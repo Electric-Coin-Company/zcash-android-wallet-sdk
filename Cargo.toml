@@ -1,0 +1,17 @@
+[package]
+name = "zcash-wallet-sdk-poc"
+version = "0.0.1"
+authors = ["Kevin Gorham <kevin.gorham@z.cash>"]
+description = "Simple PoC that rust can work with protobufs over JNI"
+publish = false
+
+[dependencies]
+rand = "0.4"
+
+[target.'cfg(target_os="android")'.dependencies]
+jni = { version = "0.9", default-features = false }
+
+[lib]
+name = "zcashwalletsdk"
+path = "src/main/rust/lib.rs"
+crate-type = ["staticlib", "cdylib"]

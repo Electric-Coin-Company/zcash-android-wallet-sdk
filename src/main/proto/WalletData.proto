@@ -1,0 +1,6 @@
+package cash.z.wallet.sdk.proto;
+message WalletData {
+  required string name = 1;
+  required int32 id = 2;
+  optional string emails = 3;
+}

@@ -1,0 +1,3 @@
+<resources>
+    <string name="sdk_test_message">Library linking is working!</string>
+</resources>
