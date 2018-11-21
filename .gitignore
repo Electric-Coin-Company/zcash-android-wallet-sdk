@@ -12,6 +12,7 @@
 bin/
 gen/
 out/
+target/
 jniLibs/
 
 # Gradle files
