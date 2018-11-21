@@ -2,7 +2,7 @@ use std::os::raw::{c_char, c_int};
 
 /// For now, this just returns a magic number
 #[no_mangle]
-pub extern "C" fn test_response(input: *const c_char) -> c_int {
+pub extern "C" fn test_response(_input: *const c_char) -> c_int {
     let magic_number = 42;
     magic_number
 }
