@@ -9,7 +9,7 @@ publish = false
 rand = "0.4"
 
 [target.'cfg(target_os="android")'.dependencies]
-jni = { version = "0.9", default-features = false }
+jni = { version = "0.10", default-features = false }
 
 [lib]
 name = "zcashwalletsdk"
