@@ -14,7 +14,7 @@ if [ ! -f "$standalone_script" ]; then
 else
 	echo "Standalone NDK files appear to be missing.\n    Attempting to install them..."
 	ndk_dir=$(dirname $(dirname $(dirname $standalone_script 2>/dev/null) 2>/dev/null) 2>/dev/null)
-	ndk_version=$(grep -oE "[0-9.]{5,}" /home/gmale/kg/setup/android/sdk/ndk-bundle/source.properties 2>/dev/null)
+	ndk_version=$(grep -oE "[0-9.]{5,}" $ndk_dir/source.properties 2>/dev/null)
 	echo "        NDK version $ndk_version found at $ndk_dir"
 fi
 
