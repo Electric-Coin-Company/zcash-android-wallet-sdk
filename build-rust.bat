@@ -3,6 +3,9 @@
 @rem Set local scope for the variables with windows NT shell
 if "%OS%"=="Windows_NT" setlocal
 
+set DIRNAME=%~dp0
+if "%DIRNAME%" == "" set DIRNAME=.
+
 @rem check for cargo installation
 cargo --version >NUL 2>&1
 if %ERRORLEVEL% equ 0 goto cargoFound
@@ -24,6 +27,11 @@ echo Done.
 call build-ndk-standalone.bat
 if %ERRORLEVEL% neq 0 exit /b 1
 
+
+@rem add NDK binaries to path so the cc crate can find them
+set PATH=%DIRNAME%\out\ndk\standalone\arm\bin;%PATH%
+set PATH=%DIRNAME%\out\ndk\standalone\arm64\bin;%PATH%
+set PATH=%DIRNAME%\out\ndk\standalone\x86\bin;%PATH%
 
 echo Building...
 echo    building aarch64...

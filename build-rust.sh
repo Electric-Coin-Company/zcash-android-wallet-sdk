@@ -26,12 +26,12 @@ echo "Android targets found!"
 
 echo "Building..."
 echo "   building aarch64..."
-cargo build --target aarch64-linux-android --release || exit 10
+PATH="$PATH:$(pwd)/out/ndk/standalone/arm64/bin" cargo build --target aarch64-linux-android --release || exit 10
 
 echo "   building i686..."
-cargo build --target i686-linux-android --release || exit 20
+PATH="$PATH:$(pwd)/out/ndk/standalone/x86/bin" cargo build --target i686-linux-android --release || exit 20
 
 echo "   building armv7..."
-cargo build --target armv7-linux-androideabi --release || exit 30
+PATH="$PATH:$(pwd)/out/ndk/standalone/arm/bin" cargo build --target armv7-linux-androideabi --release || exit 30
 
 echo "Done."
