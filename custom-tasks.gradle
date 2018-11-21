@@ -49,8 +49,14 @@ tasks.register("generateJniLibs").configure {
     }
     description = "Generate *.so files for connecting to the Rust wallet logic through the JNI"
     doLast {
-        exec {
-            commandLine("./build-rust.sh")
+        if (System.getProperty('os.name').toLowerCase(Locale.ROOT).contains('windows')) {
+            exec {
+                commandLine("./build-rust.bat")
+            }
+        } else {
+            exec {
+                commandLine("./build-rust.sh")
+            }
         }
     }
     inputs.files(fileTree(dir: jniSrcDir, include: '**/*'))
