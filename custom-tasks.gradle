@@ -1,64 +1,72 @@
-val protoSrcDir = "src/main/proto"
-val protoDestDir = "build/generated/source/wire"
-val jniSrcDir = "src/main/rust"
-val jniDestDir = "build/rust/target"
+def protoSrcDir = "src/main/proto"
+def protoDestDir = "build/generated/source/wire"
+def jniSrcDir = "src/main/rust"
+def jniDestDir = "build/rust/target"
 
-
-fun fileTreeWith(dir: String, vararg include: String): ConfigurableFileTree {
-    return fileTree(mapOf("dir" to dir, "include" to include))
-}
+def libFile = "libzcashwalletsdk.so"
+def libX86File = "build/rust/target/i686-linux-android/release/$libFile"
+def libX86Dir = "src/main/jniLibs/x86"
+def libArm64File = "build/rust/target/aarch64-linux-android/release/$libFile"
+def libArm64Dir = "src/main/jniLibs/arm64-v8a"
+def libArmeabiFile = "build/rust/target/armv7-linux-androideabi/release/$libFile"
+def libArmeabiDir = "src/main/jniLibs/armeabi-v7a"
 
 buildscript {
     dependencies {
         classpath("com.squareup.wire:wire-compiler:2.2.0")
     }
-
     repositories {
         mavenCentral()
     }
-
 }
 
-val generateProtobufClasses: TaskProvider<Task> = tasks.register("generateProtobufClasses").apply {
-    configure {
-        doFirst {
-            println("**** CREATING PROTOS ****")
-            delete(protoDestDir)
-            mkdir(protoDestDir)
-        }
-        description = "Generate Java classes from protocol buffer (.proto) schema files for use with Square's Wire library"
-
-        fileTreeWith(protoSrcDir, "**/*.proto").forEach { file ->
-            doLast {
-                javaexec {
-                    main = "com.squareup.wire.WireCompiler"
-                    classpath = buildscript.configurations.getByName("classpath")
-                    args = listOf("--proto_path=$protoSrcDir", "--java_out=$protoDestDir", file.path)
-                }
-            }
-        }
-        inputs.files(fileTreeWith(protoSrcDir, "**/*.proto"))
-        outputs.files(fileTreeWith(protoDestDir, "**"))
+tasks.register("generateProtobufClasses").configure {
+    doFirst {
+        println("**** CREATING PROTOS ****")
+        delete(protoDestDir)
+        mkdir(protoDestDir)
     }
-}
+    description = "Generate Java classes from protocol buffer (.proto) schema files for use with Square's Wire library"
 
-val generateJniLibs: TaskProvider<Task> = tasks.register("generateJniLibs").apply {
-    configure {
-        doFirst {
-            println("**** CREATING JNI LIBS ****")
-            delete(jniDestDir)
-            mkdir(jniDestDir)
-        }
-        description = "Generate *.so files for connecting to the Rust wallet logic through the JNI"
+    fileTree(dir: protoSrcDir, include: '**/*.proto').each { File file ->
         doLast {
-            exec {
-                commandLine("./build-rust.sh")
+            javaexec {
+                main = "com.squareup.wire.WireCompiler"
+                classpath = buildscript.configurations.classpath
+                args = ["--proto_path=$protoSrcDir", "--java_out=$protoDestDir", file.path]
             }
         }
-        inputs.files(fileTreeWith(jniSrcDir, "**/*"))
-        outputs.files(fileTreeWith(jniDestDir, "**/*.so"))
     }
+    inputs.files(fileTree(dir: protoSrcDir, include: '**/*.proto'))
+    outputs.files(fileTree(dir: protoDestDir, include: '**'))
 }
 
-tasks["preBuild"]!!.dependsOn(generateProtobufClasses)
-tasks["preBuild"]!!.dependsOn(generateJniLibs)
+tasks.register("generateJniLibs").configure {
+    doFirst {
+        println("**** CREATING JNI LIBS ****")
+        delete(jniDestDir)
+        mkdir(jniDestDir)
+    }
+    description = "Generate *.so files for connecting to the Rust wallet logic through the JNI"
+    doLast {
+        exec {
+            commandLine("./build-rust.sh")
+        }
+    }
+    inputs.files(fileTree(dir: jniSrcDir, include: '**/*'))
+    outputs.files(fileTree(dir: jniDestDir, include: '**/*.so'))
+}
+
+tasks.register("copyLibX86", Copy) {
+    from libX86File
+    into libX86Dir
+}
+tasks.register("copyLibArm64", Copy) {
+    from libArm64File
+    into libArm64Dir
+}
+tasks.register("copyLibArmeabi", Copy) {
+    dependsOn copyLibArm64, copyLibX86
+    from libArmeabiFile
+    into libArmeabiDir
+}
