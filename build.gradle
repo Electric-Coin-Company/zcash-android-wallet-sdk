@@ -15,11 +15,19 @@ buildscript {
         classpath 'com.android.tools.build:gradle:3.4.0-alpha04'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${versions.kotlin}"
         classpath "com.github.ben-manes:gradle-versions-plugin:0.20.0"
+        classpath 'com.github.dcendents:android-maven-gradle-plugin:2.1'
     }
 }
 
 apply from: 'custom-tasks.gradle'
 apply plugin: 'com.android.library'
+apply plugin: "kotlin-android-extensions"
+apply plugin: "kotlin-android"
+apply plugin: 'com.github.ben-manes.versions'
+apply plugin: 'com.github.dcendents.android-maven'
+
+group = 'cash.z.android.wallet'
+version = '1.0.1'
 
 repositories {
     google()
@@ -32,8 +40,8 @@ android {
     defaultConfig {
         minSdkVersion 16
         targetSdkVersion 28
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 1_00_01
+        versionName = "1.0.1"
         testInstrumentationRunner = "android.support.test.runner.AndroidJUnitRunner"
     }
 
@@ -46,7 +54,7 @@ android {
     sourceSets {
         main {
             java {
-                srcDir "build/generated/source/wire"
+                srcDirs "build/generated/source/wire"
             }
         }
     }
