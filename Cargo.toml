@@ -8,6 +8,14 @@ publish = false
 [dependencies]
 rand = "0.4"
 
+[dependencies.zcash_client_backend]
+git = "https://github.com/str4d/librustzcash.git"
+rev = "819f13da44825d4afa9d04a3ef676f5d71fb0d94"
+
+[dependencies.zip32]
+git = "https://github.com/str4d/librustzcash.git"
+rev = "819f13da44825d4afa9d04a3ef676f5d71fb0d94"
+
 [target.'cfg(target_os="android")'.dependencies]
 jni = { version = "0.10", default-features = false }
 
