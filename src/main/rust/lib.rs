@@ -1,10 +1,23 @@
-use std::os::raw::{c_char, c_int};
+extern crate zcash_client_backend;
+extern crate zip32;
 
-/// For now, this just returns a magic number
-#[no_mangle]
-pub extern "C" fn test_response(_input: *const c_char) -> c_int {
-    let magic_number = 42;
-    magic_number
+use zcash_client_backend::{
+    address::encode_payment_address, constants::HRP_SAPLING_EXTENDED_SPENDING_KEY_TEST,
+};
+use zip32::{ChildIndex, ExtendedSpendingKey};
+
+fn address_from_seed(seed: &[u8]) -> String {
+    let master = ExtendedSpendingKey::master(seed);
+    let extsk = ExtendedSpendingKey::from_path(
+        &master,
+        &[
+            ChildIndex::Hardened(32),
+            ChildIndex::Hardened(1),
+            ChildIndex::Hardened(0),
+        ],
+    );
+    let addr = extsk.default_address().unwrap().1;
+    encode_payment_address(HRP_SAPLING_EXTENDED_SPENDING_KEY_TEST, &addr)
 }
 
 /// JNI interface
@@ -13,30 +26,23 @@ pub extern "C" fn test_response(_input: *const c_char) -> c_int {
 pub mod android {
     extern crate jni;
 
-    use self::jni::objects::{JClass, JString};
-    use self::jni::sys::*;
+    use self::jni::objects::JClass;
+    use self::jni::sys::{jbyteArray, jstring};
     use self::jni::JNIEnv;
-    use super::*;
+
+    use super::address_from_seed;
 
     #[no_mangle]
-    pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_getMagicInt(
+    pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_getAddress(
         env: JNIEnv,
         _: JClass,
-        test_input: JString,
-    ) -> jint {
-        let jvm_text = env
-            .get_string(test_input)
-            .expect("unable to find text for test input");
-        test_response(jvm_text.as_ptr())
-    }
+        seed: jbyteArray,
+    ) -> jstring {
+        let seed = env.convert_byte_array(seed).unwrap();
 
-    #[no_mangle]
-    pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_sendComplexData(
-        env: JNIEnv,
-        _: JClass,
-        wallet_data: jbyteArray,
-    ) -> jint {
-        let bytes = env.convert_byte_array(wallet_data);
-        bytes.unwrap().len() as i32
+        let addr = address_from_seed(&seed);
+
+        let output = env.new_string(addr).expect("Couldn't create Java string!");
+        output.into_inner()
     }
 }
