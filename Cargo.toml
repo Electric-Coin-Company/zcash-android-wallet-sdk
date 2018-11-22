@@ -8,6 +8,7 @@ publish = false
 [dependencies]
 protobuf = "2"
 rand = "0.4"
+rusqlite = { version = "0.15", features = ["bundled"] }
 
 [dependencies.zcash_client_backend]
 git = "https://github.com/str4d/librustzcash.git"
