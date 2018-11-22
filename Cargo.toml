@@ -6,6 +6,7 @@ description = "Simple PoC that rust can work with protobufs over JNI"
 publish = false
 
 [dependencies]
+protobuf = "2"
 rand = "0.4"
 
 [dependencies.zcash_client_backend]
@@ -18,6 +19,9 @@ rev = "819f13da44825d4afa9d04a3ef676f5d71fb0d94"
 
 [target.'cfg(target_os="android")'.dependencies]
 jni = { version = "0.10", default-features = false }
+
+[build-dependencies]
+protobuf-codegen-pure = "2"
 
 [lib]
 name = "zcashwalletsdk"

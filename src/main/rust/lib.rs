@@ -1,5 +1,8 @@
+extern crate protobuf;
 extern crate zcash_client_backend;
 extern crate zip32;
+
+mod protos;
 
 use zcash_client_backend::{
     address::encode_payment_address, constants::HRP_SAPLING_EXTENDED_SPENDING_KEY_TEST,
