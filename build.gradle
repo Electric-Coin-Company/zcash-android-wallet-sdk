@@ -5,7 +5,8 @@ buildscript {
         'targetSdkVersion': 28
     ]
     ext.versions = [
-        'kotlin': '1.3.0'
+        'kotlin': '1.3.0',
+        'architectureComponents': '2.0.0'
     ]
     repositories {
         google()
@@ -23,6 +24,7 @@ apply from: 'custom-tasks.gradle'
 apply plugin: 'com.android.library'
 apply plugin: "kotlin-android-extensions"
 apply plugin: "kotlin-android"
+apply plugin: 'kotlin-kapt'
 apply plugin: 'com.github.ben-manes.versions'
 apply plugin: 'com.github.dcendents.android-maven'
 
@@ -61,13 +63,22 @@ android {
 }
 
 dependencies {
+    // Square
     api "com.squareup.wire:wire-runtime:2.2.0"
+
+    // Architecture components
+    implementation "androidx.lifecycle:lifecycle-runtime:${versions.architectureComponents}"
+    implementation "androidx.lifecycle:lifecycle-extensions:${versions.architectureComponents}"
+    implementation "androidx.room:room-runtime:${versions.architectureComponents}"
+    kapt "androidx.lifecycle:lifecycle-compiler:${versions.architectureComponents}"
+    kapt "androidx.room:room-compiler:${versions.architectureComponents}"
 
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:${versions.kotlin}"
     implementation "com.android.support:appcompat-v7:28.0.0"
     testImplementation "junit:junit:4.12"
-    androidTestImplementation "com.android.support.test:runner:1.0.2"
-    androidTestImplementation "com.android.support.test.espresso:espresso-core:3.0.2"
+    androidTestImplementation "androidx.test:runner:1.1.0"
+    androidTestImplementation "androidx.test.espresso:espresso-core:3.1.0"
+    androidTestImplementation "androidx.arch.core:core-testing:${versions.architectureComponents}"
 }
 
 
