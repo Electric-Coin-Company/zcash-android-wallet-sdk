@@ -9,6 +9,7 @@
 *.class
 
 # Generated files
+.cargo/
 bin/
 gen/
 out/
