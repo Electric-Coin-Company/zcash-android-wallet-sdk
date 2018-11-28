@@ -6,6 +6,8 @@ class JniConverter {
 
     external fun scanBlocks(db: String, start: Int, end: Int, seed: ByteArray): Array<ByteArray>
 
+    external fun initLogs()
+
     companion object {
         init {
             System.loadLibrary("zcashwalletsdk")
