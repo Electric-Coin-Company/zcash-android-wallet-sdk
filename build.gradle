@@ -72,5 +72,4 @@ dependencies {
 
 
 preBuild.dependsOn generateProtobufClasses
-preBuild.dependsOn generateJniLibs
-preBuild.dependsOn copyLibArmeabi
+preBuild.dependsOn copyAllJniLibs
