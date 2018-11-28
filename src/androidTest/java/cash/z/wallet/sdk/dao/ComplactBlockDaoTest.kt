@@ -24,7 +24,7 @@ class ComplactBlockDaoTest {
             CompactBlockDb::class.java
         ).build()
 
-//        dao = db.compactBlockDao()
+        dao = db?.complactBlockDao()
     }
 
     @Test
