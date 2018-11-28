@@ -27,7 +27,7 @@ apply plugin: 'com.github.ben-manes.versions'
 apply plugin: 'com.github.dcendents.android-maven'
 
 group = 'cash.z.android.wallet'
-version = '1.1.1'
+version = '1.1.2'
 
 repositories {
     google()
@@ -40,8 +40,8 @@ android {
     defaultConfig {
         minSdkVersion 16
         targetSdkVersion 28
-        versionCode = 1_10_01
-        versionName = "1.1.1"
+        versionCode = 1_01_02
+        versionName = "1.1.2"
         testInstrumentationRunner = "android.support.test.runner.AndroidJUnitRunner"
     }
 
