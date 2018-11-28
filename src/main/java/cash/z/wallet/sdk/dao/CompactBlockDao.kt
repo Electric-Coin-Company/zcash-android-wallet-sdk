@@ -13,5 +13,5 @@ interface CompactBlockDao {
     fun insert(block: CompactBlock)
 
     @Query("SELECT * FROM CompactBlock WHERE height = :height")
-    fun findById(height: Int): LiveData<CompactBlock>
+    fun findById(height: Int): CompactBlock
 }
