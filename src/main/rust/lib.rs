@@ -1,3 +1,5 @@
+#[macro_use] extern crate log;
+
 extern crate protobuf;
 extern crate rusqlite;
 extern crate zcash_client_backend;
@@ -76,14 +78,34 @@ fn scan_cached_blocks(
 #[allow(non_snake_case)]
 pub mod android {
     extern crate jni;
+    extern crate android_logger;
+    extern crate log_panics;
 
+    use log::Level;
     use protobuf::Message;
 
     use self::jni::objects::{JClass, JString};
     use self::jni::sys::{jbyteArray, jint, jobjectArray, jsize, jstring};
     use self::jni::JNIEnv;
+    use self::android_logger::Filter;
 
     use super::{address_from_extfvk, extfvk_from_seed, scan_cached_blocks};
+
+    #[no_mangle]
+    pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_initLogs(
+        _env: JNIEnv,
+        _: JClass
+    ) {
+        android_logger::init_once(
+            Filter::default() .with_min_level(Level::Trace),
+            Some("cash.z.rust.logs")
+        );
+
+        log_panics::init();
+
+        trace!("logs have been initialized {}", "successfully");
+        error!("this is a sample error message");
+    }
 
     #[no_mangle]
     pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_getAddress(
