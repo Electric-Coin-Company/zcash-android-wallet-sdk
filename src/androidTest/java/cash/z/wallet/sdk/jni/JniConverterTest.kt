@@ -2,17 +2,10 @@ package cash.z.wallet.sdk.jni
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
-import org.junit.Before
+import org.junit.BeforeClass
 import org.junit.Test
 
 class JniConverterTest {
-
-    val converter: JniConverter = JniConverter()
-
-    @Before
-    fun initLogs() {
-        converter.initLogs()
-    }
 
     @Test
     fun testGetAddress_exists() {
@@ -37,6 +30,16 @@ class JniConverterTest {
         )
         val expectedAddress = "ztestsapling1snmqdnfqnc407pvqw7sld8w5zxx6nd0523kvlj4jf39uvxvh7vn0hs3q38n07806dwwecqwke3t"
         assertEquals("Invalid number of results", 2, result.size)
+    }
+
+    companion object {
+        val converter: JniConverter = JniConverter()
+
+        @BeforeClass
+        @JvmStatic
+        fun setup() {
+            converter.initLogs()
+        }
     }
 
 }

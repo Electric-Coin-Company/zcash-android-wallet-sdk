@@ -1,4 +1,5 @@
-#[macro_use] extern crate log;
+#[macro_use]
+extern crate log;
 
 extern crate protobuf;
 extern crate rusqlite;
@@ -94,16 +95,16 @@ pub mod android {
     #[no_mangle]
     pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_initLogs(
         _env: JNIEnv,
-        _: JClass
+        _: JClass,
     ) {
         android_logger::init_once(
-            Filter::default() .with_min_level(Level::Trace),
-            Some("cash.z.rust.logs")
+            Filter::default().with_min_level(Level::Trace),
+            Some("cash.z.rust.logs"),
         );
 
         log_panics::init();
 
-        trace!("logs have been initialized {}", "successfully");
+        debug!("logs have been initialized {}", "successfully");
         error!("this is a sample error message");
     }
 
