@@ -4,18 +4,17 @@ import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.room.Room
 import androidx.test.platform.app.InstrumentationRegistry
 import cash.z.wallet.sdk.db.CompactBlockDb
-import org.junit.Assert.assertNotNull
-import org.junit.Before
-import org.junit.Rule
-import org.junit.Test
+import cash.z.wallet.sdk.vo.CompactBlock
+import org.junit.*
+import org.junit.Assert.*
 
 class ComplactBlockDaoTest {
 
     @get:Rule
     var instantTaskExecutorRule = InstantTaskExecutorRule()
 
-    private var dao: CompactBlockDao? = null
-    private var db: CompactBlockDb? = null
+    private lateinit var dao: CompactBlockDao
+    private lateinit var db: CompactBlockDb
 
     @Before
     fun initDb() {
@@ -27,6 +26,11 @@ class ComplactBlockDaoTest {
             .apply { dao = complactBlockDao() }
     }
 
+    @After
+    fun close() {
+        db.close()
+    }
+
     @Test
     fun testDbExists() {
         assertNotNull(db)
@@ -36,4 +40,16 @@ class ComplactBlockDaoTest {
     fun testDaoExists() {
         assertNotNull(dao)
     }
+
+    @Test
+    fun testDaoInsert() {
+        CompactBlock(343899, "sample".toByteArray()).let { block ->
+            dao.insert(block)
+            val result = dao.findById(block.height)
+            assertEquals(block.height, result?.height)
+            assertTrue(block.data.contentEquals(result!!.data))
+            dao.delete(block)
+        }
+    }
+
 }
