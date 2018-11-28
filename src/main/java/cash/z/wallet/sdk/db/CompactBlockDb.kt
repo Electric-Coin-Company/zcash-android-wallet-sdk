@@ -2,6 +2,7 @@ package cash.z.wallet.sdk.db
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
+import cash.z.wallet.sdk.dao.CompactBlockDao
 import cash.z.wallet.sdk.vo.CompactBlock
 
 @Database(
@@ -11,5 +12,5 @@ import cash.z.wallet.sdk.vo.CompactBlock
     exportSchema = false
 )
 abstract class CompactBlockDb : RoomDatabase() {
-
+    abstract fun complactBlockDao(): CompactBlockDao
 }
