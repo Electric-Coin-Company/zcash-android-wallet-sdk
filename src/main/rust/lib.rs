@@ -104,8 +104,7 @@ pub mod android {
 
         log_panics::init();
 
-        debug!("logs have been initialized {}", "successfully");
-        error!("this is a sample error message");
+        debug!("logs have been initialized successfully");
     }
 
     #[no_mangle]
