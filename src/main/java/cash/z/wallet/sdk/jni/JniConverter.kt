@@ -4,7 +4,7 @@ class JniConverter {
 
     external fun getAddress(seed: ByteArray): String
 
-    external fun scanBlocks(db: String, start: Int, end: Int, seed: ByteArray): Array<ByteArray>
+    external fun scanBlocks(db_cache: String, db_data: String, seed: ByteArray)
 
     external fun initLogs()
 

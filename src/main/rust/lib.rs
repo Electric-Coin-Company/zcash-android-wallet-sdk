@@ -8,14 +8,12 @@ extern crate zip32;
 
 mod protos;
 
-use rusqlite::Connection;
+use rusqlite::{types::ToSql, Connection, NO_PARAMS};
 use zcash_client_backend::{
     address::encode_payment_address, constants::HRP_SAPLING_EXTENDED_SPENDING_KEY_TEST,
     welding_rig::scan_block_from_bytes,
 };
 use zip32::{ChildIndex, ExtendedFullViewingKey, ExtendedSpendingKey};
-
-use protos::ValueReceived::ValueReceived;
 
 fn extfvk_from_seed(seed: &[u8]) -> ExtendedFullViewingKey {
     let master = ExtendedSpendingKey::master(seed);
@@ -35,43 +33,123 @@ fn address_from_extfvk(extfvk: &ExtendedFullViewingKey) -> String {
     encode_payment_address(HRP_SAPLING_EXTENDED_SPENDING_KEY_TEST, &addr)
 }
 
+fn init_data_database(db_data: &str) -> rusqlite::Result<()> {
+    let data = Connection::open(db_data)?;
+    data.execute(
+        "CREATE TABLE IF NOT EXISTS blocks (
+            height INTEGER PRIMARY KEY,
+            time INTEGER
+        )",
+        NO_PARAMS,
+    )?;
+    data.execute(
+        "CREATE TABLE IF NOT EXISTS transactions (
+            id_tx INTEGER PRIMARY KEY,
+            txid BLOB NOT NULL UNIQUE,
+            block INTEGER NOT NULL,
+            FOREIGN KEY (block) REFERENCES blocks(height)
+        )",
+        NO_PARAMS,
+    )?;
+    data.execute(
+        "CREATE TABLE IF NOT EXISTS received_notes (
+            id_note INTEGER PRIMARY KEY,
+            tx INTEGER NOT NULL,
+            output_index INTEGER NOT NULL,
+            value INTEGER NOT NULL,
+            FOREIGN KEY (tx) REFERENCES transactions(id_tx),
+            CONSTRAINT tx_output UNIQUE (tx, output_index)
+        )",
+        NO_PARAMS,
+    )?;
+    Ok(())
+}
+
 struct CompactBlockRow {
     height: i32,
     data: Vec<u8>,
 }
 
-/// Scans the given block range for any transactions received by the given
-/// ExtendedFullViewingKeys. Returns a Vec of block height, txid and value.
+/// Scans new blocks added to the cache for any transactions received by the given
+/// ExtendedFullViewingKeys.
+///
+/// Assumes that the caller is handling rollbacks.
 fn scan_cached_blocks(
-    db: String,
-    start: i32,
-    end: i32,
+    db_cache: &str,
+    db_data: &str,
     extfvks: &[ExtendedFullViewingKey],
-) -> Vec<ValueReceived> {
-    let conn = Connection::open(db).unwrap();
-    let mut stmt = conn
-        .prepare("SELECT height, data FROM compactblocks WHERE height >= ? AND height <= ?")
-        .unwrap();
-    let rows = stmt
-        .query_map(&[start, end], |row| CompactBlockRow {
-            height: row.get(0),
-            data: row.get(1),
-        }).unwrap();
+) -> rusqlite::Result<()> {
+    let cache = Connection::open(db_cache)?;
+    let data = Connection::open(db_data)?;
 
-    let mut received = vec![];
+    // Recall where we synced up to previously.
+    // If we have never synced, use 0 to select all cached CompactBlocks.
+    let mut last_height =
+        data.query_row(
+            "SELECT MAX(height) FROM blocks",
+            NO_PARAMS,
+            |row| match row.get_checked(0) {
+                Ok(h) => h,
+                Err(_) => 0,
+            },
+        )?;
+
+    // Prepare necessary SQL statements
+    let mut stmt_blocks = cache
+        .prepare("SELECT height, data FROM compactblocks WHERE height > ? ORDER BY height ASC")?;
+    let mut stmt_insert_block = data.prepare(
+        "INSERT INTO blocks (height)
+        VALUES (?)",
+    )?;
+    let mut stmt_insert_tx = data.prepare(
+        "INSERT INTO transactions (txid, block)
+        VALUES (?, ?)",
+    )?;
+    let mut stmt_insert_note = data.prepare(
+        "INSERT INTO received_notes (tx, output_index, value)
+        VALUES (?, ?, ?)",
+    )?;
+
+    // Fetch the CompactBlocks we need to scan
+    let rows = stmt_blocks.query_map(&[last_height], |row| CompactBlockRow {
+        height: row.get(0),
+        data: row.get(1),
+    })?;
+
     for row in rows {
-        let row = row.unwrap();
+        let row = row?;
+
+        // Scanned blocks MUST be height-seqential.
+        if row.height != (last_height + 1) {
+            error!(
+                "Expected height of next CompactBlock to be {}, but was {}",
+                last_height + 1,
+                row.height
+            );
+            // Nothing more we can do
+            break;
+        }
+        last_height = row.height;
+
+        // Insert the block into the database.
+        stmt_insert_block.execute(&[row.height.to_sql()?])?;
+
         for tx in scan_block_from_bytes(&row.data, &extfvks) {
+            // Insert our transaction into the database.
+            stmt_insert_tx.execute(&[tx.txid.0.to_vec().to_sql()?, row.height.to_sql()?])?;
+            let tx_row = data.last_insert_rowid();
+
             for output in tx.shielded_outputs {
-                let mut vr = ValueReceived::new();
-                vr.set_blockHeight(row.height as u64);
-                vr.set_txHash(tx.txid.0.to_vec());
-                vr.set_value(output.value);
-                received.push(vr);
+                // Insert received note into the database.
+                // Assumptions:
+                // - A transaction will not contain more than 2^63 shielded outputs.
+                // - A note value will never exceed 2^63 zatoshis.
+                stmt_insert_note.execute(&[tx_row, output.index as i64, output.value as i64])?;
             }
         }
     }
-    received
+
+    Ok(())
 }
 
 /// JNI interface
@@ -83,11 +161,10 @@ pub mod android {
     extern crate log_panics;
 
     use log::Level;
-    use protobuf::Message;
 
     use self::android_logger::Filter;
     use self::jni::objects::{JClass, JString};
-    use self::jni::sys::{jbyteArray, jint, jobjectArray, jsize, jstring};
+    use self::jni::sys::{jbyteArray, jstring};
     use self::jni::JNIEnv;
 
     use super::{address_from_extfvk, extfvk_from_seed, scan_cached_blocks};
@@ -125,32 +202,22 @@ pub mod android {
     pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_scanBlocks(
         env: JNIEnv,
         _: JClass,
-        db: JString,
-        start: jint,
-        end: jint,
+        db_cache: JString,
+        db_data: JString,
         seed: jbyteArray,
-    ) -> jobjectArray {
-        let db = env
-            .get_string(db)
+    ) {
+        let db_cache: String = env
+            .get_string(db_cache)
+            .expect("Couldn't get Java string!")
+            .into();
+        let db_data: String = env
+            .get_string(db_data)
             .expect("Couldn't get Java string!")
             .into();
         let seed = env.convert_byte_array(seed).unwrap();
 
-        let received = scan_cached_blocks(db, start, end, &[extfvk_from_seed(&seed)]);
-
-        let jreceived = env
-            .new_object_array(
-                received.len() as jsize,
-                "[B",
-                env.new_byte_array(0).unwrap().into(),
-            ).unwrap();
-        for (i, vr) in received.into_iter().enumerate() {
-            let jvr = env
-                .byte_array_from_slice(&vr.write_to_bytes().unwrap())
-                .unwrap();
-            env.set_object_array_element(jreceived, i as jsize, jvr.into())
-                .unwrap();
+        if let Err(e) = scan_cached_blocks(&db_cache, &db_data, &[extfvk_from_seed(&seed)]) {
+            error!("Error while scanning blocks: {}", e);
         }
-        jreceived
     }
 }
