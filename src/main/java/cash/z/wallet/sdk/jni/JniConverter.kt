@@ -2,9 +2,7 @@ package cash.z.wallet.sdk.jni
 
 class JniConverter {
 
-    external fun getMagicInt(value: String): Int
-
-    external fun sendComplexData(walletData: ByteArray): Int
+    external fun getAddress(seed: ByteArray): String
 
     companion object {
         init {
