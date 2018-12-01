@@ -9,9 +9,11 @@
 *.class
 
 # Generated files
+.cargo/
 bin/
 gen/
 out/
+src/main/rust/protos/
 target/
 jniLibs/
 

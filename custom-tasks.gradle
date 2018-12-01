@@ -20,7 +20,7 @@ buildscript {
     }
 }
 
-tasks.register("generateProtobufClasses").configure {
+tasks.register("generateProtobufClasses") {
     doFirst {
         println("**** CREATING PROTOS ****")
         delete(protoDestDir)
@@ -41,7 +41,7 @@ tasks.register("generateProtobufClasses").configure {
     outputs.files(fileTree(dir: protoDestDir, include: '**'))
 }
 
-tasks.register("generateJniLibs").configure {
+tasks.register("generateJniLibs") {
     doFirst {
         println("**** CREATING JNI LIBS ****")
         delete(jniDestDir)
@@ -59,20 +59,25 @@ tasks.register("generateJniLibs").configure {
             }
         }
     }
-    inputs.files(fileTree(dir: jniSrcDir, include: '**/*'))
+    inputs.files(fileTree(dir: jniSrcDir, include: '**/*.rs'))
     outputs.files(fileTree(dir: jniDestDir, include: '**/*.so'))
 }
 
 tasks.register("copyLibX86", Copy) {
+    dependsOn generateJniLibs
     from libX86File
     into libX86Dir
 }
 tasks.register("copyLibArm64", Copy) {
+    dependsOn generateJniLibs
     from libArm64File
     into libArm64Dir
 }
 tasks.register("copyLibArmeabi", Copy) {
-    dependsOn copyLibArm64, copyLibX86
+    dependsOn generateJniLibs
     from libArmeabiFile
     into libArmeabiDir
+}
+tasks.register("copyAllJniLibs") {
+    dependsOn copyLibX86, copyLibArm64, copyLibArmeabi
 }
