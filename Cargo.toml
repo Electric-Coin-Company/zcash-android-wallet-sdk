@@ -6,7 +6,6 @@ description = "Simple PoC that rust can work with protobufs over JNI"
 publish = false
 
 [dependencies]
-protobuf = "2"
 rand = "0.4"
 rusqlite = { version = "0.15", features = ["bundled"] }
 log = "0.4"
@@ -23,9 +22,6 @@ rev = "63ec78bb857a258a97d25a5a6e747389996e566a"
 jni = { version = "0.10", default-features = false }
 android_logger = "0.6"
 log-panics = "2.0.0"
-
-[build-dependencies]
-protobuf-codegen-pure = "2"
 
 [lib]
 name = "zcashwalletsdk"

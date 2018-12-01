@@ -1,9 +1,0 @@
-syntax = "proto3";
-
-package cash.z.wallet.sdk.proto;
-
-message ValueReceived {
-  uint64 blockHeight = 1;
-  bytes txHash = 2;
-  uint64 value = 3;
-}

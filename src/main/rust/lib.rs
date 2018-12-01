@@ -1,12 +1,9 @@
 #[macro_use]
 extern crate log;
 
-extern crate protobuf;
 extern crate rusqlite;
 extern crate zcash_client_backend;
 extern crate zip32;
-
-mod protos;
 
 use rusqlite::{types::ToSql, Connection, NO_PARAMS};
 use zcash_client_backend::{
