@@ -8,3 +8,5 @@ From an app developer's perspective, this SDK will encapsulate the most complex 
 
 
 ![SDK Diagram](assets/sdk-diagram.png?raw=true "SDK Diagram DRAFT")
+
+Thankfully, the only thing an app developer has to be concerned with is the following:
