@@ -7,23 +7,33 @@ extern crate ff;
 extern crate pairing;
 extern crate protobuf;
 extern crate rusqlite;
+extern crate sapling_crypto;
 extern crate zcash_client_backend;
 extern crate zcash_primitives;
 extern crate zip32;
 
 use failure::{format_err, Error};
 use ff::{PrimeField, PrimeFieldRepr};
+use pairing::bls12_381::Bls12;
 use protobuf::parse_from_bytes;
 use rusqlite::{types::ToSql, Connection, NO_PARAMS};
+use sapling_crypto::{
+    jubjub::fs::{Fs, FsRepr},
+    primitives::{Diversifier, Note, PaymentAddress},
+};
 use zcash_client_backend::{
     constants::HRP_SAPLING_PAYMENT_ADDRESS_TEST, encoding::encode_payment_address,
-    proto::compact_formats::CompactBlock, welding_rig::scan_block,
+    note_encryption::Memo, proto::compact_formats::CompactBlock, prover::TxProver,
+    transaction::Builder, welding_rig::scan_block,
 };
 use zcash_primitives::{
     merkle_tree::{CommitmentTree, IncrementalWitness},
+    transaction::components::Amount,
     JUBJUB,
 };
 use zip32::{ChildIndex, ExtendedFullViewingKey, ExtendedSpendingKey};
+
+const ANCHOR_OFFSET: u32 = 10;
 
 fn extfvk_from_seed(seed: &[u8]) -> ExtendedFullViewingKey {
     let master = ExtendedSpendingKey::master(seed);
@@ -92,6 +102,20 @@ fn init_data_database(db_data: &str) -> rusqlite::Result<()> {
             FOREIGN KEY (note) REFERENCES received_notes(id_note),
             FOREIGN KEY (block) REFERENCES blocks(height),
             CONSTRAINT witness_height UNIQUE (note, block)
+        )",
+        NO_PARAMS,
+    )?;
+    data.execute(
+        "CREATE TABLE IF NOT EXISTS sent_notes (
+            id_note INTEGER PRIMARY KEY,
+            tx INTEGER NOT NULL,
+            output_index INTEGER NOT NULL,
+            from_account INTEGER NOT NULL,
+            address TEXT NOT NULL,
+            value INTEGER NOT NULL,
+            memo BLOB,
+            FOREIGN KEY (tx) REFERENCES transactions(id_tx),
+            CONSTRAINT tx_output UNIQUE (tx, output_index)
         )",
         NO_PARAMS,
     )?;
@@ -334,6 +358,187 @@ fn scan_cached_blocks(
     }
 
     Ok(())
+}
+
+struct SelectedNoteRow {
+    diversifier: Diversifier,
+    note: Note<Bls12>,
+    witness: IncrementalWitness,
+}
+
+/// Creates a transaction paying the specified address.
+fn send_to_address(
+    db_data: &str,
+    consensus_branch_id: u32,
+    prover: impl TxProver,
+    account: u32,
+    extsk: &ExtendedSpendingKey,
+    to: &PaymentAddress<Bls12>,
+    value: Amount,
+    memo: Option<Memo>,
+) -> Result<i64, Error> {
+    let data = Connection::open(db_data)?;
+
+    // Check that the ExtendedSpendingKey we have been given corresponds to the
+    // ExtendedFullViewingKey for the account we are spending from.
+    let extfvk = ExtendedFullViewingKey::from(extsk);
+    if !data
+        .prepare("SELECT * FROM accounts WHERE account = ? AND extfvk = ?")?
+        .exists(&[
+            account.to_sql()?,
+            encode_extended_full_viewing_key(HRP_SAPLING_EXTENDED_FULL_VIEWING_KEY_TEST, &extfvk)
+                .to_sql()?,
+        ])?
+    {
+        return Err(format_err!(
+            "Incorrect ExtendedSpendingKey for account {}",
+            account
+        ));
+    }
+    let ovk = extfvk.fvk.ovk;
+
+    // Target the next block, assuming we are up-to-date.
+    let height = data.query_row_and_then("SELECT MAX(height) FROM blocks", NO_PARAMS, |row| {
+        let ret: Result<u32, _> = row.get_checked(0);
+        ret
+    })? + 1;
+
+    // The goal of this SQL statement is to select the oldest notes until the required
+    // value has been reached, and then fetch the witnesses at the desired height for the
+    // selected notes. This is achieved in several steps:
+    //
+    // 1) Use a window function to create a view of all notes, ordered from oldest to
+    //    newest, with an additional column containing a running sum:
+    //    - Unspent notes accumulate the values of all unspent notes in that note's
+    //      account, up to itself.
+    //    - Spent notes accumulate the values of all notes in the transaction they were
+    //      spent in, up to itself.
+    //
+    // 2) Select all unspent notes in the desired account, along with their running sum.
+    //
+    // 3) Select all notes for which the running sum was less than the required value, as
+    //    well as a single note for which the sum was greater than or equal to the
+    //    required value, bringing the sum of all selected notes across the threshold.
+    //
+    // 4) Match the selected notes against the witnesses at the desired height.
+    let mut stmt_select_notes = data.prepare(
+        "WITH selected AS (
+            WITH eligible AS (
+                SELECT id_note, diversifier, value, rcm,
+                    SUM(value) OVER
+                        (PARTITION BY account, spent ORDER BY id_note) AS so_far
+                FROM received_notes
+                WHERE account = ? AND spent IS NULL
+            )
+            SELECT * FROM eligible WHERE so_far < ?
+            UNION
+            SELECT * FROM (SELECT * FROM eligible WHERE so_far >= ? LIMIT 1)
+        ), witnesses AS (
+            SELECT note, witness FROM sapling_witnesses
+            WHERE block = ?
+        )
+        SELECT selected.diversifier, selected.value, selected.rcm, witnesses.witness
+        FROM selected
+        INNER JOIN witnesses ON selected.id_note = witnesses.note",
+    )?;
+
+    // Select notes
+    let notes = stmt_select_notes.query_and_then::<_, Error, _, _>(
+        &[
+            account as i64,
+            value.0,
+            value.0,
+            (height - ANCHOR_OFFSET) as i64,
+        ],
+        |row| {
+            let mut diversifier = Diversifier([0; 11]);
+            let d: Vec<_> = row.get(0);
+            diversifier.0.copy_from_slice(&d);
+
+            let note_value: i64 = row.get(1);
+
+            let d: Vec<_> = row.get(2);
+            let rcm = {
+                let mut tmp = FsRepr::default();
+                tmp.read_le(&d[..])?;
+                Fs::from_repr(tmp)?
+            };
+
+            let from = extfvk
+                .fvk
+                .vk
+                .into_payment_address(diversifier, &JUBJUB)
+                .unwrap();
+            let note = from.create_note(note_value as u64, rcm, &JUBJUB).unwrap();
+
+            let d: Vec<_> = row.get(3);
+            let witness = IncrementalWitness::read(&d[..])?;
+
+            Ok(SelectedNoteRow {
+                diversifier,
+                note,
+                witness,
+            })
+        },
+    )?;
+
+    // Create the transaction
+    let mut builder = Builder::new(height);
+    for selected in notes {
+        let selected = selected?;
+        builder.add_sapling_spend(
+            extsk.clone(),
+            selected.diversifier,
+            selected.note,
+            selected.witness,
+        )?;
+    }
+    builder.add_sapling_output(ovk, to.clone(), value, memo.clone())?;
+    let (tx, tx_metadata) = builder.build(consensus_branch_id, prover)?;
+    // We only called add_sapling_output() once.
+    let output_index = tx_metadata.output_index(0).unwrap() as i64;
+
+    // Save the transaction in the database.
+    let mut raw_tx = vec![];
+    tx.write(&mut raw_tx)?;
+    let mut stmt_insert_tx = data.prepare(
+        "INSERT INTO transactions (txid, raw)
+        VALUES (?, ?)",
+    )?;
+    stmt_insert_tx.execute(&[&tx.txid().0[..], &raw_tx[..]])?;
+    let id_tx = data.last_insert_rowid();
+
+    // Save the sent note in the database.
+    let to_str = encode_payment_address(HRP_SAPLING_PAYMENT_ADDRESS_TEST, to);
+    if memo.is_some() {
+        let mut stmt_insert_sent_note = data.prepare(
+            "INSERT INTO sent_notes (tx, output_index, from_account, address, value, memo)
+            VALUES (?, ?, ?, ?, ?, ?)",
+        )?;
+        stmt_insert_sent_note.execute(&[
+            id_tx.to_sql()?,
+            output_index.to_sql()?,
+            account.to_sql()?,
+            to_str.to_sql()?,
+            value.0.to_sql()?,
+            memo.unwrap().as_bytes().to_sql()?,
+        ])?;
+    } else {
+        let mut stmt_insert_sent_note = data.prepare(
+            "INSERT INTO sent_notes (tx, output_index, from_account, address, value)
+            VALUES (?, ?, ?, ?, ?)",
+        )?;
+        stmt_insert_sent_note.execute(&[
+            id_tx.to_sql()?,
+            output_index.to_sql()?,
+            account.to_sql()?,
+            to_str.to_sql()?,
+            value.0.to_sql()?,
+        ])?;
+    }
+
+    // Return the row number of the transaction, so the caller can fetch it for sending.
+    Ok(id_tx)
 }
 
 /// JNI interface
