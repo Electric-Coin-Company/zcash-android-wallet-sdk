@@ -135,6 +135,19 @@ struct WitnessRow {
     witness: IncrementalWitness,
 }
 
+fn get_balance(db_data: &str, account: u32) -> Result<Amount, Error> {
+    let data = Connection::open(db_data)?;
+
+    let balance = data.query_row(
+        "SELECT SUM(value) FROM received_notes
+        WHERE account = ? AND spent IS NULL",
+        &[account],
+        |row| row.get_checked(0).unwrap_or(0),
+    )?;
+
+    Ok(Amount(balance))
+}
+
 /// Scans new blocks added to the cache for any transactions received by the given
 /// ExtendedFullViewingKeys.
 ///
@@ -567,7 +580,7 @@ pub mod android {
     use self::jni::JNIEnv;
 
     use super::{
-        address_from_extfvk, extfvk_from_seed, scan_cached_blocks, send_to_address,
+        address_from_extfvk, extfvk_from_seed, get_balance, scan_cached_blocks, send_to_address,
         SAPLING_CONSENSUS_BRANCH_ID,
     };
 
@@ -598,6 +611,33 @@ pub mod android {
 
         let output = env.new_string(addr).expect("Couldn't create Java string!");
         output.into_inner()
+    }
+
+    #[no_mangle]
+    pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_getBalance(
+        env: JNIEnv,
+        _: JClass,
+        db_data: JString,
+        account: jint,
+    ) -> jlong {
+        let db_data: String = env
+            .get_string(db_data)
+            .expect("Couldn't get Java string!")
+            .into();
+        let account = if account >= 0 {
+            account as u32
+        } else {
+            error!("account argument must be positive");
+            return -1;
+        };
+
+        match get_balance(&db_data, account) {
+            Ok(balance) => balance.0,
+            Err(e) => {
+                error!("Error while fetching balance: {}", e);
+                -1
+            }
+        }
     }
 
     #[no_mangle]
