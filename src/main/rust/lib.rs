@@ -33,6 +33,8 @@ use zcash_primitives::{
 };
 use zip32::{ChildIndex, ExtendedFullViewingKey, ExtendedSpendingKey};
 
+const SAPLING_CONSENSUS_BRANCH_ID: u32 = 0x76b8_09bb;
+
 const ANCHOR_OFFSET: u32 = 10;
 
 fn extfvk_from_seed(seed: &[u8]) -> ExtendedFullViewingKey {
@@ -550,13 +552,24 @@ pub mod android {
     extern crate log_panics;
 
     use log::Level;
+    use std::path::Path;
+    use zcash_client_backend::{
+        constants::{HRP_SAPLING_EXTENDED_SPENDING_KEY_TEST, HRP_SAPLING_PAYMENT_ADDRESS_TEST},
+        encoding::{decode_extended_spending_key, decode_payment_address},
+        note_encryption::Memo,
+        prover::LocalTxProver,
+    };
+    use zcash_primitives::transaction::components::Amount;
 
     use self::android_logger::Filter;
     use self::jni::objects::{JClass, JString};
-    use self::jni::sys::{jboolean, jbyteArray, jstring, JNI_FALSE, JNI_TRUE};
+    use self::jni::sys::{jboolean, jbyteArray, jint, jlong, jstring, JNI_FALSE, JNI_TRUE};
     use self::jni::JNIEnv;
 
-    use super::{address_from_extfvk, extfvk_from_seed, scan_cached_blocks};
+    use super::{
+        address_from_extfvk, extfvk_from_seed, scan_cached_blocks, send_to_address,
+        SAPLING_CONSENSUS_BRANCH_ID,
+    };
 
     #[no_mangle]
     pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_initLogs(
@@ -610,6 +623,101 @@ pub mod android {
             Err(e) => {
                 error!("Error while scanning blocks: {}", e);
                 JNI_FALSE
+            }
+        }
+    }
+
+    #[no_mangle]
+    pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_sendToAddress(
+        env: JNIEnv,
+        _: JClass,
+        db_data: JString,
+        account: jint,
+        extsk: JString,
+        to: JString,
+        value: jlong,
+        memo: JString,
+        spend_params: JString,
+        output_params: JString,
+    ) -> jlong {
+        let db_data: String = env
+            .get_string(db_data)
+            .expect("Couldn't get Java string!")
+            .into();
+        let account = if account >= 0 {
+            account as u32
+        } else {
+            error!("account argument must be positive");
+            return -1;
+        };
+        let extsk: String = env
+            .get_string(extsk)
+            .expect("Couldn't get Java string!")
+            .into();
+        let to: String = env
+            .get_string(to)
+            .expect("Couldn't get Java string!")
+            .into();
+        let value = Amount(value);
+        let memo: String = env
+            .get_string(memo)
+            .expect("Couldn't get Java string!")
+            .into();
+        let spend_params: String = env
+            .get_string(spend_params)
+            .expect("Couldn't get Java string!")
+            .into();
+        let output_params: String = env
+            .get_string(output_params)
+            .expect("Couldn't get Java string!")
+            .into();
+
+        let extsk =
+            match decode_extended_spending_key(HRP_SAPLING_EXTENDED_SPENDING_KEY_TEST, &extsk) {
+                Ok(extsk) => extsk,
+                Err(e) => {
+                    error!("Invalid ExtendedSpendingKey: {}", e);
+                    return -1;
+                }
+            };
+
+        let to = match decode_payment_address(HRP_SAPLING_PAYMENT_ADDRESS_TEST, &to) {
+            Ok(to) => to,
+            Err(e) => {
+                error!("Invalid PaymentAddress: {}", e);
+                return -1;
+            }
+        };
+
+        let memo = match Memo::from_str(&memo) {
+            Ok(memo) => Some(memo),
+            Err(()) => {
+                error!("Memo is too long");
+                return -1;
+            }
+        };
+
+        let prover = LocalTxProver::new(
+            Path::new(&spend_params),
+            "8270785a1a0d0bc77196f000ee6d221c9c9894f55307bd9357c3f0105d31ca63991ab91324160d8f53e2bbd3c2633a6eb8bdf5205d822e7f3f73edac51b2b70c",
+            Path::new(&output_params),
+            "657e3d38dbb5cb5e7dd2970e8b03d69b4787dd907285b5a7f0790dcc8072f60bf593b32cc2d1c030e00ff5ae64bf84c5c3beb84ddc841d48264b4a171744d028",
+        );
+
+        match send_to_address(
+            &db_data,
+            SAPLING_CONSENSUS_BRANCH_ID,
+            prover,
+            account,
+            &extsk,
+            &to,
+            value,
+            memo,
+        ) {
+            Ok(tx_row) => tx_row,
+            Err(e) => {
+                error!("Error while sending funds: {}", e);
+                -1
             }
         }
     }
