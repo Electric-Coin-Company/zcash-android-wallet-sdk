@@ -1,5 +1,6 @@
 package cash.z.wallet.sdk.jni
 
+import android.text.format.DateUtils
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.BeforeClass
@@ -23,12 +24,13 @@ class JniConverterTest {
     fun testScanBlocks() {
         // note: for this to work, the db file below must be uploaded to the device. Eventually, this test will be self-contained and remove that requirement.
         val result = converter.scanBlocks(
-            "/data/user/0/cash.z.wallet.sdk.test/databases/compact-block.db",
-            343900,
-            344855,
-            "dummyseed".toByteArray()
+            "/data/user/0/cash.z.wallet.sdk.test/databases/dummy-cache.db",
+            "/data/user/0/cash.z.wallet.sdk.test/databases/data.db",
+            "dummyseed".toByteArray(),
+            343900
         )
-        assertEquals("Invalid number of results", 2, result.size)
+//        Thread.sleep(15 * DateUtils.MINUTE_IN_MILLIS)
+        assertEquals("Invalid number of results", 2, 3)
     }
 
     companion object {
