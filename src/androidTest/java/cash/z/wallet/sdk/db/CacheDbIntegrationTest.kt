@@ -9,7 +9,7 @@ import cash.z.wallet.sdk.vo.CompactBlock
 import org.junit.*
 import org.junit.Assert.*
 
-class DbIntegrationTest {
+class CacheDbIntegrationTest {
     @get:Rule
     var instantTaskExecutorRule = InstantTaskExecutorRule()
 
@@ -39,7 +39,8 @@ class DbIntegrationTest {
         fun setup() {
             // TODO: put this database in the assets directory and open it from there via .openHelperFactory(new AssetSQLiteOpenHelperFactory()) seen here https://github.com/albertogiunta/sqliteAsset
             db = Room
-                .databaseBuilder(ApplicationProvider.getApplicationContext(), CompactBlockDb::class.java, "compact-blocks.db")
+                .databaseBuilder(ApplicationProvider.getApplicationContext(), CompactBlockDb::class.java, "dummy-cache.db")
+//                .databaseBuilder(ApplicationProvider.getApplicationContext(), CompactBlockDb::class.java, "compact-blocks.db")
                 .setJournalMode(RoomDatabase.JournalMode.TRUNCATE)
                 .fallbackToDestructiveMigration()
                 .build()
