@@ -15,7 +15,7 @@ import cash.z.wallet.sdk.vo.Transaction
         Block::class,
         Note::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class DerivedDataDb : RoomDatabase() {

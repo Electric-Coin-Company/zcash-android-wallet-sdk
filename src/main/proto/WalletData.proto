@@ -1,6 +1,7 @@
-package cash.z.wallet.sdk.proto;
+syntax = "proto3";
+package rpc;
 message WalletData {
-  required string name = 1;
-  required int32 id = 2;
-  optional string emails = 3;
+  string name = 1;
+  int32 id = 2;
+  string emails = 3;
 }

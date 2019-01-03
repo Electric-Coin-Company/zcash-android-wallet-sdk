@@ -6,7 +6,7 @@ import androidx.room.Entity
 @Entity(primaryKeys = ["height"], tableName = "blocks")
 data class Block(
     val height: Int,
-    val time: Int,
+    val time: Int?,
     @ColumnInfo(typeAffinity = ColumnInfo.BLOB, name = "sapling_tree")
     val saplingTree: ByteArray
 ) {
@@ -20,7 +20,7 @@ data class Block(
 
     override fun hashCode(): Int {
         var result = height
-        result = 31 * result + time
+        result = 31 * result + (time ?: 0)
         result = 31 * result + saplingTree.contentHashCode()
         return result
     }

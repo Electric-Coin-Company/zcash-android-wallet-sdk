@@ -1,0 +1,46 @@
+task unregistered {
+    println "configuring unregistered"
+    doLast {
+        println 'unregistered'
+    }
+}
+
+tasks.register("pb") {
+    println "configuring pb"
+    doLast {
+        println 'preBuild'
+    }
+}
+tasks.register("generateJni") {
+    println "configuring generateJni"
+    doLast {
+        println 'jni'
+    }
+}
+tasks.register("copyA") {
+    dependsOn generateJni
+    println "configuring copyA"
+    doLast {
+        println 'copyA'
+    }
+}
+tasks.register("copyB") {
+    dependsOn generateJni
+    println "configuring copyB"
+    doLast {
+        println 'copyB'
+    }
+}
+tasks.register("copyC") {
+    dependsOn generateJni
+    println "configuring copyC"
+    doLast {
+        println 'copyC'
+    }
+}
+
+task copyAll {
+    dependsOn copyA, copyB, copyC
+}
+
+pb.dependsOn copyAll
