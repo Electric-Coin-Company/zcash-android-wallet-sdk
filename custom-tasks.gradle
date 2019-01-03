@@ -1,5 +1,6 @@
-def protoSrcDir = "src/main/proto"
-def protoDestDir = "build/generated/source/wire"
+//def protoSrcDir = "src/main/proto"
+//def protoDestDir = "build/generated/source/grpc"
+def protoIncludeDir = "build/extracted-include-protos/main"
 def jniSrcDir = "src/main/rust"
 def jniDestDir = "build/rust/target"
 
@@ -11,36 +12,64 @@ def libArm64Dir = "src/main/jniLibs/arm64-v8a"
 def libArmeabiFile = "build/rust/target/armv7-linux-androideabi/release/$libFile"
 def libArmeabiDir = "src/main/jniLibs/armeabi-v7a"
 
-buildscript {
-    dependencies {
-        classpath("com.squareup.wire:wire-compiler:2.2.0")
-    }
-    repositories {
-        mavenCentral()
-    }
-}
+//buildscript {
+//    dependencies {
+//        classpath("com.squareup.wire:wire-compiler:2.2.0")
+//    }
+//    repositories {
+//        mavenCentral()
+//    }
+//}
 
-tasks.register("generateProtobufClasses") {
+//tasks.register("generateGrpcClasses") {
+//    doFirst {
+//        println("**** CREATING PROTOS ****")
+//        delete(protoDestDir)
+//        mkdir(protoDestDir)
+//    }
+//    description = "Generate Java classes from protocol buffer (.proto) schema files for use with grpc"
+//
+//    fileTree(dir: protoSrcDir, include: '**/*.proto').each { File file ->
+//        doLast {
+//            javaexec {
+//                main = "com.squareup.wire.WireCompiler"
+//                classpath = buildscript.configurations.classpath
+//                args = ["--proto_path=$protoSrcDir", "--java_out=$protoDestDir", file.path]
+//            }
+//        }
+//    }
+//    inputs.files(fileTree(dir: protoSrcDir, include: '**/*.proto'))
+//    outputs.files(fileTree(dir: protoDestDir, include: '**'))
+//}
+
+//tasks.register("generateProtobufClasses") {
+//    doFirst {
+//        println("**** CREATING PROTOS ****")
+//        delete(protoDestDir)
+//        mkdir(protoDestDir)
+//    }
+//    description = "Generate Java classes from protocol buffer (.proto) schema files for use with Square's Wire library"
+//
+//    fileTree(dir: protoSrcDir, include: '**/*.proto').each { File file ->
+//        doLast {
+//            javaexec {
+//                main = "com.squareup.wire.WireCompiler"
+//                classpath = buildscript.configurations.classpath
+//                args = ["--proto_path=$protoSrcDir", "--java_out=$protoDestDir", file.path]
+//            }
+//        }
+//    }
+//    inputs.files(fileTree(dir: protoSrcDir, include: '**/*.proto'))
+//    outputs.files(fileTree(dir: protoDestDir, include: '**'))
+//}
+tasks.register("includeDirBugFix") {
     doFirst {
-        println("**** CREATING PROTOS ****")
-        delete(protoDestDir)
-        mkdir(protoDestDir)
+        mkdir(protoIncludeDir)
     }
-    description = "Generate Java classes from protocol buffer (.proto) schema files for use with Square's Wire library"
-
-    fileTree(dir: protoSrcDir, include: '**/*.proto').each { File file ->
-        doLast {
-            javaexec {
-                main = "com.squareup.wire.WireCompiler"
-                classpath = buildscript.configurations.classpath
-                args = ["--proto_path=$protoSrcDir", "--java_out=$protoDestDir", file.path]
-            }
-        }
-    }
-    inputs.files(fileTree(dir: protoSrcDir, include: '**/*.proto'))
-    outputs.files(fileTree(dir: protoDestDir, include: '**'))
 }
 
+// TODO: run these in paralell with the worker API: https://guides.gradle.org/using-the-worker-api/
+//       note: this will require modifying the build script and having 3 separate calls
 tasks.register("generateJniLibs") {
     doFirst {
         println("**** CREATING JNI LIBS ****")

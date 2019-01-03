@@ -33,7 +33,7 @@ data class Note(
 
     val account: Int,
     val value: Int,
-    val spent: Int,
+    val spent: Int?,
 
     @ColumnInfo(typeAffinity = ColumnInfo.BLOB)
     val diversifier: ByteArray,
@@ -69,7 +69,7 @@ data class Note(
         result = 31 * result + outputIndex
         result = 31 * result + account
         result = 31 * result + value
-        result = 31 * result + spent
+        result = 31 * result + (spent ?: 0)
         result = 31 * result + diversifier.contentHashCode()
         result = 31 * result + rcm.contentHashCode()
         result = 31 * result + nf.contentHashCode()

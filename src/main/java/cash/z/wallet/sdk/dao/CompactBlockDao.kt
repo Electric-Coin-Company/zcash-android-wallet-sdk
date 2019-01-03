@@ -5,7 +5,7 @@ import cash.z.wallet.sdk.vo.CompactBlock
 
 @Dao
 interface CompactBlockDao {
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     fun insert(block: CompactBlock)
 
     @Query("SELECT * FROM compactblocks WHERE height = :height")
