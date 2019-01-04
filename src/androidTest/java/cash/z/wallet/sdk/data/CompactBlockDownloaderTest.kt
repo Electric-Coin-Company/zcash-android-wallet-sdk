@@ -11,7 +11,7 @@ import org.junit.Rule
 import org.junit.Test
 import rpc.CompactFormats
 
-class CompactBlockDownloaderTest {
+class CompactBlockDownloaderTestAndroid {
     @get:Rule
     var instantTaskExecutorRule = InstantTaskExecutorRule()
 
