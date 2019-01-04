@@ -1,18 +1,15 @@
 package cash.z.wallet.sdk
 
 
-import android.util.Log
 import io.grpc.ManagedChannel
 import io.grpc.ManagedChannelBuilder
-import org.junit.AfterClass
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
-import org.junit.BeforeClass
-import org.junit.Test
+import org.junit.jupiter.api.*
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
 import rpc.CompactTxStreamerGrpc
 import rpc.Service
-import rpc.Service.*
-import rpc.WalletDataOuterClass
+import rpc.Service.BlockID
+import rpc.Service.BlockRange
 import java.util.concurrent.TimeUnit
 
 class GlueTest {
@@ -37,14 +34,14 @@ class GlueTest {
     companion object {
         lateinit var blockingStub: CompactTxStreamerGrpc.CompactTxStreamerBlockingStub
 
-        @BeforeClass
+        @BeforeAll
         @JvmStatic
         fun setup() {
             val channel = ManagedChannelBuilder.forAddress("localhost", 9067).usePlaintext().build()
             blockingStub = CompactTxStreamerGrpc.newBlockingStub(channel)
         }
 
-        @AfterClass
+        @AfterAll
         @JvmStatic
         fun tearDown() {
             (blockingStub.channel as ManagedChannel).shutdown().awaitTermination(2000L, TimeUnit.MILLISECONDS)
