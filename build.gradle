@@ -38,7 +38,6 @@ version = '1.2.4'
 repositories {
     google()
     jcenter()
-    mavenCentral()
 }
 
 android {
@@ -72,6 +71,22 @@ android {
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
+    }
+    kotlinOptions {
+        // Allow the use of Result objects understanding that if the API changes, we'll have to fix it before upgrading our kotlin version
+        freeCompilerArgs = ["-Xallow-result-return-type"]
+    }
+    packagingOptions {
+        exclude 'META-INF/DEPENDENCIES'
+        exclude 'META-INF/LICENSE'
+        exclude 'META-INF/LICENSE.txt'
+        exclude 'META-INF/license.txt'
+        exclude 'META-INF/NOTICE'
+        exclude 'META-INF/NOTICE.txt'
+        exclude 'META-INF/notice.txt'
+        exclude 'META-INF/ASL2.0'
+        exclude 'META-INF/LICENSE.md'
+        exclude 'META-INF/LICENSE-notice.md'
     }
 }
 
