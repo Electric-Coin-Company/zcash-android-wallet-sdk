@@ -14,6 +14,7 @@ function generate_standalone_ndk()
     # Try to find and print some info about the NDK based on the location of the toolchain script
     if [ ! -f "$standalone_script" ]; then
         echo "NDK not found. Please make sure that ANDROID_HOME is set and the NDK has been installed there"
+        exit 40
     else
         echo "Standalone NDK files appear to be missing.\n    Attempting to install them..."
         ndk_dir=$(dirname $(dirname $(dirname $standalone_script 2>/dev/null) 2>/dev/null) 2>/dev/null)
