@@ -580,8 +580,8 @@ pub mod android {
     use self::jni::JNIEnv;
 
     use super::{
-        address_from_extfvk, extfvk_from_seed, get_balance, scan_cached_blocks, send_to_address,
-        SAPLING_CONSENSUS_BRANCH_ID,
+        address_from_extfvk, extfvk_from_seed, get_balance, init_data_database, scan_cached_blocks,
+        send_to_address, SAPLING_CONSENSUS_BRANCH_ID,
     };
 
     #[no_mangle]
@@ -597,6 +597,26 @@ pub mod android {
         log_panics::init();
 
         debug!("logs have been initialized successfully");
+    }
+
+    #[no_mangle]
+    pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_initDataDb(
+        env: JNIEnv,
+        _: JClass,
+        db_data: JString,
+    ) -> jboolean {
+        let db_data: String = env
+            .get_string(db_data)
+            .expect("Couldn't get Java string!")
+            .into();
+
+        match init_data_database(&db_data) {
+            Ok(()) => JNI_TRUE,
+            Err(e) => {
+                error!("Error while initializing data DB: {}", e);
+                JNI_FALSE
+            }
+        }
     }
 
     #[no_mangle]
