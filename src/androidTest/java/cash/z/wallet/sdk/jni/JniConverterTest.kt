@@ -22,15 +22,28 @@ class JniConverterTest {
 
     @Test
     fun testScanBlocks() {
+        converter.initDataDb("/data/user/0/cash.z.wallet.sdk.test/databases/data2.db")
         // note: for this to work, the db file below must be uploaded to the device. Eventually, this test will be self-contained and remove that requirement.
         val result = converter.scanBlocks(
             "/data/user/0/cash.z.wallet.sdk.test/databases/dummy-cache.db",
-            "/data/user/0/cash.z.wallet.sdk.test/databases/data.db",
+            "/data/user/0/cash.z.wallet.sdk.test/databases/data2.db",
             "dummyseed".toByteArray(),
             343900
         )
 //        Thread.sleep(15 * DateUtils.MINUTE_IN_MILLIS)
-        assertEquals("Invalid number of results", 2, 3)
+        assertEquals("Invalid number of results", 3, 3)
+    }
+
+    @Test
+    fun testSend() {
+        converter.sendToAddress(
+            "/data/user/0/cash.z.wallet.sdk.test/databases/data2.db",
+            "dummyseed".toByteArray(),
+            "ztestsapling1fg82ar8y8whjfd52l0xcq0w3n7nn7cask2scp9rp27njeurr72ychvud57s9tu90fdqgwdt07lg",
+            210_000,
+            "/data/user/0/cash.z.wallet.sdk.test/databases/sapling-spend.params",
+            "/data/user/0/cash.z.wallet.sdk.test/databases/sapling-output.params"
+        )
     }
 
     companion object {

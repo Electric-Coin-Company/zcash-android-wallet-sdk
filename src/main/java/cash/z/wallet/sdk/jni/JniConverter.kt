@@ -35,7 +35,8 @@ class JniConverter {
         value: Long,
         memo: String,
         spendParams: String,
-        outputParams: String): Long
+        outputParams: String
+    ): Long
 
     external fun initLogs()
 

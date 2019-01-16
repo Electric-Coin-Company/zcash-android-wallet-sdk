@@ -16,9 +16,9 @@ import io.grpc.ManagedChannel
 import io.grpc.ManagedChannelBuilder
 import org.junit.*
 import org.junit.Assert.*
-import rpc.CompactTxStreamerGrpc
-import rpc.Service
-import rpc.Service.*
+import cash.z.wallet.sdk.rpc.CompactTxStreamerGrpc
+import cash.z.wallet.sdk.rpc.Service
+import cash.z.wallet.sdk.rpc.Service.*
 import java.util.concurrent.TimeUnit
 
 class GlueSetupIntegrationTest {
