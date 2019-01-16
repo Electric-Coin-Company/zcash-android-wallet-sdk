@@ -10,7 +10,7 @@ import cash.z.wallet.sdk.jni.JniConverter
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.ConflatedBroadcastChannel
 import kotlinx.coroutines.channels.ReceiveChannel
-import rpc.CompactFormats
+import cash.z.wallet.sdk.rpc.CompactFormats
 
 /**
  * Downloads compact blocks to the database and then scans them for transactions

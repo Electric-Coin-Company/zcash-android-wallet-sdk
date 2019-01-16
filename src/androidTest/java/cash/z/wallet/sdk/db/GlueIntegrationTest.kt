@@ -16,9 +16,9 @@ import io.grpc.ManagedChannel
 import io.grpc.ManagedChannelBuilder
 import org.junit.*
 import org.junit.Assert.*
-import rpc.CompactTxStreamerGrpc
-import rpc.Service
-import rpc.Service.*
+import cash.z.wallet.sdk.rpc.CompactTxStreamerGrpc
+import cash.z.wallet.sdk.rpc.Service
+import cash.z.wallet.sdk.rpc.Service.*
 import java.util.concurrent.TimeUnit
 
 class GlueIntegrationTest {
@@ -49,15 +49,17 @@ class GlueIntegrationTest {
         while (result.hasNext()) {
             val compactBlock = result.next()
             dao.insert(CompactBlock(compactBlock.height.toInt(), compactBlock.toByteArray()))
-            System.err.println("stored block at height: ${compactBlock.height}")
+            System.err.println("stored block at height: ${compactBlock.height} with time ${compactBlock.time}")
         }
     }
 
     private fun scanData() {
+        val dbFileName = "/data/user/0/cash.z.wallet.sdk.test/databases/new-data-glue.db"
+        converter.initDataDb(dbFileName)
         Log.e("tezt", "scanning blocks...")
         val result = converter.scanBlocks(
             cacheDbPath,
-            "/data/user/0/cash.z.wallet.sdk.test/databases/data-glue.db",
+            dbFileName,
             "dummyseed".toByteArray(),
             373070
         )
@@ -75,7 +77,7 @@ class GlueIntegrationTest {
         // db
         private lateinit var dao: CompactBlockDao
         private lateinit var db: CompactBlockDb
-        private const val cacheDbName = "dummy-cache-glue.db"
+        private const val cacheDbName = "new-dummy-cache-glue.db"
         private const val cacheDbPath = "/data/user/0/cash.z.wallet.sdk.test/databases/$cacheDbName"
 
         // grpc

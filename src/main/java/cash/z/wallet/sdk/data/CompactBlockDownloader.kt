@@ -2,17 +2,15 @@ package cash.z.wallet.sdk.data
 
 import cash.z.wallet.sdk.ext.debug
 import cash.z.wallet.sdk.ext.toBlockRange
-import io.grpc.ManagedChannel
+import cash.z.wallet.sdk.rpc.CompactFormats.CompactBlock
+import cash.z.wallet.sdk.rpc.CompactTxStreamerGrpc
+import cash.z.wallet.sdk.rpc.CompactTxStreamerGrpc.CompactTxStreamerBlockingStub
+import cash.z.wallet.sdk.rpc.Service
 import io.grpc.ManagedChannelBuilder
 import kotlinx.coroutines.*
 import kotlinx.coroutines.Dispatchers.IO
-import kotlinx.coroutines.NonCancellable.isActive
 import kotlinx.coroutines.channels.BroadcastChannel
 import kotlinx.coroutines.channels.ReceiveChannel
-import rpc.CompactFormats.CompactBlock
-import rpc.CompactTxStreamerGrpc
-import rpc.CompactTxStreamerGrpc.CompactTxStreamerBlockingStub
-import rpc.Service
 import java.io.Closeable
 
 /**

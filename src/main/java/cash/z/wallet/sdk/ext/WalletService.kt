@@ -1,6 +1,6 @@
 package cash.z.wallet.sdk.ext
 
-import rpc.Service
+import cash.z.wallet.sdk.rpc.Service
 
 inline fun Long.toBlockHeight(): Service.BlockID = Service.BlockID.newBuilder().setHeight(this).build()
 inline fun LongRange.toBlockRange(): Service.BlockRange =

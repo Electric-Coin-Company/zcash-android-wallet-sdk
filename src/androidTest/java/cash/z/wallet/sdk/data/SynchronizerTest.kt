@@ -11,7 +11,7 @@ import org.junit.Assert.assertNotNull
 import org.junit.BeforeClass
 import org.junit.Rule
 import org.junit.Test
-import rpc.CompactFormats
+import cash.z.wallet.sdk.rpc.CompactFormats
 
 class SynchronizerTest {
     @get:Rule
