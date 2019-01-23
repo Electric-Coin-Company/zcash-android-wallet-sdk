@@ -16,7 +16,7 @@ import org.jetbrains.annotations.NotNull
 )
 data class Transaction(
     @ColumnInfo(name = "id_tx")
-    val id: Int,
+    val id: Long,
 
     @ColumnInfo(typeAffinity = ColumnInfo.BLOB, name = "txid")
     @NotNull
@@ -38,7 +38,7 @@ data class Transaction(
     }
 
     override fun hashCode(): Int {
-        var result = id
+        var result = id.toInt()
         result = 31 * result + transactionId.contentHashCode()
         result = 31 * result + block
         result = 31 * result + (raw?.contentHashCode() ?: 0)

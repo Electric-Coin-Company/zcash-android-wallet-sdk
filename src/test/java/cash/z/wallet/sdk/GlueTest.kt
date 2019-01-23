@@ -6,10 +6,10 @@ import io.grpc.ManagedChannelBuilder
 import org.junit.jupiter.api.*
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
-import rpc.CompactTxStreamerGrpc
-import rpc.Service
-import rpc.Service.BlockID
-import rpc.Service.BlockRange
+import cash.z.wallet.sdk.rpc.CompactTxStreamerGrpc
+import cash.z.wallet.sdk.rpc.Service
+import cash.z.wallet.sdk.rpc.Service.BlockID
+import cash.z.wallet.sdk.rpc.Service.BlockRange
 import java.util.concurrent.TimeUnit
 
 class GlueTest {

@@ -1,5 +1,8 @@
 package cash.z.wallet.sdk.jni
 
+import cash.z.wallet.sdk.annotation.OpenForTesting
+
+@OpenForTesting
 class JniConverter {
 
     external fun initDataDb(dbData: String): Boolean

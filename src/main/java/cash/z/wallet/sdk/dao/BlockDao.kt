@@ -2,9 +2,6 @@ package cash.z.wallet.sdk.dao
 
 import androidx.room.*
 import cash.z.wallet.sdk.vo.Block
-import androidx.lifecycle.LiveData
-
-
 
 @Dao
 interface BlockDao {
@@ -23,4 +20,12 @@ interface BlockDao {
     @Query("SELECT COUNT(height) FROM blocks")
     fun count(): Int
 
+    @Query("DELETE FROM blocks")
+    fun deleteAll()
+
+    @Query("SELECT MAX(height) FROM blocks")
+    fun lastScannedHeight(): Long
+
+    @Query("UPDATE blocks SET time=:time WHERE height = :height")
+    fun updateTime(height: Int, time: Int)
 }

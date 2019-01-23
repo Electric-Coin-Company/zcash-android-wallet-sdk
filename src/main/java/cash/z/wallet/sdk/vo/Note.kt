@@ -3,6 +3,7 @@ package cash.z.wallet.sdk.vo
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
+import androidx.room.Ignore
 
 @Entity(
     tableName = "received_notes",
@@ -23,29 +24,29 @@ import androidx.room.ForeignKey
 )
 data class Note(
     @ColumnInfo(name = "id_note")
-    val id: Int,
+    val id: Int = 0,
 
     @ColumnInfo(name = "tx")
-    val transaction: Int,
+    val transaction: Int = 0,
 
     @ColumnInfo(name = "output_index")
-    val outputIndex: Int,
+    val outputIndex: Int = 0,
 
-    val account: Int,
-    val value: Int,
-    val spent: Int?,
-
-    @ColumnInfo(typeAffinity = ColumnInfo.BLOB)
-    val diversifier: ByteArray,
+    val account: Int = 0,
+    val value: Int = 0,
+    val spent: Int? = 0,
 
     @ColumnInfo(typeAffinity = ColumnInfo.BLOB)
-    val rcm: ByteArray,
+    val diversifier: ByteArray = byteArrayOf(),
 
     @ColumnInfo(typeAffinity = ColumnInfo.BLOB)
-    val nf: ByteArray,
+    val rcm: ByteArray = byteArrayOf(),
 
     @ColumnInfo(typeAffinity = ColumnInfo.BLOB)
-    val memo: ByteArray?
+    val nf: ByteArray = byteArrayOf(),
+
+    @ColumnInfo(typeAffinity = ColumnInfo.BLOB)
+    val memo: ByteArray? = byteArrayOf()
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -78,3 +79,5 @@ data class Note(
     }
 
 }
+
+data class NoteQuery(val txId: Int, val value: Int, val height: Int, val sent: Boolean, val time: Long)
