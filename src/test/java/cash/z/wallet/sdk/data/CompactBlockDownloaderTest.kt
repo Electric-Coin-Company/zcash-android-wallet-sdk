@@ -2,30 +2,38 @@ package cash.z.wallet.sdk.data
 
 import cash.z.wallet.anyNotNull
 import cash.z.wallet.sdk.ext.toBlockHeight
+import cash.z.wallet.sdk.rpc.CompactFormats
+import cash.z.wallet.sdk.rpc.CompactTxStreamerGrpc.CompactTxStreamerBlockingStub
+import cash.z.wallet.sdk.rpc.Service
 import com.nhaarman.mockitokotlin2.*
 import kotlinx.coroutines.*
-import org.junit.jupiter.api.*
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
-import rpc.CompactFormats
-import rpc.CompactTxStreamerGrpc.CompactTxStreamerBlockingStub
-import rpc.Service
 import kotlin.system.measureTimeMillis
+import org.junit.Rule
+
+
 
 @ExtendWith(MockitoExtension::class)
 @MockitoSettings(strictness = Strictness.LENIENT) // allows us to setup the blockingStub once, with everything, rather than using custom stubs for each test
 class CompactBlockDownloaderTest {
 
-    lateinit var downloader: CompactBlockDownloader
-    lateinit var connection: CompactBlockDownloader.Connection
+    lateinit var downloader: CompactBlockStream
+    lateinit var connection: CompactBlockStream.Connection
     val job = Job()
     val io = CoroutineScope(Dispatchers.IO + job)
+
+    @Rule
+    var grpcServerRule = GrpcServerRule()
 
     @BeforeEach
     fun setUp(@Mock blockingStub: CompactTxStreamerBlockingStub) {
@@ -53,8 +61,9 @@ class CompactBlockDownloaderTest {
             }
             delayedIterator
         }
-        connection = spy(CompactBlockDownloader.Connection(blockingStub))
-        downloader = CompactBlockDownloader(connection)
+        downloader = CompactBlockStream(grpcServerRule.channel, TroubleshootingTwig())
+        connection = spy(downloader.connection)
+        whenever(connection.createStub(any())).thenReturn(blockingStub)
     }
 
     @AfterEach

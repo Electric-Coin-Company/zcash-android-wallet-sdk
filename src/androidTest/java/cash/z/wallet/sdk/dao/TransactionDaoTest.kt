@@ -45,7 +45,7 @@ class TransactionDaoTest {
 
     @Test
     fun testDaoInsert() {
-        Transaction(4, "sample".toByteArray(), 356418, null).let { transaction ->
+        Transaction(4L, "sample".toByteArray(), 356418, null).let { transaction ->
             dao.insert(transaction)
             val result = dao.findById(transaction.id)
             assertEquals(transaction.id, result?.id)

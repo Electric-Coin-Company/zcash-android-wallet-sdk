@@ -12,6 +12,7 @@
 .cargo/
 bin/
 gen/
+generated/
 out/
 target/
 jniLibs/

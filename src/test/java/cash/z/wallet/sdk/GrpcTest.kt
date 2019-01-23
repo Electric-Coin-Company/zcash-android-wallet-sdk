@@ -8,9 +8,9 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
-import rpc.CompactTxStreamerGrpc
-import rpc.Service
-import rpc.Service.*
+import cash.z.wallet.sdk.rpc.CompactTxStreamerGrpc
+import cash.z.wallet.sdk.rpc.Service
+import cash.z.wallet.sdk.rpc.Service.*
 import rpc.WalletDataOuterClass
 import java.util.concurrent.TimeUnit
 
