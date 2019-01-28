@@ -124,6 +124,28 @@ fn init_data_database(db_data: &str) -> rusqlite::Result<()> {
     Ok(())
 }
 
+fn init_blocks_table(
+    db_data: &str,
+    height: i32,
+    time: u32,
+    sapling_tree: &[u8],
+) -> Result<(), Error> {
+    let data = Connection::open(db_data)?;
+
+    let mut empty_check = data.prepare("SELECT * FROM blocks LIMIT 1")?;
+    if empty_check.exists(NO_PARAMS)? {
+        return Err(format_err!("blocks table is not empty"));
+    }
+
+    data.execute(
+        "INSERT INTO blocks (height, time, sapling_tree)
+        VALUES (?, ?, ?)",
+        &[height.to_sql()?, time.to_sql()?, sapling_tree.to_sql()?],
+    )?;
+
+    Ok(())
+}
+
 struct CompactBlockRow {
     height: i32,
     data: Vec<u8>,
@@ -580,8 +602,8 @@ pub mod android {
     use self::jni::JNIEnv;
 
     use super::{
-        address_from_extfvk, extfvk_from_seed, get_balance, init_data_database, scan_cached_blocks,
-        send_to_address, SAPLING_CONSENSUS_BRANCH_ID,
+        address_from_extfvk, extfvk_from_seed, get_balance, init_blocks_table, init_data_database,
+        scan_cached_blocks, send_to_address, SAPLING_CONSENSUS_BRANCH_ID,
     };
 
     #[no_mangle]
@@ -611,6 +633,36 @@ pub mod android {
             .into();
 
         match init_data_database(&db_data) {
+            Ok(()) => JNI_TRUE,
+            Err(e) => {
+                error!("Error while initializing data DB: {}", e);
+                JNI_FALSE
+            }
+        }
+    }
+
+    #[no_mangle]
+    pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_initBlocksTable(
+        env: JNIEnv,
+        _: JClass,
+        db_data: JString,
+        height: jint,
+        time: jlong,
+        sapling_tree: jbyteArray,
+    ) -> jboolean {
+        let db_data: String = env
+            .get_string(db_data)
+            .expect("Couldn't get Java string!")
+            .into();
+        let time = if time >= 0 && time <= (u32::max_value() as jlong) {
+            time as u32
+        } else {
+            error!("time argument must fit in a u32");
+            return JNI_FALSE;
+        };
+        let sapling_tree = env.convert_byte_array(sapling_tree).unwrap();
+
+        match init_blocks_table(&db_data, height, time, &sapling_tree) {
             Ok(()) => JNI_TRUE,
             Err(e) => {
                 error!("Error while initializing data DB: {}", e);
