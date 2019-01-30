@@ -15,7 +15,7 @@ class JniConverter {
         time: Long,
         saplingTree: ByteArray): Boolean
 
-    external fun getAddress(seed: ByteArray): String
+    external fun getAddress(dbData: String, account: Int): String
 
     external fun getBalance(dbData: String, account: Int): Long
 

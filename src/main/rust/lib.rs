@@ -37,24 +37,11 @@ use zcash_primitives::{
     transaction::components::Amount,
     JUBJUB,
 };
-use zip32::{ChildIndex, ExtendedFullViewingKey, ExtendedSpendingKey};
+use zip32::{ExtendedFullViewingKey, ExtendedSpendingKey};
 
 const SAPLING_CONSENSUS_BRANCH_ID: u32 = 0x76b8_09bb;
 
 const ANCHOR_OFFSET: u32 = 10;
-
-fn extfvk_from_seed(seed: &[u8]) -> ExtendedFullViewingKey {
-    let master = ExtendedSpendingKey::master(seed);
-    let extsk = ExtendedSpendingKey::from_path(
-        &master,
-        &[
-            ChildIndex::Hardened(32),
-            ChildIndex::Hardened(1),
-            ChildIndex::Hardened(0),
-        ],
-    );
-    ExtendedFullViewingKey::from(&extsk)
-}
 
 fn address_from_extfvk(extfvk: &ExtendedFullViewingKey) -> String {
     let addr = extfvk.default_address().unwrap().1;
@@ -200,6 +187,19 @@ struct CompactBlockRow {
 struct WitnessRow {
     id_note: i64,
     witness: IncrementalWitness,
+}
+
+fn get_address(db_data: &str, account: u32) -> Result<String, Error> {
+    let data = Connection::open(db_data)?;
+
+    let addr = data.query_row(
+        "SELECT address FROM accounts
+        WHERE account = ?",
+        &[account],
+        |row| row.get(0),
+    )?;
+
+    Ok(addr)
 }
 
 fn get_balance(db_data: &str, account: u32) -> Result<Amount, Error> {
@@ -664,8 +664,8 @@ pub mod android {
     use self::jni::JNIEnv;
 
     use super::{
-        address_from_extfvk, extfvk_from_seed, get_balance, init_accounts_table, init_blocks_table,
-        init_data_database, scan_cached_blocks, send_to_address, SAPLING_CONSENSUS_BRANCH_ID,
+        get_address, get_balance, init_accounts_table, init_blocks_table, init_data_database,
+        scan_cached_blocks, send_to_address, SAPLING_CONSENSUS_BRANCH_ID,
     };
 
     #[no_mangle]
@@ -804,11 +804,29 @@ pub mod android {
     pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_getAddress(
         env: JNIEnv,
         _: JClass,
-        seed: jbyteArray,
+        db_data: JString,
+        account: jint,
     ) -> jstring {
-        let seed = env.convert_byte_array(seed).unwrap();
+        let db_data: String = env
+            .get_string(db_data)
+            .expect("Couldn't get Java string!")
+            .into();
 
-        let addr = address_from_extfvk(&extfvk_from_seed(&seed));
+        let addr = match account {
+            acc if acc >= 0 => match get_address(&db_data, acc as u32) {
+                Ok(addr) => addr,
+                Err(e) => {
+                    error!("Error while fetching address: {}", e);
+                    // Return an empty string to indicate an error
+                    String::default()
+                }
+            },
+            _ => {
+                error!("account argument must be positive");
+                // Return an empty string to indicate an error
+                String::default()
+            }
+        };
 
         let output = env.new_string(addr).expect("Couldn't create Java string!");
         output.into_inner()
