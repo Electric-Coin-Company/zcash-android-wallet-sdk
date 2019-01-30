@@ -4,6 +4,11 @@ class JniConverter {
 
     external fun initDataDb(dbData: String): Boolean
 
+    external fun initAccountsTable(
+        dbData: String,
+        seed: ByteArray,
+        accounts: Int): Array<String>
+
     external fun initBlocksTable(
         dbData: String,
         height: Int,
