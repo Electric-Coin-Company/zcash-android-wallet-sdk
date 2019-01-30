@@ -19,7 +19,7 @@ class JniConverter {
 
     external fun getBalance(dbData: String, account: Int): Long
 
-    external fun scanBlocks(db_cache: String, db_data: String, seed: ByteArray): Boolean
+    external fun scanBlocks(db_cache: String, db_data: String): Boolean
 
     external fun sendToAddress(
         dbData: String,

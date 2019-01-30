@@ -23,7 +23,9 @@ use sapling_crypto::{
 };
 use zcash_client_backend::{
     constants::{HRP_SAPLING_EXTENDED_FULL_VIEWING_KEY_TEST, HRP_SAPLING_PAYMENT_ADDRESS_TEST},
-    encoding::{encode_extended_full_viewing_key, encode_payment_address},
+    encoding::{
+        decode_extended_full_viewing_key, encode_extended_full_viewing_key, encode_payment_address,
+    },
     note_encryption::Memo,
     proto::compact_formats::CompactBlock,
     prover::TxProver,
@@ -213,15 +215,11 @@ fn get_balance(db_data: &str, account: u32) -> Result<Amount, Error> {
     Ok(Amount(balance))
 }
 
-/// Scans new blocks added to the cache for any transactions received by the given
-/// ExtendedFullViewingKeys.
+/// Scans new blocks added to the cache for any transactions received by the
+/// tracked accounts.
 ///
 /// Assumes that the caller is handling rollbacks.
-fn scan_cached_blocks(
-    db_cache: &str,
-    db_data: &str,
-    extfvks: &[ExtendedFullViewingKey],
-) -> Result<(), Error> {
+fn scan_cached_blocks(db_cache: &str, db_data: &str) -> Result<(), Error> {
     let cache = Connection::open(db_cache)?;
     let data = Connection::open(db_data)?;
 
@@ -275,6 +273,16 @@ fn scan_cached_blocks(
         height: row.get(0),
         data: row.get(1),
     })?;
+
+    // Fetch the ExtendedFullViewingKeys we are tracking
+    let mut stmt_fetch_accounts =
+        data.prepare("SELECT extfvk FROM accounts ORDER BY account ASC")?;
+    let extfvks = stmt_fetch_accounts.query_map(NO_PARAMS, |row| {
+        let extfvk: String = row.get(0);
+        decode_extended_full_viewing_key(HRP_SAPLING_EXTENDED_FULL_VIEWING_KEY_TEST, &extfvk)
+    })?;
+    // Raise SQL errors from the query, and IO errors from parsing.
+    let extfvks: Vec<_> = extfvks.collect::<Result<Result<_, _>, _>>()??;
 
     // Get the most recent CommitmentTree
     let mut tree = match stmt_fetch_tree.query_row(&[last_height], |row| match row.get_checked(0) {
@@ -331,7 +339,13 @@ fn scan_cached_blocks(
         let txs = {
             let nf_refs: Vec<_> = nullifiers.iter().map(|(nf, acc)| (&nf[..], *acc)).collect();
             let mut witness_refs: Vec<_> = witnesses.iter_mut().map(|w| &mut w.witness).collect();
-            scan_block(block, &extfvks, &nf_refs, &mut tree, &mut witness_refs[..])
+            scan_block(
+                block,
+                &extfvks[..],
+                &nf_refs,
+                &mut tree,
+                &mut witness_refs[..],
+            )
         };
 
         // Insert the block into the database.
@@ -833,7 +847,6 @@ pub mod android {
         _: JClass,
         db_cache: JString,
         db_data: JString,
-        seed: jbyteArray,
     ) -> jboolean {
         let db_cache: String = env
             .get_string(db_cache)
@@ -843,9 +856,8 @@ pub mod android {
             .get_string(db_data)
             .expect("Couldn't get Java string!")
             .into();
-        let seed = env.convert_byte_array(seed).unwrap();
 
-        match scan_cached_blocks(&db_cache, &db_data, &[extfvk_from_seed(&seed)]) {
+        match scan_cached_blocks(&db_cache, &db_data) {
             Ok(()) => JNI_TRUE,
             Err(e) => {
                 error!("Error while scanning blocks: {}", e);
