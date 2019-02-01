@@ -13,7 +13,6 @@
 bin/
 gen/
 out/
-src/main/rust/protos/
 target/
 jniLibs/
 
