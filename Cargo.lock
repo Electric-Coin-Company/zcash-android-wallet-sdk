@@ -724,7 +724,7 @@ version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
-name = "zcash-wallet-sdk-poc"
+name = "zcash-android-wallet-sdk"
 version = "0.0.1"
 dependencies = [
  "android_logger 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
