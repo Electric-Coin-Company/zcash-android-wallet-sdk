@@ -3,6 +3,7 @@ package cash.z.wallet.sdk.data
 import cash.z.wallet.sdk.data.Synchronizer.SyncState.FirstRun
 import cash.z.wallet.sdk.data.Synchronizer.SyncState.ReadyToProcess
 import cash.z.wallet.sdk.exception.SynchronizerException
+import cash.z.wallet.sdk.ext.masked
 import cash.z.wallet.sdk.rpc.CompactFormats
 import cash.z.wallet.sdk.secure.Wallet
 import kotlinx.coroutines.*
@@ -22,6 +23,7 @@ class Synchronizer(
     val downloader: CompactBlockStream,
     val processor: CompactBlockProcessor,
     val repository: TransactionRepository,
+    val activeTransactionManager: ActiveTransactionManager,
     val wallet: Wallet,
     val batchSize: Int = 1000,
     logger: Twig = SilentTwig()
@@ -35,7 +37,12 @@ class Synchronizer(
     private val wasPreviouslyStarted
         get() = savedBlockChannel.isClosedForSend || ::blockJob.isInitialized
 
-    fun blocks(): ReceiveChannel<CompactFormats.CompactBlock> = savedBlockChannel.openSubscription()
+
+    //
+    // Public API
+    //
+
+    fun activeTransactions() = activeTransactionManager.subscribe()
 
     fun start(parentScope: CoroutineScope): Synchronizer {
         //  prevent restarts so the behavior of this class is easier to reason about
@@ -47,7 +54,59 @@ class Synchronizer(
         return this
     }
 
-    fun CoroutineScope.continueWithState(syncState: SyncState): Job {
+    fun stop() {
+        twig("stopping")
+        blockJob.cancel()
+        downloader.stop()
+        repository.stop()
+    }
+
+    suspend fun isFirstRun(): Boolean = withContext(IO) {
+        !processor.dataDbExists || processor.cacheDao.count() == 0
+    }
+
+    // TODO: pull all these twigs into the activeTransactionManager
+    suspend fun sendToAddress(zatoshi: Long, toAddress: String) = withContext(IO) { // don't expose accounts yet
+        val activeSendTransaction = activeTransactionManager.create(zatoshi, toAddress.masked())
+        val transactionId: Long = wallet.sendToAddress(zatoshi, toAddress)
+        if (transactionId < 0) {
+            activeTransactionManager.failure(activeSendTransaction, "Failed to create, possibly due to insufficient funds or an invalid key")
+            return@withContext
+        }
+        val transactionRaw: ByteArray? = repository.findTransactionById(transactionId)?.raw
+        if (transactionRaw == null) {
+            activeTransactionManager.failure(activeSendTransaction, "Failed to find the transaction that we just attempted to create in the dataDb")
+            return@withContext
+        }
+
+        activeTransactionManager.created(activeSendTransaction, transactionId)
+        try {
+            twig("attempting to submit transaction $transactionId")
+            activeTransactionManager.upload(activeSendTransaction)
+            downloader.connection.submitTransaction(transactionRaw)
+            activeTransactionManager.awaitConfirmation(activeSendTransaction)
+            twig("successfully submitted")
+        } catch (t: Throwable) {
+            twig("submit failed due to $t")
+            var revertMessage = "failed to submit transaction and failed to revert pending send id $transactionId in the dataDb."
+            try {
+                repository.deleteTransactionById(transactionId)
+                revertMessage = "failed to submit transaction. The pending send with id $transactionId has been removed from the DB."
+            } catch (t: Throwable) {
+            } finally {
+                activeTransactionManager.failure(activeSendTransaction, "$revertMessage Failure caused by: ${t.message}")
+            }
+        }
+    }
+
+//    fun blocks(): ReceiveChannel<CompactFormats.CompactBlock> = savedBlockChannel.openSubscription()
+
+
+    //
+    // Private API
+    //
+
+    private fun CoroutineScope.continueWithState(syncState: SyncState): Job {
         return when (syncState) {
             FirstRun -> onFirstRun()
             is ReadyToProcess -> onReady(syncState)
@@ -66,11 +125,26 @@ class Synchronizer(
             // TODO: for PIR concerns, introduce some jitter here for where, exactly, the downloader starts
             val blockChannel =
                 downloader.start(this, syncState.startingBlockHeight, batchSize)
+            launch { monitorProgress(downloader.progress()) }
             repository.start(this)
             processor.processBlocks(blockChannel)
         } finally {
             stop()
         }
+    }
+
+    private suspend fun monitorProgress(progressChannel: ReceiveChannel<Int>) = withContext(IO) {
+        twig("beginning to monitor download progress")
+        for (i in progressChannel) {
+            if(i >= 100) {
+                twig("triggering a proactive scan in a second because all missing blocks have been loaded")
+                delay(1000L)
+                twig("triggering proactive scan!")
+                launch { processor.scanBlocks() }
+                break
+            }
+        }
+        twig("done monitoring download progress")
     }
 
     // TODO: get rid of this temporary helper function after syncing with the latest rust code
@@ -99,13 +173,6 @@ class Synchronizer(
 
         twig("determined ${state::class.java.simpleName}")
          state
-    }
-
-    fun stop() {
-        twig("stopping")
-        blockJob.cancel()
-        downloader.stop()
-        repository.stop()
     }
 
     sealed class SyncState {
