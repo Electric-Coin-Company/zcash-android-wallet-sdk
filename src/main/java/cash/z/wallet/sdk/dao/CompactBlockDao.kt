@@ -5,6 +5,10 @@ import cash.z.wallet.sdk.vo.CompactBlock
 
 @Dao
 interface CompactBlockDao {
+
+    @Query("SELECT COUNT(height) FROM compactblocks")
+    fun count(): Int
+
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     fun insert(block: CompactBlock)
 

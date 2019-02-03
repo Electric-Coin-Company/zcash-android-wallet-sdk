@@ -39,7 +39,7 @@ class CompactBlockProcessor(
     private val seed by seedProvider
     var birthdayHeight = Long.MAX_VALUE
 
-    internal val dataDbExists get() = File(dataDbPath).exists()
+    val dataDbExists get() = File(dataDbPath).exists()
 
     init {
         cacheDb = createCompactBlockCacheDb(applicationContext, cacheDbName)

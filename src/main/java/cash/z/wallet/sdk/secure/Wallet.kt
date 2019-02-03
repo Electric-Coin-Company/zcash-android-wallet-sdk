@@ -4,6 +4,7 @@ import cash.z.wallet.sdk.data.SilentTwig
 import cash.z.wallet.sdk.data.Twig
 import cash.z.wallet.sdk.data.twigTask
 import cash.z.wallet.sdk.exception.WalletException
+import cash.z.wallet.sdk.ext.masked
 import cash.z.wallet.sdk.jni.JniConverter
 import com.squareup.okhttp.OkHttpClient
 import com.squareup.okhttp.Request
@@ -48,7 +49,7 @@ class Wallet(
     suspend fun sendToAddress(value: Long, toAddress: String, fromAccountId: Int = accountIds[0]): Long =
         withContext(IO) {
             var result = -1L
-            twigTask("sending $value zatoshi to ${toAddress.masked()}") {
+            twigTask("creating raw transaction to send $value zatoshi to ${toAddress.masked()}") {
                 result = runCatching {
                     ensureParams(paramDestinationDir)
                     twig("params exist at $paramDestinationDir! attempting to send...")
@@ -126,7 +127,7 @@ class Wallet(
         return OkHttpClient()
     }
 
-    private fun String.masked(): String = if (startsWith("ztest")) "****${takeLast(4)}" else "***masked***"
+
     private fun String.toPath(): String = "$paramDestinationDir/$this"
 
     companion object {

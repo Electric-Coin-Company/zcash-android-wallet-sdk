@@ -12,6 +12,7 @@ import io.grpc.ManagedChannelBuilder
 import kotlinx.coroutines.*
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.channels.BroadcastChannel
+import kotlinx.coroutines.channels.ConflatedBroadcastChannel
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.distinct
 import java.io.Closeable
@@ -81,7 +82,7 @@ class CompactBlockStream private constructor(logger: Twig = SilentTwig()) : Twig
         private var job: Job? = null
         private var syncJob: Job? = null
         private val compactBlockChannel = BroadcastChannel<CompactBlock>(100)
-        private val progressChannel = BroadcastChannel<Int>(100)
+        private val progressChannel = ConflatedBroadcastChannel<Int>()
 
         fun createStub(timeoutMillis: Long = 60_000L): CompactTxStreamerBlockingStub {
             return CompactTxStreamerGrpc.newBlockingStub(channel).withDeadlineAfter(timeoutMillis, TimeUnit.MILLISECONDS)
