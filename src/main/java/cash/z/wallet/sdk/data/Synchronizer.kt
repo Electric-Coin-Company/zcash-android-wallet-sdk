@@ -1,9 +1,7 @@
 package cash.z.wallet.sdk.data
 
-import cash.z.wallet.sdk.data.Synchronizer.SyncState.FirstRun
-import cash.z.wallet.sdk.data.Synchronizer.SyncState.ReadyToProcess
+import cash.z.wallet.sdk.data.Synchronizer.SyncState.*
 import cash.z.wallet.sdk.exception.SynchronizerException
-import cash.z.wallet.sdk.ext.masked
 import cash.z.wallet.sdk.rpc.CompactFormats
 import cash.z.wallet.sdk.secure.Wallet
 import kotlinx.coroutines.*
@@ -59,47 +57,27 @@ class Synchronizer(
         blockJob.cancel()
         downloader.stop()
         repository.stop()
+        activeTransactionManager.stop()
+    }
+
+    suspend fun isOutOfSync(): Boolean = withContext(IO) {
+        val latestBlockHeight = downloader.connection.getLatestBlockHeight()
+        val ourHeight = processor.cacheDao.latestBlockHeight()
+        val tolerance = 10
+        val delta = latestBlockHeight - ourHeight
+        twig("checking whether out of sync. LatestHeight: $latestBlockHeight  ourHeight: $ourHeight  Delta: $delta   tolerance: $tolerance")
+        delta > tolerance
     }
 
     suspend fun isFirstRun(): Boolean = withContext(IO) {
-        !processor.dataDbExists || processor.cacheDao.count() == 0
+        // maybe just toggle a flag somewhere rather than inferring based on db status
+        !processor.dataDbExists && (!processor.cachDbExists || processor.cacheDao.count() == 0)
     }
 
-    // TODO: pull all these twigs into the activeTransactionManager
-    suspend fun sendToAddress(zatoshi: Long, toAddress: String) = withContext(IO) { // don't expose accounts yet
-        val activeSendTransaction = activeTransactionManager.create(zatoshi, toAddress.masked())
-        val transactionId: Long = wallet.sendToAddress(zatoshi, toAddress)
-        if (transactionId < 0) {
-            activeTransactionManager.failure(activeSendTransaction, "Failed to create, possibly due to insufficient funds or an invalid key")
-            return@withContext
-        }
-        val transactionRaw: ByteArray? = repository.findTransactionById(transactionId)?.raw
-        if (transactionRaw == null) {
-            activeTransactionManager.failure(activeSendTransaction, "Failed to find the transaction that we just attempted to create in the dataDb")
-            return@withContext
-        }
+    suspend fun sendToAddress(zatoshi: Long, toAddress: String) =
+        activeTransactionManager.sendToAddress(zatoshi, toAddress)
 
-        activeTransactionManager.created(activeSendTransaction, transactionId)
-        try {
-            twig("attempting to submit transaction $transactionId")
-            activeTransactionManager.upload(activeSendTransaction)
-            downloader.connection.submitTransaction(transactionRaw)
-            activeTransactionManager.awaitConfirmation(activeSendTransaction)
-            twig("successfully submitted")
-        } catch (t: Throwable) {
-            twig("submit failed due to $t")
-            var revertMessage = "failed to submit transaction and failed to revert pending send id $transactionId in the dataDb."
-            try {
-                repository.deleteTransactionById(transactionId)
-                revertMessage = "failed to submit transaction. The pending send with id $transactionId has been removed from the DB."
-            } catch (t: Throwable) {
-            } finally {
-                activeTransactionManager.failure(activeSendTransaction, "$revertMessage Failure caused by: ${t.message}")
-            }
-        }
-    }
-
-//    fun blocks(): ReceiveChannel<CompactFormats.CompactBlock> = savedBlockChannel.openSubscription()
+    fun cancelSend(transaction: ActiveSendTransaction): Boolean = activeTransactionManager.cancel(transaction)
 
 
     //
@@ -109,14 +87,23 @@ class Synchronizer(
     private fun CoroutineScope.continueWithState(syncState: SyncState): Job {
         return when (syncState) {
             FirstRun -> onFirstRun()
+            is CacheOnly -> onCacheOnly(syncState)
             is ReadyToProcess -> onReady(syncState)
         }
     }
 
     private fun CoroutineScope.onFirstRun(): Job {
         twig("this appears to be a fresh install, beginning first run of application")
-        processor.onFirstRun()
-        return continueWithState(ReadyToProcess(processor.birthdayHeight))
+        val firstRunStartHeight = wallet.initialize() // should get the latest sapling tree and return that height
+        twig("wallet firstRun returned a value of $firstRunStartHeight")
+        return continueWithState(ReadyToProcess(firstRunStartHeight))
+    }
+
+    private fun CoroutineScope.onCacheOnly(syncState: CacheOnly): Job {
+        twig("we have cached blocks but no data DB, beginning pre-cached version of application")
+        val firstRunStartHeight = wallet.initialize(syncState.startingBlockHeight)
+        twig("wallet has already cached up to a height of $firstRunStartHeight")
+        return continueWithState(ReadyToProcess(firstRunStartHeight))
     }
 
     private fun CoroutineScope.onReady(syncState: ReadyToProcess) = launch {
@@ -126,6 +113,7 @@ class Synchronizer(
             val blockChannel =
                 downloader.start(this, syncState.startingBlockHeight, batchSize)
             launch { monitorProgress(downloader.progress()) }
+            activeTransactionManager.start()
             repository.start(this)
             processor.processBlocks(blockChannel)
         } finally {
@@ -139,34 +127,30 @@ class Synchronizer(
             if(i >= 100) {
                 twig("triggering a proactive scan in a second because all missing blocks have been loaded")
                 delay(1000L)
-                twig("triggering proactive scan!")
-                launch { processor.scanBlocks() }
+                launch {
+                    twig("triggering proactive scan!")
+                    processor.scanBlocks()
+                    twig("done triggering proactive scan!")
+                }
                 break
             }
         }
         twig("done monitoring download progress")
     }
 
-    // TODO: get rid of this temporary helper function after syncing with the latest rust code
-    suspend fun updateTimeStamp(height: Int): Long? = withContext(IO) {
-        val originalBlock = processor.cacheDao.findById(height)
-        twig("TMP: found block at height ${height}")
-        if (originalBlock != null) {
-            val ogBlock = CompactFormats.CompactBlock.parseFrom(originalBlock.data)
-            twig("TMP: parsed block! ${ogBlock.height}  ${ogBlock.time}")
-            (repository as PollingTransactionRepository).blocks.updateTime(height, ogBlock.time)
-            ogBlock.time
-        }
-        null
-    }
-
+    //TODO: add state for never scanned . . . where we have some cache but no entries in the data db
     private suspend fun determineState(): SyncState = withContext(IO) {
         twig("determining state (has the app run before, what block did we last see, etc.)")
         val state = if (processor.dataDbExists) {
             // this call blocks because it does IO
-            val startingBlockHeight = repository.lastScannedHeight()
-            twig("dataDb exists with last height of $startingBlockHeight")
-            if (startingBlockHeight == 0L) FirstRun else ReadyToProcess(startingBlockHeight)
+            val startingBlockHeight = processor.lastProcessedBlock()
+            twig("cacheDb exists with last height of $startingBlockHeight")
+            if (startingBlockHeight <= 0) FirstRun else ReadyToProcess(startingBlockHeight)
+        } else if(processor.cachDbExists) {
+            // this call blocks because it does IO
+            val startingBlockHeight = processor.lastProcessedBlock()
+            twig("cacheDb exists with last height of $startingBlockHeight")
+            if (startingBlockHeight <= 0) FirstRun else CacheOnly(startingBlockHeight)
         } else {
             FirstRun
         }
@@ -177,6 +161,7 @@ class Synchronizer(
 
     sealed class SyncState {
         object FirstRun : SyncState()
-        class ReadyToProcess(val startingBlockHeight: Long = Long.MAX_VALUE) : SyncState()
+        class CacheOnly(val startingBlockHeight: Int = Int.MAX_VALUE) : SyncState()
+        class ReadyToProcess(val startingBlockHeight: Int = Int.MAX_VALUE) : SyncState()
     }
 }

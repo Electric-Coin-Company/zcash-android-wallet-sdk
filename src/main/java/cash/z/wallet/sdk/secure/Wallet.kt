@@ -13,6 +13,7 @@ import kotlinx.coroutines.withContext
 import okio.Okio
 import java.io.File
 import kotlin.properties.ReadOnlyProperty
+import kotlin.properties.ReadWriteProperty
 
 
 /**
@@ -25,10 +26,11 @@ class Wallet(
     private val paramDestinationDir: String,
     /** indexes of accounts ids. In the reference wallet, we only work with account 0 */
     private val accountIds: Array<Int> = arrayOf(0),
-    seedProvider: ReadOnlyProperty<Any?, ByteArray>,
+    private val seedProvider: ReadOnlyProperty<Any?, ByteArray>,
+    spendingKeyProvider: ReadWriteProperty<Any?, String>,
     logger: Twig = SilentTwig()
 ) : Twig by logger {
-    val seed by seedProvider
+    var spendingKeyStore by spendingKeyProvider
 
     init {
         // initialize data db for this wallet and its accounts
@@ -39,14 +41,42 @@ class Wallet(
         // get back an array of spending keys for each account. store them super securely
     }
 
-    fun getBalance(accountId: Int = accountIds[0]) {
-        // TODO: modify request to factor in account Ids
-        converter.getBalance(dbDataPath)
+    fun initialize(firstRunStartHeight: Int = 280000): Int {
+        twig("Initializing wallet for first run")
+        converter.initDataDb(dbDataPath)
+        // securely store the spendingkey by leveraging the utilities provided during construction
+        val seed by seedProvider
+        val accountSpendingKeys = converter.initAccountsTable(dbDataPath, seed, 1)
+        spendingKeyStore = accountSpendingKeys[0]
+
+//        converter.initBlocksTable(dbData, height, time, saplingTree)
+        // TODO: init blocks table with sapling tree. probably read a table row in and then write it out to disk in a way where we can deserialize easily
+        // TODO: then use that to determine firstRunStartHeight
+
+//        val firstRunStartHeight = 405410
+        return firstRunStartHeight
     }
 
-    // TODO: modify request to factor in account Ids
-    // TODO: once initializeForSeed exists then we won't need to hang onto it and use it here
-    suspend fun sendToAddress(value: Long, toAddress: String, fromAccountId: Int = accountIds[0]): Long =
+    fun getAddress(accountId: Int = accountIds[0]): String {
+        return converter.getAddress(dbDataPath, accountId)
+    }
+
+    fun getBalance(accountId: Int = accountIds[0]) {
+        // TODO: modify request to factor in account Ids
+        converter.getBalance(dbDataPath, accountId)
+    }
+
+    /**
+     * Does the proofs and processing required to create a raw transaction and inserts the result in the database. On
+     * average, this call takes over 10 seconds.
+     *
+     * @param value the zatoshi value to send
+     * @param toAddress the destination address
+     * @param memo the memo, which is not augmented in any way
+     *
+     * @return the row id in the transactions table that contains the raw transaction or -1 if it failed
+     */
+    suspend fun createRawSendTransaction(value: Long, toAddress: String, memo: String = "", fromAccountId: Int = accountIds[0]): Long =
         withContext(IO) {
             var result = -1L
             twigTask("creating raw transaction to send $value zatoshi to ${toAddress.masked()}") {
@@ -55,9 +85,11 @@ class Wallet(
                     twig("params exist at $paramDestinationDir! attempting to send...")
                     converter.sendToAddress(
                         dbDataPath,
-                        seed,
+                        fromAccountId,
+                        spendingKeyStore,
                         toAddress,
                         value,
+                        memo,
                         // using names here so it's easier to avoid transposing them, if the function signature changes
                         spendParams = SPEND_PARAM_FILE_NAME.toPath(),
                         outputParams = OUTPUT_PARAM_FILE_NAME.toPath()

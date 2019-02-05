@@ -4,7 +4,7 @@ import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.room.Room
 import androidx.test.platform.app.InstrumentationRegistry
 import cash.z.wallet.sdk.db.CompactBlockDb
-import cash.z.wallet.sdk.vo.CompactBlock
+import cash.z.wallet.sdk.entity.CompactBlock
 import org.junit.*
 import org.junit.Assert.*
 

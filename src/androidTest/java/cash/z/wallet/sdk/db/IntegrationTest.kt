@@ -1,5 +1,6 @@
 package cash.z.wallet.sdk.db
 
+import android.text.format.DateUtils
 import androidx.test.platform.app.InstrumentationRegistry
 import cash.z.wallet.sdk.data.*
 import cash.z.wallet.sdk.jni.JniConverter
@@ -16,8 +17,8 @@ verify that the SDK is behaving as expected.
  */
 class IntegrationTest {
 
-    private val dataDbName = "IntegrationData.db"
-    private val cacheDdName = "IntegrationCache.db"
+    private val dataDbName = "IntegrationData41.db"
+    private val cacheDdName = "IntegrationCache41.db"
     private val context = InstrumentationRegistry.getInstrumentation().context
 
     private lateinit var downloader: CompactBlockStream
@@ -39,7 +40,7 @@ class IntegrationTest {
         }
     }
 
-    @Test
+    @Test(timeout = 1L * DateUtils.MINUTE_IN_MILLIS/10)
     fun testSync() = runBlocking<Unit> {
         val converter = JniConverter()
         converter.initLogs()
@@ -48,14 +49,16 @@ class IntegrationTest {
         downloader = CompactBlockStream("10.0.2.2", 9067, logger)
         processor = CompactBlockProcessor(context, converter, cacheDdName, dataDbName, logger = logger)
         repository = PollingTransactionRepository(context, dataDbName, 10_000L, converter, logger)
-        wallet = Wallet(converter, context.getDatabasePath(dataDbName).absolutePath, context.cacheDir.absolutePath, arrayOf(0), SampleSeedProvider("dummyseed"))
+        wallet = Wallet(converter, context.getDatabasePath(dataDbName).absolutePath, context.cacheDir.absolutePath, arrayOf(0), SampleSeedProvider("dummyseed"), SampleSpendingKeyProvider("dummyseed"), logger)
 
 //        repository.start(this)
         synchronizer = Synchronizer(
             downloader,
             processor,
             repository,
+            ActiveTransactionManager(repository, downloader.connection, wallet, logger),
             wallet,
+            1000,
             logger
         ).start(this)
 

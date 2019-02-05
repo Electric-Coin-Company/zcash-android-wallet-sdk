@@ -1,7 +1,7 @@
 package cash.z.wallet.sdk.dao
 
 import androidx.room.*
-import cash.z.wallet.sdk.vo.CompactBlock
+import cash.z.wallet.sdk.entity.CompactBlock
 
 @Dao
 interface CompactBlockDao {
@@ -20,4 +20,7 @@ interface CompactBlockDao {
 
     @Delete
     fun delete(block: CompactBlock)
+
+    @Query("SELECT MAX(height) FROM compactblocks")
+    fun latestBlockHeight(): Int
 }

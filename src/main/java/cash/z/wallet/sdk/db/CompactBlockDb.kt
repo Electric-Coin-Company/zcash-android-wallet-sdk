@@ -3,7 +3,7 @@ package cash.z.wallet.sdk.db
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import cash.z.wallet.sdk.dao.CompactBlockDao
-import cash.z.wallet.sdk.vo.CompactBlock
+import cash.z.wallet.sdk.entity.CompactBlock
 
 @Database(
     entities = [

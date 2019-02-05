@@ -5,7 +5,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.test.core.app.ApplicationProvider
 import cash.z.wallet.sdk.dao.CompactBlockDao
-import cash.z.wallet.sdk.vo.CompactBlock
+import cash.z.wallet.sdk.entity.CompactBlock
 import org.junit.*
 import org.junit.Assert.*
 

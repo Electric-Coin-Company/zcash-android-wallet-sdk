@@ -5,21 +5,20 @@ import androidx.room.RoomDatabase
 import cash.z.wallet.sdk.dao.BlockDao
 import cash.z.wallet.sdk.dao.NoteDao
 import cash.z.wallet.sdk.dao.TransactionDao
-import cash.z.wallet.sdk.vo.Block
-import cash.z.wallet.sdk.vo.Note
-import cash.z.wallet.sdk.vo.Transaction
+import cash.z.wallet.sdk.entity.*
 
 @Database(
     entities = [
         Transaction::class,
         Block::class,
-        Note::class
+        Note::class,
+        Account::class,
+        Sent::class
     ],
     version = 2,
     exportSchema = false
 )
 abstract class DerivedDataDb : RoomDatabase() {
     abstract fun transactionDao(): TransactionDao
-    abstract fun noteDao(): NoteDao
     abstract fun blockDao(): BlockDao
 }

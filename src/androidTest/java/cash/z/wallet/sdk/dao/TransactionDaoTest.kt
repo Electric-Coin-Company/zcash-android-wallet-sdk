@@ -5,8 +5,8 @@ import androidx.room.Room
 import androidx.test.platform.app.InstrumentationRegistry
 import cash.z.wallet.sdk.db.CompactBlockDb
 import cash.z.wallet.sdk.db.DerivedDataDb
-import cash.z.wallet.sdk.vo.CompactBlock
-import cash.z.wallet.sdk.vo.Transaction
+import cash.z.wallet.sdk.entity.CompactBlock
+import cash.z.wallet.sdk.entity.Transaction
 import org.junit.*
 import org.junit.Assert.*
 

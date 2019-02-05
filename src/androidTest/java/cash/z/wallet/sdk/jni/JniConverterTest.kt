@@ -8,27 +8,29 @@ import org.junit.Test
 
 class JniConverterTest {
 
+    private val dbDataFile = "/data/user/0/cash.z.wallet.sdk.test/databases/data2.db"
+
     @Test
     fun testGetAddress_exists() {
-        assertNotNull(converter.getAddress("dummyseed".toByteArray()))
+        assertNotNull(converter.getAddress(dbDataFile, 0))
     }
 
     @Test
     fun testGetAddress_valid() {
-        val address = converter.getAddress("dummyseed".toByteArray())
+        val address = converter.getAddress(dbDataFile, 0)
         val expectedAddress = "ztestsapling1snmqdnfqnc407pvqw7sld8w5zxx6nd0523kvlj4jf39uvxvh7vn0hs3q38n07806dwwecqwke3t"
         assertEquals("Invalid address", expectedAddress, address)
     }
 
     @Test
     fun testScanBlocks() {
-        converter.initDataDb("/data/user/0/cash.z.wallet.sdk.test/databases/data2.db")
+        converter.initDataDb(dbDataFile)
+        converter.initAccountsTable(dbDataFile, "dummyseed".toByteArray(), 1)
+
         // note: for this to work, the db file below must be uploaded to the device. Eventually, this test will be self-contained and remove that requirement.
         val result = converter.scanBlocks(
             "/data/user/0/cash.z.wallet.sdk.test/databases/dummy-cache.db",
-            "/data/user/0/cash.z.wallet.sdk.test/databases/data2.db",
-            "dummyseed".toByteArray(),
-            343900
+            dbDataFile
         )
 //        Thread.sleep(15 * DateUtils.MINUTE_IN_MILLIS)
         assertEquals("Invalid number of results", 3, 3)
@@ -38,9 +40,11 @@ class JniConverterTest {
     fun testSend() {
         converter.sendToAddress(
             "/data/user/0/cash.z.wallet.sdk.test/databases/data2.db",
-            "dummyseed".toByteArray(),
+            0,
+            "dummykey",
             "ztestsapling1fg82ar8y8whjfd52l0xcq0w3n7nn7cask2scp9rp27njeurr72ychvud57s9tu90fdqgwdt07lg",
             210_000,
+            "",
             "/data/user/0/cash.z.wallet.sdk.test/databases/sapling-spend.params",
             "/data/user/0/cash.z.wallet.sdk.test/databases/sapling-output.params"
         )

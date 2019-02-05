@@ -36,7 +36,7 @@ class CompactBlockStream private constructor(logger: Twig = SilentTwig()) : Twig
 
     fun start(
         scope: CoroutineScope,
-        startingBlockHeight: Long = Long.MAX_VALUE,
+        startingBlockHeight: Int = Int.MAX_VALUE,
         batchSize: Int = DEFAULT_BATCH_SIZE,
         pollFrequencyMillis: Long = DEFAULT_POLL_INTERVAL
     ): ReceiveChannel<CompactBlock> {
@@ -82,6 +82,7 @@ class CompactBlockStream private constructor(logger: Twig = SilentTwig()) : Twig
         private var job: Job? = null
         private var syncJob: Job? = null
         private val compactBlockChannel = BroadcastChannel<CompactBlock>(100)
+        private val latestBlockHeightChannel = ConflatedBroadcastChannel<Int>()
         private val progressChannel = ConflatedBroadcastChannel<Int>()
 
         fun createStub(timeoutMillis: Long = 60_000L): CompactTxStreamerBlockingStub {
@@ -92,18 +93,20 @@ class CompactBlockStream private constructor(logger: Twig = SilentTwig()) : Twig
 
         fun progress() = progressChannel.openSubscription()
 
+        fun latestHeights() = latestBlockHeightChannel.openSubscription()
+
         /**
          * Download all the missing blocks and return the height of the last block downloaded, which can be used to
          * calculate the total number of blocks downloaded.
          */
-        suspend fun downloadMissingBlocks(startingBlockHeight: Long, batchSize: Int = DEFAULT_BATCH_SIZE): Long {
+        suspend fun downloadMissingBlocks(startingBlockHeight: Int, batchSize: Int = DEFAULT_BATCH_SIZE): Int {
             twig("downloadingMissingBlocks starting at $startingBlockHeight")
             val latestBlockHeight = getLatestBlockHeight()
             var downloadedBlockHeight = startingBlockHeight
             // if blocks are missing then download them
             if (startingBlockHeight < latestBlockHeight) {
                 val missingBlockCount = latestBlockHeight - startingBlockHeight + 1
-                val batches = missingBlockCount / batchSize + (if (missingBlockCount.rem(batchSize) == 0L) 0 else 1)
+                val batches = missingBlockCount / batchSize + (if (missingBlockCount.rem(batchSize) == 0) 0 else 1)
                 var progress: Int
                 twig("found $missingBlockCount missing blocks, downloading in $batches batches...")
                 for (i in 1..batches) {
@@ -114,7 +117,7 @@ class CompactBlockStream private constructor(logger: Twig = SilentTwig()) : Twig
                         progress = Math.round(i/batches.toFloat() * 100)
                         progressChannel.send(progress)
                         downloadedBlockHeight = end
-                        twig("finished batch $i\n")
+                        twig("finished batch $i of $batches\n")
                     }
                 }
                 progressChannel.cancel()
@@ -124,8 +127,8 @@ class CompactBlockStream private constructor(logger: Twig = SilentTwig()) : Twig
             return downloadedBlockHeight
         }
 
-        suspend fun getLatestBlockHeight(): Long = withContext(IO) {
-            createStub().getLatestBlock(Service.ChainSpec.newBuilder().build()).height
+        suspend fun getLatestBlockHeight(): Int = withContext(IO) {
+            createStub().getLatestBlock(Service.ChainSpec.newBuilder().build()).height.toInt()
         }
 
         suspend fun submitTransaction(raw: ByteArray) = withContext(IO) {
@@ -133,7 +136,7 @@ class CompactBlockStream private constructor(logger: Twig = SilentTwig()) : Twig
             createStub().sendTransaction(request)
         }
 
-        suspend fun streamBlocks(pollFrequencyMillis: Long = DEFAULT_POLL_INTERVAL, startingBlockHeight: Long = Long.MAX_VALUE) = withContext(IO) {
+        suspend fun streamBlocks(pollFrequencyMillis: Long = DEFAULT_POLL_INTERVAL, startingBlockHeight: Int = Int.MAX_VALUE) = withContext(IO) {
             twig("streamBlocks started at $startingBlockHeight with interval $pollFrequencyMillis")
             // start with the next block, unless we were asked to start before then
             var nextBlockHeight = Math.min(startingBlockHeight, getLatestBlockHeight() + 1)
@@ -170,7 +173,7 @@ class CompactBlockStream private constructor(logger: Twig = SilentTwig()) : Twig
             }
         }
 
-        suspend fun loadBlockRange(range: LongRange): Int = withContext(IO) {
+        suspend fun loadBlockRange(range: IntRange): Int = withContext(IO) {
             twig("requesting block range $range on thread ${Thread.currentThread().name}")
             val result = createStub(90_000L).getBlockRange(range.toBlockRange())
             twig("done requesting block range")
@@ -180,6 +183,7 @@ class CompactBlockStream private constructor(logger: Twig = SilentTwig()) : Twig
                 val nextBlock = result.next()
                 twig("...while loading block range $range, received new block ${nextBlock.height} on thread ${Thread.currentThread().name}. Sending...")
                 compactBlockChannel.send(nextBlock)
+                latestBlockHeightChannel.send(nextBlock.height.toInt())
                 twig("...done sending block ${nextBlock.height}")
             }
             twig("done loading block range $range")

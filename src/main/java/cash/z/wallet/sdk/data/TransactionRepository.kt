@@ -1,17 +1,16 @@
 package cash.z.wallet.sdk.data
 
-import cash.z.wallet.sdk.vo.NoteQuery
-import cash.z.wallet.sdk.vo.Transaction
+import cash.z.wallet.sdk.dao.WalletTransaction
+import cash.z.wallet.sdk.entity.Transaction
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.ReceiveChannel
-import java.math.BigDecimal
 
 interface TransactionRepository {
     fun start(parentScope: CoroutineScope)
     fun stop()
     fun balance(): ReceiveChannel<Long>
-    fun allTransactions(): ReceiveChannel<List<NoteQuery>>
-    fun lastScannedHeight(): Long
+    fun allTransactions(): ReceiveChannel<List<WalletTransaction>>
+    fun lastScannedHeight(): Int
     suspend fun findTransactionById(txId: Long): Transaction?
     suspend fun deleteTransactionById(txId: Long)
 }

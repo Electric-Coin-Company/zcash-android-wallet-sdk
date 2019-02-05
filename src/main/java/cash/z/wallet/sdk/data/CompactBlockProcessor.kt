@@ -20,14 +20,12 @@ import kotlin.properties.ReadWriteProperty
  * Responsible for processing the blocks on the stream. Saves them to the cacheDb and periodically scans for transactions.
  *
  * @property applicationContext used to connect to the DB on the device. No reference is kept beyond construction.
- * @property seedProvider used for scanning. Later, this will be replaced by a viewing key so we don't pass the seed around.
  */
 class CompactBlockProcessor(
     applicationContext: Context,
     val converter: JniConverter = JniConverter(),
     cacheDbName: String = CACHE_DB_NAME,
     dataDbName: String = DATA_DB_NAME,
-    seedProvider: ReadOnlyProperty<Any?, ByteArray> = SampleSeedProvider("dummyseed"),
     logger: Twig = SilentTwig()
 ) : Twig by logger {
 
@@ -36,27 +34,14 @@ class CompactBlockProcessor(
     private val cacheDbPath: String
     private val dataDbPath: String
 
-    private val seed by seedProvider
-    var birthdayHeight = Long.MAX_VALUE
-
     val dataDbExists get() = File(dataDbPath).exists()
+    val cachDbExists get() = File(cacheDbPath).exists()
 
     init {
         cacheDb = createCompactBlockCacheDb(applicationContext, cacheDbName)
         cacheDao = cacheDb.complactBlockDao()
         cacheDbPath = applicationContext.getDatabasePath(cacheDbName).absolutePath
         dataDbPath = applicationContext.getDatabasePath(dataDbName).absolutePath
-    }
-
-    fun onFirstRun() {
-        twigTask("executing compactblock processor for first run: initializing data db") {
-            converter.initDataDb(dataDbPath)
-        }
-        // TODO: add precomputed sapling tree to DB and this will be the basis for the birthday
-//        val birthday = 373070L
-        val birthday = 394925L
-        birthdayHeight = birthday
-        twig("compactblock processor birthday set to $birthdayHeight")
     }
 
     private fun createCompactBlockCacheDb(applicationContext: Context, cacheDbName: String): CompactBlockDb {
@@ -80,11 +65,7 @@ class CompactBlockProcessor(
                 val nextBlock = incomingBlocks.receive()
                 val nextBlockHeight = nextBlock.height
                 twig("received block with height ${nextBlockHeight} on thread ${Thread.currentThread().name}")
-                if (birthdayHeight > nextBlockHeight) {
-                    birthdayHeight = nextBlockHeight
-                    twig("birthday initialized to $birthdayHeight")
-                }
-                cacheDao.insert(cash.z.wallet.sdk.vo.CompactBlock(nextBlockHeight.toInt(), nextBlock.toByteArray()))
+                cacheDao.insert(cash.z.wallet.sdk.entity.CompactBlock(nextBlockHeight.toInt(), nextBlock.toByteArray()))
                 if (shouldScanBlocks(lastScanTime, hasScanned)) {
                     twig("last block prior to scan ${nextBlockHeight}")
                     scanBlocks()
@@ -111,17 +92,17 @@ class CompactBlockProcessor(
         twigTask("scanning blocks") {
             if (isActive) {
                 try {
-                    converter.scanBlocks(
-                        cacheDbPath,
-                        dataDbPath,
-                        seed,
-                        birthdayHeight.toInt()
-                    )
+                    converter.scanBlocks(cacheDbPath, dataDbPath)
                 } catch (t: Throwable) {
                     twig("error while scanning blocks: $t")
                 }
             }
         }
+    }
+
+    suspend fun lastProcessedBlock(): Int = withContext(IO) {
+        // TODO: maybe start at the tip and keep going backward until we find a verifiably non-corrupted block, far enough back to be immune to reorgs
+        Math.max(0, cacheDao.latestBlockHeight() - 20)
     }
 
     companion object {
