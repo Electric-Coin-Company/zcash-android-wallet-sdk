@@ -21,6 +21,7 @@ buildscript {
         classpath "com.github.ben-manes:gradle-versions-plugin:0.20.0"
         classpath 'com.github.dcendents:android-maven-gradle-plugin:2.1'
         classpath "com.google.protobuf:protobuf-gradle-plugin:0.8.7"
+        classpath 'com.getkeepsafe.dexcount:dexcount-gradle-plugin:0.8.6'
     }
 }
 
@@ -33,9 +34,10 @@ apply plugin: 'kotlin-allopen'
 apply plugin: 'com.google.protobuf'
 apply plugin: 'com.github.ben-manes.versions'
 apply plugin: 'com.github.dcendents.android-maven'
+apply plugin: 'com.getkeepsafe.dexcount'
 
 group = 'cash.z.android.wallet'
-version = '1.4.0'
+version = '1.6.0'
 
 repositories {
     google()
@@ -48,7 +50,7 @@ android {
     defaultConfig {
         minSdkVersion 16
         targetSdkVersion 28
-        versionCode = 1_04_00
+        versionCode = 1_06_00
         versionName = version
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         multiDexEnabled false

@@ -8,9 +8,9 @@ import cash.z.wallet.sdk.dao.BlockDao
 import cash.z.wallet.sdk.dao.NoteDao
 import cash.z.wallet.sdk.dao.TransactionDao
 import cash.z.wallet.sdk.jni.JniConverter
-import cash.z.wallet.sdk.vo.Block
-import cash.z.wallet.sdk.vo.Note
-import cash.z.wallet.sdk.vo.Transaction
+import cash.z.wallet.sdk.entity.Block
+import cash.z.wallet.sdk.entity.Note
+import cash.z.wallet.sdk.entity.Transaction
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.atLeast
 import com.nhaarman.mockitokotlin2.mock
@@ -48,12 +48,11 @@ internal class PollingTransactionRepositoryTest {
         val dbName = "polling-test.db"
         val context = ApplicationProvider.getApplicationContext<Context>()
         converter = mock {
-            on { getBalance(any()) }.thenAnswer { balanceProvider.next() }
+            on { getBalance(any(), 0) }.thenAnswer { balanceProvider.next() }
         }
         repository = PollingTransactionRepository(context, dbName, pollFrequency, converter, twig) { db ->
             blockDao = db.blockDao()
             transactionDao = db.transactionDao()
-            noteDao = db.noteDao()
         }
     }
 
@@ -65,7 +64,6 @@ internal class PollingTransactionRepositoryTest {
         // just verify the cascading deletes are working, for sanity
         assertEquals(0, blockDao.count())
         assertEquals(0, transactionDao.count())
-        assertEquals(0, noteDao.count())
     }
 
     @Test
@@ -92,14 +90,14 @@ internal class PollingTransactionRepositoryTest {
 
         // we at least requested the balance more times from the rust library than we got it in the channel
         // (meaning the duplicates were ignored)
-        verify(converter, atLeast(distinctBalances + 1)).getBalance(anyString())
+        verify(converter, atLeast(distinctBalances + 1)).getBalance(anyString(), 0)
     }
 
     @Test
     fun testTransactionsAreNotLost() = runBlocking<Unit> {
         val iterations = 10
         balanceProvider = List(iterations + 1) { it.toLong() }.iterator()
-        val transactionChannel = repository.transactions()
+        val transactionChannel = repository.allTransactions()
         repository.start(this)
         insert(iterations) {
             repeat(iterations) {
@@ -147,7 +145,7 @@ internal class PollingTransactionRepositoryTest {
         return Note(
             id.toInt(),
             id.toInt(),
-            value = Random.nextInt(0, 10)
+            value = Random.nextLong(0L, 10L)
         )
     }
 }

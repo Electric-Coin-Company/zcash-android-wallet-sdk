@@ -1,7 +1,7 @@
 package cash.z.wallet.sdk.dao
 
 import androidx.room.*
-import cash.z.wallet.sdk.vo.Block
+import cash.z.wallet.sdk.entity.Block
 
 @Dao
 interface BlockDao {
@@ -24,7 +24,7 @@ interface BlockDao {
     fun deleteAll()
 
     @Query("SELECT MAX(height) FROM blocks")
-    fun lastScannedHeight(): Long
+    fun lastScannedHeight(): Int
 
     @Query("UPDATE blocks SET time=:time WHERE height = :height")
     fun updateTime(height: Int, time: Int)

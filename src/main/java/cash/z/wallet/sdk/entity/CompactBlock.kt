@@ -1,4 +1,4 @@
-package cash.z.wallet.sdk.vo
+package cash.z.wallet.sdk.entity
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity

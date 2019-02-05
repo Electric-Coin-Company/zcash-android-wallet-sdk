@@ -11,7 +11,7 @@ import cash.z.wallet.sdk.dao.NoteDao
 import cash.z.wallet.sdk.dao.TransactionDao
 import cash.z.wallet.sdk.ext.toBlockHeight
 import cash.z.wallet.sdk.jni.JniConverter
-import cash.z.wallet.sdk.vo.CompactBlock
+import cash.z.wallet.sdk.entity.CompactBlock
 import io.grpc.ManagedChannel
 import io.grpc.ManagedChannelBuilder
 import org.junit.*
@@ -43,8 +43,8 @@ class GlueSetupIntegrationTest {
     private fun addData() {
         val result = blockingStub.getBlockRange(
             BlockRange.newBuilder()
-                .setStart(373070L.toBlockHeight())
-                .setEnd(373085L.toBlockHeight())
+                .setStart(373070.toBlockHeight())
+                .setEnd(373085.toBlockHeight())
                 .build()
         )
         while (result.hasNext()) {
@@ -56,12 +56,7 @@ class GlueSetupIntegrationTest {
 
     private fun scanData() {
         Log.e("tezt", "scanning blocks...")
-        val result = converter.scanBlocks(
-            cacheDbPath,
-            "/data/user/0/cash.z.wallet.sdk.test/databases/data-glue.db",
-            "dummyseed".toByteArray(),
-            373070
-        )
+        val result = converter.scanBlocks(cacheDbPath, "/data/user/0/cash.z.wallet.sdk.test/databases/data-glue.db")
         System.err.println("done.")
     }
 

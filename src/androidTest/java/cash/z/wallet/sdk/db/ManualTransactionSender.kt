@@ -4,67 +4,33 @@ import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.test.core.app.ApplicationProvider
-import cash.z.wallet.sdk.dao.BlockDao
 import cash.z.wallet.sdk.dao.TransactionDao
 import org.junit.AfterClass
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
 import org.junit.BeforeClass
 import org.junit.Rule
 import org.junit.Test
 
-class DerivedDbIntegrationTest {
+class ManualTransactionSender {
     @get:Rule
     var instantTaskExecutorRule = InstantTaskExecutorRule()
 
     @Test
-    fun testDbExists() {
-        assertNotNull(db)
+    fun sendTransactionViaTest() {
+        val transaction = transactions.findById(12)
+        val hex = transaction?.raw?.toHex()
+        assertEquals("foo", hex)
     }
 
-    @Test
-    fun testDaoExists_Transaction() {
-        assertNotNull(transactions)
-    }
-
-    @Test
-    fun testDaoExists_Block() {
-        assertNotNull(blocks)
-    }
-
-    @Test
-    fun testCount_Transaction() {
-        assertEquals(5, transactions.count())
-    }
-
-    @Test
-    fun testCount_Block() {
-        assertEquals(80101, blocks.count())
-    }
-
-    @Test
-    fun testNoteQuery() {
-        val all = transactions.getAll()
-        assertEquals(3, all.size)
-    }
-
-    @Test
-    fun testTransactionDaoPrepopulated() {
-        val tran = transactions.findById(1)
-
-        assertEquals(343987, tran?.block)
-    }
-
-    @Test
-    fun testBlockDaoPrepopulated() {
-        val tran = blocks.findById(1)?.apply {
-            assertEquals(343987, this.height)
-        }
+    private fun ByteArray.toHex(): String {
+        val sb = StringBuilder(size * 2)
+        for (b in this)
+            sb.append(String.format("%02x", b))
+        return sb.toString()
     }
 
     companion object {
         private lateinit var transactions: TransactionDao
-        private lateinit var blocks: BlockDao
         private lateinit var db: DerivedDataDb
 
         @BeforeClass
@@ -72,13 +38,12 @@ class DerivedDbIntegrationTest {
         fun setup() {
             // TODO: put this database in the assets directory and open it from there via .openHelperFactory(new AssetSQLiteOpenHelperFactory()) seen here https://github.com/albertogiunta/sqliteAsset
             db = Room
-                .databaseBuilder(ApplicationProvider.getApplicationContext(), DerivedDataDb::class.java, "new-data-glue2.db")
+                .databaseBuilder(ApplicationProvider.getApplicationContext(), DerivedDataDb::class.java, "wallet_data1202.db")
                 .setJournalMode(RoomDatabase.JournalMode.TRUNCATE)
                 .fallbackToDestructiveMigration()
                 .build()
                 .apply {
                     transactions = transactionDao()
-                    blocks = blockDao()
                 }
         }
 

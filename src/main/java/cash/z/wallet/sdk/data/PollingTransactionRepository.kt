@@ -1,22 +1,23 @@
 package cash.z.wallet.sdk.data
 
 import android.content.Context
+import android.text.TextUtils
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import cash.z.wallet.sdk.dao.BlockDao
-import cash.z.wallet.sdk.dao.NoteDao
 import cash.z.wallet.sdk.dao.TransactionDao
+import cash.z.wallet.sdk.dao.WalletTransaction
 import cash.z.wallet.sdk.db.DerivedDataDb
 import cash.z.wallet.sdk.exception.RepositoryException
 import cash.z.wallet.sdk.exception.RustLayerException
 import cash.z.wallet.sdk.jni.JniConverter
-import cash.z.wallet.sdk.vo.NoteQuery
-import cash.z.wallet.sdk.vo.Transaction
+import cash.z.wallet.sdk.entity.Transaction
 import kotlinx.coroutines.*
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.channels.ConflatedBroadcastChannel
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.distinct
+import java.util.*
 
 /**
  * Repository that does polling for simplicity. We will implement an alternative version that uses live data as well as
@@ -54,13 +55,12 @@ open class PollingTransactionRepository(
         dbCallback(derivedDataDb)
     }
 
-    private val notes: NoteDao = derivedDataDb.noteDao()
     internal val blocks: BlockDao = derivedDataDb.blockDao()
     private val transactions: TransactionDao = derivedDataDb.transactionDao()
     private lateinit var pollingJob: Job
     private val balanceChannel = ConflatedBroadcastChannel<Long>()
-    private val allTransactionsChannel = ConflatedBroadcastChannel<List<NoteQuery>>()
-    val existingTransactions = listOf<NoteQuery>()
+    private val allTransactionsChannel = ConflatedBroadcastChannel<List<WalletTransaction>>()
+    private val existingTransactions = listOf<WalletTransaction>()
     private val wasPreviouslyStarted
         get() = !existingTransactions.isEmpty() || balanceChannel.isClosedForSend || allTransactionsChannel.isClosedForSend
 
@@ -77,20 +77,22 @@ open class PollingTransactionRepository(
 
     override fun stop() {
         twig("stopping")
-        balanceChannel.cancel()
-        allTransactionsChannel.cancel()
-        pollingJob.cancel()
+        // when polling ends, we call stop which can result in a duplicate call to stop
+        // So keep stop idempotent, rather than crashing with "Channel was closed" errors
+        if (!balanceChannel.isClosedForSend) balanceChannel.cancel()
+        if (!allTransactionsChannel.isClosedForSend) allTransactionsChannel.cancel()
+        if (!pollingJob.isCancelled) pollingJob.cancel()
     }
 
     override fun balance(): ReceiveChannel<Long> {
         return balanceChannel.openSubscription().distinct()
     }
 
-    override fun allTransactions(): ReceiveChannel<List<NoteQuery>> {
+    override fun allTransactions(): ReceiveChannel<List<WalletTransaction>> {
         return allTransactionsChannel.openSubscription()
     }
 
-    override fun lastScannedHeight(): Long {
+    override fun lastScannedHeight(): Int {
         return blocks.lastScannedHeight()
     }
 
@@ -109,21 +111,21 @@ open class PollingTransactionRepository(
 
     private suspend fun poll() = withContext(IO) {
         try {
-            var previousNotes: List<NoteQuery>? = null
+            var previousTransactions: List<WalletTransaction>? = null
             while (isActive
                 && !balanceChannel.isClosedForSend
                 && !allTransactionsChannel.isClosedForSend
             ) {
                 twigTask("polling for transactions") {
-                    val newNotes = notes.getAll()
+                    val newTransactions = transactions.getAll()
 
-                    if (hasChanged(previousNotes, newNotes)) {
-                        twig("loaded ${notes.count()} transactions and changes were detected!")
-                        allTransactionsChannel.send(newNotes)
+                    if (hasChanged(previousTransactions, newTransactions)) {
+                        twig("loaded ${newTransactions.count()} transactions and changes were detected!")
+                        allTransactionsChannel.send(newTransactions)
                         sendLatestBalance()
-                        previousNotes = newNotes
+                        previousTransactions = newTransactions
                     } else {
-                        twig("loaded ${notes.count()} transactions but no changes detected.")
+                        twig("loaded ${newTransactions.count()} transactions but no changes detected.")
                     }
                 }
                 delay(pollFrequencyMillis)
@@ -133,53 +135,34 @@ open class PollingTransactionRepository(
         }
     }
 
-    private fun hasChanged(oldNotes: List<NoteQuery>?, newNotes: List<NoteQuery>): Boolean {
-        // shortcuts first
-        if (newNotes.isEmpty() && oldNotes == null) return false // if nothing has happened, that doesn't count as a change
-        if (oldNotes == null) return true
-        if (oldNotes.size != newNotes.size) return true
-
-        for (note in newNotes) {
-            if (!oldNotes.contains(note)) return true
+    private fun hasChanged(oldTxs: List<WalletTransaction>?, newTxs: List<WalletTransaction>): Boolean {
+        fun pr(t: List<WalletTransaction>?): String {
+            if(t == null) return "none"
+            val str = StringBuilder()
+            for (tx in t) {
+                str.append("\n@TWIG: ").append(tx.toString())
+            }
+            return str.toString()
         }
-        return false
+        val sends = newTxs.filter { it.isSend }
+        if(sends.isNotEmpty()) twig("SENDS hasChanged: old-txs: ${pr(oldTxs?.filter { it.isSend })}\n@TWIG: new-txs: ${pr(sends)}")
+
+        // shortcuts first
+        if (newTxs.isEmpty() && oldTxs == null) return false.also { twig("detected nothing happened yet") } // if nothing has happened, that doesn't count as a change
+        if (oldTxs == null) return true.also { twig("detected first set of txs!") } // the first set of transactions is automatically a change
+        if (oldTxs.size != newTxs.size) return true.also { twig("detected size difference") } // can't be the same and have different sizes, duh
+
+        for (note in newTxs) {
+            if (!oldTxs.contains(note)) return true.also { twig("detected change for $note") }
+        }
+        return false.also { twig("detected no changes in all new txs") }
     }
-
-
-//    private suspend fun poll() = withContext(IO) {
-//        try {
-//            while (isActive && !transactionChannel.isClosedForSend && !balanceChannel.isClosedForSend && !allTransactionsChannel.isClosedForSend) {
-//                twigTask("polling for transactions") {
-//                    val newTransactions = checkForNewTransactions()
-//                    newTransactions?.takeUnless { it.isEmpty() }?.forEach {
-//                        existingTransactions.union(listOf(it))
-//                        transactionChannel.send(it)
-//                        allTransactionsChannel.send(existingTransactions)
-//                    }?.also {
-//                        twig("discovered ${newTransactions?.size} transactions!")
-//                        // only update the balance when we've had some new transactions
-//                        sendLatestBalance()
-//                    }
-//                }
-//                delay(pollFrequencyMillis)
-//            }
-//        } finally {
-//            // if the job is cancelled, it should be the same as the repository stopping.
-//            // otherwise, it over-complicates things and makes it harder to reason about the behavior of this class.
-//            stop()
-//        }
-//    }
-//
-//    protected open fun checkForNewTransactions(): Set<NoteQuery>? {
-//        val notes = notes.getAll()
-//        twig("object $this : checking for new transactions. previousCount: ${existingTransactions.size}   currentCount: ${notes.size}")
-//        return notes.subtract(existingTransactions)
-//    }
 
     private suspend fun sendLatestBalance() = withContext(IO) {
         twigTask("sending balance") {
             try {
-                val balance = converter.getBalance(derivedDataDbPath)
+                // TODO: use wallet here
+                val balance = converter.getBalance(derivedDataDbPath,  0)
                 twig("balance: $balance")
                 balanceChannel.send(balance)
             } catch (t: Throwable) {
