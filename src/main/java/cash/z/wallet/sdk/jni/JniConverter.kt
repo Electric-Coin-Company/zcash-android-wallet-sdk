@@ -23,7 +23,8 @@ class JniConverter {
 
     external fun sendToAddress(
         dbData: String,
-        seed: ByteArray,
+        account: Int,
+        extsk: String,
         to: String,
         value: Long,
         memo: String,
