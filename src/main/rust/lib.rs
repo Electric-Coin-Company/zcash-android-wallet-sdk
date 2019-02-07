@@ -9,6 +9,7 @@ extern crate jni;
 extern crate log_panics;
 extern crate pairing;
 extern crate protobuf;
+extern crate rand;
 extern crate rusqlite;
 extern crate sapling_crypto;
 extern crate time;
