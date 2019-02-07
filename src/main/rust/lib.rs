@@ -103,10 +103,7 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_initAccountsTab
                 )
             })
             .collect();
-        let extfvks: Vec<_> = extsks
-            .iter()
-            .map(|extsk| ExtendedFullViewingKey::from(extsk))
-            .collect();
+        let extfvks: Vec<_> = extsks.iter().map(ExtendedFullViewingKey::from).collect();
 
         match init_accounts_table(&db_data, &extfvks) {
             Ok(()) => {
@@ -155,7 +152,7 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_initBlocksTable
         .get_string(db_data)
         .expect("Couldn't get Java string!")
         .into();
-    let time = if time >= 0 && time <= (u32::max_value() as jlong) {
+    let time = if time >= 0 && time <= jlong::from(u32::max_value()) {
         time as u32
     } else {
         error!("time argument must fit in a u32");
@@ -336,8 +333,7 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_sendToAddress(
         &db_data,
         SAPLING_CONSENSUS_BRANCH_ID,
         prover,
-        account,
-        &extsk,
+        (account, &extsk),
         &to,
         value,
         memo,

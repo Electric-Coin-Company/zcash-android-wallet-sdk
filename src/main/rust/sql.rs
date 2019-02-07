@@ -449,8 +449,7 @@ pub fn send_to_address(
     db_data: &str,
     consensus_branch_id: u32,
     prover: impl TxProver,
-    account: u32,
-    extsk: &ExtendedSpendingKey,
+    (account, extsk): (u32, &ExtendedSpendingKey),
     to: &PaymentAddress<Bls12>,
     value: Amount,
     memo: Option<Memo>,
@@ -523,10 +522,10 @@ pub fn send_to_address(
     // Select notes
     let notes = stmt_select_notes.query_and_then::<_, Error, _, _>(
         &[
-            account as i64,
+            i64::from(account),
             value.0,
             value.0,
-            (height - ANCHOR_OFFSET) as i64,
+            i64::from(height - ANCHOR_OFFSET),
         ],
         |row| {
             let mut diversifier = Diversifier([0; 11]);
