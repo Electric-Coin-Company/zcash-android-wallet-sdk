@@ -3,7 +3,10 @@ extern crate failure;
 #[macro_use]
 extern crate log;
 
+extern crate android_logger;
 extern crate ff;
+extern crate jni;
+extern crate log_panics;
 extern crate pairing;
 extern crate protobuf;
 extern crate rusqlite;
@@ -16,10 +19,12 @@ mod sql;
 
 const SAPLING_CONSENSUS_BRANCH_ID: u32 = 0x76b8_09bb;
 
-extern crate android_logger;
-extern crate jni;
-extern crate log_panics;
-
+use android_logger::Filter;
+use jni::{
+    objects::{JClass, JString},
+    sys::{jboolean, jbyteArray, jint, jlong, jobjectArray, jsize, jstring, JNI_FALSE, JNI_TRUE},
+    JNIEnv,
+};
 use log::Level;
 use std::path::Path;
 use zcash_client_backend::{
@@ -32,13 +37,6 @@ use zcash_client_backend::{
 };
 use zcash_primitives::transaction::components::Amount;
 use zip32::{ChildIndex, ExtendedFullViewingKey, ExtendedSpendingKey};
-
-use self::android_logger::Filter;
-use self::jni::objects::{JClass, JString};
-use self::jni::sys::{
-    jboolean, jbyteArray, jint, jlong, jobjectArray, jsize, jstring, JNI_FALSE, JNI_TRUE,
-};
-use self::jni::JNIEnv;
 
 use crate::sql::{
     get_address, get_balance, init_accounts_table, init_blocks_table, init_data_database,

@@ -12,11 +12,11 @@ publish = false
 android_logger = "0.6"
 failure = "0.1"
 jni = { version = "0.10", default-features = false }
+log = "0.4"
 log-panics = "2.0.0"
 protobuf = "2"
 rand = "0.4"
 rusqlite = { version = "0.15", features = ["bundled"] }
-log = "0.4"
 
 [dependencies.ff]
 git = "https://github.com/str4d/librustzcash.git"
