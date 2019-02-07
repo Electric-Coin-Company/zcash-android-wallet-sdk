@@ -632,3 +632,45 @@ pub fn send_to_address<P: AsRef<Path>>(
     // Return the row number of the transaction, so the caller can fetch it for sending.
     Ok(id_tx)
 }
+
+#[cfg(test)]
+mod tests {
+    use tempfile::NamedTempFile;
+    use zip32::{ExtendedFullViewingKey, ExtendedSpendingKey};
+
+    use super::{init_accounts_table, init_blocks_table, init_data_database};
+
+    #[test]
+    fn init_accounts_table_only_works_once() {
+        let data_file = NamedTempFile::new().unwrap();
+        let db_data = data_file.path();
+        init_data_database(&db_data).unwrap();
+
+        // We can call the function as many times as we want with no data
+        init_accounts_table(&db_data, &[]).unwrap();
+        init_accounts_table(&db_data, &[]).unwrap();
+
+        // First call with data should initialise the accounts table
+        let extfvks = [ExtendedFullViewingKey::from(&ExtendedSpendingKey::master(
+            &[],
+        ))];
+        init_accounts_table(&db_data, &extfvks).unwrap();
+
+        // Subsequent calls should return an error
+        init_accounts_table(&db_data, &[]).unwrap_err();
+        init_accounts_table(&db_data, &extfvks).unwrap_err();
+    }
+
+    #[test]
+    fn init_blocks_table_only_works_once() {
+        let data_file = NamedTempFile::new().unwrap();
+        let db_data = data_file.path();
+        init_data_database(&db_data).unwrap();
+
+        // First call with data should initialise the blocks table
+        init_blocks_table(&db_data, 1, 1, &[]).unwrap();
+
+        // Subsequent calls should return an error
+        init_blocks_table(&db_data, 2, 2, &[]).unwrap_err();
+    }
+}

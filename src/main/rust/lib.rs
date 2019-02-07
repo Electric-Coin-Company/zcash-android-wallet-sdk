@@ -16,6 +16,9 @@ extern crate zcash_client_backend;
 extern crate zcash_primitives;
 extern crate zip32;
 
+#[cfg(test)]
+extern crate tempfile;
+
 mod sql;
 
 const SAPLING_CONSENSUS_BRANCH_ID: u32 = 0x76b8_09bb;

@@ -43,6 +43,9 @@ rev = "89cfef8515d5d88809c485a44fdc54572b9e5666"
 git = "https://github.com/str4d/librustzcash.git"
 rev = "89cfef8515d5d88809c485a44fdc54572b9e5666"
 
+[dev-dependencies]
+tempfile = "3"
+
 [lib]
 name = "zcashwalletsdk"
 path = "src/main/rust/lib.rs"
