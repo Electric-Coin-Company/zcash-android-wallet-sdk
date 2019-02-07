@@ -7,6 +7,7 @@ use sapling_crypto::{
     jubjub::fs::{Fs, FsRepr},
     primitives::{Diversifier, Note, PaymentAddress},
 };
+use std::path::Path;
 use zcash_client_backend::{
     constants::{HRP_SAPLING_EXTENDED_FULL_VIEWING_KEY_TEST, HRP_SAPLING_PAYMENT_ADDRESS_TEST},
     encoding::{
@@ -32,7 +33,7 @@ fn address_from_extfvk(extfvk: &ExtendedFullViewingKey) -> String {
     encode_payment_address(HRP_SAPLING_PAYMENT_ADDRESS_TEST, &addr)
 }
 
-pub fn init_data_database(db_data: &str) -> rusqlite::Result<()> {
+pub fn init_data_database<P: AsRef<Path>>(db_data: P) -> rusqlite::Result<()> {
     let data = Connection::open(db_data)?;
     data.execute(
         "CREATE TABLE IF NOT EXISTS accounts (
@@ -113,7 +114,10 @@ pub fn init_data_database(db_data: &str) -> rusqlite::Result<()> {
     Ok(())
 }
 
-pub fn init_accounts_table(db_data: &str, extfvks: &[ExtendedFullViewingKey]) -> Result<(), Error> {
+pub fn init_accounts_table<P: AsRef<Path>>(
+    db_data: P,
+    extfvks: &[ExtendedFullViewingKey],
+) -> Result<(), Error> {
     let data = Connection::open(db_data)?;
 
     let mut empty_check = data.prepare("SELECT * FROM accounts LIMIT 1")?;
@@ -142,8 +146,8 @@ pub fn init_accounts_table(db_data: &str, extfvks: &[ExtendedFullViewingKey]) ->
     Ok(())
 }
 
-pub fn init_blocks_table(
-    db_data: &str,
+pub fn init_blocks_table<P: AsRef<Path>>(
+    db_data: P,
     height: i32,
     time: u32,
     sapling_tree: &[u8],
@@ -175,7 +179,7 @@ struct WitnessRow {
     witness: IncrementalWitness,
 }
 
-pub fn get_address(db_data: &str, account: u32) -> Result<String, Error> {
+pub fn get_address<P: AsRef<Path>>(db_data: P, account: u32) -> Result<String, Error> {
     let data = Connection::open(db_data)?;
 
     let addr = data.query_row(
@@ -188,7 +192,7 @@ pub fn get_address(db_data: &str, account: u32) -> Result<String, Error> {
     Ok(addr)
 }
 
-pub fn get_balance(db_data: &str, account: u32) -> Result<Amount, Error> {
+pub fn get_balance<P: AsRef<Path>>(db_data: P, account: u32) -> Result<Amount, Error> {
     let data = Connection::open(db_data)?;
 
     let balance = data.query_row(
@@ -205,7 +209,10 @@ pub fn get_balance(db_data: &str, account: u32) -> Result<Amount, Error> {
 /// tracked accounts.
 ///
 /// Assumes that the caller is handling rollbacks.
-pub fn scan_cached_blocks(db_cache: &str, db_data: &str) -> Result<(), Error> {
+pub fn scan_cached_blocks<P: AsRef<Path>, Q: AsRef<Path>>(
+    db_cache: P,
+    db_data: Q,
+) -> Result<(), Error> {
     let cache = Connection::open(db_cache)?;
     let data = Connection::open(db_data)?;
 
@@ -447,8 +454,8 @@ struct SelectedNoteRow {
 }
 
 /// Creates a transaction paying the specified address.
-pub fn send_to_address(
-    db_data: &str,
+pub fn send_to_address<P: AsRef<Path>>(
+    db_data: P,
     consensus_branch_id: u32,
     prover: impl TxProver,
     (account, extsk): (u32, &ExtendedSpendingKey),
