@@ -9,11 +9,14 @@ description = "JNI backend for the Android wallet SDK"
 publish = false
 
 [dependencies]
+android_logger = "0.6"
 failure = "0.1"
+jni = { version = "0.10", default-features = false }
+log = "0.4"
+log-panics = "2.0.0"
 protobuf = "2"
 rand = "0.4"
 rusqlite = { version = "0.15", features = ["bundled"] }
-log = "0.4"
 
 [dependencies.ff]
 git = "https://github.com/str4d/librustzcash.git"
@@ -38,11 +41,6 @@ rev = "89cfef8515d5d88809c485a44fdc54572b9e5666"
 [dependencies.zip32]
 git = "https://github.com/str4d/librustzcash.git"
 rev = "89cfef8515d5d88809c485a44fdc54572b9e5666"
-
-[target.'cfg(target_os="android")'.dependencies]
-jni = { version = "0.10", default-features = false }
-android_logger = "0.6"
-log-panics = "2.0.0"
 
 [lib]
 name = "zcashwalletsdk"
