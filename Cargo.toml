@@ -17,6 +17,7 @@ log-panics = "2.0.0"
 protobuf = "2"
 rand = "0.4"
 rusqlite = { version = "0.15", features = ["bundled"] }
+time = "0.1"
 
 [dependencies.ff]
 git = "https://github.com/str4d/librustzcash.git"

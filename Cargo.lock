@@ -738,6 +738,7 @@ dependencies = [
  "rand 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "rusqlite 0.15.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "sapling-crypto 0.0.1 (git+https://github.com/str4d/librustzcash.git?rev=89cfef8515d5d88809c485a44fdc54572b9e5666)",
+ "time 0.1.42 (registry+https://github.com/rust-lang/crates.io-index)",
  "zcash_client_backend 0.0.0 (git+https://github.com/str4d/librustzcash.git?rev=89cfef8515d5d88809c485a44fdc54572b9e5666)",
  "zcash_primitives 0.0.0 (git+https://github.com/str4d/librustzcash.git?rev=89cfef8515d5d88809c485a44fdc54572b9e5666)",
  "zip32 0.0.0 (git+https://github.com/str4d/librustzcash.git?rev=89cfef8515d5d88809c485a44fdc54572b9e5666)",

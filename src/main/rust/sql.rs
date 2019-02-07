@@ -54,8 +54,10 @@ pub fn init_data_database(db_data: &str) -> rusqlite::Result<()> {
         "CREATE TABLE IF NOT EXISTS transactions (
             id_tx INTEGER PRIMARY KEY,
             txid BLOB NOT NULL UNIQUE,
+            created TEXT,
             block INTEGER,
             tx_index INTEGER,
+            expiry_height INTEGER,
             raw BLOB,
             FOREIGN KEY (block) REFERENCES blocks(height)
         )",
@@ -574,15 +576,21 @@ pub fn send_to_address(
     let (tx, tx_metadata) = builder.build(consensus_branch_id, prover)?;
     // We only called add_sapling_output() once.
     let output_index = tx_metadata.output_index(0).unwrap() as i64;
+    let created = time::get_time();
 
     // Save the transaction in the database.
     let mut raw_tx = vec![];
     tx.write(&mut raw_tx)?;
     let mut stmt_insert_tx = data.prepare(
-        "INSERT INTO transactions (txid, raw)
-        VALUES (?, ?)",
+        "INSERT INTO transactions (txid, created, expiry_height, raw)
+        VALUES (?, ?, ?, ?)",
     )?;
-    stmt_insert_tx.execute(&[&tx.txid().0[..], &raw_tx[..]])?;
+    stmt_insert_tx.execute(&[
+        tx.txid().0.to_sql()?,
+        created.to_sql()?,
+        tx.expiry_height.to_sql()?,
+        raw_tx.to_sql()?,
+    ])?;
     let id_tx = data.last_insert_rowid();
 
     // Save the sent note in the database.

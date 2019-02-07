@@ -11,6 +11,7 @@ extern crate pairing;
 extern crate protobuf;
 extern crate rusqlite;
 extern crate sapling_crypto;
+extern crate time;
 extern crate zcash_client_backend;
 extern crate zcash_primitives;
 extern crate zip32;
