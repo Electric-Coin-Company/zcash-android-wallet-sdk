@@ -636,9 +636,12 @@ pub fn send_to_address<P: AsRef<Path>>(
 #[cfg(test)]
 mod tests {
     use tempfile::NamedTempFile;
+    use zcash_client_backend::{
+        constants::HRP_SAPLING_PAYMENT_ADDRESS_TEST, encoding::decode_payment_address,
+    };
     use zip32::{ExtendedFullViewingKey, ExtendedSpendingKey};
 
-    use super::{init_accounts_table, init_blocks_table, init_data_database};
+    use super::{get_address, init_accounts_table, init_blocks_table, init_data_database};
 
     #[test]
     fn init_accounts_table_only_works_once() {
@@ -672,5 +675,22 @@ mod tests {
 
         // Subsequent calls should return an error
         init_blocks_table(&db_data, 2, 2, &[]).unwrap_err();
+    }
+
+    #[test]
+    fn init_accounts_table_stores_correct_address() {
+        let data_file = NamedTempFile::new().unwrap();
+        let db_data = data_file.path();
+        init_data_database(&db_data).unwrap();
+
+        // Add an account to the wallet
+        let extsk = ExtendedSpendingKey::master(&[]);
+        let extfvks = [ExtendedFullViewingKey::from(&extsk)];
+        init_accounts_table(&db_data, &extfvks).unwrap();
+
+        // The account's address should be in the data DB
+        let addr = get_address(&db_data, 0).unwrap();
+        let pa = decode_payment_address(HRP_SAPLING_PAYMENT_ADDRESS_TEST, &addr).unwrap();
+        assert_eq!(pa, extsk.default_address().unwrap().1);
     }
 }
