@@ -325,21 +325,21 @@ pub fn scan_cached_blocks<P: AsRef<Path>, Q: AsRef<Path>>(
     let mut tree = match stmt_fetch_tree.query_row(&[last_height], |row| match row.get_checked(0) {
         Ok(data) => {
             let data: Vec<_> = data;
-            CommitmentTree::read(&data[..]).unwrap()
+            CommitmentTree::read(&data[..])
         }
-        Err(_) => CommitmentTree::new(),
+        Err(_) => Ok(CommitmentTree::new()),
     }) {
         Ok(tree) => tree,
-        Err(_) => CommitmentTree::new(),
-    };
+        Err(_) => Ok(CommitmentTree::new()),
+    }?;
 
     // Get most recent incremental witnesses for the notes we are tracking
     let witnesses = stmt_fetch_witnesses.query_map(&[last_height], |row| {
         let data: Vec<_> = row.get(1);
-        WitnessRow {
+        IncrementalWitness::read(&data[..]).map(|witness| WitnessRow {
             id_note: row.get(0),
-            witness: IncrementalWitness::read(&data[..]).unwrap(),
-        }
+            witness,
+        })
     })?;
     let mut witnesses: Vec<_> = witnesses.collect::<Result<_, _>>()?;
 
@@ -646,7 +646,7 @@ pub fn send_to_address<P: AsRef<Path>>(
 
     // Save the sent note in the database.
     let to_str = encode_payment_address(HRP_SAPLING_PAYMENT_ADDRESS_TEST, to);
-    if memo.is_some() {
+    if let Some(memo) = memo {
         let mut stmt_insert_sent_note = data.prepare(
             "INSERT INTO sent_notes (tx, output_index, from_account, address, value, memo)
             VALUES (?, ?, ?, ?, ?, ?)",
@@ -657,7 +657,7 @@ pub fn send_to_address<P: AsRef<Path>>(
             account.to_sql()?,
             to_str.to_sql()?,
             value.0.to_sql()?,
-            memo.unwrap().as_bytes().to_sql()?,
+            memo.as_bytes().to_sql()?,
         ])?;
     } else {
         let mut stmt_insert_sent_note = data.prepare(
