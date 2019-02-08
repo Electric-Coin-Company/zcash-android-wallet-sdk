@@ -387,7 +387,8 @@ pub fn scan_cached_blocks<P: AsRef<Path>, Q: AsRef<Path>>(
 
         // Insert the block into the database.
         let mut encoded_tree = Vec::new();
-        tree.write(&mut encoded_tree).unwrap();
+        tree.write(&mut encoded_tree)
+            .expect("Should be able to write to a Vec");
         stmt_insert_block.execute(&[
             row.height.to_sql()?,
             block_time.to_sql()?,
@@ -473,7 +474,10 @@ pub fn scan_cached_blocks<P: AsRef<Path>, Q: AsRef<Path>>(
         let mut encoded = Vec::new();
         for witness_row in witnesses.iter() {
             encoded.clear();
-            witness_row.witness.write(&mut encoded).unwrap();
+            witness_row
+                .witness
+                .write(&mut encoded)
+                .expect("Should be able to write to a Vec");
             stmt_insert_witness.execute(&[
                 witness_row.id_note.to_sql()?,
                 last_height.to_sql()?,
@@ -626,7 +630,10 @@ pub fn send_to_address<P: AsRef<Path>>(
     builder.add_sapling_output(ovk, to.clone(), value, memo.clone())?;
     let (tx, tx_metadata) = builder.build(consensus_branch_id, prover)?;
     // We only called add_sapling_output() once.
-    let output_index = tx_metadata.output_index(0).unwrap() as i64;
+    let output_index = match tx_metadata.output_index(0) {
+        Some(idx) => idx as i64,
+        None => panic!("Output 0 should exist in the transaction"),
+    };
     let created = time::get_time();
 
     // Save the transaction in the database.
