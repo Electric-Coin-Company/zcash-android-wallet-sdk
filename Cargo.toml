@@ -21,27 +21,27 @@ time = "0.1"
 
 [dependencies.ff]
 git = "https://github.com/str4d/librustzcash.git"
-rev = "89cfef8515d5d88809c485a44fdc54572b9e5666"
+rev = "669df0fa7b2fbd8e1d2ee78d7f0c6544ea04bfd3"
 
 [dependencies.pairing]
 git = "https://github.com/str4d/librustzcash.git"
-rev = "89cfef8515d5d88809c485a44fdc54572b9e5666"
+rev = "669df0fa7b2fbd8e1d2ee78d7f0c6544ea04bfd3"
 
 [dependencies.sapling-crypto]
 git = "https://github.com/str4d/librustzcash.git"
-rev = "89cfef8515d5d88809c485a44fdc54572b9e5666"
+rev = "669df0fa7b2fbd8e1d2ee78d7f0c6544ea04bfd3"
 
 [dependencies.zcash_client_backend]
 git = "https://github.com/str4d/librustzcash.git"
-rev = "89cfef8515d5d88809c485a44fdc54572b9e5666"
+rev = "669df0fa7b2fbd8e1d2ee78d7f0c6544ea04bfd3"
 
 [dependencies.zcash_primitives]
 git = "https://github.com/str4d/librustzcash.git"
-rev = "89cfef8515d5d88809c485a44fdc54572b9e5666"
+rev = "669df0fa7b2fbd8e1d2ee78d7f0c6544ea04bfd3"
 
 [dependencies.zip32]
 git = "https://github.com/str4d/librustzcash.git"
-rev = "89cfef8515d5d88809c485a44fdc54572b9e5666"
+rev = "669df0fa7b2fbd8e1d2ee78d7f0c6544ea04bfd3"
 
 [dev-dependencies]
 tempfile = "3"

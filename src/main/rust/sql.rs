@@ -217,6 +217,38 @@ pub fn get_balance<P: AsRef<Path>>(db_data: P, account: u32) -> Result<Amount, E
     Ok(Amount(balance))
 }
 
+pub fn get_received_memo_as_utf8<P: AsRef<Path>>(
+    db_data: P,
+    id_note: i64,
+) -> Result<Option<String>, Error> {
+    let data = Connection::open(db_data)?;
+
+    let memo: Vec<_> = data.query_row(
+        "SELECT memo FROM received_notes
+        WHERE id_note = ?",
+        &[id_note],
+        |row| row.get(0),
+    )?;
+
+    Memo::from_bytes(&memo).and_then(|memo| memo.to_utf8())
+}
+
+pub fn get_sent_memo_as_utf8<P: AsRef<Path>>(
+    db_data: P,
+    id_note: i64,
+) -> Result<Option<String>, Error> {
+    let data = Connection::open(db_data)?;
+
+    let memo: Vec<_> = data.query_row(
+        "SELECT memo FROM sent_notes
+        WHERE id_note = ?",
+        &[id_note],
+        |row| row.get(0),
+    )?;
+
+    Memo::from_bytes(&memo).and_then(|memo| memo.to_utf8())
+}
+
 /// Scans new blocks added to the cache for any transactions received by the
 /// tracked accounts.
 ///
