@@ -1,24 +1,5 @@
-extern crate failure;
-
 #[macro_use]
 extern crate log;
-
-extern crate android_logger;
-extern crate ff;
-extern crate jni;
-extern crate log_panics;
-extern crate pairing;
-extern crate protobuf;
-extern crate rand;
-extern crate rusqlite;
-extern crate sapling_crypto;
-extern crate time;
-extern crate zcash_client_backend;
-extern crate zcash_primitives;
-extern crate zip32;
-
-#[cfg(test)]
-extern crate tempfile;
 
 mod sql;
 
@@ -49,7 +30,10 @@ use crate::sql::{
 };
 
 #[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_initLogs(_env: JNIEnv, _: JClass) {
+pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_initLogs(
+    _env: JNIEnv<'_>,
+    _: JClass<'_>,
+) {
     android_logger::init_once(
         Filter::default().with_min_level(Level::Trace),
         Some("cash.z.rust.logs"),
@@ -62,9 +46,9 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_initLogs(_env: 
 
 #[no_mangle]
 pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_initDataDb(
-    env: JNIEnv,
-    _: JClass,
-    db_data: JString,
+    env: JNIEnv<'_>,
+    _: JClass<'_>,
+    db_data: JString<'_>,
 ) -> jboolean {
     let db_data: String = env
         .get_string(db_data)
@@ -82,9 +66,9 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_initDataDb(
 
 #[no_mangle]
 pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_initAccountsTable(
-    env: JNIEnv,
-    _: JClass,
-    db_data: JString,
+    env: JNIEnv<'_>,
+    _: JClass<'_>,
+    db_data: JString<'_>,
     seed: jbyteArray,
     accounts: jint,
 ) -> jobjectArray {
@@ -146,9 +130,9 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_initAccountsTab
 
 #[no_mangle]
 pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_initBlocksTable(
-    env: JNIEnv,
-    _: JClass,
-    db_data: JString,
+    env: JNIEnv<'_>,
+    _: JClass<'_>,
+    db_data: JString<'_>,
     height: jint,
     time: jlong,
     sapling_tree: jbyteArray,
@@ -176,9 +160,9 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_initBlocksTable
 
 #[no_mangle]
 pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_getAddress(
-    env: JNIEnv,
-    _: JClass,
-    db_data: JString,
+    env: JNIEnv<'_>,
+    _: JClass<'_>,
+    db_data: JString<'_>,
     account: jint,
 ) -> jstring {
     let db_data: String = env
@@ -208,9 +192,9 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_getAddress(
 
 #[no_mangle]
 pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_getBalance(
-    env: JNIEnv,
-    _: JClass,
-    db_data: JString,
+    env: JNIEnv<'_>,
+    _: JClass<'_>,
+    db_data: JString<'_>,
     account: jint,
 ) -> jlong {
     let db_data: String = env
@@ -235,9 +219,9 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_getBalance(
 
 #[no_mangle]
 pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_getReceivedMemoAsUtf8(
-    env: JNIEnv,
-    _: JClass,
-    db_data: JString,
+    env: JNIEnv<'_>,
+    _: JClass<'_>,
+    db_data: JString<'_>,
     id_note: jlong,
 ) -> jstring {
     let db_data: String = env
@@ -260,9 +244,9 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_getReceivedMemo
 
 #[no_mangle]
 pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_getSentMemoAsUtf8(
-    env: JNIEnv,
-    _: JClass,
-    db_data: JString,
+    env: JNIEnv<'_>,
+    _: JClass<'_>,
+    db_data: JString<'_>,
     id_note: jlong,
 ) -> jstring {
     let db_data: String = env
@@ -285,10 +269,10 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_getSentMemoAsUt
 
 #[no_mangle]
 pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_scanBlocks(
-    env: JNIEnv,
-    _: JClass,
-    db_cache: JString,
-    db_data: JString,
+    env: JNIEnv<'_>,
+    _: JClass<'_>,
+    db_cache: JString<'_>,
+    db_data: JString<'_>,
 ) -> jboolean {
     let db_cache: String = env
         .get_string(db_cache)
@@ -310,16 +294,16 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_scanBlocks(
 
 #[no_mangle]
 pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_sendToAddress(
-    env: JNIEnv,
-    _: JClass,
-    db_data: JString,
+    env: JNIEnv<'_>,
+    _: JClass<'_>,
+    db_data: JString<'_>,
     account: jint,
-    extsk: JString,
-    to: JString,
+    extsk: JString<'_>,
+    to: JString<'_>,
     value: jlong,
-    memo: JString,
-    spend_params: JString,
-    output_params: JString,
+    memo: JString<'_>,
+    spend_params: JString<'_>,
+    output_params: JString<'_>,
 ) -> jlong {
     let db_data: String = env
         .get_string(db_data)
