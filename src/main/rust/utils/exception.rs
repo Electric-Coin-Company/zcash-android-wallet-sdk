@@ -12,16 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use jni::JNIEnv;
+use jni::{errors::Result as JniResult, JNIEnv};
 
 use std::any::Any;
 use std::error::Error;
-use std::result;
 use std::thread;
 
-use JniError;
-
-type ExceptionResult<T> = thread::Result<result::Result<T, JniError>>;
+type ExceptionResult<T> = thread::Result<JniResult<T>>;
 
 // Returns value or "throws" exception. `error_val` is returned, because exception will be thrown
 // at the Java side. So this function should be used only for the `panic::catch_unwind` result.
