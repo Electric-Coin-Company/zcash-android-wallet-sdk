@@ -1,33 +1,15 @@
-extern crate failure;
-
 #[macro_use]
 extern crate log;
 
-extern crate android_logger;
-extern crate ff;
-extern crate jni;
-extern crate log_panics;
-extern crate pairing;
-extern crate protobuf;
-extern crate rand;
-extern crate rusqlite;
-extern crate sapling_crypto;
-extern crate time;
-extern crate zcash_client_backend;
-extern crate zcash_primitives;
-extern crate zip32;
-
-#[cfg(test)]
-extern crate tempfile;
-
 mod sql;
+mod utils;
 
 const SAPLING_CONSENSUS_BRANCH_ID: u32 = 0x76b8_09bb;
 
 use android_logger::Filter;
 use jni::{
     objects::{JClass, JString},
-    sys::{jboolean, jbyteArray, jint, jlong, jobjectArray, jsize, jstring, JNI_FALSE, JNI_TRUE},
+    sys::{jboolean, jbyteArray, jint, jlong, jobjectArray, jstring, JNI_FALSE, JNI_TRUE},
     JNIEnv,
 };
 use log::Level;
@@ -37,11 +19,12 @@ use zcash_client_backend::{
     encoding::{
         decode_extended_spending_key, decode_payment_address, encode_extended_spending_key,
     },
+    keystore::spending_key,
     note_encryption::Memo,
     prover::LocalTxProver,
 };
 use zcash_primitives::transaction::components::Amount;
-use zip32::{ChildIndex, ExtendedFullViewingKey, ExtendedSpendingKey};
+use zip32::ExtendedFullViewingKey;
 
 use crate::sql::{
     get_address, get_balance, init_accounts_table, init_blocks_table, init_data_database,
@@ -49,7 +32,10 @@ use crate::sql::{
 };
 
 #[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_initLogs(_env: JNIEnv, _: JClass) {
+pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_initLogs(
+    _env: JNIEnv<'_>,
+    _: JClass<'_>,
+) {
     android_logger::init_once(
         Filter::default().with_min_level(Level::Trace),
         Some("cash.z.rust.logs"),
@@ -62,14 +48,11 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_initLogs(_env: 
 
 #[no_mangle]
 pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_initDataDb(
-    env: JNIEnv,
-    _: JClass,
-    db_data: JString,
+    env: JNIEnv<'_>,
+    _: JClass<'_>,
+    db_data: JString<'_>,
 ) -> jboolean {
-    let db_data: String = env
-        .get_string(db_data)
-        .expect("Couldn't get Java string!")
-        .into();
+    let db_data = utils::java_string_to_rust(&env, db_data);
 
     match init_data_database(&db_data) {
         Ok(()) => JNI_TRUE,
@@ -82,31 +65,18 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_initDataDb(
 
 #[no_mangle]
 pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_initAccountsTable(
-    env: JNIEnv,
-    _: JClass,
-    db_data: JString,
+    env: JNIEnv<'_>,
+    _: JClass<'_>,
+    db_data: JString<'_>,
     seed: jbyteArray,
     accounts: jint,
 ) -> jobjectArray {
-    let db_data: String = env
-        .get_string(db_data)
-        .expect("Couldn't get Java string!")
-        .into();
+    let db_data = utils::java_string_to_rust(&env, db_data);
     let seed = env.convert_byte_array(seed).unwrap();
 
     let ret = if accounts >= 0 {
-        let master = ExtendedSpendingKey::master(&seed);
         let extsks: Vec<_> = (0..accounts as u32)
-            .map(|account| {
-                ExtendedSpendingKey::from_path(
-                    &master,
-                    &[
-                        ChildIndex::Hardened(32),
-                        ChildIndex::Hardened(1),
-                        ChildIndex::Hardened(account),
-                    ],
-                )
-            })
+            .map(|account| spending_key(&seed, 1, account))
             .collect();
         let extfvks: Vec<_> = extsks.iter().map(ExtendedFullViewingKey::from).collect();
 
@@ -127,36 +97,30 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_initAccountsTab
         vec![]
     };
 
-    let jempty = env.new_string("").expect("Couldn't create Java string!");
-    let jret = env
-        .new_object_array(ret.len() as jsize, "java/lang/String", *jempty)
-        .expect("Couldn't create Java array!");
-    for (i, extsk) in ret.into_iter().enumerate() {
-        let jextsk = env
-            .new_string(encode_extended_spending_key(
+    utils::rust_vec_to_java(
+        &env,
+        ret,
+        "java/lang/String",
+        |env, extsk| {
+            env.new_string(encode_extended_spending_key(
                 HRP_SAPLING_EXTENDED_SPENDING_KEY_TEST,
                 &extsk,
             ))
-            .expect("Couldn't create Java string!");
-        env.set_object_array_element(jret, i as jsize, *jextsk)
-            .expect("Couldn't set Java array element!");
-    }
-    jret
+        },
+        |env| env.new_string(""),
+    )
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_initBlocksTable(
-    env: JNIEnv,
-    _: JClass,
-    db_data: JString,
+    env: JNIEnv<'_>,
+    _: JClass<'_>,
+    db_data: JString<'_>,
     height: jint,
     time: jlong,
     sapling_tree: jbyteArray,
 ) -> jboolean {
-    let db_data: String = env
-        .get_string(db_data)
-        .expect("Couldn't get Java string!")
-        .into();
+    let db_data = utils::java_string_to_rust(&env, db_data);
     let time = if time >= 0 && time <= jlong::from(u32::max_value()) {
         time as u32
     } else {
@@ -176,15 +140,12 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_initBlocksTable
 
 #[no_mangle]
 pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_getAddress(
-    env: JNIEnv,
-    _: JClass,
-    db_data: JString,
+    env: JNIEnv<'_>,
+    _: JClass<'_>,
+    db_data: JString<'_>,
     account: jint,
 ) -> jstring {
-    let db_data: String = env
-        .get_string(db_data)
-        .expect("Couldn't get Java string!")
-        .into();
+    let db_data = utils::java_string_to_rust(&env, db_data);
 
     let addr = match account {
         acc if acc >= 0 => match get_address(&db_data, acc as u32) {
@@ -208,15 +169,12 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_getAddress(
 
 #[no_mangle]
 pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_getBalance(
-    env: JNIEnv,
-    _: JClass,
-    db_data: JString,
+    env: JNIEnv<'_>,
+    _: JClass<'_>,
+    db_data: JString<'_>,
     account: jint,
 ) -> jlong {
-    let db_data: String = env
-        .get_string(db_data)
-        .expect("Couldn't get Java string!")
-        .into();
+    let db_data = utils::java_string_to_rust(&env, db_data);
     let account = if account >= 0 {
         account as u32
     } else {
@@ -235,15 +193,12 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_getBalance(
 
 #[no_mangle]
 pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_getReceivedMemoAsUtf8(
-    env: JNIEnv,
-    _: JClass,
-    db_data: JString,
+    env: JNIEnv<'_>,
+    _: JClass<'_>,
+    db_data: JString<'_>,
     id_note: jlong,
 ) -> jstring {
-    let db_data: String = env
-        .get_string(db_data)
-        .expect("Couldn't get Java string!")
-        .into();
+    let db_data = utils::java_string_to_rust(&env, db_data);
 
     let memo = match crate::sql::get_received_memo_as_utf8(db_data, id_note) {
         Ok(memo) => memo.unwrap_or_default(),
@@ -260,15 +215,12 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_getReceivedMemo
 
 #[no_mangle]
 pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_getSentMemoAsUtf8(
-    env: JNIEnv,
-    _: JClass,
-    db_data: JString,
+    env: JNIEnv<'_>,
+    _: JClass<'_>,
+    db_data: JString<'_>,
     id_note: jlong,
 ) -> jstring {
-    let db_data: String = env
-        .get_string(db_data)
-        .expect("Couldn't get Java string!")
-        .into();
+    let db_data = utils::java_string_to_rust(&env, db_data);
 
     let memo = match crate::sql::get_sent_memo_as_utf8(db_data, id_note) {
         Ok(memo) => memo.unwrap_or_default(),
@@ -285,19 +237,13 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_getSentMemoAsUt
 
 #[no_mangle]
 pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_scanBlocks(
-    env: JNIEnv,
-    _: JClass,
-    db_cache: JString,
-    db_data: JString,
+    env: JNIEnv<'_>,
+    _: JClass<'_>,
+    db_cache: JString<'_>,
+    db_data: JString<'_>,
 ) -> jboolean {
-    let db_cache: String = env
-        .get_string(db_cache)
-        .expect("Couldn't get Java string!")
-        .into();
-    let db_data: String = env
-        .get_string(db_data)
-        .expect("Couldn't get Java string!")
-        .into();
+    let db_cache = utils::java_string_to_rust(&env, db_cache);
+    let db_data = utils::java_string_to_rust(&env, db_data);
 
     match scan_cached_blocks(&db_cache, &db_data) {
         Ok(()) => JNI_TRUE,
@@ -310,48 +256,30 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_scanBlocks(
 
 #[no_mangle]
 pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_sendToAddress(
-    env: JNIEnv,
-    _: JClass,
-    db_data: JString,
+    env: JNIEnv<'_>,
+    _: JClass<'_>,
+    db_data: JString<'_>,
     account: jint,
-    extsk: JString,
-    to: JString,
+    extsk: JString<'_>,
+    to: JString<'_>,
     value: jlong,
-    memo: JString,
-    spend_params: JString,
-    output_params: JString,
+    memo: JString<'_>,
+    spend_params: JString<'_>,
+    output_params: JString<'_>,
 ) -> jlong {
-    let db_data: String = env
-        .get_string(db_data)
-        .expect("Couldn't get Java string!")
-        .into();
+    let db_data = utils::java_string_to_rust(&env, db_data);
     let account = if account >= 0 {
         account as u32
     } else {
         error!("account argument must be positive");
         return -1;
     };
-    let extsk: String = env
-        .get_string(extsk)
-        .expect("Couldn't get Java string!")
-        .into();
-    let to: String = env
-        .get_string(to)
-        .expect("Couldn't get Java string!")
-        .into();
+    let extsk = utils::java_string_to_rust(&env, extsk);
+    let to = utils::java_string_to_rust(&env, to);
     let value = Amount(value);
-    let memo: String = env
-        .get_string(memo)
-        .expect("Couldn't get Java string!")
-        .into();
-    let spend_params: String = env
-        .get_string(spend_params)
-        .expect("Couldn't get Java string!")
-        .into();
-    let output_params: String = env
-        .get_string(output_params)
-        .expect("Couldn't get Java string!")
-        .into();
+    let memo = utils::java_string_to_rust(&env, memo);
+    let spend_params = utils::java_string_to_rust(&env, spend_params);
+    let output_params = utils::java_string_to_rust(&env, output_params);
 
     let extsk = match decode_extended_spending_key(HRP_SAPLING_EXTENDED_SPENDING_KEY_TEST, &extsk) {
         Ok(extsk) => extsk,
