@@ -9,7 +9,7 @@ const SAPLING_CONSENSUS_BRANCH_ID: u32 = 0x76b8_09bb;
 use android_logger::Filter;
 use jni::{
     objects::{JClass, JString},
-    sys::{jboolean, jbyteArray, jint, jlong, jobjectArray, jsize, jstring, JNI_FALSE, JNI_TRUE},
+    sys::{jboolean, jbyteArray, jint, jlong, jobjectArray, jstring, JNI_FALSE, JNI_TRUE},
     JNIEnv,
 };
 use log::Level;
@@ -97,21 +97,18 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_initAccountsTab
         vec![]
     };
 
-    let jempty = env.new_string("").expect("Couldn't create Java string!");
-    let jret = env
-        .new_object_array(ret.len() as jsize, "java/lang/String", *jempty)
-        .expect("Couldn't create Java array!");
-    for (i, extsk) in ret.into_iter().enumerate() {
-        let jextsk = env
-            .new_string(encode_extended_spending_key(
+    utils::rust_vec_to_java(
+        &env,
+        ret,
+        "java/lang/String",
+        |env, extsk| {
+            env.new_string(encode_extended_spending_key(
                 HRP_SAPLING_EXTENDED_SPENDING_KEY_TEST,
                 &extsk,
             ))
-            .expect("Couldn't create Java string!");
-        env.set_object_array_element(jret, i as jsize, *jextsk)
-            .expect("Couldn't set Java array element!");
-    }
-    jret
+        },
+        |env| env.new_string(""),
+    )
 }
 
 #[no_mangle]
