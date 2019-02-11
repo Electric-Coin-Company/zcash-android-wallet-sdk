@@ -7,6 +7,7 @@ use sapling_crypto::{
     jubjub::fs::{Fs, FsRepr},
     primitives::{Diversifier, Note, PaymentAddress},
 };
+use std::path::Path;
 use zcash_client_backend::{
     constants::{HRP_SAPLING_EXTENDED_FULL_VIEWING_KEY_TEST, HRP_SAPLING_PAYMENT_ADDRESS_TEST},
     encoding::{
@@ -32,7 +33,19 @@ fn address_from_extfvk(extfvk: &ExtendedFullViewingKey) -> String {
     encode_payment_address(HRP_SAPLING_PAYMENT_ADDRESS_TEST, &addr)
 }
 
-pub fn init_data_database(db_data: &str) -> rusqlite::Result<()> {
+pub fn init_cache_database<P: AsRef<Path>>(db_cache: P) -> rusqlite::Result<()> {
+    let cache = Connection::open(db_cache)?;
+    cache.execute(
+        "CREATE TABLE IF NOT EXISTS compactblocks (
+            height INTEGER PRIMARY KEY,
+            data BLOB NOT NULL
+        )",
+        NO_PARAMS,
+    )?;
+    Ok(())
+}
+
+pub fn init_data_database<P: AsRef<Path>>(db_data: P) -> rusqlite::Result<()> {
     let data = Connection::open(db_data)?;
     data.execute(
         "CREATE TABLE IF NOT EXISTS accounts (
@@ -54,8 +67,10 @@ pub fn init_data_database(db_data: &str) -> rusqlite::Result<()> {
         "CREATE TABLE IF NOT EXISTS transactions (
             id_tx INTEGER PRIMARY KEY,
             txid BLOB NOT NULL UNIQUE,
+            created TEXT,
             block INTEGER,
             tx_index INTEGER,
+            expiry_height INTEGER,
             raw BLOB,
             FOREIGN KEY (block) REFERENCES blocks(height)
         )",
@@ -111,7 +126,10 @@ pub fn init_data_database(db_data: &str) -> rusqlite::Result<()> {
     Ok(())
 }
 
-pub fn init_accounts_table(db_data: &str, extfvks: &[ExtendedFullViewingKey]) -> Result<(), Error> {
+pub fn init_accounts_table<P: AsRef<Path>>(
+    db_data: P,
+    extfvks: &[ExtendedFullViewingKey],
+) -> Result<(), Error> {
     let data = Connection::open(db_data)?;
 
     let mut empty_check = data.prepare("SELECT * FROM accounts LIMIT 1")?;
@@ -140,8 +158,8 @@ pub fn init_accounts_table(db_data: &str, extfvks: &[ExtendedFullViewingKey]) ->
     Ok(())
 }
 
-pub fn init_blocks_table(
-    db_data: &str,
+pub fn init_blocks_table<P: AsRef<Path>>(
+    db_data: P,
     height: i32,
     time: u32,
     sapling_tree: &[u8],
@@ -173,7 +191,7 @@ struct WitnessRow {
     witness: IncrementalWitness,
 }
 
-pub fn get_address(db_data: &str, account: u32) -> Result<String, Error> {
+pub fn get_address<P: AsRef<Path>>(db_data: P, account: u32) -> Result<String, Error> {
     let data = Connection::open(db_data)?;
 
     let addr = data.query_row(
@@ -186,7 +204,7 @@ pub fn get_address(db_data: &str, account: u32) -> Result<String, Error> {
     Ok(addr)
 }
 
-pub fn get_balance(db_data: &str, account: u32) -> Result<Amount, Error> {
+pub fn get_balance<P: AsRef<Path>>(db_data: P, account: u32) -> Result<Amount, Error> {
     let data = Connection::open(db_data)?;
 
     let balance = data.query_row(
@@ -199,11 +217,46 @@ pub fn get_balance(db_data: &str, account: u32) -> Result<Amount, Error> {
     Ok(Amount(balance))
 }
 
+pub fn get_received_memo_as_utf8<P: AsRef<Path>>(
+    db_data: P,
+    id_note: i64,
+) -> Result<Option<String>, Error> {
+    let data = Connection::open(db_data)?;
+
+    let memo: Vec<_> = data.query_row(
+        "SELECT memo FROM received_notes
+        WHERE id_note = ?",
+        &[id_note],
+        |row| row.get(0),
+    )?;
+
+    Memo::from_bytes(&memo).and_then(|memo| memo.to_utf8())
+}
+
+pub fn get_sent_memo_as_utf8<P: AsRef<Path>>(
+    db_data: P,
+    id_note: i64,
+) -> Result<Option<String>, Error> {
+    let data = Connection::open(db_data)?;
+
+    let memo: Vec<_> = data.query_row(
+        "SELECT memo FROM sent_notes
+        WHERE id_note = ?",
+        &[id_note],
+        |row| row.get(0),
+    )?;
+
+    Memo::from_bytes(&memo).and_then(|memo| memo.to_utf8())
+}
+
 /// Scans new blocks added to the cache for any transactions received by the
 /// tracked accounts.
 ///
 /// Assumes that the caller is handling rollbacks.
-pub fn scan_cached_blocks(db_cache: &str, db_data: &str) -> Result<(), Error> {
+pub fn scan_cached_blocks<P: AsRef<Path>, Q: AsRef<Path>>(
+    db_cache: P,
+    db_data: Q,
+) -> Result<(), Error> {
     let cache = Connection::open(db_cache)?;
     let data = Connection::open(db_data)?;
 
@@ -272,21 +325,21 @@ pub fn scan_cached_blocks(db_cache: &str, db_data: &str) -> Result<(), Error> {
     let mut tree = match stmt_fetch_tree.query_row(&[last_height], |row| match row.get_checked(0) {
         Ok(data) => {
             let data: Vec<_> = data;
-            CommitmentTree::read(&data[..]).unwrap()
+            CommitmentTree::read(&data[..])
         }
-        Err(_) => CommitmentTree::new(),
+        Err(_) => Ok(CommitmentTree::new()),
     }) {
         Ok(tree) => tree,
-        Err(_) => CommitmentTree::new(),
-    };
+        Err(_) => Ok(CommitmentTree::new()),
+    }?;
 
     // Get most recent incremental witnesses for the notes we are tracking
     let witnesses = stmt_fetch_witnesses.query_map(&[last_height], |row| {
         let data: Vec<_> = row.get(1);
-        WitnessRow {
+        IncrementalWitness::read(&data[..]).map(|witness| WitnessRow {
             id_note: row.get(0),
-            witness: IncrementalWitness::read(&data[..]).unwrap(),
-        }
+            witness,
+        })
     })?;
     let mut witnesses: Vec<_> = witnesses.collect::<Result<_, _>>()?;
 
@@ -334,7 +387,8 @@ pub fn scan_cached_blocks(db_cache: &str, db_data: &str) -> Result<(), Error> {
 
         // Insert the block into the database.
         let mut encoded_tree = Vec::new();
-        tree.write(&mut encoded_tree).unwrap();
+        tree.write(&mut encoded_tree)
+            .expect("Should be able to write to a Vec");
         stmt_insert_block.execute(&[
             row.height.to_sql()?,
             block_time.to_sql()?,
@@ -420,7 +474,10 @@ pub fn scan_cached_blocks(db_cache: &str, db_data: &str) -> Result<(), Error> {
         let mut encoded = Vec::new();
         for witness_row in witnesses.iter() {
             encoded.clear();
-            witness_row.witness.write(&mut encoded).unwrap();
+            witness_row
+                .witness
+                .write(&mut encoded)
+                .expect("Should be able to write to a Vec");
             stmt_insert_witness.execute(&[
                 witness_row.id_note.to_sql()?,
                 last_height.to_sql()?,
@@ -445,8 +502,8 @@ struct SelectedNoteRow {
 }
 
 /// Creates a transaction paying the specified address.
-pub fn send_to_address(
-    db_data: &str,
+pub fn send_to_address<P: AsRef<Path>>(
+    db_data: P,
     consensus_branch_id: u32,
     prover: impl TxProver,
     (account, extsk): (u32, &ExtendedSpendingKey),
@@ -573,21 +630,30 @@ pub fn send_to_address(
     builder.add_sapling_output(ovk, to.clone(), value, memo.clone())?;
     let (tx, tx_metadata) = builder.build(consensus_branch_id, prover)?;
     // We only called add_sapling_output() once.
-    let output_index = tx_metadata.output_index(0).unwrap() as i64;
+    let output_index = match tx_metadata.output_index(0) {
+        Some(idx) => idx as i64,
+        None => panic!("Output 0 should exist in the transaction"),
+    };
+    let created = time::get_time();
 
     // Save the transaction in the database.
     let mut raw_tx = vec![];
     tx.write(&mut raw_tx)?;
     let mut stmt_insert_tx = data.prepare(
-        "INSERT INTO transactions (txid, raw)
-        VALUES (?, ?)",
+        "INSERT INTO transactions (txid, created, expiry_height, raw)
+        VALUES (?, ?, ?, ?)",
     )?;
-    stmt_insert_tx.execute(&[&tx.txid().0[..], &raw_tx[..]])?;
+    stmt_insert_tx.execute(&[
+        tx.txid().0.to_sql()?,
+        created.to_sql()?,
+        tx.expiry_height.to_sql()?,
+        raw_tx.to_sql()?,
+    ])?;
     let id_tx = data.last_insert_rowid();
 
     // Save the sent note in the database.
     let to_str = encode_payment_address(HRP_SAPLING_PAYMENT_ADDRESS_TEST, to);
-    if memo.is_some() {
+    if let Some(memo) = memo {
         let mut stmt_insert_sent_note = data.prepare(
             "INSERT INTO sent_notes (tx, output_index, from_account, address, value, memo)
             VALUES (?, ?, ?, ?, ?, ?)",
@@ -598,7 +664,7 @@ pub fn send_to_address(
             account.to_sql()?,
             to_str.to_sql()?,
             value.0.to_sql()?,
-            memo.unwrap().as_bytes().to_sql()?,
+            memo.as_bytes().to_sql()?,
         ])?;
     } else {
         let mut stmt_insert_sent_note = data.prepare(
@@ -616,4 +682,303 @@ pub fn send_to_address(
 
     // Return the row number of the transaction, so the caller can fetch it for sending.
     Ok(id_tx)
+}
+
+#[cfg(test)]
+mod tests {
+    use ff::{PrimeField, PrimeFieldRepr};
+    use pairing::bls12_381::Bls12;
+    use protobuf::Message;
+    use rand::{thread_rng, Rand, Rng};
+    use rusqlite::{types::ToSql, Connection};
+    use sapling_crypto::{
+        jubjub::fs::Fs,
+        primitives::{Note, PaymentAddress},
+    };
+    use std::path::Path;
+    use tempfile::NamedTempFile;
+    use zcash_client_backend::{
+        constants::HRP_SAPLING_PAYMENT_ADDRESS_TEST,
+        encoding::decode_payment_address,
+        note_encryption::{Memo, SaplingNoteEncryption},
+        proto::compact_formats::{CompactBlock, CompactOutput, CompactSpend, CompactTx},
+    };
+    use zcash_primitives::{transaction::components::Amount, JUBJUB};
+    use zip32::{ExtendedFullViewingKey, ExtendedSpendingKey};
+
+    use super::{
+        get_address, get_balance, init_accounts_table, init_blocks_table, init_cache_database,
+        init_data_database, scan_cached_blocks,
+    };
+
+    /// Create a fake CompactBlock at the given height, containing a single output paying
+    /// the given address. Returns the CompactBlock and the nullifier for the new note.
+    fn fake_compact_block(
+        height: i32,
+        extfvk: ExtendedFullViewingKey,
+        value: Amount,
+    ) -> (CompactBlock, Vec<u8>) {
+        let to = extfvk.default_address().unwrap().1;
+
+        // Create a fake Note for the account
+        let mut rng = thread_rng();
+        let note = Note {
+            g_d: to.diversifier.g_d::<Bls12>(&JUBJUB).unwrap(),
+            pk_d: to.pk_d.clone(),
+            value: value.0 as u64,
+            r: Fs::rand(&mut rng),
+        };
+        let encryptor =
+            SaplingNoteEncryption::new(extfvk.fvk.ovk, note.clone(), to.clone(), Memo::default());
+        let mut cmu = vec![];
+        note.cm(&JUBJUB).into_repr().write_le(&mut cmu).unwrap();
+        let mut epk = vec![];
+        encryptor.epk().write(&mut epk).unwrap();
+        let enc_ciphertext = encryptor.encrypt_note_plaintext();
+
+        // Create a fake CompactBlock containing the note
+        let mut cout = CompactOutput::new();
+        cout.set_cmu(cmu);
+        cout.set_epk(epk);
+        cout.set_ciphertext(enc_ciphertext[..52].to_vec());
+        let mut ctx = CompactTx::new();
+        let mut txid = vec![0; 32];
+        rng.fill_bytes(&mut txid);
+        ctx.set_hash(txid);
+        ctx.outputs.push(cout);
+        let mut cb = CompactBlock::new();
+        cb.set_height(height as u64);
+        cb.vtx.push(ctx);
+        (cb, note.nf(&extfvk.fvk.vk, 0, &JUBJUB))
+    }
+
+    /// Create a fake CompactBlock at the given height, spending a single note from the
+    /// given address.
+    fn fake_compact_block_spending(
+        height: i32,
+        (nf, in_value): (Vec<u8>, Amount),
+        extfvk: ExtendedFullViewingKey,
+        to: PaymentAddress<Bls12>,
+        value: Amount,
+    ) -> CompactBlock {
+        let mut rng = thread_rng();
+
+        // Create a fake CompactBlock containing the note
+        let mut cspend = CompactSpend::new();
+        cspend.set_nf(nf);
+        let mut ctx = CompactTx::new();
+        let mut txid = vec![0; 32];
+        rng.fill_bytes(&mut txid);
+        ctx.set_hash(txid);
+        ctx.spends.push(cspend);
+
+        // Create a fake Note for the payment
+        ctx.outputs.push({
+            let note = Note {
+                g_d: to.diversifier.g_d::<Bls12>(&JUBJUB).unwrap(),
+                pk_d: to.pk_d.clone(),
+                value: value.0 as u64,
+                r: Fs::rand(&mut rng),
+            };
+            let encryptor =
+                SaplingNoteEncryption::new(extfvk.fvk.ovk, note.clone(), to, Memo::default());
+            let mut cmu = vec![];
+            note.cm(&JUBJUB).into_repr().write_le(&mut cmu).unwrap();
+            let mut epk = vec![];
+            encryptor.epk().write(&mut epk).unwrap();
+            let enc_ciphertext = encryptor.encrypt_note_plaintext();
+
+            let mut cout = CompactOutput::new();
+            cout.set_cmu(cmu);
+            cout.set_epk(epk);
+            cout.set_ciphertext(enc_ciphertext[..52].to_vec());
+            cout
+        });
+
+        // Create a fake Note for the change
+        ctx.outputs.push({
+            let change_addr = extfvk.default_address().unwrap().1;
+            let note = Note {
+                g_d: change_addr.diversifier.g_d::<Bls12>(&JUBJUB).unwrap(),
+                pk_d: change_addr.pk_d.clone(),
+                value: (in_value.0 - value.0) as u64,
+                r: Fs::rand(&mut rng),
+            };
+            let encryptor = SaplingNoteEncryption::new(
+                extfvk.fvk.ovk,
+                note.clone(),
+                change_addr,
+                Memo::default(),
+            );
+            let mut cmu = vec![];
+            note.cm(&JUBJUB).into_repr().write_le(&mut cmu).unwrap();
+            let mut epk = vec![];
+            encryptor.epk().write(&mut epk).unwrap();
+            let enc_ciphertext = encryptor.encrypt_note_plaintext();
+
+            let mut cout = CompactOutput::new();
+            cout.set_cmu(cmu);
+            cout.set_epk(epk);
+            cout.set_ciphertext(enc_ciphertext[..52].to_vec());
+            cout
+        });
+
+        let mut cb = CompactBlock::new();
+        cb.set_height(height as u64);
+        cb.vtx.push(ctx);
+        cb
+    }
+
+    /// Insert a fake CompactBlock into the cache DB.
+    fn insert_into_cache<P: AsRef<Path>>(db_cache: P, cb: &CompactBlock) {
+        let cb_bytes = cb.write_to_bytes().unwrap();
+        let cache = Connection::open(&db_cache).unwrap();
+        cache
+            .prepare("INSERT INTO compactblocks (height, data) VALUES (?, ?)")
+            .unwrap()
+            .execute(&[
+                (cb.height as i32).to_sql().unwrap(),
+                cb_bytes.to_sql().unwrap(),
+            ])
+            .unwrap();
+    }
+
+    #[test]
+    fn init_accounts_table_only_works_once() {
+        let data_file = NamedTempFile::new().unwrap();
+        let db_data = data_file.path();
+        init_data_database(&db_data).unwrap();
+
+        // We can call the function as many times as we want with no data
+        init_accounts_table(&db_data, &[]).unwrap();
+        init_accounts_table(&db_data, &[]).unwrap();
+
+        // First call with data should initialise the accounts table
+        let extfvks = [ExtendedFullViewingKey::from(&ExtendedSpendingKey::master(
+            &[],
+        ))];
+        init_accounts_table(&db_data, &extfvks).unwrap();
+
+        // Subsequent calls should return an error
+        init_accounts_table(&db_data, &[]).unwrap_err();
+        init_accounts_table(&db_data, &extfvks).unwrap_err();
+    }
+
+    #[test]
+    fn init_blocks_table_only_works_once() {
+        let data_file = NamedTempFile::new().unwrap();
+        let db_data = data_file.path();
+        init_data_database(&db_data).unwrap();
+
+        // First call with data should initialise the blocks table
+        init_blocks_table(&db_data, 1, 1, &[]).unwrap();
+
+        // Subsequent calls should return an error
+        init_blocks_table(&db_data, 2, 2, &[]).unwrap_err();
+    }
+
+    #[test]
+    fn init_accounts_table_stores_correct_address() {
+        let data_file = NamedTempFile::new().unwrap();
+        let db_data = data_file.path();
+        init_data_database(&db_data).unwrap();
+
+        // Add an account to the wallet
+        let extsk = ExtendedSpendingKey::master(&[]);
+        let extfvks = [ExtendedFullViewingKey::from(&extsk)];
+        init_accounts_table(&db_data, &extfvks).unwrap();
+
+        // The account's address should be in the data DB
+        let addr = get_address(&db_data, 0).unwrap();
+        let pa = decode_payment_address(HRP_SAPLING_PAYMENT_ADDRESS_TEST, &addr).unwrap();
+        assert_eq!(pa, extsk.default_address().unwrap().1);
+    }
+
+    #[test]
+    fn scan_cached_blocks_finds_received_notes() {
+        let cache_file = NamedTempFile::new().unwrap();
+        let db_cache = cache_file.path();
+        init_cache_database(&db_cache).unwrap();
+
+        let data_file = NamedTempFile::new().unwrap();
+        let db_data = data_file.path();
+        init_data_database(&db_data).unwrap();
+
+        // Add an account to the wallet
+        let extsk = ExtendedSpendingKey::master(&[]);
+        let extfvk = ExtendedFullViewingKey::from(&extsk);
+        init_accounts_table(&db_data, &[extfvk.clone()]).unwrap();
+
+        // Account balance should be zero
+        assert_eq!(get_balance(db_data, 0).unwrap(), Amount(0));
+
+        // Create a fake CompactBlock sending value to the address
+        let value = Amount(5);
+        let (cb, _) = fake_compact_block(1, extfvk.clone(), value);
+        insert_into_cache(db_cache, &cb);
+
+        // Scan the cache
+        scan_cached_blocks(db_cache, db_data).unwrap();
+
+        // Account balance should reflect the received note
+        assert_eq!(get_balance(db_data, 0).unwrap(), value);
+
+        // Create a second fake CompactBlock sending more value to the address
+        let value2 = Amount(7);
+        let (cb2, _) = fake_compact_block(2, extfvk, value2);
+        insert_into_cache(db_cache, &cb2);
+
+        // Scan the cache again
+        scan_cached_blocks(db_cache, db_data).unwrap();
+
+        // Account balance should reflect both received notes
+        // TODO: impl Sum for Amount
+        assert_eq!(get_balance(db_data, 0).unwrap(), Amount(value.0 + value2.0));
+    }
+
+    #[test]
+    fn scan_cached_blocks_finds_change_notes() {
+        let cache_file = NamedTempFile::new().unwrap();
+        let db_cache = cache_file.path();
+        init_cache_database(&db_cache).unwrap();
+
+        let data_file = NamedTempFile::new().unwrap();
+        let db_data = data_file.path();
+        init_data_database(&db_data).unwrap();
+
+        // Add an account to the wallet
+        let extsk = ExtendedSpendingKey::master(&[]);
+        let extfvk = ExtendedFullViewingKey::from(&extsk);
+        init_accounts_table(&db_data, &[extfvk.clone()]).unwrap();
+
+        // Account balance should be zero
+        assert_eq!(get_balance(db_data, 0).unwrap(), Amount(0));
+
+        // Create a fake CompactBlock sending value to the address
+        let value = Amount(5);
+        let (cb, nf) = fake_compact_block(1, extfvk.clone(), value);
+        insert_into_cache(db_cache, &cb);
+
+        // Scan the cache
+        scan_cached_blocks(db_cache, db_data).unwrap();
+
+        // Account balance should reflect the received note
+        assert_eq!(get_balance(db_data, 0).unwrap(), value);
+
+        // Create a second fake CompactBlock spending value from the address
+        let extsk2 = ExtendedSpendingKey::master(&[0]);
+        let to2 = extsk2.default_address().unwrap().1;
+        let value2 = Amount(2);
+        insert_into_cache(
+            db_cache,
+            &fake_compact_block_spending(2, (nf, value), extfvk, to2, value2),
+        );
+
+        // Scan the cache again
+        scan_cached_blocks(db_cache, db_data).unwrap();
+
+        // Account balance should equal the change
+        // TODO: impl Sum for Amount
+        assert_eq!(get_balance(db_data, 0).unwrap(), Amount(value.0 - value2.0));
+    }
 }

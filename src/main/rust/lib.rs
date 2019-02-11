@@ -9,11 +9,16 @@ extern crate jni;
 extern crate log_panics;
 extern crate pairing;
 extern crate protobuf;
+extern crate rand;
 extern crate rusqlite;
 extern crate sapling_crypto;
+extern crate time;
 extern crate zcash_client_backend;
 extern crate zcash_primitives;
 extern crate zip32;
+
+#[cfg(test)]
+extern crate tempfile;
 
 mod sql;
 
@@ -229,6 +234,56 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_getBalance(
 }
 
 #[no_mangle]
+pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_getReceivedMemoAsUtf8(
+    env: JNIEnv,
+    _: JClass,
+    db_data: JString,
+    id_note: jlong,
+) -> jstring {
+    let db_data: String = env
+        .get_string(db_data)
+        .expect("Couldn't get Java string!")
+        .into();
+
+    let memo = match crate::sql::get_received_memo_as_utf8(db_data, id_note) {
+        Ok(memo) => memo.unwrap_or_default(),
+        Err(e) => {
+            error!("Error while fetching memo: {}", e);
+            // Return an empty string to indicate an error
+            String::default()
+        }
+    };
+
+    let output = env.new_string(memo).expect("Couldn't create Java string!");
+    output.into_inner()
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_getSentMemoAsUtf8(
+    env: JNIEnv,
+    _: JClass,
+    db_data: JString,
+    id_note: jlong,
+) -> jstring {
+    let db_data: String = env
+        .get_string(db_data)
+        .expect("Couldn't get Java string!")
+        .into();
+
+    let memo = match crate::sql::get_sent_memo_as_utf8(db_data, id_note) {
+        Ok(memo) => memo.unwrap_or_default(),
+        Err(e) => {
+            error!("Error while fetching memo: {}", e);
+            // Return an empty string to indicate an error
+            String::default()
+        }
+    };
+
+    let output = env.new_string(memo).expect("Couldn't create Java string!");
+    output.into_inner()
+}
+
+#[no_mangle]
 pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_scanBlocks(
     env: JNIEnv,
     _: JClass,
@@ -316,8 +371,8 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_sendToAddress(
 
     let memo = match Memo::from_str(&memo) {
         Ok(memo) => Some(memo),
-        Err(()) => {
-            error!("Memo is too long");
+        Err(e) => {
+            error!("{}", e);
             return -1;
         }
     };

@@ -11,38 +11,53 @@ publish = false
 [dependencies]
 android_logger = "0.6"
 failure = "0.1"
+futures = { version = "0.1", optional = true }
+grpc = { version = "0.6", optional = true }
+hex = { version = "0.3", optional = true }
 jni = { version = "0.10", default-features = false }
 log = "0.4"
 log-panics = "2.0.0"
 protobuf = "2"
 rand = "0.4"
 rusqlite = { version = "0.15", features = ["bundled"] }
+time = "0.1"
 
 [dependencies.ff]
 git = "https://github.com/str4d/librustzcash.git"
-rev = "89cfef8515d5d88809c485a44fdc54572b9e5666"
+rev = "669df0fa7b2fbd8e1d2ee78d7f0c6544ea04bfd3"
 
 [dependencies.pairing]
 git = "https://github.com/str4d/librustzcash.git"
-rev = "89cfef8515d5d88809c485a44fdc54572b9e5666"
+rev = "669df0fa7b2fbd8e1d2ee78d7f0c6544ea04bfd3"
 
 [dependencies.sapling-crypto]
 git = "https://github.com/str4d/librustzcash.git"
-rev = "89cfef8515d5d88809c485a44fdc54572b9e5666"
+rev = "669df0fa7b2fbd8e1d2ee78d7f0c6544ea04bfd3"
 
 [dependencies.zcash_client_backend]
 git = "https://github.com/str4d/librustzcash.git"
-rev = "89cfef8515d5d88809c485a44fdc54572b9e5666"
+rev = "669df0fa7b2fbd8e1d2ee78d7f0c6544ea04bfd3"
 
 [dependencies.zcash_primitives]
 git = "https://github.com/str4d/librustzcash.git"
-rev = "89cfef8515d5d88809c485a44fdc54572b9e5666"
+rev = "669df0fa7b2fbd8e1d2ee78d7f0c6544ea04bfd3"
 
 [dependencies.zip32]
 git = "https://github.com/str4d/librustzcash.git"
-rev = "89cfef8515d5d88809c485a44fdc54572b9e5666"
+rev = "669df0fa7b2fbd8e1d2ee78d7f0c6544ea04bfd3"
+
+[dev-dependencies]
+tempfile = "3"
+
+[features]
+updater = ["futures", "grpc", "hex"]
 
 [lib]
 name = "zcashwalletsdk"
 path = "src/main/rust/lib.rs"
 crate-type = ["staticlib", "cdylib"]
+
+[[bin]]
+name = "update-sapling-tree"
+path = "src/main/rust/bin/update_sapling_tree.rs"
+required-features = ["updater"]
