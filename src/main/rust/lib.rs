@@ -18,11 +18,12 @@ use zcash_client_backend::{
     encoding::{
         decode_extended_spending_key, decode_payment_address, encode_extended_spending_key,
     },
+    keystore::spending_key,
     note_encryption::Memo,
     prover::LocalTxProver,
 };
 use zcash_primitives::transaction::components::Amount;
-use zip32::{ChildIndex, ExtendedFullViewingKey, ExtendedSpendingKey};
+use zip32::ExtendedFullViewingKey;
 
 use crate::sql::{
     get_address, get_balance, init_accounts_table, init_blocks_table, init_data_database,
@@ -79,18 +80,8 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_initAccountsTab
     let seed = env.convert_byte_array(seed).unwrap();
 
     let ret = if accounts >= 0 {
-        let master = ExtendedSpendingKey::master(&seed);
         let extsks: Vec<_> = (0..accounts as u32)
-            .map(|account| {
-                ExtendedSpendingKey::from_path(
-                    &master,
-                    &[
-                        ChildIndex::Hardened(32),
-                        ChildIndex::Hardened(1),
-                        ChildIndex::Hardened(account),
-                    ],
-                )
-            })
+            .map(|account| spending_key(&seed, 1, account))
             .collect();
         let extfvks: Vec<_> = extsks.iter().map(ExtendedFullViewingKey::from).collect();
 
