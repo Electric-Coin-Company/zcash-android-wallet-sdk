@@ -12,13 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use jni::{errors::Result as JniResult, JNIEnv};
-
+use failure::Error;
+use jni::JNIEnv;
 use std::any::Any;
-use std::error::Error;
 use std::thread;
 
-type ExceptionResult<T> = thread::Result<JniResult<T>>;
+type ExceptionResult<T> = thread::Result<Result<T, Error>>;
 
 // Returns value or "throws" exception. `error_val` is returned, because exception will be thrown
 // at the Java side. So this function should be used only for the `panic::catch_unwind` result.
@@ -78,7 +77,7 @@ pub fn any_to_string(any: &Box<Any + Send>) -> String {
         s.to_string()
     } else if let Some(s) = any.downcast_ref::<String>() {
         s.clone()
-    } else if let Some(error) = any.downcast_ref::<Box<Error + Send>>() {
+    } else if let Some(error) = any.downcast_ref::<Box<std::error::Error + Send>>() {
         error.description().to_string()
     } else {
         "Unknown error occurred".to_string()
