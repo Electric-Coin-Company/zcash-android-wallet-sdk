@@ -341,7 +341,7 @@ pub fn scan_cached_blocks<P: AsRef<Path>, Q: AsRef<Path>>(
             witness,
         })
     })?;
-    let mut witnesses: Vec<_> = witnesses.collect::<Result<_, _>>()?;
+    let mut witnesses: Vec<_> = witnesses.collect::<Result<Result<_, _>, _>>()??;
 
     // Get the nullifiers for the notes we are tracking
     let nullifiers = stmt_fetch_nullifiers.query_map(NO_PARAMS, |row| {
