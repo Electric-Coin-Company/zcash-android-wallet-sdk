@@ -33,7 +33,7 @@ fn address_from_extfvk(extfvk: &ExtendedFullViewingKey) -> String {
     encode_payment_address(HRP_SAPLING_PAYMENT_ADDRESS_TEST, &addr)
 }
 
-pub fn init_cache_database<P: AsRef<Path>>(db_cache: P) -> rusqlite::Result<()> {
+pub fn init_cache_database<P: AsRef<Path>>(db_cache: P) -> Result<(), Error> {
     let cache = Connection::open(db_cache)?;
     cache.execute(
         "CREATE TABLE IF NOT EXISTS compactblocks (
@@ -45,7 +45,7 @@ pub fn init_cache_database<P: AsRef<Path>>(db_cache: P) -> rusqlite::Result<()> 
     Ok(())
 }
 
-pub fn init_data_database<P: AsRef<Path>>(db_data: P) -> rusqlite::Result<()> {
+pub fn init_data_database<P: AsRef<Path>>(db_data: P) -> Result<(), Error> {
     let data = Connection::open(db_data)?;
     data.execute(
         "CREATE TABLE IF NOT EXISTS accounts (
