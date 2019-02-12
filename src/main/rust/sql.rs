@@ -533,7 +533,14 @@ pub fn send_to_address<P: AsRef<Path>>(
 
     // Target the next block, assuming we are up-to-date.
     let height = data.query_row_and_then("SELECT MAX(height) FROM blocks", NO_PARAMS, |row| {
-        let ret: Result<u32, _> = row.get_checked(0);
+        let ret: Result<u32, _> = match row.get_checked(0) {
+            // If there are no blocks, the query returns NULL.
+            Err(rusqlite::Error::InvalidColumnType(_, _)) => {
+                Err(format_err!("Must sync before calling send_to_address()"))
+            }
+            Err(e) => Err(e.into()),
+            Ok(height) => Ok(height),
+        };
         ret
     })? + 1;
 
@@ -1048,6 +1055,25 @@ mod tests {
         ) {
             Ok(_) => panic!("Should have failed"),
             Err(e) => assert_eq!(e.to_string(), "Incorrect ExtendedSpendingKey for account 1"),
+        }
+    }
+
+    #[test]
+    fn send_to_address_fails_with_no_blocks() {
+        let data_file = NamedTempFile::new().unwrap();
+        let db_data = data_file.path();
+        init_data_database(&db_data).unwrap();
+
+        // Add an account to the wallet
+        let extsk = ExtendedSpendingKey::master(&[]);
+        let extfvks = [ExtendedFullViewingKey::from(&extsk)];
+        init_accounts_table(&db_data, &extfvks).unwrap();
+        let to = extsk.default_address().unwrap().1;
+
+        // We cannot do anything if we aren't synchronised
+        match send_to_address(db_data, 1, test_prover(), (0, &extsk), &to, Amount(1), None) {
+            Ok(_) => panic!("Should have failed"),
+            Err(e) => assert_eq!(e.to_string(), "Must sync before calling send_to_address()"),
         }
     }
 }
