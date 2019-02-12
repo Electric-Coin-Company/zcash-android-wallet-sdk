@@ -48,6 +48,7 @@ git = "https://github.com/str4d/librustzcash.git"
 rev = "669df0fa7b2fbd8e1d2ee78d7f0c6544ea04bfd3"
 
 [dev-dependencies]
+dirs = "1"
 tempfile = "3"
 
 [features]

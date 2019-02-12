@@ -702,14 +702,40 @@ mod tests {
         encoding::decode_payment_address,
         note_encryption::{Memo, SaplingNoteEncryption},
         proto::compact_formats::{CompactBlock, CompactOutput, CompactSpend, CompactTx},
+        prover::{LocalTxProver, TxProver},
     };
     use zcash_primitives::{transaction::components::Amount, JUBJUB};
     use zip32::{ExtendedFullViewingKey, ExtendedSpendingKey};
 
     use super::{
         get_address, get_balance, init_accounts_table, init_blocks_table, init_cache_database,
-        init_data_database, scan_cached_blocks,
+        init_data_database, scan_cached_blocks, send_to_address,
     };
+
+    fn test_prover() -> impl TxProver {
+        let unix_params_dir = dirs::home_dir().map(|path| path.join(".zcash-params"));
+        let win_osx_params_dir = dirs::data_dir().map(|path| path.join("ZcashParams"));
+        let (spend_path, output_path) = match (unix_params_dir, win_osx_params_dir) {
+            (Some(ref params_dir), _) if params_dir.exists() => (
+                params_dir.join("sapling-spend.params"),
+                params_dir.join("sapling-output.params"),
+            ),
+            (_, Some(ref params_dir)) if params_dir.exists() => (
+                params_dir.join("sapling-spend.params"),
+                params_dir.join("sapling-output.params"),
+            ),
+            _ => {
+                panic!("Cannot locate the Zcash parameters. Please run zcash-fetch-params or fetch-params.sh to download the parameters, and then re-run the tests.");
+            }
+        };
+
+        LocalTxProver::new(
+            &spend_path,
+            "8270785a1a0d0bc77196f000ee6d221c9c9894f55307bd9357c3f0105d31ca63991ab91324160d8f53e2bbd3c2633a6eb8bdf5205d822e7f3f73edac51b2b70c",
+            &output_path,
+            "657e3d38dbb5cb5e7dd2970e8b03d69b4787dd907285b5a7f0790dcc8072f60bf593b32cc2d1c030e00ff5ae64bf84c5c3beb84ddc841d48264b4a171744d028",
+        )
+    }
 
     /// Create a fake CompactBlock at the given height, containing a single output paying
     /// the given address. Returns the CompactBlock and the nullifier for the new note.
@@ -980,5 +1006,48 @@ mod tests {
         // Account balance should equal the change
         // TODO: impl Sum for Amount
         assert_eq!(get_balance(db_data, 0).unwrap(), Amount(value.0 - value2.0));
+    }
+
+    #[test]
+    fn send_to_address_fails_on_incorrect_extsk() {
+        let data_file = NamedTempFile::new().unwrap();
+        let db_data = data_file.path();
+        init_data_database(&db_data).unwrap();
+
+        // Add two accounts to the wallet
+        let extsk0 = ExtendedSpendingKey::master(&[]);
+        let extsk1 = ExtendedSpendingKey::master(&[0]);
+        let extfvks = [
+            ExtendedFullViewingKey::from(&extsk0),
+            ExtendedFullViewingKey::from(&extsk1),
+        ];
+        init_accounts_table(&db_data, &extfvks).unwrap();
+        let to = extsk0.default_address().unwrap().1;
+
+        // Invalid extsk for the given account should cause an error
+        match send_to_address(
+            db_data,
+            1,
+            test_prover(),
+            (0, &extsk1),
+            &to,
+            Amount(1),
+            None,
+        ) {
+            Ok(_) => panic!("Should have failed"),
+            Err(e) => assert_eq!(e.to_string(), "Incorrect ExtendedSpendingKey for account 0"),
+        }
+        match send_to_address(
+            db_data,
+            1,
+            test_prover(),
+            (1, &extsk0),
+            &to,
+            Amount(1),
+            None,
+        ) {
+            Ok(_) => panic!("Should have failed"),
+            Err(e) => assert_eq!(e.to_string(), "Incorrect ExtendedSpendingKey for account 1"),
+        }
     }
 }
