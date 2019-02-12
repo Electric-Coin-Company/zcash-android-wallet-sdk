@@ -622,11 +622,23 @@ pub fn send_to_address<P: AsRef<Path>>(
             })
         },
     )?;
+    let notes: Vec<SelectedNoteRow> = notes.collect::<Result<_, _>>()?;
+
+    // Confirm we were able to select sufficient value
+    let selected_value = notes
+        .iter()
+        .fold(0, |acc, selected| acc + selected.note.value);
+    if selected_value < value.0 as u64 {
+        return Err(format_err!(
+            "Insufficient balance (have {}, need {})",
+            selected_value,
+            value.0
+        ));
+    }
 
     // Create the transaction
     let mut builder = Builder::new(height);
     for selected in notes {
-        let selected = selected?;
         builder.add_sapling_spend(
             extsk.clone(),
             selected.diversifier,
@@ -1074,6 +1086,29 @@ mod tests {
         match send_to_address(db_data, 1, test_prover(), (0, &extsk), &to, Amount(1), None) {
             Ok(_) => panic!("Should have failed"),
             Err(e) => assert_eq!(e.to_string(), "Must sync before calling send_to_address()"),
+        }
+    }
+
+    #[test]
+    fn send_to_address_fails_on_insufficient_balance() {
+        let data_file = NamedTempFile::new().unwrap();
+        let db_data = data_file.path();
+        init_data_database(&db_data).unwrap();
+        init_blocks_table(&db_data, 1, 1, &[]).unwrap();
+
+        // Add an account to the wallet
+        let extsk = ExtendedSpendingKey::master(&[]);
+        let extfvks = [ExtendedFullViewingKey::from(&extsk)];
+        init_accounts_table(&db_data, &extfvks).unwrap();
+        let to = extsk.default_address().unwrap().1;
+
+        // Account balance should be zero
+        assert_eq!(get_balance(db_data, 0).unwrap(), Amount(0));
+
+        // We cannot spend anything
+        match send_to_address(db_data, 1, test_prover(), (0, &extsk), &to, Amount(1), None) {
+            Ok(_) => panic!("Should have failed"),
+            Err(e) => assert_eq!(e.to_string(), "Insufficient balance (have 0, need 1)"),
         }
     }
 }
