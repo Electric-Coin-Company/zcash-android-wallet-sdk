@@ -26,6 +26,8 @@ use zcash_primitives::{
 };
 use zip32::{ExtendedFullViewingKey, ExtendedSpendingKey};
 
+// TODO: Expose this in zcash_client_backend
+const DEFAULT_FEE: i64 = 10000;
 const ANCHOR_OFFSET: u32 = 10;
 
 fn address_from_extfvk(extfvk: &ExtendedFullViewingKey) -> String {
@@ -562,6 +564,7 @@ pub fn send_to_address<P: AsRef<Path>>(
     //    required value, bringing the sum of all selected notes across the threshold.
     //
     // 4) Match the selected notes against the witnesses at the desired height.
+    let target_value = value.0 + DEFAULT_FEE;
     let mut stmt_select_notes = data.prepare(
         "WITH selected AS (
             WITH eligible AS (
@@ -587,8 +590,8 @@ pub fn send_to_address<P: AsRef<Path>>(
     let notes = stmt_select_notes.query_and_then::<_, Error, _, _>(
         &[
             i64::from(account),
-            value.0,
-            value.0,
+            target_value,
+            target_value,
             i64::from(height.saturating_sub(ANCHOR_OFFSET)),
         ],
         |row| {
@@ -628,11 +631,11 @@ pub fn send_to_address<P: AsRef<Path>>(
     let selected_value = notes
         .iter()
         .fold(0, |acc, selected| acc + selected.note.value);
-    if selected_value < value.0 as u64 {
+    if selected_value < target_value as u64 {
         return Err(format_err!(
-            "Insufficient balance (have {}, need {})",
+            "Insufficient balance (have {}, need {} including fee)",
             selected_value,
-            value.0
+            target_value
         ));
     }
 
@@ -1108,7 +1111,10 @@ mod tests {
         // We cannot spend anything
         match send_to_address(db_data, 1, test_prover(), (0, &extsk), &to, Amount(1), None) {
             Ok(_) => panic!("Should have failed"),
-            Err(e) => assert_eq!(e.to_string(), "Insufficient balance (have 0, need 1)"),
+            Err(e) => assert_eq!(
+                e.to_string(),
+                "Insufficient balance (have 0, need 10001 including fee)"
+            ),
         }
     }
 }
