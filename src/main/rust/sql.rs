@@ -589,7 +589,7 @@ pub fn send_to_address<P: AsRef<Path>>(
             i64::from(account),
             value.0,
             value.0,
-            i64::from(height - ANCHOR_OFFSET),
+            i64::from(height.saturating_sub(ANCHOR_OFFSET)),
         ],
         |row| {
             let mut diversifier = Diversifier([0; 11]);
