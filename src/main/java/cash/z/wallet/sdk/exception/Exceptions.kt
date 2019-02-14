@@ -20,7 +20,7 @@ sealed class RepositoryException(message: String, cause: Throwable? = null) : Ru
 }
 
 sealed class SynchronizerException(message: String, cause: Throwable? = null) : RuntimeException(message, cause) {
-    object FalseStart: SynchronizerException("Once a synchronizer has stopped it cannotbe restarted. Instead, a new " +
+    object FalseStart: SynchronizerException("Once a synchronizer has stopped it cannot be restarted. Instead, a new " +
             "instance should be created.")
 }
 

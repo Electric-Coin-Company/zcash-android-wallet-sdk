@@ -169,7 +169,7 @@ class ActiveTransactionManager(
                     twig("transaction $transactionId HAS BEEN MINED!!! updating the corresponding active transaction.")
                     tx.height.set(matchingDbTransaction.height)
                     twig("active transaction height updated to ${matchingDbTransaction.height} and state updated to AwaitingConfirmations(0)")
-                    setState(transaction, AwaitingConfirmations(0))
+                    setState(transaction, AwaitingConfirmations(1))
                 } else {
                     twig("transaction $transactionId has still not been mined.")
                 }
@@ -217,6 +217,7 @@ class ActiveTransactionManager(
         created(activeSendTransaction, transactionId)
 
         uploadRawTransaction(transactionId, activeSendTransaction, transactionRaw)
+        //TODO: synchronously await confirmations by checking periodically inside a while loop until confirmations = 10
     }
 
     private suspend fun uploadRawTransaction(
