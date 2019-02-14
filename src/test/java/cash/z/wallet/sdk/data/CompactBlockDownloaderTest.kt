@@ -20,11 +20,13 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
 import kotlin.system.measureTimeMillis
 import org.junit.Rule
-
+import io.grpc.testing.GrpcServerRule
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport
 
 
 @ExtendWith(MockitoExtension::class)
 @MockitoSettings(strictness = Strictness.LENIENT) // allows us to setup the blockingStub once, with everything, rather than using custom stubs for each test
+@EnableRuleMigrationSupport
 class CompactBlockDownloaderTest {
 
     lateinit var downloader: CompactBlockStream
