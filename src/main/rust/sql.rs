@@ -387,6 +387,33 @@ pub fn scan_cached_blocks<P: AsRef<Path>, Q: AsRef<Path>>(
             )
         };
 
+        // Enforce that all roots match
+        {
+            let cur_root = tree.root();
+            for row in &witnesses {
+                if row.witness.root() != cur_root {
+                    return Err(format_err!(
+                        "Witness for note {} has incorrect anchor after scanning block {}",
+                        row.id_note,
+                        last_height
+                    ));
+                }
+            }
+            for (tx, new_witnesses) in &txs {
+                for (i, witness) in new_witnesses.iter().enumerate() {
+                    if witness.root() != cur_root {
+                        return Err(format_err!(
+                            "New witness for output {} in tx {} has incorrect anchor after scanning block {}: {:?}",
+                            tx.shielded_outputs[i].index,
+                            tx.txid,
+                            last_height,
+                            witness.root(),
+                        ));
+                    }
+                }
+            }
+        }
+
         // Insert the block into the database.
         let mut encoded_tree = Vec::new();
         tree.write(&mut encoded_tree)
