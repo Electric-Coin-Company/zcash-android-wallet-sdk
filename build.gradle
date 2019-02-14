@@ -74,10 +74,7 @@ android {
             }
         }
     }
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
-    }
+
     kotlinOptions {
         // Allow the use of Result objects understanding that if the API changes, we'll have to fix it before upgrading our kotlin version
         freeCompilerArgs = ["-Xallow-result-return-type"]

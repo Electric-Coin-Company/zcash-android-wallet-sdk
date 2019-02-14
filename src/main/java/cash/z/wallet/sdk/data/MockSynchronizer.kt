@@ -24,7 +24,9 @@ import kotlin.random.nextLong
  */
 open class MockSynchronizer(
     private val transactionInterval: Long = 30_000L,
-    private val activeTransactionUpdateFrequency: Long = 3_000L
+    private val activeTransactionUpdateFrequency: Long = 3_000L,
+    private val isFirstRun: Boolean = Random.nextBoolean(),
+    private val isOutOfSync: Boolean = Random.nextBoolean()
 ) : Synchronizer, CoroutineScope {
 
     private val mockAddress = "ztestsaplingmock0000this0is0a0mock0address0do0not0send0funds0to0this0address0ok0thanks00"
@@ -67,7 +69,7 @@ open class MockSynchronizer(
     }
 
     override suspend fun isFirstRun(): Boolean {
-        return Random.nextBoolean()
+        return isFirstRun
     }
 
     override fun getAddress() = mockAddress

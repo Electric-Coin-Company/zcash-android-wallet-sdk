@@ -79,9 +79,10 @@ open class PollingTransactionRepository(
         twig("stopping")
         // when polling ends, we call stop which can result in a duplicate call to stop
         // So keep stop idempotent, rather than crashing with "Channel was closed" errors
-        if (!balanceChannel.isClosedForSend) balanceChannel.cancel()
-        if (!allTransactionsChannel.isClosedForSend) allTransactionsChannel.cancel()
-        if (!pollingJob.isCancelled) pollingJob.cancel()
+        // probably should make a safeCancel extension function for this and use it everywhere that we cancel a channel
+        try{ if (!balanceChannel.isClosedForSend) balanceChannel.cancel() }catch (t:Throwable){}
+        try{ if (!allTransactionsChannel.isClosedForSend) allTransactionsChannel.cancel() }catch (t:Throwable){}
+        try{ if (!pollingJob.isCancelled) pollingJob.cancel() }catch (t:Throwable){}
     }
 
     override fun balance(): ReceiveChannel<Long> {
