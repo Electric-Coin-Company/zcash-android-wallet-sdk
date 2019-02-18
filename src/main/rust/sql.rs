@@ -360,13 +360,10 @@ pub fn scan_cached_blocks<P: AsRef<Path>, Q: AsRef<Path>>(
         // Start an SQL transaction for this block.
         data.execute("BEGIN IMMEDIATE", NO_PARAMS)?;
 
-        // Scanned blocks MUST be height-ascending, but they might not be height-sequential
-        // (e.g. if blocks that don't contain Sapling data are skipped). Note that this
-        // introduces a risk that a block containing Sapling data is skipped; it is up to
-        // the caller to ensure this does not happen.
-        if row.height <= last_height {
+        // Scanned blocks MUST be height-sequential.
+        if row.height != (last_height + 1) {
             return Err(format_err!(
-                "Expected height of next CompactBlock to be at least {}, but was {}",
+                "Expected height of next CompactBlock to be {}, but was {}",
                 last_height + 1,
                 row.height
             ));
@@ -1008,6 +1005,46 @@ mod tests {
         let addr = get_address(&db_data, 0).unwrap();
         let pa = decode_payment_address(HRP_SAPLING_PAYMENT_ADDRESS_TEST, &addr).unwrap();
         assert_eq!(pa, extsk.default_address().unwrap().1);
+    }
+
+    #[test]
+    fn scan_cached_blocks_requires_sequential_blocks() {
+        let cache_file = NamedTempFile::new().unwrap();
+        let db_cache = cache_file.path();
+        init_cache_database(&db_cache).unwrap();
+
+        let data_file = NamedTempFile::new().unwrap();
+        let db_data = data_file.path();
+        init_data_database(&db_data).unwrap();
+
+        // Add an account to the wallet
+        let extsk = ExtendedSpendingKey::master(&[]);
+        let extfvk = ExtendedFullViewingKey::from(&extsk);
+        init_accounts_table(&db_data, &[extfvk.clone()]).unwrap();
+
+        // Create a block with height 1
+        let value = Amount(50000);
+        let (cb1, _) = fake_compact_block(1, extfvk.clone(), value);
+        insert_into_cache(db_cache, &cb1);
+        scan_cached_blocks(db_cache, db_data).unwrap();
+        assert_eq!(get_balance(db_data, 0).unwrap(), value);
+
+        // We cannot scan a block of height 3 next
+        let (cb3, _) = fake_compact_block(3, extfvk.clone(), value);
+        insert_into_cache(db_cache, &cb3);
+        match scan_cached_blocks(db_cache, db_data) {
+            Ok(_) => panic!("Should have failed"),
+            Err(e) => assert_eq!(
+                e.to_string(),
+                "Expected height of next CompactBlock to be 2, but was 3"
+            ),
+        }
+
+        // If we add a block of height 2, we can now scan both
+        let (cb2, _) = fake_compact_block(2, extfvk.clone(), value);
+        insert_into_cache(db_cache, &cb2);
+        scan_cached_blocks(db_cache, db_data).unwrap();
+        assert_eq!(get_balance(db_data, 0).unwrap(), Amount(150_000));
     }
 
     #[test]
