@@ -532,6 +532,9 @@ struct SelectedNoteRow {
 }
 
 /// Creates a transaction paying the specified address.
+///
+/// Do not call this multiple times in parallel, or you will generate transactions that
+/// double-spend the same notes.
 pub fn send_to_address<P: AsRef<Path>>(
     db_data: P,
     consensus_branch_id: u32,
@@ -699,6 +702,9 @@ pub fn send_to_address<P: AsRef<Path>>(
     };
     let created = time::get_time();
 
+    // Update the database atomically, to ensure the result is internally consistent.
+    data.execute("BEGIN IMMEDIATE", NO_PARAMS)?;
+
     // Save the transaction in the database.
     let mut raw_tx = vec![];
     tx.write(&mut raw_tx)?;
@@ -713,6 +719,20 @@ pub fn send_to_address<P: AsRef<Path>>(
         raw_tx.to_sql()?,
     ])?;
     let id_tx = data.last_insert_rowid();
+
+    // Mark notes as spent.
+    //
+    // This locks the notes so they aren't selected again by a subsequent call to
+    // send_to_address() before this transaction has been mined (at which point the notes
+    // get re-marked as spent).
+    //
+    // Assumes that send_to_address() will never be called in parallel, which is a
+    // reasonable assumption for a light client such as a mobile phone.
+    let mut stmt_mark_spent_note =
+        data.prepare("UPDATE received_notes SET spent = ? WHERE nf = ?")?;
+    for spend in &tx.shielded_spends {
+        stmt_mark_spent_note.execute(&[id_tx.to_sql()?, spend.nullifier.to_sql()?])?;
+    }
 
     // Save the sent note in the database.
     let to_str = encode_payment_address(HRP_SAPLING_PAYMENT_ADDRESS_TEST, to);
@@ -742,6 +762,8 @@ pub fn send_to_address<P: AsRef<Path>>(
             value.0.to_sql()?,
         ])?;
     }
+
+    data.execute("COMMIT", NO_PARAMS)?;
 
     // Return the row number of the transaction, so the caller can fetch it for sending.
     Ok(id_tx)
@@ -1155,6 +1177,60 @@ mod tests {
             Err(e) => assert_eq!(
                 e.to_string(),
                 "Insufficient balance (have 0, need 10001 including fee)"
+            ),
+        }
+    }
+
+    #[test]
+    fn send_to_address_fails_on_locked_notes() {
+        let cache_file = NamedTempFile::new().unwrap();
+        let db_cache = cache_file.path();
+        init_cache_database(&db_cache).unwrap();
+
+        let data_file = NamedTempFile::new().unwrap();
+        let db_data = data_file.path();
+        init_data_database(&db_data).unwrap();
+
+        // Add an account to the wallet
+        let extsk = ExtendedSpendingKey::master(&[]);
+        let extfvk = ExtendedFullViewingKey::from(&extsk);
+        init_accounts_table(&db_data, &[extfvk.clone()]).unwrap();
+
+        // Add funds to the wallet in a single note
+        let value = Amount(50000);
+        let (cb, _) = fake_compact_block(1, extfvk.clone(), value);
+        insert_into_cache(db_cache, &cb);
+        scan_cached_blocks(db_cache, db_data).unwrap();
+        assert_eq!(get_balance(db_data, 0).unwrap(), value);
+
+        // Send some of the funds to another address
+        let extsk2 = ExtendedSpendingKey::master(&[]);
+        let to = extsk2.default_address().unwrap().1;
+        send_to_address(
+            db_data,
+            1,
+            test_prover(),
+            (0, &extsk),
+            &to,
+            Amount(15000),
+            None,
+        )
+        .unwrap();
+
+        // A second spend fails because there are no usable notes
+        match send_to_address(
+            db_data,
+            1,
+            test_prover(),
+            (0, &extsk),
+            &to,
+            Amount(2000),
+            None,
+        ) {
+            Ok(_) => panic!("Should have failed"),
+            Err(e) => assert_eq!(
+                e.to_string(),
+                "Insufficient balance (have 0, need 12000 including fee)"
             ),
         }
     }
