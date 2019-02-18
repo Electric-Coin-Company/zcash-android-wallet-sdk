@@ -609,6 +609,10 @@ pub fn send_to_address<P: AsRef<Path>>(
     //
     // 4) Match the selected notes against the witnesses at the desired height.
     let target_value = value.0 + DEFAULT_FEE;
+    debug!(
+        "Selecting notes from account {} targeting {} zatoshis and anchor height {}",
+        account, target_value, anchor_height,
+    );
     let mut stmt_select_notes = data.prepare(
         "WITH selected AS (
             WITH eligible AS (
@@ -644,6 +648,7 @@ pub fn send_to_address<P: AsRef<Path>>(
             diversifier.0.copy_from_slice(&d);
 
             let note_value: i64 = row.get(1);
+            debug!("Selected note with value {}", note_value);
 
             let d: Vec<_> = row.get(2);
             let rcm = {
