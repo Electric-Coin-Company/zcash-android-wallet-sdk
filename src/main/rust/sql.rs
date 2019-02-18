@@ -7,6 +7,7 @@ use sapling_crypto::{
     jubjub::fs::{Fs, FsRepr},
     primitives::{Diversifier, Note, PaymentAddress},
 };
+use std::cmp;
 use std::path::Path;
 use zcash_client_backend::{
     constants::{HRP_SAPLING_EXTENDED_FULL_VIEWING_KEY_TEST, HRP_SAPLING_PAYMENT_ADDRESS_TEST},
@@ -561,17 +562,30 @@ pub fn send_to_address<P: AsRef<Path>>(
     let ovk = extfvk.fvk.ovk;
 
     // Target the next block, assuming we are up-to-date.
-    let height = data.query_row_and_then("SELECT MAX(height) FROM blocks", NO_PARAMS, |row| {
-        let ret: Result<u32, _> = match row.get_checked(0) {
+    let (height, anchor_height) = data.query_row_and_then(
+        "SELECT MIN(height), MAX(height) FROM blocks",
+        NO_PARAMS,
+        |row| match (row.get_checked::<_, u32>(0), row.get_checked::<_, u32>(1)) {
             // If there are no blocks, the query returns NULL.
-            Err(rusqlite::Error::InvalidColumnType(_, _)) => {
+            (Err(rusqlite::Error::InvalidColumnType(_, _)), _)
+            | (_, Err(rusqlite::Error::InvalidColumnType(_, _))) => {
                 Err(format_err!("Must sync before calling send_to_address()"))
             }
-            Err(e) => Err(e.into()),
-            Ok(height) => Ok(height),
-        };
-        ret
-    })? + 1;
+            (Err(e), _) | (_, Err(e)) => Err(e.into()),
+            (Ok(min_height), Ok(max_height)) => {
+                let target_height = max_height + 1;
+
+                // Select an anchor ANCHOR_OFFSET back from the target block,
+                // unless that would be before the earliest block we have.
+                let anchor_height = i64::from(cmp::max(
+                    target_height.saturating_sub(ANCHOR_OFFSET),
+                    min_height,
+                ));
+
+                Ok((target_height, anchor_height))
+            }
+        },
+    )?;
 
     // The goal of this SQL statement is to select the oldest notes until the required
     // value has been reached, and then fetch the witnesses at the desired height for the
@@ -619,7 +633,7 @@ pub fn send_to_address<P: AsRef<Path>>(
             i64::from(account),
             target_value,
             target_value,
-            i64::from(height.saturating_sub(ANCHOR_OFFSET)),
+            anchor_height,
         ],
         |row| {
             let mut diversifier = Diversifier([0; 11]);
