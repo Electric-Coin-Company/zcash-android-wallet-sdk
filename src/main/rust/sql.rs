@@ -626,7 +626,8 @@ pub fn send_to_address<P: AsRef<Path>>(
                     SUM(value) OVER
                         (PARTITION BY account, spent ORDER BY id_note) AS so_far
                 FROM received_notes
-                WHERE account = ? AND spent IS NULL
+                INNER JOIN transactions ON transactions.id_tx = received_notes.tx
+                WHERE account = ? AND spent IS NULL AND transactions.block <= ?
             )
             SELECT * FROM eligible WHERE so_far < ?
             UNION
@@ -644,6 +645,7 @@ pub fn send_to_address<P: AsRef<Path>>(
     let notes = stmt_select_notes.query_and_then::<_, Error, _, _>(
         &[
             i64::from(account),
+            anchor_height,
             target_value,
             target_value,
             anchor_height,
@@ -1230,6 +1232,95 @@ mod tests {
                 "Insufficient balance (have 0, need 10001 including fee)"
             ),
         }
+    }
+
+    #[test]
+    fn send_to_address_fails_on_unverified_notes() {
+        let cache_file = NamedTempFile::new().unwrap();
+        let db_cache = cache_file.path();
+        init_cache_database(&db_cache).unwrap();
+
+        let data_file = NamedTempFile::new().unwrap();
+        let db_data = data_file.path();
+        init_data_database(&db_data).unwrap();
+
+        // Add an account to the wallet
+        let extsk = ExtendedSpendingKey::master(&[]);
+        let extfvk = ExtendedFullViewingKey::from(&extsk);
+        init_accounts_table(&db_data, &[extfvk.clone()]).unwrap();
+
+        // Add funds to the wallet in a single note
+        let value = Amount(50000);
+        let (cb, _) = fake_compact_block(1, extfvk.clone(), value);
+        insert_into_cache(db_cache, &cb);
+        scan_cached_blocks(db_cache, db_data).unwrap();
+        assert_eq!(get_balance(db_data, 0).unwrap(), value);
+
+        // Add more funds to the wallet in a second note
+        let (cb, _) = fake_compact_block(2, extfvk.clone(), value);
+        insert_into_cache(db_cache, &cb);
+        scan_cached_blocks(db_cache, db_data).unwrap();
+        assert_eq!(get_balance(db_data, 0).unwrap().0, 2 * value.0);
+
+        // Spend fails because there are insufficient verified notes
+        let extsk2 = ExtendedSpendingKey::master(&[]);
+        let to = extsk2.default_address().unwrap().1;
+        match send_to_address(
+            db_data,
+            1,
+            test_prover(),
+            (0, &extsk),
+            &to,
+            Amount(70000),
+            None,
+        ) {
+            Ok(_) => panic!("Should have failed"),
+            Err(e) => assert_eq!(
+                e.to_string(),
+                "Insufficient balance (have 50000, need 80000 including fee)"
+            ),
+        }
+
+        // Mine blocks 3 to 10 until just before the second note is verified
+        for i in 3..11 {
+            let (cb, _) = fake_compact_block(i, extfvk.clone(), value);
+            insert_into_cache(db_cache, &cb);
+        }
+        scan_cached_blocks(db_cache, db_data).unwrap();
+
+        // Second spend still fails
+        match send_to_address(
+            db_data,
+            1,
+            test_prover(),
+            (0, &extsk),
+            &to,
+            Amount(70000),
+            None,
+        ) {
+            Ok(_) => panic!("Should have failed"),
+            Err(e) => assert_eq!(
+                e.to_string(),
+                "Insufficient balance (have 50000, need 80000 including fee)"
+            ),
+        }
+
+        // Mine block 11 so that the second note becomes verified
+        let (cb, _) = fake_compact_block(11, extfvk.clone(), value);
+        insert_into_cache(db_cache, &cb);
+        scan_cached_blocks(db_cache, db_data).unwrap();
+
+        // Second spend should now succeed
+        send_to_address(
+            db_data,
+            1,
+            test_prover(),
+            (0, &extsk),
+            &to,
+            Amount(70000),
+            None,
+        )
+        .unwrap();
     }
 
     #[test]
