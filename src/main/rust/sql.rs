@@ -307,6 +307,12 @@ pub fn scan_cached_blocks<P: AsRef<Path>, Q: AsRef<Path>>(
         VALUES (?, ?, ?)",
     )?;
     let mut stmt_prune_witnesses = data.prepare("DELETE FROM sapling_witnesses WHERE block < ?")?;
+    let mut stmt_update_expired = data.prepare(
+        "UPDATE received_notes SET spent = NULL WHERE EXISTS (
+            SELECT id_tx FROM transactions
+            WHERE id_tx = received_notes.spent AND block IS NULL AND expiry_height < ?
+        )",
+    )?;
 
     // Fetch the CompactBlocks we need to scan
     let rows = stmt_blocks.query_map(&[last_height], |row| CompactBlockRow {
@@ -514,6 +520,9 @@ pub fn scan_cached_blocks<P: AsRef<Path>, Q: AsRef<Path>>(
 
         // Prune the stored witnesses (we only expect rollbacks of at most 100 blocks).
         stmt_prune_witnesses.execute(&[last_height - 100])?;
+
+        // Update now-expired transactions that didn't get mined.
+        stmt_update_expired.execute(&[last_height])?;
 
         // Commit the SQL transaction, writing this block's data atomically.
         data.execute("COMMIT", NO_PARAMS)?;
@@ -1275,5 +1284,55 @@ mod tests {
                 "Insufficient balance (have 0, need 12000 including fee)"
             ),
         }
+
+        // Mine blocks 2 to 22 (that don't send us funds) until just before the first
+        // transaction expires
+        for i in 2..23 {
+            let (cb, _) = fake_compact_block(
+                i,
+                ExtendedFullViewingKey::from(&ExtendedSpendingKey::master(&[i as u8])),
+                value,
+            );
+            insert_into_cache(db_cache, &cb);
+        }
+        scan_cached_blocks(db_cache, db_data).unwrap();
+
+        // Second spend still fails
+        match send_to_address(
+            db_data,
+            1,
+            test_prover(),
+            (0, &extsk),
+            &to,
+            Amount(2000),
+            None,
+        ) {
+            Ok(_) => panic!("Should have failed"),
+            Err(e) => assert_eq!(
+                e.to_string(),
+                "Insufficient balance (have 0, need 12000 including fee)"
+            ),
+        }
+
+        // Mine block 23 so that the first transaction expires
+        let (cb, _) = fake_compact_block(
+            23,
+            ExtendedFullViewingKey::from(&ExtendedSpendingKey::master(&[23])),
+            value,
+        );
+        insert_into_cache(db_cache, &cb);
+        scan_cached_blocks(db_cache, db_data).unwrap();
+
+        // Second spend should now succeed
+        send_to_address(
+            db_data,
+            1,
+            test_prover(),
+            (0, &extsk),
+            &to,
+            Amount(2000),
+            None,
+        )
+        .unwrap();
     }
 }
