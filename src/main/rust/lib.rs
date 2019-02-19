@@ -31,8 +31,8 @@ use zip32::ExtendedFullViewingKey;
 
 use crate::{
     sql::{
-        get_address, get_balance, init_accounts_table, init_blocks_table, init_data_database,
-        scan_cached_blocks, send_to_address,
+        get_address, get_balance, get_verified_balance, init_accounts_table, init_blocks_table,
+        init_data_database, scan_cached_blocks, send_to_address,
     },
     utils::exception::unwrap_exc_or,
 };
@@ -182,6 +182,29 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_getBalance(
         match get_balance(&db_data, account) {
             Ok(balance) => Ok(balance.0),
             Err(e) => Err(format_err!("Error while fetching balance: {}", e)),
+        }
+    });
+    unwrap_exc_or(&env, res, -1)
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_getVerifiedBalance(
+    env: JNIEnv<'_>,
+    _: JClass<'_>,
+    db_data: JString<'_>,
+    account: jint,
+) -> jlong {
+    let res = panic::catch_unwind(|| {
+        let db_data = utils::java_string_to_rust(&env, db_data);
+        let account = if account >= 0 {
+            account as u32
+        } else {
+            return Err(format_err!("account argument must be positive"));
+        };
+
+        match get_verified_balance(&db_data, account) {
+            Ok(balance) => Ok(balance.0),
+            Err(e) => Err(format_err!("Error while fetching verified balance: {}", e)),
         }
     });
     unwrap_exc_or(&env, res, -1)

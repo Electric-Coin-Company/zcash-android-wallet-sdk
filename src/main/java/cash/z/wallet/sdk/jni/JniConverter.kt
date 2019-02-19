@@ -19,6 +19,8 @@ class JniConverter {
 
     external fun getBalance(dbData: String, account: Int): Long
 
+    external fun getVerifiedBalance(dbData: String, account: Int): Long
+
     external fun getReceivedMemoAsUtf8(dbData: String, idNote: Long): String
 
     external fun getSentMemoAsUtf8(dbData: String, idNote: Long): String
