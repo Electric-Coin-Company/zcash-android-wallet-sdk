@@ -23,9 +23,8 @@ class SdkSynchronizer(
     private val activeTransactionManager: ActiveTransactionManager,
     private val wallet: Wallet,
     private val batchSize: Int = 1000,
-    private val blockPollFrequency: Long = CompactBlockStream.DEFAULT_POLL_INTERVAL,
-    logger: Twig = SilentTwig()
-) : Twig by logger, Synchronizer {
+    private val blockPollFrequency: Long = CompactBlockStream.DEFAULT_POLL_INTERVAL
+) : Synchronizer {
 
     private lateinit var blockJob: Job
 
