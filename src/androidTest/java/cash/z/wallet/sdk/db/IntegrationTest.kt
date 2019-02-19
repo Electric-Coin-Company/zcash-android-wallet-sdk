@@ -52,17 +52,16 @@ class IntegrationTest {
         wallet = Wallet(converter, context.getDatabasePath(dataDbName).absolutePath, context.cacheDir.absolutePath, arrayOf(0), SampleSeedProvider("dummyseed"), SampleSpendingKeyProvider("dummyseed"), logger)
 
 //        repository.start(this)
-        synchronizer = Synchronizer(
+        synchronizer = SdkSynchronizer(
             downloader,
             processor,
             repository,
             ActiveTransactionManager(repository, downloader.connection, wallet, logger),
             wallet,
-            1000,
-            logger
+            1000
         ).start(this)
 
-        for(i in synchronizer.downloader.progress()) {
+        for(i in synchronizer.progress()) {
             logger.twig("made progress: $i")
         }
     }

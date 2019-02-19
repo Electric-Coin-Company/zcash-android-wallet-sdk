@@ -38,7 +38,7 @@ apply plugin: 'com.github.dcendents.android-maven'
 apply plugin: 'com.getkeepsafe.dexcount'
 
 group = 'cash.z.android.wallet'
-version = '1.6.0'
+version = '1.7.3'
 
 repositories {
     google()
@@ -51,7 +51,7 @@ android {
     defaultConfig {
         minSdkVersion 16
         targetSdkVersion 28
-        versionCode = 1_06_00
+        versionCode = 1_07_03
         versionName = version
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         multiDexEnabled true
@@ -74,7 +74,10 @@ android {
             }
         }
     }
-
+    compileOptions {
+        sourceCompatibility 1.8
+        targetCompatibility 1.8
+    }
     kotlinOptions {
         // Allow the use of Result objects understanding that if the API changes, we'll have to fix it before upgrading our kotlin version
         freeCompilerArgs = ["-Xallow-result-return-type"]

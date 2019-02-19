@@ -24,6 +24,7 @@ interface TransactionDao {
                transactions.raw IS NOT NULL   AS isSend,
                transactions.block IS NOT NULL AS isMined,
                blocks.time                    AS timeInSeconds,
+               sent_notes.address             AS address,
                CASE
                  WHEN transactions.raw IS NOT NULL THEN sent_notes.value
                  ELSE received_notes.value
@@ -53,5 +54,6 @@ data class WalletTransaction(
     val height: Int? = null,
     val isSend: Boolean = false,
     val timeInSeconds: Long = 0L,
+    val address: String? = null,
     val isMined: Boolean = false
 )

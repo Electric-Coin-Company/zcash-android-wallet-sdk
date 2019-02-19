@@ -169,7 +169,7 @@ inline fun BigDecimal?.toUsd(decimals: Int = USD_FORMATTER.maximumFractionDigits
  */
 inline fun BigDecimal?.convertZecToUsd(zecPrice: BigDecimal): BigDecimal {
     if(this == null) return BigDecimal.ZERO
-    if(this < BigDecimal.ZERO) throw IllegalArgumentException("Invalid ZEC value: $zecPrice. ZEC is represented by notes and cannot be negative")
+    if(this < BigDecimal.ZERO) throw IllegalArgumentException("Invalid ZEC value: ${zecPrice.toDouble()}. ZEC is represented by notes and cannot be negative")
     return this.multiply(zecPrice, MathContext.DECIMAL128)
 }
 
@@ -180,7 +180,7 @@ inline fun BigDecimal?.convertZecToUsd(zecPrice: BigDecimal): BigDecimal {
  */
 inline fun BigDecimal?.convertUsdToZec(zecPrice: BigDecimal): BigDecimal {
     if(this == null) return BigDecimal.ZERO
-    if(this < BigDecimal.ZERO) throw IllegalArgumentException("Invalid USD value: $zecPrice. Converting this would result in negative ZEC and ZEC is represented by notes and cannot be negative")
+    if(this < BigDecimal.ZERO) throw IllegalArgumentException("Invalid USD value: ${zecPrice.toDouble()}. Converting this would result in negative ZEC and ZEC is represented by notes and cannot be negative")
     return this.divide(zecPrice, MathContext.DECIMAL128)
 }
 
