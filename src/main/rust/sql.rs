@@ -7,6 +7,7 @@ use sapling_crypto::{
     jubjub::fs::{Fs, FsRepr},
     primitives::{Diversifier, Note, PaymentAddress},
 };
+use std::cmp;
 use std::path::Path;
 use zcash_client_backend::{
     constants::{HRP_SAPLING_EXTENDED_FULL_VIEWING_KEY_TEST, HRP_SAPLING_PAYMENT_ADDRESS_TEST},
@@ -33,6 +34,33 @@ const ANCHOR_OFFSET: u32 = 10;
 fn address_from_extfvk(extfvk: &ExtendedFullViewingKey) -> String {
     let addr = extfvk.default_address().unwrap().1;
     encode_payment_address(HRP_SAPLING_PAYMENT_ADDRESS_TEST, &addr)
+}
+
+/// Determine the target height for a transaction, and the height from which to
+/// select anchors, based on the current synchronised block chain.
+fn get_target_and_anchor_heights(data: &Connection) -> Result<(u32, u32), Error> {
+    data.query_row_and_then(
+        "SELECT MIN(height), MAX(height) FROM blocks",
+        NO_PARAMS,
+        |row| match (row.get_checked::<_, u32>(0), row.get_checked::<_, u32>(1)) {
+            // If there are no blocks, the query returns NULL.
+            (Err(rusqlite::Error::InvalidColumnType(_, _)), _)
+            | (_, Err(rusqlite::Error::InvalidColumnType(_, _))) => {
+                Err(format_err!("Must scan blocks first"))
+            }
+            (Err(e), _) | (_, Err(e)) => Err(e.into()),
+            (Ok(min_height), Ok(max_height)) => {
+                let target_height = max_height + 1;
+
+                // Select an anchor ANCHOR_OFFSET back from the target block,
+                // unless that would be before the earliest block we have.
+                let anchor_height =
+                    cmp::max(target_height.saturating_sub(ANCHOR_OFFSET), min_height);
+
+                Ok((target_height, anchor_height))
+            }
+        },
+    )
 }
 
 pub fn init_cache_database<P: AsRef<Path>>(db_cache: P) -> Result<(), Error> {
@@ -219,6 +247,24 @@ pub fn get_balance<P: AsRef<Path>>(db_data: P, account: u32) -> Result<Amount, E
     Ok(Amount(balance))
 }
 
+/// Returns the verified balance for the account, which ignores notes that have been
+/// received too recently and are not yet deemed spendable.
+pub fn get_verified_balance<P: AsRef<Path>>(db_data: P, account: u32) -> Result<Amount, Error> {
+    let data = Connection::open(db_data)?;
+
+    let (_, anchor_height) = get_target_and_anchor_heights(&data)?;
+
+    let balance = data.query_row(
+        "SELECT SUM(value) FROM received_notes
+        INNER JOIN transactions ON transactions.id_tx = received_notes.tx
+        WHERE account = ? AND spent IS NULL AND transactions.block <= ?",
+        &[account, anchor_height],
+        |row| row.get_checked(0).unwrap_or(0),
+    )?;
+
+    Ok(Amount(balance))
+}
+
 pub fn get_received_memo_as_utf8<P: AsRef<Path>>(
     db_data: P,
     id_note: i64,
@@ -306,6 +352,12 @@ pub fn scan_cached_blocks<P: AsRef<Path>, Q: AsRef<Path>>(
         VALUES (?, ?, ?)",
     )?;
     let mut stmt_prune_witnesses = data.prepare("DELETE FROM sapling_witnesses WHERE block < ?")?;
+    let mut stmt_update_expired = data.prepare(
+        "UPDATE received_notes SET spent = NULL WHERE EXISTS (
+            SELECT id_tx FROM transactions
+            WHERE id_tx = received_notes.spent AND block IS NULL AND expiry_height < ?
+        )",
+    )?;
 
     // Fetch the CompactBlocks we need to scan
     let rows = stmt_blocks.query_map(&[last_height], |row| CompactBlockRow {
@@ -359,13 +411,10 @@ pub fn scan_cached_blocks<P: AsRef<Path>, Q: AsRef<Path>>(
         // Start an SQL transaction for this block.
         data.execute("BEGIN IMMEDIATE", NO_PARAMS)?;
 
-        // Scanned blocks MUST be height-ascending, but they might not be height-sequential
-        // (e.g. if blocks that don't contain Sapling data are skipped). Note that this
-        // introduces a risk that a block containing Sapling data is skipped; it is up to
-        // the caller to ensure this does not happen.
-        if row.height <= last_height {
+        // Scanned blocks MUST be height-sequential.
+        if row.height != (last_height + 1) {
             return Err(format_err!(
-                "Expected height of next CompactBlock to be at least {}, but was {}",
+                "Expected height of next CompactBlock to be {}, but was {}",
                 last_height + 1,
                 row.height
             ));
@@ -517,6 +566,9 @@ pub fn scan_cached_blocks<P: AsRef<Path>, Q: AsRef<Path>>(
         // Prune the stored witnesses (we only expect rollbacks of at most 100 blocks).
         stmt_prune_witnesses.execute(&[last_height - 100])?;
 
+        // Update now-expired transactions that didn't get mined.
+        stmt_update_expired.execute(&[last_height])?;
+
         // Commit the SQL transaction, writing this block's data atomically.
         data.execute("COMMIT", NO_PARAMS)?;
     }
@@ -531,6 +583,9 @@ struct SelectedNoteRow {
 }
 
 /// Creates a transaction paying the specified address.
+///
+/// Do not call this multiple times in parallel, or you will generate transactions that
+/// double-spend the same notes.
 pub fn send_to_address<P: AsRef<Path>>(
     db_data: P,
     consensus_branch_id: u32,
@@ -561,17 +616,10 @@ pub fn send_to_address<P: AsRef<Path>>(
     let ovk = extfvk.fvk.ovk;
 
     // Target the next block, assuming we are up-to-date.
-    let height = data.query_row_and_then("SELECT MAX(height) FROM blocks", NO_PARAMS, |row| {
-        let ret: Result<u32, _> = match row.get_checked(0) {
-            // If there are no blocks, the query returns NULL.
-            Err(rusqlite::Error::InvalidColumnType(_, _)) => {
-                Err(format_err!("Must sync before calling send_to_address()"))
-            }
-            Err(e) => Err(e.into()),
-            Ok(height) => Ok(height),
-        };
-        ret
-    })? + 1;
+    let (height, anchor_height) = {
+        let (target_height, anchor_height) = get_target_and_anchor_heights(&data)?;
+        (target_height, i64::from(anchor_height))
+    };
 
     // The goal of this SQL statement is to select the oldest notes until the required
     // value has been reached, and then fetch the witnesses at the desired height for the
@@ -592,6 +640,10 @@ pub fn send_to_address<P: AsRef<Path>>(
     //
     // 4) Match the selected notes against the witnesses at the desired height.
     let target_value = value.0 + DEFAULT_FEE;
+    debug!(
+        "Selecting notes from account {} targeting {} zatoshis and anchor height {}",
+        account, target_value, anchor_height,
+    );
     let mut stmt_select_notes = data.prepare(
         "WITH selected AS (
             WITH eligible AS (
@@ -599,7 +651,8 @@ pub fn send_to_address<P: AsRef<Path>>(
                     SUM(value) OVER
                         (PARTITION BY account, spent ORDER BY id_note) AS so_far
                 FROM received_notes
-                WHERE account = ? AND spent IS NULL
+                INNER JOIN transactions ON transactions.id_tx = received_notes.tx
+                WHERE account = ? AND spent IS NULL AND transactions.block <= ?
             )
             SELECT * FROM eligible WHERE so_far < ?
             UNION
@@ -617,9 +670,10 @@ pub fn send_to_address<P: AsRef<Path>>(
     let notes = stmt_select_notes.query_and_then::<_, Error, _, _>(
         &[
             i64::from(account),
+            anchor_height,
             target_value,
             target_value,
-            i64::from(height.saturating_sub(ANCHOR_OFFSET)),
+            anchor_height,
         ],
         |row| {
             let mut diversifier = Diversifier([0; 11]);
@@ -627,6 +681,7 @@ pub fn send_to_address<P: AsRef<Path>>(
             diversifier.0.copy_from_slice(&d);
 
             let note_value: i64 = row.get(1);
+            debug!("Selected note with value {}", note_value);
 
             let d: Vec<_> = row.get(2);
             let rcm = {
@@ -685,6 +740,9 @@ pub fn send_to_address<P: AsRef<Path>>(
     };
     let created = time::get_time();
 
+    // Update the database atomically, to ensure the result is internally consistent.
+    data.execute("BEGIN IMMEDIATE", NO_PARAMS)?;
+
     // Save the transaction in the database.
     let mut raw_tx = vec![];
     tx.write(&mut raw_tx)?;
@@ -699,6 +757,20 @@ pub fn send_to_address<P: AsRef<Path>>(
         raw_tx.to_sql()?,
     ])?;
     let id_tx = data.last_insert_rowid();
+
+    // Mark notes as spent.
+    //
+    // This locks the notes so they aren't selected again by a subsequent call to
+    // send_to_address() before this transaction has been mined (at which point the notes
+    // get re-marked as spent).
+    //
+    // Assumes that send_to_address() will never be called in parallel, which is a
+    // reasonable assumption for a light client such as a mobile phone.
+    let mut stmt_mark_spent_note =
+        data.prepare("UPDATE received_notes SET spent = ? WHERE nf = ?")?;
+    for spend in &tx.shielded_spends {
+        stmt_mark_spent_note.execute(&[id_tx.to_sql()?, spend.nullifier.to_sql()?])?;
+    }
 
     // Save the sent note in the database.
     let to_str = encode_payment_address(HRP_SAPLING_PAYMENT_ADDRESS_TEST, to);
@@ -729,6 +801,8 @@ pub fn send_to_address<P: AsRef<Path>>(
         ])?;
     }
 
+    data.execute("COMMIT", NO_PARAMS)?;
+
     // Return the row number of the transaction, so the caller can fetch it for sending.
     Ok(id_tx)
 }
@@ -757,8 +831,8 @@ mod tests {
     use zip32::{ExtendedFullViewingKey, ExtendedSpendingKey};
 
     use super::{
-        get_address, get_balance, init_accounts_table, init_blocks_table, init_cache_database,
-        init_data_database, scan_cached_blocks, send_to_address,
+        get_address, get_balance, get_verified_balance, init_accounts_table, init_blocks_table,
+        init_cache_database, init_data_database, scan_cached_blocks, send_to_address,
     };
 
     fn test_prover() -> impl TxProver {
@@ -970,6 +1044,46 @@ mod tests {
     }
 
     #[test]
+    fn scan_cached_blocks_requires_sequential_blocks() {
+        let cache_file = NamedTempFile::new().unwrap();
+        let db_cache = cache_file.path();
+        init_cache_database(&db_cache).unwrap();
+
+        let data_file = NamedTempFile::new().unwrap();
+        let db_data = data_file.path();
+        init_data_database(&db_data).unwrap();
+
+        // Add an account to the wallet
+        let extsk = ExtendedSpendingKey::master(&[]);
+        let extfvk = ExtendedFullViewingKey::from(&extsk);
+        init_accounts_table(&db_data, &[extfvk.clone()]).unwrap();
+
+        // Create a block with height 1
+        let value = Amount(50000);
+        let (cb1, _) = fake_compact_block(1, extfvk.clone(), value);
+        insert_into_cache(db_cache, &cb1);
+        scan_cached_blocks(db_cache, db_data).unwrap();
+        assert_eq!(get_balance(db_data, 0).unwrap(), value);
+
+        // We cannot scan a block of height 3 next
+        let (cb3, _) = fake_compact_block(3, extfvk.clone(), value);
+        insert_into_cache(db_cache, &cb3);
+        match scan_cached_blocks(db_cache, db_data) {
+            Ok(_) => panic!("Should have failed"),
+            Err(e) => assert_eq!(
+                e.to_string(),
+                "Expected height of next CompactBlock to be 2, but was 3"
+            ),
+        }
+
+        // If we add a block of height 2, we can now scan both
+        let (cb2, _) = fake_compact_block(2, extfvk.clone(), value);
+        insert_into_cache(db_cache, &cb2);
+        scan_cached_blocks(db_cache, db_data).unwrap();
+        assert_eq!(get_balance(db_data, 0).unwrap(), Amount(150_000));
+    }
+
+    #[test]
     fn scan_cached_blocks_finds_received_notes() {
         let cache_file = NamedTempFile::new().unwrap();
         let db_cache = cache_file.path();
@@ -1115,7 +1229,7 @@ mod tests {
         // We cannot do anything if we aren't synchronised
         match send_to_address(db_data, 1, test_prover(), (0, &extsk), &to, Amount(1), None) {
             Ok(_) => panic!("Should have failed"),
-            Err(e) => assert_eq!(e.to_string(), "Must sync before calling send_to_address()"),
+            Err(e) => assert_eq!(e.to_string(), "Must scan blocks first"),
         }
     }
 
@@ -1143,5 +1257,204 @@ mod tests {
                 "Insufficient balance (have 0, need 10001 including fee)"
             ),
         }
+    }
+
+    #[test]
+    fn send_to_address_fails_on_unverified_notes() {
+        let cache_file = NamedTempFile::new().unwrap();
+        let db_cache = cache_file.path();
+        init_cache_database(&db_cache).unwrap();
+
+        let data_file = NamedTempFile::new().unwrap();
+        let db_data = data_file.path();
+        init_data_database(&db_data).unwrap();
+
+        // Add an account to the wallet
+        let extsk = ExtendedSpendingKey::master(&[]);
+        let extfvk = ExtendedFullViewingKey::from(&extsk);
+        init_accounts_table(&db_data, &[extfvk.clone()]).unwrap();
+
+        // Add funds to the wallet in a single note
+        let value = Amount(50000);
+        let (cb, _) = fake_compact_block(1, extfvk.clone(), value);
+        insert_into_cache(db_cache, &cb);
+        scan_cached_blocks(db_cache, db_data).unwrap();
+
+        // Verified balance matches total balance
+        assert_eq!(get_balance(db_data, 0).unwrap(), value);
+        assert_eq!(get_verified_balance(db_data, 0).unwrap(), value);
+
+        // Add more funds to the wallet in a second note
+        let (cb, _) = fake_compact_block(2, extfvk.clone(), value);
+        insert_into_cache(db_cache, &cb);
+        scan_cached_blocks(db_cache, db_data).unwrap();
+
+        // Verified balance does not include the second note
+        assert_eq!(get_balance(db_data, 0).unwrap().0, 2 * value.0);
+        assert_eq!(get_verified_balance(db_data, 0).unwrap(), value);
+
+        // Spend fails because there are insufficient verified notes
+        let extsk2 = ExtendedSpendingKey::master(&[]);
+        let to = extsk2.default_address().unwrap().1;
+        match send_to_address(
+            db_data,
+            1,
+            test_prover(),
+            (0, &extsk),
+            &to,
+            Amount(70000),
+            None,
+        ) {
+            Ok(_) => panic!("Should have failed"),
+            Err(e) => assert_eq!(
+                e.to_string(),
+                "Insufficient balance (have 50000, need 80000 including fee)"
+            ),
+        }
+
+        // Mine blocks 3 to 10 until just before the second note is verified
+        for i in 3..11 {
+            let (cb, _) = fake_compact_block(i, extfvk.clone(), value);
+            insert_into_cache(db_cache, &cb);
+        }
+        scan_cached_blocks(db_cache, db_data).unwrap();
+
+        // Second spend still fails
+        match send_to_address(
+            db_data,
+            1,
+            test_prover(),
+            (0, &extsk),
+            &to,
+            Amount(70000),
+            None,
+        ) {
+            Ok(_) => panic!("Should have failed"),
+            Err(e) => assert_eq!(
+                e.to_string(),
+                "Insufficient balance (have 50000, need 80000 including fee)"
+            ),
+        }
+
+        // Mine block 11 so that the second note becomes verified
+        let (cb, _) = fake_compact_block(11, extfvk.clone(), value);
+        insert_into_cache(db_cache, &cb);
+        scan_cached_blocks(db_cache, db_data).unwrap();
+
+        // Second spend should now succeed
+        send_to_address(
+            db_data,
+            1,
+            test_prover(),
+            (0, &extsk),
+            &to,
+            Amount(70000),
+            None,
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn send_to_address_fails_on_locked_notes() {
+        let cache_file = NamedTempFile::new().unwrap();
+        let db_cache = cache_file.path();
+        init_cache_database(&db_cache).unwrap();
+
+        let data_file = NamedTempFile::new().unwrap();
+        let db_data = data_file.path();
+        init_data_database(&db_data).unwrap();
+
+        // Add an account to the wallet
+        let extsk = ExtendedSpendingKey::master(&[]);
+        let extfvk = ExtendedFullViewingKey::from(&extsk);
+        init_accounts_table(&db_data, &[extfvk.clone()]).unwrap();
+
+        // Add funds to the wallet in a single note
+        let value = Amount(50000);
+        let (cb, _) = fake_compact_block(1, extfvk.clone(), value);
+        insert_into_cache(db_cache, &cb);
+        scan_cached_blocks(db_cache, db_data).unwrap();
+        assert_eq!(get_balance(db_data, 0).unwrap(), value);
+
+        // Send some of the funds to another address
+        let extsk2 = ExtendedSpendingKey::master(&[]);
+        let to = extsk2.default_address().unwrap().1;
+        send_to_address(
+            db_data,
+            1,
+            test_prover(),
+            (0, &extsk),
+            &to,
+            Amount(15000),
+            None,
+        )
+        .unwrap();
+
+        // A second spend fails because there are no usable notes
+        match send_to_address(
+            db_data,
+            1,
+            test_prover(),
+            (0, &extsk),
+            &to,
+            Amount(2000),
+            None,
+        ) {
+            Ok(_) => panic!("Should have failed"),
+            Err(e) => assert_eq!(
+                e.to_string(),
+                "Insufficient balance (have 0, need 12000 including fee)"
+            ),
+        }
+
+        // Mine blocks 2 to 22 (that don't send us funds) until just before the first
+        // transaction expires
+        for i in 2..23 {
+            let (cb, _) = fake_compact_block(
+                i,
+                ExtendedFullViewingKey::from(&ExtendedSpendingKey::master(&[i as u8])),
+                value,
+            );
+            insert_into_cache(db_cache, &cb);
+        }
+        scan_cached_blocks(db_cache, db_data).unwrap();
+
+        // Second spend still fails
+        match send_to_address(
+            db_data,
+            1,
+            test_prover(),
+            (0, &extsk),
+            &to,
+            Amount(2000),
+            None,
+        ) {
+            Ok(_) => panic!("Should have failed"),
+            Err(e) => assert_eq!(
+                e.to_string(),
+                "Insufficient balance (have 0, need 12000 including fee)"
+            ),
+        }
+
+        // Mine block 23 so that the first transaction expires
+        let (cb, _) = fake_compact_block(
+            23,
+            ExtendedFullViewingKey::from(&ExtendedSpendingKey::master(&[23])),
+            value,
+        );
+        insert_into_cache(db_cache, &cb);
+        scan_cached_blocks(db_cache, db_data).unwrap();
+
+        // Second spend should now succeed
+        send_to_address(
+            db_data,
+            1,
+            test_prover(),
+            (0, &extsk),
+            &to,
+            Amount(2000),
+            None,
+        )
+        .unwrap();
     }
 }
