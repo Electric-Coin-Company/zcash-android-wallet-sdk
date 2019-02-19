@@ -24,9 +24,10 @@ import kotlin.random.nextLong
  */
 open class MockSynchronizer(
     private val transactionInterval: Long = 30_000L,
+    private val initialLoadDuration: Long = 5_000L,
     private val activeTransactionUpdateFrequency: Long = 3_000L,
     private val isFirstRun: Boolean = Random.nextBoolean(),
-    private val isOutOfSync: Boolean = Random.nextBoolean()
+    private var isOutOfSync: Boolean? = null
 ) : Synchronizer, CoroutineScope {
 
     private val mockAddress = "ztestsaplingmock0000this0is0a0mock0address0do0not0send0funds0to0this0address0ok0thanks00"
@@ -51,11 +52,15 @@ open class MockSynchronizer(
     private val progressChannel = ConflatedBroadcastChannel(0)
 
     override fun start(parentScope: CoroutineScope): Synchronizer {
+        Twig.sprout("mock")
+        twig("synchronizer starting")
         forge.start(parentScope)
         return this
     }
 
     override fun stop() {
+        println("synchronizer stopping!")
+        Twig.clip("mock")
         job.cancel()
     }
 
@@ -65,16 +70,21 @@ open class MockSynchronizer(
     override fun progress() = progressChannel.openSubscription()
 
     override suspend fun isOutOfSync(): Boolean {
-        return Random.nextInt(100) < 10
+        val result = isOutOfSync ?: (Random.nextInt(100) < 10)
+        twig("checking isOutOfSync: $result")
+        if(isOutOfSync == true) launch { delay(20_000L); isOutOfSync = false }
+        return result
     }
 
     override suspend fun isFirstRun(): Boolean {
+        twig("checking isFirstRun: $isFirstRun")
         return isFirstRun
     }
 
-    override fun getAddress() = mockAddress
+    override fun getAddress() = mockAddress.also {  twig("returning mock address $mockAddress") }
 
     override suspend fun sendToAddress(zatoshi: Long, toAddress: String) = withContext<Unit>(Dispatchers.IO) {
+        Twig.sprout("send")
         val walletTransaction = forge.createSendTransaction(zatoshi)
         val activeTransaction = forge.createActiveSendTransaction(walletTransaction, toAddress)
         val isInvalidForTestnet = toAddress.length != 88 && toAddress.startsWith("ztest")
@@ -86,18 +96,18 @@ open class MockSynchronizer(
             isInvalidForMainnet -> TransactionState.Failure(TransactionState.Creating, "invalid mainnet address")
             else -> TransactionState.Creating
         }
-        println("after input validation, state is being set to ${state::class.simpleName}")
+        twig("after input validation, state is being set to ${state::class.simpleName}")
         setState(activeTransaction, state)
 
-        println("active tx size is ${activeTransactions.size}")
+        twig("active tx size is ${activeTransactions.size}")
 
         // next, transition it through the states, if it got created
         if (state !is TransactionState.Creating) {
-            println("failed to create transaction")
+            twig("failed to create transaction")
             return@withContext
         } else {
             // first, add the transaction
-            println("adding transaction")
+            twig("adding transaction")
             transactionMutex.withLock {
                 transactions.add(walletTransaction)
             }
@@ -126,6 +136,7 @@ open class MockSynchronizer(
                     setState(activeTransaction, newState)
                 }
         }
+        Twig.clip("send")
     }
 
     private suspend fun setState(activeTransaction: ActiveTransaction, state: TransactionState) {
@@ -133,16 +144,17 @@ open class MockSynchronizer(
         activeTransactionMutex.withLock {
             val currentState = activeTransactions[activeTransaction]
             if ((currentState?.order ?: 0) < 0) {
-                println("ignoring state ${state::class.simpleName} because the current state is ${currentState!!::class.simpleName}")
+                twig("ignoring state ${state::class.simpleName} " +
+                        "because the current state is ${currentState!!::class.simpleName}")
                 return
             }
             activeTransactions[activeTransaction] = state
             var count = if (state is TransactionState.AwaitingConfirmations) "(${state.confirmationCount})" else ""
-            println("state set to ${state::class.simpleName}$count on thread ${Thread.currentThread().name}")
+            twig("state set to ${state::class.simpleName}$count on thread ${Thread.currentThread().name}")
         }
 
         copyMap = activeTransactions.toMutableMap()
-        println("sending ${copyMap.size} active transactions")
+        twig("sending ${copyMap.size} active transactions")
         launch {
             activeTransactionsChannel.send(copyMap)
         }
@@ -150,7 +162,7 @@ open class MockSynchronizer(
 
     override fun cancelSend(transaction: ActiveSendTransaction): Boolean {
         launch {
-            println("cancelling transaction $transaction")
+            twig("cancelling transaction $transaction")
             setState(transaction, TransactionState.Cancelled)
         }
         return true
@@ -176,17 +188,20 @@ open class MockSynchronizer(
                     transactionMutex.withLock {
                         // does not factor in confirmations
                         balance =
-                                transactions.fold(0L) { acc, tx -> if (tx.isSend && tx.isMined) acc - tx.value else acc + tx.value }
+                                transactions.fold(0L) { acc, tx ->
+                                    if (tx.isSend && tx.isMined) acc - tx.value else acc + tx.value
+                                }
                     }
                     balanceChannel.send(balance)
                 }
-                // other collaborators add to the list, periodically. So this simulates, real-world, non-distinct updates.
+                // other collaborators add to the list, periodically. This simulates, real-world, non-distinct updates.
                 delay(Random.nextLong(transactionInterval / 2))
                 var copyList = listOf<WalletTransaction>()
                 transactionMutex.withLock {
                     // shallow copy
                     copyList = transactions.map { it }
                 }
+                twig("sending ${copyList.size} transactions")
                 transactionsChannel.send(copyList)
             }
         }
@@ -195,18 +210,24 @@ open class MockSynchronizer(
             while (job.isActive) {
                 delay(transactionInterval)
                 transactionMutex.withLock {
-                    println("adding received transaction for random value")
-                    transactions.add(createReceiveTransaction())
+                    twig("adding received transaction with random value")
+                    transactions.add(
+                        createReceiveTransaction()
+                            .also { twig("adding received transaction with random value: ${it.value}") }
+                    )
                 }
             }
         }
 
         fun CoroutineScope.launchUpdateProgress() =  launch {
-            val progressInterval = Math.max(transactionInterval / 4, 1)
+            var progress = 0
             while (job.isActive) {
-                delay(Random.nextLong(1L..progressInterval))
-                progressChannel.send(Math.min(transactions.size * 10, 100))
+                delay(initialLoadDuration/100)
+                twig("sending progress of $progress")
+                progressChannel.send(progress++)
+                if(progress > 100) break
             }
+            twig("progress channel complete!")
         }
 
         fun createReceiveTransaction(): WalletTransaction {
@@ -220,9 +241,12 @@ open class MockSynchronizer(
             )
         }
 
-        fun createSendTransaction(amount: Long = Random.nextLong(20_000L..1_000_000_000L), txId: Long = -1L): WalletTransaction {
+        fun createSendTransaction(
+            amount: Long = Random.nextLong(20_000L..1_000_000_000L),
+            txId: Long = -1L
+        ): WalletTransaction {
             return WalletTransaction(
-                txId = if(txId == -1L) transactionId.getAndIncrement() else txId,
+                txId = if (txId == -1L) transactionId.getAndIncrement() else txId,
                 value = amount,
                 height = null,
                 isSend = true,
