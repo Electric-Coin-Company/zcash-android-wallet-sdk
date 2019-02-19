@@ -279,6 +279,8 @@ interface ActiveTransaction {
 }
 
 sealed class TransactionState(val order: Int) {
+    val timestamp: Long = System.currentTimeMillis()
+
     object Creating : TransactionState(0)
 
     /** @param txId row in the database where the raw transaction has been stored, temporarily, by the rust lib */
@@ -286,13 +288,25 @@ sealed class TransactionState(val order: Int) {
 
     object SendingToNetwork : TransactionState(20)
 
-    class AwaitingConfirmations(val confirmationCount: Int) : TransactionState(30)
+    class AwaitingConfirmations(val confirmationCount: Int) : TransactionState(30) {
+        override fun toString(): String {
+            return "${super.toString()}($confirmationCount)"
+        }
+    }
 
     object Cancelled : TransactionState(-1)
     /** @param failedStep the state of this transaction at the time, prior to failure */
-    class Failure(val failedStep: TransactionState?, val reason: String = "") : TransactionState(-2)
+    class Failure(val failedStep: TransactionState?, val reason: String = "") : TransactionState(-2) {
+        override fun toString(): String {
+            return "${super.toString()}($failedStep) : $reason"
+        }
+    }
 
     fun isActive(): Boolean {
         return order > 0
+    }
+
+    override fun toString(): String {
+        return javaClass.simpleName
     }
 }

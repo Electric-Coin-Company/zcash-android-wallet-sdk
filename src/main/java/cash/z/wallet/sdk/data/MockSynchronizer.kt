@@ -46,10 +46,10 @@ open class MockSynchronizer(
 
     private val forge = Forge()
 
-    private val balanceChannel = ConflatedBroadcastChannel(0L)
+    private val balanceChannel = ConflatedBroadcastChannel<Long>()
     private val activeTransactionsChannel = ConflatedBroadcastChannel<Map<ActiveTransaction, TransactionState>>(mutableMapOf())
     private val transactionsChannel = ConflatedBroadcastChannel<List<WalletTransaction>>(listOf())
-    private val progressChannel = ConflatedBroadcastChannel(0)
+    private val progressChannel = ConflatedBroadcastChannel<Int>()
 
     override fun start(parentScope: CoroutineScope): Synchronizer {
         Twig.sprout("mock")
@@ -167,7 +167,6 @@ open class MockSynchronizer(
         }
         return true
     }
-
 
     /* creators */
 
