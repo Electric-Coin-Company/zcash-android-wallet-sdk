@@ -30,6 +30,7 @@ use zip32::{ExtendedFullViewingKey, ExtendedSpendingKey};
 // TODO: Expose this in zcash_client_backend
 const DEFAULT_FEE: i64 = 10000;
 const ANCHOR_OFFSET: u32 = 10;
+const SAPLING_ACTIVATION_HEIGHT: i32 = 280_000;
 
 fn address_from_extfvk(extfvk: &ExtendedFullViewingKey) -> String {
     let addr = extfvk.default_address().unwrap().1;
@@ -309,14 +310,14 @@ pub fn scan_cached_blocks<P: AsRef<Path>, Q: AsRef<Path>>(
     let data = Connection::open(db_data)?;
 
     // Recall where we synced up to previously.
-    // If we have never synced, use 0 to select all cached CompactBlocks.
+    // If we have never synced, use sapling activation height to select all cached CompactBlocks.
     let mut last_height =
         data.query_row(
             "SELECT MAX(height) FROM blocks",
             NO_PARAMS,
             |row| match row.get_checked(0) {
                 Ok(h) => h,
-                Err(_) => 0,
+                Err(_) => SAPLING_ACTIVATION_HEIGHT - 1,
             },
         )?;
 
