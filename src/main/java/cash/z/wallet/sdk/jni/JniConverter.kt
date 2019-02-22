@@ -13,7 +13,7 @@ class JniConverter {
         dbData: String,
         height: Int,
         time: Long,
-        saplingTree: ByteArray): Boolean
+        saplingTree: String): Boolean
 
     external fun getAddress(dbData: String, account: Int): String
 

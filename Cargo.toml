@@ -14,7 +14,7 @@ android_logger = "0.6"
 failure = "0.1"
 futures = { version = "0.1", optional = true }
 grpc = { version = "0.6", optional = true }
-hex = { version = "0.3", optional = true }
+hex = "0.3"
 jni = { version = "0.10", default-features = false }
 log = "0.4"
 log-panics = "2.0.0"
@@ -52,7 +52,7 @@ dirs = "1"
 tempfile = "3"
 
 [features]
-updater = ["futures", "grpc", "hex"]
+updater = ["futures", "grpc"]
 
 [lib]
 name = "zcashwalletsdk"

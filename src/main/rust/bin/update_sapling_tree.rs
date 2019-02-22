@@ -26,11 +26,11 @@ const BATCH_SIZE: u64 = 10_000;
 fn print_sapling_tree(height: u64, time: u32, tree: CommitmentTree) {
     let mut tree_bytes = vec![];
     tree.write(&mut tree_bytes).unwrap();
-    println!("{");
+    println!("{{");
     println!("  \"height\": {},", height);
     println!("  \"time\": {},", time);
     println!("  \"tree\": \"{}\",", hex::encode(tree_bytes));
-    println!("}");
+    println!("}}");
 }
 
 fn main() {

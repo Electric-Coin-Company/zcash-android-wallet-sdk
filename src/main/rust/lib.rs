@@ -1,5 +1,6 @@
 #[macro_use]
 extern crate log;
+extern crate hex;
 
 mod sql;
 mod utils;
@@ -119,7 +120,7 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_initBlocksTable
     db_data: JString<'_>,
     height: jint,
     time: jlong,
-    sapling_tree: jbyteArray,
+    sapling_tree_string: JString<'_>,
 ) -> jboolean {
     let res = panic::catch_unwind(|| {
         let db_data = utils::java_string_to_rust(&env, db_data);
@@ -128,7 +129,8 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_initBlocksTable
         } else {
             return Err(format_err!("time argument must fit in a u32"));
         };
-        let sapling_tree = env.convert_byte_array(sapling_tree).unwrap();
+        let sapling_tree =
+            hex::decode(utils::java_string_to_rust(&env, sapling_tree_string)).unwrap();
 
         match init_blocks_table(&db_data, height, time, &sapling_tree) {
             Ok(()) => Ok(JNI_TRUE),
