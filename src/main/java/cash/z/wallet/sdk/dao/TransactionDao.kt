@@ -36,6 +36,7 @@ interface TransactionDao {
                       ON transactions.id_tx = received_notes.tx
                LEFT JOIN blocks
                       ON transactions.block = blocks.height
+        WHERE received_notes.is_change != 1 or transactions.raw IS NOT NULL
         ORDER  BY block IS NOT NUll, height DESC, time DESC, txId DESC
     """)
     fun getAll(): List<WalletTransaction>
