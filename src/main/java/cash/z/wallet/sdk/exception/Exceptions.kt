@@ -34,7 +34,15 @@ sealed class CompactBlockStreamException(message: String, cause: Throwable? = nu
 }
 
 sealed class WalletException(message: String, cause: Throwable? = null) : RuntimeException(message, cause) {
-    object MissingParamsException : WalletException("Cannot send funds due to missing spend or output params and " +
-            "attempting to download them failed.")
+    class MissingBirthdayFilesException(directory: String) : WalletException(
+        "Cannot initialize wallet because no birthday files were found in the $directory directory."
+    )
     class FetchParamsException(message: String) : WalletException("Failed to fetch params due to: $message")
+    object MissingParamsException : WalletException(
+        "Cannot send funds due to missing spend or output params and attempting to download them failed."
+    )
+    class MalformattedBirthdayFilesException(directory: String, file: String) : WalletException(
+        "Failed to parse file $directory/$file verify that it is formatted as #####.json, " +
+                "where the first portion is an Int representing the height of the tree contained in the file"
+    )
 }

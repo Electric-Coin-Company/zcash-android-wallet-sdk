@@ -1,15 +1,22 @@
 package cash.z.wallet.sdk.secure
 
-import cash.z.wallet.sdk.data.*
+import android.content.Context
+import cash.z.wallet.sdk.data.Bush
+import cash.z.wallet.sdk.data.CompactBlockProcessor.Companion.SAPLING_ACTIVATION_HEIGHT
+import cash.z.wallet.sdk.data.twig
+import cash.z.wallet.sdk.data.twigTask
 import cash.z.wallet.sdk.exception.WalletException
 import cash.z.wallet.sdk.ext.masked
 import cash.z.wallet.sdk.jni.JniConverter
+import com.google.gson.Gson
+import com.google.gson.stream.JsonReader
 import com.squareup.okhttp.OkHttpClient
 import com.squareup.okhttp.Request
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.withContext
 import okio.Okio
 import java.io.File
+import java.io.InputStreamReader
 import kotlin.properties.ReadOnlyProperty
 import kotlin.properties.ReadWriteProperty
 
@@ -19,6 +26,7 @@ import kotlin.properties.ReadWriteProperty
  * required to exercise those abilities.
  */
 class Wallet(
+    private val birthday: WalletBirthday,
     private val converter: JniConverter,
     private val dbDataPath: String,
     private val paramDestinationDir: String,
@@ -27,6 +35,24 @@ class Wallet(
     private val seedProvider: ReadOnlyProperty<Any?, ByteArray>,
     spendingKeyProvider: ReadWriteProperty<Any?, String>
 ) {
+    constructor(
+        context: Context,
+        converter: JniConverter,
+        dbDataPath: String,
+        paramDestinationDir: String,
+        accountIds: Array<Int> = arrayOf(0),
+        seedProvider: ReadOnlyProperty<Any?, ByteArray>,
+        spendingKeyProvider: ReadWriteProperty<Any?, String>
+    ) : this(
+        birthday = loadBirthdayFromAssets(context),
+        converter = converter,
+        dbDataPath = dbDataPath,
+        paramDestinationDir = paramDestinationDir,
+        accountIds = accountIds,
+        seedProvider = seedProvider,
+        spendingKeyProvider = spendingKeyProvider
+    )
+
     var spendingKeyStore by spendingKeyProvider
 
     init {
@@ -38,11 +64,13 @@ class Wallet(
         // get back an array of spending keys for each account. store them super securely
     }
 
-    fun initialize(firstRunStartHeight: Int = 280000): Int {
+    fun initialize(
+        firstRunStartHeight: Int = SAPLING_ACTIVATION_HEIGHT
+    ): Int {
         twig("Initializing wallet for first run")
         converter.initDataDb(dbDataPath)
-        //TODO: pass this into the synchronizer and leverage it here
-        converter.initBlocksTable(dbDataPath, 421720, 1550762014, "015495a30aef9e18b9c774df6a9fcd583748c8bba1a6348e70f59bc9f0c2bc673b000f00000000018054b75173b577dc36f2c80dfc41f83d6716557597f74ec54436df32d4466d57000120f1825067a52ca973b07431199d5866a0d46ef231d08aa2f544665936d5b4520168d782e3d028131f59e9296c75de5a101898c5e53108e45baa223c608d6c3d3d01fb0a8d465b57c15d793c742df9470b116ddf06bd30d42123fdb7becef1fd63640001a86b141bdb55fd5f5b2e880ea4e07caf2bbf1ac7b52a9f504977913068a917270001dd960b6c11b157d1626f0768ec099af9385aea3f31c91111a8c5b899ffb99e6b0192acd61b1853311b0bf166057ca433e231c93ab5988844a09a91c113ebc58e18019fbfd76ad6d98cafa0174391546e7022afe62e870e20e16d57c4c419a5c2bb69")
+        twig("seeding the database with sapling tree at height ${birthday.height}")
+        converter.initBlocksTable(dbDataPath, birthday.height, birthday.time, birthday.tree)
 
         // securely store the spendingkey by leveraging the utilities provided during construction
         val seed by seedProvider
@@ -53,8 +81,7 @@ class Wallet(
         // TODO: init blocks table with sapling tree. probably read a table row in and then write it out to disk in a way where we can deserialize easily
         // TODO: then use that to determine firstRunStartHeight
 
-//        val firstRunStartHeight = 405410
-        return 421720
+        return Math.max(firstRunStartHeight, birthday.height)
     }
 
     fun getAddress(accountId: Int = accountIds[0]): String {
@@ -171,5 +198,40 @@ class Wallet(
         const val CLOUD_PARAM_DIR_URL = "https://z.cash/downloads/"
         const val SPEND_PARAM_FILE_NAME = "sapling-spend.params"
         const val OUTPUT_PARAM_FILE_NAME = "sapling-output.params"
+
+        const val BIRTHDAY_DIRECTORY = "zcash/saplingtree"
+
+        /**
+         * Load the given birthday file from the assets of the given context. When no height is specified, we default to
+         * the file with the greatest name.
+         *
+         * @param context the context from which to load assets.
+         * @param birthdayHeight the height file to look for among the file names.
+         *
+         * @return a WalletBirthday that reflects the contents of the file or an exception when parsing fails.
+         */
+        fun loadBirthdayFromAssets(context: Context, birthdayHeight: Int? = null): WalletBirthday {
+            val treeFiles = context.assets.list(Wallet.BIRTHDAY_DIRECTORY).apply { sortDescending() }
+            if (treeFiles.isEmpty()) throw WalletException.MissingBirthdayFilesException(BIRTHDAY_DIRECTORY)
+            try {
+                val file = treeFiles.first {
+                    if (birthdayHeight == null) true
+                    else it.contains(birthdayHeight.toString())
+                }
+                val reader =
+                    JsonReader(InputStreamReader(context.assets.open("$BIRTHDAY_DIRECTORY/$file")))
+                return Gson().fromJson(reader, WalletBirthday::class.java)
+            } catch (t: Throwable) {
+                throw WalletException.MalformattedBirthdayFilesException(BIRTHDAY_DIRECTORY, treeFiles[0])
+            }
+        }
+
     }
+
+    data class WalletBirthday(
+        val height: Int = -1,
+        val time: Long = -1,
+        val tree: String = ""
+    )
+
 }

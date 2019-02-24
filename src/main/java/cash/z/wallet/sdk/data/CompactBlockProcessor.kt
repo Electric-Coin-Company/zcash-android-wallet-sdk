@@ -13,8 +13,6 @@ import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 import java.io.File
-import kotlin.properties.ReadOnlyProperty
-import kotlin.properties.ReadWriteProperty
 
 /**
  * Responsible for processing the blocks on the stream. Saves them to the cacheDb and periodically scans for transactions.
@@ -24,8 +22,8 @@ import kotlin.properties.ReadWriteProperty
 class CompactBlockProcessor(
     applicationContext: Context,
     val converter: JniConverter = JniConverter(),
-    cacheDbName: String = CACHE_DB_NAME,
-    dataDbName: String = DATA_DB_NAME,
+    cacheDbName: String = DEFAULT_CACHE_DB_NAME,
+    dataDbName: String = DEFAULT_DATA_DB_NAME,
     logger: Twig = SilentTwig()
 ) : Twig by logger {
 
@@ -100,17 +98,23 @@ class CompactBlockProcessor(
         }
     }
 
+    /**
+     * Returns the height of the last processed block or -1 if no blocks have been processed.
+     */
     suspend fun lastProcessedBlock(): Int = withContext(IO) {
-        // TODO: maybe start at the tip and keep going backward until we find a verifiably non-corrupted block, far enough back to be immune to reorgs
-        Math.max(0, cacheDao.latestBlockHeight() - 20)
+        val lastBlock = Math.max(0, cacheDao.latestBlockHeight() - 1)
+        if (lastBlock < SAPLING_ACTIVATION_HEIGHT) -1 else lastBlock
     }
 
     companion object {
+        const val DEFAULT_CACHE_DB_NAME = "DownloadedCompactBlocks.db"
+        const val DEFAULT_DATA_DB_NAME = "CompactBlockScanResults.db"
+
         /** Default amount of time to synchronize before initiating the first scan. This allows time to download a few blocks. */
         const val INITIAL_SCAN_DELAY = 3000L
         /** Minimum amount of time between scans. The frequency with which we check whether the block height has changed and, if so, trigger a scan */
         const val SCAN_FREQUENCY = 75_000L
-        const val CACHE_DB_NAME = "DownloadedCompactBlocks.db"
-        const val DATA_DB_NAME = "CompactBlockScanResults.db"
+        // TODO: find a better home for this constant
+        const val SAPLING_ACTIVATION_HEIGHT = 280_000
     }
 }
