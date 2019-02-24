@@ -76,13 +76,9 @@ open class PollingTransactionRepository(
     }
 
     override fun stop() {
-        twig("stopping")
-        // when polling ends, we call stop which can result in a duplicate call to stop
-        // So keep stop idempotent, rather than crashing with "Channel was closed" errors
-        // probably should make a safeCancel extension function for this and use it everywhere that we cancel a channel
-        try{ if (!balanceChannel.isClosedForSend) balanceChannel.cancel() }catch (t:Throwable){}
-        try{ if (!allTransactionsChannel.isClosedForSend) allTransactionsChannel.cancel() }catch (t:Throwable){}
-        try{ if (!pollingJob.isCancelled) pollingJob.cancel() }catch (t:Throwable){}
+        twig("stopping but doing nothing")
+        pollingJob.cancel()
+        // TODO: verify that the channels behave as expected in this scenario
     }
 
     override fun balance(): ReceiveChannel<Long> {
@@ -115,30 +111,28 @@ open class PollingTransactionRepository(
     }
 
     private suspend fun poll() = withContext(IO) {
-        try {
-            var previousTransactions: List<WalletTransaction>? = null
-            while (isActive
-                && !balanceChannel.isClosedForSend
-                && !allTransactionsChannel.isClosedForSend
-            ) {
-                twigTask("polling for transactions") {
-                    val newTransactions = transactions.getAll()
+        var previousTransactions: List<WalletTransaction>? = null
+        while (isActive
+            && !balanceChannel.isClosedForSend
+            && !allTransactionsChannel.isClosedForSend
+        ) {
+            twigTask("polling for transactions every ${pollFrequencyMillis}ms") {
+                val newTransactions = transactions.getAll()
 
-                    if (hasChanged(previousTransactions, newTransactions)) {
-                        twig("loaded ${newTransactions.count()} transactions and changes were detected!")
-                        allTransactionsChannel.send(newTransactions)
-                        sendLatestBalance()
-                        previousTransactions = newTransactions
-                    } else {
-                        twig("loaded ${newTransactions.count()} transactions but no changes detected.")
-                    }
+                if (hasChanged(previousTransactions, newTransactions)) {
+                    twig("loaded ${newTransactions.count()} transactions and changes were detected!")
+                    allTransactionsChannel.send(newTransactions)
+                    sendLatestBalance()
+                    previousTransactions = newTransactions
+                } else {
+                    twig("loaded ${newTransactions.count()} transactions but no changes detected.")
                 }
-                delay(pollFrequencyMillis)
             }
-        } finally {
-            stop()
+            delay(pollFrequencyMillis)
         }
+        twig("Done polling for transactions")
     }
+
 
     private fun hasChanged(oldTxs: List<WalletTransaction>?, newTxs: List<WalletTransaction>): Boolean {
         fun pr(t: List<WalletTransaction>?): String {

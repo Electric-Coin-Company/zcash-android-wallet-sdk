@@ -31,6 +31,8 @@ sealed class CompactBlockProcessorException(message: String, cause: Throwable? =
 
 sealed class CompactBlockStreamException(message: String, cause: Throwable? = null) : RuntimeException(message, cause) {
     object ConnectionClosed: CompactBlockStreamException("Cannot start stream when connection is closed.")
+    class FalseStart(cause: Throwable?): CompactBlockStreamException("Failed to start compact block stream due to " +
+            "$cause caused by ${cause?.cause}")
 }
 
 sealed class WalletException(message: String, cause: Throwable? = null) : RuntimeException(message, cause) {

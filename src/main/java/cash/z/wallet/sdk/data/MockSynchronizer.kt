@@ -27,7 +27,8 @@ open class MockSynchronizer(
     private val initialLoadDuration: Long = 5_000L,
     private val activeTransactionUpdateFrequency: Long = 3_000L,
     private val isFirstRun: Boolean = Random.nextBoolean(),
-    private var isOutOfSync: Boolean? = null
+    private var isOutOfSync: Boolean? = null,
+    override var onSynchronizerErrorListener: ((Throwable?) -> Boolean)? = null // presently ignored (there are no errors in mock yet)
 ) : Synchronizer, CoroutineScope {
 
     private val mockAddress = "ztestsaplingmock0000this0is0a0mock0address0do0not0send0funds0to0this0address0ok0thanks00"
@@ -81,7 +82,7 @@ open class MockSynchronizer(
         return isFirstRun
     }
 
-    override fun getAddress() = mockAddress.also {  twig("returning mock address $mockAddress") }
+    override val address get() = mockAddress.also {  twig("returning mock address $mockAddress") }
 
     override suspend fun sendToAddress(zatoshi: Long, toAddress: String) = withContext<Unit>(Dispatchers.IO) {
         Twig.sprout("send")

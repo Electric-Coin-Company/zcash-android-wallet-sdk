@@ -7,6 +7,7 @@ import cash.z.wallet.sdk.secure.Wallet
 import kotlinx.coroutines.*
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.channels.ReceiveChannel
+import kotlin.coroutines.CoroutineContext
 
 /**
  * The glue. Downloads compact blocks to the database and then scans them for transactions. In order to serve that
@@ -29,9 +30,6 @@ class SdkSynchronizer(
     private lateinit var blockJob: Job
     private lateinit var initialState: SyncState
 
-    private val wasPreviouslyStarted
-        get() = ::blockJob.isInitialized
-
 
     //
     // Public API
@@ -40,21 +38,29 @@ class SdkSynchronizer(
     /* Lifecycle */
 
     override fun start(parentScope: CoroutineScope): Synchronizer {
+        val supervisorJob = SupervisorJob(parentScope.coroutineContext[Job])
         //  prevent restarts so the behavior of this class is easier to reason about
         if (wasPreviouslyStarted) throw SynchronizerException.FalseStart
         twig("starting")
-        blockJob = parentScope.launch {
-            continueWithState(determineState())
+        failure = null
+        blockJob = parentScope.launch(CoroutineExceptionHandler(exceptionHandler)) {
+            supervisorScope {
+                continueWithState(determineState())
+            }
         }
         return this
     }
 
     override fun stop() {
         twig("stopping")
-        blockJob.cancel()
-        downloader.stop()
-        repository.stop()
-        activeTransactionManager.stop()
+        downloader.stop().also { twig("downloader stopped") }
+        repository.stop().also { twig("repository stopped") }
+        activeTransactionManager.stop().also { twig("activeTransactionManager stopped") }
+        Thread.sleep(5000L)
+        blockJob.cancel().also { twig("blockJob cancelled") }
+        twig("wait for it...")
+        Thread.sleep(2000L)
+        twig("done stopping")
     }
 
     /* Channels */
@@ -88,7 +94,7 @@ class SdkSynchronizer(
 
     /* Operations */
 
-    override fun getAddress() = wallet.getAddress()
+    override val address get() = wallet.getAddress()
 
     override suspend fun sendToAddress(zatoshi: Long, toAddress: String) =
         activeTransactionManager.sendToAddress(zatoshi, toAddress)
@@ -124,25 +130,18 @@ class SdkSynchronizer(
 
     private fun CoroutineScope.onReady(syncState: ReadyToProcess) = launch {
         twig("synchronization is ready to begin at height ${syncState.startingBlockHeight}")
-        try {
-            // TODO: for PIR concerns, introduce some jitter here for where, exactly, the downloader starts
-            val blockChannel =
-                downloader.start(
-                    this,
-                    syncState.startingBlockHeight,
-                    batchSize,
-                    pollFrequencyMillis = blockPollFrequency
-                )
-            launch { monitorProgress(downloader.progress()) }
-            activeTransactionManager.start()
-            repository.start(this)
-            processor.processBlocks(blockChannel)
-        } catch(t:Throwable) {
-            // TODO: find the best mechanism for error handling
-            twig("catching an error $t caused by ${t.cause} <and> ${t.cause?.cause} <and> ${t.cause?.cause?.cause} ")
-        } finally {
-            stop()
-        }
+        // TODO: for PIR concerns, introduce some jitter here for where, exactly, the downloader starts
+        val blockChannel =
+            downloader.start(
+                this,
+                syncState.startingBlockHeight,
+                batchSize,
+                pollFrequencyMillis = blockPollFrequency
+            )
+        launch { monitorProgress(downloader.progress()) }
+        activeTransactionManager.start()
+        repository.start(this)
+        processor.processBlocks(blockChannel)
     }
 
     private suspend fun monitorProgress(progressChannel: ReceiveChannel<Int>) = withContext(IO) {
@@ -185,9 +184,38 @@ class SdkSynchronizer(
          initialState
     }
 
+
+    //
+    // Error Handling
+    //
+
+    private val wasPreviouslyStarted
+        get() = ::blockJob.isInitialized
+
+    private var failure: Throwable? = null
+
+    private val exceptionHandler: (c: CoroutineContext, t: Throwable) -> Unit = { _, throwable ->
+        twig("********")
+        twig("********  ERROR: $throwable")
+        if (throwable.cause != null) twig("******** caused by ${throwable.cause}")
+        if (throwable.cause?.cause != null) twig("******** caused by ${throwable.cause?.cause}")
+        twig("********")
+
+        val hasRecovered = onSynchronizerErrorListener?.invoke(throwable)
+        if (hasRecovered != true) stop().also { failure = throwable }
+    }
+
+    override var onSynchronizerErrorListener: ((Throwable?) -> Boolean)? = null
+        set(value) {
+            field = value
+            if (failure != null) value?.invoke(failure)
+        }
+
+
     sealed class SyncState {
         object FirstRun : SyncState()
         class CacheOnly(val startingBlockHeight: Int = Int.MAX_VALUE) : SyncState()
         class ReadyToProcess(val startingBlockHeight: Int = Int.MAX_VALUE) : SyncState()
     }
+
 }
