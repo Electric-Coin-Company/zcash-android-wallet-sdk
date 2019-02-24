@@ -11,6 +11,7 @@ interface TransactionRepository {
     fun balance(): ReceiveChannel<Long>
     fun allTransactions(): ReceiveChannel<List<WalletTransaction>>
     fun lastScannedHeight(): Int
+    fun isInitialized(): Boolean
     suspend fun findTransactionById(txId: Long): Transaction?
     suspend fun deleteTransactionById(txId: Long)
 }

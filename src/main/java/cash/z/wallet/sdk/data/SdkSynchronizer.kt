@@ -27,6 +27,7 @@ class SdkSynchronizer(
 ) : Synchronizer {
 
     private lateinit var blockJob: Job
+    private lateinit var initialState: SyncState
 
     private val wasPreviouslyStarted
         get() = ::blockJob.isInitialized
@@ -82,8 +83,7 @@ class SdkSynchronizer(
     }
 
     override suspend fun isFirstRun(): Boolean = withContext(IO) {
-        // maybe just toggle a flag somewhere rather than inferring based on db status
-        !processor.dataDbExists && (!processor.cachDbExists || processor.cacheDao.count() == 0)
+        initialState is FirstRun
     }
 
     /* Operations */
@@ -127,11 +127,19 @@ class SdkSynchronizer(
         try {
             // TODO: for PIR concerns, introduce some jitter here for where, exactly, the downloader starts
             val blockChannel =
-                downloader.start(this, syncState.startingBlockHeight, batchSize, pollFrequencyMillis = blockPollFrequency)
+                downloader.start(
+                    this,
+                    syncState.startingBlockHeight,
+                    batchSize,
+                    pollFrequencyMillis = blockPollFrequency
+                )
             launch { monitorProgress(downloader.progress()) }
             activeTransactionManager.start()
             repository.start(this)
             processor.processBlocks(blockChannel)
+        } catch(t:Throwable) {
+            // TODO: find the best mechanism for error handling
+            twig("catching an error $t caused by ${t.cause} <and> ${t.cause?.cause} <and> ${t.cause?.cause?.cause} ")
         } finally {
             stop()
         }
@@ -157,11 +165,13 @@ class SdkSynchronizer(
     //TODO: add state for never scanned . . . where we have some cache but no entries in the data db
     private suspend fun determineState(): SyncState = withContext(IO) {
         twig("determining state (has the app run before, what block did we last see, etc.)")
-        val state = if (processor.dataDbExists) {
+        initialState = if (processor.dataDbExists) {
+            val isInitialized = repository.isInitialized()
             // this call blocks because it does IO
-            val startingBlockHeight = processor.lastProcessedBlock()
-            twig("cacheDb exists with last height of $startingBlockHeight")
-            if (startingBlockHeight <= 0) FirstRun else ReadyToProcess(startingBlockHeight)
+            val startingBlockHeight = Math.max(processor.lastProcessedBlock(), repository.lastScannedHeight())
+
+            twig("cacheDb exists with last height of $startingBlockHeight and isInitialized = $isInitialized")
+            if (!repository.isInitialized()) FirstRun else ReadyToProcess(startingBlockHeight)
         } else if(processor.cachDbExists) {
             // this call blocks because it does IO
             val startingBlockHeight = processor.lastProcessedBlock()
@@ -171,8 +181,8 @@ class SdkSynchronizer(
             FirstRun
         }
 
-        twig("determined ${state::class.java.simpleName}")
-         state
+        twig("determined ${initialState::class.java.simpleName}")
+         initialState
     }
 
     sealed class SyncState {

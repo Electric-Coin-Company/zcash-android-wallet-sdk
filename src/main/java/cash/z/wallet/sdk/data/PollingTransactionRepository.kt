@@ -97,6 +97,10 @@ open class PollingTransactionRepository(
         return blocks.lastScannedHeight()
     }
 
+    override fun isInitialized(): Boolean {
+        return blocks.count() > 0
+    }
+
     override suspend fun findTransactionById(txId: Long): Transaction? = withContext(IO) {
         twig("finding transaction with id $txId on thread ${Thread.currentThread().name}")
         val transaction = transactions.findById(txId)
