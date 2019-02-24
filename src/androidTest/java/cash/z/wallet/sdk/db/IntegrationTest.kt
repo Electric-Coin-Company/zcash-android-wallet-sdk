@@ -6,9 +6,9 @@ import cash.z.wallet.sdk.data.*
 import cash.z.wallet.sdk.jni.JniConverter
 import cash.z.wallet.sdk.secure.Wallet
 import kotlinx.coroutines.runBlocking
+import org.junit.AfterClass
 import org.junit.Before
 import org.junit.Test
-import org.junit.jupiter.api.AfterEach
 
 /*
 TODO:
@@ -23,8 +23,6 @@ class IntegrationTest {
 
     private lateinit var downloader: CompactBlockStream
     private lateinit var processor: CompactBlockProcessor
-    private lateinit var synchronizer: Synchronizer
-    private lateinit var repository: TransactionRepository
     private lateinit var wallet: Wallet
 
     @Before
@@ -49,7 +47,15 @@ class IntegrationTest {
         downloader = CompactBlockStream("10.0.2.2", 9067, logger)
         processor = CompactBlockProcessor(context, converter, cacheDdName, dataDbName, logger = logger)
         repository = PollingTransactionRepository(context, dataDbName, 10_000L, converter, logger)
-        wallet = Wallet(converter, context.getDatabasePath(dataDbName).absolutePath, context.cacheDir.absolutePath, arrayOf(0), SampleSeedProvider("dummyseed"), SampleSpendingKeyProvider("dummyseed"), logger)
+        wallet = Wallet(
+            context,
+            converter,
+            context.getDatabasePath(dataDbName).absolutePath,
+            context.cacheDir.absolutePath,
+            arrayOf(0),
+            SampleSeedProvider("dummyseed"),
+            SampleSpendingKeyProvider("dummyseed")
+        )
 
 //        repository.start(this)
         synchronizer = SdkSynchronizer(
@@ -66,9 +72,13 @@ class IntegrationTest {
         }
     }
 
-    @AfterEach
-    fun tearDown() {
-        repository.stop()
-        synchronizer.stop()
+    companion object {
+        private lateinit var synchronizer: Synchronizer
+        private lateinit var repository: TransactionRepository
+        @AfterClass
+        fun tearDown() {
+            repository.stop()
+            synchronizer.stop()
+        }
     }
 }
