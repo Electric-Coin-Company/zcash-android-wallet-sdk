@@ -20,7 +20,15 @@ interface Synchronizer {
     /* Status */
     suspend fun isOutOfSync(): Boolean
     suspend fun isFirstRun(): Boolean
-    fun getAddress(): String
+    val address: String
+
+    /**
+     * Called whenever there is an uncaught exception.
+     *
+     * @return true when the error has been handled and the Synchronizer should continue. False when the error is
+     * unrecoverable and the Synchronizer should [stop].
+     */
+    var onSynchronizerErrorListener: ((Throwable?) -> Boolean)?
 
     /* Operations */
     suspend fun sendToAddress(zatoshi: Long, toAddress: String)

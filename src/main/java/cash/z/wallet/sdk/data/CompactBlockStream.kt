@@ -58,9 +58,7 @@ class CompactBlockStream private constructor(logger: Twig = SilentTwig()) : Twig
                     it.streamBlocks(pollFrequencyMillis, latestBlockHeight)
                 }
             } catch (t: Throwable) {
-                twig("failed to start compact block stream due to $t caused by ${t.cause}")
-            } finally {
-                stop()
+                throw CompactBlockStreamException.FalseStart(t)
             }
         }
 
