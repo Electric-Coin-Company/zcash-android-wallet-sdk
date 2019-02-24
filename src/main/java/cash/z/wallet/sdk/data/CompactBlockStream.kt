@@ -57,6 +57,8 @@ class CompactBlockStream private constructor(logger: Twig = SilentTwig()) : Twig
                     }
                     it.streamBlocks(pollFrequencyMillis, latestBlockHeight)
                 }
+            } catch (t: Throwable) {
+                twig("failed to start compact block stream due to $t caused by ${t.cause}")
             } finally {
                 stop()
             }
@@ -138,6 +140,7 @@ class CompactBlockStream private constructor(logger: Twig = SilentTwig()) : Twig
 
         suspend fun streamBlocks(pollFrequencyMillis: Long = DEFAULT_POLL_INTERVAL, startingBlockHeight: Int = Int.MAX_VALUE) = withContext(IO) {
             twig("streamBlocks started at $startingBlockHeight with interval $pollFrequencyMillis")
+            progressChannel.send(100) // anytime we make it to this method, we're done catching up
             // start with the next block, unless we were asked to start before then
             var nextBlockHeight = Math.min(startingBlockHeight, getLatestBlockHeight() + 1)
             while (isActive && !compactBlockChannel.isClosedForSend) {

@@ -75,8 +75,8 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility 1.8
-        targetCompatibility 1.8
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
     kotlinOptions {
         // Allow the use of Result objects understanding that if the API changes, we'll have to fix it before upgrading our kotlin version
@@ -158,11 +158,13 @@ dependencies {
     testImplementation "org.junit.jupiter:junit-jupiter-migrationsupport:${versions.junitJupiter}"
     testImplementation "io.grpc:grpc-testing:1.18.0"
 
+    // NOTE: androidTests will use JUnit4, while src/test/java tests will leverage Junit5
+    // Attempting to use JUnit5 via https://github.com/mannodermaus/android-junit5 was painful. The plugin configuration
+    // was buggy, crashing in several places. It also would require a separate test flavor because it's minimum API 26
+    // because "JUnit 5 uses Java 8-specific APIs that didn't exist on Android before the Oreo release."
     androidTestImplementation 'com.nhaarman.mockitokotlin2:mockito-kotlin:2.1.0'
     androidTestImplementation 'org.mockito:mockito-android:2.24.0'
-    androidTestImplementation "org.junit.jupiter:junit-jupiter-api:${versions.junitJupiter}"
     androidTestImplementation "androidx.test:runner:1.1.1"
-    androidTestImplementation "androidx.test.espresso:espresso-core:3.1.1"
     androidTestImplementation "androidx.test:core:1.1.0"
     androidTestImplementation 'androidx.test.ext:junit:1.1.0'
     androidTestImplementation "androidx.arch.core:core-testing:${versions.architectureComponents}"
