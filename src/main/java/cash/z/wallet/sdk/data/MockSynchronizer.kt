@@ -1,6 +1,7 @@
 package cash.z.wallet.sdk.data
 
 import cash.z.wallet.sdk.dao.WalletTransaction
+import cash.z.wallet.sdk.secure.Wallet
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.ConflatedBroadcastChannel
 import kotlinx.coroutines.sync.Mutex
@@ -47,7 +48,7 @@ open class MockSynchronizer(
 
     private val forge = Forge()
 
-    private val balanceChannel = ConflatedBroadcastChannel<Long>()
+    private val balanceChannel = ConflatedBroadcastChannel<Wallet.WalletBalance>()
     private val activeTransactionsChannel = ConflatedBroadcastChannel<Map<ActiveTransaction, TransactionState>>(mutableMapOf())
     private val transactionsChannel = ConflatedBroadcastChannel<List<WalletTransaction>>(listOf())
     private val progressChannel = ConflatedBroadcastChannel<Int>()
@@ -192,7 +193,7 @@ open class MockSynchronizer(
                                     if (tx.isSend && tx.isMined) acc - tx.value else acc + tx.value
                                 }
                     }
-                    balanceChannel.send(balance)
+                    balanceChannel.send(Wallet.WalletBalance(balance, balance - 10000 /* miner's fee */))
                 }
                 // other collaborators add to the list, periodically. This simulates, real-world, non-distinct updates.
                 delay(Random.nextLong(transactionInterval / 2))

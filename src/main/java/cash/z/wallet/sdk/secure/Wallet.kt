@@ -5,6 +5,7 @@ import cash.z.wallet.sdk.data.Bush
 import cash.z.wallet.sdk.data.CompactBlockProcessor.Companion.SAPLING_ACTIVATION_HEIGHT
 import cash.z.wallet.sdk.data.twig
 import cash.z.wallet.sdk.data.twigTask
+import cash.z.wallet.sdk.exception.RustLayerException
 import cash.z.wallet.sdk.exception.WalletException
 import cash.z.wallet.sdk.ext.masked
 import cash.z.wallet.sdk.jni.JniConverter
@@ -13,6 +14,8 @@ import com.google.gson.stream.JsonReader
 import com.squareup.okhttp.OkHttpClient
 import com.squareup.okhttp.Request
 import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.channels.ConflatedBroadcastChannel
+import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.withContext
 import okio.Okio
 import java.io.File
@@ -28,7 +31,7 @@ import kotlin.properties.ReadWriteProperty
 class Wallet(
     private val birthday: WalletBirthday,
     private val converter: JniConverter,
-    private val dbDataPath: String,
+    private val dataDbPath: String,
     private val paramDestinationDir: String,
     /** indexes of accounts ids. In the reference wallet, we only work with account 0 */
     private val accountIds: Array<Int> = arrayOf(0),
@@ -38,7 +41,7 @@ class Wallet(
     constructor(
         context: Context,
         converter: JniConverter,
-        dbDataPath: String,
+        dataDbPath: String,
         paramDestinationDir: String,
         accountIds: Array<Int> = arrayOf(0),
         seedProvider: ReadOnlyProperty<Any?, ByteArray>,
@@ -46,7 +49,7 @@ class Wallet(
     ) : this(
         birthday = loadBirthdayFromAssets(context),
         converter = converter,
-        dbDataPath = dbDataPath,
+        dataDbPath = dataDbPath,
         paramDestinationDir = paramDestinationDir,
         accountIds = accountIds,
         seedProvider = seedProvider,
@@ -55,26 +58,19 @@ class Wallet(
 
     var spendingKeyStore by spendingKeyProvider
 
-    init {
-        // initialize data db for this wallet and its accounts
-        // initialize extended viewing keys for this wallet's seed and store them in the dataDb
-        // initialize spending keys
-
-        // call converter.initializeForSeed(seed, n) where n is the number of accounts
-        // get back an array of spending keys for each account. store them super securely
-    }
+    private val balanceChannel = ConflatedBroadcastChannel<WalletBalance>()
 
     fun initialize(
         firstRunStartHeight: Int = SAPLING_ACTIVATION_HEIGHT
     ): Int {
         twig("Initializing wallet for first run")
-        converter.initDataDb(dbDataPath)
+        converter.initDataDb(dataDbPath)
         twig("seeding the database with sapling tree at height ${birthday.height}")
-        converter.initBlocksTable(dbDataPath, birthday.height, birthday.time, birthday.tree)
+        converter.initBlocksTable(dataDbPath, birthday.height, birthday.time, birthday.tree)
 
         // securely store the spendingkey by leveraging the utilities provided during construction
         val seed by seedProvider
-        val accountSpendingKeys = converter.initAccountsTable(dbDataPath, seed, 1)
+        val accountSpendingKeys = converter.initAccountsTable(dataDbPath, seed, 1)
         spendingKeyStore = accountSpendingKeys[0]
 
 //        converter.initBlocksTable(dbData, height, time, saplingTree)
@@ -85,12 +81,26 @@ class Wallet(
     }
 
     fun getAddress(accountId: Int = accountIds[0]): String {
-        return converter.getAddress(dbDataPath, accountId)
+        return converter.getAddress(dataDbPath, accountId)
     }
 
-    fun getBalance(accountId: Int = accountIds[0]) {
-        // TODO: modify request to factor in account Ids
-        converter.getBalance(dbDataPath, accountId)
+    fun balance(): ReceiveChannel<WalletBalance> {
+        return balanceChannel.openSubscription()
+    }
+
+    suspend fun sendBalanceInfo(accountId: Int = accountIds[0]) = withContext(IO) {
+        twigTask("checking balance info") {
+            try {
+                val balanceTotal = converter.getBalance(dataDbPath, accountId)
+                twig("found total balance of: $balanceTotal")
+                val balanceAvailable = converter.getVerifiedBalance(dataDbPath, accountId)
+                twig("found available balance of: $balanceAvailable")
+                balanceChannel.send(WalletBalance(balanceTotal, balanceAvailable))
+            } catch (t: Throwable) {
+                twig("failed to get balance due to $t")
+                throw RustLayerException.BalanceException(t)
+            }
+        }
     }
 
     /**
@@ -106,12 +116,12 @@ class Wallet(
     suspend fun createRawSendTransaction(value: Long, toAddress: String, memo: String = "", fromAccountId: Int = accountIds[0]): Long =
         withContext(IO) {
             var result = -1L
-            Bush.trunk.twigTask("creating raw transaction to send $value zatoshi to ${toAddress.masked()}") {
+            twigTask("creating raw transaction to send $value zatoshi to ${toAddress.masked()}") {
                 result = runCatching {
                     ensureParams(paramDestinationDir)
                     twig("params exist at $paramDestinationDir! attempting to send...")
                     converter.sendToAddress(
-                        dbDataPath,
+                        dataDbPath,
                         fromAccountId,
                         spendingKeyStore,
                         toAddress,
@@ -232,6 +242,11 @@ class Wallet(
         val height: Int = -1,
         val time: Long = -1,
         val tree: String = ""
+    )
+
+    data class WalletBalance(
+        val total: Long = -1,
+        val available: Long = -1
     )
 
 }
