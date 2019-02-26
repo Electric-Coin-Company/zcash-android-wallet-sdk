@@ -6,7 +6,9 @@ import cash.z.wallet.sdk.exception.SynchronizerException
 import cash.z.wallet.sdk.secure.Wallet
 import kotlinx.coroutines.*
 import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.channels.ConflatedBroadcastChannel
 import kotlinx.coroutines.channels.ReceiveChannel
+import kotlinx.coroutines.channels.distinct
 import kotlin.coroutines.CoroutineContext
 
 /**
@@ -29,7 +31,6 @@ class SdkSynchronizer(
 
     private lateinit var blockJob: Job
     private lateinit var initialState: SyncState
-
 
     //
     // Public API
@@ -73,8 +74,8 @@ class SdkSynchronizer(
         return downloader.progress()
     }
 
-    override fun balance(): ReceiveChannel<Long> {
-        return repository.balance()
+    override fun balance(): ReceiveChannel<Wallet.WalletBalance> {
+        return wallet.balance()
     }
 
     /* Status */
@@ -139,6 +140,7 @@ class SdkSynchronizer(
                 pollFrequencyMillis = blockPollFrequency
             )
         launch { monitorProgress(downloader.progress()) }
+        launch { monitorTransactions(repository.allTransactions().distinct()) }
         activeTransactionManager.start()
         repository.start(this)
         processor.processBlocks(blockChannel)
@@ -159,6 +161,16 @@ class SdkSynchronizer(
             }
         }
         twig("done monitoring download progress")
+    }
+
+    private suspend fun monitorTransactions(transactionChannel: ReceiveChannel<List<WalletTransaction>>) = withContext(IO) {
+        twig("beginning to monitor transactions in order to update the balance")
+        for (i in transactionChannel) {
+            twig("triggering a balance update because transactions have changed")
+            wallet.sendBalanceInfo()
+            twig("done triggering balance check!")
+        }
+        twig("done monitoring transactions in order to update the balance")
     }
 
     //TODO: add state for never scanned . . . where we have some cache but no entries in the data db

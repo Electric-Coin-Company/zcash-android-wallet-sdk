@@ -1,23 +1,18 @@
 package cash.z.wallet.sdk.data
 
 import android.content.Context
-import android.text.TextUtils
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import cash.z.wallet.sdk.dao.BlockDao
 import cash.z.wallet.sdk.dao.TransactionDao
 import cash.z.wallet.sdk.dao.WalletTransaction
 import cash.z.wallet.sdk.db.DerivedDataDb
-import cash.z.wallet.sdk.exception.RepositoryException
-import cash.z.wallet.sdk.exception.RustLayerException
-import cash.z.wallet.sdk.jni.JniConverter
 import cash.z.wallet.sdk.entity.Transaction
+import cash.z.wallet.sdk.exception.RepositoryException
 import kotlinx.coroutines.*
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.channels.ConflatedBroadcastChannel
 import kotlinx.coroutines.channels.ReceiveChannel
-import kotlinx.coroutines.channels.distinct
-import java.util.*
 
 /**
  * Repository that does polling for simplicity. We will implement an alternative version that uses live data as well as
@@ -26,11 +21,8 @@ import java.util.*
  */
 open class PollingTransactionRepository(
     private val derivedDataDb: DerivedDataDb,
-    private val derivedDataDbPath: String,
-    private val converter: JniConverter,
-    private val pollFrequencyMillis: Long = 2000L,
-    logger: Twig = SilentTwig()
-) : TransactionRepository, Twig by logger {
+    private val pollFrequencyMillis: Long = 2000L
+) : TransactionRepository {
 
     /**
      * Constructor that creates the database and then executes a callback on it.
@@ -39,18 +31,12 @@ open class PollingTransactionRepository(
         context: Context,
         dataDbName: String,
         pollFrequencyMillis: Long = 2000L,
-        converter: JniConverter = JniConverter(),
-        logger: Twig = SilentTwig(),
         dbCallback: (DerivedDataDb) -> Unit = {}
     ) : this(
         Room.databaseBuilder(context, DerivedDataDb::class.java, dataDbName)
             .setJournalMode(RoomDatabase.JournalMode.TRUNCATE)
-            .fallbackToDestructiveMigration()
             .build(),
-        context.getDatabasePath(dataDbName).absolutePath,
-        converter,
-        pollFrequencyMillis,
-        logger
+        pollFrequencyMillis
     ) {
         dbCallback(derivedDataDb)
     }
@@ -58,11 +44,10 @@ open class PollingTransactionRepository(
     internal val blocks: BlockDao = derivedDataDb.blockDao()
     private val transactions: TransactionDao = derivedDataDb.transactionDao()
     private lateinit var pollingJob: Job
-    private val balanceChannel = ConflatedBroadcastChannel<Long>()
     private val allTransactionsChannel = ConflatedBroadcastChannel<List<WalletTransaction>>()
     private val existingTransactions = listOf<WalletTransaction>()
     private val wasPreviouslyStarted
-        get() = !existingTransactions.isEmpty() || balanceChannel.isClosedForSend || allTransactionsChannel.isClosedForSend
+        get() = !existingTransactions.isEmpty() || allTransactionsChannel.isClosedForSend
 
     override fun start(parentScope: CoroutineScope) {
         //  prevent restarts so the behavior of this class is easier to reason about
@@ -79,10 +64,6 @@ open class PollingTransactionRepository(
         twig("stopping but doing nothing")
         pollingJob.cancel()
         // TODO: verify that the channels behave as expected in this scenario
-    }
-
-    override fun balance(): ReceiveChannel<Long> {
-        return balanceChannel.openSubscription().distinct()
     }
 
     override fun allTransactions(): ReceiveChannel<List<WalletTransaction>> {
@@ -105,24 +86,20 @@ open class PollingTransactionRepository(
     }
 
     override suspend fun deleteTransactionById(txId: Long) = withContext(IO) {
-        twigTask("deleting transaction with id ${txId}") {
+        twigTask("deleting transaction with id $txId") {
             transactions.deleteById(txId)
         }
     }
 
     private suspend fun poll() = withContext(IO) {
         var previousTransactions: List<WalletTransaction>? = null
-        while (isActive
-            && !balanceChannel.isClosedForSend
-            && !allTransactionsChannel.isClosedForSend
-        ) {
+        while (isActive && !allTransactionsChannel.isClosedForSend) {
             twigTask("polling for transactions every ${pollFrequencyMillis}ms") {
                 val newTransactions = transactions.getAll()
 
                 if (hasChanged(previousTransactions, newTransactions)) {
                     twig("loaded ${newTransactions.count()} transactions and changes were detected!")
                     allTransactionsChannel.send(newTransactions)
-                    sendLatestBalance()
                     previousTransactions = newTransactions
                 } else {
                     twig("loaded ${newTransactions.count()} transactions but no changes detected.")
@@ -157,17 +134,4 @@ open class PollingTransactionRepository(
         return false.also { twig("detected no changes in all new txs") }
     }
 
-    private suspend fun sendLatestBalance() = withContext(IO) {
-        twigTask("sending balance") {
-            try {
-                // TODO: use wallet here
-                val balance = converter.getBalance(derivedDataDbPath,  0)
-                twig("balance: $balance")
-                balanceChannel.send(balance)
-            } catch (t: Throwable) {
-                twig("failed to get balance due to $t")
-                throw RustLayerException.BalanceException(t)
-            }
-        }
-    }
 }

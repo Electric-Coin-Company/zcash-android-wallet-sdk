@@ -8,7 +8,6 @@ import kotlinx.coroutines.channels.ReceiveChannel
 interface TransactionRepository {
     fun start(parentScope: CoroutineScope)
     fun stop()
-    fun balance(): ReceiveChannel<Long>
     fun allTransactions(): ReceiveChannel<List<WalletTransaction>>
     fun lastScannedHeight(): Int
     fun isInitialized(): Boolean

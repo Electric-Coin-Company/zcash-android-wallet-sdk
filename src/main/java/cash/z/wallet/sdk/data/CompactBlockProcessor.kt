@@ -87,6 +87,7 @@ class CompactBlockProcessor(
     }
 
     suspend fun scanBlocks() = withContext(IO) {
+        Twig.sprout("scan")
         twigTask("scanning blocks") {
             if (isActive) {
                 try {
@@ -96,6 +97,7 @@ class CompactBlockProcessor(
                 }
             }
         }
+        Twig.clip("scan")
     }
 
     /**

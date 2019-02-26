@@ -1,6 +1,7 @@
 package cash.z.wallet.sdk.data
 
 import cash.z.wallet.sdk.dao.WalletTransaction
+import cash.z.wallet.sdk.secure.Wallet
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.ReceiveChannel
 
@@ -14,7 +15,7 @@ interface Synchronizer {
     // NOTE: each of these are expected to be a broadcast channel, such that [receive] always returns the latest value
     fun activeTransactions(): ReceiveChannel<Map<ActiveTransaction, TransactionState>>
     fun allTransactions(): ReceiveChannel<List<WalletTransaction>>
-    fun balance(): ReceiveChannel<Long>
+    fun balance(): ReceiveChannel<Wallet.WalletBalance>
     fun progress(): ReceiveChannel<Int>
 
     /* Status */

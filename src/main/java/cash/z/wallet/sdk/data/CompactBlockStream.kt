@@ -58,6 +58,7 @@ class CompactBlockStream private constructor(logger: Twig = SilentTwig()) : Twig
                     it.streamBlocks(pollFrequencyMillis, latestBlockHeight)
                 }
             } catch (t: Throwable) {
+                twig("throwing $t")
                 throw CompactBlockStreamException.FalseStart(t)
             }
         }
@@ -120,7 +121,7 @@ class CompactBlockStream private constructor(logger: Twig = SilentTwig()) : Twig
                         twig("finished batch $i of $batches\n")
                     }
                 }
-                progressChannel.cancel()
+//                progressChannel.cancel()
             } else {
                 twig("no missing blocks to download!")
             }

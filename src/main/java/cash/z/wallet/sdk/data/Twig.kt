@@ -1,7 +1,7 @@
 package cash.z.wallet.sdk.data
 
 import java.util.concurrent.CopyOnWriteArrayList
-import kotlin.system.measureTimeMillis
+
 internal typealias Leaf = String
 
 /**
@@ -54,6 +54,11 @@ object Bush {
 inline fun twig(message: String) = Bush.trunk.twig(message)
 
 /**
+ * Times a tiny log task. Execute the block of code with some twigging around the outside.
+ */
+inline fun <R> twigTask(logMessage: String, block: () -> R): R = Bush.trunk.twigTask(logMessage, block)
+
+/**
  * A tiny log that does nothing. No one hears this twig fall in the woods.
  */
 class SilentTwig : Twig {
@@ -94,17 +99,20 @@ open class CompositeTwig(private val twigBundle: MutableList<Twig>) : Twig {
 }
 
 /**
- * A tiny log task. Execute the block of code with some twigging around the outside.
+ * A tiny log task. Execute the block of code with some twigging around the outside. For silent twigs, this adds a small
+ * amount of overhead at the call site but still avoids logging.
+ *
+ * note: being an extension function (i.e. static rather than a member of the Twig interface) allows this function to be
+ *       inlined and simplifies its use with suspend functions
+ *       (otherwise the function and its "block" param would have to suspend)
  */
-// for silent twigs, this adds a small amount of overhead at the call site but still avoids logging
-//
-// note: being an extension function (i.e. static rather than a member of the Twig interface) allows this function to be
-//       inlined and simplifies its use with suspend functions
-//       (otherwise the function and its "block" param would have to suspend)
-inline fun Twig.twigTask(logMessage: String, block: () -> Unit) {
+inline fun <R> Twig.twigTask(logMessage: String, block: () -> R): R {
+    val start = System.nanoTime()
     twig("$logMessage - started    | on thread ${Thread.currentThread().name})")
-    val time = measureTimeMillis(block)
-    twig("$logMessage - completed  | in ${time}ms on thread ${Thread.currentThread().name}")
+    val result  = block()
+    twig("$logMessage - completed  | in ${System.nanoTime() - start}ms" +
+            " on thread ${Thread.currentThread().name}")
+    return result
 }
 
 /**
