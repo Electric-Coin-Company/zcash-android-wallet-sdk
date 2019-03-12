@@ -5,10 +5,13 @@ buildscript {
         'targetSdkVersion': 28
     ]
     ext.versions = [
-        'architectureComponents': '2.0.0',
-        'grpc':'1.17.1',
-        'kotlin': '1.3.10',
-        'coroutines': '1.1.0',
+        'architectureComponents': [
+            'lifecycle': '2.1.0-alpha02',
+            'room': '2.1.0-alpha04'
+        ],
+        'grpc':'1.19.0',
+        'kotlin': '1.3.21',
+        'coroutines': '1.1.1',
         'junitJupiter': '5.4.0'
     ]
     repositories {
@@ -16,12 +19,12 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:3.4.0-alpha05'
+        classpath 'com.android.tools.build:gradle:3.5.0-alpha07'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${versions.kotlin}"
         classpath "org.jetbrains.kotlin:kotlin-allopen:${versions.kotlin}"
-        classpath "com.github.ben-manes:gradle-versions-plugin:0.20.0"
+        classpath "com.github.ben-manes:gradle-versions-plugin:0.21.0"
         classpath 'com.github.dcendents:android-maven-gradle-plugin:2.1'
-        classpath "com.google.protobuf:protobuf-gradle-plugin:0.8.7"
+        classpath "com.google.protobuf:protobuf-gradle-plugin:0.8.8"
         classpath 'com.getkeepsafe.dexcount:dexcount-gradle-plugin:0.8.6'
     }
 }
@@ -38,7 +41,7 @@ apply plugin: 'com.github.dcendents.android-maven'
 apply plugin: 'com.getkeepsafe.dexcount'
 
 group = 'cash.z.android.wallet'
-version = '1.7.3'
+version = '1.7.4'
 
 repositories {
     google()
@@ -51,10 +54,10 @@ android {
     defaultConfig {
         minSdkVersion 16
         targetSdkVersion 28
-        versionCode = 1_07_03
-        versionName = version
+        versionCode = 1_07_04_00  // last digits are alpha(0X) beta(1X) rc(2X) release(3X). Ex: 1_08_04_20 is a RC build
+        versionName = "$version-alpha"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        multiDexEnabled true
+        multiDexEnabled false
         archivesBaseName = "zcash-android-wallet-sdk-$versionName"
     }
 
@@ -77,10 +80,6 @@ android {
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
-    }
-    kotlinOptions {
-        // Allow the use of Result objects understanding that if the API changes, we'll have to fix it before upgrading our kotlin version
-        freeCompilerArgs = ["-Xallow-result-return-type"]
     }
     packagingOptions {
         exclude 'META-INF/DEPENDENCIES'
@@ -107,7 +106,7 @@ clean {
 
 protobuf {
     generatedFilesBaseDir = "$projectDir/src/generated/source/grpc"
-    protoc { artifact = 'com.google.protobuf:protoc:3.6.1' }
+    protoc { artifact = 'com.google.protobuf:protoc:3.7.0' }
     plugins {
         javalite { artifact = "com.google.protobuf:protoc-gen-javalite:3.0.0" }
         grpc { artifact = "io.grpc:protoc-gen-grpc-java:${versions.grpc}" }
@@ -124,18 +123,20 @@ protobuf {
 }
 
 dependencies {
-    implementation 'androidx.appcompat:appcompat:1.0.2'
+    implementation 'androidx.appcompat:appcompat:1.1.0-alpha02'
     implementation 'androidx.multidex:multidex:2.0.1'
 
-    // Architecture components
-    implementation "androidx.lifecycle:lifecycle-runtime:${versions.architectureComponents}"
-    implementation "androidx.lifecycle:lifecycle-extensions:${versions.architectureComponents}"
-    implementation "androidx.room:room-runtime:${versions.architectureComponents}"
-    implementation "androidx.room:room-common:${versions.architectureComponents}"
-    kapt "androidx.lifecycle:lifecycle-compiler:${versions.architectureComponents}"
-    kapt "androidx.room:room-compiler:${versions.architectureComponents}"
+    // Architecture Components: Lifecycle
+    implementation "androidx.lifecycle:lifecycle-runtime:${versions.architectureComponents.lifecycle}"
+    implementation "androidx.lifecycle:lifecycle-extensions:${versions.architectureComponents.lifecycle}"
+    kapt "androidx.lifecycle:lifecycle-compiler:${versions.architectureComponents.lifecycle}"
 
-    // kotlin
+    // Architecture Components: Room
+    implementation "androidx.room:room-runtime:${versions.architectureComponents.room}"
+    implementation "androidx.room:room-common:${versions.architectureComponents.room}"
+    kapt "androidx.room:room-compiler:${versions.architectureComponents.room}"
+
+    // Kotlin
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:${versions.kotlin}"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:${versions.coroutines}"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:${versions.coroutines}"
@@ -146,29 +147,28 @@ dependencies {
     implementation "io.grpc:grpc-stub:${versions.grpc}"
     implementation 'javax.annotation:javax.annotation-api:1.3.2'
 
-    // other
+    // Other
     implementation "com.jakewharton.timber:timber:4.7.1"
 
     // Tests
     testImplementation "org.jetbrains.kotlin:kotlin-reflect:${versions.kotlin}"
-    testImplementation 'org.mockito:mockito-junit-jupiter:2.24.0'
+    testImplementation 'org.mockito:mockito-junit-jupiter:2.25.0'
     testImplementation 'com.nhaarman.mockitokotlin2:mockito-kotlin:2.1.0'
     testImplementation "org.junit.jupiter:junit-jupiter-api:${versions.junitJupiter}"
     testImplementation "org.junit.jupiter:junit-jupiter-engine:${versions.junitJupiter}"
     testImplementation "org.junit.jupiter:junit-jupiter-migrationsupport:${versions.junitJupiter}"
-    testImplementation "io.grpc:grpc-testing:1.18.0"
+    testImplementation "io.grpc:grpc-testing:${versions.grpc}"
 
     // NOTE: androidTests will use JUnit4, while src/test/java tests will leverage Junit5
     // Attempting to use JUnit5 via https://github.com/mannodermaus/android-junit5 was painful. The plugin configuration
     // was buggy, crashing in several places. It also would require a separate test flavor because it's minimum API 26
     // because "JUnit 5 uses Java 8-specific APIs that didn't exist on Android before the Oreo release."
     androidTestImplementation 'com.nhaarman.mockitokotlin2:mockito-kotlin:2.1.0'
-    androidTestImplementation 'org.mockito:mockito-android:2.24.0'
-    androidTestImplementation "androidx.test:runner:1.1.1"
-    androidTestImplementation "androidx.test:core:1.1.0"
+    androidTestImplementation 'org.mockito:mockito-android:2.25.0'
+    androidTestImplementation "androidx.test:runner:1.1.2-alpha02"
+    androidTestImplementation "androidx.test:core:1.1.1-alpha02"
     androidTestImplementation "androidx.arch.core:core-testing:2.0.0"
-    androidTestImplementation 'androidx.test.ext:junit:1.1.0'
-    androidTestImplementation "androidx.arch.core:core-testing:${versions.architectureComponents}"
+    androidTestImplementation 'androidx.test.ext:junit:1.1.1-alpha02'
 }
 
 
