@@ -1,3 +1,32 @@
+```diff
+-🛑 WARNING: *Early preview* 🛑  
+```
+In the spirit of transparency, we provide this as a window into what we are actively developing. This is an alpha build, not yet intended for 3rd party use. Please be advised of the following:
+
+* 🛑 This code currently is not audited 🛑
+* ❌ This is a public, active branch with **no support**
+* ❌ The code **does not have** documentation that is reviewed and approved by our Documentation team
+* ❌ The code **does not have** unit tests, acceptance tests and stress tests
+* ❌ The code **does not have** automated tests that use the officially supported CI system
+* ❌ All merged code **has not received** a code review by people at Zcash Company
+* ❌ This product **does not run** compatibly with the latest version of zcashd
+* ❌ The product **is** majorly broken in several ways
+* ❌ The library **only runs** on testnet
+* ❌ The library **does not run** on mainnet and **cannot** run on regtest
+* ❌ We **are actively changing** the codebase and adding features where/when needed
+* ❌ We **do not** undertake appropriate security coverage (threat models, review, response, etc.)
+* :heavy_check_mark: There is a product manager for this library
+* :heavy_check_mark: Zcash Company maintains the library as we discover bugs and do network upgrades/minor releases
+* :heavy_check_mark: Users can expect to get a response within a few weeks after submitting an issue
+* ❌ The User Support team **had not yet been briefed** on the features provided to users and the functionality of the associated test-framework
+
+ ### 🛑 Use of this code may lead to a loss of funds 🛑 
+ 
+ Use of this code my alead to loss of funds, loss of "expected" privacy, or denial of service for a large portion of users, or a bug which could leverage any of those kinds of attacks (especially a "0 day" where we suspect few people know about the vulnerability).
+
+### :eyes: At this time, this is for preview purposes only. :eyes: 
+
+
 # Zcash Android SDK
 
 This lightweight SDK connects Android to Zcash. It welds together Rust and Kotlin in a minimal way, allowing third-party Android apps to send and receive shielded transactions easily, securely and privately.
