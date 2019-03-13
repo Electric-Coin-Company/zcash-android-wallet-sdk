@@ -1,15 +1,17 @@
 package cash.z.wallet.sdk.dao
 
-import androidx.room.*
+import androidx.room.Dao
+import androidx.room.Delete
+import androidx.room.Query
 import cash.z.wallet.sdk.entity.Transaction
 
 @Dao
 interface TransactionDao {
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insert(transaction: Transaction)
-
     @Query("SELECT * FROM transactions WHERE id_tx = :id")
     fun findById(id: Long): Transaction?
+
+    @Delete
+    fun delete(transaction: Transaction)
 
     @Query("DELETE FROM transactions WHERE id_tx = :id")
     fun deleteById(id: Long)
@@ -40,13 +42,6 @@ interface TransactionDao {
         ORDER  BY block IS NOT NUll, height DESC, time DESC, txId DESC
     """)
     fun getAll(): List<WalletTransaction>
-
-    @Delete
-    fun delete(transaction: Transaction)
-
-    @Query("SELECT COUNT(id_tx) FROM transactions")
-    fun count(): Int
-
 }
 
 data class WalletTransaction(

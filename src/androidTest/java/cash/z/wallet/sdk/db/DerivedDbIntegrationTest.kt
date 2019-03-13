@@ -33,11 +33,6 @@ class DerivedDbIntegrationTest {
     }
 
     @Test
-    fun testCount_Transaction() {
-        assertEquals(5, transactions.count())
-    }
-
-    @Test
     fun testCount_Block() {
         assertEquals(80101, blocks.count())
     }
@@ -53,13 +48,6 @@ class DerivedDbIntegrationTest {
         val tran = transactions.findById(1)
 
         assertEquals(343987, tran?.block)
-    }
-
-    @Test
-    fun testBlockDaoPrepopulated() {
-        val tran = blocks.findById(1)?.apply {
-            assertEquals(343987, this.height)
-        }
     }
 
     companion object {
