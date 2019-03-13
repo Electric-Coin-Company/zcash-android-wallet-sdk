@@ -1,8 +1,6 @@
 #[macro_use]
 extern crate log;
-extern crate hex;
 
-mod sql;
 mod utils;
 
 const SAPLING_CONSENSUS_BRANCH_ID: u32 = 0x76b8_09bb;
@@ -24,19 +22,17 @@ use zcash_client_backend::{
         decode_extended_spending_key, decode_payment_address, encode_extended_spending_key,
     },
     keystore::spending_key,
-    note_encryption::Memo,
     prover::LocalTxProver,
+    sqlite::{
+        get_address, get_balance, get_received_memo_as_utf8, get_sent_memo_as_utf8,
+        get_verified_balance, init_accounts_table, init_blocks_table, init_data_database,
+        scan_cached_blocks, send_to_address,
+    },
 };
-use zcash_primitives::transaction::components::Amount;
+use zcash_primitives::{note_encryption::Memo, transaction::components::Amount};
 use zip32::ExtendedFullViewingKey;
 
-use crate::{
-    sql::{
-        get_address, get_balance, get_verified_balance, init_accounts_table, init_blocks_table,
-        init_data_database, scan_cached_blocks, send_to_address,
-    },
-    utils::exception::unwrap_exc_or,
-};
+use crate::utils::exception::unwrap_exc_or;
 
 #[no_mangle]
 pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_initLogs(
@@ -222,7 +218,7 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_getReceivedMemo
     let res = panic::catch_unwind(|| {
         let db_data = utils::java_string_to_rust(&env, db_data);
 
-        let memo = match crate::sql::get_received_memo_as_utf8(db_data, id_note) {
+        let memo = match get_received_memo_as_utf8(db_data, id_note) {
             Ok(memo) => memo.unwrap_or_default(),
             Err(e) => return Err(format_err!("Error while fetching memo: {}", e)),
         };
@@ -243,7 +239,7 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_getSentMemoAsUt
     let res = panic::catch_unwind(|| {
         let db_data = utils::java_string_to_rust(&env, db_data);
 
-        let memo = match crate::sql::get_sent_memo_as_utf8(db_data, id_note) {
+        let memo = match get_sent_memo_as_utf8(db_data, id_note) {
             Ok(memo) => memo.unwrap_or_default(),
             Err(e) => return Err(format_err!("Error while fetching memo: {}", e)),
         };
@@ -302,20 +298,26 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_sendToAddress(
 
         let extsk =
             match decode_extended_spending_key(HRP_SAPLING_EXTENDED_SPENDING_KEY_TEST, &extsk) {
-                Ok(extsk) => extsk,
+                Ok(Some(extsk)) => extsk,
+                Ok(None) => {
+                    return Err(format_err!("ExtendedSpendingKey is for the wrong network"));
+                }
                 Err(e) => {
                     return Err(format_err!("Invalid ExtendedSpendingKey: {}", e));
                 }
             };
 
         let to = match decode_payment_address(HRP_SAPLING_PAYMENT_ADDRESS_TEST, &to) {
-            Ok(to) => to,
+            Ok(Some(to)) => to,
+            Ok(None) => {
+                return Err(format_err!("PaymentAddress is for the wrong network"));
+            }
             Err(e) => {
                 return Err(format_err!("Invalid PaymentAddress: {}", e));
             }
         };
 
-        let memo = Some(Memo::from_str(&memo)?);
+        let memo = Memo::from_str(&memo);
 
         let prover = LocalTxProver::new(
             Path::new(&spend_params),
