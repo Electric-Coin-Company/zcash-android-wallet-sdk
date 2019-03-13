@@ -5,27 +5,9 @@ import cash.z.wallet.sdk.entity.Block
 
 @Dao
 interface BlockDao {
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insert(block: Block)
-
-    @Query("SELECT * FROM blocks WHERE height = :height")
-    fun findById(height: Int): Block?
-
-    @Query("DELETE FROM blocks WHERE height = :height")
-    fun deleteById(height: Int)
-
-    @Delete
-    fun delete(block: Block)
-
     @Query("SELECT COUNT(height) FROM blocks")
     fun count(): Int
 
-    @Query("DELETE FROM blocks")
-    fun deleteAll()
-
     @Query("SELECT MAX(height) FROM blocks")
     fun lastScannedHeight(): Int
-
-    @Query("UPDATE blocks SET time=:time WHERE height = :height")
-    fun updateTime(height: Int, time: Int)
 }
