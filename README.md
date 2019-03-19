@@ -42,6 +42,17 @@ In the spirit of transparency, we provide this as a window into what we are acti
 
 This lightweight SDK connects Android to Zcash. It welds together Rust and Kotlin in a minimal way, allowing third-party Android apps to send and receive shielded transactions easily, securely and privately.
 
+# Usage
+
+:warning: Presently, the latest stable code lives in the `preview` branch, under active development, and is not yet published. 
+
+Compilation requires `Cargo` and has been tested on Ubuntu, MacOS and Windows. To compile the SDK run:
+
+```bash
+./gradlew assembleZTestnetDebug
+```
+This creates a `testnet` build of the SDK that can be used to preview basic functionality for sending and receiving shielded transactions. If you do not have `Rust` and `Cargo` installed, the build script will let you know and provide further instructions for installation.
+
 # Structure
 
 From an app developer's perspective, this SDK will encapsulate the most complex aspects of using Zcash, freeing the developer to focus on UI and UX, rather than scanning blockchains and building commitment trees! Internally, the SDK is structured as follows:
@@ -56,7 +67,7 @@ Thankfully, the only thing an app developer has to be concerned with is the foll
 The primary steps for a 3rd party developer to make use of this SDK are simply:
 
   1. Start the synchronizer
-  2. Consume transactions from the repository
+  2. Consume wallet data via channels 
   
 The Sychronizer takes care of
 
