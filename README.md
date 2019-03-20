@@ -21,7 +21,7 @@ In the spirit of transparency, we provide this as a window into what we are acti
 * ❌ We **are actively changing** the codebase and adding features where/when needed
 * ❌ We **do not** undertake appropriate security coverage (threat models, review, response, etc.)
 * :heavy_check_mark: There is a product manager for this library
-* :heavy_check_mark: Zcash Company maintains the library as we discover bugs and do network upgrades/minor releases
+* :heavy_check_mark: Electric Coin Company maintains the library as we discover bugs and do network upgrades/minor releases
 * :heavy_check_mark: Users can expect to get a response within a few weeks after submitting an issue
 * ❌ The User Support team **had not yet been briefed** on the features provided to users and the functionality of the associated test-framework
 * ❌ The code is **unpolished**
