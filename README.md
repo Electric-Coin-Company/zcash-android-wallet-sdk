@@ -44,12 +44,12 @@ This lightweight SDK connects Android to Zcash. It welds together Rust and Kotli
 
 # Usage
 
-:warning: Presently, the latest stable code lives in the `preview` branch, under active development, and is not yet published. 
+:warning: Presently, the latest stable code lives in the `preview` branch, under active development, and is not yet released. 
 
 Compilation requires `Cargo` and has been tested on Ubuntu, MacOS and Windows. To compile the SDK run:
 
 ```bash
-./gradlew assembleZTestnetDebug
+./gradlew assembleZcashtestnetRelease
 ```
 This creates a `testnet` build of the SDK that can be used to preview basic functionality for sending and receiving shielded transactions. If you do not have `Rust` and `Cargo` installed, the build script will let you know and provide further instructions for installation.
 
@@ -82,4 +82,6 @@ At a high level, the Synchronizer provides ReceiveChannels that broadcast transa
     
 At a more granular level...
 
-:calendar: more detailed documentation [scheduled for the next milestone](https://github.com/zcash/zcash/projects/25)
+Visit the [preview branch](https://github.com/zcash/zcash-android-wallet-sdk/tree/preview) for more detailed documentation and the latest code.
+
+:warning: Presently, the latest stable code lives in the `preview` branch, under active development, and is not yet released.
