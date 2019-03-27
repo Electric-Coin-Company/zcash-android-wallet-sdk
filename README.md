@@ -1,6 +1,6 @@
 # Security Disclaimer
 
-#### :warning:  WARNING: This is an *early preview*
+#### :warning:  WARNING: This is an *early preview* under active development and *anything may change at anytime!*
 
 ----
 
@@ -21,7 +21,7 @@ In the spirit of transparency, we provide this as a window into what we are acti
 * ❌ We **are actively changing** the codebase and adding features where/when needed
 * ❌ We **do not** undertake appropriate security coverage (threat models, review, response, etc.)
 * :heavy_check_mark: There is a product manager for this library
-* :heavy_check_mark: Zcash Company maintains the library as we discover bugs and do network upgrades/minor releases
+* :heavy_check_mark: Electric Coin Company maintains the library as we discover bugs and do network upgrades/minor releases
 * :heavy_check_mark: Users can expect to get a response within a few weeks after submitting an issue
 * ❌ The User Support team **had not yet been briefed** on the features provided to users and the functionality of the associated test-framework
 * ❌ The code is **unpolished**
@@ -58,11 +58,11 @@ This creates a `testnet` build of the SDK that can be used to preview basic func
 From an app developer's perspective, this SDK will encapsulate the most complex aspects of using Zcash, freeing the developer to focus on UI and UX, rather than scanning blockchains and building commitment trees! Internally, the SDK is structured as follows:
 
 
-![SDK Diagram](assets/sdk-diagram.png?raw=true "SDK Diagram DRAFT")
+![SDK Diagram](assets/sdk_diagram_final.png?raw=true "SDK Diagram")
 
 Thankfully, the only thing an app developer has to be concerned with is the following:
 
-![SDK Diagram Developer Perspective](assets/sdk_dev_pov.png?raw=true "SDK Diagram Dev POV DRAFT")
+![SDK Diagram Developer Perspective](assets/sdk_dev_pov_final.png?raw=true "SDK Diagram Dev PoV")
 
 The primary steps for a 3rd party developer to make use of this SDK are simply:
 
