@@ -71,9 +71,9 @@ open class MockSynchronizer(
     override fun balance() = balanceChannel.openSubscription()
     override fun progress() = progressChannel.openSubscription()
 
-    override suspend fun isOutOfSync(): Boolean {
+    override suspend fun isStale(): Boolean {
         val result = isOutOfSync ?: (Random.nextInt(100) < 10)
-        twig("checking isOutOfSync: $result")
+        twig("checking isStale: $result")
         if(isOutOfSync == true) launch { delay(20_000L); isOutOfSync = false }
         return result
     }
@@ -83,63 +83,67 @@ open class MockSynchronizer(
         return isFirstRun
     }
 
-    override val address get() = mockAddress.also {  twig("returning mock address $mockAddress") }
+    override fun getAddress(accountId: Int): String = mockAddress.also {  twig("returning mock address $mockAddress") }
 
-    override suspend fun sendToAddress(zatoshi: Long, toAddress: String) = withContext<Unit>(Dispatchers.IO) {
-        Twig.sprout("send")
-        val walletTransaction = forge.createSendTransaction(zatoshi)
-        val activeTransaction = forge.createActiveSendTransaction(walletTransaction, toAddress)
-        val isInvalidForTestnet = toAddress.length != 88 && toAddress.startsWith("ztest")
-        val isInvalidForMainnet = toAddress.length != 78 && toAddress.startsWith("zs")
-        val state = when {
-            zatoshi < 0 -> TransactionState.Failure(TransactionState.Creating, "amount cannot be negative")
-            !toAddress.startsWith("z") -> TransactionState.Failure(TransactionState.Creating, "address must start with z")
-            isInvalidForTestnet -> TransactionState.Failure(TransactionState.Creating, "invalid testnet address")
-            isInvalidForMainnet -> TransactionState.Failure(TransactionState.Creating, "invalid mainnet address")
-            else -> TransactionState.Creating
-        }
-        twig("after input validation, state is being set to ${state::class.simpleName}")
-        setState(activeTransaction, state)
-
-        twig("active tx size is ${activeTransactions.size}")
-
-        // next, transition it through the states, if it got created
-        if (state !is TransactionState.Creating) {
-            twig("failed to create transaction")
-            return@withContext
-        } else {
-            // first, add the transaction
-            twig("adding transaction")
-            transactionMutex.withLock {
-                transactions.add(walletTransaction)
+    override suspend fun sendToAddress(zatoshi: Long, toAddress: String, memo: String, fromAccountId: Int) =
+        withContext<Unit>(Dispatchers.IO) {
+            Twig.sprout("send")
+            val walletTransaction = forge.createSendTransaction(zatoshi)
+            val activeTransaction = forge.createActiveSendTransaction(walletTransaction, toAddress)
+            val isInvalidForTestnet = toAddress.length != 88 && toAddress.startsWith("ztest")
+            val isInvalidForMainnet = toAddress.length != 78 && toAddress.startsWith("zs")
+            val state = when {
+                zatoshi < 0 -> TransactionState.Failure(TransactionState.Creating, "amount cannot be negative")
+                !toAddress.startsWith("z") -> TransactionState.Failure(
+                    TransactionState.Creating,
+                    "address must start with z"
+                )
+                isInvalidForTestnet -> TransactionState.Failure(TransactionState.Creating, "invalid testnet address")
+                isInvalidForMainnet -> TransactionState.Failure(TransactionState.Creating, "invalid mainnet address")
+                else -> TransactionState.Creating
             }
+            twig("after input validation, state is being set to ${state::class.simpleName}")
+            setState(activeTransaction, state)
 
-            // then update the active transaction through the creation and submission steps
-            listOf(TransactionState.Created(walletTransaction.txId), TransactionState.SendingToNetwork)
-                .forEach { newState ->
-                    if (!job.isActive) return@withContext
-                    delay(activeTransactionUpdateFrequency)
-                    setState(activeTransaction, newState)
+            twig("active tx size is ${activeTransactions.size}")
+
+            // next, transition it through the states, if it got created
+            if (state !is TransactionState.Creating) {
+                twig("failed to create transaction")
+                return@withContext
+            } else {
+                // first, add the transaction
+                twig("adding transaction")
+                transactionMutex.withLock {
+                    transactions.add(walletTransaction)
                 }
 
-            // then set the wallet transaction's height (to simulate it being mined)
-            val minedHeight = forge.latestHeight.getAndIncrement()
-            transactionMutex.withLock {
-                transactions.remove(walletTransaction)
-                transactions.add(walletTransaction.copy(height = minedHeight, isMined = true))
-            }
+                // then update the active transaction through the creation and submission steps
+                listOf(TransactionState.Created(walletTransaction.txId), TransactionState.SendingToNetwork)
+                    .forEach { newState ->
+                        if (!job.isActive) return@withContext
+                        delay(activeTransactionUpdateFrequency)
+                        setState(activeTransaction, newState)
+                    }
 
-            // simply transition it through the states
-            List(11) { TransactionState.AwaitingConfirmations(it) }
-                .forEach { newState ->
-                    if (!job.isActive) return@withContext
-                    delay(activeTransactionUpdateFrequency)
-                    activeTransaction.height.set(minedHeight + newState.confirmationCount)
-                    setState(activeTransaction, newState)
+                // then set the wallet transaction's height (to simulate it being mined)
+                val minedHeight = forge.latestHeight.getAndIncrement()
+                transactionMutex.withLock {
+                    transactions.remove(walletTransaction)
+                    transactions.add(walletTransaction.copy(height = minedHeight, isMined = true))
                 }
+
+                // simply transition it through the states
+                List(11) { TransactionState.AwaitingConfirmations(it) }
+                    .forEach { newState ->
+                        if (!job.isActive) return@withContext
+                        delay(activeTransactionUpdateFrequency)
+                        activeTransaction.height.set(minedHeight + newState.confirmationCount)
+                        setState(activeTransaction, newState)
+                    }
+            }
+            Twig.clip("send")
         }
-        Twig.clip("send")
-    }
 
     private suspend fun setState(activeTransaction: ActiveTransaction, state: TransactionState) {
         var copyMap = mutableMapOf<ActiveTransaction, TransactionState>()

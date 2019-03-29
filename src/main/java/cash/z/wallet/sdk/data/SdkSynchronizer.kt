@@ -29,8 +29,19 @@ class SdkSynchronizer(
     private val blockPollFrequency: Long = CompactBlockStream.DEFAULT_POLL_INTERVAL
 ) : Synchronizer {
 
+    /**
+     * The primary job for this Synchronizer. It leverages structured concurrency to cancel all work when the
+     * `parentScope` provided to the [start] method ends.
+     */
     private lateinit var blockJob: Job
+
+    /**
+     * The state this Synchronizer was in when it started. This is helpful because the conditions that lead to FirstRun
+     * or isStale being detected can change quickly so retaining the initial state is useful for walkthroughs or other
+     * elements of an app that rely on this information later.
+     */
     private lateinit var initialState: SyncState
+
 
     //
     // Public API
@@ -38,6 +49,14 @@ class SdkSynchronizer(
 
     /* Lifecycle */
 
+    /**
+     * Starts this synchronizer within the given scope. For simplicity, attempting to start an instance that has already
+     * been started will throw a [SynchronizerException.FalseStart] exception. This reduces the complexity of managing
+     * resources that must be recycled. Instead, each synchronizer is designed to have a long lifespan (similar to act or application) <=- explain usage
+     *
+     * @param parentScope the scope to use for this synchronizer, typically something with a lifecycle such as an
+     * Activity. Implementations should leverage structured concurrency and cancel all jobs when this scope completes.
+     */
     override fun start(parentScope: CoroutineScope): Synchronizer {
         val supervisorJob = SupervisorJob(parentScope.coroutineContext[Job])
         //  prevent restarts so the behavior of this class is easier to reason about
@@ -80,7 +99,7 @@ class SdkSynchronizer(
 
     /* Status */
 
-    override suspend fun isOutOfSync(): Boolean = withContext(IO) {
+    override suspend fun isStale(): Boolean = withContext(IO) {
         val latestBlockHeight = downloader.connection.getLatestBlockHeight()
         val ourHeight = processor.cacheDao.latestBlockHeight()
         val tolerance = 10
@@ -95,10 +114,10 @@ class SdkSynchronizer(
 
     /* Operations */
 
-    override val address get() = wallet.getAddress()
+    override fun getAddress(accountId: Int): String = wallet.getAddress()
 
-    override suspend fun sendToAddress(zatoshi: Long, toAddress: String) =
-        activeTransactionManager.sendToAddress(zatoshi, toAddress)
+    override suspend fun sendToAddress(zatoshi: Long, toAddress: String, memo: String, fromAccountId: Int) =
+        activeTransactionManager.sendToAddress(zatoshi, toAddress, memo, fromAccountId)
 
     override fun cancelSend(transaction: ActiveSendTransaction): Boolean = activeTransactionManager.cancel(transaction)
 
