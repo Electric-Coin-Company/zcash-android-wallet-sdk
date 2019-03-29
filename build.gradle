@@ -22,6 +22,7 @@ buildscript {
         classpath 'com.android.tools.build:gradle:3.5.0-alpha09'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${versions.kotlin}"
         classpath "org.jetbrains.kotlin:kotlin-allopen:${versions.kotlin}"
+        classpath "org.jetbrains.dokka:dokka-gradle-plugin:0.9.18"
         classpath "com.github.ben-manes:gradle-versions-plugin:0.21.0"
         classpath 'com.github.dcendents:android-maven-gradle-plugin:2.1'
         classpath "com.google.protobuf:protobuf-gradle-plugin:0.8.8"
@@ -31,10 +32,11 @@ buildscript {
 
 apply from: 'custom-tasks.gradle'
 apply plugin: 'com.android.library'
-apply plugin: "kotlin-android-extensions"
-apply plugin: "kotlin-android"
+apply plugin: 'kotlin-android-extensions'
+apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-kapt'
 apply plugin: 'kotlin-allopen'
+apply plugin: 'org.jetbrains.dokka'
 apply plugin: 'com.google.protobuf'
 apply plugin: 'com.github.ben-manes.versions'
 apply plugin: 'com.github.dcendents.android-maven'
@@ -126,6 +128,11 @@ allOpen {
 
 clean {
     delete "$project.projectDir/src/generated/source/grpc"
+}
+
+dokka {
+    outputFormat = 'gfm'
+    outputDirectory = "$buildDir/docs"
 }
 
 protobuf {

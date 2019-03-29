@@ -66,12 +66,12 @@ Thankfully, the only thing an app developer has to be concerned with is the foll
 
 At a high level, this SDK simply helps native Android codebases connect to Zcash's Rust crypto libraries without needing to know Rust or be a Cryptographer. Think of it as welding. The SDK takes separate things and tightly bonds them together such that each can remain as idiomatic as possible. It's goal is to make it easy for an app to incorporate shielded transactions while remaining a good citizen on mobile devices. 
 
-Given all the moving parts, making things easy requires coordination. The [Synchronizer](docs/synchronizer/index.md) provides that layer of abstraction so that the primary steps to make use of this SDK are simply:
+Given all the moving parts, making things easy requires coordination. The [Synchronizer](docs/-synchronizer/index.md) provides that layer of abstraction so that the primary steps to make use of this SDK are simply:
 
-  1. Start the [Synchronizer](docs/synchronizer/index.md)
+  1. Start the [Synchronizer](docs/-synchronizer/index.md)
   2. Subscribe to wallet data
   
-The [Synchronizer](docs/synchronizer/index.md) takes care of
+The [Synchronizer](docs/-synchronizer/index.md) takes care of
 
     - Connecting to the light wallet server
     - Downloading the latest compact blocks in a privacy-sensitive way
@@ -80,7 +80,7 @@ The [Synchronizer](docs/synchronizer/index.md) takes care of
     - Sending payments to a full node through the light wallet server
     - Monitoring sent payments for status updates
 
-To accomplish this, these responsibilities of the SDK are divided into separate components. Each component is coordinated by the [Synchronizer](docs/synchronizer/index.md), which is the thread that ties it all together.
+To accomplish this, these responsibilities of the SDK are divided into separate components. Each component is coordinated by the [Synchronizer](docs/-synchronizer/index.md), which is the thread that ties it all together.
 
 #### Components
 
@@ -99,7 +99,7 @@ Add the SDK dependency
 ```gradle
 implementation "cash.z.android.wallet:zcash-android-testnet:1.7.5-alpha@aar"
 ```
-Start the [Synchronizer](docs/synchronizer/index.md)
+Start the [Synchronizer](docs/-synchronizer/index.md)
 
 ```kotlin
 synchronizer.start(this)
