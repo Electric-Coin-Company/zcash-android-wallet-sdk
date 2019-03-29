@@ -27,12 +27,6 @@ internal class ConversionsTest {
     fun `toZecString uses banker's rounding`() {
         assertEquals("1.123456", 112345650L.convertZatoshiToZecString())
     }
-//    @Test
-//    fun  `toZec preserves precision when scale is changed`() {
-//        val desiredFunds = 1.1234567890123456789.toZec(3)
-//        assertEquals(1.123, desiredFunds.toDouble())
-//        assertEquals("1.1234567", desiredFunds.setScale(7))
-//    }
     @Test
     fun `toZecString honors minimum digits`() {
         assertEquals("1.1000", 1.1.toZecString(6, 4))
@@ -50,7 +44,7 @@ internal class ConversionsTest {
         assertEquals("1", 1.0.toZecString(6, 0))
     }
     @Test
-    fun `toZecString defaults are resonable`() {
+    fun `toZecString defaults are reasonable`() {
         // basically check for no extra zeros and banker's rounding
         assertEquals("1", 1.0000000.toZecString())
         assertEquals("0", 0.0000000.toZecString())
@@ -60,7 +54,7 @@ internal class ConversionsTest {
         assertEquals("1.000006", 1.0000055.toZecString())
     }
     @Test
-    fun `toUsdString defaults are resonable`() {
+    fun `toUsdString defaults are reasonable`() {
         // basically check for no extra zeros and banker's rounding
         assertEquals("1.00", 1.0000000.toUsdString())
         assertEquals("0", 0.0000000.toUsdString())

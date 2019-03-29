@@ -46,7 +46,7 @@ class IntegrationTest {
 
         downloader = CompactBlockStream("10.0.2.2", 9067, logger)
         processor = CompactBlockProcessor(context, converter, cacheDdName, dataDbName, logger = logger)
-        repository = PollingTransactionRepository(context, dataDbName, 10_000L, converter, logger)
+        repository = PollingTransactionRepository(context, dataDbName, 10_000L)
         wallet = Wallet(
             context,
             converter,

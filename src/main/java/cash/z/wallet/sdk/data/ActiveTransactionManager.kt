@@ -192,10 +192,10 @@ class ActiveTransactionManager(
     // Active Transaction Management
     //
 
-    suspend fun sendToAddress(zatoshi: Long, toAddress: String) = withContext(Dispatchers.IO) {
+    suspend fun sendToAddress(zatoshi: Long, toAddress: String, memo: String = "", fromAccountId: Int = 0) = withContext(Dispatchers.IO) {
         twig("creating send transaction for zatoshi value $zatoshi")
         val activeSendTransaction = create(zatoshi, toAddress.masked())
-        val transactionId: Long = wallet.createRawSendTransaction(zatoshi, toAddress) // this call takes up to 20 seconds
+        val transactionId: Long = wallet.createRawSendTransaction(zatoshi, toAddress, memo, fromAccountId) // this call takes up to 20 seconds
 
         // cancellation basically just prevents sending to the network but we cannot cancel after this moment
         // well, technically we could still allow cancellation in the split second between this line of code and the upload request but lets not complicate things

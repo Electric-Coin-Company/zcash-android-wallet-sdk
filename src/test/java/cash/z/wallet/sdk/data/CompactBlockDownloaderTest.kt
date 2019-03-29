@@ -65,7 +65,7 @@ class CompactBlockDownloaderTest {
         }
         downloader = CompactBlockStream(grpcServerRule.channel, TroubleshootingTwig())
         connection = spy(downloader.connection)
-        whenever(connection.createStub(any())).thenReturn(blockingStub)
+        whenever(connection.createStub(anyNotNull())).thenReturn(blockingStub)
     }
 
     @AfterEach
