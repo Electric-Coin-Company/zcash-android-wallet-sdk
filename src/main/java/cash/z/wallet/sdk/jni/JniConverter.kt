@@ -2,6 +2,11 @@ package cash.z.wallet.sdk.jni
 
 import cash.z.wallet.sdk.annotation.OpenForTesting
 
+/**
+ * Serves as the JNI boundary between the Kotlin and Rust layers. Functions in this class should not be called directly
+ * by code outside of the SDK. Instead, one of the higher-level components should be used such as Wallet.kt or
+ * CompactBlockProcessor.kt.
+ */
 @OpenForTesting
 class JniConverter {
 

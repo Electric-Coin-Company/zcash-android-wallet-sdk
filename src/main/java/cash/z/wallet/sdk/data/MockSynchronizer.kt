@@ -14,21 +14,27 @@ import kotlin.random.nextInt
 import kotlin.random.nextLong
 
 /**
- * Utility for building UIs. It does the best it can to mock the synchronizer so that it can be dropped right into any
+ * Utility for building UIs. It does the best it can to mock the SDKSynchronizer so that it can be dropped into any
  * project and drive the UI. It generates active transactions in response to funds being sent and generates random
- * received transactions periodically.
+ * received transactions, periodically.
  *
  * @param transactionInterval the time in milliseconds between receive transactions being added because those are the
  * only ones auto-generated. Send transactions are triggered by the UI. Transactions are polled at half this interval.
+ * @param initialLoadDuration the time in milliseconds it should take to simulate the initial load. The progress channel
+ * will send regular updates such that it reaches 100 in this amount of time.
  * @param activeTransactionUpdateFrequency the amount of time in milliseconds between updates to an active
  * transaction's state. Active transactions move through their lifecycle and increment their state at this rate.
+ * @param isFirstRun whether this Mock should return `true` for isFirstRun. Defaults to a random boolean.
+ * @param isStale whether this Mock should return `true` for isStale. When null, this will follow the default behavior
+ * of returning true about 10% of the time.
+ * @param onSynchronizerErrorListener presently ignored because there are not yet any errors in mock.
  */
 open class MockSynchronizer(
     private val transactionInterval: Long = 30_000L,
     private val initialLoadDuration: Long = 5_000L,
     private val activeTransactionUpdateFrequency: Long = 3_000L,
     private val isFirstRun: Boolean = Random.nextBoolean(),
-    private var isOutOfSync: Boolean? = null,
+    private var isStale: Boolean? = null,
     override var onSynchronizerErrorListener: ((Throwable?) -> Boolean)? = null // presently ignored (there are no errors in mock yet)
 ) : Synchronizer, CoroutineScope {
 
@@ -36,6 +42,9 @@ open class MockSynchronizer(
 
     private val job = Job()
 
+    /**
+     * Coroutine context used for the CoroutineScope implementation, used to mock asynchronous behaviors.
+     */
     override val coroutineContext: CoroutineContext
         get() = Dispatchers.IO + job
 
@@ -53,6 +62,9 @@ open class MockSynchronizer(
     private val transactionsChannel = ConflatedBroadcastChannel<List<WalletTransaction>>(listOf())
     private val progressChannel = ConflatedBroadcastChannel<Int>()
 
+    /**
+     * Starts this mock Synchronizer.
+     */
     override fun start(parentScope: CoroutineScope): Synchronizer {
         Twig.sprout("mock")
         twig("synchronizer starting")
@@ -60,8 +72,11 @@ open class MockSynchronizer(
         return this
     }
 
+    /**
+     * Stops this mock Synchronizer by cancelling its primary job.
+     */
     override fun stop() {
-        println("synchronizer stopping!")
+        twig("synchronizer stopping!")
         Twig.clip("mock")
         job.cancel()
     }
@@ -71,27 +86,47 @@ open class MockSynchronizer(
     override fun balance() = balanceChannel.openSubscription()
     override fun progress() = progressChannel.openSubscription()
 
+    /**
+     * Returns true roughly 10% of the time and then resets to false after some delay.
+     */
     override suspend fun isStale(): Boolean {
-        val result = isOutOfSync ?: (Random.nextInt(100) < 10)
+        val result = isStale ?: (Random.nextInt(100) < 10)
         twig("checking isStale: $result")
-        if(isOutOfSync == true) launch { delay(20_000L); isOutOfSync = false }
+        if(isStale == true) launch { delay(20_000L); isStale = false }
         return result
     }
 
+    /**
+     * Returns [isFirstRun] as provided during initialization of this MockSynchronizer.
+     */
     override suspend fun isFirstRun(): Boolean {
         twig("checking isFirstRun: $isFirstRun")
         return isFirstRun
     }
 
+    /**
+     * Returns the [mockAddress]. This address is not usable.
+     */
     override fun getAddress(accountId: Int): String = mockAddress.also {  twig("returning mock address $mockAddress") }
 
+    /**
+     * Uses the [forge] to fabricate a transaction and then walk it through the transaction lifecycle in a useful way.
+     * This method will validate the zatoshi amount and toAddress a bit to help with UI validation.
+     *
+     * @param zatoshi the amount to send. A transaction will be created matching this amount.
+     * @param toAddress the address to use. An active transaction will be created matching this address.
+     * @param memo the memo to use. This field is ignored.
+     * @param fromAccountId the account. This field is ignored.
+     */
     override suspend fun sendToAddress(zatoshi: Long, toAddress: String, memo: String, fromAccountId: Int) =
         withContext<Unit>(Dispatchers.IO) {
             Twig.sprout("send")
             val walletTransaction = forge.createSendTransaction(zatoshi)
             val activeTransaction = forge.createActiveSendTransaction(walletTransaction, toAddress)
+
             val isInvalidForTestnet = toAddress.length != 88 && toAddress.startsWith("ztest")
             val isInvalidForMainnet = toAddress.length != 78 && toAddress.startsWith("zs")
+
             val state = when {
                 zatoshi < 0 -> TransactionState.Failure(TransactionState.Creating, "amount cannot be negative")
                 !toAddress.startsWith("z") -> TransactionState.Failure(
@@ -145,6 +180,12 @@ open class MockSynchronizer(
             Twig.clip("send")
         }
 
+    /**
+     * Helper method to update the state of the given active transaction.
+     *
+     * @param activeTransaction the transaction to update.
+     * @param state the new state to set.
+     */
     private suspend fun setState(activeTransaction: ActiveTransaction, state: TransactionState) {
         var copyMap = mutableMapOf<ActiveTransaction, TransactionState>()
         activeTransactionMutex.withLock {
@@ -166,6 +207,9 @@ open class MockSynchronizer(
         }
     }
 
+    /**
+     * Sets the state of the given transaction to 'Cancelled'.
+     */
     override fun cancelSend(transaction: ActiveSendTransaction): Boolean {
         launch {
             twig("cancelling transaction $transaction")
@@ -174,18 +218,27 @@ open class MockSynchronizer(
         return true
     }
 
-    /* creators */
-
+    /**
+     * Utility for forging transactions in both senses of the word.
+     */
     private inner class Forge {
         val transactionId = AtomicLong(Random.nextLong(1L..100_000L))
         val latestHeight = AtomicInteger(Random.nextInt(280000..600000))
 
+        /**
+         * Fire up this forge to begin fabricating transactions.
+         */
         fun start(scope: CoroutineScope) {
             scope.launchAddReceiveTransactions()
             scope.launchUpdateTransactionsAndBalance()
             scope.launchUpdateProgress()
         }
 
+        /**
+         * Take the current list of transactions in the outer class (in a thread-safe way)  and send updates to the
+         * transaction and balance channels on a regular interval, regardless of what data is present in the
+         * transactions collection.
+         */
         fun CoroutineScope.launchUpdateTransactionsAndBalance() = launch {
             while (job.isActive) {
                 if (transactions.size != 0) {
@@ -211,6 +264,11 @@ open class MockSynchronizer(
             }
         }
 
+        /**
+         * Periodically create a transaction and add it to the running list of transactions in the outer class, knowing
+         * that this list of transactions will be periodically broadcast by the `launchUpdateTransactionsAndBalance`
+         * function.
+         */
         fun CoroutineScope.launchAddReceiveTransactions() = launch {
             while (job.isActive) {
                 delay(transactionInterval)
@@ -224,6 +282,9 @@ open class MockSynchronizer(
             }
         }
 
+        /**
+         * Fabricate a stream of progress events.
+         */
         fun CoroutineScope.launchUpdateProgress() =  launch {
             var progress = 0
             while (job.isActive) {
@@ -235,6 +296,9 @@ open class MockSynchronizer(
             twig("progress channel complete!")
         }
 
+        /**
+         * Fabricate a receive transaction.
+         */
         fun createReceiveTransaction(): WalletTransaction {
             return WalletTransaction(
                 txId = transactionId.getAndIncrement(),
@@ -246,6 +310,9 @@ open class MockSynchronizer(
             )
         }
 
+        /**
+         * Fabricate a send transaction.
+         */
         fun createSendTransaction(
             amount: Long = Random.nextLong(20_000L..1_000_000_000L),
             txId: Long = -1L
@@ -260,9 +327,15 @@ open class MockSynchronizer(
             )
         }
 
+        /**
+         * Fabricate an active send transaction, based on the given wallet transaction instance.
+         */
         fun createActiveSendTransaction(walletTransaction: WalletTransaction, toAddress: String)
                 = createActiveSendTransaction(walletTransaction.value, toAddress, walletTransaction.txId)
 
+        /**
+         * Fabricate an active send transaction.
+         */
         fun createActiveSendTransaction(amount: Long, address: String, txId: Long = -1): ActiveSendTransaction {
             return ActiveSendTransaction(
                 transactionId = AtomicLong(if (txId < 0) transactionId.getAndIncrement() else txId),
