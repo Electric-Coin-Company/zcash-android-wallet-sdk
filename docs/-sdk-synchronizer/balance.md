@@ -6,5 +6,5 @@
 
 Overrides [Synchronizer.balance](../-synchronizer/balance.md)
 
-A stream of balance values.
+A stream of balance values, delegated to the [wallet](#).
 

@@ -6,10 +6,10 @@
 
 Overrides [Synchronizer.isFirstRun](../-synchronizer/is-first-run.md)
 
-A flag to indicate that this is the first run of this Synchronizer on this device. This is useful for knowing
-whether to initialize databases or other required resourcews, as well as whether to show walk-throughs.
+A flag to indicate that the initial state of this synchronizer was firstRun. This is useful for knowing whether
+initializing the database is required and whether to show things like"first run walk-throughs."
 
 **Return**
-true when this is the first run. Implementations can set criteria for that but typically it will be when
-the database needs to be initialized.
+true when this synchronizer has not been run before on this device or when cache has been cleared since
+the last run.
 

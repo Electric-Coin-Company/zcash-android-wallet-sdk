@@ -6,14 +6,15 @@
 
 Overrides [Synchronizer.sendToAddress](../-synchronizer/send-to-address.md)
 
-Sends zatoshi.
+Uses the [forge](#) to fabricate a transaction and then walk it through the transaction lifecycle in a useful way.
+This method will validate the zatoshi amount and toAddress a bit to help with UI validation.
 
 ### Parameters
 
-`zatoshi` - the amount of zatoshi to send.
+`zatoshi` - the amount to send. A transaction will be created matching this amount.
 
-`toAddress` - the receipient's address.
+`toAddress` - the address to use. An active transaction will be created matching this address.
 
-`memo` - the optional memo to include as part of the transaction.
+`memo` - the memo to use. This field is ignored.
 
-`fromAccountId` - the optional account id to use. By default, the first account is used.
+`fromAccountId` - the account. This field is ignored.

@@ -12,7 +12,7 @@ Sends zatoshi.
 
 `zatoshi` - the amount of zatoshi to send.
 
-`toAddress` - the receipient's address.
+`toAddress` - the recipient's address.
 
 `memo` - the optional memo to include as part of the transaction.
 

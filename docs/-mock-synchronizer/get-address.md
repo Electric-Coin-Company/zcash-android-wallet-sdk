@@ -6,8 +6,5 @@
 
 Overrides [Synchronizer.getAddress](../-synchronizer/get-address.md)
 
-Gets the address for the given account.
+Returns the [mockAddress](#). This address is not usable.
 
-### Parameters
-
-`accountId` - the optional accountId whose address of interest. By default, the first account is used.

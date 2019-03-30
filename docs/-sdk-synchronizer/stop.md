@@ -6,5 +6,7 @@
 
 Overrides [Synchronizer.stop](../-synchronizer/stop.md)
 
-Stop this synchronizer.
+Stops this synchronizer by stopping the downloader, repository, and activeTransactionManager, then cancelling the
+parent job. Note that we do not cancel the parent scope that was passed into [start](start.md) because the synchronizer
+does not own that scope, it just uses it for launching children.
 

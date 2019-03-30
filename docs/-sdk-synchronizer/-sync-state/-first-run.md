@@ -3,3 +3,6 @@
 # FirstRun
 
 `object FirstRun : `[`SdkSynchronizer.SyncState`](index.md)
+
+State for the first run of the Synchronizer, when the database has not been initialized.
+

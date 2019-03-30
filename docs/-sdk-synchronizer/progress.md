@@ -6,7 +6,8 @@
 
 Overrides [Synchronizer.progress](../-synchronizer/progress.md)
 
-A stream of progress values, typically corresponding to this Synchronizer downloading blocks. Typically, any non-
-zero value below 100 indicates that progress indicators can be shown and a value of 100 signals that progress is
-complete and any progress indicators can be hidden.
+A stream of progress values, corresponding to this Synchronizer downloading blocks, delegated to the
+[downloader](#). Any non-zero value below 100 indicates that progress indicators can be shown and a value of 100
+signals that progress is complete and any progress indicators can be hidden. At that point, the synchronizer
+switches from catching up on missed blocks to periodically monitoring for newly mined blocks.
 

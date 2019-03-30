@@ -5,7 +5,7 @@
 `abstract suspend fun isFirstRun(): `[`Boolean`](https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-boolean/index.html)
 
 A flag to indicate that this is the first run of this Synchronizer on this device. This is useful for knowing
-whether to initialize databases or other required resourcews, as well as whether to show walk-throughs.
+whether to initialize databases or other required resources, as well as whether to show walk-throughs.
 
 **Return**
 true when this is the first run. Implementations can set criteria for that but typically it will be when

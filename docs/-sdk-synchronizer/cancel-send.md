@@ -6,8 +6,9 @@
 
 Overrides [Synchronizer.cancelSend](../-synchronizer/cancel-send.md)
 
-Attempts to cancel a previously sent transaction. Typically, cancellation is only an option if the transaction
-has not yet been submitted to the server.
+Attempts to cancel a previously sent transaction. Transactions can only be cancelled during the calculation phase
+before they've been submitted to the server. This method will return false when it is too late to cancel. This
+logic is delegated to the activeTransactionManager, which knows the state of the given transaction.
 
 ### Parameters
 

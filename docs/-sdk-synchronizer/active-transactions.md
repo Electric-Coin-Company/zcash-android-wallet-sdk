@@ -6,5 +6,5 @@
 
 Overrides [Synchronizer.activeTransactions](../-synchronizer/active-transactions.md)
 
-A stream of all the active transactions.
+A stream of all the wallet transactions, delegated to the [activeTransactionManager](#).
 

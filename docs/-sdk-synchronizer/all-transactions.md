@@ -6,5 +6,5 @@
 
 Overrides [Synchronizer.allTransactions](../-synchronizer/all-transactions.md)
 
-A stream of all the wallet transactions.
+A stream of all the wallet transactions, delegated to the [repository](#).
 

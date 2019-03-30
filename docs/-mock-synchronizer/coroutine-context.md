@@ -3,3 +3,6 @@
 # coroutineContext
 
 `open val coroutineContext: `[`CoroutineContext`](https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.coroutines/-coroutine-context/index.html)
+
+Coroutine context used for the CoroutineScope implementation, used to mock asynchronous behaviors.
+

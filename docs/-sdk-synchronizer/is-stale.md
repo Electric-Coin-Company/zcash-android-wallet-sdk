@@ -6,11 +6,12 @@
 
 Overrides [Synchronizer.isStale](../-synchronizer/is-stale.md)
 
-A flag to indicate that this Synchronizer is significantly out of sync with it's server. Typically, this means
-that the balance and other data cannot be completely trusted because a significant amount of data has not been
-processed. This is intended for showing progress indicators when the user returns to the app after having not
-used it for days. Typically, this means minor sync issues should be ignored and this should be leveraged in order
-to alert a user that the balance information is stale.
+A flag to indicate that this Synchronizer is significantly out of sync with it's server. This is determined by
+the delta between the current block height reported by the server and the latest block we have stored in cache.
+Whenever this delta is greater than the [staleTolerance](#), this function returns true. This is intended for
+showing progress indicators when the user returns to the app after having not used it for a long period.
+Typically, this means the user may have to wait for downloading to occur and the current balance and transaction
+information cannot be trusted as 100% accurate.
 
 **Return**
 true when the local data is significantly out of sync with the remote server and the app data is stale.

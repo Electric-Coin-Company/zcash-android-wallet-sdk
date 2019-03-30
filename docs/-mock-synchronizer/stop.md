@@ -6,5 +6,5 @@
 
 Overrides [Synchronizer.stop](../-synchronizer/stop.md)
 
-Stop this synchronizer.
+Stops this mock Synchronizer by cancelling its primary job.
 

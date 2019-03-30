@@ -6,9 +6,5 @@
 
 Overrides [Synchronizer.onSynchronizerErrorListener](../-synchronizer/on-synchronizer-error-listener.md)
 
-Gets or sets a global error listener. This is a useful hook for handling unexpected critical errors.
-
-**Return**
-true when the error has been handled and the Synchronizer should continue. False when the error is
-unrecoverable and the Synchronizer should [stop](../-synchronizer/stop.md).
+presently ignored because there are not yet any errors in mock.
 
