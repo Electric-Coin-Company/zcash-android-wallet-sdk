@@ -1,10 +1,7 @@
 package cash.z.wallet.sdk.data
 
 import cash.z.wallet.sdk.dao.WalletTransaction
-import com.nhaarman.mockitokotlin2.timeout
 import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.distinctBy
-import kotlinx.coroutines.channels.filter
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -188,7 +185,7 @@ internal class MockSynchronizerTest {
     fun `is out of sync about 10% of the time`() = runBlocking {
         var count = 0
         repeat(100_000) {
-            if (synchronizer.isOutOfSync()) count++
+            if (synchronizer.isStale()) count++
         }
         assertTrue(count < 11_000, "a count of $count is too frequent")
         assertTrue(count > 9_000, "a count of $count is too infrequent")

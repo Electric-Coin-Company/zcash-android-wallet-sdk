@@ -23,13 +23,6 @@ class CacheDbIntegrationTest {
         assertNotNull(dao)
     }
 
-    @Test
-    fun testDaoPrepopulated() {
-        dao.findById(343900).apply {
-            assertEquals(343900, this?.height)
-        }
-    }
-
     companion object {
         private lateinit var dao: CompactBlockDao
         private lateinit var db: CompactBlockDb

@@ -7,7 +7,6 @@ import androidx.room.RoomDatabase
 import androidx.test.core.app.ApplicationProvider
 import cash.z.wallet.sdk.dao.BlockDao
 import cash.z.wallet.sdk.dao.CompactBlockDao
-import cash.z.wallet.sdk.dao.NoteDao
 import cash.z.wallet.sdk.dao.TransactionDao
 import cash.z.wallet.sdk.ext.toBlockHeight
 import cash.z.wallet.sdk.jni.JniConverter

@@ -2,8 +2,6 @@ package cash.z.wallet.sdk.exception
 
 import java.lang.RuntimeException
 
-//TODO: rename things in here when we know what we're calling the Rust layer (librustzcash?)
-
 /**
  * Exceptions thrown in the Rust layer of the SDK. We may not always be able to surface details about this
  * exception so it's important for the SDK to provide helpful messages whenever these errors are encountered.

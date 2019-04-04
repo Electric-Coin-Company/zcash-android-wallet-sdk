@@ -110,3 +110,21 @@ tasks.register("copyLibArmeabi", Copy) {
 tasks.register("copyAllJniLibs") {
     dependsOn copyLibX86, copyLibArm64, copyLibArmeabi
 }
+
+tasks.register("updateDocs", Copy) {
+    dependsOn dokka
+
+    from("$buildDir/docs/zcash-android-wallet-sdk/cash.z.wallet.sdk.data/") {
+        include '-synchronizer/'
+        include '-sdk-synchronizer/'
+        include '-mock-synchronizer/'
+        include '-twig/'
+        rename 'index.md', 'README.md'
+    }
+    from("$buildDir/docs/zcash-android-wallet-sdk/cash.z.wallet.sdk.secure/") {
+        include '-wallet/'
+        rename 'index.md', 'README.md'
+    }
+    into "docs"
+    includeEmptyDirs = false
+}

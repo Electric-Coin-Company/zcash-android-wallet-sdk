@@ -9,6 +9,7 @@ import cash.z.wallet.sdk.exception.RustLayerException
 import cash.z.wallet.sdk.exception.WalletException
 import cash.z.wallet.sdk.ext.masked
 import cash.z.wallet.sdk.jni.JniConverter
+import cash.z.wallet.sdk.secure.Wallet.WalletBirthday
 import com.google.gson.Gson
 import com.google.gson.stream.JsonReader
 import com.squareup.okhttp.OkHttpClient
@@ -27,6 +28,8 @@ import kotlin.properties.ReadWriteProperty
 /**
  * Wrapper for the converter. This class basically represents all the Rust-wallet capabilities and the supporting data
  * required to exercise those abilities.
+ *
+ * @param birthday the birthday of this wallet. See [WalletBirthday] for more info.
  */
 class Wallet(
     private val birthday: WalletBirthday,
@@ -56,10 +59,20 @@ class Wallet(
         spendingKeyProvider = spendingKeyProvider
     )
 
-    var spendingKeyStore by spendingKeyProvider
+    /**
+     * Delegate for storing spending keys. This will be used when the spending keys are created during initialization.
+     */
+    private var spendingKeyStore by spendingKeyProvider
 
+    /**
+     * Channel where balance info will be emitted.
+     */
     private val balanceChannel = ConflatedBroadcastChannel<WalletBalance>()
 
+    /**
+     * Initializes the wallet by creating the DataDb and pre-populating it with data corresponding to the birthday for
+     * this wallet.
+     */
     fun initialize(
         firstRunStartHeight: Int = SAPLING_ACTIVATION_HEIGHT
     ): Int {
@@ -68,26 +81,33 @@ class Wallet(
         twig("seeding the database with sapling tree at height ${birthday.height}")
         converter.initBlocksTable(dataDbPath, birthday.height, birthday.time, birthday.tree)
 
-        // securely store the spendingkey by leveraging the utilities provided during construction
+        // store the spendingkey by leveraging the utilities provided during construction
         val seed by seedProvider
         val accountSpendingKeys = converter.initAccountsTable(dataDbPath, seed, 1)
         spendingKeyStore = accountSpendingKeys[0]
 
-//        converter.initBlocksTable(dbData, height, time, saplingTree)
-        // TODO: init blocks table with sapling tree. probably read a table row in and then write it out to disk in a way where we can deserialize easily
-        // TODO: then use that to determine firstRunStartHeight
-
         return Math.max(firstRunStartHeight, birthday.height)
     }
 
+    /**
+     * Gets the address for this wallet, defaulting to the first account.
+     */
     fun getAddress(accountId: Int = accountIds[0]): String {
         return converter.getAddress(dataDbPath, accountId)
     }
 
+    /**
+     * Stream of balances.
+     */
     fun balance(): ReceiveChannel<WalletBalance> {
         return balanceChannel.openSubscription()
     }
 
+    /**
+     * Calculates the latest balance info and emits it into the balance channel. Defaults to the first account.
+     *
+     * @param accountId the account to check for balance info.
+     */
     suspend fun sendBalanceInfo(accountId: Int = accountIds[0]) = withContext(IO) {
         twigTask("checking balance info") {
             try {
@@ -137,6 +157,13 @@ class Wallet(
             result
         }
 
+    /**
+     * Download and store the params into the given directory.
+     *
+     * @param destinationDir the directory where the params will be stored. It's assumed that we have write access to
+     * this directory. Typically, this should be the app's cache directory because it is not harmful if these files are
+     * cleared by the user since they are downloaded on-demand.
+     */
     suspend fun fetchParams(destinationDir: String) = withContext(IO) {
         val client = createHttpClient()
         var failureMessage = ""
@@ -166,6 +193,11 @@ class Wallet(
         if (failureMessage.isNotEmpty()) throw WalletException.FetchParamsException(failureMessage)
     }
 
+    /**
+     * Checks the given directory for the output and spending params and calls [fetchParams] if they're missing.
+     *
+     * @param destinationDir the directory where the params should be stored.
+     */
     private suspend fun ensureParams(destinationDir: String) {
         var hadError = false
         arrayOf(SPEND_PARAM_FILE_NAME, OUTPUT_PARAM_FILE_NAME).forEach { paramFileName ->
@@ -191,6 +223,10 @@ class Wallet(
     // Helpers
     //
 
+    /**
+     * Http client is only used for downloading sapling spend and output params data, which are necessary for the wallet to
+     * scan blocks.
+     */
     private fun createHttpClient(): OkHttpClient {
         //TODO: add logging and timeouts
         return OkHttpClient()
@@ -206,9 +242,20 @@ class Wallet(
          * since we're using a cloudfront URL that already redirects.
          */
         const val CLOUD_PARAM_DIR_URL = "https://z.cash/downloads/"
+
+        /**
+         * File name for the sappling spend params
+         */
         const val SPEND_PARAM_FILE_NAME = "sapling-spend.params"
+
+        /**
+         * File name for the sapling output params
+         */
         const val OUTPUT_PARAM_FILE_NAME = "sapling-output.params"
 
+        /**
+         * Directory within the assets folder where birthday data (i.e. sapling trees for a given height) can be found.
+         */
         const val BIRTHDAY_DIRECTORY = "zcash/saplingtree"
 
         /**
@@ -238,12 +285,46 @@ class Wallet(
 
     }
 
+    /**
+     * Represents the wallet's birthday which can be thought of as a checkpoint at the earliest moment in history where
+     * transactions related to this wallet could exist. Ideally, this would correspond to the latest block height at the
+     * time the wallet key was created. Worst case, the height of Sapling activation could be used (280000).
+     *
+     * Knowing a wallet's birthday can significantly reduce the amount of data that it needs to download because none of
+     * the data before that height needs to be scanned for transactions. However, we do need the Sapling tree data in
+     * order to construct valid transactions from that point forward. This birthday contains that tree data, allowing us
+     * to avoid downloading all the compact blocks required in order to generate it.
+     *
+     * Currently, the data for this is generated by running `cargo run --release --features=updater` with the SDK and
+     * saving the resulting JSON to the `src/main/assets/zcash` folder. That script simply builds a Sapling tree from
+     * the start of Sapling activation up to the latest block height. In the future, this data could be exposed as a
+     * service on the lightwalletd server because every zcashd node already maintains the sapling tree for each block.
+     * For now, we just include the latest checkpoint in each SDK release.
+     *
+     * New wallets can ignore any blocks created before their birthday.
+     *
+     * @param height the height at the time the wallet was born
+     * @param time the time the wallet was born, in seconds
+     * @param tree the sapling tree corresponding to the given height. This takes around 15 minutes of processing to
+     * generate from scratch because all blocks since activation need to be considered. So when it is calculated in
+     * advance it can save the user a lot of time.
+     */
     data class WalletBirthday(
         val height: Int = -1,
         val time: Long = -1,
         val tree: String = ""
     )
 
+    /**
+     * Data structure to hold the total and available balance of the wallet. This is what is received on the balance
+     * channel.
+     *
+     * @param total the total balance, ignoring funds that cannot be used.
+     * @param available the amount of funds that are available for use. Typical reasons that funds may be unavailable
+     * include fairly new transactions that do not have enough confirmations or notes that are tied up because we are
+     * awaiting change from a transaction. When a note has been spent, its change cannot be used until there are enough
+     * confirmations.
+     */
     data class WalletBalance(
         val total: Long = -1,
         val available: Long = -1
