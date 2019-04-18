@@ -17,6 +17,9 @@ buildscript {
     repositories {
         google()
         jcenter()
+        maven {
+            url 'https://jitpack.io'
+        }
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:3.5.0-alpha09'
@@ -27,6 +30,7 @@ buildscript {
         classpath 'com.github.dcendents:android-maven-gradle-plugin:2.1'
         classpath "com.google.protobuf:protobuf-gradle-plugin:0.8.8"
         classpath 'com.getkeepsafe.dexcount:dexcount-gradle-plugin:0.8.6'
+        classpath 'com.github.str4d:rust-android-gradle:a7847cd48d'
     }
 }
 
@@ -41,6 +45,7 @@ apply plugin: 'com.google.protobuf'
 apply plugin: 'com.github.ben-manes.versions'
 apply plugin: 'com.github.dcendents.android-maven'
 apply plugin: 'com.getkeepsafe.dexcount'
+apply plugin: 'org.mozilla.rust-android-gradle.rust-android'
 
 group = 'cash.z.android.wallet'
 version = '1.7.4'
@@ -154,6 +159,18 @@ protobuf {
     }
 }
 
+cargo {
+    module = "."
+    libname = "zcashwalletsdk"
+    targets = [
+        "arm",
+        "arm64",
+        "x86",
+    ]
+    profile = "release"
+    forceTargets = true
+}
+
 dependencies {
     implementation 'androidx.appcompat:appcompat:1.1.0-alpha03'
 
@@ -207,6 +224,4 @@ dependencies {
     androidTestImplementation 'androidx.test:runner:1.1.1'
 }
 
-
 preBuild.dependsOn includeDirBugFix
-preBuild.dependsOn copyAllJniLibs
