@@ -22,15 +22,15 @@ import java.util.concurrent.TimeUnit
  * Serves as a source of compact blocks received from the light wallet server. Once started, it will
  * request all the appropriate blocks and then stream them into the channel returned when calling [start].
  */
-class CompactBlockStream private constructor(logger: Twig = SilentTwig()) : Twig by logger {
+class CompactBlockStream private constructor() {
     lateinit var connection: Connection
 
     // TODO: improve the creation of this channel (tweak its settings to use mobile device responsibly) and make sure it is properly cleaned up
-    constructor(host: String, port: Int, logger: Twig = SilentTwig()) : this(
-        ManagedChannelBuilder.forAddress(host, port).usePlaintext().build(), logger
+    constructor(host: String, port: Int) : this(
+        ManagedChannelBuilder.forAddress(host, port).usePlaintext().build()
     )
 
-    constructor(channel: Channel, logger: Twig = SilentTwig()) : this(logger) {
+    constructor(channel: Channel) : this() {
         connection = Connection(channel)
     }
 

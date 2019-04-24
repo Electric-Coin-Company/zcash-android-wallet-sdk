@@ -152,8 +152,8 @@ class SdkSynchronizer(
     /**
      * A stream of balance values, delegated to the [wallet].
      */
-    override fun balance(): ReceiveChannel<Wallet.WalletBalance> {
-        return wallet.balance()
+    override fun balances(): ReceiveChannel<Wallet.WalletBalance> {
+        return wallet.balances()
     }
 
 
@@ -196,9 +196,17 @@ class SdkSynchronizer(
     /**
      * Gets the address for the given account.
      *
-     * @param accountId the optional accountId whose address of interest. By default, the first account is used.
+     * @param accountId the optional accountId whose address of interest. Typically, this value is zero.
      */
     override fun getAddress(accountId: Int): String = wallet.getAddress()
+
+    /**
+     * Gets the available balance for the given account. In most cases, the stream of balances provided by [balances]
+     * should be used instead of this function.
+     *
+     * @param accountId the optional accountId whose available balance is of interest. Typically, this value is zero.
+     */
+    override fun getAvailableBalance(accountId: Int): Long = wallet.availableBalanceSnapshot(accountId)
 
     /**
      * Sends zatoshi.

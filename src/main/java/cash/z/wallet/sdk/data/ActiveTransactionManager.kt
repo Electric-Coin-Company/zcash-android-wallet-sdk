@@ -20,9 +20,8 @@ import java.util.concurrent.atomic.AtomicLong
 class ActiveTransactionManager(
     private val repository: TransactionRepository,
     private val service: CompactBlockStream.Connection,
-    private val wallet: Wallet,
-    logger: Twig = SilentTwig()
-) : CoroutineScope, Twig by logger {
+    private val wallet: Wallet
+) : CoroutineScope {
 
     private val job = Job()
     override val coroutineContext: CoroutineContext = Dispatchers.Main + job

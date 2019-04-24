@@ -43,7 +43,7 @@ interface Synchronizer {
     /**
      * A stream of balance values.
      */
-    fun balance(): ReceiveChannel<Wallet.WalletBalance>
+    fun balances(): ReceiveChannel<Wallet.WalletBalance>
 
     /**
      * A stream of progress values, typically corresponding to this Synchronizer downloading blocks. Typically, any non-
@@ -89,9 +89,17 @@ interface Synchronizer {
     /**
      * Gets the address for the given account.
      *
-     * @param accountId the optional accountId whose address of interest. By default, the first account is used.
+     * @param accountId the optional accountId whose address is of interest. By default, the first account is used.
      */
     fun getAddress(accountId: Int = 0): String
+
+    /**
+     * Gets the available balance for the given account. In most cases, the stream of balances provided by [balances]
+     * should be used instead of this function.
+     *
+     * @param accountId the optional accountId whose balance is of interest. By default, the first account is used.
+     */
+    fun getAvailableBalance(accountId: Int = 0): Long
 
     /**
      * Sends zatoshi.
