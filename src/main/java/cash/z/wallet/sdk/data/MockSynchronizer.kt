@@ -83,7 +83,7 @@ open class MockSynchronizer(
 
     override fun activeTransactions() = activeTransactionsChannel.openSubscription()
     override fun allTransactions() = transactionsChannel.openSubscription()
-    override fun balance() = balanceChannel.openSubscription()
+    override fun balances() = balanceChannel.openSubscription()
     override fun progress() = progressChannel.openSubscription()
 
     /**
@@ -108,6 +108,18 @@ open class MockSynchronizer(
      * Returns the [mockAddress]. This address is not usable.
      */
     override fun getAddress(accountId: Int): String = mockAddress.also {  twig("returning mock address $mockAddress") }
+
+    /**
+     * Returns the available balance by adding up all the transactions and subtracting the miner's fee.
+     */
+    override fun getAvailableBalance(accountId: Int): Long {
+        if (transactions.size != 0) {
+            return transactions.fold(0L) { acc, tx ->
+                if (tx.isSend && tx.isMined) acc - tx.value else acc + tx.value
+            } - 10_000L // miner's fee
+        }
+        return 0L
+    }
 
     /**
      * Uses the [forge] to fabricate a transaction and then walk it through the transaction lifecycle in a useful way.

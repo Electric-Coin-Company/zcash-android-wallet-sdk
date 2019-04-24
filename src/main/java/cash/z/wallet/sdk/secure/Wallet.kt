@@ -99,8 +99,18 @@ class Wallet(
     /**
      * Stream of balances.
      */
-    fun balance(): ReceiveChannel<WalletBalance> {
+    fun balances(): ReceiveChannel<WalletBalance> {
         return balanceChannel.openSubscription()
+    }
+
+    /**
+     * Return a quick snapshot of the available balance. In most cases, the stream of balances
+     * provided by [balances] should be used instead of this funciton.
+     *
+     * @param accountId the account to check for balance info. Defaults to zero.
+     */
+    fun availableBalanceSnapshot(accountId: Int = accountIds[0]): Long {
+        return converter.getVerifiedBalance(dataDbPath, accountId)
     }
 
     /**
