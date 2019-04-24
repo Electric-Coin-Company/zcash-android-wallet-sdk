@@ -23,9 +23,8 @@ class CompactBlockProcessor(
     applicationContext: Context,
     val converter: JniConverter = JniConverter(),
     cacheDbName: String = DEFAULT_CACHE_DB_NAME,
-    dataDbName: String = DEFAULT_DATA_DB_NAME,
-    logger: Twig = SilentTwig()
-) : Twig by logger {
+    dataDbName: String = DEFAULT_DATA_DB_NAME
+) {
 
     internal val cacheDao: CompactBlockDao
     private val cacheDb: CompactBlockDb
