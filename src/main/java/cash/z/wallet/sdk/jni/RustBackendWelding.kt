@@ -22,6 +22,10 @@ interface RustBackendWelding {
 
     fun getAddress(dbData: String, account: Int): String
 
+    fun isValidShieldedAddress(addr: String): Boolean
+
+    fun isValidTransparentAddress(addr: String): Boolean
+
     fun getBalance(dbData: String, account: Int): Long
 
     fun getVerifiedBalance(dbData: String, account: Int): Long

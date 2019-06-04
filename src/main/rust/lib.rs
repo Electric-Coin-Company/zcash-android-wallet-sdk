@@ -175,6 +175,56 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_getAddress(
 }
 
 #[no_mangle]
+pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_isValidShieldedAddress(
+    env: JNIEnv<'_>,
+    _: JClass<'_>,
+    addr: JString<'_>,
+) -> jboolean {
+    let res = panic::catch_unwind(|| {
+        let addr = utils::java_string_to_rust(&env, addr);
+
+        match RecipientAddress::from_str(&addr) {
+            Ok(Some(addr)) => match addr {
+                RecipientAddress::Shielded(_) => Ok(JNI_TRUE),
+                RecipientAddress::Transparent(_) => Ok(JNI_FALSE),
+            }
+            Ok(None) => {
+                Err(format_err!("Address is for the wrong network"))
+            }
+            Err(e) => {
+                Err(format_err!("Invalid address: {}", e))
+            }
+        }
+    });
+    unwrap_exc_or(&env, res, JNI_FALSE)
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_isValidTransparentAddress(
+    env: JNIEnv<'_>,
+    _: JClass<'_>,
+    addr: JString<'_>,
+) -> jboolean {
+    let res = panic::catch_unwind(|| {
+        let addr = utils::java_string_to_rust(&env, addr);
+
+        match RecipientAddress::from_str(&addr) {
+            Ok(Some(addr)) => match addr {
+                RecipientAddress::Shielded(_) => Ok(JNI_FALSE),
+                RecipientAddress::Transparent(_) => Ok(JNI_TRUE),
+            }
+            Ok(None) => {
+                Err(format_err!("Address is for the wrong network"))
+            }
+            Err(e) => {
+                Err(format_err!("Invalid address: {}", e))
+            }
+        }
+    });
+    unwrap_exc_or(&env, res, JNI_FALSE)
+}
+
+#[no_mangle]
 pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_getBalance(
     env: JNIEnv<'_>,
     _: JClass<'_>,

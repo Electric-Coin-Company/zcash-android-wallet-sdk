@@ -25,6 +25,10 @@ class RustBackend : RustBackendWelding {
 
     external override fun getAddress(dbData: String, account: Int): String
 
+    external override fun isValidShieldedAddress(addr: String): Boolean
+
+    external override fun isValidTransparentAddress(addr: String): Boolean
+
     external override fun getBalance(dbData: String, account: Int): Long
 
     external override fun getVerifiedBalance(dbData: String, account: Int): Long
