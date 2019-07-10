@@ -184,15 +184,12 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_isValidShieldedA
         let addr = utils::java_string_to_rust(&env, addr);
 
         match RecipientAddress::from_str(&addr) {
-            Ok(Some(addr)) => match addr {
+            Some(addr) => match addr {
                 RecipientAddress::Shielded(_) => Ok(JNI_TRUE),
                 RecipientAddress::Transparent(_) => Ok(JNI_FALSE),
             }
-            Ok(None) => {
+            None => {
                 Err(format_err!("Address is for the wrong network"))
-            }
-            Err(e) => {
-                Err(format_err!("Invalid address: {}", e))
             }
         }
     });
@@ -209,15 +206,12 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_isValidTranspare
         let addr = utils::java_string_to_rust(&env, addr);
 
         match RecipientAddress::from_str(&addr) {
-            Ok(Some(addr)) => match addr {
+            Some(addr) => match addr {
                 RecipientAddress::Shielded(_) => Ok(JNI_FALSE),
                 RecipientAddress::Transparent(_) => Ok(JNI_TRUE),
             }
-            Ok(None) => {
+            None => {
                 Err(format_err!("Address is for the wrong network"))
-            }
-            Err(e) => {
-                Err(format_err!("Invalid address: {}", e))
             }
         }
     });
@@ -415,12 +409,9 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_sendToAddress(
         };
 
         let to = match RecipientAddress::from_str(&to) {
-            Ok(Some(to)) => to,
-            Ok(None) => {
+            Some(to) => to,
+            None => {
                 return Err(format_err!("Address is for the wrong network"));
-            }
-            Err(e) => {
-                return Err(format_err!("Invalid Address: {}", e));
             }
         };
 
