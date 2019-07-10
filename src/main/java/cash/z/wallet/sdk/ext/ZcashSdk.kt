@@ -12,7 +12,7 @@ const val MINERS_FEE_ZATOSHI = 10_000L
 /**
  * The number of zatoshi that equal 1 ZEC.
  */
-const val ZATOSHI = 100_000_000L
+const val ZATOSHI_PER_ZEC = 100_000_000L
 
 /**
  * The height of the first sapling block. When it comes to shielded transactions, we do not need to consider any blocks
