@@ -1,9 +1,8 @@
 package cash.z.wallet.sdk.data
 
-import cash.z.android.wallet.data.ChannelListValueProvider
 import cash.z.wallet.sdk.block.CompactBlockProcessor
-import cash.z.wallet.sdk.dao.WalletTransaction
-import cash.z.wallet.sdk.db.PendingTransactionEntity
+import cash.z.wallet.sdk.dao.ClearedTransaction
+import cash.z.wallet.sdk.db.PendingTransaction
 import cash.z.wallet.sdk.exception.WalletException
 import cash.z.wallet.sdk.secure.Wallet
 import kotlinx.coroutines.*
@@ -21,40 +20,73 @@ class StableSynchronizer (
     private val ledger: PollingTransactionRepository,
     private val sender: TransactionSender,
     private val processor: CompactBlockProcessor,
-    private val encoder: RawTransactionEncoder,
-    private val clearedTransactionProvider: ChannelListValueProvider<WalletTransaction>
-) : DataSyncronizer {
+    private val encoder: RawTransactionEncoder
+) : DataSynchronizer {
 
-    /** This listener will not be called on the main thread. So it will need to switch to do anything with UI, like dialogs */
-    override var onCriticalErrorListener: ((Throwable) -> Boolean)? = null
+    /**
+     * The lifespan of this Synchronizer. This scope is initialized once the Synchronizer starts because it will be a
+     * child of the parentScope that gets passed into the [start] function. Everything launched by this Synchronizer
+     * will be cancelled once the Synchronizer or its parentScope stops. This is a lateinit rather than nullable
+     * property so that it fails early rather than silently, whenever the scope is used before the Synchronizer has been
+     * started.
+     */
+    lateinit var coroutineScope: CoroutineScope
 
-    private var syncJob: Job? = null
-    private var clearedJob: Job? = null
-    private var pendingJob: Job? = null
-    private var progressJob: Job? = null
+
+    //
+    // Communication Primitives
+    //
 
     private val balanceChannel = ConflatedBroadcastChannel(Wallet.WalletBalance())
     private val progressChannel = ConflatedBroadcastChannel(0)
-    private val pendingChannel = ConflatedBroadcastChannel<List<PendingTransactionEntity>>(listOf())
-    private val clearedChannel = clearedTransactionProvider.channel
+    private val pendingChannel = ConflatedBroadcastChannel<List<PendingTransaction>>(listOf())
+    private val clearedChannel = ConflatedBroadcastChannel<List<ClearedTransaction>>(listOf())
 
-    // TODO: clean these up and turn them into delegates
-    internal val pendingProvider = ChannelListValueProvider(pendingChannel)
+
+    //
+    // Status
+    //
 
     override val isConnected: Boolean get() = processor.isConnected
     override val isSyncing: Boolean get() = processor.isSyncing
     override val isScanning: Boolean get() = processor.isScanning
 
-    // TODO: find a better way to expose the lifecycle of this synchronizer (right now this is only used by the zcon1 app's SendReceiver)
-    lateinit var internalScope: CoroutineScope
-    override fun start(scope: CoroutineScope) {
-        internalScope = scope
-        twig("Starting sender!")
+
+    //
+    // Error Callbacks
+    //
+
+    /** This listener will not be called on the main thread. So it will need to switch to do anything with UI, like dialogs */
+    override var onCriticalErrorListener: ((Throwable) -> Boolean)? = null
+
+
+    override fun start(parentScope: CoroutineScope) {
+        // base this scope on the parent so that when the parent's job cancels, everything here cancels as well
+        // also use a supervisor job so that one failure doesn't bring down the whole synchronizer
+        coroutineScope = CoroutineScope(SupervisorJob(parentScope.coroutineContext[Job]!!) + Dispatchers.Main)
+
+        coroutineScope.launch {
+            initWallet()
+            startSender(this)
+
+            launchProgressMonitor()
+            launchPendingMonitor()
+            launchClearedMonitor()
+            onReady()
+        }
+    }
+
+    private fun startSender(parentScope: CoroutineScope) {
+        sender.onSubmissionError = ::onFailedSend
+        sender.start(parentScope)
+    }
+
+    private suspend fun initWallet() = withContext(Dispatchers.IO) {
         try {
             wallet.initialize()
         } catch (e: WalletException.AlreadyInitializedException) {
             twig("Warning: wallet already initialized but this is safe to ignore " +
-                    "because the SDK now automatically detects where to start downloading.")
+                    "because the SDK automatically detects where to start downloading.")
         } catch (f: WalletException.FalseStart) {
             if (recoverFrom(f)) {
                 twig("Warning: had a wallet init error but we recovered!")
@@ -62,12 +94,6 @@ class StableSynchronizer (
                 twig("Error: false start while initializing wallet!")
             }
         }
-        sender.onSubmissionError = ::onFailedSend
-        sender.start(scope)
-        progressJob = scope.launchProgressMonitor()
-        pendingJob = scope.launchPendingMonitor()
-        clearedJob = scope.launchClearedMonitor()
-        syncJob = scope.onReady()
     }
 
     private fun recoverFrom(error: WalletException.FalseStart): Boolean {
@@ -76,19 +102,11 @@ class StableSynchronizer (
             //TODO: these errors are fatal and we need to delete the database and start over
             twig("Database should be deleted and we should start over")
         }
-        return true
+        return false
     }
 
-    // TODO: consider removing the need for stopping by wrapping everything in a job that gets cancelled
-    // probably just returning the job from start
     override fun stop() {
-        sender.stop()
-        // TODO: consider wrapping these in another object that helps with cleanup like job.toScopedJob()
-        // it would keep a reference to the job and then clear that reference when the scope ends
-        syncJob?.cancel().also { syncJob = null }
-        pendingJob?.cancel().also { pendingJob = null }
-        clearedJob?.cancel().also { clearedJob = null }
-        progressJob?.cancel().also { progressJob = null }
+        coroutineScope.cancel()
     }
 
 
@@ -206,20 +224,20 @@ class StableSynchronizer (
         return progressChannel.openSubscription()
     }
 
-    override fun pendingTransactions(): ReceiveChannel<List<PendingTransactionEntity>> {
+    override fun pendingTransactions(): ReceiveChannel<List<PendingTransaction>> {
         return pendingChannel.openSubscription()
     }
 
-    override fun clearedTransactions(): ReceiveChannel<List<WalletTransaction>> {
+    override fun clearedTransactions(): ReceiveChannel<List<ClearedTransaction>> {
         return clearedChannel.openSubscription()
     }
 
-    override fun getPending(): List<PendingTransactionEntity> {
-        return pendingProvider.getLatestValue()
+    override fun getPending(): List<PendingTransaction> {
+        return if (pendingChannel.isClosedForSend) listOf() else pendingChannel.value
     }
 
-    override fun getCleared(): List<WalletTransaction> {
-        return clearedTransactionProvider.getLatestValue()
+    override fun getCleared(): List<ClearedTransaction> {
+        return if (clearedChannel.isClosedForSend) listOf() else clearedChannel.value
     }
 
     override fun getBalance(): Wallet.WalletBalance {
@@ -238,38 +256,32 @@ class StableSynchronizer (
         toAddress: String,
         memo: String,
         fromAccountId: Int
-    ): PendingTransactionEntity = withContext(IO) {
+    ): PendingTransaction = withContext(IO) {
         sender.sendToAddress(encoder, zatoshi, toAddress, memo, fromAccountId)
     }
 
 }
 
 
-interface DataSyncronizer : ClearedTransactionProvider, PendingTransactionProvider {
-    fun start(scope: CoroutineScope)
+interface DataSynchronizer {
+    fun start(parentScope: CoroutineScope)
     fun stop()
 
     suspend fun getAddress(accountId: Int = 0): String
-    suspend fun sendToAddress(zatoshi: Long, toAddress: String, memo: String = "", fromAccountId: Int = 0): PendingTransactionEntity
+    suspend fun sendToAddress(zatoshi: Long, toAddress: String, memo: String = "", fromAccountId: Int = 0): PendingTransaction
 
     fun balances(): ReceiveChannel<Wallet.WalletBalance>
     fun progress(): ReceiveChannel<Int>
-    fun pendingTransactions(): ReceiveChannel<List<PendingTransactionEntity>>
-    fun clearedTransactions(): ReceiveChannel<List<WalletTransaction>>
+    fun pendingTransactions(): ReceiveChannel<List<PendingTransaction>>
+    fun clearedTransactions(): ReceiveChannel<List<ClearedTransaction>>
+
+    fun getPending(): List<PendingTransaction>
+    fun getCleared(): List<ClearedTransaction>
+    fun getBalance(): Wallet.WalletBalance
 
     val isConnected: Boolean
     val isSyncing: Boolean
     val isScanning: Boolean
     var onCriticalErrorListener: ((Throwable) -> Boolean)?
-    override fun getPending(): List<PendingTransactionEntity>
-    override fun getCleared(): List<WalletTransaction>
-    fun getBalance(): Wallet.WalletBalance
-}
 
-interface ClearedTransactionProvider {
-    fun getCleared(): List<WalletTransaction>
-}
-
-interface PendingTransactionProvider {
-    fun getPending(): List<PendingTransactionEntity>
 }

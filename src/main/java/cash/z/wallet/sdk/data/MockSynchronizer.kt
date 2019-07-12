@@ -1,8 +1,6 @@
 package cash.z.wallet.sdk.data
 
-import cash.z.wallet.sdk.block.CompactBlockProcessor
-import cash.z.wallet.sdk.block.ProcessorConfig
-import cash.z.wallet.sdk.dao.WalletTransaction
+import cash.z.wallet.sdk.dao.ClearedTransaction
 import cash.z.wallet.sdk.ext.MINERS_FEE_ZATOSHI
 import cash.z.wallet.sdk.secure.Wallet
 import kotlinx.coroutines.*
@@ -50,7 +48,7 @@ open class MockSynchronizer(
         get() = Dispatchers.IO + job
 
     /* only accessed through mutual exclusion */
-    private val transactions = mutableListOf<WalletTransaction>()
+    private val transactions = mutableListOf<ClearedTransaction>()
     private val activeTransactions = mutableMapOf<ActiveTransaction, TransactionState>()
 
     private val transactionMutex = Mutex()
@@ -60,7 +58,7 @@ open class MockSynchronizer(
 
     private val balanceChannel = ConflatedBroadcastChannel<Wallet.WalletBalance>()
     private val activeTransactionsChannel = ConflatedBroadcastChannel<Map<ActiveTransaction, TransactionState>>(mutableMapOf())
-    private val transactionsChannel = ConflatedBroadcastChannel<List<WalletTransaction>>(listOf())
+    private val transactionsChannel = ConflatedBroadcastChannel<List<ClearedTransaction>>(listOf())
     private val progressChannel = ConflatedBroadcastChannel<Int>()
 
     /**
@@ -257,7 +255,7 @@ open class MockSynchronizer(
                 }
                 // other collaborators add to the list, periodically. This simulates, real-world, non-distinct updates.
                 delay(Random.nextLong(transactionInterval / 2))
-                var copyList = listOf<WalletTransaction>()
+                var copyList = listOf<ClearedTransaction>()
                 transactionMutex.withLock {
                     // shallow copy
                     copyList = transactions.map { it }
@@ -302,8 +300,8 @@ open class MockSynchronizer(
         /**
          * Fabricate a receive transaction.
          */
-        fun createReceiveTransaction(): WalletTransaction {
-            return WalletTransaction(
+        fun createReceiveTransaction(): ClearedTransaction {
+            return ClearedTransaction(
                 id = transactionId.getAndIncrement(),
                 value = Random.nextLong(20_000L..1_000_000_000L),
                 height = latestHeight.getAndIncrement(),
@@ -319,8 +317,8 @@ open class MockSynchronizer(
         fun createSendTransaction(
             amount: Long = Random.nextLong(20_000L..1_000_000_000L),
             txId: Long = -1L
-        ): WalletTransaction {
-            return WalletTransaction(
+        ): ClearedTransaction {
+            return ClearedTransaction(
                 id = if (txId == -1L) transactionId.getAndIncrement() else txId,
                 value = amount,
                 height = null,
@@ -333,7 +331,7 @@ open class MockSynchronizer(
         /**
          * Fabricate an active send transaction, based on the given wallet transaction instance.
          */
-        fun createActiveSendTransaction(walletTransaction: WalletTransaction, toAddress: String)
+        fun createActiveSendTransaction(walletTransaction: ClearedTransaction, toAddress: String)
                 = createActiveSendTransaction(walletTransaction.value, toAddress, walletTransaction.id)
 
         /**

@@ -1,13 +1,13 @@
 package cash.z.wallet.sdk.db
 
 import androidx.room.*
-import cash.z.wallet.sdk.dao.WalletTransaction
+import cash.z.wallet.sdk.dao.ClearedTransaction
 import cash.z.wallet.sdk.data.RawTransaction
 import cash.z.wallet.sdk.ext.masked
 
 @Database(
     entities = [
-        PendingTransactionEntity::class
+        PendingTransaction::class
     ],
     version = 1,
     exportSchema = false
@@ -19,10 +19,10 @@ abstract class PendingTransactionDb : RoomDatabase() {
 @Dao
 interface PendingTransactionDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insert(transaction: PendingTransactionEntity): Long
+    fun insert(transaction: PendingTransaction): Long
 
     @Delete
-    fun delete(transaction: PendingTransactionEntity)
+    fun delete(transaction: PendingTransaction)
 //
 //    /**
 //     * Query all blocks that are not mined and not expired.
@@ -48,11 +48,11 @@ interface PendingTransactionDao {
 //    fun getAllPending(currentHeight: Int): List<PendingTransactionEntity>
 
     @Query("SELECT * from pending_transactions ORDER BY createTime")
-    fun getAll(): List<PendingTransactionEntity>
+    fun getAll(): List<PendingTransaction>
 }
 
 @Entity(tableName = "pending_transactions")
-data class PendingTransactionEntity(
+data class PendingTransaction(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
     val address: String = "",
@@ -86,7 +86,7 @@ data class PendingTransactionEntity(
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
-        if (other !is PendingTransactionEntity) return false
+        if (other !is PendingTransaction) return false
 
         if (id != other.id) return false
         if (address != other.address) return false
@@ -130,50 +130,50 @@ data class PendingTransactionEntity(
 
 }
 
-fun PendingTransactionEntity.isSameTxId(other: WalletTransaction): Boolean {
+fun PendingTransaction.isSameTxId(other: ClearedTransaction): Boolean {
     return txId != null && other.rawTransactionId != null && txId.contentEquals(other.rawTransactionId!!)
 }
 
-fun PendingTransactionEntity.isSameTxId(other: PendingTransactionEntity): Boolean {
+fun PendingTransaction.isSameTxId(other: PendingTransaction): Boolean {
     return txId != null && other.txId != null && txId.contentEquals(other.txId)
 }
 
-fun PendingTransactionEntity.isCreating(): Boolean {
+fun PendingTransaction.isCreating(): Boolean {
     return raw == null && submitAttempts <= 0 && !isFailedSubmit() && !isFailedEncoding()
 }
 
-fun PendingTransactionEntity.isFailedEncoding(): Boolean {
+fun PendingTransaction.isFailedEncoding(): Boolean {
     return raw == null && encodeAttempts > 0
 }
 
-fun PendingTransactionEntity.isFailedSubmit(): Boolean {
+fun PendingTransaction.isFailedSubmit(): Boolean {
     return errorMessage != null || (errorCode != null && errorCode < 0)
 }
 
-fun PendingTransactionEntity.isFailure(): Boolean {
+fun PendingTransaction.isFailure(): Boolean {
     return isFailedEncoding() || isFailedSubmit()
 }
 
-fun PendingTransactionEntity.isSubmitted(): Boolean {
+fun PendingTransaction.isSubmitted(): Boolean {
     return submitAttempts > 0
 }
 
-fun PendingTransactionEntity.isMined(): Boolean {
+fun PendingTransaction.isMined(): Boolean {
     return minedHeight > 0
 }
 
-fun PendingTransactionEntity.isPending(currentHeight: Int = -1): Boolean {
+fun PendingTransaction.isPending(currentHeight: Int = -1): Boolean {
     // not mined and not expired and successfully created
     return !isSubmitSuccess() && minedHeight == -1 && (expiryHeight == -1 || expiryHeight > currentHeight) && raw != null
 }
 
-fun PendingTransactionEntity.isSubmitSuccess(): Boolean {
+fun PendingTransaction.isSubmitSuccess(): Boolean {
     return submitAttempts > 0 && (errorCode != null && errorCode >= 0) && errorMessage == null
 }
 
 /**
  * The amount of time remaining until this transaction is stale
  */
-fun PendingTransactionEntity.ttl(): Long {
+fun PendingTransaction.ttl(): Long {
     return (60L * 2L) - (System.currentTimeMillis()/1000 - createTime)
 }

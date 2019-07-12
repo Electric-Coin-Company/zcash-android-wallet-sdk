@@ -1,7 +1,7 @@
 package cash.z.wallet.sdk.data
 
 import cash.z.wallet.sdk.block.CompactBlockProcessor
-import cash.z.wallet.sdk.dao.WalletTransaction
+import cash.z.wallet.sdk.dao.ClearedTransaction
 import cash.z.wallet.sdk.exception.SynchronizerException
 import cash.z.wallet.sdk.exception.WalletException
 import cash.z.wallet.sdk.secure.Wallet
@@ -80,7 +80,7 @@ class SdkSynchronizer(
     /**
      * Channel of transactions from the repository.
      */
-    private val transactionChannel = ConflatedBroadcastChannel<List<WalletTransaction>>()
+    private val transactionChannel = ConflatedBroadcastChannel<List<ClearedTransaction>>()
 
     /**
      * Channel of balance information.
@@ -147,7 +147,7 @@ class SdkSynchronizer(
     /**
      * A stream of all the wallet transactions, delegated to the [repository].
      */
-    override fun allTransactions(): ReceiveChannel<List<WalletTransaction>> {
+    override fun allTransactions(): ReceiveChannel<List<ClearedTransaction>> {
         return transactionChannel.openSubscription()
     }
 
@@ -244,7 +244,7 @@ class SdkSynchronizer(
     /**
      * Monitors transactions and recalculates the balance any time transactions have changed.
      */
-    private suspend fun monitorTransactions(transactionChannel: ReceiveChannel<List<WalletTransaction>>) =
+    private suspend fun monitorTransactions(transactionChannel: ReceiveChannel<List<ClearedTransaction>>) =
         withContext(IO) {
             twig("beginning to monitor transactions in order to update the balance")
             launch {

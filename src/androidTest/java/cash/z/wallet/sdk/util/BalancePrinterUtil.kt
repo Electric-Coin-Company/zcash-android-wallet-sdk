@@ -3,10 +3,10 @@ package cash.z.wallet.sdk.db
 import androidx.test.platform.app.InstrumentationRegistry
 import cash.z.wallet.sdk.block.CompactBlockDbStore
 import cash.z.wallet.sdk.block.CompactBlockDownloader
-import cash.z.wallet.sdk.data.SampleSeedProvider
 import cash.z.wallet.sdk.data.TroubleshootingTwig
 import cash.z.wallet.sdk.data.Twig
 import cash.z.wallet.sdk.data.twig
+import cash.z.wallet.sdk.ext.SampleSeedProvider
 import cash.z.wallet.sdk.jni.RustBackend
 import cash.z.wallet.sdk.secure.Wallet
 import cash.z.wallet.sdk.service.LightWalletGrpcService
