@@ -50,10 +50,45 @@ interface TransactionDao {
         WHERE received_notes.is_change != 1 or transactions.raw IS NOT NULL
         ORDER  BY block IS NOT NUll, height DESC, time DESC, txId DESC
     """)
-    fun getAll(): List<WalletTransaction>
+    fun getAll(): List<ClearedTransaction>
+
+    /**
+     * Query transactions by rawTxId
+     */
+    @Query("""
+        SELECT transactions.id_tx             AS id,
+               transactions.txid              AS rawTransactionId,
+               transactions.block             AS height,
+               transactions.raw IS NOT NULL   AS isSend,
+               transactions.block IS NOT NULL AS isMined,
+               blocks.time                    AS timeInSeconds,
+               sent_notes.address             AS address,
+               CASE
+                 WHEN transactions.raw IS NOT NULL THEN sent_notes.value
+                 ELSE received_notes.value
+               END                            AS value,
+              CASE
+                 WHEN transactions.raw IS NOT NULL THEN sent_notes.memo IS NOT NULL
+                 ELSE received_notes.memo IS NOT NULL
+               END                            AS rawMemoExists,
+             CASE
+                 WHEN transactions.raw IS NOT NULL THEN sent_notes.id_note
+                 ELSE received_notes.id_note
+               END                            AS noteId
+        FROM   transactions
+               LEFT JOIN sent_notes
+                      ON transactions.id_tx = sent_notes.tx
+               LEFT JOIN received_notes
+                      ON transactions.id_tx = received_notes.tx
+               LEFT JOIN blocks
+                      ON transactions.block = blocks.height
+        WHERE (received_notes.is_change != 1 or transactions.raw IS NOT NULL) AND (height IS NOT NULL) and (rawTransactionId = :rawTxId)
+        ORDER  BY block IS NOT NUll, height DESC, time DESC, txId DESC
+    """)
+    fun findByRawId(rawTxId: ByteArray): List<ClearedTransaction>
 }
 
-data class WalletTransaction(
+data class ClearedTransaction(
     val id: Long = 0L,
     val noteId: Long = 0L,
     val rawTransactionId: ByteArray? = null,
@@ -72,7 +107,7 @@ data class WalletTransaction(
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
-        if (other !is WalletTransaction) return false
+        if (other !is ClearedTransaction) return false
 
         if (noteId != other.noteId) return false
         if (id != other.id) return false

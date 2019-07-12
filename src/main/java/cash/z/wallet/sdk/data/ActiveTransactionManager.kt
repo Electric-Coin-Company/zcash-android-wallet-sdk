@@ -1,6 +1,6 @@
 package cash.z.wallet.sdk.data
 
-import cash.z.wallet.sdk.dao.WalletTransaction
+import cash.z.wallet.sdk.dao.ClearedTransaction
 import cash.z.wallet.sdk.ext.masked
 import cash.z.wallet.sdk.secure.Wallet
 import kotlinx.coroutines.*
@@ -13,8 +13,6 @@ import cash.z.wallet.sdk.data.TransactionState.*
 import cash.z.wallet.sdk.service.LightWalletService
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
-import kotlin.contracts.ExperimentalContracts
-import kotlin.contracts.contract
 
 /**
  * Manages active send/receive transactions. These are transactions that have been initiated but not completed with
@@ -34,7 +32,7 @@ class ActiveTransactionManager(
     // mutableMapOf gives the same result but we're explicit about preserving insertion order, since we rely on that
     private val activeTransactions = LinkedHashMap<ActiveTransaction, TransactionState>()
     private val channel = ConflatedBroadcastChannel<Map<ActiveTransaction, TransactionState>>()
-    private val clearedTransactions = ConflatedBroadcastChannel<List<WalletTransaction>>()
+    private val clearedTransactions = ConflatedBroadcastChannel<List<ClearedTransaction>>()
 //    private val latestHeightSubscription = service.latestHeights()
 
     fun subscribe(): ReceiveChannel<Map<ActiveTransaction, TransactionState>> {
@@ -150,7 +148,7 @@ class ActiveTransactionManager(
      * @param transactions the latest transactions received from our subscription to the transaction repository. That
      * channel only publishes transactions when they have changed in some way.
      */
-    private fun updateSentTransactions(transactions: List<WalletTransaction>) {
+    private fun updateSentTransactions(transactions: List<ClearedTransaction>) {
         twig("transaction modification received! Updating active sent transactions based on new transaction list")
         val sentTransactions = transactions.filter { it.isSend }
         val activeSentTransactions =

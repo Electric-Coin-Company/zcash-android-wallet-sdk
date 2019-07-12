@@ -1,6 +1,6 @@
 package cash.z.wallet.sdk.data
 
-import cash.z.wallet.sdk.dao.WalletTransaction
+import cash.z.wallet.sdk.dao.ClearedTransaction
 import kotlinx.coroutines.*
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -142,7 +142,7 @@ internal class MockSynchronizerTest {
     @Test
     fun `balance matches transactions without sends`() = runBlocking {
         val balances = fastSynchronizer.start(fastSynchronizer).balances()
-        var transactions = listOf<WalletTransaction>()
+        var transactions = listOf<ClearedTransaction>()
         while (transactions.count() < 10) {
             transactions = fastSynchronizer.allTransactions().receive()
             println("got ${transactions.count()} transaction(s)")
@@ -152,7 +152,7 @@ internal class MockSynchronizerTest {
 
     @Test
     fun `balance matches transactions with sends`() = runBlocking {
-        var transactions = listOf<WalletTransaction>()
+        var transactions = listOf<ClearedTransaction>()
         val balances = fastSynchronizer.start(fastSynchronizer).balances()
         val transactionChannel = fastSynchronizer.allTransactions()
         while (transactions.count() < 10) {

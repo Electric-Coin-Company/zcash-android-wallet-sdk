@@ -1,6 +1,6 @@
 package cash.z.wallet.sdk.data
 
-import cash.z.wallet.sdk.dao.WalletTransaction
+import cash.z.wallet.sdk.dao.ClearedTransaction
 import cash.z.wallet.sdk.secure.Wallet
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.ReceiveChannel
@@ -38,7 +38,7 @@ interface Synchronizer {
     /**
      * A stream of all the wallet transactions.
      */
-    fun allTransactions(): ReceiveChannel<List<WalletTransaction>>
+    fun allTransactions(): ReceiveChannel<List<ClearedTransaction>>
 
     /**
      * A stream of balance values.

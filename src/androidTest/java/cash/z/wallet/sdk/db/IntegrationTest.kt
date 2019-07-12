@@ -6,6 +6,8 @@ import cash.z.wallet.sdk.block.CompactBlockDownloader
 import cash.z.wallet.sdk.block.CompactBlockProcessor
 import cash.z.wallet.sdk.block.ProcessorConfig
 import cash.z.wallet.sdk.data.*
+import cash.z.wallet.sdk.ext.SampleSeedProvider
+import cash.z.wallet.sdk.ext.SampleSpendingKeyProvider
 import cash.z.wallet.sdk.jni.RustBackend
 import cash.z.wallet.sdk.secure.Wallet
 import cash.z.wallet.sdk.service.LightWalletGrpcService

@@ -5,7 +5,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import cash.z.wallet.sdk.dao.BlockDao
 import cash.z.wallet.sdk.dao.TransactionDao
-import cash.z.wallet.sdk.dao.WalletTransaction
+import cash.z.wallet.sdk.dao.ClearedTransaction
 import cash.z.wallet.sdk.db.DerivedDataDb
 import cash.z.wallet.sdk.entity.Transaction
 import cash.z.wallet.sdk.jni.RustBackendWelding
@@ -64,16 +64,20 @@ open class PollingTransactionRepository(
         transaction
     }
 
+    fun findTransactionByRawId(rawTxId: ByteArray): List<ClearedTransaction>? {
+        return transactions.findByRawId(rawTxId)
+    }
+
     override suspend fun deleteTransactionById(txId: Long) = withContext(IO) {
         twigTask("deleting transaction with id $txId") {
             transactions.deleteById(txId)
         }
     }
 
-    suspend fun poll(channel: SendChannel<List<WalletTransaction>>, frequency: Long = pollFrequencyMillis) = withContext(IO) {
+    suspend fun poll(channel: SendChannel<List<ClearedTransaction>>, frequency: Long = pollFrequencyMillis) = withContext(IO) {
         pollingJob?.cancel()
         pollingJob = launch {
-            var previousTransactions: List<WalletTransaction>? = null
+            var previousTransactions: List<ClearedTransaction>? = null
             while (isActive && !channel.isClosedForSend) {
                 twigTask("polling for cleared transactions every ${frequency}ms") {
                     val newTransactions = transactions.getAll()
@@ -97,7 +101,7 @@ open class PollingTransactionRepository(
         derivedDataDb.close()
     }
 
-    private suspend fun addMemos(newTransactions: List<WalletTransaction>): List<WalletTransaction> = withContext(IO){
+    private suspend fun addMemos(newTransactions: List<ClearedTransaction>): List<ClearedTransaction> = withContext(IO){
         for (tx in newTransactions) {
             if (tx.rawMemoExists) {
                 tx.memo = if(tx.isSend) {
@@ -111,8 +115,8 @@ open class PollingTransactionRepository(
     }
 
 
-    private fun hasChanged(oldTxs: List<WalletTransaction>?, newTxs: List<WalletTransaction>): Boolean {
-        fun pr(t: List<WalletTransaction>?): String {
+    private fun hasChanged(oldTxs: List<ClearedTransaction>?, newTxs: List<ClearedTransaction>): Boolean {
+        fun pr(t: List<ClearedTransaction>?): String {
             if(t == null) return "none"
             val str = StringBuilder()
             for (tx in t) {
@@ -133,5 +137,6 @@ open class PollingTransactionRepository(
         }
         return false.also { twig("detected no changes in all new txs") }
     }
+
 
 }

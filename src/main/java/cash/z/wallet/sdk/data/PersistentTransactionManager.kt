@@ -5,7 +5,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import cash.z.wallet.sdk.db.PendingTransactionDao
 import cash.z.wallet.sdk.db.PendingTransactionDb
-import cash.z.wallet.sdk.db.PendingTransactionEntity
+import cash.z.wallet.sdk.db.PendingTransaction
 import cash.z.wallet.sdk.ext.EXPIRY_OFFSET
 import cash.z.wallet.sdk.service.LightWalletService
 import kotlinx.coroutines.Dispatchers.IO
@@ -31,11 +31,11 @@ class PersistentTransactionManager(private val db: PendingTransactionDb) : Trans
             .build()
     ) {
         dbCallback(db)
+        dao = db.pendingTransactionDao()
     }
 
     override fun start() {
         twig("TransactionManager starting")
-        dao = db.pendingTransactionDao()
     }
 
     override fun stop() {
@@ -47,7 +47,7 @@ class PersistentTransactionManager(private val db: PendingTransactionDb) : Trans
         zatoshiValue: Long,
         toAddress: String,
         memo: String
-    ): PendingTransactionEntity? = withContext(IO) {
+    ): PendingTransaction? = withContext(IO) {
         twig("constructing a placeholder transaction")
         val tx = initTransaction(zatoshiValue, toAddress, memo)
         twig("done constructing a placeholder transaction")
@@ -71,14 +71,14 @@ class PersistentTransactionManager(private val db: PendingTransactionDb) : Trans
         toAddress: String,
         memo: String,
         currentHeight: Int
-    ): PendingTransactionEntity = manageCreation(encoder, initTransaction(zatoshiValue, toAddress, memo), currentHeight)
+    ): PendingTransaction = manageCreation(encoder, initTransaction(zatoshiValue, toAddress, memo), currentHeight)
 
 
     suspend fun manageCreation(
         encoder: RawTransactionEncoder,
-        transaction: PendingTransactionEntity,
+        transaction: PendingTransaction,
         currentHeight: Int
-    ): PendingTransactionEntity = withContext(IO){
+    ): PendingTransaction = withContext(IO){
         twig("managing the creation of a transaction")
         var tx = transaction.copy(expiryHeight = if (currentHeight == -1) -1 else currentHeight + EXPIRY_OFFSET)
         try {
@@ -103,7 +103,7 @@ class PersistentTransactionManager(private val db: PendingTransactionDb) : Trans
     }
 
     override suspend fun manageSubmission(service: LightWalletService, pendingTransaction: RawTransaction) {
-        var tx = pendingTransaction as PendingTransactionEntity
+        var tx = pendingTransaction as PendingTransaction
         try {
             twig("managing the preparation to submit transaction memo: ${tx.memo} amount: ${tx.value}")
             val response = service.submitTransaction(pendingTransaction.raw!!)
@@ -121,7 +121,7 @@ class PersistentTransactionManager(private val db: PendingTransactionDb) : Trans
         }
     }
 
-    override suspend fun getAll(): List<PendingTransactionEntity> = withContext(IO) {
+    override suspend fun getAll(): List<PendingTransaction> = withContext(IO) {
         dao.getAll()
     }
 
@@ -130,8 +130,8 @@ class PersistentTransactionManager(private val db: PendingTransactionDb) : Trans
         toAddress: String,
         memo: String,
         currentHeight: Int = -1
-    ): PendingTransactionEntity {
-        return PendingTransactionEntity(
+    ): PendingTransaction {
+        return PendingTransaction(
             value = value,
             address = toAddress,
             memo = memo,
@@ -139,7 +139,7 @@ class PersistentTransactionManager(private val db: PendingTransactionDb) : Trans
         )
     }
 
-    suspend fun manageMined(pendingTx: PendingTransactionEntity, matchingMinedTx: PendingTransactionEntity) = withContext(IO) {
+    suspend fun manageMined(pendingTx: PendingTransaction, matchingMinedTx: PendingTransaction) = withContext(IO) {
         twig("a pending transaction has been mined!")
         val tx = pendingTx.copy(minedHeight = matchingMinedTx.minedHeight)
         dao.insert(tx)
@@ -148,7 +148,7 @@ class PersistentTransactionManager(private val db: PendingTransactionDb) : Trans
     /**
      * Remove a transaction and pretend it never existed.
      */
-    suspend fun abortTransaction(existingTransaction: PendingTransactionEntity) = withContext(IO) {
+    suspend fun abortTransaction(existingTransaction: PendingTransaction) = withContext(IO) {
         dao.delete(existingTransaction)
     }
 
