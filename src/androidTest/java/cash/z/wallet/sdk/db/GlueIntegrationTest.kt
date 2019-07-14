@@ -5,7 +5,6 @@ import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.test.core.app.ApplicationProvider
-import cash.z.wallet.sdk.dao.CompactBlockDao
 import cash.z.wallet.sdk.entity.CompactBlock
 import cash.z.wallet.sdk.ext.toBlockHeight
 import cash.z.wallet.sdk.jni.RustBackend

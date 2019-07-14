@@ -4,8 +4,6 @@ import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.test.core.app.ApplicationProvider
-import cash.z.wallet.sdk.dao.BlockDao
-import cash.z.wallet.sdk.dao.TransactionDao
 import org.junit.AfterClass
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -39,7 +37,7 @@ class DerivedDbIntegrationTest {
 
     @Test
     fun testNoteQuery() {
-        val all = transactions.getAll()
+        val all = transactions.getReceivedTransactions()
         assertEquals(3, all.size)
     }
 
@@ -47,7 +45,7 @@ class DerivedDbIntegrationTest {
     fun testTransactionDaoPrepopulated() {
         val tran = transactions.findById(1)
 
-        assertEquals(343987, tran?.block)
+        assertEquals(343987, tran?.minedHeight)
     }
 
     companion object {

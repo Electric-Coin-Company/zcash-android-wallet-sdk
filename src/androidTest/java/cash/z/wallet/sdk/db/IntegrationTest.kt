@@ -61,7 +61,7 @@ class IntegrationTest {
 
         downloader = CompactBlockDownloader(lightwalletService, compactBlockStore)
         processor = CompactBlockProcessor(config, downloader, repository, rustBackend)
-        repository = PollingTransactionRepository(context, dataDbName, rustBackend, 10_000L)
+        repository = PollingTransactionRepository(context, dataDbName, 10_000L)
         wallet = Wallet(
             context = context,
             rustBackend = rustBackend,
@@ -71,17 +71,17 @@ class IntegrationTest {
         )
 
 //        repository.start(this)
-        synchronizer = SdkSynchronizer(
-            processor,
-            repository,
-            ActiveTransactionManager(repository, lightwalletService, wallet),
-            wallet,
-            1000
-        ).start(this)
-
-        for(i in synchronizer.progress()) {
-            twig("made progress: $i")
-        }
+//        synchronizer = StableSynchronizer(wallet, repository, , processor)
+//            processor,
+//            repository,
+//            ActiveTransactionManager(repository, lightwalletService, wallet),
+//            wallet,
+//            1000
+//        ).start(this)
+//
+//        for(i in synchronizer.progress()) {
+//            twig("made progress: $i")
+//        }
     }
 
     companion object {

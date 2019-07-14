@@ -3,7 +3,7 @@ package cash.z.wallet.sdk.block
 import android.content.Context
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import cash.z.wallet.sdk.dao.CompactBlockDao
+import cash.z.wallet.sdk.db.CompactBlockDao
 import cash.z.wallet.sdk.db.CompactBlockDb
 import cash.z.wallet.sdk.entity.CompactBlock
 import cash.z.wallet.sdk.ext.SAPLING_ACTIVATION_HEIGHT

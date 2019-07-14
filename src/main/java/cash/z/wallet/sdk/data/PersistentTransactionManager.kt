@@ -5,7 +5,8 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import cash.z.wallet.sdk.db.PendingTransactionDao
 import cash.z.wallet.sdk.db.PendingTransactionDb
-import cash.z.wallet.sdk.db.PendingTransaction
+import cash.z.wallet.sdk.entity.PendingTransaction
+import cash.z.wallet.sdk.entity.Transaction
 import cash.z.wallet.sdk.ext.EXPIRY_OFFSET
 import cash.z.wallet.sdk.service.LightWalletService
 import kotlinx.coroutines.Dispatchers.IO
@@ -16,23 +17,22 @@ import kotlinx.coroutines.withContext
  */
 // TODO: consider having the manager register the fail listeners rather than having that responsibility spread elsewhere (synchronizer and the broom)
 class PersistentTransactionManager(private val db: PendingTransactionDb) : TransactionManager {
-    private lateinit var dao: PendingTransactionDao
+
+    private val dao: PendingTransactionDao = db.pendingTransactionDao()
 
     /**
      * Constructor that creates the database and then executes a callback on it.
      */
     constructor(
         appContext: Context,
-        dataDbName: String = "PendingTransactions.db",
-        dbCallback: (PendingTransactionDb) -> Unit = {}
+        dataDbName: String = "PendingTransactions.db"
     ) : this(
-        Room.databaseBuilder(appContext, PendingTransactionDb::class.java, dataDbName)
-            .setJournalMode(RoomDatabase.JournalMode.TRUNCATE)
-            .build()
-    ) {
-        dbCallback(db)
-        dao = db.pendingTransactionDao()
-    }
+        Room.databaseBuilder(
+            appContext,
+            PendingTransactionDb::class.java,
+            dataDbName
+        ).setJournalMode(RoomDatabase.JournalMode.TRUNCATE).build()
+    )
 
     override fun start() {
         twig("TransactionManager starting")
@@ -66,7 +66,7 @@ class PersistentTransactionManager(private val db: PendingTransactionDb) : Trans
     }
 
     override suspend fun manageCreation(
-        encoder: RawTransactionEncoder,
+        encoder: TransactionEncoder,
         zatoshiValue: Long,
         toAddress: String,
         memo: String,
@@ -75,7 +75,7 @@ class PersistentTransactionManager(private val db: PendingTransactionDb) : Trans
 
 
     suspend fun manageCreation(
-        encoder: RawTransactionEncoder,
+        encoder: TransactionEncoder,
         transaction: PendingTransaction,
         currentHeight: Int
     ): PendingTransaction = withContext(IO){
@@ -83,9 +83,9 @@ class PersistentTransactionManager(private val db: PendingTransactionDb) : Trans
         var tx = transaction.copy(expiryHeight = if (currentHeight == -1) -1 else currentHeight + EXPIRY_OFFSET)
         try {
             twig("beginning to encode transaction with : $encoder")
-            val encodedTx = encoder.create(tx.value, tx.address, tx.memo)
+            val encodedTx = encoder.create(tx.value, tx.toAddress, tx.memo ?: "")
             twig("successfully encoded transaction for ${tx.memo}!!")
-            tx = tx.copy(raw = encodedTx.raw, txId = encodedTx.txId)
+            tx = tx.copy(raw = encodedTx.raw, rawTransactionId = encodedTx.txId)
             tx
         } catch (t: Throwable) {
             val message = "failed to encode transaction due to : ${t.message} caused by: ${t.cause}"
@@ -102,16 +102,16 @@ class PersistentTransactionManager(private val db: PendingTransactionDb) : Trans
         }
     }
 
-    override suspend fun manageSubmission(service: LightWalletService, pendingTransaction: RawTransaction) {
+    override suspend fun manageSubmission(service: LightWalletService, pendingTransaction: SignedTransaction) {
         var tx = pendingTransaction as PendingTransaction
         try {
             twig("managing the preparation to submit transaction memo: ${tx.memo} amount: ${tx.value}")
             val response = service.submitTransaction(pendingTransaction.raw!!)
             twig("management of submit transaction completed with response: ${response.errorCode}: ${response.errorMessage}")
-            if (response.errorCode < 0) {
-                tx = tx.copy(errorMessage = response.errorMessage, errorCode = response.errorCode)
+            tx = if (response.errorCode < 0) {
+                tx.copy(errorMessage = response.errorMessage, errorCode = response.errorCode)
             } else {
-                tx = tx.copy(errorMessage = null, errorCode = response.errorCode)
+                tx.copy(errorMessage = null, errorCode = response.errorCode)
             }
         } catch (t: Throwable) {
             twig("error while managing submitting transaction: ${t.message} caused by: ${t.cause}")
@@ -133,13 +133,13 @@ class PersistentTransactionManager(private val db: PendingTransactionDb) : Trans
     ): PendingTransaction {
         return PendingTransaction(
             value = value,
-            address = toAddress,
+            toAddress = toAddress,
             memo = memo,
             expiryHeight = if (currentHeight == -1) -1 else currentHeight + EXPIRY_OFFSET
         )
     }
 
-    suspend fun manageMined(pendingTx: PendingTransaction, matchingMinedTx: PendingTransaction) = withContext(IO) {
+    suspend fun manageMined(pendingTx: PendingTransaction, matchingMinedTx: Transaction) = withContext(IO) {
         twig("a pending transaction has been mined!")
         val tx = pendingTx.copy(minedHeight = matchingMinedTx.minedHeight)
         dao.insert(tx)

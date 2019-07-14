@@ -56,3 +56,13 @@ sealed class WalletException(message: String, cause: Throwable? = null) : Runtim
             " because it already exists.", cause)
     class FalseStart(cause: Throwable?) : WalletException("Failed to initialize wallet due to: $cause", cause)
 }
+
+
+class TransactionNotFoundException(transactionId: Long) : RuntimeException("Unable to find transactionId " +
+    "$transactionId in the repository. This means the wallet created a transaction and then returned a row ID " +
+    "that does not actually exist. This is a scenario where the wallet should have thrown an exception but failed " +
+    "to do so.")
+
+class TransactionNotEncodedException(transactionId: Long) : RuntimeException("The transaction returned by the wallet," +
+    " with id $transactionId, does not have any raw data. This is a scenario where the wallet should have thrown" +
+    " an exception but failed to do so.")

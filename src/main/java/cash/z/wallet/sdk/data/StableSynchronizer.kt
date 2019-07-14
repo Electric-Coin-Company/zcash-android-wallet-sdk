@@ -1,8 +1,9 @@
 package cash.z.wallet.sdk.data
 
 import cash.z.wallet.sdk.block.CompactBlockProcessor
-import cash.z.wallet.sdk.dao.ClearedTransaction
-import cash.z.wallet.sdk.db.PendingTransaction
+import cash.z.wallet.sdk.entity.ClearedTransaction
+import cash.z.wallet.sdk.entity.PendingTransaction
+import cash.z.wallet.sdk.entity.SentTransaction
 import cash.z.wallet.sdk.exception.WalletException
 import cash.z.wallet.sdk.secure.Wallet
 import kotlinx.coroutines.*
@@ -17,11 +18,11 @@ import kotlin.coroutines.CoroutineContext
 @ExperimentalCoroutinesApi
 class StableSynchronizer (
     private val wallet: Wallet,
-    private val ledger: PollingTransactionRepository,
+    private val ledger: TransactionRepository,
     private val sender: TransactionSender,
     private val processor: CompactBlockProcessor,
-    private val encoder: RawTransactionEncoder
-) : DataSynchronizer {
+    private val encoder: TransactionEncoder
+) : Synchronizer {
 
     /**
      * The lifespan of this Synchronizer. This scope is initialized once the Synchronizer starts because it will be a
@@ -53,27 +54,34 @@ class StableSynchronizer (
 
 
     //
-    // Error Callbacks
+    // Error Handling
     //
 
-    /** This listener will not be called on the main thread. So it will need to switch to do anything with UI, like dialogs */
-    override var onCriticalErrorListener: ((Throwable) -> Boolean)? = null
+    /*
+     * These listeners will not be called on the main thread.
+     * So they will need to switch to do anything with UI, like dialogs
+     */
+    override var onCriticalErrorHandler: ((Throwable?) -> Boolean)? = null
+    override var onProcessorErrorHandler: ((Throwable?) -> Boolean)? = null
+    override var onSubmissionErrorHandler: ((Throwable?) -> Boolean)? = null
 
 
-    override fun start(parentScope: CoroutineScope) {
+    override fun start(parentScope: CoroutineScope): Synchronizer {
         // base this scope on the parent so that when the parent's job cancels, everything here cancels as well
         // also use a supervisor job so that one failure doesn't bring down the whole synchronizer
         coroutineScope = CoroutineScope(SupervisorJob(parentScope.coroutineContext[Job]!!) + Dispatchers.Main)
 
+        // TODO: this doesn't work as intended. Refactor to improve the cancellation behavior (i.e. what happens when one job fails) by making launchTransactionMonitor throw an exception
         coroutineScope.launch {
             initWallet()
             startSender(this)
 
             launchProgressMonitor()
             launchPendingMonitor()
-            launchClearedMonitor()
+            launchTransactionMonitor()
             onReady()
         }
+        return this
     }
 
     private fun startSender(parentScope: CoroutineScope) {
@@ -115,7 +123,7 @@ class StableSynchronizer (
     //
 
     // begin the monitor that will update the balance proactively whenever we're done a large scan
-    private fun CoroutineScope.launchProgressMonitor(): Job? = launch {
+    private fun CoroutineScope.launchProgressMonitor(): Job = launch {
         twig("launching progress monitor")
         val progressUpdates = progress()
         for (progress in progressUpdates) {
@@ -128,7 +136,7 @@ class StableSynchronizer (
     }
 
     // begin the monitor that will output pending transactions into the pending channel
-    private fun CoroutineScope.launchPendingMonitor(): Job? = launch {
+    private fun CoroutineScope.launchPendingMonitor(): Job = launch {
         twig("launching pending monitor")
         // ask to be notified when the sender notices anything new, while attempting to send
         sender.notifyOnChange(pendingChannel)
@@ -143,29 +151,26 @@ class StableSynchronizer (
         twig("done monitoring for pending changes and balance changes")
     }
 
-    // begin the monitor that will output cleared transactions into the cleared channel
-    private fun CoroutineScope.launchClearedMonitor(): Job? = launch {
-        twig("launching cleared monitor")
-        // poll for modifications and send them into the cleared channel
-        ledger.poll(clearedChannel, 10_000L)
+    private fun CoroutineScope.launchTransactionMonitor(): Job = launch {
+        ledger.monitorChanges(::onTransactionsChanged)
+    }
 
-        // when those notifications come in, also update the balance
-        val channel = clearedChannel.openSubscription()
-        for (cleared in channel) {
-            if(!balanceChannel.isClosedForSend) {
-                twig("triggering a balance update because cleared transactions have changed")
-                refreshBalance()
-            } else {
-                twig("WARNING: noticed new cleared transactions but the balance channel was closed for send so ignoring!")
-            }
+    fun onTransactionsChanged() {
+        coroutineScope.launch {
+            refreshBalance()
+            clearedChannel.send(ledger.getClearedTransactions())
         }
-        twig("done monitoring for cleared changes and balance changes")
+        twig("done handling changed transactions")
     }
 
     suspend fun refreshBalance() = withContext(IO) {
-        balanceChannel.send(wallet.getBalanceInfo())
+        if (!balanceChannel.isClosedForSend) {
+            twig("triggering a balance update because transactions have changed")
+            balanceChannel.send(wallet.getBalanceInfo())
+        } else {
+            twig("WARNING: noticed new transactions but the balance channel was closed for send so ignoring!")
+        }
     }
-
 
     private fun CoroutineScope.onReady() = launch(CoroutineExceptionHandler(::onCriticalError)) {
         twig("Synchronizer Ready. Starting processor!")
@@ -181,34 +186,21 @@ class StableSynchronizer (
         if (error.cause?.cause != null) twig("******** caused by ${error.cause?.cause}")
         twig("********")
 
-
-        onCriticalErrorListener?.invoke(error)
+        onCriticalErrorHandler?.invoke(error)
     }
 
-    var sameErrorCount = 1
-    var processorErrorMessage: String? = ""
+    private fun onFailedSend(error: Throwable): Boolean {
+        twig("ERROR while submitting transaction: $error")
+        return onSubmissionErrorHandler?.invoke(error)?.also {
+            if (it) twig("submission error handler signaled that we should try again!")
+        } == true
+    }
+
     private fun onProcessorError(error: Throwable): Boolean {
-        val dummyContext = CoroutineName("bob")
-        if (processorErrorMessage == error.message) sameErrorCount++
-        val isFrequent = sameErrorCount.rem(25) == 0
-        when {
-            sameErrorCount == 5 -> onCriticalError(dummyContext, error)
-//            isFrequent -> trackError(ProcessorRepeatedFailure(error, sameErrorCount))
-            sameErrorCount == 120 -> {
-//                trackError(ProcessorMaxFailureReached(error))
-                Thread.sleep(500)
-                throw error
-            }
-        }
-
-
-        processorErrorMessage = error.message
-        twig("synchronizer sees your error and ignores it, willfully! Keep retrying ($sameErrorCount), processor!")
-        return true
-    }
-
-    fun onFailedSend(throwable: Throwable) {
-//        trackError(ErrorSubmitting(throwable))
+        twig("ERROR while processing data: $error")
+        return onProcessorErrorHandler?.invoke(error)?.also {
+            if (it) twig("processor error handler signaled that we should try again!")
+        } == true
     }
 
 
@@ -232,15 +224,15 @@ class StableSynchronizer (
         return clearedChannel.openSubscription()
     }
 
-    override fun getPending(): List<PendingTransaction> {
+    override fun lastPending(): List<PendingTransaction> {
         return if (pendingChannel.isClosedForSend) listOf() else pendingChannel.value
     }
 
-    override fun getCleared(): List<ClearedTransaction> {
+    override fun lastCleared(): List<ClearedTransaction> {
         return if (clearedChannel.isClosedForSend) listOf() else clearedChannel.value
     }
 
-    override fun getBalance(): Wallet.WalletBalance {
+    override fun lastBalance(): Wallet.WalletBalance {
         return balanceChannel.value
     }
 
@@ -248,6 +240,12 @@ class StableSynchronizer (
     //
     // Send / Receive
     //
+
+    override fun cancelSend(transaction: SentTransaction): Boolean {
+        // not implemented
+        throw NotImplementedError("Cancellation is not yet implemented " +
+                "but should be pretty straight forward, using th PersistentTransactionManager")
+    }
 
     override suspend fun getAddress(accountId: Int): String = withContext(IO) { wallet.getAddress() }
 
@@ -259,29 +257,5 @@ class StableSynchronizer (
     ): PendingTransaction = withContext(IO) {
         sender.sendToAddress(encoder, zatoshi, toAddress, memo, fromAccountId)
     }
-
-}
-
-
-interface DataSynchronizer {
-    fun start(parentScope: CoroutineScope)
-    fun stop()
-
-    suspend fun getAddress(accountId: Int = 0): String
-    suspend fun sendToAddress(zatoshi: Long, toAddress: String, memo: String = "", fromAccountId: Int = 0): PendingTransaction
-
-    fun balances(): ReceiveChannel<Wallet.WalletBalance>
-    fun progress(): ReceiveChannel<Int>
-    fun pendingTransactions(): ReceiveChannel<List<PendingTransaction>>
-    fun clearedTransactions(): ReceiveChannel<List<ClearedTransaction>>
-
-    fun getPending(): List<PendingTransaction>
-    fun getCleared(): List<ClearedTransaction>
-    fun getBalance(): Wallet.WalletBalance
-
-    val isConnected: Boolean
-    val isSyncing: Boolean
-    val isScanning: Boolean
-    var onCriticalErrorListener: ((Throwable) -> Boolean)?
 
 }
