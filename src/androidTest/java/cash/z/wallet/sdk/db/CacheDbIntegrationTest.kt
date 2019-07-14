@@ -4,10 +4,11 @@ import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.test.core.app.ApplicationProvider
-import cash.z.wallet.sdk.dao.CompactBlockDao
-import cash.z.wallet.sdk.entity.CompactBlock
-import org.junit.*
-import org.junit.Assert.*
+import org.junit.AfterClass
+import org.junit.Assert.assertNotNull
+import org.junit.BeforeClass
+import org.junit.Rule
+import org.junit.Test
 
 class CacheDbIntegrationTest {
     @get:Rule

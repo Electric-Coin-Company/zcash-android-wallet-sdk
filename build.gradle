@@ -49,7 +49,7 @@ apply plugin: 'org.mozilla.rust-android-gradle.rust-android'
 apply plugin: 'org.owasp.dependencycheck'
 
 group = 'cash.z.android.wallet'
-version = '1.9.0'
+version = '1.9.1'
 
 repositories {
     google()
@@ -64,7 +64,7 @@ android {
     defaultConfig {
         minSdkVersion buildConfig.minSdkVersion
         targetSdkVersion buildConfig.targetSdkVersion
-        versionCode = 1_09_00_00  // last digits are alpha(0X) beta(1X) rc(2X) release(3X). Ex: 1_08_04_20 is a RC build
+        versionCode = 1_09_01_00  // last digits are alpha(0X) beta(1X) rc(2X) release(3X). Ex: 1_08_04_20 is a RC build
         versionName = "$version-alpha"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         testInstrumentationRunnerArguments clearPackageData: 'true'

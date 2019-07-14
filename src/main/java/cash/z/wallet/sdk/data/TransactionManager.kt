@@ -9,12 +9,12 @@ import cash.z.wallet.sdk.service.LightWalletService
 interface TransactionManager {
     fun start()
     fun stop()
-    suspend fun manageCreation(encoder: RawTransactionEncoder, zatoshiValue: Long, toAddress: String, memo: String, currentHeight: Int): RawTransaction
-    suspend fun manageSubmission(service: LightWalletService, pendingTransaction: RawTransaction)
-    suspend fun getAll(): List<RawTransaction>
+    suspend fun manageCreation(encoder: TransactionEncoder, zatoshiValue: Long, toAddress: String, memo: String, currentHeight: Int): SignedTransaction
+    suspend fun manageSubmission(service: LightWalletService, pendingTransaction: SignedTransaction)
+    suspend fun getAll(): List<SignedTransaction>
 }
-interface RawTransaction {
-    val raw: ByteArray?
+interface SignedTransaction {
+    val raw: ByteArray
 }
 
 interface TransactionError {

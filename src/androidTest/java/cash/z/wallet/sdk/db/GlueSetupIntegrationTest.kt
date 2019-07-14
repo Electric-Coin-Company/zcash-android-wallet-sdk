@@ -5,20 +5,21 @@ import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.test.core.app.ApplicationProvider
-import cash.z.wallet.sdk.dao.BlockDao
-import cash.z.wallet.sdk.dao.CompactBlockDao
-import cash.z.wallet.sdk.dao.TransactionDao
 import cash.z.wallet.sdk.entity.CompactBlock
 import cash.z.wallet.sdk.ext.toBlockHeight
 import cash.z.wallet.sdk.jni.RustBackend
 import cash.z.wallet.sdk.jni.RustBackendWelding
-import io.grpc.ManagedChannel
-import io.grpc.ManagedChannelBuilder
-import org.junit.*
-import org.junit.Assert.*
 import cash.z.wallet.sdk.rpc.CompactTxStreamerGrpc
 import cash.z.wallet.sdk.rpc.Service
-import cash.z.wallet.sdk.rpc.Service.*
+import cash.z.wallet.sdk.rpc.Service.BlockID
+import cash.z.wallet.sdk.rpc.Service.BlockRange
+import io.grpc.ManagedChannel
+import io.grpc.ManagedChannelBuilder
+import org.junit.AfterClass
+import org.junit.Assert.assertNotNull
+import org.junit.BeforeClass
+import org.junit.Rule
+import org.junit.Test
 import java.util.concurrent.TimeUnit
 
 class GlueSetupIntegrationTest {

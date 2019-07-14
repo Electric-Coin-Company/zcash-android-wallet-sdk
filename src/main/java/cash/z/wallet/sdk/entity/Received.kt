@@ -27,7 +27,7 @@ import androidx.room.ForeignKey
         onDelete = ForeignKey.CASCADE
     )]
 )
-data class Note(
+data class Received(
     @ColumnInfo(name = "id_note")
     val id: Int = 0,
 
@@ -66,7 +66,7 @@ data class Note(
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
 
-        return (other is Note)
+        return (other is Received)
                 && id == other.id
                 && transactionId == other.transactionId
                 && outputIndex == other.outputIndex
