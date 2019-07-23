@@ -3,8 +3,6 @@ extern crate log;
 
 mod utils;
 
-const SAPLING_CONSENSUS_BRANCH_ID: u32 = 0x76b8_09bb;
-
 use android_logger::Filter;
 use failure::format_err;
 use jni::{
@@ -17,25 +15,33 @@ use std::panic;
 use std::path::Path;
 use std::ptr;
 use zcash_client_backend::{
-    constants::{HRP_SAPLING_EXTENDED_SPENDING_KEY_TEST, HRP_SAPLING_PAYMENT_ADDRESS_TEST},
-    encoding::{
-        decode_extended_spending_key, decode_payment_address, encode_extended_spending_key,
-    },
-    keystore::spending_key,
-    prover::LocalTxProver,
-    sqlite::{
-        get_address, get_balance, get_received_memo_as_utf8, get_sent_memo_as_utf8,
-        get_verified_balance, init_accounts_table, init_blocks_table, init_data_database,
-        scan_cached_blocks, send_to_address,
-    },
+    constants::SAPLING_CONSENSUS_BRANCH_ID,
+    encoding::{decode_extended_spending_key, encode_extended_spending_key},
+    keys::spending_key,
 };
-use zcash_primitives::{note_encryption::Memo, transaction::components::Amount};
-use zip32::ExtendedFullViewingKey;
+use zcash_client_sqlite::{
+    address::RecipientAddress,
+    chain::{rewind_to_height, validate_combined_chain},
+    get_address, get_balance, get_received_memo_as_utf8, get_sent_memo_as_utf8,
+    get_verified_balance, init_accounts_table, init_blocks_table, init_data_database,
+    scan_cached_blocks, send_to_address, ErrorKind,
+};
+use zcash_primitives::{
+    block::BlockHash, note_encryption::Memo, transaction::components::Amount,
+    zip32::ExtendedFullViewingKey,
+};
+use zcash_proofs::prover::LocalTxProver;
 
 use crate::utils::exception::unwrap_exc_or;
 
+#[cfg(feature = "mainnet")]
+use zcash_client_backend::constants::mainnet::HRP_SAPLING_EXTENDED_SPENDING_KEY;
+
+#[cfg(not(feature = "mainnet"))]
+use zcash_client_backend::constants::testnet::HRP_SAPLING_EXTENDED_SPENDING_KEY;
+
 #[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_initLogs(
+pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_initLogs(
     _env: JNIEnv<'_>,
     _: JClass<'_>,
 ) {
@@ -50,7 +56,7 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_initLogs(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_initDataDb(
+pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_initDataDb(
     env: JNIEnv<'_>,
     _: JClass<'_>,
     db_data: JString<'_>,
@@ -66,7 +72,7 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_initDataDb(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_initAccountsTable(
+pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_initAccountsTable(
     env: JNIEnv<'_>,
     _: JClass<'_>,
     db_data: JString<'_>,
@@ -96,7 +102,7 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_initAccountsTab
                     "java/lang/String",
                     |env, extsk| {
                         env.new_string(encode_extended_spending_key(
-                            HRP_SAPLING_EXTENDED_SPENDING_KEY_TEST,
+                            HRP_SAPLING_EXTENDED_SPENDING_KEY,
                             &extsk,
                         ))
                     },
@@ -110,16 +116,22 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_initAccountsTab
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_initBlocksTable(
+pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_initBlocksTable(
     env: JNIEnv<'_>,
     _: JClass<'_>,
     db_data: JString<'_>,
     height: jint,
+    hash_string: JString<'_>,
     time: jlong,
     sapling_tree_string: JString<'_>,
 ) -> jboolean {
     let res = panic::catch_unwind(|| {
         let db_data = utils::java_string_to_rust(&env, db_data);
+        let hash = {
+            let mut hash = hex::decode(utils::java_string_to_rust(&env, hash_string)).unwrap();
+            hash.reverse();
+            BlockHash::from_slice(&hash)
+        };
         let time = if time >= 0 && time <= jlong::from(u32::max_value()) {
             time as u32
         } else {
@@ -128,7 +140,7 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_initBlocksTable
         let sapling_tree =
             hex::decode(utils::java_string_to_rust(&env, sapling_tree_string)).unwrap();
 
-        match init_blocks_table(&db_data, height, time, &sapling_tree) {
+        match init_blocks_table(&db_data, height, hash, time, &sapling_tree) {
             Ok(()) => Ok(JNI_TRUE),
             Err(e) => Err(format_err!("Error while initializing blocks table: {}", e)),
         }
@@ -137,7 +149,7 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_initBlocksTable
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_getAddress(
+pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_getAddress(
     env: JNIEnv<'_>,
     _: JClass<'_>,
     db_data: JString<'_>,
@@ -163,7 +175,51 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_getAddress(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_getBalance(
+pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_isValidShieldedAddress(
+    env: JNIEnv<'_>,
+    _: JClass<'_>,
+    addr: JString<'_>,
+) -> jboolean {
+    let res = panic::catch_unwind(|| {
+        let addr = utils::java_string_to_rust(&env, addr);
+
+        match RecipientAddress::from_str(&addr) {
+            Some(addr) => match addr {
+                RecipientAddress::Shielded(_) => Ok(JNI_TRUE),
+                RecipientAddress::Transparent(_) => Ok(JNI_FALSE),
+            }
+            None => {
+                Err(format_err!("Address is for the wrong network"))
+            }
+        }
+    });
+    unwrap_exc_or(&env, res, JNI_FALSE)
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_isValidTransparentAddress(
+    env: JNIEnv<'_>,
+    _: JClass<'_>,
+    addr: JString<'_>,
+) -> jboolean {
+    let res = panic::catch_unwind(|| {
+        let addr = utils::java_string_to_rust(&env, addr);
+
+        match RecipientAddress::from_str(&addr) {
+            Some(addr) => match addr {
+                RecipientAddress::Shielded(_) => Ok(JNI_FALSE),
+                RecipientAddress::Transparent(_) => Ok(JNI_TRUE),
+            }
+            None => {
+                Err(format_err!("Address is for the wrong network"))
+            }
+        }
+    });
+    unwrap_exc_or(&env, res, JNI_FALSE)
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_getBalance(
     env: JNIEnv<'_>,
     _: JClass<'_>,
     db_data: JString<'_>,
@@ -186,7 +242,7 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_getBalance(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_getVerifiedBalance(
+pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_getVerifiedBalance(
     env: JNIEnv<'_>,
     _: JClass<'_>,
     db_data: JString<'_>,
@@ -209,7 +265,7 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_getVerifiedBala
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_getReceivedMemoAsUtf8(
+pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_getReceivedMemoAsUtf8(
     env: JNIEnv<'_>,
     _: JClass<'_>,
     db_data: JString<'_>,
@@ -230,7 +286,7 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_getReceivedMemo
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_getSentMemoAsUtf8(
+pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_getSentMemoAsUtf8(
     env: JNIEnv<'_>,
     _: JClass<'_>,
     db_data: JString<'_>,
@@ -251,7 +307,53 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_getSentMemoAsUt
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_scanBlocks(
+pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_validateCombinedChain(
+    env: JNIEnv<'_>,
+    _: JClass<'_>,
+    db_cache: JString<'_>,
+    db_data: JString<'_>,
+) -> jint {
+    let res = panic::catch_unwind(|| {
+        let db_cache = utils::java_string_to_rust(&env, db_cache);
+        let db_data = utils::java_string_to_rust(&env, db_data);
+
+        if let Err(e) = validate_combined_chain(&db_cache, &db_data) {
+            match e.kind() {
+                ErrorKind::InvalidChain(upper_bound, _) => Ok(*upper_bound),
+                _ => Err(format_err!("Error while validating chain: {}", e)),
+            }
+        } else {
+            // All blocks are valid, so "highest invalid block height" is below genesis.
+            Ok(-1)
+        }
+    });
+    unwrap_exc_or(&env, res, 0)
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_rewindToHeight(
+    env: JNIEnv<'_>,
+    _: JClass<'_>,
+    db_data: JString<'_>,
+    height: jint,
+) -> jboolean {
+    let res = panic::catch_unwind(|| {
+        let db_data = utils::java_string_to_rust(&env, db_data);
+
+        match rewind_to_height(&db_data, height) {
+            Ok(()) => Ok(JNI_TRUE),
+            Err(e) => Err(format_err!(
+                "Error while rewinding data DB to height {}: {}",
+                height,
+                e
+            )),
+        }
+    });
+    unwrap_exc_or(&env, res, JNI_FALSE)
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_scanBlocks(
     env: JNIEnv<'_>,
     _: JClass<'_>,
     db_cache: JString<'_>,
@@ -270,7 +372,7 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_scanBlocks(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_sendToAddress(
+pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_sendToAddress(
     env: JNIEnv<'_>,
     _: JClass<'_>,
     db_data: JString<'_>,
@@ -296,35 +398,26 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_JniConverter_sendToAddress(
         let spend_params = utils::java_string_to_rust(&env, spend_params);
         let output_params = utils::java_string_to_rust(&env, output_params);
 
-        let extsk =
-            match decode_extended_spending_key(HRP_SAPLING_EXTENDED_SPENDING_KEY_TEST, &extsk) {
-                Ok(Some(extsk)) => extsk,
-                Ok(None) => {
-                    return Err(format_err!("ExtendedSpendingKey is for the wrong network"));
-                }
-                Err(e) => {
-                    return Err(format_err!("Invalid ExtendedSpendingKey: {}", e));
-                }
-            };
-
-        let to = match decode_payment_address(HRP_SAPLING_PAYMENT_ADDRESS_TEST, &to) {
-            Ok(Some(to)) => to,
+        let extsk = match decode_extended_spending_key(HRP_SAPLING_EXTENDED_SPENDING_KEY, &extsk) {
+            Ok(Some(extsk)) => extsk,
             Ok(None) => {
-                return Err(format_err!("PaymentAddress is for the wrong network"));
+                return Err(format_err!("ExtendedSpendingKey is for the wrong network"));
             }
             Err(e) => {
-                return Err(format_err!("Invalid PaymentAddress: {}", e));
+                return Err(format_err!("Invalid ExtendedSpendingKey: {}", e));
+            }
+        };
+
+        let to = match RecipientAddress::from_str(&to) {
+            Some(to) => to,
+            None => {
+                return Err(format_err!("Address is for the wrong network"));
             }
         };
 
         let memo = Memo::from_str(&memo);
 
-        let prover = LocalTxProver::new(
-            Path::new(&spend_params),
-            "8270785a1a0d0bc77196f000ee6d221c9c9894f55307bd9357c3f0105d31ca63991ab91324160d8f53e2bbd3c2633a6eb8bdf5205d822e7f3f73edac51b2b70c",
-            Path::new(&output_params),
-            "657e3d38dbb5cb5e7dd2970e8b03d69b4787dd907285b5a7f0790dcc8072f60bf593b32cc2d1c030e00ff5ae64bf84c5c3beb84ddc841d48264b4a171744d028",
-        );
+        let prover = LocalTxProver::new(Path::new(&spend_params), Path::new(&output_params));
 
         send_to_address(
             &db_data,
