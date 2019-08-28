@@ -27,7 +27,7 @@ class CompactBlockStream private constructor() {
 
     // TODO: improve the creation of this channel (tweak its settings to use mobile device responsibly) and make sure it is properly cleaned up
     constructor(host: String, port: Int) : this(
-        ManagedChannelBuilder.forAddress(host, port).usePlaintext().build()
+        ManagedChannelBuilder.forAddress(host, port).useTransportSecurity().build()
     )
 
     constructor(channel: Channel) : this() {
