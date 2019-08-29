@@ -15,38 +15,34 @@ failure = "0.1"
 futures = { version = "0.1", optional = true }
 grpc = { version = "0.6", optional = true }
 hex = "0.3"
-jni = { version = "0.10", default-features = false }
+jni = { version = "0.13", default-features = false }
 log = "0.4"
 log-panics = "2.0.0"
 protobuf = { version = "2", optional = true }
 
 [dependencies.ff]
 git = "https://github.com/str4d/librustzcash.git"
-rev = "0134e6c26e4d26ec646f01032f6cb900910b9317"
+rev = "1cbeac9d593d65938870797fb8dbafa352644d34"
 
 [dependencies.pairing]
 git = "https://github.com/str4d/librustzcash.git"
-rev = "0134e6c26e4d26ec646f01032f6cb900910b9317"
-
-[dependencies.sapling-crypto]
-git = "https://github.com/str4d/librustzcash.git"
-rev = "0134e6c26e4d26ec646f01032f6cb900910b9317"
+rev = "1cbeac9d593d65938870797fb8dbafa352644d34"
 
 [dependencies.zcash_client_backend]
 git = "https://github.com/str4d/librustzcash.git"
-rev = "0134e6c26e4d26ec646f01032f6cb900910b9317"
+rev = "1cbeac9d593d65938870797fb8dbafa352644d34"
 
 [dependencies.zcash_client_sqlite]
 git = "https://github.com/str4d/librustzcash.git"
-rev = "0134e6c26e4d26ec646f01032f6cb900910b9317"
+rev = "1cbeac9d593d65938870797fb8dbafa352644d34"
 
 [dependencies.zcash_primitives]
 git = "https://github.com/str4d/librustzcash.git"
-rev = "0134e6c26e4d26ec646f01032f6cb900910b9317"
+rev = "1cbeac9d593d65938870797fb8dbafa352644d34"
 
 [dependencies.zcash_proofs]
 git = "https://github.com/str4d/librustzcash.git"
-rev = "0134e6c26e4d26ec646f01032f6cb900910b9317"
+rev = "1cbeac9d593d65938870797fb8dbafa352644d34"
 
 [features]
 mainnet = ["zcash_client_sqlite/mainnet"]

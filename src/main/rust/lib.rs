@@ -22,9 +22,14 @@ use zcash_client_backend::{
 use zcash_client_sqlite::{
     address::RecipientAddress,
     chain::{rewind_to_height, validate_combined_chain},
-    get_address, get_balance, get_received_memo_as_utf8, get_sent_memo_as_utf8,
-    get_verified_balance, init_accounts_table, init_blocks_table, init_data_database,
-    scan_cached_blocks, send_to_address, ErrorKind,
+    error::ErrorKind,
+    init::{init_accounts_table, init_blocks_table, init_data_database},
+    query::{
+        get_address, get_balance, get_received_memo_as_utf8, get_sent_memo_as_utf8,
+        get_verified_balance,
+    },
+    scan::scan_cached_blocks,
+    transact::create_to_address,
 };
 use zcash_primitives::{
     block::BlockHash, note_encryption::Memo, transaction::components::Amount,
@@ -187,10 +192,8 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_isValidShieldedA
             Some(addr) => match addr {
                 RecipientAddress::Shielded(_) => Ok(JNI_TRUE),
                 RecipientAddress::Transparent(_) => Ok(JNI_FALSE),
-            }
-            None => {
-                Err(format_err!("Address is for the wrong network"))
-            }
+            },
+            None => Err(format_err!("Address is for the wrong network")),
         }
     });
     unwrap_exc_or(&env, res, JNI_FALSE)
@@ -209,10 +212,8 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_isValidTranspare
             Some(addr) => match addr {
                 RecipientAddress::Shielded(_) => Ok(JNI_FALSE),
                 RecipientAddress::Transparent(_) => Ok(JNI_TRUE),
-            }
-            None => {
-                Err(format_err!("Address is for the wrong network"))
-            }
+            },
+            None => Err(format_err!("Address is for the wrong network")),
         }
     });
     unwrap_exc_or(&env, res, JNI_FALSE)
@@ -234,7 +235,7 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_getBalance(
         };
 
         match get_balance(&db_data, account) {
-            Ok(balance) => Ok(balance.0),
+            Ok(balance) => Ok(balance.into()),
             Err(e) => Err(format_err!("Error while fetching balance: {}", e)),
         }
     });
@@ -257,7 +258,7 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_getVerifiedBalan
         };
 
         match get_verified_balance(&db_data, account) {
-            Ok(balance) => Ok(balance.0),
+            Ok(balance) => Ok(balance.into()),
             Err(e) => Err(format_err!("Error while fetching verified balance: {}", e)),
         }
     });
@@ -393,7 +394,8 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_sendToAddress(
         };
         let extsk = utils::java_string_to_rust(&env, extsk);
         let to = utils::java_string_to_rust(&env, to);
-        let value = Amount(value);
+        let value =
+            Amount::from_nonnegative_i64(value).map_err(|()| format_err!("Invalid amount"))?;
         let memo = utils::java_string_to_rust(&env, memo);
         let spend_params = utils::java_string_to_rust(&env, spend_params);
         let output_params = utils::java_string_to_rust(&env, output_params);
@@ -419,7 +421,7 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_sendToAddress(
 
         let prover = LocalTxProver::new(Path::new(&spend_params), Path::new(&output_params));
 
-        send_to_address(
+        create_to_address(
             &db_data,
             SAPLING_CONSENSUS_BRANCH_ID,
             prover,
