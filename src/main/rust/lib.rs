@@ -394,8 +394,10 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_sendToAddress(
         };
         let extsk = utils::java_string_to_rust(&env, extsk);
         let to = utils::java_string_to_rust(&env, to);
-        let value =
-            Amount::from_nonnegative_i64(value).map_err(|()| format_err!("Invalid amount"))?;
+        let value = Amount::from_i64(value).map_err(|()| format_err!("Invalid amount, out of range"))?;
+        if value.is_negative() {
+            return Err(ormat_err!("Amount is negative"));
+        }
         let memo = utils::java_string_to_rust(&env, memo);
         let spend_params = utils::java_string_to_rust(&env, spend_params);
         let output_params = utils::java_string_to_rust(&env, output_params);
