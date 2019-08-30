@@ -138,40 +138,45 @@ class Wallet(
     }
 
     /**
-     * Does the proofs and processing required to create a raw transaction and inserts the result in the database. On
-     * average, this call takes over 10 seconds.
+     * Does the proofs and processing required to create a transaction to spend funds and inserts
+     * the result in the database. On average, this call takes over 10 seconds.
      *
      * @param value the zatoshi value to send
      * @param toAddress the destination address
      * @param memo the memo, which is not augmented in any way
      *
-     * @return the row id in the transactions table that contains the raw transaction or -1 if it failed
+     * @return the row id in the transactions table that contains the spend transaction
+     * or -1 if it failed
      */
-    suspend fun createRawSendTransaction(value: Long, toAddress: String, memo: String = "", fromAccountId: Int = accountIds[0]): Long =
-        withContext(IO) {
-            twigTask("creating raw transaction to send $value zatoshi to ${toAddress.masked()} with memo $memo") {
-                try {
-                    ensureParams(paramDestinationDir)
-                    twig("params exist at $paramDestinationDir! attempting to send...")
-                    rustBackend.sendToAddress(
-                        dataDbPath,
-                        fromAccountId,
-                        spendingKeyStore,
-                        toAddress,
-                        value,
-                        memo,
-                        // using names here so it's easier to avoid transposing them, if the function signature changes
-                        spendParams = SPEND_PARAM_FILE_NAME.toPath(),
-                        outputParams = OUTPUT_PARAM_FILE_NAME.toPath()
-                    )
-                } catch (t: Throwable) {
-                    twig("${t.message}")
-                    throw t
-                }
-            }.also { result ->
-                twig("result of sendToAddress: $result")
+    suspend fun createSpend(
+        value: Long,
+        toAddress: String,
+        memo: String = "",
+        fromAccountId: Int = accountIds[0]
+    ): Long = withContext(IO) {
+        twigTask("creating transaction to spend $value zatoshi to ${toAddress.masked()} with memo $memo") {
+            try {
+                ensureParams(paramDestinationDir)
+                twig("params exist at $paramDestinationDir! attempting to send...")
+                rustBackend.createToAddress(
+                    dataDbPath,
+                    fromAccountId,
+                    spendingKeyStore,
+                    toAddress,
+                    value,
+                    memo,
+                    // using names here so it's easier to avoid transposing them, if the function signature changes
+                    spendParamsPath = SPEND_PARAM_FILE_NAME.toPath(),
+                    outputParamsPath = OUTPUT_PARAM_FILE_NAME.toPath()
+                )
+            } catch (t: Throwable) {
+                twig("${t.message}")
+                throw t
             }
+        }.also { result ->
+            twig("result of sendToAddress: $result")
         }
+    }
 
     /**
      * Download and store the params into the given directory.
@@ -284,8 +289,8 @@ class Wallet(
          * @return a WalletBirthday that reflects the contents of the file or an exception when parsing fails.
          */
         fun loadBirthdayFromAssets(context: Context, birthdayHeight: Int? = null): WalletBirthday {
-            val treeFiles = context.assets.list(Wallet.BIRTHDAY_DIRECTORY).apply { sortDescending() }
-            if (treeFiles.isEmpty()) throw WalletException.MissingBirthdayFilesException(BIRTHDAY_DIRECTORY)
+            val treeFiles = context.assets.list(Wallet.BIRTHDAY_DIRECTORY)?.apply { sortDescending() }
+            if (treeFiles.isNullOrEmpty()) throw WalletException.MissingBirthdayFilesException(BIRTHDAY_DIRECTORY)
             try {
                 val file = treeFiles.first {
                     if (birthdayHeight == null) true

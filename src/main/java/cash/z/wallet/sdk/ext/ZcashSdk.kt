@@ -68,3 +68,8 @@ const val DEFAULT_REWIND_DISTANCE = 10
  * returning from the background and is exposed via the Synchronizer's isStale function.
  */
 const val DEFAULT_STALE_TOLERANCE = 10
+
+/**
+ * The default port to use for connecting to lightwalletd instances.
+ */
+const val DEFAULT_LIGHTWALLETD_PORT = 9067

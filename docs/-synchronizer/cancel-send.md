@@ -2,7 +2,7 @@
 
 # cancelSend
 
-`abstract fun cancelSend(transaction: `[`ActiveSendTransaction`](../-active-send-transaction/index.md)`): `[`Boolean`](https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-boolean/index.html)
+`abstract fun cancelSend(transaction: `[`SentTransaction`](../../cash.z.wallet.sdk.entity/-sent-transaction/index.md)`): `[`Boolean`](https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-boolean/index.html)
 
 Attempts to cancel a previously sent transaction. Typically, cancellation is only an option if the transaction
 has not yet been submitted to the server.

@@ -71,7 +71,7 @@ class IntegrationTest {
         )
 
 //        repository.start(this)
-//        synchronizer = StableSynchronizer(wallet, repository, , processor)
+//        synchronizer = SdkSynchronizer(wallet, repository, , processor)
 //            processor,
 //            repository,
 //            ActiveTransactionManager(repository, lightwalletService, wallet),

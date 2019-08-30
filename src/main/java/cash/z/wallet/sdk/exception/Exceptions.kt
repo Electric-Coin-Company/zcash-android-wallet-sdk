@@ -1,8 +1,5 @@
 package cash.z.wallet.sdk.exception
 
-import java.lang.Exception
-import java.lang.RuntimeException
-
 /**
  * Exceptions thrown in the Rust layer of the SDK. We may not always be able to surface details about this
  * exception so it's important for the SDK to provide helpful messages whenever these errors are encountered.
@@ -19,8 +16,9 @@ sealed class RepositoryException(message: String, cause: Throwable? = null) : Ru
 }
 
 sealed class SynchronizerException(message: String, cause: Throwable? = null) : RuntimeException(message, cause) {
-    object FalseStart: SynchronizerException("Once a synchronizer has stopped it cannot be restarted. Instead, a new " +
-            "instance should be created.")
+    object FalseStart: SynchronizerException("This synchronizer was already started. Multiple calls to start are not" +
+                "allowed and once a synchronizer has stopped it cannot be restarted."
+    )
 }
 
 sealed class CompactBlockProcessorException(message: String, cause: Throwable? = null) : RuntimeException(message, cause) {

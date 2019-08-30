@@ -4,5 +4,6 @@
 
 `abstract fun stop(): `[`Unit`](https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-unit/index.html)
 
-Stop this synchronizer.
+Stop this synchronizer. Implementations should ensure that calling this method cancels all jobs that were created
+by this instance.
 

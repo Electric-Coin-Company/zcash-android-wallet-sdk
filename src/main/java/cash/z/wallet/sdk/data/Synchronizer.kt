@@ -9,7 +9,7 @@ import kotlinx.coroutines.channels.ReceiveChannel
 
 /**
  * Primary interface for interacting with the SDK. Defines the contract that specific implementations like
- * [MockSynchronizer] and [StableSynchronizer] fulfill. Given the language-level support for coroutines, we favor their
+ * [MockSynchronizer] and [SdkSynchronizer] fulfill. Given the language-level support for coroutines, we favor their
  * use in the SDK and incorporate that choice into this contract.
  */
 interface Synchronizer {

@@ -1,6 +1,5 @@
 package cash.z.wallet.sdk.jni
 
-import android.text.format.DateUtils
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.BeforeClass
@@ -38,7 +37,7 @@ class RustBackendTest {
 
     @Test
     fun testSend() {
-        rustBackend.sendToAddress(
+        rustBackend.createToAddress(
             "/data/user/0/cash.z.wallet.sdk.test/databases/data2.db",
             0,
             "dummykey",
@@ -52,12 +51,6 @@ class RustBackendTest {
 
     companion object {
         val rustBackend: RustBackendWelding = RustBackend()
-
-        @BeforeClass
-        @JvmStatic
-        fun setup() {
-            rustBackend.initLogs()
-        }
     }
 
 }

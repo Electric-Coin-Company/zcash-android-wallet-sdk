@@ -2,12 +2,9 @@ package cash.z.wallet.sdk.ext
 
 import android.content.Context
 import cash.z.wallet.sdk.data.twig
-import cash.z.wallet.sdk.rpc.Service
 import kotlinx.coroutines.delay
 import java.io.File
 import kotlin.random.Random
-
-inline fun Int.toBlockHeight(): Service.BlockID = Service.BlockID.newBuilder().setHeight(this.toLong()).build()
 
 suspend inline fun retryUpTo(retries: Int, initialDelay: Int = 10, block: () -> Unit) {
     var failedAttempts = 0

@@ -2,13 +2,12 @@
 
 # cancelSend
 
-`fun cancelSend(transaction: `[`ActiveSendTransaction`](../-active-send-transaction/index.md)`): `[`Boolean`](https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-boolean/index.html)
+`fun cancelSend(transaction: `[`SentTransaction`](../../cash.z.wallet.sdk.entity/-sent-transaction/index.md)`): `[`Boolean`](https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-boolean/index.html)
 
 Overrides [Synchronizer.cancelSend](../-synchronizer/cancel-send.md)
 
-Attempts to cancel a previously sent transaction. Transactions can only be cancelled during the calculation phase
-before they've been submitted to the server. This method will return false when it is too late to cancel. This
-logic is delegated to the activeTransactionManager, which knows the state of the given transaction.
+Attempts to cancel a previously sent transaction. Typically, cancellation is only an option if the transaction
+has not yet been submitted to the server.
 
 ### Parameters
 

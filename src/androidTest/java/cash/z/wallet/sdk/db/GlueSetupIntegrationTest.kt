@@ -6,7 +6,6 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.test.core.app.ApplicationProvider
 import cash.z.wallet.sdk.entity.CompactBlock
-import cash.z.wallet.sdk.ext.toBlockHeight
 import cash.z.wallet.sdk.jni.RustBackend
 import cash.z.wallet.sdk.jni.RustBackendWelding
 import cash.z.wallet.sdk.rpc.CompactTxStreamerGrpc
@@ -44,8 +43,8 @@ class GlueSetupIntegrationTest {
     private fun addData() {
         val result = blockingStub.getBlockRange(
             BlockRange.newBuilder()
-                .setStart(373070.toBlockHeight())
-                .setEnd(373085.toBlockHeight())
+                .setStart(BlockID.newBuilder().setHeight(373070L).build())
+                .setEnd(BlockID.newBuilder().setHeight(373085L).build())
                 .build()
         )
         while (result.hasNext()) {
