@@ -1,5 +1,6 @@
 package cash.z.wallet.sdk.exception
 
+import java.lang.Exception
 import java.lang.RuntimeException
 
 /**
@@ -25,6 +26,12 @@ sealed class SynchronizerException(message: String, cause: Throwable? = null) : 
 sealed class CompactBlockProcessorException(message: String, cause: Throwable? = null) : RuntimeException(message, cause) {
     class DataDbMissing(path: String): CompactBlockProcessorException("No data db file found at path $path. Verify " +
             "that the data DB has been initialized via `rustBackend.initDataDb(path)`")
+    open class ConfigurationException(message: String, cause: Throwable?) : CompactBlockProcessorException(message, cause)
+    class FileInsteadOfPath(fileName: String) : ConfigurationException("Invalid Path: the given path appears to be a" +
+            " file name instead of a path: $fileName. The RustBackend expects the absolutePath to the database rather" +
+            " than just the database filename because Rust does not access the app Context." +
+            " So pass in context.getDatabasePath(dbFileName).absolutePath instead of just dbFileName alone.", null)
+    class FailedReorgRepair(message: String) : CompactBlockProcessorException(message)
 }
 
 sealed class CompactBlockStreamException(message: String, cause: Throwable? = null) : RuntimeException(message, cause) {
@@ -45,4 +52,17 @@ sealed class WalletException(message: String, cause: Throwable? = null) : Runtim
         "Failed to parse file $directory/$file verify that it is formatted as #####.json, " +
                 "where the first portion is an Int representing the height of the tree contained in the file"
     )
+    class AlreadyInitializedException(cause: Throwable) : WalletException("Failed to initialize the blocks table" +
+            " because it already exists.", cause)
+    class FalseStart(cause: Throwable?) : WalletException("Failed to initialize wallet due to: $cause", cause)
 }
+
+
+class TransactionNotFoundException(transactionId: Long) : RuntimeException("Unable to find transactionId " +
+    "$transactionId in the repository. This means the wallet created a transaction and then returned a row ID " +
+    "that does not actually exist. This is a scenario where the wallet should have thrown an exception but failed " +
+    "to do so.")
+
+class TransactionNotEncodedException(transactionId: Long) : RuntimeException("The transaction returned by the wallet," +
+    " with id $transactionId, does not have any raw data. This is a scenario where the wallet should have thrown" +
+    " an exception but failed to do so.")

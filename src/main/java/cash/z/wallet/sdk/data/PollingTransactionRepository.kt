@@ -3,16 +3,11 @@ package cash.z.wallet.sdk.data
 import android.content.Context
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import cash.z.wallet.sdk.dao.BlockDao
-import cash.z.wallet.sdk.dao.TransactionDao
-import cash.z.wallet.sdk.dao.WalletTransaction
-import cash.z.wallet.sdk.db.DerivedDataDb
+import cash.z.wallet.sdk.db.*
+import cash.z.wallet.sdk.entity.ClearedTransaction
 import cash.z.wallet.sdk.entity.Transaction
-import cash.z.wallet.sdk.exception.RepositoryException
 import kotlinx.coroutines.*
 import kotlinx.coroutines.Dispatchers.IO
-import kotlinx.coroutines.channels.ConflatedBroadcastChannel
-import kotlinx.coroutines.channels.ReceiveChannel
 
 /**
  * Repository that does polling for simplicity. We will implement an alternative version that uses live data as well as
@@ -21,54 +16,29 @@ import kotlinx.coroutines.channels.ReceiveChannel
  */
 open class PollingTransactionRepository(
     private val derivedDataDb: DerivedDataDb,
-    private val pollFrequencyMillis: Long = 2000L
+    private val pollFrequencyMillis: Long = 2000L,
+    private val limit: Int = Int.MAX_VALUE
 ) : TransactionRepository {
 
     /**
-     * Constructor that creates the database and then executes a callback on it.
+     * Constructor that creates the database.
      */
     constructor(
         context: Context,
         dataDbName: String,
-        pollFrequencyMillis: Long = 2000L,
-        dbCallback: (DerivedDataDb) -> Unit = {}
+        pollFrequencyMillis: Long = 2000L
     ) : this(
         Room.databaseBuilder(context, DerivedDataDb::class.java, dataDbName)
             .setJournalMode(RoomDatabase.JournalMode.TRUNCATE)
             .build(),
         pollFrequencyMillis
-    ) {
-        dbCallback(derivedDataDb)
-    }
+    )
 
-    internal val blocks: BlockDao = derivedDataDb.blockDao()
+    private val blocks: BlockDao = derivedDataDb.blockDao()
+    private val receivedNotes: ReceivedDao = derivedDataDb.receivedDao()
+    private val sentNotes: SentDao = derivedDataDb.sentDao()
     private val transactions: TransactionDao = derivedDataDb.transactionDao()
-    private lateinit var pollingJob: Job
-    private val allTransactionsChannel = ConflatedBroadcastChannel<List<WalletTransaction>>()
-    private val existingTransactions = listOf<WalletTransaction>()
-    private val wasPreviouslyStarted
-        get() = !existingTransactions.isEmpty() || allTransactionsChannel.isClosedForSend
-
-    override fun start(parentScope: CoroutineScope) {
-        //  prevent restarts so the behavior of this class is easier to reason about
-        if (wasPreviouslyStarted) throw RepositoryException.FalseStart
-
-        twig("starting")
-
-        pollingJob = parentScope.launch {
-            poll()
-        }
-    }
-
-    override fun stop() {
-        twig("stopping but doing nothing")
-        pollingJob.cancel()
-        // TODO: verify that the channels behave as expected in this scenario
-    }
-
-    override fun allTransactions(): ReceiveChannel<List<WalletTransaction>> {
-        return allTransactionsChannel.openSubscription()
-    }
+    protected var pollingJob: Job? = null
 
     override fun lastScannedHeight(): Int {
         return blocks.lastScannedHeight()
@@ -85,53 +55,69 @@ open class PollingTransactionRepository(
         transaction
     }
 
+    override suspend fun findTransactionByRawId(rawTxId: ByteArray): Transaction? = withContext(IO) {
+        transactions.findByRawId(rawTxId)
+    }
+
     override suspend fun deleteTransactionById(txId: Long) = withContext(IO) {
         twigTask("deleting transaction with id $txId") {
             transactions.deleteById(txId)
         }
     }
+    override suspend fun getClearedTransactions(): List<ClearedTransaction> = withContext(IO) {
+        transactions.getSentTransactions(limit) + transactions.getReceivedTransactions(limit)
+    }
 
-    private suspend fun poll() = withContext(IO) {
-        var previousTransactions: List<WalletTransaction>? = null
-        while (isActive && !allTransactionsChannel.isClosedForSend) {
-            twigTask("polling for transactions every ${pollFrequencyMillis}ms") {
-                val newTransactions = transactions.getAll()
+    override suspend fun monitorChanges(listener: () -> Unit) = withContext(IO) {
+        // since the only thing mutable is unmined transactions, we can simply check for new data rows rather than doing any deep comparisons
+        // in the future we can leverage triggers instead
+        pollingJob?.cancel()
+        pollingJob = launch {
+            val txCount = ValueHolder(-1, "Transaction Count")
+            val unminedCount = ValueHolder(-1, "Unmined Transaction Count")
+            val sentCount = ValueHolder(-1, "Sent Transaction Count")
+            val receivedCount = ValueHolder(-1, "Received Transaction Count")
 
-                if (hasChanged(previousTransactions, newTransactions)) {
-                    twig("loaded ${newTransactions.count()} transactions and changes were detected!")
-                    allTransactionsChannel.send(newTransactions)
-                    previousTransactions = newTransactions
+            while (coroutineContext.isActive) {
+                // we check all conditions to avoid duplicate notifications whenever a change impacts multiple tables
+                // if counting becomes slower than the blocktime (highly unlikely) then this could be optimized to call the listener early and continue counting afterward but there's no need for that complexity now
+                if (txCount.changed(transactions.count())
+                    || unminedCount.changed(transactions.countUnmined())
+                    || sentCount.changed(sentNotes.count())
+                    || receivedCount.changed(receivedNotes.count())
+                ) {
+                    twig("Notifying listener that changes have been detected in transactions!")
+                    listener.invoke()
                 } else {
-                    twig("loaded ${newTransactions.count()} transactions but no changes detected.")
+                    twig("No changes detected in transactions.")
                 }
+                delay(pollFrequencyMillis)
             }
-            delay(pollFrequencyMillis)
         }
-        twig("Done polling for transactions")
     }
 
-
-    private fun hasChanged(oldTxs: List<WalletTransaction>?, newTxs: List<WalletTransaction>): Boolean {
-        fun pr(t: List<WalletTransaction>?): String {
-            if(t == null) return "none"
-            val str = StringBuilder()
-            for (tx in t) {
-                str.append("\n@TWIG: ").append(tx.toString())
-            }
-            return str.toString()
-        }
-        val sends = newTxs.filter { it.isSend }
-        if(sends.isNotEmpty()) twig("SENDS hasChanged: old-txs: ${pr(oldTxs?.filter { it.isSend })}\n@TWIG: new-txs: ${pr(sends)}")
-
-        // shortcuts first
-        if (newTxs.isEmpty() && oldTxs == null) return false.also { twig("detected nothing happened yet") } // if nothing has happened, that doesn't count as a change
-        if (oldTxs == null) return true.also { twig("detected first set of txs!") } // the first set of transactions is automatically a change
-        if (oldTxs.size != newTxs.size) return true.also { twig("detected size difference") } // can't be the same and have different sizes, duh
-
-        for (note in newTxs) {
-            if (!oldTxs.contains(note)) return true.also { twig("detected change for $note") }
-        }
-        return false.also { twig("detected no changes in all new txs") }
+    fun stop() {
+        pollingJob?.cancel().also { pollingJob = null }
+        derivedDataDb.close()
     }
 
+}
+
+/**
+ * Reduces some of the boilerplate of checking a value for changes.
+ */
+internal class ValueHolder<T>(var value: T, val description: String = "Value") {
+
+    /**
+     * Hold the new value and report whether it has changed.
+     */
+    fun changed(newValue: T): Boolean {
+        return if (newValue == value) {
+            false
+        } else {
+            twig("$description changed from $value to $newValue")
+            value = newValue
+            true
+        }
+    }
 }

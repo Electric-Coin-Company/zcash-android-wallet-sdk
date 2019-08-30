@@ -2,11 +2,11 @@ package cash.z.wallet.sdk.secure
 
 import android.content.Context
 import cash.z.wallet.sdk.data.Bush
-import cash.z.wallet.sdk.data.CompactBlockProcessor.Companion.SAPLING_ACTIVATION_HEIGHT
 import cash.z.wallet.sdk.data.twig
 import cash.z.wallet.sdk.data.twigTask
 import cash.z.wallet.sdk.exception.RustLayerException
 import cash.z.wallet.sdk.exception.WalletException
+import cash.z.wallet.sdk.ext.SAPLING_ACTIVATION_HEIGHT
 import cash.z.wallet.sdk.ext.masked
 import cash.z.wallet.sdk.jni.RustBackendWelding
 import cash.z.wallet.sdk.secure.Wallet.WalletBirthday
@@ -15,8 +15,6 @@ import com.google.gson.stream.JsonReader
 import com.squareup.okhttp.OkHttpClient
 import com.squareup.okhttp.Request
 import kotlinx.coroutines.Dispatchers.IO
-import kotlinx.coroutines.channels.ConflatedBroadcastChannel
-import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.withContext
 import okio.Okio
 import java.io.File
@@ -44,15 +42,16 @@ class Wallet(
     constructor(
         context: Context,
         rustBackend: RustBackendWelding,
-        dataDbPath: String,
-        paramDestinationDir: String,
-        accountIds: Array<Int> = arrayOf(0),
+        dataDbName: String,
         seedProvider: ReadOnlyProperty<Any?, ByteArray>,
-        spendingKeyProvider: ReadWriteProperty<Any?, String>
+        spendingKeyProvider: ReadWriteProperty<Any?, String>,
+        birthday: WalletBirthday = loadBirthdayFromAssets(context),
+        paramDestinationDir: String = "${context.cacheDir.absolutePath}/params",
+        accountIds: Array<Int> = arrayOf(0)
     ) : this(
-        birthday = loadBirthdayFromAssets(context),
+        birthday = birthday,
         rustBackend = rustBackend,
-        dataDbPath = dataDbPath,
+        dataDbPath = context.getDatabasePath(dataDbName).absolutePath,
         paramDestinationDir = paramDestinationDir,
         accountIds = accountIds,
         seedProvider = seedProvider,
@@ -65,28 +64,40 @@ class Wallet(
     private var spendingKeyStore by spendingKeyProvider
 
     /**
-     * Channel where balance info will be emitted.
-     */
-    private val balanceChannel = ConflatedBroadcastChannel<WalletBalance>()
-
-    /**
      * Initializes the wallet by creating the DataDb and pre-populating it with data corresponding to the birthday for
      * this wallet.
      */
     fun initialize(
         firstRunStartHeight: Int = SAPLING_ACTIVATION_HEIGHT
     ): Int {
-        twig("Initializing wallet for first run")
-        rustBackend.initDataDb(dataDbPath)
-        twig("seeding the database with sapling tree at height ${birthday.height}")
-        rustBackend.initBlocksTable(dataDbPath, birthday.height, birthday.hash, birthday.time, birthday.tree)
+        // TODO: find a better way to map these exceptions from the Rust side. For now, match error text :(
 
-        // store the spendingkey by leveraging the utilities provided during construction
-        val seed by seedProvider
-        val accountSpendingKeys = rustBackend.initAccountsTable(dataDbPath, seed, 1)
-        spendingKeyStore = accountSpendingKeys[0]
+        try {
+            rustBackend.initDataDb(dataDbPath)
+            twig("Initialized wallet for first run into file $dataDbPath")
+        } catch (e: Throwable) {
+            throw WalletException.FalseStart(e)
+        }
 
-        return Math.max(firstRunStartHeight, birthday.height)
+        try {
+            rustBackend.initBlocksTable(dataDbPath, birthday.height, birthday.hash, birthday.time, birthday.tree)
+            twig("seeded the database with sapling tree at height ${birthday.height} into file $dataDbPath")
+        } catch (t: Throwable) {
+            if (t.message?.contains("is not empty") == true) throw WalletException.AlreadyInitializedException(t)
+            else throw WalletException.FalseStart(t)
+        }
+
+        try {
+            // store the spendingkey by leveraging the utilities provided during construction
+            val seed by seedProvider
+            val accountSpendingKeys = rustBackend.initAccountsTable(dataDbPath, seed, 1)
+            spendingKeyStore = accountSpendingKeys[0]
+
+            twig("Initialized the accounts table into file $dataDbPath")
+            return Math.max(firstRunStartHeight, birthday.height)
+        } catch (e: Throwable) {
+            throw WalletException.FalseStart(e)
+        }
     }
 
     /**
@@ -94,13 +105,6 @@ class Wallet(
      */
     fun getAddress(accountId: Int = accountIds[0]): String {
         return rustBackend.getAddress(dataDbPath, accountId)
-    }
-
-    /**
-     * Stream of balances.
-     */
-    fun balances(): ReceiveChannel<WalletBalance> {
-        return balanceChannel.openSubscription()
     }
 
     /**
@@ -118,14 +122,14 @@ class Wallet(
      *
      * @param accountId the account to check for balance info.
      */
-    suspend fun sendBalanceInfo(accountId: Int = accountIds[0]) = withContext(IO) {
+    suspend fun getBalanceInfo(accountId: Int = accountIds[0]): WalletBalance = withContext(IO) {
         twigTask("checking balance info") {
             try {
                 val balanceTotal = rustBackend.getBalance(dataDbPath, accountId)
                 twig("found total balance of: $balanceTotal")
                 val balanceAvailable = rustBackend.getVerifiedBalance(dataDbPath, accountId)
                 twig("found available balance of: $balanceAvailable")
-                balanceChannel.send(WalletBalance(balanceTotal, balanceAvailable))
+                WalletBalance(balanceTotal, balanceAvailable)
             } catch (t: Throwable) {
                 twig("failed to get balance due to $t")
                 throw RustLayerException.BalanceException(t)
@@ -145,9 +149,8 @@ class Wallet(
      */
     suspend fun createRawSendTransaction(value: Long, toAddress: String, memo: String = "", fromAccountId: Int = accountIds[0]): Long =
         withContext(IO) {
-            var result = -1L
-            twigTask("creating raw transaction to send $value zatoshi to ${toAddress.masked()}") {
-                result = runCatching {
+            twigTask("creating raw transaction to send $value zatoshi to ${toAddress.masked()} with memo $memo") {
+                try {
                     ensureParams(paramDestinationDir)
                     twig("params exist at $paramDestinationDir! attempting to send...")
                     rustBackend.sendToAddress(
@@ -161,10 +164,13 @@ class Wallet(
                         spendParams = SPEND_PARAM_FILE_NAME.toPath(),
                         outputParams = OUTPUT_PARAM_FILE_NAME.toPath()
                     )
-                }.getOrDefault(result)
+                } catch (t: Throwable) {
+                    twig("${t.message}")
+                    throw t
+                }
+            }.also { result ->
+                twig("result of sendToAddress: $result")
             }
-            twig("result of sendToAddress: $result")
-            result
         }
 
     /**
