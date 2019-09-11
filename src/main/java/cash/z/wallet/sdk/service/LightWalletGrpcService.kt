@@ -12,15 +12,15 @@ import io.grpc.ManagedChannel
 import io.grpc.android.AndroidChannelBuilder
 import java.util.concurrent.TimeUnit
 
-class LightWalletGrpcService(private val channel: ManagedChannel) : LightWalletService {
+class LightWalletGrpcService private constructor(private val channel: ManagedChannel)
+    : LightWalletService {
 
-    constructor(appContext: Context, host: String, port: Int = 9067) : this(
-        AndroidChannelBuilder
-            .forAddress(host, port)
-            .context(appContext)
-            .usePlaintext()
-            .build()
-    )
+    constructor(
+        appContext: Context,
+        host: String,
+        port: Int = DEFAULT_LIGHTWALLETD_PORT,
+        usePlaintext: Boolean = !appContext.resources.getBoolean(R.bool.is_mainnet)
+    ) : this(createDefaultChannel(appContext, host, port, usePlaintext))
 
     /* LightWalletService implementation */
 
@@ -63,5 +63,27 @@ class LightWalletGrpcService(private val channel: ManagedChannel) : LightWalletS
                 this@apply += CompactBlock(compactBlock.height.toInt(), compactBlock.toByteArray())
             }
         }
+
+    companion object {
+        fun createDefaultChannel(
+            appContext: Context,
+            host: String,
+            port: Int,
+            usePlaintext: Boolean
+        ): ManagedChannel {
+            return AndroidChannelBuilder
+                .forAddress(host, port)
+                .context(appContext)
+                .apply {
+                    if (usePlaintext) {
+                        if (!appContext.resources.getBoolean(R.bool.lightwalletd_allow_very_insecure_connections)) throw LightwalletException.InsecureConnection
+                        usePlaintext()
+                    } else {
+                        useTransportSecurity()
+                    }
+                }
+                .build()
+        }
+    }
 }
 

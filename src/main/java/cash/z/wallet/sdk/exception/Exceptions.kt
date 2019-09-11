@@ -57,6 +57,12 @@ sealed class WalletException(message: String, cause: Throwable? = null) : Runtim
     class FalseStart(cause: Throwable?) : WalletException("Failed to initialize wallet due to: $cause", cause)
 }
 
+sealed class LightwalletException(message: String, cause: Throwable? = null) : RuntimeException(message, cause) {
+    object InsecureConnection : LightwalletException("Error: attempted to connect to lightwalletd" +
+            " with an insecure connection! Plaintext connections are only allowed when the" +
+            " resource value for 'R.bool.lightwalletd_allow_very_insecure_connections' is true" +
+            " because this choice should be explicit.")
+}
 
 class TransactionNotFoundException(transactionId: Long) : RuntimeException("Unable to find transactionId " +
     "$transactionId in the repository. This means the wallet created a transaction and then returned a row ID " +
