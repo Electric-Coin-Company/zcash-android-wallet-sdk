@@ -11,6 +11,7 @@ import cash.z.wallet.sdk.secure.Wallet
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.launch
 import kotlin.properties.Delegates
@@ -20,13 +21,11 @@ import kotlin.reflect.KProperty
 class MainActivity : ScopedActivity() {
 
     private lateinit var synchronizer: Synchronizer
-    private var progressJob: Job? = null
-    private var balanceJob: Job? = null
     private var activeTransaction: TransactionInfo = TransactionInfo()
     private var loaded: Boolean by observable(false) {_, old: Boolean, new: Boolean ->
         if (!old && new) {
             launch {
-                onBalance(synchronizer.getBalance())
+                onBalance(synchronizer.lastBalance())
             }
         }
     }
@@ -40,23 +39,14 @@ class MainActivity : ScopedActivity() {
 
         synchronizer = Injection.provideSynchronizer(this.applicationContext)
         synchronizer.start(this)
-    }
 
-
-    override fun onResume() {
-        super.onResume()
-        progressJob = launchProgressMonitor(synchronizer.progress())
-        balanceJob = launchBalanceMonitor(synchronizer.balances())
-    }
-
-    override fun onPause() {
-        super.onPause()
-        progressJob?.cancel().also { progressJob = null }
-        balanceJob?.cancel().also { balanceJob = null }
+        launchProgressMonitor(synchronizer.progress())
+        launchBalanceMonitor(synchronizer.balances())
     }
 
     override fun onDestroy() {
         super.onDestroy()
+        cancel()
         synchronizer.stop()
     }
 
@@ -66,11 +56,11 @@ class MainActivity : ScopedActivity() {
         }
     }
 
-    private fun CoroutineScope.launchTransactionMonitor(channel: ReceiveChannel<Map<ActiveTransaction, TransactionState>>) = launch {
-        for (i in channel) {
-            onUpdate(i)
-        }
-    }
+//    private fun CoroutineScope.launchTransactionMonitor(channel: ReceiveChannel<Map<ActiveTransaction, TransactionState>>) = launch {
+//        for (i in channel) {
+//            onUpdate(i)
+//        }
+//    }
 
     private fun CoroutineScope.launchBalanceMonitor(channel: ReceiveChannel<Wallet.WalletBalance>) = launch {
         for (i in channel) {
@@ -98,23 +88,23 @@ class MainActivity : ScopedActivity() {
         }
     }
 
-    private fun onUpdate(transactions: Map<ActiveTransaction, TransactionState>) {
-        if (transactions.isNotEmpty()) {
-            // primary is the last one that was inserted
-            val primaryEntry =
-                    transactions.entries.toTypedArray()[transactions.size - 1]
-            updatePrimaryTransaction(primaryEntry.key, primaryEntry.value)
-        }
-    }
+//    private fun onUpdate(transactions: Map<ActiveTransaction, TransactionState>) {
+//        if (transactions.isNotEmpty()) {
+//            // primary is the last one that was inserted
+//            val primaryEntry =
+//                    transactions.entries.toTypedArray()[transactions.size - 1]
+//            updatePrimaryTransaction(primaryEntry.key, primaryEntry.value)
+//        }
+//    }
 
-    private fun updatePrimaryTransaction(transaction: ActiveTransaction,
-                                         transactionState: TransactionState) {
-        val status = transactionState.toString()
-        text_status.text = "Memo Sent!\nAwaiting confirmation...\nstatus: $status"
-    }
+//    private fun updatePrimaryTransaction(transaction: ActiveTransaction,
+//                                         transactionState: TransactionState) {
+//        val status = transactionState.toString()
+//        text_status.text = "Memo Sent!\nAwaiting confirmation...\nstatus: $status"
+//    }
 
     fun onSendMemo(v: View) {
-        launchTransactionMonitor(synchronizer.activeTransactions())
+//        launchTransactionMonitor(synchronizer.activeTransactions())
 
         activeTransaction = TransactionInfo(memo = input_memo.text.toString())
 

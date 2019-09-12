@@ -18,7 +18,7 @@ class WalletTransactionEncoder(
      * double-bangs for things).
      */
     override suspend fun create(zatoshi: Long, toAddress: String, memo: String): EncodedTransaction = withContext(IO) {
-        val transactionId = wallet.createRawSendTransaction(zatoshi, toAddress, memo)
+        val transactionId = wallet.createSpend(zatoshi, toAddress, memo)
         val transaction = repository.findTransactionById(transactionId)
             ?: throw TransactionNotFoundException(transactionId)
         EncodedTransaction(transaction.transactionId, transaction.raw

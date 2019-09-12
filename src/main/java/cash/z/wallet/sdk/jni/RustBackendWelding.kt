@@ -6,49 +6,49 @@ package cash.z.wallet.sdk.jni
  */
 interface RustBackendWelding {
 
-    fun initDataDb(dbData: String): Boolean
+    fun initDataDb(dbDataPath: String): Boolean
 
     fun initAccountsTable(
-        dbData: String,
+        dbDataPath: String,
         seed: ByteArray,
         accounts: Int): Array<String>
 
     fun initBlocksTable(
-        dbData: String,
+        dbDataPath: String,
         height: Int,
         hash: String,
         time: Long,
         saplingTree: String): Boolean
 
-    fun getAddress(dbData: String, account: Int): String
+    fun getAddress(dbDataPath: String, account: Int): String
 
     fun isValidShieldedAddress(addr: String): Boolean
 
     fun isValidTransparentAddress(addr: String): Boolean
 
-    fun getBalance(dbData: String, account: Int): Long
+    fun getBalance(dbDataPath: String, account: Int): Long
 
-    fun getVerifiedBalance(dbData: String, account: Int): Long
+    fun getVerifiedBalance(dbDataPath: String, account: Int): Long
 
-    fun getReceivedMemoAsUtf8(dbData: String, idNote: Long): String
+    fun getReceivedMemoAsUtf8(dbDataPath: String, idNote: Long): String
 
-    fun getSentMemoAsUtf8(dbData: String, idNote: Long): String
+    fun getSentMemoAsUtf8(dbDataPath: String, idNote: Long): String
 
-    fun validateCombinedChain(db_cache: String, db_data: String): Int
+    fun validateCombinedChain(dbCachePath: String, dbDataPath: String): Int
 
-    fun rewindToHeight(db_data: String, height: Int): Boolean
+    fun rewindToHeight(dbDataPath: String, height: Int): Boolean
 
-    fun scanBlocks(db_cache: String, db_data: String): Boolean
+    fun scanBlocks(dbCachePath: String, dbDataPath: String): Boolean
 
-    fun sendToAddress(
-        dbData: String,
+    fun createToAddress(
+        dbDataPath: String,
         account: Int,
         extsk: String,
         to: String,
         value: Long,
         memo: String,
-        spendParams: String,
-        outputParams: String
+        spendParamsPath: String,
+        outputParamsPath: String
     ): Long
 
     fun initLogs()

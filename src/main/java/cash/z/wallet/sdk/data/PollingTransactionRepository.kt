@@ -13,10 +13,14 @@ import kotlinx.coroutines.Dispatchers.IO
  * Repository that does polling for simplicity. We will implement an alternative version that uses live data as well as
  * one that creates triggers and then reference them here. For now this is the most basic example of keeping track of
  * changes.
+ *
+ * @param limit the max number of transactions to return when polling for changes. After a wallet has been a round for a
+ * long time, returning ALL transactions might be overkill. Instead, it may be more efficient to only return a limited
+ * number of transactions, like the most recent transaction that has changed.
  */
 open class PollingTransactionRepository(
     private val derivedDataDb: DerivedDataDb,
-    private val pollFrequencyMillis: Long = 2000L,
+    private val pollFrequencyMillis: Long = DEFAULT_TX_POLL_INTERVAL_MS,
     private val limit: Int = Int.MAX_VALUE
 ) : TransactionRepository {
 
@@ -26,7 +30,7 @@ open class PollingTransactionRepository(
     constructor(
         context: Context,
         dataDbName: String,
-        pollFrequencyMillis: Long = 2000L
+        pollFrequencyMillis: Long = DEFAULT_TX_POLL_INTERVAL_MS
     ) : this(
         Room.databaseBuilder(context, DerivedDataDb::class.java, dataDbName)
             .setJournalMode(RoomDatabase.JournalMode.TRUNCATE)
@@ -89,7 +93,7 @@ open class PollingTransactionRepository(
                     twig("Notifying listener that changes have been detected in transactions!")
                     listener.invoke()
                 } else {
-                    twig("No changes detected in transactions.")
+                    //twig("No changes detected in transactions.")
                 }
                 delay(pollFrequencyMillis)
             }
@@ -101,6 +105,9 @@ open class PollingTransactionRepository(
         derivedDataDb.close()
     }
 
+    companion object {
+        const val DEFAULT_TX_POLL_INTERVAL_MS = 5_000L
+    }
 }
 
 /**

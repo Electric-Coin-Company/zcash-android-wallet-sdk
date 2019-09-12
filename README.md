@@ -49,6 +49,7 @@ This lightweight SDK connects Android to Zcash. It welds together Rust and Kotli
     - [Components](#components)
 - [Quickstart](#quickstart)
 - [Compiling Sources](#compiling-sources)
+- [Versioning](#versioning)
 
 ## Structure
 
@@ -84,20 +85,20 @@ To accomplish this, these responsibilities of the SDK are divided into separate 
 
 #### Components
 
-| Component  | Summary | Input | Output |
-| :--------- | :------------ | :--- | :--- |
-| **Downloader** | Downloads compact blocks | Server host:port | Stream of compact blocks |
-| **Processor** | Processes compact blocks | Stream of compact blocks | Decoded wallet data |
-| **Repository** | Source of data derived from processing blocks | Decoded wallet data | UI Data |
-| **Active Transaction Manager** | Manages the lifecycle of pending transactions | Decoded wallet data | Transaction state |
-| **Wallet** | Wraps the Zcash rust libraries, insulating SDK users from changes in that layer | Configuration | Configuration |
-  
+| Component  | Summary |
+| :--------- | :------ |
+| **LightWalletService** | Service used for requesting compact blocks |
+| **CompactBlockStore** | Stores compact blocks that have been downloaded from the `LightWalletService` |
+| **CompactBlockProcessor** | Validates and scans the compact blocks in the `CompactBlockStore` for transaction details |
+| **TransactionManager** | Creates, Submits and manages transactions for spending funds |
+| **Wallet** | Wraps the Zcash rust libraries, insulating SDK users from changes in that layer |
+
 [Back to contents](#contents)
 ## Quickstart
 
 Add the SDK dependency
 ```gradle
-implementation "cash.z.android.wallet:zcash-android-testnet:1.7.5-alpha@aar"
+implementation "cash.z.android.wallet:zcash-android-testnet:1.0.0-alpha01@aar"
 ```
 Start the [Synchronizer](docs/-synchronizer/README.md)
 
@@ -126,5 +127,19 @@ Compilation requires `Cargo` and has been tested on Ubuntu, MacOS and Windows. T
 ./gradlew clean assembleZcashtestnetRelease
 ```
 This creates a `testnet` build of the SDK that can be used to preview basic functionality for sending and receiving shielded transactions. If you do not have `Rust` and `Cargo` installed, the build script will let you know and provide further instructions for installation. Note that merely using the SDK does not require installing Rust or Cargo--that is only required for compilation.
+
+
+[Back to contents](#contents)
+## Versioning
+
+This project follows [semantic versioning](https://semver.org/) with pre-release versions. An example of a valid version number is `1.0.4-alpha11` denoting the `11th` iteration of the `alpha` pre-release of version `1.0.4`. Stable releases, such as `1.0.4` will not contain any pre-release identifiers. Pre-releases include the following, in order of stability: `alpha`, `beta`, `rc`. Version codes offer a numeric representation of the build name that always increases. The first six significant digits represent the major, minor and patch number (two digits each) and the last 3 significant digits represent the pre-release identifier. The first digit of the identifier signals the build type. Lastly, each new build has a higher version code than all previous builds. The following table breaks this down:
+
+#### Build Types
+| Type  | Purpose | Stability | Audience | Identifier | Example Version |
+| :---- | :--------- | :---------- | :-------- | :------- | :--- |
+| **alpha** | **Sandbox.** For developers to verify behavior and try features. Things seen here might never go to production. Most bugs here can be ignored.| Unstable: Expect bugs | Internal developers | 0XX | 1.2.3-alpha04 (10203004) |
+| **beta** | **Hand-off.** For developers to present finished features. Bugs found here should be reported and immediately addressed, if they relate to recent changes. | Unstable: Report bugs | Internal stakeholders | 2XX | 1.2.3-beta04 (10203204) |
+| **release candidate** | **Hardening.** Final testing for an app release that we believe is ready to go live. The focus here is regression testing to ensure that new changes have not introduced instability in areas that were previously working.  | Stable: Hunt for bugs | External testers | 4XX | 1.2.3-rc04 (10203404) |
+| **production** | **Dellivery.** Deliver new features to end users. Any bugs found here need to be prioritized. Some will require immediate attention but most can be worked into a future release. | Stable: Prioritize bugs | Public | 8XX | 1.2.3 (10203800) |
 
 [Back to contents](#contents)

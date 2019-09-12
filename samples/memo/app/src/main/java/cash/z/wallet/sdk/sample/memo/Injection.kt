@@ -6,6 +6,8 @@ import cash.z.wallet.sdk.block.CompactBlockDownloader
 import cash.z.wallet.sdk.block.CompactBlockProcessor
 import cash.z.wallet.sdk.block.ProcessorConfig
 import cash.z.wallet.sdk.data.*
+import cash.z.wallet.sdk.ext.SampleSeedProvider
+import cash.z.wallet.sdk.ext.SimpleProvider
 import cash.z.wallet.sdk.jni.RustBackend
 import cash.z.wallet.sdk.secure.Wallet
 import cash.z.wallet.sdk.service.LightWalletGrpcService
@@ -18,12 +20,21 @@ object Injection {
     private val rustBackend = RustBackend()
 
     fun provideSynchronizer(appContext: Context): Synchronizer {
-        val config = ProcessorConfig(cacheDbName.toDbPath(appContext), dataDbName.toDbPath(appContext), downloadBatchSize = 1_000) // settings
-        val service = LightWalletGrpcService(appContext, host, port) // connects to lightwalletd
-        val blockStore = CompactBlockDbStore(appContext, cacheDbName) // enables compact block storage in cache
-        val downloader = CompactBlockDownloader(service, blockStore) // downloads blocks an puts them in storage
-        val repository = PollingTransactionRepository(appContext, dataDbName, rustBackend) // provides access to txs
-        val processor = CompactBlockProcessor(config, downloader, repository, rustBackend) // decrypts compact blocks
+
+        // ledger
+        val ledger = PollingTransactionRepository(appContext, dataDbName)
+
+        // sender
+        val manager = PersistentTransactionManager(appContext)
+        val service = LightWalletGrpcService(appContext, host, port)
+        val sender = PersistentTransactionSender(manager, service, ledger)
+
+        // processor
+        val config = ProcessorConfig(cacheDbName.toDbPath(appContext), dataDbName.toDbPath(appContext))
+        val blockStore = CompactBlockDbStore(appContext, cacheDbName)
+        val downloader = CompactBlockDownloader(service, blockStore)
+        val processor = CompactBlockProcessor(config, downloader, ledger, rustBackend)
+
         // wrapper for rustbackend
         val wallet = Wallet(
             context = appContext,
@@ -33,10 +44,18 @@ object Injection {
             seedProvider = SampleSeedProvider("testreferencecarol"),
             spendingKeyProvider = SimpleProvider("dummyValue")
         )
-        val activeTransactionManager = ActiveTransactionManager(repository, service, wallet) // monitors active txs
+
+        // Encoder
+        val encoder = WalletTransactionEncoder(wallet, ledger)
 
         // ties everything together
-        return SdkSynchronizer(processor, repository, activeTransactionManager, wallet)
+        return SdkSynchronizer(
+            wallet,
+            ledger,
+            sender,
+            processor,
+            encoder
+        )
     }
 
     private fun String.toDbPath(context: Context): String {

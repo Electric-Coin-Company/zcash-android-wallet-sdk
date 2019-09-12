@@ -9,49 +9,49 @@ import cash.z.wallet.sdk.data.twig
  */
 class RustBackend : RustBackendWelding {
 
-    external override fun initDataDb(dbData: String): Boolean
+    external override fun initDataDb(dbDataPath: String): Boolean
 
     external override fun initAccountsTable(
-        dbData: String,
+        dbDataPath: String,
         seed: ByteArray,
         accounts: Int): Array<String>
 
     external override fun initBlocksTable(
-        dbData: String,
+        dbDataPath: String,
         height: Int,
         hash: String,
         time: Long,
         saplingTree: String): Boolean
 
-    external override fun getAddress(dbData: String, account: Int): String
+    external override fun getAddress(dbDataPath: String, account: Int): String
 
     external override fun isValidShieldedAddress(addr: String): Boolean
 
     external override fun isValidTransparentAddress(addr: String): Boolean
 
-    external override fun getBalance(dbData: String, account: Int): Long
+    external override fun getBalance(dbDataPath: String, account: Int): Long
 
-    external override fun getVerifiedBalance(dbData: String, account: Int): Long
+    external override fun getVerifiedBalance(dbDataPath: String, account: Int): Long
 
-    external override fun getReceivedMemoAsUtf8(dbData: String, idNote: Long): String
+    external override fun getReceivedMemoAsUtf8(dbDataPath: String, idNote: Long): String
 
-    external override fun getSentMemoAsUtf8(dbData: String, idNote: Long): String
+    external override fun getSentMemoAsUtf8(dbDataPath: String, idNote: Long): String
 
-    external override fun validateCombinedChain(db_cache: String, db_data: String): Int
+    external override fun validateCombinedChain(dbCachePath: String, dbDataPath: String): Int
 
-    external override fun rewindToHeight(db_data: String, height: Int): Boolean
+    external override fun rewindToHeight(dbDataPath: String, height: Int): Boolean
 
-    external override fun scanBlocks(db_cache: String, db_data: String): Boolean
+    external override fun scanBlocks(dbCachePath: String, dbDataPath: String): Boolean
 
-    external override fun sendToAddress(
-        dbData: String,
+    external override fun createToAddress(
+        dbDataPath: String,
         account: Int,
         extsk: String,
         to: String,
         value: Long,
         memo: String,
-        spendParams: String,
-        outputParams: String
+        spendParamsPath: String,
+        outputParamsPath: String
     ): Long
 
     external override fun initLogs()

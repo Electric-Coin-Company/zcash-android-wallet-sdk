@@ -4,6 +4,7 @@ import cash.z.wallet.sdk.block.CompactBlockProcessor
 import cash.z.wallet.sdk.entity.ClearedTransaction
 import cash.z.wallet.sdk.entity.PendingTransaction
 import cash.z.wallet.sdk.entity.SentTransaction
+import cash.z.wallet.sdk.exception.SynchronizerException
 import cash.z.wallet.sdk.exception.WalletException
 import cash.z.wallet.sdk.secure.Wallet
 import kotlinx.coroutines.*
@@ -13,10 +14,21 @@ import kotlinx.coroutines.channels.ReceiveChannel
 import kotlin.coroutines.CoroutineContext
 
 /**
- * A synchronizer that attempts to remain operational, despite any number of errors that can occur.
+ * A synchronizer that attempts to remain operational, despite any number of errors that can occur. It acts as the glue
+ * that ties all the pieces of the SDK together. Each component of the SDK is designed for the potential of stand-alone
+ * usage but coordinating all the interactions is non-trivial. So the synchronizer facilitates this, acting as reference
+ * that demonstrates how all the pieces can be tied together. Its goal is to allow a developer to focus on their app
+ * rather than the nuances of how Zcash works.
+ *
+ * @param wallet the component that wraps the JNI layer that interacts with the rust backend and manages wallet config.
+ * @param repository the component that exposes streams of wallet transaction information.
+ * @param sender the component responsible for sending transactions to lightwalletd in order to spend funds.
+ * @param processor the component that saves the downloaded compact blocks to the cache and then scans those blocks for
+ * data related to this wallet.
+ * @param encoder the component that creates a signed transaction, used for spending funds.
  */
 @ExperimentalCoroutinesApi
-class StableSynchronizer (
+class SdkSynchronizer (
     private val wallet: Wallet,
     private val ledger: TransactionRepository,
     private val sender: TransactionSender,
@@ -35,38 +47,85 @@ class StableSynchronizer (
 
 
     //
-    // Communication Primitives
-    //
-
-    private val balanceChannel = ConflatedBroadcastChannel(Wallet.WalletBalance())
-    private val progressChannel = ConflatedBroadcastChannel(0)
-    private val pendingChannel = ConflatedBroadcastChannel<List<PendingTransaction>>(listOf())
-    private val clearedChannel = ConflatedBroadcastChannel<List<ClearedTransaction>>(listOf())
-
-
-    //
     // Status
     //
 
+    /**
+     * A property that is true while a connection to the lightwalletd server exists.
+     */
     override val isConnected: Boolean get() = processor.isConnected
+
+    /**
+     * A property that is true while actively downloading blocks from lightwalletd.
+     */
     override val isSyncing: Boolean get() = processor.isSyncing
+
+    /**
+     * A property that is true while actively scanning the cache of compact blocks for transactions.
+     */
     override val isScanning: Boolean get() = processor.isScanning
+
+
+    //
+    // Communication Primitives
+    //
+
+    /**
+     * Channel of balance information.
+     */
+    private val balanceChannel = ConflatedBroadcastChannel(Wallet.WalletBalance())
+
+    /**
+     * Channel of data representing transactions that are pending.
+     */
+    private val pendingChannel = ConflatedBroadcastChannel<List<PendingTransaction>>(listOf())
+
+    /**
+     * Channel of data representing transactions that have been mined.
+     */
+    private val clearedChannel = ConflatedBroadcastChannel<List<ClearedTransaction>>(listOf())
 
 
     //
     // Error Handling
     //
 
-    /*
-     * These listeners will not be called on the main thread.
-     * So they will need to switch to do anything with UI, like dialogs
+    /**
+     * A callback to invoke whenever an uncaught error is encountered. By definition, the return value of the function
+     * is ignored because this error is unrecoverable. The only reason the function has a return value is so that all
+     * error handlers work with the same signature which allows one function to handle all errors in simple apps. This
+     * callback is not called on the main thread so any UI work would need to switch context to the main thread.
      */
     override var onCriticalErrorHandler: ((Throwable?) -> Boolean)? = null
+
+    /**
+     * A callback to invoke whenver a processor error is encountered. Returning true signals that the error was handled
+     * and a retry attempt should be made, if possible. This callback is not called on the main thread so any UI work
+     * would need to switch context to the main thread.
+     */
     override var onProcessorErrorHandler: ((Throwable?) -> Boolean)? = null
+
+    /**
+     * A callback to invoke whenever a server error is encountered while submitting a transaction to lightwalletd.
+     * Returning true signals that the error was handled and a retry attempt should be made, if possible. This callback
+     * is not called on the main thread so any UI work would need to switch context to the main thread.
+     */
     override var onSubmissionErrorHandler: ((Throwable?) -> Boolean)? = null
 
 
+    /**
+     * Starts this synchronizer within the given scope. For simplicity, attempting to start an instance that has already
+     * been started will throw a [SynchronizerException.FalseStart] exception. This reduces the complexity of managing
+     * resources that must be recycled. Instead, each synchronizer is designed to have a long lifespan and should be
+     * started from an activity, application or session.
+     *
+     * @param parentScope the scope to use for this synchronizer, typically something with a lifecycle such as an
+     * Activity for single-activity apps or a logged in user session. This scope is only used for launching this
+     * synchronzer's job as a child.
+     */
     override fun start(parentScope: CoroutineScope): Synchronizer {
+        if (::coroutineScope.isInitialized) throw SynchronizerException.FalseStart
+
         // base this scope on the parent so that when the parent's job cancels, everything here cancels as well
         // also use a supervisor job so that one failure doesn't bring down the whole synchronizer
         coroutineScope = CoroutineScope(SupervisorJob(parentScope.coroutineContext[Job]!!) + Dispatchers.Main)
@@ -84,12 +143,18 @@ class StableSynchronizer (
         return this
     }
 
+    /**
+     * Initializes the sender such that it can initiate requests within the scope of this synchronizer.
+     */
     private fun startSender(parentScope: CoroutineScope) {
         sender.onSubmissionError = ::onFailedSend
         sender.start(parentScope)
     }
 
-    private suspend fun initWallet() = withContext(Dispatchers.IO) {
+    /**
+     * Initialize the wallet, which involves populating data tables based on the latest state of the wallet.
+     */
+    private suspend fun initWallet() = withContext(IO) {
         try {
             wallet.initialize()
         } catch (e: WalletException.AlreadyInitializedException) {
@@ -104,6 +169,8 @@ class StableSynchronizer (
         }
     }
 
+    // TODO: this is a work in progress. We could take drastic measures to automatically recover from certain critical
+    //  errors and alert the user but this might be better to do at the app level, rather than SDK level.
     private fun recoverFrom(error: WalletException.FalseStart): Boolean {
         if (error.message?.contains("unable to open database file") == true
             || error.message?.contains("table blocks has no column named") == true) {
@@ -113,6 +180,11 @@ class StableSynchronizer (
         return false
     }
 
+    /**
+     * Stop this synchronizer and all of its child jobs. Once a synchronizer has been stopped it should not be restarted
+     * and attempting to do so will result in an error. Also, this function will throw an exception if the synchronizer
+     * was never previously started.
+     */
     override fun stop() {
         coroutineScope.cancel()
     }
@@ -157,6 +229,7 @@ class StableSynchronizer (
 
     fun onTransactionsChanged() {
         coroutineScope.launch {
+            twig("triggering a balance update because transactions have changed")
             refreshBalance()
             clearedChannel.send(ledger.getClearedTransactions())
         }
@@ -165,7 +238,6 @@ class StableSynchronizer (
 
     suspend fun refreshBalance() = withContext(IO) {
         if (!balanceChannel.isClosedForSend) {
-            twig("triggering a balance update because transactions have changed")
             balanceChannel.send(wallet.getBalanceInfo())
         } else {
             twig("WARNING: noticed new transactions but the balance channel was closed for send so ignoring!")
@@ -212,9 +284,7 @@ class StableSynchronizer (
         return balanceChannel.openSubscription()
     }
 
-    override fun progress(): ReceiveChannel<Int> {
-        return progressChannel.openSubscription()
-    }
+    override fun progress(): ReceiveChannel<Int> = processor.progress()
 
     override fun pendingTransactions(): ReceiveChannel<List<PendingTransaction>> {
         return pendingChannel.openSubscription()
