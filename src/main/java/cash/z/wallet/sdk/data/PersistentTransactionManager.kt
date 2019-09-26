@@ -7,7 +7,7 @@ import cash.z.wallet.sdk.db.PendingTransactionDao
 import cash.z.wallet.sdk.db.PendingTransactionDb
 import cash.z.wallet.sdk.entity.PendingTransaction
 import cash.z.wallet.sdk.entity.Transaction
-import cash.z.wallet.sdk.ext.EXPIRY_OFFSET
+import cash.z.wallet.sdk.ext.ZcashSdk.EXPIRY_OFFSET
 import cash.z.wallet.sdk.service.LightWalletService
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.withContext

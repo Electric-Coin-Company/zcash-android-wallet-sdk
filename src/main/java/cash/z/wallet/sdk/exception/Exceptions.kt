@@ -30,6 +30,8 @@ sealed class CompactBlockProcessorException(message: String, cause: Throwable? =
             " than just the database filename because Rust does not access the app Context." +
             " So pass in context.getDatabasePath(dbFileName).absolutePath instead of just dbFileName alone.", null)
     class FailedReorgRepair(message: String) : CompactBlockProcessorException(message)
+    object FailedScan : CompactBlockProcessorException("Error while scanning blocks. This most " +
+            "likely means a block is missing or a reorg was mishandled. See Rust logs for details.")
 }
 
 sealed class CompactBlockStreamException(message: String, cause: Throwable? = null) : RuntimeException(message, cause) {

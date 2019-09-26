@@ -2,6 +2,7 @@ package cash.z.wallet.sdk.ext
 
 import android.content.Context
 import cash.z.wallet.sdk.data.twig
+import cash.z.wallet.sdk.ext.ZcashSdk.MAX_BACKOFF_INTERVAL
 import kotlinx.coroutines.delay
 import java.io.File
 import kotlin.random.Random
@@ -22,7 +23,7 @@ suspend inline fun retryUpTo(retries: Int, initialDelay: Int = 10, block: () -> 
     }
 }
 
-suspend inline fun retryWithBackoff(noinline onErrorListener: ((Throwable) -> Boolean)? = null, initialDelayMillis: Long = 1000L, maxDelayMillis: Long = DEFAULT_MAX_BACKOFF_INTERVAL, block: () -> Unit) {
+suspend inline fun retryWithBackoff(noinline onErrorListener: ((Throwable) -> Boolean)? = null, initialDelayMillis: Long = 1000L, maxDelayMillis: Long = MAX_BACKOFF_INTERVAL, block: () -> Unit) {
     var sequence = 0 // count up to the max and then reset to half. So that we don't repeat the max but we also don't repeat too much.
     while (true) {
         try {

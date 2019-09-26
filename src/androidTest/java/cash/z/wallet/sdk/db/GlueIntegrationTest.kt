@@ -5,7 +5,7 @@ import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.test.core.app.ApplicationProvider
-import cash.z.wallet.sdk.entity.CompactBlock
+import cash.z.wallet.sdk.entity.CompactBlockEntity
 import cash.z.wallet.sdk.jni.RustBackend
 import cash.z.wallet.sdk.jni.RustBackendWelding
 import cash.z.wallet.sdk.rpc.CompactTxStreamerGrpc
@@ -47,19 +47,19 @@ class GlueIntegrationTest {
         )
         while (result.hasNext()) {
             val compactBlock = result.next()
-            dao.insert(CompactBlock(compactBlock.height.toInt(), compactBlock.toByteArray()))
+            dao.insert(CompactBlockEntity(compactBlock.height.toInt(), compactBlock.toByteArray()))
             System.err.println("stored block at height: ${compactBlock.height} with time ${compactBlock.time}")
         }
     }
 
     private fun scanData() {
         val dbFileName = "/data/user/0/cash.z.wallet.sdk.test/databases/new-data-glue.db"
-        rustBackend.initDataDb(dbFileName)
-        rustBackend.initAccountsTable(dbFileName, "dummyseed".toByteArray(), 1)
+        rustBackend.initDataDb()
+        rustBackend.initAccountsTable("dummyseed".toByteArray(), 1)
 
 
         Log.e("tezt", "scanning blocks...")
-        val result = rustBackend.scanBlocks(cacheDbPath, dbFileName)
+        val result = rustBackend.scanBlocks()
         System.err.println("done.")
     }
 
@@ -69,7 +69,7 @@ class GlueIntegrationTest {
 
     companion object {
         // jni
-        val rustBackend: RustBackendWelding = RustBackend()
+        val rustBackend: RustBackendWelding = RustBackend
 
         // db
         private lateinit var dao: CompactBlockDao
@@ -83,7 +83,7 @@ class GlueIntegrationTest {
         @BeforeClass
         @JvmStatic
         fun setup() {
-            rustBackend.initLogs()
+            rustBackend.create(ApplicationProvider.getApplicationContext())
 
             val channel = ManagedChannelBuilder.forAddress("10.0.2.2", 9067).usePlaintext().build()
             blockingStub = CompactTxStreamerGrpc.newBlockingStub(channel)

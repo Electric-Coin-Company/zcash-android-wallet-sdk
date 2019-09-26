@@ -5,7 +5,7 @@ import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.test.core.app.ApplicationProvider
-import cash.z.wallet.sdk.entity.CompactBlock
+import cash.z.wallet.sdk.entity.CompactBlockEntity
 import cash.z.wallet.sdk.jni.RustBackend
 import cash.z.wallet.sdk.jni.RustBackendWelding
 import cash.z.wallet.sdk.rpc.CompactTxStreamerGrpc
@@ -49,14 +49,14 @@ class GlueSetupIntegrationTest {
         )
         while (result.hasNext()) {
             val compactBlock = result.next()
-            dao.insert(CompactBlock(compactBlock.height.toInt(), compactBlock.toByteArray()))
+            dao.insert(CompactBlockEntity(compactBlock.height.toInt(), compactBlock.toByteArray()))
             System.err.println("stored block at height: ${compactBlock.height}")
         }
     }
 
     private fun scanData() {
         Log.e("tezt", "scanning blocks...")
-        val result = rustBackend.scanBlocks(cacheDbPath, "/data/user/0/cash.z.wallet.sdk.test/databases/data-glue.db")
+        val result = rustBackend.scanBlocks()
         System.err.println("done.")
     }
 
@@ -66,13 +66,13 @@ class GlueSetupIntegrationTest {
 
     companion object {
         // jni
-        val rustBackend: RustBackendWelding = RustBackend()
+        val rustBackend: RustBackendWelding = RustBackend
 
         // db
         private lateinit var dao: CompactBlockDao
         private lateinit var db: CompactBlockDb
-        private const val cacheDbName = "dummy-cache-glue.db"
-        private const val cacheDbPath = "/data/user/0/cash.z.wallet.sdk.test/databases/$cacheDbName"
+        private const val cacheDbName = "cache-glue.db"
+        private const val dataDbName = "data-glue.db"
 
         // grpc
         lateinit var blockingStub: CompactTxStreamerGrpc.CompactTxStreamerBlockingStub
@@ -80,7 +80,7 @@ class GlueSetupIntegrationTest {
         @BeforeClass
         @JvmStatic
         fun setup() {
-            rustBackend.initLogs()
+            rustBackend.create(ApplicationProvider.getApplicationContext(), cacheDbName, dataDbName)
 
             val channel = ManagedChannelBuilder.forAddress("10.0.2.2", 9067).usePlaintext().build()
             blockingStub = CompactTxStreamerGrpc.newBlockingStub(channel)

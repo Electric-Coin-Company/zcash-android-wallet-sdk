@@ -4,8 +4,10 @@ import androidx.test.platform.app.InstrumentationRegistry
 import cash.z.wallet.sdk.block.CompactBlockDbStore
 import cash.z.wallet.sdk.block.CompactBlockDownloader
 import cash.z.wallet.sdk.block.CompactBlockProcessor
-import cash.z.wallet.sdk.block.ProcessorConfig
-import cash.z.wallet.sdk.data.*
+import cash.z.wallet.sdk.data.PollingTransactionRepository
+import cash.z.wallet.sdk.data.Synchronizer
+import cash.z.wallet.sdk.data.TroubleshootingTwig
+import cash.z.wallet.sdk.data.Twig
 import cash.z.wallet.sdk.ext.SampleSeedProvider
 import cash.z.wallet.sdk.ext.SampleSpendingKeyProvider
 import cash.z.wallet.sdk.jni.RustBackend
@@ -47,27 +49,19 @@ class IntegrationTest {
 
     @Test(timeout = 120_000L)
     fun testSync() = runBlocking<Unit> {
-        val rustBackend = RustBackend()
-        rustBackend.initLogs()
-        val config = ProcessorConfig(
-            cacheDbPath = context.getDatabasePath(cacheDdName).absolutePath,
-            dataDbPath = context.getDatabasePath(dataDbName).absolutePath,
-            downloadBatchSize = 2000,
-            blockPollFrequencyMillis = 10_000L
-        )
+        val rustBackend = RustBackend.create(context)
 
         val lightwalletService = LightWalletGrpcService(context,"192.168.1.134")
-        val compactBlockStore = CompactBlockDbStore(context, config.cacheDbPath)
+        val compactBlockStore = CompactBlockDbStore(context)
 
         downloader = CompactBlockDownloader(lightwalletService, compactBlockStore)
-        processor = CompactBlockProcessor(config, downloader, repository, rustBackend)
+        processor = CompactBlockProcessor(downloader, repository, rustBackend)
         repository = PollingTransactionRepository(context, dataDbName, 10_000L)
         wallet = Wallet(
-            context = context,
-            rustBackend = rustBackend,
-            dataDbName = dataDbName,
-            seedProvider = SampleSeedProvider("dummyseed"),
-            spendingKeyProvider = SampleSpendingKeyProvider("dummyseed")
+            context,
+            rustBackend,
+            SampleSeedProvider("dummyseed"),
+            SampleSpendingKeyProvider("dummyseed")
         )
 
 //        repository.start(this)

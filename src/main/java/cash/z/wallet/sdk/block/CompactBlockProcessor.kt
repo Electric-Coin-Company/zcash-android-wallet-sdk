@@ -6,7 +6,15 @@ import cash.z.wallet.sdk.data.TransactionRepository
 import cash.z.wallet.sdk.data.Twig
 import cash.z.wallet.sdk.data.twig
 import cash.z.wallet.sdk.exception.CompactBlockProcessorException
-import cash.z.wallet.sdk.ext.*
+import cash.z.wallet.sdk.ext.ZcashSdk.DOWNLOAD_BATCH_SIZE
+import cash.z.wallet.sdk.ext.ZcashSdk.MAX_BACKOFF_INTERVAL
+import cash.z.wallet.sdk.ext.ZcashSdk.MAX_REORG_SIZE
+import cash.z.wallet.sdk.ext.ZcashSdk.POLL_INTERVAL
+import cash.z.wallet.sdk.ext.ZcashSdk.RETRIES
+import cash.z.wallet.sdk.ext.ZcashSdk.REWIND_DISTANCE
+import cash.z.wallet.sdk.ext.ZcashSdk.SAPLING_ACTIVATION_HEIGHT
+import cash.z.wallet.sdk.ext.retryUpTo
+import cash.z.wallet.sdk.ext.retryWithBackoff
 import cash.z.wallet.sdk.jni.RustBackend
 import cash.z.wallet.sdk.jni.RustBackendWelding
 import kotlinx.coroutines.Dispatchers.IO
@@ -15,8 +23,10 @@ import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
-import java.io.File
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.math.max
+import kotlin.math.min
+import kotlin.math.roundToInt
 
 /**
  * Responsible for processing the compact blocks that are received from the lightwallet server. This class encapsulates
@@ -25,10 +35,9 @@ import java.util.concurrent.atomic.AtomicInteger
  */
 @OpenForTesting
 class CompactBlockProcessor(
-    internal val config: ProcessorConfig,
     internal val downloader: CompactBlockDownloader,
     private val repository: TransactionRepository,
-    private val rustBackend: RustBackendWelding = RustBackend()
+    private val rustBackend: RustBackendWelding
 ) {
     var onErrorListener: ((Throwable) -> Boolean)? = null
     var isConnected: Boolean = false
@@ -45,22 +54,21 @@ class CompactBlockProcessor(
      */
     suspend fun start() = withContext(IO) {
         twig("processor starting")
-        validateConfig()
 
         // using do/while makes it easier to execute exactly one loop which helps with testing this processor quickly
         // (because you can start and then immediately set isStopped=true to always get precisely one loop)
         do {
-            retryWithBackoff(::onConnectionError, maxDelayMillis = config.maxBackoffInterval) {
+            retryWithBackoff(::onConnectionError, maxDelayMillis = MAX_BACKOFF_INTERVAL) {
                 val result = processNewBlocks()
                 // immediately process again after failures in order to download new blocks right away
                 if (result < 0) {
                     isSyncing = false
                     isScanning = false
                     consecutiveChainErrors.set(0)
-                    twig("Successfully processed new blocks. Sleeping for ${config.blockPollFrequencyMillis}ms")
-                    delay(config.blockPollFrequencyMillis)
+                    twig("Successfully processed new blocks. Sleeping for ${POLL_INTERVAL}ms")
+                    delay(POLL_INTERVAL)
                 } else {
-                    if(consecutiveChainErrors.get() >= config.retries) {
+                    if(consecutiveChainErrors.get() >= RETRIES) {
                         val errorMessage = "ERROR: unable to resolve reorg at height $result after ${consecutiveChainErrors.get()} correction attempts!"
                         fail(CompactBlockProcessorException.FailedReorgRepair(errorMessage))
                     } else {
@@ -72,16 +80,6 @@ class CompactBlockProcessor(
         } while (isActive && !isStopped)
         twig("processor complete")
         stop()
-    }
-
-    /**
-     * Validate the config to expose a common pitfall.
-     */
-    private fun validateConfig() {
-        if(!config.cacheDbPath.contains(File.separator))
-            throw CompactBlockProcessorException.FileInsteadOfPath(config.cacheDbPath)
-        if(!config.dataDbPath.contains(File.separator))
-            throw CompactBlockProcessorException.FileInsteadOfPath(config.dataDbPath)
     }
 
     fun stop() {
@@ -107,7 +105,7 @@ class CompactBlockProcessor(
         val latestBlockHeight = downloader.getLatestBlockHeight()
         isConnected = true // no exception on downloader call
         isSyncing = true
-        val lastDownloadedHeight = Math.max(getLastDownloadedHeight(), SAPLING_ACTIVATION_HEIGHT - 1)
+        val lastDownloadedHeight = max(getLastDownloadedHeight(), SAPLING_ACTIVATION_HEIGHT - 1)
         val lastScannedHeight = getLastScannedHeight()
 
         twig("latestBlockHeight: $latestBlockHeight\tlastDownloadedHeight: $lastDownloadedHeight" +
@@ -115,14 +113,18 @@ class CompactBlockProcessor(
 
         // as long as the database has the sapling tree (like when it's initialized from a checkpoint) we can avoid
         // downloading earlier blocks so take the larger of these two numbers
-        val rangeToDownload = (Math.max(lastDownloadedHeight, lastScannedHeight) + 1)..latestBlockHeight
+        val rangeToDownload = (max(lastDownloadedHeight, lastScannedHeight) + 1)..latestBlockHeight
         val rangeToScan = (lastScannedHeight + 1)..latestBlockHeight
 
         downloadNewBlocks(rangeToDownload)
         val error = validateNewBlocks(rangeToScan)
         if (error < 0) {
-            scanNewBlocks(rangeToScan)
-            -1 // TODO: in theory scan should not fail when validate succeeds but maybe consider returning the failed block height whenever scan does fail
+            // in theory, a scan should not fail after validation succeeds but maybe consider
+            // changing the rust layer to return the failed block height whenever scan does fail
+            // rather than a boolean
+            val success = scanNewBlocks(rangeToScan)
+            if (!success) throw CompactBlockProcessorException.FailedScan
+            -1
         } else {
             error
         }
@@ -137,20 +139,19 @@ class CompactBlockProcessor(
             Twig.sprout("downloading")
             twig("downloading blocks in range $range")
 
-            var downloadedBlockHeight = range.start
+            var downloadedBlockHeight = range.first
             val missingBlockCount = range.last - range.first + 1
-            val batches = (missingBlockCount / config.downloadBatchSize
-                    + (if (missingBlockCount.rem(config.downloadBatchSize) == 0) 0 else 1))
+            val batches = (missingBlockCount / DOWNLOAD_BATCH_SIZE
+                    + (if (missingBlockCount.rem(DOWNLOAD_BATCH_SIZE) == 0) 0 else 1))
             var progress: Int
-            twig("found $missingBlockCount missing blocks, downloading in $batches batches of ${config.downloadBatchSize}...")
+            twig("found $missingBlockCount missing blocks, downloading in $batches batches of ${DOWNLOAD_BATCH_SIZE}...")
             for (i in 1..batches) {
-                retryUpTo(config.retries) {
-                    val end = Math.min(range.first + (i * config.downloadBatchSize), range.last + 1)
-                    val batchRange = downloadedBlockHeight..(end - 1)
-                    twig("downloaded $batchRange (batch $i of $batches)") {
-                        downloader.downloadBlockRange(batchRange)
+                retryUpTo(RETRIES) {
+                    val end = min(range.first + (i * DOWNLOAD_BATCH_SIZE), range.last + 1)
+                    twig("downloaded $downloadedBlockHeight..${(end - 1)} (batch $i of $batches)") {
+                        downloader.downloadBlockRange(downloadedBlockHeight until end)
                     }
-                    progress = Math.round(i / batches.toFloat() * 100)
+                    progress = (i / batches.toFloat() * 100).roundToInt()
                     // only report during large downloads. TODO: allow for configuration of "large"
                     progressChannel.send(progress)
                     downloadedBlockHeight = end
@@ -168,7 +169,7 @@ class CompactBlockProcessor(
         }
         Twig.sprout("validating")
         twig("validating blocks in range $range")
-        val result = rustBackend.validateCombinedChain(config.cacheDbPath, config.dataDbPath)
+        val result = rustBackend.validateCombinedChain()
         Twig.clip("validating")
         return result
     }
@@ -181,7 +182,7 @@ class CompactBlockProcessor(
         Twig.sprout("scanning")
         twig("scanning blocks in range $range")
         isScanning = true
-        val result = rustBackend.scanBlocks(config.cacheDbPath, config.dataDbPath)
+        val result = rustBackend.scanBlocks()
         isScanning = false
         Twig.clip("scanning")
         return result
@@ -190,7 +191,7 @@ class CompactBlockProcessor(
     private suspend fun handleChainError(errorHeight: Int) = withContext(IO) {
         val lowerBound = determineLowerBound(errorHeight)
         twig("handling chain error at $errorHeight by rewinding to block $lowerBound")
-        rustBackend.rewindToHeight(config.dataDbPath, lowerBound)
+        rustBackend.rewindToHeight(lowerBound)
         downloader.rewindTo(lowerBound)
     }
 
@@ -202,7 +203,7 @@ class CompactBlockProcessor(
     }
 
     private fun determineLowerBound(errorHeight: Int): Int {
-        val offset = Math.min(MAX_REORG_SIZE, config.rewindDistance * (consecutiveChainErrors.get() + 1))
+        val offset = Math.min(MAX_REORG_SIZE, REWIND_DISTANCE * (consecutiveChainErrors.get() + 1))
         return Math.max(errorHeight - offset, SAPLING_ACTIVATION_HEIGHT)
     }
 
@@ -214,17 +215,3 @@ class CompactBlockProcessor(
         repository.lastScannedHeight()
     }
 }
-
-/**
- * @property cacheDbPath absolute file path of the DB where raw, unprocessed compact blocks are stored.
- * @property dataDbPath absolute file path of the DB where all information derived from the cache DB is stored.
- */
-data class ProcessorConfig(
-    val cacheDbPath: String = "",
-    val dataDbPath: String = "",
-    val downloadBatchSize: Int = DEFAULT_BATCH_SIZE,
-    val blockPollFrequencyMillis: Long = DEFAULT_POLL_INTERVAL,
-    val retries: Int = DEFAULT_RETRIES,
-    val maxBackoffInterval: Long = DEFAULT_MAX_BACKOFF_INTERVAL,
-    val rewindDistance: Int = DEFAULT_REWIND_DISTANCE
-)

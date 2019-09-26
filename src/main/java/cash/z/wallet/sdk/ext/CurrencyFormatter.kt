@@ -2,6 +2,7 @@ package cash.z.wallet.sdk.ext
 
 import cash.z.wallet.sdk.ext.Conversions.USD_FORMATTER
 import cash.z.wallet.sdk.ext.Conversions.ZEC_FORMATTER
+import cash.z.wallet.sdk.ext.ZcashSdk.ZATOSHI_PER_ZEC
 import java.math.BigDecimal
 import java.math.MathContext
 import java.math.RoundingMode

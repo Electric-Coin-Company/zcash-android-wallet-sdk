@@ -200,8 +200,8 @@ class SdkSynchronizer (
         val progressUpdates = progress()
         for (progress in progressUpdates) {
             if (progress == 100) {
-                twig("triggering a balance update because progress is complete")
-                refreshBalance()
+                twig("triggering a balance update because progress is complete (j/k)")
+                //refreshBalance()
             }
         }
         twig("done monitoring for progress changes")
@@ -217,8 +217,8 @@ class SdkSynchronizer (
         val channel = pendingChannel.openSubscription()
         for (pending in channel) {
             if(balanceChannel.isClosedForSend) break
-            twig("triggering a balance update because pending transactions have changed")
-            refreshBalance()
+            twig("triggering a balance update because pending transactions have changed (j/kk)")
+//            refreshBalance()
         }
         twig("done monitoring for pending changes and balance changes")
     }

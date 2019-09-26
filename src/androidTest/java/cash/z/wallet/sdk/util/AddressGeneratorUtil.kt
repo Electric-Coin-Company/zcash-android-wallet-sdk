@@ -1,4 +1,4 @@
-package cash.z.wallet.sdk.db
+package cash.z.wallet.sdk.util
 
 import androidx.test.platform.app.InstrumentationRegistry
 import cash.z.wallet.sdk.data.TroubleshootingTwig
@@ -23,14 +23,13 @@ class AddressGeneratorUtil {
 
     private val dataDbName = "AddressUtilData.db"
     private val context = InstrumentationRegistry.getInstrumentation().context
-    private val rustBackend = RustBackend()
+    private val rustBackend = RustBackend.create(context)
 
     private lateinit var wallet: Wallet
 
     @Before
     fun setup() {
         Twig.plant(TroubleshootingTwig())
-        rustBackend.initLogs()
     }
 
     private fun deleteDb() {
@@ -64,13 +63,7 @@ class AddressGeneratorUtil {
     private fun initWallet(seed: String): ReadWriteProperty<Any?, String> {
         deleteDb()
         val spendingKeyProvider = Delegates.notNull<String>()
-        wallet = Wallet(
-            context = context,
-            rustBackend = rustBackend,
-            dataDbName = dataDbName,
-            seedProvider = SampleSeedProvider(seed),
-            spendingKeyProvider = spendingKeyProvider
-        )
+        wallet = Wallet(context, rustBackend, SampleSeedProvider(seed), spendingKeyProvider)
         wallet.initialize()
         return spendingKeyProvider
     }

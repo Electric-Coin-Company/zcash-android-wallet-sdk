@@ -4,7 +4,9 @@ import cash.z.wallet.sdk.data.TransactionRepository
 import cash.z.wallet.sdk.data.TroubleshootingTwig
 import cash.z.wallet.sdk.data.Twig
 import cash.z.wallet.sdk.entity.CompactBlock
+import cash.z.wallet.sdk.entity.CompactBlockEntity
 import cash.z.wallet.sdk.ext.SAPLING_ACTIVATION_HEIGHT
+import cash.z.wallet.sdk.ext.ZcashSdk.SAPLING_ACTIVATION_HEIGHT
 import cash.z.wallet.sdk.jni.RustBackendWelding
 import cash.z.wallet.sdk.service.LightWalletService
 import com.nhaarman.mockitokotlin2.*
@@ -12,7 +14,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -51,7 +53,7 @@ internal class CompactBlockProcessorTest {
                 getBlockRange(any())
             }.thenAnswer { invocation ->
                 val range = invocation.arguments[0] as IntRange
-                range.map { CompactBlock(it, ByteArray(0)) }
+                range.map { CompactBlockEntity(it, ByteArray(0)) }
             }
         }
         lightwalletService.stub {
@@ -64,7 +66,7 @@ internal class CompactBlockProcessorTest {
             onBlocking {
                 write(any())
             }.thenAnswer { invocation ->
-                val lastBlockHeight = (invocation.arguments[0] as List<CompactBlock>).last().height
+                val lastBlockHeight = (invocation.arguments[0] as List<CompactBlockEntity>).last().height
                 lastDownloadedHeight = lastBlockHeight
                 Unit
             }

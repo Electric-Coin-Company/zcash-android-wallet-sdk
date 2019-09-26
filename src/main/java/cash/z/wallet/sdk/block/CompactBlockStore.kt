@@ -1,6 +1,6 @@
 package cash.z.wallet.sdk.block
 
-import cash.z.wallet.sdk.entity.CompactBlock
+import cash.z.wallet.sdk.rpc.CompactFormats
 
 /**
  * Interface for storing compact blocks.
@@ -14,7 +14,7 @@ interface CompactBlockStore {
     /**
      * Write the given blocks to this store, which may be anything from an in-memory cache to a DB.
      */
-    suspend fun write(result: List<CompactBlock>)
+    suspend fun write(result: List<CompactFormats.CompactBlock>)
 
     /**
      * Remove every block above and including the given height.
