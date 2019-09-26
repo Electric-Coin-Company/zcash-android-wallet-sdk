@@ -1,7 +1,7 @@
 package cash.z.wallet.sdk.db
 
 import androidx.room.*
-import cash.z.wallet.sdk.entity.CompactBlock
+import cash.z.wallet.sdk.entity.CompactBlockEntity
 
 
 //
@@ -9,8 +9,7 @@ import cash.z.wallet.sdk.entity.CompactBlock
 //
 
 @Database(
-    entities = [
-        CompactBlock::class],
+    entities = [CompactBlockEntity::class],
     version = 1,
     exportSchema = false
 )
@@ -26,10 +25,10 @@ abstract class CompactBlockDb : RoomDatabase() {
 @Dao
 interface CompactBlockDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insert(block: CompactBlock)
+    fun insert(block: CompactBlockEntity)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insert(block: List<CompactBlock>)
+    fun insert(block: List<CompactBlockEntity>)
 
     @Query("DELETE FROM compactblocks WHERE height >= :height")
     fun rewindTo(height: Int)

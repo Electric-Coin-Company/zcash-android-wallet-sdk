@@ -2,9 +2,8 @@ package cash.z.wallet.sdk.service
 
 import android.content.Context
 import cash.z.wallet.sdk.R
-import cash.z.wallet.sdk.entity.CompactBlock
 import cash.z.wallet.sdk.exception.LightwalletException
-import cash.z.wallet.sdk.ext.DEFAULT_LIGHTWALLETD_PORT
+import cash.z.wallet.sdk.ext.ZcashSdk.LIGHTWALLETD_PORT
 import cash.z.wallet.sdk.rpc.CompactFormats
 import cash.z.wallet.sdk.rpc.CompactTxStreamerGrpc
 import cash.z.wallet.sdk.rpc.Service
@@ -32,13 +31,19 @@ class LightWalletGrpcService private constructor(
     constructor(
         appContext: Context,
         host: String,
-        port: Int = DEFAULT_LIGHTWALLETD_PORT,
+        port: Int = LIGHTWALLETD_PORT,
         usePlaintext: Boolean = !appContext.resources.getBoolean(R.bool.is_mainnet)
     ) : this(createDefaultChannel(appContext, host, port, usePlaintext))
 
     /* LightWalletService implementation */
 
-    override fun getBlockRange(heightRange: IntRange): List<CompactBlock> {
+    /**
+     * Blocking call to download all blocks in the given range.
+     *
+     * @param heightRange the inclusive range of block heights to download.
+     * @return a list of compact blocks for the given range
+     */
+    override fun getBlockRange(heightRange: IntRange): List<CompactFormats.CompactBlock> {
         channel.resetConnectBackoff()
         return channel.createStub(streamingRequestTimeoutSec).getBlockRange(heightRange.toBlockRange()).toList()
     }
@@ -48,9 +53,9 @@ class LightWalletGrpcService private constructor(
         return channel.createStub(singleRequestTimeoutSec).getLatestBlock(Service.ChainSpec.newBuilder().build()).height.toInt()
     }
 
-    override fun submitTransaction(raw: ByteArray): Service.SendResponse {
+    override fun submitTransaction(spendTransaction: ByteArray): Service.SendResponse {
         channel.resetConnectBackoff()
-        val request = Service.RawTransaction.newBuilder().setData(ByteString.copyFrom(raw)).build()
+        val request = Service.RawTransaction.newBuilder().setData(ByteString.copyFrom(spendTransaction)).build()
         return channel.createStub().sendTransaction(request)
     }
 
@@ -68,15 +73,14 @@ class LightWalletGrpcService private constructor(
 
     private inline fun IntRange.toBlockRange(): Service.BlockRange =
         Service.BlockRange.newBuilder()
-            .setStart(this.first.toBlockHeight())
-            .setEnd(this.last.toBlockHeight())
+            .setStart(first.toBlockHeight())
+            .setEnd(last.toBlockHeight())
             .build()
 
-    private fun Iterator<CompactFormats.CompactBlock>.toList(): List<CompactBlock> =
-        mutableListOf<CompactBlock>().apply {
+    private fun Iterator<CompactFormats.CompactBlock>.toList(): List<CompactFormats.CompactBlock> =
+        mutableListOf<CompactFormats.CompactBlock>().apply {
             while (hasNext()) {
-                val compactBlock = next()
-                this@apply += CompactBlock(compactBlock.height.toInt(), compactBlock.toByteArray())
+                this@apply += next()
             }
         }
 
@@ -102,4 +106,3 @@ class LightWalletGrpcService private constructor(
         }
     }
 }
-

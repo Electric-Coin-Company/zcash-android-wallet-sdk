@@ -1,6 +1,5 @@
 package cash.z.wallet.sdk.block
 
-import cash.z.wallet.sdk.data.twig
 import cash.z.wallet.sdk.service.LightWalletService
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.withContext

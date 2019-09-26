@@ -1,56 +1,52 @@
 package cash.z.wallet.sdk.jni
 
+import android.content.Context
+import cash.z.wallet.sdk.ext.ZcashSdk
+
 /**
- * Contract defining the exposed capabilitiies of the Rust backend.
+ * Contract defining the exposed capabilities of the Rust backend.
  * This is what welds the SDK to the Rust layer.
  */
 interface RustBackendWelding {
 
-    fun initDataDb(dbDataPath: String): Boolean
+    fun create(
+        appContext: Context,
+        dbCacheName: String = ZcashSdk.DB_CACHE_NAME,
+        dbDataName: String = ZcashSdk.DB_DATA_NAME
+    ): RustBackendWelding
 
-    fun initAccountsTable(
-        dbDataPath: String,
-        seed: ByteArray,
-        accounts: Int): Array<String>
+    fun initDataDb(): Boolean
 
-    fun initBlocksTable(
-        dbDataPath: String,
-        height: Int,
-        hash: String,
-        time: Long,
-        saplingTree: String): Boolean
+    fun initAccountsTable(seed: ByteArray, numberOfAccounts: Int): Array<String>
 
-    fun getAddress(dbDataPath: String, account: Int): String
+    fun initBlocksTable(height: Int, hash: String, time: Long, saplingTree: String): Boolean
+
+    fun getAddress(account: Int = 0): String
 
     fun isValidShieldedAddress(addr: String): Boolean
 
     fun isValidTransparentAddress(addr: String): Boolean
 
-    fun getBalance(dbDataPath: String, account: Int): Long
+    fun getBalance(account: Int = 0): Long
 
-    fun getVerifiedBalance(dbDataPath: String, account: Int): Long
+    fun getVerifiedBalance(account: Int = 0): Long
 
-    fun getReceivedMemoAsUtf8(dbDataPath: String, idNote: Long): String
+    fun getReceivedMemoAsUtf8(idNote: Long): String
 
-    fun getSentMemoAsUtf8(dbDataPath: String, idNote: Long): String
+    fun getSentMemoAsUtf8(idNote: Long): String
 
-    fun validateCombinedChain(dbCachePath: String, dbDataPath: String): Int
+    fun validateCombinedChain(): Int
 
-    fun rewindToHeight(dbDataPath: String, height: Int): Boolean
+    fun rewindToHeight(height: Int): Boolean
 
-    fun scanBlocks(dbCachePath: String, dbDataPath: String): Boolean
+    fun scanBlocks(): Boolean
 
     fun createToAddress(
-        dbDataPath: String,
         account: Int,
         extsk: String,
         to: String,
         value: Long,
-        memo: String,
-        spendParamsPath: String,
-        outputParamsPath: String
+        memo: String
     ): Long
-
-    fun initLogs()
 
 }

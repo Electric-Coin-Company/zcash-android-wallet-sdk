@@ -36,19 +36,16 @@ class BalancePrinterUtil {
     private val context = InstrumentationRegistry.getInstrumentation().context
     private val cacheDbName = "BalanceUtilCache.db"
     private val dataDbName = "BalanceUtilData.db"
-    private val cacheDbPath = context.getDatabasePath("BalanceUtilCache.db").absolutePath
-    private val dataDbPath = context.getDatabasePath("BalanceUtilData.db").absolutePath
-    private val rustBackend = RustBackend()
+    private val rustBackend = RustBackend.create(context, cacheDbName, dataDbName)
 
     private val downloader = CompactBlockDownloader(
         LightWalletGrpcService(context, host),
-        CompactBlockDbStore(context, cacheDbName)
+        CompactBlockDbStore(context)
     )
 
     @Before
     fun setup() {
         Twig.plant(TroubleshootingTwig())
-        rustBackend.initLogs()
         cacheBlocks()
     }
 
@@ -73,11 +70,11 @@ class BalancePrinterUtil {
             deleteDb(dataDbName)
             initWallet(seed)
             twig("scanning blocks for seed <$seed>")
-            rustBackend.scanBlocks(cacheDbPath, dataDbPath)
+            rustBackend.scanBlocks()
             twig("done scanning blocks for seed $seed")
-            val total = rustBackend.getBalance(dataDbPath, 0)
+            val total = rustBackend.getBalance(0)
             twig("found total: $total")
-            val available = rustBackend.getVerifiedBalance(dataDbPath, 0)
+            val available = rustBackend.getVerifiedBalance(0)
             twig("found available: $available")
             twig("xrxrx2\t$seed\t$total\t$available")
             println("xrxrx2\t$seed\t$total\t$available")
@@ -102,12 +99,11 @@ class BalancePrinterUtil {
     private fun initWallet(seed: String): Wallet {
         val spendingKeyProvider = Delegates.notNull<String>()
         return Wallet(
-            context = context,
-            birthday = Wallet.loadBirthdayFromAssets(context, birthday),
-            rustBackend = rustBackend,
-            dataDbName = dataDbName,
-            seedProvider = SampleSeedProvider(seed),
-            spendingKeyProvider = spendingKeyProvider
+            context,
+            rustBackend,
+            SampleSeedProvider(seed),
+            spendingKeyProvider,
+            Wallet.loadBirthdayFromAssets(context, birthday)
         ).apply {
             runCatching {
                 initialize()
@@ -139,7 +135,7 @@ class BalancePrinterUtil {
         val dummyWallet = initWallet("dummySeed")
         Twig.sprout("validating")
         twig("validating blocks in range $range")
-        val result = rustBackend.validateCombinedChain(cacheDbPath, dataDbPath)
+        val result = rustBackend.validateCombinedChain()
         Twig.clip("validating")
         return result
     }

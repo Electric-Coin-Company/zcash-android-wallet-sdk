@@ -13,7 +13,7 @@ import cash.z.wallet.sdk.secure.Wallet
 import cash.z.wallet.sdk.service.LightWalletGrpcService
 
 object Injection {
-    private const val host: String = "lightwalletd.z.cash"
+    private const val host: String = "34.68.177.238"
     private const val port: Int = 9067
     private const val cacheDbName = "memos-cache.db"
     private const val dataDbName = "memos-data.db"
