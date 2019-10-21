@@ -10,20 +10,16 @@ import androidx.room.ForeignKey
     foreignKeys = [ForeignKey(
         entity = Transaction::class,
         parentColumns = ["id_tx"],
-        childColumns = ["tx"],
-        onUpdate = ForeignKey.CASCADE,
-        onDelete = ForeignKey.CASCADE
+        childColumns = ["tx"]
     ), ForeignKey(
         entity = Account::class,
         parentColumns = ["account"],
-        childColumns = ["from_account"],
-        onUpdate = ForeignKey.CASCADE,
-        onDelete = ForeignKey.SET_NULL
+        childColumns = ["from_account"]
     )]
 )
 data class Sent(
     @ColumnInfo(name = "id_note")
-    val id: Int = 0,
+    val id: Int? = 0,
 
     @ColumnInfo(name = "tx")
     val transactionId: Int = 0,
@@ -34,7 +30,7 @@ data class Sent(
     @ColumnInfo(name = "from_account")
     val account: Int = 0,
 
-    val address: String,
+    val address: String = "",
 
     val value: Long = 0,
 
@@ -44,22 +40,29 @@ data class Sent(
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
+        if (other !is Sent) return false
 
-        return (other is Sent)
-                && id == other.id
-                && transactionId == other.transactionId
-                && outputIndex == other.outputIndex
-                && account == other.account
-                && value == other.value
-                && ((memo == null && other.memo == null) || (memo != null && other.memo != null && memo.contentEquals(other.memo)))
+        if (id != other.id) return false
+        if (transactionId != other.transactionId) return false
+        if (outputIndex != other.outputIndex) return false
+        if (account != other.account) return false
+        if (address != other.address) return false
+        if (value != other.value) return false
+        if (memo != null) {
+            if (other.memo == null) return false
+            if (!memo.contentEquals(other.memo)) return false
+        } else if (other.memo != null) return false
+
+        return true
     }
 
     override fun hashCode(): Int {
-        var result = id
+        var result = id ?: 0
         result = 31 * result + transactionId
         result = 31 * result + outputIndex
         result = 31 * result + account
-        result = 31 * result + value.toInt()
+        result = 31 * result + address.hashCode()
+        result = 31 * result + value.hashCode()
         result = 31 * result + (memo?.contentHashCode() ?: 0)
         return result
     }

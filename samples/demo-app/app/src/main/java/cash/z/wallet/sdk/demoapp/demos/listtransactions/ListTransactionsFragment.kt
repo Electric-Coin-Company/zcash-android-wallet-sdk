@@ -39,7 +39,10 @@ class ListTransactionsFragment : BaseDemoFragment<FragmentListTransactionsBindin
 
     override fun onClear() {
         ledger.close()
-        synchronizer.stop()
+        (synchronizer as SdkSynchronizer).apply {
+            stop()
+            clearData()
+        }
     }
 
     private fun monitorStatus() {

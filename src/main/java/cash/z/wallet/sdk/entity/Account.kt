@@ -10,7 +10,7 @@ import androidx.room.Ignore
     primaryKeys = ["account"]
 )
 data class Account(
-    val account: Int = 0,
+    val account: Int? = 0,
 
     @ColumnInfo(name = "extfvk")
     val extendedFullViewingKey: String = "",

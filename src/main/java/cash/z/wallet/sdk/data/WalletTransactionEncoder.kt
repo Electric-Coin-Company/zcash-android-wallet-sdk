@@ -9,7 +9,8 @@ import kotlinx.coroutines.withContext
 
 class WalletTransactionEncoder(
     private val wallet: Wallet,
-    private val repository: TransactionRepository
+    private val repository: TransactionRepository,
+    private val spendingKeyProvider: Wallet.SpendingKeyProvider
 ) : TransactionEncoder {
 
     /**
@@ -18,7 +19,7 @@ class WalletTransactionEncoder(
      * double-bangs for things).
      */
     override suspend fun create(zatoshi: Long, toAddress: String, memo: String): EncodedTransaction = withContext(IO) {
-        val transactionId = wallet.createSpend(zatoshi, toAddress, memo)
+        val transactionId = wallet.createSpend(spendingKeyProvider.key, zatoshi, toAddress, memo)
         val transaction = repository.findTransactionById(transactionId)
             ?: throw TransactionNotFoundException(transactionId)
         EncodedTransaction(transaction.transactionId, transaction.raw

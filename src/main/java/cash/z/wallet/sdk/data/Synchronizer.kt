@@ -6,6 +6,7 @@ import cash.z.wallet.sdk.entity.SentTransaction
 import cash.z.wallet.sdk.secure.Wallet
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.ReceiveChannel
+import kotlinx.coroutines.flow.Flow
 
 /**
  * Primary interface for interacting with the SDK. Defines the contract that specific implementations like
@@ -84,23 +85,10 @@ interface Synchronizer {
     //
 
     /**
-     * A flag indicating whether this Synchronizer is connected to its lightwalletd server. When false, a UI element
-     * may want to turn red.
+     * A flow of values representing the [Status] of this Synchronizer. As the status changes, a new
+     * value will be emitted by this flow.
      */
-    val isConnected: Boolean
-
-
-    /**
-     * A flag indicating whether this Synchronizer is actively downloading compact blocks. When true, a UI element
-     * may want to turn yellow.
-     */
-    val isSyncing: Boolean
-
-    /**
-     * A flag indicating whether this Synchronizer is actively decrypting compact blocks, searching for transactions.
-     * When true, a UI element may want to turn yellow.
-     */
-    val isScanning: Boolean
+    val status: Flow<Status>
 
 
     //
@@ -168,4 +156,30 @@ interface Synchronizer {
      * error is unrecoverable and the sender should [stop].
      */
     var onSubmissionErrorHandler: ((Throwable?) -> Boolean)?
+
+    enum class Status {
+        /**
+         * Indicates that [stop] has been called on this Synchronizer and it will no longer be used.
+         */
+        STOPPED,
+
+        /**
+         * Indicates that this Synchronizer is disconnected from its lightwalletd server.
+         * When set, a UI element may want to turn red.
+         */
+        DISCONNECTED,
+
+        /**
+         * Indicates that this Synchronizer is not yet synced and therefore should not broadcast
+         * transactions because it does not have the latest data. When set, a UI element may want
+         * to turn yellow.
+         */
+        SYNCING,
+
+        /**
+         * Indicates that this Synchronizer is fully up to date and ready for all wallet functions.
+         * When set, a UI element may want to turn green.
+         */
+        SYNCED
+    }
 }

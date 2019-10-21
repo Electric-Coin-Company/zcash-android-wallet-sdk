@@ -48,6 +48,9 @@ sealed class WalletException(message: String, cause: Throwable? = null) : Runtim
     object MissingParamsException : WalletException(
         "Cannot send funds due to missing spend or output params and attempting to download them failed."
     )
+    class BirthdayNotFoundException(directory: String, height: Int?) : WalletException(
+        "Unable to find birthday file for $height verify that $directory/$height.json exists."
+    )
     class MalformattedBirthdayFilesException(directory: String, file: String) : WalletException(
         "Failed to parse file $directory/$file verify that it is formatted as #####.json, " +
                 "where the first portion is an Int representing the height of the tree contained in the file"

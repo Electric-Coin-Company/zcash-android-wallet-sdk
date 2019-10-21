@@ -6,8 +6,9 @@ import cash.z.wallet.sdk.data.twig
 import cash.z.wallet.sdk.data.twigTask
 import cash.z.wallet.sdk.exception.RustLayerException
 import cash.z.wallet.sdk.exception.WalletException
-import cash.z.wallet.sdk.exception.WalletException.MalformattedBirthdayFilesException
-import cash.z.wallet.sdk.exception.WalletException.MissingBirthdayFilesException
+import cash.z.wallet.sdk.exception.WalletException.*
+import cash.z.wallet.sdk.ext.ZcashSdk.DB_CACHE_NAME
+import cash.z.wallet.sdk.ext.ZcashSdk.DB_DATA_NAME
 import cash.z.wallet.sdk.ext.ZcashSdk.OUTPUT_PARAM_FILE_NAME
 import cash.z.wallet.sdk.ext.ZcashSdk.SAPLING_ACTIVATION_HEIGHT
 import cash.z.wallet.sdk.ext.ZcashSdk.SPEND_PARAM_FILE_NAME
@@ -23,8 +24,6 @@ import kotlinx.coroutines.withContext
 import okio.Okio
 import java.io.File
 import java.io.InputStreamReader
-import kotlin.properties.ReadOnlyProperty
-import kotlin.properties.ReadWriteProperty
 
 
 /**
@@ -33,61 +32,54 @@ import kotlin.properties.ReadWriteProperty
  * The [cash.z.wallet.sdk.block.CompactBlockProcessor] handles all the remaining Rust backend
  * functionality, related to processing blocks.
  */
-class Wallet private constructor(
-    private val birthday: WalletBirthday,
-    private val rustBackend: RustBackendWelding,
-    private val paramDestinationDir: String,
-    private val seedProvider: ReadOnlyProperty<Any?, ByteArray>,
-    spendingKeyProvider: ReadWriteProperty<Any?, String>,
-    /** indexes of accounts ids. In the reference wallet, we only work with account 0 */
-    private val accountIds: Array<Int> = arrayOf(0)
-) {
+class Wallet {
+
+    lateinit var rustBackend: RustBackendWelding
+    var lowerBoundHeight: Int = SAPLING_ACTIVATION_HEIGHT
+
+    fun clear() {
+        if (::rustBackend.isInitialized) {
+            (rustBackend as RustBackend).clear()
+        } else {
+            twig("WARNING: attempted to clear an uninitialized wallet. No action was taken since " +
+                    "the database paths have not yet been set.")
+        }
+    }
+
     /**
-     * Construct a wallet from the given birthday. It will take care of downloading params, on first
-     * use, to a private cache directory as well as initializing the RustBackend. The file paths for
-     * these components are not configurable
-     * per github issue https://github.com/zcash/zcash-android-wallet-sdk/issues/30
+     * Initialize the wallet with the given seed and return the related private keys for each
+     * account specified or null if the wallet was previously initialized and block data exists on
+     * disk. When this method returns null, that signals that the wallet will need to retrieve the
+     * private keys from its own secure storage. In other words, the private keys are only given out
+     * once for each set of database files. Subsequent calls to [initialize] will only load the Rust
+     * library and return null.
      *
-     * @param appContext the application context. This is used for loading a checkpoint
-     * corresponding to the wallet's birthday from the SDK assets directory and also for setting
-     * the path for storing the sapling params.
-     * @param birthday the date this wallet's seed was created.
-     * @param rustBackend the RustBackend that the rest of the SDK will use. It is initialized by
-     * by this class.
-     * @param seedProvider a read-only property that provides the seed.
-     * @param spendingKeyProvider a read-only property that provides the spending key.
-     * @param accountIds the ids of the accounts to use. Defaults to a array of 0.
-     */
-    constructor(
-        appContext: Context,
-        rustBackend: RustBackendWelding,
-        seedProvider: ReadOnlyProperty<Any?, ByteArray>,
-        spendingKeyProvider: ReadWriteProperty<Any?, String>,
-        birthday: WalletBirthday = loadBirthdayFromAssets(appContext),
-        accountIds: Array<Int> = arrayOf(0)
-    ) : this(
-        birthday = birthday,
-        rustBackend = rustBackend,
-        paramDestinationDir = (rustBackend as RustBackend).paramDestinationDir,
-        seedProvider = seedProvider,
-        spendingKeyProvider = spendingKeyProvider,
-        accountIds = accountIds
-    )
-
-    /**
-     * Delegate for storing spending keys. This will be used when the spending keys are created
-     * during initialization.
-     */
-    private var spendingKeyStore by spendingKeyProvider
-
-    /**
-     * Initializes the wallet by creating the DataDb and pre-populating it with data corresponding
-     * to the birthday for this wallet.
+     * 'compactBlockCache.db' and 'transactionData.db' files are created by this function (if they
+     * do not already exist). These files can be given a prefix for scenarios where multiple wallets
+     * operate in one app--for instance, when sweeping funds from another wallet seed.
+     *
+     * @param appContext the application context.
+     * @param seed the seed to use for initializing this wallet.
+     * @param birthdayHeight the height corresponding to when the wallet seed was created. If null,
+     * this signals that the wallet is being born.
+     * @param numberOfAccounts the number of accounts to create from this seed.
+     * @param dbFileNamePrefix the optional prefix to add to the names of the database files.
      */
     fun initialize(
-        firstRunStartHeight: Int = SAPLING_ACTIVATION_HEIGHT
-    ): Int {
+        appContext: Context,
+        seed: ByteArray,
+        birthdayHeight: Int? = null,
+        numberOfAccounts: Int = 1,
+        dbFileNamePrefix: String = ""
+    ): Array<String>? {
+        rustBackend = RustBackend.create(
+            appContext,
+            "${dbFileNamePrefix}$DB_CACHE_NAME",
+            "${dbFileNamePrefix}$DB_DATA_NAME"
+        )
+
         try {
+            // only creates tables, if they don't exist
             rustBackend.initDataDb()
             twig("Initialized wallet for first run")
         } catch (e: Throwable) {
@@ -95,30 +87,27 @@ class Wallet private constructor(
         }
 
         try {
+            val birthday = loadBirthdayFromAssets(appContext, birthdayHeight)
+            lowerBoundHeight = birthday.height
             rustBackend.initBlocksTable(
                 birthday.height,
                 birthday.hash,
                 birthday.time,
                 birthday.tree
             )
-            twig("seeded the database with sapling tree at height ${birthday.height}")
+            twig("seeded the database with sapling tree at height ${birthday.height} (expected $birthdayHeight)")
         } catch (t: Throwable) {
             if (t.message?.contains("is not empty") == true) {
-                throw WalletException.AlreadyInitializedException(t)
+                return null
             } else {
                 throw WalletException.FalseStart(t)
             }
         }
 
         try {
-            // store the spendingkey by leveraging the utilities provided during construction
-            val seed by seedProvider
-            val accountSpendingKeys =
-                rustBackend.initAccountsTable(seed, 1)
-            spendingKeyStore = accountSpendingKeys[0]
-
-            twig("Initialized the accounts table")
-            return Math.max(firstRunStartHeight, birthday.height)
+            return rustBackend.initAccountsTable(seed, numberOfAccounts).also {
+                twig("Initialized the accounts table with $numberOfAccounts account(s)")
+            }
         } catch (e: Throwable) {
             throw WalletException.FalseStart(e)
         }
@@ -127,32 +116,32 @@ class Wallet private constructor(
     /**
      * Gets the address for this wallet, defaulting to the first account.
      */
-    fun getAddress(accountId: Int = accountIds[0]): String {
-        return rustBackend.getAddress(accountId)
+    fun getAddress(accountIndex: Int = 0): String {
+        return rustBackend.getAddress(accountIndex)
     }
 
     /**
      * Return a quick snapshot of the available balance. In most cases, the stream of balances
      * provided by [balances] should be used instead of this funciton.
      *
-     * @param accountId the account to check for balance info. Defaults to zero.
+     * @param accountIndex the account to check for balance info. Defaults to zero.
      */
-    fun availableBalanceSnapshot(accountId: Int = accountIds[0]): Long {
-        return rustBackend.getVerifiedBalance(accountId)
+    fun availableBalanceSnapshot(accountIndex: Int = 0): Long {
+        return rustBackend.getVerifiedBalance(accountIndex)
     }
 
     /**
      * Calculates the latest balance info and emits it into the balance channel. Defaults to the
      * first account.
      *
-     * @param accountId the account to check for balance info.
+     * @param accountIndex the account to check for balance info.
      */
-    suspend fun getBalanceInfo(accountId: Int = accountIds[0]): WalletBalance = withContext(IO) {
+    suspend fun getBalanceInfo(accountIndex: Int = 0): WalletBalance = withContext(IO) {
         twigTask("checking balance info") {
             try {
-                val balanceTotal = rustBackend.getBalance(accountId)
+                val balanceTotal = rustBackend.getBalance(accountIndex)
                 twig("found total balance of: $balanceTotal")
-                val balanceAvailable = rustBackend.getVerifiedBalance(accountId)
+                val balanceAvailable = rustBackend.getVerifiedBalance(accountIndex)
                 twig("found available balance of: $balanceAvailable")
                 WalletBalance(balanceTotal, balanceAvailable)
             } catch (t: Throwable) {
@@ -174,19 +163,22 @@ class Wallet private constructor(
      * or -1 if it failed
      */
     suspend fun createSpend(
+        spendingKey: String,
         value: Long,
         toAddress: String,
         memo: String = "",
-        fromAccountId: Int = accountIds[0]
+        fromAccountIndex: Int = 0
     ): Long = withContext(IO) {
-        twigTask("creating transaction to spend $value zatoshi to" +
-                " ${toAddress.masked()} with memo $memo") {
+        twigTask(
+            "creating transaction to spend $value zatoshi to" +
+                    " ${toAddress.masked()} with memo $memo"
+        ) {
             try {
-                ensureParams(paramDestinationDir)
-                twig("params exist at $paramDestinationDir! attempting to send...")
+                ensureParams((rustBackend as RustBackend).paramDestinationDir)
+                twig("params exist! attempting to send...")
                 rustBackend.createToAddress(
-                    fromAccountId,
-                    spendingKeyStore,
+                    fromAccountIndex,
+                    spendingKey,
                     toAddress,
                     value,
                     memo
@@ -277,9 +269,6 @@ class Wallet private constructor(
         return OkHttpClient()
     }
 
-
-    private fun String.toPath(): String = "$paramDestinationDir/$this"
-
     companion object {
         /**
          * The Url that is used by default in zcashd.
@@ -306,13 +295,18 @@ class Wallet private constructor(
          */
         fun loadBirthdayFromAssets(context: Context, birthdayHeight: Int? = null): WalletBirthday {
             val treeFiles =
-                context.assets.list(Wallet.BIRTHDAY_DIRECTORY)?.apply { sortDescending() }
+                context.assets.list(BIRTHDAY_DIRECTORY)?.apply { sortDescending() }
             if (treeFiles.isNullOrEmpty()) throw MissingBirthdayFilesException(BIRTHDAY_DIRECTORY)
+            val file: String
             try {
-                val file = treeFiles.first {
+                file = treeFiles.first() {
                     if (birthdayHeight == null) true
                     else it.contains(birthdayHeight.toString())
                 }
+            } catch (t: Throwable) {
+                throw BirthdayNotFoundException(BIRTHDAY_DIRECTORY, birthdayHeight)
+            }
+            try {
                 val reader = JsonReader(
                     InputStreamReader(context.assets.open("$BIRTHDAY_DIRECTORY/$file"))
                 )
@@ -374,4 +368,19 @@ class Wallet private constructor(
         val available: Long = -1
     )
 
+    //
+    // Key Management Interfaces
+    //
+
+    interface KeyManager: SeedProvider, SpendingKeyStore, SpendingKeyProvider
+    
+    interface SeedProvider {
+        val seed: ByteArray
+    }
+    interface SpendingKeyStore {
+        var key: String
+    }
+    interface SpendingKeyProvider {
+        val key: String
+    }
 }

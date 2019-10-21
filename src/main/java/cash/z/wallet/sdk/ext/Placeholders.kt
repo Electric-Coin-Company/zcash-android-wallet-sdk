@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Build
 import android.provider.Settings
+import cash.z.wallet.sdk.secure.Wallet
 import kotlin.properties.ReadOnlyProperty
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
@@ -23,9 +24,19 @@ class SampleSpendingKeyProvider(private val seedValue: String) : ReadWriteProper
 }
 
 @Deprecated(message = InsecureWarning.message)
-class SampleSeedProvider(val seedValue: String) : ReadOnlyProperty<Any?, ByteArray> {
+class SampleSeedProvider(val seed: ByteArray) : ReadOnlyProperty<Any?, ByteArray> {
+    constructor(seedValue: String) : this(seedValue.toByteArray())
     override fun getValue(thisRef: Any?, property: KProperty<*>): ByteArray {
-        return seedValue.toByteArray()
+        return seed
+    }
+}
+
+@Deprecated(message = InsecureWarning.message)
+class BlockingSeedProvider(val seed: ByteArray, val delay: Long = 5000L) : ReadOnlyProperty<Any?, ByteArray> {
+    constructor(seedValue: String, delayMillis: Long = 5000L) : this(seedValue.toByteArray(), delayMillis)
+    override fun getValue(thisRef: Any?, property: KProperty<*>): ByteArray {
+        Thread.sleep(delay)
+        return seed
     }
 }
 
@@ -39,6 +50,26 @@ class SimpleProvider<T>(var value: T) : ReadWriteProperty<Any?, T> {
         this.value = value
     }
 }
+
+@Deprecated(message = InsecureWarning.message)
+class BlockingProvider<T>(var value: T, val delay: Long = 5000L) : ReadWriteProperty<Any?, T> {
+    override fun getValue(thisRef: Any?, property: KProperty<*>): T {
+        Thread.sleep(delay)
+        return value
+    }
+
+    override fun setValue(thisRef: Any?, property: KProperty<*>, value: T) {
+        Thread.sleep(delay)
+        this.value = value
+    }
+}
+
+@Deprecated(message = InsecureWarning.message)
+class SampleKeyManager(val sampleSeed: ByteArray) : Wallet.KeyManager {
+    override lateinit var key: String
+    override val seed: ByteArray get() = sampleSeed
+}
+
 
 /**
  * This is intentionally insecure. Wallet makers have told us storing keys is their specialty so we don't put a lot of

@@ -241,14 +241,17 @@ class PersistentTransactionSender (
                     tx.rawTransactionId?.let {
                         ledger.findTransactionByRawId(tx.rawTransactionId)
                     }?.let {
-                        twig("matching transaction found! $tx")
-                        (manager as PersistentTransactionManager).manageMined(tx, it)
-                        refreshSentTransactions()
+                        if (it.minedHeight != null) {
+                            twig("matching mined transaction found! $tx")
+                            (manager as PersistentTransactionManager).manageMined(tx, it)
+                            refreshSentTransactions()
+                        }
                     }
                 }
             }
             twig("given current height $currentHeight, we found $pendingCount pending txs to submit")
         } catch (t: Throwable) {
+            t.printStackTrace()
             twig("Error during updatePendingTransactions: $t caused by ${t.cause}")
         }
     }

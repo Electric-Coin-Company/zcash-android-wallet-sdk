@@ -1,18 +1,82 @@
 package cash.z.wallet.sdk.data
 
+import android.content.Context
+import cash.z.wallet.sdk.block.CompactBlockDbStore
+import cash.z.wallet.sdk.block.CompactBlockDownloader
 import cash.z.wallet.sdk.block.CompactBlockProcessor
+import cash.z.wallet.sdk.block.CompactBlockProcessor.State.*
+import cash.z.wallet.sdk.block.CompactBlockStore
+import cash.z.wallet.sdk.data.Synchronizer.Status.*
 import cash.z.wallet.sdk.entity.ClearedTransaction
 import cash.z.wallet.sdk.entity.PendingTransaction
 import cash.z.wallet.sdk.entity.SentTransaction
 import cash.z.wallet.sdk.exception.SynchronizerException
 import cash.z.wallet.sdk.exception.WalletException
 import cash.z.wallet.sdk.secure.Wallet
+import cash.z.wallet.sdk.service.LightWalletGrpcService
+import cash.z.wallet.sdk.service.LightWalletService
 import kotlinx.coroutines.*
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.channels.ConflatedBroadcastChannel
 import kotlinx.coroutines.channels.ReceiveChannel
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlin.coroutines.CoroutineContext
 
+
+/**
+ * Constructor function for building a Synchronizer, given the bare minimum amount of information
+ * necessary to do so.
+ */
+@Suppress("FunctionName")
+fun Synchronizer(
+    appContext: Context,
+    lightwalletdHost: String,
+    keyManager: Wallet.KeyManager,
+    birthdayHeight: Int? = null
+): Synchronizer {
+    val wallet = Wallet().also {
+        val privateKeyMaybe = it.initialize(appContext, keyManager.seed, birthdayHeight)
+        if (privateKeyMaybe != null) keyManager.key = privateKeyMaybe[0]
+    }
+    return Synchronizer(
+        appContext,
+        wallet,
+        lightwalletdHost,
+        keyManager
+    )
+}
+
+/**
+ * Constructor function for building a Synchronizer in the most flexible way possible. This allows
+ * a wallet maker to customize any subcomponent of the Synchronzier.
+ */
+@Suppress("FunctionName")
+fun Synchronizer(
+    appContext: Context,
+    wallet: Wallet,
+    lightwalletdHost: String,
+    keyManager: Wallet.KeyManager,
+    ledger: TransactionRepository = PagedTransactionRepository(appContext),
+    manager: TransactionManager = PersistentTransactionManager(appContext),
+    service: LightWalletService = LightWalletGrpcService(appContext, lightwalletdHost),
+    sender: TransactionSender =  PersistentTransactionSender(manager, service, ledger),
+    blockStore: CompactBlockStore = CompactBlockDbStore(appContext),
+    downloader: CompactBlockDownloader = CompactBlockDownloader(service, blockStore),
+    processor: CompactBlockProcessor = CompactBlockProcessor(downloader, ledger, wallet.rustBackend),
+    encoder: TransactionEncoder = WalletTransactionEncoder(wallet, ledger, keyManager)
+): Synchronizer {
+    // ties everything together
+    return SdkSynchronizer(
+        wallet,
+        ledger,
+        sender,
+        processor,
+        encoder
+    )
+}
 /**
  * A synchronizer that attempts to remain operational, despite any number of errors that can occur. It acts as the glue
  * that ties all the pieces of the SDK together. Each component of the SDK is designed for the potential of stand-alone
@@ -20,7 +84,7 @@ import kotlin.coroutines.CoroutineContext
  * that demonstrates how all the pieces can be tied together. Its goal is to allow a developer to focus on their app
  * rather than the nuances of how Zcash works.
  *
- * @param wallet the component that wraps the JNI layer that interacts with the rust backend and manages wallet config.
+ * @param wallet An initialized wallet. This component wraps the rust backend and manages wallet config.
  * @param repository the component that exposes streams of wallet transaction information.
  * @param sender the component responsible for sending transactions to lightwalletd in order to spend funds.
  * @param processor the component that saves the downloaded compact blocks to the cache and then scans those blocks for
@@ -51,19 +115,17 @@ class SdkSynchronizer (
     //
 
     /**
-     * A property that is true while a connection to the lightwalletd server exists.
+     * Indicates the status of this Synchronizer. This implementation basically simplifies the
+     * status of the processor to focus only on the high level states that matter most.
      */
-    override val isConnected: Boolean get() = processor.isConnected
-
-    /**
-     * A property that is true while actively downloading blocks from lightwalletd.
-     */
-    override val isSyncing: Boolean get() = processor.isSyncing
-
-    /**
-     * A property that is true while actively scanning the cache of compact blocks for transactions.
-     */
-    override val isScanning: Boolean get() = processor.isScanning
+    override val status = processor.state.map {
+        when (it) {
+            is Synced -> SYNCED
+            is Stopped -> STOPPED
+            is Disconnected -> DISCONNECTED
+            else -> SYNCING
+        }
+    }
 
 
     //
@@ -99,7 +161,7 @@ class SdkSynchronizer (
     override var onCriticalErrorHandler: ((Throwable?) -> Boolean)? = null
 
     /**
-     * A callback to invoke whenver a processor error is encountered. Returning true signals that the error was handled
+     * A callback to invoke whenever a processor error is encountered. Returning true signals that the error was handled
      * and a retry attempt should be made, if possible. This callback is not called on the main thread so any UI work
      * would need to switch context to the main thread.
      */
@@ -132,12 +194,10 @@ class SdkSynchronizer (
 
         // TODO: this doesn't work as intended. Refactor to improve the cancellation behavior (i.e. what happens when one job fails) by making launchTransactionMonitor throw an exception
         coroutineScope.launch {
-            initWallet()
             startSender(this)
 
             launchProgressMonitor()
             launchPendingMonitor()
-            launchTransactionMonitor()
             onReady()
         }
         return this
@@ -149,24 +209,6 @@ class SdkSynchronizer (
     private fun startSender(parentScope: CoroutineScope) {
         sender.onSubmissionError = ::onFailedSend
         sender.start(parentScope)
-    }
-
-    /**
-     * Initialize the wallet, which involves populating data tables based on the latest state of the wallet.
-     */
-    private suspend fun initWallet() = withContext(IO) {
-        try {
-            wallet.initialize()
-        } catch (e: WalletException.AlreadyInitializedException) {
-            twig("Warning: wallet already initialized but this is safe to ignore " +
-                    "because the SDK automatically detects where to start downloading.")
-        } catch (f: WalletException.FalseStart) {
-            if (recoverFrom(f)) {
-                twig("Warning: had a wallet init error but we recovered!")
-            } else {
-                twig("Error: false start while initializing wallet!")
-            }
-        }
     }
 
     // TODO: this is a work in progress. We could take drastic measures to automatically recover from certain critical
@@ -186,9 +228,15 @@ class SdkSynchronizer (
      * was never previously started.
      */
     override fun stop() {
-        coroutineScope.cancel()
+        coroutineScope.launch {
+            processor.stop()
+            coroutineScope.cancel()
+        }
     }
 
+    fun clearData() {
+        wallet.clear()
+    }
 
     //
     // Monitors
@@ -223,19 +271,6 @@ class SdkSynchronizer (
         twig("done monitoring for pending changes and balance changes")
     }
 
-    private fun CoroutineScope.launchTransactionMonitor(): Job = launch {
-        ledger.monitorChanges(::onTransactionsChanged)
-    }
-
-    fun onTransactionsChanged() {
-        coroutineScope.launch {
-            twig("triggering a balance update because transactions have changed")
-            refreshBalance()
-            clearedChannel.send(ledger.getClearedTransactions())
-        }
-        twig("done handling changed transactions")
-    }
-
     suspend fun refreshBalance() = withContext(IO) {
         if (!balanceChannel.isClosedForSend) {
             balanceChannel.send(wallet.getBalanceInfo())
@@ -247,6 +282,10 @@ class SdkSynchronizer (
     private fun CoroutineScope.onReady() = launch(CoroutineExceptionHandler(::onCriticalError)) {
         twig("Synchronizer Ready. Starting processor!")
         processor.onErrorListener = ::onProcessorError
+        status.filter { it == SYNCED }.onEach {
+            twig("Triggering an automatic balance refresh since the processor is synced!")
+            refreshBalance()
+        }.launchIn(this)
         processor.start()
         twig("Synchronizer onReady complete. Processor start has exited!")
     }
@@ -270,8 +309,15 @@ class SdkSynchronizer (
 
     private fun onProcessorError(error: Throwable): Boolean {
         twig("ERROR while processing data: $error")
+        if (onProcessorErrorHandler == null) {
+            twig("WARNING: falling back to the default behavior for processor errors. To add" +
+                    " custom behavior, set synchronizer.onProcessorErrorHandler to" +
+                    " a non-null value")
+            return true
+        }
         return onProcessorErrorHandler?.invoke(error)?.also {
-            if (it) twig("processor error handler signaled that we should try again!")
+            twig("processor error handler signaled that we should " +
+                        "${if (it) "try again" else "abort"}!")
         } == true
     }
 

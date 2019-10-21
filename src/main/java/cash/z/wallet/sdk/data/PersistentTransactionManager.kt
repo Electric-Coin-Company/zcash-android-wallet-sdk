@@ -105,14 +105,11 @@ class PersistentTransactionManager(private val db: PendingTransactionDb) : Trans
     override suspend fun manageSubmission(service: LightWalletService, pendingTransaction: SignedTransaction) {
         var tx = pendingTransaction as PendingTransaction
         try {
-            twig("managing the preparation to submit transaction memo: ${tx.memo} amount: ${tx.value}")
+            twig("submitting transaction to lightwalletd - memo: ${tx.memo} amount: ${tx.value}")
             val response = service.submitTransaction(pendingTransaction.raw!!)
-            twig("management of submit transaction completed with response: ${response.errorCode}: ${response.errorMessage}")
-            tx = if (response.errorCode < 0) {
-                tx.copy(errorMessage = response.errorMessage, errorCode = response.errorCode)
-            } else {
-                tx.copy(errorMessage = null, errorCode = response.errorCode)
-            }
+            val error = response.errorCode < 0
+            twig("${if (error) "FAILURE! " else "SUCCESS!"} submit transaction completed with response: ${response.errorCode}: ${response.errorMessage}")
+            tx = tx.copy(errorMessage = if (error) response.errorMessage else null, errorCode = response.errorCode)
         } catch (t: Throwable) {
             twig("error while managing submitting transaction: ${t.message} caused by: ${t.cause}")
         } finally {
@@ -141,7 +138,7 @@ class PersistentTransactionManager(private val db: PendingTransactionDb) : Trans
 
     suspend fun manageMined(pendingTx: PendingTransaction, matchingMinedTx: Transaction) = withContext(IO) {
         twig("a pending transaction has been mined!")
-        val tx = pendingTx.copy(minedHeight = matchingMinedTx.minedHeight)
+        val tx = pendingTx.copy(minedHeight = matchingMinedTx.minedHeight!!)
         dao.insert(tx)
     }
 

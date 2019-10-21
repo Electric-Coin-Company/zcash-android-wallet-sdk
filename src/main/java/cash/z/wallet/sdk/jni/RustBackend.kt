@@ -4,31 +4,42 @@ import android.content.Context
 import cash.z.wallet.sdk.data.twig
 import cash.z.wallet.sdk.ext.ZcashSdk.OUTPUT_PARAM_FILE_NAME
 import cash.z.wallet.sdk.ext.ZcashSdk.SPEND_PARAM_FILE_NAME
+import java.io.File
 
 /**
  * Serves as the JNI boundary between the Kotlin and Rust layers. Functions in this class should
  * not be called directly by code outside of the SDK. Instead, one of the higher-level components
  * should be used such as Wallet.kt or CompactBlockProcessor.kt.
  */
-internal object RustBackend : RustBackendWelding {
+object RustBackend : RustBackendWelding {
     private var loaded = false
     private lateinit var dbDataPath: String
     private lateinit var dbCachePath: String
     lateinit var paramDestinationDir: String
 
+    /**
+     * Loads the library and initializes path variables. Although it is best to only call this
+     * function once, it is idempotent.
+     */
     override fun create(appContext: Context, dbCacheName: String, dbDataName: String): RustBackend {
         twig("Creating RustBackend") {
             // It is safe to call these things twice but not efficient. So we add a loose check and
             // ignore the fact that it's not thread-safe.
             if (!loaded) {
-                initLogs()
                 loadRustLibrary()
+                initLogs()
             }
             dbCachePath = appContext.getDatabasePath(dbCacheName).absolutePath
             dbDataPath = appContext.getDatabasePath(dbDataName).absolutePath
             paramDestinationDir = "${appContext.cacheDir.absolutePath}/params"
         }
         return this
+    }
+
+    fun clear() {
+        twig("Deleting databases")
+        File(dbCachePath).delete()
+        File(dbDataPath).delete()
     }
 
     /**
@@ -43,7 +54,6 @@ internal object RustBackend : RustBackendWelding {
             twig("Error while loading native library: ${e.message}")
         }
     }
-
 
     //
     // Wrapper Functions

@@ -2,6 +2,7 @@ package cash.z.wallet.sdk.block
 
 import androidx.annotation.VisibleForTesting
 import cash.z.wallet.sdk.annotation.OpenForTesting
+import cash.z.wallet.sdk.block.CompactBlockProcessor.State.*
 import cash.z.wallet.sdk.data.TransactionRepository
 import cash.z.wallet.sdk.data.Twig
 import cash.z.wallet.sdk.data.twig
@@ -15,12 +16,12 @@ import cash.z.wallet.sdk.ext.ZcashSdk.REWIND_DISTANCE
 import cash.z.wallet.sdk.ext.ZcashSdk.SAPLING_ACTIVATION_HEIGHT
 import cash.z.wallet.sdk.ext.retryUpTo
 import cash.z.wallet.sdk.ext.retryWithBackoff
-import cash.z.wallet.sdk.jni.RustBackend
 import cash.z.wallet.sdk.jni.RustBackendWelding
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.channels.ConflatedBroadcastChannel
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 import java.util.concurrent.atomic.AtomicInteger
@@ -37,15 +38,17 @@ import kotlin.math.roundToInt
 class CompactBlockProcessor(
     internal val downloader: CompactBlockDownloader,
     private val repository: TransactionRepository,
-    private val rustBackend: RustBackendWelding
+    private val rustBackend: RustBackendWelding,
+    minimumHeight: Int = SAPLING_ACTIVATION_HEIGHT
 ) {
     var onErrorListener: ((Throwable) -> Boolean)? = null
-    var isConnected: Boolean = false
-    var isSyncing: Boolean = false
-    var isScanning: Boolean = false
+
     private val progressChannel = ConflatedBroadcastChannel(0)
-    private var isStopped = false
     private val consecutiveChainErrors = AtomicInteger(0)
+    private val lowerBoundHeight: Int = max(SAPLING_ACTIVATION_HEIGHT, minimumHeight - MAX_REORG_SIZE)
+
+    private val _state: ConflatedBroadcastChannel<State> = ConflatedBroadcastChannel(Initialized)
+    val state = _state.asFlow()
 
     fun progress(): ReceiveChannel<Int> = progressChannel.openSubscription()
 
@@ -62,8 +65,6 @@ class CompactBlockProcessor(
                 val result = processNewBlocks()
                 // immediately process again after failures in order to download new blocks right away
                 if (result < 0) {
-                    isSyncing = false
-                    isScanning = false
                     consecutiveChainErrors.set(0)
                     twig("Successfully processed new blocks. Sleeping for ${POLL_INTERVAL}ms")
                     delay(POLL_INTERVAL)
@@ -77,16 +78,16 @@ class CompactBlockProcessor(
                     consecutiveChainErrors.getAndIncrement()
                 }
             }
-        } while (isActive && !isStopped)
+        } while (isActive && _state.value !is Stopped)
         twig("processor complete")
         stop()
     }
 
-    fun stop() {
-        isStopped = true
+    suspend fun stop() {
+        setState(Stopped)
     }
 
-    fun fail(error: Throwable) {
+    private suspend fun fail(error: Throwable) {
         stop()
         twig("${error.message}")
         throw error
@@ -103,27 +104,33 @@ class CompactBlockProcessor(
 
         // define ranges
         val latestBlockHeight = downloader.getLatestBlockHeight()
-        isConnected = true // no exception on downloader call
-        isSyncing = true
-        val lastDownloadedHeight = max(getLastDownloadedHeight(), SAPLING_ACTIVATION_HEIGHT - 1)
+        val lastDownloadedHeight = getLastDownloadedHeight()
         val lastScannedHeight = getLastScannedHeight()
+        val boundedLastDownloadedHeight = max(lastDownloadedHeight, lowerBoundHeight - 1)
 
-        twig("latestBlockHeight: $latestBlockHeight\tlastDownloadedHeight: $lastDownloadedHeight" +
-                "\tlastScannedHeight: $lastScannedHeight")
+        twig(
+            "latestBlockHeight: $latestBlockHeight\tlastDownloadedHeight: $lastDownloadedHeight" +
+                    "\tlastScannedHeight: $lastScannedHeight\tlowerBoundHeight: $lowerBoundHeight"
+        )
 
         // as long as the database has the sapling tree (like when it's initialized from a checkpoint) we can avoid
         // downloading earlier blocks so take the larger of these two numbers
-        val rangeToDownload = (max(lastDownloadedHeight, lastScannedHeight) + 1)..latestBlockHeight
+        val rangeToDownload = (max(boundedLastDownloadedHeight, lastScannedHeight) + 1)..latestBlockHeight
         val rangeToScan = (lastScannedHeight + 1)..latestBlockHeight
 
+        setState(Downloading)
         downloadNewBlocks(rangeToDownload)
-        val error = validateNewBlocks(rangeToScan)
+
+        setState(Validating)
+        var error = validateNewBlocks(rangeToScan)
         if (error < 0) {
             // in theory, a scan should not fail after validation succeeds but maybe consider
             // changing the rust layer to return the failed block height whenever scan does fail
             // rather than a boolean
+            setState(Scanning)
             val success = scanNewBlocks(rangeToScan)
             if (!success) throw CompactBlockProcessorException.FailedScan
+            else setState(Synced)
             -1
         } else {
             error
@@ -136,6 +143,7 @@ class CompactBlockProcessor(
         if (range.isEmpty()) {
             twig("no blocks to download")
         } else {
+            _state.send(Downloading)
             Twig.sprout("downloading")
             twig("downloading blocks in range $range")
 
@@ -181,9 +189,7 @@ class CompactBlockProcessor(
         }
         Twig.sprout("scanning")
         twig("scanning blocks in range $range")
-        isScanning = true
         val result = rustBackend.scanBlocks()
-        isScanning = false
         Twig.clip("scanning")
         return result
     }
@@ -196,15 +202,13 @@ class CompactBlockProcessor(
     }
 
     private fun onConnectionError(throwable: Throwable): Boolean {
-        isConnected = false
-        isSyncing = false
-        isScanning = false
+        _state.offer(Disconnected)
         return onErrorListener?.invoke(throwable) ?: true
     }
 
     private fun determineLowerBound(errorHeight: Int): Int {
         val offset = Math.min(MAX_REORG_SIZE, REWIND_DISTANCE * (consecutiveChainErrors.get() + 1))
-        return Math.max(errorHeight - offset, SAPLING_ACTIVATION_HEIGHT)
+        return Math.max(errorHeight - offset, lowerBoundHeight)
     }
 
     suspend fun getLastDownloadedHeight() = withContext(IO) {
@@ -213,5 +217,20 @@ class CompactBlockProcessor(
 
     suspend fun getLastScannedHeight() = withContext(IO) {
         repository.lastScannedHeight()
+    }
+
+    suspend fun setState(newState: State) {
+        _state.send(newState)
+    }
+
+    sealed class State {
+        interface Connected
+        object Downloading : Connected, State()
+        object Validating : Connected, State()
+        object Scanning : Connected, State()
+        object Synced : Connected, State()
+        object Disconnected : State()
+        object Stopped : State()
+        object Initialized : State()
     }
 }

@@ -17,26 +17,26 @@ import org.jetbrains.annotations.NotNull
     foreignKeys = [ForeignKey(
         entity = Block::class,
         parentColumns = ["height"],
-        childColumns = ["block"],
-        onDelete = ForeignKey.CASCADE
+        childColumns = ["block"]
     )]
 )
 data class Transaction(
     @ColumnInfo(name = "id_tx")
-    val id: Long,
+    val id: Long?,
 
     @ColumnInfo(typeAffinity = ColumnInfo.BLOB, name = "txid")
-    @NotNull
     val transactionId: ByteArray,
 
     @ColumnInfo(name = "tx_index")
-    val transactionIndex: Int,
+    val transactionIndex: Int?,
+
+    val created: String?,
 
     @ColumnInfo(name = "expiry_height")
-    val expiryHeight: Int,
+    val expiryHeight: Int?,
 
     @ColumnInfo(name = "block")
-    val minedHeight: Int,
+    val minedHeight: Int?,
 
     @ColumnInfo(typeAffinity = ColumnInfo.BLOB)
     val raw: ByteArray?
@@ -48,6 +48,7 @@ data class Transaction(
         if (id != other.id) return false
         if (!transactionId.contentEquals(other.transactionId)) return false
         if (transactionIndex != other.transactionIndex) return false
+        if (created != other.created) return false
         if (expiryHeight != other.expiryHeight) return false
         if (minedHeight != other.minedHeight) return false
         if (raw != null) {
@@ -61,12 +62,14 @@ data class Transaction(
     override fun hashCode(): Int {
         var result = id.hashCode()
         result = 31 * result + transactionId.contentHashCode()
-        result = 31 * result + transactionIndex
-        result = 31 * result + expiryHeight
-        result = 31 * result + minedHeight
+        result = 31 * result + (transactionIndex ?: 0)
+        result = 31 * result + (created?.hashCode() ?: 0)
+        result = 31 * result + (expiryHeight ?: 0)
+        result = 31 * result + (minedHeight ?: 0)
         result = 31 * result + (raw?.contentHashCode() ?: 0)
         return result
     }
+
 }
 
 @Entity(tableName = "pending_transactions")

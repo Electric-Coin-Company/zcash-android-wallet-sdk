@@ -25,4 +25,9 @@ interface LightWalletService {
      * Submit a raw transaction.
      */
     fun submitTransaction(spendTransaction: ByteArray): Service.SendResponse
+
+    /**
+     * Cleanup any connections when the service is shutting down and not going to be used again.
+     */
+    fun shutdown()
 }

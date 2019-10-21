@@ -1,5 +1,6 @@
 package cash.z.wallet.sdk.db
 
+import androidx.paging.DataSource
 import androidx.room.*
 import cash.z.wallet.sdk.entity.*
 import cash.z.wallet.sdk.entity.Transaction
@@ -97,7 +98,7 @@ interface TransactionDao {
         ORDER  BY block IS NOT NULL, height DESC, time DESC, txid DESC
         LIMIT  :limit
     """)
-    fun getSentTransactions(limit: Int = Int.MAX_VALUE): List<SentTransaction>
+    fun getSentTransactions(limit: Int = Int.MAX_VALUE): DataSource.Factory<Int, SentTransaction>
 
 
     /**
@@ -122,6 +123,6 @@ interface TransactionDao {
         ORDER  BY minedheight DESC, blocktimeinseconds DESC, id DESC
         LIMIT  :limit
     """)
-    fun getReceivedTransactions(limit: Int = Int.MAX_VALUE): List<ReceivedTransaction>
+    fun getReceivedTransactions(limit: Int = Int.MAX_VALUE): DataSource.Factory<Int, ReceivedTransaction>
 
 }
