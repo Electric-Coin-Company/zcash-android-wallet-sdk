@@ -1,3 +1,0 @@
-include ':app', ":sdk"
-project(":sdk").projectDir =  file("../../../zcash-android-wallet-sdk")
-rootProject.name='Zcash Memo'

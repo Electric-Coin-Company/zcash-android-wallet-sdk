@@ -1,0 +1,67 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+apply plugin: 'kotlin-android-extensions'
+apply plugin: 'kotlin-kapt'
+apply plugin: 'androidx.navigation.safeargs'
+
+android {
+    compileSdkVersion 29
+    buildToolsVersion "29.0.2"
+    viewBinding.enabled = true
+    defaultConfig {
+        applicationId "cash.z.wallet.sdk.demoapp"
+        minSdkVersion 21
+        targetSdkVersion 29
+        versionCode 1
+        versionName "1.0"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        missingDimensionStrategy "network", "zcashtestnet"
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+dependencies {
+    // SDK
+    implementation project(path: ':sdk')
+//    implementation "cash.z.android.wallet:zcash-android-testnet:$sdk_version@aar"
+
+    // SDK: grpc
+    implementation "io.grpc:grpc-okhttp:1.21.0"
+    implementation "io.grpc:grpc-protobuf-lite:1.21.0"
+    implementation "io.grpc:grpc-stub:1.21.0"
+    implementation "io.grpc:grpc-android:1.21.0"
+    implementation 'javax.annotation:javax.annotation-api:1.3.2'
+    // SDK: Room
+    implementation "androidx.room:room-runtime:2.2.0"
+    implementation "androidx.room:room-common:2.2.0"
+    implementation "androidx.paging:paging-runtime-ktx:2.1.0"
+    implementation 'com.google.guava:guava:27.0.1-android'
+    kapt "androidx.room:room-compiler:2.2.0"
+    // SDK: Other
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.3.2"
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.3.2"
+
+    // Android
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+    implementation 'androidx.appcompat:appcompat:1.1.0'
+    implementation 'androidx.core:core-ktx:1.1.0'
+    implementation 'androidx.legacy:legacy-support-v4:1.0.0'
+    implementation 'com.google.android.material:material:1.0.0'
+    implementation 'androidx.constraintlayout:constraintlayout:1.1.3'
+    implementation 'androidx.navigation:navigation-fragment:2.0.0'
+    implementation 'androidx.navigation:navigation-ui:2.0.0'
+    implementation 'androidx.lifecycle:lifecycle-extensions:2.1.0'
+    implementation 'androidx.navigation:navigation-fragment-ktx:2.0.0'
+    implementation 'androidx.navigation:navigation-ui-ktx:2.0.0'
+    testImplementation 'junit:junit:4.12'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.1'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
+    implementation "androidx.lifecycle:lifecycle-common-java8:2.2.0-beta01"
+    implementation "androidx.lifecycle:lifecycle-runtime-ktx:2.2.0-beta01" // provides lifecycleScope!
+
+}
