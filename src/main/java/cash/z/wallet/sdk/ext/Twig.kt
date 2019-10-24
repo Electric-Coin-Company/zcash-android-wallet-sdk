@@ -1,6 +1,5 @@
-package cash.z.wallet.sdk.data
+package cash.z.wallet.sdk.ext
 
-import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.CopyOnWriteArraySet
 
 internal typealias Leaf = String
@@ -97,7 +96,8 @@ open class TroubleshootingTwig(
  * Since there can only ever be one trunk on the bush of twigs, this class lets
  * you cheat and make that trunk be a bundle of twigs.
  */
-open class CompositeTwig(private val twigBundle: MutableList<Twig>) : Twig {
+open class CompositeTwig(private val twigBundle: MutableList<Twig>) :
+    Twig {
     override operator fun plus(twig: Twig): Twig {
         if (twig is CompositeTwig) twigBundle.addAll(twig.twigBundle) else twigBundle.add(twig); return this
     }

@@ -1,9 +1,9 @@
 package cash.z.wallet.sdk.secure
 
 import android.content.Context
-import cash.z.wallet.sdk.data.Bush
-import cash.z.wallet.sdk.data.twig
-import cash.z.wallet.sdk.data.twigTask
+import cash.z.wallet.sdk.ext.Bush
+import cash.z.wallet.sdk.ext.twig
+import cash.z.wallet.sdk.ext.twigTask
 import cash.z.wallet.sdk.exception.RustLayerException
 import cash.z.wallet.sdk.exception.WalletException
 import cash.z.wallet.sdk.exception.WalletException.*
@@ -169,10 +169,8 @@ class Wallet {
         memo: String = "",
         fromAccountIndex: Int = 0
     ): Long = withContext(IO) {
-        twigTask(
-            "creating transaction to spend $value zatoshi to" +
-                    " ${toAddress.masked()} with memo $memo"
-        ) {
+        twigTask("creating transaction to spend $value zatoshi to" +
+                " ${toAddress.masked()} with memo $memo") {
             try {
                 ensureParams((rustBackend as RustBackend).paramDestinationDir)
                 twig("params exist! attempting to send...")

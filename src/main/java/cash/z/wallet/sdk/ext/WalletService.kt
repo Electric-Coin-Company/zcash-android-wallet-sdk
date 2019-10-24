@@ -1,7 +1,6 @@
 package cash.z.wallet.sdk.ext
 
 import android.content.Context
-import cash.z.wallet.sdk.data.twig
 import cash.z.wallet.sdk.ext.ZcashSdk.MAX_BACKOFF_INTERVAL
 import kotlinx.coroutines.delay
 import java.io.File

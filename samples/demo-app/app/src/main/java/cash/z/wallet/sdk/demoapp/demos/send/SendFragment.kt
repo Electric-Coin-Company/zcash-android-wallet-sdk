@@ -4,8 +4,9 @@ import android.view.LayoutInflater
 import android.view.View
 import android.widget.Toast
 import androidx.lifecycle.coroutineScope
-import cash.z.wallet.sdk.data.SdkSynchronizer
-import cash.z.wallet.sdk.data.Synchronizer
+import androidx.lifecycle.lifecycleScope
+import cash.z.wallet.sdk.SdkSynchronizer
+import cash.z.wallet.sdk.Synchronizer
 import cash.z.wallet.sdk.demoapp.App
 import cash.z.wallet.sdk.demoapp.BaseDemoFragment
 import cash.z.wallet.sdk.demoapp.databinding.FragmentSendBinding

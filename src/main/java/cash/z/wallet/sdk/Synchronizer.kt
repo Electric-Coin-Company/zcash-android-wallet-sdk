@@ -1,4 +1,4 @@
-package cash.z.wallet.sdk.data
+package cash.z.wallet.sdk
 
 import cash.z.wallet.sdk.entity.ClearedTransaction
 import cash.z.wallet.sdk.entity.PendingTransaction

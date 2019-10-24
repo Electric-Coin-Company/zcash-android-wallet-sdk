@@ -1,4 +1,4 @@
-package cash.z.wallet.sdk.data
+package cash.z.wallet.sdk.transaction
 
 import android.content.Context
 import androidx.room.Room
@@ -8,6 +8,7 @@ import cash.z.wallet.sdk.db.PendingTransactionDb
 import cash.z.wallet.sdk.entity.PendingTransaction
 import cash.z.wallet.sdk.entity.Transaction
 import cash.z.wallet.sdk.ext.ZcashSdk.EXPIRY_OFFSET
+import cash.z.wallet.sdk.ext.twig
 import cash.z.wallet.sdk.service.LightWalletService
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.withContext

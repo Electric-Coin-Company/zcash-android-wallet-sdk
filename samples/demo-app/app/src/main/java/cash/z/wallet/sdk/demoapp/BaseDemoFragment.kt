@@ -7,8 +7,8 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.viewbinding.ViewBinding
-import cash.z.wallet.sdk.data.TroubleshootingTwig
-import cash.z.wallet.sdk.data.Twig
+import cash.z.wallet.sdk.ext.TroubleshootingTwig
+import cash.z.wallet.sdk.ext.Twig
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.withContext
 

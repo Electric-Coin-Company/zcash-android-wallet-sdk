@@ -1,11 +1,10 @@
 package cash.z.wallet.sdk.sample.demoapp
 
 import androidx.test.platform.app.InstrumentationRegistry
-import cash.z.wallet.sdk.data.*
+import cash.z.wallet.sdk.SdkSynchronizer
+import cash.z.wallet.sdk.transaction.*
 import cash.z.wallet.sdk.demoapp.util.SampleStorageBridge
-import cash.z.wallet.sdk.ext.ZcashSdk
-import cash.z.wallet.sdk.ext.convertZecToZatoshi
-import cash.z.wallet.sdk.ext.toZec
+import cash.z.wallet.sdk.ext.*
 import cash.z.wallet.sdk.secure.Wallet
 import cash.z.wallet.sdk.service.LightWalletGrpcService
 import kotlinx.coroutines.runBlocking

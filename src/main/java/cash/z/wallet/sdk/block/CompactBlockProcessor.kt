@@ -3,9 +3,9 @@ package cash.z.wallet.sdk.block
 import androidx.annotation.VisibleForTesting
 import cash.z.wallet.sdk.annotation.OpenForTesting
 import cash.z.wallet.sdk.block.CompactBlockProcessor.State.*
-import cash.z.wallet.sdk.data.TransactionRepository
-import cash.z.wallet.sdk.data.Twig
-import cash.z.wallet.sdk.data.twig
+import cash.z.wallet.sdk.transaction.TransactionRepository
+import cash.z.wallet.sdk.ext.Twig
+import cash.z.wallet.sdk.ext.twig
 import cash.z.wallet.sdk.exception.CompactBlockProcessorException
 import cash.z.wallet.sdk.ext.ZcashSdk.DOWNLOAD_BATCH_SIZE
 import cash.z.wallet.sdk.ext.ZcashSdk.MAX_BACKOFF_INTERVAL

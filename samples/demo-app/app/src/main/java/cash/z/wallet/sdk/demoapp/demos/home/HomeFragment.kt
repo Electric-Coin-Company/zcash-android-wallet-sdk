@@ -8,8 +8,7 @@ import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
-import androidx.navigation.fragment.NavHostFragment
-import cash.z.wallet.sdk.data.twig
+import cash.z.wallet.sdk.ext.twig
 import cash.z.wallet.sdk.demoapp.App
 import cash.z.wallet.sdk.demoapp.R
 import cash.z.wallet.sdk.ext.ZcashSdk

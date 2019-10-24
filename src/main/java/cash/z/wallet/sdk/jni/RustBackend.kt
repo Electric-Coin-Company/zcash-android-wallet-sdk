@@ -1,7 +1,7 @@
 package cash.z.wallet.sdk.jni
 
 import android.content.Context
-import cash.z.wallet.sdk.data.twig
+import cash.z.wallet.sdk.ext.twig
 import cash.z.wallet.sdk.ext.ZcashSdk.OUTPUT_PARAM_FILE_NAME
 import cash.z.wallet.sdk.ext.ZcashSdk.SPEND_PARAM_FILE_NAME
 import java.io.File

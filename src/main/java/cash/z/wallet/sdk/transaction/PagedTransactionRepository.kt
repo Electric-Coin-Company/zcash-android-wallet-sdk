@@ -1,4 +1,4 @@
-package cash.z.wallet.sdk.data
+package cash.z.wallet.sdk.transaction
 
 import android.content.Context
 import androidx.lifecycle.LifecycleOwner
@@ -13,6 +13,8 @@ import cash.z.wallet.sdk.db.TransactionDao
 import cash.z.wallet.sdk.entity.ClearedTransaction
 import cash.z.wallet.sdk.entity.Transaction
 import cash.z.wallet.sdk.ext.ZcashSdk
+import cash.z.wallet.sdk.ext.twig
+import cash.z.wallet.sdk.ext.twigTask
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.withContext
 

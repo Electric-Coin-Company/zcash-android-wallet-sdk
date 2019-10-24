@@ -1,8 +1,8 @@
 package cash.z.wallet.sdk.demoapp.demos.listtransactions
 
-import cash.z.wallet.sdk.data.PagedTransactionRepository
-import cash.z.wallet.sdk.data.Synchronizer
-import cash.z.wallet.sdk.data.TransactionRepository
+import cash.z.wallet.sdk.transaction.PagedTransactionRepository
+import cash.z.wallet.sdk.Synchronizer
+import cash.z.wallet.sdk.transaction.TransactionRepository
 import cash.z.wallet.sdk.demoapp.App
 import cash.z.wallet.sdk.demoapp.util.SampleStorageBridge
 import cash.z.wallet.sdk.secure.Wallet

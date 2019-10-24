@@ -5,11 +5,12 @@ import android.view.View
 import androidx.lifecycle.lifecycleScope
 import androidx.paging.PagedList
 import androidx.recyclerview.widget.LinearLayoutManager
-import cash.z.wallet.sdk.data.PagedTransactionRepository
-import cash.z.wallet.sdk.data.Synchronizer
+import cash.z.wallet.sdk.SdkSynchronizer
+import cash.z.wallet.sdk.Synchronizer
 import cash.z.wallet.sdk.demoapp.BaseDemoFragment
 import cash.z.wallet.sdk.demoapp.databinding.FragmentListTransactionsBinding
 import cash.z.wallet.sdk.entity.ReceivedTransaction
+import cash.z.wallet.sdk.transaction.PagedTransactionRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.flow.collect

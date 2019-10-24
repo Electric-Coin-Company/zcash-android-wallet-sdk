@@ -4,8 +4,7 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
-import cash.z.wallet.sdk.data.SignedTransaction
-import org.jetbrains.annotations.NotNull
+import cash.z.wallet.sdk.transaction.SignedTransaction
 
 
 //

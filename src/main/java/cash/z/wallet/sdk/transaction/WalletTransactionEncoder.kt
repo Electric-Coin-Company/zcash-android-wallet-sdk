@@ -1,4 +1,4 @@
-package cash.z.wallet.sdk.data
+package cash.z.wallet.sdk.transaction
 
 import cash.z.wallet.sdk.entity.EncodedTransaction
 import cash.z.wallet.sdk.exception.TransactionNotEncodedException

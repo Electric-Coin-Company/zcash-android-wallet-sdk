@@ -1,4 +1,4 @@
-package cash.z.wallet.sdk.data
+package cash.z.wallet.sdk
 
 import android.content.Context
 import cash.z.wallet.sdk.block.CompactBlockDbStore
@@ -6,15 +6,17 @@ import cash.z.wallet.sdk.block.CompactBlockDownloader
 import cash.z.wallet.sdk.block.CompactBlockProcessor
 import cash.z.wallet.sdk.block.CompactBlockProcessor.State.*
 import cash.z.wallet.sdk.block.CompactBlockStore
-import cash.z.wallet.sdk.data.Synchronizer.Status.*
+import cash.z.wallet.sdk.Synchronizer.Status.*
 import cash.z.wallet.sdk.entity.ClearedTransaction
 import cash.z.wallet.sdk.entity.PendingTransaction
 import cash.z.wallet.sdk.entity.SentTransaction
 import cash.z.wallet.sdk.exception.SynchronizerException
 import cash.z.wallet.sdk.exception.WalletException
+import cash.z.wallet.sdk.ext.twig
 import cash.z.wallet.sdk.secure.Wallet
 import cash.z.wallet.sdk.service.LightWalletGrpcService
 import cash.z.wallet.sdk.service.LightWalletService
+import cash.z.wallet.sdk.transaction.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.channels.ConflatedBroadcastChannel
@@ -65,7 +67,7 @@ fun Synchronizer(
     sender: TransactionSender =  PersistentTransactionSender(manager, service, ledger),
     blockStore: CompactBlockStore = CompactBlockDbStore(appContext),
     downloader: CompactBlockDownloader = CompactBlockDownloader(service, blockStore),
-    processor: CompactBlockProcessor = CompactBlockProcessor(downloader, ledger, wallet.rustBackend),
+    processor: CompactBlockProcessor = CompactBlockProcessor(downloader, ledger, wallet.rustBackend, wallet.lowerBoundHeight),
     encoder: TransactionEncoder = WalletTransactionEncoder(wallet, ledger, keyManager)
 ): Synchronizer {
     // ties everything together
@@ -310,14 +312,18 @@ class SdkSynchronizer (
     private fun onProcessorError(error: Throwable): Boolean {
         twig("ERROR while processing data: $error")
         if (onProcessorErrorHandler == null) {
-            twig("WARNING: falling back to the default behavior for processor errors. To add" +
-                    " custom behavior, set synchronizer.onProcessorErrorHandler to" +
-                    " a non-null value")
+            twig(
+                "WARNING: falling back to the default behavior for processor errors. To add" +
+                        " custom behavior, set synchronizer.onProcessorErrorHandler to" +
+                        " a non-null value"
+            )
             return true
         }
         return onProcessorErrorHandler?.invoke(error)?.also {
-            twig("processor error handler signaled that we should " +
-                        "${if (it) "try again" else "abort"}!")
+            twig(
+                "processor error handler signaled that we should " +
+                        "${if (it) "try again" else "abort"}!"
+            )
         } == true
     }
 
