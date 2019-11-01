@@ -6,5 +6,11 @@ interface TransactionEncoder {
     /**
      * Creates a signed transaction
      */
-    suspend fun create(zatoshi: Long, toAddress: String, memo: String = ""): EncodedTransaction
+    suspend fun createTransaction(
+        spendingKey: String,
+        zatoshi: Long,
+        toAddress: String,
+        memo: String,
+        fromAccountIndex: Int
+    ): EncodedTransaction
 }

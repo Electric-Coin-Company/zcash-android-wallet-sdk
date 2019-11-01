@@ -1,9 +1,9 @@
 package cash.z.wallet.sdk.jni
 
+import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
-import org.junit.BeforeClass
 import org.junit.Test
 
 class RustBackendTest {
@@ -43,7 +43,7 @@ class RustBackendTest {
     }
 
     companion object {
-        val rustBackend: RustBackendWelding = RustBackend.create(ApplicationProvider.getApplicationContext(), "rustTestCache.db", "rustTestData.db")
+        val rustBackend: RustBackendWelding = RustBackend.init(ApplicationProvider.getApplicationContext() as Context, "rustTest")
     }
 
 }

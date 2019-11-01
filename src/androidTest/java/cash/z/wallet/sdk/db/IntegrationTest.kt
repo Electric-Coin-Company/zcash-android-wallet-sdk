@@ -48,7 +48,7 @@ class IntegrationTest {
 
     @Test(timeout = 120_000L)
     fun testSync() = runBlocking<Unit> {
-        val rustBackend = RustBackend.create(context)
+        val rustBackend = RustBackend.init(context)
 
         val lightwalletService = LightWalletGrpcService(context,"192.168.1.134")
         val compactBlockStore = CompactBlockDbStore(context)

@@ -36,7 +36,7 @@ class BalancePrinterUtil {
     private val context = InstrumentationRegistry.getInstrumentation().context
     private val cacheDbName = "BalanceUtilCache.db"
     private val dataDbName = "BalanceUtilData.db"
-    private val rustBackend = RustBackend.create(context, cacheDbName, dataDbName)
+    private val rustBackend = RustBackend.init(context, cacheDbName, dataDbName)
 
     private val downloader = CompactBlockDownloader(
         LightWalletGrpcService(context, host),

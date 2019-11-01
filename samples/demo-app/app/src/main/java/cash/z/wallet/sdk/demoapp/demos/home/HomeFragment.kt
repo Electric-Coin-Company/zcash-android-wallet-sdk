@@ -36,7 +36,6 @@ class HomeFragment : Fragment() {
         super.onResume()
         twig("Visiting the home screen clears the default databases, for sanity sake, because " +
                 "each demo is intended to be self-contained.")
-        App.instance.getDatabasePath(ZcashSdk.DB_DATA_NAME).absoluteFile.delete()
-        App.instance.getDatabasePath(ZcashSdk.DB_CACHE_NAME).absoluteFile.delete()
+        App.instance.getDatabasePath("unusued.db").parentFile.listFiles().forEach { it.delete() }
     }
 }

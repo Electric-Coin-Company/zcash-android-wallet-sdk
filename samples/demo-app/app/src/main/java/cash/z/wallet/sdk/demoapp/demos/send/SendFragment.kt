@@ -3,68 +3,64 @@ package cash.z.wallet.sdk.demoapp.demos.send
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.Toast
-import androidx.lifecycle.coroutineScope
 import androidx.lifecycle.lifecycleScope
-import cash.z.wallet.sdk.SdkSynchronizer
+import cash.z.wallet.sdk.Initializer
 import cash.z.wallet.sdk.Synchronizer
+import cash.z.wallet.sdk.block.CompactBlockProcessor
 import cash.z.wallet.sdk.demoapp.App
 import cash.z.wallet.sdk.demoapp.BaseDemoFragment
 import cash.z.wallet.sdk.demoapp.databinding.FragmentSendBinding
 import cash.z.wallet.sdk.demoapp.util.SampleStorageBridge
-import cash.z.wallet.sdk.ext.convertZatoshiToZecString
-import cash.z.wallet.sdk.ext.convertZecToZatoshi
-import cash.z.wallet.sdk.ext.toZec
-import cash.z.wallet.sdk.secure.Wallet
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.channels.ReceiveChannel
-import kotlinx.coroutines.channels.filterNot
+import cash.z.wallet.sdk.entity.*
+import cash.z.wallet.sdk.ext.*
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
 class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
-    private val sampleSeed = App.instance.defaultConfig.seed
-    private val birthdayHeight: Int = App.instance.defaultConfig.birthdayHeight
-    private val host: String = App.instance.defaultConfig.host
+    private val config = App.instance.defaultConfig
+    private val initializer = Initializer(App.instance)
 
     private lateinit var synchronizer: Synchronizer
+    private lateinit var keyManager: SampleStorageBridge
 
     override fun inflateBinding(layoutInflater: LayoutInflater): FragmentSendBinding =
         FragmentSendBinding.inflate(layoutInflater)
 
     override fun resetInBackground() {
-        val keyManager = SampleStorageBridge().securelyStoreSeed(sampleSeed)
-        synchronizer =
-            Synchronizer(App.instance, host, keyManager, birthdayHeight)
+        val spendingKeys = initializer.new(config.seed)
+        keyManager = SampleStorageBridge().securelyStorePrivateKey(spendingKeys[0])
+        synchronizer = Synchronizer(App.instance, config.host, initializer.rustBackend)
     }
 
     override fun onResetComplete() {
-        lifecycle.coroutineScope.apply {
-            synchronizer.start(this)
-            launchProgressMonitor(synchronizer.progress())
-            launchBalanceMonitor(synchronizer.balances())
-        }
+        initSendUI()
+        startSynchronizer()
+        monitorStatus()
+    }
 
+    private fun initSendUI() {
         binding.buttonSend.setOnClickListener(::onSend)
     }
 
+    private fun startSynchronizer() {
+        lifecycleScope.apply {
+            synchronizer.start(this)
+        }
+    }
+
+    private fun monitorStatus() {
+        synchronizer.status.collectWith(lifecycleScope, ::onStatus)
+        synchronizer.progress.collectWith(lifecycleScope, ::onProgress)
+        synchronizer.balances.collectWith(lifecycleScope, ::onBalance)
+    }
+
+    private fun onStatus(status: Synchronizer.Status) {
+        binding.textStatus.text = "Status: $status"
+    }
+
     override fun onClear() {
-        // remove the stored databases
-        (synchronizer as SdkSynchronizer).clearData()
         synchronizer.stop()
-    }
-
-    private fun CoroutineScope.launchProgressMonitor(channel: ReceiveChannel<Int>) = launch {
-        for (i in channel) {
-            onProgress(i)
-        }
-    }
-
-    private fun CoroutineScope.launchBalanceMonitor(
-        channel: ReceiveChannel<Wallet.WalletBalance>
-    ) = launch {
-        val positiveBalances = channel.filterNot { it.total < 0 }
-        for (i in positiveBalances) {
-            onBalance(i)
-        }
+        initializer.clear()
     }
 
     private fun onProgress(i: Int) {
@@ -75,7 +71,7 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
         binding.textStatus.text = message
     }
 
-    private fun onBalance(balance: Wallet.WalletBalance) {
+    private fun onBalance(balance: CompactBlockProcessor.WalletBalance) {
         binding.textBalances.text = """
             Available balance: ${balance.available.convertZatoshiToZecString()}
             Total balance: ${balance.total.convertZatoshiToZecString()}
@@ -86,9 +82,23 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
 
     private fun onSend(unused: View) {
         // TODO: add input fields to the UI. Possibly, including a scanner for the address input
-        lifecycleScope.launch {
-            synchronizer.sendToAddress(0.001.toZec().convertZecToZatoshi(), "ztestsapling1fg82ar8y8whjfd52l0xcq0w3n7nn7cask2scp9rp27njeurr72ychvud57s9tu90fdqgwdt07lg", "Demo App Funds")
+        synchronizer.sendToAddress(
+            keyManager.key,
+            0.0024.toZec().convertZecToZatoshi(),
+            config.toAddress,
+            "Demo App Funds"
+        ).collectWith(lifecycleScope, ::onPendingTxUpdated)
+    }
+
+    private fun onPendingTxUpdated(pendingTransaction: PendingTransaction) {
+        val message = when {
+            pendingTransaction.isSubmitted() -> "Successfully submitted transaction!"
+            pendingTransaction.isMined() -> "Transaction Mined!"
+            pendingTransaction.isFailedEncoding() -> "ERROR: failed to encode transaction!"
+            pendingTransaction.isFailedSubmit() -> "ERROR: failed to submit transaction!"
+            pendingTransaction.isCreating() -> "Creating transaction!"
+            else -> "Transaction updated!".also { twig("Unhandled TX state: $pendingTransaction") }
         }
-        Toast.makeText(App.instance, "Sending funds...", Toast.LENGTH_SHORT).show()
+        Toast.makeText(App.instance, message, Toast.LENGTH_SHORT).show()
     }
 }

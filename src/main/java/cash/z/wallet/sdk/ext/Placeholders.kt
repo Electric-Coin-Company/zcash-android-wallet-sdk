@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Build
 import android.provider.Settings
-import cash.z.wallet.sdk.secure.Wallet
 import kotlin.properties.ReadOnlyProperty
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
@@ -63,12 +62,12 @@ class BlockingProvider<T>(var value: T, val delay: Long = 5000L) : ReadWriteProp
         this.value = value
     }
 }
-
-@Deprecated(message = InsecureWarning.message)
-class SampleKeyManager(val sampleSeed: ByteArray) : Wallet.KeyManager {
-    override lateinit var key: String
-    override val seed: ByteArray get() = sampleSeed
-}
+//
+//@Deprecated(message = InsecureWarning.message)
+//class SampleKeyManager(val sampleSeed: ByteArray) : Wallet.KeyManager {
+//    override lateinit var key: String
+//    override val seed: ByteArray get() = sampleSeed
+//}
 
 
 /**

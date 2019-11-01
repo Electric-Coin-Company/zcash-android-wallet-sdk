@@ -124,7 +124,7 @@ internal class CompactBlockProcessorTest {
         // then  we should rewind the default (10) blocks
         val expectedBlock = errorBlock - processor.config.rewindDistance
         processBlocks(100L)
-        verify(processor.downloader, atLeastOnce()).rewindTo(expectedBlock)
+        verify(processor.downloader, atLeastOnce()).rewindToHeight(expectedBlock)
         verify(rustBackend, atLeastOnce()).rewindToHeight("", expectedBlock)
         assertNotNull(processor)
     }

@@ -5,7 +5,6 @@ import cash.z.wallet.sdk.SdkSynchronizer
 import cash.z.wallet.sdk.transaction.*
 import cash.z.wallet.sdk.demoapp.util.SampleStorageBridge
 import cash.z.wallet.sdk.ext.*
-import cash.z.wallet.sdk.secure.Wallet
 import cash.z.wallet.sdk.service.LightWalletGrpcService
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -49,12 +48,12 @@ class SampleCodeTest {
     /////////////////////////////////////////////////////
     // Derive Extended Spending Key
     @Test fun deriveSpendingKey() {
-        val wallet = Wallet()
-        val privateKeys = wallet.initialize(context, seed)
-        assertNotNull("Wallet already existed.", privateKeys)
-
-        log("Spending Key: ${privateKeys?.get(0)}")
-        log("Address: ${wallet.getAddress()}")
+//        val wallet = Wallet()
+//        val privateKeys = wallet.initialize(context, seed)
+//        assertNotNull("Wallet already existed.", privateKeys)
+//
+//        log("Spending Key: ${privateKeys?.get(0)}")
+//        log("Address: ${wallet.getAddress()}")
     }
 
     /////////////////////////////////////////////////////
@@ -107,24 +106,24 @@ class SampleCodeTest {
     // ///////////////////////////////////////////////////
     // Create a signed transaction (with memo)
     @Test fun createTransaction() = runBlocking {
-        val wallet = Wallet()
-        val repository = PagedTransactionRepository(context)
-        val keyManager = SampleStorageBridge().securelyStoreSeed(seed)
-        val encoder = WalletTransactionEncoder(wallet, repository, keyManager)
-        val amount = 0.123.toZec().convertZecToZatoshi()
-        val address = "ztestsapling1tklsjr0wyw0d58f3p7wufvrj2cyfv6q6caumyueadq8qvqt8lda6v6tpx474rfru9y6u75u7qnw"
-        val memo = "Test Transaction"
-        val encodedTx = encoder.create(amount, address, memo ?: "")
+//        val wallet = Wallet()
+//        val repository = PagedTransactionRepository(context)
+//        val keyManager = SampleStorageBridge().securelyStoreSeed(seed)
+//        val encoder = WalletTransactionEncoder(wallet, repository, keyManager)
+//        val amount = 0.123.toZec().convertZecToZatoshi()
+//        val address = "ztestsapling1tklsjr0wyw0d58f3p7wufvrj2cyfv6q6caumyueadq8qvqt8lda6v6tpx474rfru9y6u75u7qnw"
+//        val memo = "Test Transaction"
+//        val encodedTx = encoder.create(amount, address, memo ?: "")
     }
 
     // ///////////////////////////////////////////////////
     // Create a signed transaction (with memo) and broadcast
     @Test fun submitTransaction() = runBlocking {
-        val amount = 0.123.toZec().convertZecToZatoshi()
-        val address = "ztestsapling1tklsjr0wyw0d58f3p7wufvrj2cyfv6q6caumyueadq8qvqt8lda6v6tpx474rfru9y6u75u7qnw"
-        val memo = "Test Transaction"
-        val transaction = synchronizer.sendToAddress(amount, address, memo)
-        log("transaction: $transaction")
+//        val amount = 0.123.toZec().convertZecToZatoshi()
+//        val address = "ztestsapling1tklsjr0wyw0d58f3p7wufvrj2cyfv6q6caumyueadq8qvqt8lda6v6tpx474rfru9y6u75u7qnw"
+//        val memo = "Test Transaction"
+//        val transaction = synchronizer.sendToAddress(amount, address, memo)
+//        log("transaction: $transaction")
     }
 
 

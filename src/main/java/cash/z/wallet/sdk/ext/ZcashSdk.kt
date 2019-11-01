@@ -31,7 +31,7 @@ object ZcashSdk {
 
     /**
      * The amount of blocks ahead of the current height where new transactions are set to expire. This value is controlled
-     * by the rust backend but it is helpful to know what it is set to and shdould be kept in sync.
+     * by the rust backend but it is helpful to know what it is set to and should be kept in sync.
      */
     const val EXPIRY_OFFSET = 20
 
@@ -68,8 +68,9 @@ object ZcashSdk {
      */
     const val LIGHTWALLETD_PORT = 9067
 
-    const val DB_DATA_NAME = "transactionData.db"
-    const val DB_CACHE_NAME = "compactBlockCache.db"
+    const val DB_DATA_NAME = "Data.db"
+    const val DB_CACHE_NAME = "Cache.db"
+    const val DEFAULT_DB_NAME_PREFIX = "ZcashSdk_"
 
     /**
      * File name for the sappling spend params
@@ -80,5 +81,12 @@ object ZcashSdk {
      * File name for the sapling output params
      */
     const val OUTPUT_PARAM_FILE_NAME = "sapling-output.params"
+
+    /**
+     * The Url that is used by default in zcashd.
+     * We'll want to make this externally configurable, rather than baking it into the SDK but
+     * this will do for now, since we're using a cloudfront URL that already redirects.
+     */
+    const val CLOUD_PARAM_DIR_URL = "https://z.cash/downloads/"
 
 }

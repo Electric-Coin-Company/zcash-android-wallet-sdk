@@ -2,7 +2,6 @@ package cash.z.wallet.sdk.demoapp.util
 
 import android.content.Context
 import cash.z.wallet.sdk.demoapp.App
-import cash.z.wallet.sdk.secure.Wallet
 
 
 @Deprecated(
@@ -31,28 +30,35 @@ class SampleStorage {
 
 /**
  * Simple demonstration of how to take existing code that securely stores data and bridge it into
- * the KeyManager interface. This class implements the interface by delegating to the storage
- * object. For demo purposes, we're using an insecure SampleStorage implementation but this can
- * easily be swapped for a true storage solution.
+ * the SDK. This class delegates to the storage object. For demo purposes, we're using an insecure
+ * SampleStorage implementation but this can easily be swapped for a truly secure storage solution.
  */
-class SampleStorageBridge(): Wallet.KeyManager {
-    private val KEY_SEED = "cash.z.wallet.sdk.demoapp.SEED"
-    private val KEY_PK = "cash.z.wallet.sdk.demoapp.PK"
+class SampleStorageBridge() {
     private val delegate = SampleStorage()
 
-    constructor(seed: ByteArray) : this() {
-        securelyStoreSeed(seed)
-    }
-
+    /**
+     * Just a sugar method to help with being explicit in sample code. We want to show developers
+     * our intention that they write simple bridges to secure storage components.
+     */
     fun securelyStoreSeed(seed: ByteArray): SampleStorageBridge {
         delegate.saveSensitiveBytes(KEY_SEED, seed)
         return this
     }
 
-    override val seed: ByteArray get() = delegate.loadSensitiveBytes(KEY_SEED)!!
-    override var key: String
-        get() = delegate.loadSensitiveString(KEY_PK)!!
-        set(value) {
-            delegate.saveSensitiveString(KEY_PK, value)
-        }
+    /**
+     * Just a sugar method to help with being explicit in sample code. We want to show developers
+     * our intention that they write simple bridges to secure storage components.
+     */
+    fun securelyStorePrivateKey(key: String): SampleStorageBridge {
+        delegate.saveSensitiveString(KEY_PK, key)
+        return this
+    }
+
+     val seed: ByteArray get() = delegate.loadSensitiveBytes(KEY_SEED)!!
+     val key get() = delegate.loadSensitiveString(KEY_PK)!!
+
+    companion object {
+        private const val KEY_SEED = "cash.z.wallet.sdk.demoapp.SEED"
+        private const val KEY_PK = "cash.z.wallet.sdk.demoapp.PK"
+    }
 }

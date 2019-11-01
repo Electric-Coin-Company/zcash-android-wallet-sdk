@@ -8,7 +8,7 @@ import androidx.room.ForeignKey
     tableName = "sent_notes",
     primaryKeys = ["id_note"],
     foreignKeys = [ForeignKey(
-        entity = Transaction::class,
+        entity = TransactionEntity::class,
         parentColumns = ["id_tx"],
         childColumns = ["tx"]
     ), ForeignKey(

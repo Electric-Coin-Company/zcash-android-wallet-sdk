@@ -3,10 +3,9 @@ package cash.z.wallet.sdk.block
 import androidx.annotation.VisibleForTesting
 import cash.z.wallet.sdk.annotation.OpenForTesting
 import cash.z.wallet.sdk.block.CompactBlockProcessor.State.*
-import cash.z.wallet.sdk.transaction.TransactionRepository
-import cash.z.wallet.sdk.ext.Twig
-import cash.z.wallet.sdk.ext.twig
 import cash.z.wallet.sdk.exception.CompactBlockProcessorException
+import cash.z.wallet.sdk.exception.RustLayerException
+import cash.z.wallet.sdk.ext.*
 import cash.z.wallet.sdk.ext.ZcashSdk.DOWNLOAD_BATCH_SIZE
 import cash.z.wallet.sdk.ext.ZcashSdk.MAX_BACKOFF_INTERVAL
 import cash.z.wallet.sdk.ext.ZcashSdk.MAX_REORG_SIZE
@@ -14,9 +13,9 @@ import cash.z.wallet.sdk.ext.ZcashSdk.POLL_INTERVAL
 import cash.z.wallet.sdk.ext.ZcashSdk.RETRIES
 import cash.z.wallet.sdk.ext.ZcashSdk.REWIND_DISTANCE
 import cash.z.wallet.sdk.ext.ZcashSdk.SAPLING_ACTIVATION_HEIGHT
-import cash.z.wallet.sdk.ext.retryUpTo
-import cash.z.wallet.sdk.ext.retryWithBackoff
+import cash.z.wallet.sdk.jni.RustBackend
 import cash.z.wallet.sdk.jni.RustBackendWelding
+import cash.z.wallet.sdk.transaction.TransactionRepository
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.channels.ConflatedBroadcastChannel
 import kotlinx.coroutines.channels.ReceiveChannel
@@ -43,14 +42,14 @@ class CompactBlockProcessor(
 ) {
     var onErrorListener: ((Throwable) -> Boolean)? = null
 
-    private val progressChannel = ConflatedBroadcastChannel(0)
     private val consecutiveChainErrors = AtomicInteger(0)
     private val lowerBoundHeight: Int = max(SAPLING_ACTIVATION_HEIGHT, minimumHeight - MAX_REORG_SIZE)
 
     private val _state: ConflatedBroadcastChannel<State> = ConflatedBroadcastChannel(Initialized)
-    val state = _state.asFlow()
+    private val _progress = ConflatedBroadcastChannel(0)
 
-    fun progress(): ReceiveChannel<Int> = progressChannel.openSubscription()
+    val state = _state.asFlow()
+    val progress = _progress.asFlow()
 
     /**
      * Download compact blocks, verify and scan them.
@@ -156,18 +155,18 @@ class CompactBlockProcessor(
             for (i in 1..batches) {
                 retryUpTo(RETRIES) {
                     val end = min(range.first + (i * DOWNLOAD_BATCH_SIZE), range.last + 1)
-                    twig("downloaded $downloadedBlockHeight..${(end - 1)} (batch $i of $batches)") {
+                    twig("downloaded $downloadedBlockHeight..${(end - 1)} (batch $i of $batches) into : ${(rustBackend as RustBackend).dbCachePath}") {
                         downloader.downloadBlockRange(downloadedBlockHeight until end)
                     }
                     progress = (i / batches.toFloat() * 100).roundToInt()
                     // only report during large downloads. TODO: allow for configuration of "large"
-                    progressChannel.send(progress)
+                    _progress.send(progress)
                     downloadedBlockHeight = end
                 }
             }
             Twig.clip("downloading")
         }
-        progressChannel.send(100)
+        _progress.send(100)
     }
 
     private fun validateNewBlocks(range: IntRange?): Int {
@@ -176,7 +175,7 @@ class CompactBlockProcessor(
             return -1
         }
         Twig.sprout("validating")
-        twig("validating blocks in range $range")
+        twig("validating blocks in range $range in db: ${(rustBackend as RustBackend).dbCachePath}")
         val result = rustBackend.validateCombinedChain()
         Twig.clip("validating")
         return result
@@ -198,7 +197,7 @@ class CompactBlockProcessor(
         val lowerBound = determineLowerBound(errorHeight)
         twig("handling chain error at $errorHeight by rewinding to block $lowerBound")
         rustBackend.rewindToHeight(lowerBound)
-        downloader.rewindTo(lowerBound)
+        downloader.rewindToHeight(lowerBound)
     }
 
     private fun onConnectionError(throwable: Throwable): Boolean {
@@ -219,18 +218,58 @@ class CompactBlockProcessor(
         repository.lastScannedHeight()
     }
 
+    suspend fun getAddress(accountId: Int) = withContext(IO) {
+        rustBackend.getAddress(accountId)
+    }
+
+    /**
+     * Calculates the latest balance info. Defaults to the first account.
+     *
+     * @param accountIndex the account to check for balance info.
+     */
+    suspend fun getBalanceInfo(accountIndex: Int = 0): WalletBalance = withContext(IO) {
+        twigTask("checking balance info") {
+            try {
+                val balanceTotal = rustBackend.getBalance(accountIndex)
+                twig("found total balance of: $balanceTotal")
+                val balanceAvailable = rustBackend.getVerifiedBalance(accountIndex)
+                twig("found available balance of: $balanceAvailable")
+                WalletBalance(balanceTotal, balanceAvailable)
+            } catch (t: Throwable) {
+                twig("failed to get balance due to $t")
+                throw RustLayerException.BalanceException(t)
+            }
+        }
+    }
+
     suspend fun setState(newState: State) {
         _state.send(newState)
     }
 
     sealed class State {
         interface Connected
-        object Downloading : Connected, State()
-        object Validating : Connected, State()
-        object Scanning : Connected, State()
+        interface Syncing
+        object Downloading : Connected, Syncing, State()
+        object Validating : Connected, Syncing, State()
+        object Scanning : Connected, Syncing, State()
         object Synced : Connected, State()
         object Disconnected : State()
         object Stopped : State()
         object Initialized : State()
     }
+
+    /**
+     * Data structure to hold the total and available balance of the wallet. This is what is
+     * received on the balance channel.
+     *
+     * @param total the total balance, ignoring funds that cannot be used.
+     * @param available the amount of funds that are available for use. Typical reasons that funds
+     * may be unavailable include fairly new transactions that do not have enough confirmations or
+     * notes that are tied up because we are awaiting change from a transaction. When a note has
+     * been spent, its change cannot be used until there are enough confirmations.
+     */
+    data class WalletBalance(
+        val total: Long = -1,
+        val available: Long = -1
+    )
 }

@@ -1,21 +1,14 @@
 package cash.z.wallet.sdk.jni
 
-import android.content.Context
-import cash.z.wallet.sdk.ext.ZcashSdk
-
 /**
  * Contract defining the exposed capabilities of the Rust backend.
  * This is what welds the SDK to the Rust layer.
  */
 interface RustBackendWelding {
 
-    fun create(
-        appContext: Context,
-        dbCacheName: String = ZcashSdk.DB_CACHE_NAME,
-        dbDataName: String = ZcashSdk.DB_DATA_NAME
-    ): RustBackendWelding
-
     fun initDataDb(): Boolean
+
+//    fun initAccountsTable(extfvks: Array<ByteArray>, numberOfAccounts: Int)
 
     fun initAccountsTable(seed: ByteArray, numberOfAccounts: Int): Array<String>
 
@@ -23,9 +16,9 @@ interface RustBackendWelding {
 
     fun getAddress(account: Int = 0): String
 
-    fun isValidShieldedAddress(addr: String): Boolean
+    fun isValidShieldedAddr(addr: String): Boolean
 
-    fun isValidTransparentAddress(addr: String): Boolean
+    fun isValidTransparentAddr(addr: String): Boolean
 
     fun getBalance(account: Int = 0): Long
 
@@ -49,4 +42,9 @@ interface RustBackendWelding {
         memo: String
     ): Long
 
+    fun deriveSpendingKeys(seed: ByteArray, numberOfAccounts: Int = 1): Array<String>
+
+    fun deriveViewingKeys(seed: ByteArray, numberOfAccounts: Int = 1): Array<String>
+
+    fun deriveViewingKey(spendingKey: String): String
 }

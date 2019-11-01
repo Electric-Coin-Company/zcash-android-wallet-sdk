@@ -196,6 +196,7 @@ dependencies {
     // Architecture Components: Room
     implementation "androidx.room:room-runtime:${versions.architectureComponents.room}"
     implementation "androidx.room:room-common:${versions.architectureComponents.room}"
+    implementation "androidx.room:room-ktx:${versions.architectureComponents.room}"
     implementation "androidx.paging:paging-runtime-ktx:${versions.architectureComponents.paging}"
     kapt "androidx.room:room-compiler:${versions.architectureComponents.room}"
 

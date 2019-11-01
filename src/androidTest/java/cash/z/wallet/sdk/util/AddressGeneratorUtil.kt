@@ -23,7 +23,7 @@ class AddressGeneratorUtil {
 
     private val dataDbName = "AddressUtilData.db"
     private val context = InstrumentationRegistry.getInstrumentation().context
-    private val rustBackend = RustBackend.create(context)
+    private val rustBackend = RustBackend.init(context)
 
     private lateinit var wallet: Wallet
 

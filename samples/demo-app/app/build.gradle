@@ -23,12 +23,17 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
+    compileOptions {
+        sourceCompatibility 1.8
+        targetCompatibility 1.8
+    }
 }
 
 dependencies {
     // SDK
     implementation project(path: ':sdk')
-//    implementation "cash.z.android.wallet:zcash-android-testnet:$sdk_version@aar"
+//    implementation "cash.z.android.wallet:zcash-android-core:$sdk_version@aar"
+//    implementation "cash.z.android.wallet:zcash-kotlin-bip39:$sdk_version@aar"
 
     // SDK: grpc
     implementation "io.grpc:grpc-okhttp:1.21.0"
@@ -39,6 +44,7 @@ dependencies {
     // SDK: Room
     implementation "androidx.room:room-runtime:2.2.0"
     implementation "androidx.room:room-common:2.2.0"
+    implementation "androidx.room:room-ktx:2.2.0"
     implementation "androidx.paging:paging-runtime-ktx:2.1.0"
     implementation 'com.google.guava:guava:27.0.1-android'
     kapt "androidx.room:room-compiler:2.2.0"

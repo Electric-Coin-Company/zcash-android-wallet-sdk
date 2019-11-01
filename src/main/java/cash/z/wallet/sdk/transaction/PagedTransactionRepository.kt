@@ -1,20 +1,17 @@
 package cash.z.wallet.sdk.transaction
 
 import android.content.Context
-import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.Observer
 import androidx.paging.PagedList
-import androidx.paging.toLiveData
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import cash.z.wallet.sdk.db.BlockDao
 import cash.z.wallet.sdk.db.DerivedDataDb
 import cash.z.wallet.sdk.db.TransactionDao
-import cash.z.wallet.sdk.entity.ClearedTransaction
-import cash.z.wallet.sdk.entity.Transaction
+import cash.z.wallet.sdk.entity.TransactionEntity
 import cash.z.wallet.sdk.ext.ZcashSdk
+import cash.z.wallet.sdk.ext.android.toFlowPagedList
+import cash.z.wallet.sdk.ext.android.toRefreshable
 import cash.z.wallet.sdk.ext.twig
-import cash.z.wallet.sdk.ext.twigTask
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.withContext
 
@@ -46,25 +43,20 @@ open class PagedTransactionRepository(
 
     private val blocks: BlockDao = derivedDataDb.blockDao()
     private val transactions: TransactionDao = derivedDataDb.transactionDao()
-    private val transactionLivePagedList =
-        transactions.getReceivedTransactions().toLiveData(pageSize)
+    private val receivedTxDataSourceFactory = transactions.getReceivedTransactions().toRefreshable()
+    private val sentTxDataSourceFactory = transactions.getSentTransactions().toRefreshable()
+    private val allTxDataSourceFactory = transactions.getAllTransactions().toRefreshable()
 
-    /**
-     * The primary function of this repository. Callers to this method receive a [PagedList]
-     * snapshot of the current data source that can then be queried by page, via the normal [List]
-     * API. Meaning, the details of the paging behavior, including caching and pre-fetch are handled
-     * automatically. This integrates directly with the RecyclerView for seamless display of a large
-     * number of transactions.
-     */
-    fun setTransactionPageListener(
-        lifecycleOwner: LifecycleOwner,
-        listener: (PagedList<out ClearedTransaction>) -> Unit
-    ) {
-        transactionLivePagedList.removeObservers(lifecycleOwner)
-        transactionLivePagedList.observe(lifecycleOwner, Observer { transactions ->
-            listener(transactions)
-        })
-    }
+
+    //
+    // TransactionRepository API
+    //
+
+    override val receivedTransactions = receivedTxDataSourceFactory.toFlowPagedList(pageSize)
+    override val sentTransactions = sentTxDataSourceFactory.toFlowPagedList(pageSize)
+    override val allTransactions = allTxDataSourceFactory.toFlowPagedList(pageSize)
+
+    override fun invalidate() = receivedTxDataSourceFactory.refresh()
 
     override fun lastScannedHeight(): Int {
         return blocks.lastScannedHeight()
@@ -74,21 +66,15 @@ open class PagedTransactionRepository(
         return blocks.count() > 0
     }
 
-    override suspend fun findTransactionById(txId: Long): Transaction? = withContext(IO) {
+    override suspend fun findTransactionById(txId: Long): TransactionEntity? = withContext(IO) {
         twig("finding transaction with id $txId on thread ${Thread.currentThread().name}")
         val transaction = transactions.findById(txId)
         twig("found ${transaction?.id}")
         transaction
     }
 
-    override suspend fun findTransactionByRawId(rawTxId: ByteArray): Transaction? = withContext(IO) {
+    override suspend fun findTransactionByRawId(rawTxId: ByteArray): TransactionEntity? = withContext(IO) {
         transactions.findByRawId(rawTxId)
-    }
-
-    override suspend fun deleteTransactionById(txId: Long) = withContext(IO) {
-        twigTask("deleting transaction with id $txId") {
-            transactions.deleteById(txId)
-        }
     }
 
     fun close() {
