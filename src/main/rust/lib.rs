@@ -381,7 +381,7 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_createToAddress(
     extsk: JString<'_>,
     to: JString<'_>,
     value: jlong,
-    memo: JString<'_>,
+    memo: jbyteArray,
     spend_params: JString<'_>,
     output_params: JString<'_>,
 ) -> jlong {
@@ -398,7 +398,7 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_createToAddress(
         if value.is_negative() {
             return Err(format_err!("Amount is negative"));
         }
-        let memo = utils::java_string_to_rust(&env, memo);
+        let memo_bytes = env.convert_byte_array(memo).unwrap();
         let spend_params = utils::java_string_to_rust(&env, spend_params);
         let output_params = utils::java_string_to_rust(&env, output_params);
 
@@ -419,7 +419,7 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_createToAddress(
             }
         };
 
-        let memo = Memo::from_str(&memo);
+        let memo = Memo::from_bytes(&memo_bytes);
 
         let prover = LocalTxProver::new(Path::new(&spend_params), Path::new(&output_params));
 

@@ -64,7 +64,7 @@ class PersistentTransactionManager(
         var tx = PendingTransactionEntity(
             value = zatoshiValue,
             toAddress = toAddress,
-            memo = memo,
+            memo = memo.toByteArray(),
             accountIndex = fromAccountIndex
         )
         try {
@@ -110,7 +110,7 @@ class PersistentTransactionManager(
                 spendingKey,
                 tx.value,
                 tx.toAddress,
-                tx.memo ?: "",
+                tx.memo,
                 tx.accountIndex
             )
             twig("successfully encoded transaction for ${tx.memo}!!")

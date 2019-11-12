@@ -10,7 +10,7 @@ interface TransactionEncoder {
         spendingKey: String,
         zatoshi: Long,
         toAddress: String,
-        memo: String,
-        fromAccountIndex: Int
+        memo: ByteArray? = byteArrayOf(),
+        fromAccountIndex: Int = 0
     ): EncodedTransaction
 }

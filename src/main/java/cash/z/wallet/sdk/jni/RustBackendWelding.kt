@@ -39,7 +39,7 @@ interface RustBackendWelding {
         extsk: String,
         to: String,
         value: Long,
-        memo: String
+        memo: ByteArray? = byteArrayOf()
     ): Long
 
     fun deriveSpendingKeys(seed: ByteArray, numberOfAccounts: Int = 1): Array<String>

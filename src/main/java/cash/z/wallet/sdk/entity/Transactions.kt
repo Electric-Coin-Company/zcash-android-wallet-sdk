@@ -75,7 +75,7 @@ data class PendingTransactionEntity(
     override val id: Long = 0,
     override val toAddress: String = "",
     override val value: Long = -1,
-    override val memo: String? = null,
+    override val memo: ByteArray? = byteArrayOf(),
     override val accountIndex: Int,
     override val minedHeight: Int = -1,
     override val expiryHeight: Int = -1,
@@ -88,11 +88,10 @@ data class PendingTransactionEntity(
     override val createTime: Long = System.currentTimeMillis(),
 
     @ColumnInfo(typeAffinity = ColumnInfo.BLOB)
-    override val raw: ByteArray = ByteArray(0),
+    override val raw: ByteArray = byteArrayOf(),
     @ColumnInfo(typeAffinity = ColumnInfo.BLOB)
-    override val rawTransactionId: ByteArray? = null
+    override val rawTransactionId: ByteArray? = byteArrayOf()
 ) : PendingTransaction {
-
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is PendingTransactionEntity) return false
@@ -100,7 +99,10 @@ data class PendingTransactionEntity(
         if (id != other.id) return false
         if (toAddress != other.toAddress) return false
         if (value != other.value) return false
-        if (memo != other.memo) return false
+        if (memo != null) {
+            if (other.memo == null) return false
+            if (!memo.contentEquals(other.memo)) return false
+        } else if (other.memo != null) return false
         if (accountIndex != other.accountIndex) return false
         if (minedHeight != other.minedHeight) return false
         if (expiryHeight != other.expiryHeight) return false
@@ -123,7 +125,7 @@ data class PendingTransactionEntity(
         var result = id.hashCode()
         result = 31 * result + toAddress.hashCode()
         result = 31 * result + value.hashCode()
-        result = 31 * result + (memo?.hashCode() ?: 0)
+        result = 31 * result + (memo?.contentHashCode() ?: 0)
         result = 31 * result + accountIndex
         result = 31 * result + minedHeight
         result = 31 * result + expiryHeight
@@ -137,6 +139,7 @@ data class PendingTransactionEntity(
         result = 31 * result + (rawTransactionId?.contentHashCode() ?: 0)
         return result
     }
+
 }
 
 
@@ -152,7 +155,7 @@ data class PendingTransactionEntity(
 data class ConfirmedTransaction(
     override val id: Long = 0L,
     override val value: Long = 0L,
-    override val memo: ByteArray? = null,
+    override val memo: ByteArray? = ByteArray(0),
     override val noteId: Long = 0L,
     override val blockTimeInSeconds: Long = 0L,
     override val minedHeight: Int = -1,

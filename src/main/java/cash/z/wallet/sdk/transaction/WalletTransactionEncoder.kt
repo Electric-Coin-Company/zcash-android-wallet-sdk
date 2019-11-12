@@ -27,7 +27,7 @@ class WalletTransactionEncoder(
         spendingKey: String,
         zatoshi: Long,
         toAddress: String,
-        memo: String,
+        memo: ByteArray?,
         fromAccountIndex: Int
     ): EncodedTransaction = withContext(IO) {
         val transactionId = createSpend(spendingKey, zatoshi, toAddress, memo)
@@ -53,7 +53,7 @@ class WalletTransactionEncoder(
         spendingKey: String,
         value: Long,
         toAddress: String,
-        memo: String = "",
+        memo: ByteArray? = byteArrayOf(),
         fromAccountIndex: Int = 0
     ): Long = withContext(IO) {
         twigTask("creating transaction to spend $value zatoshi to" +

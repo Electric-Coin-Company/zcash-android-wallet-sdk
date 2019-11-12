@@ -101,14 +101,14 @@ class RustBackend : RustBackendWelding {
         extsk: String,
         to: String,
         value: Long,
-        memo: String
+        memo: ByteArray?
     ): Long = createToAddress(
         dbDataPath,
         account,
         extsk,
         to,
         value,
-        memo,
+        memo ?: ByteArray(0),
         "${paramDestinationDir}/$SPEND_PARAM_FILE_NAME",
         "${paramDestinationDir}/$OUTPUT_PARAM_FILE_NAME"
     )
@@ -215,17 +215,6 @@ class RustBackend : RustBackendWelding {
         ): Long
 
         @JvmStatic private external fun initLogs()
-
-    private external fun createToAddress(
-        dbDataPath: String,
-        account: Int,
-        extsk: String,
-        to: String,
-        value: Long,
-        memo: String,
-        spendParamsPath: String,
-        outputParamsPath: String
-    ): Long
 
         @JvmStatic private external fun deriveExtendedSpendingKeys(seed: ByteArray, numberOfAccounts: Int): Array<String>
 

@@ -37,8 +37,7 @@ class RustBackendTest {
             0,
             "dummykey",
             "ztestsapling1fg82ar8y8whjfd52l0xcq0w3n7nn7cask2scp9rp27njeurr72ychvud57s9tu90fdqgwdt07lg",
-            210_000,
-            ""
+            210_000
         )
     }
 
