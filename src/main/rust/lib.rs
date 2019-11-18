@@ -16,7 +16,10 @@ use std::path::Path;
 use std::ptr;
 use zcash_client_backend::{
     constants::SAPLING_CONSENSUS_BRANCH_ID,
-    encoding::{decode_extended_spending_key, encode_extended_spending_key},
+    encoding::{
+        decode_extended_spending_key, encode_extended_full_viewing_key,
+        encode_extended_spending_key,
+    },
     keys::spending_key,
 };
 use zcash_client_sqlite::{
@@ -32,18 +35,23 @@ use zcash_client_sqlite::{
     transact::create_to_address,
 };
 use zcash_primitives::{
-    block::BlockHash, note_encryption::Memo, transaction::components::Amount,
-    zip32::ExtendedFullViewingKey,
+    block::BlockHash,
+    note_encryption::Memo,
+    transaction::components::Amount,
+    zip32::{ExtendedFullViewingKey, ExtendedSpendingKey},
 };
 use zcash_proofs::prover::LocalTxProver;
 
 use crate::utils::exception::unwrap_exc_or;
 
 #[cfg(feature = "mainnet")]
-use zcash_client_backend::constants::mainnet::HRP_SAPLING_EXTENDED_SPENDING_KEY;
-
+use zcash_client_backend::constants::mainnet::{
+    HRP_SAPLING_EXTENDED_FULL_VIEWING_KEY, HRP_SAPLING_EXTENDED_SPENDING_KEY,
+};
 #[cfg(not(feature = "mainnet"))]
-use zcash_client_backend::constants::testnet::HRP_SAPLING_EXTENDED_SPENDING_KEY;
+use zcash_client_backend::constants::testnet::{
+    HRP_SAPLING_EXTENDED_FULL_VIEWING_KEY, HRP_SAPLING_EXTENDED_SPENDING_KEY,
+};
 
 #[no_mangle]
 pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_initLogs(
@@ -51,7 +59,7 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_initLogs(
     _: JClass<'_>,
 ) {
     android_logger::init_once(
-        Filter::default().with_min_level(Level::Trace),
+        Filter::default().with_min_level(Level::Debug),
         Some("cash.z.rust.logs"),
     );
 
@@ -121,6 +129,112 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_initAccountsTabl
 }
 
 #[no_mangle]
+pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_deriveExtendedSpendingKeys(
+    env: JNIEnv<'_>,
+    _: JClass<'_>,
+    seed: jbyteArray,
+    accounts: jint,
+) -> jobjectArray {
+    let res = panic::catch_unwind(|| {
+        let seed = env.convert_byte_array(seed).unwrap();
+        let accounts = if accounts > 0 {
+            accounts as u32
+        } else {
+            return Err(format_err!("accounts argument must be greater than zero"));
+        };
+
+        let extsks: Vec<_> = (0..accounts)
+            .map(|account| spending_key(&seed, 1, account))
+            .collect();
+
+        Ok(utils::rust_vec_to_java(
+            &env,
+            extsks,
+            "java/lang/String",
+            |env, extsk| {
+                env.new_string(encode_extended_spending_key(
+                    HRP_SAPLING_EXTENDED_SPENDING_KEY,
+                    &extsk,
+                ))
+            },
+            |env| env.new_string(""),
+        ))
+    });
+    unwrap_exc_or(&env, res, ptr::null_mut())
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_deriveExtendedFullViewingKeys(
+    env: JNIEnv<'_>,
+    _: JClass<'_>,
+    seed: jbyteArray,
+    accounts: jint,
+) -> jobjectArray {
+    let res = panic::catch_unwind(|| {
+        let seed = env.convert_byte_array(seed).unwrap();
+        let accounts = if accounts > 0 {
+            accounts as u32
+        } else {
+            return Err(format_err!("accounts argument must be greater than zero"));
+        };
+
+        let extfvks: Vec<_> = (0..accounts)
+            .map(|account| ExtendedFullViewingKey::from(&spending_key(&seed, 1, account)))
+            .collect();
+
+        Ok(utils::rust_vec_to_java(
+            &env,
+            extfvks,
+            "java/lang/String",
+            |env, extfvk| {
+                env.new_string(encode_extended_full_viewing_key(
+                    HRP_SAPLING_EXTENDED_FULL_VIEWING_KEY,
+                    &extfvk,
+                ))
+            },
+            |env| env.new_string(""),
+        ))
+    });
+    unwrap_exc_or(&env, res, ptr::null_mut())
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_deriveExtendedFullViewingKey(
+    env: JNIEnv<'_>,
+    _: JClass<'_>,
+    extsk_string: JString<'_>,
+) -> jobjectArray {
+    let res = panic::catch_unwind(|| {
+        let extsk_string = utils::java_string_to_rust(&env, extsk_string);
+        let extfvk = match decode_extended_spending_key(
+            HRP_SAPLING_EXTENDED_SPENDING_KEY,
+            &extsk_string,
+        ) {
+            Ok(Some(extsk)) => ExtendedFullViewingKey::from(&extsk),
+            Ok(None) => {
+                return Err(format_err!("Deriving viewing key from spending key returned no results. Encoding was valid but type was incorrect."));
+            }
+            Err(e) => {
+                return Err(format_err!(
+                    "Error while deriving viewing key from spending key: {}",
+                    e
+                ));
+            }
+        };
+
+        let output = env
+            .new_string(encode_extended_full_viewing_key(
+                HRP_SAPLING_EXTENDED_FULL_VIEWING_KEY,
+                &extfvk,
+            ))
+            .expect("Couldn't create Java string!");
+
+        Ok(output.into_inner())
+    });
+    unwrap_exc_or(&env, res, ptr::null_mut())
+}
+
+#[no_mangle]
 pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_initBlocksTable(
     env: JNIEnv<'_>,
     _: JClass<'_>,
@@ -145,6 +259,7 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_initBlocksTable(
         let sapling_tree =
             hex::decode(utils::java_string_to_rust(&env, sapling_tree_string)).unwrap();
 
+        debug!("initializing blocks table with height {}", height);
         match init_blocks_table(&db_data, height, hash, time, &sapling_tree) {
             Ok(()) => Ok(JNI_TRUE),
             Err(e) => Err(format_err!("Error while initializing blocks table: {}", e)),
@@ -394,7 +509,8 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_createToAddress(
         };
         let extsk = utils::java_string_to_rust(&env, extsk);
         let to = utils::java_string_to_rust(&env, to);
-        let value = Amount::from_i64(value).map_err(|()| format_err!("Invalid amount, out of range"))?;
+        let value =
+            Amount::from_i64(value).map_err(|()| format_err!("Invalid amount, out of range"))?;
         if value.is_negative() {
             return Err(format_err!("Amount is negative"));
         }
