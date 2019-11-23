@@ -1,7 +1,6 @@
 package cash.z.wallet.sdk
 
 import android.content.Context
-import androidx.paging.PagedList
 import cash.z.wallet.sdk.Synchronizer.Status.*
 import cash.z.wallet.sdk.block.CompactBlockDbStore
 import cash.z.wallet.sdk.block.CompactBlockDownloader
@@ -254,16 +253,19 @@ class SdkSynchronizer internal constructor(
         // TODO: this would be the place to clear out any stale pending transactions. Remove filter
         //  logic and then delete any pending transaction with sufficient confirmations (all in one
         //  db transaction).
-        manager.getAll().first().filter { !it.isMined() }.forEach { pendingTx ->
-            twig("checking for updates on pendingTx id: ${pendingTx.id}")
-            pendingTx.rawTransactionId?.let { rawId ->
-                ledger.findMinedHeight(rawId)?.let { minedHeight ->
-                    twig("found matching transaction for pending transaction with id" +
-                            " ${pendingTx.id} mined at height ${minedHeight}!")
-                    manager.applyMinedHeight(pendingTx, minedHeight)
+        manager.getAll().first().filter { it.isSubmitSuccess() && !it.isMined() }
+            .forEach { pendingTx ->
+                twig("checking for updates on pendingTx id: ${pendingTx.id}")
+                pendingTx.rawTransactionId?.let { rawId ->
+                    ledger.findMinedHeight(rawId)?.let { minedHeight ->
+                        twig(
+                            "found matching transaction for pending transaction with id" +
+                                    " ${pendingTx.id} mined at height ${minedHeight}!"
+                        )
+                        manager.applyMinedHeight(pendingTx, minedHeight)
+                    }
                 }
             }
-        }
     }
 
 
@@ -287,13 +289,15 @@ class SdkSynchronizer internal constructor(
         manager.initSpend(zatoshi, toAddress, memo, fromAccountIndex).let { placeHolderTx ->
             emit(placeHolderTx)
             manager.encode(spendingKey, placeHolderTx).let { encodedTx ->
-                manager.submit(encodedTx)
+                if (!encodedTx.isFailedEncoding() && !encodedTx.isCancelled()) {
+                    manager.submit(encodedTx)
+                }
             }
         }
     }.flatMapLatest {
-        twig("Monitoring pending transaction for updates...")
+        twig("Monitoring pending transaction (id: ${it.id}) for updates...")
         manager.monitorById(it.id)
-    }
+    }.distinctUntilChanged()
 }
 
 

@@ -2,19 +2,18 @@ package cash.z.wallet.sdk.demoapp.demos.send
 
 import android.view.LayoutInflater
 import android.view.View
-import android.widget.Toast
+import android.widget.TextView
 import androidx.lifecycle.lifecycleScope
 import cash.z.wallet.sdk.Initializer
 import cash.z.wallet.sdk.Synchronizer
 import cash.z.wallet.sdk.block.CompactBlockProcessor
 import cash.z.wallet.sdk.demoapp.App
 import cash.z.wallet.sdk.demoapp.BaseDemoFragment
+import cash.z.wallet.sdk.demoapp.R
 import cash.z.wallet.sdk.demoapp.databinding.FragmentSendBinding
 import cash.z.wallet.sdk.demoapp.util.SampleStorageBridge
 import cash.z.wallet.sdk.entity.*
 import cash.z.wallet.sdk.ext.*
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.launch
 
 class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
     private val config = App.instance.defaultConfig
@@ -22,6 +21,36 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
 
     private lateinit var synchronizer: Synchronizer
     private lateinit var keyManager: SampleStorageBridge
+
+    private lateinit var amountInput: TextView
+    private lateinit var addressInput: TextView
+
+
+    //
+    // Observable properties (done without livedata or flows for simplicity)
+    //
+
+    private var availableBalance = -1L
+        set(value) {
+            field = value
+            onUpdateSendButton()
+        }
+    private var isSending = false
+        set(value) {
+            field = value
+            if (value) Twig.sprout("Sending") else Twig.clip("Sending")
+            onUpdateSendButton()
+        }
+    private var isSyncing = true
+        set(value) {
+            field = value
+            onUpdateSendButton()
+        }
+
+
+    //
+    // BaseDemoFragment overrides
+    //
 
     override fun inflateBinding(layoutInflater: LayoutInflater): FragmentSendBinding =
         FragmentSendBinding.inflate(layoutInflater)
@@ -32,13 +61,30 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
         synchronizer = Synchronizer(App.instance, config.host, initializer.rustBackend)
     }
 
+    // STARTING POINT
     override fun onResetComplete() {
-        initSendUI()
+        initSendUi()
         startSynchronizer()
-        monitorStatus()
+        monitorChanges()
     }
 
-    private fun initSendUI() {
+    override fun onClear() {
+        synchronizer.stop()
+        initializer.clear()
+    }
+
+
+    //
+    // Private functions
+    //
+
+    private fun initSendUi() {
+        amountInput = binding.root.findViewById<TextView>(R.id.input_amount).apply {
+            text = config.sendAmount.toString()
+        }
+        addressInput = binding.root.findViewById<TextView>(R.id.input_address).apply {
+            text = config.toAddress
+        }
         binding.buttonSend.setOnClickListener(::onSend)
     }
 
@@ -48,7 +94,7 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
         }
     }
 
-    private fun monitorStatus() {
+    private fun monitorChanges() {
         synchronizer.status.collectWith(lifecycleScope, ::onStatus)
         synchronizer.progress.collectWith(lifecycleScope, ::onProgress)
         synchronizer.balances.collectWith(lifecycleScope, ::onBalance)
@@ -56,11 +102,12 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
 
     private fun onStatus(status: Synchronizer.Status) {
         binding.textStatus.text = "Status: $status"
-    }
-
-    override fun onClear() {
-        synchronizer.stop()
-        initializer.clear()
+        if (status == Synchronizer.Status.SYNCING) {
+            isSyncing = true
+            binding.textBalance.text = "Calculating balance..."
+        } else {
+            isSyncing = false
+        }
     }
 
     private fun onProgress(i: Int) {
@@ -69,39 +116,69 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
             else -> "Downloading blocks...$i%"
         }
         binding.textStatus.text = message
+        binding.textBalance.text = ""
     }
 
     private fun onBalance(balance: CompactBlockProcessor.WalletBalance) {
-        binding.textBalances.text = """
+        availableBalance = balance.available
+        binding.textBalance.text = """
             Available balance: ${balance.available.convertZatoshiToZecString()}
             Total balance: ${balance.total.convertZatoshiToZecString()}
         """.trimIndent()
-        binding.buttonSend.isEnabled = balance.available > 0
-        binding.textStatus.text = "Synced!"
     }
 
     private fun onSend(unused: View) {
-        // TODO: add input fields to the UI. Possibly, including a scanner for the address input
+        isSending = true
+        val amount = amountInput.text.toString().toDouble().convertZecToZatoshi()
+        val toAddress = addressInput.text.toString()
         synchronizer.sendToAddress(
             keyManager.key,
-            0.0024.toZec().convertZecToZatoshi(),
-            config.toAddress,
+            amount,
+            toAddress,
             "Demo App Funds"
         ).collectWith(lifecycleScope, ::onPendingTxUpdated)
     }
 
     private fun onPendingTxUpdated(pendingTransaction: PendingTransaction?) {
+        val id = pendingTransaction?.id ?: -1
         val message = when {
             pendingTransaction == null -> "Transaction not found"
-            pendingTransaction.isMined() -> "Transaction Mined!"
-            pendingTransaction.isSubmitted() -> "Successfully submitted transaction!"
-            pendingTransaction.isFailedEncoding() -> "ERROR: failed to encode transaction!"
-            pendingTransaction.isFailedSubmit() -> "ERROR: failed to submit transaction!"
-            pendingTransaction.isCreated() -> "Transaction creation complete!"
-            pendingTransaction.isCreating() -> "Creating transaction!"
+            pendingTransaction.isMined() -> "Transaction Mined (id: $id)!\n\nSEND COMPLETE".also { isSending = false }
+            pendingTransaction.isSubmitSuccess() -> "Successfully submitted transaction!\nAwaiting confirmation..."
+            pendingTransaction.isFailedEncoding() -> "ERROR: failed to encode transaction! (id: $id)".also { isSending = false }
+            pendingTransaction.isFailedSubmit() -> "ERROR: failed to submit transaction! (id: $id)".also { isSending = false }
+            pendingTransaction.isCreated() -> "Transaction creation complete! (id: $id)"
+            pendingTransaction.isCreating() -> "Creating transaction!".also { onResetInfo() }
             else -> "Transaction updated!".also { twig("Unhandled TX state: $pendingTransaction") }
         }
-        twig("PENDING TX: $message")
-        Toast.makeText(App.instance, message, Toast.LENGTH_SHORT).show()
+        twig("Pending TX Updated: $message")
+        binding.textInfo.apply {
+            text = "$text\n$message"
+        }
     }
+
+    private fun onUpdateSendButton() {
+        with(binding.buttonSend) {
+            when {
+                isSending -> {
+                    text = "➡ sending"
+                    isEnabled = false
+                }
+                isSyncing -> {
+                    text = "⌛ syncing"
+                    isEnabled = false
+                }
+                availableBalance <= 0 -> isEnabled = false
+                else -> {
+                    text = "send"
+                    isEnabled = true
+                }
+            }
+        }
+    }
+
+    private fun onResetInfo() {
+        binding.textInfo.text = "Active Transaction:"
+    }
+
 }

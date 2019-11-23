@@ -142,6 +142,15 @@ inline fun Double?.toZec(decimals: Int = ZEC_FORMATTER.maximumFractionDigits): B
 }
 
 /**
+ * Format a Double Zec value as a Long Zatoshi value, by first converting to Zec with the given
+ * precision.
+ * Start with Zec -> End with Zatoshi.
+ */
+inline fun Double?.convertZecToZatoshi(decimals: Int = ZEC_FORMATTER.maximumFractionDigits): Long {
+    return this.toZec(decimals).convertZecToZatoshi()
+}
+
+/**
  * Format a BigDecimal Zec value as a BigDecimal Zec value, right-padded to the given number of fraction digits.
  * Start with Zec -> End with Zec.
  */

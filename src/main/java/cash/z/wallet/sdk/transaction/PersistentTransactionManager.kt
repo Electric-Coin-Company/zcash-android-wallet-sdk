@@ -1,8 +1,6 @@
 package cash.z.wallet.sdk.transaction
 
 import android.content.Context
-import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.Observer
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import cash.z.wallet.sdk.db.PendingTransactionDao
@@ -15,6 +13,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import java.lang.IllegalStateException
 import kotlin.math.max
 
 /**
@@ -134,14 +133,14 @@ class PersistentTransactionManager(
     }
 
     override suspend fun submit(pendingTx: PendingTransaction): PendingTransaction = withContext(Dispatchers.IO) {
-        var tx1 = pendingTransactionDao { findById(pendingTx.id) }
-        if(tx1 == null) twig("unable to find transaction for id: ${pendingTx.id}")
-        var tx = tx1!!
+        // reload the tx to check for cancellation
+        var storedTx = pendingTransactionDao { findById(pendingTx.id) } ?: throw IllegalStateException("Error while submitting transaction. No pending transaction found that matches the one being submitted. Verify that the transaction still exists among the set of pending transactions.")
+        var tx = storedTx
         try {
             // do nothing when cancelled
             if (!tx.isCancelled()) {
                 twig("submitting transaction to lightwalletd - memo: ${tx.memo} amount: ${tx.value}")
-                val response = service.submitTransaction(tx.raw!!)
+                val response = service.submitTransaction(tx.raw)
                 val error = response.errorCode < 0
                 twig("${if (error) "FAILURE! " else "SUCCESS!"} submit transaction completed with response: ${response.errorCode}: ${response.errorMessage}")
                 tx = tx.copy(
