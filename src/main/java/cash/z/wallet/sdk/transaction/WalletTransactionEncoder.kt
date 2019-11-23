@@ -1,6 +1,5 @@
 package cash.z.wallet.sdk.transaction
 
-import cash.z.wallet.sdk.Initializer
 import cash.z.wallet.sdk.entity.EncodedTransaction
 import cash.z.wallet.sdk.exception.TransactionEncoderException
 import cash.z.wallet.sdk.ext.*
@@ -31,11 +30,8 @@ class WalletTransactionEncoder(
         fromAccountIndex: Int
     ): EncodedTransaction = withContext(IO) {
         val transactionId = createSpend(spendingKey, zatoshi, toAddress, memo)
-        val transaction = repository.findTransactionById(transactionId)
+        repository.findEncodedTransactionById(transactionId)
             ?: throw TransactionEncoderException.TransactionNotFoundException(transactionId)
-        EncodedTransaction(transaction.transactionId, transaction.raw
-            ?: throw TransactionEncoderException.TransactionNotEncodedException(transactionId)
-        )
     }
 
     /**

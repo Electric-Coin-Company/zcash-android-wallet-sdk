@@ -90,15 +90,18 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
         ).collectWith(lifecycleScope, ::onPendingTxUpdated)
     }
 
-    private fun onPendingTxUpdated(pendingTransaction: PendingTransaction) {
+    private fun onPendingTxUpdated(pendingTransaction: PendingTransaction?) {
         val message = when {
-            pendingTransaction.isSubmitted() -> "Successfully submitted transaction!"
+            pendingTransaction == null -> "Transaction not found"
             pendingTransaction.isMined() -> "Transaction Mined!"
+            pendingTransaction.isSubmitted() -> "Successfully submitted transaction!"
             pendingTransaction.isFailedEncoding() -> "ERROR: failed to encode transaction!"
             pendingTransaction.isFailedSubmit() -> "ERROR: failed to submit transaction!"
+            pendingTransaction.isCreated() -> "Transaction creation complete!"
             pendingTransaction.isCreating() -> "Creating transaction!"
             else -> "Transaction updated!".also { twig("Unhandled TX state: $pendingTransaction") }
         }
+        twig("PENDING TX: $message")
         Toast.makeText(App.instance, message, Toast.LENGTH_SHORT).show()
     }
 }

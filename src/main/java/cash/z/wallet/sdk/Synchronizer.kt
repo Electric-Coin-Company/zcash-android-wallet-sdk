@@ -61,15 +61,10 @@ interface Synchronizer {
     /* Transactions */
 
     /**
-     * All transactions of every type.
-     */
-    val allTransactions: Flow<PagedList<Transaction>>
-
-    /**
      * A flow of all the outbound pending transaction that have been sent but are awaiting
      * confirmations.
      */
-    val pendingTransactions: Flow<PagedList<PendingTransaction>>
+    val pendingTransactions: Flow<List<PendingTransaction>>
 
     /**
      * A flow of all the transactions that are on the blockchain.
@@ -114,7 +109,7 @@ interface Synchronizer {
         toAddress: String,
         memo: String = "",
         fromAccountIndex: Int = 0
-    ): Flow<PendingTransaction>
+    ): Flow<PendingTransaction?>
 
     /**
      * Attempts to cancel a transaction that is about to be sent. Typically, cancellation is only

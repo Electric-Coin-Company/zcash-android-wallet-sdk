@@ -1,5 +1,6 @@
 package cash.z.wallet.sdk.transaction
 
+import cash.z.wallet.sdk.entity.ConfirmedTransaction
 import cash.z.wallet.sdk.entity.PendingTransaction
 import kotlinx.coroutines.flow.Flow
 
@@ -9,14 +10,16 @@ import kotlinx.coroutines.flow.Flow
  * transactions through to completion.
  */
 interface OutboundTransactionManager {
-    fun initSpend(
+    suspend fun initSpend(
         zatoshi: Long,
         toAddress: String,
         memo: String,
         fromAccountIndex: Int
-    ): Flow<PendingTransaction>
-    fun encode(spendingKey: String, pendingTx: PendingTransaction): Flow<PendingTransaction>
-    fun submit(pendingTx: PendingTransaction): Flow<PendingTransaction>
+    ): PendingTransaction
+    suspend fun encode(spendingKey: String, pendingTx: PendingTransaction): PendingTransaction
+    suspend fun submit(pendingTx: PendingTransaction): PendingTransaction
+    suspend fun applyMinedHeight(pendingTx: PendingTransaction, minedHeight: Int)
+    suspend fun monitorById(id: Long): Flow<PendingTransaction>
 
     /**
      * Attempt to cancel a transaction.
@@ -24,7 +27,7 @@ interface OutboundTransactionManager {
      * @return true when the transaction was able to be cancelled.
      */
     suspend fun cancel(pendingTx: PendingTransaction): Boolean
-    suspend fun getAll(): List<PendingTransaction>
+    fun getAll(): Flow<List<PendingTransaction>>
 }
 
 interface TransactionError {

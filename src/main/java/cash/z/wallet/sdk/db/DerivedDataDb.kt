@@ -1,10 +1,11 @@
 package cash.z.wallet.sdk.db
 
 import androidx.paging.DataSource
-import androidx.paging.PositionalDataSource
-import androidx.room.*
+import androidx.room.Dao
+import androidx.room.Database
+import androidx.room.Query
+import androidx.room.RoomDatabase
 import cash.z.wallet.sdk.entity.*
-import cash.z.wallet.sdk.entity.Transaction
 
 //
 // Database
@@ -62,11 +63,21 @@ interface TransactionDao {
     @Query("SELECT COUNT(block) FROM transactions WHERE block IS NULL")
     fun countUnmined(): Int
 
-    @Query("SELECT * FROM transactions WHERE id_tx = :id")
-    fun findById(id: Long): TransactionEntity?
+    @Query("""
+        SELECT transactions.txid AS txId, 
+               transactions.raw  AS raw 
+        FROM   transactions
+        WHERE  id_tx = :id AND raw is not null
+        """)
+    fun findEncodedTransactionById(id: Long): EncodedTransaction?
 
-    @Query("SELECT * FROM transactions WHERE txid = :rawTransactionId LIMIT 1")
-    fun findByRawId(rawTransactionId: ByteArray): TransactionEntity?
+    @Query("""
+        SELECT transactions.block
+        FROM   transactions 
+        WHERE  txid = :rawTransactionId
+        LIMIT  1 
+    """)
+    fun findMinedHeight(rawTransactionId: ByteArray): Int?
 
 //    @Delete
 //    fun delete(transaction: Transaction)

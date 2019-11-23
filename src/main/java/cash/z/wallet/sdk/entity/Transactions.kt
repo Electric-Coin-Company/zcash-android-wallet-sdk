@@ -297,6 +297,10 @@ fun PendingTransaction.isCreating(): Boolean {
     return (raw?.isEmpty() != false) && submitAttempts <= 0 && !isFailedSubmit() && !isFailedEncoding()
 }
 
+fun PendingTransaction.isCreated(): Boolean {
+    return (raw?.isEmpty() == false) && submitAttempts <= 0 && !isFailedSubmit() && !isFailedEncoding()
+}
+
 fun PendingTransaction.isFailedEncoding(): Boolean {
     return (raw?.isEmpty() != false) && encodeAttempts > 0
 }

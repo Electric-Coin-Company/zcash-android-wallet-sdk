@@ -1,6 +1,8 @@
 package cash.z.wallet.sdk.transaction
 
 import android.content.Context
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.Observer
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import cash.z.wallet.sdk.db.PendingTransactionDao
@@ -8,10 +10,11 @@ import cash.z.wallet.sdk.db.PendingTransactionDb
 import cash.z.wallet.sdk.entity.*
 import cash.z.wallet.sdk.ext.twig
 import cash.z.wallet.sdk.service.LightWalletService
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import kotlin.math.max
 
 /**
@@ -54,12 +57,12 @@ class PersistentTransactionManager(
      * Initialize a [PendingTransaction] and then insert it in the database for monitoring and
      * follow-up.
      */
-    override fun initSpend(
+    override suspend fun initSpend(
         zatoshiValue: Long,
         toAddress: String,
         memo: String,
         fromAccountIndex: Int
-    ): Flow<PendingTransaction> = flow {
+    ): PendingTransaction = withContext(Dispatchers.IO) {
         twig("constructing a placeholder transaction")
         var tx = PendingTransactionEntity(
             value = zatoshiValue,
@@ -80,12 +83,14 @@ class PersistentTransactionManager(
             twig("Unknown error while attempting to create pending transaction: ${t.message} caused by: ${t.cause}")
         }
 
-        emit(tx)
+        tx
     }
 
-    suspend fun manageMined(pendingTx: PendingTransactionEntity, matchingMinedTx: TransactionEntity) {
-        twig("a pending transaction has been mined!")
-        safeUpdate(pendingTx.copy(minedHeight = matchingMinedTx.minedHeight!!))
+    override suspend fun applyMinedHeight(pendingTx: PendingTransaction, minedHeight: Int) {
+        (pendingTx as? PendingTransactionEntity)?.let {
+            twig("a pending transaction has been mined!")
+            safeUpdate(pendingTx.copy(minedHeight = minedHeight))
+        }
     }
 
     /**
@@ -97,10 +102,10 @@ class PersistentTransactionManager(
         }
     }
 
-    override fun encode(
+    override suspend fun encode(
         spendingKey: String,
         pendingTx: PendingTransaction
-    ): Flow<PendingTransaction> = flow {
+    ): PendingTransaction = withContext(Dispatchers.IO) {
         twig("managing the creation of a transaction")
         //var tx = transaction.copy(expiryHeight = if (currentHeight == -1) -1 else currentHeight + EXPIRY_OFFSET)
         var tx = pendingTx as PendingTransactionEntity
@@ -125,10 +130,10 @@ class PersistentTransactionManager(
         }
         safeUpdate(tx)
 
-        emit(tx)
+        tx
     }
 
-    override fun submit(pendingTx: PendingTransaction): Flow<PendingTransaction> = flow {
+    override suspend fun submit(pendingTx: PendingTransaction): PendingTransaction = withContext(Dispatchers.IO) {
         var tx1 = pendingTransactionDao { findById(pendingTx.id) }
         if(tx1 == null) twig("unable to find transaction for id: ${pendingTx.id}")
         var tx = tx1!!
@@ -157,7 +162,11 @@ class PersistentTransactionManager(
             safeUpdate(tx)
         }
 
-        emit(tx)
+        tx
+    }
+
+    override suspend fun monitorById(id: Long): Flow<PendingTransaction> {
+        return pendingTransactionDao { monitorById(id) }
     }
 
     override suspend fun cancel(pendingTx: PendingTransaction): Boolean {
@@ -172,7 +181,7 @@ class PersistentTransactionManager(
         }
     }
 
-    override suspend fun getAll(): List<PendingTransaction> = pendingTransactionDao { getAll() }
+    override fun getAll() = _dao.getAll()
 
     /**
      * Updating the pending transaction is often done at the end of a function but still should

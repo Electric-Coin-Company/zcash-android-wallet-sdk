@@ -7,6 +7,8 @@ import androidx.room.RoomDatabase
 import cash.z.wallet.sdk.db.BlockDao
 import cash.z.wallet.sdk.db.DerivedDataDb
 import cash.z.wallet.sdk.db.TransactionDao
+import cash.z.wallet.sdk.entity.ConfirmedTransaction
+import cash.z.wallet.sdk.entity.EncodedTransaction
 import cash.z.wallet.sdk.entity.TransactionEntity
 import cash.z.wallet.sdk.ext.ZcashSdk
 import cash.z.wallet.sdk.ext.android.toFlowPagedList
@@ -66,15 +68,12 @@ open class PagedTransactionRepository(
         return blocks.count() > 0
     }
 
-    override suspend fun findTransactionById(txId: Long): TransactionEntity? = withContext(IO) {
-        twig("finding transaction with id $txId on thread ${Thread.currentThread().name}")
-        val transaction = transactions.findById(txId)
-        twig("found ${transaction?.id}")
-        transaction
+    override suspend fun findEncodedTransactionById(txId: Long) = withContext(IO) {
+        transactions.findEncodedTransactionById(txId)
     }
 
-    override suspend fun findTransactionByRawId(rawTxId: ByteArray): TransactionEntity? = withContext(IO) {
-        transactions.findByRawId(rawTxId)
+    override suspend fun findMinedHeight(rawTransactionId: ByteArray) = withContext(IO) {
+        transactions.findMinedHeight(rawTransactionId)
     }
 
     fun close() {

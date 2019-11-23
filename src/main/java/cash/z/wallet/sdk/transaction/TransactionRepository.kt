@@ -7,8 +7,8 @@ import kotlinx.coroutines.flow.Flow
 interface TransactionRepository {
     fun lastScannedHeight(): Int
     fun isInitialized(): Boolean
-    suspend fun findTransactionById(txId: Long): TransactionEntity?
-    suspend fun findTransactionByRawId(rawTransactionId: ByteArray): TransactionEntity?
+    suspend fun findEncodedTransactionById(txId: Long): EncodedTransaction?
+    suspend fun findMinedHeight(rawTransactionId: ByteArray): Int?
 
     /**
      * Provides a way for other components to signal that the underlying data has been modified.

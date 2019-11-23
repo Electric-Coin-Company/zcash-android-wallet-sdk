@@ -2,7 +2,7 @@ package cash.z.wallet.sdk.db
 
 import androidx.room.*
 import cash.z.wallet.sdk.entity.PendingTransactionEntity
-import cash.z.wallet.sdk.entity.PendingTransaction
+import kotlinx.coroutines.flow.Flow
 
 
 //
@@ -43,7 +43,10 @@ interface PendingTransactionDao {
     suspend fun findById(id: Long): PendingTransactionEntity?
 
     @Query("SELECT * FROM pending_transactions ORDER BY createTime")
-    suspend fun getAll(): List<PendingTransactionEntity>
+    fun getAll(): Flow<List<PendingTransactionEntity>>
+
+    @Query("SELECT * FROM pending_transactions WHERE id = :id")
+    fun monitorById(id: Long): Flow<PendingTransactionEntity>
 }
 
 

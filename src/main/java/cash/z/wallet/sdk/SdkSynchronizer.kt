@@ -37,11 +37,12 @@ import kotlin.coroutines.CoroutineContext
  */
 @ExperimentalCoroutinesApi
 class SdkSynchronizer internal constructor(
-    val ledger: TransactionRepository,
+    private val ledger: TransactionRepository,
     private val manager: OutboundTransactionManager,
     private val processor: CompactBlockProcessor
 ) : Synchronizer {
-    private val balanceChannel = ConflatedBroadcastChannel<WalletBalance>()
+    private val _balances = ConflatedBroadcastChannel<WalletBalance>()
+    private val _status = ConflatedBroadcastChannel<Synchronizer.Status>()
 
     /**
      * The lifespan of this Synchronizer. This scope is initialized once the Synchronizer starts
@@ -57,22 +58,11 @@ class SdkSynchronizer internal constructor(
     // Transactions
     //
 
-    // TODO: implement this stuff
-    override val balances: Flow<WalletBalance> = balanceChannel.asFlow()
-    override val allTransactions: Flow<PagedList<Transaction>> = flow{}
-    override val pendingTransactions: Flow<PagedList<PendingTransaction>> = flow{}
-    override val clearedTransactions: Flow<PagedList<ConfirmedTransaction>> = flow{}
-
-    override val sentTransactions: Flow<PagedList<ConfirmedTransaction>> = ledger.sentTransactions
-    override val receivedTransactions: Flow<PagedList<ConfirmedTransaction>> = ledger.receivedTransactions
-
-
-
-
-
-
-
-
+    override val balances: Flow<WalletBalance> = _balances.asFlow()
+    override val clearedTransactions = ledger.allTransactions
+    override val pendingTransactions = manager.getAll()
+    override val sentTransactions = ledger.sentTransactions
+    override val receivedTransactions = ledger.receivedTransactions
 
 
     //
@@ -81,16 +71,11 @@ class SdkSynchronizer internal constructor(
 
     /**
      * Indicates the status of this Synchronizer. This implementation basically simplifies the
-     * status of the processor to focus only on the high level states that matter most.
+     * status of the processor to focus only on the high level states that matter most. Whenever the
+     * processor is finished scanning, the synchronizer updates transaction and balance info and
+     * then emits a [SYNCED] status.
      */
-    override val status = processor.state.map {
-        when (it) {
-            is Synced -> SYNCED
-            is Stopped -> STOPPED
-            is Disconnected -> DISCONNECTED
-            else -> SYNCING
-        }
-    }
+    override val status = _status.asFlow()
 
     /**
      * Indicates the download progress of the Synchronizer. When progress reaches 100, that
@@ -147,8 +132,9 @@ class SdkSynchronizer internal constructor(
     override fun start(parentScope: CoroutineScope): Synchronizer {
         if (::coroutineScope.isInitialized) throw SynchronizerException.FalseStart
 
-        // base this scope on the parent so that when the parent's job cancels, everything here cancels as well
-        // also use a supervisor job so that one failure doesn't bring down the whole synchronizer
+        // base this scope on the parent so that when the parent's job cancels, everything here
+        // cancels as well also use a supervisor job so that one failure doesn't bring down the
+        // whole synchronizer
         coroutineScope =
             CoroutineScope(SupervisorJob(parentScope.coroutineContext[Job]!!) + Dispatchers.Main)
         coroutineScope.onReady()
@@ -164,7 +150,8 @@ class SdkSynchronizer internal constructor(
         coroutineScope.launch {
             processor.stop()
             coroutineScope.cancel()
-            balanceChannel.cancel()
+            _balances.cancel()
+            _status.cancel()
         }
     }
 
@@ -178,30 +165,23 @@ class SdkSynchronizer internal constructor(
     }
 
     private suspend fun refreshBalance() {
-        balanceChannel.send(processor.getBalanceInfo())
+        _balances.send(processor.getBalanceInfo())
     }
 
     private fun CoroutineScope.onReady() = launch(CoroutineExceptionHandler(::onCriticalError)) {
         twig("Synchronizer Ready. Starting processor!")
         processor.onErrorListener = ::onProcessorError
-        status.filter { it == SYNCED }.onEach {
-            // TRICKY:
-            // Keep an eye on this section because there is a potential for concurrent DB
-            // modification. A change in transactions means a change in balance. Calculating the
-            // balance requires touching transactions. If both are done in separate threads, the
-            // database can have issues. On Android, would manifest as a false positive for a
-            // "malformed database" exception when the database is not actually corrupt but rather
-            // locked (i.e. it's a bad error message).
-            // The balance refresh is done first because it is coroutine-based and will fully
-            // complete by the time the function returns.
-            // Ultimately, refreshing the transactions just invalidates views of data that
-            // already exists and it completes on another thread so it should come after the
-            // balance refresh is complete.
-            twigTask("Triggering an automatic balance refresh since the processor is synced!") {
-                refreshBalance()
-            }
-            twigTask("Triggering an automatic transaction refresh since the processor is synced!") {
-                refreshTransactions()
+        processor.state.onEach {
+            when (it) {
+                is Scanned -> {
+                    onScanComplete(it.scannedRange)
+                    SYNCED
+                }
+                is Stopped -> STOPPED
+                is Disconnected -> DISCONNECTED
+                else -> SYNCING
+            }.let { synchronizerStatus ->
+                _status.send(synchronizerStatus)
             }
         }.launchIn(this)
         processor.start()
@@ -243,6 +223,49 @@ class SdkSynchronizer internal constructor(
         } == true
     }
 
+    private suspend fun onScanComplete(scannedRange: IntRange) {
+        // TODO: optimize to skip logic here if there are no new transactions with a block height
+        //       within the given range
+
+        // TRICKY:
+        // Keep an eye on this section because there is a potential for concurrent DB
+        // modification. A change in transactions means a change in balance. Calculating the
+        // balance requires touching transactions. If both are done in separate threads, the
+        // database can have issues. On Android, this would manifest as a false positive for a
+        // "malformed database" exception when the database is not actually corrupt but rather
+        // locked (i.e. it's a bad error message).
+        // The balance refresh is done first because it is coroutine-based and will fully
+        // complete by the time the function returns.
+        // Ultimately, refreshing the transactions just invalidates views of data that
+        // already exists and it completes on another thread so it should come after the
+        // balance refresh is complete.
+        twigTask("Triggering balance refresh since the processor is synced!") {
+            refreshBalance()
+        }
+        twigTask("Triggering pending transaction refresh!") {
+            refreshPendingTransactions()
+        }
+        twigTask("Triggering transaction refresh since the processor is synced!") {
+            refreshTransactions()
+        }
+    }
+
+    private suspend fun refreshPendingTransactions() {
+        // TODO: this would be the place to clear out any stale pending transactions. Remove filter
+        //  logic and then delete any pending transaction with sufficient confirmations (all in one
+        //  db transaction).
+        manager.getAll().first().filter { !it.isMined() }.forEach { pendingTx ->
+            twig("checking for updates on pendingTx id: ${pendingTx.id}")
+            pendingTx.rawTransactionId?.let { rawId ->
+                ledger.findMinedHeight(rawId)?.let { minedHeight ->
+                    twig("found matching transaction for pending transaction with id" +
+                            " ${pendingTx.id} mined at height ${minedHeight}!")
+                    manager.applyMinedHeight(pendingTx, minedHeight)
+                }
+            }
+        }
+    }
+
 
     //
     // Send / Receive
@@ -258,13 +281,18 @@ class SdkSynchronizer internal constructor(
         toAddress: String,
         memo: String,
         fromAccountIndex: Int
-    ): Flow<PendingTransaction> {
-        twig("beginning sendToAddress")
-        return manager.initSpend(zatoshi, toAddress, memo, fromAccountIndex).flatMapConcat {
-            manager.encode(spendingKey, it)
-        }.flatMapConcat {
-            manager.submit(it)
+    ): Flow<PendingTransaction> = flow {
+        twig("Initializing pending transaction")
+        // Emit the placeholder transaction, then switch to monitoring the database
+        manager.initSpend(zatoshi, toAddress, memo, fromAccountIndex).let { placeHolderTx ->
+            emit(placeHolderTx)
+            manager.encode(spendingKey, placeHolderTx).let { encodedTx ->
+                manager.submit(encodedTx)
+            }
         }
+    }.flatMapLatest {
+        twig("Monitoring pending transaction for updates...")
+        manager.monitorById(it.id)
     }
 }
 
@@ -278,13 +306,16 @@ fun Synchronizer(
     appContext: Context,
     lightwalletdHost: String,
     rustBackend: RustBackend,
-    ledger: TransactionRepository = PagedTransactionRepository(appContext, 10, rustBackend.dbDataPath),
+    ledger: TransactionRepository =
+        PagedTransactionRepository(appContext, 10, rustBackend.dbDataPath),
     blockStore: CompactBlockStore = CompactBlockDbStore(appContext, rustBackend.dbCachePath),
     service: LightWalletService = LightWalletGrpcService(appContext, lightwalletdHost),
     encoder: TransactionEncoder = WalletTransactionEncoder(rustBackend, ledger),
     downloader: CompactBlockDownloader = CompactBlockDownloader(service, blockStore),
-    manager: OutboundTransactionManager = PersistentTransactionManager(appContext, encoder, service),
-    processor: CompactBlockProcessor = CompactBlockProcessor(downloader, ledger, rustBackend, rustBackend.birthdayHeight)
+    manager: OutboundTransactionManager =
+        PersistentTransactionManager(appContext, encoder, service),
+    processor: CompactBlockProcessor =
+        CompactBlockProcessor(downloader, ledger, rustBackend, rustBackend.birthdayHeight)
 ): Synchronizer {
     // ties everything together
     return SdkSynchronizer(

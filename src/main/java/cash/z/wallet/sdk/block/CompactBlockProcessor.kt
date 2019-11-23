@@ -18,7 +18,6 @@ import cash.z.wallet.sdk.jni.RustBackendWelding
 import cash.z.wallet.sdk.transaction.TransactionRepository
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.channels.ConflatedBroadcastChannel
-import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.isActive
@@ -129,12 +128,15 @@ class CompactBlockProcessor(
             setState(Scanning)
             val success = scanNewBlocks(rangeToScan)
             if (!success) throw CompactBlockProcessorException.FailedScan
-            else setState(Synced)
+            else {
+                setState(Scanned(rangeToScan))
+            }
             -1
         } else {
             error
         }
     }
+
 
 
     @VisibleForTesting //allow mocks to verify how this is called, rather than the downloader, which is more complex
@@ -155,7 +157,7 @@ class CompactBlockProcessor(
             for (i in 1..batches) {
                 retryUpTo(RETRIES) {
                     val end = min(range.first + (i * DOWNLOAD_BATCH_SIZE), range.last + 1)
-                    twig("downloaded $downloadedBlockHeight..${(end - 1)} (batch $i of $batches) into : ${(rustBackend as RustBackend).dbCachePath}") {
+                    twig("downloaded $downloadedBlockHeight..${(end - 1)} (batch $i of $batches)") {
                         downloader.downloadBlockRange(downloadedBlockHeight until end)
                     }
                     progress = (i / batches.toFloat() * 100).roundToInt()
@@ -252,7 +254,7 @@ class CompactBlockProcessor(
         object Downloading : Connected, Syncing, State()
         object Validating : Connected, Syncing, State()
         object Scanning : Connected, Syncing, State()
-        object Synced : Connected, State()
+        class Scanned(val scannedRange:IntRange) : Connected, Syncing, State()
         object Disconnected : State()
         object Stopped : State()
         object Initialized : State()
