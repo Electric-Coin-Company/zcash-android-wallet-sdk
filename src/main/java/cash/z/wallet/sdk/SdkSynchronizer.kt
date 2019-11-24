@@ -10,6 +10,7 @@ import cash.z.wallet.sdk.block.CompactBlockProcessor.WalletBalance
 import cash.z.wallet.sdk.block.CompactBlockStore
 import cash.z.wallet.sdk.entity.*
 import cash.z.wallet.sdk.exception.SynchronizerException
+import cash.z.wallet.sdk.ext.ZcashSdk
 import cash.z.wallet.sdk.ext.twig
 import cash.z.wallet.sdk.ext.twigTask
 import cash.z.wallet.sdk.jni.RustBackend
@@ -300,6 +301,31 @@ class SdkSynchronizer internal constructor(
     }.distinctUntilChanged()
 }
 
+/**
+ * Simplest constructor possible. Useful for demos, sample apps or PoC's. Anything more complex
+ * will probably want to handle initialization, directly.
+ */
+fun Synchronizer(
+    appContext: Context,
+    lightwalletdHost: String = ZcashSdk.DEFAULT_LIGHTWALLETD_HOST,
+    seed: ByteArray? = null,
+    birthday: Initializer.WalletBirthday? = null
+): Synchronizer {
+    val initializer = Initializer(appContext)
+    if (initializer.hasData()) {
+        initializer.open()
+    } else {
+        seed ?: throw IllegalArgumentException(
+            "Failed to initialize. A seed is required when no wallet exists on the device."
+        )
+        if (birthday == null) {
+            initializer.new(seed, overwrite = true)
+        } else {
+            initializer.import(seed, birthday, overwrite = true)
+        }
+    }
+    return Synchronizer(appContext, lightwalletdHost, initializer.rustBackend)
+}
 
 /**
  * Constructor function for building a Synchronizer in the most flexible way possible. This allows

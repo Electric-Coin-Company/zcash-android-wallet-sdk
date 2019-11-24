@@ -1,6 +1,5 @@
 package cash.z.wallet.sdk.transaction
 
-import cash.z.wallet.sdk.entity.ConfirmedTransaction
 import cash.z.wallet.sdk.entity.PendingTransaction
 import kotlinx.coroutines.flow.Flow
 

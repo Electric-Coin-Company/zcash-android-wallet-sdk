@@ -66,12 +66,6 @@ class ListTransactionsFragment : BaseDemoFragment<FragmentListTransactionsBindin
         synchronizer.progress.collectWith(lifecycleScope, ::onProgress)
     }
 
-//    private fun CoroutineScope.launchProgressMonitor(channel: ReceiveChannel<Int>) = launch {
-//        for (i in channel) {
-//            onProgress(i)
-//        }
-//    }
-
     private fun onProgress(i: Int) {
         val message = when (i) {
             100 -> "Scanning blocks..."

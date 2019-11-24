@@ -40,6 +40,7 @@ class GetBlockRangeFragment : BaseDemoFragment<FragmentGetBlockRangeBinding>() {
         }
     }
 
+    // TODO: iterate on this demo to show all the blocks in a recyclerview showing block heights and vtx count
     private fun setBlockRange(blockRange: IntRange) {
         val blocks =
             lightwalletService.getBlockRange(blockRange)
@@ -55,7 +56,3 @@ class GetBlockRangeFragment : BaseDemoFragment<FragmentGetBlockRangeBinding>() {
         binding.textInfo.text = "Error: $message"
     }
 }
-//
-//for block range, put them in a table and show a list of block heights and vtx count sorted by time
-//
-//        and for this, allow input

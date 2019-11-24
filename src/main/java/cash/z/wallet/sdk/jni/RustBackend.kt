@@ -15,6 +15,10 @@ import java.io.File
  */
 class RustBackend : RustBackendWelding {
 
+    init {
+        load()
+    }
+
     internal lateinit var dbDataPath: String
     internal lateinit var dbCachePath: String
     internal lateinit var dbNamePrefix: String
@@ -40,7 +44,6 @@ class RustBackend : RustBackendWelding {
     ): RustBackend {
         this.dbNamePrefix = dbNamePrefix
         twig("Creating RustBackend") {
-            load()
             dbCachePath = File(dbPath, "${dbNamePrefix}${ZcashSdk.DB_CACHE_NAME}").absolutePath
             dbDataPath = File(dbPath, "${dbNamePrefix}${ZcashSdk.DB_DATA_NAME}").absolutePath
             paramDestinationDir = paramsPath

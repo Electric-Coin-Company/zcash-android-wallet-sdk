@@ -19,7 +19,7 @@ class GetAddressFragment : BaseDemoFragment<FragmentGetAddressBinding>() {
          * Create and initialize the wallet. Initialization will return the private keys but for the
          * purposes of this demo we don't need them.
          */
-        initializer.initializeAccounts(seed)
+        initializer.new(seed)
     }
 
     override fun onResetComplete() {

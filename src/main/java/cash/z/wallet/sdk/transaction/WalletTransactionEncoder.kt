@@ -45,7 +45,7 @@ class WalletTransactionEncoder(
      * @return the row id in the transactions table that contains the spend transaction
      * or -1 if it failed
      */
-    suspend fun createSpend(
+    private suspend fun createSpend(
         spendingKey: String,
         value: Long,
         toAddress: String,

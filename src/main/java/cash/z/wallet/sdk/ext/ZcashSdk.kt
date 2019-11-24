@@ -68,6 +68,11 @@ object ZcashSdk {
      */
     const val LIGHTWALLETD_PORT = 9067
 
+    /**
+     * The default host to use for lightwalletd.
+     */
+    const val DEFAULT_LIGHTWALLETD_HOST = "listwallted.z.cash"
+
     const val DB_DATA_NAME = "Data.db"
     const val DB_CACHE_NAME = "Cache.db"
     const val DEFAULT_DB_NAME_PREFIX = "ZcashSdk_"

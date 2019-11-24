@@ -73,8 +73,8 @@ sealed class BirthdayException(message: String, cause: Throwable? = null) : SdkE
 
 sealed class InitializerException(message: String, cause: Throwable? = null) :  SdkException(message, cause){
     class FalseStart(cause: Throwable?) : InitializerException("Failed to initialize accounts due to: $cause", cause)
-    class AlreadyInitializedException(cause: Throwable) : InitializerException("Failed to initialize the blocks table" +
-            " because it already exists.", cause)
+    class AlreadyInitializedException(cause: Throwable, dbPath: String) : InitializerException("Failed to initialize the blocks table" +
+            " because it already exists in $dbPath", cause)
     object DatabasePathException :
         InitializerException("Critical failure to locate path for storing databases. Perhaps this" +
                 " device prevents apps from storing data? We cannot manage initialize the wallet" +

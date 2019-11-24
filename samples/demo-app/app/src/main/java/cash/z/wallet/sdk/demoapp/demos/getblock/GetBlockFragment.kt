@@ -44,7 +44,3 @@ class GetBlockFragment : BaseDemoFragment<FragmentGetBlockBinding>() {
         lightwalletService.shutdown()
     }
 }
-//
-//for block range, put them in a table and show a list of block heights and vtx count sorted by time
-//
-//        and for this, allow input

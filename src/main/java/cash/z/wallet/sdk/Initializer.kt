@@ -88,10 +88,11 @@ class Initializer(
     fun new(
         seed: ByteArray,
         birthday: WalletBirthday = newWalletBirthday,
-        numberOfAccounts: Int = 1
+        numberOfAccounts: Int = 1,
+        overwrite: Boolean = false
     ): Array<String> {
         initRustLibrary()
-        return initializeAccounts(seed, birthday, numberOfAccounts)
+        return initializeAccounts(seed, birthday, numberOfAccounts, overwrite)
     }
 
    /**
@@ -103,10 +104,11 @@ class Initializer(
      */
     fun import(
         seed: ByteArray,
-        birthday: WalletBirthday = saplingBirthday
+        birthday: WalletBirthday = saplingBirthday,
+        overwrite: Boolean = false
     ): Array<String> {
         initRustLibrary()
-        return initializeAccounts(seed, birthday)
+        return initializeAccounts(seed, birthday, overwrite = overwrite)
     }
 
     /**
@@ -130,14 +132,16 @@ class Initializer(
      * @return the spending keys for each account, ordered by index. These keys are only needed for
      * spending funds.
      */
-    fun initializeAccounts(
+    private fun initializeAccounts(
         seed: ByteArray,
         birthday: WalletBirthday = newWalletBirthday,
-        numberOfAccounts: Int = 1
+        numberOfAccounts: Int = 1,
+        overwrite: Boolean = false
     ): Array<String> {
         this.birthday = birthday
 
         try {
+            if (overwrite) rustBackend.clear()
             // only creates tables, if they don't exist
             rustBackend.initDataDb()
             twig("Initialized wallet for first run")
@@ -155,7 +159,7 @@ class Initializer(
             twig("seeded the database with sapling tree at height ${birthday.height}")
         } catch (t: Throwable) {
             if (t.message?.contains("is not empty") == true) {
-                throw InitializerException.AlreadyInitializedException(t)
+                throw InitializerException.AlreadyInitializedException(t, rustBackend.dbDataPath)
             } else {
                 throw InitializerException.FalseStart(t)
             }
