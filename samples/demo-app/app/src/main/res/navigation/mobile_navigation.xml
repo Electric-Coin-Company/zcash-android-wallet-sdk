@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/mobile_navigation"
+    app:startDestination="@+id/nav_home">
+
+    <fragment
+        android:id="@+id/nav_home"
+        android:name="cash.z.wallet.sdk.demoapp.demos.home.HomeFragment"
+        android:label="@string/menu_home"
+        tools:layout="@layout/fragment_home">
+    </fragment>
+    <fragment
+        android:id="@+id/nav_address"
+        android:name="cash.z.wallet.sdk.demoapp.demos.getaddress.GetAddressFragment"
+        android:label="@string/menu_address"
+        tools:layout="@layout/fragment_get_address" />
+    <fragment
+        android:id="@+id/nav_private_key"
+        android:name="cash.z.wallet.sdk.demoapp.demos.getprivatekey.GetPrivateKeyFragment"
+        android:label="@string/menu_private_key"
+        tools:layout="@layout/fragment_get_private_key" />
+    <fragment
+        android:id="@+id/nav_latest_height"
+        android:name="cash.z.wallet.sdk.demoapp.demos.getlatestheight.GetLatestHeightFragment"
+        android:label="@string/menu_latest_height"
+        tools:layout="@layout/fragment_get_latest_height" />
+    <fragment
+        android:id="@+id/nav_block"
+        android:name="cash.z.wallet.sdk.demoapp.demos.getblock.GetBlockFragment"
+        android:label="@string/menu_block"
+        tools:layout="@layout/fragment_get_block" />
+    <fragment
+        android:id="@+id/nav_block_range"
+        android:name="cash.z.wallet.sdk.demoapp.demos.getblockrange.GetBlockRangeFragment"
+        android:label="@string/menu_block_range"
+        tools:layout="@layout/fragment_get_block_range" />
+    <fragment
+        android:id="@+id/nav_transactions"
+        android:name="cash.z.wallet.sdk.demoapp.demos.listtransactions.ListTransactionsFragment"
+        android:label="@string/menu_transactions"
+        tools:layout="@layout/fragment_list_transactions" />
+    <fragment
+        android:id="@+id/nav_send"
+        android:name="cash.z.wallet.sdk.demoapp.demos.send.SendFragment"
+        android:label="@string/menu_send"
+        tools:layout="@layout/fragment_send" />
+</navigation>

@@ -2,10 +2,10 @@ package cash.z.wallet.sdk.block
 
 import androidx.annotation.VisibleForTesting
 import cash.z.wallet.sdk.annotation.OpenForTesting
-import cash.z.wallet.sdk.data.TransactionRepository
-import cash.z.wallet.sdk.data.Twig
-import cash.z.wallet.sdk.data.twig
+import cash.z.wallet.sdk.block.CompactBlockProcessor.State.*
 import cash.z.wallet.sdk.exception.CompactBlockProcessorException
+import cash.z.wallet.sdk.exception.RustLayerException
+import cash.z.wallet.sdk.ext.*
 import cash.z.wallet.sdk.ext.ZcashSdk.DOWNLOAD_BATCH_SIZE
 import cash.z.wallet.sdk.ext.ZcashSdk.MAX_BACKOFF_INTERVAL
 import cash.z.wallet.sdk.ext.ZcashSdk.MAX_REORG_SIZE
@@ -13,14 +13,13 @@ import cash.z.wallet.sdk.ext.ZcashSdk.POLL_INTERVAL
 import cash.z.wallet.sdk.ext.ZcashSdk.RETRIES
 import cash.z.wallet.sdk.ext.ZcashSdk.REWIND_DISTANCE
 import cash.z.wallet.sdk.ext.ZcashSdk.SAPLING_ACTIVATION_HEIGHT
-import cash.z.wallet.sdk.ext.retryUpTo
-import cash.z.wallet.sdk.ext.retryWithBackoff
 import cash.z.wallet.sdk.jni.RustBackend
 import cash.z.wallet.sdk.jni.RustBackendWelding
+import cash.z.wallet.sdk.transaction.TransactionRepository
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.channels.ConflatedBroadcastChannel
-import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 import java.util.concurrent.atomic.AtomicInteger
@@ -37,17 +36,19 @@ import kotlin.math.roundToInt
 class CompactBlockProcessor(
     internal val downloader: CompactBlockDownloader,
     private val repository: TransactionRepository,
-    private val rustBackend: RustBackendWelding
+    private val rustBackend: RustBackendWelding,
+    minimumHeight: Int = SAPLING_ACTIVATION_HEIGHT
 ) {
     var onErrorListener: ((Throwable) -> Boolean)? = null
-    var isConnected: Boolean = false
-    var isSyncing: Boolean = false
-    var isScanning: Boolean = false
-    private val progressChannel = ConflatedBroadcastChannel(0)
-    private var isStopped = false
-    private val consecutiveChainErrors = AtomicInteger(0)
 
-    fun progress(): ReceiveChannel<Int> = progressChannel.openSubscription()
+    private val consecutiveChainErrors = AtomicInteger(0)
+    private val lowerBoundHeight: Int = max(SAPLING_ACTIVATION_HEIGHT, minimumHeight - MAX_REORG_SIZE)
+
+    private val _state: ConflatedBroadcastChannel<State> = ConflatedBroadcastChannel(Initialized)
+    private val _progress = ConflatedBroadcastChannel(0)
+
+    val state = _state.asFlow()
+    val progress = _progress.asFlow()
 
     /**
      * Download compact blocks, verify and scan them.
@@ -62,8 +63,6 @@ class CompactBlockProcessor(
                 val result = processNewBlocks()
                 // immediately process again after failures in order to download new blocks right away
                 if (result < 0) {
-                    isSyncing = false
-                    isScanning = false
                     consecutiveChainErrors.set(0)
                     twig("Successfully processed new blocks. Sleeping for ${POLL_INTERVAL}ms")
                     delay(POLL_INTERVAL)
@@ -77,16 +76,16 @@ class CompactBlockProcessor(
                     consecutiveChainErrors.getAndIncrement()
                 }
             }
-        } while (isActive && !isStopped)
+        } while (isActive && _state.value !is Stopped)
         twig("processor complete")
         stop()
     }
 
-    fun stop() {
-        isStopped = true
+    suspend fun stop() {
+        setState(Stopped)
     }
 
-    fun fail(error: Throwable) {
+    private suspend fun fail(error: Throwable) {
         stop()
         twig("${error.message}")
         throw error
@@ -103,27 +102,35 @@ class CompactBlockProcessor(
 
         // define ranges
         val latestBlockHeight = downloader.getLatestBlockHeight()
-        isConnected = true // no exception on downloader call
-        isSyncing = true
-        val lastDownloadedHeight = max(getLastDownloadedHeight(), SAPLING_ACTIVATION_HEIGHT - 1)
+        val lastDownloadedHeight = getLastDownloadedHeight()
         val lastScannedHeight = getLastScannedHeight()
+        val boundedLastDownloadedHeight = max(lastDownloadedHeight, lowerBoundHeight - 1)
 
-        twig("latestBlockHeight: $latestBlockHeight\tlastDownloadedHeight: $lastDownloadedHeight" +
-                "\tlastScannedHeight: $lastScannedHeight")
+        twig(
+            "latestBlockHeight: $latestBlockHeight\tlastDownloadedHeight: $lastDownloadedHeight" +
+                    "\tlastScannedHeight: $lastScannedHeight\tlowerBoundHeight: $lowerBoundHeight"
+        )
 
         // as long as the database has the sapling tree (like when it's initialized from a checkpoint) we can avoid
         // downloading earlier blocks so take the larger of these two numbers
-        val rangeToDownload = (max(lastDownloadedHeight, lastScannedHeight) + 1)..latestBlockHeight
+        val rangeToDownload = (max(boundedLastDownloadedHeight, lastScannedHeight) + 1)..latestBlockHeight
         val rangeToScan = (lastScannedHeight + 1)..latestBlockHeight
 
+        setState(Downloading)
         downloadNewBlocks(rangeToDownload)
-        val error = validateNewBlocks(rangeToScan)
+
+        setState(Validating)
+        var error = validateNewBlocks(rangeToScan)
         if (error < 0) {
             // in theory, a scan should not fail after validation succeeds but maybe consider
             // changing the rust layer to return the failed block height whenever scan does fail
             // rather than a boolean
+            setState(Scanning)
             val success = scanNewBlocks(rangeToScan)
             if (!success) throw CompactBlockProcessorException.FailedScan
+            else {
+                setState(Scanned(rangeToScan))
+            }
             -1
         } else {
             error
@@ -131,11 +138,13 @@ class CompactBlockProcessor(
     }
 
 
+
     @VisibleForTesting //allow mocks to verify how this is called, rather than the downloader, which is more complex
     internal suspend fun downloadNewBlocks(range: IntRange) = withContext<Unit>(IO) {
         if (range.isEmpty()) {
             twig("no blocks to download")
         } else {
+            _state.send(Downloading)
             Twig.sprout("downloading")
             twig("downloading blocks in range $range")
 
@@ -153,13 +162,13 @@ class CompactBlockProcessor(
                     }
                     progress = (i / batches.toFloat() * 100).roundToInt()
                     // only report during large downloads. TODO: allow for configuration of "large"
-                    progressChannel.send(progress)
+                    _progress.send(progress)
                     downloadedBlockHeight = end
                 }
             }
             Twig.clip("downloading")
         }
-        progressChannel.send(100)
+        _progress.send(100)
     }
 
     private fun validateNewBlocks(range: IntRange?): Int {
@@ -168,7 +177,7 @@ class CompactBlockProcessor(
             return -1
         }
         Twig.sprout("validating")
-        twig("validating blocks in range $range")
+        twig("validating blocks in range $range in db: ${(rustBackend as RustBackend).dbCachePath}")
         val result = rustBackend.validateCombinedChain()
         Twig.clip("validating")
         return result
@@ -181,9 +190,7 @@ class CompactBlockProcessor(
         }
         Twig.sprout("scanning")
         twig("scanning blocks in range $range")
-        isScanning = true
         val result = rustBackend.scanBlocks()
-        isScanning = false
         Twig.clip("scanning")
         return result
     }
@@ -192,19 +199,17 @@ class CompactBlockProcessor(
         val lowerBound = determineLowerBound(errorHeight)
         twig("handling chain error at $errorHeight by rewinding to block $lowerBound")
         rustBackend.rewindToHeight(lowerBound)
-        downloader.rewindTo(lowerBound)
+        downloader.rewindToHeight(lowerBound)
     }
 
     private fun onConnectionError(throwable: Throwable): Boolean {
-        isConnected = false
-        isSyncing = false
-        isScanning = false
+        _state.offer(Disconnected)
         return onErrorListener?.invoke(throwable) ?: true
     }
 
     private fun determineLowerBound(errorHeight: Int): Int {
         val offset = Math.min(MAX_REORG_SIZE, REWIND_DISTANCE * (consecutiveChainErrors.get() + 1))
-        return Math.max(errorHeight - offset, SAPLING_ACTIVATION_HEIGHT)
+        return Math.max(errorHeight - offset, lowerBoundHeight)
     }
 
     suspend fun getLastDownloadedHeight() = withContext(IO) {
@@ -214,4 +219,59 @@ class CompactBlockProcessor(
     suspend fun getLastScannedHeight() = withContext(IO) {
         repository.lastScannedHeight()
     }
+
+    suspend fun getAddress(accountId: Int) = withContext(IO) {
+        rustBackend.getAddress(accountId)
+    }
+
+    /**
+     * Calculates the latest balance info. Defaults to the first account.
+     *
+     * @param accountIndex the account to check for balance info.
+     */
+    suspend fun getBalanceInfo(accountIndex: Int = 0): WalletBalance = withContext(IO) {
+        twigTask("checking balance info") {
+            try {
+                val balanceTotal = rustBackend.getBalance(accountIndex)
+                twig("found total balance of: $balanceTotal")
+                val balanceAvailable = rustBackend.getVerifiedBalance(accountIndex)
+                twig("found available balance of: $balanceAvailable")
+                WalletBalance(balanceTotal, balanceAvailable)
+            } catch (t: Throwable) {
+                twig("failed to get balance due to $t")
+                throw RustLayerException.BalanceException(t)
+            }
+        }
+    }
+
+    suspend fun setState(newState: State) {
+        _state.send(newState)
+    }
+
+    sealed class State {
+        interface Connected
+        interface Syncing
+        object Downloading : Connected, Syncing, State()
+        object Validating : Connected, Syncing, State()
+        object Scanning : Connected, Syncing, State()
+        class Scanned(val scannedRange:IntRange) : Connected, Syncing, State()
+        object Disconnected : State()
+        object Stopped : State()
+        object Initialized : State()
+    }
+
+    /**
+     * Data structure to hold the total and available balance of the wallet. This is what is
+     * received on the balance channel.
+     *
+     * @param total the total balance, ignoring funds that cannot be used.
+     * @param available the amount of funds that are available for use. Typical reasons that funds
+     * may be unavailable include fairly new transactions that do not have enough confirmations or
+     * notes that are tied up because we are awaiting change from a transaction. When a note has
+     * been spent, its change cannot be used until there are enough confirmations.
+     */
+    data class WalletBalance(
+        val total: Long = -1,
+        val available: Long = -1
+    )
 }

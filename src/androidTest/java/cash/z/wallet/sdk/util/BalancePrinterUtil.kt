@@ -3,9 +3,9 @@ package cash.z.wallet.sdk.db
 import androidx.test.platform.app.InstrumentationRegistry
 import cash.z.wallet.sdk.block.CompactBlockDbStore
 import cash.z.wallet.sdk.block.CompactBlockDownloader
-import cash.z.wallet.sdk.data.TroubleshootingTwig
-import cash.z.wallet.sdk.data.Twig
-import cash.z.wallet.sdk.data.twig
+import cash.z.wallet.sdk.ext.TroubleshootingTwig
+import cash.z.wallet.sdk.ext.Twig
+import cash.z.wallet.sdk.ext.twig
 import cash.z.wallet.sdk.ext.SampleSeedProvider
 import cash.z.wallet.sdk.jni.RustBackend
 import cash.z.wallet.sdk.secure.Wallet
@@ -36,7 +36,7 @@ class BalancePrinterUtil {
     private val context = InstrumentationRegistry.getInstrumentation().context
     private val cacheDbName = "BalanceUtilCache.db"
     private val dataDbName = "BalanceUtilData.db"
-    private val rustBackend = RustBackend.create(context, cacheDbName, dataDbName)
+    private val rustBackend = RustBackend.init(context, cacheDbName, dataDbName)
 
     private val downloader = CompactBlockDownloader(
         LightWalletGrpcService(context, host),

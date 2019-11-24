@@ -1,47 +1,60 @@
 package cash.z.wallet.sdk.jni
 
 import android.content.Context
-import cash.z.wallet.sdk.data.twig
+import cash.z.wallet.sdk.exception.BirthdayException
+import cash.z.wallet.sdk.ext.ZcashSdk
 import cash.z.wallet.sdk.ext.ZcashSdk.OUTPUT_PARAM_FILE_NAME
 import cash.z.wallet.sdk.ext.ZcashSdk.SPEND_PARAM_FILE_NAME
+import cash.z.wallet.sdk.ext.twig
+import java.io.File
 
 /**
  * Serves as the JNI boundary between the Kotlin and Rust layers. Functions in this class should
  * not be called directly by code outside of the SDK. Instead, one of the higher-level components
  * should be used such as Wallet.kt or CompactBlockProcessor.kt.
  */
-internal object RustBackend : RustBackendWelding {
-    private var loaded = false
-    private lateinit var dbDataPath: String
-    private lateinit var dbCachePath: String
-    lateinit var paramDestinationDir: String
+class RustBackend : RustBackendWelding {
 
-    override fun create(appContext: Context, dbCacheName: String, dbDataName: String): RustBackend {
+    init {
+        load()
+    }
+
+    internal lateinit var dbDataPath: String
+    internal lateinit var dbCachePath: String
+    internal lateinit var dbNamePrefix: String
+    internal lateinit var paramDestinationDir: String
+    internal var birthdayHeight: Int = -1
+        get() = if (field != -1) field else throw BirthdayException.UninitializedBirthdayException
+
+    fun init(appContext: Context, dbNamePrefix: String = ZcashSdk.DEFAULT_DB_NAME_PREFIX) =
+        init(
+            appContext.getDatabasePath("unused.db").parentFile.absolutePath,
+            "${appContext.cacheDir.absolutePath}/params",
+            dbNamePrefix
+        )
+
+    /**
+     * Loads the library and initializes path variables. Although it is best to only call this
+     * function once, it is idempotent.
+     */
+    fun init(
+        dbPath: String,
+        paramsPath: String,
+        dbNamePrefix: String = ZcashSdk.DEFAULT_DB_NAME_PREFIX
+    ): RustBackend {
+        this.dbNamePrefix = dbNamePrefix
         twig("Creating RustBackend") {
-            // It is safe to call these things twice but not efficient. So we add a loose check and
-            // ignore the fact that it's not thread-safe.
-            if (!loaded) {
-                initLogs()
-                loadRustLibrary()
-            }
-            dbCachePath = appContext.getDatabasePath(dbCacheName).absolutePath
-            dbDataPath = appContext.getDatabasePath(dbDataName).absolutePath
-            paramDestinationDir = "${appContext.cacheDir.absolutePath}/params"
+            dbCachePath = File(dbPath, "${dbNamePrefix}${ZcashSdk.DB_CACHE_NAME}").absolutePath
+            dbDataPath = File(dbPath, "${dbNamePrefix}${ZcashSdk.DB_DATA_NAME}").absolutePath
+            paramDestinationDir = paramsPath
         }
         return this
     }
 
-    /**
-     * The first call made to this object in order to load the Rust backend library. All other calls
-     * will fail if this function has not been invoked.
-     */
-    private fun loadRustLibrary() {
-        try {
-            System.loadLibrary("zcashwalletsdk")
-            loaded = true
-        } catch (e: Throwable) {
-            twig("Error while loading native library: ${e.message}")
-        }
+    fun clear() {
+        twig("Deleting databases")
+        File(dbCachePath).delete()
+        File(dbDataPath).delete()
     }
 
 
@@ -49,104 +62,167 @@ internal object RustBackend : RustBackendWelding {
     // Wrapper Functions
     //
 
-    override fun initDataDb(): Boolean = initDataDb(dbDataPath)
+    override fun initDataDb() = initDataDb(dbDataPath)
 
-    override fun initAccountsTable(seed: ByteArray, numberOfAccounts: Int): Array<String> =
-        initAccountsTable(dbDataPath, seed, numberOfAccounts)
+//    override fun initAccountsTable(extfvks: Array<String>) =
+//        initAccountsTableWithKeys(dbDataPath, extfvks)
+
+    override fun initAccountsTable(
+        seed: ByteArray,
+        numberOfAccounts: Int
+    ) = initAccountsTable(dbDataPath, seed, numberOfAccounts)
 
     override fun initBlocksTable(
         height: Int,
         hash: String,
         time: Long,
         saplingTree: String
-    ): Boolean = initBlocksTable(dbDataPath, height, hash, time, saplingTree)
+    ): Boolean {
+        birthdayHeight = height
+        return initBlocksTable(dbDataPath, height, hash, time, saplingTree)
+    }
 
-    override fun getAddress(account: Int): String = getAddress(dbDataPath, account)
+    override fun getAddress(account: Int) = getAddress(dbDataPath, account)
 
-    override fun getBalance(account: Int): Long = getBalance(dbDataPath, account)
+    override fun getBalance(account: Int) = getBalance(dbDataPath, account)
 
-    override fun getVerifiedBalance(account: Int): Long = getVerifiedBalance(dbDataPath, account)
+    override fun getVerifiedBalance(account: Int) = getVerifiedBalance(dbDataPath, account)
 
-    override fun getReceivedMemoAsUtf8(idNote: Long): String =
+    override fun getReceivedMemoAsUtf8(idNote: Long) =
         getReceivedMemoAsUtf8(dbDataPath, idNote)
 
-    override fun getSentMemoAsUtf8(idNote: Long): String = getSentMemoAsUtf8(dbDataPath, idNote)
+    override fun getSentMemoAsUtf8(idNote: Long) = getSentMemoAsUtf8(dbDataPath, idNote)
 
-    override fun validateCombinedChain(): Int = validateCombinedChain(dbCachePath, dbDataPath)
+    override fun validateCombinedChain() = validateCombinedChain(dbCachePath, dbDataPath)
 
-    override fun rewindToHeight(height: Int): Boolean = rewindToHeight(dbDataPath, height)
+    override fun rewindToHeight(height: Int) = rewindToHeight(dbDataPath, height)
 
-    override fun scanBlocks(): Boolean = scanBlocks(dbCachePath, dbDataPath)
+    override fun scanBlocks() = scanBlocks(dbCachePath, dbDataPath)
 
     override fun createToAddress(
         account: Int,
         extsk: String,
         to: String,
         value: Long,
-        memo: String
+        memo: ByteArray?
     ): Long = createToAddress(
         dbDataPath,
         account,
         extsk,
         to,
         value,
-        memo,
+        memo ?: ByteArray(0),
         "${paramDestinationDir}/$SPEND_PARAM_FILE_NAME",
         "${paramDestinationDir}/$OUTPUT_PARAM_FILE_NAME"
     )
 
+    override fun deriveSpendingKeys(seed: ByteArray, numberOfAccounts: Int) =
+        deriveExtendedSpendingKeys(seed, numberOfAccounts)
 
-    //
-    // External Functions
-    //
+    override fun deriveViewingKeys(seed: ByteArray, numberOfAccounts: Int) =
+        deriveExtendedFullViewingKeys(seed, numberOfAccounts)
 
-    private external fun initDataDb(dbDataPath: String): Boolean
+    override fun deriveViewingKey(spendingKey: String) = deriveExtendedFullViewingKey(spendingKey)
 
-    private external fun initAccountsTable(
-        dbDataPath: String,
-        seed: ByteArray,
-        accounts: Int
-    ): Array<String>
+    override fun isValidShieldedAddr(addr: String) =
+        isValidShieldedAddress(addr)
 
-    private external fun initBlocksTable(
-        dbDataPath: String,
-        height: Int,
-        hash: String,
-        time: Long,
-        saplingTree: String
-    ): Boolean
+    override fun isValidTransparentAddr(addr: String) =
+        isValidTransparentAddress(addr)
 
-    private external fun getAddress(dbDataPath: String, account: Int): String
+    /**
+     * Exposes all of the librustzcash functions along with helpers for loading the static library.
+     */
+    companion object {
+        private var loaded = false
 
-    external override fun isValidShieldedAddress(addr: String): Boolean
+        fun load() {
+            // It is safe to call these things twice but not efficient. So we add a loose check and
+            // ignore the fact that it's not thread-safe.
+            if (!loaded) {
+                twig("Loading RustBackend") {
+                    loadRustLibrary()
+                    initLogs()
+                }
+            }
+        }
 
-    external override fun isValidTransparentAddress(addr: String): Boolean
+        /**
+         * The first call made to this object in order to load the Rust backend library. All other
+         * external function calls will fail if the libraries have not been loaded.
+         */
+        private fun loadRustLibrary() {
+            try {
+                System.loadLibrary("zcashwalletsdk")
+                loaded = true
+            } catch (e: Throwable) {
+                twig("Error while loading native library: ${e.message}")
+            }
+        }
 
-    private external fun getBalance(dbDataPath: String, account: Int): Long
 
-    private external fun getVerifiedBalance(dbDataPath: String, account: Int): Long
+        //
+        // External Functions
+        //
 
-    private external fun getReceivedMemoAsUtf8(dbDataPath: String, idNote: Long): String
+        @JvmStatic private external fun initDataDb(dbDataPath: String): Boolean
 
-    private external fun getSentMemoAsUtf8(dbDataPath: String, idNote: Long): String
+        @JvmStatic private external fun initAccountsTable(
+            dbDataPath: String,
+            seed: ByteArray,
+            accounts: Int
+        ): Array<String>
 
-    private external fun validateCombinedChain(dbCachePath: String, dbDataPath: String): Int
+//    @JvmStatic private external fun initAccountsTableWithKeys(
+//        dbDataPath: String,
+//        extfvk: Array<String>
+//    )
 
-    private external fun rewindToHeight(dbDataPath: String, height: Int): Boolean
+        @JvmStatic private external fun initBlocksTable(
+            dbDataPath: String,
+            height: Int,
+            hash: String,
+            time: Long,
+            saplingTree: String
+        ): Boolean
 
-    private external fun scanBlocks(dbCachePath: String, dbDataPath: String): Boolean
+        @JvmStatic private external fun getAddress(dbDataPath: String, account: Int): String
 
-    private external fun createToAddress(
-        dbDataPath: String,
-        account: Int,
-        extsk: String,
-        to: String,
-        value: Long,
-        memo: String,
-        spendParamsPath: String,
-        outputParamsPath: String
-    ): Long
+        @JvmStatic private external fun isValidShieldedAddress(addr: String): Boolean
 
-    private external fun initLogs()
+        @JvmStatic private external fun isValidTransparentAddress(addr: String): Boolean
 
+        @JvmStatic private external fun getBalance(dbDataPath: String, account: Int): Long
+
+        @JvmStatic private external fun getVerifiedBalance(dbDataPath: String, account: Int): Long
+
+        @JvmStatic private external fun getReceivedMemoAsUtf8(dbDataPath: String, idNote: Long): String
+
+        @JvmStatic private external fun getSentMemoAsUtf8(dbDataPath: String, idNote: Long): String
+
+        @JvmStatic private external fun validateCombinedChain(dbCachePath: String, dbDataPath: String): Int
+
+        @JvmStatic private external fun rewindToHeight(dbDataPath: String, height: Int): Boolean
+
+        @JvmStatic private external fun scanBlocks(dbCachePath: String, dbDataPath: String): Boolean
+
+        @JvmStatic private external fun createToAddress(
+            dbDataPath: String,
+            account: Int,
+            extsk: String,
+            to: String,
+            value: Long,
+            memo: ByteArray,
+            spendParamsPath: String,
+            outputParamsPath: String
+        ): Long
+
+        @JvmStatic private external fun initLogs()
+
+        @JvmStatic private external fun deriveExtendedSpendingKeys(seed: ByteArray, numberOfAccounts: Int): Array<String>
+
+        @JvmStatic private external fun deriveExtendedFullViewingKeys(seed: ByteArray, numberOfAccounts: Int): Array<String>
+
+        @JvmStatic private external fun deriveExtendedFullViewingKey(spendingKey: String): String
+    }
 }

@@ -13,7 +13,8 @@ import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.withContext
 
 class CompactBlockDbStore(
-    applicationContext: Context
+    applicationContext: Context,
+    val dbPath: String
 ) : CompactBlockStore {
 
     private val cacheDao: CompactBlockDao
@@ -25,7 +26,7 @@ class CompactBlockDbStore(
     }
 
     private fun createCompactBlockCacheDb(applicationContext: Context): CompactBlockDb {
-        return Room.databaseBuilder(applicationContext, CompactBlockDb::class.java, DB_CACHE_NAME)
+        return Room.databaseBuilder(applicationContext, CompactBlockDb::class.java, dbPath)
             .setJournalMode(RoomDatabase.JournalMode.TRUNCATE)
             // this is a simple cache of blocks. destroying the db should be benign
             .fallbackToDestructiveMigration()

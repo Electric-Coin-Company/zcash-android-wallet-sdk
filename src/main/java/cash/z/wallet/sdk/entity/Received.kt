@@ -8,28 +8,22 @@ import androidx.room.ForeignKey
     tableName = "received_notes",
     primaryKeys = ["id_note"],
     foreignKeys = [ForeignKey(
-        entity = Transaction::class,
+        entity = TransactionEntity::class,
         parentColumns = ["id_tx"],
-        childColumns = ["tx"],
-        onUpdate = ForeignKey.CASCADE,
-        onDelete = ForeignKey.CASCADE
-    ), ForeignKey(
-        entity = Transaction::class,
-        parentColumns = ["id_tx"],
-        childColumns = ["spent"],
-        onUpdate = ForeignKey.CASCADE,
-        onDelete = ForeignKey.SET_NULL
+        childColumns = ["tx"]
     ), ForeignKey(
         entity = Account::class,
         parentColumns = ["account"],
-        childColumns = ["account"],
-        onUpdate = ForeignKey.CASCADE,
-        onDelete = ForeignKey.CASCADE
+        childColumns = ["account"]
+    ), ForeignKey(
+        entity = TransactionEntity::class,
+        parentColumns = ["id_tx"],
+        childColumns = ["spent"]
     )]
 )
 data class Received(
     @ColumnInfo(name = "id_note")
-    val id: Int = 0,
+    val id: Int? = 0,
 
     /**
      * A reference to the transaction this note was received in
@@ -48,9 +42,6 @@ data class Received(
      */
     val spent: Int? = 0,
 
-    @ColumnInfo(name = "is_change")
-    val isChange: Boolean = false,
-
     @ColumnInfo(typeAffinity = ColumnInfo.BLOB)
     val diversifier: ByteArray = byteArrayOf(),
 
@@ -60,40 +51,11 @@ data class Received(
     @ColumnInfo(typeAffinity = ColumnInfo.BLOB)
     val nf: ByteArray = byteArrayOf(),
 
+    @ColumnInfo(name = "is_change")
+    val isChange: Boolean = false,
+
     @ColumnInfo(typeAffinity = ColumnInfo.BLOB)
     val memo: ByteArray? = byteArrayOf()
 ) {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-
-        return (other is Received)
-                && id == other.id
-                && transactionId == other.transactionId
-                && outputIndex == other.outputIndex
-                && account == other.account
-                && value == other.value
-                && spent == other.spent
-                && diversifier.contentEquals(other.diversifier)
-                && rcm.contentEquals(other.rcm)
-                && nf.contentEquals(other.nf)
-                && isChange == other.isChange
-                && ((memo == null && other.memo == null)
-                || (memo != null && other.memo != null && memo.contentEquals(other.memo)))
-    }
-
-    override fun hashCode(): Int {
-        var result = id
-        result = 31 * result + transactionId
-        result = 31 * result + outputIndex
-        result = 31 * result + account
-        result = 31 * result + value.toInt()
-        result = 31 * result + (if (isChange) 1 else 0)
-        result = 31 * result + (spent ?: 0)
-        result = 31 * result + diversifier.contentHashCode()
-        result = 31 * result + rcm.contentHashCode()
-        result = 31 * result + nf.contentHashCode()
-        result = 31 * result + (memo?.contentHashCode() ?: 0)
-        return result
-    }
 
 }

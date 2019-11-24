@@ -59,6 +59,9 @@ class LightWalletGrpcService private constructor(
         return channel.createStub().sendTransaction(request)
     }
 
+    override fun shutdown() {
+        channel.shutdownNow()
+    }
 
     //
     // Utilities

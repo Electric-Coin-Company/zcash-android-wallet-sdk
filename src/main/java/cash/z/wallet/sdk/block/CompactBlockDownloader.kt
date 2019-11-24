@@ -23,7 +23,7 @@ open class CompactBlockDownloader(
         compactBlockStore.write(result)
     }
 
-    suspend fun rewindTo(height: Int) = withContext(IO) {
+    suspend fun rewindToHeight(height: Int) = withContext(IO) {
         // TODO: cancel anything in flight
         compactBlockStore.rewindTo(height)
     }

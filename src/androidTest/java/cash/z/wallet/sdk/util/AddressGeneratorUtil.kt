@@ -1,8 +1,8 @@
 package cash.z.wallet.sdk.util
 
 import androidx.test.platform.app.InstrumentationRegistry
-import cash.z.wallet.sdk.data.TroubleshootingTwig
-import cash.z.wallet.sdk.data.Twig
+import cash.z.wallet.sdk.ext.TroubleshootingTwig
+import cash.z.wallet.sdk.ext.Twig
 import cash.z.wallet.sdk.ext.SampleSeedProvider
 import cash.z.wallet.sdk.jni.RustBackend
 import cash.z.wallet.sdk.secure.Wallet
@@ -23,7 +23,7 @@ class AddressGeneratorUtil {
 
     private val dataDbName = "AddressUtilData.db"
     private val context = InstrumentationRegistry.getInstrumentation().context
-    private val rustBackend = RustBackend.create(context)
+    private val rustBackend = RustBackend.init(context)
 
     private lateinit var wallet: Wallet
 

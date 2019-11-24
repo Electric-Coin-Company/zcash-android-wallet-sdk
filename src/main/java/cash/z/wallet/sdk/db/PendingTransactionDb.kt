@@ -1,7 +1,8 @@
 package cash.z.wallet.sdk.db
 
 import androidx.room.*
-import cash.z.wallet.sdk.entity.PendingTransaction
+import cash.z.wallet.sdk.entity.PendingTransactionEntity
+import kotlinx.coroutines.flow.Flow
 
 
 //
@@ -10,7 +11,7 @@ import cash.z.wallet.sdk.entity.PendingTransaction
 
 @Database(
     entities = [
-        PendingTransaction::class
+        PendingTransactionEntity::class
     ],
     version = 1,
     exportSchema = false
@@ -26,14 +27,26 @@ abstract class PendingTransactionDb : RoomDatabase() {
 
 @Dao
 interface PendingTransactionDao {
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insert(transaction: PendingTransaction): Long
+    @Insert(onConflict = OnConflictStrategy.ABORT)
+    suspend fun create(transaction: PendingTransactionEntity): Long
+
+    @Update(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun update(transaction: PendingTransactionEntity)
 
     @Delete
-    fun delete(transaction: PendingTransaction)
+    suspend fun delete(transaction: PendingTransactionEntity)
 
-    @Query("SELECT * from pending_transactions ORDER BY createTime")
-    fun getAll(): List<PendingTransaction>
+    @Query("UPDATE pending_transactions SET cancelled = 1 WHERE id = :id")
+    suspend fun cancel(id: Long)
+
+    @Query("SELECT * FROM pending_transactions WHERE id = :id")
+    suspend fun findById(id: Long): PendingTransactionEntity?
+
+    @Query("SELECT * FROM pending_transactions ORDER BY createTime")
+    fun getAll(): Flow<List<PendingTransactionEntity>>
+
+    @Query("SELECT * FROM pending_transactions WHERE id = :id")
+    fun monitorById(id: Long): Flow<PendingTransactionEntity>
 }
 
 
