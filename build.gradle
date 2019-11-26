@@ -172,12 +172,11 @@ cargo {
     ]
     profile = "release"
     forceTargets = true
-
+    prebuiltToolchains = true
     variants {
         zcashmainnetDebug {
             defaultFeaturesAnd("mainnet")
         }
-
         zcashmainnetRelease {
             defaultFeaturesAnd("mainnet")
         }

@@ -76,7 +76,7 @@ class Initializer(
      *
      * @return true when an initialized wallet exists on this device.
      */
-    fun hasData() = prefs.get<Boolean>("hasData") == true
+    fun hasData() = prefs.get<Boolean>(PREFS_HAS_DATA) == true
 
     /**
      * Initialize a new wallet with the given seed and birthday. It creates the required database
@@ -168,11 +168,11 @@ class Initializer(
         try {
             return rustBackend.initAccountsTable(seed, numberOfAccounts).also {
                 twig("Initialized the accounts table with ${numberOfAccounts} account(s)")
+                onAccountsInitialized()
             }
         } catch (t: Throwable) {
             throw InitializerException.FalseStart(t)
         }
-        onAccountsInitialized()
     }
 
     /**
@@ -207,6 +207,7 @@ class Initializer(
     private fun onAccountsInitialized() {
         saveBirthdayToPrefs(prefs, birthday)
         prefs[PREFS_HAS_DATA] = true
+
     }
 
     /**
@@ -344,6 +345,7 @@ class Initializer(
          * @param birthday the birthday to save. It will be split into primitives.
          */
         fun saveBirthdayToPrefs(prefs: SharedPreferences, birthday: WalletBirthday) {
+            twig("saving birthday to prefs (${birthday.height})")
             prefs[PREFS_BIRTHDAY_HEIGHT] = birthday.height
             prefs[PREFS_BIRTHDAY_HASH] = birthday.hash
             prefs[PREFS_BIRTHDAY_TIME] = birthday.time

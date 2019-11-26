@@ -25,7 +25,7 @@ interface Synchronizer {
      * lifecycle such as an Activity. Implementations should leverage structured concurrency and
      * cancel all jobs when this scope completes.
      */
-    fun start(parentScope: CoroutineScope): Synchronizer
+    fun start(parentScope: CoroutineScope? = null): Synchronizer
 
     /**
      * Stop this synchronizer. Implementations should ensure that calling this method cancels all

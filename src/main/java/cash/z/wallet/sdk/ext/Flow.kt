@@ -3,6 +3,8 @@ package cash.z.wallet.sdk.ext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 
 /**
@@ -34,4 +36,10 @@ fun <T> Flow<T>.collectWith(scope: CoroutineScope, block: (T) -> Unit) {
             block(it)
         }
     }
+}
+
+suspend fun <T, S> Flow<T>.onFirst(block: suspend (T) -> S) {
+    onEach {
+        block(it)
+    }.first()
 }

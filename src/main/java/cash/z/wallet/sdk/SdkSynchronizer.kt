@@ -127,16 +127,19 @@ class SdkSynchronizer internal constructor(
      *
      * @param parentScope the scope to use for this synchronizer, typically something with a
      * lifecycle such as an Activity for single-activity apps or a logged in user session. This
-     * scope is only used for launching this synchronzer's job as a child.
+     * scope is only used for launching this synchronzer's job as a child. If no scope is provided,
+     * then this synchronizer and all of its coroutines will run until stop is called, which is not
+     * recommended since it can leak resources. That type of behavior is more useful for tests.
      */
-    override fun start(parentScope: CoroutineScope): Synchronizer {
+    override fun start(parentScope: CoroutineScope?): Synchronizer {
         if (::coroutineScope.isInitialized) throw SynchronizerException.FalseStart
 
         // base this scope on the parent so that when the parent's job cancels, everything here
         // cancels as well also use a supervisor job so that one failure doesn't bring down the
         // whole synchronizer
+        val supervisorJob = SupervisorJob(parentScope?.coroutineContext?.get(Job))
         coroutineScope =
-            CoroutineScope(SupervisorJob(parentScope.coroutineContext[Job]!!) + Dispatchers.Main)
+            CoroutineScope(supervisorJob + Dispatchers.Main)
         coroutineScope.onReady()
         return this
     }
@@ -313,14 +316,18 @@ fun Synchronizer(
 ): Synchronizer {
     val initializer = Initializer(appContext)
     if (initializer.hasData()) {
+        twig("Initializing existing wallet")
         initializer.open()
+        twig("${initializer.rustBackend.dbDataPath}")
     } else {
         seed ?: throw IllegalArgumentException(
             "Failed to initialize. A seed is required when no wallet exists on the device."
         )
         if (birthday == null) {
+            twig("Initializing new wallet")
             initializer.new(seed, overwrite = true)
         } else {
+            twig("Initializing imported wallet")
             initializer.import(seed, birthday, overwrite = true)
         }
     }
