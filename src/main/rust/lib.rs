@@ -15,7 +15,6 @@ use std::panic;
 use std::path::Path;
 use std::ptr;
 use zcash_client_backend::{
-    constants::SAPLING_CONSENSUS_BRANCH_ID,
     encoding::{
         decode_extended_spending_key, encode_extended_full_viewing_key,
         encode_extended_spending_key,
@@ -36,6 +35,7 @@ use zcash_client_sqlite::{
 };
 use zcash_primitives::{
     block::BlockHash,
+    consensus::BranchId,
     note_encryption::Memo,
     transaction::components::Amount,
     zip32::{ExtendedFullViewingKey, ExtendedSpendingKey},
@@ -541,14 +541,14 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_createToAddress(
 
         create_to_address(
             &db_data,
-            SAPLING_CONSENSUS_BRANCH_ID,
+            BranchId::Blossom,
             prover,
             (account, &extsk),
             &to,
             value,
             memo,
         )
-        .map_err(|e| format_err!("Error while sending funds: {}", e))
+        .map_err(|e| format_err!("Error while creating transaction: {}", e))
     });
     unwrap_exc_or(&env, res, -1)
 }

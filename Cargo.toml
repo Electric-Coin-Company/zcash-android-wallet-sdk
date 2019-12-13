@@ -22,23 +22,23 @@ protobuf = { version = "2", optional = true }
 
 [dependencies.ff]
 git = "https://github.com/str4d/librustzcash.git"
-rev = "1cbeac9d593d65938870797fb8dbafa352644d34"
+rev = "f3f5338282eeda6d9f5bff69f6930a5473c95925"
 
 [dependencies.pairing]
 git = "https://github.com/str4d/librustzcash.git"
-rev = "1cbeac9d593d65938870797fb8dbafa352644d34"
+rev = "f3f5338282eeda6d9f5bff69f6930a5473c95925"
 
 [dependencies.zcash_client_backend]
 git = "https://github.com/str4d/librustzcash.git"
-rev = "1cbeac9d593d65938870797fb8dbafa352644d34"
+rev = "f3f5338282eeda6d9f5bff69f6930a5473c95925"
 
 [dependencies.zcash_client_sqlite]
 git = "https://github.com/str4d/librustzcash.git"
-rev = "1cbeac9d593d65938870797fb8dbafa352644d34"
+rev = "f3f5338282eeda6d9f5bff69f6930a5473c95925"
 
 [dependencies.zcash_primitives]
 git = "https://github.com/str4d/librustzcash.git"
-rev = "1cbeac9d593d65938870797fb8dbafa352644d34"
+rev = "f3f5338282eeda6d9f5bff69f6930a5473c95925"
 
 [dependencies.zcash_proofs]
 git = "https://github.com/str4d/librustzcash.git"
