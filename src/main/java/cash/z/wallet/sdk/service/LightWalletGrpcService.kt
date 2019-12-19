@@ -3,7 +3,8 @@ package cash.z.wallet.sdk.service
 import android.content.Context
 import cash.z.wallet.sdk.R
 import cash.z.wallet.sdk.exception.LightwalletException
-import cash.z.wallet.sdk.ext.ZcashSdk.LIGHTWALLETD_PORT
+import cash.z.wallet.sdk.ext.ZcashSdk.DEFAULT_LIGHTWALLETD_PORT
+import cash.z.wallet.sdk.ext.twig
 import cash.z.wallet.sdk.rpc.CompactFormats
 import cash.z.wallet.sdk.rpc.CompactTxStreamerGrpc
 import cash.z.wallet.sdk.rpc.Service
@@ -31,7 +32,7 @@ class LightWalletGrpcService private constructor(
     constructor(
         appContext: Context,
         host: String,
-        port: Int = LIGHTWALLETD_PORT,
+        port: Int = DEFAULT_LIGHTWALLETD_PORT,
         usePlaintext: Boolean = !appContext.resources.getBoolean(R.bool.is_mainnet)
     ) : this(createDefaultChannel(appContext, host, port, usePlaintext))
 
@@ -94,6 +95,7 @@ class LightWalletGrpcService private constructor(
             port: Int,
             usePlaintext: Boolean
         ): ManagedChannel {
+            twig("Creating connection to $host:$port")
             return AndroidChannelBuilder
                 .forAddress(host, port)
                 .context(appContext)

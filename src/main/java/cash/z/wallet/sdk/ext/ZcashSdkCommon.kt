@@ -66,7 +66,7 @@ open class ZcashSdkCommon {
     /**
      * The default port to use for connecting to lightwalletd instances.
      */
-    open val LIGHTWALLETD_PORT = 9067
+    open val DEFAULT_LIGHTWALLETD_PORT = 9067
 
     /**
      * The default host to use for lightwalletd.

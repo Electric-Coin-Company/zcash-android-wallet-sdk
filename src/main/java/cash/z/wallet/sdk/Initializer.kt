@@ -19,6 +19,8 @@ import java.io.InputStreamReader
  */
 class Initializer(
     appContext: Context,
+    val host: String = ZcashSdk.DEFAULT_LIGHTWALLETD_HOST,
+    val port: Int = ZcashSdk.DEFAULT_LIGHTWALLETD_PORT,
     private val alias: String = ZcashSdk.DEFAULT_DB_NAME_PREFIX
 ) {
     init {

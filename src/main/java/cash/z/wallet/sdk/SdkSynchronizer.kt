@@ -311,6 +311,7 @@ class SdkSynchronizer internal constructor(
 fun Synchronizer(
     appContext: Context,
     lightwalletdHost: String = ZcashSdk.DEFAULT_LIGHTWALLETD_HOST,
+    lightwalletdPort: Int = ZcashSdk.DEFAULT_LIGHTWALLETD_PORT,
     seed: ByteArray? = null,
     birthday: Initializer.WalletBirthday? = null
 ): Synchronizer {
@@ -331,8 +332,13 @@ fun Synchronizer(
             initializer.import(seed, birthday, overwrite = true)
         }
     }
-    return Synchronizer(appContext, lightwalletdHost, initializer.rustBackend)
+    return Synchronizer(appContext, initializer.rustBackend, lightwalletdHost, lightwalletdPort)
 }
+
+fun Synchronizer(
+    appContext: Context,
+    initializer: Initializer
+) = Synchronizer(appContext, initializer.rustBackend, initializer.host, initializer.port)
 
 /**
  * Constructor function for building a Synchronizer in the most flexible way possible. This allows
@@ -341,12 +347,13 @@ fun Synchronizer(
 @Suppress("FunctionName")
 fun Synchronizer(
     appContext: Context,
-    lightwalletdHost: String,
     rustBackend: RustBackend,
+    lightwalletdHost: String = ZcashSdk.DEFAULT_LIGHTWALLETD_HOST,
+    lightwalletdPort: Int = ZcashSdk.DEFAULT_LIGHTWALLETD_PORT,
     ledger: TransactionRepository =
         PagedTransactionRepository(appContext, 10, rustBackend.dbDataPath),
     blockStore: CompactBlockStore = CompactBlockDbStore(appContext, rustBackend.dbCachePath),
-    service: LightWalletService = LightWalletGrpcService(appContext, lightwalletdHost),
+    service: LightWalletService = LightWalletGrpcService(appContext, lightwalletdHost, lightwalletdPort),
     encoder: TransactionEncoder = WalletTransactionEncoder(rustBackend, ledger),
     downloader: CompactBlockDownloader = CompactBlockDownloader(service, blockStore),
     manager: OutboundTransactionManager =
