@@ -46,11 +46,11 @@ use crate::utils::exception::unwrap_exc_or;
 
 #[cfg(feature = "mainnet")]
 use zcash_client_backend::constants::mainnet::{
-    HRP_SAPLING_EXTENDED_FULL_VIEWING_KEY, HRP_SAPLING_EXTENDED_SPENDING_KEY,
+    COIN_TYPE, HRP_SAPLING_EXTENDED_FULL_VIEWING_KEY, HRP_SAPLING_EXTENDED_SPENDING_KEY
 };
 #[cfg(not(feature = "mainnet"))]
 use zcash_client_backend::constants::testnet::{
-    HRP_SAPLING_EXTENDED_FULL_VIEWING_KEY, HRP_SAPLING_EXTENDED_SPENDING_KEY,
+    COIN_TYPE, HRP_SAPLING_EXTENDED_FULL_VIEWING_KEY, HRP_SAPLING_EXTENDED_SPENDING_KEY
 };
 
 #[no_mangle]
@@ -102,7 +102,7 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_initAccountsTabl
         };
 
         let extsks: Vec<_> = (0..accounts)
-            .map(|account| spending_key(&seed, 1, account))
+            .map(|account| spending_key(&seed, COIN_TYPE, account))
             .collect();
         let extfvks: Vec<_> = extsks.iter().map(ExtendedFullViewingKey::from).collect();
 
@@ -144,7 +144,7 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_deriveExtendedSp
         };
 
         let extsks: Vec<_> = (0..accounts)
-            .map(|account| spending_key(&seed, 1, account))
+            .map(|account| spending_key(&seed, COIN_TYPE, account))
             .collect();
 
         Ok(utils::rust_vec_to_java(
@@ -179,7 +179,7 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_deriveExtendedFu
         };
 
         let extfvks: Vec<_> = (0..accounts)
-            .map(|account| ExtendedFullViewingKey::from(&spending_key(&seed, 1, account)))
+            .map(|account| ExtendedFullViewingKey::from(&spending_key(&seed, COIN_TYPE, account)))
             .collect();
 
         Ok(utils::rust_vec_to_java(
