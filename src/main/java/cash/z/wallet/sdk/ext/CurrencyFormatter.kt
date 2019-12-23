@@ -223,4 +223,6 @@ inline fun String?.safelyConvertToBigDecimal(): BigDecimal? {
     }
 }
 
+inline fun String.abbreviatedAddress() = if (length > 16) "${take(8)}…${takeLast(8)}" else this
+
 internal inline fun String.masked(): String = if (startsWith("ztest")) "****${takeLast(4)}" else "***masked***"
