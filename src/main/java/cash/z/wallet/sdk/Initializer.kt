@@ -183,6 +183,7 @@ class Initializer(
      */
     fun clear() {
         rustBackend.clear()
+        prefs[PREFS_HAS_DATA] = false
     }
 
     /**
@@ -294,9 +295,10 @@ class Initializer(
             )
             val file: String
             try {
-                file = treeFiles.first() {
-                    if (birthdayHeight == null) true
-                    else it.contains(birthdayHeight.toString())
+                file = if (birthdayHeight == null) treeFiles.first() else {
+                    treeFiles.first {
+                        it.split(".").first().toInt() <= birthdayHeight
+                    }
                 }
             } catch (t: Throwable) {
                 throw BirthdayException.BirthdayFileNotFoundException(
