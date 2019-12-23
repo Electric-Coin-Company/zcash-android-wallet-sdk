@@ -1,22 +1,20 @@
 package cash.z.wallet.sdk.block
 
-import cash.z.wallet.sdk.transaction.TransactionRepository
+import cash.z.wallet.sdk.entity.CompactBlockEntity
 import cash.z.wallet.sdk.ext.TroubleshootingTwig
 import cash.z.wallet.sdk.ext.Twig
-import cash.z.wallet.sdk.entity.CompactBlock
-import cash.z.wallet.sdk.entity.CompactBlockEntity
-import cash.z.wallet.sdk.ext.SAPLING_ACTIVATION_HEIGHT
 import cash.z.wallet.sdk.ext.ZcashSdk.SAPLING_ACTIVATION_HEIGHT
-import cash.z.wallet.sdk.jni.RustBackendWelding
+import cash.z.wallet.sdk.ext.twig
+import cash.z.wallet.sdk.jni.RustBackend
 import cash.z.wallet.sdk.service.LightWalletService
+import cash.z.wallet.sdk.transaction.TransactionRepository
 import com.nhaarman.mockitokotlin2.*
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
-import org.junit.jupiter.api.AfterEach
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.collect
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
@@ -25,12 +23,10 @@ import org.mockito.quality.Strictness
 
 @ExtendWith(MockitoExtension::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-internal class CompactBlockProcessorTest {
-
-    private val frequency = 5L
+class CompactBlockProcessorTest {
 
     // Mocks/Spys
-    @Mock lateinit var rustBackend: RustBackendWelding
+    @Mock lateinit var rustBackend: RustBackend
     lateinit var processor: CompactBlockProcessor
 
     // Test variables
@@ -41,14 +37,13 @@ internal class CompactBlockProcessorTest {
 
     @BeforeEach
     fun setUp(
-        @Mock lightwalletService: LightWalletService,
-        @Mock compactBlockStore: CompactBlockStore,
-        @Mock repository: TransactionRepository
+    @Mock lightwalletService: LightWalletService,
+    @Mock compactBlockStore: CompactBlockStore,
+    @Mock repository: TransactionRepository
     ) {
         Twig.plant(TroubleshootingTwig())
 
-
-        lightwalletService.stub {
+     lightwalletService.stub {
             onBlocking {
                 getBlockRange(any())
             }.thenAnswer { invocation ->
@@ -90,66 +85,72 @@ internal class CompactBlockProcessorTest {
             }.thenAnswer { lastScannedHeight }
         }
 
-        val config = ProcessorConfig(retries = 1, blockPollFrequencyMillis = frequency, downloadBatchSize = 50_000)
         val downloader = spy(CompactBlockDownloader(lightwalletService, compactBlockStore))
-        processor = spy(CompactBlockProcessor(config, downloader, repository, rustBackend))
+        processor = spy(CompactBlockProcessor(downloader, repository, rustBackend))
 
-        whenever(rustBackend.validateCombinedChain(any(), any())).thenAnswer {
+        whenever(rustBackend.validateCombinedChain()).thenAnswer {
             errorBlock
         }
 
-        whenever(rustBackend.scanBlocks(any(), any())).thenAnswer {
+        whenever(rustBackend.scanBlocks()).thenAnswer {
             true
         }
     }
 
-    @AfterEach
-    fun tearDown() {
-    }
-
     @Test
+    @Timeout(5)
     fun `check for OBOE when downloading`() = runBlocking {
         // if the last block downloaded was 350_000, then we already have that block and should start with 350_001
-        lastDownloadedHeight = 350_000
+        lastDownloadedHeight = 550_000
 
-        processBlocks()
-        verify(processor).downloadNewBlocks(350_001..latestBlockHeight)
+        processBlocksThen {
+            verify(processor).downloadNewBlocks(350_001..latestBlockHeight)
+        }
     }
 
     @Test
+    @Timeout(5)
     fun `chain error rewinds by expected amount`() = runBlocking {
         // if the highest block whose prevHash doesn't match happens at block 300_010
-        errorBlock = 300_010
+        errorBlock = 500_010
 
         // then  we should rewind the default (10) blocks
-        val expectedBlock = errorBlock - processor.config.rewindDistance
-        processBlocks(100L)
-        verify(processor.downloader, atLeastOnce()).rewindToHeight(expectedBlock)
-        verify(rustBackend, atLeastOnce()).rewindToHeight("", expectedBlock)
-        assertNotNull(processor)
+        val expectedBlock = errorBlock - 10
+        processBlocksThen {
+            twig("FINISHED PROCESSING!")
+            verify(processor.downloader, atLeastOnce()).rewindToHeight(expectedBlock)
+            verify(rustBackend, atLeastOnce()).rewindToHeight(expectedBlock)
+            assertNotNull(processor)
+        }
     }
 
     @Test
+//    @Timeout(5)
     fun `chain error downloads expected number of blocks`() = runBlocking {
         // if the highest block whose prevHash doesn't match happens at block 300_010
         // and our rewind distance is the default (10), then we want to download exactly ten blocks
-        errorBlock = 300_010
+        errorBlock = 500_010
 
         // plus 1 because the range is inclusive
-        val expectedRange = (errorBlock - processor.config.rewindDistance + 1)..latestBlockHeight
-        processBlocks(1500L)
-        verify(processor, atLeastOnce()).downloadNewBlocks(expectedRange)
+        val expectedRange = (errorBlock - 10 + 1)..latestBlockHeight
+        processBlocksThen {
+            verify(processor, atLeastOnce()).downloadNewBlocks(expectedRange)
+        }
     }
 
-    private fun processBlocks(delayMillis: Long? = null) = runBlocking {
-        launch { processor.start() }
-        val progressChannel = processor.progress()
-        for (i in progressChannel) {
-            if(i >= 100) {
-                if(delayMillis != null) delay(delayMillis)
-                processor.stop()
-                break
-            }
+    // TODO: fix the fact that flows cause this not to work as originally coded. With a channel, we can stop observing once we reach 100. A flow makes that more difficult. The SDK behavior is still the same but testing that behavior is a little tricky without some refactors.
+    private suspend fun processBlocksThen(block: suspend () -> Unit) = runBlocking {
+        val scope = this
+        launch {
+            processor.start()
         }
+        processor.progress.collect { i ->
+            if(i >= 100) {
+                block()
+                processor.stop()
+            }
+            twig("processed $i")
+        }
+        twig("Done processing!")
     }
 }

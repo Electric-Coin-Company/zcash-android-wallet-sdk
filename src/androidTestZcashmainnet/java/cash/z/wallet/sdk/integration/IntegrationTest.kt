@@ -37,7 +37,7 @@ class IntegrationTest {
 
     @Test
     fun testLoadBirthday() {
-        val (height, hash, time, tree) = Initializer.loadBirthdayFromAssets(context, ZcashSdk.SAPLING_ACTIVATION_HEIGHT)
+        val (height, hash, time, tree) = Initializer.loadBirthdayFromAssets(context, ZcashSdk.SAPLING_ACTIVATION_HEIGHT + 1)
         assertEquals(ZcashSdk.SAPLING_ACTIVATION_HEIGHT, height)
     }
 
@@ -105,6 +105,7 @@ class IntegrationTest {
         private val synchronizer: Synchronizer = Synchronizer(
             context,
             host,
+            443,
             seed
         )
 

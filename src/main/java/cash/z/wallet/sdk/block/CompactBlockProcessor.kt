@@ -31,6 +31,11 @@ import kotlin.math.roundToInt
  * Responsible for processing the compact blocks that are received from the lightwallet server. This class encapsulates
  * all the business logic required to validate and scan the blockchain and is therefore tightly coupled with
  * librustzcash.
+ *
+ * @param minimumHeight the lowest height that we could care about. This is mostly used during
+ * reorgs as a backstop to make sure we do not rewind beyond sapling activation. It also is factored
+ * in when considering initial range to download. In most cases, this should be the birthday height
+ * of the current wallet--the height before which we do not need to scan for transactions.
  */
 @OpenForTesting
 class CompactBlockProcessor(
@@ -76,7 +81,7 @@ class CompactBlockProcessor(
                     consecutiveChainErrors.getAndIncrement()
                 }
             }
-        } while (isActive && _state.value !is Stopped)
+        } while (isActive && !_state.isClosedForSend && _state.value !is Stopped)
         twig("processor complete")
         stop()
     }
