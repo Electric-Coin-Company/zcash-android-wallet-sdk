@@ -34,7 +34,7 @@ import kotlin.math.roundToInt
  */
 @OpenForTesting
 class CompactBlockProcessor(
-    internal val downloader: CompactBlockDownloader,
+    val downloader: CompactBlockDownloader,
     private val repository: TransactionRepository,
     private val rustBackend: RustBackendWelding,
     minimumHeight: Int = SAPLING_ACTIVATION_HEIGHT

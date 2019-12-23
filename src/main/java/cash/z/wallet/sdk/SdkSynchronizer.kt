@@ -39,10 +39,12 @@ import kotlin.coroutines.CoroutineContext
 class SdkSynchronizer internal constructor(
     private val ledger: TransactionRepository,
     private val manager: OutboundTransactionManager,
-    private val processor: CompactBlockProcessor
+    val processor: CompactBlockProcessor,
+    // TODO: clean this up and don't hold this
+    val rustBackend: RustBackend? = null
 ) : Synchronizer {
-    private val _balances = ConflatedBroadcastChannel<WalletBalance>()
-    private val _status = ConflatedBroadcastChannel<Synchronizer.Status>()
+    private val _balances = ConflatedBroadcastChannel(WalletBalance())
+    private val _status = ConflatedBroadcastChannel<Synchronizer.Status>(DISCONNECTED)
 
     /**
      * The lifespan of this Synchronizer. This scope is initialized once the Synchronizer starts
@@ -167,7 +169,7 @@ class SdkSynchronizer internal constructor(
         ledger.invalidate()
     }
 
-    private suspend fun refreshBalance() {
+    suspend fun refreshBalance() {
         _balances.send(processor.getBalanceInfo())
     }
 
@@ -315,7 +317,7 @@ fun Synchronizer(
     seed: ByteArray? = null,
     birthday: Initializer.WalletBirthday? = null
 ): Synchronizer {
-    val initializer = Initializer(appContext)
+    val initializer = Initializer(appContext, lightwalletdHost, lightwalletdPort)
     if (initializer.hasData()) {
         twig("Initializing existing wallet")
         initializer.open()
@@ -332,7 +334,7 @@ fun Synchronizer(
             initializer.import(seed, birthday, overwrite = true)
         }
     }
-    return Synchronizer(appContext, initializer.rustBackend, lightwalletdHost, lightwalletdPort)
+    return Synchronizer(appContext, initializer)
 }
 
 fun Synchronizer(
@@ -365,6 +367,7 @@ fun Synchronizer(
     return SdkSynchronizer(
         ledger,
         manager,
-        processor
+        processor,
+        rustBackend
     )
 }
