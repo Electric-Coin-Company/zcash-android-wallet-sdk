@@ -109,7 +109,7 @@ interface Synchronizer {
         toAddress: String,
         memo: String = "",
         fromAccountIndex: Int = 0
-    ): Flow<PendingTransaction?>
+    ): Flow<PendingTransaction>
 
     /**
      * Attempts to cancel a transaction that is about to be sent. Typically, cancellation is only

@@ -39,9 +39,7 @@ import kotlin.coroutines.CoroutineContext
 class SdkSynchronizer internal constructor(
     private val ledger: TransactionRepository,
     private val manager: OutboundTransactionManager,
-    val processor: CompactBlockProcessor,
-    // TODO: clean this up and don't hold this
-    val rustBackend: RustBackend? = null
+    val processor: CompactBlockProcessor
 ) : Synchronizer {
     private val _balances = ConflatedBroadcastChannel(WalletBalance())
     private val _status = ConflatedBroadcastChannel<Synchronizer.Status>(DISCONNECTED)
@@ -373,7 +371,6 @@ fun Synchronizer(
     return SdkSynchronizer(
         ledger,
         manager,
-        processor,
-        rustBackend
+        processor
     )
 }
