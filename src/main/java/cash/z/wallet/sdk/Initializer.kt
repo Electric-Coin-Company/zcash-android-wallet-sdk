@@ -3,13 +3,14 @@ package cash.z.wallet.sdk
 import android.content.Context
 import android.content.SharedPreferences
 import cash.z.wallet.sdk.exception.BirthdayException
-import cash.z.wallet.sdk.exception.BirthdayException.MissingBirthdayException
 import cash.z.wallet.sdk.exception.InitializerException
 import cash.z.wallet.sdk.ext.*
 import cash.z.wallet.sdk.jni.RustBackend
 import com.google.gson.Gson
 import com.google.gson.stream.JsonReader
 import java.io.InputStreamReader
+import kotlin.properties.ReadWriteProperty
+import kotlin.reflect.KProperty
 
 /**
  * Responsible for initialization, which can be considered as setup that must happen before
@@ -41,11 +42,6 @@ class Initializer(
     private val paramPath: String = "${appContext.cacheDir.absolutePath}/params"
 
     /**
-     * Preferences where the birthday is stored.
-     */
-    private val prefs: SharedPreferences = SharedPrefs(appContext, alias)
-
-    /**
      * A wrapped version of [cash.z.wallet.sdk.jni.RustBackendWelding] that will be passed to the
      * SDK when it is constructed. It provides access to all Librustzcash features and is configured
      * based on this initializer.
@@ -58,27 +54,12 @@ class Initializer(
     lateinit var birthday: WalletBirthday
 
     /**
-     * Birthday that helps new wallets not have to scan from the beginning, which saves significant
-     * amounts of startup time. This value is created using the context passed into the constructor.
+     * Returns true when either 'open', 'new' or 'import' have already been called. Each of those
+     * functions calls `initRustLibrary` before returning. The entire point of the initializer is to
+     * setup everything necessary for the Synchronizer to function, which mainly boils down to
+     * loading the rust backend.
      */
-    private var newWalletBirthday: WalletBirthday = loadBirthdayFromAssets(appContext)
-
-    /**
-     * Birthday to use whenever no birthday is known, meaning we have to scan from the first time a
-     * transaction could have happened. This is the most efficient value we can use in this least
-     * efficient circumstance. This value is created using the context passed into the constructor
-     * and it is a different value for mainnet and testnet.
-     */
-    private var saplingBirthday: WalletBirthday =
-        loadBirthdayFromAssets(appContext, ZcashSdk.SAPLING_ACTIVATION_HEIGHT)
-
-    /**
-     * Typically the first function that is called on this class in order to determine whether the
-     * user needs to create a new wallet.
-     *
-     * @return true when an initialized wallet exists on this device.
-     */
-    fun hasData() = prefs.get<Boolean>(PREFS_HAS_DATA) == true
+    val isInitialized: Boolean get() = ::rustBackend.isInitialized
 
     /**
      * Initialize a new wallet with the given seed and birthday. It creates the required database
@@ -89,12 +70,12 @@ class Initializer(
      */
     fun new(
         seed: ByteArray,
-        birthday: WalletBirthday = newWalletBirthday,
+        newWalletBirthday: WalletBirthday,
         numberOfAccounts: Int = 1,
         overwrite: Boolean = false
     ): Array<String> {
         initRustLibrary()
-        return initializeAccounts(seed, birthday, numberOfAccounts, overwrite)
+        return initializeAccounts(seed, newWalletBirthday, numberOfAccounts, overwrite)
     }
 
    /**
@@ -105,21 +86,20 @@ class Initializer(
      * DB.
      */
     fun import(
-        seed: ByteArray,
-        birthday: WalletBirthday = saplingBirthday,
-        overwrite: Boolean = false
+       seed: ByteArray,
+       previousWalletBirthday: WalletBirthday,
+       overwrite: Boolean = false
     ): Array<String> {
         initRustLibrary()
-        return initializeAccounts(seed, birthday, overwrite = overwrite)
+        return initializeAccounts(seed, previousWalletBirthday, overwrite = overwrite)
     }
 
     /**
      * Loads the rust library and previously used birthday for use by all other components. This is
      * the most common use case for the initializer--reopening a wallet that was previously created.
      */
-    fun open(): Initializer {
+    fun open(birthday: WalletBirthday): Initializer {
         initRustLibrary()
-        birthday = loadBirthdayFromPrefs(prefs) ?: throw MissingBirthdayException(alias)
         rustBackend.birthdayHeight = birthday.height
         return this
     }
@@ -136,7 +116,7 @@ class Initializer(
      */
     private fun initializeAccounts(
         seed: ByteArray,
-        birthday: WalletBirthday = newWalletBirthday,
+        birthday: WalletBirthday,
         numberOfAccounts: Int = 1,
         overwrite: Boolean = false
     ): Array<String> {
@@ -170,7 +150,6 @@ class Initializer(
         try {
             return rustBackend.initAccountsTable(seed, numberOfAccounts).also {
                 twig("Initialized the accounts table with ${numberOfAccounts} account(s)")
-                onAccountsInitialized()
             }
         } catch (t: Throwable) {
             throw InitializerException.FalseStart(t)
@@ -183,34 +162,6 @@ class Initializer(
      */
     fun clear() {
         rustBackend.clear()
-        prefs[PREFS_HAS_DATA] = false
-    }
-
-    /**
-     * Validate that the alias doesn't contain malicious characters by enforcing simple rules which
-     * permit the alias to be used as part of a file name for the preferences and databases. This
-     * enables multiple wallets to exist on one device, which is also helpful for sweeping funds.
-     *
-     * @throws IllegalArgumentException whenever the alias is not less than 100 characters or
-     * contains something other than alphanumeric characters. Underscores are allowed but aliases
-     * must start with a letter.
-     */
-    private fun validateAlias(alias: String) {
-        require(alias.length in 1..99 && alias[0].isLetter()
-                && alias.all{ it.isLetterOrDigit() || it == '_' }) {
-            "ERROR: Invalid alias ($alias). For security, the alias must be shorter than 100 " +
-            "characters and only contain letters, digits or underscores and start with a letter."
-        }
-    }
-
-    /**
-     * Called when accounts have been successfully initialized. Stores the birthday and a flag to
-     * signal that initialization has happened for the given alias.
-     */
-    private fun onAccountsInitialized() {
-        saveBirthdayToPrefs(prefs, birthday)
-        prefs[PREFS_HAS_DATA] = true
-
     }
 
     /**
@@ -218,7 +169,7 @@ class Initializer(
      * that was passed to the constructor.
      */
     private fun initRustLibrary() {
-        if (!::rustBackend.isInitialized) rustBackend = RustBackend().init(dbPath, paramPath, alias)
+        if (!isInitialized) rustBackend = RustBackend().init(dbPath, paramPath, alias)
     }
 
 
@@ -256,26 +207,85 @@ class Initializer(
 
 
     /**
-     * Static helper functions that facilitate initializing the birthday.
+     * Model object for holding wallet birthdays. It is only used by this class.
      */
-    companion object {
+    data class WalletBirthday(
+        val height: Int = -1,
+        val hash: String = "",
+        val time: Long = -1,
+        val tree: String = ""
+    )
 
-        //
-        // Preference Keys
-        //
+    interface WalletBirthdayStore : ReadWriteProperty<R, WalletBirthday> {
+        val newWalletBirthday: WalletBirthday
 
-        private const val PREFS_HAS_DATA = "Initializer.prefs.hasData"
-        private const val PREFS_BIRTHDAY_HEIGHT = "Initializer.prefs.birthday.height"
-        private const val PREFS_BIRTHDAY_TIME = "Initializer.prefs.birthday.time"
-        private const val PREFS_BIRTHDAY_HASH = "Initializer.prefs.birthday.hash"
-        private const val PREFS_BIRTHDAY_TREE = "Initializer.prefs.birthday.tree"
+        fun getBirthday(): WalletBirthday
+        fun setBirthday(value: WalletBirthday)
+        fun loadBirthday(birthdayHeight: Int): WalletBirthday
+        fun hasExistingBirthday(): Boolean
+        fun hasImportedBirthday(): Boolean
 
+        /* Property implementation that allows this interface to be used as a property delegate */
+
+        override fun getValue(thisRef: R, property: KProperty<*>): WalletBirthday {
+            return getBirthday()
+        }
+
+        override fun setValue(thisRef: R, property: KProperty<*>, value: WalletBirthday) {
+            setBirthday(value)
+        }
+
+    }
+
+    class DefaultBirthdayStore(
+        private val appContext: Context,
+        private val importedBirthdayHeight: Int? = null,
+        val alias: String = "default_prefs"
+    ) : WalletBirthdayStore {
 
         /**
-         * Directory within the assets folder where birthday data
-         * (i.e. sapling trees for a given height) can be found.
+         * Birthday that helps new wallets not have to scan from the beginning, which saves
+         * significant amounts of startup time. This value is created using the context passed into
+         * the constructor.
          */
-        private const val BIRTHDAY_DIRECTORY = "zcash/saplingtree"
+        override val newWalletBirthday: WalletBirthday get() = loadBirthdayFromAssets(appContext)
+
+        /**
+         * Birthday to use whenever no birthday is known, meaning we have to scan from the first
+         * time a transaction could have happened. This is the most efficient value we can use in
+         * this least efficient circumstance. This value is created using the context passed into
+         * the constructor and it is a different value for mainnet and testnet.
+         */
+        private val saplingBirthday: WalletBirthday get() =
+            loadBirthdayFromAssets(appContext, ZcashSdk.SAPLING_ACTIVATION_HEIGHT)
+
+        /**
+         * Preferences where the birthday is stored.
+         */
+        private val prefs: SharedPreferences = SharedPrefs(appContext, alias)
+
+        init {
+            validateAlias(alias)
+            if (importedBirthdayHeight != null) {
+                saveBirthdayToPrefs(
+                    prefs,
+                    loadBirthdayFromAssets(appContext, importedBirthdayHeight)
+                )
+            }
+        }
+
+        override fun hasExistingBirthday(): Boolean = loadBirthdayFromPrefs(prefs) != null
+
+        override fun hasImportedBirthday(): Boolean = importedBirthdayHeight != null
+
+        override fun getBirthday() = loadBirthdayFromPrefs(prefs) ?: saplingBirthday
+
+        override fun setBirthday(value: WalletBirthday) {
+            saveBirthdayToPrefs(prefs, value)
+        }
+
+        override fun loadBirthday(birthdayHeight: Int) =
+            loadBirthdayFromAssets(appContext, birthdayHeight)
 
         /**
          * Load the given birthday file from the assets of the given context. When no height is
@@ -287,12 +297,17 @@ class Initializer(
          * @return a WalletBirthday that reflects the contents of the file or an exception when
          * parsing fails.
          */
-        fun loadBirthdayFromAssets(context: Context, birthdayHeight: Int? = null): WalletBirthday {
+        private fun loadBirthdayFromAssets(
+            context: Context,
+            birthdayHeight: Int? = null
+        ): WalletBirthday {
+            twig("loading birthday from assets: $birthdayHeight")
             val treeFiles =
                 context.assets.list(BIRTHDAY_DIRECTORY)?.apply { sortDescending() }
             if (treeFiles.isNullOrEmpty()) throw BirthdayException.MissingBirthdayFilesException(
                 BIRTHDAY_DIRECTORY
             )
+            twig("found ${treeFiles.size} sapling tree checkpoints: $treeFiles")
             val file: String
             try {
                 file = if (birthdayHeight == null) treeFiles.first() else {
@@ -327,7 +342,7 @@ class Initializer(
          *
          * @return a birthday from preferences if one exists and null, otherwise null
          */
-        fun loadBirthdayFromPrefs(prefs: SharedPreferences?): WalletBirthday? {
+        private fun loadBirthdayFromPrefs(prefs: SharedPreferences?): WalletBirthday? {
             prefs ?: return null
             val height: Int? = prefs[PREFS_BIRTHDAY_HEIGHT]
             return height?.let {
@@ -348,7 +363,7 @@ class Initializer(
          * @param prefs the shared preferences to use
          * @param birthday the birthday to save. It will be split into primitives.
          */
-        fun saveBirthdayToPrefs(prefs: SharedPreferences, birthday: WalletBirthday) {
+        private fun saveBirthdayToPrefs(prefs: SharedPreferences, birthday: WalletBirthday) {
             twig("saving birthday to prefs (${birthday.height})")
             prefs[PREFS_BIRTHDAY_HEIGHT] = birthday.height
             prefs[PREFS_BIRTHDAY_HASH] = birthday.hash
@@ -356,15 +371,45 @@ class Initializer(
             prefs[PREFS_BIRTHDAY_TREE] = birthday.tree
         }
 
-    }
+        /**
+         * Static helper functions that facilitate initializing the birthday.
+         */
+        companion object {
 
-    /**
-     * Model object for holding wallet birthdays. It is only used by this class.
-     */
-    data class WalletBirthday(
-        val height: Int = -1,
-        val hash: String = "",
-        val time: Long = -1,
-        val tree: String = ""
-    )
+            //
+            // Preference Keys
+            //
+
+            private const val PREFS_HAS_DATA = "Initializer.prefs.hasData"
+            private const val PREFS_BIRTHDAY_HEIGHT = "Initializer.prefs.birthday.height"
+            private const val PREFS_BIRTHDAY_TIME = "Initializer.prefs.birthday.time"
+            private const val PREFS_BIRTHDAY_HASH = "Initializer.prefs.birthday.hash"
+            private const val PREFS_BIRTHDAY_TREE = "Initializer.prefs.birthday.tree"
+
+
+            /**
+             * Directory within the assets folder where birthday data
+             * (i.e. sapling trees for a given height) can be found.
+             */
+            private const val BIRTHDAY_DIRECTORY = "zcash/saplingtree"
+
+        }
+    }
+}
+
+/**
+ * Validate that the alias doesn't contain malicious characters by enforcing simple rules which
+ * permit the alias to be used as part of a file name for the preferences and databases. This
+ * enables multiple wallets to exist on one device, which is also helpful for sweeping funds.
+ *
+ * @throws IllegalArgumentException whenever the alias is not less than 100 characters or
+ * contains something other than alphanumeric characters. Underscores are allowed but aliases
+ * must start with a letter.
+ */
+internal fun validateAlias(alias: String) {
+    require(alias.length in 1..99 && alias[0].isLetter()
+            && alias.all{ it.isLetterOrDigit() || it == '_' }) {
+        "ERROR: Invalid alias ($alias). For security, the alias must be shorter than 100 " +
+                "characters and only contain letters, digits or underscores and start with a letter"
+    }
 }

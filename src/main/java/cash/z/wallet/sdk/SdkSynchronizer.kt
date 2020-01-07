@@ -315,23 +315,23 @@ fun Synchronizer(
     lightwalletdHost: String = ZcashSdk.DEFAULT_LIGHTWALLETD_HOST,
     lightwalletdPort: Int = ZcashSdk.DEFAULT_LIGHTWALLETD_PORT,
     seed: ByteArray? = null,
-    birthday: Initializer.WalletBirthday? = null
+    birthdayStore: Initializer.WalletBirthdayStore = Initializer.DefaultBirthdayStore(appContext)
 ): Synchronizer {
     val initializer = Initializer(appContext, lightwalletdHost, lightwalletdPort)
-    if (initializer.hasData()) {
+    if (seed != null && birthdayStore.hasExistingBirthday()) {
         twig("Initializing existing wallet")
-        initializer.open()
+        initializer.open(birthdayStore.getBirthday())
         twig("${initializer.rustBackend.dbDataPath}")
     } else {
-        seed ?: throw IllegalArgumentException(
+        require(seed != null) {
             "Failed to initialize. A seed is required when no wallet exists on the device."
-        )
-        if (birthday == null) {
+        }
+        if (birthdayStore.hasImportedBirthday()) {
             twig("Initializing new wallet")
-            initializer.new(seed, overwrite = true)
+            initializer.new(seed, birthdayStore.newWalletBirthday, overwrite = true)
         } else {
             twig("Initializing imported wallet")
-            initializer.import(seed, birthday, overwrite = true)
+            initializer.import(seed, birthdayStore.getBirthday(), overwrite = true)
         }
     }
     return Synchronizer(appContext, initializer)
@@ -340,7 +340,13 @@ fun Synchronizer(
 fun Synchronizer(
     appContext: Context,
     initializer: Initializer
-) = Synchronizer(appContext, initializer.rustBackend, initializer.host, initializer.port)
+): Synchronizer {
+    check(initializer.isInitialized) {
+        "Error: RustBackend must be loaded before creating the Synchronizer. Verify that either" +
+                " the 'open', 'new' or 'import' function has been called on the Initializer."
+    }
+    return Synchronizer(appContext, initializer.rustBackend, initializer.host, initializer.port)
+}
 
 /**
  * Constructor function for building a Synchronizer in the most flexible way possible. This allows
