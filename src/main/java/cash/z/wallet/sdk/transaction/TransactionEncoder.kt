@@ -13,4 +13,7 @@ interface TransactionEncoder {
         memo: ByteArray? = byteArrayOf(),
         fromAccountIndex: Int = 0
     ): EncodedTransaction
+
+    suspend fun isValidShieldedAddress(address: String): Boolean
+    suspend fun isValidTransparentAddress(address: String): Boolean
 }

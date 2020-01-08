@@ -111,6 +111,32 @@ interface Synchronizer {
         fromAccountIndex: Int = 0
     ): Flow<PendingTransaction>
 
+
+    /**
+     * Returns true when the given address is a valid z-addr. Invalid addresses will throw an
+     * exception. Valid z-addresses have these characteristics: //TODO
+     *
+     * @param address the address to validate.
+     * @throws RuntimeException when the address is invalid.
+     */
+    suspend fun isValidShieldedAddr(address: String): Boolean
+
+    /**
+     * Returns true when the given address is a valid t-addr. Invalid addresses will throw an
+     * exception. Valid t-addresses have these characteristics: //TODO
+     *
+     * @param address the address to validate.
+     * @throws RuntimeException when the address is invalid.
+     */
+    suspend fun isValidTransparentAddr(address: String): Boolean
+
+    /**
+     * Validates the given address, returning information about why it is invalid.
+     *
+     * @param address the address to validate.
+     */
+    suspend fun validateAddress(address: String): AddressType
+
     /**
      * Attempts to cancel a transaction that is about to be sent. Typically, cancellation is only
      * an option if the transaction has not yet been submitted to the server.
@@ -177,5 +203,14 @@ interface Synchronizer {
          * When set, a UI element may want to turn green.
          */
         SYNCED
+    }
+
+    sealed class AddressType {
+        interface Valid
+        object Shielded : Valid, AddressType()
+        object Transparent : Valid, AddressType()
+        class Invalid(val reason: String = "Invalid") : AddressType()
+
+        val isNotValid get() = this !is Valid
     }
 }

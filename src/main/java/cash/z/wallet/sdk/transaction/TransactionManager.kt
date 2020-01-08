@@ -20,6 +20,9 @@ interface OutboundTransactionManager {
     suspend fun applyMinedHeight(pendingTx: PendingTransaction, minedHeight: Int)
     suspend fun monitorById(id: Long): Flow<PendingTransaction>
 
+    suspend fun isValidShieldedAddress(address: String): Boolean
+    suspend fun isValidTransparentAddress(address: String): Boolean
+
     /**
      * Attempt to cancel a transaction.
      *

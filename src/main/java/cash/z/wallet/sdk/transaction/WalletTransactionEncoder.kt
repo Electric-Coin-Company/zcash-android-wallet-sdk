@@ -35,6 +35,22 @@ class WalletTransactionEncoder(
     }
 
     /**
+     * Utility function to help with validation. This is not called during [createTransaction]
+     * because this class asserts that all validation is done externally by the UI, for now.
+     */
+    override suspend fun isValidShieldedAddress(address: String): Boolean = withContext(IO) {
+        rustBackend.isValidShieldedAddr(address)
+    }
+
+    /**
+     * Utility function to help with validation. This is not called during [createTransaction]
+     * because this class asserts that all validation is done externally by the UI, for now.
+     */
+    override suspend fun isValidTransparentAddress(address: String): Boolean = withContext(IO) {
+        rustBackend.isValidTransparentAddr(address)
+    }
+
+    /**
      * Does the proofs and processing required to create a transaction to spend funds and inserts
      * the result in the database. On average, this call takes over 10 seconds.
      *

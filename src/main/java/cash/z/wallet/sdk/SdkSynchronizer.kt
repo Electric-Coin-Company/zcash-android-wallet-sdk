@@ -302,6 +302,29 @@ class SdkSynchronizer internal constructor(
         twig("Monitoring pending transaction (id: ${it.id}) for updates...")
         manager.monitorById(it.id)
     }.distinctUntilChanged()
+
+    override suspend fun isValidShieldedAddr(address: String) = manager.isValidShieldedAddress(address)
+
+    override suspend fun isValidTransparentAddr(address: String) =
+        manager.isValidTransparentAddress(address)
+
+    override suspend fun validateAddress(address: String): Synchronizer.AddressType {
+        return try {
+            isValidShieldedAddr(address)
+            Synchronizer.AddressType.Shielded
+        } catch (zError: Throwable) {
+            var message = zError.message
+            try {
+                isValidTransparentAddr(address)
+                Synchronizer.AddressType.Transparent
+            } catch (tError: Throwable) {
+                Synchronizer.AddressType.Invalid(
+                    if (message != tError.message) "$message and ${tError.message}" else (message
+                        ?: "Invalid")
+                )
+            }
+        }
+    }
 }
 
 /**
