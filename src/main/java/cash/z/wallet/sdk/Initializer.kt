@@ -288,53 +288,6 @@ class Initializer(
             loadBirthdayFromAssets(appContext, birthdayHeight)
 
         /**
-         * Load the given birthday file from the assets of the given context. When no height is
-         * specified, we default to the file with the greatest name.
-         *
-         * @param context the context from which to load assets.
-         * @param birthdayHeight the height file to look for among the file names.
-         *
-         * @return a WalletBirthday that reflects the contents of the file or an exception when
-         * parsing fails.
-         */
-        private fun loadBirthdayFromAssets(
-            context: Context,
-            birthdayHeight: Int? = null
-        ): WalletBirthday {
-            twig("loading birthday from assets: $birthdayHeight")
-            val treeFiles =
-                context.assets.list(BIRTHDAY_DIRECTORY)?.apply { sortDescending() }
-            if (treeFiles.isNullOrEmpty()) throw BirthdayException.MissingBirthdayFilesException(
-                BIRTHDAY_DIRECTORY
-            )
-            twig("found ${treeFiles.size} sapling tree checkpoints: $treeFiles")
-            val file: String
-            try {
-                file = if (birthdayHeight == null) treeFiles.first() else {
-                    treeFiles.first {
-                        it.split(".").first().toInt() <= birthdayHeight
-                    }
-                }
-            } catch (t: Throwable) {
-                throw BirthdayException.BirthdayFileNotFoundException(
-                    BIRTHDAY_DIRECTORY,
-                    birthdayHeight
-                )
-            }
-            try {
-                val reader = JsonReader(
-                    InputStreamReader(context.assets.open("${BIRTHDAY_DIRECTORY}/$file"))
-                )
-                return Gson().fromJson(reader, WalletBirthday::class.java)
-            } catch (t: Throwable) {
-                throw BirthdayException.MalformattedBirthdayFilesException(
-                    BIRTHDAY_DIRECTORY,
-                    treeFiles[0]
-                )
-            }
-        }
-
-        /**
          * Retrieves the birthday-related primitives from the given preference object and then uses
          * them to construct and return a birthday instance. It assumes that if the first preference
          * is there, the rest will be too. If that's not the case, a call to this function will
@@ -393,6 +346,52 @@ class Initializer(
              */
             private const val BIRTHDAY_DIRECTORY = "zcash/saplingtree"
 
+            /**
+             * Load the given birthday file from the assets of the given context. When no height is
+             * specified, we default to the file with the greatest name.
+             *
+             * @param context the context from which to load assets.
+             * @param birthdayHeight the height file to look for among the file names.
+             *
+             * @return a WalletBirthday that reflects the contents of the file or an exception when
+             * parsing fails.
+             */
+            fun loadBirthdayFromAssets(
+                context: Context,
+                birthdayHeight: Int? = null
+            ): WalletBirthday {
+                twig("loading birthday from assets: $birthdayHeight")
+                val treeFiles =
+                    context.assets.list(BIRTHDAY_DIRECTORY)?.apply { sortDescending() }
+                if (treeFiles.isNullOrEmpty()) throw BirthdayException.MissingBirthdayFilesException(
+                    BIRTHDAY_DIRECTORY
+                )
+                twig("found ${treeFiles.size} sapling tree checkpoints: $treeFiles")
+                val file: String
+                try {
+                    file = if (birthdayHeight == null) treeFiles.first() else {
+                        treeFiles.first {
+                            it.split(".").first().toInt() <= birthdayHeight
+                        }
+                    }
+                } catch (t: Throwable) {
+                    throw BirthdayException.BirthdayFileNotFoundException(
+                        BIRTHDAY_DIRECTORY,
+                        birthdayHeight
+                    )
+                }
+                try {
+                    val reader = JsonReader(
+                        InputStreamReader(context.assets.open("${BIRTHDAY_DIRECTORY}/$file"))
+                    )
+                    return Gson().fromJson(reader, WalletBirthday::class.java)
+                } catch (t: Throwable) {
+                    throw BirthdayException.MalformattedBirthdayFilesException(
+                        BIRTHDAY_DIRECTORY,
+                        treeFiles[0]
+                    )
+                }
+            }
         }
     }
 }

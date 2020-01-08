@@ -38,6 +38,14 @@ fun <T> Flow<T>.collectWith(scope: CoroutineScope, block: (T) -> Unit) {
     }
 }
 
+fun <T, S> Flow<T>.onFirstWith(scope: CoroutineScope, block: suspend (T) -> S) {
+    scope.launch {
+        onEach {
+            block(it)
+        }.first()
+    }
+}
+
 suspend fun <T, S> Flow<T>.onFirst(block: suspend (T) -> S) {
     onEach {
         block(it)
