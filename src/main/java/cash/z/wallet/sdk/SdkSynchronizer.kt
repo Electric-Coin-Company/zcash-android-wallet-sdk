@@ -1,6 +1,8 @@
 package cash.z.wallet.sdk
 
 import android.content.Context
+import cash.z.wallet.sdk.Synchronizer.AddressType.Shielded
+import cash.z.wallet.sdk.Synchronizer.AddressType.Transparent
 import cash.z.wallet.sdk.Synchronizer.Status.*
 import cash.z.wallet.sdk.block.CompactBlockDbStore
 import cash.z.wallet.sdk.block.CompactBlockDownloader
@@ -316,13 +318,11 @@ class SdkSynchronizer internal constructor(
 
     override suspend fun validateAddress(address: String): Synchronizer.AddressType {
         return try {
-            isValidShieldedAddr(address)
-            Synchronizer.AddressType.Shielded
+            if (isValidShieldedAddr(address)) Shielded else Transparent
         } catch (zError: Throwable) {
             var message = zError.message
             try {
-                isValidTransparentAddr(address)
-                Synchronizer.AddressType.Transparent
+                if (isValidTransparentAddr(address)) Transparent else Shielded
             } catch (tError: Throwable) {
                 Synchronizer.AddressType.Invalid(
                     if (message != tError.message) "$message and ${tError.message}" else (message
@@ -386,7 +386,7 @@ fun Synchronizer(
     lightwalletdHost: String = ZcashSdk.DEFAULT_LIGHTWALLETD_HOST,
     lightwalletdPort: Int = ZcashSdk.DEFAULT_LIGHTWALLETD_PORT,
     ledger: TransactionRepository =
-        PagedTransactionRepository(appContext, 10, rustBackend.dbDataPath),
+        PagedTransactionRepository(appContext, 1000, rustBackend.dbDataPath), // TODO: fix this pagesize bug, small pages should not crash the app. It crashes with: Uncaught Exception: android.view.ViewRootImpl$CalledFromWrongThreadException: Only the original thread that created a view hierarchy can touch its views. and is probably related to FlowPagedList
     blockStore: CompactBlockStore = CompactBlockDbStore(appContext, rustBackend.dbCachePath),
     service: LightWalletService = LightWalletGrpcService(appContext, lightwalletdHost, lightwalletdPort),
     encoder: TransactionEncoder = WalletTransactionEncoder(rustBackend, ledger),

@@ -174,13 +174,15 @@ class CompactBlockProcessor(
             twig("found $missingBlockCount missing blocks, downloading in $batches batches of ${DOWNLOAD_BATCH_SIZE}...")
             for (i in 1..batches) {
                 retryUpTo(RETRIES) {
-                    val end = min(range.first + (i * DOWNLOAD_BATCH_SIZE), range.last + 1)
-                    twig("downloaded $downloadedBlockHeight..${(end - 1)} (batch $i of $batches)") {
-                        downloader.downloadBlockRange(downloadedBlockHeight until end)
+                    val end = min((range.first + (i * DOWNLOAD_BATCH_SIZE)) - 1, range.last) // subtract 1 on the first value because the range is inclusive
+                    var count = 0
+                    twig("downloaded $downloadedBlockHeight..$end (batch $i of $batches) [${downloadedBlockHeight..end}]") {
+                        count = downloader.downloadBlockRange(downloadedBlockHeight..end)
                     }
+                    twig("downloaded $count blocks!")
                     progress = (i / batches.toFloat() * 100).roundToInt()
-                    // only report during large downloads. TODO: allow for configuration of "large"
                     _progress.send(progress)
+                    updateProgress(lastDownloadedHeight = downloader.getLastDownloadedHeight().also { twig("updating lastDownloadedHeight=$it") })
                     downloadedBlockHeight = end
                 }
             }

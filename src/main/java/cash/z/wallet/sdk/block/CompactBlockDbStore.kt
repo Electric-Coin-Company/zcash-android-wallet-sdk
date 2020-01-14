@@ -34,7 +34,7 @@ class CompactBlockDbStore(
     }
 
     override suspend fun getLatestHeight(): Int = withContext(IO) {
-        val lastBlock = Math.max(0, cacheDao.latestBlockHeight() - 1)
+        val lastBlock = Math.max(0, cacheDao.latestBlockHeight())
         if (lastBlock < SAPLING_ACTIVATION_HEIGHT) -1 else lastBlock
     }
 

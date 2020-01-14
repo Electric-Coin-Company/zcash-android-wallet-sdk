@@ -223,6 +223,8 @@ inline fun String?.safelyConvertToBigDecimal(): BigDecimal? {
     }
 }
 
-inline fun String.abbreviatedAddress(startLength: Int = 8, endLength: Int = 8) = if (length > startLength + endLength) "${take(startLength)}…${takeLast(endLength)}" else this
+inline fun String.toAbbreviatedAddress(startLength: Int = 8, endLength: Int = 8) = if (length > startLength + endLength) "${take(startLength)}…${takeLast(endLength)}" else this
 
 internal inline fun String.masked(): String = if (startsWith("ztest") || startsWith("zs")) "****${takeLast(4)}" else "***masked***"
+
+inline fun String?.isShielded() = this != null && startsWith('z')
