@@ -80,10 +80,16 @@ class SdkSynchronizer internal constructor(
     /**
      * Indicates the download progress of the Synchronizer. When progress reaches 100, that
      * signals that the Synchronizer is in sync with the network. Balances should be considered
-     * inaccurate and outbound transactions should be prevented until this sync is complete.
+     * inaccurate and outbound transactions should be prevented until this sync is complete. It is
+     * a simplified version of [processorInfo].
      */
     override val progress: Flow<Int> = processor.progress
 
+    /**
+     * Indicates the latest information about the blocks that have been processed by the SDK. This
+     * is very helpful for conveying detailed progress and status to the user.
+     */
+    override val processorInfo: Flow<CompactBlockProcessor.ProcessorInfo> = processor.processorInfo
 
     //
     // Error Handling

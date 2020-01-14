@@ -1,6 +1,7 @@
 package cash.z.wallet.sdk
 
 import androidx.paging.PagedList
+import cash.z.wallet.sdk.block.CompactBlockProcessor
 import cash.z.wallet.sdk.block.CompactBlockProcessor.WalletBalance
 import cash.z.wallet.sdk.entity.*
 import kotlinx.coroutines.CoroutineScope
@@ -52,6 +53,13 @@ interface Synchronizer {
      * a value of 100 signals that progress is complete and any progress indicators can be hidden.
      */
     val progress: Flow<Int>
+
+    /**
+     * A flow of processor details, updated every time blocks are processed to include the latest
+     * block height, blocks downloaded and blocks scanned. Similar to the [progress] flow but with a
+     * lot more detail.
+     */
+    val processorInfo: Flow<CompactBlockProcessor.ProcessorInfo>
 
     /**
      * A stream of balance values, separately reflecting both the available and total balance.
