@@ -32,7 +32,7 @@ interface RustBackendWelding {
 
     fun rewindToHeight(height: Int): Boolean
 
-    fun scanBlocks(): Boolean
+    fun scanBlocks(limit: Int = -1): Boolean
 
     fun createToAddress(
         account: Int,

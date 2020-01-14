@@ -30,7 +30,10 @@ use zcash_client_sqlite::{
         get_address, get_balance, get_received_memo_as_utf8, get_sent_memo_as_utf8,
         get_verified_balance,
     },
-    scan::scan_cached_blocks,
+    scan::{
+        scan_cached_blocks,
+        scan_cached_block_batch
+    },
     transact::create_to_address,
 };
 use zcash_primitives::{
@@ -480,6 +483,27 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_scanBlocks(
         let db_data = utils::java_string_to_rust(&env, db_data);
 
         match scan_cached_blocks(&db_cache, &db_data) {
+            Ok(()) => Ok(JNI_TRUE),
+            Err(e) => Err(format_err!("Error while scanning blocks: {}", e)),
+        }
+    });
+    unwrap_exc_or(&env, res, JNI_FALSE)
+}
+
+// ADDED BY ANDROID
+#[no_mangle]
+pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_scanBlockBatch(
+    env: JNIEnv<'_>,
+    _: JClass<'_>,
+    db_cache: JString<'_>,
+    db_data: JString<'_>,
+    limit: jint
+) -> jboolean {
+    let res = panic::catch_unwind(|| {
+        let db_cache = utils::java_string_to_rust(&env, db_cache);
+        let db_data = utils::java_string_to_rust(&env, db_data);
+
+        match scan_cached_block_batch(&db_cache, &db_data, limit) {
             Ok(()) => Ok(JNI_TRUE),
             Err(e) => Err(format_err!("Error while scanning blocks: {}", e)),
         }

@@ -97,7 +97,13 @@ class RustBackend : RustBackendWelding {
 
     override fun rewindToHeight(height: Int) = rewindToHeight(dbDataPath, height)
 
-    override fun scanBlocks() = scanBlocks(dbCachePath, dbDataPath)
+    override fun scanBlocks(limit: Int): Boolean {
+        return if (limit > 0) {
+            scanBlockBatch(dbCachePath, dbDataPath, limit)
+        } else {
+            scanBlocks(dbCachePath, dbDataPath)
+        }
+    }
 
     override fun createToAddress(
         account: Int,
@@ -205,6 +211,8 @@ class RustBackend : RustBackendWelding {
         @JvmStatic private external fun rewindToHeight(dbDataPath: String, height: Int): Boolean
 
         @JvmStatic private external fun scanBlocks(dbCachePath: String, dbDataPath: String): Boolean
+
+        @JvmStatic private external fun scanBlockBatch(dbCachePath: String, dbDataPath: String, limit: Int): Boolean
 
         @JvmStatic private external fun createToAddress(
             dbDataPath: String,
