@@ -31,8 +31,7 @@ use zcash_client_sqlite::{
         get_verified_balance,
     },
     scan::{
-        scan_cached_blocks,
-        scan_cached_block_batch
+        scan_cached_blocks
     },
     transact::create_to_address,
 };
@@ -503,7 +502,8 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_scanBlockBatch(
         let db_cache = utils::java_string_to_rust(&env, db_cache);
         let db_data = utils::java_string_to_rust(&env, db_data);
 
-        match scan_cached_block_batch(&db_cache, &db_data, limit) {
+//        match scan_cached_block_batch(&db_cache, &db_data, limit) {
+        match scan_cached_blocks(&db_cache, &db_data) {
             Ok(()) => Ok(JNI_TRUE),
             Err(e) => Err(format_err!("Error while scanning blocks: {}", e)),
         }

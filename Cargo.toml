@@ -42,7 +42,7 @@ rev = "f3f5338282eeda6d9f5bff69f6930a5473c95925"
 
 [dependencies.zcash_proofs]
 git = "https://github.com/str4d/librustzcash.git"
-rev = "1cbeac9d593d65938870797fb8dbafa352644d34"
+rev = "f3f5338282eeda6d9f5bff69f6930a5473c95925"
 
 [features]
 mainnet = ["zcash_client_sqlite/mainnet"]
