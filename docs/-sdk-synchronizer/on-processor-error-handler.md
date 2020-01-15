@@ -1,4 +1,4 @@
-[zcash-android-wallet-sdk](../../index.md) / [cash.z.wallet.sdk.data](../index.md) / [SdkSynchronizer](index.md) / [onProcessorErrorHandler](./on-processor-error-handler.md)
+[zcash-android-wallet-sdk](../../index.md) / [cash.z.wallet.sdk](../index.md) / [SdkSynchronizer](index.md) / [onProcessorErrorHandler](./on-processor-error-handler.md)
 
 # onProcessorErrorHandler
 
@@ -6,7 +6,7 @@
 
 Overrides [Synchronizer.onProcessorErrorHandler](../-synchronizer/on-processor-error-handler.md)
 
-A callback to invoke whenver a processor error is encountered. Returning true signals that the error was handled
-and a retry attempt should be made, if possible. This callback is not called on the main thread so any UI work
-would need to switch context to the main thread.
+A callback to invoke whenever a processor error is encountered. Returning true signals that
+the error was handled and a retry attempt should be made, if possible. This callback is not
+called on the main thread so any UI work would need to switch context to the main thread.
 
