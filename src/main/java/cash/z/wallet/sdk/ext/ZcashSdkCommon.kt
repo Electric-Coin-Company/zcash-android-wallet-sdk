@@ -41,10 +41,16 @@ open class ZcashSdkCommon {
     val DOWNLOAD_BATCH_SIZE = 100
 
     /**
+     * Default size of batches of blocks to scan via librustzcash. The smaller this number the more granular information
+     * can be provided about scan state. Unfortunately, it may also lead to a lot of overhead during scanning.
+     */
+    val SCAN_BATCH_SIZE = 150
+
+    /**
      * Default amount of time, in milliseconds, to poll for new blocks. Typically, this should be about half the average
      * block time.
      */
-    val POLL_INTERVAL = 75_000L
+    val POLL_INTERVAL = 20_000L
 
     /**
      * Default attempts at retrying.

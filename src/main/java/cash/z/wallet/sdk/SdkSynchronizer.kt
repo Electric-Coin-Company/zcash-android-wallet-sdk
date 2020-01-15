@@ -185,12 +185,15 @@ class SdkSynchronizer internal constructor(
         processor.state.onEach {
             when (it) {
                 is Scanned -> {
+                    // do a bit of housekeeping and then report synced status
                     onScanComplete(it.scannedRange)
                     SYNCED
                 }
                 is Stopped -> STOPPED
                 is Disconnected -> DISCONNECTED
-                else -> SYNCING
+                is Downloading, Initialized -> DOWNLOADING
+                is Validating -> VALIDATING
+                is Scanning -> SCANNING
             }.let { synchronizerStatus ->
                 _status.send(synchronizerStatus)
             }

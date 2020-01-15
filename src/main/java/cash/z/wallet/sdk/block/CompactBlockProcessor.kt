@@ -13,6 +13,7 @@ import cash.z.wallet.sdk.ext.ZcashSdk.POLL_INTERVAL
 import cash.z.wallet.sdk.ext.ZcashSdk.RETRIES
 import cash.z.wallet.sdk.ext.ZcashSdk.REWIND_DISTANCE
 import cash.z.wallet.sdk.ext.ZcashSdk.SAPLING_ACTIVATION_HEIGHT
+import cash.z.wallet.sdk.ext.ZcashSdk.SCAN_BATCH_SIZE
 import cash.z.wallet.sdk.jni.RustBackend
 import cash.z.wallet.sdk.jni.RustBackendWelding
 import cash.z.wallet.sdk.transaction.TransactionRepository
@@ -215,7 +216,7 @@ class CompactBlockProcessor(
                 if (failedAttempts > 0) twig("retrying the scan after $failedAttempts failure(s)...")
                 do {
                     var scannedNewBlocks = false
-                    result = rustBackend.scanBlocks(500)
+                    result = rustBackend.scanBlocks(SCAN_BATCH_SIZE)
                     val lastScannedHeight = getLastScannedHeight()
                     twig("batch scan complete. Last scanned height: $lastScannedHeight target height: ${range.last}")
                     if (currentInfo.lastScannedHeight != lastScannedHeight) {
@@ -271,7 +272,10 @@ class CompactBlockProcessor(
 
     private fun determineLowerBound(errorHeight: Int): Int {
         val offset = Math.min(MAX_REORG_SIZE, REWIND_DISTANCE * (consecutiveChainErrors.get() + 1))
-        return Math.max(errorHeight - offset, lowerBoundHeight)
+        return Math.max(errorHeight - offset, lowerBoundHeight).also {
+            twig("offset = min($MAX_REORG_SIZE, $REWIND_DISTANCE * (${consecutiveChainErrors.get() + 1})) = $offset")
+            twig("lowerBound = max($errorHeight - $offset, $lowerBoundHeight) = $it")
+        }
     }
 
     suspend fun getLastDownloadedHeight() = withContext(IO) {

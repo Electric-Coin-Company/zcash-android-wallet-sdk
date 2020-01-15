@@ -99,6 +99,7 @@ class Initializer(
      * the most common use case for the initializer--reopening a wallet that was previously created.
      */
     fun open(birthday: WalletBirthday): Initializer {
+        twig("Opening wallet with birthday ${birthday.height}")
         initRustLibrary()
         rustBackend.birthdayHeight = birthday.height
         return this
@@ -121,7 +122,7 @@ class Initializer(
         overwrite: Boolean = false
     ): Array<String> {
         this.birthday = birthday
-
+        twig("Initializing accounts with birthday ${birthday.height}")
         try {
             if (overwrite) rustBackend.clear()
             // only creates tables, if they don't exist
@@ -278,9 +279,12 @@ class Initializer(
 
         override fun hasImportedBirthday(): Boolean = importedBirthdayHeight != null
 
-        override fun getBirthday() = loadBirthdayFromPrefs(prefs) ?: saplingBirthday
+        override fun getBirthday(): Initializer.WalletBirthday {
+            return loadBirthdayFromPrefs(prefs).apply { twig("Loaded birthday from prefs: ${this?.height}") } ?: saplingBirthday.apply { twig("returning sapling birthday") }
+        }
 
         override fun setBirthday(value: WalletBirthday) {
+            twig("Setting birthday to ${value.height}")
             saveBirthdayToPrefs(prefs, value)
         }
 
@@ -362,7 +366,13 @@ class Initializer(
             ): WalletBirthday {
                 twig("loading birthday from assets: $birthdayHeight")
                 val treeFiles =
-                    context.assets.list(BIRTHDAY_DIRECTORY)?.apply { sortDescending() }
+                    context.assets.list(BIRTHDAY_DIRECTORY)?.apply { sortByDescending { fileName ->
+                        try {
+                            fileName.split('.').first().toInt()
+                        } catch (t: Throwable) {
+                            ZcashSdk.SAPLING_ACTIVATION_HEIGHT
+                        }
+                    } }
                 if (treeFiles.isNullOrEmpty()) throw BirthdayException.MissingBirthdayFilesException(
                     BIRTHDAY_DIRECTORY
                 )
