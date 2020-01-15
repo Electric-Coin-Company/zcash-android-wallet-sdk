@@ -1,4 +1,4 @@
-This is an alpha build and is currently under active development. Please be advised of the following:
+This is a beta build and is currently under active development. Please be advised of the following:
 
 - This code currently is not audited by an external security auditor, use it at your own risk
 - The code **has not been subjected to thorough review** by engineers at the Electric Coin Company
@@ -63,13 +63,14 @@ To accomplish this, these responsibilities of the SDK are divided into separate 
 
 #### Components
 
-| Component                 | Summary                                                                                   |
-| :------------------------ | :---------------------------------------------------------------------------------------- |
-| **LightWalletService**    | Service used for requesting compact blocks                                                |
-| **CompactBlockStore**     | Stores compact blocks that have been downloaded from the `LightWalletService`             |
-| **CompactBlockProcessor** | Validates and scans the compact blocks in the `CompactBlockStore` for transaction details |
-| **TransactionManager**    | Creates, Submits and manages transactions for spending funds                              |
-| **Wallet**                | Wraps the Zcash rust libraries, insulating SDK users from changes in that layer           |
+| Component                      | Summary                                                                                   |
+| :----------------------------- | :---------------------------------------------------------------------------------------- |
+| **LightWalletService**         | Service used for requesting compact blocks                                                |
+| **CompactBlockStore**          | Stores compact blocks that have been downloaded from the `LightWalletService`             |
+| **CompactBlockProcessor**      | Validates and scans the compact blocks in the `CompactBlockStore` for transaction details |
+| **OutboundTransactionManager** | Creates, Submits and manages transactions for spending funds                              |
+| **Initializer**                | Responsible for all setup that must happen before synchronization can begin. Loads the rust library and helps with key derivation.           |
+| **RustBackend**                | Wraps the rust library and exposes its functionality to the Kotlin SDK |
 
 [Back to contents](#contents)
 
@@ -96,14 +97,14 @@ synchronizer.getAddress()
 Send funds to another address
 
 ```kotlin
-synchronizer.sendToAddress(zatoshi, address, memo)
+synchronizer.sendToAddress(spendingKey, zatoshi, address, memo)
 ```
 
 [Back to contents](#contents)
 
 ## Compiling Sources
 
-:warning: Presently, the latest stable code lives in the `preview` branch, under active development, and is not yet released.
+:warning: Presently, the latest stable code lives in the `master` branch, is under active development, and is not yet released.
 
 Importing the dependency should be enough for use but in the event that you want to compile the SDK from sources, including the Kotlin and Rust portions, simply use Gradle.
 
