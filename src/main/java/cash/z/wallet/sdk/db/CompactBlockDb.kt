@@ -1,16 +1,38 @@
 package cash.z.wallet.sdk.db
 
-import androidx.room.Database
-import androidx.room.RoomDatabase
-import cash.z.wallet.sdk.dao.CompactBlockDao
-import cash.z.wallet.sdk.vo.CompactBlock
+import androidx.room.*
+import cash.z.wallet.sdk.entity.CompactBlockEntity
+
+
+//
+// Database
+//
 
 @Database(
-    entities = [
-        CompactBlock::class],
+    entities = [CompactBlockEntity::class],
     version = 1,
     exportSchema = false
 )
 abstract class CompactBlockDb : RoomDatabase() {
     abstract fun complactBlockDao(): CompactBlockDao
+}
+
+
+//
+// Data Access Objects
+//
+
+@Dao
+interface CompactBlockDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun insert(block: CompactBlockEntity)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun insert(block: List<CompactBlockEntity>)
+
+    @Query("DELETE FROM compactblocks WHERE height >= :height")
+    fun rewindTo(height: Int)
+
+    @Query("SELECT MAX(height) FROM compactblocks")
+    fun latestBlockHeight(): Int
 }

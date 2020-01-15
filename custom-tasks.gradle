@@ -1,83 +1,25 @@
-def protoSrcDir = "src/main/proto"
-def protoDestDir = "build/generated/source/wire"
-def jniSrcDir = "src/main/rust"
-def jniDestDir = "build/rust/target"
+def protoIncludeDir = "build/extracted-include-protos/main"
 
-def libFile = "libzcashwalletsdk.so"
-def libX86File = "build/rust/target/i686-linux-android/release/$libFile"
-def libX86Dir = "src/main/jniLibs/x86"
-def libArm64File = "build/rust/target/aarch64-linux-android/release/$libFile"
-def libArm64Dir = "src/main/jniLibs/arm64-v8a"
-def libArmeabiFile = "build/rust/target/armv7-linux-androideabi/release/$libFile"
-def libArmeabiDir = "src/main/jniLibs/armeabi-v7a"
-
-buildscript {
-    dependencies {
-        classpath("com.squareup.wire:wire-compiler:2.2.0")
-    }
-    repositories {
-        mavenCentral()
-    }
-}
-
-tasks.register("generateProtobufClasses") {
+tasks.register("includeDirBugFix") {
     doFirst {
-        println("**** CREATING PROTOS ****")
-        delete(protoDestDir)
-        mkdir(protoDestDir)
+        mkdir(protoIncludeDir)
     }
-    description = "Generate Java classes from protocol buffer (.proto) schema files for use with Square's Wire library"
-
-    fileTree(dir: protoSrcDir, include: '**/*.proto').each { File file ->
-        doLast {
-            javaexec {
-                main = "com.squareup.wire.WireCompiler"
-                classpath = buildscript.configurations.classpath
-                args = ["--proto_path=$protoSrcDir", "--java_out=$protoDestDir", file.path]
-            }
-        }
-    }
-    inputs.files(fileTree(dir: protoSrcDir, include: '**/*.proto'))
-    outputs.files(fileTree(dir: protoDestDir, include: '**'))
 }
 
-tasks.register("generateJniLibs") {
-    doFirst {
-        println("**** CREATING JNI LIBS ****")
-        delete(jniDestDir)
-        mkdir(jniDestDir)
-    }
-    description = "Generate *.so files for connecting to the Rust wallet logic through the JNI"
-    doLast {
-        if (System.getProperty('os.name').toLowerCase(Locale.ROOT).contains('windows')) {
-            exec {
-                commandLine("./build-rust.bat")
-            }
-        } else {
-            exec {
-                commandLine("./build-rust.sh")
-            }
-        }
-    }
-    inputs.files(fileTree(dir: jniSrcDir, include: '**/*.rs'))
-    outputs.files(fileTree(dir: jniDestDir, include: '**/*.so'))
-}
+tasks.register("updateDocs", Copy) {
+    dependsOn dokka
 
-tasks.register("copyLibX86", Copy) {
-    dependsOn generateJniLibs
-    from libX86File
-    into libX86Dir
-}
-tasks.register("copyLibArm64", Copy) {
-    dependsOn generateJniLibs
-    from libArm64File
-    into libArm64Dir
-}
-tasks.register("copyLibArmeabi", Copy) {
-    dependsOn generateJniLibs
-    from libArmeabiFile
-    into libArmeabiDir
-}
-tasks.register("copyAllJniLibs") {
-    dependsOn copyLibX86, copyLibArm64, copyLibArmeabi
+    from("$buildDir/docs/zcash-android-wallet-sdk/cash.z.wallet.sdk.data/") {
+        include '-synchronizer/'
+        include '-sdk-synchronizer/'
+        include '-mock-synchronizer/'
+        include '-twig/'
+        rename 'index.md', 'README.md'
+    }
+    from("$buildDir/docs/zcash-android-wallet-sdk/cash.z.wallet.sdk.secure/") {
+        include '-wallet/'
+        rename 'index.md', 'README.md'
+    }
+    into "docs"
+    includeEmptyDirs = false
 }

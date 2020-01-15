@@ -1,0 +1,24 @@
+<resources>
+    <string name="app_name">Demo App</string>
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+    <string name="nav_header_title">Android SDK Demo</string>
+    <string name="nav_header_subtitle">v1.0.0-alpha02</string>
+    <string name="nav_header_desc">Navigation header</string>
+    <string name="action_settings">Settings</string>
+
+    <!-- Drawer Menu -->
+    <string name="menu_home">Home</string>
+    <string name="menu_private_key">Get Private Key</string>
+    <string name="menu_address">Get Address</string>
+    <string name="menu_latest_height">Get Latest Height</string>
+    <string name="menu_block">Get Block</string>
+    <string name="menu_block_range">Get Block Range</string>
+    <string name="menu_decrypt">Decrypt Block</string>
+    <string name="menu_transactions">List Transactions</string>
+    <string name="menu_send">Send</string>
+
+    <string name="home_second">Home Second</string>
+    <string name="next">Next</string>
+    <string name="previous">Previous</string>
+</resources>
