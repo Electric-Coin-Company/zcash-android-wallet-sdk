@@ -1,6 +1,7 @@
 package cash.z.wallet.sdk
 
 import androidx.paging.PagedList
+import cash.z.wallet.sdk.block.CompactBlockProcessor
 import cash.z.wallet.sdk.block.CompactBlockProcessor.WalletBalance
 import cash.z.wallet.sdk.entity.*
 import kotlinx.coroutines.CoroutineScope
@@ -25,7 +26,7 @@ interface Synchronizer {
      * lifecycle such as an Activity. Implementations should leverage structured concurrency and
      * cancel all jobs when this scope completes.
      */
-    fun start(parentScope: CoroutineScope): Synchronizer
+    fun start(parentScope: CoroutineScope? = null): Synchronizer
 
     /**
      * Stop this synchronizer. Implementations should ensure that calling this method cancels all
@@ -52,6 +53,13 @@ interface Synchronizer {
      * a value of 100 signals that progress is complete and any progress indicators can be hidden.
      */
     val progress: Flow<Int>
+
+    /**
+     * A flow of processor details, updated every time blocks are processed to include the latest
+     * block height, blocks downloaded and blocks scanned. Similar to the [progress] flow but with a
+     * lot more detail.
+     */
+    val processorInfo: Flow<CompactBlockProcessor.ProcessorInfo>
 
     /**
      * A stream of balance values, separately reflecting both the available and total balance.
@@ -109,7 +117,33 @@ interface Synchronizer {
         toAddress: String,
         memo: String = "",
         fromAccountIndex: Int = 0
-    ): Flow<PendingTransaction?>
+    ): Flow<PendingTransaction>
+
+
+    /**
+     * Returns true when the given address is a valid z-addr. Invalid addresses will throw an
+     * exception. Valid z-addresses have these characteristics: //TODO
+     *
+     * @param address the address to validate.
+     * @throws RuntimeException when the address is invalid.
+     */
+    suspend fun isValidShieldedAddr(address: String): Boolean
+
+    /**
+     * Returns true when the given address is a valid t-addr. Invalid addresses will throw an
+     * exception. Valid t-addresses have these characteristics: //TODO
+     *
+     * @param address the address to validate.
+     * @throws RuntimeException when the address is invalid.
+     */
+    suspend fun isValidTransparentAddr(address: String): Boolean
+
+    /**
+     * Validates the given address, returning information about why it is invalid.
+     *
+     * @param address the address to validate.
+     */
+    suspend fun validateAddress(address: String): AddressType
 
     /**
      * Attempts to cancel a transaction that is about to be sent. Typically, cancellation is only
@@ -166,16 +200,36 @@ interface Synchronizer {
         DISCONNECTED,
 
         /**
-         * Indicates that this Synchronizer is not yet synced and therefore should not broadcast
-         * transactions because it does not have the latest data. When set, a UI element may want
-         * to turn yellow.
+         * Indicates that this Synchronizer is actively downloading new blocks from the server.
          */
-        SYNCING,
+        DOWNLOADING,
+
+        /**
+         * Indicates that this Synchronizer is actively validating new blocks that were downloaded
+         * from the server. Blocks need to be verified before they are scanned. This confirms that
+         * each block is chain-sequential, thereby detecting missing blocks and reorgs.
+         */
+        VALIDATING,
+
+        /**
+         * Indicates that this Synchronizer is actively decrypting new blocks that were downloaded
+         * from the server.
+         */
+        SCANNING,
 
         /**
          * Indicates that this Synchronizer is fully up to date and ready for all wallet functions.
-         * When set, a UI element may want to turn green.
+         * When set, a UI element may want to turn green. In this state, the balance can be trusted.
          */
         SYNCED
+    }
+
+    sealed class AddressType {
+        interface Valid
+        object Shielded : Valid, AddressType()
+        object Transparent : Valid, AddressType()
+        class Invalid(val reason: String = "Invalid") : AddressType()
+
+        val isNotValid get() = this !is Valid
     }
 }

@@ -6,16 +6,16 @@ import kotlinx.coroutines.delay
 import java.io.File
 import kotlin.random.Random
 
-suspend inline fun retryUpTo(retries: Int, initialDelay: Int = 10, block: () -> Unit) {
+suspend inline fun retryUpTo(retries: Int, initialDelayMillis: Long = 10L, block: (Int) -> Unit) {
     var failedAttempts = 0
     while (failedAttempts < retries) {
         try {
-            block()
+            block(failedAttempts)
             return
         } catch (t: Throwable) {
             failedAttempts++
             if (failedAttempts >= retries) throw t
-            val duration = Math.pow(initialDelay.toDouble(), failedAttempts.toDouble()).toLong()
+            val duration = Math.pow(initialDelayMillis.toDouble(), failedAttempts.toDouble()).toLong()
             twig("failed due to $t retrying (${failedAttempts + 1}/$retries) in ${duration}s...")
             delay(duration)
         }

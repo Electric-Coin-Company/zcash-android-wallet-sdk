@@ -18,9 +18,10 @@ open class CompactBlockDownloader(
     val compactBlockStore: CompactBlockStore
 ) {
 
-    suspend fun downloadBlockRange(heightRange: IntRange) = withContext(IO) {
+    suspend fun downloadBlockRange(heightRange: IntRange): Int = withContext(IO) {
         val result = lightwalletService.getBlockRange(heightRange)
         compactBlockStore.write(result)
+        result.size
     }
 
     suspend fun rewindToHeight(height: Int) = withContext(IO) {

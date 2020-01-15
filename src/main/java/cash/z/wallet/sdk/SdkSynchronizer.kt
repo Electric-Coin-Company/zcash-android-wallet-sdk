@@ -1,6 +1,8 @@
 package cash.z.wallet.sdk
 
 import android.content.Context
+import cash.z.wallet.sdk.Synchronizer.AddressType.Shielded
+import cash.z.wallet.sdk.Synchronizer.AddressType.Transparent
 import cash.z.wallet.sdk.Synchronizer.Status.*
 import cash.z.wallet.sdk.block.CompactBlockDbStore
 import cash.z.wallet.sdk.block.CompactBlockDownloader
@@ -39,10 +41,10 @@ import kotlin.coroutines.CoroutineContext
 class SdkSynchronizer internal constructor(
     private val ledger: TransactionRepository,
     private val manager: OutboundTransactionManager,
-    private val processor: CompactBlockProcessor
+    val processor: CompactBlockProcessor
 ) : Synchronizer {
-    private val _balances = ConflatedBroadcastChannel<WalletBalance>()
-    private val _status = ConflatedBroadcastChannel<Synchronizer.Status>()
+    private val _balances = ConflatedBroadcastChannel(WalletBalance())
+    private val _status = ConflatedBroadcastChannel<Synchronizer.Status>(DISCONNECTED)
 
     /**
      * The lifespan of this Synchronizer. This scope is initialized once the Synchronizer starts
@@ -80,10 +82,16 @@ class SdkSynchronizer internal constructor(
     /**
      * Indicates the download progress of the Synchronizer. When progress reaches 100, that
      * signals that the Synchronizer is in sync with the network. Balances should be considered
-     * inaccurate and outbound transactions should be prevented until this sync is complete.
+     * inaccurate and outbound transactions should be prevented until this sync is complete. It is
+     * a simplified version of [processorInfo].
      */
     override val progress: Flow<Int> = processor.progress
 
+    /**
+     * Indicates the latest information about the blocks that have been processed by the SDK. This
+     * is very helpful for conveying detailed progress and status to the user.
+     */
+    override val processorInfo: Flow<CompactBlockProcessor.ProcessorInfo> = processor.processorInfo
 
     //
     // Error Handling
@@ -127,16 +135,19 @@ class SdkSynchronizer internal constructor(
      *
      * @param parentScope the scope to use for this synchronizer, typically something with a
      * lifecycle such as an Activity for single-activity apps or a logged in user session. This
-     * scope is only used for launching this synchronzer's job as a child.
+     * scope is only used for launching this synchronzer's job as a child. If no scope is provided,
+     * then this synchronizer and all of its coroutines will run until stop is called, which is not
+     * recommended since it can leak resources. That type of behavior is more useful for tests.
      */
-    override fun start(parentScope: CoroutineScope): Synchronizer {
+    override fun start(parentScope: CoroutineScope?): Synchronizer {
         if (::coroutineScope.isInitialized) throw SynchronizerException.FalseStart
 
         // base this scope on the parent so that when the parent's job cancels, everything here
         // cancels as well also use a supervisor job so that one failure doesn't bring down the
         // whole synchronizer
+        val supervisorJob = SupervisorJob(parentScope?.coroutineContext?.get(Job))
         coroutineScope =
-            CoroutineScope(SupervisorJob(parentScope.coroutineContext[Job]!!) + Dispatchers.Main)
+            CoroutineScope(supervisorJob + Dispatchers.Main)
         coroutineScope.onReady()
         return this
     }
@@ -164,7 +175,7 @@ class SdkSynchronizer internal constructor(
         ledger.invalidate()
     }
 
-    private suspend fun refreshBalance() {
+    suspend fun refreshBalance() {
         _balances.send(processor.getBalanceInfo())
     }
 
@@ -174,12 +185,15 @@ class SdkSynchronizer internal constructor(
         processor.state.onEach {
             when (it) {
                 is Scanned -> {
+                    // do a bit of housekeeping and then report synced status
                     onScanComplete(it.scannedRange)
                     SYNCED
                 }
                 is Stopped -> STOPPED
                 is Disconnected -> DISCONNECTED
-                else -> SYNCING
+                is Downloading, Initialized -> DOWNLOADING
+                is Validating -> VALIDATING
+                is Scanning -> SCANNING
             }.let { synchronizerStatus ->
                 _status.send(synchronizerStatus)
             }
@@ -299,6 +313,27 @@ class SdkSynchronizer internal constructor(
         twig("Monitoring pending transaction (id: ${it.id}) for updates...")
         manager.monitorById(it.id)
     }.distinctUntilChanged()
+
+    override suspend fun isValidShieldedAddr(address: String) = manager.isValidShieldedAddress(address)
+
+    override suspend fun isValidTransparentAddr(address: String) =
+        manager.isValidTransparentAddress(address)
+
+    override suspend fun validateAddress(address: String): Synchronizer.AddressType {
+        return try {
+            if (isValidShieldedAddr(address)) Shielded else Transparent
+        } catch (zError: Throwable) {
+            var message = zError.message
+            try {
+                if (isValidTransparentAddr(address)) Transparent else Shielded
+            } catch (tError: Throwable) {
+                Synchronizer.AddressType.Invalid(
+                    if (message != tError.message) "$message and ${tError.message}" else (message
+                        ?: "Invalid")
+                )
+            }
+        }
+    }
 }
 
 /**
@@ -308,23 +343,39 @@ class SdkSynchronizer internal constructor(
 fun Synchronizer(
     appContext: Context,
     lightwalletdHost: String = ZcashSdk.DEFAULT_LIGHTWALLETD_HOST,
+    lightwalletdPort: Int = ZcashSdk.DEFAULT_LIGHTWALLETD_PORT,
     seed: ByteArray? = null,
-    birthday: Initializer.WalletBirthday? = null
+    birthdayStore: Initializer.WalletBirthdayStore = Initializer.DefaultBirthdayStore(appContext)
 ): Synchronizer {
-    val initializer = Initializer(appContext)
-    if (initializer.hasData()) {
-        initializer.open()
+    val initializer = Initializer(appContext, lightwalletdHost, lightwalletdPort)
+    if (seed != null && birthdayStore.hasExistingBirthday()) {
+        twig("Initializing existing wallet")
+        initializer.open(birthdayStore.getBirthday())
+        twig("${initializer.rustBackend.dbDataPath}")
     } else {
-        seed ?: throw IllegalArgumentException(
+        require(seed != null) {
             "Failed to initialize. A seed is required when no wallet exists on the device."
-        )
-        if (birthday == null) {
-            initializer.new(seed, overwrite = true)
+        }
+        if (birthdayStore.hasImportedBirthday()) {
+            twig("Initializing new wallet")
+            initializer.new(seed, birthdayStore.newWalletBirthday, overwrite = true)
         } else {
-            initializer.import(seed, birthday, overwrite = true)
+            twig("Initializing imported wallet")
+            initializer.import(seed, birthdayStore.getBirthday(), overwrite = true)
         }
     }
-    return Synchronizer(appContext, lightwalletdHost, initializer.rustBackend)
+    return Synchronizer(appContext, initializer)
+}
+
+fun Synchronizer(
+    appContext: Context,
+    initializer: Initializer
+): Synchronizer {
+    check(initializer.isInitialized) {
+        "Error: RustBackend must be loaded before creating the Synchronizer. Verify that either" +
+                " the 'open', 'new' or 'import' function has been called on the Initializer."
+    }
+    return Synchronizer(appContext, initializer.rustBackend, initializer.host, initializer.port)
 }
 
 /**
@@ -334,12 +385,13 @@ fun Synchronizer(
 @Suppress("FunctionName")
 fun Synchronizer(
     appContext: Context,
-    lightwalletdHost: String,
     rustBackend: RustBackend,
+    lightwalletdHost: String = ZcashSdk.DEFAULT_LIGHTWALLETD_HOST,
+    lightwalletdPort: Int = ZcashSdk.DEFAULT_LIGHTWALLETD_PORT,
     ledger: TransactionRepository =
-        PagedTransactionRepository(appContext, 10, rustBackend.dbDataPath),
+        PagedTransactionRepository(appContext, 1000, rustBackend.dbDataPath), // TODO: fix this pagesize bug, small pages should not crash the app. It crashes with: Uncaught Exception: android.view.ViewRootImpl$CalledFromWrongThreadException: Only the original thread that created a view hierarchy can touch its views. and is probably related to FlowPagedList
     blockStore: CompactBlockStore = CompactBlockDbStore(appContext, rustBackend.dbCachePath),
-    service: LightWalletService = LightWalletGrpcService(appContext, lightwalletdHost),
+    service: LightWalletService = LightWalletGrpcService(appContext, lightwalletdHost, lightwalletdPort),
     encoder: TransactionEncoder = WalletTransactionEncoder(rustBackend, ledger),
     downloader: CompactBlockDownloader = CompactBlockDownloader(service, blockStore),
     manager: OutboundTransactionManager =
