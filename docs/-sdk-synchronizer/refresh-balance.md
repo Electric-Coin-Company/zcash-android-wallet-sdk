@@ -1,4 +1,4 @@
-[zcash-android-wallet-sdk](../../index.md) / [cash.z.wallet.sdk.data](../index.md) / [SdkSynchronizer](index.md) / [refreshBalance](./refresh-balance.md)
+[zcash-android-wallet-sdk](../../index.md) / [cash.z.wallet.sdk](../index.md) / [SdkSynchronizer](index.md) / [refreshBalance](./refresh-balance.md)
 
 # refreshBalance
 
