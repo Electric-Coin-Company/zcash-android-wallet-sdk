@@ -7,7 +7,9 @@ This is a beta build and is currently under active development. Please be advise
 
 🔒 Security Warnings
 
-The Zcash Android Wallet SDK is experimental and a work in progress. Use it at your own risk.
+- The Zcash Android Wallet SDK is experimental and a work in progress. Use it at your own risk.
+- Developers using this SDK must familiarize themselves with the current [threat
+  model](docs/ThreatModel.md), especially the known weaknesses described there.
 
 ---
 
