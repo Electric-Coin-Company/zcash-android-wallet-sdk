@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
+import kotlin.random.Random
 
 /**
  * Responsible for processing the compact blocks that are received from the lightwallet server. This class encapsulates
@@ -80,7 +81,7 @@ class CompactBlockProcessor(
                 if (result < 0) {
                     consecutiveChainErrors.set(0)
                     twig("Successfully processed new blocks. Sleeping for ${POLL_INTERVAL}ms")
-                    delay(POLL_INTERVAL)
+                    delay(calculateDelay())
                 } else {
                     if(consecutiveChainErrors.get() >= RETRIES) {
                         val errorMessage = "ERROR: unable to resolve reorg at height $result after ${consecutiveChainErrors.get()} correction attempts!"
@@ -155,7 +156,6 @@ class CompactBlockProcessor(
                 error
             }
         }
-
     }
 
     @VisibleForTesting //allow mocks to verify how this is called, rather than the downloader, which is more complex
@@ -264,6 +264,8 @@ class CompactBlockProcessor(
         rustBackend.rewindToHeight(lowerBound)
         downloader.rewindToHeight(lowerBound)
     }
+
+    private fun calculateDelay(): Long = POLL_INTERVAL/2 + Random.nextLong(POLL_INTERVAL)
 
     private fun onConnectionError(throwable: Throwable): Boolean {
         _state.offer(Disconnected)
