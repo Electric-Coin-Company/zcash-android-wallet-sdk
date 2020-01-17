@@ -265,7 +265,20 @@ class CompactBlockProcessor(
         downloader.rewindToHeight(lowerBound)
     }
 
-    private fun calculateDelay(): Long = POLL_INTERVAL/2 + Random.nextLong(POLL_INTERVAL)
+    /**
+     * Poll on time boundaries and add jitter. Per Issue #95, we want to avoid exposing computation
+     * time to a network observer. Instead, we poll at regular time intervals and then also add a
+     * little jitter for good measure. See #95 for more details.
+     */
+    private fun calculateDelay(): Long {
+        var nextInterval = System.currentTimeMillis() + POLL_INTERVAL
+
+        // round down to the interval boundary
+        nextInterval -= nextInterval.rem(POLL_INTERVAL)
+
+        // add jitter
+        return nextInterval + Random.nextLong(POLL_INTERVAL/4)
+    }
 
     private fun onConnectionError(throwable: Throwable): Boolean {
         _state.offer(Disconnected)
