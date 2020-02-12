@@ -41,6 +41,9 @@ sealed class CompactBlockProcessorException(message: String, cause: Throwable? =
     class FailedReorgRepair(message: String) : CompactBlockProcessorException(message)
     object FailedScan : CompactBlockProcessorException("Error while scanning blocks. This most " +
             "likely means a block is missing or a reorg was mishandled. See Rust logs for details.")
+    object Uninitialized : CompactBlockProcessorException("Cannot process blocks because the wallet has not been" +
+            " initialized. Verify that the seed phrase was properly created or imported. If so, then this problem" +
+            " can be fixed by re-importing the wallet.")
 }
 
 sealed class CompactBlockStreamException(message: String, cause: Throwable? = null) : SdkException(message, cause) {
@@ -77,8 +80,8 @@ sealed class InitializerException(message: String, cause: Throwable? = null) :  
             " because it already exists in $dbPath", cause)
     object DatabasePathException :
         InitializerException("Critical failure to locate path for storing databases. Perhaps this" +
-                " device prevents apps from storing data? We cannot manage initialize the wallet" +
-                " unless we can store data.")
+                " device prevents apps from storing data? We cannot initialize the wallet unless" +
+                " we can store data.")
 }
 
 sealed class LightwalletException(message: String, cause: Throwable? = null) : SdkException(message, cause) {

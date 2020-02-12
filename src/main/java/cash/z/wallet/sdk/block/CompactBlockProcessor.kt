@@ -113,8 +113,8 @@ class CompactBlockProcessor(
      * return the block height where an error was found.
      */
     private suspend fun processNewBlocks(): Int = withContext(IO) {
+        verifySetup()
         twig("beginning to process new blocks (with lower bound: $lowerBoundHeight)...")
-
         // Get the latest info (but don't transmit it on the channel) and then use that to update the scan/download ranges
         ProcessorInfo(
             networkBlockHeight = downloader.getLatestBlockHeight(),
@@ -156,6 +156,10 @@ class CompactBlockProcessor(
             }
         }
 
+    }
+
+    private fun verifySetup() {
+        if (!repository.isInitialized()) throw CompactBlockProcessorException.Uninitialized
     }
 
     @VisibleForTesting //allow mocks to verify how this is called, rather than the downloader, which is more complex
