@@ -22,6 +22,7 @@ use zcash_client_backend::{
     keys::spending_key,
 };
 use zcash_client_sqlite::{
+    address_from_extfvk,
     address::RecipientAddress,
     chain::{rewind_to_height, validate_combined_chain},
     error::ErrorKind,
@@ -30,11 +31,10 @@ use zcash_client_sqlite::{
         get_address, get_balance, get_received_memo_as_utf8, get_sent_memo_as_utf8,
         get_verified_balance,
     },
-    scan::{
-        scan_cached_blocks
-    },
+    scan::scan_cached_blocks,
     transact::create_to_address,
 };
+
 use zcash_primitives::{
     block::BlockHash,
     consensus::BranchId,
@@ -54,6 +54,7 @@ use zcash_client_backend::constants::mainnet::{
 use zcash_client_backend::constants::testnet::{
     COIN_TYPE, HRP_SAPLING_EXTENDED_FULL_VIEWING_KEY, HRP_SAPLING_EXTENDED_SPENDING_KEY
 };
+use zcash_client_backend::encoding::decode_extended_full_viewing_key;
 
 #[no_mangle]
 pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_initLogs(
@@ -196,6 +197,60 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_deriveExtendedFu
             },
             |env| env.new_string(""),
         ))
+    });
+    unwrap_exc_or(&env, res, ptr::null_mut())
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_deriveAddressFromSeed(
+    env: JNIEnv<'_>,
+    _: JClass<'_>,
+    seed: jbyteArray,
+    account_index: jint,
+) -> jstring {
+    let res = panic::catch_unwind(|| {
+        let seed = env.convert_byte_array(seed).unwrap();
+        let account_index = if account_index >= 0 {
+            account_index as u32
+        } else {
+            return Err(format_err!("accountIndex argument must be positive"));
+        };
+
+        let extfvk: ExtendedFullViewingKey = ExtendedFullViewingKey::from(&spending_key(&seed, COIN_TYPE, account_index));
+        let address = address_from_extfvk(&extfvk);
+        let output = env.new_string(address).expect("Couldn't create Java string!");
+        Ok(output.into_inner())
+    });
+    unwrap_exc_or(&env, res, ptr::null_mut())
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_deriveAddressFromViewingKey(
+    env: JNIEnv<'_>,
+    _: JClass<'_>,
+    extfvk_string: JString<'_>,
+) -> jstring {
+    let res = panic::catch_unwind(|| {
+        let extfvk_string = utils::java_string_to_rust(&env, extfvk_string);
+        let extfvk = match decode_extended_full_viewing_key(
+            HRP_SAPLING_EXTENDED_SPENDING_KEY,
+            &extfvk_string,
+        ) {
+            Ok(Some(extfvk)) => extfvk,
+            Ok(None) => {
+                return Err(format_err!("Deriving viewing key from string returned no results. Encoding was valid but type was incorrect."));
+            }
+            Err(e) => {
+                return Err(format_err!(
+                    "Error while deriving viewing key from string input: {}",
+                    e
+                ));
+            }
+        };
+
+        let address = address_from_extfvk(&extfvk);
+        let output = env.new_string(address).expect("Couldn't create Java string!");
+        Ok(output.into_inner())
     });
     unwrap_exc_or(&env, res, ptr::null_mut())
 }
@@ -481,7 +536,7 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_scanBlocks(
         let db_cache = utils::java_string_to_rust(&env, db_cache);
         let db_data = utils::java_string_to_rust(&env, db_data);
 
-        match scan_cached_blocks(&db_cache, &db_data) {
+        match scan_cached_blocks(&db_cache, &db_data, None) {
             Ok(()) => Ok(JNI_TRUE),
             Err(e) => Err(format_err!("Error while scanning blocks: {}", e)),
         }
@@ -502,8 +557,7 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_scanBlockBatch(
         let db_cache = utils::java_string_to_rust(&env, db_cache);
         let db_data = utils::java_string_to_rust(&env, db_data);
 
-//        match scan_cached_block_batch(&db_cache, &db_data, limit) {
-        match scan_cached_blocks(&db_cache, &db_data) {
+        match scan_cached_blocks(&db_cache, &db_data, Some(limit)) {
             Ok(()) => Ok(JNI_TRUE),
             Err(e) => Err(format_err!("Error while scanning blocks: {}", e)),
         }
