@@ -17,12 +17,11 @@ use std::ptr;
 use zcash_client_backend::{
     encoding::{
         decode_extended_spending_key, encode_extended_full_viewing_key,
-        encode_extended_spending_key,
+        encode_extended_spending_key, encode_payment_address,
     },
     keys::spending_key,
 };
 use zcash_client_sqlite::{
-    address_from_extfvk,
     address::RecipientAddress,
     chain::{rewind_to_height, validate_combined_chain},
     error::ErrorKind,
@@ -48,11 +47,13 @@ use crate::utils::exception::unwrap_exc_or;
 
 #[cfg(feature = "mainnet")]
 use zcash_client_backend::constants::mainnet::{
-    COIN_TYPE, HRP_SAPLING_EXTENDED_FULL_VIEWING_KEY, HRP_SAPLING_EXTENDED_SPENDING_KEY
+    COIN_TYPE, HRP_SAPLING_EXTENDED_FULL_VIEWING_KEY, HRP_SAPLING_EXTENDED_SPENDING_KEY,
+    HRP_SAPLING_PAYMENT_ADDRESS,
 };
 #[cfg(not(feature = "mainnet"))]
 use zcash_client_backend::constants::testnet::{
-    COIN_TYPE, HRP_SAPLING_EXTENDED_FULL_VIEWING_KEY, HRP_SAPLING_EXTENDED_SPENDING_KEY
+    COIN_TYPE, HRP_SAPLING_EXTENDED_FULL_VIEWING_KEY, HRP_SAPLING_EXTENDED_SPENDING_KEY,
+    HRP_SAPLING_PAYMENT_ADDRESS,
 };
 use zcash_client_backend::encoding::decode_extended_full_viewing_key;
 
@@ -216,9 +217,14 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_deriveAddressFro
             return Err(format_err!("accountIndex argument must be positive"));
         };
 
-        let extfvk: ExtendedFullViewingKey = ExtendedFullViewingKey::from(&spending_key(&seed, COIN_TYPE, account_index));
-        let address = address_from_extfvk(&extfvk);
-        let output = env.new_string(address).expect("Couldn't create Java string!");
+        let address = spending_key(&seed, COIN_TYPE, account_index)
+            .default_address()
+            .unwrap()
+            .1;
+        let address_str = encode_payment_address(HRP_SAPLING_PAYMENT_ADDRESS, &address);
+        let output = env
+            .new_string(address_str)
+            .expect("Couldn't create Java string!");
         Ok(output.into_inner())
     });
     unwrap_exc_or(&env, res, ptr::null_mut())
@@ -248,8 +254,11 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_deriveAddressFro
             }
         };
 
-        let address = address_from_extfvk(&extfvk);
-        let output = env.new_string(address).expect("Couldn't create Java string!");
+        let address = extfvk.default_address().unwrap().1;
+        let address_str = encode_payment_address(HRP_SAPLING_PAYMENT_ADDRESS, &address);
+        let output = env
+            .new_string(address_str)
+            .expect("Couldn't create Java string!");
         Ok(output.into_inner())
     });
     unwrap_exc_or(&env, res, ptr::null_mut())
@@ -551,7 +560,7 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_scanBlockBatch(
     _: JClass<'_>,
     db_cache: JString<'_>,
     db_data: JString<'_>,
-    limit: jint
+    limit: jint,
 ) -> jboolean {
     let res = panic::catch_unwind(|| {
         let db_cache = utils::java_string_to_rust(&env, db_cache);
