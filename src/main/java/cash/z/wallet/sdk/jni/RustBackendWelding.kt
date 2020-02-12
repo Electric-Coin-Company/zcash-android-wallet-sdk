@@ -47,4 +47,8 @@ interface RustBackendWelding {
     fun deriveViewingKeys(seed: ByteArray, numberOfAccounts: Int = 1): Array<String>
 
     fun deriveViewingKey(spendingKey: String): String
+
+    fun deriveAddress(seed: ByteArray, accountIndex: Int = 0): String
+
+    fun deriveAddress(viewingKey: String): String
 }

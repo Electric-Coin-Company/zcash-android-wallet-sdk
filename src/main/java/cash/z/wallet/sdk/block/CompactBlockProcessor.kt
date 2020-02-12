@@ -183,7 +183,7 @@ class CompactBlockProcessor(
                     twig("downloaded $count blocks!")
                     progress = (i / batches.toFloat() * 100).roundToInt()
                     _progress.send(progress)
-                    updateProgress(lastDownloadedHeight = downloader.getLastDownloadedHeight().also { twig("updating lastDownloadedHeight=$it") })
+                    updateProgress(lastDownloadedHeight = downloader.getLastDownloadedHeight())
                     downloadedBlockHeight = end
                 }
             }
@@ -198,7 +198,7 @@ class CompactBlockProcessor(
             return -1
         }
         Twig.sprout("validating")
-        twig("validating blocks in range $range in db: ${(rustBackend as RustBackend).dbCachePath}")
+        twig("validating blocks in range $range in db: ${(rustBackend as RustBackend).pathCacheDb}")
         val result = rustBackend.validateCombinedChain()
         Twig.clip("validating")
         return result
@@ -254,7 +254,6 @@ class CompactBlockProcessor(
             lastScanRange = lastScanRange,
             lastDownloadRange = lastDownloadRange
         )
-        twig("Sending updated currentInfo: $currentInfo")
         _processorInfo.send(currentInfo)
     }
 

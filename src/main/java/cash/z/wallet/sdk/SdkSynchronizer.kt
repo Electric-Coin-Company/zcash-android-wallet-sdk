@@ -176,11 +176,12 @@ class SdkSynchronizer internal constructor(
     }
 
     suspend fun refreshBalance() {
+        twig("refreshing balance")
         _balances.send(processor.getBalanceInfo())
     }
 
     private fun CoroutineScope.onReady() = launch(CoroutineExceptionHandler(::onCriticalError)) {
-        twig("Synchronizer Ready. Starting processor!")
+        twig("Synchronizer (${this@SdkSynchronizer}) Ready. Starting processor!")
         processor.onErrorListener = ::onProcessorError
         processor.state.onEach {
             when (it) {
@@ -351,17 +352,17 @@ fun Synchronizer(
     if (seed != null && birthdayStore.hasExistingBirthday()) {
         twig("Initializing existing wallet")
         initializer.open(birthdayStore.getBirthday())
-        twig("${initializer.rustBackend.dbDataPath}")
+        twig("${initializer.rustBackend.pathDataDb}")
     } else {
         require(seed != null) {
             "Failed to initialize. A seed is required when no wallet exists on the device."
         }
         if (birthdayStore.hasImportedBirthday()) {
             twig("Initializing new wallet")
-            initializer.new(seed, birthdayStore.newWalletBirthday, overwrite = true)
+            initializer.new(seed, birthdayStore.newWalletBirthday, 1, true, true)
         } else {
             twig("Initializing imported wallet")
-            initializer.import(seed, birthdayStore.getBirthday(), overwrite = true)
+            initializer.import(seed, birthdayStore.getBirthday(), true, true)
         }
     }
     return Synchronizer(appContext, initializer)
@@ -389,8 +390,8 @@ fun Synchronizer(
     lightwalletdHost: String = ZcashSdk.DEFAULT_LIGHTWALLETD_HOST,
     lightwalletdPort: Int = ZcashSdk.DEFAULT_LIGHTWALLETD_PORT,
     ledger: TransactionRepository =
-        PagedTransactionRepository(appContext, 1000, rustBackend.dbDataPath), // TODO: fix this pagesize bug, small pages should not crash the app. It crashes with: Uncaught Exception: android.view.ViewRootImpl$CalledFromWrongThreadException: Only the original thread that created a view hierarchy can touch its views. and is probably related to FlowPagedList
-    blockStore: CompactBlockStore = CompactBlockDbStore(appContext, rustBackend.dbCachePath),
+        PagedTransactionRepository(appContext, 1000, rustBackend.pathDataDb), // TODO: fix this pagesize bug, small pages should not crash the app. It crashes with: Uncaught Exception: android.view.ViewRootImpl$CalledFromWrongThreadException: Only the original thread that created a view hierarchy can touch its views. and is probably related to FlowPagedList
+    blockStore: CompactBlockStore = CompactBlockDbStore(appContext, rustBackend.pathCacheDb),
     service: LightWalletService = LightWalletGrpcService(appContext, lightwalletdHost, lightwalletdPort),
     encoder: TransactionEncoder = WalletTransactionEncoder(rustBackend, ledger),
     downloader: CompactBlockDownloader = CompactBlockDownloader(service, blockStore),

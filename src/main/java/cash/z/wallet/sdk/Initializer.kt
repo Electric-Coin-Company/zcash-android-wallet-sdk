@@ -8,7 +8,9 @@ import cash.z.wallet.sdk.ext.*
 import cash.z.wallet.sdk.jni.RustBackend
 import com.google.gson.Gson
 import com.google.gson.stream.JsonReader
+import java.io.File
 import java.io.InputStreamReader
+import java.util.*
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 
@@ -29,17 +31,20 @@ class Initializer(
     }
 
     /**
-     * The path this initializer will use when creating instances of Rustbackend. This value is
-     * derived from the appContext when this class is constructed.
-     */
-    private val dbPath: String = appContext.getDatabasePath("unused.db").parentFile?.absolutePath
-        ?: throw InitializerException.DatabasePathException
-
-    /**
-     * The path this initializer will use when cheching for and downloaading sapling params. This
+     * The path this initializer will use when checking for and downloaading sapling params. This
      * value is derived from the appContext when this class is constructed.
      */
-    private val paramPath: String = "${appContext.cacheDir.absolutePath}/params"
+    private val pathParams: String = "${appContext.cacheDir.absolutePath}/params"
+
+    /**
+     * The path used for storing cached compact blocks for processing.
+     */
+    private val pathCacheDb: String = cacheDbPath(appContext, alias)
+
+    /**
+     * The path used for storing the data derived from the cached compact blocks.
+     */
+    private val pathDataDb: String = dataDbPath(appContext, alias)
 
     /**
      * A wrapped version of [cash.z.wallet.sdk.jni.RustBackendWelding] that will be passed to the
@@ -65,33 +70,61 @@ class Initializer(
      * Initialize a new wallet with the given seed and birthday. It creates the required database
      * tables and loads and configures the [rustBackend] property for use by all other components.
      *
+     * @param seed the seed to use for the newly created wallet.
+     * @param newWalletBirthday the birthday to use for the newly created wallet. Typically, this
+     * corresponds to the most recent checkpoint available since new wallets should not have any
+     * transactions prior to their creation.
+     * @param numberOfAccounts the number of accounts to create for this wallet. This is not fully
+     * supported so the default value of 1 is recommended.
+     * @param clearCacheDb when true, this will delete cacheDb, if it exists, resulting in the fresh
+     * download of all compact blocks. Otherwise, downloading resumes from the last fetched block.
+     * @param clearDataDb when true, this will delete the dataDb, if it exists, resulting in the
+     * fresh scan of all blocks. Otherwise, initialization crashes when previous wallet data exists
+     * to prevent accidental overwrites.
+     *
      * @return the account spending keys, corresponding to the accounts that get initialized in the
      * DB.
+     * @throws InitializerException.AlreadyInitializedException when the blocks table already exists
+     * and [clearDataDb] is false.
      */
     fun new(
         seed: ByteArray,
         newWalletBirthday: WalletBirthday,
         numberOfAccounts: Int = 1,
-        overwrite: Boolean = false
+        clearCacheDb: Boolean = false,
+        clearDataDb: Boolean = false
     ): Array<String> {
-        initRustLibrary()
-        return initializeAccounts(seed, newWalletBirthday, numberOfAccounts, overwrite)
+        return initializeAccounts(seed, newWalletBirthday, numberOfAccounts,
+            clearCacheDb = clearCacheDb, clearDataDb = clearDataDb)
     }
 
-   /**
+    /**
      * Initialize a new wallet with the imported seed and birthday. It creates the required database
      * tables and loads and configures the [rustBackend] property for use by all other components.
      *
+     * @param seed the seed to use for the imported wallet.
+     * @param previousWalletBirthday the birthday to use for the imported. Typically, this
+     * corresponds to the height where this wallet was first created, allowing the wallet to be
+     * optimized not to download or scan blocks from before the wallet existed.
+     * @param clearCacheDb when true, this will delete cacheDb, if it exists, resulting in the fresh
+     * download of all compact blocks. Otherwise, downloading resumes from the last fetched block.
+     * @param clearDataDb when true, this will delete the dataDb, if it exists, resulting in the
+     * fresh scan of all blocks. Otherwise, this function throws an exception when previous wallet
+     * data exists to prevent accidental overwrites.
+     *
      * @return the account spending keys, corresponding to the accounts that get initialized in the
      * DB.
+     * @throws InitializerException.AlreadyInitializedException when the blocks table already exists
+     * and [clearDataDb] is false.
      */
     fun import(
        seed: ByteArray,
        previousWalletBirthday: WalletBirthday,
-       overwrite: Boolean = false
+       clearCacheDb: Boolean = false,
+       clearDataDb: Boolean = false
     ): Array<String> {
-        initRustLibrary()
-        return initializeAccounts(seed, previousWalletBirthday, overwrite = overwrite)
+        return initializeAccounts(seed, previousWalletBirthday,
+            clearCacheDb = clearCacheDb, clearDataDb = clearDataDb)
     }
 
     /**
@@ -100,8 +133,7 @@ class Initializer(
      */
     fun open(birthday: WalletBirthday): Initializer {
         twig("Opening wallet with birthday ${birthday.height}")
-        initRustLibrary()
-        rustBackend.birthdayHeight = birthday.height
+        requireRustBackend().birthdayHeight = birthday.height
         return this
     }
 
@@ -119,21 +151,22 @@ class Initializer(
         seed: ByteArray,
         birthday: WalletBirthday,
         numberOfAccounts: Int = 1,
-        overwrite: Boolean = false
+        clearCacheDb: Boolean = false,
+        clearDataDb: Boolean = false
     ): Array<String> {
         this.birthday = birthday
         twig("Initializing accounts with birthday ${birthday.height}")
         try {
-            if (overwrite) rustBackend.clear()
+            requireRustBackend().clear(clearCacheDb, clearDataDb)
             // only creates tables, if they don't exist
-            rustBackend.initDataDb()
+            requireRustBackend().initDataDb()
             twig("Initialized wallet for first run")
         } catch (t: Throwable) {
             throw InitializerException.FalseStart(t)
         }
 
         try {
-            rustBackend.initBlocksTable(
+            requireRustBackend().initBlocksTable(
                 birthday.height,
                 birthday.hash,
                 birthday.time,
@@ -142,14 +175,14 @@ class Initializer(
             twig("seeded the database with sapling tree at height ${birthday.height}")
         } catch (t: Throwable) {
             if (t.message?.contains("is not empty") == true) {
-                throw InitializerException.AlreadyInitializedException(t, rustBackend.dbDataPath)
+                throw InitializerException.AlreadyInitializedException(t, rustBackend.pathDataDb)
             } else {
                 throw InitializerException.FalseStart(t)
             }
         }
 
         try {
-            return rustBackend.initAccountsTable(seed, numberOfAccounts).also {
+            return requireRustBackend().initAccountsTable(seed, numberOfAccounts).also {
                 twig("Initialized the accounts table with ${numberOfAccounts} account(s)")
             }
         } catch (t: Throwable) {
@@ -166,11 +199,13 @@ class Initializer(
     }
 
     /**
-     * Lazily initializes the rust backend, using values that were captured from the appContext
-     * that was passed to the constructor.
+     * Internal function used to initialize the [rustBackend] before use. Initialization should only
+     * happen as a result of [new], [import] or [open] being called or as part of stand-alone key
+     * derivation.
      */
-    private fun initRustLibrary() {
-        if (!isInitialized) rustBackend = RustBackend().init(dbPath, paramPath, alias)
+    private fun requireRustBackend(): RustBackend {
+        if (!isInitialized) rustBackend = RustBackend().init(pathCacheDb, pathDataDb, pathParams)
+        return rustBackend
     }
 
 
@@ -184,27 +219,61 @@ class Initializer(
      *
      * @return the spending keys that correspond to the seed, formatted as Strings.
      */
-    fun deriveSpendingKeys(seed: ByteArray, numberOfAccounts: Int =  1): Array<String> {
-        initRustLibrary()
-        return rustBackend.deriveSpendingKeys(seed, numberOfAccounts)
-    }
+    fun deriveSpendingKeys(seed: ByteArray, numberOfAccounts: Int =  1): Array<String> =
+        requireRustBackend().deriveSpendingKeys(seed, numberOfAccounts)
 
     /**
      * Given a seed and a number of accounts, return the associated viewing keys.
      *
      * @return the viewing keys that correspond to the seed, formatted as Strings.
      */
-    fun deriveViewingKeys(seed: ByteArray, numberOfAccounts: Int =  1): Array<String> {
-        initRustLibrary()
-        return rustBackend.deriveViewingKeys(seed, numberOfAccounts)
-    }
+    fun deriveViewingKeys(seed: ByteArray, numberOfAccounts: Int =  1): Array<String> =
+        requireRustBackend().deriveViewingKeys(seed, numberOfAccounts)
 
     /**
      * Given a spending key, return the associated viewing key.
      *
      * @return the viewing key that corresponds to the spending key.
      */
-    fun deriveViewingKey(spendingKey: String): String = rustBackend.deriveViewingKey(spendingKey)
+    fun deriveViewingKey(spendingKey: String): String =
+        requireRustBackend().deriveViewingKey(spendingKey)
+
+    /**
+     * Given a seed and account index, return the associated address.
+     *
+     * @return the address that corresponds to the seed and account index.
+     */
+    fun deriveAddress(seed: ByteArray, accountIndex: Int) =
+        requireRustBackend().deriveAddress(seed, accountIndex)
+
+    /**
+     * Given a viewing key string, return the associated address.
+     *
+     * @return the address that corresponds to the viewing key.
+     */
+    fun deriveAddress(viewingKey: String) =
+        requireRustBackend().deriveAddress(viewingKey)
+
+
+    companion object {
+
+        //
+        // Path Helpers
+        //
+
+        fun cacheDbPath(appContext: Context, alias: String): String =
+            aliasToPath(appContext, alias, ZcashSdk.DB_CACHE_NAME)
+
+        fun dataDbPath(appContext: Context, alias: String): String =
+            aliasToPath(appContext, alias, ZcashSdk.DB_DATA_NAME)
+
+        private fun aliasToPath(appContext: Context, alias: String, dbFileName: String): String {
+            val parentDir: String =
+                appContext.getDatabasePath("unused.db").parentFile?.absolutePath
+                    ?: throw InitializerException.DatabasePathException
+            return File(parentDir, "${alias}_$dbFileName").absolutePath
+        }
+    }
 
 
     /**
@@ -241,7 +310,7 @@ class Initializer(
     class DefaultBirthdayStore(
         private val appContext: Context,
         private val importedBirthdayHeight: Int? = null,
-        val alias: String = "default_prefs"
+        val alias: String = DEFAULT_ALIAS
     ) : WalletBirthdayStore {
 
         /**
@@ -267,12 +336,6 @@ class Initializer(
 
         init {
             validateAlias(alias)
-            if (importedBirthdayHeight != null) {
-                saveBirthdayToPrefs(
-                    prefs,
-                    loadBirthdayFromAssets(appContext, importedBirthdayHeight)
-                )
-            }
         }
 
         override fun hasExistingBirthday(): Boolean = loadBirthdayFromPrefs(prefs) != null
@@ -350,6 +413,26 @@ class Initializer(
              */
             private const val BIRTHDAY_DIRECTORY = "zcash/saplingtree"
 
+            const val DEFAULT_ALIAS = "default_prefs"
+
+            // Constructor function
+            fun NewWalletBirthdayStore(appContext: Context, alias: String = DEFAULT_ALIAS): WalletBirthdayStore {
+                return DefaultBirthdayStore(appContext, alias = alias).apply {
+                    setBirthday(newWalletBirthday)
+                }
+            }
+
+            // Constructor function
+            fun ImportedWalletBirthdayStore(appContext: Context, importedBirthdayHeight: Int?, alias: String = DEFAULT_ALIAS): WalletBirthdayStore {
+                return DefaultBirthdayStore(appContext, alias = alias).apply {
+                    if (importedBirthdayHeight != null) {
+                        saveBirthdayToPrefs(prefs, loadBirthdayFromAssets(appContext, importedBirthdayHeight))
+                    } else {
+                        setBirthday(newWalletBirthday)
+                    }
+                }
+            }
+
             /**
              * Load the given birthday file from the assets of the given context. When no height is
              * specified, we default to the file with the greatest name.
@@ -376,7 +459,7 @@ class Initializer(
                 if (treeFiles.isNullOrEmpty()) throw BirthdayException.MissingBirthdayFilesException(
                     BIRTHDAY_DIRECTORY
                 )
-                twig("found ${treeFiles.size} sapling tree checkpoints: $treeFiles")
+                twig("found ${treeFiles.size} sapling tree checkpoints: ${Arrays.toString(treeFiles)}")
                 val file: String
                 try {
                     file = if (birthdayHeight == null) treeFiles.first() else {
