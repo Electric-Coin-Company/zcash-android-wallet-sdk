@@ -187,6 +187,13 @@ interface Synchronizer {
      */
     var onSubmissionErrorHandler: ((Throwable?) -> Boolean)?
 
+    /**
+     * A callback to invoke whenever a chain error is encountered. These occur whenever the
+     * processor detects a missing or non-chain-sequential block (i.e. a reorg).
+     */
+    var onChainErrorHandler: ((Int, Int) -> Any)?
+
+
     enum class Status {
         /**
          * Indicates that [stop] has been called on this Synchronizer and it will no longer be used.
@@ -232,4 +239,5 @@ interface Synchronizer {
 
         val isNotValid get() = this !is Valid
     }
+
 }

@@ -121,6 +121,12 @@ class SdkSynchronizer internal constructor(
      */
     override var onSubmissionErrorHandler: ((Throwable?) -> Boolean)? = null
 
+    /**
+     * A callback to invoke whenever a chain error is encountered. These occur whenever the
+     * processor detects a missing or non-chain-sequential block (i.e. a reorg).
+     */
+    override var onChainErrorHandler: ((Int, Int) -> Any)? = null
+
 
     //
     // Public API
@@ -182,7 +188,8 @@ class SdkSynchronizer internal constructor(
 
     private fun CoroutineScope.onReady() = launch(CoroutineExceptionHandler(::onCriticalError)) {
         twig("Synchronizer (${this@SdkSynchronizer}) Ready. Starting processor!")
-        processor.onErrorListener = ::onProcessorError
+        processor.onProcessorErrorListener = ::onProcessorError
+        processor.onChainErrorListener = ::onChainError
         processor.state.onEach {
             when (it) {
                 is Scanned -> {
@@ -236,6 +243,18 @@ class SdkSynchronizer internal constructor(
                         "${if (it) "try again" else "abort"}!"
             )
         } == true
+    }
+
+    private fun onChainError(errorHeight: Int, rewindHeight: Int) {
+        twig("Chain error detected at height: $errorHeight. Rewinding to: $rewindHeight")
+        if (onChainErrorHandler == null) {
+            twig(
+                "WARNING: a chain error occurred but no callback is registered to be notified of " +
+                "chain errors. To respond to these errors (perhaps to update the UI or alert the" +
+                " user) set synchronizer.onChainErrorHandler to a non-null value"
+            )
+        }
+        onChainErrorHandler?.invoke(errorHeight, rewindHeight)
     }
 
     private suspend fun onScanComplete(scannedRange: IntRange) {
