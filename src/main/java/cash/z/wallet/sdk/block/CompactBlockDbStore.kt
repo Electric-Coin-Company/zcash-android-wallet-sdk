@@ -45,4 +45,8 @@ class CompactBlockDbStore(
     override suspend fun rewindTo(height: Int) = withContext(IO) {
         cacheDao.rewindTo(height)
     }
+
+    override fun close() {
+        cacheDb.close()
+    }
 }

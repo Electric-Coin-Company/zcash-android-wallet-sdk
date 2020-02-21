@@ -4,16 +4,14 @@ import android.content.Context
 import androidx.paging.PagedList
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import cash.z.wallet.sdk.db.BlockDao
 import cash.z.wallet.sdk.db.DerivedDataDb
 import cash.z.wallet.sdk.db.TransactionDao
-import cash.z.wallet.sdk.entity.ConfirmedTransaction
-import cash.z.wallet.sdk.entity.EncodedTransaction
-import cash.z.wallet.sdk.entity.TransactionEntity
 import cash.z.wallet.sdk.ext.ZcashSdk
 import cash.z.wallet.sdk.ext.android.toFlowPagedList
 import cash.z.wallet.sdk.ext.android.toRefreshable
-import cash.z.wallet.sdk.ext.twig
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.withContext
 
@@ -39,9 +37,14 @@ open class PagedTransactionRepository(
     ) : this(
         Room.databaseBuilder(context, DerivedDataDb::class.java, dataDbName)
             .setJournalMode(RoomDatabase.JournalMode.TRUNCATE)
+            .addMigrations(MIGRATION_4_3)
             .build(),
         pageSize
     )
+    init {
+        derivedDataDb.openHelper.writableDatabase.beginTransaction()
+        derivedDataDb.openHelper.writableDatabase.endTransaction()
+    }
 
     private val blocks: BlockDao = derivedDataDb.blockDao()
     private val transactions: TransactionDao = derivedDataDb.transactionDao()
@@ -78,6 +81,63 @@ open class PagedTransactionRepository(
 
     fun close() {
         derivedDataDb.close()
+    }
+
+
+    //
+    // Migrations
+    //
+
+    companion object {
+//        val MIGRATION_3_4 = object : Migration(3, 4) {
+//            override fun migrate(database: SupportSQLiteDatabase) {
+//                database.execSQL("PRAGMA foreign_keys = OFF;")
+//                database.execSQL("""
+//                    CREATE TABLE IF NOT EXISTS received_notes_new (
+//                        id_note INTEGER PRIMARY KEY, tx INTEGER NOT NULL,
+//                        output_index INTEGER NOT NULL, account INTEGER NOT NULL,
+//                        diversifier BLOB NOT NULL, value INTEGER NOT NULL,
+//                        rcm BLOB NOT NULL, nf BLOB NOT NULL UNIQUE,
+//                        is_change INTEGER NOT NULL, memo BLOB,
+//                        spent INTEGER
+//                    ); """.trimIndent()
+//                )
+//                database.execSQL("INSERT INTO received_notes_new SELECT * FROM received_notes;")
+//                database.execSQL("DROP TABLE received_notes;")
+//                database.execSQL("ALTER TABLE received_notes_new RENAME TO received_notes;")
+//                database.execSQL("PRAGMA foreign_keys = ON;")
+//            }
+//        }
+
+        val MIGRATION_4_3 = object : Migration(4, 3) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("PRAGMA foreign_keys = OFF;")
+                database.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS received_notes_new (
+                        id_note INTEGER PRIMARY KEY,
+                        tx INTEGER NOT NULL,
+                        output_index INTEGER NOT NULL,
+                        account INTEGER NOT NULL,
+                        diversifier BLOB NOT NULL,
+                        value INTEGER NOT NULL,
+                        rcm BLOB NOT NULL,
+                        nf BLOB NOT NULL UNIQUE,
+                        is_change INTEGER NOT NULL,
+                        memo BLOB,
+                        spent INTEGER,
+                        FOREIGN KEY (tx) REFERENCES transactions(id_tx),
+                        FOREIGN KEY (account) REFERENCES accounts(account),
+                        FOREIGN KEY (spent) REFERENCES transactions(id_tx),
+                        CONSTRAINT tx_output UNIQUE (tx, output_index)
+                    ); """.trimIndent()
+                )
+                database.execSQL("INSERT INTO received_notes_new SELECT * FROM received_notes;")
+                database.execSQL("DROP TABLE received_notes;")
+                database.execSQL("ALTER TABLE received_notes_new RENAME TO received_notes;")
+                database.execSQL("PRAGMA foreign_keys = ON;")
+            }
+        }
     }
 
 }

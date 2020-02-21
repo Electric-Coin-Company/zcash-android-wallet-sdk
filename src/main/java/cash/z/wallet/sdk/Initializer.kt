@@ -31,7 +31,7 @@ class Initializer(
     }
 
     /**
-     * The path this initializer will use when checking for and downloaading sapling params. This
+     * The path this initializer will use when checking for and downloading sapling params. This
      * value is derived from the appContext when this class is constructed.
      */
     private val pathParams: String = "${appContext.cacheDir.absolutePath}/params"
@@ -130,6 +130,12 @@ class Initializer(
     /**
      * Loads the rust library and previously used birthday for use by all other components. This is
      * the most common use case for the initializer--reopening a wallet that was previously created.
+     *
+     * @param birthday birthday height of the wallet. This value is passed to the
+     * [CompactBlockProcessor] and becomes a factor in determining the lower bounds height that this
+     * wallet will use. This height helps with determining where to start downloading as well as how
+     * far back to go during a rewind. Every wallet has a birthday and the initializer depends on
+     * this value but does not own it.
      */
     fun open(birthday: WalletBirthday): Initializer {
         twig("Opening wallet with birthday ${birthday.height}")
@@ -204,7 +210,10 @@ class Initializer(
      * derivation.
      */
     private fun requireRustBackend(): RustBackend {
-        if (!isInitialized) rustBackend = RustBackend().init(pathCacheDb, pathDataDb, pathParams)
+        if (!isInitialized) {
+            twig("Initializing cache: $pathCacheDb  data: $pathDataDb  params: $pathParams")
+            rustBackend = RustBackend().init(pathCacheDb, pathDataDb, pathParams)
+        }
         return rustBackend
     }
 
@@ -271,13 +280,14 @@ class Initializer(
             val parentDir: String =
                 appContext.getDatabasePath("unused.db").parentFile?.absolutePath
                     ?: throw InitializerException.DatabasePathException
-            return File(parentDir, "${alias}_$dbFileName").absolutePath
+            val prefix = if (alias.endsWith('_')) alias else "${alias}_"
+            return File(parentDir, "$prefix$dbFileName").absolutePath
         }
     }
 
 
     /**
-     * Model object for holding wallet birthdays. It is only used by this class.
+     * Model object for holding wallet birthday. It is only used by this class.
      */
     data class WalletBirthday(
         val height: Int = -1,

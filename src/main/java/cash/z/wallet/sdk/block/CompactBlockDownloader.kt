@@ -37,5 +37,10 @@ open class CompactBlockDownloader(
         compactBlockStore.getLatestHeight()
     }
 
+    fun stop() {
+        lightwalletService.shutdown()
+        compactBlockStore.close()
+    }
+
 }
 

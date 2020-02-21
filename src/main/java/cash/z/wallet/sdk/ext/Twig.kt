@@ -1,6 +1,8 @@
 package cash.z.wallet.sdk.ext
 
 import java.util.concurrent.CopyOnWriteArraySet
+import kotlin.math.roundToInt
+import kotlin.math.roundToLong
 
 internal typealias Leaf = String
 
@@ -129,10 +131,10 @@ inline fun <R> Twig.twig(logMessage: String, block: () -> R): R {
  *       (otherwise the function and its "block" param would have to suspend)
  */
 inline fun <R> Twig.twigTask(logMessage: String, block: () -> R): R {
-    twig("$logMessage - started    | on thread ${Thread.currentThread().name})")
+    twig("$logMessage - started    | on thread ${Thread.currentThread().name}")
     val start = System.nanoTime()
     val result  = block()
-    val elapsed = ((System.nanoTime() - start)/1e6)
+    val elapsed = ((System.nanoTime() - start) / 1e5).roundToLong() / 10L
     twig("$logMessage - completed  | in $elapsed ms" +
             " on thread ${Thread.currentThread().name}")
     return result
