@@ -22,22 +22,25 @@ use service_grpc::CompactTxStreamer;
 const LIGHTWALLETD_HOST: &str = "lightwalletd.z.cash";
 const LIGHTWALLETD_PORT: u16 = 9067;
 const BATCH_SIZE: u64 = 10_000;
+const TARGET_HEIGHT: u64 = 735000;
+const NETWORK: &str = "mainnet";
 
 fn print_sapling_tree(height: u64, mut hash: Vec<u8>, time: u32, tree: CommitmentTree<Node>) {
     hash.reverse();
     let mut tree_bytes = vec![];
     tree.write(&mut tree_bytes).unwrap();
     println!("{{");
+    println!("  \"network\": \"{}\",", NETWORK);
     println!("  \"height\": {},", height);
-    println!("  \"hash\": {},", hex::encode(hash));
+    println!("  \"hash\": \"{}\",", hex::encode(hash));
     println!("  \"time\": {},", time);
-    println!("  \"tree\": \"{}\",", hex::encode(tree_bytes));
+    println!("  \"tree\": \"{}\"", hex::encode(tree_bytes));
     println!("}}");
 }
 
 fn main() {
     // For now, start from Sapling activation height
-    let mut start_height = 280000;
+    let mut start_height = 419200;
     let mut tree = CommitmentTree::new();
 
     let client_conf = Default::default();
@@ -50,11 +53,7 @@ fn main() {
 
     loop {
         // Get the latest height
-        let latest_height = client
-            .get_latest_block(grpc::RequestOptions::new(), service::ChainSpec::new())
-            .wait_drop_metadata()
-            .unwrap()
-            .height;
+        let latest_height = TARGET_HEIGHT;
         let end_height = if latest_height - start_height < BATCH_SIZE {
             latest_height
         } else {
