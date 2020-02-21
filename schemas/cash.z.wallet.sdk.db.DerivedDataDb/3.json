@@ -1,0 +1,345 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 3,
+    "identityHash": "d6e9b05e0607d399f821058adb43dc15",
+    "entities": [
+      {
+        "tableName": "transactions",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id_tx` INTEGER, `txid` BLOB NOT NULL, `tx_index` INTEGER, `created` TEXT, `expiry_height` INTEGER, `block` INTEGER, `raw` BLOB, PRIMARY KEY(`id_tx`), FOREIGN KEY(`block`) REFERENCES `blocks`(`height`) ON UPDATE NO ACTION ON DELETE NO ACTION )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id_tx",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "transactionId",
+            "columnName": "txid",
+            "affinity": "BLOB",
+            "notNull": true
+          },
+          {
+            "fieldPath": "transactionIndex",
+            "columnName": "tx_index",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "created",
+            "columnName": "created",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "expiryHeight",
+            "columnName": "expiry_height",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "minedHeight",
+            "columnName": "block",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "raw",
+            "columnName": "raw",
+            "affinity": "BLOB",
+            "notNull": false
+          }
+        ],
+        "primaryKey": {
+          "columnNames": [
+            "id_tx"
+          ],
+          "autoGenerate": false
+        },
+        "indices": [],
+        "foreignKeys": [
+          {
+            "table": "blocks",
+            "onDelete": "NO ACTION",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "block"
+            ],
+            "referencedColumns": [
+              "height"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "blocks",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`height` INTEGER, `hash` BLOB NOT NULL, `time` INTEGER NOT NULL, `sapling_tree` BLOB NOT NULL, PRIMARY KEY(`height`))",
+        "fields": [
+          {
+            "fieldPath": "height",
+            "columnName": "height",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "hash",
+            "columnName": "hash",
+            "affinity": "BLOB",
+            "notNull": true
+          },
+          {
+            "fieldPath": "time",
+            "columnName": "time",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "saplingTree",
+            "columnName": "sapling_tree",
+            "affinity": "BLOB",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "columnNames": [
+            "height"
+          ],
+          "autoGenerate": false
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "received_notes",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id_note` INTEGER, `tx` INTEGER NOT NULL, `output_index` INTEGER NOT NULL, `account` INTEGER NOT NULL, `value` INTEGER NOT NULL, `spent` INTEGER, `diversifier` BLOB NOT NULL, `rcm` BLOB NOT NULL, `nf` BLOB NOT NULL, `is_change` INTEGER NOT NULL, `memo` BLOB, PRIMARY KEY(`id_note`), FOREIGN KEY(`tx`) REFERENCES `transactions`(`id_tx`) ON UPDATE NO ACTION ON DELETE NO ACTION , FOREIGN KEY(`account`) REFERENCES `accounts`(`account`) ON UPDATE NO ACTION ON DELETE NO ACTION , FOREIGN KEY(`spent`) REFERENCES `transactions`(`id_tx`) ON UPDATE NO ACTION ON DELETE NO ACTION )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id_note",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "transactionId",
+            "columnName": "tx",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "outputIndex",
+            "columnName": "output_index",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "account",
+            "columnName": "account",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "value",
+            "columnName": "value",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "spent",
+            "columnName": "spent",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "diversifier",
+            "columnName": "diversifier",
+            "affinity": "BLOB",
+            "notNull": true
+          },
+          {
+            "fieldPath": "rcm",
+            "columnName": "rcm",
+            "affinity": "BLOB",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nf",
+            "columnName": "nf",
+            "affinity": "BLOB",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isChange",
+            "columnName": "is_change",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "memo",
+            "columnName": "memo",
+            "affinity": "BLOB",
+            "notNull": false
+          }
+        ],
+        "primaryKey": {
+          "columnNames": [
+            "id_note"
+          ],
+          "autoGenerate": false
+        },
+        "indices": [],
+        "foreignKeys": [
+          {
+            "table": "transactions",
+            "onDelete": "NO ACTION",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "tx"
+            ],
+            "referencedColumns": [
+              "id_tx"
+            ]
+          },
+          {
+            "table": "accounts",
+            "onDelete": "NO ACTION",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "account"
+            ],
+            "referencedColumns": [
+              "account"
+            ]
+          },
+          {
+            "table": "transactions",
+            "onDelete": "NO ACTION",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "spent"
+            ],
+            "referencedColumns": [
+              "id_tx"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "accounts",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`account` INTEGER, `extfvk` TEXT NOT NULL, `address` TEXT NOT NULL, PRIMARY KEY(`account`))",
+        "fields": [
+          {
+            "fieldPath": "account",
+            "columnName": "account",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "extendedFullViewingKey",
+            "columnName": "extfvk",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "address",
+            "columnName": "address",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "columnNames": [
+            "account"
+          ],
+          "autoGenerate": false
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "sent_notes",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id_note` INTEGER, `tx` INTEGER NOT NULL, `output_index` INTEGER NOT NULL, `from_account` INTEGER NOT NULL, `address` TEXT NOT NULL, `value` INTEGER NOT NULL, `memo` BLOB, PRIMARY KEY(`id_note`), FOREIGN KEY(`tx`) REFERENCES `transactions`(`id_tx`) ON UPDATE NO ACTION ON DELETE NO ACTION , FOREIGN KEY(`from_account`) REFERENCES `accounts`(`account`) ON UPDATE NO ACTION ON DELETE NO ACTION )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id_note",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "transactionId",
+            "columnName": "tx",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "outputIndex",
+            "columnName": "output_index",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "account",
+            "columnName": "from_account",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "address",
+            "columnName": "address",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "value",
+            "columnName": "value",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "memo",
+            "columnName": "memo",
+            "affinity": "BLOB",
+            "notNull": false
+          }
+        ],
+        "primaryKey": {
+          "columnNames": [
+            "id_note"
+          ],
+          "autoGenerate": false
+        },
+        "indices": [],
+        "foreignKeys": [
+          {
+            "table": "transactions",
+            "onDelete": "NO ACTION",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "tx"
+            ],
+            "referencedColumns": [
+              "id_tx"
+            ]
+          },
+          {
+            "table": "accounts",
+            "onDelete": "NO ACTION",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "from_account"
+            ],
+            "referencedColumns": [
+              "account"
+            ]
+          }
+        ]
+      }
+    ],
+    "views": [],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'd6e9b05e0607d399f821058adb43dc15')"
+    ]
+  }
+}

@@ -11,7 +11,7 @@ import cash.z.wallet.sdk.entity.CompactBlockEntity
 @Database(
     entities = [CompactBlockEntity::class],
     version = 1,
-    exportSchema = false
+    exportSchema = true
 )
 abstract class CompactBlockDb : RoomDatabase() {
     abstract fun complactBlockDao(): CompactBlockDao
