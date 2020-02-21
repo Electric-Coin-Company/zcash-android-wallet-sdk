@@ -23,4 +23,9 @@ interface CompactBlockStore {
      * Meaning, if max height is 100 block and  rewindTo(50) is called, then the highest block remaining will be 49.
      */
     suspend fun rewindTo(height: Int)
+
+    /**
+     * Close any connections to the block store.
+     */
+    fun close()
 }

@@ -20,7 +20,7 @@ import cash.z.wallet.sdk.entity.*
         Sent::class
     ],
     version = 3,
-    exportSchema = false
+    exportSchema = true
 )
 abstract class DerivedDataDb : RoomDatabase() {
     abstract fun transactionDao(): TransactionDao
@@ -168,11 +168,11 @@ interface TransactionDao {
          WHERE  ( transactions.raw IS NULL
                  AND received_notes.is_change != 1 )
                 OR ( transactions.raw IS NOT NULL )
-         ORDER  BY ( minedheight IS NOT NULL ),
-                  minedheight DESC,
-                  blocktimeinseconds DESC,
-                  id DESC  
+         ORDER BY blocktimeinseconds DESC,
+		          minedHeight DESC,
+                  id DESC
          LIMIT  :limit
     """)
     fun getAllTransactions(limit: Int = Int.MAX_VALUE): DataSource.Factory<Int, ConfirmedTransaction>
 }
+

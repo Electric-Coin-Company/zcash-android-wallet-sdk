@@ -1,8 +1,6 @@
 package cash.z.wallet.sdk.jni
 
-import android.content.Context
 import cash.z.wallet.sdk.exception.BirthdayException
-import cash.z.wallet.sdk.ext.ZcashSdk
 import cash.z.wallet.sdk.ext.ZcashSdk.OUTPUT_PARAM_FILE_NAME
 import cash.z.wallet.sdk.ext.ZcashSdk.SPEND_PARAM_FILE_NAME
 import cash.z.wallet.sdk.ext.twig
@@ -19,42 +17,40 @@ class RustBackend : RustBackendWelding {
         load()
     }
 
-    internal lateinit var dbDataPath: String
-    internal lateinit var dbCachePath: String
-    internal lateinit var dbNamePrefix: String
-    internal lateinit var paramDestinationDir: String
+    // Paths
+    internal lateinit var pathDataDb: String
+    internal lateinit var pathCacheDb: String
+    internal lateinit var pathParamsDir: String
+
     internal var birthdayHeight: Int = -1
         get() = if (field != -1) field else throw BirthdayException.UninitializedBirthdayException
-
-    fun init(appContext: Context, dbNamePrefix: String = ZcashSdk.DEFAULT_DB_NAME_PREFIX) =
-        init(
-            appContext.getDatabasePath("unused.db").parentFile.absolutePath,
-            "${appContext.cacheDir.absolutePath}/params",
-            dbNamePrefix
-        )
 
     /**
      * Loads the library and initializes path variables. Although it is best to only call this
      * function once, it is idempotent.
      */
     fun init(
-        dbPath: String,
-        paramsPath: String,
-        dbNamePrefix: String = ZcashSdk.DEFAULT_DB_NAME_PREFIX
+        cacheDbPath: String,
+        dataDbPath: String,
+        paramsPath: String
     ): RustBackend {
-        this.dbNamePrefix = dbNamePrefix
         twig("Creating RustBackend") {
-            dbCachePath = File(dbPath, "${dbNamePrefix}${ZcashSdk.DB_CACHE_NAME}").absolutePath
-            dbDataPath = File(dbPath, "${dbNamePrefix}${ZcashSdk.DB_DATA_NAME}").absolutePath
-            paramDestinationDir = paramsPath
+            pathCacheDb = cacheDbPath
+            pathDataDb = dataDbPath
+            pathParamsDir = paramsPath
         }
         return this
     }
 
-    fun clear() {
-        twig("Deleting databases")
-        File(dbCachePath).delete()
-        File(dbDataPath).delete()
+    fun clear(clearCacheDb: Boolean = true, clearDataDb: Boolean = true) {
+        if (clearCacheDb) {
+            twig("Deleting cache database!")
+            File(pathCacheDb).delete()
+        }
+        if (clearDataDb) {
+            twig("Deleting data database!")
+            File(pathDataDb).delete()
+        }
     }
 
 
@@ -62,7 +58,7 @@ class RustBackend : RustBackendWelding {
     // Wrapper Functions
     //
 
-    override fun initDataDb() = initDataDb(dbDataPath)
+    override fun initDataDb() = initDataDb(pathDataDb)
 
 //    override fun initAccountsTable(extfvks: Array<String>) =
 //        initAccountsTableWithKeys(dbDataPath, extfvks)
@@ -70,7 +66,7 @@ class RustBackend : RustBackendWelding {
     override fun initAccountsTable(
         seed: ByteArray,
         numberOfAccounts: Int
-    ) = initAccountsTable(dbDataPath, seed, numberOfAccounts)
+    ) = initAccountsTable(pathDataDb, seed, numberOfAccounts)
 
     override fun initBlocksTable(
         height: Int,
@@ -79,29 +75,29 @@ class RustBackend : RustBackendWelding {
         saplingTree: String
     ): Boolean {
         birthdayHeight = height
-        return initBlocksTable(dbDataPath, height, hash, time, saplingTree)
+        return initBlocksTable(pathDataDb, height, hash, time, saplingTree)
     }
 
-    override fun getAddress(account: Int) = getAddress(dbDataPath, account)
+    override fun getAddress(account: Int) = getAddress(pathDataDb, account)
 
-    override fun getBalance(account: Int) = getBalance(dbDataPath, account)
+    override fun getBalance(account: Int) = getBalance(pathDataDb, account)
 
-    override fun getVerifiedBalance(account: Int) = getVerifiedBalance(dbDataPath, account)
+    override fun getVerifiedBalance(account: Int) = getVerifiedBalance(pathDataDb, account)
 
     override fun getReceivedMemoAsUtf8(idNote: Long) =
-        getReceivedMemoAsUtf8(dbDataPath, idNote)
+        getReceivedMemoAsUtf8(pathDataDb, idNote)
 
-    override fun getSentMemoAsUtf8(idNote: Long) = getSentMemoAsUtf8(dbDataPath, idNote)
+    override fun getSentMemoAsUtf8(idNote: Long) = getSentMemoAsUtf8(pathDataDb, idNote)
 
-    override fun validateCombinedChain() = validateCombinedChain(dbCachePath, dbDataPath)
+    override fun validateCombinedChain() = validateCombinedChain(pathCacheDb, pathDataDb)
 
-    override fun rewindToHeight(height: Int) = rewindToHeight(dbDataPath, height)
+    override fun rewindToHeight(height: Int) = rewindToHeight(pathDataDb, height)
 
     override fun scanBlocks(limit: Int): Boolean {
         return if (limit > 0) {
-            scanBlockBatch(dbCachePath, dbDataPath, limit)
+            scanBlockBatch(pathCacheDb, pathDataDb, limit)
         } else {
-            scanBlocks(dbCachePath, dbDataPath)
+            scanBlocks(pathCacheDb, pathDataDb)
         }
     }
 
@@ -112,14 +108,14 @@ class RustBackend : RustBackendWelding {
         value: Long,
         memo: ByteArray?
     ): Long = createToAddress(
-        dbDataPath,
+        pathDataDb,
         account,
         extsk,
         to,
         value,
         memo ?: ByteArray(0),
-        "${paramDestinationDir}/$SPEND_PARAM_FILE_NAME",
-        "${paramDestinationDir}/$OUTPUT_PARAM_FILE_NAME"
+        "${pathParamsDir}/$SPEND_PARAM_FILE_NAME",
+        "${pathParamsDir}/$OUTPUT_PARAM_FILE_NAME"
     )
 
     override fun deriveSpendingKeys(seed: ByteArray, numberOfAccounts: Int) =
@@ -129,6 +125,11 @@ class RustBackend : RustBackendWelding {
         deriveExtendedFullViewingKeys(seed, numberOfAccounts)
 
     override fun deriveViewingKey(spendingKey: String) = deriveExtendedFullViewingKey(spendingKey)
+
+    override fun deriveAddress(seed: ByteArray, accountIndex: Int) =
+        deriveAddressFromSeed(seed, accountIndex)
+
+    override fun deriveAddress(viewingKey: String) = deriveAddressFromViewingKey(viewingKey)
 
     override fun isValidShieldedAddr(addr: String) =
         isValidShieldedAddress(addr)
@@ -232,5 +233,9 @@ class RustBackend : RustBackendWelding {
         @JvmStatic private external fun deriveExtendedFullViewingKeys(seed: ByteArray, numberOfAccounts: Int): Array<String>
 
         @JvmStatic private external fun deriveExtendedFullViewingKey(spendingKey: String): String
+
+        @JvmStatic private external fun deriveAddressFromSeed(seed: ByteArray, accountIndex: Int): String
+
+        @JvmStatic private external fun deriveAddressFromViewingKey(key: String): String
     }
 }

@@ -60,7 +60,6 @@ class FlowPagedListBuilder<Key, Value>(
                 }
 
                 do {
-                    twig("zzzzz do this while...")
                     if (::dataSource.isInitialized) {
                         dataSource.removeInvalidatedCallback(callback)
                     }

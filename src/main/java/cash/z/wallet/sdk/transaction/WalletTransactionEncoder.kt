@@ -71,7 +71,7 @@ class WalletTransactionEncoder(
         twigTask("creating transaction to spend $value zatoshi to" +
                 " ${toAddress.masked()} with memo $memo") {
             try {
-                ensureParams((rustBackend as RustBackend).paramDestinationDir)
+                ensureParams((rustBackend as RustBackend).pathParamsDir)
                 twig("params exist! attempting to send...")
                 rustBackend.createToAddress(
                     fromAccountIndex,

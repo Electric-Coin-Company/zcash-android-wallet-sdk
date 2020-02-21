@@ -30,6 +30,11 @@ open class ZcashSdkCommon {
     val MAX_REORG_SIZE = 100
 
     /**
+     * The maximum length of a memo.
+     */
+    val MAX_MEMO_SIZE = 512
+
+    /**
      * The amount of blocks ahead of the current height where new transactions are set to expire. This value is controlled
      * by the rust backend but it is helpful to know what it is set to and should be kept in sync.
      */
@@ -81,7 +86,7 @@ open class ZcashSdkCommon {
 
     val DB_DATA_NAME = "Data.db"
     val DB_CACHE_NAME = "Cache.db"
-    open val DEFAULT_DB_NAME_PREFIX = "ZcashSdk_"
+    open val DEFAULT_DB_NAME_PREFIX = "ZcashSdk"
 
     /**
      * File name for the sappling spend params

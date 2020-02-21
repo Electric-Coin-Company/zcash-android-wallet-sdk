@@ -50,7 +50,7 @@ class IntegrationTest {
     fun testBalance() = runBlocking {
         var availableBalance: Long = 0L
         synchronizer.balances.onFirst {
-                availableBalance = it.available
+                availableBalance = it.availableZatoshi
         }
 
         synchronizer.status.filter { it == SYNCED }.onFirst {
@@ -65,7 +65,7 @@ class IntegrationTest {
     @Ignore
     fun testSpend() = runBlocking {
         var success = false
-        synchronizer.balances.filter { it.available > 0 }.onEach {
+        synchronizer.balances.filter { it.availableZatoshi > 0 }.onEach {
             success = sendFunds()
         }.first()
         log("asserting $success")

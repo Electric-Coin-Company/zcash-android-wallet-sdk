@@ -1,51 +1,46 @@
 package cash.z.wallet.sdk.util
 
 import androidx.test.platform.app.InstrumentationRegistry
-import cash.z.wallet.sdk.ext.TroubleshootingTwig
-import cash.z.wallet.sdk.ext.Twig
-import cash.z.wallet.sdk.ext.SampleSeedProvider
-import cash.z.wallet.sdk.jni.RustBackend
-import cash.z.wallet.sdk.secure.Wallet
+import cash.z.wallet.sdk.Initializer
+import cash.z.wallet.sdk.Initializer.WalletBirthday
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.runBlocking
 import okio.Okio
 import org.junit.Assert.assertEquals
-import org.junit.Before
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.IOException
-import kotlin.properties.Delegates
-import kotlin.properties.ReadWriteProperty
 
 @ExperimentalCoroutinesApi
 class AddressGeneratorUtil {
 
-    private val dataDbName = "AddressUtilData.db"
     private val context = InstrumentationRegistry.getInstrumentation().context
-    private val rustBackend = RustBackend.init(context)
+    private val initializer = Initializer(context).open(WalletBirthday())
+    private val mnemonics = SimpleMnemonics()
 
-    private lateinit var wallet: Wallet
-
-    @Before
-    fun setup() {
-        Twig.plant(TroubleshootingTwig())
-    }
-
-    private fun deleteDb() {
-        context.getDatabasePath(dataDbName).absoluteFile.delete()
+    @Test
+    fun printMnemonic() {
+        mnemonics.apply {
+            val mnemonicPhrase = String(nextMnemonic())
+            println("example mnemonic: $mnemonicPhrase")
+            assertEquals(24, mnemonicPhrase.split(" ").size)
+        }
     }
 
     @Test
     fun generateAddresses() = runBlocking {
-        readLines().collect { seed ->
-            val keyStore = initWallet(seed)
-            val address = wallet.getAddress()
-            val pk by keyStore
-            println("xrxrx2\t$seed\t$address\t$pk")
-        }
-        Thread.sleep(5000)
-        assertEquals("foo", "bar")
+        readLines()
+            .map { seedPhrase ->
+                mnemonics.toSeed(seedPhrase.toCharArray())
+            }.map { seed ->
+                initializer.rustBackend.deriveAddress(seed)
+            }.collect { address ->
+                println("xrxrx2\t$address")
+                assertTrue(address.startsWith("zs1"))
+            }
     }
 
     @Throws(IOException::class)
@@ -60,11 +55,4 @@ class AddressGeneratorUtil {
         }
     }
 
-    private fun initWallet(seed: String): ReadWriteProperty<Any?, String> {
-        deleteDb()
-        val spendingKeyProvider = Delegates.notNull<String>()
-        wallet = Wallet(context, rustBackend, SampleSeedProvider(seed), spendingKeyProvider)
-        wallet.initialize()
-        return spendingKeyProvider
-    }
 }

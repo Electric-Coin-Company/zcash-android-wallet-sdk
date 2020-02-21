@@ -121,6 +121,12 @@ class SdkSynchronizer internal constructor(
      */
     override var onSubmissionErrorHandler: ((Throwable?) -> Boolean)? = null
 
+    /**
+     * A callback to invoke whenever a chain error is encountered. These occur whenever the
+     * processor detects a missing or non-chain-sequential block (i.e. a reorg).
+     */
+    override var onChainErrorHandler: ((Int, Int) -> Any)? = null
+
 
     //
     // Public API
@@ -176,12 +182,14 @@ class SdkSynchronizer internal constructor(
     }
 
     suspend fun refreshBalance() {
+        twig("refreshing balance")
         _balances.send(processor.getBalanceInfo())
     }
 
     private fun CoroutineScope.onReady() = launch(CoroutineExceptionHandler(::onCriticalError)) {
-        twig("Synchronizer Ready. Starting processor!")
-        processor.onErrorListener = ::onProcessorError
+        twig("Synchronizer (${this@SdkSynchronizer}) Ready. Starting processor!")
+        processor.onProcessorErrorListener = ::onProcessorError
+        processor.onChainErrorListener = ::onChainError
         processor.state.onEach {
             when (it) {
                 is Scanned -> {
@@ -235,6 +243,18 @@ class SdkSynchronizer internal constructor(
                         "${if (it) "try again" else "abort"}!"
             )
         } == true
+    }
+
+    private fun onChainError(errorHeight: Int, rewindHeight: Int) {
+        twig("Chain error detected at height: $errorHeight. Rewinding to: $rewindHeight")
+        if (onChainErrorHandler == null) {
+            twig(
+                "WARNING: a chain error occurred but no callback is registered to be notified of " +
+                "chain errors. To respond to these errors (perhaps to update the UI or alert the" +
+                " user) set synchronizer.onChainErrorHandler to a non-null value"
+            )
+        }
+        onChainErrorHandler?.invoke(errorHeight, rewindHeight)
     }
 
     private suspend fun onScanComplete(scannedRange: IntRange) {
@@ -351,17 +371,17 @@ fun Synchronizer(
     if (seed != null && birthdayStore.hasExistingBirthday()) {
         twig("Initializing existing wallet")
         initializer.open(birthdayStore.getBirthday())
-        twig("${initializer.rustBackend.dbDataPath}")
+        twig("${initializer.rustBackend.pathDataDb}")
     } else {
         require(seed != null) {
             "Failed to initialize. A seed is required when no wallet exists on the device."
         }
         if (birthdayStore.hasImportedBirthday()) {
             twig("Initializing new wallet")
-            initializer.new(seed, birthdayStore.newWalletBirthday, overwrite = true)
+            initializer.new(seed, birthdayStore.newWalletBirthday, 1, true, true)
         } else {
             twig("Initializing imported wallet")
-            initializer.import(seed, birthdayStore.getBirthday(), overwrite = true)
+            initializer.import(seed, birthdayStore.getBirthday(), true, true)
         }
     }
     return Synchronizer(appContext, initializer)
@@ -389,8 +409,8 @@ fun Synchronizer(
     lightwalletdHost: String = ZcashSdk.DEFAULT_LIGHTWALLETD_HOST,
     lightwalletdPort: Int = ZcashSdk.DEFAULT_LIGHTWALLETD_PORT,
     ledger: TransactionRepository =
-        PagedTransactionRepository(appContext, 1000, rustBackend.dbDataPath), // TODO: fix this pagesize bug, small pages should not crash the app. It crashes with: Uncaught Exception: android.view.ViewRootImpl$CalledFromWrongThreadException: Only the original thread that created a view hierarchy can touch its views. and is probably related to FlowPagedList
-    blockStore: CompactBlockStore = CompactBlockDbStore(appContext, rustBackend.dbCachePath),
+        PagedTransactionRepository(appContext, 1000, rustBackend.pathDataDb), // TODO: fix this pagesize bug, small pages should not crash the app. It crashes with: Uncaught Exception: android.view.ViewRootImpl$CalledFromWrongThreadException: Only the original thread that created a view hierarchy can touch its views. and is probably related to FlowPagedList
+    blockStore: CompactBlockStore = CompactBlockDbStore(appContext, rustBackend.pathCacheDb),
     service: LightWalletService = LightWalletGrpcService(appContext, lightwalletdHost, lightwalletdPort),
     encoder: TransactionEncoder = WalletTransactionEncoder(rustBackend, ledger),
     downloader: CompactBlockDownloader = CompactBlockDownloader(service, blockStore),
