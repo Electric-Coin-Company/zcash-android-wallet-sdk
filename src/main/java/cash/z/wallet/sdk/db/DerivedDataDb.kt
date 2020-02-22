@@ -168,8 +168,9 @@ interface TransactionDao {
          WHERE  ( transactions.raw IS NULL
                  AND received_notes.is_change != 1 )
                 OR ( transactions.raw IS NOT NULL )
-         ORDER BY blocktimeinseconds DESC,
-		          minedHeight DESC,
+         ORDER  BY ( minedheight IS NOT NULL ),
+                  minedheight DESC,
+                  blocktimeinseconds DESC,
                   id DESC
          LIMIT  :limit
     """)
