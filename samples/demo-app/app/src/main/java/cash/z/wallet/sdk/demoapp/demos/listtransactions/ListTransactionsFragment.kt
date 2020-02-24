@@ -22,7 +22,8 @@ import kotlinx.coroutines.launch
  */
 class ListTransactionsFragment : BaseDemoFragment<FragmentListTransactionsBinding>() {
     private val config = App.instance.defaultConfig
-    private val initializer = Initializer(App.instance)
+    private val initializer = Initializer(App.instance, host = config.host, port = config.port)
+    private val birthday = config.newWalletBirthday()
     private lateinit var synchronizer: Synchronizer
     private lateinit var adapter: TransactionAdapter<ConfirmedTransaction>
 
@@ -30,8 +31,8 @@ class ListTransactionsFragment : BaseDemoFragment<FragmentListTransactionsBindin
         FragmentListTransactionsBinding.inflate(layoutInflater)
 
     override fun resetInBackground() {
-        initializer.new(config.seed)
-        synchronizer = Synchronizer(App.instance, config.host, initializer.rustBackend)
+        initializer.new(config.seed, birthday)
+        synchronizer = Synchronizer(App.instance, initializer)
     }
 
     override fun onResetComplete() {

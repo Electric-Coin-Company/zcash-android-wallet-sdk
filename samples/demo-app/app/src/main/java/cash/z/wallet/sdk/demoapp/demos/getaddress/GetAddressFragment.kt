@@ -8,8 +8,10 @@ import cash.z.wallet.sdk.demoapp.databinding.FragmentGetAddressBinding
 
 class GetAddressFragment : BaseDemoFragment<FragmentGetAddressBinding>() {
 
-    private var seed: ByteArray = App.instance.defaultConfig.seed
-    private val initializer: Initializer = Initializer(App.instance)
+    private val config = App.instance.defaultConfig
+    private var seed: ByteArray = config.seed
+    private val initializer: Initializer = Initializer(App.instance, host = config.host, port = config.port)
+    private val birthday = config.newWalletBirthday()
 
     override fun inflateBinding(layoutInflater: LayoutInflater): FragmentGetAddressBinding
             = FragmentGetAddressBinding.inflate(layoutInflater)
@@ -19,7 +21,7 @@ class GetAddressFragment : BaseDemoFragment<FragmentGetAddressBinding>() {
          * Create and initialize the wallet. Initialization will return the private keys but for the
          * purposes of this demo we don't need them.
          */
-        initializer.new(seed)
+        initializer.new(seed, birthday)
     }
 
     override fun onResetComplete() {

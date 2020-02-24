@@ -17,7 +17,8 @@ import cash.z.wallet.sdk.ext.*
 
 class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
     private val config = App.instance.defaultConfig
-    private val initializer = Initializer(App.instance)
+    private val initializer = Initializer(App.instance, host = config.host, port = config.port)
+    private val birthday = config.newWalletBirthday()
 
     private lateinit var synchronizer: Synchronizer
     private lateinit var keyManager: SampleStorageBridge
@@ -56,9 +57,9 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
         FragmentSendBinding.inflate(layoutInflater)
 
     override fun resetInBackground() {
-        val spendingKeys = initializer.new(config.seed)
+        val spendingKeys = initializer.new(config.seed, birthday)
         keyManager = SampleStorageBridge().securelyStorePrivateKey(spendingKeys[0])
-        synchronizer = Synchronizer(App.instance, config.host, initializer.rustBackend)
+        synchronizer = Synchronizer(App.instance, initializer)
     }
 
     // STARTING POINT
@@ -102,7 +103,7 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
 
     private fun onStatus(status: Synchronizer.Status) {
         binding.textStatus.text = "Status: $status"
-        if (status == Synchronizer.Status.SYNCING) {
+        if (status != Synchronizer.Status.SYNCED) {
             isSyncing = true
             binding.textBalance.text = "Calculating balance..."
         } else {
@@ -120,10 +121,10 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
     }
 
     private fun onBalance(balance: CompactBlockProcessor.WalletBalance) {
-        availableBalance = balance.available
+        availableBalance = balance.availableZatoshi
         binding.textBalance.text = """
-            Available balance: ${balance.available.convertZatoshiToZecString()}
-            Total balance: ${balance.total.convertZatoshiToZecString()}
+            Available balance: ${balance.availableZatoshi.convertZatoshiToZecString()}
+            Total balance: ${balance.totalZatoshi.convertZatoshiToZecString()}
         """.trimIndent()
     }
 
