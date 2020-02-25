@@ -21,28 +21,36 @@ log-panics = "2.0.0"
 protobuf = { version = "2", optional = true }
 
 [dependencies.ff]
-git = "https://github.com/str4d/librustzcash.git"
-rev = "f3f5338282eeda6d9f5bff69f6930a5473c95925"
+git = "https://github.com/gmale/librustzcash.git"
+branch = "feature/add-scan-limit"
 
 [dependencies.pairing]
-git = "https://github.com/str4d/librustzcash.git"
-rev = "f3f5338282eeda6d9f5bff69f6930a5473c95925"
+git = "https://github.com/gmale/librustzcash.git"
+branch = "feature/add-scan-limit"
 
 [dependencies.zcash_client_backend]
-git = "https://github.com/str4d/librustzcash.git"
-rev = "f3f5338282eeda6d9f5bff69f6930a5473c95925"
+git = "https://github.com/gmale/librustzcash.git"
+branch = "feature/add-scan-limit"
 
 [dependencies.zcash_client_sqlite]
-git = "https://github.com/str4d/librustzcash.git"
-rev = "f3f5338282eeda6d9f5bff69f6930a5473c95925"
+git = "https://github.com/gmale/librustzcash.git"
+branch = "feature/add-scan-limit"
 
 [dependencies.zcash_primitives]
-git = "https://github.com/str4d/librustzcash.git"
-rev = "f3f5338282eeda6d9f5bff69f6930a5473c95925"
+git = "https://github.com/gmale/librustzcash.git"
+branch = "feature/add-scan-limit"
 
 [dependencies.zcash_proofs]
-git = "https://github.com/str4d/librustzcash.git"
-rev = "f3f5338282eeda6d9f5bff69f6930a5473c95925"
+git = "https://github.com/gmale/librustzcash.git"
+branch = "feature/add-scan-limit"
+
+#[patch.'https://github.com/str4d/librustzcash.git']
+#ff = { path = '../../clones/librustzcash/ff' }
+#pairing = { path = '../../clones/librustzcash/pairing' }
+#zcash_client_backend = { path = '../../clones/librustzcash/zcash_client_backend' }
+#zcash_client_sqlite = { path = '../../clones/librustzcash/zcash_client_sqlite' }
+#zcash_primitives = { path = '../../clones/librustzcash/zcash_primitives' }
+#zcash_proofs = { path = '../../clones/librustzcash/zcash_proofs' }
 
 [features]
 mainnet = ["zcash_client_sqlite/mainnet"]
