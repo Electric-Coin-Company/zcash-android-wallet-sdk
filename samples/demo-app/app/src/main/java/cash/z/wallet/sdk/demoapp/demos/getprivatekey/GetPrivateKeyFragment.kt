@@ -26,7 +26,7 @@ class GetPrivateKeyFragment : BaseDemoFragment<FragmentGetPrivateKeyBinding>() {
         spendingKeys = initializer.new(seed, birthday)
 
         /*
-         * Viewing keys can be derived from a seed or from spending keys.
+         * Alternatively, viewing keys can also be derived directly from a seed or spending keys.
          */
         viewingKeys = initializer.deriveViewingKeys(seed)
 

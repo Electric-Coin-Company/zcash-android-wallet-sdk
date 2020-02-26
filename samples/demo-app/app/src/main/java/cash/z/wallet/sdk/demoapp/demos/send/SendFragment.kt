@@ -18,7 +18,7 @@ import cash.z.wallet.sdk.ext.*
 class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
     private val config = App.instance.defaultConfig
     private val initializer = Initializer(App.instance, host = config.host, port = config.port)
-    private val birthday = config.newWalletBirthday()
+    private val birthday = config.loadBirthday()
 
     private lateinit var synchronizer: Synchronizer
     private lateinit var keyManager: SampleStorageBridge
@@ -31,7 +31,7 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
     // Observable properties (done without livedata or flows for simplicity)
     //
 
-    private var availableBalance = -1L
+    private var balance = CompactBlockProcessor.WalletBalance()
         set(value) {
             field = value
             onUpdateSendButton()
@@ -98,40 +98,47 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
     private fun monitorChanges() {
         synchronizer.status.collectWith(lifecycleScope, ::onStatus)
         synchronizer.progress.collectWith(lifecycleScope, ::onProgress)
+        synchronizer.processorInfo.collectWith(lifecycleScope, ::onProcessorInfoUpdated)
         synchronizer.balances.collectWith(lifecycleScope, ::onBalance)
     }
 
     private fun onStatus(status: Synchronizer.Status) {
         binding.textStatus.text = "Status: $status"
-        if (status != Synchronizer.Status.SYNCED) {
-            isSyncing = true
+        isSyncing = status != Synchronizer.Status.SYNCED
+        if (status == Synchronizer.Status.SCANNING) {
             binding.textBalance.text = "Calculating balance..."
         } else {
-            isSyncing = false
+            if (!isSyncing) onBalance(balance)
         }
     }
 
     private fun onProgress(i: Int) {
-        val message = when (i) {
-            100 -> "Scanning blocks..."
-            else -> "Downloading blocks...$i%"
+        if (i < 100) {
+            binding.textStatus.text = "Downloading blocks...$i%"
+            binding.textBalance.visibility = View.INVISIBLE
+        } else {
+            binding.textBalance.visibility = View.VISIBLE
         }
-        binding.textStatus.text = message
-        binding.textBalance.text = ""
+    }
+
+    private fun onProcessorInfoUpdated(info: CompactBlockProcessor.ProcessorInfo) {
+        if (info.isScanning) binding.textStatus.text = "Scanning blocks...${info.scanProgress}%"
     }
 
     private fun onBalance(balance: CompactBlockProcessor.WalletBalance) {
-        availableBalance = balance.availableZatoshi
-        binding.textBalance.text = """
-            Available balance: ${balance.availableZatoshi.convertZatoshiToZecString()}
-            Total balance: ${balance.totalZatoshi.convertZatoshiToZecString()}
-        """.trimIndent()
+        this.balance = balance
+        if (!isSyncing) {
+            binding.textBalance.text = """
+                Available balance: ${balance.availableZatoshi.convertZatoshiToZecString(12)}
+                Total balance: ${balance.totalZatoshi.convertZatoshiToZecString(12)}
+            """.trimIndent()
+        }
     }
 
     private fun onSend(unused: View) {
         isSending = true
         val amount = amountInput.text.toString().toDouble().convertZecToZatoshi()
-        val toAddress = addressInput.text.toString()
+        val toAddress = addressInput.text.toString().trim()
         synchronizer.sendToAddress(
             keyManager.key,
             amount,
@@ -169,7 +176,7 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
                     text = "⌛ syncing"
                     isEnabled = false
                 }
-                availableBalance <= 0 -> isEnabled = false
+                balance.availableZatoshi <= 0 -> isEnabled = false
                 else -> {
                     text = "send"
                     isEnabled = true
