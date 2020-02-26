@@ -40,7 +40,6 @@
             android:layout_height="wrap_content"
             android:ems="8"
             android:hint="to address"
-            android:inputType="number"
             android:textSize="20sp" />
     </com.google.android.material.textfield.TextInputLayout>
 
