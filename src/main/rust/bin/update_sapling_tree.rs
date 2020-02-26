@@ -4,6 +4,8 @@ extern crate grpc;
 extern crate hex;
 extern crate pairing;
 extern crate protobuf;
+extern crate tls_api;
+extern crate tls_api_rustls;
 extern crate zcash_client_backend;
 extern crate zcash_primitives;
 
@@ -14,6 +16,7 @@ use ff::{PrimeField, PrimeFieldRepr};
 use futures::Stream;
 use grpc::ClientStubExt;
 use pairing::bls12_381::{Fr, FrRepr};
+use tls_api::TlsConnector;
 use zcash_client_backend::proto::compact_formats;
 use zcash_primitives::{merkle_tree::CommitmentTree, sapling::Node};
 
@@ -44,7 +47,7 @@ fn main() {
     let mut tree = CommitmentTree::new();
 
     let client_conf = Default::default();
-    let client = service_grpc::CompactTxStreamerClient::new_plain(
+    let client = service_grpc::CompactTxStreamerClient::new_tls::<tls_api_rustls::TlsConnector>(
         LIGHTWALLETD_HOST,
         LIGHTWALLETD_PORT,
         client_conf,

@@ -19,6 +19,8 @@ jni = { version = "0.13", default-features = false }
 log = "0.4"
 log-panics = "2.0.0"
 protobuf = { version = "2", optional = true }
+tls-api = { version = "0.1", optional = true }
+tls-api-rustls = { version = "0.1", optional = true }
 
 [dependencies.ff]
 git = "https://github.com/gmale/librustzcash.git"
@@ -54,7 +56,7 @@ branch = "feature/add-scan-limit"
 
 [features]
 mainnet = ["zcash_client_sqlite/mainnet"]
-updater = ["futures", "grpc", "protobuf"]
+updater = ["futures", "grpc", "protobuf", "tls-api", "tls-api-rustls"]
 
 [lib]
 name = "zcashwalletsdk"
