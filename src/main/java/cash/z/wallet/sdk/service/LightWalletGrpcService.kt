@@ -33,7 +33,7 @@ class LightWalletGrpcService private constructor(
         appContext: Context,
         host: String,
         port: Int = DEFAULT_LIGHTWALLETD_PORT,
-        usePlaintext: Boolean = !appContext.resources.getBoolean(R.bool.is_mainnet)
+        usePlaintext: Boolean = appContext.resources.getBoolean(R.bool.lightwalletd_allow_very_insecure_connections)
     ) : this(createDefaultChannel(appContext, host, port, usePlaintext))
 
     /* LightWalletService implementation */

@@ -15,7 +15,21 @@ android {
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
-        missingDimensionStrategy "network", "zcashtestnet"
+    }
+    flavorDimensions 'network'
+    productFlavors {
+        // would rather name them "testnet" and "mainnet" but product flavor names cannot start with the word "test"
+        zcashtestnet {
+            dimension 'network'
+            applicationId 'cash.z.wallet.sdk.demoapp.testnet'
+            matchingFallbacks = ['zcashtestnet', 'debug']
+        }
+
+        zcashmainnet {
+            dimension 'network'
+            applicationId 'cash.z.wallet.sdk.demoapp.mainnet'
+            matchingFallbacks = ['zcashmainnet', 'release']
+        }
     }
     buildTypes {
         release {
@@ -36,7 +50,12 @@ dependencies {
     // SDK
     implementation project(path: ':sdk')
 //    implementation "cash.z.android.wallet:zcash-android-core:$sdk_version@aar"
-//    implementation "cash.z.android.wallet:zcash-kotlin-bip39:$sdk_version@aar"
+
+    // sample mnemonic plugin
+    implementation 'com.github.zcash:zcash-android-wallet-plugins:1.0.0'
+    implementation 'com.madgag.spongycastle:core:1.58.0.0'
+    implementation 'io.github.novacrypto:BIP39:2019.01.27'
+    implementation 'io.github.novacrypto:securestring:2019.01.27'
 
     // SDK: grpc
     implementation "io.grpc:grpc-okhttp:1.21.0"

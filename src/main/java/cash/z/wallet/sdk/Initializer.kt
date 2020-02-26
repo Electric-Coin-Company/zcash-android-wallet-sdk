@@ -252,7 +252,7 @@ class Initializer(
      *
      * @return the address that corresponds to the seed and account index.
      */
-    fun deriveAddress(seed: ByteArray, accountIndex: Int) =
+    fun deriveAddress(seed: ByteArray, accountIndex: Int = 0) =
         requireRustBackend().deriveAddress(seed, accountIndex)
 
     /**

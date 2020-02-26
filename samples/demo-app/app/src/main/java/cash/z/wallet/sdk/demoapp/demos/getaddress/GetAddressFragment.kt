@@ -11,22 +11,21 @@ class GetAddressFragment : BaseDemoFragment<FragmentGetAddressBinding>() {
     private var seed: ByteArray = App.instance.defaultConfig.seed
     private val initializer: Initializer = Initializer(App.instance)
 
+    private lateinit var address: String
+
     override fun inflateBinding(layoutInflater: LayoutInflater): FragmentGetAddressBinding
             = FragmentGetAddressBinding.inflate(layoutInflater)
 
     override fun resetInBackground() {
-        /**
-         * Create and initialize the wallet. Initialization will return the private keys but for the
-         * purposes of this demo we don't need them.
-         */
-        initializer.new(seed)
+        address = initializer.deriveAddress(seed)
     }
 
     override fun onResetComplete() {
-        binding.textInfo.text = initializer.rustBackend.getAddress()
+        binding.textInfo.text = address
     }
 
-    override fun onClear() {
-        initializer.clear()
+    override fun onActionButtonClicked() {
+        copyToClipboard(address)
     }
+
 }

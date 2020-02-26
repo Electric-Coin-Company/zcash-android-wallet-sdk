@@ -11,6 +11,7 @@ import cash.z.wallet.sdk.service.LightWalletService
 class GetBlockRangeFragment : BaseDemoFragment<FragmentGetBlockRangeBinding>() {
 
     private val host = App.instance.defaultConfig.host
+    private val port = App.instance.defaultConfig.port
 
     private lateinit var lightwalletService: LightWalletService
     
@@ -18,7 +19,7 @@ class GetBlockRangeFragment : BaseDemoFragment<FragmentGetBlockRangeBinding>() {
         FragmentGetBlockRangeBinding.inflate(layoutInflater)
 
     override fun resetInBackground() {
-        lightwalletService = LightWalletGrpcService(App.instance, host)
+        lightwalletService = LightWalletGrpcService(App.instance, host, port)
     }
 
     override fun onResetComplete() {

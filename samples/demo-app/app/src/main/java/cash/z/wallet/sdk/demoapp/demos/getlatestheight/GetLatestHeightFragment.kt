@@ -10,6 +10,7 @@ import cash.z.wallet.sdk.service.LightWalletService
 
 class GetLatestHeightFragment : BaseDemoFragment<FragmentGetLatestHeightBinding>() {
     private val host = App.instance.defaultConfig.host
+    private val port = App.instance.defaultConfig.port
 
     private lateinit var lightwalletService: LightWalletService
 
@@ -17,7 +18,7 @@ class GetLatestHeightFragment : BaseDemoFragment<FragmentGetLatestHeightBinding>
         FragmentGetLatestHeightBinding.inflate(layoutInflater)
 
     override fun resetInBackground() {
-        lightwalletService = LightWalletGrpcService(App.instance, host)
+        lightwalletService = LightWalletGrpcService(App.instance, host, port)
     }
 
     override fun onResetComplete() {
@@ -26,5 +27,10 @@ class GetLatestHeightFragment : BaseDemoFragment<FragmentGetLatestHeightBinding>
 
     override fun onClear() {
         lightwalletService.shutdown()
+    }
+
+    override fun onActionButtonClicked() {
+        toast("Refreshed!")
+        onResetComplete()
     }
 }

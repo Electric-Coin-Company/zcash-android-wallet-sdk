@@ -7,6 +7,7 @@ import androidx.paging.PagedList
 import androidx.recyclerview.widget.LinearLayoutManager
 import cash.z.wallet.sdk.Initializer
 import cash.z.wallet.sdk.Synchronizer
+import cash.z.wallet.sdk.block.CompactBlockProcessor
 import cash.z.wallet.sdk.demoapp.App
 import cash.z.wallet.sdk.demoapp.BaseDemoFragment
 import cash.z.wallet.sdk.demoapp.databinding.FragmentListTransactionsBinding
@@ -22,16 +23,21 @@ import kotlinx.coroutines.launch
  */
 class ListTransactionsFragment : BaseDemoFragment<FragmentListTransactionsBinding>() {
     private val config = App.instance.defaultConfig
-    private val initializer = Initializer(App.instance)
+    private val initializer = Initializer(App.instance, host = config.host, port = config.port)
+    private val birthday = config.loadBirthday()
     private lateinit var synchronizer: Synchronizer
     private lateinit var adapter: TransactionAdapter<ConfirmedTransaction>
+    private lateinit var address: String
+    private var status: Synchronizer.Status? = null
+
+    private val isSynced get() = status == Synchronizer.Status.SYNCED
 
     override fun inflateBinding(layoutInflater: LayoutInflater): FragmentListTransactionsBinding =
         FragmentListTransactionsBinding.inflate(layoutInflater)
 
     override fun resetInBackground() {
-        initializer.new(config.seed)
-        synchronizer = Synchronizer(App.instance, config.host, initializer.rustBackend)
+        initializer.new(config.seed, birthday)
+        synchronizer = Synchronizer(App.instance, initializer)
     }
 
     override fun onResetComplete() {
@@ -50,6 +56,7 @@ class ListTransactionsFragment : BaseDemoFragment<FragmentListTransactionsBindin
             LinearLayoutManager(activity, LinearLayoutManager.VERTICAL, false)
         adapter = TransactionAdapter()
         lifecycleScope.launch {
+            address = synchronizer.getAddress()
             synchronizer.receivedTransactions.collect { onTransactionsUpdated(it) }
         }
         binding.recyclerTransactions.adapter = adapter
@@ -63,20 +70,22 @@ class ListTransactionsFragment : BaseDemoFragment<FragmentListTransactionsBindin
 
     private fun monitorStatus() {
         synchronizer.status.collectWith(lifecycleScope, ::onStatus)
+        synchronizer.processorInfo.collectWith(lifecycleScope, ::onProcessorInfoUpdated)
         synchronizer.progress.collectWith(lifecycleScope, ::onProgress)
     }
 
+    private fun onProcessorInfoUpdated(info: CompactBlockProcessor.ProcessorInfo) {
+        if (info.isScanning) binding.textInfo.text = "Scanning blocks...${info.scanProgress}%"
+    }
+
     private fun onProgress(i: Int) {
-        val message = when (i) {
-            100 -> "Scanning blocks..."
-            else -> "Downloading blocks...$i%"
-        }
-        binding.textInfo.text = message
+        if (i < 100) binding.textInfo.text = "Downloading blocks...$i%"
     }
 
     private fun onStatus(status: Synchronizer.Status) {
+        this.status = status
         binding.textStatus.text = "Status: $status"
-        if (status == Synchronizer.Status.SYNCED) onSyncComplete()
+        if (isSynced) onSyncComplete()
     }
 
     private fun onSyncComplete() {
@@ -86,5 +95,24 @@ class ListTransactionsFragment : BaseDemoFragment<FragmentListTransactionsBindin
     private fun onTransactionsUpdated(transactions: PagedList<ConfirmedTransaction>) {
         twig("got a new paged list of transactions")
         adapter.submitList(transactions)
+
+        // show message when there are no transactions
+        if (isSynced) {
+            binding.textInfo.apply {
+                if (transactions.isEmpty()) {
+                    visibility = View.VISIBLE
+                    text =
+                        "No transactions found. Try to either change the seed words in the" +
+                                " DemoConfig.kt file or send funds to this address (tap the FAB to copy it):\n\n $address"
+                } else {
+                    visibility = View.INVISIBLE
+                    text = ""
+                }
+            }
+        }
+    }
+
+    override fun onActionButtonClicked() {
+        if (::address.isInitialized) copyToClipboard(address)
     }
 }

@@ -1,7 +1,6 @@
 package cash.z.wallet.sdk.demoapp
 
 import android.app.Application
-import cash.z.wallet.sdk.demoapp.util.DemoConfig
 
 class App : Application() {
 

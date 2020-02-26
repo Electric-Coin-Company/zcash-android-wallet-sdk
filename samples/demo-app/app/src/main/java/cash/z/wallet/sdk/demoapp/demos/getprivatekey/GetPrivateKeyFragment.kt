@@ -9,6 +9,7 @@ import cash.z.wallet.sdk.demoapp.databinding.FragmentGetPrivateKeyBinding
 class GetPrivateKeyFragment : BaseDemoFragment<FragmentGetPrivateKeyBinding>() {
     private var seed: ByteArray = App.instance.defaultConfig.seed
     private val initializer: Initializer = Initializer(App.instance)
+    private val birthday = App.instance.defaultConfig.newWalletBirthday()
     private lateinit var spendingKeys: Array<String>
     private lateinit var viewingKeys: Array<String>
 
@@ -22,10 +23,10 @@ class GetPrivateKeyFragment : BaseDemoFragment<FragmentGetPrivateKeyBinding>() {
          * store these keys in its secure storage for retrieval, later. Private keys are only needed
          * for sending funds.
          */
-        spendingKeys = initializer.new(seed)
+        spendingKeys = initializer.new(seed, birthday)
 
         /*
-         * Viewing keys can be derived from a seed or from spending keys.
+         * Alternatively, viewing keys can also be derived directly from a seed or spending keys.
          */
         viewingKeys = initializer.deriveViewingKeys(seed)
 

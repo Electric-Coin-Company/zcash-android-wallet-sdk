@@ -402,10 +402,48 @@ class CompactBlockProcessor(
         val lastDownloadRange: IntRange = 0..-1, // empty range
         val lastScanRange: IntRange = 0..-1  // empty range
     ) {
+
+        /**
+         * Returns false when all values match their defaults.
+         */
         val hasData get() = networkBlockHeight != -1
                 || lastScannedHeight != -1
                 || lastDownloadedHeight != -1
                 || lastDownloadRange != 0..-1
                 || lastScanRange != 0..-1
+
+        /**
+         * Returns true when there are more than zero blocks remaining to download.
+         */
+        val isDownloading: Boolean get() = !lastDownloadRange.isEmpty()
+                && lastDownloadedHeight < lastDownloadRange.last
+
+        /**
+         * Returns true when downloading has completed and there are more than zero blocks remaining
+         * to be scanned.
+         */
+        val isScanning: Boolean get() = !isDownloading
+                && !lastScanRange.isEmpty()
+                && lastScannedHeight < lastScanRange.last
+
+        /**
+         * The amount of scan progress from 0 to 100.
+         */
+        val scanProgress get() = when {
+            lastScannedHeight <= -1 -> 0
+            lastScanRange.isEmpty() -> 100
+            lastScannedHeight >= lastScanRange.last -> 100
+            else -> {
+                // when lastScannedHeight == lastScanRange.first, we have scanned one block, thus the offsets
+                val blocksScanned = (lastScannedHeight - lastScanRange.first + 1).coerceAtLeast(0)
+                // we scan the range inclusively so 100..100 is one block to scan, thus the offset
+                val numberOfBlocks = lastScanRange.last - lastScanRange.first + 1
+                // take the percentage then convert and round
+                ((blocksScanned.toFloat() / numberOfBlocks) * 100.0f).let { percent ->
+                    percent.coerceAtMost(100.0f).roundToInt()
+                }
+            }
+        }
+
     }
 }
