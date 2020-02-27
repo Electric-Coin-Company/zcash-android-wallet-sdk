@@ -9,6 +9,12 @@ import kotlinx.coroutines.flow.Flow
 // Database
 //
 
+/**
+ * Database for pending transaction information. Unlike with the "Data DB," the wallet is free to
+ * write to this database. In a way, this almost serves as a local mempool for all transactions
+ * initiated by this wallet. Currently, the data necessary to support expired transactions is there
+ * but it is not being leveraged.
+ */
 @Database(
     entities = [
         PendingTransactionEntity::class
@@ -25,6 +31,9 @@ abstract class PendingTransactionDb : RoomDatabase() {
 // Data Access Objects
 //
 
+/**
+ * Data access object providing crud for pending transactions.
+ */
 @Dao
 interface PendingTransactionDao {
     @Insert(onConflict = OnConflictStrategy.ABORT)

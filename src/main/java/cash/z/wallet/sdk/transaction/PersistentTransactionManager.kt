@@ -5,7 +5,10 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import cash.z.wallet.sdk.db.PendingTransactionDao
 import cash.z.wallet.sdk.db.PendingTransactionDb
-import cash.z.wallet.sdk.entity.*
+import cash.z.wallet.sdk.entity.PendingTransaction
+import cash.z.wallet.sdk.entity.PendingTransactionEntity
+import cash.z.wallet.sdk.entity.isCancelled
+import cash.z.wallet.sdk.entity.isSubmitted
 import cash.z.wallet.sdk.ext.twig
 import cash.z.wallet.sdk.service.LightWalletService
 import kotlinx.coroutines.Dispatchers
@@ -13,13 +16,19 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import java.lang.IllegalStateException
 import kotlin.math.max
 
 /**
- * Facilitates persistent attempts to ensure a transaction occurs.
+ * Facilitates persistent attempts to ensure that an outbound transaction is completed.
+ *
+ * @param db the database where the wallet can freely write information related to pending
+ * transactions. This database effectively serves as the mempool for transactions created by this
+ * wallet.
+ * @property encoder responsible for encoding a transaction by taking all the inputs and returning
+ * an [cash.z.wallet.sdk.entity.EncodedTransaction] object containing the raw bytes and transaction
+ * id.
+ * @property service the lightwallet service used to submit transactions.
  */
-// TODO: consider having the manager register the fail listeners rather than having that responsibility spread elsewhere (synchronizer and the broom)
 class PersistentTransactionManager(
     db: PendingTransactionDb,
     private val encoder: TransactionEncoder,
@@ -52,10 +61,11 @@ class PersistentTransactionManager(
         service
     )
 
-    /**
-     * Initialize a [PendingTransaction] and then insert it in the database for monitoring and
-     * follow-up.
-     */
+
+    //
+    // OutboundTransactionManager implementation
+    //
+
     override suspend fun initSpend(
         zatoshiValue: Long,
         toAddress: String,
@@ -79,7 +89,8 @@ class PersistentTransactionManager(
                 twig("successfully created TX in DB")
             }
         } catch (t: Throwable) {
-            twig("Unknown error while attempting to create pending transaction: ${t.message} caused by: ${t.cause}")
+            twig("Unknown error while attempting to create pending transaction: ${t.message}" +
+                    " caused by: ${t.cause}")
         }
 
         tx
@@ -92,21 +103,11 @@ class PersistentTransactionManager(
         }
     }
 
-    /**
-     * Remove a transaction and pretend it never existed.
-     */
-    suspend fun abortTransaction(existingTransaction: PendingTransaction) {
-        pendingTransactionDao {
-            delete(existingTransaction as PendingTransactionEntity)
-        }
-    }
-
     override suspend fun encode(
         spendingKey: String,
         pendingTx: PendingTransaction
     ): PendingTransaction = withContext(Dispatchers.IO) {
         twig("managing the creation of a transaction")
-        //var tx = transaction.copy(expiryHeight = if (currentHeight == -1) -1 else currentHeight + EXPIRY_OFFSET)
         var tx = pendingTx as PendingTransactionEntity
         try {
             twig("beginning to encode transaction with : $encoder")
@@ -123,7 +124,7 @@ class PersistentTransactionManager(
             val message = "failed to encode transaction due to : ${t.message} caused by: ${t.cause}"
             twig(message)
             message
-            tx = tx.copy(errorMessage = message, errorCode = 2000) //TODO: find a place for these error codes
+            tx = tx.copy(errorMessage = message, errorCode = ERROR_ENCODING)
         } finally {
             tx = tx.copy(encodeAttempts = max(1, tx.encodeAttempts + 1))
         }
@@ -134,15 +135,19 @@ class PersistentTransactionManager(
 
     override suspend fun submit(pendingTx: PendingTransaction): PendingTransaction = withContext(Dispatchers.IO) {
         // reload the tx to check for cancellation
-        var storedTx = pendingTransactionDao { findById(pendingTx.id) } ?: throw IllegalStateException("Error while submitting transaction. No pending transaction found that matches the one being submitted. Verify that the transaction still exists among the set of pending transactions.")
+        var storedTx = pendingTransactionDao { findById(pendingTx.id) }
+            ?: throw IllegalStateException("Error while submitting transaction. No pending" +
+                    " transaction found that matches the one being submitted. Verify that the" +
+                    " transaction still exists among the set of pending transactions.")
         var tx = storedTx
         try {
             // do nothing when cancelled
             if (!tx.isCancelled()) {
-                twig("submitting transaction to lightwalletd - memo: ${tx.memo} amount: ${tx.value}")
+                twig("submitting transaction with memo: ${tx.memo} amount: ${tx.value}")
                 val response = service.submitTransaction(tx.raw)
                 val error = response.errorCode < 0
-                twig("${if (error) "FAILURE! " else "SUCCESS!"} submit transaction completed with response: ${response.errorCode}: ${response.errorMessage}")
+                twig("${if (error) "FAILURE! " else "SUCCESS!"} submit transaction completed with" +
+                        " response: ${response.errorCode}: ${response.errorMessage}")
                 tx = tx.copy(
                     errorMessage = if (error) response.errorMessage else null,
                     errorCode = response.errorCode,
@@ -157,7 +162,11 @@ class PersistentTransactionManager(
             val message =
                 "Unknown error while submitting transaction: ${t.message} caused by: ${t.cause}"
             twig(message)
-            tx = tx.copy(errorMessage = t.message, errorCode = 3000, submitAttempts = max(1, tx.submitAttempts + 1)) //TODO: find a place for these error codes
+            tx = tx.copy(
+                errorMessage = t.message,
+                errorCode = ERROR_SUBMITTING,
+                submitAttempts = max(1, tx.submitAttempts + 1)
+            )
             safeUpdate(tx)
         }
 
@@ -188,18 +197,33 @@ class PersistentTransactionManager(
 
     override fun getAll() = _dao.getAll()
 
+
+    //
+    // Helper functions
+    //
+
+    /**
+     * Remove a transaction and pretend it never existed.
+     */
+    suspend fun abortTransaction(existingTransaction: PendingTransaction) {
+        pendingTransactionDao {
+            delete(existingTransaction as PendingTransactionEntity)
+        }
+    }
+
     /**
      * Updating the pending transaction is often done at the end of a function but still should
      * happen within a try/catch block, surrounded by logging. So this helps with that.
      */
     private suspend fun safeUpdate(tx: PendingTransactionEntity): PendingTransaction {
         return try {
-            twig("updating tx into DB: $tx")
+            twig("updating tx in DB: $tx")
             pendingTransactionDao { update(tx) }
-            twig("successfully updated TX into DB")
+            twig("successfully updated TX in DB")
             tx
         } catch (t: Throwable) {
-            twig("Unknown error while attempting to update pending transaction: ${t.message} caused by: ${t.cause}")
+            twig("Unknown error while attempting to update pending transaction: ${t.message}" +
+                    " caused by: ${t.cause}")
             tx
         }
     }
@@ -208,6 +232,13 @@ class PersistentTransactionManager(
         return daoMutex.withLock {
             _dao.block()
         }
+    }
+
+    companion object {
+        /** Error code for an error while encoding a transaction */
+        const val ERROR_ENCODING = 2000
+        /** Error code for an error while submitting a transaction */
+        const val ERROR_SUBMITTING = 3000
     }
 }
 

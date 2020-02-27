@@ -58,6 +58,15 @@ inline fun retrySimple(retries: Int = 2, sleepTime: Long = 20L, block: (Int) -> 
     }
 }
 
+/**
+ * Execute the given block and if it fails, retry with an exponential backoff.
+ *
+ * @param onErrorListener a callback that gets the first shot at processing any error and can veto
+ * the retry behavior by returning false.
+ * @param initialDelayMillis the initial delay before retrying.
+ * @param maxDelayMillis the maximum delay between retrys.
+ * @param block the logic to run once and then run again if it fails.
+ */
 suspend inline fun retryWithBackoff(noinline onErrorListener: ((Throwable) -> Boolean)? = null, initialDelayMillis: Long = 1000L, maxDelayMillis: Long = MAX_BACKOFF_INTERVAL, block: () -> Unit) {
     var sequence = 0 // count up to the max and then reset to half. So that we don't repeat the max but we also don't repeat too much.
     while (true) {
@@ -83,6 +92,11 @@ suspend inline fun retryWithBackoff(noinline onErrorListener: ((Throwable) -> Bo
     }
 }
 
+/**
+ * Return true if the given database already exists.
+ *
+ * @return true when the given database exists in the given context.
+ */
 internal fun dbExists(appContext: Context, dbFileName: String): Boolean {
     return File(appContext.getDatabasePath(dbFileName).absolutePath).exists()
 }

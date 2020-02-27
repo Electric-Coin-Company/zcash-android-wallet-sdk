@@ -19,17 +19,27 @@ sealed class RustLayerException(message: String, cause: Throwable? = null) : Sdk
             "blocks are not missing or have not been scanned out of order.", cause)
 }
 
+/**
+ * User-facing exceptions thrown by the transaction repository.
+ */
 sealed class RepositoryException(message: String, cause: Throwable? = null) : SdkException(message, cause) {
     object FalseStart: RepositoryException( "The channel is closed. Note that once a repository has stopped it " +
             "cannot be restarted. Verify that the repository is not being restarted.")
 }
 
+/**
+ * High-level exceptions thrown by the synchronizer, which do not fall within the umbrealla of a
+ * child component.
+ */
 sealed class SynchronizerException(message: String, cause: Throwable? = null) : SdkException(message, cause) {
     object FalseStart: SynchronizerException("This synchronizer was already started. Multiple calls to start are not" +
                 "allowed and once a synchronizer has stopped it cannot be restarted."
     )
 }
 
+/**
+ * Potentially user-facing exceptions that occur while processing compact blocks.
+ */
 sealed class CompactBlockProcessorException(message: String, cause: Throwable? = null) : SdkException(message, cause) {
     class DataDbMissing(path: String): CompactBlockProcessorException("No data db file found at path $path. Verify " +
             "that the data DB has been initialized via `rustBackend.initDataDb(path)`")
@@ -48,13 +58,9 @@ sealed class CompactBlockProcessorException(message: String, cause: Throwable? =
             " can be fixed by re-importing the wallet.")
 }
 
-sealed class CompactBlockStreamException(message: String, cause: Throwable? = null) : SdkException(message, cause) {
-    object ConnectionClosed: CompactBlockStreamException("Cannot start stream when connection is closed.")
-    class FalseStart(cause: Throwable?): CompactBlockStreamException("Failed to start compact block stream due to " +
-            "$cause caused by ${cause?.cause}")
-}
-
-
+/**
+ * Exceptions related to the wallet's birthday.
+ */
 sealed class BirthdayException(message: String, cause: Throwable? = null) : SdkException(message, cause) {
     object UninitializedBirthdayException : BirthdayException("Error the birthday cannot be" +
             " accessed before it is initialized. Verify that the new, import or open functions" +
@@ -76,6 +82,9 @@ sealed class BirthdayException(message: String, cause: Throwable? = null) : SdkE
     )
 }
 
+/**
+ * Exceptions thrown by the initializer.
+ */
 sealed class InitializerException(message: String, cause: Throwable? = null) :  SdkException(message, cause){
     class FalseStart(cause: Throwable?) : InitializerException("Failed to initialize accounts due to: $cause", cause)
     class AlreadyInitializedException(cause: Throwable, dbPath: String) : InitializerException("Failed to initialize the blocks table" +
@@ -86,6 +95,9 @@ sealed class InitializerException(message: String, cause: Throwable? = null) :  
                 " we can store data.")
 }
 
+/**
+ * Exceptions thrown while interacting with lightwalletd.
+ */
 sealed class LightwalletException(message: String, cause: Throwable? = null) : SdkException(message, cause) {
     object InsecureConnection : LightwalletException("Error: attempted to connect to lightwalletd" +
             " with an insecure connection! Plaintext connections are only allowed when the" +
@@ -93,6 +105,9 @@ sealed class LightwalletException(message: String, cause: Throwable? = null) : S
             " because this choice should be explicit.")
 }
 
+/**
+ * Potentially user-facing exceptions thrown while encoding transactions.
+ */
 sealed class TransactionEncoderException(message: String, cause: Throwable? = null) : SdkException(message, cause) {
     class FetchParamsException(message: String) : TransactionEncoderException("Failed to fetch params due to: $message")
     object MissingParamsException : TransactionEncoderException(

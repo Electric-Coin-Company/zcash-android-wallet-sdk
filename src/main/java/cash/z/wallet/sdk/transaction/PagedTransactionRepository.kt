@@ -79,6 +79,9 @@ open class PagedTransactionRepository(
         transactions.findMinedHeight(rawTransactionId)
     }
 
+    /**
+     * Close the underlying database.
+     */
     fun close() {
         derivedDataDb.close()
     }
@@ -109,7 +112,7 @@ open class PagedTransactionRepository(
 //            }
 //        }
 
-        val MIGRATION_4_3 = object : Migration(4, 3) {
+        private val MIGRATION_4_3 = object : Migration(4, 3) {
             override fun migrate(database: SupportSQLiteDatabase) {
                 database.execSQL("PRAGMA foreign_keys = OFF;")
                 database.execSQL(

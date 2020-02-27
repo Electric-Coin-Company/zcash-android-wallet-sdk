@@ -8,6 +8,12 @@ import cash.z.wallet.sdk.entity.CompactBlockEntity
 // Database
 //
 
+/**
+ * The "Cache DB", serving as a cache of compact blocks, waiting to be processed. This will contain
+ * the entire blockchain, from the birthdate of the wallet, forward. The [CompactBlockProcessor]
+ * will copy blocks from this database, as they are scanned. In the future, those blocks can be
+ * deleted because they are no longer needed. Currently, this efficiency has not been implemented.
+ */
 @Database(
     entities = [CompactBlockEntity::class],
     version = 1,
@@ -22,6 +28,9 @@ abstract class CompactBlockDb : RoomDatabase() {
 // Data Access Objects
 //
 
+/**
+ * Data access object for compact blocks in the "Cache DB."
+ */
 @Dao
 interface CompactBlockDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)

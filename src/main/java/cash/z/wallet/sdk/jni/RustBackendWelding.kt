@@ -3,6 +3,8 @@ package cash.z.wallet.sdk.jni
 /**
  * Contract defining the exposed capabilities of the Rust backend.
  * This is what welds the SDK to the Rust layer.
+ * It is not documented because it is not intended to be used, directly.
+ * Instead, use the synchronizer or one of its subcomponents.
  */
 interface RustBackendWelding {
 

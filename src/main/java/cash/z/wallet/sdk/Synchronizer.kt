@@ -109,11 +109,11 @@ interface Synchronizer {
     /**
      * Sends zatoshi.
      *
-     * @param spendingKey the key that allows spends to occur.
+     * @param spendingKey the key associated with the notes that will be spent.
      * @param zatoshi the amount of zatoshi to send.
      * @param toAddress the recipient's address.
      * @param memo the optional memo to include as part of the transaction.
-     * @param fromAccountId the optional account id to use. By default, the first account is used.
+     * @param fromAccountIndex the optional account id to use. By default, the first account is used.
      *
      * @return a flow of PendingTransaction objects representing changes to the state of the
      * transaction. Any time the state changes a new instance will be emitted by this flow. This is

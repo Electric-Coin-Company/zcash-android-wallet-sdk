@@ -11,6 +11,13 @@ import cash.z.wallet.sdk.entity.*
 // Database
 //
 
+/**
+ * The "Data DB," where all data derived from the compact blocks is stored. Most importantly, this
+ * database contains transaction information and can be queried for the current balance. The
+ * "blocks" table contains a copy of everything that has been scanned. In the future, that table can
+ * be truncated up to the last scanned block, for storage efficiency. Wallets should only read from,
+ * but never write to, this database.
+ */
 @Database(
     entities = [
         TransactionEntity::class,
@@ -34,6 +41,9 @@ abstract class DerivedDataDb : RoomDatabase() {
 // Data Access Objects
 //
 
+/**
+ * The data access object for blocks, used for determining the last scanned height.
+ */
 @Dao
 interface BlockDao {
     @Query("SELECT COUNT(height) FROM blocks")
@@ -43,18 +53,28 @@ interface BlockDao {
     fun lastScannedHeight(): Int
 }
 
+/**
+ * The data access object for notes, used for determining whether transactions exist.
+ */
 @Dao
 interface ReceivedDao {
     @Query("SELECT COUNT(tx) FROM received_notes")
     fun count(): Int
 }
 
+/**
+ * The data access object for sent notes, used for determining whether outbound transactions exist.
+ */
 @Dao
 interface SentDao {
     @Query("SELECT COUNT(tx) FROM sent_notes")
     fun count(): Int
 }
 
+/**
+ * The data access object for transactions, used for querying all transaction information, including
+ * whether transactions are mined.
+ */
 @Dao
 interface TransactionDao {
     @Query("SELECT COUNT(id_tx) FROM transactions")
@@ -78,12 +98,6 @@ interface TransactionDao {
         LIMIT  1 
     """)
     fun findMinedHeight(rawTransactionId: ByteArray): Int?
-
-//    @Delete
-//    fun delete(transaction: Transaction)
-//
-//    @Query("DELETE FROM transactions WHERE id_tx = :id")
-//    fun deleteById(id: Long)
 
     /**
      * Query sent transactions that have been mined, sorted so the newest data is at the top.
@@ -137,6 +151,9 @@ interface TransactionDao {
     """)
     fun getReceivedTransactions(limit: Int = Int.MAX_VALUE): DataSource.Factory<Int, ConfirmedTransaction>
 
+    /**
+     * Query all transactions, joining outbound and inbound transactions into the same table.
+     */
     @Query("""
          SELECT transactions.id_tx          AS id,
                transactions.block           AS minedHeight,
