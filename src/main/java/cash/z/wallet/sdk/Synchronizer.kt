@@ -25,6 +25,8 @@ interface Synchronizer {
      * @param parentScope the scope to use for this synchronizer, typically something with a
      * lifecycle such as an Activity. Implementations should leverage structured concurrency and
      * cancel all jobs when this scope completes.
+     *
+     * @return an instance of the class so that this function can be used fluidly.
      */
     fun start(parentScope: CoroutineScope? = null): Synchronizer
 
@@ -99,17 +101,24 @@ interface Synchronizer {
      *
      * @param accountId the optional accountId whose address is of interest. By default, the first
      * account is used.
+     *
+     * @return the address for the given account.
      */
     suspend fun getAddress(accountId: Int = 0): String
 
     /**
      * Sends zatoshi.
      *
-     * @param spendingKey the key that allows spends to occur.
+     * @param spendingKey the key associated with the notes that will be spent.
      * @param zatoshi the amount of zatoshi to send.
      * @param toAddress the recipient's address.
      * @param memo the optional memo to include as part of the transaction.
-     * @param fromAccountId the optional account id to use. By default, the first account is used.
+     * @param fromAccountIndex the optional account id to use. By default, the first account is used.
+     *
+     * @return a flow of PendingTransaction objects representing changes to the state of the
+     * transaction. Any time the state changes a new instance will be emitted by this flow. This is
+     * useful for updating the UI without needing to poll. Of course, polling is always an option
+     * for any wallet that wants to ignore this return value.
      */
     fun sendToAddress(
         spendingKey: String,
@@ -122,26 +131,38 @@ interface Synchronizer {
 
     /**
      * Returns true when the given address is a valid z-addr. Invalid addresses will throw an
-     * exception. Valid z-addresses have these characteristics: //TODO
+     * exception. Valid z-addresses have these characteristics: //TODO copy info from related ZIP
      *
      * @param address the address to validate.
+     *
+     * @return true when the given address is a valid z-addr.
+     *
      * @throws RuntimeException when the address is invalid.
      */
     suspend fun isValidShieldedAddr(address: String): Boolean
 
     /**
      * Returns true when the given address is a valid t-addr. Invalid addresses will throw an
-     * exception. Valid t-addresses have these characteristics: //TODO
+     * exception. Valid t-addresses have these characteristics: //TODO copy info from related ZIP
      *
      * @param address the address to validate.
+     *
+     * @return true when the given address is a valid t-addr.
+     *
      * @throws RuntimeException when the address is invalid.
      */
     suspend fun isValidTransparentAddr(address: String): Boolean
 
     /**
-     * Validates the given address, returning information about why it is invalid.
+     * Validates the given address, returning information about why it is invalid. This is a
+     * convenience method that combines the behavior of [isValidShieldedAddr] and
+     * [isValidTransparentAddr] into one call so that the developer doesn't have to worry about
+     * handling the exceptions that they throw. Rather, exceptions are converted to
+     * [AddressType.Invalid] which has a `reason` property describing why it is invalid.
      *
      * @param address the address to validate.
+     *
+     * @return an instance of [AddressType] providing validation info regarding the given address.
      */
     suspend fun validateAddress(address: String): AddressType
 
@@ -150,6 +171,7 @@ interface Synchronizer {
      * an option if the transaction has not yet been submitted to the server.
      *
      * @param transaction the transaction to cancel.
+     *
      * @return true when the cancellation request was successful. False when it is too late.
      */
     suspend fun cancelSpend(transaction: PendingTransaction): Boolean
@@ -193,7 +215,9 @@ interface Synchronizer {
      */
     var onChainErrorHandler: ((Int, Int) -> Any)?
 
-
+    /**
+     * Represents the status of this Synchronizer, which is useful for communicating to the user.
+     */
     enum class Status {
         /**
          * Indicates that [stop] has been called on this Synchronizer and it will no longer be used.
@@ -231,12 +255,35 @@ interface Synchronizer {
         SYNCED
     }
 
+    /**
+     * Represents the types of addresses, either Shielded, Transparent or Invalid.
+     */
     sealed class AddressType {
+        /**
+         * Marker interface for valid [AddressType] instances.
+         */
         interface Valid
+
+        /**
+         * An instance of [AddressType] corresponding to a valid z-addr.
+         */
         object Shielded : Valid, AddressType()
+
+        /**
+         * An instance of [AddressType] corresponding to a valid t-addr.
+         */
         object Transparent : Valid, AddressType()
+
+        /**
+         * An instance of [AddressType] corresponding to an invalid address.
+         *
+         * @param reason a descrption of why the address was invalid.
+         */
         class Invalid(val reason: String = "Invalid") : AddressType()
 
+        /**
+         * A convenience method that returns true when an instance of this class is invalid.
+         */
         val isNotValid get() = this !is Valid
     }
 

@@ -17,10 +17,10 @@ import java.util.concurrent.TimeUnit
 /**
  * Implementation of LightwalletService using gRPC for requests to lightwalletd.
  * 
- * @param channel the channel to use for communicating with the lightwalletd server.
- * @param singleRequestTimeoutSec the timeout to use for non-streaming requests. When a new stub is
+ * @property channel the channel to use for communicating with the lightwalletd server.
+ * @property singleRequestTimeoutSec the timeout to use for non-streaming requests. When a new stub is
  * created, it will use a deadline that is after the given duration from now.
- * @param streamingRequestTimeoutSec the timeout to use for streaming requests. When a new stub is
+ * @property streamingRequestTimeoutSec the timeout to use for streaming requests. When a new stub is
  * created for streaming requests, it will use a deadline that is after the given duration from now.
  */
 class LightWalletGrpcService private constructor(
@@ -29,6 +29,16 @@ class LightWalletGrpcService private constructor(
     private val streamingRequestTimeoutSec: Long = 90L
 ) : LightWalletService {
 
+    /**
+     * Construct an instance that corresponds to the given host and port.
+     *
+     * @param appContext the application context used to check whether TLS is required by this build
+     * flavor.
+     * @param host the host of the server to use.
+     * @param port the port of the server to use.
+     * @param usePlaintext whether to use TLS or plaintext for requests. Plaintext is dangerous so
+     * it requires jumping through a few more hoops.
+     */
     constructor(
         appContext: Context,
         host: String,
@@ -38,12 +48,6 @@ class LightWalletGrpcService private constructor(
 
     /* LightWalletService implementation */
 
-    /**
-     * Blocking call to download all blocks in the given range.
-     *
-     * @param heightRange the inclusive range of block heights to download.
-     * @return a list of compact blocks for the given range
-     */
     override fun getBlockRange(heightRange: IntRange): List<CompactFormats.CompactBlock> {
         channel.resetConnectBackoff()
         return channel.createStub(streamingRequestTimeoutSec).getBlockRange(heightRange.toBlockRange()).toList()
@@ -89,6 +93,11 @@ class LightWalletGrpcService private constructor(
         }
 
     companion object {
+        /**
+         * Convenience function for creating the default channel to be used for all connections. It
+         * is important that this channel can handle transitioning from WiFi to Cellular connections
+         * and is properly setup to support TLS, when required.
+         */
         fun createDefaultChannel(
             appContext: Context,
             host: String,

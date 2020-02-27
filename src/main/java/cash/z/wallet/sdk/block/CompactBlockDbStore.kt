@@ -6,14 +6,20 @@ import androidx.room.RoomDatabase
 import cash.z.wallet.sdk.db.CompactBlockDao
 import cash.z.wallet.sdk.db.CompactBlockDb
 import cash.z.wallet.sdk.entity.CompactBlockEntity
-import cash.z.wallet.sdk.ext.ZcashSdk.DB_CACHE_NAME
 import cash.z.wallet.sdk.ext.ZcashSdk.SAPLING_ACTIVATION_HEIGHT
 import cash.z.wallet.sdk.rpc.CompactFormats
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.withContext
 
+/**
+ * An implementation of CompactBlockStore that persists information to a database in the given
+ * path. This represents the "cache db" or local cache of compact blocks waiting to be scanned.
+ *
+ * @param appContext the application context. This is used for creating the database.
+ * @property dbPath the absolute path to the database.
+ */
 class CompactBlockDbStore(
-    applicationContext: Context,
+    appContext: Context,
     val dbPath: String
 ) : CompactBlockStore {
 
@@ -21,12 +27,12 @@ class CompactBlockDbStore(
     private val cacheDb: CompactBlockDb
 
     init {
-        cacheDb = createCompactBlockCacheDb(applicationContext)
+        cacheDb = createCompactBlockCacheDb(appContext)
         cacheDao = cacheDb.complactBlockDao()
     }
 
-    private fun createCompactBlockCacheDb(applicationContext: Context): CompactBlockDb {
-        return Room.databaseBuilder(applicationContext, CompactBlockDb::class.java, dbPath)
+    private fun createCompactBlockCacheDb(appContext: Context): CompactBlockDb {
+        return Room.databaseBuilder(appContext, CompactBlockDb::class.java, dbPath)
             .setJournalMode(RoomDatabase.JournalMode.TRUNCATE)
             // this is a simple cache of blocks. destroying the db should be benign
             .fallbackToDestructiveMigration()

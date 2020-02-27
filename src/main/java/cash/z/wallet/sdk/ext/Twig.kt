@@ -10,7 +10,15 @@ internal typealias Leaf = String
  * A tiny log.
  */
 interface Twig {
+
+    /**
+     * Log the message. Simple.
+     */
     fun twig(logMessage: String = "")
+
+    /**
+     * Bundles twigs together
+     */
     operator fun plus(twig: Twig): Twig {
         // if the other twig is a composite twig, let it handle the addition
         return if(twig is CompositeTwig) twig.plus(this) else CompositeTwig(mutableListOf(this, twig))
@@ -74,6 +82,10 @@ inline fun <R> twigTask(logMessage: String, block: () -> R): R = Bush.trunk.twig
  * A tiny log that does nothing. No one hears this twig fall in the woods.
  */
 class SilentTwig : Twig {
+
+    /**
+     * Shh.
+     */
     override fun twig(logMessage: String) {
         // shh
     }
@@ -89,6 +101,10 @@ open class TroubleshootingTwig(
     val formatter: (String) -> String = spiffy(5),
     val printer: (String) -> Any = System.err::println
 ) : Twig {
+
+    /**
+     * Actually print and format the log message, unlike the SilentTwig, which does nothing.
+     */
     override fun twig(logMessage: String) {
         printer(formatter(logMessage))
     }

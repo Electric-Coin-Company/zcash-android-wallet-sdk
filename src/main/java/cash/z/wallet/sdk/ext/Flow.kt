@@ -38,6 +38,10 @@ fun <T> Flow<T>.collectWith(scope: CoroutineScope, block: (T) -> Unit) {
     }
 }
 
+/**
+ * Utility for performing the given action on the first emission of a flow and running that action
+ * in the given scope.
+ */
 fun <T, S> Flow<T>.onFirstWith(scope: CoroutineScope, block: suspend (T) -> S) {
     scope.launch {
         onEach {
@@ -46,6 +50,9 @@ fun <T, S> Flow<T>.onFirstWith(scope: CoroutineScope, block: suspend (T) -> S) {
     }
 }
 
+/**
+ * Utility for performing the given action on the first emission of a flow.
+ */
 suspend fun <T, S> Flow<T>.onFirst(block: suspend (T) -> S) {
     onEach {
         block(it)

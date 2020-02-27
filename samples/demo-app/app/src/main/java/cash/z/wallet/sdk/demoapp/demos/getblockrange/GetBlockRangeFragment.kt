@@ -8,6 +8,12 @@ import cash.z.wallet.sdk.demoapp.databinding.FragmentGetBlockRangeBinding
 import cash.z.wallet.sdk.service.LightWalletGrpcService
 import cash.z.wallet.sdk.service.LightWalletService
 
+/**
+ * Retrieves a range of compact block from the lightwalletd service and displays basic information
+ * about them. This demonstrates the basic ability to connect to the server, request a range of 
+ * compact block and parse the response. This could be augmented to display metadata about certain
+ * block ranges for instance, to find the block with the most shielded transactions in a range.
+ */
 class GetBlockRangeFragment : BaseDemoFragment<FragmentGetBlockRangeBinding>() {
 
     private val host = App.instance.defaultConfig.host

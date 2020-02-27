@@ -106,17 +106,39 @@ synchronizer.sendToAddress(spendingKey, zatoshi, address, memo)
 
 ## Compiling Sources
 
-:warning: Presently, the latest stable code lives in the `master` branch, is under active development, and is not yet released.
+:warning: Compilation is not required unless you plan to submit a patch or fork the code. Instead, it is recommended to simply add the SDK dependencies via gradle.
 
-Importing the dependency should be enough for use but in the event that you want to compile the SDK from sources, including the Kotlin and Rust portions, simply use Gradle.
+In the event that you *do* want to compile the SDK from sources, follow these steps:
 
-Compilation requires `Cargo` and has been tested on Ubuntu, MacOS and Windows. To compile the SDK run:
-
+1. [Install rust](https://www.rust-lang.org/learn/get-started) 
+2. Then, add the android targets via: 
 ```bash
-./gradlew clean assembleZcashtestnetRelease
+rustup target add armv7-linux-androideabi aarch64-linux-android i686-linux-android
 ```
+3. Clone this repo 
+4. [Install android studio](https://developer.android.com/studio/install) and open this project via `/your/path/to/zcash-android-wallet-sdk/build.gradle`
+5. Open Android Studio’s SDK manager    
+<p align="center">
+    <img src="assets/sdk-manager-icon.png?raw=true" width="70%"/>
+</p>    
 
-This creates a `testnet` build of the SDK that can be used to preview basic functionality for sending and receiving shielded transactions. If you do not have `Rust` and `Cargo` installed, the build script will let you know and provide further instructions for installation. Note that merely using the SDK does not require installing Rust or Cargo--that is only required for compilation.
+  6. Then, install NDK 20.0.5594570 
+<p align="center">
+    <img src="assets/ndk-window.png?raw=true" width="85%"/>
+</p>    
+
+  7. [Create an emulator](https://developer.android.com/studio/run/managing-avds) if you don’t already have one (recommended target: API 29)
+  8. Select your desired build variant. Currently, we recommend `zcashmainnetDebug` as the testnet variants are slower to sync to current height due to a lack of checkpoints. 
+<p align="center">
+    <img src="assets/build-variants.png?raw=true" width="54%"/>
+</p>    
+
+  9. Sync project with Gradle files, and build from the IDE. Alternatively, to build from the command line run:
+  ```bash
+  ./gradlew clean assembleZcashmainnetDebug
+  ```    
+
+This creates a build of the SDK under `build/outputs/aar/` that can be used to preview functionality. For more detailed examples, checkout the [demo app](samples/demo-app). Note that merely using the SDK does not require installing Rust or Cargo--that is only required when compiling from source.
 
 [Back to contents](#contents)
 

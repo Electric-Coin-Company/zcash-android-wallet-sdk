@@ -18,25 +18,52 @@ open class CompactBlockDownloader(
     val compactBlockStore: CompactBlockStore
 ) {
 
+    /**
+     * Requests the given range of blocks from the lightwalletService and then persists them to the
+     * compactBlockStore.
+     *
+     * @param heightRange the inclusive range of heights to request. For example 10..20 would
+     * request 11 blocks (including block 10 and block 20).
+     *
+     * @return the number of blocks that were returned in the results from the lightwalletService.
+     */
     suspend fun downloadBlockRange(heightRange: IntRange): Int = withContext(IO) {
         val result = lightwalletService.getBlockRange(heightRange)
         compactBlockStore.write(result)
         result.size
     }
 
+    /**
+     * Rewind the storage to the given height, usually to handle reorgs.
+     *
+     * @param height the height to which the data will rewind.
+     */
     suspend fun rewindToHeight(height: Int) = withContext(IO) {
         // TODO: cancel anything in flight
         compactBlockStore.rewindTo(height)
     }
 
+    /**
+     * Return the latest block height known by the lightwalletService.
+     *
+     * @return the latest block height.
+     */
     suspend fun getLatestBlockHeight() = withContext(IO) {
         lightwalletService.getLatestBlockHeight()
     }
 
+    /**
+     * Return the latest block height that has been persisted into the [CompactBlockStore].
+     *
+     * @return the latest block height that has been persisted.
+     */
     suspend fun getLastDownloadedHeight() = withContext(IO) {
         compactBlockStore.getLatestHeight()
     }
 
+    /**
+     * Stop this downloader and cleanup any resources being used.
+     */
     fun stop() {
         lightwalletService.shutdown()
         compactBlockStore.close()

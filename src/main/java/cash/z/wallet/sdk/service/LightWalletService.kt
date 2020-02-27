@@ -13,16 +13,23 @@ interface LightWalletService {
      *
      * @param heightRange the inclusive range to fetch. For instance if 1..5 is given, then every
      * block in that range will be fetched, including 1 and 5.
+     *
+     * @return a list of compact blocks for the given range
+     *
      */
     fun getBlockRange(heightRange: IntRange): List<CompactFormats.CompactBlock>
 
     /**
      * Return the latest block height known to the service.
+     *
+     * @return the latest block height known to the service.
      */
     fun getLatestBlockHeight(): Int
 
     /**
      * Submit a raw transaction.
+     *
+     * @return the response from the server.
      */
     fun submitTransaction(spendTransaction: ByteArray): Service.SendResponse
 
