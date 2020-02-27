@@ -8,6 +8,11 @@ import cash.z.wallet.sdk.demoapp.databinding.FragmentGetLatestHeightBinding
 import cash.z.wallet.sdk.service.LightWalletGrpcService
 import cash.z.wallet.sdk.service.LightWalletService
 
+/**
+ * Retrieves the latest block height from the lightwalletd server. This is the simplest test for
+ * connectivity with the server. Modify the `host` and the `port` to check the SDK's ability to
+ * communicate with a given lightwalletd instance.
+ */
 class GetLatestHeightFragment : BaseDemoFragment<FragmentGetLatestHeightBinding>() {
     private val host = App.instance.defaultConfig.host
     private val port = App.instance.defaultConfig.port

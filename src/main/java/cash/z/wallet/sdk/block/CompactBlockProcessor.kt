@@ -33,6 +33,10 @@ import kotlin.math.roundToInt
  * all the business logic required to validate and scan the blockchain and is therefore tightly coupled with
  * librustzcash.
  *
+ * @property downloader the component responsible for downloading compact blocks and persisting them
+ * locally for processing.
+ * @property repository the repository holding transaction information.
+ * @property rustBackend the librustzcash functionality available and exposed to the SDK.
  * @param minimumHeight the lowest height that we could care about. This is mostly used during
  * reorgs as a backstop to make sure we do not rewind beyond sapling activation. It also is factored
  * in when considering initial range to download. In most cases, this should be the birthday height
@@ -45,7 +49,15 @@ class CompactBlockProcessor(
     private val rustBackend: RustBackendWelding,
     minimumHeight: Int = SAPLING_ACTIVATION_HEIGHT
 ) {
+    /**
+     * Callback for any critical errors that occur while processing compact blocks.
+     */
     var onProcessorErrorListener: ((Throwable) -> Boolean)? = null
+
+    /**
+     * Callbaqck for reorgs. This callback is invoked when validation fails with the height at which
+     * an error was found and the lower bound to which the data will rewind, at most.
+     */
     var onChainErrorListener: ((Int, Int) -> Any)? = null
 
     private val consecutiveChainErrors = AtomicInteger(0)
@@ -62,12 +74,26 @@ class CompactBlockProcessor(
      */
     private var currentInfo = ProcessorInfo()
 
+    /**
+     * The flow of state values so that a wallet can monitor the state of this class without needing
+     * to poll.
+     */
     val state = _state.asFlow()
+
+    /**
+     * The flow of progress values so that a wallet can monitor how much downloading remains
+     * without needing to poll.
+     */
     val progress = _progress.asFlow()
+
+    /**
+     * The flow of detailed processorInfo like the range of blocks that shall be downloaded and
+     * scanned. This gives the wallet a lot of insight into the work of this processor.
+     */
     val processorInfo = _processorInfo.asFlow()
 
     /**
-     * Download compact blocks, verify and scan them.
+     * Download compact blocks, verify and scan them until [stop] is called.
      */
     suspend fun start() = withContext(IO) {
         twig("processor starting")
@@ -165,6 +191,8 @@ class CompactBlockProcessor(
      * in ascending order, with no gaps and are also chain-sequential. This means every block's
      * prevHash value matches the preceding block in the chain.
      *
+     * @param lastScanRange the range to be validated and scanned.
+     *
      * @return error code or -1 when there is no error.
      */
     private suspend fun validateAndScanNewBlocks(lastScanRange: IntRange): Int = withContext(IO) {
@@ -194,7 +222,9 @@ class CompactBlockProcessor(
     }
 
     /**
-     * Download all blocks in the given range.
+     * Request all blocks in the given range and persist them locally for processing, later.
+     *
+     * @param range the range of blocks to download.
      */
     @VisibleForTesting //allow mocks to verify how this is called, rather than the downloader, which is more complex
     internal suspend fun downloadNewBlocks(range: IntRange) = withContext<Unit>(IO) {
@@ -234,6 +264,11 @@ class CompactBlockProcessor(
      * Validate all blocks in the given range, ensuring that the blocks are in ascending order, with
      * no gaps and are also chain-sequential. This means every block's prevHash value matches the
      * preceding block in the chain.
+     *
+     *  @param range the range of blocks to validate.
+     *
+     *  @return -1 when there is not problem. Otherwise, return the lowest height where an error was
+     *  found. In other words, validation starts at the back of the chain and works toward the tip.
      */
     private fun validateNewBlocks(range: IntRange?): Int {
         if (range?.isEmpty() != false) {
@@ -248,8 +283,13 @@ class CompactBlockProcessor(
     }
 
     /**
-     * Scan all blocks in the given range, decrypting anything that matches our wallet and storing
-     * the data.
+     * Scan all blocks in the given range, decrypting and persisting anything that matches our
+     * wallet.
+     *
+     *  @param range the range of blocks to scan.
+     *
+     *  @return -1 when there is not problem. Otherwise, return the lowest height where an error was
+     *  found. In other words, scanning starts at the back of the chain and works toward the tip.
      */
     private suspend fun scanNewBlocks(range: IntRange?): Boolean = withContext(IO) {
         if (range?.isEmpty() != false) {
@@ -282,6 +322,13 @@ class CompactBlockProcessor(
     }
 
     /**
+     * Emit an instance of processorInfo, corresponding to the provided data.
+     *
+     * @param networkBlockHeight the latest block available to lightwalletd that may or may not be
+     * downloaded by this wallet yet.
+     * @param lastScannedHeight the height up to which the wallet last scanned. This determines
+     * where the next scan will begin.
+     * @param lastDownloadedHeight the last compact block that was successfully downloaded.
      * @param lastScanRange the inclusive range to scan. This represents what we most recently
      * wanted to scan. In most cases, it will be an invalid range because we'd like to scan blocks
      * that we don't yet have.
@@ -326,14 +373,29 @@ class CompactBlockProcessor(
         }
     }
 
+    /**
+     * Get the height of the last block that was downloaded by this processor.
+     *
+     * @return the last downloaded height reported by the downloader.
+     */
     suspend fun getLastDownloadedHeight() = withContext(IO) {
         downloader.getLastDownloadedHeight()
     }
 
+    /**
+     * Get the height of the last block that was scanned by this processor.
+     *
+     * @return the last scanned height reported by the repository.
+     */
     suspend fun getLastScannedHeight() = withContext(IO) {
         repository.lastScannedHeight()
     }
 
+    /**
+     * Get address corresponding to the given account for this wallet.
+     *
+     * @return the address of this wallet.
+     */
     suspend fun getAddress(accountId: Int) = withContext(IO) {
         rustBackend.getAddress(accountId)
     }
@@ -342,6 +404,8 @@ class CompactBlockProcessor(
      * Calculates the latest balance info. Defaults to the first account.
      *
      * @param accountIndex the account to check for balance info.
+     *
+     * @return an instance of WalletBalance containing information about available and total funds.
      */
     suspend fun getBalanceInfo(accountIndex: Int = 0): WalletBalance = withContext(IO) {
         twigTask("checking balance info") {
@@ -358,19 +422,65 @@ class CompactBlockProcessor(
         }
     }
 
-    suspend fun setState(newState: State) {
+    /**
+     * Transmits the given state for this processor.
+     */
+    private suspend fun setState(newState: State) {
         _state.send(newState)
     }
 
+    /**
+     * Sealed class representing the various states of this processor.
+     */
     sealed class State {
+        /**
+         * Marker interface for [State] instances that represent when the wallet is connected.
+         */
         interface Connected
+
+        /**
+         * Marker interface for [State] instances that represent when the wallet is syncing.
+         */
         interface Syncing
+
+        /**
+         * [State] for when the wallet is actively downloading compact blocks because the latest
+         * block height available from the server is greater than what we have locally. We move out
+         * of this state once our local height matches the server.
+         */
         object Downloading : Connected, Syncing, State()
+
+        /**
+         * [State] for when the blocks that have been downloaded are actively being validated to
+         * ensure that there are no gaps and that every block is chain-sequential to the previous
+         * block, which determines whether a reorg has happened on our watch.
+         */
         object Validating : Connected, Syncing, State()
+
+        /**
+         * [State] for when the blocks that have been downloaded are actively being decrypted.
+         */
         object Scanning : Connected, Syncing, State()
+
+        /**
+         * [State] for when we are done decrypting blocks, for now.
+         */
         class Scanned(val scannedRange:IntRange) : Connected, Syncing, State()
+
+        /**
+         * [State] for when we have no connection to lightwalletd.
+         */
         object Disconnected : State()
+
+        /**
+         * [State] for when [stop] has been called. For simplicity, processors should not be
+         * restarted but they are not prevented from this behavior.
+         */
         object Stopped : State()
+
+        /**
+         * [State] the initial state of the processor, once it is constructed.
+         */
         object Initialized : State()
     }
 
@@ -390,6 +500,14 @@ class CompactBlockProcessor(
     )
 
     /**
+     * Data class for holding detailed information about the processor.
+     *
+     * @param networkBlockHeight the latest block available to lightwalletd that may or may not be
+     * downloaded by this wallet yet.
+     * @param lastScannedHeight the height up to which the wallet last scanned. This determines
+     * where the next scan will begin.
+     * @param lastDownloadedHeight the last compact block that was successfully downloaded.
+     *
      * @param lastDownloadRange inclusive range to download. Meaning, if the range is 10..10,
      * then we will download exactly block 10. If the range is 11..10, then we want to download
      * block 11 but can't.
@@ -404,7 +522,9 @@ class CompactBlockProcessor(
     ) {
 
         /**
-         * Returns false when all values match their defaults.
+         * Determines whether this instance has data.
+         *
+         * @return false when all values match their defaults.
          */
         val hasData get() = networkBlockHeight != -1
                 || lastScannedHeight != -1
@@ -413,13 +533,17 @@ class CompactBlockProcessor(
                 || lastScanRange != 0..-1
 
         /**
-         * Returns true when there are more than zero blocks remaining to download.
+         * Determines whether this instance is actively downloading compact blocks.
+         *
+         * @return true when there are more than zero blocks remaining to download.
          */
         val isDownloading: Boolean get() = !lastDownloadRange.isEmpty()
                 && lastDownloadedHeight < lastDownloadRange.last
 
         /**
-         * Returns true when downloading has completed and there are more than zero blocks remaining
+         * Determines whether this instance is actively scanning or validating compact blocks.
+         *
+         * @return true when downloading has completed and there are more than zero blocks remaining
          * to be scanned.
          */
         val isScanning: Boolean get() = !isDownloading

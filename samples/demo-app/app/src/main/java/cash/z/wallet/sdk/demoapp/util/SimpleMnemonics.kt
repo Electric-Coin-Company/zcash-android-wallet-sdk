@@ -7,6 +7,13 @@ import io.github.novacrypto.bip39.Words
 import io.github.novacrypto.bip39.wordlists.English
 import java.security.SecureRandom
 
+/**
+ * A sample implementation of a plugin for handling Mnemonic phrases. Any library can easily be
+ * plugged into the SDK in this manner. In this case, we are wrapping a few example 3rd party
+ * libraries with a thin layer that converts from their API to ours via the MnemonicPlugin
+ * interface. We do not endorse these libraries, rather we just use them as an example of how to
+ * take existing infrastructure and plug it into the SDK.
+ */
 class SimpleMnemonics : MnemonicPlugin {
 
     override fun nextEntropy(): ByteArray {

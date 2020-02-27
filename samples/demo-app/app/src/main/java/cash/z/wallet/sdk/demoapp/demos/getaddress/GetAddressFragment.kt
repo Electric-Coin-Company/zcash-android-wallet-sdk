@@ -6,6 +6,10 @@ import cash.z.wallet.sdk.demoapp.App
 import cash.z.wallet.sdk.demoapp.BaseDemoFragment
 import cash.z.wallet.sdk.demoapp.databinding.FragmentGetAddressBinding
 
+/**
+ * Displays the address associated with the seed defined by the default config. To modify the seed
+ * that is used, update the `DemoConfig.seedWords` value.
+ */
 class GetAddressFragment : BaseDemoFragment<FragmentGetAddressBinding>() {
 
     private var seed: ByteArray = App.instance.defaultConfig.seed

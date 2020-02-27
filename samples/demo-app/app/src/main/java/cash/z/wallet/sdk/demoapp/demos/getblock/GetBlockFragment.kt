@@ -8,6 +8,11 @@ import cash.z.wallet.sdk.demoapp.databinding.FragmentGetBlockBinding
 import cash.z.wallet.sdk.service.LightWalletGrpcService
 import cash.z.wallet.sdk.service.LightWalletService
 
+/**
+ * Retrieves a compact block from the lightwalletd service and displays basic information about it.
+ * This demonstrates the basic ability to connect to the server, request a compact block and parse
+ * the response.
+ */
 class GetBlockFragment : BaseDemoFragment<FragmentGetBlockBinding>() {
     private val host = App.instance.defaultConfig.host
     private val port = App.instance.defaultConfig.port

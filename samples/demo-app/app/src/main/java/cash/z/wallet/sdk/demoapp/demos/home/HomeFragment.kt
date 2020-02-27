@@ -8,11 +8,15 @@ import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
-import cash.z.wallet.sdk.ext.twig
 import cash.z.wallet.sdk.demoapp.App
 import cash.z.wallet.sdk.demoapp.R
-import cash.z.wallet.sdk.ext.ZcashSdk
+import cash.z.wallet.sdk.ext.twig
 
+/**
+ * The landing page for the demo. Every time the app returns to this screen, it clears all demo
+ * data just for sanity. The goal is for each demo to be self-contained so that the behavior is
+ * repeatable and independent of pre-existing state.
+ */
 class HomeFragment : Fragment() {
 
     private lateinit var homeViewModel: HomeViewModel

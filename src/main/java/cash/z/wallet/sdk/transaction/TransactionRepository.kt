@@ -4,6 +4,9 @@ import androidx.paging.PagedList
 import cash.z.wallet.sdk.entity.*
 import kotlinx.coroutines.flow.Flow
 
+/**
+ * Repository of wallet transactions, providing an agnostic interface to the underlying information.
+ */
 interface TransactionRepository {
     fun lastScannedHeight(): Int
     fun isInitialized(): Boolean

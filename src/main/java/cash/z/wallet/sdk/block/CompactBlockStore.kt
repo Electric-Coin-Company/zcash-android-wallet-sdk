@@ -8,11 +8,15 @@ import cash.z.wallet.sdk.rpc.CompactFormats
 interface CompactBlockStore {
     /**
      * Gets the highest block that is currently stored.
+     *
+     * @return the latest block height.
      */
     suspend fun getLatestHeight(): Int
 
     /**
      * Write the given blocks to this store, which may be anything from an in-memory cache to a DB.
+     *
+     * @param result the list of compact blocks to persist.
      */
     suspend fun write(result: List<CompactFormats.CompactBlock>)
 
@@ -21,6 +25,8 @@ interface CompactBlockStore {
      *
      * After this operation, the data store will look the same as one that has not yet stored the given block height.
      * Meaning, if max height is 100 block and  rewindTo(50) is called, then the highest block remaining will be 49.
+     *
+     * @param height the target height to which to rewind.
      */
     suspend fun rewindTo(height: Int)
 

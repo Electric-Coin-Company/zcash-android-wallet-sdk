@@ -6,6 +6,12 @@ import cash.z.wallet.sdk.demoapp.App
 import cash.z.wallet.sdk.demoapp.BaseDemoFragment
 import cash.z.wallet.sdk.demoapp.databinding.FragmentGetPrivateKeyBinding
 
+/**
+ * Displays the viewing key and spending key associated with the seed defined by the default config.
+ * To modify the seed that is used, update the `DemoConfig.seedWords` value. This demo takes two
+ * approaches to deriving the seed, one that is stateless and another that is not. In most cases, a
+ * wallet instance will call `new` on an initializer and then store the result.
+ */
 class GetPrivateKeyFragment : BaseDemoFragment<FragmentGetPrivateKeyBinding>() {
     private var seed: ByteArray = App.instance.defaultConfig.seed
     private val initializer: Initializer = Initializer(App.instance)
@@ -20,8 +26,10 @@ class GetPrivateKeyFragment : BaseDemoFragment<FragmentGetPrivateKeyBinding>() {
         /*
          * Initialize with the seed and retrieve one private key for each account specified (by
          * default, only 1 account is created). In a normal circumstance, a wallet app would then
-         * store these keys in its secure storage for retrieval, later. Private keys are only needed
-         * for sending funds.
+         * store these keys in its secure storage for retrieval, later. Spending keys are only
+         * needed when sending funds. Viewing keys can be derived from spending keys. In most cases,
+         * a call to `initializer.new` or `initializer.import` are the only time a wallet passes the
+         * seed to the SDK. From that point forward, only spending or viewing keys are needed.
          */
         spendingKeys = initializer.new(seed, birthday)
 

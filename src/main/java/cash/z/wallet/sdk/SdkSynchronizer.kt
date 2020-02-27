@@ -32,9 +32,9 @@ import kotlin.coroutines.CoroutineContext
  * pieces can be tied together. Its goal is to allow a developer to focus on their app rather than
  * the nuances of how Zcash works.
  *
- * @param ledger exposes flows of wallet transaction information.
- * @param manager manages and tracks outbound transactions.
- * @param processor saves the downloaded compact blocks to the cache and then scans those blocks for
+ * @property ledger exposes flows of wallet transaction information.
+ * @property manager manages and tracks outbound transactions.
+ * @property processor saves the downloaded compact blocks to the cache and then scans those blocks for
  * data related to this wallet.
  */
 @ExperimentalCoroutinesApi
@@ -144,6 +144,8 @@ class SdkSynchronizer internal constructor(
      * scope is only used for launching this synchronzer's job as a child. If no scope is provided,
      * then this synchronizer and all of its coroutines will run until stop is called, which is not
      * recommended since it can leak resources. That type of behavior is more useful for tests.
+     *
+     * @return an instance of this class so that this function can be used fluidly.
      */
     override fun start(parentScope: CoroutineScope?): Synchronizer {
         if (::coroutineScope.isInitialized) throw SynchronizerException.FalseStart
@@ -181,6 +183,10 @@ class SdkSynchronizer internal constructor(
         ledger.invalidate()
     }
 
+    /**
+     * Calculate the latest balance, based on the blocks that have been scanned and transmit this
+     * information into the flow of [balances].
+     */
     suspend fun refreshBalance() {
         twig("refreshing balance")
         _balances.send(processor.getBalanceInfo())
@@ -357,9 +363,19 @@ class SdkSynchronizer internal constructor(
 }
 
 /**
- * Simplest constructor possible. Useful for demos, sample apps or PoC's. Anything more complex
+ * A convenience constructor that accepts the information most likely to change and uses defaults
+ * for everything else. This is useful for demos, sample apps or PoC's. Anything more complex
  * will probably want to handle initialization, directly.
+ *
+ * @param appContext the application context. This is mostly used for finding databases and params
+ * files within the apps secure storage area.
+ * @param lightwalletdHost the lightwalletd host to use for connections.
+ * @param lightwalletdPort the lightwalletd port to use for connections.
+ * @param seed the seed to use for this wallet, when importing. Null when creating a new wallet.
+ * @param birthdayStore the place to store the birthday of this wallet for future reference, which
+ * allows something else to manage the state on behalf of the initializer.
  */
+@Suppress("FunctionName")
 fun Synchronizer(
     appContext: Context,
     lightwalletdHost: String = ZcashSdk.DEFAULT_LIGHTWALLETD_HOST,
@@ -387,6 +403,20 @@ fun Synchronizer(
     return Synchronizer(appContext, initializer)
 }
 
+/**
+ * Constructor function to use in most cases. This is a convenience function for when a wallet has
+ * already created an initializer. Meaning, the basic flow is to call either [Initializer.new] or
+ * [Initializer.import] on the first run and then [Initializer.open] for all subsequent launches of
+ * the wallet. From there, the initializer is passed to this function in order to start syncing from
+ * where the wallet left off.
+ *
+ * @param appContext the application context. This is mostly used for finding databases and params
+ * files within the apps secure storage area.
+ * @param initializer the helper that is leveraged for creating all the components that the
+ * Synchronizer requires. It is mainly responsible for initializing the databases associated with
+ * this synchronizer.
+ */
+@Suppress("FunctionName")
 fun Synchronizer(
     appContext: Context,
     initializer: Initializer
@@ -400,7 +430,24 @@ fun Synchronizer(
 
 /**
  * Constructor function for building a Synchronizer in the most flexible way possible. This allows
- * a wallet maker to customize any subcomponent of the Synchronzier.
+ * a wallet maker to customize any subcomponent of the Synchronzer.
+ *
+ * @param appContext the application context. This is mostly used for finding databases and params
+ * files within the apps secure storage area.
+ * @param lightwalletdHost the lightwalletd host to use for connections.
+ * @param lightwalletdPort the lightwalletd port to use for connections.
+ * @param ledger repository of wallet transactions, providing an agnostic interface to the
+ * underlying information.
+ * @param blockStore component responsible for storing compact blocks downloaded from lightwalletd.
+ * @param service the lightwalletd service that can provide compact blocks and submit transactions.
+ * @param encoder the component responsible for encoding transactions.
+ * @param downloader the component responsible for downloading ranges of compact blocks.
+ * @param manager the component that manages outbound transactions in order to report which ones are
+ * still pending, particularly after failed attempts or dropped connectivity. The intent is to help
+ * monitor outbound  transactions status through to completion.
+ * @param processor the component responsible for processing compact blocks. This is effectively the
+ * brains of the synchronizer that implements most of the high-level business logic and determines
+ * the current state of the wallet.
  */
 @Suppress("FunctionName")
 fun Synchronizer(

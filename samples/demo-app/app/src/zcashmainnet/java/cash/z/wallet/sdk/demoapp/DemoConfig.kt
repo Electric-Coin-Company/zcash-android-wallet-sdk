@@ -16,7 +16,6 @@ data class DemoConfig(
     val toAddress: String = "zs1lcdmue7rewgvzh3jd09sfvwq3sumu6hkhpk53q94kcneuffjkdg9e3tyxrugkmpza5c3c5e6eqh"
 ) {
     val seed: ByteArray get() = SimpleMnemonics().toSeed(seedWords.toCharArray())
-
     fun newWalletBirthday() = Initializer.DefaultBirthdayStore.loadBirthdayFromAssets(App.instance)
     fun loadBirthday(height: Int = birthdayHeight) = Initializer.DefaultBirthdayStore.loadBirthdayFromAssets(App.instance, height)
 }

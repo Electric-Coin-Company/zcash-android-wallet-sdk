@@ -15,6 +15,14 @@ import cash.z.wallet.sdk.demoapp.util.SampleStorageBridge
 import cash.z.wallet.sdk.entity.*
 import cash.z.wallet.sdk.ext.*
 
+/**
+ * Demonstrates sending funds to an address. This is the most complex example that puts all of the
+ * pieces of the SDK together, including monitoring transactions for completion. It begins by
+ * downloading, validating and scanning any missing blocks. Once that is complete, the wallet is
+ * in a SYNCED state and available to send funds. Calling `sendToAddress` produces a flow of
+ * PendingTransaction objects which represent the active state of the transaction that was sent.
+ * Any time the state of that transaction changes, a new instance will be emitted.
+ */
 class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
     private val config = App.instance.defaultConfig
     private val initializer = Initializer(App.instance, host = config.host, port = config.port)
