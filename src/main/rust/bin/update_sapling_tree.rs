@@ -28,10 +28,29 @@ const BATCH_SIZE: u64 = 10_000;
 const TARGET_HEIGHT: u64 = 735000;
 const NETWORK: &str = "mainnet";
 
+#[derive(Debug)]
+enum Error {
+    InvalidBlock,
+    Grpc(grpc::Error),
+    Io(std::io::Error),
+}
+
+impl From<grpc::Error> for Error {
+    fn from(e: grpc::Error) -> Self {
+        Error::Grpc(e)
+    }
+}
+
+impl From<std::io::Error> for Error {
+    fn from(e: std::io::Error) -> Self {
+        Error::Io(e)
+    }
+}
+
 fn print_sapling_tree(height: u64, mut hash: Vec<u8>, time: u32, tree: CommitmentTree<Node>) {
     hash.reverse();
     let mut tree_bytes = vec![];
-    tree.write(&mut tree_bytes).unwrap();
+    tree.write(&mut tree_bytes).expect("can write into Vec");
     println!("{{");
     println!("  \"network\": \"{}\",", NETWORK);
     println!("  \"height\": {},", height);
@@ -41,7 +60,7 @@ fn print_sapling_tree(height: u64, mut hash: Vec<u8>, time: u32, tree: Commitmen
     println!("}}");
 }
 
-fn main() {
+fn main() -> Result<(), Error> {
     // For now, start from Sapling activation height
     let mut start_height = 419200;
     let mut tree = CommitmentTree::new();
@@ -51,8 +70,7 @@ fn main() {
         LIGHTWALLETD_HOST,
         LIGHTWALLETD_PORT,
         client_conf,
-    )
-    .unwrap();
+    )?;
 
     loop {
         // Get the latest height
@@ -81,17 +99,17 @@ fn main() {
         let mut end_time = 0;
         let mut parsed = 0;
         for block in blocks {
-            let block = block.unwrap();
+            let block = block?;
             end_hash = block.hash;
             end_time = block.time;
             for tx in block.vtx.iter() {
                 for output in tx.outputs.iter() {
                     // Append commitment to tree
                     let mut repr = FrRepr::default();
-                    repr.read_le(&output.cmu[..]).unwrap();
-                    let cmu = Fr::from_repr(repr).unwrap();
+                    repr.read_le(&output.cmu[..])?;
+                    let cmu = Fr::from_repr(repr).map_err(|_| Error::InvalidBlock)?;
                     let node = Node::new(cmu.into_repr());
-                    tree.append(node).unwrap();
+                    tree.append(node).expect("tree is not full");
                 }
             }
             parsed += 1
@@ -100,7 +118,7 @@ fn main() {
 
         if end_height == latest_height {
             print_sapling_tree(end_height, end_hash, end_time, tree);
-            break;
+            break Ok(());
         } else {
             start_height = end_height + 1
         }
