@@ -16,21 +16,24 @@ Refer to [build instructions](https://github.com/zcash/zcash-android-wallet-sdk#
 3. Launch from Android Studio, https://developer.android.com/studio  
 
 ## Exploring the demo app
-After building the app, the emulator should launch. The demo basic app that exercises the related code (see below picture). 
+After building the app, the emulator should launch with a basic app that exercises the SDK (see picture below). 
+To explore the app, click on each menu item, in order, and also look at the associated code. 
 
 ![The android demo app, running in Android Studio](assets/demo-app.png?raw=true "Demo App with Android Studio")
 
-The demo app is not trying to show what's possible, but to present how to accomplish the building blocks of wallet functionality in a simple way in code. 
+The demo app is not trying to show what's possible, but to present how to accomplish the building blocks of wallet functionality in a simple way in code. It is comprised of the following self-contained demos. All data is reset between demos in order to keep the behavior repeatable and independant of state.
 
-To explore the app, click on each menu item in order and look at the associated code: 
-1. Click `Get Private Key	` to see the private key associated with the address. Look at `GetPrivateKeyFragment.kt` to see how the private key is generated. 
-1. Click `Get Address` to see the address. You can send funds to it if you have a wallet that can send to shielded addresses (we recommend ZecWalletLite, if you need one). Look at `GetAddressFragment.kt` to see what to click to copy the address. 
-1. Click `Get Latest Height` to see the latest height--it might be at the latest mainnet height if your app has not synced yet. Look at `GetLatestHeightFragment.kt` to see how the app talks to lightwalletd to get the latest block height. 
-1. Click `Get Block` to see the 500,000th block. You can see other blocks here, too. Look at  `GetBlockFragment.kt` to see how the blocks are retrieved and processed. 
-1. Click `Get Block Range` to see the 500,000th block again. You can request a range of blocks here, so go ahead and try that. Look at `GetBlockRangeFragment.kt` to see how multiple blocks are processed. 
-1. Click `List transactions` and wait until all necessary blocks are downloaded. You should see a list of all past incoming transactions. Look at `ListTransactionsFragment.kt` to see how transactions are updated and listed here. Currently, we are not able to retrieve outgoing transactions from scanning the block chain, an app will need to keep track of the transaction information on send (see next step). 
-1. Click `Send` and wait for the necessary blocks to download and sync. Even if you had synced from the previous demo, it’s normal behavior to sync again each time. Try sending to the pre-filled address, or to an address of your own. Look at `SendFragment.kt` to see all that is required to send a transaction, as well as handling transaction state. 
+### Demos
 
+Menu Item|Related Code|Description
+:-----|:-----|:-----
+Get Private Key|[GetPrivateKeyFragment.kt](app/src/main/java/cash/z/wallet/sdk/demoapp/demos/getprivatekey/GetPrivateKeyFragment.kt)|Given a seed, display its viewing key and spending key 
+Get Address|[GetAddressFragment.kt](app/src/main/java/cash/z/wallet/sdk/demoapp/demos/getaddress/GetAddressFragment.kt)|Given a seed, display its z-addr
+Get Latest Height|[GetLatestHeightFragment.kt](app/src/main/java/cash/z/wallet/sdk/demoapp/demos/getlatestheight/GetLatestHeightFragment.kt)|Given a lightwalletd server, retrieve the latest block height
+Get Block|[GetBlockFragment.kt](app/src/main/java/cash/z/wallet/sdk/demoapp/demos/getblock/GetBlockFragment.kt)|Given a lightwalletd server, retrieve a compact block
+Get Block Range|[GetBlockRangeFragment.kt](app/src/main/java/cash/z/wallet/sdk/demoapp/demos/getblockrange/GetBlockRangeFragment.kt)|Given a lightwalletd server, retrieve a range of compact blocks
+List Transactions|[ListTransactionsFragment.kt](app/src/main/java/cash/z/wallet/sdk/demoapp/demos/listtransactions/ListTransactionsFragment.kt)|Given a seed, list all related shielded transations
+Send|[SendFragment.kt](app/src/main/java/cash/z/wallet/sdk/demoapp/demos/send/SendFragment.kt)|Send and monitor a transaction, the most complex demo
 
 ## Getting started
 We’re assuming you already have a brilliant app idea, a vision for the app’s UI, and know the ins and outs of the Android lifecycle. We’ll just stick to the Zcash app part of “getting started.” 
