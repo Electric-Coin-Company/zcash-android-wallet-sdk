@@ -2,6 +2,7 @@ extern crate ff;
 extern crate futures;
 extern crate grpc;
 extern crate hex;
+extern crate httpbis;
 extern crate pairing;
 extern crate protobuf;
 extern crate tls_api;
@@ -14,9 +15,12 @@ mod service_grpc;
 
 use ff::{PrimeField, PrimeFieldRepr};
 use futures::Stream;
-use grpc::ClientStubExt;
+use grpc::ClientStub;
+use httpbis::ClientTlsOption;
 use pairing::bls12_381::{Fr, FrRepr};
-use tls_api::TlsConnector;
+use std::net::ToSocketAddrs;
+use std::sync::Arc;
+use tls_api::{TlsConnector, TlsConnectorBuilder};
 use zcash_client_backend::proto::compact_formats;
 use zcash_primitives::{merkle_tree::CommitmentTree, sapling::Node};
 
@@ -33,6 +37,7 @@ enum Error {
     InvalidBlock,
     Grpc(grpc::Error),
     Io(std::io::Error),
+    TlsApi(tls_api::Error),
 }
 
 impl From<grpc::Error> for Error {
@@ -44,6 +49,12 @@ impl From<grpc::Error> for Error {
 impl From<std::io::Error> for Error {
     fn from(e: std::io::Error) -> Self {
         Error::Io(e)
+    }
+}
+
+impl From<tls_api::Error> for Error {
+    fn from(e: tls_api::Error) -> Self {
+        Error::TlsApi(e)
     }
 }
 
@@ -65,12 +76,36 @@ fn main() -> Result<(), Error> {
     let mut start_height = 419200;
     let mut tree = CommitmentTree::new();
 
+    // If LIGHTWALLETD_HOST is behind a load balancer which resolves to multiple IP
+    // addresses, we need to select one ourselves and then use it directly, as a
+    // workaround for https://github.com/stepancheg/rust-http2/issues/7
+    let socket = (LIGHTWALLETD_HOST, LIGHTWALLETD_PORT)
+        .to_socket_addrs()?
+        .into_iter()
+        .next()
+        .expect("LIGHTWALLETD_HOST can be resolved");
+
+    let tls = {
+        let mut tls_connector = tls_api_rustls::TlsConnector::builder()?;
+
+        if tls_api_rustls::TlsConnector::supports_alpn() {
+            tls_connector.set_alpn_protocols(&[b"h2"])?;
+        }
+
+        let tls_connector = tls_connector.build()?;
+
+        let tls_connector = Arc::new(tls_connector);
+        ClientTlsOption::Tls(LIGHTWALLETD_HOST.to_owned(), tls_connector)
+    };
+
     let client_conf = Default::default();
-    let client = service_grpc::CompactTxStreamerClient::new_tls::<tls_api_rustls::TlsConnector>(
+    let client = grpc::Client::new_expl::<tls_api_rustls::TlsConnector>(
+        &socket,
         LIGHTWALLETD_HOST,
-        LIGHTWALLETD_PORT,
+        tls,
         client_conf,
-    )?;
+    )
+    .map(|c| service_grpc::CompactTxStreamerClient::with_client(Arc::new(c)))?;
 
     loop {
         // Get the latest height
