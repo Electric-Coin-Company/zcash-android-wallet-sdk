@@ -1,12 +1,22 @@
 # Android demo app 
-
-## Introduction
 This is a demo app that exercises code in https://github.com/zcash/zcash-android-wallet-sdk, which has all the Android-related functionalities necessary to build a mobile Zcash shielded wallet. 
 
 It relies on [Lightwalletd](https://github.com/zcash/lightwalletd), a backend service that provides a bandwidth-efficient interface to the Zcash blockchain. There is an equivalent [iOS demo app](https://github.com/zcash/ZcashLightClientKit). 
 
+
+## Contents
+
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Exploring the demo app](#exploring-the-demo-app)
+  - [Demos](#demos)
+- [Getting started](#getting-started)
+- [Resources](#resources)
+
 ## Requirements
 The demo app is built in Kotlin, and targets API 21. The demo directly links the SDK source code so building it also builds the SDK and therefore requires Rust and the NDK. 
+
+[Back to contents](#contents)
 
 ## Installation
 Refer to [build instructions](https://github.com/zcash/zcash-android-wallet-sdk#compiling-sources) in the readme of the android-wallet-sdk repository for detailed instructions. In short, you will need to: 
@@ -14,6 +24,8 @@ Refer to [build instructions](https://github.com/zcash/zcash-android-wallet-sdk#
 1. Install rust: https://www.rust-lang.org/learn/get-started  
 2. Clone this repo, https://github.com/zcash/zcash-android-wallet-sdk 
 3. Launch from Android Studio, https://developer.android.com/studio  
+
+[Back to contents](#contents)
 
 ## Exploring the demo app
 After building the app, the emulator should launch with a basic app that exercises the SDK (see picture below). 
@@ -35,6 +47,8 @@ Get Block Range|[GetBlockRangeFragment.kt](app/src/main/java/cash/z/wallet/sdk/d
 List Transactions|[ListTransactionsFragment.kt](app/src/main/java/cash/z/wallet/sdk/demoapp/demos/listtransactions/ListTransactionsFragment.kt)|Given a seed, list all related shielded transations
 Send|[SendFragment.kt](app/src/main/java/cash/z/wallet/sdk/demoapp/demos/send/SendFragment.kt)|Send and monitor a transaction, the most complex demo
 
+[Back to contents](#contents)
+
 ## Getting started
 We’re assuming you already have a brilliant app idea, a vision for the app’s UI, and know the ins and outs of the Android lifecycle. We’ll just stick to the Zcash app part of “getting started.” 
 
@@ -47,6 +61,7 @@ Similarly, the best way to build a functioning Zcash shielded app is to implemen
 1. Now that you have the blocks process them and list transactions that send to or are from that wallet, to calculate your balance. 
 1. With a current balance (and funds, of course), send a transaction and monitor its transaction status and update the UI with the results. 
 
+[Back to contents](#contents)
 
 ## Resources
 You don’t need to do it all on your own. 
@@ -55,3 +70,5 @@ You don’t need to do it all on your own.
 * Get funded to build a Zcash app: [Zcash foundation grants program](https://grants.zfnd.org/)
 * Follow Zcash-specific best practices: [Zcash wallet developer checklist](https://zcash.readthedocs.io/en/latest/rtd_pages/ux_wallet_checklist.html)
 * Get more information and see FAQs about the wallet: [Shielded resources documentation](https://zcash.readthedocs.io/en/latest/rtd_pages/shielded_support.html)
+
+[Back to contents](#contents)
