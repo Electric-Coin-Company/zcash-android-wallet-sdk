@@ -114,18 +114,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "bellman"
 version = "0.2.0"
-source = "git+https://github.com/gmale/librustzcash.git?branch=feature/add-scan-limit#a9364c53d7ee5d2b5d3ff3bbbd62b4344c2fc710"
+source = "git+https://github.com/str4d/librustzcash.git?branch=note-spending-v7#24ab2ed19cd627d17c4a5fc4eb9d2f90b0011a11"
 dependencies = [
  "bit-vec 0.4.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "blake2s_simd 0.5.10 (registry+https://github.com/rust-lang/crates.io-index)",
  "byteorder 1.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "crossbeam 0.7.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "ff 0.5.0 (git+https://github.com/gmale/librustzcash.git?branch=feature/add-scan-limit)",
+ "ff 0.5.0 (git+https://github.com/str4d/librustzcash.git?branch=note-spending-v7)",
  "futures 0.1.29 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures-cpupool 0.1.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "group 0.2.0 (git+https://github.com/gmale/librustzcash.git?branch=feature/add-scan-limit)",
+ "group 0.2.0 (git+https://github.com/str4d/librustzcash.git?branch=note-spending-v7)",
  "num_cpus 1.11.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "pairing 0.15.0 (git+https://github.com/gmale/librustzcash.git?branch=feature/add-scan-limit)",
+ "pairing 0.15.0 (git+https://github.com/str4d/librustzcash.git?branch=note-spending-v7)",
  "rand_core 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -421,17 +421,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "ff"
 version = "0.5.0"
-source = "git+https://github.com/gmale/librustzcash.git?branch=feature/add-scan-limit#a9364c53d7ee5d2b5d3ff3bbbd62b4344c2fc710"
+source = "git+https://github.com/str4d/librustzcash.git?branch=note-spending-v7#24ab2ed19cd627d17c4a5fc4eb9d2f90b0011a11"
 dependencies = [
  "byteorder 1.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "ff_derive 0.4.0 (git+https://github.com/gmale/librustzcash.git?branch=feature/add-scan-limit)",
+ "ff_derive 0.4.0 (git+https://github.com/str4d/librustzcash.git?branch=note-spending-v7)",
  "rand_core 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
 name = "ff_derive"
 version = "0.4.0"
-source = "git+https://github.com/gmale/librustzcash.git?branch=feature/add-scan-limit#a9364c53d7ee5d2b5d3ff3bbbd62b4344c2fc710"
+source = "git+https://github.com/str4d/librustzcash.git?branch=note-spending-v7#24ab2ed19cd627d17c4a5fc4eb9d2f90b0011a11"
 dependencies = [
  "num-bigint 0.2.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "num-integer 0.1.42 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -507,9 +507,9 @@ dependencies = [
 [[package]]
 name = "group"
 version = "0.2.0"
-source = "git+https://github.com/gmale/librustzcash.git?branch=feature/add-scan-limit#a9364c53d7ee5d2b5d3ff3bbbd62b4344c2fc710"
+source = "git+https://github.com/str4d/librustzcash.git?branch=note-spending-v7#24ab2ed19cd627d17c4a5fc4eb9d2f90b0011a11"
 dependencies = [
- "ff 0.5.0 (git+https://github.com/gmale/librustzcash.git?branch=feature/add-scan-limit)",
+ "ff 0.5.0 (git+https://github.com/str4d/librustzcash.git?branch=note-spending-v7)",
  "rand 0.7.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand_xorshift 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -778,11 +778,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "pairing"
 version = "0.15.0"
-source = "git+https://github.com/gmale/librustzcash.git?branch=feature/add-scan-limit#a9364c53d7ee5d2b5d3ff3bbbd62b4344c2fc710"
+source = "git+https://github.com/str4d/librustzcash.git?branch=note-spending-v7#24ab2ed19cd627d17c4a5fc4eb9d2f90b0011a11"
 dependencies = [
  "byteorder 1.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "ff 0.5.0 (git+https://github.com/gmale/librustzcash.git?branch=feature/add-scan-limit)",
- "group 0.2.0 (git+https://github.com/gmale/librustzcash.git?branch=feature/add-scan-limit)",
+ "ff 0.5.0 (git+https://github.com/str4d/librustzcash.git?branch=note-spending-v7)",
+ "group 0.2.0 (git+https://github.com/str4d/librustzcash.git?branch=note-spending-v7)",
  "rand_core 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -1461,7 +1461,7 @@ version = "0.0.1"
 dependencies = [
  "android_logger 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "failure 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)",
- "ff 0.5.0 (git+https://github.com/gmale/librustzcash.git?branch=feature/add-scan-limit)",
+ "ff 0.5.0 (git+https://github.com/str4d/librustzcash.git?branch=note-spending-v7)",
  "futures 0.1.29 (registry+https://github.com/rust-lang/crates.io-index)",
  "grpc 0.6.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "hex 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1469,64 +1469,64 @@ dependencies = [
  "jni 0.13.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "log-panics 2.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "pairing 0.15.0 (git+https://github.com/gmale/librustzcash.git?branch=feature/add-scan-limit)",
+ "pairing 0.15.0 (git+https://github.com/str4d/librustzcash.git?branch=note-spending-v7)",
  "protobuf 2.8.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "tls-api 0.1.22 (registry+https://github.com/rust-lang/crates.io-index)",
  "tls-api-rustls 0.1.22 (registry+https://github.com/rust-lang/crates.io-index)",
- "zcash_client_backend 0.1.0 (git+https://github.com/gmale/librustzcash.git?branch=feature/add-scan-limit)",
- "zcash_client_sqlite 0.0.0 (git+https://github.com/gmale/librustzcash.git?branch=feature/add-scan-limit)",
- "zcash_primitives 0.1.0 (git+https://github.com/gmale/librustzcash.git?branch=feature/add-scan-limit)",
- "zcash_proofs 0.1.0 (git+https://github.com/gmale/librustzcash.git?branch=feature/add-scan-limit)",
+ "zcash_client_backend 0.1.0 (git+https://github.com/str4d/librustzcash.git?branch=note-spending-v7)",
+ "zcash_client_sqlite 0.0.0 (git+https://github.com/str4d/librustzcash.git?branch=note-spending-v7)",
+ "zcash_primitives 0.1.0 (git+https://github.com/str4d/librustzcash.git?branch=note-spending-v7)",
+ "zcash_proofs 0.1.0 (git+https://github.com/str4d/librustzcash.git?branch=note-spending-v7)",
 ]
 
 [[package]]
 name = "zcash_client_backend"
 version = "0.1.0"
-source = "git+https://github.com/gmale/librustzcash.git?branch=feature/add-scan-limit#a9364c53d7ee5d2b5d3ff3bbbd62b4344c2fc710"
+source = "git+https://github.com/str4d/librustzcash.git?branch=note-spending-v7#24ab2ed19cd627d17c4a5fc4eb9d2f90b0011a11"
 dependencies = [
  "bech32 0.7.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "bs58 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "ff 0.5.0 (git+https://github.com/gmale/librustzcash.git?branch=feature/add-scan-limit)",
+ "ff 0.5.0 (git+https://github.com/str4d/librustzcash.git?branch=note-spending-v7)",
  "hex 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "pairing 0.15.0 (git+https://github.com/gmale/librustzcash.git?branch=feature/add-scan-limit)",
+ "pairing 0.15.0 (git+https://github.com/str4d/librustzcash.git?branch=note-spending-v7)",
  "protobuf 2.8.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "protobuf-codegen-pure 2.8.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "subtle 2.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "zcash_primitives 0.1.0 (git+https://github.com/gmale/librustzcash.git?branch=feature/add-scan-limit)",
+ "zcash_primitives 0.1.0 (git+https://github.com/str4d/librustzcash.git?branch=note-spending-v7)",
 ]
 
 [[package]]
 name = "zcash_client_sqlite"
 version = "0.0.0"
-source = "git+https://github.com/gmale/librustzcash.git?branch=feature/add-scan-limit#a9364c53d7ee5d2b5d3ff3bbbd62b4344c2fc710"
+source = "git+https://github.com/str4d/librustzcash.git?branch=note-spending-v7#24ab2ed19cd627d17c4a5fc4eb9d2f90b0011a11"
 dependencies = [
  "bech32 0.7.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "bs58 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "ff 0.5.0 (git+https://github.com/gmale/librustzcash.git?branch=feature/add-scan-limit)",
- "pairing 0.15.0 (git+https://github.com/gmale/librustzcash.git?branch=feature/add-scan-limit)",
+ "ff 0.5.0 (git+https://github.com/str4d/librustzcash.git?branch=note-spending-v7)",
+ "pairing 0.15.0 (git+https://github.com/str4d/librustzcash.git?branch=note-spending-v7)",
  "protobuf 2.8.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "rusqlite 0.20.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "time 0.1.42 (registry+https://github.com/rust-lang/crates.io-index)",
- "zcash_client_backend 0.1.0 (git+https://github.com/gmale/librustzcash.git?branch=feature/add-scan-limit)",
- "zcash_primitives 0.1.0 (git+https://github.com/gmale/librustzcash.git?branch=feature/add-scan-limit)",
+ "zcash_client_backend 0.1.0 (git+https://github.com/str4d/librustzcash.git?branch=note-spending-v7)",
+ "zcash_primitives 0.1.0 (git+https://github.com/str4d/librustzcash.git?branch=note-spending-v7)",
 ]
 
 [[package]]
 name = "zcash_primitives"
 version = "0.1.0"
-source = "git+https://github.com/gmale/librustzcash.git?branch=feature/add-scan-limit#a9364c53d7ee5d2b5d3ff3bbbd62b4344c2fc710"
+source = "git+https://github.com/str4d/librustzcash.git?branch=note-spending-v7#24ab2ed19cd627d17c4a5fc4eb9d2f90b0011a11"
 dependencies = [
  "aes 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "blake2b_simd 0.5.10 (registry+https://github.com/rust-lang/crates.io-index)",
  "blake2s_simd 0.5.10 (registry+https://github.com/rust-lang/crates.io-index)",
  "byteorder 1.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "crypto_api_chachapoly 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "ff 0.5.0 (git+https://github.com/gmale/librustzcash.git?branch=feature/add-scan-limit)",
+ "ff 0.5.0 (git+https://github.com/str4d/librustzcash.git?branch=note-spending-v7)",
  "fpe 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "hex 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "pairing 0.15.0 (git+https://github.com/gmale/librustzcash.git?branch=feature/add-scan-limit)",
+ "pairing 0.15.0 (git+https://github.com/str4d/librustzcash.git?branch=note-spending-v7)",
  "rand 0.7.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand_core 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "sha2 0.8.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1535,16 +1535,16 @@ dependencies = [
 [[package]]
 name = "zcash_proofs"
 version = "0.1.0"
-source = "git+https://github.com/gmale/librustzcash.git?branch=feature/add-scan-limit#a9364c53d7ee5d2b5d3ff3bbbd62b4344c2fc710"
+source = "git+https://github.com/str4d/librustzcash.git?branch=note-spending-v7#24ab2ed19cd627d17c4a5fc4eb9d2f90b0011a11"
 dependencies = [
- "bellman 0.2.0 (git+https://github.com/gmale/librustzcash.git?branch=feature/add-scan-limit)",
+ "bellman 0.2.0 (git+https://github.com/str4d/librustzcash.git?branch=note-spending-v7)",
  "blake2b_simd 0.5.10 (registry+https://github.com/rust-lang/crates.io-index)",
  "byteorder 1.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "directories 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "ff 0.5.0 (git+https://github.com/gmale/librustzcash.git?branch=feature/add-scan-limit)",
- "pairing 0.15.0 (git+https://github.com/gmale/librustzcash.git?branch=feature/add-scan-limit)",
+ "ff 0.5.0 (git+https://github.com/str4d/librustzcash.git?branch=note-spending-v7)",
+ "pairing 0.15.0 (git+https://github.com/str4d/librustzcash.git?branch=note-spending-v7)",
  "rand_core 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "zcash_primitives 0.1.0 (git+https://github.com/gmale/librustzcash.git?branch=feature/add-scan-limit)",
+ "zcash_primitives 0.1.0 (git+https://github.com/str4d/librustzcash.git?branch=note-spending-v7)",
 ]
 
 [metadata]
@@ -1563,7 +1563,7 @@ dependencies = [
 "checksum base64 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)" = "0b25d992356d2eb0ed82172f5248873db5560c4721f564b13cb5193bda5e668e"
 "checksum base64 0.9.3 (registry+https://github.com/rust-lang/crates.io-index)" = "489d6c0ed21b11d038c31b6ceccca973e65d73ba3bd8ecb9a2babf5546164643"
 "checksum bech32 0.7.2 (registry+https://github.com/rust-lang/crates.io-index)" = "cdcf67bb7ba7797a081cd19009948ab533af7c355d5caf1d08c777582d351e9c"
-"checksum bellman 0.2.0 (git+https://github.com/gmale/librustzcash.git?branch=feature/add-scan-limit)" = "<none>"
+"checksum bellman 0.2.0 (git+https://github.com/str4d/librustzcash.git?branch=note-spending-v7)" = "<none>"
 "checksum bit-vec 0.4.4 (registry+https://github.com/rust-lang/crates.io-index)" = "02b4ff8b16e6076c3e14220b39fbc1fabb6737522281a388998046859400895f"
 "checksum bitflags 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "cf1de2fe8c75bc145a2f577add951f8134889b4795d47466a54a5c846d691693"
 "checksum blake2b_simd 0.5.10 (registry+https://github.com/rust-lang/crates.io-index)" = "d8fb2d74254a3a0b5cac33ac9f8ed0e44aa50378d9dbb2e5d83bd21ed1dc2c8a"
@@ -1601,8 +1601,8 @@ dependencies = [
 "checksum fake-simd 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)" = "e88a8acf291dafb59c2d96e8f59828f3838bb1a70398823ade51a84de6a6deed"
 "checksum fallible-iterator 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "4443176a9f2c162692bd3d352d745ef9413eec5782a80d8fd6f8a1ac692a07f7"
 "checksum fallible-streaming-iterator 0.1.9 (registry+https://github.com/rust-lang/crates.io-index)" = "7360491ce676a36bf9bb3c56c1aa791658183a54d2744120f27285738d90465a"
-"checksum ff 0.5.0 (git+https://github.com/gmale/librustzcash.git?branch=feature/add-scan-limit)" = "<none>"
-"checksum ff_derive 0.4.0 (git+https://github.com/gmale/librustzcash.git?branch=feature/add-scan-limit)" = "<none>"
+"checksum ff 0.5.0 (git+https://github.com/str4d/librustzcash.git?branch=note-spending-v7)" = "<none>"
+"checksum ff_derive 0.4.0 (git+https://github.com/str4d/librustzcash.git?branch=note-spending-v7)" = "<none>"
 "checksum fnv 1.0.6 (registry+https://github.com/rust-lang/crates.io-index)" = "2fad85553e09a6f881f739c29f0b00b0f01357c743266d478b68951ce23285f3"
 "checksum fpe 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "21988a326139165b75e3196bc6962ca638e5fb0c95102fbf152a3743174b01e4"
 "checksum fuchsia-zircon 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)" = "2e9763c69ebaae630ba35f74888db465e49e259ba1bc0eda7d06f4a067615d82"
@@ -1611,7 +1611,7 @@ dependencies = [
 "checksum futures-cpupool 0.1.8 (registry+https://github.com/rust-lang/crates.io-index)" = "ab90cde24b3319636588d0c35fe03b1333857621051837ed769faefb4c2162e4"
 "checksum generic-array 0.12.3 (registry+https://github.com/rust-lang/crates.io-index)" = "c68f0274ae0e023facc3c97b2e00f076be70e254bc851d972503b328db79b2ec"
 "checksum getrandom 0.1.14 (registry+https://github.com/rust-lang/crates.io-index)" = "7abc8dd8451921606d809ba32e95b6111925cd2906060d2dcc29c070220503eb"
-"checksum group 0.2.0 (git+https://github.com/gmale/librustzcash.git?branch=feature/add-scan-limit)" = "<none>"
+"checksum group 0.2.0 (git+https://github.com/str4d/librustzcash.git?branch=note-spending-v7)" = "<none>"
 "checksum grpc 0.6.2 (registry+https://github.com/rust-lang/crates.io-index)" = "2aaf1d741fe6f3413f1f9f71b99f5e4e26776d563475a8a53ce53a73a8534c1d"
 "checksum hermit-abi 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)" = "eff2656d88f158ce120947499e971d743c05dbcbed62e5bd2f38f1698bbc3772"
 "checksum hex 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)" = "805026a5d0141ffc30abb3be3173848ad46a1b1664fe632428479619a3644d77"
@@ -1641,7 +1641,7 @@ dependencies = [
 "checksum num-traits 0.2.11 (registry+https://github.com/rust-lang/crates.io-index)" = "c62be47e61d1842b9170f0fdeec8eba98e60e90e5446449a0545e5152acd7096"
 "checksum num_cpus 1.11.1 (registry+https://github.com/rust-lang/crates.io-index)" = "76dac5ed2a876980778b8b85f75a71b6cbf0db0b1232ee12f826bccb00d09d72"
 "checksum opaque-debug 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)" = "2839e79665f131bdb5782e51f2c6c9599c133c6098982a54c794358bf432529c"
-"checksum pairing 0.15.0 (git+https://github.com/gmale/librustzcash.git?branch=feature/add-scan-limit)" = "<none>"
+"checksum pairing 0.15.0 (git+https://github.com/str4d/librustzcash.git?branch=note-spending-v7)" = "<none>"
 "checksum parking_lot 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)" = "f842b1982eb6c2fe34036a4fbfb06dd185a3f5c8edfaacdf7d1ea10b07de6252"
 "checksum parking_lot_core 0.6.2 (registry+https://github.com/rust-lang/crates.io-index)" = "b876b1b9e7ac6e1a74a6da34d25c42e17e8862aa409cbbbdcfc8d86c6f3bc62b"
 "checksum pkg-config 0.3.17 (registry+https://github.com/rust-lang/crates.io-index)" = "05da548ad6865900e60eaba7f589cc0783590a92e940c26953ff81ddbab2d677"
@@ -1717,7 +1717,7 @@ dependencies = [
 "checksum winapi-util 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)" = "4ccfbf554c6ad11084fb7517daca16cfdcaccbdadba4fc336f032a8b12c2ad80"
 "checksum winapi-x86_64-pc-windows-gnu 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f"
 "checksum ws2_32-sys 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "d59cefebd0c892fa2dd6de581e937301d8552cb44489cdff035c6187cb63fa5e"
-"checksum zcash_client_backend 0.1.0 (git+https://github.com/gmale/librustzcash.git?branch=feature/add-scan-limit)" = "<none>"
-"checksum zcash_client_sqlite 0.0.0 (git+https://github.com/gmale/librustzcash.git?branch=feature/add-scan-limit)" = "<none>"
-"checksum zcash_primitives 0.1.0 (git+https://github.com/gmale/librustzcash.git?branch=feature/add-scan-limit)" = "<none>"
-"checksum zcash_proofs 0.1.0 (git+https://github.com/gmale/librustzcash.git?branch=feature/add-scan-limit)" = "<none>"
+"checksum zcash_client_backend 0.1.0 (git+https://github.com/str4d/librustzcash.git?branch=note-spending-v7)" = "<none>"
+"checksum zcash_client_sqlite 0.0.0 (git+https://github.com/str4d/librustzcash.git?branch=note-spending-v7)" = "<none>"
+"checksum zcash_primitives 0.1.0 (git+https://github.com/str4d/librustzcash.git?branch=note-spending-v7)" = "<none>"
+"checksum zcash_proofs 0.1.0 (git+https://github.com/str4d/librustzcash.git?branch=note-spending-v7)" = "<none>"

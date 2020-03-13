@@ -30,7 +30,7 @@ use zcash_client_sqlite::{
         get_address, get_balance, get_received_memo_as_utf8, get_sent_memo_as_utf8,
         get_verified_balance,
     },
-    scan::scan_cached_blocks,
+    scan::{decrypt_and_store_transaction, scan_cached_blocks},
     transact::create_to_address,
 };
 
@@ -38,7 +38,7 @@ use zcash_primitives::{
     block::BlockHash,
     consensus::BranchId,
     note_encryption::Memo,
-    transaction::components::Amount,
+    transaction::{components::Amount, Transaction},
     zip32::{ExtendedFullViewingKey, ExtendedSpendingKey},
 };
 use zcash_proofs::prover::LocalTxProver;
@@ -569,6 +569,26 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_scanBlockBatch(
         match scan_cached_blocks(&db_cache, &db_data, Some(limit)) {
             Ok(()) => Ok(JNI_TRUE),
             Err(e) => Err(format_err!("Error while scanning blocks: {}", e)),
+        }
+    });
+    unwrap_exc_or(&env, res, JNI_FALSE)
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_decryptAndStoreTransaction(
+    env: JNIEnv<'_>,
+    _: JClass<'_>,
+    db_data: JString<'_>,
+    tx: jbyteArray,
+) -> jboolean {
+    let res = panic::catch_unwind(|| {
+        let db_data = utils::java_string_to_rust(&env, db_data);
+        let tx_bytes = env.convert_byte_array(tx).unwrap();
+        let tx = Transaction::read(&tx_bytes[..])?;
+
+        match decrypt_and_store_transaction(&db_data, &tx) {
+            Ok(()) => Ok(JNI_TRUE),
+            Err(e) => Err(format_err!("Error while decrypting transaction: {}", e)),
         }
     });
     unwrap_exc_or(&env, res, JNI_FALSE)

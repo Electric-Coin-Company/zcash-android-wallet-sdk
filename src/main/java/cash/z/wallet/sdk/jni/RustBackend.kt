@@ -101,6 +101,8 @@ class RustBackend : RustBackendWelding {
         }
     }
 
+    override fun decryptAndStoreTransaction(tx: ByteArray) = decryptAndStoreTransaction(pathDataDb, tx)
+
     override fun createToAddress(
         account: Int,
         extsk: String,
@@ -214,6 +216,8 @@ class RustBackend : RustBackendWelding {
         @JvmStatic private external fun scanBlocks(dbCachePath: String, dbDataPath: String): Boolean
 
         @JvmStatic private external fun scanBlockBatch(dbCachePath: String, dbDataPath: String, limit: Int): Boolean
+
+        @JvmStatic private external fun decryptAndStoreTransaction(dbDataPath: String, tx: ByteArray)
 
         @JvmStatic private external fun createToAddress(
             dbDataPath: String,
