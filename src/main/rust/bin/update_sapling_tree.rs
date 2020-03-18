@@ -18,6 +18,7 @@ use futures::Stream;
 use grpc::ClientStub;
 use httpbis::ClientTlsOption;
 use pairing::bls12_381::{Fr, FrRepr};
+use std::env;
 use std::net::ToSocketAddrs;
 use std::sync::Arc;
 use tls_api::{TlsConnector, TlsConnectorBuilder};
@@ -26,11 +27,23 @@ use zcash_primitives::{merkle_tree::CommitmentTree, sapling::Node};
 
 use service_grpc::CompactTxStreamer;
 
+#[cfg(feature = "mainnet")]
+const START_HEIGHT: u64 = 419200;
+#[cfg(feature = "mainnet")]
 const LIGHTWALLETD_HOST: &str = "lightwalletd.z.cash";
+#[cfg(feature = "mainnet")]
+const NETWORK: &str = "mainnet";
+
+#[cfg(not(feature = "mainnet"))]
+const START_HEIGHT: u64 = 280000;
+#[cfg(not(feature = "mainnet"))]
+const LIGHTWALLETD_HOST: &str = "lightwalletd.testnet.z.cash";
+#[cfg(not(feature = "mainnet"))]
+const NETWORK: &str = "testnet";
+
 const LIGHTWALLETD_PORT: u16 = 9067;
 const BATCH_SIZE: u64 = 10_000;
-const TARGET_HEIGHT: u64 = 735000;
-const NETWORK: &str = "mainnet";
+const TARGET_HEIGHT: u64 = 810000;
 
 #[derive(Debug)]
 enum Error {
@@ -72,8 +85,31 @@ fn print_sapling_tree(height: u64, mut hash: Vec<u8>, time: u32, tree: Commitmen
 }
 
 fn main() -> Result<(), Error> {
+    let args: Vec<String> = env::args().collect();
+    let mut target_height = TARGET_HEIGHT;
+
+    if args.len() > 1 {
+        let target = &args[1];
+        match target.parse() {
+            Ok(n) => target_height = n,
+            Err(_) => {
+                eprintln!(
+                    "warning: expected target height as the first argument but found '{}'\
+                     instead. Falling back to the default target height of {}.",
+                    target, target_height
+                );
+            }
+        };
+    }
+
+    println!(
+        "creating {} checkpoint for range {}..{}",
+        NETWORK, START_HEIGHT, target_height
+    );
+    println!("connecting to {}:{}", LIGHTWALLETD_HOST, LIGHTWALLETD_PORT);
+
     // For now, start from Sapling activation height
-    let mut start_height = 419200;
+    let mut start_height = START_HEIGHT;
     let mut tree = CommitmentTree::new();
 
     // If LIGHTWALLETD_HOST is behind a load balancer which resolves to multiple IP
@@ -109,7 +145,7 @@ fn main() -> Result<(), Error> {
 
     loop {
         // Get the latest height
-        let latest_height = TARGET_HEIGHT;
+        let latest_height = target_height;
         let end_height = if latest_height - start_height < BATCH_SIZE {
             latest_height
         } else {
