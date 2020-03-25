@@ -69,5 +69,12 @@ open class CompactBlockDownloader(
         compactBlockStore.close()
     }
 
+    /**
+     * Fetch the details of a known transaction.
+     *
+     * @return the full transaction info.
+     */
+    fun fetchTransaction(txId: ByteArray) = lightwalletService.fetchTransaction(txId)
+
 }
 

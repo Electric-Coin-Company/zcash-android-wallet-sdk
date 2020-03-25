@@ -208,8 +208,11 @@ class SdkSynchronizer internal constructor(
                 is Downloading, Initialized -> DOWNLOADING
                 is Validating -> VALIDATING
                 is Scanning -> SCANNING
+                is Enhancing -> ENHANCING
             }.let { synchronizerStatus ->
-                _status.send(synchronizerStatus)
+                //  ignore enhancing status for now
+                // TODO: clean this up and handle enhancing gracefully
+                if (synchronizerStatus != ENHANCING) _status.send(synchronizerStatus)
             }
         }.launchIn(this)
         processor.start()

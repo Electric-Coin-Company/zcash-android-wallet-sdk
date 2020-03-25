@@ -9,6 +9,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import cash.z.wallet.sdk.db.BlockDao
 import cash.z.wallet.sdk.db.DerivedDataDb
 import cash.z.wallet.sdk.db.TransactionDao
+import cash.z.wallet.sdk.entity.ConfirmedTransaction
 import cash.z.wallet.sdk.ext.ZcashSdk
 import cash.z.wallet.sdk.ext.android.toFlowPagedList
 import cash.z.wallet.sdk.ext.android.toRefreshable
@@ -75,6 +76,10 @@ open class PagedTransactionRepository(
     override suspend fun findEncodedTransactionById(txId: Long) = withContext(IO) {
         transactions.findEncodedTransactionById(txId)
     }
+
+    override suspend fun findNewTransactions(blockHeightRange: IntRange): List<ConfirmedTransaction> =
+        transactions.findAllTransactionsByRange(blockHeightRange.first, blockHeightRange.last)
+
 
     override suspend fun findMinedHeight(rawTransactionId: ByteArray) = withContext(IO) {
         transactions.findMinedHeight(rawTransactionId)

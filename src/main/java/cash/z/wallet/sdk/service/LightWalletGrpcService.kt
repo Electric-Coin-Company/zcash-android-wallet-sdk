@@ -68,6 +68,12 @@ class LightWalletGrpcService private constructor(
         channel.shutdownNow()
     }
 
+    override fun fetchTransaction(txId: ByteArray): Service.RawTransaction? {
+        channel.resetConnectBackoff()
+        return channel.createStub().getTransaction(Service.TxFilter.newBuilder().setHash(ByteString.copyFrom(txId)).build())
+    }
+
+
     //
     // Utilities
     //

@@ -3,6 +3,7 @@ package cash.z.wallet.sdk.block
 import androidx.annotation.VisibleForTesting
 import cash.z.wallet.sdk.annotation.OpenForTesting
 import cash.z.wallet.sdk.block.CompactBlockProcessor.State.*
+import cash.z.wallet.sdk.entity.ConfirmedTransaction
 import cash.z.wallet.sdk.exception.CompactBlockProcessorException
 import cash.z.wallet.sdk.exception.RustLayerException
 import cash.z.wallet.sdk.ext.*
@@ -17,10 +18,13 @@ import cash.z.wallet.sdk.ext.ZcashSdk.SCAN_BATCH_SIZE
 import cash.z.wallet.sdk.jni.RustBackend
 import cash.z.wallet.sdk.jni.RustBackendWelding
 import cash.z.wallet.sdk.transaction.TransactionRepository
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.channels.ConflatedBroadcastChannel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 import java.util.concurrent.atomic.AtomicInteger
@@ -159,7 +163,9 @@ class CompactBlockProcessor(
             -1
         } else {
             downloadNewBlocks(currentInfo.lastDownloadRange)
-            validateAndScanNewBlocks(currentInfo.lastScanRange)
+            validateAndScanNewBlocks(currentInfo.lastScanRange).also {
+                enhanceTransactionDetails(currentInfo.lastScanRange)
+            }
         }
     }
 
@@ -168,6 +174,9 @@ class CompactBlockProcessor(
      * the scan/download ranges that require processing.
      */
     private suspend fun updateRanges() = withContext(IO)  {
+        // TODO: rethink this and make it easier to understand what's happening. Can we reduce this
+        // so that we only work with actual changing info rather than periodic snapshots? Do we need
+        // to calculate these derived values every time?
         ProcessorInfo(
             networkBlockHeight = downloader.getLatestBlockHeight(),
             lastScannedHeight = getLastScannedHeight(),
@@ -212,6 +221,37 @@ class CompactBlockProcessor(
         } else {
             error
         }
+    }
+
+    private suspend fun enhanceTransactionDetails(lastScanRange: IntRange): Int {
+        Twig.sprout("enhancing")
+        twig("Enhancing transaction details for blocks $lastScanRange")
+        setState(Enhancing)
+        return try {
+            val newTxs = repository.findNewTransactions(lastScanRange)
+            if (newTxs == null) twig("no new transactions found in $lastScanRange")
+            newTxs?.onEach { newTransaction ->
+                if (newTransaction == null) twig("somehow, new transaction was null!!!")
+                else enhance(newTransaction)
+            }
+            twig("Done enhancing transaction details")
+            1
+        } catch (t: Throwable) {
+            twig("Failed to enhance due to $t")
+            t.printStackTrace()
+            -1
+        } finally {
+            Twig.clip("enhancing")
+        }
+    }
+
+    private suspend fun enhance(transaction: ConfirmedTransaction) = withContext(Dispatchers.IO) {
+        twig("START: enhancing transaction (id:${transaction.id}  block:${transaction.minedHeight})")
+        downloader.fetchTransaction(transaction.rawTransactionId)?.let { tx ->
+            twig("decrypting and storing transaction (id:${transaction.id}  block:${transaction.minedHeight})")
+            rustBackend.decryptAndStoreTransaction(tx.data.toByteArray())
+        } ?: twig("no transaction found. Nothing to enhance. This probably shouldn't happen.")
+        twig("DONE: enhancing transaction (id:${transaction.id}  block:${transaction.minedHeight})")
     }
 
     /**
@@ -466,6 +506,15 @@ class CompactBlockProcessor(
          * [State] for when we are done decrypting blocks, for now.
          */
         class Scanned(val scannedRange:IntRange) : Connected, Syncing, State()
+
+        /**
+         * [State] for when transaction details are being retrieved. This typically means the wallet
+         * has downloaded and scanned blocks and is now processing any transactions that were
+         * discovered. Once a transaction is discovered, followup network requests are needed in
+         * order to retrieve memos or outbound transaction information, like the recipient address.
+         * The existing information we have about transactions is enhanced by the new information.
+         */
+        object Enhancing : Connected, Syncing, State()
 
         /**
          * [State] for when we have no connection to lightwalletd.

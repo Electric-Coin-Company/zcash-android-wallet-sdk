@@ -37,4 +37,11 @@ interface LightWalletService {
      * Cleanup any connections when the service is shutting down and not going to be used again.
      */
     fun shutdown()
+
+    /**
+     * Fetch the details of a known transaction.
+     *
+     * @return the full transaction info.
+     */
+    fun fetchTransaction(txId: ByteArray): Service.RawTransaction?
 }
