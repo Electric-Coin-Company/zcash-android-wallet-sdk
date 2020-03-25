@@ -86,7 +86,19 @@ suspend inline fun retryWithBackoff(noinline onErrorListener: ((Throwable) -> Bo
                 duration = maxDelayMillis - Random.nextLong(1000L) // include jitter but don't exceed max delay
                 sequence /= 2
             }
-            twig("Failed due to $t backing off and retrying in ${duration}ms...")
+            //TODO: return here and check whether adding more cause info helps identify why the connection is timing out after the device goes to sleep
+            var cause = t.cause
+            var depth = 0
+            val causes = buildString {
+                while(cause != null && depth < 5) {
+                    append(" [$depth] caused by $cause")
+                    cause = cause?.cause
+                    depth++
+                }
+                if (depth == 0) append(" (no additional causes provided)")
+                if (cause != null) append(" (additional causes omitted)")
+            }
+            twig("Failed due to $t$causes backing off and retrying in ${duration}ms...")
             delay(duration)
         }
     }
