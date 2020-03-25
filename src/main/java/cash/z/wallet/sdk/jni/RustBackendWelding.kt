@@ -36,6 +36,8 @@ interface RustBackendWelding {
 
     fun scanBlocks(limit: Int = -1): Boolean
 
+    fun decryptAndStoreTransaction(tx: ByteArray)
+
     fun createToAddress(
         account: Int,
         extsk: String,

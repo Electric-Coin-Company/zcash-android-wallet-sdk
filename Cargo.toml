@@ -24,28 +24,28 @@ tls-api = { version = "0.1", optional = true }
 tls-api-rustls = { version = "0.1", optional = true }
 
 [dependencies.ff]
-git = "https://github.com/gmale/librustzcash.git"
-branch = "feature/add-scan-limit"
+git = "https://github.com/str4d/librustzcash.git"
+branch = "note-spending-v7"
 
 [dependencies.pairing]
-git = "https://github.com/gmale/librustzcash.git"
-branch = "feature/add-scan-limit"
+git = "https://github.com/str4d/librustzcash.git"
+branch = "note-spending-v7"
 
 [dependencies.zcash_client_backend]
-git = "https://github.com/gmale/librustzcash.git"
-branch = "feature/add-scan-limit"
+git = "https://github.com/str4d/librustzcash.git"
+branch = "note-spending-v7"
 
 [dependencies.zcash_client_sqlite]
-git = "https://github.com/gmale/librustzcash.git"
-branch = "feature/add-scan-limit"
+git = "https://github.com/str4d/librustzcash.git"
+branch = "note-spending-v7"
 
 [dependencies.zcash_primitives]
-git = "https://github.com/gmale/librustzcash.git"
-branch = "feature/add-scan-limit"
+git = "https://github.com/str4d/librustzcash.git"
+branch = "note-spending-v7"
 
 [dependencies.zcash_proofs]
-git = "https://github.com/gmale/librustzcash.git"
-branch = "feature/add-scan-limit"
+git = "https://github.com/str4d/librustzcash.git"
+branch = "note-spending-v7"
 
 #[patch.'https://github.com/str4d/librustzcash.git']
 #ff = { path = '../../clones/librustzcash/ff' }
