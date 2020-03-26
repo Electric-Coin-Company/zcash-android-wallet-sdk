@@ -164,7 +164,7 @@ class Initializer(
     /**
      * Initializes the databases that the rust library uses for managing state. The "data db" is
      * created and a row is entered corresponding to the given birthday so that scanning does not
-     * need to start from the  beginning of time. Lastly, the accounts table is initialized to
+     * need to start from the beginning of time. Lastly, the accounts table is initialized to
      * simply hold the address and viewing key for each account, which simplifies the process of
      * scanning and decrypting compact blocks.
      *
@@ -174,7 +174,7 @@ class Initializer(
      * @param birthday the birthday to use for this wallet. This is used in order to seed the data
      * DB with the first sapling tree, which also determines where the SDK begins downloading and
      * scanning. Any blocks lower than the height represented by this birthday can safely be ignored
-     * since a wallet cannot have transactions prior to it's creation.
+     * since a wallet cannot have transactions prior to its creation.
      * @param numberOfAccounts the number of accounts to create. Only 1 account is tested and
      * supported at this time. It is possible, although unlikely that multiple accounts would behave
      * as expected. Due to the nature of shielded address, the official Zcash recommendation is to

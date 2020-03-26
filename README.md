@@ -45,7 +45,7 @@ Thankfully, the only thing an app developer has to be concerned with is the foll
 
 ## Overview
 
-At a high level, this SDK simply helps native Android codebases connect to Zcash's Rust crypto libraries without needing to know Rust or be a Cryptographer. Think of it as welding. The SDK takes separate things and tightly bonds them together such that each can remain as idiomatic as possible. It's goal is to make it easy for an app to incorporate shielded transactions while remaining a good citizen on mobile devices.
+At a high level, this SDK simply helps native Android codebases connect to Zcash's Rust crypto libraries without needing to know Rust or be a Cryptographer. Think of it as welding. The SDK takes separate things and tightly bonds them together such that each can remain as idiomatic as possible. Its goal is to make it easy for an app to incorporate shielded transactions while remaining a good citizen on mobile devices.
 
 Given all the moving parts, making things easy requires coordination. The [Synchronizer](docs/-synchronizer/README.md) provides that layer of abstraction so that the primary steps to make use of this SDK are simply:
 
@@ -111,7 +111,7 @@ synchronizer.sendToAddress(spendingKey, zatoshi, address, memo)
 In the event that you *do* want to compile the SDK from sources, follow these steps:
 
 1. [Install rust](https://www.rust-lang.org/learn/get-started) 
-2. Then, add the android targets via: 
+2. Then, add the android targets via:
 ```bash
 rustup target add armv7-linux-androideabi aarch64-linux-android i686-linux-android
 ```
@@ -128,7 +128,7 @@ rustup target add armv7-linux-androideabi aarch64-linux-android i686-linux-andro
 </p>    
 
   7. [Create an emulator](https://developer.android.com/studio/run/managing-avds) if you don’t already have one (recommended target: API 29)
-  8. Select your desired build variant. Currently, we recommend `zcashmainnetDebug` as the testnet variants are slower to sync to current height due to a lack of checkpoints. 
+  8. Select your desired build variant. Currently, we recommend `zcashmainnetDebug` as the testnet variants are slower to sync to current height due to a lack of checkpoints.
 <p align="center">
     <img src="assets/build-variants.png?raw=true" width="54%"/>
 </p>    

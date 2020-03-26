@@ -15,7 +15,7 @@ import kotlinx.coroutines.flow.Flow
  * Constructs a `Flow<PagedList>`, from this `DataSource.Factory`, convenience for
  * [FlowPagedListBuilder].
  *
- * No work (such as loading) is done immediately, the creation of the first PagedList is is
+ * No work (such as loading) is done immediately, the creation of the first PagedList is
  * deferred until the Flow is collected.
  *
  * @param config Paging configuration.
@@ -39,7 +39,7 @@ fun <Key, Value> DataSource.Factory<Key, Value>.toFlowPagedList(
  * Constructs a `Flow<PagedList>`, from this `DataSource.Factory`, convenience for
  * [FlowPagedListBuilder].
  *
- * No work (such as loading) is done immediately, the creation of the first PagedList is is
+ * No work (such as loading) is done immediately, the creation of the first PagedList is
  * deferred until the Flow is collected.
  *
  * @param pageSize Page size.

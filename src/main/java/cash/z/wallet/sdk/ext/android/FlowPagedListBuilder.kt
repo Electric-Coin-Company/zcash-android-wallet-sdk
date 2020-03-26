@@ -39,7 +39,7 @@ class FlowPagedListBuilder<Key, Value>(
     /**
      * Constructs the `Flow<PagedList>`.
      *
-     * No work (such as loading) is done immediately, the creation of the first PagedList is is
+     * No work (such as loading) is done immediately, the creation of the first PagedList is
      * deferred until the Flow is collected.
      *
      * @return The Flow of PagedLists

@@ -54,7 +54,7 @@ interface OutboundTransactionManager {
      * Given a transaction and the height at which it was mined, update the transaction to indicate
      * that it was mined.
      *
-     * @param pendingTx the pending transaction that has been mineed.
+     * @param pendingTx the pending transaction that has been mined.
      * @param minedHeight the height at which the given transaction was mined, according to the data
      * that has been processed from the blockchain.
      */
@@ -67,7 +67,7 @@ interface OutboundTransactionManager {
      * @param id the id to monitor.
      *
      * @return a flow of pending transactions that are emitted anytime the transaction associated
-     * withh the given id changes.
+     * with the given id changes.
      */
     suspend fun monitorById(id: Long): Flow<PendingTransaction>
 

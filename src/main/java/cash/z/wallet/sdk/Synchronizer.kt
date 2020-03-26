@@ -277,7 +277,7 @@ interface Synchronizer {
         /**
          * An instance of [AddressType] corresponding to an invalid address.
          *
-         * @param reason a descrption of why the address was invalid.
+         * @param reason a description of why the address was invalid.
          */
         class Invalid(val reason: String = "Invalid") : AddressType()
 

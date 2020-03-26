@@ -141,7 +141,7 @@ class SdkSynchronizer internal constructor(
      *
      * @param parentScope the scope to use for this synchronizer, typically something with a
      * lifecycle such as an Activity for single-activity apps or a logged in user session. This
-     * scope is only used for launching this synchronzer's job as a child. If no scope is provided,
+     * scope is only used for launching this synchronizer's job as a child. If no scope is provided,
      * then this synchronizer and all of its coroutines will run until stop is called, which is not
      * recommended since it can leak resources. That type of behavior is more useful for tests.
      *
@@ -444,7 +444,7 @@ fun Synchronizer(
  * @param downloader the component responsible for downloading ranges of compact blocks.
  * @param manager the component that manages outbound transactions in order to report which ones are
  * still pending, particularly after failed attempts or dropped connectivity. The intent is to help
- * monitor outbound  transactions status through to completion.
+ * monitor outbound transactions status through to completion.
  * @param processor the component responsible for processing compact blocks. This is effectively the
  * brains of the synchronizer that implements most of the high-level business logic and determines
  * the current state of the wallet.

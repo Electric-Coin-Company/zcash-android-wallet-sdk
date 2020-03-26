@@ -33,7 +33,7 @@ To explore the app, click on each menu item, in order, and also look at the asso
 
 ![The android demo app, running in Android Studio](assets/demo-app.png?raw=true "Demo App with Android Studio")
 
-The demo app is not trying to show what's possible, but to present how to accomplish the building blocks of wallet functionality in a simple way in code. It is comprised of the following self-contained demos. All data is reset between demos in order to keep the behavior repeatable and independant of state.
+The demo app is not trying to show what's possible, but to present how to accomplish the building blocks of wallet functionality in a simple way in code. It is comprised of the following self-contained demos. All data is reset between demos in order to keep the behavior repeatable and independent of state.
 
 ### Demos
 
@@ -44,7 +44,7 @@ Get Address|[GetAddressFragment.kt](app/src/main/java/cash/z/wallet/sdk/demoapp/
 Get Latest Height|[GetLatestHeightFragment.kt](app/src/main/java/cash/z/wallet/sdk/demoapp/demos/getlatestheight/GetLatestHeightFragment.kt)|Given a lightwalletd server, retrieve the latest block height
 Get Block|[GetBlockFragment.kt](app/src/main/java/cash/z/wallet/sdk/demoapp/demos/getblock/GetBlockFragment.kt)|Given a lightwalletd server, retrieve a compact block
 Get Block Range|[GetBlockRangeFragment.kt](app/src/main/java/cash/z/wallet/sdk/demoapp/demos/getblockrange/GetBlockRangeFragment.kt)|Given a lightwalletd server, retrieve a range of compact blocks
-List Transactions|[ListTransactionsFragment.kt](app/src/main/java/cash/z/wallet/sdk/demoapp/demos/listtransactions/ListTransactionsFragment.kt)|Given a seed, list all related shielded transations
+List Transactions|[ListTransactionsFragment.kt](app/src/main/java/cash/z/wallet/sdk/demoapp/demos/listtransactions/ListTransactionsFragment.kt)|Given a seed, list all related shielded transactions
 Send|[SendFragment.kt](app/src/main/java/cash/z/wallet/sdk/demoapp/demos/send/SendFragment.kt)|Send and monitor a transaction, the most complex demo
 
 [Back to contents](#contents)
