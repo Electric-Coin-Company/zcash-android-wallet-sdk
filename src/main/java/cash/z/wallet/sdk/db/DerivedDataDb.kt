@@ -26,7 +26,7 @@ import cash.z.wallet.sdk.entity.*
         Account::class,
         Sent::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = true
 )
 abstract class DerivedDataDb : RoomDatabase() {
@@ -163,15 +163,15 @@ interface TransactionDao {
                transactions.raw             AS raw,
                sent_notes.address           AS toAddress,
                CASE
-                 WHEN transactions.raw IS NOT NULL THEN sent_notes.value
+                 WHEN sent_notes.value IS NOT NULL THEN sent_notes.value
                  ELSE received_notes.value
                end                          AS value,
                CASE
-                 WHEN transactions.raw IS NOT NULL THEN sent_notes.memo
+                 WHEN sent_notes.memo IS NOT NULL THEN sent_notes.memo
                  ELSE received_notes.memo
                end                          AS memo,
                CASE
-                 WHEN transactions.raw IS NOT NULL THEN sent_notes.id_note
+                 WHEN sent_notes.id_note IS NOT NULL THEN sent_notes.id_note
                  ELSE received_notes.id_note
                end                          AS noteId,
                blocks.time                  AS blockTimeInSeconds
@@ -207,15 +207,15 @@ interface TransactionDao {
                transactions.raw           AS raw, 
                sent_notes.address         AS toAddress, 
                CASE 
-                 WHEN transactions.raw IS NOT NULL THEN sent_notes.value 
+                 WHEN sent_notes.value IS NOT NULL THEN sent_notes.value 
                  ELSE received_notes.value 
                end                        AS value, 
                CASE 
-                 WHEN transactions.raw IS NOT NULL THEN sent_notes.memo 
+                 WHEN sent_notes.memo IS NOT NULL THEN sent_notes.memo 
                  ELSE received_notes.memo 
                end                        AS memo, 
                CASE 
-                 WHEN transactions.raw IS NOT NULL THEN sent_notes.id_note 
+                 WHEN sent_notes.id_note IS NOT NULL THEN sent_notes.id_note 
                  ELSE received_notes.id_note 
                end                        AS noteId, 
                blocks.time                AS blockTimeInSeconds 
@@ -226,7 +226,8 @@ interface TransactionDao {
                       ON transactions.id_tx = sent_notes.tx 
                LEFT JOIN blocks 
                       ON transactions.block = blocks.height 
-        WHERE  :blockRangeStart <= minedheight AND minedheight <= :blockRangeEnd 
+        WHERE  :blockRangeStart <= minedheight 
+               AND minedheight <= :blockRangeEnd 
         ORDER  BY ( minedheight IS NOT NULL ), 
                   minedheight ASC, 
                   blocktimeinseconds DESC, 
