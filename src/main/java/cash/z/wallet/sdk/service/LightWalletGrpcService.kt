@@ -24,10 +24,13 @@ import java.util.concurrent.TimeUnit
  * created for streaming requests, it will use a deadline that is after the given duration from now.
  */
 class LightWalletGrpcService private constructor(
-    private val channel: ManagedChannel,
+    private var channel: ManagedChannel,
     private val singleRequestTimeoutSec: Long = 10L,
     private val streamingRequestTimeoutSec: Long = 90L
 ) : LightWalletService {
+
+    //TODO: find a better way to do this, maybe change the constructor to keep the properties
+    lateinit var connectionInfo: ConnectionInfo
 
     /**
      * Construct an instance that corresponds to the given host and port.
@@ -44,7 +47,9 @@ class LightWalletGrpcService private constructor(
         host: String,
         port: Int = DEFAULT_LIGHTWALLETD_PORT,
         usePlaintext: Boolean = appContext.resources.getBoolean(R.bool.lightwalletd_allow_very_insecure_connections)
-    ) : this(createDefaultChannel(appContext, host, port, usePlaintext))
+    ) : this(createDefaultChannel(appContext, host, port, usePlaintext)) {
+        connectionInfo = ConnectionInfo(appContext.applicationContext, host, port, usePlaintext)
+    }
 
     /* LightWalletService implementation */
 
@@ -65,12 +70,22 @@ class LightWalletGrpcService private constructor(
     }
 
     override fun shutdown() {
-        channel.shutdownNow()
+        channel.shutdown()
     }
 
     override fun fetchTransaction(txId: ByteArray): Service.RawTransaction? {
         channel.resetConnectBackoff()
         return channel.createStub().getTransaction(Service.TxFilter.newBuilder().setHash(ByteString.copyFrom(txId)).build())
+    }
+
+    override fun reconnect() {
+        channel.shutdown()
+        channel = createDefaultChannel(
+            connectionInfo.appContext,
+            connectionInfo.host,
+            connectionInfo.port,
+            connectionInfo.usePlaintext
+        )
     }
 
 
@@ -98,6 +113,13 @@ class LightWalletGrpcService private constructor(
             }
         }
 
+    inner class ConnectionInfo(
+        val appContext: Context,
+        val host: String,
+        val port: Int,
+        val usePlaintext: Boolean
+    )
+
     companion object {
         /**
          * Convenience function for creating the default channel to be used for all connections. It
@@ -110,7 +132,7 @@ class LightWalletGrpcService private constructor(
             port: Int,
             usePlaintext: Boolean
         ): ManagedChannel {
-            twig("Creating connection to $host:$port")
+            twig("Creating channel that will connect to $host:$port")
             return AndroidChannelBuilder
                 .forAddress(host, port)
                 .context(appContext)

@@ -17,7 +17,9 @@ import cash.z.wallet.sdk.ext.ZcashSdk.SAPLING_ACTIVATION_HEIGHT
 import cash.z.wallet.sdk.ext.ZcashSdk.SCAN_BATCH_SIZE
 import cash.z.wallet.sdk.jni.RustBackend
 import cash.z.wallet.sdk.jni.RustBackendWelding
+import cash.z.wallet.sdk.service.LightWalletGrpcService
 import cash.z.wallet.sdk.transaction.TransactionRepository
+import io.grpc.StatusRuntimeException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.channels.ConflatedBroadcastChannel
@@ -66,6 +68,7 @@ class CompactBlockProcessor(
 
     private val consecutiveChainErrors = AtomicInteger(0)
     private val lowerBoundHeight: Int = max(SAPLING_ACTIVATION_HEIGHT, minimumHeight - MAX_REORG_SIZE)
+    private val reconnectError = -20
 
     private val _state: ConflatedBroadcastChannel<State> = ConflatedBroadcastChannel(Initialized)
     private val _progress = ConflatedBroadcastChannel(0)
@@ -108,10 +111,13 @@ class CompactBlockProcessor(
             retryWithBackoff(::onProcessorError, maxDelayMillis = MAX_BACKOFF_INTERVAL) {
                 val result = processNewBlocks()
                 // immediately process again after failures in order to download new blocks right away
-                if (result < 0) {
-                    consecutiveChainErrors.set(0)
-                    twig("Successfully processed new blocks. Sleeping for ${POLL_INTERVAL}ms")
-                    delay(POLL_INTERVAL)
+                if (result == reconnectError) {
+                        twig("Unable to process new blocks because we are disconnected! Attempting to reconnect in ${POLL_INTERVAL/4}ms")
+                        delay(POLL_INTERVAL/4)
+                } else if (result < 0) {
+                        consecutiveChainErrors.set(0)
+                        twig("Successfully processed new blocks. Sleeping for ${POLL_INTERVAL}ms")
+                        delay(POLL_INTERVAL)
                 } else {
                     if(consecutiveChainErrors.get() >= RETRIES) {
                         val errorMessage = "ERROR: unable to resolve reorg at height $result after ${consecutiveChainErrors.get()} correction attempts!"
@@ -156,8 +162,12 @@ class CompactBlockProcessor(
         verifySetup()
         twig("beginning to process new blocks (with lower bound: $lowerBoundHeight)...")
 
-        updateRanges()
-        if (currentInfo.lastDownloadRange.isEmpty() && currentInfo.lastScanRange.isEmpty()) {
+        if (!updateRanges()) {
+            twig("Disconnection detected! Attempting to reconnect!")
+            setState(Disconnected)
+            downloader.lightwalletService.reconnect()
+            reconnectError
+        } else if (currentInfo.lastDownloadRange.isEmpty() && currentInfo.lastScanRange.isEmpty()) {
             twig("Nothing to process: no new blocks to download or scan, right now.")
             setState(Scanned(currentInfo.lastScanRange))
             -1
@@ -172,26 +182,34 @@ class CompactBlockProcessor(
     /**
      * Gets the latest range info and then uses that initialInfo to update (and transmit)
      * the scan/download ranges that require processing.
+     *
+     * @return true when the update succeeds.
      */
-    private suspend fun updateRanges() = withContext(IO)  {
-        // TODO: rethink this and make it easier to understand what's happening. Can we reduce this
-        // so that we only work with actual changing info rather than periodic snapshots? Do we need
-        // to calculate these derived values every time?
-        ProcessorInfo(
-            networkBlockHeight = downloader.getLatestBlockHeight(),
-            lastScannedHeight = getLastScannedHeight(),
-            lastDownloadedHeight = max(getLastDownloadedHeight(), lowerBoundHeight - 1)
-        ).let { initialInfo ->
-            updateProgress(
-                networkBlockHeight = initialInfo.networkBlockHeight,
-                lastScannedHeight = initialInfo.lastScannedHeight,
-                lastDownloadedHeight = initialInfo.lastDownloadedHeight,
-                lastScanRange = (initialInfo.lastScannedHeight + 1)..initialInfo.networkBlockHeight,
-                lastDownloadRange = (max(
-                    initialInfo.lastDownloadedHeight,
-                    initialInfo.lastScannedHeight
-                ) + 1)..initialInfo.networkBlockHeight
-            )
+    private suspend fun updateRanges(): Boolean = withContext(IO)  {
+        try {
+            // TODO: rethink this and make it easier to understand what's happening. Can we reduce this
+            // so that we only work with actual changing info rather than periodic snapshots? Do we need
+            // to calculate these derived values every time?
+            ProcessorInfo(
+                networkBlockHeight = downloader.getLatestBlockHeight(),
+                lastScannedHeight = getLastScannedHeight(),
+                lastDownloadedHeight = max(getLastDownloadedHeight(), lowerBoundHeight - 1)
+            ).let { initialInfo ->
+                updateProgress(
+                    networkBlockHeight = initialInfo.networkBlockHeight,
+                    lastScannedHeight = initialInfo.lastScannedHeight,
+                    lastDownloadedHeight = initialInfo.lastDownloadedHeight,
+                    lastScanRange = (initialInfo.lastScannedHeight + 1)..initialInfo.networkBlockHeight,
+                    lastDownloadRange = (max(
+                        initialInfo.lastDownloadedHeight,
+                        initialInfo.lastScannedHeight
+                    ) + 1)..initialInfo.networkBlockHeight
+                )
+            }
+            true
+        } catch (t: StatusRuntimeException) {
+            twig("Warning: failed to update ranges due to $t caused by ${t.cause}")
+            false
         }
     }
 
