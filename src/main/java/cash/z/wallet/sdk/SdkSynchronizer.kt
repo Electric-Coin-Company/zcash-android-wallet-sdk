@@ -403,7 +403,7 @@ fun Synchronizer(
             initializer.import(seed, birthdayStore.getBirthday(), true, true)
         }
     }
-    return Synchronizer(appContext, initializer)
+    return Synchronizer(initializer)
 }
 
 /**
@@ -413,22 +413,17 @@ fun Synchronizer(
  * the wallet. From there, the initializer is passed to this function in order to start syncing from
  * where the wallet left off.
  *
- * @param appContext the application context. This is mostly used for finding databases and params
- * files within the apps secure storage area.
  * @param initializer the helper that is leveraged for creating all the components that the
  * Synchronizer requires. It is mainly responsible for initializing the databases associated with
  * this synchronizer.
  */
 @Suppress("FunctionName")
-fun Synchronizer(
-    appContext: Context,
-    initializer: Initializer
-): Synchronizer {
+fun Synchronizer(initializer: Initializer): Synchronizer {
     check(initializer.isInitialized) {
         "Error: RustBackend must be loaded before creating the Synchronizer. Verify that either" +
                 " the 'open', 'new' or 'import' function has been called on the Initializer."
     }
-    return Synchronizer(appContext, initializer.rustBackend, initializer.host, initializer.port)
+    return Synchronizer(initializer.context, initializer.rustBackend, initializer.host, initializer.port)
 }
 
 /**

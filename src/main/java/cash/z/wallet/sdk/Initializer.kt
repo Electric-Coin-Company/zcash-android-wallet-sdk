@@ -22,7 +22,8 @@ import kotlin.reflect.KProperty
  * used before on this device.
  *
  * @param appContext the application context, used to extract the storage paths for the databases
- * and param files. A reference to the context is not held beyond initialization.
+ * and param files. A reference to the context is held beyond initialization in order to simplify
+ * synchronizer construction so that an initializer is all that is ever required.
  * @param host the host that the synchronizer should use.
  * @param port the port that the synchronizer should use when connecting to the host.
  * @param alias the alias to use for this synchronizer. Think of it as a unique name that allows
@@ -36,6 +37,8 @@ class Initializer(
     val port: Int = ZcashSdk.DEFAULT_LIGHTWALLETD_PORT,
     private val alias: String = ZcashSdk.DEFAULT_DB_NAME_PREFIX
 ) {
+    val context = appContext.applicationContext
+
     init {
         validateAlias(alias)
     }
@@ -44,17 +47,17 @@ class Initializer(
      * The path this initializer will use when checking for and downloading sapling params. This
      * value is derived from the appContext when this class is constructed.
      */
-    private val pathParams: String = "${appContext.cacheDir.absolutePath}/params"
+    private val pathParams: String = "${context.cacheDir.absolutePath}/params"
 
     /**
      * The path used for storing cached compact blocks for processing.
      */
-    private val pathCacheDb: String = cacheDbPath(appContext, alias)
+    private val pathCacheDb: String = cacheDbPath(context, alias)
 
     /**
      * The path used for storing the data derived from the cached compact blocks.
      */
-    private val pathDataDb: String = dataDbPath(appContext, alias)
+    private val pathDataDb: String = dataDbPath(context, alias)
 
     /**
      * A wrapped version of [cash.z.wallet.sdk.jni.RustBackendWelding] that will be passed to the
