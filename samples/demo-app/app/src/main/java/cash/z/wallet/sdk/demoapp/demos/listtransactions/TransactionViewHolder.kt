@@ -14,6 +14,7 @@ import java.util.*
  */
 class TransactionViewHolder<T : ConfirmedTransaction>(itemView: View) : RecyclerView.ViewHolder(itemView) {
     private val amountText = itemView.findViewById<TextView>(R.id.text_transaction_amount)
+    private val infoText = itemView.findViewById<TextView>(R.id.text_transaction_info)
     private val timeText = itemView.findViewById<TextView>(R.id.text_transaction_timestamp)
     private val formatter = SimpleDateFormat("M/d h:mma", Locale.getDefault())
 
@@ -22,5 +23,10 @@ class TransactionViewHolder<T : ConfirmedTransaction>(itemView: View) : Recycler
         timeText.text =
             if (transaction == null || transaction?.blockTimeInSeconds == 0L) "Pending"
             else formatter.format(transaction.blockTimeInSeconds * 1000L)
+        infoText.text = getMemoString(transaction)
+    }
+
+    private fun getMemoString(transaction: T?): String {
+        return transaction?.memo?.takeUnless { it[0] < 0 }?.let { String(it) } ?: "no memo"
     }
 }

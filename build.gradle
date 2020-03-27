@@ -146,8 +146,8 @@ clean {
 }
 
 dokka {
-    outputFormat = 'gfm'
-    outputDirectory = "$buildDir/docs"
+    outputFormat = 'html'
+    outputDirectory = "$buildDir/docs/rtd"
 }
 
 protobuf {

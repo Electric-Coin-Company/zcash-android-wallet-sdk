@@ -86,7 +86,7 @@ suspend inline fun retryWithBackoff(noinline onErrorListener: ((Throwable) -> Bo
                 duration = maxDelayMillis - Random.nextLong(1000L) // include jitter but don't exceed max delay
                 sequence /= 2
             }
-            twig("Failed due to $t backing off and retrying in ${duration}ms...")
+            twig("Failed due to $t caused by ${t.cause} backing off and retrying in ${duration}ms...")
             delay(duration)
         }
     }

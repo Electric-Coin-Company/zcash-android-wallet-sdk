@@ -34,7 +34,20 @@ interface LightWalletService {
     fun submitTransaction(spendTransaction: ByteArray): Service.SendResponse
 
     /**
+     * Fetch the details of a known transaction.
+     *
+     * @return the full transaction info.
+     */
+    fun fetchTransaction(txId: ByteArray): Service.RawTransaction?
+
+    /**
      * Cleanup any connections when the service is shutting down and not going to be used again.
      */
     fun shutdown()
+
+    /**
+     * Reconnect to the same or a different server. This is useful when the connection is
+     * unrecoverable. That might be time to switch to a mirror or just reconnect.
+     */
+    fun reconnect()
 }

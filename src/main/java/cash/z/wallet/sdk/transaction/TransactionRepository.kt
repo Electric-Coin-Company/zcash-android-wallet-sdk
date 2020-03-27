@@ -33,6 +33,19 @@ interface TransactionRepository {
     suspend fun findEncodedTransactionById(txId: Long): EncodedTransaction?
 
     /**
+     * Find all the newly scanned transactions in the given range, including transactions (like
+     * change or those only identified by nullifiers) which should not appear in the UI. This method
+     * is intended for use after a scan, in order to collect all the transactions that were
+     * discovered and then enhance them with additional details. It returns a list to signal that
+     * the intention is not to add them to a recyclerview or otherwise show in the UI.
+     *
+     * @param blockHeightRange the range of blocks to check for transactions.
+     *
+     * @return a list of transactions that were mined in the given range, inclusive.
+     */
+    suspend fun findNewTransactions(blockHeightRange: IntRange): List<ConfirmedTransaction>
+
+    /**
      * Find the mined height that matches the given raw tx_id in bytes. This is useful for matching
      * a pending transaction with one that we've decrypted from the blockchain.
      *

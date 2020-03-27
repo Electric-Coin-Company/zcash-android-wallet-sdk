@@ -26,7 +26,7 @@ import cash.z.wallet.sdk.entity.*
         Account::class,
         Sent::class
     ],
-    version = 3,
+    version = 5,
     exportSchema = true
 )
 abstract class DerivedDataDb : RoomDatabase() {
@@ -163,15 +163,15 @@ interface TransactionDao {
                transactions.raw             AS raw,
                sent_notes.address           AS toAddress,
                CASE
-                 WHEN transactions.raw IS NOT NULL THEN sent_notes.value
+                 WHEN sent_notes.value IS NOT NULL THEN sent_notes.value
                  ELSE received_notes.value
                end                          AS value,
                CASE
-                 WHEN transactions.raw IS NOT NULL THEN sent_notes.memo
+                 WHEN sent_notes.memo IS NOT NULL THEN sent_notes.memo
                  ELSE received_notes.memo
                end                          AS memo,
                CASE
-                 WHEN transactions.raw IS NOT NULL THEN sent_notes.id_note
+                 WHEN sent_notes.id_note IS NOT NULL THEN sent_notes.id_note
                  ELSE received_notes.id_note
                end                          AS noteId,
                blocks.time                  AS blockTimeInSeconds
@@ -192,5 +192,49 @@ interface TransactionDao {
          LIMIT  :limit
     """)
     fun getAllTransactions(limit: Int = Int.MAX_VALUE): DataSource.Factory<Int, ConfirmedTransaction>
+
+    /**
+     * Query the transactions table over the given block range, this includes transactions that
+     * should not show up in most UIs. The intended purpose of this request is to find new
+     * transactions that need to be enhanced via follow-up requests to the server.
+     */
+    @Query("""
+        SELECT transactions.id_tx         AS id, 
+               transactions.block         AS minedHeight, 
+               transactions.tx_index      AS transactionIndex, 
+               transactions.txid          AS rawTransactionId, 
+               transactions.expiry_height AS expiryHeight, 
+               transactions.raw           AS raw, 
+               sent_notes.address         AS toAddress, 
+               CASE 
+                 WHEN sent_notes.value IS NOT NULL THEN sent_notes.value 
+                 ELSE received_notes.value 
+               end                        AS value, 
+               CASE 
+                 WHEN sent_notes.memo IS NOT NULL THEN sent_notes.memo 
+                 ELSE received_notes.memo 
+               end                        AS memo, 
+               CASE 
+                 WHEN sent_notes.id_note IS NOT NULL THEN sent_notes.id_note 
+                 ELSE received_notes.id_note 
+               end                        AS noteId, 
+               blocks.time                AS blockTimeInSeconds 
+        FROM   transactions 
+               LEFT JOIN received_notes 
+                      ON transactions.id_tx = received_notes.tx 
+               LEFT JOIN sent_notes 
+                      ON transactions.id_tx = sent_notes.tx 
+               LEFT JOIN blocks 
+                      ON transactions.block = blocks.height 
+        WHERE  :blockRangeStart <= minedheight 
+               AND minedheight <= :blockRangeEnd 
+        ORDER  BY ( minedheight IS NOT NULL ), 
+                  minedheight ASC, 
+                  blocktimeinseconds DESC, 
+                  id DESC 
+        LIMIT  :limit 
+    """)
+    suspend fun findAllTransactionsByRange(blockRangeStart: Int, blockRangeEnd: Int = blockRangeStart, limit: Int = Int.MAX_VALUE): List<ConfirmedTransaction>
+
 }
 

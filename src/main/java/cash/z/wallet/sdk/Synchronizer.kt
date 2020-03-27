@@ -4,6 +4,7 @@ import androidx.paging.PagedList
 import cash.z.wallet.sdk.block.CompactBlockProcessor
 import cash.z.wallet.sdk.block.CompactBlockProcessor.WalletBalance
 import cash.z.wallet.sdk.entity.*
+import cash.z.wallet.sdk.rpc.Service
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 
@@ -247,6 +248,12 @@ interface Synchronizer {
          * from the server.
          */
         SCANNING,
+
+        /**
+         * Indicates that this Synchronizer is actively enhancing newly scanned blocks with
+         * additional transaction details, fetched from the server.
+         */
+        ENHANCING,
 
         /**
          * Indicates that this Synchronizer is fully up to date and ready for all wallet functions.

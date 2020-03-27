@@ -3,6 +3,7 @@ package cash.z.wallet.sdk.block
 import androidx.annotation.VisibleForTesting
 import cash.z.wallet.sdk.annotation.OpenForTesting
 import cash.z.wallet.sdk.block.CompactBlockProcessor.State.*
+import cash.z.wallet.sdk.entity.ConfirmedTransaction
 import cash.z.wallet.sdk.exception.CompactBlockProcessorException
 import cash.z.wallet.sdk.exception.RustLayerException
 import cash.z.wallet.sdk.ext.*
@@ -16,11 +17,16 @@ import cash.z.wallet.sdk.ext.ZcashSdk.SAPLING_ACTIVATION_HEIGHT
 import cash.z.wallet.sdk.ext.ZcashSdk.SCAN_BATCH_SIZE
 import cash.z.wallet.sdk.jni.RustBackend
 import cash.z.wallet.sdk.jni.RustBackendWelding
+import cash.z.wallet.sdk.service.LightWalletGrpcService
 import cash.z.wallet.sdk.transaction.TransactionRepository
+import io.grpc.StatusRuntimeException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.channels.ConflatedBroadcastChannel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 import java.util.concurrent.atomic.AtomicInteger
@@ -62,6 +68,7 @@ class CompactBlockProcessor(
 
     private val consecutiveChainErrors = AtomicInteger(0)
     private val lowerBoundHeight: Int = max(SAPLING_ACTIVATION_HEIGHT, minimumHeight - MAX_REORG_SIZE)
+    private val reconnectError = -20
 
     private val _state: ConflatedBroadcastChannel<State> = ConflatedBroadcastChannel(Initialized)
     private val _progress = ConflatedBroadcastChannel(0)
@@ -104,10 +111,13 @@ class CompactBlockProcessor(
             retryWithBackoff(::onProcessorError, maxDelayMillis = MAX_BACKOFF_INTERVAL) {
                 val result = processNewBlocks()
                 // immediately process again after failures in order to download new blocks right away
-                if (result < 0) {
-                    consecutiveChainErrors.set(0)
-                    twig("Successfully processed new blocks. Sleeping for ${POLL_INTERVAL}ms")
-                    delay(POLL_INTERVAL)
+                if (result == reconnectError) {
+                        twig("Unable to process new blocks because we are disconnected! Attempting to reconnect in ${POLL_INTERVAL/4}ms")
+                        delay(POLL_INTERVAL/4)
+                } else if (result < 0) {
+                        consecutiveChainErrors.set(0)
+                        twig("Successfully processed new blocks. Sleeping for ${POLL_INTERVAL}ms")
+                        delay(POLL_INTERVAL)
                 } else {
                     if(consecutiveChainErrors.get() >= RETRIES) {
                         val errorMessage = "ERROR: unable to resolve reorg at height $result after ${consecutiveChainErrors.get()} correction attempts!"
@@ -152,37 +162,54 @@ class CompactBlockProcessor(
         verifySetup()
         twig("beginning to process new blocks (with lower bound: $lowerBoundHeight)...")
 
-        updateRanges()
-        if (currentInfo.lastDownloadRange.isEmpty() && currentInfo.lastScanRange.isEmpty()) {
+        if (!updateRanges()) {
+            twig("Disconnection detected! Attempting to reconnect!")
+            setState(Disconnected)
+            downloader.lightwalletService.reconnect()
+            reconnectError
+        } else if (currentInfo.lastDownloadRange.isEmpty() && currentInfo.lastScanRange.isEmpty()) {
             twig("Nothing to process: no new blocks to download or scan, right now.")
             setState(Scanned(currentInfo.lastScanRange))
             -1
         } else {
             downloadNewBlocks(currentInfo.lastDownloadRange)
-            validateAndScanNewBlocks(currentInfo.lastScanRange)
+            validateAndScanNewBlocks(currentInfo.lastScanRange).also {
+                enhanceTransactionDetails(currentInfo.lastScanRange)
+            }
         }
     }
 
     /**
      * Gets the latest range info and then uses that initialInfo to update (and transmit)
      * the scan/download ranges that require processing.
+     *
+     * @return true when the update succeeds.
      */
-    private suspend fun updateRanges() = withContext(IO)  {
-        ProcessorInfo(
-            networkBlockHeight = downloader.getLatestBlockHeight(),
-            lastScannedHeight = getLastScannedHeight(),
-            lastDownloadedHeight = max(getLastDownloadedHeight(), lowerBoundHeight - 1)
-        ).let { initialInfo ->
-            updateProgress(
-                networkBlockHeight = initialInfo.networkBlockHeight,
-                lastScannedHeight = initialInfo.lastScannedHeight,
-                lastDownloadedHeight = initialInfo.lastDownloadedHeight,
-                lastScanRange = (initialInfo.lastScannedHeight + 1)..initialInfo.networkBlockHeight,
-                lastDownloadRange = (max(
-                    initialInfo.lastDownloadedHeight,
-                    initialInfo.lastScannedHeight
-                ) + 1)..initialInfo.networkBlockHeight
-            )
+    private suspend fun updateRanges(): Boolean = withContext(IO)  {
+        try {
+            // TODO: rethink this and make it easier to understand what's happening. Can we reduce this
+            // so that we only work with actual changing info rather than periodic snapshots? Do we need
+            // to calculate these derived values every time?
+            ProcessorInfo(
+                networkBlockHeight = downloader.getLatestBlockHeight(),
+                lastScannedHeight = getLastScannedHeight(),
+                lastDownloadedHeight = max(getLastDownloadedHeight(), lowerBoundHeight - 1)
+            ).let { initialInfo ->
+                updateProgress(
+                    networkBlockHeight = initialInfo.networkBlockHeight,
+                    lastScannedHeight = initialInfo.lastScannedHeight,
+                    lastDownloadedHeight = initialInfo.lastDownloadedHeight,
+                    lastScanRange = (initialInfo.lastScannedHeight + 1)..initialInfo.networkBlockHeight,
+                    lastDownloadRange = (max(
+                        initialInfo.lastDownloadedHeight,
+                        initialInfo.lastScannedHeight
+                    ) + 1)..initialInfo.networkBlockHeight
+                )
+            }
+            true
+        } catch (t: StatusRuntimeException) {
+            twig("Warning: failed to update ranges due to $t caused by ${t.cause}")
+            false
         }
     }
 
@@ -212,6 +239,37 @@ class CompactBlockProcessor(
         } else {
             error
         }
+    }
+
+    private suspend fun enhanceTransactionDetails(lastScanRange: IntRange): Int {
+        Twig.sprout("enhancing")
+        twig("Enhancing transaction details for blocks $lastScanRange")
+        setState(Enhancing)
+        return try {
+            val newTxs = repository.findNewTransactions(lastScanRange)
+            if (newTxs == null) twig("no new transactions found in $lastScanRange")
+            newTxs?.onEach { newTransaction ->
+                if (newTransaction == null) twig("somehow, new transaction was null!!!")
+                else enhance(newTransaction)
+            }
+            twig("Done enhancing transaction details")
+            1
+        } catch (t: Throwable) {
+            twig("Failed to enhance due to $t")
+            t.printStackTrace()
+            -1
+        } finally {
+            Twig.clip("enhancing")
+        }
+    }
+
+    private suspend fun enhance(transaction: ConfirmedTransaction) = withContext(Dispatchers.IO) {
+        twig("START: enhancing transaction (id:${transaction.id}  block:${transaction.minedHeight})")
+        downloader.fetchTransaction(transaction.rawTransactionId)?.let { tx ->
+            twig("decrypting and storing transaction (id:${transaction.id}  block:${transaction.minedHeight})")
+            rustBackend.decryptAndStoreTransaction(tx.data.toByteArray())
+        } ?: twig("no transaction found. Nothing to enhance. This probably shouldn't happen.")
+        twig("DONE: enhancing transaction (id:${transaction.id}  block:${transaction.minedHeight})")
     }
 
     /**
@@ -466,6 +524,15 @@ class CompactBlockProcessor(
          * [State] for when we are done decrypting blocks, for now.
          */
         class Scanned(val scannedRange:IntRange) : Connected, Syncing, State()
+
+        /**
+         * [State] for when transaction details are being retrieved. This typically means the wallet
+         * has downloaded and scanned blocks and is now processing any transactions that were
+         * discovered. Once a transaction is discovered, followup network requests are needed in
+         * order to retrieve memos or outbound transaction information, like the recipient address.
+         * The existing information we have about transactions is enhanced by the new information.
+         */
+        object Enhancing : Connected, Syncing, State()
 
         /**
          * [State] for when we have no connection to lightwalletd.
