@@ -5,7 +5,7 @@ import java.lang.RuntimeException
 
 /**
  * Marker for all custom exceptions from the SDK. Making it an interface would result in more typing
- * so its a supertype, instead.
+ * so it's a supertype, instead.
  */
 open class SdkException(message: String, cause: Throwable?) : RuntimeException(message, cause)
 
@@ -28,7 +28,7 @@ sealed class RepositoryException(message: String, cause: Throwable? = null) : Sd
 }
 
 /**
- * High-level exceptions thrown by the synchronizer, which do not fall within the umbrealla of a
+ * High-level exceptions thrown by the synchronizer, which do not fall within the umbrella of a
  * child component.
  */
 sealed class SynchronizerException(message: String, cause: Throwable? = null) : SdkException(message, cause) {

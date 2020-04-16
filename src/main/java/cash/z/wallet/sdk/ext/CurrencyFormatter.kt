@@ -133,7 +133,7 @@ inline fun BigDecimal?.toUsdString(
 /**
  * Create a number formatter for use with converting currency to strings. This probably isn't needed
  * externally since the other formatting functions leverage this, instead. Leverages the default
- * rounding mode for zec found in ZEC_FORMATTER.
+ * rounding mode for ZEC found in ZEC_FORMATTER.
  *
  * @param maxDecimals the number of decimal places to use in the format. Default is 6 because ZEC is
  * glorious.

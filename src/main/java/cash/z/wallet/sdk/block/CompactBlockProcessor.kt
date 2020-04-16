@@ -325,7 +325,7 @@ class CompactBlockProcessor(
      *
      *  @param range the range of blocks to validate.
      *
-     *  @return -1 when there is not problem. Otherwise, return the lowest height where an error was
+     *  @return -1 when there is no problem. Otherwise, return the lowest height where an error was
      *  found. In other words, validation starts at the back of the chain and works toward the tip.
      */
     private fun validateNewBlocks(range: IntRange?): Int {
@@ -346,7 +346,7 @@ class CompactBlockProcessor(
      *
      *  @param range the range of blocks to scan.
      *
-     *  @return -1 when there is not problem. Otherwise, return the lowest height where an error was
+     *  @return -1 when there is no problem. Otherwise, return the lowest height where an error was
      *  found. In other words, scanning starts at the back of the chain and works toward the tip.
      */
     private suspend fun scanNewBlocks(range: IntRange?): Boolean = withContext(IO) {
