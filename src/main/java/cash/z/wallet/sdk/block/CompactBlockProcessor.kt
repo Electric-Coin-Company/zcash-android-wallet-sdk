@@ -4,7 +4,7 @@ import androidx.annotation.VisibleForTesting
 import cash.z.wallet.sdk.BuildConfig
 import cash.z.wallet.sdk.annotation.OpenForTesting
 import cash.z.wallet.sdk.block.CompactBlockProcessor.State.*
-import cash.z.wallet.sdk.entity.ConfirmedTransaction
+import cash.z.wallet.sdk.db.entity.ConfirmedTransaction
 import cash.z.wallet.sdk.exception.CompactBlockProcessorException
 import cash.z.wallet.sdk.exception.CompactBlockProcessorException.EnhanceTransactionError.EnhanceTxDecryptError
 import cash.z.wallet.sdk.exception.CompactBlockProcessorException.EnhanceTransactionError.EnhanceTxDownloadError

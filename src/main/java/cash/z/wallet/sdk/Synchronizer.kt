@@ -3,8 +3,8 @@ package cash.z.wallet.sdk
 import androidx.paging.PagedList
 import cash.z.wallet.sdk.block.CompactBlockProcessor
 import cash.z.wallet.sdk.block.CompactBlockProcessor.WalletBalance
-import cash.z.wallet.sdk.entity.ConfirmedTransaction
-import cash.z.wallet.sdk.entity.PendingTransaction
+import cash.z.wallet.sdk.db.entity.ConfirmedTransaction
+import cash.z.wallet.sdk.db.entity.PendingTransaction
 import cash.z.wallet.sdk.ext.ConsensusBranchId
 import cash.z.wallet.sdk.rpc.Service
 import kotlinx.coroutines.CoroutineScope

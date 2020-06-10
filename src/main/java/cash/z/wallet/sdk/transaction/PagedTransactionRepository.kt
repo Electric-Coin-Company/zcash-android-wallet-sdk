@@ -4,12 +4,10 @@ import android.content.Context
 import androidx.paging.PagedList
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import androidx.room.migration.Migration
-import androidx.sqlite.db.SupportSQLiteDatabase
 import cash.z.wallet.sdk.db.BlockDao
 import cash.z.wallet.sdk.db.DerivedDataDb
 import cash.z.wallet.sdk.db.TransactionDao
-import cash.z.wallet.sdk.entity.ConfirmedTransaction
+import cash.z.wallet.sdk.db.entity.ConfirmedTransaction
 import cash.z.wallet.sdk.ext.ZcashSdk
 import cash.z.wallet.sdk.ext.android.toFlowPagedList
 import cash.z.wallet.sdk.ext.android.toRefreshable

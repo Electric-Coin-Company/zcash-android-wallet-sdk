@@ -1,6 +1,6 @@
 package cash.z.wallet.sdk.transaction
 
-import cash.z.wallet.sdk.entity.PendingTransaction
+import cash.z.wallet.sdk.db.entity.PendingTransaction
 import kotlinx.coroutines.flow.Flow
 
 /**

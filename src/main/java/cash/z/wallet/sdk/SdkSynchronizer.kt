@@ -11,7 +11,7 @@ import cash.z.wallet.sdk.block.CompactBlockProcessor
 import cash.z.wallet.sdk.block.CompactBlockProcessor.State.*
 import cash.z.wallet.sdk.block.CompactBlockProcessor.WalletBalance
 import cash.z.wallet.sdk.block.CompactBlockStore
-import cash.z.wallet.sdk.entity.*
+import cash.z.wallet.sdk.db.entity.*
 import cash.z.wallet.sdk.exception.SynchronizerException
 import cash.z.wallet.sdk.ext.*
 import cash.z.wallet.sdk.rpc.Service

@@ -1,7 +1,7 @@
 package cash.z.wallet.sdk.transaction
 
 import androidx.paging.PagedList
-import cash.z.wallet.sdk.entity.*
+import cash.z.wallet.sdk.db.entity.*
 import kotlinx.coroutines.flow.Flow
 
 /**

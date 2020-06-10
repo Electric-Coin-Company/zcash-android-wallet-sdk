@@ -5,7 +5,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import cash.z.wallet.sdk.db.CompactBlockDao
 import cash.z.wallet.sdk.db.CompactBlockDb
-import cash.z.wallet.sdk.entity.CompactBlockEntity
+import cash.z.wallet.sdk.db.entity.CompactBlockEntity
 import cash.z.wallet.sdk.ext.ZcashSdk.SAPLING_ACTIVATION_HEIGHT
 import cash.z.wallet.sdk.rpc.CompactFormats
 import kotlinx.coroutines.Dispatchers.IO

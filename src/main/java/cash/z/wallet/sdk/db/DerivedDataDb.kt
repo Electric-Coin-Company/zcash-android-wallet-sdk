@@ -7,7 +7,7 @@ import androidx.room.Query
 import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
-import cash.z.wallet.sdk.entity.*
+import cash.z.wallet.sdk.db.entity.*
 
 //
 // Database

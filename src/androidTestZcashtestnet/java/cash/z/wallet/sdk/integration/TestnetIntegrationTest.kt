@@ -4,7 +4,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import cash.z.wallet.sdk.Initializer
 import cash.z.wallet.sdk.Synchronizer
 import cash.z.wallet.sdk.Synchronizer.Status.SYNCED
-import cash.z.wallet.sdk.entity.isSubmitSuccess
+import cash.z.wallet.sdk.db.entity.isSubmitSuccess
 import cash.z.wallet.sdk.ext.*
 import cash.z.wallet.sdk.jni.RustBackend
 import cash.z.wallet.sdk.service.LightWalletGrpcService

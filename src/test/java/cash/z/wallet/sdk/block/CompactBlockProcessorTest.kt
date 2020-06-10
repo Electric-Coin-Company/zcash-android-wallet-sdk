@@ -1,6 +1,6 @@
 package cash.z.wallet.sdk.block
 
-import cash.z.wallet.sdk.entity.CompactBlockEntity
+import cash.z.wallet.sdk.db.entity.CompactBlockEntity
 import cash.z.wallet.sdk.ext.TroubleshootingTwig
 import cash.z.wallet.sdk.ext.Twig
 import cash.z.wallet.sdk.ext.ZcashSdk.SAPLING_ACTIVATION_HEIGHT

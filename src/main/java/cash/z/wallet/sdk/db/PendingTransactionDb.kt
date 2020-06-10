@@ -1,7 +1,7 @@
 package cash.z.wallet.sdk.db
 
 import androidx.room.*
-import cash.z.wallet.sdk.entity.PendingTransactionEntity
+import cash.z.wallet.sdk.db.entity.PendingTransactionEntity
 import kotlinx.coroutines.flow.Flow
 
 

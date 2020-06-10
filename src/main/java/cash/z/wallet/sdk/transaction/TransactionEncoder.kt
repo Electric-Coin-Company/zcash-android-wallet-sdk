@@ -1,6 +1,6 @@
 package cash.z.wallet.sdk.transaction
 
-import cash.z.wallet.sdk.entity.EncodedTransaction
+import cash.z.wallet.sdk.db.entity.EncodedTransaction
 
 interface TransactionEncoder {
     /**
