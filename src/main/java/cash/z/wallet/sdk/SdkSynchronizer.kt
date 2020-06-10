@@ -1,9 +1,9 @@
 package cash.z.wallet.sdk
 
-import cash.z.wallet.sdk.Synchronizer.AddressType
-import cash.z.wallet.sdk.Synchronizer.AddressType.Shielded
-import cash.z.wallet.sdk.Synchronizer.AddressType.Transparent
-import cash.z.wallet.sdk.Synchronizer.ConsensusMatchType
+import cash.z.wallet.sdk.validate.AddressType
+import cash.z.wallet.sdk.validate.AddressType.Shielded
+import cash.z.wallet.sdk.validate.AddressType.Transparent
+import cash.z.wallet.sdk.validate.ConsensusMatchType
 import cash.z.wallet.sdk.Synchronizer.Status.*
 import cash.z.wallet.sdk.block.CompactBlockDbStore
 import cash.z.wallet.sdk.block.CompactBlockDownloader
