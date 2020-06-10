@@ -111,13 +111,15 @@ class CompactBlockProcessor(
             retryWithBackoff(::onProcessorError, maxDelayMillis = MAX_BACKOFF_INTERVAL) {
                 val result = processNewBlocks()
                 // immediately process again after failures in order to download new blocks right away
-                if (result == reconnectError) {
-                        twig("Unable to process new blocks because we are disconnected! Attempting to reconnect in ${POLL_INTERVAL/4}ms")
-                        delay(POLL_INTERVAL/4)
-                } else if (result < 0) {
-                        consecutiveChainErrors.set(0)
-                        twig("Successfully processed new blocks. Sleeping for ${POLL_INTERVAL}ms")
-                        delay(POLL_INTERVAL)
+                if (result == ERROR_CODE_RECONNECT) {
+                    val napTime = calculatePollInterval(true)
+                    twig("Unable to process new blocks because we are disconnected! Attempting to reconnect in ${napTime}ms")
+                    delay(napTime)
+                } else if (result == ERROR_CODE_NONE || result == ERROR_CODE_FAILED_ENHANCE) {
+                    consecutiveChainErrors.set(0)
+                    val napTime = calculatePollInterval()
+                    twig("Successfully processed new blocks${if (result == ERROR_CODE_FAILED_ENHANCE) " (but there were enhancement errors! We ignore those, for now. Memos in this block range are probably missing! This will be improved in a future release.)" else ""}. Sleeping for ${napTime}ms")
+                    delay(napTime)
                 } else {
                     if(consecutiveChainErrors.get() >= RETRIES) {
                         val errorMessage = "ERROR: unable to resolve reorg at height $result after ${consecutiveChainErrors.get()} correction attempts!"
@@ -429,6 +431,23 @@ class CompactBlockProcessor(
             twig("offset = min($MAX_REORG_SIZE, $REWIND_DISTANCE * (${consecutiveChainErrors.get() + 1})) = $offset")
             twig("lowerBound = max($errorHeight - $offset, $lowerBoundHeight) = $it")
         }
+    }
+
+    /**
+    ￼* Poll on time boundaries. Per Issue #95, we want to avoid exposing computation time to a
+     * network observer. Instead, we poll at regular time intervals that are large enough for all
+     * computation to complete so no intervals are skipped. See 95 for more details.
+     *
+     * @param fastIntervalDesired currently not used but sometimes we want to poll quickly, such as
+     * when we unexpectedly lose server connection or are waiting for an event to happen on the
+     * chain. We can pass this desire along now and later figure out how to handle it, privately.
+    ￼*/
+    private fun calculatePollInterval(fastIntervalDesired: Boolean = false): Long {
+        val interval = POLL_INTERVAL
+        val now = System.currentTimeMillis()
+        val deltaToNextInteral = interval - (now + interval).rem(interval)
+        twig("sleeping for ${deltaToNextInteral}ms from $now in order to wake at ${now + deltaToNextInteral}")
+        return deltaToNextInteral
     }
 
     /**
