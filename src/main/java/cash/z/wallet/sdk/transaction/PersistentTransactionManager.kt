@@ -9,6 +9,8 @@ import cash.z.wallet.sdk.entity.PendingTransaction
 import cash.z.wallet.sdk.entity.PendingTransactionEntity
 import cash.z.wallet.sdk.entity.isCancelled
 import cash.z.wallet.sdk.entity.isSubmitted
+import cash.z.wallet.sdk.exception.LightwalletException
+import cash.z.wallet.sdk.ext.ConsensusBranchId
 import cash.z.wallet.sdk.ext.twig
 import cash.z.wallet.sdk.service.LightWalletService
 import kotlinx.coroutines.Dispatchers
@@ -31,7 +33,7 @@ import kotlin.math.max
  */
 class PersistentTransactionManager(
     db: PendingTransactionDb,
-    private val encoder: TransactionEncoder,
+    internal val encoder: TransactionEncoder,
     private val service: LightWalletService
 ) : OutboundTransactionManager {
 

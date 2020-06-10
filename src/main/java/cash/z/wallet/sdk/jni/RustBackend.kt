@@ -104,6 +104,7 @@ class RustBackend : RustBackendWelding {
     override fun decryptAndStoreTransaction(tx: ByteArray) = decryptAndStoreTransaction(pathDataDb, tx)
 
     override fun createToAddress(
+        consensusBranchId: Long,
         account: Int,
         extsk: String,
         to: String,
@@ -111,6 +112,7 @@ class RustBackend : RustBackendWelding {
         memo: ByteArray?
     ): Long = createToAddress(
         pathDataDb,
+        consensusBranchId,
         account,
         extsk,
         to,
@@ -133,11 +135,11 @@ class RustBackend : RustBackendWelding {
 
     override fun deriveAddress(viewingKey: String) = deriveAddressFromViewingKey(viewingKey)
 
-    override fun isValidShieldedAddr(addr: String) =
-        isValidShieldedAddress(addr)
+    override fun isValidShieldedAddr(addr: String) = isValidShieldedAddress(addr)
 
-    override fun isValidTransparentAddr(addr: String) =
-        isValidTransparentAddress(addr)
+    override fun isValidTransparentAddr(addr: String) = isValidTransparentAddress(addr)
+
+    override fun getBranchIdForHeight(height: Int): Long = branchIdForHeight(height)
 
     /**
      * Exposes all of the librustzcash functions along with helpers for loading the static library.
@@ -221,6 +223,7 @@ class RustBackend : RustBackendWelding {
 
         @JvmStatic private external fun createToAddress(
             dbDataPath: String,
+            consensusBranchId: Long,
             account: Int,
             extsk: String,
             to: String,
@@ -241,5 +244,7 @@ class RustBackend : RustBackendWelding {
         @JvmStatic private external fun deriveAddressFromSeed(seed: ByteArray, accountIndex: Int): String
 
         @JvmStatic private external fun deriveAddressFromViewingKey(key: String): String
+
+        @JvmStatic private external fun branchIdForHeight(height: Int): Long
     }
 }

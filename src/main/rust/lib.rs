@@ -11,6 +11,7 @@ use jni::{
     JNIEnv,
 };
 use log::Level;
+use std::convert::TryFrom;
 use std::panic;
 use std::path::Path;
 use std::ptr;
@@ -44,6 +45,12 @@ use zcash_primitives::{
 use zcash_proofs::prover::LocalTxProver;
 
 use crate::utils::exception::unwrap_exc_or;
+
+#[cfg(feature = "mainnet")]
+use zcash_primitives::consensus::MainNetwork as Network;
+
+#[cfg(not(feature = "mainnet"))]
+use zcash_primitives::consensus::TestNetwork as Network;
 
 #[cfg(feature = "mainnet")]
 use zcash_client_backend::constants::mainnet::{
@@ -599,6 +606,7 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_createToAddress(
     env: JNIEnv<'_>,
     _: JClass<'_>,
     db_data: JString<'_>,
+    consensus_branch_id: jlong,
     account: jint,
     extsk: JString<'_>,
     to: JString<'_>,
@@ -646,9 +654,17 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_createToAddress(
 
         let prover = LocalTxProver::new(Path::new(&spend_params), Path::new(&output_params));
 
+        let branch_id = match BranchId::try_from(consensus_branch_id as u32) {
+            Ok(branch) => branch,
+            Err(e) => {
+                return Err(format_err!("Invalid consensus branch id: {}", e));
+            }
+        };
+
+        // let branch = if
         create_to_address(
             &db_data,
-            BranchId::Blossom,
+            branch_id,
             prover,
             (account, &extsk),
             &to,
@@ -656,6 +672,21 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_createToAddress(
             memo,
         )
         .map_err(|e| format_err!("Error while creating transaction: {}", e))
+    });
+    unwrap_exc_or(&env, res, -1)
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_branchIdForHeight(
+    env: JNIEnv<'_>,
+    _: JClass<'_>,
+    height: jint,
+) -> jint {
+    let res = panic::catch_unwind(|| {
+        let branch: BranchId = BranchId::for_height::<Network>(height as u32);
+        let branch_id:u32 = u32::from(branch);
+        debug!("For height {} found consensus branch {:?}", height, branch);
+        Ok(branch_id as i32)
     });
     unwrap_exc_or(&env, res, -1)
 }

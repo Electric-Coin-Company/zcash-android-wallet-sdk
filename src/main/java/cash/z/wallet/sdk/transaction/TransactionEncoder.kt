@@ -43,4 +43,9 @@ interface TransactionEncoder {
      * @return true when the given address is a valid t-addr
      */
     suspend fun isValidTransparentAddress(address: String): Boolean
+
+    /**
+     * Return the consensus branch that the encoder is using when making transactions.
+     */
+    suspend fun getConsensusBranchId(): Long
 }

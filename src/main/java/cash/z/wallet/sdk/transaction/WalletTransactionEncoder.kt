@@ -75,6 +75,13 @@ class WalletTransactionEncoder(
         rustBackend.isValidTransparentAddr(address)
     }
 
+    override suspend fun getConsensusBranchId(): Long {
+        val height = repository.lastScannedHeight()
+        if (height < ZcashSdk.SAPLING_ACTIVATION_HEIGHT)
+            throw TransactionEncoderException.IncompleteScanException(height)
+        return rustBackend.getBranchIdForHeight(height)
+    }
+
     /**
      * Does the proofs and processing required to create a transaction to spend funds and inserts
      * the result in the database. On average, this call takes over 10 seconds.
@@ -98,9 +105,11 @@ class WalletTransactionEncoder(
         twigTask("creating transaction to spend $zatoshi zatoshi to" +
                 " ${toAddress.masked()} with memo $memo") {
             try {
+                val branchId = getConsensusBranchId()
                 ensureParams((rustBackend as RustBackend).pathParamsDir)
-                twig("params exist! attempting to send...")
+                twig("params exist! attempting to send with consensus branchId $branchId...")
                 rustBackend.createToAddress(
+                    branchId,
                     fromAccountIndex,
                     spendingKey,
                     toAddress,
