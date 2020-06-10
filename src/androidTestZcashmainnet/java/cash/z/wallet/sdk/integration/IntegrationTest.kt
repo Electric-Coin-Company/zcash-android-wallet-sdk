@@ -6,6 +6,7 @@ import cash.z.wallet.sdk.Synchronizer
 import cash.z.wallet.sdk.Synchronizer.Status.SYNCED
 import cash.z.wallet.sdk.entity.isSubmitSuccess
 import cash.z.wallet.sdk.ext.*
+import cash.z.wallet.sdk.import
 import cash.z.wallet.sdk.jni.RustBackend
 import cash.z.wallet.sdk.service.LightWalletGrpcService
 import kotlinx.coroutines.delay
@@ -80,7 +81,7 @@ class IntegrationTest {
             ZcashSdk.MINERS_FEE_ZATOSHI,
             toAddress,
             "first mainnet tx from the SDK"
-        ).filter { it?.isSubmitSuccess() == true }.onFirst {
+        ).filter { it.isSubmitSuccess() }.onFirst {
             log("DONE SENDING!!!")
         }
         log("returning true from sendFunds")
@@ -98,16 +99,15 @@ class IntegrationTest {
         const val host = "lightd-main.zecwallet.co"
         const val port = 443
         val seed = "cash.z.wallet.sdk.integration.IntegrationTest.seed.value.64bytes".toByteArray()
+        val birthdayHeight = 843_000
         val address = "zs1m30y59wxut4zk9w24d6ujrdnfnl42hpy0ugvhgyhr8s0guszutqhdj05c7j472dndjstulph74m"
         val toAddress = "zs1vp7kvlqr4n9gpehztr76lcn6skkss9p8keqs3nv8avkdtjrcctrvmk9a7u494kluv756jeee5k0"
 
         private val context = InstrumentationRegistry.getInstrumentation().context
-        private val synchronizer: Synchronizer = Synchronizer(
-            context,
-            host,
-            443,
-            seed
-        )
+        private val initializer = Initializer(context, host, port).apply {
+            import(seed, birthdayHeight, overwrite = true)
+        }
+        private val synchronizer: Synchronizer = Synchronizer(initializer)
 
         @JvmStatic
         @BeforeClass

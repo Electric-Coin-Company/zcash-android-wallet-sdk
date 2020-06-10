@@ -2,6 +2,7 @@ package cash.z.wallet.sdk
 
 import android.content.Context
 import android.content.SharedPreferences
+import cash.z.wallet.sdk.Initializer.DefaultBirthdayStore.Companion.ImportedWalletBirthdayStore
 import cash.z.wallet.sdk.exception.BirthdayException
 import cash.z.wallet.sdk.exception.InitializerException
 import cash.z.wallet.sdk.ext.ZcashSdk
@@ -60,11 +61,23 @@ class Initializer(
     private val pathDataDb: String = dataDbPath(context, alias)
 
     /**
+     * Backing field for rustBackend, used for giving better error messages whenever the initializer
+     * is mistakenly used prior to being properly loaded.
+     */
+    private var _rustBackend: RustBackend? = null
+
+    /**
      * A wrapped version of [cash.z.wallet.sdk.jni.RustBackendWelding] that will be passed to the
      * SDK when it is constructed. It provides access to all Librustzcash features and is configured
      * based on this initializer.
      */
-    lateinit var rustBackend: RustBackend
+    val rustBackend: RustBackend get() {
+        check(_rustBackend != null) {
+            "Error: RustBackend must be loaded before it is accessed. Verify that either" +
+                    " the 'open', 'new' or 'import' function has been called on the Initializer."
+        }
+        return _rustBackend!!
+    }
 
     /**
      * The birthday that was ultimately used for initializing the accounts.
@@ -77,7 +90,7 @@ class Initializer(
      * setup everything necessary for the Synchronizer to function, which mainly boils down to
      * loading the rust backend.
      */
-    val isInitialized: Boolean get() = ::rustBackend.isInitialized
+    val isInitialized: Boolean get() = _rustBackend != null
 
     /**
      * Initialize a new wallet with the given seed and birthday. It creates the required database
@@ -140,8 +153,7 @@ class Initializer(
        clearCacheDb: Boolean = false,
        clearDataDb: Boolean = false
     ): Array<String> {
-        return initializeAccounts(seed, previousWalletBirthday,
-            clearCacheDb = clearCacheDb, clearDataDb = clearDataDb)
+        return initializeAccounts(seed, previousWalletBirthday, clearCacheDb = clearCacheDb, clearDataDb = clearDataDb)
     }
 
     /**
@@ -254,7 +266,7 @@ class Initializer(
     private fun requireRustBackend(): RustBackend {
         if (!isInitialized) {
             twig("Initializing cache: $pathCacheDb  data: $pathDataDb  params: $pathParams")
-            rustBackend = RustBackend().init(pathCacheDb, pathDataDb, pathParams)
+            _rustBackend = RustBackend().init(pathCacheDb, pathDataDb, pathParams)
         }
         return rustBackend
     }
@@ -679,6 +691,29 @@ class Initializer(
                 }
             }
         }
+    }
+}
+
+/**
+ * Convenience extension for importing from an integer height, rather than a wallet birthday object.
+ *
+ * @param alias the prefix to use for the cache of blocks downloaded and the data decrypted from
+ * those blocks. Using different names helps for use cases that involve multiple keys.
+ * @param overwrite when true, this will delete all existing data. Use with caution because this can
+ * result in a loss of funds, when a user has not backed up their seed. This parameter is most
+ * useful during testing or proof of concept work, where you want to run the same code each time so
+ * data must be cleared between runs.
+ *
+ * @return the spending keys, derived from the seed, for convenience.
+ */
+fun Initializer.import(
+    seed: ByteArray,
+    birthdayHeight: Int,
+    alias: String = ZcashSdk.DEFAULT_DB_NAME_PREFIX,
+    overwrite: Boolean = false
+): Array<String> {
+    return ImportedWalletBirthdayStore(context, birthdayHeight, alias).getBirthday().let {
+        import(seed, it, clearCacheDb = overwrite, clearDataDb = overwrite)
     }
 }
 

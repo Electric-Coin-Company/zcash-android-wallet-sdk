@@ -32,15 +32,15 @@ import kotlin.coroutines.CoroutineContext
  * pieces can be tied together. Its goal is to allow a developer to focus on their app rather than
  * the nuances of how Zcash works.
  *
- * @property ledger exposes flows of wallet transaction information.
- * @property manager manages and tracks outbound transactions.
+ * @property storage exposes flows of wallet transaction information.
+ * @property txManager manages and tracks outbound transactions.
  * @property processor saves the downloaded compact blocks to the cache and then scans those blocks for
  * data related to this wallet.
  */
 @ExperimentalCoroutinesApi
 class SdkSynchronizer internal constructor(
-    private val ledger: TransactionRepository,
-    private val manager: OutboundTransactionManager,
+    private val storage: TransactionRepository,
+    private val txManager: OutboundTransactionManager,
     val processor: CompactBlockProcessor
 ) : Synchronizer {
     private val _balances = ConflatedBroadcastChannel(WalletBalance())
@@ -61,10 +61,10 @@ class SdkSynchronizer internal constructor(
     //
 
     override val balances: Flow<WalletBalance> = _balances.asFlow()
-    override val clearedTransactions = ledger.allTransactions
-    override val pendingTransactions = manager.getAll()
-    override val sentTransactions = ledger.sentTransactions
-    override val receivedTransactions = ledger.receivedTransactions
+    override val clearedTransactions = storage.allTransactions
+    override val pendingTransactions = txManager.getAll()
+    override val sentTransactions = storage.sentTransactions
+    override val receivedTransactions = storage.receivedTransactions
 
 
     //
@@ -180,7 +180,7 @@ class SdkSynchronizer internal constructor(
     //
 
     private fun refreshTransactions() {
-        ledger.invalidate()
+        storage.invalidate()
     }
 
     /**
@@ -297,16 +297,16 @@ class SdkSynchronizer internal constructor(
         // TODO: this would be the place to clear out any stale pending transactions. Remove filter
         //  logic and then delete any pending transaction with sufficient confirmations (all in one
         //  db transaction).
-        manager.getAll().first().filter { it.isSubmitSuccess() && !it.isMined() }
+        txManager.getAll().first().filter { it.isSubmitSuccess() && !it.isMined() }
             .forEach { pendingTx ->
                 twig("checking for updates on pendingTx id: ${pendingTx.id}")
                 pendingTx.rawTransactionId?.let { rawId ->
-                    ledger.findMinedHeight(rawId)?.let { minedHeight ->
+                    storage.findMinedHeight(rawId)?.let { minedHeight ->
                         twig(
                             "found matching transaction for pending transaction with id" +
                                     " ${pendingTx.id} mined at height ${minedHeight}!"
                         )
-                        manager.applyMinedHeight(pendingTx, minedHeight)
+                        txManager.applyMinedHeight(pendingTx, minedHeight)
                     }
                 }
             }
@@ -317,7 +317,7 @@ class SdkSynchronizer internal constructor(
     // Send / Receive
     //
 
-    override suspend fun cancelSpend(transaction: PendingTransaction) = manager.cancel(transaction)
+    override suspend fun cancelSpend(transaction: PendingTransaction) = txManager.cancel(transaction)
 
     override suspend fun getAddress(accountId: Int): String = processor.getAddress(accountId)
 
@@ -330,25 +330,25 @@ class SdkSynchronizer internal constructor(
     ): Flow<PendingTransaction> = flow {
         twig("Initializing pending transaction")
         // Emit the placeholder transaction, then switch to monitoring the database
-        manager.initSpend(zatoshi, toAddress, memo, fromAccountIndex).let { placeHolderTx ->
+        txManager.initSpend(zatoshi, toAddress, memo, fromAccountIndex).let { placeHolderTx ->
             emit(placeHolderTx)
-            manager.encode(spendingKey, placeHolderTx).let { encodedTx ->
+            txManager.encode(spendingKey, placeHolderTx).let { encodedTx ->
                 if (!encodedTx.isFailedEncoding() && !encodedTx.isCancelled()) {
-                    manager.submit(encodedTx)
+                    txManager.submit(encodedTx)
                 }
             }
         }
     }.flatMapLatest {
         twig("Monitoring pending transaction (id: ${it.id}) for updates...")
-        manager.monitorById(it.id)
+        txManager.monitorById(it.id)
     }.distinctUntilChanged()
 
-    override suspend fun isValidShieldedAddr(address: String) = manager.isValidShieldedAddress(address)
+    override suspend fun isValidShieldedAddr(address: String) = txManager.isValidShieldedAddress(address)
 
     override suspend fun isValidTransparentAddr(address: String) =
-        manager.isValidTransparentAddress(address)
+        txManager.isValidTransparentAddress(address)
 
-    override suspend fun validateAddress(address: String): Synchronizer.AddressType {
+    override suspend fun validateAddress(address: String): AddressType {
         return try {
             if (isValidShieldedAddr(address)) Shielded else Transparent
         } catch (zError: Throwable) {
@@ -356,91 +356,61 @@ class SdkSynchronizer internal constructor(
             try {
                 if (isValidTransparentAddr(address)) Transparent else Shielded
             } catch (tError: Throwable) {
-                Synchronizer.AddressType.Invalid(
+                AddressType.Invalid(
                     if (message != tError.message) "$message and ${tError.message}" else (message
                         ?: "Invalid")
                 )
             }
         }
     }
-}
 
-/**
- * A convenience constructor that accepts the information most likely to change and uses defaults
- * for everything else. This is useful for demos, sample apps or PoC's. Anything more complex
- * will probably want to handle initialization, directly.
- *
- * @param appContext the application context. This is mostly used for finding databases and params
- * files within the apps secure storage area.
- * @param lightwalletdHost the lightwalletd host to use for connections.
- * @param lightwalletdPort the lightwalletd port to use for connections.
- * @param seed the seed to use for this wallet, when importing. Null when creating a new wallet.
- * @param birthdayStore the place to store the birthday of this wallet for future reference, which
- * allows something else to manage the state on behalf of the initializer.
- */
-@Suppress("FunctionName")
-fun Synchronizer(
-    appContext: Context,
-    lightwalletdHost: String = ZcashSdk.DEFAULT_LIGHTWALLETD_HOST,
-    lightwalletdPort: Int = ZcashSdk.DEFAULT_LIGHTWALLETD_PORT,
-    seed: ByteArray? = null,
-    birthdayStore: Initializer.WalletBirthdayStore = Initializer.DefaultBirthdayStore(appContext)
-): Synchronizer {
-    val initializer = Initializer(appContext, lightwalletdHost, lightwalletdPort)
-    if (seed != null && birthdayStore.hasExistingBirthday()) {
-        twig("Initializing existing wallet")
-        initializer.open(birthdayStore.getBirthday())
-        twig("${initializer.rustBackend.pathDataDb}")
-    } else {
-        require(seed != null) {
-            "Failed to initialize. A seed is required when no wallet exists on the device."
+    override suspend fun validateConsensusBranch(): ConsensusMatchType {
+        val serverBranchId = tryNull { processor.downloader.getServerInfo().consensusBranchId }
+        val sdkBranchId = tryNull {
+            (txManager as PersistentTransactionManager).encoder.getConsensusBranchId()
         }
-        if (birthdayStore.hasImportedBirthday()) {
-            twig("Initializing new wallet")
-            initializer.new(seed, birthdayStore.newWalletBirthday, 1, true, true)
-        } else {
-            twig("Initializing imported wallet")
-            initializer.import(seed, birthdayStore.getBirthday(), true, true)
-        }
+        return ConsensusMatchType(
+            sdkBranchId?.let { ConsensusBranchId.fromId(it) },
+            serverBranchId?.let { ConsensusBranchId.fromHex(it) }
+        )
     }
-    return Synchronizer(initializer)
 }
 
 /**
- * Constructor function to use in most cases. This is a convenience function for when a wallet has
- * already created an initializer. Meaning, the basic flow is to call either [Initializer.new] or
- * [Initializer.import] on the first run and then [Initializer.open] for all subsequent launches of
- * the wallet. From there, the initializer is passed to this function in order to start syncing from
- * where the wallet left off.
+ * Builder function for constructing a Synchronizer with flexibility for adding custom behavior. The
+ * Initializer is the only thing required because it takes care of loading the Rust libraries
+ * properly; everything else has a reasonable default. For a wallet, the most common flow is to
+ * first call either [Initializer.new] or [Initializer.import] on the first run and then
+ * [Initializer.open] for all subsequent launches of the wallet. From there, the initializer is
+ * passed to this function in order to start syncing from where the wallet left off.
+ *
+ * The remaining parameters are all optional and they allow a wallet maker to customize any
+ * subcomponent of the Synchronizer. For example, this function could be used to inject an in-memory
+ * CompactBlockStore rather than a SQL implementation or a downloader that does not use gRPC:
+ *
+ * ```
+ * val initializer = Initializer(context, host, port).import(seedPhrase, birthdayHeight)
+ * val synchronizer = Synchronizer(initializer,
+ *      blockStore = MyInMemoryBlockStore(),
+ *      downloader = MyRestfulServiceForBlocks()
+ * )
+ * ```
+ *
+ * Note: alternatively, all the objects required to build a Synchronizer (the object graph) can be
+ * supplied by a dependency injection framework like Dagger or Koin. This builder just makes that
+ * process a bit easier so developers can get started syncing the blockchain without the overhead of
+ * configuring a bunch of objects, first.
  *
  * @param initializer the helper that is leveraged for creating all the components that the
- * Synchronizer requires. It is mainly responsible for initializing the databases associated with
- * this synchronizer.
- */
-@Suppress("FunctionName")
-fun Synchronizer(initializer: Initializer): Synchronizer {
-    check(initializer.isInitialized) {
-        "Error: RustBackend must be loaded before creating the Synchronizer. Verify that either" +
-                " the 'open', 'new' or 'import' function has been called on the Initializer."
-    }
-    return Synchronizer(initializer.context, initializer.rustBackend, initializer.host, initializer.port)
-}
-
-/**
- * Constructor function for building a Synchronizer in the most flexible way possible. This allows
- * a wallet maker to customize any subcomponent of the Synchronzer.
- *
- * @param appContext the application context. This is mostly used for finding databases and params
- * files within the apps secure storage area.
- * @param lightwalletdHost the lightwalletd host to use for connections.
- * @param lightwalletdPort the lightwalletd port to use for connections.
- * @param ledger repository of wallet transactions, providing an agnostic interface to the
- * underlying information.
+ * Synchronizer requires. It contains all information necessary to build a synchronizer and it is
+ * mainly responsible for initializing the databases associated with this synchronizer and loading
+ * the rust backend.
+ * @param repository repository of wallet data, providing an interface to the underlying info.
  * @param blockStore component responsible for storing compact blocks downloaded from lightwalletd.
  * @param service the lightwalletd service that can provide compact blocks and submit transactions.
  * @param encoder the component responsible for encoding transactions.
  * @param downloader the component responsible for downloading ranges of compact blocks.
- * @param manager the component that manages outbound transactions in order to report which ones are
+ * @param txManager the component that manages outbound transactions in order to report which ones are
  * still pending, particularly after failed attempts or dropped connectivity. The intent is to help
  * monitor outbound transactions status through to completion.
  * @param processor the component responsible for processing compact blocks. This is effectively the
@@ -449,25 +419,24 @@ fun Synchronizer(initializer: Initializer): Synchronizer {
  */
 @Suppress("FunctionName")
 fun Synchronizer(
-    appContext: Context,
-    rustBackend: RustBackend,
-    lightwalletdHost: String = ZcashSdk.DEFAULT_LIGHTWALLETD_HOST,
-    lightwalletdPort: Int = ZcashSdk.DEFAULT_LIGHTWALLETD_PORT,
-    ledger: TransactionRepository =
-        PagedTransactionRepository(appContext, 1000, rustBackend.pathDataDb), // TODO: fix this pagesize bug, small pages should not crash the app. It crashes with: Uncaught Exception: android.view.ViewRootImpl$CalledFromWrongThreadException: Only the original thread that created a view hierarchy can touch its views. and is probably related to FlowPagedList
-    blockStore: CompactBlockStore = CompactBlockDbStore(appContext, rustBackend.pathCacheDb),
-    service: LightWalletService = LightWalletGrpcService(appContext, lightwalletdHost, lightwalletdPort),
-    encoder: TransactionEncoder = WalletTransactionEncoder(rustBackend, ledger),
+    initializer: Initializer,
+    repository: TransactionRepository =
+        PagedTransactionRepository(initializer.context, 1000, initializer.rustBackend.pathDataDb), // TODO: fix this pagesize bug, small pages should not crash the app. It crashes with: Uncaught Exception: android.view.ViewRootImpl$CalledFromWrongThreadException: Only the original thread that created a view hierarchy can touch its views. and is probably related to FlowPagedList
+    blockStore: CompactBlockStore = CompactBlockDbStore(initializer.context, initializer.rustBackend.pathCacheDb),
+    service: LightWalletService = LightWalletGrpcService(initializer.context, initializer.host, initializer.port),
+    encoder: TransactionEncoder = WalletTransactionEncoder(initializer.rustBackend, repository),
     downloader: CompactBlockDownloader = CompactBlockDownloader(service, blockStore),
-    manager: OutboundTransactionManager =
-        PersistentTransactionManager(appContext, encoder, service),
+    txManager: OutboundTransactionManager =
+        PersistentTransactionManager(initializer.context, encoder, service),
     processor: CompactBlockProcessor =
-        CompactBlockProcessor(downloader, ledger, rustBackend, rustBackend.birthdayHeight)
+        CompactBlockProcessor(downloader, repository, initializer.rustBackend, initializer.rustBackend.birthdayHeight)
 ): Synchronizer {
-    // ties everything together
+    // call the actual constructor now that all dependencies have been injected
+    // alternatively, this entire object graph can be supplied by Dagger
+    // This builder just makes that easier.
     return SdkSynchronizer(
-        ledger,
-        manager,
+        repository,
+        txManager,
         processor
     )
 }
