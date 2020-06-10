@@ -1,3 +1,7 @@
+[![license](https://img.shields.io/github/license/zcash/zcash-android-wallet-sdk.svg?maxAge=2592000&style=plastic)](https://github.com/zcash/kotlin-bip39/blob/master/LICENSE)
+[![@gmale](https://img.shields.io/badge/contact-android@z.cash-5AA9E7.svg?style=plastic)](https://github.com/gmale)
+![Bintray](https://img.shields.io/bintray/v/ecc-mobile/android/sdk-mainnet?color=success&style=plastic)
+
 This is a beta build and is currently under active development. Please be advised of the following:
 
 - This code currently is not audited by an external security auditor, use it at your own risk
@@ -78,10 +82,26 @@ To accomplish this, these responsibilities of the SDK are divided into separate 
 
 ## Quickstart
 
-Add the SDK dependency
+Add flavors for testnet v mainnet. Since `productFlavors` cannot start with the word 'test' we recommend:
+```groovy
+flavorDimensions 'network'
+productFlavors {
+    // would rather name them "testnet" and "mainnet" but product flavor names cannot start with the word "test"
+    zcashtestnet {
+        dimension 'network'
+        matchingFallbacks = ['zcashtestnet', 'debug']
+    }
+    zcashmainnet {
+        dimension 'network'
+        matchingFallbacks = ['zcashmainnet', 'release']
+    }
+}
+```
+Add the matching SDK dependency for each variant:
 
-```gradle
-implementation "cash.z.ecc.android:zcash-android-wallet-sdk-testnet:1.1.0-beta01@aar"
+```groovy
+zcashmainnetImplementation "cash.z.ecc.android:sdk-mainnet:${version}@aar"
+zcashtestnetImplementation "cash.z.ecc.android:sdk-testnet:${version}@aar"
 ```
 
 Start the [Synchronizer](docs/-synchronizer/README.md)
