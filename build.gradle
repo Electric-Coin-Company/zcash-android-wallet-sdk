@@ -42,10 +42,13 @@ buildscript {
         classpath 'com.github.str4d:rust-android-gradle:68b4ecc053'
         classpath 'org.owasp:dependency-check-gradle:5.3.0'
         classpath "gradle.plugin.com.dorongold.plugins:task-tree:1.5"
+        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.5'
     }
 }
 
 apply from: 'custom-tasks.gradle'
+apply plugin: 'maven-publish'
+apply plugin: 'com.jfrog.bintray'
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
@@ -60,6 +63,7 @@ apply plugin: 'org.mozilla.rust-android-gradle.rust-android'
 apply plugin: 'org.owasp.dependencycheck'
 apply plugin: "com.dorongold.task-tree"
 apply from: 'ci.gradle'
+apply from: 'publish.gradle'
 
 group = Deps.group
 version = Deps.versionName
@@ -199,6 +203,10 @@ cargo {
         }
         zcashmainnetRelease {
             defaultFeaturesAnd("mainnet")
+        }
+        zcashtestnetDebug {
+        }
+        zcashtestnetRelease {
         }
     }
 }

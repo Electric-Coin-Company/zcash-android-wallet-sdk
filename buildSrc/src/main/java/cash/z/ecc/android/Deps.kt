@@ -11,6 +11,18 @@ object Deps {
     const val description =     "This lightweight SDK connects Android to Zcash. It welds together Rust and Kotlin in a minimal way, allowing third-party Android apps to send and receive shielded transactions easily, securely and privately."
     const val githubUrl =       "https://github.com/zcash/zcash-android-wallet-sdk"
 
+    // publishing
+    object Publication {
+        object Mainnet {
+            const val variant = "zcashmainnetRelease"
+            const val artifactId = "sdk-mainnet"
+        }
+        object Testnet {
+            const val variant = "zcashtestnetRelease"
+            const val artifactId = "sdk-testnet"
+        }
+    }
+
     object Kotlin : Version(kotlinVersion) {
         val STDLIB =            "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$version"
     }

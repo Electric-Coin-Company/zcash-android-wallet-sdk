@@ -43,22 +43,42 @@ task docsJar(type: Jar) {
     from dokka
 }
 
+def activePublication = Deps.Publication.Testnet
 publishing {
     publications {
-        Production(MavenPublication) {
-            from components.java
-            artifact sourcesJar
-            artifact docsJar
-            groupId Deps.group
-            artifactId Deps.artifactName
-            version Deps.versionName
+        android.libraryVariants.all { variant ->
+            if (variant.name != activePublication.variant) return
 
-            pom.withXml {
-                def root = asNode()
-                root.appendNode('description', Deps.description)
-                root.appendNode('name', Deps.artifactName)
-                root.appendNode('url', )
-                root.children().last() + pomConfig
+            Production(MavenPublication) {
+                artifact variant.outputs[0].packageLibrary // the AAR
+                artifact sourcesJar
+                artifact docsJar
+                groupId Deps.group
+                artifactId activePublication.artifactId
+                version Deps.versionName
+
+                pom.withXml {
+                    def root = asNode()
+                    root.appendNode('description', Deps.description)
+                    root.appendNode('name', activePublication.artifactId)
+                    root.appendNode('url', )
+                    root.children().last() + pomConfig
+
+                    // AAR-specific: we must explicitly add dependencies for an AAR
+                    def depsNode = root["dependencies"][0] ?: root.appendNode("dependencies")
+                    def addDep = {
+                        if (it.group == null) return // Avoid empty dependency nodes
+                        def dependencyNode = depsNode.appendNode('dependency')
+                        dependencyNode.appendNode('groupId', it.group)
+                        dependencyNode.appendNode('artifactId', it.name)
+                        dependencyNode.appendNode('version', it.version)
+                        if (it.hasProperty('optional') && it.optional) {
+                            dependencyNode.appendNode('optional', 'true')
+                        }
+                    }
+                    // run the 'addDep' closure over each dependency
+                    configurations.compile.allDependencies.each addDep
+                }
             }
         }
     }
@@ -71,14 +91,15 @@ bintray {
     override = true
     pkg {
         repo = 'android'
-        name = Deps.artifactName
+        name = activePublication.artifactId
         description = Deps.description
         publish = true
         publicDownloadNumbers = true
         userOrg = 'ecc-mobile'
+        labels = ['aar', 'android', 'zcash', 'ecc', 'sdk']
         licenses = ['MIT']
         vcsUrl = Deps.githubUrl
-        dryRun = false
+        dryRun = true
         version {
             name = Deps.versionName
             desc = Deps.description
