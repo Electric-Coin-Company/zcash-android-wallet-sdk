@@ -1,5 +1,6 @@
 package cash.z.wallet.sdk.exception
 
+import cash.z.wallet.sdk.ext.ConsensusBranchId
 import java.lang.RuntimeException
 
 
@@ -35,6 +36,10 @@ sealed class SynchronizerException(message: String, cause: Throwable? = null) : 
     object FalseStart: SynchronizerException("This synchronizer was already started. Multiple calls to start are not" +
                 "allowed and once a synchronizer has stopped it cannot be restarted."
     )
+    object NotYetStarted: SynchronizerException("The synchronizer has not yet started. Verify that" +
+            " start has been called prior to this operation and that the coroutineScope is not" +
+            " being accessed before it is initialized."
+    )
 }
 
 /**
@@ -57,6 +62,10 @@ sealed class CompactBlockProcessorException(message: String, cause: Throwable? =
     object Uninitialized : CompactBlockProcessorException("Cannot process blocks because the wallet has not been" +
             " initialized. Verify that the seed phrase was properly created or imported. If so, then this problem" +
             " can be fixed by re-importing the wallet.")
+    open class EnhanceTransactionError(message: String, val height: Int, cause: Throwable) : CompactBlockProcessorException(message, cause) {
+        class EnhanceTxDownloadError(height: Int, cause: Throwable) : EnhanceTransactionError("Error while attempting to download a transaction to enhance", height, cause)
+        class EnhanceTxDecryptError(height: Int, cause: Throwable) : EnhanceTransactionError("Error while attempting to decrypt and store a transaction to enhance", height, cause)
+    }
 }
 
 /**
@@ -104,6 +113,14 @@ sealed class LightwalletException(message: String, cause: Throwable? = null) : S
             " with an insecure connection! Plaintext connections are only allowed when the" +
             " resource value for 'R.bool.lightwalletd_allow_very_insecure_connections' is true" +
             " because this choice should be explicit.")
+    class ConsensusBranchException(sdkBranch: String, lwdBranch: String) :
+        LightwalletException(
+            "Error: the lightwalletd server is using a consensus branch" +
+                " (branch: $lwdBranch) that does not match the transactions being created" +
+                " (branch: $sdkBranch). This probably means the SDK and Server are on two" +
+                " different chains, most likely because of a recent network upgrade (NU). Either" +
+                " update the SDK to match lightwalletd or use a lightwalletd that matches the SDK."
+        )
 }
 
 /**
@@ -121,4 +138,9 @@ sealed class TransactionEncoderException(message: String, cause: Throwable? = nu
     class TransactionNotEncodedException(transactionId: Long) : TransactionEncoderException("The transaction returned by the wallet," +
             " with id $transactionId, does not have any raw data. This is a scenario where the wallet should have thrown" +
             " an exception but failed to do so.")
+
+    class IncompleteScanException(lastScannedHeight: Int) : TransactionEncoderException("Cannot" +
+            " create spending transaction because scanning is incomplete. We must scan up to the" +
+            " latest height to know which consensus rules to apply. However, the last scanned" +
+            " height was $lastScannedHeight.")
 }

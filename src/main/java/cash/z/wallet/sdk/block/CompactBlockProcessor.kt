@@ -1,10 +1,13 @@
 package cash.z.wallet.sdk.block
 
 import androidx.annotation.VisibleForTesting
+import cash.z.wallet.sdk.BuildConfig
 import cash.z.wallet.sdk.annotation.OpenForTesting
 import cash.z.wallet.sdk.block.CompactBlockProcessor.State.*
 import cash.z.wallet.sdk.entity.ConfirmedTransaction
 import cash.z.wallet.sdk.exception.CompactBlockProcessorException
+import cash.z.wallet.sdk.exception.CompactBlockProcessorException.EnhanceTransactionError.EnhanceTxDecryptError
+import cash.z.wallet.sdk.exception.CompactBlockProcessorException.EnhanceTransactionError.EnhanceTxDownloadError
 import cash.z.wallet.sdk.exception.RustLayerException
 import cash.z.wallet.sdk.ext.*
 import cash.z.wallet.sdk.ext.ZcashSdk.DOWNLOAD_BATCH_SIZE
@@ -17,7 +20,7 @@ import cash.z.wallet.sdk.ext.ZcashSdk.SAPLING_ACTIVATION_HEIGHT
 import cash.z.wallet.sdk.ext.ZcashSdk.SCAN_BATCH_SIZE
 import cash.z.wallet.sdk.jni.RustBackend
 import cash.z.wallet.sdk.jni.RustBackendWelding
-import cash.z.wallet.sdk.service.LightWalletGrpcService
+import cash.z.wallet.sdk.transaction.PagedTransactionRepository
 import cash.z.wallet.sdk.transaction.TransactionRepository
 import io.grpc.StatusRuntimeException
 import kotlinx.coroutines.Dispatchers
@@ -25,8 +28,6 @@ import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.channels.ConflatedBroadcastChannel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 import java.util.concurrent.atomic.AtomicInteger
@@ -56,7 +57,10 @@ class CompactBlockProcessor(
     minimumHeight: Int = SAPLING_ACTIVATION_HEIGHT
 ) {
     /**
-     * Callback for any critical errors that occur while processing compact blocks.
+     * Callback for any non-trivial errors that occur while processing compact blocks.
+     *
+     * @return true when processing should continue. Return false when the error is unrecoverable
+     * and all processing should halt and stop retrying.
      */
     var onProcessorErrorListener: ((Throwable) -> Boolean)? = null
 
@@ -64,11 +68,10 @@ class CompactBlockProcessor(
      * Callbaqck for reorgs. This callback is invoked when validation fails with the height at which
      * an error was found and the lower bound to which the data will rewind, at most.
      */
-    var onChainErrorListener: ((Int, Int) -> Any)? = null
+    var onChainErrorListener: ((errorHeight: Int, rewindHeight: Int) -> Any)? = null
 
     private val consecutiveChainErrors = AtomicInteger(0)
     private val lowerBoundHeight: Int = max(SAPLING_ACTIVATION_HEIGHT, minimumHeight - MAX_REORG_SIZE)
-    private val reconnectError = -20
 
     private val _state: ConflatedBroadcastChannel<State> = ConflatedBroadcastChannel(Initialized)
     private val _progress = ConflatedBroadcastChannel(0)
@@ -79,7 +82,7 @@ class CompactBlockProcessor(
      * sequentially, due to the way sqlite works so it is okay for this not to be threadsafe or
      * coroutine safe because processing cannot be concurrent.
      */
-    private var currentInfo = ProcessorInfo()
+    internal var currentInfo = ProcessorInfo()
 
     /**
      * The flow of state values so that a wallet can monitor the state of this class without needing
@@ -168,16 +171,15 @@ class CompactBlockProcessor(
             twig("Disconnection detected! Attempting to reconnect!")
             setState(Disconnected)
             downloader.lightwalletService.reconnect()
-            reconnectError
+            ERROR_CODE_RECONNECT
         } else if (currentInfo.lastDownloadRange.isEmpty() && currentInfo.lastScanRange.isEmpty()) {
             twig("Nothing to process: no new blocks to download or scan, right now.")
             setState(Scanned(currentInfo.lastScanRange))
-            -1
+            ERROR_CODE_NONE
         } else {
             downloadNewBlocks(currentInfo.lastDownloadRange)
-            validateAndScanNewBlocks(currentInfo.lastScanRange).also {
-                enhanceTransactionDetails(currentInfo.lastScanRange)
-            }
+            val error = validateAndScanNewBlocks(currentInfo.lastScanRange)
+            if (error != ERROR_CODE_NONE) error else enhanceTransactionDetails(currentInfo.lastScanRange)
         }
     }
 
@@ -222,12 +224,12 @@ class CompactBlockProcessor(
      *
      * @param lastScanRange the range to be validated and scanned.
      *
-     * @return error code or -1 when there is no error.
+     * @return error code or [ERROR_CODE_NONE] when there is no error.
      */
     private suspend fun validateAndScanNewBlocks(lastScanRange: IntRange): Int = withContext(IO) {
         setState(Validating)
         var error = validateNewBlocks(lastScanRange)
-        if (error < 0) {
+        if (error == ERROR_CODE_NONE) {
             // in theory, a scan should not fail after validation succeeds but maybe consider
             // changing the rust layer to return the failed block height whenever scan does fail
             // rather than a boolean
@@ -237,7 +239,7 @@ class CompactBlockProcessor(
             else {
                 setState(Scanned(lastScanRange))
             }
-            -1
+            ERROR_CODE_NONE
         } else {
             error
         }
@@ -255,23 +257,34 @@ class CompactBlockProcessor(
                 else enhance(newTransaction)
             }
             twig("Done enhancing transaction details")
-            1
+            ERROR_CODE_NONE
         } catch (t: Throwable) {
             twig("Failed to enhance due to $t")
             t.printStackTrace()
-            -1
+            ERROR_CODE_FAILED_ENHANCE
         } finally {
             Twig.clip("enhancing")
         }
     }
 
+    // TODO: we still need a way to identify those transactions that failed to be enhanced
     private suspend fun enhance(transaction: ConfirmedTransaction) = withContext(Dispatchers.IO) {
-        twig("START: enhancing transaction (id:${transaction.id}  block:${transaction.minedHeight})")
-        downloader.fetchTransaction(transaction.rawTransactionId)?.let { tx ->
-            twig("decrypting and storing transaction (id:${transaction.id}  block:${transaction.minedHeight})")
-            rustBackend.decryptAndStoreTransaction(tx.data.toByteArray())
-        } ?: twig("no transaction found. Nothing to enhance. This probably shouldn't happen.")
-        twig("DONE: enhancing transaction (id:${transaction.id}  block:${transaction.minedHeight})")
+        var downloaded = false
+        try {
+            twig("START: enhancing transaction (id:${transaction.id}  block:${transaction.minedHeight})")
+            downloader.fetchTransaction(transaction.rawTransactionId)?.let { tx ->
+                downloaded = true
+                twig("decrypting and storing transaction (id:${transaction.id}  block:${transaction.minedHeight})")
+                rustBackend.decryptAndStoreTransaction(tx.data.toByteArray())
+            } ?: twig("no transaction found. Nothing to enhance. This probably shouldn't happen.")
+            twig("DONE: enhancing transaction (id:${transaction.id}  block:${transaction.minedHeight})")
+        } catch (t: Throwable) {
+            twig("Warning: failure on transaction: error: $t\ttransaction: $transaction")
+            onProcessorError(
+                if (downloaded) EnhanceTxDecryptError(transaction.minedHeight, t)
+                else EnhanceTxDownloadError(transaction.minedHeight, t)
+            )
+        }
     }
 
     /**
@@ -327,13 +340,13 @@ class CompactBlockProcessor(
      *
      *  @param range the range of blocks to validate.
      *
-     *  @return -1 when there is no problem. Otherwise, return the lowest height where an error was
+     *  @return [ERROR_CODE_NONE] when there is no problem. Otherwise, return the lowest height where an error was
      *  found. In other words, validation starts at the back of the chain and works toward the tip.
      */
     private fun validateNewBlocks(range: IntRange?): Int {
         if (range?.isEmpty() != false) {
             twig("no blocks to validate: $range")
-            return -1
+            return ERROR_CODE_NONE
         }
         Twig.sprout("validating")
         twig("validating blocks in range $range in db: ${(rustBackend as RustBackend).pathCacheDb}")
@@ -348,7 +361,7 @@ class CompactBlockProcessor(
      *
      *  @param range the range of blocks to scan.
      *
-     *  @return -1 when there is no problem. Otherwise, return the lowest height where an error was
+     *  @return [ERROR_CODE_NONE] when there is no problem. Otherwise, return the lowest height where an error was
      *  found. In other words, scanning starts at the back of the chain and works toward the tip.
      */
     private suspend fun scanNewBlocks(range: IntRange?): Boolean = withContext(IO) {
@@ -414,13 +427,52 @@ class CompactBlockProcessor(
     }
 
     private suspend fun handleChainError(errorHeight: Int) = withContext(IO) {
-        val lowerBound = determineLowerBound(errorHeight)
-        twig("handling chain error at $errorHeight by rewinding to block $lowerBound")
-        onChainErrorListener?.invoke(errorHeight, lowerBound)
-        rustBackend.rewindToHeight(lowerBound)
-        downloader.rewindToHeight(lowerBound)
+        // TODO consider an error object containing hash information
+        printValidationErrorInfo(errorHeight)
+        determineLowerBound(errorHeight).let { lowerBound ->
+            twig("handling chain error at $errorHeight by rewinding to block $lowerBound")
+            onChainErrorListener?.invoke(errorHeight, lowerBound)
+            rustBackend.rewindToHeight(lowerBound)
+            downloader.rewindToHeight(lowerBound)
+        }
     }
 
+    /** insightful function for debugging these critical errors */
+    private suspend fun printValidationErrorInfo(errorHeight: Int, count: Int = 11) {
+        // Note: blocks are public information so it's okay to print them but, still, let's not unless we're debugging something
+        if (!BuildConfig.DEBUG) return
+
+        var errorInfo = fetchValidationErrorInfo(errorHeight)
+        twig("validation failed at block ${errorInfo.errorHeight} which had hash ${errorInfo.actualPrevHash} but the expected hash was ${errorInfo.expectedPrevHash}")
+        errorInfo = fetchValidationErrorInfo(errorHeight + 1)
+        twig("The next block block: ${errorInfo.errorHeight} which had hash ${errorInfo.actualPrevHash} but the expected hash was ${errorInfo.expectedPrevHash}")
+
+        twig("=================== BLOCKS [$errorHeight..${errorHeight + count - 1}]: START ========")
+        repeat(count) { i ->
+            val height = errorHeight + i
+            val block = downloader.compactBlockStore.findCompactBlock(height)
+            // sometimes the initial block was inserted via checkpoint and will not appear in the cache. We can get the hash another way but prevHash is correctly null.
+            val hash = block?.hash?.toByteArray() ?: (repository as PagedTransactionRepository).findBlockHash(height)
+            twig("block: $height\thash=${hash?.toHexReversed()} \tprevHash=${block?.prevHash?.toByteArray()?.toHexReversed()}")
+        }
+        twig("=================== BLOCKS [$errorHeight..${errorHeight + count - 1}]: END ========")
+    }
+
+    private suspend fun fetchValidationErrorInfo(errorHeight: Int): ValidationErrorInfo {
+        val hash = (repository as PagedTransactionRepository).findBlockHash(errorHeight + 1)?.toHexReversed()
+        val prevHash = repository.findBlockHash(errorHeight)?.toHexReversed()
+
+        val compactBlock = downloader.compactBlockStore.findCompactBlock(errorHeight + 1)
+        val expectedPrevHash = compactBlock?.prevHash?.toByteArray()?.toHexReversed()
+        return ValidationErrorInfo(errorHeight, hash, expectedPrevHash, prevHash)
+    }
+
+    /**
+     * Called for every noteworthy error.
+     *
+     * @return true when processing should continue. Return false when the error is unrecoverable
+     * and all processing should halt and stop retrying.
+     */
     private fun onProcessorError(throwable: Throwable): Boolean {
         return onProcessorErrorListener?.invoke(throwable) ?: true
     }
@@ -654,6 +706,19 @@ class CompactBlockProcessor(
                 }
             }
         }
+    }
 
+    data class ValidationErrorInfo(
+        val errorHeight: Int,
+        val hash:  String?,
+        val expectedPrevHash: String?,
+        val actualPrevHash: String?
+    )
+
+
+    companion object {
+        const val ERROR_CODE_NONE = -1
+        const val ERROR_CODE_RECONNECT = 20
+        const val ERROR_CODE_FAILED_ENHANCE = 40
     }
 }
