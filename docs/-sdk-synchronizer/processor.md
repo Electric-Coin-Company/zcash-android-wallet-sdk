@@ -1,4 +1,4 @@
-[zcash-android-wallet-sdk](../../index.md) / [cash.z.wallet.sdk](../index.md) / [SdkSynchronizer](index.md) / [processor](./processor.md)
+[zcash-android-wallet-sdk](../../index.md) / [cash.z.ecc.android.sdk](../index.md) / [SdkSynchronizer](index.md) / [processor](./processor.md)
 
 # processor
 
@@ -7,3 +7,7 @@
 saves the downloaded compact blocks to the cache and then scans those blocks for
 data related to this wallet.
 
+### Property
+
+`processor` - saves the downloaded compact blocks to the cache and then scans those blocks for
+data related to this wallet.

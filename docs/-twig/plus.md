@@ -3,3 +3,6 @@
 # plus
 
 `open operator fun plus(twig: `[`Twig`](index.md)`): `[`Twig`](index.md)
+
+Bundles twigs together
+

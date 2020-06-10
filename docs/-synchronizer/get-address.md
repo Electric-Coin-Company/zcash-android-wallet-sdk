@@ -1,4 +1,4 @@
-[zcash-android-wallet-sdk](../../index.md) / [cash.z.wallet.sdk](../index.md) / [Synchronizer](index.md) / [getAddress](./get-address.md)
+[zcash-android-wallet-sdk](../../index.md) / [cash.z.ecc.android.sdk](../index.md) / [Synchronizer](index.md) / [getAddress](./get-address.md)
 
 # getAddress
 
@@ -10,3 +10,7 @@ Gets the address for the given account.
 
 `accountId` - the optional accountId whose address is of interest. By default, the first
 account is used.
+
+**Return**
+the address for the given account.
+
