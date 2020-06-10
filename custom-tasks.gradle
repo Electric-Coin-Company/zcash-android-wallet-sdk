@@ -9,14 +9,14 @@ tasks.register("includeDirBugFix") {
 tasks.register("updateDocs", Copy) {
     dependsOn dokka
 
-    from("$buildDir/docs/zcash-android-wallet-sdk/cash.z.wallet.sdk.data/") {
+    from("$buildDir/docs/zcash-android-wallet-sdk/cash.z.ecc.android.sdk.data/") {
         include '-synchronizer/'
         include '-sdk-synchronizer/'
         include '-mock-synchronizer/'
         include '-twig/'
         rename 'index.md', 'README.md'
     }
-    from("$buildDir/docs/zcash-android-wallet-sdk/cash.z.wallet.sdk.secure/") {
+    from("$buildDir/docs/zcash-android-wallet-sdk/cash.z.ecc.android.sdk.secure/") {
         include '-wallet/'
         rename 'index.md', 'README.md'
     }

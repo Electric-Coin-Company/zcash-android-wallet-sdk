@@ -1,4 +1,4 @@
-[zcash-android-wallet-sdk](../../index.md) / [cash.z.wallet.sdk.data](../index.md) / [SdkSynchronizer](index.md) / [isSyncing](./is-syncing.md)
+[zcash-android-wallet-sdk](../../index.md) / [cash.z.ecc.android.sdk.data](../index.md) / [SdkSynchronizer](index.md) / [isSyncing](./is-syncing.md)
 
 # isSyncing
 

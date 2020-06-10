@@ -81,7 +81,7 @@ To accomplish this, these responsibilities of the SDK are divided into separate 
 Add the SDK dependency
 
 ```gradle
-implementation "cash.z.android.wallet:zcash-android-testnet:1.0.0-alpha01@aar"
+implementation "cash.z.ecc.android:zcash-android-wallet-sdk-testnet:1.1.0-beta01@aar"
 ```
 
 Start the [Synchronizer](docs/-synchronizer/README.md)
@@ -122,7 +122,8 @@ rustup target add armv7-linux-androideabi aarch64-linux-android i686-linux-andro
     <img src="assets/sdk-manager-icon.png?raw=true" width="70%"/>
 </p>    
 
-  6. Then, install NDK 20.0.5594570 
+  6. Then, install NDK ~~20.0.5594570~~ 21.1.6352462     
+     (pro tip: build.gradle -> `ndkVersion` defines the actual required version. This README may get out-of-date)
 <p align="center">
     <img src="assets/ndk-window.png?raw=true" width="85%"/>
 </p>    

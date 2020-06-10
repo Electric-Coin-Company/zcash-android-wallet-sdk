@@ -1,8 +1,8 @@
-[zcash-android-wallet-sdk](../../index.md) / [cash.z.wallet.sdk.data](../index.md) / [SdkSynchronizer](index.md) / [&lt;init&gt;](./-init-.md)
+[zcash-android-wallet-sdk](../../index.md) / [cash.z.ecc.android.sdk.data](../index.md) / [SdkSynchronizer](index.md) / [&lt;init&gt;](./-init-.md)
 
 # &lt;init&gt;
 
-`SdkSynchronizer(wallet: `[`Wallet`](../../cash.z.wallet.sdk.secure/-wallet/index.md)`, ledger: `[`TransactionRepository`](../-transaction-repository/index.md)`, sender: `[`TransactionSender`](../-transaction-sender/index.md)`, processor: `[`CompactBlockProcessor`](../../cash.z.wallet.sdk.block/-compact-block-processor/index.md)`, encoder: `[`TransactionEncoder`](../-transaction-encoder/index.md)`)`
+`SdkSynchronizer(wallet: `[`Wallet`](../../cash.z.ecc.android.sdk.secure/-wallet/index.md)`, ledger: `[`TransactionRepository`](../-transaction-repository/index.md)`, sender: `[`TransactionSender`](../-transaction-sender/index.md)`, processor: `[`CompactBlockProcessor`](../../cash.z.ecc.android.sdk.block/-compact-block-processor/index.md)`, encoder: `[`TransactionEncoder`](../-transaction-encoder/index.md)`)`
 
 A synchronizer that attempts to remain operational, despite any number of errors that can occur. It acts as the glue
 that ties all the pieces of the SDK together. Each component of the SDK is designed for the potential of stand-alone

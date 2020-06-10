@@ -5,11 +5,12 @@ apply plugin: 'kotlin-kapt'
 apply plugin: 'androidx.navigation.safeargs'
 
 android {
+    ndkVersion "21.1.6352462"
     compileSdkVersion 29
     buildToolsVersion "29.0.2"
     viewBinding.enabled = true
     defaultConfig {
-        applicationId "cash.z.wallet.sdk.demoapp"
+        applicationId "cash.z.ecc.android.sdk.demoapp"
         minSdkVersion 21
         targetSdkVersion 29
         versionCode 1
@@ -21,13 +22,13 @@ android {
         // would rather name them "testnet" and "mainnet" but product flavor names cannot start with the word "test"
         zcashtestnet {
             dimension 'network'
-            applicationId 'cash.z.wallet.sdk.demoapp.testnet'
+            applicationId 'cash.z.ecc.android.sdk.demoapp.testnet'
             matchingFallbacks = ['zcashtestnet', 'debug']
         }
 
         zcashmainnet {
             dimension 'network'
-            applicationId 'cash.z.wallet.sdk.demoapp.mainnet'
+            applicationId 'cash.z.ecc.android.sdk.demoapp.mainnet'
             matchingFallbacks = ['zcashmainnet', 'release']
         }
     }
@@ -48,40 +49,38 @@ android {
 
 dependencies {
     // SDK
-    implementation project(path: ':sdk')
-//    implementation "cash.z.android.wallet:zcash-android-core:$sdk_version@aar"
+    zcashmainnetImplementation 'cash.z.ecc.android:sdk-mainnet:1.1.0-beta01'
+    zcashtestnetImplementation 'cash.z.ecc.android:sdk-testnet:1.1.0-beta01'
 
     // sample mnemonic plugin
-    implementation 'com.github.zcash:zcash-android-wallet-plugins:1.0.0'
-    implementation 'com.madgag.spongycastle:core:1.58.0.0'
-    implementation 'io.github.novacrypto:BIP39:2019.01.27'
-    implementation 'io.github.novacrypto:securestring:2019.01.27'
+    implementation 'com.github.zcash:zcash-android-wallet-plugins:1.0.1'
+    implementation 'cash.z.ecc.android:kotlin-bip39:1.0.0-beta08'
 
     // SDK: grpc
-    implementation "io.grpc:grpc-okhttp:1.21.0"
-    implementation "io.grpc:grpc-protobuf-lite:1.21.0"
-    implementation "io.grpc:grpc-stub:1.21.0"
+    implementation 'io.grpc:grpc-okhttp:1.25.0'
+    implementation "io.grpc:grpc-android:1.25.0"
+    implementation 'io.grpc:grpc-protobuf-lite:1.25.0'
+    implementation 'io.grpc:grpc-stub:1.25.0'
     implementation 'javax.annotation:javax.annotation-api:1.3.2'
     // SDK: Room
-    implementation "androidx.room:room-ktx:2.2.2"
-    implementation "androidx.paging:paging-runtime-ktx:2.1.0"
+    implementation 'androidx.room:room-ktx:2.2.5'
+    implementation 'androidx.paging:paging-runtime-ktx:2.1.2'
     implementation 'com.google.guava:guava:27.0.1-android'
-    kapt "androidx.room:room-compiler:2.2.2"
+    kapt 'androidx.room:room-compiler:2.2.5'
     // SDK: Other
-    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.3.2"
-    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.3.2"
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.3.5'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.3.5'
 
     // Android
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
-    implementation 'androidx.core:core-ktx:1.1.0'
+    implementation 'androidx.core:core-ktx:1.3.0'
     implementation 'androidx.constraintlayout:constraintlayout:1.1.3'
-    implementation 'androidx.lifecycle:lifecycle-extensions:2.1.0'
-    implementation "androidx.lifecycle:lifecycle-common-java8:2.2.0-rc02"
-    implementation "androidx.lifecycle:lifecycle-runtime-ktx:2.2.0-rc02" // provides lifecycleScope!
-    implementation 'androidx.navigation:navigation-fragment-ktx:2.1.0'
-    implementation 'androidx.navigation:navigation-ui-ktx:2.1.0'
-    testImplementation 'junit:junit:4.12'
+    implementation 'androidx.lifecycle:lifecycle-extensions:2.2.0'
+    implementation 'androidx.lifecycle:lifecycle-common-java8:2.3.0-alpha03'
+    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.3.0-alpha03' // provides lifecycleScope!
+    implementation 'androidx.navigation:navigation-fragment-ktx:2.2.2'
+    implementation 'androidx.navigation:navigation-ui-ktx:2.2.2'
+    testImplementation 'junit:junit:4.13'
     androidTestImplementation 'androidx.test.ext:junit:1.1.1'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
-
 }

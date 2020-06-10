@@ -1,10 +1,8 @@
-[zcash-android-wallet-sdk](../../index.md) / [cash.z.wallet.sdk](../index.md) / [SdkSynchronizer](index.md) / [status](./status.md)
+[zcash-android-wallet-sdk](../../index.md) / [cash.z.ecc.android.sdk](../index.md) / [SdkSynchronizer](index.md) / [status](./status.md)
 
 # status
 
-`val status: Flow<`[`Synchronizer.Status`](../-synchronizer/-status/index.md)`>`
-
-Overrides [Synchronizer.status](../-synchronizer/status.md)
+`val status: Flow<Status>`
 
 Indicates the status of this Synchronizer. This implementation basically simplifies the
 status of the processor to focus only on the high level states that matter most. Whenever the

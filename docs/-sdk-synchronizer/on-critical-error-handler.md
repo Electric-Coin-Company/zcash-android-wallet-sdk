@@ -1,10 +1,8 @@
-[zcash-android-wallet-sdk](../../index.md) / [cash.z.wallet.sdk](../index.md) / [SdkSynchronizer](index.md) / [onCriticalErrorHandler](./on-critical-error-handler.md)
+[zcash-android-wallet-sdk](../../index.md) / [cash.z.ecc.android.sdk](../index.md) / [SdkSynchronizer](index.md) / [onCriticalErrorHandler](./on-critical-error-handler.md)
 
 # onCriticalErrorHandler
 
 `var onCriticalErrorHandler: ((`[`Throwable`](https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-throwable/index.html)`?) -> `[`Boolean`](https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-boolean/index.html)`)?`
-
-Overrides [Synchronizer.onCriticalErrorHandler](../-synchronizer/on-critical-error-handler.md)
 
 A callback to invoke whenever an uncaught error is encountered. By definition, the return
 value of the function is ignored because this error is unrecoverable. The only reason the

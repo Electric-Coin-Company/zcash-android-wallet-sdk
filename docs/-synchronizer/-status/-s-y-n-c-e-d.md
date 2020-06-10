@@ -1,4 +1,4 @@
-[zcash-android-wallet-sdk](../../../index.md) / [cash.z.wallet.sdk](../../index.md) / [Synchronizer](../index.md) / [Status](index.md) / [SYNCED](./-s-y-n-c-e-d.md)
+[zcash-android-wallet-sdk](../../../index.md) / [cash.z.ecc.android.sdk](../../index.md) / [Synchronizer](../index.md) / [Status](index.md) / [SYNCED](./-s-y-n-c-e-d.md)
 
 # SYNCED
 

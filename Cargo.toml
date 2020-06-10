@@ -25,27 +25,27 @@ tls-api-rustls = { version = "0.1", optional = true }
 
 [dependencies.ff]
 git = "https://github.com/str4d/librustzcash.git"
-branch = "note-spending-v7"
+rev = "c72d374e28bea0c249a898f2c470ed3d58773d0c"
 
 [dependencies.pairing]
 git = "https://github.com/str4d/librustzcash.git"
-branch = "note-spending-v7"
+rev = "c72d374e28bea0c249a898f2c470ed3d58773d0c"
 
 [dependencies.zcash_client_backend]
 git = "https://github.com/str4d/librustzcash.git"
-branch = "note-spending-v7"
+rev = "c72d374e28bea0c249a898f2c470ed3d58773d0c"
 
 [dependencies.zcash_client_sqlite]
 git = "https://github.com/str4d/librustzcash.git"
-branch = "note-spending-v7"
+rev = "c72d374e28bea0c249a898f2c470ed3d58773d0c"
 
 [dependencies.zcash_primitives]
 git = "https://github.com/str4d/librustzcash.git"
-branch = "note-spending-v7"
+rev = "c72d374e28bea0c249a898f2c470ed3d58773d0c"
 
 [dependencies.zcash_proofs]
 git = "https://github.com/str4d/librustzcash.git"
-branch = "note-spending-v7"
+rev = "c72d374e28bea0c249a898f2c470ed3d58773d0c"
 
 #[patch.'https://github.com/str4d/librustzcash.git']
 #ff = { path = '../../clones/librustzcash/ff' }

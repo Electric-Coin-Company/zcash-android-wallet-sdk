@@ -1,4 +1,9 @@
+import cash.z.ecc.android.Deps
+
 buildscript {
+    ext {
+        kotlin_version = '1.3.72'
+    }
     ext.buildConfig = [
         'compileSdkVersion': 29,
         'minSdkVersion': 16,
@@ -7,13 +12,13 @@ buildscript {
     ext.versions = [
         'architectureComponents': [
             'lifecycle': '2.2.0',
-            'room': '2.2.3',
-            'paging': '2.1.1'
+            'room': '2.2.5',
+            'paging': '2.1.2'
         ],
         'grpc':'1.25.0', // NOTE: cannot use a higher version because they use protobuf 3.10+ which is not compatible with 3.0+ so we'd have to implement changes in our protobuf files which breaks everything
-        'kotlin': '1.3.61',
-        'coroutines': '1.3.2',
-        'junitJupiter': '5.5.2'
+        'kotlin': '1.3.72',
+        'coroutines': '1.3.5',
+        'junitJupiter': '5.6.1'
     ]
     repositories {
         google()
@@ -21,9 +26,12 @@ buildscript {
         maven {
             url 'https://jitpack.io'
         }
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:3.6.0-rc02'
+        classpath 'com.android.tools.build:gradle:4.0.0'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${versions.kotlin}"
         classpath "org.jetbrains.kotlin:kotlin-allopen:${versions.kotlin}"
         classpath "org.jetbrains.dokka:dokka-gradle-plugin:0.10.1"
@@ -33,10 +41,14 @@ buildscript {
         classpath 'com.getkeepsafe.dexcount:dexcount-gradle-plugin:1.0.2'
         classpath 'com.github.str4d:rust-android-gradle:68b4ecc053'
         classpath 'org.owasp:dependency-check-gradle:5.3.0'
+        classpath "gradle.plugin.com.dorongold.plugins:task-tree:1.5"
+        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.5'
     }
 }
 
 apply from: 'custom-tasks.gradle'
+apply plugin: 'maven-publish'
+apply plugin: 'com.jfrog.bintray'
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
@@ -49,9 +61,12 @@ apply plugin: 'com.github.dcendents.android-maven'
 apply plugin: 'com.getkeepsafe.dexcount'
 apply plugin: 'org.mozilla.rust-android-gradle.rust-android'
 apply plugin: 'org.owasp.dependencycheck'
+apply plugin: "com.dorongold.task-tree"
+apply from: 'ci.gradle'
+apply from: 'publish.gradle'
 
-group = 'cash.z.android.wallet'
-version = '1.0.0-beta05'
+group = Deps.group
+version = Deps.versionName
 
 repositories {
     google()
@@ -64,15 +79,17 @@ android {
 
     useLibrary 'android.test.runner'
 
+    ndkVersion "21.1.6352462"
+
     defaultConfig {
         minSdkVersion buildConfig.minSdkVersion
         targetSdkVersion buildConfig.targetSdkVersion
-        versionCode = 1_00_00_205  // last digits are alpha(0XX) beta(2XX) rc(4XX) release(8XX). Ex: 1_08_04_401 is an release candidate build of version 1.8.4 and 1_08_04_800 would be the final release.
-        versionName = "$version"
+        versionCode = Deps.versionCode
+        versionName = Deps.versionName
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         testInstrumentationRunnerArguments clearPackageData: 'true'
         multiDexEnabled true
-        archivesBaseName = "zcash-android-wallet-sdk-$versionName"
+        archivesBaseName = "zcash-android-wallet-sdk-${Deps.versionName}"
 
         javaCompileOptions {
             annotationProcessorOptions {
@@ -138,7 +155,7 @@ android {
 
 allOpen {
     // marker for classes that we want to be able to extend in debug builds for testing purposes
-    annotation 'cash.z.wallet.sdk.annotation.OpenClass'
+    annotation 'cash.z.ecc.android.sdk.annotation.OpenClass'
 }
 
 clean {
@@ -187,12 +204,16 @@ cargo {
         zcashmainnetRelease {
             defaultFeaturesAnd("mainnet")
         }
+        zcashtestnetDebug {
+        }
+        zcashtestnetRelease {
+        }
     }
 }
 
 dependencies {
 
-    implementation 'androidx.appcompat:appcompat:1.2.0-alpha02'
+    implementation 'androidx.appcompat:appcompat:1.3.0-alpha01'
 
     // Architecture Components: Lifecycle
     implementation "androidx.lifecycle:lifecycle-runtime:${versions.architectureComponents.lifecycle}"
@@ -247,11 +268,17 @@ dependencies {
     androidTestImplementation 'androidx.test:runner:1.2.0'
 
     // sample mnemonic plugin
-    androidTestImplementation 'com.github.zcash:zcash-android-wallet-plugins:1.0.0'
-    androidTestImplementation 'com.madgag.spongycastle:core:1.58.0.0'
-    androidTestImplementation 'io.github.novacrypto:BIP39:2019.01.27'
-    androidTestImplementation 'io.github.novacrypto:securestring:2019.01.27'
+    androidTestImplementation 'com.github.zcash:zcash-android-wallet-plugins:1.0.1'
+    androidTestImplementation 'cash.z.ecc.android:kotlin-bip39:1.0.0-beta08'
 }
+
+taskTree{
+    noRepeat = true  //do not print a sub-tree in the task-tree more than once
+    impliesSubProjects = true  //do not print task-tree for child projects in a multi-project
+    taskDepth = 2 // limit tree depth to 3. Equivalent to running with the --task-depth option.
+}
+
+defaultTasks 'ciBuild'
 
 preBuild.dependsOn includeDirBugFix
 check.dependsOn dependencyCheckAggregate

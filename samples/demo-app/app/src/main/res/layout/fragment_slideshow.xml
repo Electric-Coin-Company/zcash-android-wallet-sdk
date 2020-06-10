@@ -5,7 +5,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="cash.z.wallet.sdk.demoapp.demos.slideshow.SlideshowFragment">
+    tools:context="cash.z.ecc.android.sdk.demoapp.demos.slideshow.SlideshowFragment">
 
     <TextView
         android:id="@+id/text_slideshow"

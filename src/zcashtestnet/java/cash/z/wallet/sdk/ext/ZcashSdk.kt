@@ -1,4 +1,4 @@
-package cash.z.wallet.sdk.ext
+package cash.z.ecc.android.sdk.ext
 
 /**
  * Wrapper for all the constant values in the SDK. It is important that these values stay fixed for

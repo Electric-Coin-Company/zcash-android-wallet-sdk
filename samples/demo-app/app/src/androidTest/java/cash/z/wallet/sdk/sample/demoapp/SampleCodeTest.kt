@@ -1,13 +1,13 @@
-package cash.z.wallet.sdk.sample.demoapp
+package cash.z.ecc.android.sdk.sample.demoapp
 
 import androidx.test.platform.app.InstrumentationRegistry
-import cash.z.wallet.sdk.Initializer
-import cash.z.wallet.sdk.Synchronizer
-import cash.z.wallet.sdk.entity.isFailure
-import cash.z.wallet.sdk.transaction.*
-import cash.z.wallet.sdk.ext.*
-import cash.z.wallet.sdk.jni.RustBackend
-import cash.z.wallet.sdk.service.LightWalletGrpcService
+import cash.z.ecc.android.sdk.Initializer
+import cash.z.ecc.android.sdk.Synchronizer
+import cash.z.ecc.android.sdk.entity.isFailure
+import cash.z.ecc.android.sdk.transaction.*
+import cash.z.ecc.android.sdk.ext.*
+import cash.z.ecc.android.sdk.jni.RustBackend
+import cash.z.ecc.android.sdk.service.LightWalletGrpcService
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
@@ -150,12 +150,5 @@ class SampleCodeTest {
         }
 
         fun log(message: String?) = twig(message ?: "null")
-
-        private fun ByteArray.toHex(): String {
-            val sb = StringBuilder(size * 2)
-            for (b in this)
-                sb.append(String.format("%02x", b))
-            return sb.toString()
-        }
     }
 }

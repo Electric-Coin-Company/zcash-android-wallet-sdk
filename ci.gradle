@@ -1,0 +1,56 @@
+
+//
+// CI tasks
+//
+
+/* These tasks help simplify the integration with CI systems */
+
+task ciCompile {
+    description = 'Verifies that the code compiles. Intended for use in response to pull requests.'
+    dependsOn 'clean', 'compileZcashmainnetReleaseJavaWithJavac'
+}
+task ciBuild {
+    description = 'Builds the default variant of the SDK. Intended for use in response to merges.'
+    dependsOn 'ciCompile', 'assembleZcashmainnetRelease'
+}
+task ciLintPr {
+    description = 'Verifies that the code passes lint checks. Intended for use in response to pull requests.'
+    doLast {
+        println 'TODO: lint this PR'
+    }
+}
+task ciDeploy {
+    description = 'Deploys an artifact to bintray. Intended for use in response to tags.'
+//    dependsOn ciBuild
+    doLast {
+        println 'TODO: deploy'
+    }
+}
+task ciTestUnit {
+    description = 'Runs unit tests that can execute without an android emulator.'
+    dependsOn 'testZcashmainnetReleaseUnitTest'
+}
+task ciTestAndroid {
+    description = 'Runs Anrdroid tests that require an android emulator.'
+    doLast {
+        println 'TODO: android test this PR'
+    }
+}
+task ciTestPr {
+    description = 'Runs the default test suite. Intended for use in response to pull requests.'
+    dependsOn ciTestAndroid, ciTestUnit
+    doLast {
+        println 'TODO: test this PR'
+    }
+}
+task ciTestNightly {
+    description = 'Runs the full nightly integration test suite. Intended to exercise everything and identify unintended breaking changes.'
+    dependsOn ciBuild
+    doLast {
+        println 'TODO: run nightly build'
+    }
+}
+
+// android tests are more complex than unit tests
+// so whenever both are scheduled as siblings, run the simple unit tests first
+ciTestAndroid.shouldRunAfter ciTestUnit

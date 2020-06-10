@@ -1,4 +1,4 @@
-[zcash-android-wallet-sdk](../../index.md) / [cash.z.wallet.sdk.data](../index.md) / [Synchronizer](index.md) / [isFirstRun](./is-first-run.md)
+[zcash-android-wallet-sdk](../../index.md) / [cash.z.ecc.android.sdk.data](../index.md) / [Synchronizer](index.md) / [isFirstRun](./is-first-run.md)
 
 # isFirstRun
 
