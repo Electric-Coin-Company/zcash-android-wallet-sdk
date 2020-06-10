@@ -64,7 +64,7 @@ open class PagedTransactionRepository(
     override val sentTransactions = sentTxDataSourceFactory.toFlowPagedList(pageSize)
     override val allTransactions = allTxDataSourceFactory.toFlowPagedList(pageSize)
 
-    override fun invalidate() = receivedTxDataSourceFactory.refresh()
+    override fun invalidate() = allTxDataSourceFactory.refresh()
 
     override fun lastScannedHeight(): Int {
         return blocks.lastScannedHeight()
