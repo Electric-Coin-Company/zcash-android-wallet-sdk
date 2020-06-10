@@ -2,7 +2,7 @@
 
 # balances
 
-`val balances: Flow<`[`CompactBlockProcessor.WalletBalance`](../../cash.z.wallet.sdk.block/-compact-block-processor/-wallet-balance/index.md)`>`
+`val balances: Flow<`[`CompactBlockProcessor.WalletBalance`](../../cash.z.ecc.android.sdk.block/-compact-block-processor/-wallet-balance/index.md)`>`
 
 Overrides [Synchronizer.balances](../-synchronizer/balances.md)
 

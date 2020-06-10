@@ -2,7 +2,7 @@
 
 # clearedTransactions
 
-`abstract val clearedTransactions: Flow<PagedList<`[`ConfirmedTransaction`](../../cash.z.wallet.sdk.entity/-confirmed-transaction/index.md)`>>`
+`abstract val clearedTransactions: Flow<PagedList<`[`ConfirmedTransaction`](../../cash.z.ecc.android.sdk.entity/-confirmed-transaction/index.md)`>>`
 
 A flow of all the transactions that are on the blockchain.
 

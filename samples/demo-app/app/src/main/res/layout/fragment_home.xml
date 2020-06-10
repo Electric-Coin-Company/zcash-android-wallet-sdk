@@ -5,7 +5,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="cash.z.wallet.sdk.demoapp.demos.home.HomeFragment">
+    tools:context="cash.z.ecc.android.sdk.demoapp.demos.home.HomeFragment">
 
     <TextView
         android:id="@+id/text_home"

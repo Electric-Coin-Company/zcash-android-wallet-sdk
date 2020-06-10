@@ -1,4 +1,4 @@
-[zcash-android-wallet-sdk](../../index.md) / [cash.z.wallet.sdk.data](../index.md) / [Synchronizer](index.md) / [activeTransactions](./active-transactions.md)
+[zcash-android-wallet-sdk](../../index.md) / [cash.z.ecc.android.sdk.data](../index.md) / [Synchronizer](index.md) / [activeTransactions](./active-transactions.md)
 
 # activeTransactions
 

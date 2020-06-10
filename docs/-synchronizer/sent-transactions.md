@@ -2,7 +2,7 @@
 
 # sentTransactions
 
-`abstract val sentTransactions: Flow<PagedList<`[`ConfirmedTransaction`](../../cash.z.wallet.sdk.entity/-confirmed-transaction/index.md)`>>`
+`abstract val sentTransactions: Flow<PagedList<`[`ConfirmedTransaction`](../../cash.z.ecc.android.sdk.entity/-confirmed-transaction/index.md)`>>`
 
 A flow of all transactions related to sending funds.
 

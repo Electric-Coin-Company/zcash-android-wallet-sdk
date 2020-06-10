@@ -1,4 +1,4 @@
-[zcash-android-wallet-sdk](../../index.md) / [cash.z.wallet.sdk.ext](../index.md) / [Twig](index.md) / [plant](./plant.md)
+[zcash-android-wallet-sdk](../../index.md) / [cash.z.ecc.android.sdk.ext](../index.md) / [Twig](index.md) / [plant](./plant.md)
 
 # plant
 

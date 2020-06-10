@@ -2,7 +2,7 @@
 
 # processorInfo
 
-`val processorInfo: Flow<`[`CompactBlockProcessor.ProcessorInfo`](../../cash.z.wallet.sdk.block/-compact-block-processor/-processor-info/index.md)`>`
+`val processorInfo: Flow<`[`CompactBlockProcessor.ProcessorInfo`](../../cash.z.ecc.android.sdk.block/-compact-block-processor/-processor-info/index.md)`>`
 
 Overrides [Synchronizer.processorInfo](../-synchronizer/processor-info.md)
 

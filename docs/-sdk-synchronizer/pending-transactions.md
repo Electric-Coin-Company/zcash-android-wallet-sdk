@@ -2,7 +2,7 @@
 
 # pendingTransactions
 
-`val pendingTransactions: Flow<`[`List`](https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-list/index.html)`<`[`PendingTransaction`](../../cash.z.wallet.sdk.entity/-pending-transaction/index.md)`>>`
+`val pendingTransactions: Flow<`[`List`](https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-list/index.html)`<`[`PendingTransaction`](../../cash.z.ecc.android.sdk.entity/-pending-transaction/index.md)`>>`
 
 Overrides [Synchronizer.pendingTransactions](../-synchronizer/pending-transactions.md)
 

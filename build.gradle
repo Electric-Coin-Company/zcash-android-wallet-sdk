@@ -1,3 +1,5 @@
+import cash.z.ecc.android.Deps
+
 buildscript {
     ext {
         kotlin_version = '1.3.72'
@@ -59,8 +61,8 @@ apply plugin: 'org.owasp.dependencycheck'
 apply plugin: "com.dorongold.task-tree"
 apply from: 'ci.gradle'
 
-group = 'cash.z.android.wallet'
-version = '1.0.0-beta05'
+group = Deps.group
+version = Deps.versionName
 
 repositories {
     google()
@@ -78,12 +80,12 @@ android {
     defaultConfig {
         minSdkVersion buildConfig.minSdkVersion
         targetSdkVersion buildConfig.targetSdkVersion
-        versionCode = 1_00_00_205  // last digits are alpha(0XX) beta(2XX) rc(4XX) release(8XX). Ex: 1_08_04_401 is an release candidate build of version 1.8.4 and 1_08_04_800 would be the final release.
-        versionName = "$version"
+        versionCode = Deps.versionCode
+        versionName = Deps.versionName
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         testInstrumentationRunnerArguments clearPackageData: 'true'
         multiDexEnabled true
-        archivesBaseName = "zcash-android-wallet-sdk-$versionName"
+        archivesBaseName = "zcash-android-wallet-sdk-${Deps.versionName}"
 
         javaCompileOptions {
             annotationProcessorOptions {
@@ -149,7 +151,7 @@ android {
 
 allOpen {
     // marker for classes that we want to be able to extend in debug builds for testing purposes
-    annotation 'cash.z.wallet.sdk.annotation.OpenClass'
+    annotation 'cash.z.ecc.android.sdk.annotation.OpenClass'
 }
 
 clean {

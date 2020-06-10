@@ -2,7 +2,7 @@
 
 # balances
 
-`abstract val balances: Flow<`[`CompactBlockProcessor.WalletBalance`](../../cash.z.wallet.sdk.block/-compact-block-processor/-wallet-balance/index.md)`>`
+`abstract val balances: Flow<`[`CompactBlockProcessor.WalletBalance`](../../cash.z.ecc.android.sdk.block/-compact-block-processor/-wallet-balance/index.md)`>`
 
 A stream of balance values, separately reflecting both the available and total balance.
 

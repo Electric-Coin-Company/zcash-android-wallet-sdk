@@ -1,4 +1,4 @@
-package cash.z.wallet.sdk.annotation
+package cash.z.ecc.android.sdk.annotation
 
 /**
  * Used in conjunction with the kotlin-allopen plugin to make any class with this annotation open for extension.

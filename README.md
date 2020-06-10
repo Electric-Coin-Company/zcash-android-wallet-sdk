@@ -81,7 +81,7 @@ To accomplish this, these responsibilities of the SDK are divided into separate 
 Add the SDK dependency
 
 ```gradle
-implementation "cash.z.android.wallet:zcash-android-testnet:1.0.0-alpha01@aar"
+implementation "cash.z.ecc.android:zcash-android-wallet-sdk-testnet:1.1.0-beta01@aar"
 ```
 
 Start the [Synchronizer](docs/-synchronizer/README.md)

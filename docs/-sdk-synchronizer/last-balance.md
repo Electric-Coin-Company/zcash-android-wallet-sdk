@@ -1,8 +1,8 @@
-[zcash-android-wallet-sdk](../../index.md) / [cash.z.wallet.sdk.data](../index.md) / [SdkSynchronizer](index.md) / [lastBalance](./last-balance.md)
+[zcash-android-wallet-sdk](../../index.md) / [cash.z.ecc.android.sdk.data](../index.md) / [SdkSynchronizer](index.md) / [lastBalance](./last-balance.md)
 
 # lastBalance
 
-`fun lastBalance(): `[`Wallet.WalletBalance`](../../cash.z.wallet.sdk.secure/-wallet/-wallet-balance/index.md)
+`fun lastBalance(): `[`Wallet.WalletBalance`](../../cash.z.ecc.android.sdk.secure/-wallet/-wallet-balance/index.md)
 
 Overrides [Synchronizer.lastBalance](../-synchronizer/last-balance.md)
 

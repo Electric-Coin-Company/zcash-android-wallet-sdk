@@ -65,7 +65,7 @@ use zcash_client_backend::constants::testnet::{
 use zcash_client_backend::encoding::decode_extended_full_viewing_key;
 
 #[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_initLogs(
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_initLogs(
     _env: JNIEnv<'_>,
     _: JClass<'_>,
 ) {
@@ -80,7 +80,7 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_initLogs(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_initDataDb(
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_initDataDb(
     env: JNIEnv<'_>,
     _: JClass<'_>,
     db_data: JString<'_>,
@@ -96,7 +96,7 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_initDataDb(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_initAccountsTable(
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_initAccountsTable(
     env: JNIEnv<'_>,
     _: JClass<'_>,
     db_data: JString<'_>,
@@ -140,7 +140,7 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_initAccountsTabl
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_deriveExtendedSpendingKeys(
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_deriveExtendedSpendingKeys(
     env: JNIEnv<'_>,
     _: JClass<'_>,
     seed: jbyteArray,
@@ -175,7 +175,7 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_deriveExtendedSp
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_deriveExtendedFullViewingKeys(
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_deriveExtendedFullViewingKeys(
     env: JNIEnv<'_>,
     _: JClass<'_>,
     seed: jbyteArray,
@@ -210,7 +210,7 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_deriveExtendedFu
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_deriveAddressFromSeed(
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_deriveAddressFromSeed(
     env: JNIEnv<'_>,
     _: JClass<'_>,
     seed: jbyteArray,
@@ -238,7 +238,7 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_deriveAddressFro
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_deriveAddressFromViewingKey(
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_deriveAddressFromViewingKey(
     env: JNIEnv<'_>,
     _: JClass<'_>,
     extfvk_string: JString<'_>,
@@ -272,7 +272,7 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_deriveAddressFro
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_deriveExtendedFullViewingKey(
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_deriveExtendedFullViewingKey(
     env: JNIEnv<'_>,
     _: JClass<'_>,
     extsk_string: JString<'_>,
@@ -308,7 +308,7 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_deriveExtendedFu
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_initBlocksTable(
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_initBlocksTable(
     env: JNIEnv<'_>,
     _: JClass<'_>,
     db_data: JString<'_>,
@@ -342,7 +342,7 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_initBlocksTable(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_getAddress(
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_getAddress(
     env: JNIEnv<'_>,
     _: JClass<'_>,
     db_data: JString<'_>,
@@ -368,7 +368,7 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_getAddress(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_isValidShieldedAddress(
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_isValidShieldedAddress(
     env: JNIEnv<'_>,
     _: JClass<'_>,
     addr: JString<'_>,
@@ -388,7 +388,7 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_isValidShieldedA
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_isValidTransparentAddress(
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_isValidTransparentAddress(
     env: JNIEnv<'_>,
     _: JClass<'_>,
     addr: JString<'_>,
@@ -408,7 +408,7 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_isValidTranspare
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_getBalance(
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_getBalance(
     env: JNIEnv<'_>,
     _: JClass<'_>,
     db_data: JString<'_>,
@@ -431,7 +431,7 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_getBalance(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_getVerifiedBalance(
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_getVerifiedBalance(
     env: JNIEnv<'_>,
     _: JClass<'_>,
     db_data: JString<'_>,
@@ -454,7 +454,7 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_getVerifiedBalan
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_getReceivedMemoAsUtf8(
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_getReceivedMemoAsUtf8(
     env: JNIEnv<'_>,
     _: JClass<'_>,
     db_data: JString<'_>,
@@ -475,7 +475,7 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_getReceivedMemoA
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_getSentMemoAsUtf8(
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_getSentMemoAsUtf8(
     env: JNIEnv<'_>,
     _: JClass<'_>,
     db_data: JString<'_>,
@@ -496,7 +496,7 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_getSentMemoAsUtf
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_validateCombinedChain(
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_validateCombinedChain(
     env: JNIEnv<'_>,
     _: JClass<'_>,
     db_cache: JString<'_>,
@@ -520,7 +520,7 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_validateCombined
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_rewindToHeight(
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_rewindToHeight(
     env: JNIEnv<'_>,
     _: JClass<'_>,
     db_data: JString<'_>,
@@ -542,7 +542,7 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_rewindToHeight(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_scanBlocks(
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_scanBlocks(
     env: JNIEnv<'_>,
     _: JClass<'_>,
     db_cache: JString<'_>,
@@ -562,7 +562,7 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_scanBlocks(
 
 // ADDED BY ANDROID
 #[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_scanBlockBatch(
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_scanBlockBatch(
     env: JNIEnv<'_>,
     _: JClass<'_>,
     db_cache: JString<'_>,
@@ -582,7 +582,7 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_scanBlockBatch(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_decryptAndStoreTransaction(
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_decryptAndStoreTransaction(
     env: JNIEnv<'_>,
     _: JClass<'_>,
     db_data: JString<'_>,
@@ -602,7 +602,7 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_decryptAndStoreT
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_createToAddress(
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_createToAddress(
     env: JNIEnv<'_>,
     _: JClass<'_>,
     db_data: JString<'_>,
@@ -677,7 +677,7 @@ pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_createToAddress(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_wallet_sdk_jni_RustBackend_branchIdForHeight(
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_branchIdForHeight(
     env: JNIEnv<'_>,
     _: JClass<'_>,
     height: jint,

@@ -2,7 +2,7 @@
 
 # clearedTransactions
 
-`val clearedTransactions: Flow<PagedList<`[`ConfirmedTransaction`](../../cash.z.wallet.sdk.entity/-confirmed-transaction/index.md)`>>`
+`val clearedTransactions: Flow<PagedList<`[`ConfirmedTransaction`](../../cash.z.ecc.android.sdk.entity/-confirmed-transaction/index.md)`>>`
 
 Overrides [Synchronizer.clearedTransactions](../-synchronizer/cleared-transactions.md)
 

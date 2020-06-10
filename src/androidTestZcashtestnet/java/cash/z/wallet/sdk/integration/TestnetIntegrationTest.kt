@@ -1,13 +1,13 @@
-package cash.z.wallet.sdk.integration
+package cash.z.ecc.android.sdk.integration
 
 import androidx.test.platform.app.InstrumentationRegistry
-import cash.z.wallet.sdk.Initializer
-import cash.z.wallet.sdk.Synchronizer
-import cash.z.wallet.sdk.Synchronizer.Status.SYNCED
-import cash.z.wallet.sdk.db.entity.isSubmitSuccess
-import cash.z.wallet.sdk.ext.*
-import cash.z.wallet.sdk.jni.RustBackend
-import cash.z.wallet.sdk.service.LightWalletGrpcService
+import cash.z.ecc.android.sdk.Initializer
+import cash.z.ecc.android.sdk.Synchronizer
+import cash.z.ecc.android.sdk.Synchronizer.Status.SYNCED
+import cash.z.ecc.android.sdk.db.entity.isSubmitSuccess
+import cash.z.ecc.android.sdk.ext.*
+import cash.z.ecc.android.sdk.jni.RustBackend
+import cash.z.ecc.android.sdk.service.LightWalletGrpcService
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
@@ -100,7 +100,7 @@ class TestnetIntegrationTest : ScopedTest() {
         private const val birthdayHeight = 963150
         private const val targetHeight = 663250
         private const val seedPhrase = "still champion voice habit trend flight survey between bitter process artefact blind carbon truly provide dizzy crush flush breeze blouse charge solid fish spread"
-        val seed = "cash.z.wallet.sdk.integration.IntegrationTest.seed.value.64bytes".toByteArray()
+        val seed = "cash.z.ecc.android.sdk.integration.IntegrationTest.seed.value.64bytes".toByteArray()
         val address = "zs1m30y59wxut4zk9w24d6ujrdnfnl42hpy0ugvhgyhr8s0guszutqhdj05c7j472dndjstulph74m"
         val toAddress = "zs1vp7kvlqr4n9gpehztr76lcn6skkss9p8keqs3nv8avkdtjrcctrvmk9a7u494kluv756jeee5k0"
 

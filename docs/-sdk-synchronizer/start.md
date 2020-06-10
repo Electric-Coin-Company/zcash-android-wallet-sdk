@@ -7,7 +7,7 @@
 Overrides [Synchronizer.start](../-synchronizer/start.md)
 
 Starts this synchronizer within the given scope. For simplicity, attempting to start an
-instance that has already been started will throw a [SynchronizerException.FalseStart](../../cash.z.wallet.sdk.exception/-synchronizer-exception/-false-start.md)
+instance that has already been started will throw a [SynchronizerException.FalseStart](../../cash.z.ecc.android.sdk.exception/-synchronizer-exception/-false-start.md)
 exception. This reduces the complexity of managing resources that must be recycled. Instead,
 each synchronizer is designed to have a long lifespan and should be started from an activity,
 application or session.
