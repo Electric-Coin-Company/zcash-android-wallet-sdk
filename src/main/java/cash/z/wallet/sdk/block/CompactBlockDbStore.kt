@@ -44,6 +44,10 @@ class CompactBlockDbStore(
         if (lastBlock < SAPLING_ACTIVATION_HEIGHT) -1 else lastBlock
     }
 
+    override suspend fun findCompactBlock(height: Int): CompactFormats.CompactBlock? {
+        return cacheDao.findCompactBlock(height)?.let { CompactFormats.CompactBlock.parseFrom(it) }
+    }
+
     override suspend fun write(result: List<CompactFormats.CompactBlock>) = withContext(IO) {
         cacheDao.insert(result.map { CompactBlockEntity(it.height.toInt(), it.toByteArray()) })
     }

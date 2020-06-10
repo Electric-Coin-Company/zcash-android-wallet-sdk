@@ -14,6 +14,13 @@ interface CompactBlockStore {
     suspend fun getLatestHeight(): Int
 
     /**
+     * Fetch the compact block for the given height, if it exists.
+     *
+     * @return the compact block or null when it did not exist.
+     */
+    suspend fun findCompactBlock(height: Int): CompactFormats.CompactBlock?
+
+    /**
      * Write the given blocks to this store, which may be anything from an in-memory cache to a DB.
      *
      * @param result the list of compact blocks to persist.

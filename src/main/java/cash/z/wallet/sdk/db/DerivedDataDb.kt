@@ -5,6 +5,8 @@ import androidx.room.Dao
 import androidx.room.Database
 import androidx.room.Query
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import cash.z.wallet.sdk.entity.*
 
 //
@@ -34,6 +36,99 @@ abstract class DerivedDataDb : RoomDatabase() {
     abstract fun blockDao(): BlockDao
     abstract fun receivedDao(): ReceivedDao
     abstract fun sentDao(): SentDao
+
+
+    //
+    // Migrations
+    //
+
+    companion object {
+
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("PRAGMA foreign_keys = OFF;")
+                database.execSQL("""
+                    CREATE TABLE IF NOT EXISTS received_notes_new (
+                        id_note INTEGER PRIMARY KEY, tx INTEGER NOT NULL,
+                        output_index INTEGER NOT NULL, account INTEGER NOT NULL,
+                        diversifier BLOB NOT NULL, value INTEGER NOT NULL,
+                        rcm BLOB NOT NULL, nf BLOB NOT NULL UNIQUE,
+                        is_change INTEGER NOT NULL, memo BLOB,
+                        spent INTEGER,
+                        FOREIGN KEY (tx) REFERENCES transactions(id_tx),
+                        FOREIGN KEY (account) REFERENCES accounts(account),
+                        FOREIGN KEY (spent) REFERENCES transactions(id_tx),
+                        CONSTRAINT tx_output UNIQUE (tx, output_index)
+                    ); """.trimIndent()
+                )
+                database.execSQL("INSERT INTO received_notes_new SELECT * FROM received_notes;")
+                database.execSQL("DROP TABLE received_notes;")
+                database.execSQL("ALTER TABLE received_notes_new RENAME TO received_notes;")
+                database.execSQL("PRAGMA foreign_keys = ON;")
+            }
+        }
+
+        val MIGRATION_4_3 = object : Migration(4, 3) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("PRAGMA foreign_keys = OFF;")
+                database.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS received_notes_new (
+                        id_note INTEGER PRIMARY KEY,
+                        tx INTEGER NOT NULL,
+                        output_index INTEGER NOT NULL,
+                        account INTEGER NOT NULL,
+                        diversifier BLOB NOT NULL,
+                        value INTEGER NOT NULL,
+                        rcm BLOB NOT NULL,
+                        nf BLOB NOT NULL UNIQUE,
+                        is_change INTEGER NOT NULL,
+                        memo BLOB,
+                        spent INTEGER,
+                        FOREIGN KEY (tx) REFERENCES transactions(id_tx),
+                        FOREIGN KEY (account) REFERENCES accounts(account),
+                        FOREIGN KEY (spent) REFERENCES transactions(id_tx),
+                        CONSTRAINT tx_output UNIQUE (tx, output_index)
+                    ); """.trimIndent()
+                )
+                database.execSQL("INSERT INTO received_notes_new SELECT * FROM received_notes;")
+                database.execSQL("DROP TABLE received_notes;")
+                database.execSQL("ALTER TABLE received_notes_new RENAME TO received_notes;")
+                database.execSQL("PRAGMA foreign_keys = ON;")
+            }
+        }
+
+
+        val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("PRAGMA foreign_keys = OFF;")
+                database.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS received_notes_new (
+                        id_note INTEGER PRIMARY KEY,
+                        tx INTEGER NOT NULL,
+                        output_index INTEGER NOT NULL,
+                        account INTEGER NOT NULL,
+                        diversifier BLOB NOT NULL,
+                        value INTEGER NOT NULL,
+                        rcm BLOB NOT NULL,
+                        nf BLOB NOT NULL UNIQUE,
+                        is_change INTEGER NOT NULL,
+                        memo BLOB,
+                        spent INTEGER,
+                        FOREIGN KEY (tx) REFERENCES transactions(id_tx),
+                        FOREIGN KEY (account) REFERENCES accounts(account),
+                        FOREIGN KEY (spent) REFERENCES transactions(id_tx),
+                        CONSTRAINT tx_output UNIQUE (tx, output_index)
+                    ); """.trimIndent()
+                )
+                database.execSQL("INSERT INTO received_notes_new SELECT * FROM received_notes;")
+                database.execSQL("DROP TABLE received_notes;")
+                database.execSQL("ALTER TABLE received_notes_new RENAME TO received_notes;")
+                database.execSQL("PRAGMA foreign_keys = ON;")
+            }
+        }
+    }
 }
 
 
@@ -51,6 +146,9 @@ interface BlockDao {
 
     @Query("SELECT MAX(height) FROM blocks")
     fun lastScannedHeight(): Int
+
+    @Query( "SELECT hash FROM BLOCKS WHERE height = :height")
+    fun findHashByHeight(height: Int): ByteArray?
 }
 
 /**
@@ -237,4 +335,3 @@ interface TransactionDao {
     suspend fun findAllTransactionsByRange(blockRangeStart: Int, blockRangeEnd: Int = blockRangeStart, limit: Int = Int.MAX_VALUE): List<ConfirmedTransaction>
 
 }
-

@@ -38,9 +38,9 @@ open class PagedTransactionRepository(
     ) : this(
         Room.databaseBuilder(context, DerivedDataDb::class.java, dataDbName)
             .setJournalMode(RoomDatabase.JournalMode.TRUNCATE)
-            .addMigrations(MIGRATION_3_4)
-            .addMigrations(MIGRATION_4_3)
-            .addMigrations(MIGRATION_4_5)
+            .addMigrations(DerivedDataDb.MIGRATION_3_4)
+            .addMigrations(DerivedDataDb.MIGRATION_4_3)
+            .addMigrations(DerivedDataDb.MIGRATION_4_5)
             .build(),
         pageSize
     )
@@ -86,6 +86,7 @@ open class PagedTransactionRepository(
         transactions.findMinedHeight(rawTransactionId)
     }
 
+
     /**
      * Close the underlying database.
      */
@@ -93,96 +94,7 @@ open class PagedTransactionRepository(
         derivedDataDb.close()
     }
 
-
-    //
-    // Migrations
-    //
-
-    companion object {
-        val MIGRATION_3_4 = object : Migration(3, 4) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                database.execSQL("PRAGMA foreign_keys = OFF;")
-                database.execSQL("""
-                    CREATE TABLE IF NOT EXISTS received_notes_new (
-                        id_note INTEGER PRIMARY KEY, tx INTEGER NOT NULL,
-                        output_index INTEGER NOT NULL, account INTEGER NOT NULL,
-                        diversifier BLOB NOT NULL, value INTEGER NOT NULL,
-                        rcm BLOB NOT NULL, nf BLOB NOT NULL UNIQUE,
-                        is_change INTEGER NOT NULL, memo BLOB,
-                        spent INTEGER,
-                        FOREIGN KEY (tx) REFERENCES transactions(id_tx),
-                        FOREIGN KEY (account) REFERENCES accounts(account),
-                        FOREIGN KEY (spent) REFERENCES transactions(id_tx),
-                        CONSTRAINT tx_output UNIQUE (tx, output_index)
-                    ); """.trimIndent()
-                )
-                database.execSQL("INSERT INTO received_notes_new SELECT * FROM received_notes;")
-                database.execSQL("DROP TABLE received_notes;")
-                database.execSQL("ALTER TABLE received_notes_new RENAME TO received_notes;")
-                database.execSQL("PRAGMA foreign_keys = ON;")
-            }
-        }
-
-        private val MIGRATION_4_3 = object : Migration(4, 3) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                database.execSQL("PRAGMA foreign_keys = OFF;")
-                database.execSQL(
-                    """
-                    CREATE TABLE IF NOT EXISTS received_notes_new (
-                        id_note INTEGER PRIMARY KEY,
-                        tx INTEGER NOT NULL,
-                        output_index INTEGER NOT NULL,
-                        account INTEGER NOT NULL,
-                        diversifier BLOB NOT NULL,
-                        value INTEGER NOT NULL,
-                        rcm BLOB NOT NULL,
-                        nf BLOB NOT NULL UNIQUE,
-                        is_change INTEGER NOT NULL,
-                        memo BLOB,
-                        spent INTEGER,
-                        FOREIGN KEY (tx) REFERENCES transactions(id_tx),
-                        FOREIGN KEY (account) REFERENCES accounts(account),
-                        FOREIGN KEY (spent) REFERENCES transactions(id_tx),
-                        CONSTRAINT tx_output UNIQUE (tx, output_index)
-                    ); """.trimIndent()
-                )
-                database.execSQL("INSERT INTO received_notes_new SELECT * FROM received_notes;")
-                database.execSQL("DROP TABLE received_notes;")
-                database.execSQL("ALTER TABLE received_notes_new RENAME TO received_notes;")
-                database.execSQL("PRAGMA foreign_keys = ON;")
-            }
-        }
-
-
-        private val MIGRATION_4_5 = object : Migration(4, 5) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                database.execSQL("PRAGMA foreign_keys = OFF;")
-                database.execSQL(
-                    """
-                    CREATE TABLE IF NOT EXISTS received_notes_new (
-                        id_note INTEGER PRIMARY KEY,
-                        tx INTEGER NOT NULL,
-                        output_index INTEGER NOT NULL,
-                        account INTEGER NOT NULL,
-                        diversifier BLOB NOT NULL,
-                        value INTEGER NOT NULL,
-                        rcm BLOB NOT NULL,
-                        nf BLOB NOT NULL UNIQUE,
-                        is_change INTEGER NOT NULL,
-                        memo BLOB,
-                        spent INTEGER,
-                        FOREIGN KEY (tx) REFERENCES transactions(id_tx),
-                        FOREIGN KEY (account) REFERENCES accounts(account),
-                        FOREIGN KEY (spent) REFERENCES transactions(id_tx),
-                        CONSTRAINT tx_output UNIQUE (tx, output_index)
-                    ); """.trimIndent()
-                )
-                database.execSQL("INSERT INTO received_notes_new SELECT * FROM received_notes;")
-                database.execSQL("DROP TABLE received_notes;")
-                database.execSQL("ALTER TABLE received_notes_new RENAME TO received_notes;")
-                database.execSQL("PRAGMA foreign_keys = ON;")
-            }
-        }
-    }
-
+    // TODO: begin converting these into Data Access API. For now, just collect the desired operations and iterate/refactor, later
+    fun findBlockHash(height: Int): ByteArray? = blocks.findHashByHeight(height)
+    fun getTransactionCount(): Int = transactions.count()
 }

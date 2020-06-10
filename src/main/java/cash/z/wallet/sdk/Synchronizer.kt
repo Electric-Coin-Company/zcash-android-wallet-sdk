@@ -3,7 +3,9 @@ package cash.z.wallet.sdk
 import androidx.paging.PagedList
 import cash.z.wallet.sdk.block.CompactBlockProcessor
 import cash.z.wallet.sdk.block.CompactBlockProcessor.WalletBalance
-import cash.z.wallet.sdk.entity.*
+import cash.z.wallet.sdk.entity.ConfirmedTransaction
+import cash.z.wallet.sdk.entity.PendingTransaction
+import cash.z.wallet.sdk.ext.ConsensusBranchId
 import cash.z.wallet.sdk.rpc.Service
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -34,6 +36,12 @@ interface Synchronizer {
     /**
      * Stop this synchronizer. Implementations should ensure that calling this method cancels all
      * jobs that were created by this instance.
+     *
+     * Note that in most cases, there is no need to call [stop] because the Synchronizer will
+     * automatically stop whenever the parentScope is cancelled. For instance, if that scope is
+     * bound to the lifecycle of the activity, the Synchronizer will stop when the activity stops.
+     * However, if no scope is provided to the start method, then the Synchronizer must be stopped
+     * with this function.
      */
     fun stop()
 
@@ -91,6 +99,21 @@ interface Synchronizer {
      * A flow of all transactions related to receiving funds.
      */
     val receivedTransactions: Flow<PagedList<ConfirmedTransaction>>
+
+
+    //
+    // Latest Properties
+    //
+
+    /**
+     * An in-memory reference to the latest height seen on the network.
+     */
+    val latestHeight: Int
+
+    /**
+     * An in-memory reference to the most recently calculated balance.
+     */
+    val latestBalance: WalletBalance
 
 
     //
@@ -155,6 +178,19 @@ interface Synchronizer {
     suspend fun isValidTransparentAddr(address: String): Boolean
 
     /**
+     * Validate whether the server and this SDK share the same consensus branch. This is
+     * particularly important to check around network updates so that any wallet that's connected to
+     * an incompatible server can surface that information effectively. For the SDK, the consensus
+     * branch is used when creating transactions as each one needs to target a specific branch. This
+     * function compares the server's branch id to this SDK's and returns information that helps
+     * determine whether they match.
+     *
+     * @return an instance of [ConsensusMatchType] that is essentially a wrapper for both branch ids
+     * and provides helper functions for communicating detailed errors to the user.
+     */
+    suspend fun validateConsensusBranch(): ConsensusMatchType
+
+    /**
      * Validates the given address, returning information about why it is invalid. This is a
      * convenience method that combines the behavior of [isValidShieldedAddr] and
      * [isValidTransparentAddr] into one call so that the developer doesn't have to worry about
@@ -176,6 +212,13 @@ interface Synchronizer {
      * @return true when the cancellation request was successful. False when it is too late.
      */
     suspend fun cancelSpend(transaction: PendingTransaction): Boolean
+
+    /**
+     * Convenience function that exposes the underlying server information, like its name and
+     * consensus branch id. Most wallets should already have a different source of truth for the
+     * server(s) with which they operate and thereby not need this function.
+     */
+    suspend fun getServerInfo(): Service.LightdInfo
 
 
     //
@@ -292,6 +335,40 @@ interface Synchronizer {
          * A convenience method that returns true when an instance of this class is invalid.
          */
         val isNotValid get() = this !is Valid
+    }
+
+    /**
+     * Helper class that provides consensus branch information for this SDK and the server to which
+     * it is connected and whether they are aligned. Essentially a wrapper for both branch ids with
+     * helper functions for communicating detailed error information to the end-user.
+     */
+    class ConsensusMatchType(val sdkBranch: ConsensusBranchId?, val serverBranch: ConsensusBranchId?) {
+        val hasServerBranch = serverBranch != null
+        val hasSdkBranch = sdkBranch != null
+        val isValid = hasServerBranch && sdkBranch == serverBranch
+        val hasBoth = hasServerBranch && hasSdkBranch
+        val hasNeither = !hasServerBranch && !hasSdkBranch
+        val isServerNewer = hasBoth && serverBranch!!.ordinal > sdkBranch!!.ordinal
+        val isSdkNewer = hasBoth && sdkBranch!!.ordinal > serverBranch!!.ordinal
+
+        val errorMessage
+            get() = when {
+                isValid -> null
+                hasNeither -> "Our branch is unknown and the server branch is unknown. Verify" +
+                        " that they are both using the latest consensus branch ID."
+                hasServerBranch -> "The server is on $serverBranch but our branch is unknown." +
+                        " Verify that we are fully synced."
+                hasSdkBranch -> "We are on $sdkBranch but the server branch is unknown. Verify" +
+                        " the network connection."
+                else -> {
+                    val newerBranch = if (isServerNewer) serverBranch else sdkBranch
+                    val olderBranch = if (isSdkNewer) serverBranch else sdkBranch
+                    val newerDevice = if (isServerNewer) "the server has" else "we have"
+                    val olderDevice = if (isSdkNewer) "the server has" else "we have"
+                    "Incompatible consensus: $newerDevice upgraded to $newerBranch but" +
+                            " $olderDevice $olderBranch."
+                }
+            }
     }
 
 }

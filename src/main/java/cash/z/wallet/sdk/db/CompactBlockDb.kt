@@ -44,4 +44,7 @@ interface CompactBlockDao {
 
     @Query("SELECT MAX(height) FROM compactblocks")
     fun latestBlockHeight(): Int
+
+    @Query("SELECT data FROM compactblocks WHERE height = :height")
+    fun findCompactBlock(height: Int): ByteArray?
 }

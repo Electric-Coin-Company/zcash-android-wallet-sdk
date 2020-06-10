@@ -1,5 +1,6 @@
 package cash.z.wallet.sdk.block
 
+import cash.z.wallet.sdk.rpc.Service
 import cash.z.wallet.sdk.service.LightWalletService
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.withContext
@@ -59,6 +60,10 @@ open class CompactBlockDownloader(
      */
     suspend fun getLastDownloadedHeight() = withContext(IO) {
         compactBlockStore.getLatestHeight()
+    }
+
+    suspend fun getServerInfo(): Service.LightdInfo = withContext(IO) {
+        lightwalletService.getServerInfo()
     }
 
     /**

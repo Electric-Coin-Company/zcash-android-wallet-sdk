@@ -1,8 +1,9 @@
 package cash.z.wallet.sdk
 
-import android.content.Context
+import cash.z.wallet.sdk.Synchronizer.AddressType
 import cash.z.wallet.sdk.Synchronizer.AddressType.Shielded
 import cash.z.wallet.sdk.Synchronizer.AddressType.Transparent
+import cash.z.wallet.sdk.Synchronizer.ConsensusMatchType
 import cash.z.wallet.sdk.Synchronizer.Status.*
 import cash.z.wallet.sdk.block.CompactBlockDbStore
 import cash.z.wallet.sdk.block.CompactBlockDownloader
@@ -12,17 +13,17 @@ import cash.z.wallet.sdk.block.CompactBlockProcessor.WalletBalance
 import cash.z.wallet.sdk.block.CompactBlockStore
 import cash.z.wallet.sdk.entity.*
 import cash.z.wallet.sdk.exception.SynchronizerException
-import cash.z.wallet.sdk.ext.ZcashSdk
-import cash.z.wallet.sdk.ext.twig
-import cash.z.wallet.sdk.ext.twigTask
-import cash.z.wallet.sdk.jni.RustBackend
+import cash.z.wallet.sdk.ext.*
+import cash.z.wallet.sdk.rpc.Service
 import cash.z.wallet.sdk.service.LightWalletGrpcService
 import cash.z.wallet.sdk.service.LightWalletService
 import cash.z.wallet.sdk.transaction.*
+import io.grpc.ManagedChannel
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.ConflatedBroadcastChannel
 import kotlinx.coroutines.flow.*
 import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.EmptyCoroutineContext
 
 /**
  * A Synchronizer that attempts to remain operational, despite any number of errors that can occur.
@@ -50,10 +51,32 @@ class SdkSynchronizer internal constructor(
      * The lifespan of this Synchronizer. This scope is initialized once the Synchronizer starts
      * because it will be a child of the parentScope that gets passed into the [start] function.
      * Everything launched by this Synchronizer will be cancelled once the Synchronizer or its
-     * parentScope stops. This is a lateinit rather than nullable property so that it fails early
+     * parentScope stops. This coordinates with [isStarted] so that it fails early
      * rather than silently, whenever the scope is used before the Synchronizer has been started.
      */
-    lateinit var coroutineScope: CoroutineScope
+    var coroutineScope: CoroutineScope = CoroutineScope(EmptyCoroutineContext)
+        get() {
+            if (!isStarted) {
+                throw SynchronizerException.NotYetStarted
+            } else {
+                return field
+            }
+        }
+        set(value) {
+            field = value
+            if (value.coroutineContext !is EmptyCoroutineContext) isStarted = true
+        }
+
+    /**
+     * The channel that this Synchronizer uses to communicate with lightwalletd. In most cases, this
+     * should not be needed or used. Instead, APIs should be added to the synchronizer to
+     * enable the desired behavior. In the rare case, such as testing, it can be helpful to share
+     * the underlying channel to connect to the same service, and use other APIs
+     * (such as darksidewalletd) because channels are heavyweight.
+     */
+    val channel: ManagedChannel get() = (processor.downloader.lightwalletService as LightWalletGrpcService).channel
+
+    var isStarted = false
 
 
     //
@@ -93,6 +116,7 @@ class SdkSynchronizer internal constructor(
      */
     override val processorInfo: Flow<CompactBlockProcessor.ProcessorInfo> = processor.processorInfo
 
+
     //
     // Error Handling
     //
@@ -125,12 +149,26 @@ class SdkSynchronizer internal constructor(
      * A callback to invoke whenever a chain error is encountered. These occur whenever the
      * processor detects a missing or non-chain-sequential block (i.e. a reorg).
      */
-    override var onChainErrorHandler: ((Int, Int) -> Any)? = null
+    override var onChainErrorHandler: ((errorHeight: Int, rewindHeight: Int) -> Any)? = null
 
 
     //
     // Public API
     //
+
+    /**
+     * Convenience function for the latest balance. Instead of using this, a wallet will more likely
+     * want to consume the flow of balances using [balances].
+     */
+    override val latestBalance: WalletBalance get() = _balances.value
+
+    /**
+     * Convenience function for the latest height. Specifically, this value represents the last
+     * height that the synchronizer has observed from the lightwalletd server. Instead of using
+     * this, a wallet will more likely want to consume the flow of processor info using
+     * [processorInfo].
+     */
+    override val latestHeight: Int get() = processor.currentInfo.networkBlockHeight
 
     /**
      * Starts this synchronizer within the given scope. For simplicity, attempting to start an
@@ -148,15 +186,15 @@ class SdkSynchronizer internal constructor(
      * @return an instance of this class so that this function can be used fluidly.
      */
     override fun start(parentScope: CoroutineScope?): Synchronizer {
-        if (::coroutineScope.isInitialized) throw SynchronizerException.FalseStart
-
+        if (isStarted) throw SynchronizerException.FalseStart
         // base this scope on the parent so that when the parent's job cancels, everything here
         // cancels as well also use a supervisor job so that one failure doesn't bring down the
         // whole synchronizer
         val supervisorJob = SupervisorJob(parentScope?.coroutineContext?.get(Job))
-        coroutineScope =
-            CoroutineScope(supervisorJob + Dispatchers.Main)
-        coroutineScope.onReady()
+        CoroutineScope(supervisorJob + Dispatchers.Main).let { scope ->
+            coroutineScope = scope
+            scope.onReady()
+        }
         return this
     }
 
@@ -172,6 +210,32 @@ class SdkSynchronizer internal constructor(
             _balances.cancel()
             _status.cancel()
         }
+    }
+
+    /**
+     * Convenience function that exposes the underlying server information, like its name and
+     * consensus branch id. Most wallets should already have a different source of truth for the
+     * server(s) with which they operate.
+     */
+    override suspend fun getServerInfo(): Service.LightdInfo = processor.downloader.getServerInfo()
+
+    
+    //
+    // Storage APIs
+    //
+
+    // TODO: turn this section into the data access API. For now, just aggregate all the things that we want to do with the underlying data
+
+    fun findBlockHash(height: Int): ByteArray? {
+        return (storage as? PagedTransactionRepository)?.findBlockHash(height)
+    }
+
+    fun findBlockHashAsHex(height: Int): String? {
+        return findBlockHash(height)?.toHexReversed()
+    }
+
+    fun getTransactionCount(): Int {
+        return (storage as? PagedTransactionRepository)?.getTransactionCount() ?: 0
     }
 
 

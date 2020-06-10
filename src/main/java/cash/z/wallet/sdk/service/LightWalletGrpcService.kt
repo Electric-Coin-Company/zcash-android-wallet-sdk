@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit
  * created for streaming requests, it will use a deadline that is after the given duration from now.
  */
 class LightWalletGrpcService private constructor(
-    private var channel: ManagedChannel,
+    var channel: ManagedChannel,
     private val singleRequestTimeoutSec: Long = 10L,
     private val streamingRequestTimeoutSec: Long = 90L
 ) : LightWalletService {
@@ -63,6 +63,10 @@ class LightWalletGrpcService private constructor(
         return channel.createStub(singleRequestTimeoutSec).getLatestBlock(Service.ChainSpec.newBuilder().build()).height.toInt()
     }
 
+    override fun getServerInfo(): Service.LightdInfo {
+        channel.resetConnectBackoff()
+        return channel.createStub(singleRequestTimeoutSec).getLightdInfo(Service.Empty.newBuilder().build())
+    }
     override fun submitTransaction(spendTransaction: ByteArray): Service.SendResponse {
         channel.resetConnectBackoff()
         val request = Service.RawTransaction.newBuilder().setData(ByteString.copyFrom(spendTransaction)).build()
@@ -79,6 +83,8 @@ class LightWalletGrpcService private constructor(
     }
 
     override fun reconnect() {
+        twig("closing existing channel and then reconnecting to" +
+                " ${connectionInfo.host}:${connectionInfo.port}?usePlaintext=${connectionInfo.usePlaintext}")
         channel.shutdown()
         channel = createDefaultChannel(
             connectionInfo.appContext,
@@ -132,7 +138,7 @@ class LightWalletGrpcService private constructor(
             port: Int,
             usePlaintext: Boolean
         ): ManagedChannel {
-            twig("Creating channel that will connect to $host:$port")
+            twig("Creating channel that will connect to $host:$port?usePlaintext=$usePlaintext")
             return AndroidChannelBuilder
                 .forAddress(host, port)
                 .context(appContext)

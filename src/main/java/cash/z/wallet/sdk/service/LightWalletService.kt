@@ -27,6 +27,25 @@ interface LightWalletService {
     fun getLatestBlockHeight(): Int
 
     /**
+     * Return basic information about the server such as:
+     *
+     * ```
+     * {
+     *     "version": "0.2.1",
+     *     "vendor": "ECC LightWalletD",
+     *     "taddrSupport": true,
+     *     "chainName": "main",
+     *     "saplingActivationHeight": 419200,
+     *     "consensusBranchId": "2bb40e60",
+     *     "blockHeight": 861272
+     * }
+     * ```
+     *
+     * @return useful server details.
+     */
+    fun getServerInfo(): Service.LightdInfo
+
+    /**
      * Submit a raw transaction.
      *
      * @return the response from the server.
