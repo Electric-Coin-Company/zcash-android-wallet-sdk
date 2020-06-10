@@ -122,7 +122,8 @@ rustup target add armv7-linux-androideabi aarch64-linux-android i686-linux-andro
     <img src="assets/sdk-manager-icon.png?raw=true" width="70%"/>
 </p>    
 
-  6. Then, install NDK 20.0.5594570 
+  6. Then, install NDK ~~20.0.5594570~~ 21.1.6352462     
+     (pro tip: build.gradle -> `ndkVersion` defines the actual required version. This README may get out-of-date)
 <p align="center">
     <img src="assets/ndk-window.png?raw=true" width="85%"/>
 </p>    
