@@ -193,6 +193,7 @@ cargo {
         "arm",
         "arm64",
         "x86",
+        "x86_64"
     ]
     profile = "release"
     forceTargets = true
