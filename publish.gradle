@@ -43,7 +43,7 @@ task docsJar(type: Jar) {
     from dokka
 }
 
-def activePublication = Deps.Publication.Testnet
+def activePublication = Deps.publishingTarget
 publishing {
     publications {
         android.libraryVariants.all { variant ->
@@ -99,7 +99,7 @@ bintray {
         labels = ['aar', 'android', 'zcash', 'ecc', 'sdk']
         licenses = ['MIT']
         vcsUrl = Deps.githubUrl
-        dryRun = true
+        dryRun = Deps.publishingDryRun
         version {
             name = Deps.versionName
             desc = Deps.description

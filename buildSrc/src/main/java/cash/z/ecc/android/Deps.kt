@@ -12,6 +12,9 @@ object Deps {
     const val githubUrl =       "https://github.com/zcash/zcash-android-wallet-sdk"
 
     // publishing
+    const val publishingDryRun = false
+    val publishingTarget = Publication.Mainnet
+
     object Publication {
         object Mainnet {
             const val variant = "zcashmainnetRelease"
