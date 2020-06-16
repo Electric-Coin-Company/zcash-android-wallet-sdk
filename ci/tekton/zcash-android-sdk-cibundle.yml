@@ -1,0 +1,34 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: TaskRun
+metadata:
+  generateName: zcash-android-sdk-cibundle-
+spec:
+  resources:
+    inputs:
+      - name: source
+        resourceSpec:
+          type: git
+          params:
+            - name: revision
+              value: master
+            - name: url
+              value: https://github.com/zcash/zcash-android-wallet-sdk.git
+  taskSpec:    
+    resources:
+      inputs:
+        - name: source
+          type: git
+    steps:
+      - name: gradlew-cibuild
+        image: electriccoinco/zcash-android-builder:ben
+        script: |
+          cd source
+          env | sort
+          pwd
+          ls -la
+          ./gradlew ciBuild --stacktrace --console=plain \
+            -Duser.home=/tekton/home \
+            -Dgradle.user.home=/tekton/home/.gradle
+        securityContext:
+          runAsUser: 0
