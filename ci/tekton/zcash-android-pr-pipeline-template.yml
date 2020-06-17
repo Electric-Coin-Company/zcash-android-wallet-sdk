@@ -1,0 +1,57 @@
+---
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: TriggerTemplate
+metadata:
+  name: zcash-android-pr-pipeline-template
+spec:
+  params:
+    - name: gitHubProject
+      description: Github project name
+    - name: gitRepositoryURL
+      description: Git repo url
+    - name: gitCommit
+      description: Git commit to build from
+      default: master
+    - name: short_sha
+      description: Short sha from git commit used to identify binaries
+    - name: statusURL
+      description: Tekton dashboard URL for the resource status
+  resourcetemplates:
+    - apiVersion: tekton.dev/v1beta1
+      kind: PipelineRun
+      metadata:
+        generateName: zcash-android-pr-pipeline-
+      spec:
+        serviceAccountName: ecc-tekton
+        pipelineRef:
+          name: zcash-android-pr-pipeline
+        resources:
+          - name: source
+            resourceSpec:
+              type: git
+              params:
+                - name: revision
+                  value: $(params.gitCommit)
+                - name: url
+                  value: $(params.gitRepositoryURL)
+          - name: zcash-android-builder-image
+            resourceSpec:
+              type: image
+              params:
+                - name: url
+                  value: electriccoinco/zcash-android-builder
+          #Is this the repo resource        
+          - name: zcash-android-wallet-sdk
+            resourceRef:
+              name: zcash-android-wallet-sdk
+        params:
+          - name: shortSha
+            value: $(params.short_sha)
+          - name: gitRepositoryURL
+            value: $(params.gitRepositoryURL)
+          - name: gitCommit
+            value: $(params.gitCommit)
+          - name: gitHubProject
+            value: $(params.gitHubProject)
+          - name: statusURL
+            value: $(params.statusURL)
