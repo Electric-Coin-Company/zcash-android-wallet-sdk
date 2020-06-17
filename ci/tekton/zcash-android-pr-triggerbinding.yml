@@ -1,0 +1,19 @@
+---
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: TriggerBinding
+metadata:
+  name: zcash-android-pr-binding
+spec:
+  params:
+  - name: dockerImageName
+    value: electriccoinco/zcash-android-builder
+  - name: gitCommit
+    value: $(body.pull_request.head.sha)
+  - name: short_sha
+    value: $(body.short_sha)
+  - name: gitRepositoryURL
+    value: $(body.repository.clone_url)
+  - name: gitHubProject
+    value: $(body.repository.full_name)
+  - name: statusURL
+    value: https://tekton-dashboard-prod.z.cash/#/namespaces/default/pipelineruns?labelSelector=tekton.dev%2Fpipeline%3Dzcash-android-pr-pipeline
