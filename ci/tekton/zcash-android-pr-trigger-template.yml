@@ -20,6 +20,7 @@ spec:
       metadata:
         generateName: zcash-android-pr-pipeline-
       spec:
+        serviceAccountName: ecc-tekton
         pipelineRef:
           name: zcash-android-pr-pipeline
         resources:

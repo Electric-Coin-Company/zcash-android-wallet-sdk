@@ -9,7 +9,7 @@ spec:
       - name: source
         type: git
   steps:
-    - name: lint
+    - name: build
       image: electriccoinco/zcash-android-builder:latest
       script: |
         cd source
