@@ -1,0 +1,111 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: zcash-android-pr-pipeline
+spec:
+  resources:
+    - name: source
+      type: git
+    - name: cloudlog
+      type: cloudEvent
+    - name: cloudlog-image
+      type: image
+  params:
+    - name: shortSha
+    - name: gitHubProject
+    - name: gitCommit
+    - name: statusURL
+  tasks:
+    - name: set-build-status-pending
+      taskRef:
+        name: github-set-status
+      params:
+        - name: REPO_FULL_NAME
+          value: $(params.gitHubProject)
+        - name: SHA
+          value: $(params.gitCommit)
+        - name: TARGET_URL
+          value: $(params.statusURL)
+        - name: DESCRIPTION
+          value: Attempting to build a binary
+        - name: CONTEXT
+          value: zcash-android-build-binary/check
+        - name: STATE
+          value: pending
+    - name: zcash-android-build-binary
+      runAfter:
+        - set-build-status-pending
+      taskRef:
+        name: zcash-android-build
+      params:
+        - name: shortSha
+          value: $(params.shortSha)
+      resources:
+        inputs:
+          - name: source
+            resource: source
+    - name: set-build-status-success
+      runAfter:
+        - zcash-android-build-binary
+      taskRef:
+        name: github-set-status
+      params:
+        - name: REPO_FULL_NAME
+          value: $(params.gitHubProject)  
+        - name: SHA
+          value: $(params.gitCommit)  
+        - name: TARGET_URL
+          value: $(params.statusURL)
+        - name: DESCRIPTION
+          value: Sucessfully built a binary
+        - name: CONTEXT
+          value: zcash-android-build-binary/check
+        - name: STATE
+          value: success
+    - name: set-lint-status-pending
+      taskRef:
+        name: github-set-status
+      params:
+        - name: REPO_FULL_NAME
+          value: $(params.gitHubProject)
+        - name: SHA
+          value: $(params.gitCommit)
+        - name: TARGET_URL
+          value: $(params.statusURL)
+        - name: DESCRIPTION
+          value: Attempting to build a docker image
+        - name: CONTEXT
+          value: zcash-android-lint/check
+        - name: STATE
+          value: pending
+    - name: zcash-android-lint
+      runAfter:
+        - set-lint-status-pending
+      taskRef:
+        name: zcash-android-lint
+      params:
+        - name: shortSha
+          value: $(params.shortSha)
+      resources:
+        inputs:
+          - name: source
+            resource: source
+    - name: set-lint-status-success
+      runAfter:
+        - zcash-android-lint
+      taskRef:
+        name: github-set-status
+      params:
+        - name: REPO_FULL_NAME
+          value: $(params.gitHubProject)  
+        - name: SHA
+          value: $(params.gitCommit)  
+        - name: TARGET_URL
+          value: $(params.statusURL)
+        - name: DESCRIPTION
+          value: Sucessfully built a docker image
+        - name: CONTEXT
+          value: zcash-android-lint/check
+        - name: STATE
+          value: success          
