@@ -7,12 +7,7 @@ spec:
   resources:
     - name: source
       type: git
-    - name: cloudlog
-      type: cloudEvent
-    - name: cloudlog-image
-      type: image
   params:
-    - name: shortSha
     - name: gitHubProject
     - name: gitCommit
     - name: statusURL
@@ -38,9 +33,6 @@ spec:
         - set-build-status-pending
       taskRef:
         name: zcash-android-sdk-build
-      params:
-        - name: shortSha
-          value: $(params.shortSha)
       resources:
         inputs:
           - name: source
@@ -84,9 +76,6 @@ spec:
         - set-lint-status-pending
       taskRef:
         name: zcash-android-sdk-lint
-      params:
-        - name: shortSha
-          value: $(params.shortSha)
       resources:
         inputs:
           - name: source

@@ -4,36 +4,20 @@ kind: Task
 metadata:
   name: zcash-android-sdk-lint
 spec:
-  workspaces:
-    - name: venv
-      emptyDir: {}
   resources:
     inputs:
       - name: source
         type: git
-          params:
-            - name: revision
-              value: master
-            - name: url
-              value: https://github.com/zcash/zcash-android-wallet-sdk
-  taskSpec:
-    resources:
-      inputs:
-        - name: source
-          type: git
-    workspaces:
-        - name: venv
-          mountPath: /venv
-    steps:
-      - name: lint
-        image: electriccoinco/zcash-android-builder:latest
-        script: |
-          cd source
-          env | sort
-          pwd
-          ls -la
-          ./gradlew ciLint --stacktrace --console=plain \
-            -Duser.home=/tekton/home \
-            -Dgradle.user.home=/tekton/home/.gradle
-        securityContext:
-          runAsUser: 0
+  steps:
+    - name: lint
+      image: electriccoinco/zcash-android-builder:latest
+      script: |
+        cd source
+        env | sort
+        pwd
+        ls -la
+        ./gradlew ciLint --stacktrace --console=plain \
+          -Duser.home=/tekton/home \
+          -Dgradle.user.home=/tekton/home/.gradle
+      securityContext:
+        runAsUser: 0
