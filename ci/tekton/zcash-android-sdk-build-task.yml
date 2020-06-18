@@ -10,8 +10,7 @@ spec:
   resources:
     inputs:
       - name: source
-        resourceSpec:
-          type: git
+        type: git
           params:
             - name: revision
               value: master
