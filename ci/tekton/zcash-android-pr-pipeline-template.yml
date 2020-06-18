@@ -39,8 +39,7 @@ spec:
               type: image
               params:
                 - name: url
-                  value: electriccoinco/zcash-android-builder
-          #Is this the repo resource        
+                  value: electriccoinco/zcash-android-builder     
           - name: zcash-android-wallet-sdk
             resourceRef:
               name: zcash-android-wallet-sdk
