@@ -37,7 +37,7 @@ spec:
       runAfter:
         - set-build-status-pending
       taskRef:
-        name: zcash-android-build
+        name: zcash-android-sdk-build
       params:
         - name: shortSha
           value: $(params.shortSha)
@@ -83,7 +83,7 @@ spec:
       runAfter:
         - set-lint-status-pending
       taskRef:
-        name: zcash-android-lint
+        name: zcash-android-sdk-lint
       params:
         - name: shortSha
           value: $(params.shortSha)

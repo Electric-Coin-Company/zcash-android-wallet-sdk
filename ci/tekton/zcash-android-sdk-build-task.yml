@@ -1,8 +1,8 @@
 ---
 apiVersion: tekton.dev/v1beta1
-kind: TaskRun
+kind: Task
 metadata:
-  generateName: zcashd-androidbuild-
+  name: zcash-android-sdk-build
 spec:
   workspaces:
     - name: venv
@@ -38,16 +38,3 @@ spec:
             -Dgradle.user.home=/tekton/home/.gradle
         securityContext:
           runAsUser: 0
-      - name: lint
-        image: electriccoinco/zcash-android-builder:latest
-        script: |
-          cd source
-          env | sort
-          pwd
-          ls -la
-          ./gradlew ciLint --stacktrace --console=plain \
-            -Duser.home=/tekton/home \
-            -Dgradle.user.home=/tekton/home/.gradle
-        securityContext:
-          runAsUser: 0
- 
