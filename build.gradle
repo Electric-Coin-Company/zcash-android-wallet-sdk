@@ -158,10 +158,6 @@ allOpen {
     annotation 'cash.z.ecc.android.sdk.annotation.OpenClass'
 }
 
-clean {
-    delete "$project.projectDir/src/generated/source/grpc"
-}
-
 dokka {
     outputFormat = 'html'
     outputDirectory = "$buildDir/docs/rtd"
