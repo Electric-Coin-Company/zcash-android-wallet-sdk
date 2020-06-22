@@ -4,16 +4,17 @@ import androidx.test.platform.app.InstrumentationRegistry
 import cash.z.ecc.android.sdk.Initializer
 import cash.z.ecc.android.sdk.SdkSynchronizer
 import cash.z.ecc.android.sdk.Synchronizer
+import cash.z.ecc.android.sdk.db.entity.isSubmitSuccess
 import cash.z.ecc.android.sdk.ext.ScopedTest
+import cash.z.ecc.android.sdk.ext.deriveSpendingKey
 import cash.z.ecc.android.sdk.ext.import
 import cash.z.ecc.android.sdk.ext.twig
+import cash.z.ecc.android.sdk.integration.MultiAccountTest
 import io.grpc.StatusRuntimeException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert
 import org.junit.Assert.assertEquals
@@ -35,6 +36,8 @@ class DarksideTestCoordinator(val host: String = "127.0.0.1") {
     val validator = DarksideTestValidator()
     val chainMaker = DarksideChainMaker()
     lateinit var synchronizer: Synchronizer
+
+    val spendingKey: String get() = initializer.deriveSpendingKey(seedPhrase)
 
 
     //
@@ -60,7 +63,7 @@ class DarksideTestCoordinator(val host: String = "127.0.0.1") {
         } catch (error: StatusRuntimeException) {
             Assert.fail(
                 "Error while fetching server status. Testing cannot begin due to:" +
-                        " ${error.message}. Verify that the server is running"
+                        " ${error.message} Caused by: ${error.cause} Verify that the server is running!"
             )
         }
         this@DarksideTestCoordinator
@@ -96,7 +99,7 @@ class DarksideTestCoordinator(val host: String = "127.0.0.1") {
      * Waits for, at most, the given amount of time for the synchronizer to download and scan blocks
      * and reach a 'SYNCED' status.
      */
-    fun await(timeout: Long = 10_000L, targetHeight: Int = -1) = runBlocking {
+    fun await(timeout: Long = 60_000L, targetHeight: Int = -1) = runBlocking {
         ScopedTest.timeoutWith(this, timeout) {
             twig("***  Waiting up to ${timeout / 1_000}s for sync ***")
             synchronizer.status.onEach {
@@ -120,6 +123,27 @@ class DarksideTestCoordinator(val host: String = "127.0.0.1") {
         }
     }
 
+    /**
+     * Send a transaction and wait until it has been fully created and successfully submitted, which
+     * takes about 10 seconds.
+     */
+    suspend fun sendAndWait(
+        scope: CoroutineScope,
+        spendingKey: String,
+        zatoshi: Long,
+        toAddress: String,
+        memo: String = "",
+        fromAccountIndex: Int = 0
+    ) {
+        var job: Job? = null
+        job = synchronizer
+            .sendToAddress(spendingKey, zatoshi, toAddress, memo, fromAccountIndex)
+            .onEach {
+                twig("got an update submitted yet? ${it.isSubmitSuccess()}")
+                if (it.isSubmitSuccess()) job?.cancel()
+            }.launchIn(scope)
+        job.join()
+    }
 
     fun stall(delay: Long = 5000L) = runBlocking {
         twig("***  Stalling for ${delay}ms ***")
@@ -188,6 +212,25 @@ class DarksideTestCoordinator(val host: String = "127.0.0.1") {
             val txCount = (synchronizer as SdkSynchronizer).getTransactionCount()
             assertEquals("Expected $count transactions but found $txCount instead!", count, txCount)
         }
+
+        fun validateMinBalance(available: Long = -1, total: Long = -1) {
+            val balance = synchronizer.latestBalance
+            if (available > 0) {
+                assertTrue("invalid available balance. Expected a minimum of $available but found ${balance.availableZatoshi}", available <= balance.availableZatoshi)
+            }
+            if (total > 0) {
+                assertTrue("invalid total balance. Expected a minimum of $total but found ${balance.totalZatoshi}", total <= balance.totalZatoshi)
+            }
+        }
+        fun validateBalance(available: Long = -1, total: Long = -1) {
+            val balance = synchronizer.latestBalance
+            if (available > 0) {
+                assertEquals("invalid available balance", available, balance.availableZatoshi)
+            }
+            if (total > 0) {
+                assertEquals("invalid total balance", total, balance.totalZatoshi)
+            }
+        }
     }
 
 
@@ -196,6 +239,7 @@ class DarksideTestCoordinator(val host: String = "127.0.0.1") {
     //
 
     inner class DarksideChainMaker {
+        var lastTipHeight = -1
 
         /**
          * Resets the darksidelightwalletd server, stages the blocks represented by the given URL, then
@@ -209,6 +253,7 @@ class DarksideTestCoordinator(val host: String = "127.0.0.1") {
             darkside
                 .reset(startHeight)
                 .stageBlocks(blocksUrl)
+            applyTipHeight(tipHeight)
         }
 
         fun stageTransaction(url: String, targetHeight: Int): DarksideChainMaker = apply {
@@ -225,10 +270,38 @@ class DarksideTestCoordinator(val host: String = "127.0.0.1") {
             darkside.stageEmptyBlocks(startHeight, count)
         }
 
+        fun stageEmptyBlock() = stageEmptyBlocks(lastTipHeight + 1, 1)
+
         fun applyTipHeight(tipHeight: Int): DarksideChainMaker = apply {
+            twig("applying tip height of $tipHeight")
             darkside.applyBlocks(tipHeight)
+            lastTipHeight = tipHeight
         }
 
+        /**
+         * Creates a chain with 100 blocks and a transaction in the middle.
+         *
+         * The chain starts at block 663150 and ends at block 663250
+         */
+        fun simpleChain() {
+            darkside
+                .reset(DEFAULT_START_HEIGHT)
+                .stageBlocks("https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/tx-incoming/blocks.txt")
+            applyTipHeight(DEFAULT_START_HEIGHT + 100)
+        }
+
+        fun advanceBy(numEmptyBlocks: Int) {
+            val nextBlock = lastTipHeight + 1
+            twig("adding $numEmptyBlocks empty blocks to the chain starting at $nextBlock")
+            darkside.stageEmptyBlocks(nextBlock, numEmptyBlocks)
+            applyTipHeight(nextBlock + numEmptyBlocks)
+        }
+
+        fun applySentTransactions(targetHeight: Int = lastTipHeight + 1) {
+            stageEmptyBlocks(lastTipHeight + 1, targetHeight - lastTipHeight)
+            darkside.stageTransactions(darkside.getSentTransactions()?.iterator(), targetHeight)
+            applyTipHeight(targetHeight)
+        }
     }
 
     companion object {

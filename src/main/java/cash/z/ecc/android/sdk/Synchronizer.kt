@@ -221,6 +221,14 @@ interface Synchronizer {
      */
     suspend fun getServerInfo(): Service.LightdInfo
 
+    /**
+     * Import the given viewing key. This key will be incorporated into scans such that any
+     * transactions that correspond to it will be decrypted and grouped by account.
+     *
+     * @param key the viewing key to import.
+     */
+    suspend fun importViewingKey(key: String)
+
 
     //
     // Error Handling

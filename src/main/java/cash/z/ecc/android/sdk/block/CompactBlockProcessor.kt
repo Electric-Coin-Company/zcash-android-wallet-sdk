@@ -251,7 +251,12 @@ class CompactBlockProcessor(
         setState(Enhancing)
         return try {
             val newTxs = repository.findNewTransactions(lastScanRange)
-            if (newTxs == null) twig("no new transactions found in $lastScanRange")
+            if (newTxs == null) {
+                twig("no new transactions found in $lastScanRange")
+            } else {
+                twig("enhancing ${newTxs.size} transaction(s)!")
+            }
+
             newTxs?.onEach { newTransaction ->
                 if (newTransaction == null) twig("somehow, new transaction was null!!!")
                 else enhance(newTransaction)
@@ -549,6 +554,10 @@ class CompactBlockProcessor(
                 throw RustLayerException.BalanceException(t)
             }
         }
+    }
+
+    suspend fun importViewingKey(key: String) {
+        rustBackend.importViewingKey(key)
     }
 
     /**

@@ -58,6 +58,10 @@ class RustBackend : RustBackendWelding {
     // Wrapper Functions
     //
 
+    override fun importViewingKey(viewingKey: String) {
+        importViewingKey(pathDataDb, viewingKey)
+    }
+
     override fun initDataDb() = initDataDb(pathDataDb)
 
 //    override fun initAccountsTable(extfvks: Array<String>) =
@@ -175,6 +179,11 @@ class RustBackend : RustBackendWelding {
         //
         // External Functions
         //
+
+        @JvmStatic private external fun importViewingKey(
+            dbDataPath: String,
+            viewingKey: String
+        ): Int
 
         @JvmStatic private external fun initDataDb(dbDataPath: String): Boolean
 

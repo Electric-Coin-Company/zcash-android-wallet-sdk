@@ -219,6 +219,7 @@ class SdkSynchronizer internal constructor(
      */
     override suspend fun getServerInfo(): Service.LightdInfo = processor.downloader.getServerInfo()
 
+    override suspend fun importViewingKey(key: String) = processor.importViewingKey(key)
     
     //
     // Storage APIs

@@ -47,13 +47,13 @@ rev = "c72d374e28bea0c249a898f2c470ed3d58773d0c"
 git = "https://github.com/str4d/librustzcash.git"
 rev = "c72d374e28bea0c249a898f2c470ed3d58773d0c"
 
-#[patch.'https://github.com/str4d/librustzcash.git']
-#ff = { path = '../../clones/librustzcash/ff' }
-#pairing = { path = '../../clones/librustzcash/pairing' }
-#zcash_client_backend = { path = '../../clones/librustzcash/zcash_client_backend' }
-#zcash_client_sqlite = { path = '../../clones/librustzcash/zcash_client_sqlite' }
-#zcash_primitives = { path = '../../clones/librustzcash/zcash_primitives' }
-#zcash_proofs = { path = '../../clones/librustzcash/zcash_proofs' }
+[patch.'https://github.com/str4d/librustzcash.git']
+ff = { path = '../../clones/librustzcash/ff' }
+pairing = { path = '../../clones/librustzcash/pairing' }
+zcash_client_backend = { path = '../../clones/librustzcash/zcash_client_backend' }
+zcash_client_sqlite = { path = '../../clones/librustzcash/zcash_client_sqlite' }
+zcash_primitives = { path = '../../clones/librustzcash/zcash_primitives' }
+zcash_proofs = { path = '../../clones/librustzcash/zcash_proofs' }
 
 [features]
 mainnet = ["zcash_client_sqlite/mainnet"]

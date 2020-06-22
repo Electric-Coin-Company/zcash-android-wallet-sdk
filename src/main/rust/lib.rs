@@ -17,8 +17,8 @@ use std::path::Path;
 use std::ptr;
 use zcash_client_backend::{
     encoding::{
-        decode_extended_spending_key, encode_extended_full_viewing_key,
-        encode_extended_spending_key, encode_payment_address,
+        decode_extended_full_viewing_key, decode_extended_spending_key,
+        encode_extended_full_viewing_key, encode_extended_spending_key, encode_payment_address,
     },
     keys::spending_key,
 };
@@ -26,7 +26,7 @@ use zcash_client_sqlite::{
     address::RecipientAddress,
     chain::{rewind_to_height, validate_combined_chain},
     error::ErrorKind,
-    init::{init_accounts_table, init_blocks_table, init_data_database},
+    init::{init_accounts_table, init_blocks_table, init_data_database, import_viewing_key},
     query::{
         get_address, get_balance, get_received_memo_as_utf8, get_sent_memo_as_utf8,
         get_verified_balance,
@@ -62,7 +62,40 @@ use zcash_client_backend::constants::testnet::{
     COIN_TYPE, HRP_SAPLING_EXTENDED_FULL_VIEWING_KEY, HRP_SAPLING_EXTENDED_SPENDING_KEY,
     HRP_SAPLING_PAYMENT_ADDRESS,
 };
-use zcash_client_backend::encoding::decode_extended_full_viewing_key;
+
+#[no_mangle]
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_importViewingKey(
+    env: JNIEnv<'_>,
+    _: JClass<'_>,
+    db_data: JString<'_>,
+    extfvk_string: JString<'_>,
+) -> jint {
+    let res = panic::catch_unwind(|| {
+        // TODO: make this a function and use it in other places to go from JString -> ExtendedFullViewingKey
+        let extfvk_string = utils::java_string_to_rust(&env, extfvk_string);
+        let extfvk = match decode_extended_full_viewing_key(
+            HRP_SAPLING_EXTENDED_FULL_VIEWING_KEY,
+            &extfvk_string,
+        ) {
+            Ok(Some(extfvk)) => extfvk,
+            Ok(None) => {
+                return Err(format_err!("Failed to import viewing key. Deriving viewing key from string returned no results. Encoding was valid but type was incorrect. Failed with: {}", extfvk_string));
+            }
+            Err(e) => {
+                return Err(format_err!(
+                    "Error while deriving viewing key from string input: {}",
+                    e
+                ));
+            }
+        };
+        let db_data = utils::java_string_to_rust(&env, db_data);
+        match import_viewing_key(&db_data, &extfvk) {
+            Ok(account_id) => Ok(account_id as i32),
+            Err(e) => Err(format_err!("Error while importing viewing key: {}", e)),
+        }
+    });
+    unwrap_exc_or(&env, res, 0)
+}
 
 #[no_mangle]
 pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_initLogs(
@@ -246,12 +279,12 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_deriveAddre
     let res = panic::catch_unwind(|| {
         let extfvk_string = utils::java_string_to_rust(&env, extfvk_string);
         let extfvk = match decode_extended_full_viewing_key(
-            HRP_SAPLING_EXTENDED_SPENDING_KEY,
+            HRP_SAPLING_EXTENDED_FULL_VIEWING_KEY,
             &extfvk_string,
         ) {
             Ok(Some(extfvk)) => extfvk,
             Ok(None) => {
-                return Err(format_err!("Deriving viewing key from string returned no results. Encoding was valid but type was incorrect."));
+                return Err(format_err!("Failed to parse viewing key string in order to derive the address. Deriving a viewing key from the string returned no results. Encoding was valid but type was incorrect."));
             }
             Err(e) => {
                 return Err(format_err!(

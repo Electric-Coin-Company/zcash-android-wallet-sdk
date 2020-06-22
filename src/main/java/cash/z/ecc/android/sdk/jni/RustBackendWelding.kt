@@ -29,6 +29,8 @@ interface RustBackendWelding {
 
     fun decryptAndStoreTransaction(tx: ByteArray)
 
+    fun importViewingKey(viewingKey: String)
+
     fun initAccountsTable(seed: ByteArray, numberOfAccounts: Int): Array<String>
 
 //    fun initAccountsTable(extfvks: Array<ByteArray>, numberOfAccounts: Int)
