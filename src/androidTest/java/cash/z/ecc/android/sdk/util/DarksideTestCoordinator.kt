@@ -5,20 +5,15 @@ import cash.z.ecc.android.sdk.Initializer
 import cash.z.ecc.android.sdk.SdkSynchronizer
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.db.entity.isSubmitSuccess
-import cash.z.ecc.android.sdk.ext.ScopedTest
-import cash.z.ecc.android.sdk.ext.deriveSpendingKey
-import cash.z.ecc.android.sdk.ext.import
-import cash.z.ecc.android.sdk.ext.twig
+import cash.z.ecc.android.sdk.ext.*
 import cash.z.ecc.android.sdk.integration.MultiAccountTest
 import io.grpc.StatusRuntimeException
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.runBlocking
 import org.junit.Assert
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import kotlin.coroutines.coroutineContext
 
 class DarksideTestCoordinator(val host: String = "127.0.0.1") {
     private val port = 9067
@@ -35,7 +30,7 @@ class DarksideTestCoordinator(val host: String = "127.0.0.1") {
     // dependencies: public
     val validator = DarksideTestValidator()
     val chainMaker = DarksideChainMaker()
-    lateinit var synchronizer: Synchronizer
+    lateinit var synchronizer: SdkSynchronizer
 
     val spendingKey: String get() = initializer.deriveSpendingKey(seedPhrase)
 
@@ -127,22 +122,22 @@ class DarksideTestCoordinator(val host: String = "127.0.0.1") {
      * Send a transaction and wait until it has been fully created and successfully submitted, which
      * takes about 10 seconds.
      */
-    suspend fun sendAndWait(
-        scope: CoroutineScope,
-        spendingKey: String,
+    suspend fun createAndSubmitTx(
         zatoshi: Long,
         toAddress: String,
         memo: String = "",
         fromAccountIndex: Int = 0
-    ) {
+    ) = coroutineScope {
+        Twig.sprout("sending")
         var job: Job? = null
         job = synchronizer
             .sendToAddress(spendingKey, zatoshi, toAddress, memo, fromAccountIndex)
             .onEach {
                 twig("got an update submitted yet? ${it.isSubmitSuccess()}")
                 if (it.isSubmitSuccess()) job?.cancel()
-            }.launchIn(scope)
+            }.launchIn(this)
         job.join()
+        Twig.clip("sending")
     }
 
     fun stall(delay: Long = 5000L) = runBlocking {
@@ -222,8 +217,8 @@ class DarksideTestCoordinator(val host: String = "127.0.0.1") {
                 assertTrue("invalid total balance. Expected a minimum of $total but found ${balance.totalZatoshi}", total <= balance.totalZatoshi)
             }
         }
-        fun validateBalance(available: Long = -1, total: Long = -1) {
-            val balance = synchronizer.latestBalance
+        suspend fun validateBalance(available: Long = -1, total: Long = -1, accountIndex: Int = 0) {
+            val balance = synchronizer.processor.getBalanceInfo(accountIndex)
             if (available > 0) {
                 assertEquals("invalid available balance", available, balance.availableZatoshi)
             }
@@ -283,7 +278,7 @@ class DarksideTestCoordinator(val host: String = "127.0.0.1") {
          *
          * The chain starts at block 663150 and ends at block 663250
          */
-        fun simpleChain() {
+        fun makeSimpleChain() {
             darkside
                 .reset(DEFAULT_START_HEIGHT)
                 .stageBlocks("https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/tx-incoming/blocks.txt")
@@ -297,7 +292,7 @@ class DarksideTestCoordinator(val host: String = "127.0.0.1") {
             applyTipHeight(nextBlock + numEmptyBlocks)
         }
 
-        fun applySentTransactions(targetHeight: Int = lastTipHeight + 1) {
+        fun applyPendingTransactions(targetHeight: Int = lastTipHeight + 1) {
             stageEmptyBlocks(lastTipHeight + 1, targetHeight - lastTipHeight)
             darkside.stageTransactions(darkside.getSentTransactions()?.iterator(), targetHeight)
             applyTipHeight(targetHeight)
