@@ -6,18 +6,11 @@ In order to ensure code changes comply with the target integrations, the followi
 
 The `master` branch is the git repositories default branch.
 
-Pull Request actions are determined by the author's association to the GitHub project. Levels are defined https://developer.github.com/v4/enum/commentauthorassociation/.
+Jobs are managed by PR labels. The following labels are actionable.
 
-### When a PR is opened by COLLABORATOR
-
-- check that linting is successful
-- check that the code builds
-- check that PR tests pass
-
-### When a PR is opened by NONE
-
-- check that linting is successful
-- check that the code builds
+|label|targets|
+|----|---|
+|`safe-to-ci`| `ciBuild`, `ciLintPr`
 
 ### Code changes to the master branch
 
