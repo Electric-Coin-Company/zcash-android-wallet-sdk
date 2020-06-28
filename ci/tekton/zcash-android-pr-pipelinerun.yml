@@ -1,0 +1,22 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  generateName: zcash-android-pr-pipeline-
+spec:
+  resources:
+    - name: source
+      resourceSpec: 
+        type: git
+        params:
+          - name: url
+            value: https://github.com/zcash/zcash-android-wallet-sdk
+          - name: revision
+            value: master
+  params:
+    - name: gitHubProject
+      value: zcash-android-wallet-sdk
+    - name: gitCommit
+      value: 2495ecff1bd60149313d9e6fa5c8fd04bc74464b
+  pipelineRef:
+    name: zcash-android-pr-pipeline

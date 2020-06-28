@@ -1,0 +1,18 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: TaskRun
+metadata:
+  generateName: zcash-android-lint-
+spec:
+  resources:
+    inputs:
+      - name: source
+        resourceSpec: 
+          type: git
+          params:
+            - name: url
+              value: https://github.com/zcash/zcash-android-wallet-sdk
+            - name: revision
+              value: master
+  taskRef:
+    name: zcash-android-sdk-build
