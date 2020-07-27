@@ -13,7 +13,6 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.runBlocking
-import org.junit.AfterClass
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.BeforeClass
@@ -111,7 +110,7 @@ class TestnetIntegrationTest : ScopedTest() {
         @JvmStatic
         @BeforeClass
         fun startUp() {
-            initializer.import(seedPhrase, birthdayHeight)
+            initializer.importPhrase(seedPhrase, birthdayHeight, "TestnetIntegrationTests", false)
             synchronizer = Synchronizer(initializer)
             synchronizer.start(classScope)
         }

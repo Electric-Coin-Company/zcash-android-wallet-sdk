@@ -3,11 +3,18 @@ package cash.z.ecc.android.sdk
 import android.content.Context
 import android.content.SharedPreferences
 import cash.z.ecc.android.sdk.Initializer.DefaultBirthdayStore.Companion.ImportedWalletBirthdayStore
+import cash.z.ecc.android.sdk.block.CompactBlockDbStore
+import cash.z.ecc.android.sdk.block.CompactBlockDownloader
+import cash.z.ecc.android.sdk.block.CompactBlockProcessor
+import cash.z.ecc.android.sdk.block.CompactBlockStore
 import cash.z.ecc.android.sdk.exception.BirthdayException
 import cash.z.ecc.android.sdk.exception.InitializerException
 import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.ext.twig
 import cash.z.ecc.android.sdk.jni.RustBackend
+import cash.z.ecc.android.sdk.service.LightWalletGrpcService
+import cash.z.ecc.android.sdk.service.LightWalletService
+import cash.z.ecc.android.sdk.transaction.*
 import com.google.gson.Gson
 import com.google.gson.stream.JsonReader
 import java.io.File
@@ -36,7 +43,7 @@ class Initializer(
     appContext: Context,
     val host: String = ZcashSdk.DEFAULT_LIGHTWALLETD_HOST,
     val port: Int = ZcashSdk.DEFAULT_LIGHTWALLETD_PORT,
-    private val alias: String = ZcashSdk.DEFAULT_DB_NAME_PREFIX
+    private val alias: String = ZcashSdk.DEFAULT_ALIAS
 ) {
     val context = appContext.applicationContext
 
@@ -446,7 +453,7 @@ class Initializer(
     class DefaultBirthdayStore(
         private val appContext: Context,
         private val importedBirthdayHeight: Int? = null,
-        val alias: String = DEFAULT_ALIAS
+        val alias: String = ZcashSdk.DEFAULT_ALIAS
     ) : WalletBirthdayStore {
 
         /**
@@ -552,11 +559,6 @@ class Initializer(
             private const val BIRTHDAY_DIRECTORY = "zcash/saplingtree"
 
             /**
-             * The default alias to use for naming the preference file used for storage.
-             */
-            const val DEFAULT_ALIAS = "default_prefs"
-
-            /**
              * A convenience constructor function for creating an instance of this class to use for
              * new wallets. It sets the stored birthday to match the `newWalletBirthday` checkpoint
              * which is typically the most recent checkpoint available.
@@ -564,7 +566,7 @@ class Initializer(
              * @param appContext the application context.
              * @param alias the alias to use when naming the preferences file used for storage.
              */
-            fun NewWalletBirthdayStore(appContext: Context, alias: String = DEFAULT_ALIAS): WalletBirthdayStore {
+            fun NewWalletBirthdayStore(appContext: Context, alias: String = ZcashSdk.DEFAULT_ALIAS): WalletBirthdayStore {
                 return DefaultBirthdayStore(appContext, alias = alias).apply {
                     setBirthday(newWalletBirthday)
                 }
@@ -582,7 +584,7 @@ class Initializer(
              * ignored since a wallet cannot have transactions before it is born.
              * @param alias the alias to use when naming the preferences file used for storage.
              */
-            fun ImportedWalletBirthdayStore(appContext: Context, importedBirthdayHeight: Int?, alias: String = DEFAULT_ALIAS): WalletBirthdayStore {
+            fun ImportedWalletBirthdayStore(appContext: Context, importedBirthdayHeight: Int?, alias: String = ZcashSdk.DEFAULT_ALIAS): WalletBirthdayStore {
                 return DefaultBirthdayStore(appContext, alias = alias).apply {
                     if (importedBirthdayHeight != null) {
                         saveBirthdayToPrefs(prefs, loadBirthdayFromAssets(appContext, importedBirthdayHeight))
@@ -709,7 +711,7 @@ class Initializer(
 fun Initializer.import(
     seed: ByteArray,
     birthdayHeight: Int,
-    alias: String = ZcashSdk.DEFAULT_DB_NAME_PREFIX,
+    alias: String = ZcashSdk.DEFAULT_ALIAS,
     overwrite: Boolean = false
 ): Array<String> {
     return ImportedWalletBirthdayStore(context, birthdayHeight, alias).getBirthday().let {
@@ -734,4 +736,71 @@ internal fun validateAlias(alias: String) {
         "ERROR: Invalid alias ($alias). For security, the alias must be shorter than 100 " +
                 "characters and only contain letters, digits or underscores and start with a letter"
     }
+}
+
+
+
+/**
+ * Builder function for constructing a Synchronizer with flexibility for adding custom behavior. The
+ * Initializer is the only thing required because it takes care of loading the Rust libraries
+ * properly; everything else has a reasonable default. For a wallet, the most common flow is to
+ * first call either [Initializer.new] or [Initializer.import] on the first run and then
+ * [Initializer.open] for all subsequent launches of the wallet. From there, the initializer is
+ * passed to this function in order to start syncing from where the wallet left off.
+ *
+ * The remaining parameters are all optional and they allow a wallet maker to customize any
+ * subcomponent of the Synchronizer. For example, this function could be used to inject an in-memory
+ * CompactBlockStore rather than a SQL implementation or a downloader that does not use gRPC:
+ *
+ * ```
+ * val initializer = Initializer(context, host, port).import(seedPhrase, birthdayHeight)
+ * val synchronizer = Synchronizer(initializer,
+ *      blockStore = MyInMemoryBlockStore(),
+ *      downloader = MyRestfulServiceForBlocks()
+ * )
+ * ```
+ *
+ * Note: alternatively, all the objects required to build a Synchronizer (the object graph) can be
+ * supplied by a dependency injection framework like Dagger or Koin. This builder just makes that
+ * process a bit easier so developers can get started syncing the blockchain without the overhead of
+ * configuring a bunch of objects, first.
+ *
+ * @param initializer the helper that is leveraged for creating all the components that the
+ * Synchronizer requires. It contains all information necessary to build a synchronizer and it is
+ * mainly responsible for initializing the databases associated with this synchronizer and loading
+ * the rust backend.
+ * @param repository repository of wallet data, providing an interface to the underlying info.
+ * @param blockStore component responsible for storing compact blocks downloaded from lightwalletd.
+ * @param service the lightwalletd service that can provide compact blocks and submit transactions.
+ * @param encoder the component responsible for encoding transactions.
+ * @param downloader the component responsible for downloading ranges of compact blocks.
+ * @param txManager the component that manages outbound transactions in order to report which ones are
+ * still pending, particularly after failed attempts or dropped connectivity. The intent is to help
+ * monitor outbound transactions status through to completion.
+ * @param processor the component responsible for processing compact blocks. This is effectively the
+ * brains of the synchronizer that implements most of the high-level business logic and determines
+ * the current state of the wallet.
+ */
+@Suppress("FunctionName")
+fun Synchronizer(
+    initializer: Initializer,
+    repository: TransactionRepository =
+        PagedTransactionRepository(initializer.context, 1000, initializer.rustBackend.pathDataDb), // TODO: fix this pagesize bug, small pages should not crash the app. It crashes with: Uncaught Exception: android.view.ViewRootImpl$CalledFromWrongThreadException: Only the original thread that created a view hierarchy can touch its views. and is probably related to FlowPagedList
+    blockStore: CompactBlockStore = CompactBlockDbStore(initializer.context, initializer.rustBackend.pathCacheDb),
+    service: LightWalletService = LightWalletGrpcService(initializer.context, initializer.host, initializer.port),
+    encoder: TransactionEncoder = WalletTransactionEncoder(initializer.rustBackend, repository),
+    downloader: CompactBlockDownloader = CompactBlockDownloader(service, blockStore),
+    txManager: OutboundTransactionManager =
+        PersistentTransactionManager(initializer.context, encoder, service),
+    processor: CompactBlockProcessor =
+        CompactBlockProcessor(downloader, repository, initializer.rustBackend, initializer.rustBackend.birthdayHeight)
+): Synchronizer {
+    // call the actual constructor now that all dependencies have been injected
+    // alternatively, this entire object graph can be supplied by Dagger
+    // This builder just makes that easier.
+    return SdkSynchronizer(
+        repository,
+        txManager,
+        processor
+    )
 }

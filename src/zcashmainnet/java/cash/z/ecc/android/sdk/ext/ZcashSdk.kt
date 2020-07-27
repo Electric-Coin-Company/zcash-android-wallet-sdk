@@ -24,6 +24,13 @@ object ZcashSdk : ZcashSdkCommon() {
      */
     override val DEFAULT_LIGHTWALLETD_HOST = "lightd-main.zecwallet.co"
 
-    override val DEFAULT_DB_NAME_PREFIX = "ZcashSdk_mainnet"
+    /**
+     * The default alias to use for naming database and preference files.
+     */
+    override val DEFAULT_ALIAS = "ZcashSdk_mainnet"
 
+    /**
+     * The name of the network that this SDK build targets.
+     */
+    override val NETWORK = "mainnet"
 }
