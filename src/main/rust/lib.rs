@@ -32,7 +32,7 @@ use zcash_client_sqlite::{
         get_verified_balance,
     },
     scan::{decrypt_and_store_transaction, scan_cached_blocks},
-    transact::create_to_address,
+    transact::{create_to_address, OvkPolicy},
 };
 
 use zcash_primitives::{
@@ -62,7 +62,6 @@ use zcash_client_backend::constants::testnet::{
     COIN_TYPE, HRP_SAPLING_EXTENDED_FULL_VIEWING_KEY, HRP_SAPLING_EXTENDED_SPENDING_KEY,
     HRP_SAPLING_PAYMENT_ADDRESS,
 };
-use zcash_client_backend::encoding::decode_extended_full_viewing_key;
 
 #[no_mangle]
 pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_initLogs(
@@ -670,6 +669,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_createToAdd
             &to,
             value,
             memo,
+            OvkPolicy::Sender,
         )
         .map_err(|e| format_err!("Error while creating transaction: {}", e))
     });
