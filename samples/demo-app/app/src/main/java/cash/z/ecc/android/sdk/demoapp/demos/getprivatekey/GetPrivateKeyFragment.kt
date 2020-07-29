@@ -44,7 +44,7 @@ class GetPrivateKeyFragment : BaseDemoFragment<FragmentGetPrivateKeyBinding>() {
     }
 
     override fun onResetComplete() {
-        binding.textInfo.text = "Spending Key:\n${spendingKeys[0]}\n\nViewing Key:\n${viewingKeys[0]}"
+        binding.textInfo.setText("Spending Key:\n${spendingKeys[0]}\n\nViewing Key:\n${viewingKeys[0]}")
     }
 
     override fun onClear() {

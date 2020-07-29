@@ -17,8 +17,8 @@ use std::path::Path;
 use std::ptr;
 use zcash_client_backend::{
     encoding::{
-        decode_extended_spending_key, encode_extended_full_viewing_key,
-        encode_extended_spending_key, encode_payment_address,
+        decode_extended_full_viewing_key, decode_extended_spending_key,
+        encode_extended_full_viewing_key, encode_extended_spending_key, encode_payment_address,
     },
     keys::spending_key,
 };
@@ -32,7 +32,7 @@ use zcash_client_sqlite::{
         get_verified_balance,
     },
     scan::{decrypt_and_store_transaction, scan_cached_blocks},
-    transact::create_to_address,
+    transact::{create_to_address, OvkPolicy},
 };
 
 use zcash_primitives::{
@@ -62,7 +62,6 @@ use zcash_client_backend::constants::testnet::{
     COIN_TYPE, HRP_SAPLING_EXTENDED_FULL_VIEWING_KEY, HRP_SAPLING_EXTENDED_SPENDING_KEY,
     HRP_SAPLING_PAYMENT_ADDRESS,
 };
-use zcash_client_backend::encoding::decode_extended_full_viewing_key;
 
 #[no_mangle]
 pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_initLogs(
@@ -246,12 +245,12 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_deriveAddre
     let res = panic::catch_unwind(|| {
         let extfvk_string = utils::java_string_to_rust(&env, extfvk_string);
         let extfvk = match decode_extended_full_viewing_key(
-            HRP_SAPLING_EXTENDED_SPENDING_KEY,
+            HRP_SAPLING_EXTENDED_FULL_VIEWING_KEY,
             &extfvk_string,
         ) {
             Ok(Some(extfvk)) => extfvk,
             Ok(None) => {
-                return Err(format_err!("Deriving viewing key from string returned no results. Encoding was valid but type was incorrect."));
+                return Err(format_err!("Failed to parse viewing key string in order to derive the address. Deriving a viewing key from the string returned no results. Encoding was valid but type was incorrect."));
             }
             Err(e) => {
                 return Err(format_err!(
@@ -670,6 +669,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_createToAdd
             &to,
             value,
             memo,
+            OvkPolicy::Sender,
         )
         .map_err(|e| format_err!("Error while creating transaction: {}", e))
     });

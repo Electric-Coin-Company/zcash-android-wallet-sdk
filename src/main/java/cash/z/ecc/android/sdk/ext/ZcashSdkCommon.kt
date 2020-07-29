@@ -24,6 +24,8 @@ open class ZcashSdkCommon {
      */
     open val SAPLING_ACTIVATION_HEIGHT = 280_000
 
+    open val NETWORK = "mainnet"
+
     /**
      * The theoretical maximum number of blocks in a reorg, due to other bottlenecks in the protocol design.
      */
@@ -86,7 +88,11 @@ open class ZcashSdkCommon {
 
     val DB_DATA_NAME = "Data.db"
     val DB_CACHE_NAME = "Cache.db"
-    open val DEFAULT_DB_NAME_PREFIX = "ZcashSdk"
+
+    /**
+     * The default alias to use for naming database and preference files.
+     */
+    open val DEFAULT_ALIAS = "ZcashSdk"
 
     /**
      * File name for the sappling spend params

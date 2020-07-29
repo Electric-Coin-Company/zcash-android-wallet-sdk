@@ -40,6 +40,6 @@ class HomeFragment : Fragment() {
         super.onResume()
         twig("CLEARING DATA: Visiting the home screen clears the default databases, for sanity" +
                     " sake, because each demo is intended to be self-contained.")
-        App.instance.getDatabasePath("unusued.db").parentFile.listFiles().forEach { it.delete() }
+        App.instance.getDatabasePath("unusued.db").parentFile?.listFiles()?.forEach { it.delete() }
     }
 }
