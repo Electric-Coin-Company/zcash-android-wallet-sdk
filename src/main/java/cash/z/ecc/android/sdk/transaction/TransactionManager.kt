@@ -96,7 +96,14 @@ interface OutboundTransactionManager {
      *
      * @return true when the transaction was able to be cancelled.
      */
-    suspend fun cancel(pendingTx: PendingTransaction): Boolean
+    suspend fun cancel(pendingId: Long): Boolean
+
+    /**
+     * Delete the given transaction but return 0 if it did not exist.
+     *
+     * @return the total number of transactions successfully removed from storage.
+     */
+    suspend fun abort(it: PendingTransaction): Int
 
     /**
      * Get all pending transactions known to this wallet as a flow that is updated anytime the list
@@ -105,6 +112,11 @@ interface OutboundTransactionManager {
      * @return a flow of all pending transactions known to this wallet.
      */
     fun getAll(): Flow<List<PendingTransaction>>
+
+    // this is mostly useful for tests we can restrict it to tests if we need to
+    suspend fun findById(id: Long): PendingTransaction?
+
+    suspend fun markForDeletion(id: Long)
 }
 
 /**

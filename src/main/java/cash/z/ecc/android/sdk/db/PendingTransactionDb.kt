@@ -43,7 +43,7 @@ interface PendingTransactionDao {
     suspend fun update(transaction: PendingTransactionEntity)
 
     @Delete
-    suspend fun delete(transaction: PendingTransactionEntity)
+    suspend fun delete(transaction: PendingTransactionEntity): Int
 
     @Query("UPDATE pending_transactions SET cancelled = 1 WHERE id = :id")
     suspend fun cancel(id: Long)
@@ -56,6 +56,29 @@ interface PendingTransactionDao {
 
     @Query("SELECT * FROM pending_transactions WHERE id = :id")
     fun monitorById(id: Long): Flow<PendingTransactionEntity>
+
+
+    //
+    // Update helper functions
+    //
+
+    @Query("UPDATE pending_transactions SET rawTransactionId = null WHERE id = :id")
+    suspend fun removeRawTransactionId(id: Long)
+
+    @Query("UPDATE pending_transactions SET minedHeight = :minedHeight WHERE id = :id")
+    suspend fun updateMinedHeight(id: Long, minedHeight: Int)
+
+    @Query("UPDATE pending_transactions SET raw = :raw, rawTransactionId = :rawTransactionId, expiryHeight = :expiryHeight WHERE id = :id")
+    suspend fun updateEncoding(id: Long, raw: ByteArray, rawTransactionId: ByteArray, expiryHeight: Int?)
+
+    @Query("UPDATE pending_transactions SET errorMessage = :errorMessage, errorCode = :errorCode WHERE id = :id")
+    suspend fun updateError(id: Long, errorMessage: String?, errorCode: Int?)
+
+    @Query("UPDATE pending_transactions SET encodeAttempts = :attempts WHERE id = :id")
+    suspend fun updateEncodeAttempts(id: Long, attempts: Int)
+
+    @Query("UPDATE pending_transactions SET submitAttempts = :attempts WHERE id = :id")
+    suspend fun updateSubmitAttempts(id: Long, attempts: Int)
 }
 
 

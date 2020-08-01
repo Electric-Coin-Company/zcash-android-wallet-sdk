@@ -5,17 +5,17 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import cash.z.ecc.android.sdk.db.PendingTransactionDao
 import cash.z.ecc.android.sdk.db.PendingTransactionDb
-import cash.z.ecc.android.sdk.db.entity.PendingTransaction
-import cash.z.ecc.android.sdk.db.entity.PendingTransactionEntity
-import cash.z.ecc.android.sdk.db.entity.isCancelled
-import cash.z.ecc.android.sdk.db.entity.isSubmitted
+import cash.z.ecc.android.sdk.db.entity.*
 import cash.z.ecc.android.sdk.ext.twig
 import cash.z.ecc.android.sdk.service.LightWalletService
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import java.io.PrintWriter
+import java.io.StringWriter
 import kotlin.math.max
 
 /**
@@ -80,26 +80,24 @@ class PersistentTransactionManager(
             accountIndex = fromAccountIndex
         )
         try {
-            twig("creating tx in DB: $tx")
-            pendingTransactionDao {
-                val insertedTx = findById(create(tx))
-                twig("pending transaction created with id: ${insertedTx?.id}")
-                tx = tx.copy(id = insertedTx!!.id)
-            }.also {
-                twig("successfully created TX in DB")
+            safeUpdate("creating tx in DB") {
+                tx = findById(create(tx))!!
+                twig("successfully created TX in DB with id: ${tx.id}")
             }
         } catch (t: Throwable) {
-            twig("Unknown error while attempting to create pending transaction: ${t.message}" +
-                    " caused by: ${t.cause}")
+            twig(
+                "Unknown error while attempting to create and fetch pending transaction:" +
+                    " ${t.message} caused by: ${t.cause}"
+            )
         }
 
         tx
     }
 
     override suspend fun applyMinedHeight(pendingTx: PendingTransaction, minedHeight: Int) {
-        (pendingTx as? PendingTransactionEntity)?.let {
-            twig("a pending transaction has been mined!")
-            safeUpdate(pendingTx.copy(minedHeight = minedHeight))
+        twig("a pending transaction has been mined!")
+        safeUpdate("updating mined height for pending tx id: ${pendingTx.id} to $minedHeight") {
+            updateMinedHeight(pendingTx.id, minedHeight)
         }
     }
 
@@ -118,56 +116,63 @@ class PersistentTransactionManager(
                 tx.memo,
                 tx.accountIndex
             )
-            twig("successfully encoded transaction for ${tx.memo}!!")
-            tx = tx.copy(raw = encodedTx.raw, rawTransactionId = encodedTx.txId)
+            twig("successfully encoded transaction!")
+            safeUpdate("updating transaction encoding") {
+                updateEncoding(tx.id, encodedTx.raw, encodedTx.txId, encodedTx.expiryHeight)
+            }
         } catch (t: Throwable) {
             val message = "failed to encode transaction due to : ${t.message} caused by: ${t.cause}"
             twig(message)
-            message
-            tx = tx.copy(errorMessage = message, errorCode = ERROR_ENCODING)
+            safeUpdate("updating transaction error info") {
+                updateError(tx.id, message, ERROR_ENCODING)
+            }
         } finally {
-            tx = tx.copy(encodeAttempts = max(1, tx.encodeAttempts + 1))
+            safeUpdate("incrementing transaction encodeAttempts (from: ${tx.encodeAttempts})") {
+                updateEncodeAttempts(tx.id, max(1, tx.encodeAttempts + 1))
+                tx = findById(tx.id)!!
+            }
         }
-        safeUpdate(tx)
 
         tx
     }
 
     override suspend fun submit(pendingTx: PendingTransaction): PendingTransaction = withContext(Dispatchers.IO) {
         // reload the tx to check for cancellation
-        var storedTx = pendingTransactionDao { findById(pendingTx.id) }
+        var tx = pendingTransactionDao { findById(pendingTx.id) }
             ?: throw IllegalStateException("Error while submitting transaction. No pending" +
                     " transaction found that matches the one being submitted. Verify that the" +
                     " transaction still exists among the set of pending transactions.")
-        var tx = storedTx
         try {
-            // do nothing when cancelled
-            if (!tx.isCancelled()) {
-                twig("submitting transaction with memo: ${tx.memo} amount: ${tx.value}")
-                val response = service.submitTransaction(tx.raw)
-                val error = response.errorCode < 0
-                twig("${if (error) "FAILURE! " else "SUCCESS!"} submit transaction completed with" +
-                        " response: ${response.errorCode}: ${response.errorMessage}")
-                tx = tx.copy(
-                    errorMessage = if (error) response.errorMessage else null,
-                    errorCode = response.errorCode,
-                    submitAttempts = max(1, tx.submitAttempts + 1)
-                )
-                safeUpdate(tx)
-            } else {
-                twig("Warning: ignoring cancelled transaction with id ${tx.id}")
+            // do nothing if failed or cancelled
+            when {
+                tx.isFailedEncoding() -> twig("Warning: this transaction will not be submitted because it failed to be encoded.")
+                tx.isCancelled() -> twig("Warning: ignoring cancelled transaction with id ${tx.id}. We will not submit it to the network because it has been cancelled.")
+                else -> {
+                    twig("submitting transaction with memo: ${tx.memo} amount: ${tx.value}")
+                    val response = service.submitTransaction(tx.raw)
+                    val error = response.errorCode < 0
+                    twig("${if (error) "FAILURE! " else "SUCCESS!"} submit transaction completed with" +
+                            " response: ${response.errorCode}: ${response.errorMessage}")
+
+                    safeUpdate("updating submitted transaction (hadError: $error)") {
+                        updateError(tx.id, if (error) response.errorMessage else null, response.errorCode)
+                        updateSubmitAttempts(tx.id, max(1, tx.submitAttempts + 1))
+                    }
+                }
             }
         } catch (t: Throwable) {
             // a non-server error has occurred
             val message =
                 "Unknown error while submitting transaction: ${t.message} caused by: ${t.cause}"
             twig(message)
-            tx = tx.copy(
-                errorMessage = t.message,
-                errorCode = ERROR_SUBMITTING,
-                submitAttempts = max(1, tx.submitAttempts + 1)
-            )
-            safeUpdate(tx)
+            safeUpdate("updating submission failure") {
+                updateError(tx.id, t.message, ERROR_SUBMITTING)
+                updateSubmitAttempts(tx.id, max(1, tx.submitAttempts + 1))
+            }
+        } finally {
+            safeUpdate("fetching latest tx info") {
+                tx = findById(tx.id)!!
+            }
         }
 
         tx
@@ -183,15 +188,41 @@ class PersistentTransactionManager(
     override suspend fun isValidTransparentAddress(address: String) =
         encoder.isValidTransparentAddress(address)
 
-    override suspend fun cancel(pendingTx: PendingTransaction): Boolean {
+    override suspend fun cancel(pendingId: Long): Boolean {
         return pendingTransactionDao {
-            val tx = findById(pendingTx.id)
+            val tx = findById(pendingId)
             if (tx?.isSubmitted() == true) {
+                twig("Attempt to cancel transaction failed because it has already been submitted!")
                 false
             } else {
-                cancel(pendingTx.id)
+                twig("Cancelling unsubmitted transaction id: $pendingId")
+                cancel(pendingId)
                 true
             }
+        }
+    }
+
+    override suspend fun findById(id: Long) = pendingTransactionDao {
+        findById(id)
+    }
+
+    override suspend fun markForDeletion(id: Long) = pendingTransactionDao {
+        withContext(IO) {
+            twig("[cleanup] marking pendingTx $id for deletion")
+            removeRawTransactionId(id)
+            updateError(id, "safe to delete", -9090)
+        }
+    }
+
+    /**
+     * Remove a transaction and pretend it never existed.
+     *
+     * @return the final number of transactions that were removed from the database.
+     */
+    override suspend fun abort(existingTransaction: PendingTransaction): Int {
+        return pendingTransactionDao {
+            twig("[cleanup] Deleting pendingTxId: ${existingTransaction.id}")
+            delete(existingTransaction as PendingTransactionEntity)
         }
     }
 
@@ -202,35 +233,32 @@ class PersistentTransactionManager(
     // Helper functions
     //
 
-    /**
-     * Remove a transaction and pretend it never existed.
-     */
-    suspend fun abortTransaction(existingTransaction: PendingTransaction) {
-        pendingTransactionDao {
-            delete(existingTransaction as PendingTransactionEntity)
-        }
-    }
 
     /**
      * Updating the pending transaction is often done at the end of a function but still should
-     * happen within a try/catch block, surrounded by logging. So this helps with that.
+     * happen within a try/catch block, surrounded by logging. So this helps with that while also
+     * ensuring that no other coroutines are concurrently interacting with the DAO.
      */
-    private suspend fun safeUpdate(tx: PendingTransactionEntity): PendingTransaction {
+     private suspend fun <R> safeUpdate(logMessage: String = "", block: suspend PendingTransactionDao.() -> R ): R? {
         return try {
-            twig("updating tx in DB: $tx")
-            pendingTransactionDao { update(tx) }
-            twig("successfully updated TX in DB")
-            tx
+            twig(logMessage)
+            pendingTransactionDao { block() }
         } catch (t: Throwable) {
-            twig("Unknown error while attempting to update pending transaction: ${t.message}" +
-                    " caused by: ${t.cause}")
-            tx
+            val stacktrace = StringWriter().also { t.printStackTrace(PrintWriter(it)) }.toString()
+            twig(
+                "Unknown error while attempting to '$logMessage':" +
+                    " ${t.message} caused by: ${t.cause} stacktrace: $stacktrace"
+            )
+            null
         }
     }
 
+
     private suspend fun <T> pendingTransactionDao(block: suspend PendingTransactionDao.() -> T): T {
         return daoMutex.withLock {
-            _dao.block()
+            withContext(IO) {
+                _dao.block()
+            }
         }
     }
 

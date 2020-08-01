@@ -1,25 +1,25 @@
 package cash.z.ecc.android.sdk
 
-import cash.z.ecc.android.sdk.validate.AddressType
-import cash.z.ecc.android.sdk.validate.AddressType.Shielded
-import cash.z.ecc.android.sdk.validate.AddressType.Transparent
-import cash.z.ecc.android.sdk.validate.ConsensusMatchType
 import cash.z.ecc.android.sdk.Synchronizer.Status.*
-import cash.z.ecc.android.sdk.block.CompactBlockDbStore
-import cash.z.ecc.android.sdk.block.CompactBlockDownloader
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.*
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor.WalletBalance
-import cash.z.ecc.android.sdk.block.CompactBlockStore
 import cash.z.ecc.android.sdk.db.entity.*
 import cash.z.ecc.android.sdk.exception.SynchronizerException
 import cash.z.ecc.android.sdk.ext.*
 import cash.z.ecc.android.sdk.service.LightWalletGrpcService
-import cash.z.ecc.android.sdk.service.LightWalletService
-import cash.z.ecc.android.sdk.transaction.*
+import cash.z.ecc.android.sdk.transaction.OutboundTransactionManager
+import cash.z.ecc.android.sdk.transaction.PagedTransactionRepository
+import cash.z.ecc.android.sdk.transaction.PersistentTransactionManager
+import cash.z.ecc.android.sdk.transaction.TransactionRepository
+import cash.z.ecc.android.sdk.validate.AddressType
+import cash.z.ecc.android.sdk.validate.AddressType.Shielded
+import cash.z.ecc.android.sdk.validate.AddressType.Transparent
+import cash.z.ecc.android.sdk.validate.ConsensusMatchType
 import cash.z.wallet.sdk.rpc.Service
 import io.grpc.ManagedChannel
 import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.channels.ConflatedBroadcastChannel
 import kotlinx.coroutines.flow.*
 import kotlin.coroutines.CoroutineContext
@@ -357,11 +357,15 @@ class SdkSynchronizer internal constructor(
         }
     }
 
-    private suspend fun refreshPendingTransactions() {
+    private suspend fun refreshPendingTransactions() = withContext(IO) {
+        twig("[cleanup] beginning to refresh and clean up pending transactions")
         // TODO: this would be the place to clear out any stale pending transactions. Remove filter
         //  logic and then delete any pending transaction with sufficient confirmations (all in one
         //  db transaction).
-        txManager.getAll().first().filter { it.isSubmitSuccess() && !it.isMined() }
+        val allPendingTxs = txManager.getAll().first()
+        val lastScannedHeight = storage.lastScannedHeight()
+
+        allPendingTxs.filter { it.isSubmitSuccess() && !it.isMined() }
             .forEach { pendingTx ->
                 twig("checking for updates on pendingTx id: ${pendingTx.id}")
                 pendingTx.rawTransactionId?.let { rawId ->
@@ -374,14 +378,55 @@ class SdkSynchronizer internal constructor(
                     }
                 }
             }
+
+        twig("[cleanup] beginning to cleanup cancelled transactions")
+        var hasCleaned = false
+        // Experimental: cleanup cancelled transactions
+        allPendingTxs.filter { it.isCancelled() && it.hasRawTransactionId() }.let { cancellable ->
+            cancellable.forEachIndexed { index, pendingTx ->
+                twig("[cleanup] FOUND (${index + 1} of ${cancellable.size})" +
+                        " CANCELLED pendingTxId: ${pendingTx.id}")
+                hasCleaned = hasCleaned || cleanupCancelledTx(pendingTx)
+            }
+        }
+
+        twig("[cleanup] beginning to cleanup expired transactions")
+        // Experimental: cleanup expired transactions
+        // note: don't delete the pendingTx until the related data has been scrubbed, or else you
+        // lose the thing that identifies the other data as invalid
+        // so we first mark the data for deletion, during the previous "cleanup" step, by removing
+        // the thing that we're trying to preserve to signal we no longer need it
+        // sometimes apps crash or things go wrong and we get an orphaned pendingTx that we'll poll
+        // forever, so maybe just get rid of all of them after a long while
+        allPendingTxs.filter { (it.isExpired(lastScannedHeight) && it.isMarkedForDeletion())
+                || it.isLongExpired(lastScannedHeight) || it.isSafeToDiscard() }
+            .forEach {
+                val result = txManager.abort(it)
+                twig("[cleanup] FOUND EXPIRED pendingTX (lastScanHeight: $lastScannedHeight  expiryHeight: ${it.expiryHeight}): and ${it.id} ${if (result > 0) "successfully removed" else "failed to remove"} it")
+            }
+
+        twig("[cleanup] deleting expired transactions from storage")
+        hasCleaned = hasCleaned || (storage.deleteExpired(lastScannedHeight) > 0)
+
+        if (hasCleaned) refreshBalance()
+        twig("[cleanup] done refreshing and cleaning up pending transactions")
     }
 
+    private suspend fun cleanupCancelledTx(pendingTx: PendingTransaction): Boolean {
+        return if (storage.cleanupCancelledTx(pendingTx.rawTransactionId!!)) {
+            txManager.markForDeletion(pendingTx.id)
+            true
+        } else {
+            twig("[cleanup] no matching tx was cleaned so the pendingTx will not be marked for deletion")
+            false
+        }
+    }
 
     //
     // Send / Receive
     //
 
-    override suspend fun cancelSpend(transaction: PendingTransaction) = txManager.cancel(transaction)
+    override suspend fun cancelSpend(pendingId: Long) = txManager.cancel(pendingId)
 
     override suspend fun getAddress(accountId: Int): String = processor.getAddress(accountId)
 
@@ -397,7 +442,12 @@ class SdkSynchronizer internal constructor(
         txManager.initSpend(zatoshi, toAddress, memo, fromAccountIndex).let { placeHolderTx ->
             emit(placeHolderTx)
             txManager.encode(spendingKey, placeHolderTx).let { encodedTx ->
-                if (!encodedTx.isFailedEncoding() && !encodedTx.isCancelled()) {
+                // only submit if it wasn't cancelled. Otherwise cleanup, immediately for best UX.
+                if (encodedTx.isCancelled()) {
+                    twig("[cleanup] this tx has been cancelled so we will cleanup instead of submitting")
+                    if (cleanupCancelledTx(encodedTx)) refreshBalance()
+                    encodedTx
+                } else {
                     txManager.submit(encodedTx)
                 }
             }
@@ -407,7 +457,8 @@ class SdkSynchronizer internal constructor(
         txManager.monitorById(it.id)
     }.distinctUntilChanged()
 
-    override suspend fun isValidShieldedAddr(address: String) = txManager.isValidShieldedAddress(address)
+    override suspend fun isValidShieldedAddr(address: String) =
+        txManager.isValidShieldedAddress(address)
 
     override suspend fun isValidTransparentAddr(address: String) =
         txManager.isValidTransparentAddress(address)

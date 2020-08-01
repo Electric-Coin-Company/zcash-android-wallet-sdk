@@ -84,6 +84,16 @@ open class PagedTransactionRepository(
         transactions.findMinedHeight(rawTransactionId)
     }
 
+    override suspend fun findMatchingTransactionId(rawTransactionId: ByteArray): Long? =
+        transactions.findMatchingTransactionId(rawTransactionId)
+
+    override suspend fun cleanupCancelledTx(rawTransactionId: ByteArray) = transactions.cleanupCancelledTx(rawTransactionId)
+    override suspend fun deleteExpired(lastScannedHeight: Int): Int {
+        // let expired transactions linger in the UI for a little while
+        return transactions.deleteExpired(lastScannedHeight - (ZcashSdk.EXPIRY_OFFSET/2))
+    }
+
+
 
     /**
      * Close the underlying database.

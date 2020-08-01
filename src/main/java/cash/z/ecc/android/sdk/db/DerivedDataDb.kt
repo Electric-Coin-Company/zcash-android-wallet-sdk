@@ -1,13 +1,12 @@
 package cash.z.ecc.android.sdk.db
 
 import androidx.paging.DataSource
-import androidx.room.Dao
-import androidx.room.Database
-import androidx.room.Query
-import androidx.room.RoomDatabase
+import androidx.room.*
+import androidx.room.Transaction
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import cash.z.ecc.android.sdk.db.entity.*
+import cash.z.ecc.android.sdk.ext.twig
 
 //
 // Database
@@ -183,7 +182,8 @@ interface TransactionDao {
 
     @Query("""
         SELECT transactions.txid AS txId, 
-               transactions.raw  AS raw 
+               transactions.raw  AS raw,
+               transactions.expiry_height AS expiryHeight
         FROM   transactions
         WHERE  id_tx = :id AND raw is not null
         """)
@@ -333,5 +333,109 @@ interface TransactionDao {
         LIMIT  :limit 
     """)
     suspend fun findAllTransactionsByRange(blockRangeStart: Int, blockRangeEnd: Int = blockRangeStart, limit: Int = Int.MAX_VALUE): List<ConfirmedTransaction>
+
+
+    // Experimental: cleanup cancelled transactions
+    //               This should probably be a rust call but there's not a lot of bandwidth for this
+    //               work to happen in librustzcash. So prove the concept on our side, first
+    //               then move the logic to the right place. Especially since the data access API is
+    //               coming soon
+    @Transaction
+    suspend fun cleanupCancelledTx(rawTransactionId: ByteArray): Boolean {
+        var success = false
+        try {
+            var hasInitialMatch = false
+            var hasFinalMatch = true
+            twig("[cleanup] cleanupCancelledTx starting...")
+            findUnminedTransactionIds(rawTransactionId).also {
+                twig("[cleanup] cleanupCancelledTx found ${it.size} matching transactions to cleanup")
+            }.forEach { transactionId ->
+                hasInitialMatch = true
+                removeInvalidTransaction(transactionId)
+            }
+            hasFinalMatch = findMatchingTransactionId(rawTransactionId) != null
+            success = hasInitialMatch && !hasFinalMatch
+            twig("[cleanup] cleanupCancelledTx Done. success? $success")
+        } catch (t: Throwable) {
+            twig("[cleanup] failed to cleanup transaction due to: $t")
+        }
+        return success
+    }
+
+    @Transaction
+    suspend fun removeInvalidTransaction(transactionId: Long): Boolean {
+        var success = false
+        try {
+            twig("[cleanup] removing invalid transactionId:$transactionId")
+            val result = unspendTransactionNotes(transactionId)
+            twig("[cleanup] unspent ($result) notes matching transaction $transactionId")
+            findSentNoteIds(transactionId)?.forEach { noteId ->
+                twig("[cleanup] WARNING: deleting invalid sent noteId:$noteId")
+                deleteSentNote(noteId)
+            }
+            twig("[cleanup] WARNING: deleting invalid transactionId $transactionId")
+            success = deleteTransaction(transactionId) != 0
+            twig("[cleanup] removeInvalidTransaction Done. success? $success")
+        } catch (t: Throwable) {
+            twig("[cleanup] failed to remove Invalid Transaction due to: $t")
+        }
+        return success
+    }
+
+    @Transaction
+    suspend fun deleteExpired(lastHeight: Int): Int {
+        var count = 0
+        findExpiredTxs(lastHeight).forEach { transactionId ->
+            if (removeInvalidTransaction(transactionId)) count++
+        }
+        return count
+    }
+
+
+    //
+    // Private-ish functions (these will move to rust, or the data access API eventually)
+    //
+
+    @Query("""
+        SELECT transactions.id_tx AS id
+        FROM   transactions 
+        WHERE  txid = :rawTransactionId
+               AND block IS NULL
+    """)
+    fun findUnminedTransactionIds(rawTransactionId: ByteArray): List<Long>
+
+    @Query("""
+        SELECT transactions.id_tx AS id
+        FROM   transactions 
+        WHERE  txid = :rawTransactionId
+        LIMIT 1
+    """)
+    suspend fun findMatchingTransactionId(rawTransactionId: ByteArray): Long?
+
+    @Query("""
+        SELECT sent_notes.id_note AS id
+        FROM   sent_notes 
+        WHERE  tx = :transactionId 
+    """)
+    fun findSentNoteIds(transactionId: Long): List<Int>?
+
+    @Query("DELETE FROM sent_notes WHERE id_note = :id")
+    fun deleteSentNote(id: Int): Int
+
+    @Query("DELETE FROM transactions WHERE id_tx = :id")
+    fun deleteTransaction(id: Long): Int
+
+    @Query("UPDATE received_notes SET spent = null WHERE spent = :transactionId")
+    fun unspendTransactionNotes(transactionId: Long): Int
+
+    @Query("""
+        SELECT transactions.id_tx
+        FROM   transactions
+        WHERE  created IS NOT NULL
+            AND block IS NULL
+            AND tx_index IS NULL
+            AND expiry_height < :lastheight
+    """)
+    suspend fun findExpiredTxs(lastheight: Int): List<Long>
 
 }
