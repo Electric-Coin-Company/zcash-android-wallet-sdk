@@ -22,7 +22,7 @@ data class Sent(
     val id: Int? = 0,
 
     @ColumnInfo(name = "tx")
-    val transactionId: Int = 0,
+    val transactionId: Long = 0,
 
     @ColumnInfo(name = "output_index")
     val outputIndex: Int = 0,
@@ -58,7 +58,7 @@ data class Sent(
 
     override fun hashCode(): Int {
         var result = id ?: 0
-        result = 31 * result + transactionId
+        result = 31 * result + transactionId.hashCode()
         result = 31 * result + outputIndex
         result = 31 * result + account
         result = 31 * result + address.hashCode()

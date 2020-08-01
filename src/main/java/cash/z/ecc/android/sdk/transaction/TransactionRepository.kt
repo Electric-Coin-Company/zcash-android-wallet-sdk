@@ -55,11 +55,23 @@ interface TransactionRepository {
      */
     suspend fun findMinedHeight(rawTransactionId: ByteArray): Int?
 
+    suspend fun findMatchingTransactionId(rawTransactionId: ByteArray): Long?
+
     /**
      * Provides a way for other components to signal that the underlying data has been modified.
      */
     fun invalidate()
 
+    /**
+     * When a transaction has been cancelled by the user, we need a bridge to clean it up from the
+     * dataDb. This function will safely remove everything related to that transaction in the right
+     * order to satisfy foreign key constraints, even if cascading isn't setup in the DB.
+     *
+     * @return true when an unmined transaction was found and then successfully removed
+     */
+    suspend fun cleanupCancelledTx(rawTransactionId: ByteArray): Boolean
+
+    suspend fun deleteExpired(lastScannedHeight: Int): Int
 
     //
     // Transactions

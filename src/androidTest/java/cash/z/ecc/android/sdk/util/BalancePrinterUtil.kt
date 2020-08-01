@@ -139,7 +139,7 @@ class BalancePrinterUtil {
 
     @Throws(IOException::class)
     fun readLines() = flow<String> {
-        val seedFile = javaClass.getResourceAsStream("/utils/seeds.txt")
+        val seedFile = javaClass.getResourceAsStream("/utils/seeds.txt")!!
         Okio.buffer(Okio.source(seedFile)).use { source ->
             var line: String? = source.readUtf8Line()
             while (line != null) {

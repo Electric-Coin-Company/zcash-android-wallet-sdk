@@ -63,6 +63,16 @@ use zcash_client_backend::constants::testnet::{
     HRP_SAPLING_PAYMENT_ADDRESS,
 };
 
+#[cfg(debug_assertions)]
+fn print_debug_state() {
+    debug!("WARNING! Debugging enabled! This will likely slow things down 10X!");
+}
+
+#[cfg(not(debug_assertions))]
+fn print_debug_state() {
+    debug!("Release enabled (congrats, this is NOT a debug build).");
+}
+
 #[no_mangle]
 pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_initLogs(
     _env: JNIEnv<'_>,
@@ -76,6 +86,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_initLogs(
     log_panics::init();
 
     debug!("logs have been initialized successfully");
+    print_debug_state()
 }
 
 #[no_mangle]

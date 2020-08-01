@@ -1,9 +1,11 @@
 package cash.z.ecc.android.sdk.db.entity
 
+import android.text.format.DateUtils
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
+import cash.z.ecc.android.sdk.ext.ZcashSdk
 
 
 //
@@ -208,7 +210,7 @@ data class ConfirmedTransaction(
     }
 }
 
-data class EncodedTransaction(val txId: ByteArray, override val raw: ByteArray) :
+data class EncodedTransaction(val txId: ByteArray, override val raw: ByteArray, val expiryHeight: Int?) :
     SignedTransaction {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -216,6 +218,7 @@ data class EncodedTransaction(val txId: ByteArray, override val raw: ByteArray) 
 
         if (!txId.contentEquals(other.txId)) return false
         if (!raw.contentEquals(other.raw)) return false
+        if (expiryHeight != other.expiryHeight) return false
 
         return true
     }
@@ -223,6 +226,7 @@ data class EncodedTransaction(val txId: ByteArray, override val raw: ByteArray) 
     override fun hashCode(): Int {
         var result = txId.contentHashCode()
         result = 31 * result + raw.contentHashCode()
+        result = 31 * result + (expiryHeight ?: 0)
         return result
     }
 }
@@ -293,6 +297,10 @@ fun PendingTransaction.isSameTxId(other: PendingTransaction): Boolean {
             && rawTransactionId!!.contentEquals(other.rawTransactionId!!)
 }
 
+fun PendingTransaction.hasRawTransactionId(): Boolean {
+    return rawTransactionId != null && (rawTransactionId?.isNotEmpty() == true)
+}
+
 fun PendingTransaction.isCreating(): Boolean {
     return (raw?.isEmpty() != false) && submitAttempts <= 0 && !isFailedSubmit() && !isFailedEncoding()
 }
@@ -323,6 +331,42 @@ fun PendingTransaction.isMined(): Boolean {
 
 fun PendingTransaction.isSubmitted(): Boolean {
     return submitAttempts > 0
+}
+
+fun PendingTransaction.isExpired(latestHeight: Int?): Boolean {
+    // TODO: test for off-by-one error here. Should we use <= or <
+    if (latestHeight == null || latestHeight < ZcashSdk.SAPLING_ACTIVATION_HEIGHT || expiryHeight < ZcashSdk.SAPLING_ACTIVATION_HEIGHT) return false
+    return expiryHeight < latestHeight
+}
+
+// if we don't have info on a pendingtx after 100 blocks then it's probably safe to stop polling!
+fun PendingTransaction.isLongExpired(latestHeight: Int?): Boolean {
+    if (latestHeight == null || latestHeight < ZcashSdk.SAPLING_ACTIVATION_HEIGHT || expiryHeight < ZcashSdk.SAPLING_ACTIVATION_HEIGHT) return false
+    return (latestHeight - expiryHeight) > 100
+}
+
+fun PendingTransaction.isMarkedForDeletion(): Boolean {
+    return rawTransactionId == null && (errorCode ?: 0) == -9090
+}
+
+fun PendingTransaction.isSafeToDiscard(): Boolean {
+    // invalid dates shouldn't happen or should be temporary
+    if (createTime < 0) return false
+
+    val age = System.currentTimeMillis() - createTime
+    val smallThreshold = 30 * DateUtils.MINUTE_IN_MILLIS
+    val hugeThreshold = 30 * DateUtils.DAY_IN_MILLIS
+    return when {
+        // if it is mined, then it is not pending so it can be deleted fairly quickly from this db
+        isMined() && age > smallThreshold -> true
+        // if a tx fails to encode, then there's not much we can do with it
+        isFailedEncoding() && age > smallThreshold -> true
+        // don't delete failed submissions until they've been cleaned up, properly, or else we lose
+        // the ability to remove them in librustzcash prior to expiration
+        isFailedSubmit() && isMarkedForDeletion() -> true
+        !isMined() && age > hugeThreshold -> true
+        else -> false
+    }
 }
 
 fun PendingTransaction.isPending(currentHeight: Int = -1): Boolean {
