@@ -4,7 +4,7 @@ import cash.z.ecc.android.sdk.Initializer
 import cash.z.ecc.android.sdk.demoapp.util.SimpleMnemonics
 
 data class DemoConfig(
-    val host: String = "lightwalletd.z.cash",
+    val host: String = "lightwalletd.electriccoin.co",
     val port: Int = 9067,
     val birthdayHeight: Int = 835_000,
     val sendAmount: Double = 0.0018,

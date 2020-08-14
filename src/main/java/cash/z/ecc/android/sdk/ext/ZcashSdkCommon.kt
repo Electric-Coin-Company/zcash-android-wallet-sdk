@@ -84,7 +84,7 @@ open class ZcashSdkCommon {
     /**
      * The default host to use for lightwalletd.
      */
-    open val DEFAULT_LIGHTWALLETD_HOST = "listwallted.z.cash"
+    open val DEFAULT_LIGHTWALLETD_HOST = "listwallted.electriccoin.co"
 
     val DB_DATA_NAME = "Data.db"
     val DB_CACHE_NAME = "Cache.db"
