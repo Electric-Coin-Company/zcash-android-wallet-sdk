@@ -54,6 +54,8 @@ class LightWalletGrpcService private constructor(
     /* LightWalletService implementation */
 
     override fun getBlockRange(heightRange: IntRange): List<CompactFormats.CompactBlock> {
+        if (heightRange.isEmpty()) return listOf()
+
         channel.resetConnectBackoff()
         return channel.createStub(streamingRequestTimeoutSec).getBlockRange(heightRange.toBlockRange()).toList()
     }
@@ -67,9 +69,20 @@ class LightWalletGrpcService private constructor(
         channel.resetConnectBackoff()
         return channel.createStub(singleRequestTimeoutSec).getLightdInfo(Service.Empty.newBuilder().build())
     }
+
     override fun submitTransaction(spendTransaction: ByteArray): Service.SendResponse {
+        if (spendTransaction.isEmpty()) {
+            return Service.SendResponse.newBuilder().setErrorCode(3000)
+                .setErrorMessage(
+                    "ERROR: failed to submit transaction because it was empty" +
+                            " so this request was ignored on the client-side."
+                )
+                .build()
+        }
         channel.resetConnectBackoff()
-        val request = Service.RawTransaction.newBuilder().setData(ByteString.copyFrom(spendTransaction)).build()
+        val request =
+            Service.RawTransaction.newBuilder().setData(ByteString.copyFrom(spendTransaction))
+                .build()
         return channel.createStub().sendTransaction(request)
     }
 
@@ -78,6 +91,8 @@ class LightWalletGrpcService private constructor(
     }
 
     override fun fetchTransaction(txId: ByteArray): Service.RawTransaction? {
+        if (txId.isEmpty()) return null
+
         channel.resetConnectBackoff()
         return channel.createStub().getTransaction(Service.TxFilter.newBuilder().setHash(ByteString.copyFrom(txId)).build())
     }
@@ -112,8 +127,12 @@ class LightWalletGrpcService private constructor(
             .setEnd(last.toBlockHeight())
             .build()
 
-    private fun Iterator<CompactFormats.CompactBlock>.toList(): List<CompactFormats.CompactBlock> =
-        mutableListOf<CompactFormats.CompactBlock>().apply {
+    /**
+     * This function effectively parses streaming responses. Each call to next(), on the iterators
+     * returned from grpc, triggers a network call.
+     */
+    private fun <T> Iterator<T>.toList(): List<T> =
+        mutableListOf<T>().apply {
             while (hasNext()) {
                 this@apply += next()
             }

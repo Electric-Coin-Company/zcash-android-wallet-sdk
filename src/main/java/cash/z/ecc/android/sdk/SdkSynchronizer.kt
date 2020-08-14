@@ -238,14 +238,14 @@ class SdkSynchronizer internal constructor(
         return (storage as? PagedTransactionRepository)?.getTransactionCount() ?: 0
     }
 
+    fun refreshTransactions() {
+        storage.invalidate()
+    }
+
 
     //
     // Private API
     //
-
-    private fun refreshTransactions() {
-        storage.invalidate()
-    }
 
     /**
      * Calculate the latest balance, based on the blocks that have been scanned and transmit this
