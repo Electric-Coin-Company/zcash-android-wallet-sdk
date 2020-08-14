@@ -25,27 +25,27 @@ tls-api-rustls = { version = "0.1", optional = true }
 
 [dependencies.ff]
 git = "https://github.com/zcash/librustzcash.git"
-rev = "f55f094ef69c2caeaa941bcf851dac8cb5fa9942"
+rev = "18b1ce7401184e86031e6d7ddefa7c8d36929296"
 
 [dependencies.pairing]
 git = "https://github.com/zcash/librustzcash.git"
-rev = "f55f094ef69c2caeaa941bcf851dac8cb5fa9942"
+rev = "18b1ce7401184e86031e6d7ddefa7c8d36929296"
 
 [dependencies.zcash_client_backend]
 git = "https://github.com/zcash/librustzcash.git"
-rev = "f55f094ef69c2caeaa941bcf851dac8cb5fa9942"
+rev = "18b1ce7401184e86031e6d7ddefa7c8d36929296"
 
 [dependencies.zcash_client_sqlite]
 git = "https://github.com/zcash/librustzcash.git"
-rev = "f55f094ef69c2caeaa941bcf851dac8cb5fa9942"
+rev = "18b1ce7401184e86031e6d7ddefa7c8d36929296"
 
 [dependencies.zcash_primitives]
 git = "https://github.com/zcash/librustzcash.git"
-rev = "f55f094ef69c2caeaa941bcf851dac8cb5fa9942"
+rev = "18b1ce7401184e86031e6d7ddefa7c8d36929296"
 
 [dependencies.zcash_proofs]
 git = "https://github.com/zcash/librustzcash.git"
-rev = "f55f094ef69c2caeaa941bcf851dac8cb5fa9942"
+rev = "18b1ce7401184e86031e6d7ddefa7c8d36929296"
 
 #[patch.'https://github.com/zcash/librustzcash.git']
 #ff = { path = '../../clones/librustzcash/ff' }
