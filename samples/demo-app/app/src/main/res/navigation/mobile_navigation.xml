@@ -43,6 +43,11 @@
         android:label="@string/menu_transactions"
         tools:layout="@layout/fragment_list_transactions" />
     <fragment
+        android:id="@+id/nav_utxos"
+        android:name="cash.z.ecc.android.sdk.demoapp.demos.listutxos.ListUtxosFragment"
+        android:label="@string/menu_utxos"
+        tools:layout="@layout/fragment_list_utxos" />
+    <fragment
         android:id="@+id/nav_send"
         android:name="cash.z.ecc.android.sdk.demoapp.demos.send.SendFragment"
         android:label="@string/menu_send"

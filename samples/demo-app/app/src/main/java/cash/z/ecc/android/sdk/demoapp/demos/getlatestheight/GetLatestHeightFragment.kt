@@ -22,15 +22,15 @@ class GetLatestHeightFragment : BaseDemoFragment<FragmentGetLatestHeightBinding>
     override fun inflateBinding(layoutInflater: LayoutInflater): FragmentGetLatestHeightBinding =
         FragmentGetLatestHeightBinding.inflate(layoutInflater)
 
-    override fun resetInBackground() {
+    fun resetInBackground() {
         lightwalletService = LightWalletGrpcService(App.instance, host, port)
     }
 
-    override fun onResetComplete() {
+    fun onResetComplete() {
         binding.textInfo.text = lightwalletService.getLatestBlockHeight().toString()
     }
 
-    override fun onClear() {
+    fun onClear() {
         lightwalletService.shutdown()
     }
 

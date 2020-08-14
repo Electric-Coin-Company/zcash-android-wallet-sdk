@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guideline_content_end"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        app:layout_constraintGuide_percent="0.88" />
+
+    <!-- Input: Address -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/text_layout_address"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:hint="Address"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.025"
+        app:layout_constraintWidth_percent="0.90"
+        tools:helperText="the seed phrase to use for this demo app">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/input_address"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@android:color/transparent"
+            android:inputType="textMultiLine|textNoSuggestions"
+            android:maxLines="1" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Input: Start -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/text_layout_range_start"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:hint="Start height"
+        app:layout_constraintStart_toStartOf="@id/text_layout_address"
+        app:layout_constraintTop_toBottomOf="@id/text_layout_address"
+        app:layout_constraintWidth_percent="0.31">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/input_range_start"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@android:color/transparent"
+            android:inputType="number"
+            android:maxLines="9" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Input: End -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/text_layout_range_end"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:hint="End height"
+        app:layout_constraintStart_toEndOf="@id/text_layout_range_start"
+        app:layout_constraintTop_toTopOf="@id/text_layout_range_start"
+        app:layout_constraintWidth_percent="0.31">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/input_range_end"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@android:color/transparent"
+            android:imeActionLabel="use phrase"
+            android:imeOptions="actionDone"
+            android:inputType="number"
+            android:maxLines="9" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <TextView
+        android:id="@+id/text_status"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:focusableInTouchMode="true"
+        android:gravity="center"
+        android:paddingEnd="16dp"
+        android:paddingStart="16dp"
+        android:textSize="14sp"
+        app:layout_constraintEnd_toStartOf="@id/button_load"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/text_layout_range_start"
+        tools:text="Initializing but this is a lot of text so what you gonna do about it" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/button_load"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="16dp"
+        android:text="Load Transactions"
+        app:layout_constraintBottom_toBottomOf="@id/text_status"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@id/text_status" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recycler_transactions"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_margin="16dp"
+        app:layout_constraintBottom_toTopOf="@id/guideline_content_end"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/text_status"
+        tools:itemCount="15"
+        tools:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+        tools:listitem="@layout/item_transaction"
+        tools:orientation="vertical" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

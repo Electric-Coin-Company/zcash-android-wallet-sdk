@@ -9,16 +9,16 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.lifecycleScope
+import androidx.fragment.app.activityViewModels
 import androidx.viewbinding.ViewBinding
 import cash.z.ecc.android.sdk.ext.TroubleshootingTwig
 import cash.z.ecc.android.sdk.ext.Twig
 import com.google.android.material.snackbar.Snackbar
-import kotlinx.coroutines.Dispatchers.IO
-import kotlinx.coroutines.withContext
 
 abstract class BaseDemoFragment<T : ViewBinding> : Fragment() {
 
+    // contains view information provided by the user
+    val sharedViewModel: SharedViewModel by activityViewModels()
     lateinit var binding: T
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -38,35 +38,12 @@ abstract class BaseDemoFragment<T : ViewBinding> : Fragment() {
     override fun onResume() {
         super.onResume()
         registerActionButtonListener()
-        // just a quick way of enforcing the following for each demo:
-        //  - wait until the fragment is created, then run `initInBackground` on a background thread
-        //  - wait until init is finished
-        //  - and then run `onInitComplete` on the Main thread
-        //     - but only once the fragment is resumed
-        //     - and if the fragment/activity/app is stopped during any of this, exit cleanly
-        //
-        // Why?
-        // Because this is a demo. In a full-blown app, there would be other appropriate times to
-        // load things. Also, we want each demo to stand alone. It is abnormal for a fragment to
-        // always recreate application state but that's the behavior we want for the demos.
-        // So we use this approach to coordinate two sets of logic and ensure they run sequentially
-        // while also respecting the lifecycle. If we didn't do this, the `initInBackground` would
-        // freeze the UI while the fragment is created and `onInitComplete` would have no way of
-        // knowing when the background thread work is done and thereby could run in the wrong order.
-        lifecycleScope.launchWhenCreated {
-            withContext(IO) {
-                resetInBackground()
-                lifecycleScope.launchWhenResumed {
-                    onResetComplete()
-                }
-            }
-        }
     }
 
     override fun onPause() {
         super.onPause()
         unregisterActionButtonListener()
-        onClear()
+        (activity as? MainActivity)?.hideKeyboard()
     }
 
     private fun registerActionButtonListener() {
@@ -80,12 +57,6 @@ abstract class BaseDemoFragment<T : ViewBinding> : Fragment() {
     }
 
     /**
-     * Callback to run whenever the fragment is paused. The intention is to clear out each demo
-     * cleanly so that they are always a repeatable experience.
-     */
-    open fun onClear() {}
-
-    /**
      * Callback that gets invoked on the visible fragment whenever the floating action button is
      * tapped. This provides a convenient placeholder for the developer to extend the
      * behavior for a demo, for instance by copying the address to the clipboard, whenever the FAB
@@ -96,7 +67,7 @@ abstract class BaseDemoFragment<T : ViewBinding> : Fragment() {
         // each fragment. Simply override this [onActionButtonClicked] callback to add behavior to a
         // demo. In other words, this function probably doesn't need to change because desired
         // behavior should go in the child fragment, which overrides this.
-        Snackbar.make(view!!, "Replace with your own action", Snackbar.LENGTH_LONG)
+        Snackbar.make(requireView(), "Replace with your own action", Snackbar.LENGTH_LONG)
             .setAction("Action") { /* auto-close */ }.show()
     }
 
@@ -122,6 +93,4 @@ abstract class BaseDemoFragment<T : ViewBinding> : Fragment() {
      * interface so the base class cannot take care of this behavior without some help.
      */
     abstract fun inflateBinding(layoutInflater: LayoutInflater): T
-    abstract fun resetInBackground()
-    abstract fun onResetComplete()
 }

@@ -19,33 +19,47 @@ httpbis = { version = "0.7", optional = true }
 jni = { version = "0.13", default-features = false }
 log = "0.4"
 log-panics = "2.0.0"
-protobuf = { version = "2", optional = true }
+#protobuf = { version = "2", optional = true }
 tls-api = { version = "0.1", optional = true }
 tls-api-rustls = { version = "0.1", optional = true }
 
+#### Temporary additions: ####################################
+base58 = "0.1.0"
+protobuf = "2"
+sha2 = "0.8.0"
+bs58 = { version = "0.3", features = ["check"] }
+hdwallet = "0.2.2"
+ripemd160 = "0.8.0"
+secp256k1 = "0.17.2"
+##############################################################
+
+
 [dependencies.ff]
 git = "https://github.com/zcash/librustzcash.git"
-rev = "f55f094ef69c2caeaa941bcf851dac8cb5fa9942"
+rev = "18b1ce7401184e86031e6d7ddefa7c8d36929296"
 
 [dependencies.pairing]
 git = "https://github.com/zcash/librustzcash.git"
-rev = "f55f094ef69c2caeaa941bcf851dac8cb5fa9942"
+rev = "18b1ce7401184e86031e6d7ddefa7c8d36929296"
 
 [dependencies.zcash_client_backend]
 git = "https://github.com/zcash/librustzcash.git"
-rev = "f55f094ef69c2caeaa941bcf851dac8cb5fa9942"
+rev = "18b1ce7401184e86031e6d7ddefa7c8d36929296"
 
 [dependencies.zcash_client_sqlite]
 git = "https://github.com/zcash/librustzcash.git"
-rev = "f55f094ef69c2caeaa941bcf851dac8cb5fa9942"
+rev = "18b1ce7401184e86031e6d7ddefa7c8d36929296"
 
 [dependencies.zcash_primitives]
 git = "https://github.com/zcash/librustzcash.git"
-rev = "f55f094ef69c2caeaa941bcf851dac8cb5fa9942"
+rev = "18b1ce7401184e86031e6d7ddefa7c8d36929296"
 
 [dependencies.zcash_proofs]
 git = "https://github.com/zcash/librustzcash.git"
-rev = "f55f094ef69c2caeaa941bcf851dac8cb5fa9942"
+rev = "18b1ce7401184e86031e6d7ddefa7c8d36929296"
+
+[build-dependencies]
+protobuf-codegen-pure = "2.14"
 
 #[patch.'https://github.com/zcash/librustzcash.git']
 #ff = { path = '../../clones/librustzcash/ff' }
@@ -57,7 +71,7 @@ rev = "f55f094ef69c2caeaa941bcf851dac8cb5fa9942"
 
 [features]
 mainnet = ["zcash_client_sqlite/mainnet"]
-updater = ["futures", "grpc", "httpbis", "protobuf", "tls-api", "tls-api-rustls"]
+#updater = ["futures", "grpc", "httpbis", "protobuf", "tls-api", "tls-api-rustls"]
 
 [lib]
 name = "zcashwalletsdk"

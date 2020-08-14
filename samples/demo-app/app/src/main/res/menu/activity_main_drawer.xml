@@ -34,6 +34,10 @@
             android:icon="@drawable/ic_list"
             android:title="@string/menu_transactions" />
         <item
+            android:id="@+id/nav_utxos"
+            android:icon="@drawable/ic_list"
+            android:title="@string/menu_utxos" />
+        <item
             android:id="@+id/nav_send"
             android:icon="@drawable/ic_menu_send"
             android:title="@string/menu_send" />

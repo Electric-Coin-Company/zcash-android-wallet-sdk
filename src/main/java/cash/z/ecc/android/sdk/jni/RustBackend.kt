@@ -4,6 +4,7 @@ import cash.z.ecc.android.sdk.exception.BirthdayException
 import cash.z.ecc.android.sdk.ext.ZcashSdk.OUTPUT_PARAM_FILE_NAME
 import cash.z.ecc.android.sdk.ext.ZcashSdk.SPEND_PARAM_FILE_NAME
 import cash.z.ecc.android.sdk.ext.twig
+import cash.z.ecc.android.sdk.rpc.LocalRpcTypes
 import java.io.File
 
 /**
@@ -125,6 +126,9 @@ class RustBackend : RustBackendWelding {
     override fun deriveSpendingKeys(seed: ByteArray, numberOfAccounts: Int) =
         deriveExtendedSpendingKeys(seed, numberOfAccounts)
 
+
+    override fun deriveTAddress(seed: ByteArray): String = deriveTransparentAddress(seed)
+
     override fun deriveViewingKeys(seed: ByteArray, numberOfAccounts: Int) =
         deriveExtendedFullViewingKeys(seed, numberOfAccounts)
 
@@ -140,6 +144,25 @@ class RustBackend : RustBackendWelding {
     override fun isValidTransparentAddr(addr: String) = isValidTransparentAddress(addr)
 
     override fun getBranchIdForHeight(height: Int): Long = branchIdForHeight(height)
+
+    /**
+     * This is a proof-of-concept for doing Local RPC, where we are effectively using the JNI
+     * boundary as a grpc server. It is slightly inefficient in terms of both space and time but
+     * given that it is all done locally, on the heap, it seems to be a worthwhile tradeoff because
+     * it reduces the complexity and expands the capacity for the two layers to communicate.
+     *
+     * We're able to keep the "unsafe" byteArray functions private and wrap them in typeSafe
+     * equivalents and, eventually, surface any parse errors (for now, errors are only logged).
+     */
+    override fun parseTransactionDataList(tdl: LocalRpcTypes.TransactionDataList): LocalRpcTypes.TransparentTransactionList {
+        return try {
+            // serialize the list, send it over to rust and get back a serialized set of results that we parse out and return
+            return LocalRpcTypes.TransparentTransactionList.parseFrom(parseTransactionDataList(tdl.toByteArray()))
+        } catch (t: Throwable) {
+            twig("ERROR: failed to parse transaction data list due to: $t caused by: ${t.cause}")
+            LocalRpcTypes.TransparentTransactionList.newBuilder().build()
+        }
+    }
 
     /**
      * Exposes all of the librustzcash functions along with helpers for loading the static library.
@@ -246,5 +269,9 @@ class RustBackend : RustBackendWelding {
         @JvmStatic private external fun deriveAddressFromViewingKey(key: String): String
 
         @JvmStatic private external fun branchIdForHeight(height: Int): Long
+
+        @JvmStatic private external fun parseTransactionDataList(serializedList: ByteArray): ByteArray
+
+        @JvmStatic private external fun deriveTransparentAddress(seed: ByteArray): String
     }
 }
