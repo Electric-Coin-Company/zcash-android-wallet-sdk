@@ -1,5 +1,7 @@
 package cash.z.ecc.android.sdk.jni
 
+import cash.z.ecc.android.sdk.rpc.LocalRpcTypes
+
 /**
  * Contract defining the exposed capabilities of the Rust backend.
  * This is what welds the SDK to the Rust layer.
@@ -22,6 +24,8 @@ interface RustBackendWelding {
     fun deriveAddress(seed: ByteArray, accountIndex: Int = 0): String
 
     fun deriveSpendingKeys(seed: ByteArray, numberOfAccounts: Int = 1): Array<String>
+
+    fun deriveTAddress(seed: ByteArray): String
 
     fun deriveViewingKey(spendingKey: String): String
 
@@ -52,6 +56,8 @@ interface RustBackendWelding {
     fun getSentMemoAsUtf8(idNote: Long): String
 
     fun getVerifiedBalance(account: Int = 0): Long
+
+    fun parseTransactionDataList(tdl: LocalRpcTypes.TransactionDataList): LocalRpcTypes.TransparentTransactionList
 
     fun rewindToHeight(height: Int): Boolean
 

@@ -63,6 +63,27 @@ use zcash_client_backend::constants::testnet::{
     HRP_SAPLING_PAYMENT_ADDRESS,
 };
 
+// /////////////////////////////////////////////////////////////////////////////////////////////////
+// Temporary Imports
+mod local_rpc_types;
+use local_rpc_types::{TransparentTransaction, TransparentTransactionList, TransactionDataList};
+use base58::{ToBase58};
+use jni::errors::{Result as JniResult};
+use protobuf::{parse_from_bytes, Message};
+use sha2::{Sha256, Digest};
+use zcash_client_backend::{
+    constants::{testnet, mainnet},
+};
+use zcash_primitives::legacy::{Script, TransparentAddress};
+
+use bs58::{self, decode::Error as Bs58Error};
+use hdwallet::{ExtendedPrivKey, KeyIndex};
+use secp256k1::{PublicKey, Secp256k1, SecretKey, SignOnly, VerifyOnly};
+use zcash_client_backend::constants::mainnet::B58_PUBKEY_ADDRESS_PREFIX;
+
+// use crate::extended_key::{key_index::KeyIndex, ExtendedPrivKey, ExtendedPubKey, KeySeed};
+// /////////////////////////////////////////////////////////////////////////////////////////////////
+
 #[cfg(debug_assertions)]
 fn print_debug_state() {
     debug!("WARNING! Debugging enabled! This will likely slow things down 10X!");
@@ -591,6 +612,84 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_scanBlockBa
     unwrap_exc_or(&env, res, JNI_FALSE)
 }
 
+// ////////////////////////////////////////////////////////////////////////////////////////////////
+// PROOF-OF-CONCEPT FOR PROTOBUF COMMUNICATION WITH SDK
+// ////////////////////////////////////////////////////////////////////////////////////////////////
+#[no_mangle]
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_parseTransactionDataList(
+    env: JNIEnv<'_>,
+    _: JClass<'_>,
+    tx_data_list: jbyteArray,
+) -> jbyteArray {
+    let mut err_val: Vec<u8> = Vec::new();
+    let mut res_err = env.byte_array_from_slice(&err_val).unwrap();
+    let res = panic::catch_unwind(|| {
+        let tx_data_bytes = env.convert_byte_array(tx_data_list)?;
+        let input_tx_data = parse_from_bytes::<TransactionDataList>(&tx_data_bytes)?;
+        let mut tx_list = TransparentTransactionList::new();
+        let mut txs = protobuf::RepeatedField::<TransparentTransaction>::new();
+        for data in input_tx_data.data.iter() {
+            let mut tx = TransparentTransaction::new();
+            let parsed = Transaction::read(&data[..])?;
+            tx.set_expiryHeight(parsed.expiry_height);
+            // Note: the wrong value is returned here (negative numbers)
+            tx.set_value(i64::from(parsed.value_balance));
+            tx.set_hasShieldedSpends(parsed.shielded_spends.len() > 0);
+            tx.set_hasShieldedOutputs(parsed.shielded_outputs.len() > 0);
+
+            for (n, vout) in parsed.vout.iter().enumerate() {
+                match vout.script_pubkey.address() {
+                    // NOTE : this logic below doesn't work. No address is parsed.
+                    Some(TransparentAddress::PublicKey(hash)) => {
+                        tx.set_toAddress(hash.to_base58check(&B58_PUBKEY_ADDRESS_PREFIX, &[]));
+                    },
+                    _ => {}
+                }
+            }
+
+            txs.push(tx);
+        }
+
+        tx_list.set_transactions(txs);
+        match env.byte_array_from_slice(&tx_list.write_to_bytes()?) {
+            Ok(result) => Ok(result),
+            Err(e) => Err(format_err!("Error while parsing transaction: {}", e)),
+        }
+    });
+    unwrap_exc_or(&env, res, res_err)
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_deriveTransparentAddress(
+    env: JNIEnv<'_>,
+    _: JClass<'_>,
+    seed: jbyteArray,
+) -> jstring {
+    let res = panic::catch_unwind(|| {
+        let seed = env.convert_byte_array(seed).unwrap();
+
+        // modified from: https://github.com/adityapk00/zecwallet-light-cli/blob/master/lib/src/lightwallet.rs
+
+        let ext_t_key = ExtendedPrivKey::with_seed(&seed).unwrap();
+        let address_sk = ext_t_key
+            .derive_private_key(KeyIndex::hardened_from_normalize_index(44).unwrap()).unwrap()
+            .derive_private_key(KeyIndex::hardened_from_normalize_index(COIN_TYPE).unwrap()).unwrap()
+            .derive_private_key(KeyIndex::hardened_from_normalize_index(0).unwrap()).unwrap()
+            .derive_private_key(KeyIndex::Normal(0)).unwrap()
+            .derive_private_key(KeyIndex::Normal(0)).unwrap()
+            .private_key;
+        let secp = Secp256k1::new();
+        let pk = PublicKey::from_secret_key(&secp, &address_sk);
+        let mut hash160 = ripemd160::Ripemd160::new();
+        hash160.input(Sha256::digest(&pk.serialize()[..].to_vec()));
+        let address_string = hash160.result().to_base58check(&B58_PUBKEY_ADDRESS_PREFIX, &[]);
+
+        let output = env.new_string(address_string).expect("Couldn't create Java string!");
+        Ok(output.into_inner())
+    });
+    unwrap_exc_or(&env, res, ptr::null_mut())
+}
+
 #[no_mangle]
 pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_decryptAndStoreTransaction(
     env: JNIEnv<'_>,
@@ -700,4 +799,36 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_branchIdFor
         Ok(branch_id as i32)
     });
     unwrap_exc_or(&env, res, -1)
+}
+
+
+
+//
+// Helper code from: https://github.com/adityapk00/zecwallet-light-cli/blob/master/lib/src/lightwallet.rs
+//
+
+/// A trait for converting a [u8] to base58 encoded string.
+pub trait ToBase58Check {
+    /// Converts a value of `self` to a base58 value, returning the owned string.
+    /// The version is a coin-specific prefix that is added.
+    /// The suffix is any bytes that we want to add at the end (like the "iscompressed" flag for
+    /// Secret key encoding)
+    fn to_base58check(&self, version: &[u8], suffix: &[u8]) -> String;
+}
+impl ToBase58Check for [u8] {
+    fn to_base58check(&self, version: &[u8], suffix: &[u8]) -> String {
+        let mut payload: Vec<u8> = Vec::new();
+        payload.extend_from_slice(version);
+        payload.extend_from_slice(self);
+        payload.extend_from_slice(suffix);
+
+        let mut checksum = double_sha256(&payload);
+        payload.append(&mut checksum[..4].to_vec());
+        payload.to_base58()
+    }
+}
+pub fn double_sha256(payload: &[u8]) -> Vec<u8> {
+    let h1 = Sha256::digest(&payload);
+    let h2 = Sha256::digest(&h1);
+    h2.to_vec()
 }
