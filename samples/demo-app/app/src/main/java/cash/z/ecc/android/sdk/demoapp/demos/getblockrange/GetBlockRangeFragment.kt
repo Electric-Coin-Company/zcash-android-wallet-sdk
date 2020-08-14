@@ -24,16 +24,16 @@ class GetBlockRangeFragment : BaseDemoFragment<FragmentGetBlockRangeBinding>() {
     override fun inflateBinding(layoutInflater: LayoutInflater): FragmentGetBlockRangeBinding =
         FragmentGetBlockRangeBinding.inflate(layoutInflater)
 
-    override fun resetInBackground() {
+    fun resetInBackground() {
         lightwalletService = LightWalletGrpcService(App.instance, host, port)
     }
 
-    override fun onResetComplete() {
+    fun onResetComplete() {
         binding.buttonApply.setOnClickListener(::onApply)
         onApply(binding.textInfo)
     }
 
-    override fun onClear() {
+    fun onClear() {
         lightwalletService.shutdown()
     }
 

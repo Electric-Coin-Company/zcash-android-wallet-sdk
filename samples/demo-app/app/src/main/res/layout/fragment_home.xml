@@ -8,27 +8,94 @@
     tools:context="cash.z.ecc.android.sdk.demoapp.demos.home.HomeFragment">
 
     <TextView
-        android:id="@+id/text_home"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginEnd="8dp"
-        android:layout_marginStart="8dp"
-        android:layout_marginTop="8dp"
-        android:textAlignment="center"
-        android:textSize="20sp"
-        app:layout_constraintBottom_toTopOf="@id/button_home"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <Button
-        android:id="@+id/button_home"
+        android:id="@+id/text_seed_phrase"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/next"
-        android:visibility="gone"
+        android:drawableEnd="@drawable/ic_baseline_edit_24"
+        android:drawablePadding="12dp"
+        android:padding="24dp"
+        android:text="Seed phrase set to: apple...fish"
+        android:textSize="18sp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/text_home" />
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.3" />
+
+    <!-- Input: Seed Phrase -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/text_layout_seed_phrase"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:hint="Seed Phrase (24 words)"
+        app:endIconMode="clear_text"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintVertical_bias="0.28"
+        app:layout_constraintWidth_percent="0.84"
+        tools:helperText="the seed phrase to use for this demo app">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/input_seed_phrase"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@android:color/transparent"
+            android:imeActionLabel="use phrase"
+            android:imeOptions="actionDone"
+            android:inputType="textMultiLine|textNoSuggestions"
+            android:maxLines="9" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/button_paste"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Paste from Clipboard"
+        app:layout_constraintStart_toStartOf="@id/text_layout_seed_phrase"
+        app:layout_constraintTop_toBottomOf="@id/text_layout_seed_phrase" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/button_accept"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        style="@style/Widget.App.Button.OutlinedButton.IconOnly"
+        app:icon="@drawable/ic_baseline_check_24"
+        app:layout_constraintEnd_toEndOf="@id/text_layout_seed_phrase"
+        app:layout_constraintTop_toBottomOf="@id/text_layout_seed_phrase" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/button_cancel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        style="@style/Widget.App.Button.OutlinedButton.IconOnly"
+        app:icon="@drawable/ic_baseline_close_24"
+        app:layout_constraintEnd_toStartOf="@id/button_accept"
+        app:layout_constraintTop_toBottomOf="@id/text_layout_seed_phrase" />
+
+    <TextView
+        android:id="@+id/text_home"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="\u25c4\tSelect a demo"
+        android:textAlignment="center"
+        android:textSize="20sp"
+        app:layout_constraintHorizontal_bias="0.1"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintVertical_bias="0.1" />
+
+    <androidx.constraintlayout.widget.Group
+        android:id="@+id/group_edit"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        app:constraint_referenced_ids="text_layout_seed_phrase,button_paste,button_accept,button_cancel" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -64,20 +64,20 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
     override fun inflateBinding(layoutInflater: LayoutInflater): FragmentSendBinding =
         FragmentSendBinding.inflate(layoutInflater)
 
-    override fun resetInBackground() {
+    fun resetInBackground() {
         val spendingKeys = initializer.new(config.seed, birthday)
         keyManager = SampleStorageBridge().securelyStorePrivateKey(spendingKeys[0])
         synchronizer = Synchronizer(initializer)
     }
 
     // STARTING POINT
-    override fun onResetComplete() {
+    fun onResetComplete() {
         initSendUi()
         startSynchronizer()
         monitorChanges()
     }
 
-    override fun onClear() {
+    fun onClear() {
         synchronizer.stop()
         initializer.clear()
     }

@@ -39,18 +39,18 @@ class ListTransactionsFragment : BaseDemoFragment<FragmentListTransactionsBindin
     override fun inflateBinding(layoutInflater: LayoutInflater): FragmentListTransactionsBinding =
         FragmentListTransactionsBinding.inflate(layoutInflater)
 
-    override fun resetInBackground() {
+    fun resetInBackground() {
         initializer.new(config.seed, birthday)
         synchronizer = Synchronizer(initializer)
     }
 
-    override fun onResetComplete() {
+    fun onResetComplete() {
         initTransactionUI()
         startSynchronizer()
         monitorStatus()
     }
     
-    override fun onClear() {
+    fun onClear() {
         synchronizer.stop()
         initializer.clear()
     }

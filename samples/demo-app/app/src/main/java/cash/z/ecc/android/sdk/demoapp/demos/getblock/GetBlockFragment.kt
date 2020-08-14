@@ -22,11 +22,11 @@ class GetBlockFragment : BaseDemoFragment<FragmentGetBlockBinding>() {
     override fun inflateBinding(layoutInflater: LayoutInflater): FragmentGetBlockBinding =
         FragmentGetBlockBinding.inflate(layoutInflater)
 
-    override fun resetInBackground() {
+    fun resetInBackground() {
         lightwalletService = LightWalletGrpcService(App.instance, host, port)
     }
 
-    override fun onResetComplete() {
+    fun onResetComplete() {
         binding.buttonApply.setOnClickListener(::onApply)
         onApply(binding.textBlockHeight)
     }
@@ -46,7 +46,7 @@ class GetBlockFragment : BaseDemoFragment<FragmentGetBlockBinding>() {
             """.trimIndent()
     }
 
-    override fun onClear() {
+    fun onClear() {
         lightwalletService.shutdown()
     }
 }
