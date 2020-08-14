@@ -1,5 +1,6 @@
 package cash.z.ecc.android.sdk.service
 
+import cash.z.ecc.android.sdk.db.entity.ConfirmedTransaction
 import cash.z.wallet.sdk.rpc.CompactFormats
 import cash.z.wallet.sdk.rpc.Service
 
@@ -51,6 +52,15 @@ interface LightWalletService {
      * @return the response from the server.
      */
     fun submitTransaction(spendTransaction: ByteArray): Service.SendResponse
+
+    /**
+     * Gets all the transactions for a given t-address over the given range.  In practice, this is
+     * effectively the same as an RPC call to a node that's running an insight server. The data is
+     * indexed and responses are fairly quick.
+     *
+     * @return a list of transactions that correspond to the given address for the given range.
+     */
+    fun getTAddressTransactions(tAddress: String, blockHeightRange: IntRange): List<Service.RawTransaction>
 
     /**
      * Fetch the details of a known transaction.

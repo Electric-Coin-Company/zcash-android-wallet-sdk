@@ -97,6 +97,20 @@ class LightWalletGrpcService private constructor(
         return channel.createStub().getTransaction(Service.TxFilter.newBuilder().setHash(ByteString.copyFrom(txId)).build())
     }
 
+    override fun getTAddressTransactions(
+        tAddress: String,
+        blockHeightRange: IntRange
+    ): List<Service.RawTransaction> {
+        if (blockHeightRange.isEmpty() || tAddress.isBlank()) return listOf()
+
+        channel.resetConnectBackoff()
+        val result = channel.createStub().getAddressTxids(
+            Service.TransparentAddressBlockFilter.newBuilder().setAddress(tAddress)
+                .setRange(blockHeightRange.toBlockRange()).build()
+        )
+        return result.toList()
+    }
+
     override fun reconnect() {
         twig("closing existing channel and then reconnecting to" +
                 " ${connectionInfo.host}:${connectionInfo.port}?usePlaintext=${connectionInfo.usePlaintext}")
