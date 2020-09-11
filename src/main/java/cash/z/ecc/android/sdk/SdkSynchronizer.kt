@@ -1,17 +1,20 @@
 package cash.z.ecc.android.sdk
 
+import android.content.Context
 import cash.z.ecc.android.sdk.Synchronizer.Status.*
+import cash.z.ecc.android.sdk.block.CompactBlockDbStore
+import cash.z.ecc.android.sdk.block.CompactBlockDownloader
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.*
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor.WalletBalance
+import cash.z.ecc.android.sdk.block.CompactBlockStore
 import cash.z.ecc.android.sdk.db.entity.*
 import cash.z.ecc.android.sdk.exception.SynchronizerException
 import cash.z.ecc.android.sdk.ext.*
+import cash.z.ecc.android.sdk.jni.RustBackend
 import cash.z.ecc.android.sdk.service.LightWalletGrpcService
-import cash.z.ecc.android.sdk.transaction.OutboundTransactionManager
-import cash.z.ecc.android.sdk.transaction.PagedTransactionRepository
-import cash.z.ecc.android.sdk.transaction.PersistentTransactionManager
-import cash.z.ecc.android.sdk.transaction.TransactionRepository
+import cash.z.ecc.android.sdk.service.LightWalletService
+import cash.z.ecc.android.sdk.transaction.*
 import cash.z.ecc.android.sdk.validate.AddressType
 import cash.z.ecc.android.sdk.validate.AddressType.Shielded
 import cash.z.ecc.android.sdk.validate.AddressType.Transparent
@@ -39,6 +42,7 @@ import kotlin.coroutines.EmptyCoroutineContext
  * data related to this wallet.
  */
 @ExperimentalCoroutinesApi
+@FlowPreview
 class SdkSynchronizer internal constructor(
     private val storage: TransactionRepository,
     private val txManager: OutboundTransactionManager,
@@ -489,4 +493,80 @@ class SdkSynchronizer internal constructor(
             serverBranchId?.let { ConsensusBranchId.fromHex(it) }
         )
     }
+
+    interface SdkInitializer {
+        val context: Context
+        val rustBackend: RustBackend
+        val host: String
+        val port: Int
+        val alias: String
+        fun clear()
+    }
+}
+
+
+
+/**
+ * Builder function for constructing a Synchronizer with flexibility for adding custom behavior. The
+ * Initializer is the only thing required because it takes care of loading the Rust libraries
+ * properly; everything else has a reasonable default. For a wallet, the most common flow is to
+ * first call either [Initializer.new] or [Initializer.import] on the first run and then
+ * [Initializer.open] for all subsequent launches of the wallet. From there, the initializer is
+ * passed to this function in order to start syncing from where the wallet left off.
+ *
+ * The remaining parameters are all optional and they allow a wallet maker to customize any
+ * subcomponent of the Synchronizer. For example, this function could be used to inject an in-memory
+ * CompactBlockStore rather than a SQL implementation or a downloader that does not use gRPC:
+ *
+ * ```
+ * val initializer = Initializer(context, host, port).import(seedPhrase, birthdayHeight)
+ * val synchronizer = Synchronizer(initializer,
+ *      blockStore = MyInMemoryBlockStore(),
+ *      downloader = MyRestfulServiceForBlocks()
+ * )
+ * ```
+ *
+ * Note: alternatively, all the objects required to build a Synchronizer (the object graph) can be
+ * supplied by a dependency injection framework like Dagger or Koin. This builder just makes that
+ * process a bit easier so developers can get started syncing the blockchain without the overhead of
+ * configuring a bunch of objects, first.
+ *
+ * @param initializer the helper that is leveraged for creating all the components that the
+ * Synchronizer requires. It contains all information necessary to build a synchronizer and it is
+ * mainly responsible for initializing the databases associated with this synchronizer and loading
+ * the rust backend.
+ * @param repository repository of wallet data, providing an interface to the underlying info.
+ * @param blockStore component responsible for storing compact blocks downloaded from lightwalletd.
+ * @param service the lightwalletd service that can provide compact blocks and submit transactions.
+ * @param encoder the component responsible for encoding transactions.
+ * @param downloader the component responsible for downloading ranges of compact blocks.
+ * @param txManager the component that manages outbound transactions in order to report which ones are
+ * still pending, particularly after failed attempts or dropped connectivity. The intent is to help
+ * monitor outbound transactions status through to completion.
+ * @param processor the component responsible for processing compact blocks. This is effectively the
+ * brains of the synchronizer that implements most of the high-level business logic and determines
+ * the current state of the wallet.
+ */
+@Suppress("FunctionName")
+fun Synchronizer(
+    initializer: SdkSynchronizer.SdkInitializer,
+    repository: TransactionRepository =
+        PagedTransactionRepository(initializer.context, 1000, initializer.rustBackend.pathDataDb), // TODO: fix this pagesize bug, small pages should not crash the app. It crashes with: Uncaught Exception: android.view.ViewRootImpl$CalledFromWrongThreadException: Only the original thread that created a view hierarchy can touch its views. and is probably related to FlowPagedList
+    blockStore: CompactBlockStore = CompactBlockDbStore(initializer.context, initializer.rustBackend.pathCacheDb),
+    service: LightWalletService = LightWalletGrpcService(initializer.context, initializer.host, initializer.port),
+    encoder: TransactionEncoder = WalletTransactionEncoder(initializer.rustBackend, repository),
+    downloader: CompactBlockDownloader = CompactBlockDownloader(service, blockStore),
+    txManager: OutboundTransactionManager =
+        PersistentTransactionManager(initializer.context, encoder, service),
+    processor: CompactBlockProcessor =
+        CompactBlockProcessor(downloader, repository, initializer.rustBackend, initializer.rustBackend.birthdayHeight)
+): Synchronizer {
+    // call the actual constructor now that all dependencies have been injected
+    // alternatively, this entire object graph can be supplied by Dagger
+    // This builder just makes that easier.
+    return SdkSynchronizer(
+        repository,
+        txManager,
+        processor
+    )
 }

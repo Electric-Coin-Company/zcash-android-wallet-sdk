@@ -14,6 +14,8 @@ import cash.z.ecc.android.sdk.ext.twig
 import cash.z.ecc.android.sdk.jni.RustBackend
 import cash.z.ecc.android.sdk.service.LightWalletGrpcService
 import cash.z.ecc.android.sdk.service.LightWalletService
+import cash.z.ecc.android.sdk.tool.WalletBirthdayTool
+import cash.z.ecc.android.sdk.tool.WalletBirthdayTool.WalletBirthday
 import cash.z.ecc.android.sdk.transaction.*
 import com.google.gson.Gson
 import com.google.gson.stream.JsonReader
@@ -41,11 +43,11 @@ import kotlin.reflect.KProperty
  */
 class Initializer(
     appContext: Context,
-    val host: String = ZcashSdk.DEFAULT_LIGHTWALLETD_HOST,
-    val port: Int = ZcashSdk.DEFAULT_LIGHTWALLETD_PORT,
-    private val alias: String = ZcashSdk.DEFAULT_ALIAS
-) {
-    val context = appContext.applicationContext
+    override val host: String = ZcashSdk.DEFAULT_LIGHTWALLETD_HOST,
+    override val port: Int = ZcashSdk.DEFAULT_LIGHTWALLETD_PORT,
+    override val alias: String = ZcashSdk.DEFAULT_ALIAS
+) : SdkSynchronizer.SdkInitializer {
+    override val context = appContext.applicationContext
 
     init {
         validateAlias(alias)
@@ -78,7 +80,7 @@ class Initializer(
      * SDK when it is constructed. It provides access to all Librustzcash features and is configured
      * based on this initializer.
      */
-    val rustBackend: RustBackend get() {
+    override val rustBackend: RustBackend get() {
         check(_rustBackend != null) {
             "Error: RustBackend must be loaded before it is accessed. Verify that either" +
                     " the 'open', 'new' or 'import' function has been called on the Initializer."
@@ -179,7 +181,7 @@ class Initializer(
      */
     fun open(birthday: WalletBirthday): Initializer {
         twig("Opening wallet with birthday ${birthday.height}")
-        requireRustBackend().birthdayHeight = birthday.height
+        requireRustBackend(birthday)
         return this
     }
 
@@ -222,16 +224,16 @@ class Initializer(
         this.birthday = birthday
         twig("Initializing accounts with birthday ${birthday.height}")
         try {
-            requireRustBackend().clear(clearCacheDb, clearDataDb)
+            requireRustBackend(birthday).clear(clearCacheDb, clearDataDb)
             // only creates tables, if they don't exist
-            requireRustBackend().initDataDb()
+            requireRustBackend(birthday).initDataDb()
             twig("Initialized wallet for first run")
         } catch (t: Throwable) {
             throw InitializerException.FalseStart(t)
         }
 
         try {
-            requireRustBackend().initBlocksTable(
+            requireRustBackend(birthday).initBlocksTable(
                 birthday.height,
                 birthday.hash,
                 birthday.time,
@@ -247,7 +249,7 @@ class Initializer(
         }
 
         try {
-            return requireRustBackend().initAccountsTable(seed, numberOfAccounts).also {
+            return requireRustBackend(birthday).initAccountsTable(seed, numberOfAccounts).also {
                 twig("Initialized the accounts table with ${numberOfAccounts} account(s)")
             }
         } catch (t: Throwable) {
@@ -259,7 +261,7 @@ class Initializer(
      * Delete all local data related to this wallet, as though the wallet was never created on this
      * device. Simply put, this call deletes the "cache db" and "data db."
      */
-    fun clear() {
+    override fun clear() {
         rustBackend.clear()
     }
 
@@ -270,77 +272,13 @@ class Initializer(
      *
      * @return the rustBackend that was loaded by this initializer.
      */
-    private fun requireRustBackend(): RustBackend {
+    private fun requireRustBackend(walletBirthday: WalletBirthday? = null): RustBackend {
         if (!isInitialized) {
             twig("Initializing cache: $pathCacheDb  data: $pathDataDb  params: $pathParams")
-            _rustBackend = RustBackend().init(pathCacheDb, pathDataDb, pathParams)
+            _rustBackend = RustBackend().init(pathCacheDb, pathDataDb, pathParams, walletBirthday?.height)
         }
         return rustBackend
     }
-
-
-    //
-    // Key Derivation Helpers
-    //
-
-    /**
-     * Given a seed and a number of accounts, return the associated spending keys. These keys can
-     * be used to derive the viewing keys.
-     *
-     * @param seed the seed from which to derive spending keys.
-     * @param numberOfAccounts the number of accounts to use. Multiple accounts are not fully
-     * supported so the default value of 1 is recommended.
-     *
-     * @return the spending keys that correspond to the seed, formatted as Strings.
-     */
-    fun deriveSpendingKeys(seed: ByteArray, numberOfAccounts: Int =  1): Array<String> =
-        requireRustBackend().deriveSpendingKeys(seed, numberOfAccounts)
-
-    /**
-     * Given a seed and a number of accounts, return the associated viewing keys.
-     *
-     * @param seed the seed from which to derive viewing keys.
-     * @param numberOfAccounts the number of accounts to use. Multiple accounts are not fully
-     * supported so the default value of 1 is recommended.
-     *
-     * @return the viewing keys that correspond to the seed, formatted as Strings.
-     */
-    fun deriveViewingKeys(seed: ByteArray, numberOfAccounts: Int =  1): Array<String> =
-        requireRustBackend().deriveViewingKeys(seed, numberOfAccounts)
-
-    /**
-     * Given a spending key, return the associated viewing key.
-     *
-     * @param spendingKey the key from which to derive the viewing key.
-     *
-     * @return the viewing key that corresponds to the spending key.
-     */
-    fun deriveViewingKey(spendingKey: String): String =
-        requireRustBackend().deriveViewingKey(spendingKey)
-
-    /**
-     * Given a seed and account index, return the associated address.
-     *
-     * @param seed the seed from which to derive the address.
-     * @param accountIndex the index of the account to use for deriving the address. Multiple
-     * accounts are not fully supported so the default value of 1 is recommended.
-     *
-     * @return the address that corresponds to the seed and account index.
-     */
-    fun deriveAddress(seed: ByteArray, accountIndex: Int = 0) =
-        requireRustBackend().deriveAddress(seed, accountIndex)
-
-    /**
-     * Given a viewing key string, return the associated address.
-     *
-     * @param viewingKey the viewing key to use for deriving the address. The viewing key is tied to
-     * a specific account so no account index is required.
-     *
-     * @return the address that corresponds to the viewing key.
-     */
-    fun deriveAddress(viewingKey: String) =
-        requireRustBackend().deriveAddress(viewingKey)
-
 
     companion object {
 
@@ -373,22 +311,6 @@ class Initializer(
             return File(parentDir, "$prefix$dbFileName").absolutePath
         }
     }
-
-
-    /**
-     * Model object for holding a wallet birthday. It is only used by this class.
-     *
-     * @param height the height at the time the wallet was born.
-     * @param hash the hash of the block at the height.
-     * @param time the block time at the height.
-     * @param tree the sapling tree corresponding to the height.
-     */
-    data class WalletBirthday(
-        val height: Int = -1,
-        val hash: String = "",
-        val time: Long = -1,
-        val tree: String = ""
-    )
 
     /**
      * Interface for classes that can handle birthday storage. This makes it possible to bridge into
@@ -461,7 +383,7 @@ class Initializer(
          * significant amounts of startup time. This value is created using the context passed into
          * the constructor.
          */
-        override val newWalletBirthday: WalletBirthday get() = loadBirthdayFromAssets(appContext)
+        override val newWalletBirthday: WalletBirthday get() = WalletBirthdayTool.loadNearest(appContext)
 
         /**
          * Birthday to use whenever no birthday is known, meaning we have to scan from the first
@@ -470,7 +392,7 @@ class Initializer(
          * the constructor and it is a different value for mainnet and testnet.
          */
         private val saplingBirthday: WalletBirthday get() =
-            loadBirthdayFromAssets(appContext, ZcashSdk.SAPLING_ACTIVATION_HEIGHT)
+            WalletBirthdayTool.loadExact(appContext, ZcashSdk.SAPLING_ACTIVATION_HEIGHT)
 
         /**
          * Preferences where the birthday is stored.
@@ -485,7 +407,7 @@ class Initializer(
 
         override fun hasImportedBirthday(): Boolean = importedBirthdayHeight != null
 
-        override fun getBirthday(): Initializer.WalletBirthday {
+        override fun getBirthday(): WalletBirthday {
             return loadBirthdayFromPrefs(prefs).apply { twig("Loaded birthday from prefs: ${this?.height}") } ?: saplingBirthday.apply { twig("returning sapling birthday") }
         }
 
@@ -495,7 +417,7 @@ class Initializer(
         }
 
         override fun loadBirthday(birthdayHeight: Int) =
-            loadBirthdayFromAssets(appContext, birthdayHeight)
+            WalletBirthdayTool.loadNearest(appContext, birthdayHeight)
 
         /**
          * Retrieves the birthday-related primitives from the given preference object and then uses
@@ -587,66 +509,12 @@ class Initializer(
             fun ImportedWalletBirthdayStore(appContext: Context, importedBirthdayHeight: Int?, alias: String = ZcashSdk.DEFAULT_ALIAS): WalletBirthdayStore {
                 return DefaultBirthdayStore(appContext, alias = alias).apply {
                     if (importedBirthdayHeight != null) {
-                        saveBirthdayToPrefs(prefs, loadBirthdayFromAssets(appContext, importedBirthdayHeight))
+                        saveBirthdayToPrefs(prefs, WalletBirthdayTool.loadNearest(appContext, importedBirthdayHeight))
                     } else {
                         setBirthday(newWalletBirthday)
                     }
                 }
             }
-
-            /**
-             * Load the given birthday file from the assets of the given context. When no height is
-             * specified, we default to the file with the greatest name.
-             *
-             * @param context the context from which to load assets.
-             * @param birthdayHeight the height file to look for among the file names.
-             *
-             * @return a WalletBirthday that reflects the contents of the file or an exception when
-             * parsing fails.
-             */
-            fun loadBirthdayFromAssets(
-                context: Context,
-                birthdayHeight: Int? = null
-            ): WalletBirthday {
-                twig("loading birthday from assets: $birthdayHeight")
-                val treeFiles =
-                    context.assets.list(BIRTHDAY_DIRECTORY)?.apply { sortByDescending { fileName ->
-                        try {
-                            fileName.split('.').first().toInt()
-                        } catch (t: Throwable) {
-                            ZcashSdk.SAPLING_ACTIVATION_HEIGHT
-                        }
-                    } }
-                if (treeFiles.isNullOrEmpty()) throw BirthdayException.MissingBirthdayFilesException(
-                    BIRTHDAY_DIRECTORY
-                )
-                twig("found ${treeFiles.size} sapling tree checkpoints: ${Arrays.toString(treeFiles)}")
-                val file: String
-                try {
-                    file = if (birthdayHeight == null) treeFiles.first() else {
-                        treeFiles.first {
-                            it.split(".").first().toInt() <= birthdayHeight
-                        }
-                    }
-                } catch (t: Throwable) {
-                    throw BirthdayException.BirthdayFileNotFoundException(
-                        BIRTHDAY_DIRECTORY,
-                        birthdayHeight
-                    )
-                }
-                try {
-                    val reader = JsonReader(
-                        InputStreamReader(context.assets.open("${BIRTHDAY_DIRECTORY}/$file"))
-                    )
-                    return Gson().fromJson(reader, WalletBirthday::class.java)
-                } catch (t: Throwable) {
-                    throw BirthdayException.MalformattedBirthdayFilesException(
-                        BIRTHDAY_DIRECTORY,
-                        treeFiles[0]
-                    )
-                }
-            }
-
 
             /*
              * Helper functions for using SharedPreferences
@@ -738,69 +606,3 @@ internal fun validateAlias(alias: String) {
     }
 }
 
-
-
-/**
- * Builder function for constructing a Synchronizer with flexibility for adding custom behavior. The
- * Initializer is the only thing required because it takes care of loading the Rust libraries
- * properly; everything else has a reasonable default. For a wallet, the most common flow is to
- * first call either [Initializer.new] or [Initializer.import] on the first run and then
- * [Initializer.open] for all subsequent launches of the wallet. From there, the initializer is
- * passed to this function in order to start syncing from where the wallet left off.
- *
- * The remaining parameters are all optional and they allow a wallet maker to customize any
- * subcomponent of the Synchronizer. For example, this function could be used to inject an in-memory
- * CompactBlockStore rather than a SQL implementation or a downloader that does not use gRPC:
- *
- * ```
- * val initializer = Initializer(context, host, port).import(seedPhrase, birthdayHeight)
- * val synchronizer = Synchronizer(initializer,
- *      blockStore = MyInMemoryBlockStore(),
- *      downloader = MyRestfulServiceForBlocks()
- * )
- * ```
- *
- * Note: alternatively, all the objects required to build a Synchronizer (the object graph) can be
- * supplied by a dependency injection framework like Dagger or Koin. This builder just makes that
- * process a bit easier so developers can get started syncing the blockchain without the overhead of
- * configuring a bunch of objects, first.
- *
- * @param initializer the helper that is leveraged for creating all the components that the
- * Synchronizer requires. It contains all information necessary to build a synchronizer and it is
- * mainly responsible for initializing the databases associated with this synchronizer and loading
- * the rust backend.
- * @param repository repository of wallet data, providing an interface to the underlying info.
- * @param blockStore component responsible for storing compact blocks downloaded from lightwalletd.
- * @param service the lightwalletd service that can provide compact blocks and submit transactions.
- * @param encoder the component responsible for encoding transactions.
- * @param downloader the component responsible for downloading ranges of compact blocks.
- * @param txManager the component that manages outbound transactions in order to report which ones are
- * still pending, particularly after failed attempts or dropped connectivity. The intent is to help
- * monitor outbound transactions status through to completion.
- * @param processor the component responsible for processing compact blocks. This is effectively the
- * brains of the synchronizer that implements most of the high-level business logic and determines
- * the current state of the wallet.
- */
-@Suppress("FunctionName")
-fun Synchronizer(
-    initializer: Initializer,
-    repository: TransactionRepository =
-        PagedTransactionRepository(initializer.context, 1000, initializer.rustBackend.pathDataDb), // TODO: fix this pagesize bug, small pages should not crash the app. It crashes with: Uncaught Exception: android.view.ViewRootImpl$CalledFromWrongThreadException: Only the original thread that created a view hierarchy can touch its views. and is probably related to FlowPagedList
-    blockStore: CompactBlockStore = CompactBlockDbStore(initializer.context, initializer.rustBackend.pathCacheDb),
-    service: LightWalletService = LightWalletGrpcService(initializer.context, initializer.host, initializer.port),
-    encoder: TransactionEncoder = WalletTransactionEncoder(initializer.rustBackend, repository),
-    downloader: CompactBlockDownloader = CompactBlockDownloader(service, blockStore),
-    txManager: OutboundTransactionManager =
-        PersistentTransactionManager(initializer.context, encoder, service),
-    processor: CompactBlockProcessor =
-        CompactBlockProcessor(downloader, repository, initializer.rustBackend, initializer.rustBackend.birthdayHeight)
-): Synchronizer {
-    // call the actual constructor now that all dependencies have been injected
-    // alternatively, this entire object graph can be supplied by Dagger
-    // This builder just makes that easier.
-    return SdkSynchronizer(
-        repository,
-        txManager,
-        processor
-    )
-}
