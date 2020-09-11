@@ -25,6 +25,7 @@ class RustBackend : RustBackendWelding {
 
     internal var birthdayHeight: Int = -1
         get() = if (field != -1) field else throw BirthdayException.UninitializedBirthdayException
+        private set
 
     /**
      * Loads the library and initializes path variables. Although it is best to only call this
@@ -33,23 +34,27 @@ class RustBackend : RustBackendWelding {
     fun init(
         cacheDbPath: String,
         dataDbPath: String,
-        paramsPath: String
+        paramsPath: String,
+        birthdayHeight: Int? = null
     ): RustBackend {
         twig("Creating RustBackend") {
             pathCacheDb = cacheDbPath
             pathDataDb = dataDbPath
             pathParamsDir = paramsPath
+            if (birthdayHeight != null) {
+                this.birthdayHeight = birthdayHeight
+            }
         }
         return this
     }
 
     fun clear(clearCacheDb: Boolean = true, clearDataDb: Boolean = true) {
         if (clearCacheDb) {
-            twig("Deleting cache database!")
+            twig("Deleting the cache database!")
             File(pathCacheDb).delete()
         }
         if (clearDataDb) {
-            twig("Deleting data database!")
+            twig("Deleting the data database!")
             File(pathDataDb).delete()
         }
     }
@@ -75,7 +80,6 @@ class RustBackend : RustBackendWelding {
         time: Long,
         saplingTree: String
     ): Boolean {
-        birthdayHeight = height
         return initBlocksTable(pathDataDb, height, hash, time, saplingTree)
     }
 
@@ -122,22 +126,6 @@ class RustBackend : RustBackendWelding {
         "${pathParamsDir}/$SPEND_PARAM_FILE_NAME",
         "${pathParamsDir}/$OUTPUT_PARAM_FILE_NAME"
     )
-
-    override fun deriveSpendingKeys(seed: ByteArray, numberOfAccounts: Int) =
-        deriveExtendedSpendingKeys(seed, numberOfAccounts)
-
-
-    override fun deriveTAddress(seed: ByteArray): String = deriveTransparentAddress(seed)
-
-    override fun deriveViewingKeys(seed: ByteArray, numberOfAccounts: Int) =
-        deriveExtendedFullViewingKeys(seed, numberOfAccounts)
-
-    override fun deriveViewingKey(spendingKey: String) = deriveExtendedFullViewingKey(spendingKey)
-
-    override fun deriveAddress(seed: ByteArray, accountIndex: Int) =
-        deriveAddressFromSeed(seed, accountIndex)
-
-    override fun deriveAddress(viewingKey: String) = deriveAddressFromViewingKey(viewingKey)
 
     override fun isValidShieldedAddr(addr: String) = isValidShieldedAddress(addr)
 
@@ -258,20 +246,8 @@ class RustBackend : RustBackendWelding {
 
         @JvmStatic private external fun initLogs()
 
-        @JvmStatic private external fun deriveExtendedSpendingKeys(seed: ByteArray, numberOfAccounts: Int): Array<String>
-
-        @JvmStatic private external fun deriveExtendedFullViewingKeys(seed: ByteArray, numberOfAccounts: Int): Array<String>
-
-        @JvmStatic private external fun deriveExtendedFullViewingKey(spendingKey: String): String
-
-        @JvmStatic private external fun deriveAddressFromSeed(seed: ByteArray, accountIndex: Int): String
-
-        @JvmStatic private external fun deriveAddressFromViewingKey(key: String): String
-
         @JvmStatic private external fun branchIdForHeight(height: Int): Long
 
         @JvmStatic private external fun parseTransactionDataList(serializedList: ByteArray): ByteArray
-
-        @JvmStatic private external fun deriveTransparentAddress(seed: ByteArray): String
     }
 }

@@ -1,7 +1,5 @@
 package cash.z.ecc.android.sdk.exception
 
-import java.lang.RuntimeException
-
 
 /**
  * Marker for all custom exceptions from the SDK. Making it an interface would result in more typing
@@ -82,6 +80,14 @@ sealed class BirthdayException(message: String, cause: Throwable? = null) : SdkE
         "Failed to initialize wallet with alias=$alias because its birthday could not be found." +
                 "  Verify the alias or perhaps a new wallet should be created, instead."
     )
+
+    class ExactBirthdayNotFoundException(height: Int, nearestMatch: Int? = null): BirthdayException(
+            "Unable to find birthday that exactly matches $height.${
+                if (nearestMatch != null) 
+                    " An exact match was request but the nearest match found was $nearestMatch." 
+                else ""
+            }"
+        )
     class BirthdayFileNotFoundException(directory: String, height: Int?) : BirthdayException(
         "Unable to find birthday file for $height verify that $directory/$height.json exists."
     )
