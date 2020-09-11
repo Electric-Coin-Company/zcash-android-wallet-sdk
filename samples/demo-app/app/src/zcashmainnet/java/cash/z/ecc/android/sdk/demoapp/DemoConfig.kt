@@ -8,6 +8,7 @@ data class DemoConfig(
     val host: String = "lightwalletd.electriccoin.co",
     val port: Int = 9067,
     val birthdayHeight: Int = 968000,
+    val utxoEndHeight: Int = 968085,
     val sendAmount: Double = 0.000018,
 
     // corresponds to address: zs15tzaulx5weua5c7l47l4pku2pw9fzwvvnsp4y80jdpul0y3nwn5zp7tmkcclqaca3mdjqjkl7hx

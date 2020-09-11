@@ -55,16 +55,14 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
     private var status: Synchronizer.Status? = null
 
     private val isSynced get() = status == Synchronizer.Status.SYNCED
-    val latestBlockHeight = 935000
 
     override fun inflateBinding(layoutInflater: LayoutInflater): FragmentListUtxosBinding =
         FragmentListUtxosBinding.inflate(layoutInflater)
 
     fun initUi() {
-
         binding.inputAddress.setText(address)
         binding.inputRangeStart.setText(ZcashSdk.SAPLING_ACTIVATION_HEIGHT.toString())
-        binding.inputRangeEnd.setText(latestBlockHeight.toString())
+        binding.inputRangeEnd.setText(config.utxoEndHeight.toString())
 
         binding.buttonLoad.setOnClickListener {
             mainActivity()?.hideKeyboard()
@@ -81,7 +79,7 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
             binding.textStatus.requestFocus()
             val addressToUse = binding.inputAddress.text.toString()
             val startToUse = binding.inputRangeStart.text.toString().toIntOrNull() ?: ZcashSdk.SAPLING_ACTIVATION_HEIGHT
-            val endToUse = binding.inputRangeEnd.text.toString().toIntOrNull() ?: latestBlockHeight
+            val endToUse = binding.inputRangeEnd.text.toString().toIntOrNull() ?: config.utxoEndHeight
             var allStart = now
             twig("loading transactions in range $startToUse..$endToUse")
             val txids = lightwalletService?.getTAddressTransactions(addressToUse, startToUse..endToUse)
