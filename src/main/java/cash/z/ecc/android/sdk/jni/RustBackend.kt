@@ -61,8 +61,8 @@ class RustBackend : RustBackendWelding {
 
     override fun initDataDb() = initDataDb(pathDataDb)
 
-//    override fun initAccountsTable(extfvks: Array<String>) =
-//        initAccountsTableWithKeys(dbDataPath, extfvks)
+    override fun initAccountsTable(vararg extfvks: String) =
+        initAccountsTableWithKeys(pathDataDb, extfvks)
 
     override fun initAccountsTable(
         seed: ByteArray,
@@ -207,10 +207,10 @@ class RustBackend : RustBackendWelding {
             accounts: Int
         ): Array<String>
 
-//    @JvmStatic private external fun initAccountsTableWithKeys(
-//        dbDataPath: String,
-//        extfvk: Array<String>
-//    )
+        @JvmStatic private external fun initAccountsTableWithKeys(
+            dbDataPath: String,
+            extfvk: Array<out String>
+        ): Boolean
 
         @JvmStatic private external fun initBlocksTable(
             dbDataPath: String,

@@ -35,7 +35,7 @@ interface RustBackendWelding {
 
     fun initAccountsTable(seed: ByteArray, numberOfAccounts: Int): Array<String>
 
-//    fun initAccountsTable(extfvks: Array<ByteArray>, numberOfAccounts: Int)
+    fun initAccountsTable(vararg extfvks: String): Boolean
 
     fun initBlocksTable(height: Int, hash: String, time: Long, saplingTree: String): Boolean
 

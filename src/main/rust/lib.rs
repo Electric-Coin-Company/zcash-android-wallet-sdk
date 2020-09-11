@@ -172,6 +172,29 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_initAccount
 
 #[no_mangle]
 pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_deriveExtendedSpendingKeys(
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_initAccountsTableWithKeys(
+    env: JNIEnv<'_>,
+    _: JClass<'_>,
+    db_data: JString<'_>,
+    extfvks_arr: jobjectArray,
+) -> jboolean {
+    let res = panic::catch_unwind(|| {
+        let db_data = utils::java_string_to_rust(&env, db_data);
+        // TODO: avoid all this unwrapping and also surface erros, better
+        let count = env.get_array_length(extfvks_arr).unwrap();
+        let extfvks = (0..count)
+            .map(|i| env.get_object_array_element(extfvks_arr, i))
+            .map(|jstr| utils::java_string_to_rust(&env, jstr.unwrap().into()))
+            .map(|vkstr| decode_extended_full_viewing_key(HRP_SAPLING_EXTENDED_FULL_VIEWING_KEY, &vkstr).unwrap().unwrap())
+            .collect::<Vec<_>>();
+
+        match init_accounts_table(&db_data, &extfvks) {
+            Ok(()) => Ok(JNI_TRUE),
+            Err(e) => Err(format_err!("Error while initializing accounts: {}", e)),
+        }
+    });
+    unwrap_exc_or(&env, res, JNI_FALSE)
+}
     env: JNIEnv<'_>,
     _: JClass<'_>,
     seed: jbyteArray,
