@@ -6,6 +6,8 @@ import android.view.View
 import androidx.lifecycle.lifecycleScope
 import androidx.paging.PagedList
 import androidx.recyclerview.widget.LinearLayoutManager
+import cash.z.ecc.android.bip39.Mnemonics
+import cash.z.ecc.android.bip39.toSeed
 import cash.z.ecc.android.sdk.SdkSynchronizer
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.VkInitializer
@@ -39,9 +41,19 @@ class ListTransactionsFragment : BaseDemoFragment<FragmentListTransactionsBindin
      * here for completeness so that each demo file can serve as a standalone example.
      */
     private fun setup() {
+        // defaults to the value of `DemoConfig.seedWords` but can also be set by the user
+        var seedPhrase = sharedViewModel.seedPhrase.value
+
+        // Use a BIP-39 library to convert a seed phrase into a byte array. Most wallets already
+        // have the seed stored
+        val seed = Mnemonics.MnemonicCode(seedPhrase).toSeed()
+
         App.instance.defaultConfig.let { config ->
-            initializer = VkInitializer(App.instance) { import(config.seed, config.birthdayHeight) }
-            address = DerivationTool.deriveShieldedAddress(config.seed)
+            initializer = VkInitializer(App.instance) {
+                import(seed, config.birthdayHeight)
+                server(config.host, config.port)
+            }
+            address = DerivationTool.deriveShieldedAddress(seed)
         }
         synchronizer = Synchronizer(initializer)
     }

@@ -5,6 +5,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.widget.TextView
 import androidx.lifecycle.lifecycleScope
+import cash.z.ecc.android.bip39.Mnemonics
+import cash.z.ecc.android.bip39.toSeed
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.VkInitializer
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor
@@ -41,13 +43,21 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
      * here for completeness so that each demo file can serve as a standalone example.
      */
     private fun setup() {
+        // defaults to the value of `DemoConfig.seedWords` but can also be set by the user
+        var seedPhrase = sharedViewModel.seedPhrase.value
+
+        // Use a BIP-39 library to convert a seed phrase into a byte array. Most wallets already
+        // have the seed stored
+        val seed = Mnemonics.MnemonicCode(seedPhrase).toSeed()
+
         App.instance.defaultConfig.let { config ->
             VkInitializer(App.instance) {
-                import(config.seed, config.birthdayHeight)
+                import(seed, config.birthdayHeight)
+                server(config.host, config.port)
             }.let { initializer ->
                 synchronizer = Synchronizer(initializer)
             }
-            spendingKey = DerivationTool.deriveSpendingKeys(config.seed).first()
+            spendingKey = DerivationTool.deriveSpendingKeys(seed).first()
         }
     }
 

@@ -25,11 +25,19 @@ import cash.z.ecc.android.sdk.service.LightWalletGrpcService
 import cash.z.ecc.android.sdk.service.LightWalletService
 import cash.z.ecc.android.sdk.rpc.LocalRpcTypes
 import cash.z.ecc.android.sdk.tool.DerivationTool
+import cash.z.ecc.android.sdk.tool.WalletBirthdayTool
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+
+
 /**
+ * ===============================================================================================
+ * NOTE:  this is still a WIP because t-addrs are not officially supported by the SDK yet
+ * ===============================================================================================
+ *
+ *
  * List all transactions related to the given seed, since the given birthday. This begins by
  * downloading any missing blocks and then validating and scanning their contents. Once scan is
  * complete, the transactions are available in the database and can be accessed by any SQL tool.
@@ -40,7 +48,7 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
     private val config = App.instance.defaultConfig
     private val initializer =
         Initializer(App.instance, host = config.host, port = config.port, alias = "Demo_Utxos")
-    private val birthday = config.loadBirthday()
+    private val birthday = WalletBirthdayTool.loadNearest(App.instance, config.birthdayHeight)
     private lateinit var synchronizer: Synchronizer
     private lateinit var adapter: UtxoAdapter<ConfirmedTransaction>
     private val address: String = "t1RwbKka1CnktvAJ1cSqdn7c6PXWG4tZqgd"

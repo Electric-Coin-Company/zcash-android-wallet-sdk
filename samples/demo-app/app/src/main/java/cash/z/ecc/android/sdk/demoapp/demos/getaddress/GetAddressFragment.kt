@@ -64,7 +64,7 @@ class GetAddressFragment : BaseDemoFragment<FragmentGetAddressBinding>() {
 
     override fun onActionButtonClicked() {
         copyToClipboard(
-            DerivationTool.deriveTransparentAddress(seed),
+            DerivationTool.deriveShieldedAddress(viewingKey),
             "Shielded address copied to clipboard!"
         )
     }
