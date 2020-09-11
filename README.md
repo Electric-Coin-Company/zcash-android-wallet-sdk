@@ -1,13 +1,12 @@
 [![license](https://img.shields.io/github/license/zcash/zcash-android-wallet-sdk.svg?maxAge=2592000&style=plastic)](https://github.com/zcash/kotlin-bip39/blob/master/LICENSE)
 [![@gmale](https://img.shields.io/badge/contact-android@z.cash-5AA9E7.svg?style=plastic)](https://github.com/gmale)
-![Bintray](https://img.shields.io/bintray/v/ecc-mobile/android/sdk-mainnet?color=success&style=plastic)
+![Bintray](https://img.shields.io/bintray/v/ecc-mobile/android/zcash-android-sdk-testnet?color=success&style=plastic)
 
 This is a beta build and is currently under active development. Please be advised of the following:
 
 - This code currently is not audited by an external security auditor, use it at your own risk
 - The code **has not been subjected to thorough review** by engineers at the Electric Coin Company
 - We **are actively changing** the codebase and adding features where/when needed
-- The code **is not yet published** (to Bintray/Maven Central)
 
 🔒 Security Warnings
 
@@ -33,7 +32,7 @@ This lightweight SDK connects Android to Zcash. It welds together Rust and Kotli
 
 ## Requirements
 
-This SDK is designed to work using a custom block server [lightwalletd](https://github.com/zcash-hackworks/lightwalletd)
+This SDK is designed to work using a light client server [lightwalletd](https://github.com/zcash-hackworks/lightwalletd)
 
 ## Structure
 
@@ -62,7 +61,7 @@ The [Synchronizer](docs/-synchronizer/README.md) takes care of
     - Downloading the latest compact blocks in a privacy-sensitive way
     - Scanning and trial decrypting those blocks for shielded transactions related to the wallet
     - Processing those related transactions into useful data for the UI
-    - Sending payments to a full node through the light wallet server
+    - Sending payments to a full node through the light client server
     - Monitoring sent payments for status updates
 
 To accomplish this, these responsibilities of the SDK are divided into separate components. Each component is coordinated by the [Synchronizer](docs/-synchronizer/README.md), which is the thread that ties it all together.
@@ -75,8 +74,9 @@ To accomplish this, these responsibilities of the SDK are divided into separate 
 | **CompactBlockStore**          | Stores compact blocks that have been downloaded from the `LightWalletService`             |
 | **CompactBlockProcessor**      | Validates and scans the compact blocks in the `CompactBlockStore` for transaction details |
 | **OutboundTransactionManager** | Creates, Submits and manages transactions for spending funds                              |
-| **Initializer**                | Responsible for all setup that must happen before synchronization can begin. Loads the rust library and helps with key derivation.           |
-| **RustBackend**                | Wraps the rust library and exposes its functionality to the Kotlin SDK |
+| **Initializer**                | Responsible for all setup that must happen before synchronization can begin. Loads the rust library and helps initialize databases.           |
+| **DerivationTool**, **BirthdayTool**                | Utilities for deriving keys, addresses and loading wallet checkpoints, called "birthdays."           |
+| **RustBackend**                | Wraps and simplifies the rust library and exposes its functionality to the Kotlin SDK |
 
 [Back to contents](#contents)
 
@@ -100,8 +100,8 @@ productFlavors {
 Add the matching SDK dependency for each variant:
 
 ```groovy
-zcashmainnetImplementation "cash.z.ecc.android:sdk-mainnet:${version}@aar"
-zcashtestnetImplementation "cash.z.ecc.android:sdk-testnet:${version}@aar"
+zcashmainnetImplementation 'cash.z.ecc.android:zcash-android-sdk-mainnet:1.1.0-beta05'
+zcashtestnetImplementation 'cash.z.ecc.android:zcash-android-sdk-testnet:1.1.0-beta05'
 ```
 
 Start the [Synchronizer](docs/-synchronizer/README.md)
@@ -114,6 +114,10 @@ Get the wallet's address
 
 ```kotlin
 synchronizer.getAddress()
+
+// or alternatively
+
+DerivationTool.deriveShieldedAddress(viewingKey)
 ```
 
 Send funds to another address
@@ -143,7 +147,7 @@ rustup target add armv7-linux-androideabi aarch64-linux-android i686-linux-andro
 </p>    
 
   6. Then, install NDK ~~20.0.5594570~~ 21.1.6352462     
-     (pro tip: build.gradle -> `ndkVersion` defines the actual required version. This README may get out-of-date)
+     (pro tip: `build.gradle -> ndkVersion` defines the actual required version. Use that because this README may get out-of-date)
 <p align="center">
     <img src="assets/ndk-window.png?raw=true" width="85%"/>
 </p>    
@@ -157,6 +161,10 @@ rustup target add armv7-linux-androideabi aarch64-linux-android i686-linux-andro
   9. Sync project with Gradle files, and build from the IDE. Alternatively, to build from the command line run:
   ```bash
   ./gradlew clean assembleZcashmainnetDebug
+  
+  // or to install in MavenLocal, set properties in Deps.kt then run
+  
+  ./gradlew publishToMavenLocal
   ```    
 
 This creates a build of the SDK under `build/outputs/aar/` that can be used to preview functionality. For more detailed examples, checkout the [demo app](samples/demo-app). Note that merely using the SDK does not require installing Rust or Cargo--that is only required when compiling from source.
