@@ -9,20 +9,26 @@
         android:id="@+id/text_layout_block_height"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginEnd="16dp"
+        app:endIconMode="clear_text"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@id/button_apply"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_chainStyle="packed"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.2">
+        app:layout_constraintVertical_bias="0.1">
 
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/text_block_height"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:ems="8"
+            android:background="@android:color/transparent"
+            android:ems="10"
             android:hint="block height"
+            android:imeActionLabel="load"
+            android:imeOptions="actionDone"
             android:inputType="number"
+            android:maxLines="1"
             android:text="500000"
             android:textSize="20sp" />
     </com.google.android.material.textfield.TextInputLayout>
@@ -31,21 +37,48 @@
         android:id="@+id/button_apply"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="apply"
-        app:layout_constraintBottom_toBottomOf="@id/text_layout_block_height"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@id/text_layout_block_height"
-        app:layout_constraintTop_toTopOf="@id/text_layout_block_height" />
-
-    <TextView
-        android:id="@+id/text_info"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:padding="16dp"
-        android:text="loading block..."
-        android:textSize="20sp"
-        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginEnd="8dp"
+        android:text="@string/load"
+        app:layout_constraintEnd_toStartOf="@id/button_previous"
+        app:layout_constraintHorizontal_chainStyle="packed"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/text_layout_block_height" />
+
+    <Button
+        android:id="@+id/button_previous"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="8dp"
+        android:text="@string/previous"
+        app:layout_constraintEnd_toStartOf="@id/button_next"
+        app:layout_constraintStart_toEndOf="@id/button_apply"
+        app:layout_constraintTop_toTopOf="@id/button_apply" />
+
+    <Button
+        android:id="@+id/button_next"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/next"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@id/button_previous"
+        app:layout_constraintTop_toTopOf="@id/button_apply" />
+
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:fillViewport="true"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/button_apply">
+
+        <TextView
+            android:id="@+id/text_info"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="16dp"
+            android:text="loading block..."
+            android:textSize="20sp"
+            android:visibility="gone" />
+    </ScrollView>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

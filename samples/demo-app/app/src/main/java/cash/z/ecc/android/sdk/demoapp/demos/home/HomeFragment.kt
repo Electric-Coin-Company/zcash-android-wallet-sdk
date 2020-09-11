@@ -41,12 +41,6 @@ class HomeFragment : BaseDemoFragment<FragmentHomeBinding>() {
 
     override fun onResume() {
         super.onResume()
-        twig(
-            "CLEARING DATA: Visiting the home screen clears the default databases, for sanity" +
-                    " sake, because each demo is intended to be self-contained."
-        )
-//        App.instance.getDatabasePath("unusued.db").parentFile?.listFiles()?.forEach { it.delete() }
-
         mainActivity()?.setClipboardListener(::updatePasteButton)
 
         lifecycleScope.launch {
@@ -101,6 +95,7 @@ class HomeFragment : BaseDemoFragment<FragmentHomeBinding>() {
     private fun setEditShown(isShown: Boolean) {
         with(binding) {
             textSeedPhrase.visibility = if (isShown) View.GONE else View.VISIBLE
+            textInstructions.visibility = if (isShown) View.GONE else View.VISIBLE
             groupEdit.visibility = if (isShown) View.VISIBLE else View.GONE
         }
     }

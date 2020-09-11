@@ -3,4 +3,7 @@
     <color name="colorPrimary">#6200EE</color>
     <color name="colorPrimaryDark">#3700B3</color>
     <color name="colorAccent">#03DAC5</color>
+
+    <color name="tx_outbound">#F06292</color>
+    <color name="tx_inbound">#81C784</color>
 </resources>

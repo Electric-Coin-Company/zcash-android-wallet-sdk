@@ -1,22 +1,22 @@
 package cash.z.ecc.android.sdk.demoapp.demos.listtransactions
 
+import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import androidx.lifecycle.lifecycleScope
 import androidx.paging.PagedList
 import androidx.recyclerview.widget.LinearLayoutManager
-import cash.z.ecc.android.sdk.Initializer
+import cash.z.ecc.android.sdk.SdkSynchronizer
 import cash.z.ecc.android.sdk.Synchronizer
+import cash.z.ecc.android.sdk.VkInitializer
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor
+import cash.z.ecc.android.sdk.db.entity.ConfirmedTransaction
 import cash.z.ecc.android.sdk.demoapp.App
 import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
 import cash.z.ecc.android.sdk.demoapp.databinding.FragmentListTransactionsBinding
-import cash.z.ecc.android.sdk.db.entity.ConfirmedTransaction
 import cash.z.ecc.android.sdk.ext.collectWith
 import cash.z.ecc.android.sdk.ext.twig
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.launch
+import cash.z.ecc.android.sdk.tool.DerivationTool
 
 /**
  * List all transactions related to the given seed, since the given birthday. This begins by
@@ -26,59 +26,45 @@ import kotlinx.coroutines.launch
  * database in a paged format that works natively with RecyclerViews.
  */
 class ListTransactionsFragment : BaseDemoFragment<FragmentListTransactionsBinding>() {
-    private val config = App.instance.defaultConfig
-    private val initializer = Initializer(App.instance, host = config.host, port = config.port)
-    private val birthday = config.loadBirthday()
+    private lateinit var initializer: SdkSynchronizer.SdkInitializer
     private lateinit var synchronizer: Synchronizer
     private lateinit var adapter: TransactionAdapter<ConfirmedTransaction>
     private lateinit var address: String
     private var status: Synchronizer.Status? = null
-
     private val isSynced get() = status == Synchronizer.Status.SYNCED
 
-    override fun inflateBinding(layoutInflater: LayoutInflater): FragmentListTransactionsBinding =
-        FragmentListTransactionsBinding.inflate(layoutInflater)
 
-    fun resetInBackground() {
-        initializer.new(config.seed, birthday)
+    /**
+     * Initialize the required values that would normally live outside the demo but are repeated
+     * here for completeness so that each demo file can serve as a standalone example.
+     */
+    private fun setup() {
+        App.instance.defaultConfig.let { config ->
+            initializer = VkInitializer(App.instance) { import(config.seed, config.birthdayHeight) }
+            address = DerivationTool.deriveShieldedAddress(config.seed)
+        }
         synchronizer = Synchronizer(initializer)
-    }
-
-    fun onResetComplete() {
-        initTransactionUI()
-        startSynchronizer()
-        monitorStatus()
-    }
-    
-    fun onClear() {
-        synchronizer.stop()
-        initializer.clear()
     }
 
     private fun initTransactionUI() {
         binding.recyclerTransactions.layoutManager =
             LinearLayoutManager(activity, LinearLayoutManager.VERTICAL, false)
         adapter = TransactionAdapter()
-        lifecycleScope.launch {
-            address = synchronizer.getAddress()
-            synchronizer.receivedTransactions.onEach {
-                onTransactionsUpdated(it)
-            }.launchIn(this)
-        }
         binding.recyclerTransactions.adapter = adapter
     }
 
-    private fun startSynchronizer() {
-        lifecycleScope.apply {
-            synchronizer.start(this)
-        }
-    }
-
-    private fun monitorStatus() {
+    private fun monitorChanges() {
+        // the lifecycleScope is used to stop everything when the fragment dies
         synchronizer.status.collectWith(lifecycleScope, ::onStatus)
         synchronizer.processorInfo.collectWith(lifecycleScope, ::onProcessorInfoUpdated)
         synchronizer.progress.collectWith(lifecycleScope, ::onProgress)
+        synchronizer.clearedTransactions.collectWith(lifecycleScope, ::onTransactionsUpdated)
     }
+
+
+    //
+    // Change listeners
+    //
 
     private fun onProcessorInfoUpdated(info: CompactBlockProcessor.ProcessorInfo) {
         if (info.isScanning) binding.textInfo.text = "Scanning blocks...${info.scanProgress}%"
@@ -108,8 +94,8 @@ class ListTransactionsFragment : BaseDemoFragment<FragmentListTransactionsBindin
                 if (transactions.isEmpty()) {
                     visibility = View.VISIBLE
                     text =
-                        "No transactions found. Try to either change the seed words in the" +
-                                " DemoConfig.kt file or send funds to this address (tap the FAB to copy it):\n\n $address"
+                        "No transactions found. Try to either change the seed words " +
+                                "or send funds to this address (tap the FAB to copy it):\n\n $address"
                 } else {
                     visibility = View.INVISIBLE
                     text = ""
@@ -118,7 +104,38 @@ class ListTransactionsFragment : BaseDemoFragment<FragmentListTransactionsBindin
         }
     }
 
+
+    //
+    // Android Lifecycle overrides
+    //
+
+    override fun onActivityCreated(savedInstanceState: Bundle?) {
+        super.onActivityCreated(savedInstanceState)
+        setup()
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        initTransactionUI()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // the lifecycleScope is used to dispose of the synchronizer when the fragment dies
+        synchronizer.start(lifecycleScope)
+        monitorChanges()
+    }
+
+
+    //
+    // Base Fragment overrides
+    //
+
     override fun onActionButtonClicked() {
         if (::address.isInitialized) copyToClipboard(address)
     }
+
+    override fun inflateBinding(layoutInflater: LayoutInflater): FragmentListTransactionsBinding =
+        FragmentListTransactionsBinding.inflate(layoutInflater)
+
 }

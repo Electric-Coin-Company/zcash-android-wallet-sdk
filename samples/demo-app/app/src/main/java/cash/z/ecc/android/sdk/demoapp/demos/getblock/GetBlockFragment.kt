@@ -1,12 +1,16 @@
 package cash.z.ecc.android.sdk.demoapp.demos.getblock
 
+import android.os.Bundle
+import android.text.Html
 import android.view.LayoutInflater
 import android.view.View
-import cash.z.ecc.android.sdk.demoapp.App
 import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
 import cash.z.ecc.android.sdk.demoapp.databinding.FragmentGetBlockBinding
-import cash.z.ecc.android.sdk.service.LightWalletGrpcService
-import cash.z.ecc.android.sdk.service.LightWalletService
+import cash.z.ecc.android.sdk.demoapp.util.mainActivity
+import cash.z.ecc.android.sdk.demoapp.util.toHtml
+import cash.z.ecc.android.sdk.demoapp.util.toRelativeTime
+import cash.z.ecc.android.sdk.demoapp.util.withCommas
+import cash.z.ecc.android.sdk.ext.toHex
 
 /**
  * Retrieves a compact block from the lightwalletd service and displays basic information about it.
@@ -14,39 +18,60 @@ import cash.z.ecc.android.sdk.service.LightWalletService
  * the response.
  */
 class GetBlockFragment : BaseDemoFragment<FragmentGetBlockBinding>() {
-    private val host = App.instance.defaultConfig.host
-    private val port = App.instance.defaultConfig.port
-
-    private lateinit var lightwalletService: LightWalletService
-
-    override fun inflateBinding(layoutInflater: LayoutInflater): FragmentGetBlockBinding =
-        FragmentGetBlockBinding.inflate(layoutInflater)
-
-    fun resetInBackground() {
-        lightwalletService = LightWalletGrpcService(App.instance, host, port)
-    }
-
-    fun onResetComplete() {
-        binding.buttonApply.setOnClickListener(::onApply)
-        onApply(binding.textBlockHeight)
-    }
-
-    private fun onApply(_unused: View) {
-        setBlockHeight(binding.textBlockHeight.text.toString().toInt())
-    }
 
     private fun setBlockHeight(blockHeight: Int) {
         val blocks =
-            lightwalletService.getBlockRange(blockHeight..blockHeight)
-        val block = blocks.firstOrNull()
-        binding.textInfo.text = """
-                block height: ${block?.height}
-                block vtxCount: ${block?.vtxCount}
-                block time: ${block?.time}
+            lightwalletService?.getBlockRange(blockHeight..blockHeight)
+        val block = blocks?.firstOrNull()
+        binding.textInfo.visibility = View.VISIBLE
+        binding.textInfo.text = Html.fromHtml(
+            """
+                <b>block height:</b> ${block?.height.withCommas()}
+                <br/><b>block time:</b> ${block?.time.toRelativeTime()}
+                <br/><b>number of shielded TXs:</b> ${block?.vtxCount}
+                <br/><b>hash:</b> ${block?.hash?.toByteArray()?.toHex()}
+                <br/><b>prevHash:</b> ${block?.prevHash?.toByteArray()?.toHex()}
+                ${block?.vtxList.toHtml()}
             """.trimIndent()
+        )
     }
 
-    fun onClear() {
-        lightwalletService.shutdown()
+    private fun onApply(_unused: View? = null) {
+        try {
+            setBlockHeight(binding.textBlockHeight.text.toString().toInt())
+        } catch (t: Throwable) {
+            toast("Error: $t")
+        }
+        mainActivity()?.hideKeyboard()
     }
+
+    private fun loadNext(offset: Int) {
+        val nextBlockHeight = (binding.textBlockHeight.text.toString().toIntOrNull() ?: -1) + offset
+        binding.textBlockHeight.setText(nextBlockHeight.toString())
+        onApply()
+    }
+
+
+    //
+    // Android Lifecycle overrides
+    //
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        binding.buttonApply.setOnClickListener(::onApply)
+        binding.buttonPrevious.setOnClickListener {
+            loadNext(-1)
+        }
+        binding.buttonNext.setOnClickListener {
+            loadNext(1)
+        }
+    }
+
+
+    //
+    // Base Fragment overrides
+    //
+
+    override fun inflateBinding(layoutInflater: LayoutInflater): FragmentGetBlockBinding =
+        FragmentGetBlockBinding.inflate(layoutInflater)
 }
