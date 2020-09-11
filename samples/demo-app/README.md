@@ -14,16 +14,17 @@ It relies on [Lightwalletd](https://github.com/zcash/lightwalletd), a backend se
 - [Resources](#resources)
 
 ## Requirements
-The demo app is built in Kotlin, and targets API 21. The demo directly links the SDK source code so building it also builds the SDK and therefore requires Rust and the NDK. 
+The demo app is built in Kotlin, and targets API 21. The demo pulls the pre-built SDK from jcenter so, unlike the SDK, it does not require Rust or the NDK! 
 
 [Back to contents](#contents)
 
 ## Installation
-Refer to [build instructions](https://github.com/zcash/zcash-android-wallet-sdk#compiling-sources) in the readme of the android-wallet-sdk repository for detailed instructions. In short, you will need to: 
+In short, you simply will need to: 
 
-1. Install rust: https://www.rust-lang.org/learn/get-started  
-2. Clone this repo, https://github.com/zcash/zcash-android-wallet-sdk 
-3. Launch from Android Studio, https://developer.android.com/studio  
+0. (pre-requisite) Install [Android Studio](https://developer.android.com/studio) and [setup an emulator](https://developer.android.com/studio/run/emulator#runningapp) or device
+1. Clone this repo: https://github.com/zcash/zcash-android-wallet-sdk 
+2. Open the `demo-app` folder in Android Studio and [launch the app](https://developer.android.com/studio/run/emulator#runningapp)    
+   (recommended build variant: `zcashmainnetDebug`)
 
 [Back to contents](#contents)
 
@@ -65,7 +66,7 @@ Similarly, the best way to build a functioning Zcash shielded app is to implemen
 
 ## Resources
 You don’t need to do it all on your own. 
-* Chat with the team who built the kit: [Zcash discord community channel, wallet](https://discord.gg/efFG7UJ)
+* Chat with the wallet team: [Zcash discord community channel, wallet](https://discord.gg/efFG7UJ)
 * Discuss ideas with other community members: [Zcash forum](https://forum.zcashcommunity.com/) 
 * Get funded to build a Zcash app: [Zcash foundation grants program](https://grants.zfnd.org/)
 * Follow Zcash-specific best practices: [Zcash wallet developer checklist](https://zcash.readthedocs.io/en/latest/rtd_pages/ux_wallet_checklist.html)
