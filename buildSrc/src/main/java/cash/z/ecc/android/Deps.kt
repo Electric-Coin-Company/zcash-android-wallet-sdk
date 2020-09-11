@@ -3,11 +3,11 @@ package cash.z.ecc.android
 object Deps {
     // For use in the top-level build.gradle which gives an error when provided
     // `Deps.Kotlin.version` directly
-    const val kotlinVersion =   "1.3.72"
+    const val kotlinVersion =   "1.4.0"
     const val group =           "cash.z.ecc.android"
     const val artifactName =    "zcash-android-wallet-sdk"
-    const val versionName =     "1.1.0-beta04"
-    const val versionCode =     1_01_00_204  // last digits are alpha(0XX) beta(2XX) rc(4XX) release(8XX). Ex: 1_08_04_401 is an release candidate build of version 1.8.4 and 1_08_04_800 would be the final release.
+    const val versionName =     "1.1.0-beta05"
+    const val versionCode =     1_01_00_205  // last digits are alpha(0XX) beta(2XX) rc(4XX) release(8XX). Ex: 1_08_04_401 is an release candidate build of version 1.8.4 and 1_08_04_800 would be the final release.
     const val description =     "This lightweight SDK connects Android to Zcash. It welds together Rust and Kotlin in a minimal way, allowing third-party Android apps to send and receive shielded transactions easily, securely and privately."
     const val githubUrl =       "https://github.com/zcash/zcash-android-wallet-sdk"
 

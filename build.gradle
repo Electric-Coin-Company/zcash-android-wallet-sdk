@@ -1,9 +1,6 @@
 import cash.z.ecc.android.Deps
 
 buildscript {
-    ext {
-        kotlin_version = '1.3.72'
-    }
     ext.buildConfig = [
         'compileSdkVersion': 29,
         'minSdkVersion': 16,
@@ -16,8 +13,7 @@ buildscript {
             'paging': '2.1.2'
         ],
         'grpc':'1.25.0', // NOTE: cannot use a higher version because they use protobuf 3.10+ which is not compatible with 3.0+ so we'd have to implement changes in our protobuf files which breaks everything
-        'kotlin': '1.3.72',
-        'coroutines': '1.3.5',
+        'coroutines': '1.3.9',
         'junitJupiter': '5.6.1'
     ]
     repositories {
@@ -32,15 +28,15 @@ buildscript {
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:4.0.1'
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${versions.kotlin}"
-        classpath "org.jetbrains.kotlin:kotlin-allopen:${versions.kotlin}"
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${Deps.kotlinVersion}"
+        classpath "org.jetbrains.kotlin:kotlin-allopen:${Deps.kotlinVersion}"
         classpath "org.jetbrains.dokka:dokka-gradle-plugin:0.10.1"
-        classpath "com.github.ben-manes:gradle-versions-plugin:0.27.0"
+        classpath "com.github.ben-manes:gradle-versions-plugin:0.31.0"
         classpath 'com.github.dcendents:android-maven-gradle-plugin:2.1'
-        classpath "com.google.protobuf:protobuf-gradle-plugin:0.8.11"
+        classpath "com.google.protobuf:protobuf-gradle-plugin:0.8.13"
         classpath 'com.getkeepsafe.dexcount:dexcount-gradle-plugin:1.0.2'
         classpath 'com.github.str4d:rust-android-gradle:68b4ecc053'
-        classpath 'org.owasp:dependency-check-gradle:5.3.0'
+        classpath 'org.owasp:dependency-check-gradle:6.0.0'
         classpath "gradle.plugin.com.dorongold.plugins:task-tree:1.5"
         classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.5'
     }
@@ -214,7 +210,7 @@ cargo {
 
 dependencies {
 
-    implementation 'androidx.appcompat:appcompat:1.3.0-alpha01'
+    implementation 'androidx.appcompat:appcompat:1.3.0-alpha02'
 
     // Architecture Components: Lifecycle
     implementation "androidx.lifecycle:lifecycle-runtime:${versions.architectureComponents.lifecycle}"
@@ -229,7 +225,7 @@ dependencies {
     kapt "androidx.room:room-compiler:${versions.architectureComponents.room}"
 
     // Kotlin
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:${versions.kotlin}"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:${Deps.kotlinVersion}"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:${versions.coroutines}"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:${versions.coroutines}"
 
@@ -248,8 +244,8 @@ dependencies {
 
     // Tests
     testImplementation 'androidx.multidex:multidex:2.0.1'
-    testImplementation "org.jetbrains.kotlin:kotlin-reflect:${versions.kotlin}"
-    testImplementation 'org.mockito:mockito-junit-jupiter:3.2.4'
+    testImplementation "org.jetbrains.kotlin:kotlin-reflect:${Deps.kotlinVersion}"
+    testImplementation 'org.mockito:mockito-junit-jupiter:3.5.10'
     testImplementation 'com.nhaarman.mockitokotlin2:mockito-kotlin:2.2.0'
     testImplementation "org.junit.jupiter:junit-jupiter-api:${versions.junitJupiter}"
     testImplementation "org.junit.jupiter:junit-jupiter-engine:${versions.junitJupiter}"
@@ -261,12 +257,12 @@ dependencies {
     // was buggy, crashing in several places. It also would require a separate test flavor because it's minimum API 26
     // because "JUnit 5 uses Java 8-specific APIs that didn't exist on Android before the Oreo release."
     androidTestImplementation 'com.nhaarman.mockitokotlin2:mockito-kotlin:2.2.0'
-    androidTestImplementation 'org.mockito:mockito-android:3.2.4'
-    androidTestImplementation "androidx.test:runner:1.2.0"
-    androidTestImplementation "androidx.test:core:1.2.0"
+    androidTestImplementation 'org.mockito:mockito-android:3.5.10'
+    androidTestImplementation "androidx.test:runner:1.3.0"
+    androidTestImplementation "androidx.test:core:1.3.0"
     androidTestImplementation "androidx.arch.core:core-testing:2.1.0"
-    androidTestImplementation 'androidx.test.ext:junit:1.1.1'
-    androidTestImplementation 'androidx.test:runner:1.2.0'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.2'
+    androidTestImplementation 'androidx.test:runner:1.3.0'
 
     // sample mnemonic plugin
     androidTestImplementation 'com.github.zcash:zcash-android-wallet-plugins:1.0.1'
