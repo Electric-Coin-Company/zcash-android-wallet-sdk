@@ -49,8 +49,8 @@ android {
 
 dependencies {
     // SDK
-    zcashmainnetImplementation 'cash.z.ecc.android:sdk-mainnet:1.1.0-beta05'
-    zcashtestnetImplementation 'cash.z.ecc.android:sdk-testnet:1.1.0-beta05'
+    zcashmainnetImplementation 'cash.z.ecc.android:zcash-android-sdk-mainnet:1.1.0-beta05'
+    zcashtestnetImplementation 'cash.z.ecc.android:zcash-android-sdk-testnet:1.1.0-beta05'
 
     // sample mnemonic plugin
     implementation 'com.github.zcash:zcash-android-wallet-plugins:1.0.1'

@@ -85,7 +85,7 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         testInstrumentationRunnerArguments clearPackageData: 'true'
         multiDexEnabled true
-        archivesBaseName = "zcash-android-wallet-sdk-${Deps.versionName}"
+        archivesBaseName = "zcash-android-sdk-${Deps.versionName}"
 
         javaCompileOptions {
             annotationProcessorOptions {
