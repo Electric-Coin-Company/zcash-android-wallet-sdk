@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.StateFlow
 class SharedViewModel : ViewModel() {
 
     private val config = App.instance.defaultConfig
-    private val _seedPhrase = MutableStateFlow(config.seedWords)
+    private val _seedPhrase = MutableStateFlow(config.initialSeedWords)
 
     // publicly, this is read-only
     val seedPhrase: StateFlow<String> get() = _seedPhrase

@@ -21,4 +21,7 @@
     <string name="home_second">Home Second</string>
     <string name="next">Next</string>
     <string name="previous">Previous</string>
+    <string name="load">Load</string>
+    <string name="apply">Apply</string>
+    <string name="loading">⌛ Loading</string>
 </resources>

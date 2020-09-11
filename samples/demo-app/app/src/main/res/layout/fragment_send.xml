@@ -3,12 +3,14 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:padding="16dp">
 
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/text_layout_amount"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginEnd="12dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@id/button_send"
         app:layout_constraintHorizontal_chainStyle="packed"
@@ -20,27 +22,30 @@
             android:id="@+id/input_amount"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:background="@android:color/transparent"
             android:ems="8"
             android:hint="zec amount"
             android:inputType="number"
-            android:textSize="20sp" />
+            android:textSize="18sp" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/text_layout_address"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        app:layout_constraintHorizontal_chainStyle="packed"
         app:layout_constraintStart_toStartOf="@id/text_layout_amount"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@id/text_layout_amount">
 
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/input_address"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:background="@android:color/transparent"
+            android:maxLines="2"
             android:ems="8"
             android:hint="to address"
-            android:textSize="20sp" />
+            android:textSize="18sp" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <Button
@@ -50,9 +55,7 @@
         android:enabled="false"
         android:text="Send"
         app:layout_constraintBottom_toBottomOf="@id/text_layout_amount"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@id/text_layout_amount"
-        app:layout_constraintTop_toTopOf="@id/text_layout_amount" />
+        app:layout_constraintStart_toEndOf="@id/text_layout_amount"/>
 
     <TextView
         android:id="@+id/text_status"
@@ -75,17 +78,17 @@
     <ScrollView
         android:layout_width="0dp"
         android:layout_height="0dp"
-        app:layout_constraintStart_toStartOf="@id/text_balance"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/text_balance"
         app:layout_constraintBottom_toBottomOf="parent"
-        >
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="@id/text_balance"
+        app:layout_constraintTop_toBottomOf="@id/text_balance">
+
         <TextView
             android:id="@+id/text_info"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:paddingEnd="8dp"
-            android:paddingBottom="48dp"/>
+            android:paddingBottom="48dp"
+            android:paddingEnd="8dp" />
     </ScrollView>
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -4,10 +4,9 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import cash.z.ecc.android.bip39.Mnemonics
 import cash.z.ecc.android.bip39.toSeed
-import cash.z.ecc.android.sdk.Initializer
-import cash.z.ecc.android.sdk.demoapp.App
 import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
 import cash.z.ecc.android.sdk.demoapp.databinding.FragmentGetPrivateKeyBinding
+import cash.z.ecc.android.sdk.tool.DerivationTool
 
 /**
  * Displays the viewing key and spending key associated with the seed used during the demo. The
@@ -16,7 +15,6 @@ import cash.z.ecc.android.sdk.demoapp.databinding.FragmentGetPrivateKeyBinding
  */
 class GetPrivateKeyFragment : BaseDemoFragment<FragmentGetPrivateKeyBinding>() {
 
-    private lateinit var initializer: Initializer
     private lateinit var seedPhrase: String
     private lateinit var seed: ByteArray
 
@@ -24,10 +22,7 @@ class GetPrivateKeyFragment : BaseDemoFragment<FragmentGetPrivateKeyBinding>() {
      * Initialize the required values that would normally live outside the demo but are repeated
      * here for completeness so that each demo file can serve as a standalone example.
      */
-    fun setup() {
-        // the initializer loads rust libraries and helps with configuration
-        initializer = Initializer(App.instance)
-
+    private fun setup() {
         // defaults to the value of `DemoConfig.seedWords` but can also be set by the user
         seedPhrase = sharedViewModel.seedPhrase.value
 
@@ -36,11 +31,13 @@ class GetPrivateKeyFragment : BaseDemoFragment<FragmentGetPrivateKeyBinding>() {
         seed = Mnemonics.MnemonicCode(seedPhrase).toSeed()
     }
 
-    fun displayKeys() {
+    private fun displayKeys() {
         // derive the keys from the seed:
         // demonstrate deriving spending keys for five accounts but only take the first one
-        val spendingKey = initializer.deriveSpendingKeys(seed, 5).first()
-        val viewingKey = initializer.deriveViewingKey(spendingKey)
+        val spendingKey = DerivationTool.deriveSpendingKeys(seed, 5).first()
+
+        // derive the key that allows you to view but not spend transactions
+        val viewingKey = DerivationTool.deriveViewingKey(spendingKey)
 
         // display the keys in the UI
         binding.textInfo.setText("Spending Key:\n$spendingKey\n\nViewing Key:\n$viewingKey")
@@ -65,6 +62,13 @@ class GetPrivateKeyFragment : BaseDemoFragment<FragmentGetPrivateKeyBinding>() {
     //
     // Base Fragment overrides
     //
+
+    override fun onActionButtonClicked() {
+        copyToClipboard(
+            DerivationTool.deriveViewingKeys(seed, 1).first(),
+            "ViewingKey copied to clipboard!"
+        )
+    }
 
     override fun inflateBinding(layoutInflater: LayoutInflater): FragmentGetPrivateKeyBinding =
         FragmentGetPrivateKeyBinding.inflate(layoutInflater)

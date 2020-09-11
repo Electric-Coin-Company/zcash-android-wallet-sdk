@@ -24,12 +24,20 @@ import cash.z.ecc.android.sdk.ext.twig
 import cash.z.ecc.android.sdk.service.LightWalletGrpcService
 import cash.z.ecc.android.sdk.service.LightWalletService
 import cash.z.ecc.android.sdk.rpc.LocalRpcTypes
+import cash.z.ecc.android.sdk.tool.DerivationTool
+import cash.z.ecc.android.sdk.tool.WalletBirthdayTool
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+
 /**
+ * ===============================================================================================
+ * NOTE:  this is still a WIP because t-addrs are not officially supported by the SDK yet
+ * ===============================================================================================
+ *
+ *
  * List all transactions related to the given seed, since the given birthday. This begins by
  * downloading any missing blocks and then validating and scanning their contents. Once scan is
  * complete, the transactions are available in the database and can be accessed by any SQL tool.
@@ -40,23 +48,21 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
     private val config = App.instance.defaultConfig
     private val initializer =
         Initializer(App.instance, host = config.host, port = config.port, alias = "Demo_Utxos")
-    private val birthday = config.loadBirthday()
+    private val birthday = WalletBirthdayTool.loadNearest(App.instance, config.birthdayHeight)
     private lateinit var synchronizer: Synchronizer
     private lateinit var adapter: UtxoAdapter<ConfirmedTransaction>
     private val address: String = "t1RwbKka1CnktvAJ1cSqdn7c6PXWG4tZqgd"
     private var status: Synchronizer.Status? = null
 
     private val isSynced get() = status == Synchronizer.Status.SYNCED
-    val latestBlockHeight = 935000
 
     override fun inflateBinding(layoutInflater: LayoutInflater): FragmentListUtxosBinding =
         FragmentListUtxosBinding.inflate(layoutInflater)
 
     fun initUi() {
-
         binding.inputAddress.setText(address)
         binding.inputRangeStart.setText(ZcashSdk.SAPLING_ACTIVATION_HEIGHT.toString())
-        binding.inputRangeEnd.setText(latestBlockHeight.toString())
+        binding.inputRangeEnd.setText(config.utxoEndHeight.toString())
 
         binding.buttonLoad.setOnClickListener {
             mainActivity()?.hideKeyboard()
@@ -66,8 +72,6 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
         initTransactionUi()
     }
 
-    private lateinit var lightwalletService: LightWalletService
-
     fun downloadTransactions() {
 
         binding.textStatus.text = "loading..."
@@ -75,15 +79,14 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
             binding.textStatus.requestFocus()
             val addressToUse = binding.inputAddress.text.toString()
             val startToUse = binding.inputRangeStart.text.toString().toIntOrNull() ?: ZcashSdk.SAPLING_ACTIVATION_HEIGHT
-            val endToUse = binding.inputRangeEnd.text.toString().toIntOrNull() ?: latestBlockHeight
-            lightwalletService = LightWalletGrpcService(App.instance, config.host, config.port)
+            val endToUse = binding.inputRangeEnd.text.toString().toIntOrNull() ?: config.utxoEndHeight
             var allStart = now
             twig("loading transactions in range $startToUse..$endToUse")
-            val txids = lightwalletService.getTAddressTransactions(addressToUse, startToUse..endToUse)
+            val txids = lightwalletService?.getTAddressTransactions(addressToUse, startToUse..endToUse)
             var delta = now - allStart
-            updateStatus("found ${txids.size} transactions in ${delta}ms.", false)
+            updateStatus("found ${txids?.size} transactions in ${delta}ms.", false)
             
-            txids.map {
+            txids?.map {
                 it.data.apply {
                     try {
                         initializer.rustBackend.decryptAndStoreTransaction(toByteArray())
@@ -91,7 +94,7 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
                         twig("failed to decrypt and store transaction due to: $t")
                     }
                 } 
-            }.let { txData ->
+            }?.let { txData ->
                 val parseStart = now
                 val tList = LocalRpcTypes.TransactionDataList.newBuilder().addAllData(txData).build()
                 val parsedTransactions = initializer.rustBackend.parseTransactionDataList(tList)
@@ -136,7 +139,7 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
         super.onResume()
         resetInBackground()
         val seed = Mnemonics.MnemonicCode(sharedViewModel.seedPhrase.value).toSeed()
-        binding.inputAddress.setText(initializer.rustBackend.deriveTAddress(seed))
+        binding.inputAddress.setText(DerivationTool.deriveTransparentAddress(seed))
     }
 
 
@@ -226,13 +229,6 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
     private fun onTransactionsUpdated(transactions: PagedList<ConfirmedTransaction>) {
         twig("got a new paged list of transactions of size ${transactions.size}")
         adapter.submitList(transactions)
-
-        // show message when there are no transactions
-//        if (isSynced) {
-        if (transactions.isEmpty()) {
-            Toast.makeText(activity, "No transactions found. Try another address or send funds to this one.", Toast.LENGTH_LONG).show()
-        }
-//        }
     }
 
     override fun onActionButtonClicked() {

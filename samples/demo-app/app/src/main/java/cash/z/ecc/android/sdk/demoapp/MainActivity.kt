@@ -17,6 +17,8 @@ import androidx.navigation.ui.navigateUp
 import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
 import androidx.viewbinding.ViewBinding
+import cash.z.ecc.android.sdk.service.LightWalletGrpcService
+import cash.z.ecc.android.sdk.service.LightWalletService
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.navigation.NavigationView
 
@@ -26,6 +28,15 @@ class MainActivity : AppCompatActivity(), ClipboardManager.OnPrimaryClipChangedL
     private lateinit var clipboard: ClipboardManager
     private var clipboardListener: ((String?) -> Unit)? = null
     var fabListener: BaseDemoFragment<out ViewBinding>? = null
+
+    /**
+     * The service to use for all demos that interact directly with the service. Since gRPC channels
+     * are expensive to recreate, we set this up once per demo. A real app would hardly ever use
+     * this object because it would utilize the synchronizer, instead, which exposes APIs that
+     * automatically sync with the server.
+     */
+    var lightwalletService: LightWalletService? = null
+    private set
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -54,12 +65,15 @@ class MainActivity : AppCompatActivity(), ClipboardManager.OnPrimaryClipChangedL
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)
         drawerLayout.addDrawerListener(this)
+        
+        initService()
     }
 
-    private fun onFabClicked(view: View) {
-        fabListener?.onActionButtonClicked()
+    override fun onDestroy() {
+        super.onDestroy()
+        lightwalletService?.shutdown()
     }
-
+    
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         // Inflate the menu; this adds items to the action bar if it is present.
         menuInflater.inflate(R.menu.main, menu)
@@ -82,6 +96,24 @@ class MainActivity : AppCompatActivity(), ClipboardManager.OnPrimaryClipChangedL
     }
 
 
+    //
+    // Private functions
+    //
+    
+    private fun initService() {
+        if (lightwalletService != null) {
+            lightwalletService?.shutdown()
+        }
+        with(App.instance.defaultConfig) {
+            lightwalletService = LightWalletGrpcService(App.instance, host, port)
+        }
+    }
+
+    private fun onFabClicked(view: View) {
+        fabListener?.onActionButtonClicked()
+    }
+
+    
     //
     // Helpers
     //

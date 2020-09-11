@@ -1,19 +1,23 @@
 package cash.z.ecc.android.sdk.demoapp.demos.send
 
+import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.TextView
 import androidx.lifecycle.lifecycleScope
-import cash.z.ecc.android.sdk.Initializer
+import cash.z.ecc.android.bip39.Mnemonics
+import cash.z.ecc.android.bip39.toSeed
 import cash.z.ecc.android.sdk.Synchronizer
+import cash.z.ecc.android.sdk.VkInitializer
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor
+import cash.z.ecc.android.sdk.db.entity.*
 import cash.z.ecc.android.sdk.demoapp.App
 import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
-import cash.z.ecc.android.sdk.demoapp.R
 import cash.z.ecc.android.sdk.demoapp.databinding.FragmentSendBinding
 import cash.z.ecc.android.sdk.demoapp.util.SampleStorageBridge
-import cash.z.ecc.android.sdk.db.entity.*
+import cash.z.ecc.android.sdk.demoapp.util.mainActivity
 import cash.z.ecc.android.sdk.ext.*
+import cash.z.ecc.android.sdk.tool.DerivationTool
 
 /**
  * Demonstrates sending funds to an address. This is the most complex example that puts all of the
@@ -24,16 +28,38 @@ import cash.z.ecc.android.sdk.ext.*
  * Any time the state of that transaction changes, a new instance will be emitted.
  */
 class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
-    private val config = App.instance.defaultConfig
-    private val initializer = Initializer(App.instance, host = config.host, port = config.port)
-    private val birthday = config.loadBirthday()
-
     private lateinit var synchronizer: Synchronizer
-    private lateinit var keyManager: SampleStorageBridge
 
     private lateinit var amountInput: TextView
     private lateinit var addressInput: TextView
 
+    // in a normal app, this would be stored securely with the trusted execution environment (TEE)
+    // but since this is a demo, we'll derive it on the fly
+    private lateinit var spendingKey: String
+
+
+    /**
+     * Initialize the required values that would normally live outside the demo but are repeated
+     * here for completeness so that each demo file can serve as a standalone example.
+     */
+    private fun setup() {
+        // defaults to the value of `DemoConfig.seedWords` but can also be set by the user
+        var seedPhrase = sharedViewModel.seedPhrase.value
+
+        // Use a BIP-39 library to convert a seed phrase into a byte array. Most wallets already
+        // have the seed stored
+        val seed = Mnemonics.MnemonicCode(seedPhrase).toSeed()
+
+        App.instance.defaultConfig.let { config ->
+            VkInitializer(App.instance) {
+                import(seed, config.birthdayHeight)
+                server(config.host, config.port)
+            }.let { initializer ->
+                synchronizer = Synchronizer(initializer)
+            }
+            spendingKey = DerivationTool.deriveSpendingKeys(seed).first()
+        }
+    }
 
     //
     // Observable properties (done without livedata or flows for simplicity)
@@ -58,49 +84,19 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
 
 
     //
-    // BaseDemoFragment overrides
-    //
-
-    override fun inflateBinding(layoutInflater: LayoutInflater): FragmentSendBinding =
-        FragmentSendBinding.inflate(layoutInflater)
-
-    fun resetInBackground() {
-        val spendingKeys = initializer.new(config.seed, birthday)
-        keyManager = SampleStorageBridge().securelyStorePrivateKey(spendingKeys[0])
-        synchronizer = Synchronizer(initializer)
-    }
-
-    // STARTING POINT
-    fun onResetComplete() {
-        initSendUi()
-        startSynchronizer()
-        monitorChanges()
-    }
-
-    fun onClear() {
-        synchronizer.stop()
-        initializer.clear()
-    }
-
-
-    //
     // Private functions
     //
 
     private fun initSendUi() {
-        amountInput = binding.root.findViewById<TextView>(R.id.input_amount).apply {
-            text = config.sendAmount.toString()
-        }
-        addressInput = binding.root.findViewById<TextView>(R.id.input_address).apply {
-            text = config.toAddress
+        App.instance.defaultConfig.let { config ->
+            amountInput = binding.inputAmount.apply {
+                setText(config.sendAmount.toZecString())
+            }
+            addressInput = binding.inputAddress.apply {
+                setText(config.toAddress)
+            }
         }
         binding.buttonSend.setOnClickListener(::onSend)
-    }
-
-    private fun startSynchronizer() {
-        lifecycleScope.apply {
-            synchronizer.start(this)
-        }
     }
 
     private fun monitorChanges() {
@@ -109,6 +105,11 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
         synchronizer.processorInfo.collectWith(lifecycleScope, ::onProcessorInfoUpdated)
         synchronizer.balances.collectWith(lifecycleScope, ::onBalance)
     }
+
+
+    //
+    // Change listeners
+    //
 
     private fun onStatus(status: Synchronizer.Status) {
         binding.textStatus.text = "Status: $status"
@@ -148,11 +149,12 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
         val amount = amountInput.text.toString().toDouble().convertZecToZatoshi()
         val toAddress = addressInput.text.toString().trim()
         synchronizer.sendToAddress(
-            keyManager.key,
+            spendingKey,
             amount,
             toAddress,
-            "Demo App Funds"
+            "Funds from Demo App"
         ).collectWith(lifecycleScope, ::onPendingTxUpdated)
+        mainActivity()?.hideKeyboard()
     }
 
     private fun onPendingTxUpdated(pendingTransaction: PendingTransaction?) {
@@ -196,5 +198,34 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
     private fun onResetInfo() {
         binding.textInfo.text = "Active Transaction:"
     }
+
+
+    //
+    // Android Lifecycle overrides
+    //
+
+    override fun onActivityCreated(savedInstanceState: Bundle?) {
+        super.onActivityCreated(savedInstanceState)
+        setup()
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        initSendUi()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // the lifecycleScope is used to dispose of the synchronizer when the fragment dies
+        synchronizer.start(lifecycleScope)
+        monitorChanges()
+    }
+
+    //
+    // BaseDemoFragment overrides
+    //
+
+    override fun inflateBinding(layoutInflater: LayoutInflater): FragmentSendBinding =
+        FragmentSendBinding.inflate(layoutInflater)
 
 }

@@ -19,23 +19,11 @@ interface RustBackendWelding {
         memo: ByteArray? = byteArrayOf()
     ): Long
 
-    fun deriveAddress(viewingKey: String): String
-
-    fun deriveAddress(seed: ByteArray, accountIndex: Int = 0): String
-
-    fun deriveSpendingKeys(seed: ByteArray, numberOfAccounts: Int = 1): Array<String>
-
-    fun deriveTAddress(seed: ByteArray): String
-
-    fun deriveViewingKey(spendingKey: String): String
-
-    fun deriveViewingKeys(seed: ByteArray, numberOfAccounts: Int = 1): Array<String>
-
     fun decryptAndStoreTransaction(tx: ByteArray)
 
     fun initAccountsTable(seed: ByteArray, numberOfAccounts: Int): Array<String>
 
-//    fun initAccountsTable(extfvks: Array<ByteArray>, numberOfAccounts: Int)
+    fun initAccountsTable(vararg extfvks: String): Boolean
 
     fun initBlocksTable(height: Int, hash: String, time: Long, saplingTree: String): Boolean
 
@@ -65,4 +53,18 @@ interface RustBackendWelding {
 
     fun validateCombinedChain(): Int
 
+    // Implemented by `DerivationTool`
+    interface Derivation {
+        fun deriveShieldedAddress(viewingKey: String): String
+
+        fun deriveShieldedAddress(seed: ByteArray, accountIndex: Int = 0): String
+
+        fun deriveSpendingKeys(seed: ByteArray, numberOfAccounts: Int = 1): Array<String>
+
+        fun deriveTransparentAddress(seed: ByteArray): String
+
+        fun deriveViewingKey(spendingKey: String): String
+
+        fun deriveViewingKeys(seed: ByteArray, numberOfAccounts: Int = 1): Array<String>
+    }
 }
