@@ -1,4 +1,4 @@
 <resources>
-    <string name="app_name"Mainnet Demo</string>
+    <string name="app_name">Mainnet Demo</string>
     <string name="nav_header_title">Android SDK Demo : MAINNET</string>
 </resources>
