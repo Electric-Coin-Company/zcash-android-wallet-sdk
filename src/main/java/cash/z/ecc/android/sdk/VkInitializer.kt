@@ -9,31 +9,31 @@ import cash.z.ecc.android.sdk.jni.RustBackend
 import cash.z.ecc.android.sdk.tool.DerivationTool
 import cash.z.ecc.android.sdk.tool.WalletBirthdayTool
 import java.io.File
-import java.lang.IllegalArgumentException
 
 /**
  * Simplified Initializer focused on starting from a ViewingKey.
  */
-class VkInitializer(appContext: Context, block: Builder.() -> Unit) :  SdkSynchronizer.SdkInitializer {
+class VkInitializer(appContext: Context, builder: Builder):  SdkSynchronizer.SdkInitializer {
     override val context = appContext.applicationContext
     override val rustBackend: RustBackend
     override val alias: String
     override val host: String
     override val port: Int
-    val viewingKeys: Array<out String>
+    val viewingKeys: List<String>
     val birthday: WalletBirthdayTool.WalletBirthday
 
     init {
-        Builder(block).let { builder ->
-            birthday = builder._birthday
-            viewingKeys = builder._viewingKeys
-            alias = builder.alias
-            host = builder.host
-            port = builder.port
-            rustBackend = initRustBackend(birthday)
-            initMissingDatabases(birthday, *viewingKeys)
-        }
+        birthday = builder.birthday
+        viewingKeys = builder.viewingKeys
+        alias = builder.alias
+        host = builder.host
+        port = builder.port
+        rustBackend = initRustBackend(birthday)
+        initMissingDatabases(birthday, *viewingKeys.toTypedArray())
     }
+
+    constructor(appContext: Context, block: Builder.() -> Unit) : this(appContext, Builder(appContext, block))
+
 
     private fun initRustBackend(birthday: WalletBirthdayTool.WalletBirthday): RustBackend {
         return RustBackend().init(
@@ -151,12 +151,13 @@ class VkInitializer(appContext: Context, block: Builder.() -> Unit) :  SdkSynchr
     }
 
 
-    inner class Builder(block: Builder.() -> Unit) {
+    class Builder(appContext: Context, block: Builder.() -> Unit) {
+        private val context = appContext.applicationContext
         /* lateinit fields that can be set in multiple ways on this builder */
-        lateinit var _birthday: WalletBirthdayTool.WalletBirthday
+        lateinit var birthday: WalletBirthdayTool.WalletBirthday
         private set
-        lateinit var _viewingKeys: Array<out String>
-        private set
+
+        val viewingKeys = mutableListOf<String>()
 
         /* optional fields with default values */
         var alias: String = ZcashSdk.DEFAULT_ALIAS
@@ -167,7 +168,7 @@ class VkInitializer(appContext: Context, block: Builder.() -> Unit) :  SdkSynchr
         var birthdayHeight: Int? = null
             set(value) {
                 field = value
-                _birthday = WalletBirthdayTool(context).loadNearest(value)
+                birthday = WalletBirthdayTool(context).loadNearest(value)
             }
 
 
@@ -179,16 +180,25 @@ class VkInitializer(appContext: Context, block: Builder.() -> Unit) :  SdkSynchr
         }
 
 
-        fun viewingKeys(vararg extendedFullViewingKeys: String) {
-            _viewingKeys = extendedFullViewingKeys
+        /**
+         * Add viewing keys to the set of accounts to monitor. Note: Using more than one viewing key
+         * is not currently well supported. Consider it an alpha-preview feature that might work but
+         * probably has serious bugs.
+         */
+        fun setViewingKeys(vararg extendedFullViewingKeys: String) {
+            viewingKeys.apply {
+                clear()
+                addAll(extendedFullViewingKeys)
+            }
         }
 
-        fun seed(seed: ByteArray, numberOfAccounts: Int = 1) {
-            _viewingKeys = DerivationTool.deriveViewingKeys(seed, numberOfAccounts)
-        }
-
-        private fun birthday(walletBirthday: WalletBirthdayTool.WalletBirthday) {
-            _birthday = walletBirthday
+        /**
+         * Add viewing key to the set of accounts to monitor. Note: Using more than one viewing key
+         * is not currently well supported. Consider it an alpha-preview feature that might work but
+         * probably has serious bugs.
+         */
+        fun addViewingKey(extendedFullViewingKey: String) {
+            viewingKeys.add(extendedFullViewingKey)
         }
 
         /**
@@ -226,13 +236,21 @@ class VkInitializer(appContext: Context, block: Builder.() -> Unit) :  SdkSynchr
         }
 
         fun import(seed: ByteArray, birthdayHeight: Int) {
-            seed(seed)
+            setSeed(seed)
             importedWalletBirthday(birthdayHeight)
         }
 
         fun new(seed: ByteArray) {
-            seed(seed)
+            setSeed(seed)
             newWalletBirthday()
+        }
+
+        /**
+         * Convenience method for setting thew viewingKeys from a given seed. This is the same as
+         * calling `setViewingKeys` with the keys that match this seed.
+         */
+        fun setSeed(seed: ByteArray, numberOfAccounts: Int = 1) {
+            setViewingKeys(*DerivationTool.deriveViewingKeys(seed, numberOfAccounts))
         }
 
 
@@ -241,24 +259,24 @@ class VkInitializer(appContext: Context, block: Builder.() -> Unit) :  SdkSynchr
         //
 
         private fun validateBirthday() {
-            require(::_birthday.isInitialized) {
+            require(::birthday.isInitialized) {
                 "Birthday is required but was not set on this initializer. Verify that a valid" +
                         " birthday was provided when creating the Initializer such as" +
                         " WalletBirthdayTool.loadNearest()"
             }
-            require(_birthday.height >= ZcashSdk.SAPLING_ACTIVATION_HEIGHT) {
-                "Invalid birthday height of ${_birthday.height}. The birthday height must be at" +
+            require(birthday.height >= ZcashSdk.SAPLING_ACTIVATION_HEIGHT) {
+                "Invalid birthday height of ${birthday.height}. The birthday height must be at" +
                         " least the height of Sapling activation on ${ZcashSdk.NETWORK}" +
                         " (${ZcashSdk.SAPLING_ACTIVATION_HEIGHT})."
             }
         }
 
         private fun validateViewingKeys() {
-            require(::_viewingKeys.isInitialized && _viewingKeys.isNotEmpty()) {
+            require(viewingKeys.isNotEmpty()) {
                 "Viewing keys are required. Ensure that the viewing keys or seed have been set" +
                         " on this Initializer."
             }
-            _viewingKeys.forEach {
+            viewingKeys.forEach {
                 DerivationTool.validateViewingKey(it)
             }
         }
