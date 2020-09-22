@@ -12,7 +12,7 @@ edition = "2018"
 [dependencies]
 android_logger = "0.9"
 failure = "0.1"
-hex = "0.3"
+hex = "0.4"
 jni = { version = "0.17", default-features = false }
 log = "0.4"
 log-panics = "2.0.0"
@@ -24,10 +24,10 @@ zcash_proofs = "0.4"
 #### Temporary additions: ####################################
 base58 = "0.1.0"
 protobuf = "2"
-sha2 = "0.8.0"
+sha2 = "0.9"
 bs58 = { version = "0.3", features = ["check"] }
 hdwallet = "0.2.2"
-ripemd160 = "0.8.0"
+ripemd160 = "0.9"
 secp256k1 = "0.17.2"
 ##############################################################
 

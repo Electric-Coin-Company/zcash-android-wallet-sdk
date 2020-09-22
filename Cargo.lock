@@ -825,12 +825,6 @@ dependencies = [
 
 [[package]]
 name = "hex"
-version = "0.3.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "805026a5d0141ffc30abb3be3173848ad46a1b1664fe632428479619a3644d77"
-
-[[package]]
-name = "hex"
 version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "644f9158b2f133fd50f5fb3242878846d9eb792e445c893805ff0e3824006e35"
@@ -1374,13 +1368,13 @@ dependencies = [
 
 [[package]]
 name = "ripemd160"
-version = "0.8.0"
+version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ad5112e0dbbb87577bfbc56c42450235e3012ce336e29c5befd7807bd626da4a"
+checksum = "2eca4ecc81b7f313189bf73ce724400a07da2a6dac19588b03c8bd76a2dcc251"
 dependencies = [
- "block-buffer 0.7.3",
- "digest 0.8.1",
- "opaque-debug 0.2.3",
+ "block-buffer 0.9.0",
+ "digest 0.9.0",
+ "opaque-debug 0.3.0",
 ]
 
 [[package]]
@@ -1989,7 +1983,7 @@ dependencies = [
  "grpc",
  "grpc-protobuf",
  "hdwallet",
- "hex 0.3.2",
+ "hex",
  "httpbis",
  "jni",
  "log",
@@ -1998,7 +1992,7 @@ dependencies = [
  "protobuf-codegen-pure",
  "ripemd160",
  "secp256k1",
- "sha2 0.8.2",
+ "sha2 0.9.1",
  "tls-api",
  "tls-api-rustls",
  "zcash_client_backend",
@@ -2018,7 +2012,7 @@ dependencies = [
  "bs58",
  "ff",
  "group",
- "hex 0.4.2",
+ "hex",
  "jubjub",
  "protobuf",
  "protobuf-codegen-pure",
@@ -2062,7 +2056,7 @@ dependencies = [
  "ff",
  "fpe",
  "group",
- "hex 0.4.2",
+ "hex",
  "jubjub",
  "lazy_static",
  "log",
