@@ -40,7 +40,7 @@ use zcash_primitives::{
     consensus::BranchId,
     note_encryption::Memo,
     transaction::{components::Amount, Transaction},
-    zip32::{ExtendedFullViewingKey, ExtendedSpendingKey},
+    zip32::ExtendedFullViewingKey,
 };
 use zcash_proofs::prover::LocalTxProver;
 
@@ -67,16 +67,13 @@ use zcash_client_backend::constants::testnet::{
 // Temporary Imports
 mod local_rpc_types;
 use base58::ToBase58;
-use jni::errors::Result as JniResult;
 use local_rpc_types::{TransactionDataList, TransparentTransaction, TransparentTransactionList};
 use protobuf::{parse_from_bytes, Message};
 use sha2::{Digest, Sha256};
-use zcash_client_backend::constants::{mainnet, testnet};
-use zcash_primitives::legacy::{Script, TransparentAddress};
+use zcash_primitives::legacy::TransparentAddress;
 
-use bs58::{self, decode::Error as Bs58Error};
 use hdwallet::{ExtendedPrivKey, KeyIndex};
-use secp256k1::{PublicKey, Secp256k1, SecretKey, SignOnly, VerifyOnly};
+use secp256k1::{PublicKey, Secp256k1};
 use zcash_client_backend::constants::mainnet::B58_PUBKEY_ADDRESS_PREFIX;
 
 // use crate::extended_key::{key_index::KeyIndex, ExtendedPrivKey, ExtendedPubKey, KeySeed};
@@ -648,8 +645,8 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_parseTransa
     _: JClass<'_>,
     tx_data_list: jbyteArray,
 ) -> jbyteArray {
-    let mut err_val: Vec<u8> = Vec::new();
-    let mut res_err = env.byte_array_from_slice(&err_val).unwrap();
+    let err_val: Vec<u8> = Vec::new();
+    let res_err = env.byte_array_from_slice(&err_val).unwrap();
     let res = panic::catch_unwind(|| {
         let tx_data_bytes = env.convert_byte_array(tx_data_list)?;
         let input_tx_data = parse_from_bytes::<TransactionDataList>(&tx_data_bytes)?;
@@ -664,7 +661,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_parseTransa
             tx.set_hasShieldedSpends(parsed.shielded_spends.len() > 0);
             tx.set_hasShieldedOutputs(parsed.shielded_outputs.len() > 0);
 
-            for (n, vout) in parsed.vout.iter().enumerate() {
+            for (_n, vout) in parsed.vout.iter().enumerate() {
                 match vout.script_pubkey.address() {
                     // NOTE : this logic below doesn't work. No address is parsed.
                     Some(TransparentAddress::PublicKey(hash)) => {

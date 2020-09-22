@@ -78,7 +78,7 @@ pub fn any_to_string(any: &Box<dyn Any + Send>) -> String {
     } else if let Some(s) = any.downcast_ref::<String>() {
         s.clone()
     } else if let Some(error) = any.downcast_ref::<Box<dyn std::error::Error + Send>>() {
-        error.description().to_string()
+        error.to_string()
     } else {
         "Unknown error occurred".to_string()
     }
@@ -106,8 +106,8 @@ mod tests {
 
     #[test]
     fn box_error_any() {
-        let error: Box<Error + Send> = Box::new("e".parse::<i32>().unwrap_err());
-        let description = error.description().to_owned();
+        let error: Box<dyn Error + Send> = Box::new("e".parse::<i32>().unwrap_err());
+        let description = error.to_string();
         let error = panic_error(error);
         assert_eq!(description, any_to_string(&error));
     }
@@ -118,7 +118,7 @@ mod tests {
         assert_eq!("Unknown error occurred", any_to_string(&error));
     }
 
-    fn panic_error<T: Send + 'static>(val: T) -> Box<Any + Send> {
+    fn panic_error<T: Send + 'static>(val: T) -> Box<dyn Any + Send> {
         panic::catch_unwind(panic::AssertUnwindSafe(|| panic!(val))).unwrap_err()
     }
 }
