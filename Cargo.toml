@@ -21,14 +21,6 @@ zcash_client_sqlite = "0.2"
 zcash_primitives = "0.4"
 zcash_proofs = "0.4"
 
-# update-sapling-tree dependencies
-futures = { version = "0.1", optional = true }
-grpc = { version = "0.6", optional = true }
-httpbis = { version = "0.7", optional = true }
-#protobuf = { version = "2", optional = true }
-tls-api = { version = "0.1", optional = true }
-tls-api-rustls = { version = "0.1", optional = true }
-
 #### Temporary additions: ####################################
 base58 = "0.1.0"
 protobuf = "2"
@@ -38,6 +30,15 @@ hdwallet = "0.2.2"
 ripemd160 = "0.8.0"
 secp256k1 = "0.17.2"
 ##############################################################
+
+# update-sapling-tree dependencies
+bls12_381 = { version = "0.3", optional = true }
+futures = { version = "0.3", optional = true }
+grpc = { version = "0.8", optional = true }
+grpc-protobuf = { version = "0.8", optional = true }
+httpbis = { version = "0.9", optional = true }
+tls-api = { version = "0.4", optional = true }
+tls-api-rustls = { version = "0.4", optional = true }
 
 
 [build-dependencies]
@@ -51,7 +52,7 @@ protobuf-codegen-pure = "2.14"
 
 [features]
 mainnet = ["zcash_client_sqlite/mainnet"]
-#updater = ["futures", "grpc", "httpbis", "protobuf", "tls-api", "tls-api-rustls"]
+updater = ["bls12_381", "futures", "grpc", "grpc-protobuf", "httpbis", "tls-api", "tls-api-rustls"]
 
 [lib]
 name = "zcashwalletsdk"
