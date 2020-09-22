@@ -1,8 +1,6 @@
 package cash.z.ecc.android.sdk.ext
 
 import cash.z.ecc.android.sdk.Initializer
-import cash.z.ecc.android.sdk.Initializer.DefaultBirthdayStore.Companion.ImportedWalletBirthdayStore
-import cash.z.ecc.android.sdk.Initializer.DefaultBirthdayStore.Companion.NewWalletBirthdayStore
 import cash.z.ecc.android.sdk.util.SimpleMnemonics
 import kotlinx.coroutines.*
 import org.junit.After
@@ -11,33 +9,10 @@ import org.junit.Before
 import org.junit.BeforeClass
 import java.util.concurrent.TimeoutException
 
-fun Initializer.importPhrase(
-    seedPhrase: String,
-    birthdayHeight: Int,
-    alias: String = ZcashSdk.DEFAULT_ALIAS,
-    clearCacheDb: Boolean = true,
-    clearDataDb: Boolean = true
-) {
-    SimpleMnemonics().toSeed(seedPhrase.toCharArray()).let { seed ->
-        ImportedWalletBirthdayStore(context, birthdayHeight, alias).getBirthday().let {
-            import(seed, it, clearCacheDb, clearDataDb)
-        }
-    }
-}
 
-fun Initializer.new(alias: String = ZcashSdk.DEFAULT_ALIAS) {
-    SimpleMnemonics().let { mnemonics ->
-        mnemonics.nextMnemonic().let { phrase ->
-            twig("DELETE THIS LOG! ${String(phrase)}")
-            NewWalletBirthdayStore(context, alias).getBirthday().let {
-                new(mnemonics.toSeed(phrase), it, 1, true, true)
-            }
-        }
-    }
+fun Initializer.Builder.seedPhrase(seedPhrase: String) {
+    setSeed(SimpleMnemonics().toSeed(seedPhrase.toCharArray()))
 }
-
-fun Initializer.deriveSpendingKey(seedPhrase: String) =
-    deriveSpendingKeys(SimpleMnemonics().toSeed(seedPhrase.toCharArray()))[0]
 
 
 open class ScopedTest(val defaultTimeout: Long = 2000L) {

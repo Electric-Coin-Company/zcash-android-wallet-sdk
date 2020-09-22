@@ -46,9 +46,8 @@ import kotlinx.coroutines.withContext
  */
 class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
     private val config = App.instance.defaultConfig
-    private val initializer =
-        Initializer(App.instance, host = config.host, port = config.port, alias = "Demo_Utxos")
-    private val birthday = WalletBirthdayTool.loadNearest(App.instance, config.birthdayHeight)
+    private lateinit var seed: ByteArray
+    private lateinit var initializer: SdkSynchronizer.SdkInitializer
     private lateinit var synchronizer: Synchronizer
     private lateinit var adapter: UtxoAdapter<ConfirmedTransaction>
     private val address: String = "t1RwbKka1CnktvAJ1cSqdn7c6PXWG4tZqgd"
@@ -58,6 +57,26 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
 
     override fun inflateBinding(layoutInflater: LayoutInflater): FragmentListUtxosBinding =
         FragmentListUtxosBinding.inflate(layoutInflater)
+
+    /**
+     * Initialize the required values that would normally live outside the demo but are repeated
+     * here for completeness so that each demo file can serve as a standalone example.
+     */
+    private fun setup() {
+        // Use a BIP-39 library to convert a seed phrase into a byte array. Most wallets already
+        // have the seed stored
+        seed = Mnemonics.MnemonicCode(sharedViewModel.seedPhrase.value).toSeed()
+        initializer = Initializer(App.instance) {
+            it.import(seed, config.birthdayHeight)
+            it.alias = "Demo_Utxos"
+        }
+        synchronizer = Synchronizer(initializer)
+    }
+
+    override fun onActivityCreated(savedInstanceState: Bundle?) {
+        super.onActivityCreated(savedInstanceState)
+        setup()
+    }
 
     fun initUi() {
         binding.inputAddress.setText(address)
@@ -85,7 +104,7 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
             val txids = lightwalletService?.getTAddressTransactions(addressToUse, startToUse..endToUse)
             var delta = now - allStart
             updateStatus("found ${txids?.size} transactions in ${delta}ms.", false)
-            
+
             txids?.map {
                 it.data.apply {
                     try {
@@ -93,7 +112,7 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
                     } catch (t: Throwable) {
                         twig("failed to decrypt and store transaction due to: $t")
                     }
-                } 
+                }
             }?.let { txData ->
                 val parseStart = now
                 val tList = LocalRpcTypes.TransactionDataList.newBuilder().addAllData(txData).build()
@@ -147,18 +166,6 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
     var finalCount: Int = 0
     fun resetInBackground() {
         try {
-            initializer.new(Mnemonics.MnemonicCode(sharedViewModel.seedPhrase.value).toSeed(), birthday)
-        } catch (e: Throwable) {
-            twig("warning to create a new initializer! Trying to open one instead due to: $e")
-            try {
-                initializer.open(birthday)
-            } catch (t: Throwable) {
-                twig("warning failed to open the initializer. Due to: $t")
-            }
-        }
-
-        try {
-            synchronizer = Synchronizer(initializer)
             lifecycleScope.launch {
                 withContext(Dispatchers.IO) {
                     initialCount = (synchronizer as SdkSynchronizer).getTransactionCount()
@@ -179,7 +186,6 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
 
     fun onClear() {
         synchronizer.stop()
-        initializer.clear()
     }
 
     private fun initTransactionUi() {

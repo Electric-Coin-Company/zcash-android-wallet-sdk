@@ -2,7 +2,8 @@ package cash.z.ecc.android.sdk.util
 
 import androidx.test.platform.app.InstrumentationRegistry
 import cash.z.ecc.android.sdk.Initializer
-import cash.z.ecc.android.sdk.Initializer.WalletBirthday
+import cash.z.ecc.android.sdk.tool.DerivationTool
+import cash.z.ecc.android.sdk.tool.WalletBirthdayTool
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
@@ -18,7 +19,7 @@ import java.io.IOException
 class AddressGeneratorUtil {
 
     private val context = InstrumentationRegistry.getInstrumentation().context
-    private val initializer = Initializer(context).open(WalletBirthday())
+
     private val mnemonics = SimpleMnemonics()
 
     @Test
@@ -36,7 +37,7 @@ class AddressGeneratorUtil {
             .map { seedPhrase ->
                 mnemonics.toSeed(seedPhrase.toCharArray())
             }.map { seed ->
-                initializer.rustBackend.deriveAddress(seed)
+                DerivationTool.deriveShieldedAddress(seed)
             }.collect { address ->
                 println("xrxrx2\t$address")
                 assertTrue(address.startsWith("zs1"))
@@ -45,7 +46,7 @@ class AddressGeneratorUtil {
 
     @Throws(IOException::class)
     fun readLines() = flow<String> {
-        val seedFile = javaClass.getResourceAsStream("/utils/seeds.txt")
+        val seedFile = javaClass.getResourceAsStream("/utils/seeds.txt")!!
         Okio.buffer(Okio.source(seedFile)).use { source ->
             var line: String? = source.readUtf8Line()
             while (line != null) {

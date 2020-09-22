@@ -6,6 +6,7 @@ import cash.z.ecc.android.sdk.SdkSynchronizer
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.ext.TroubleshootingTwig
 import cash.z.ecc.android.sdk.ext.Twig
+import cash.z.ecc.android.sdk.tool.WalletBirthdayTool
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
@@ -37,9 +38,7 @@ class DataDbScannerUtil {
     
 //    private val rustBackend = RustBackend.init(context, cacheDbName, dataDbName)
 
-    private val initializer = Initializer(context, host, port, alias)
 
-    private lateinit var birthday: Initializer.WalletBirthday
     private val birthdayHeight = 600_000
     private lateinit var synchronizer: Synchronizer
 
@@ -47,7 +46,6 @@ class DataDbScannerUtil {
     fun setup() {
         Twig.plant(TroubleshootingTwig())
 //        cacheBlocks()
-        birthday = Initializer.DefaultBirthdayStore(context, birthdayHeight, alias).getBirthday()
     }
 
     private fun cacheBlocks() = runBlocking {
@@ -67,8 +65,7 @@ class DataDbScannerUtil {
 
     @Test
     fun scanExistingDb() {
-        initializer.open(birthday)
-        synchronizer = Synchronizer(initializer)
+        synchronizer = Synchronizer(Initializer(context) { it.birthdayHeight = birthdayHeight})
 
         println("sync!")
         synchronizer.start()

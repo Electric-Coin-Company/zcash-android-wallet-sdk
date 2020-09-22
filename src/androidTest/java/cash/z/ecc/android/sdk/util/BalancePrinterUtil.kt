@@ -10,6 +10,7 @@ import cash.z.ecc.android.sdk.ext.TroubleshootingTwig
 import cash.z.ecc.android.sdk.ext.Twig
 import cash.z.ecc.android.sdk.ext.twig
 import cash.z.ecc.android.sdk.service.LightWalletGrpcService
+import cash.z.ecc.android.sdk.tool.WalletBirthdayTool
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
@@ -37,27 +38,26 @@ class BalancePrinterUtil {
     private val mnemonics = SimpleMnemonics()
     private val context = InstrumentationRegistry.getInstrumentation().context
     private val alias = "BalanceUtil"
-    private val caceDbPath = Initializer.cacheDbPath(context, alias)
-
-    private val downloader = CompactBlockDownloader(
-        LightWalletGrpcService(context, host, port),
-        CompactBlockDbStore(context, caceDbPath)
-    )
+//    private val caceDbPath = Initializer.cacheDbPath(context, alias)
+//
+//    private val downloader = CompactBlockDownloader(
+//        LightWalletGrpcService(context, host, port),
+//        CompactBlockDbStore(context, caceDbPath)
+//    )
     
 //    private val processor = CompactBlockProcessor(downloader)
     
 //    private val rustBackend = RustBackend.init(context, cacheDbName, dataDbName)
 
-    private val initializer = Initializer(context, host, port, alias)
 
-    private lateinit var birthday: Initializer.WalletBirthday
+    private lateinit var birthday: WalletBirthdayTool.WalletBirthday
     private var synchronizer: Synchronizer? = null
 
     @Before
     fun setup() {
         Twig.plant(TroubleshootingTwig())
         cacheBlocks()
-        birthday = Initializer.DefaultBirthdayStore(context, birthdayHeight, alias).getBirthday()
+        birthday = WalletBirthdayTool.loadNearest(context, birthdayHeight)
     }
 
     private fun cacheBlocks() = runBlocking {
@@ -82,7 +82,12 @@ class BalancePrinterUtil {
                 twig("checking balance for: $seedPhrase")
                 mnemonics.toSeed(seedPhrase.toCharArray())
             }.collect { seed ->
-                initializer.import(seed, birthday, clearDataDb = true, clearCacheDb = false)
+                // TODO: clear the dataDb but leave the cacheDb
+                val initializer = Initializer(context) { config ->
+                    config.import(seed, birthdayHeight)
+                    config.server(host, port)
+                    config.alias = alias
+                }
                     /*
                 what I need to do right now
                 - for each seed
