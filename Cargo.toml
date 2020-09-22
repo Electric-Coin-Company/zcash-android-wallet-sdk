@@ -22,6 +22,10 @@ log-panics = "2.0.0"
 #protobuf = { version = "2", optional = true }
 tls-api = { version = "0.1", optional = true }
 tls-api-rustls = { version = "0.1", optional = true }
+zcash_client_backend = "0.4"
+zcash_client_sqlite = "0.2"
+zcash_primitives = "0.4"
+zcash_proofs = "0.4"
 
 #### Temporary additions: ####################################
 base58 = "0.1.0"
@@ -34,36 +38,10 @@ secp256k1 = "0.17.2"
 ##############################################################
 
 
-[dependencies.ff]
-git = "https://github.com/zcash/librustzcash.git"
-rev = "18b1ce7401184e86031e6d7ddefa7c8d36929296"
-
-[dependencies.pairing]
-git = "https://github.com/zcash/librustzcash.git"
-rev = "18b1ce7401184e86031e6d7ddefa7c8d36929296"
-
-[dependencies.zcash_client_backend]
-git = "https://github.com/zcash/librustzcash.git"
-rev = "18b1ce7401184e86031e6d7ddefa7c8d36929296"
-
-[dependencies.zcash_client_sqlite]
-git = "https://github.com/zcash/librustzcash.git"
-rev = "18b1ce7401184e86031e6d7ddefa7c8d36929296"
-
-[dependencies.zcash_primitives]
-git = "https://github.com/zcash/librustzcash.git"
-rev = "18b1ce7401184e86031e6d7ddefa7c8d36929296"
-
-[dependencies.zcash_proofs]
-git = "https://github.com/zcash/librustzcash.git"
-rev = "18b1ce7401184e86031e6d7ddefa7c8d36929296"
-
 [build-dependencies]
 protobuf-codegen-pure = "2.14"
 
-#[patch.'https://github.com/zcash/librustzcash.git']
-#ff = { path = '../../clones/librustzcash/ff' }
-#pairing = { path = '../../clones/librustzcash/pairing' }
+#[patch.crates-io]
 #zcash_client_backend = { path = '../../clones/librustzcash/zcash_client_backend' }
 #zcash_client_sqlite = { path = '../../clones/librustzcash/zcash_client_sqlite' }
 #zcash_primitives = { path = '../../clones/librustzcash/zcash_primitives' }
