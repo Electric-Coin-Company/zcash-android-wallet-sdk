@@ -12,20 +12,22 @@ edition = "2018"
 [dependencies]
 android_logger = "0.9"
 failure = "0.1"
-futures = { version = "0.1", optional = true }
-grpc = { version = "0.6", optional = true }
 hex = "0.3"
-httpbis = { version = "0.7", optional = true }
 jni = { version = "0.17", default-features = false }
 log = "0.4"
 log-panics = "2.0.0"
-#protobuf = { version = "2", optional = true }
-tls-api = { version = "0.1", optional = true }
-tls-api-rustls = { version = "0.1", optional = true }
 zcash_client_backend = "0.4"
 zcash_client_sqlite = "0.2"
 zcash_primitives = "0.4"
 zcash_proofs = "0.4"
+
+# update-sapling-tree dependencies
+futures = { version = "0.1", optional = true }
+grpc = { version = "0.6", optional = true }
+httpbis = { version = "0.7", optional = true }
+#protobuf = { version = "2", optional = true }
+tls-api = { version = "0.1", optional = true }
+tls-api-rustls = { version = "0.1", optional = true }
 
 #### Temporary additions: ####################################
 base58 = "0.1.0"
