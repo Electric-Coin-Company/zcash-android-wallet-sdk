@@ -3,7 +3,7 @@ extern crate log;
 
 mod utils;
 
-use android_logger::Filter;
+use android_logger::Config;
 use failure::format_err;
 use jni::{
     objects::{JClass, JString},
@@ -95,8 +95,9 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_initLogs(
     _: JClass<'_>,
 ) {
     android_logger::init_once(
-        Filter::default().with_min_level(Level::Debug),
-        Some("cash.z.rust.logs"),
+        Config::default()
+            .with_min_level(Level::Debug)
+            .with_tag("cash.z.rust.logs"),
     );
 
     log_panics::init();
