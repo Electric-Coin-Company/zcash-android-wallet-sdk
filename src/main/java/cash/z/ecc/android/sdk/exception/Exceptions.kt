@@ -1,5 +1,9 @@
 package cash.z.ecc.android.sdk.exception
 
+import cash.z.wallet.sdk.rpc.Service
+import io.grpc.Status
+import io.grpc.Status.Code.UNAVAILABLE
+
 
 /**
  * Marker for all custom exceptions from the SDK. Making it an interface would result in more typing
@@ -113,20 +117,39 @@ sealed class InitializerException(message: String, cause: Throwable? = null) :  
 /**
  * Exceptions thrown while interacting with lightwalletd.
  */
-sealed class LightwalletException(message: String, cause: Throwable? = null) : SdkException(message, cause) {
-    object InsecureConnection : LightwalletException("Error: attempted to connect to lightwalletd" +
+sealed class LightWalletException(message: String, cause: Throwable? = null) : SdkException(message, cause) {
+    object InsecureConnection : LightWalletException("Error: attempted to connect to lightwalletd" +
             " with an insecure connection! Plaintext connections are only allowed when the" +
             " resource value for 'R.bool.lightwalletd_allow_very_insecure_connections' is true" +
             " because this choice should be explicit.")
     class ConsensusBranchException(sdkBranch: String, lwdBranch: String) :
-        LightwalletException(
+        LightWalletException(
             "Error: the lightwalletd server is using a consensus branch" +
                 " (branch: $lwdBranch) that does not match the transactions being created" +
                 " (branch: $sdkBranch). This probably means the SDK and Server are on two" +
                 " different chains, most likely because of a recent network upgrade (NU). Either" +
                 " update the SDK to match lightwalletd or use a lightwalletd that matches the SDK."
         )
+
+    open class ChangeServerException(message: String, cause: Throwable? = null) : SdkException(message, cause) {
+        class ChainInfoNotMatching(val propertyNames: String, val expectedInfo: Service.LightdInfo, val actualInfo: Service.LightdInfo) : ChangeServerException(
+            "Server change error: the $propertyNames values did not match."
+        )
+        class StatusException(val status: Status, cause: Throwable? = null) : SdkException(status.toMessage(), cause) {
+            companion object {
+                private fun Status.toMessage(): String {
+                    return when(this.code) {
+                        UNAVAILABLE -> {
+                            "Error: the new server is unavailable. Verify that the host and port are correct. Failed with $this"
+                        }
+                        else -> "Changing servers failed with status $this"
+                    }
+                }
+            }
+        }
+    }
 }
+
 
 /**
  * Potentially user-facing exceptions thrown while encoding transactions.
