@@ -35,7 +35,6 @@ class PersistentTransactionManagerTest : ScopedTest() {
 
     val pendingDbName = "PersistentTxMgrTest_Pending.db"
     val dataDbName = "PersistentTxMgrTest_Data.db"
-    private val context = InstrumentationRegistry.getInstrumentation().context
     private lateinit var manager: OutboundTransactionManager
 
     @Before

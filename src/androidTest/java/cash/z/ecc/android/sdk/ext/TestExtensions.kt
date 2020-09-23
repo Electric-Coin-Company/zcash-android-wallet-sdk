@@ -1,5 +1,7 @@
 package cash.z.ecc.android.sdk.ext
 
+import android.content.Context
+import androidx.test.platform.app.InstrumentationRegistry
 import cash.z.ecc.android.sdk.Initializer
 import cash.z.ecc.android.sdk.util.SimpleMnemonics
 import kotlinx.coroutines.*
@@ -17,6 +19,9 @@ fun Initializer.Builder.seedPhrase(seedPhrase: String) {
 
 open class ScopedTest(val defaultTimeout: Long = 2000L) {
     protected lateinit var testScope: CoroutineScope
+
+    // if an androidTest doesn't need a context, then maybe it should be a unit test instead?!
+    val context: Context = InstrumentationRegistry.getInstrumentation().context
 
     @Before
     fun start() {
