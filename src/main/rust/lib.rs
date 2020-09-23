@@ -3,7 +3,7 @@ extern crate log;
 
 mod utils;
 
-use android_logger::Filter;
+use android_logger::Config;
 use failure::format_err;
 use jni::{
     objects::{JClass, JString},
@@ -40,7 +40,7 @@ use zcash_primitives::{
     consensus::BranchId,
     note_encryption::Memo,
     transaction::{components::Amount, Transaction},
-    zip32::{ExtendedFullViewingKey, ExtendedSpendingKey},
+    zip32::ExtendedFullViewingKey,
 };
 use zcash_proofs::prover::LocalTxProver;
 
@@ -66,19 +66,14 @@ use zcash_client_backend::constants::testnet::{
 // /////////////////////////////////////////////////////////////////////////////////////////////////
 // Temporary Imports
 mod local_rpc_types;
-use local_rpc_types::{TransparentTransaction, TransparentTransactionList, TransactionDataList};
-use base58::{ToBase58};
-use jni::errors::{Result as JniResult};
+use base58::ToBase58;
+use local_rpc_types::{TransactionDataList, TransparentTransaction, TransparentTransactionList};
 use protobuf::{parse_from_bytes, Message};
-use sha2::{Sha256, Digest};
-use zcash_client_backend::{
-    constants::{testnet, mainnet},
-};
-use zcash_primitives::legacy::{Script, TransparentAddress};
+use sha2::{Digest, Sha256};
+use zcash_primitives::legacy::TransparentAddress;
 
-use bs58::{self, decode::Error as Bs58Error};
 use hdwallet::{ExtendedPrivKey, KeyIndex};
-use secp256k1::{PublicKey, Secp256k1, SecretKey, SignOnly, VerifyOnly};
+use secp256k1::{PublicKey, Secp256k1};
 use zcash_client_backend::constants::mainnet::B58_PUBKEY_ADDRESS_PREFIX;
 
 // use crate::extended_key::{key_index::KeyIndex, ExtendedPrivKey, ExtendedPubKey, KeySeed};
@@ -100,8 +95,9 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_initLogs(
     _: JClass<'_>,
 ) {
     android_logger::init_once(
-        Filter::default().with_min_level(Level::Debug),
-        Some("cash.z.rust.logs"),
+        Config::default()
+            .with_min_level(Level::Debug)
+            .with_tag("cash.z.rust.logs"),
     );
 
     log_panics::init();
@@ -184,7 +180,11 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_initAccount
         let extfvks = (0..count)
             .map(|i| env.get_object_array_element(extfvks_arr, i))
             .map(|jstr| utils::java_string_to_rust(&env, jstr.unwrap().into()))
-            .map(|vkstr| decode_extended_full_viewing_key(HRP_SAPLING_EXTENDED_FULL_VIEWING_KEY, &vkstr).unwrap().unwrap())
+            .map(|vkstr| {
+                decode_extended_full_viewing_key(HRP_SAPLING_EXTENDED_FULL_VIEWING_KEY, &vkstr)
+                    .unwrap()
+                    .unwrap()
+            })
             .collect::<Vec<_>>();
 
         match init_accounts_table(&db_data, &extfvks) {
@@ -646,8 +646,8 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_parseTransa
     _: JClass<'_>,
     tx_data_list: jbyteArray,
 ) -> jbyteArray {
-    let mut err_val: Vec<u8> = Vec::new();
-    let mut res_err = env.byte_array_from_slice(&err_val).unwrap();
+    let err_val: Vec<u8> = Vec::new();
+    let res_err = env.byte_array_from_slice(&err_val).unwrap();
     let res = panic::catch_unwind(|| {
         let tx_data_bytes = env.convert_byte_array(tx_data_list)?;
         let input_tx_data = parse_from_bytes::<TransactionDataList>(&tx_data_bytes)?;
@@ -662,12 +662,12 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_parseTransa
             tx.set_hasShieldedSpends(parsed.shielded_spends.len() > 0);
             tx.set_hasShieldedOutputs(parsed.shielded_outputs.len() > 0);
 
-            for (n, vout) in parsed.vout.iter().enumerate() {
+            for (_n, vout) in parsed.vout.iter().enumerate() {
                 match vout.script_pubkey.address() {
                     // NOTE : this logic below doesn't work. No address is parsed.
                     Some(TransparentAddress::PublicKey(hash)) => {
                         tx.set_toAddress(hash.to_base58check(&B58_PUBKEY_ADDRESS_PREFIX, &[]));
-                    },
+                    }
                     _ => {}
                 }
             }
@@ -697,19 +697,28 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveT
 
         let ext_t_key = ExtendedPrivKey::with_seed(&seed).unwrap();
         let address_sk = ext_t_key
-            .derive_private_key(KeyIndex::hardened_from_normalize_index(44).unwrap()).unwrap()
-            .derive_private_key(KeyIndex::hardened_from_normalize_index(COIN_TYPE).unwrap()).unwrap()
-            .derive_private_key(KeyIndex::hardened_from_normalize_index(0).unwrap()).unwrap()
-            .derive_private_key(KeyIndex::Normal(0)).unwrap()
-            .derive_private_key(KeyIndex::Normal(0)).unwrap()
+            .derive_private_key(KeyIndex::hardened_from_normalize_index(44).unwrap())
+            .unwrap()
+            .derive_private_key(KeyIndex::hardened_from_normalize_index(COIN_TYPE).unwrap())
+            .unwrap()
+            .derive_private_key(KeyIndex::hardened_from_normalize_index(0).unwrap())
+            .unwrap()
+            .derive_private_key(KeyIndex::Normal(0))
+            .unwrap()
+            .derive_private_key(KeyIndex::Normal(0))
+            .unwrap()
             .private_key;
         let secp = Secp256k1::new();
         let pk = PublicKey::from_secret_key(&secp, &address_sk);
         let mut hash160 = ripemd160::Ripemd160::new();
         hash160.input(Sha256::digest(&pk.serialize()[..].to_vec()));
-        let address_string = hash160.result().to_base58check(&B58_PUBKEY_ADDRESS_PREFIX, &[]);
+        let address_string = hash160
+            .result()
+            .to_base58check(&B58_PUBKEY_ADDRESS_PREFIX, &[]);
 
-        let output = env.new_string(address_string).expect("Couldn't create Java string!");
+        let output = env
+            .new_string(address_string)
+            .expect("Couldn't create Java string!");
         Ok(output.into_inner())
     });
     unwrap_exc_or(&env, res, ptr::null_mut())
@@ -819,14 +828,12 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_branchIdFor
 ) -> jint {
     let res = panic::catch_unwind(|| {
         let branch: BranchId = BranchId::for_height::<Network>(height as u32);
-        let branch_id:u32 = u32::from(branch);
+        let branch_id: u32 = u32::from(branch);
         debug!("For height {} found consensus branch {:?}", height, branch);
         Ok(branch_id as i32)
     });
     unwrap_exc_or(&env, res, -1)
 }
-
-
 
 //
 // Helper code from: https://github.com/adityapk00/zecwallet-light-cli/blob/master/lib/src/lightwallet.rs

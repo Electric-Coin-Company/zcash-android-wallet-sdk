@@ -10,60 +10,41 @@ publish = false
 edition = "2018"
 
 [dependencies]
-android_logger = "0.6"
+android_logger = "0.9"
 failure = "0.1"
-futures = { version = "0.1", optional = true }
-grpc = { version = "0.6", optional = true }
-hex = "0.3"
-httpbis = { version = "0.7", optional = true }
-jni = { version = "0.13", default-features = false }
+hex = "0.4"
+jni = { version = "0.17", default-features = false }
 log = "0.4"
 log-panics = "2.0.0"
-#protobuf = { version = "2", optional = true }
-tls-api = { version = "0.1", optional = true }
-tls-api-rustls = { version = "0.1", optional = true }
+zcash_client_backend = "0.4"
+zcash_client_sqlite = "0.2"
+zcash_primitives = "0.4"
+zcash_proofs = "0.4"
 
 #### Temporary additions: ####################################
 base58 = "0.1.0"
 protobuf = "2"
-sha2 = "0.8.0"
+sha2 = "0.9"
 bs58 = { version = "0.3", features = ["check"] }
 hdwallet = "0.2.2"
-ripemd160 = "0.8.0"
+ripemd160 = "0.9"
 secp256k1 = "0.17.2"
 ##############################################################
 
+# update-sapling-tree dependencies
+bls12_381 = { version = "0.3", optional = true }
+futures = { version = "0.3", optional = true }
+grpc = { version = "0.8", optional = true }
+grpc-protobuf = { version = "0.8", optional = true }
+httpbis = { version = "0.9", optional = true }
+tls-api = { version = "0.4", optional = true }
+tls-api-rustls = { version = "0.4", optional = true }
 
-[dependencies.ff]
-git = "https://github.com/zcash/librustzcash.git"
-rev = "18b1ce7401184e86031e6d7ddefa7c8d36929296"
-
-[dependencies.pairing]
-git = "https://github.com/zcash/librustzcash.git"
-rev = "18b1ce7401184e86031e6d7ddefa7c8d36929296"
-
-[dependencies.zcash_client_backend]
-git = "https://github.com/zcash/librustzcash.git"
-rev = "18b1ce7401184e86031e6d7ddefa7c8d36929296"
-
-[dependencies.zcash_client_sqlite]
-git = "https://github.com/zcash/librustzcash.git"
-rev = "18b1ce7401184e86031e6d7ddefa7c8d36929296"
-
-[dependencies.zcash_primitives]
-git = "https://github.com/zcash/librustzcash.git"
-rev = "18b1ce7401184e86031e6d7ddefa7c8d36929296"
-
-[dependencies.zcash_proofs]
-git = "https://github.com/zcash/librustzcash.git"
-rev = "18b1ce7401184e86031e6d7ddefa7c8d36929296"
 
 [build-dependencies]
 protobuf-codegen-pure = "2.14"
 
-#[patch.'https://github.com/zcash/librustzcash.git']
-#ff = { path = '../../clones/librustzcash/ff' }
-#pairing = { path = '../../clones/librustzcash/pairing' }
+#[patch.crates-io]
 #zcash_client_backend = { path = '../../clones/librustzcash/zcash_client_backend' }
 #zcash_client_sqlite = { path = '../../clones/librustzcash/zcash_client_sqlite' }
 #zcash_primitives = { path = '../../clones/librustzcash/zcash_primitives' }
@@ -71,7 +52,7 @@ protobuf-codegen-pure = "2.14"
 
 [features]
 mainnet = ["zcash_client_sqlite/mainnet"]
-#updater = ["futures", "grpc", "httpbis", "protobuf", "tls-api", "tls-api-rustls"]
+updater = ["bls12_381", "futures", "grpc", "grpc-protobuf", "httpbis", "tls-api", "tls-api-rustls"]
 
 [lib]
 name = "zcashwalletsdk"

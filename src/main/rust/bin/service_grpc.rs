@@ -3,7 +3,7 @@
 
 // https://github.com/Manishearth/rust-clippy/issues/702
 #![allow(unknown_lints)]
-#![allow(clippy)]
+#![allow(clippy::all)]
 
 #![cfg_attr(rustfmt, rustfmt_skip)]
 
@@ -19,88 +19,119 @@
 #![allow(unused_results)]
 
 
-// interface
+// server interface
 
 pub trait CompactTxStreamer {
-    fn get_latest_block(&self, o: ::grpc::RequestOptions, p: super::service::ChainSpec) -> ::grpc::SingleResponse<super::service::BlockID>;
+    fn get_latest_block(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::service::ChainSpec>, resp: ::grpc::ServerResponseUnarySink<super::service::BlockID>) -> ::grpc::Result<()>;
 
-    fn get_block(&self, o: ::grpc::RequestOptions, p: super::service::BlockID) -> ::grpc::SingleResponse<super::compact_formats::CompactBlock>;
+    fn get_block(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::service::BlockID>, resp: ::grpc::ServerResponseUnarySink<super::compact_formats::CompactBlock>) -> ::grpc::Result<()>;
 
-    fn get_block_range(&self, o: ::grpc::RequestOptions, p: super::service::BlockRange) -> ::grpc::StreamingResponse<super::compact_formats::CompactBlock>;
+    fn get_block_range(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::service::BlockRange>, resp: ::grpc::ServerResponseSink<super::compact_formats::CompactBlock>) -> ::grpc::Result<()>;
 
-    fn get_transaction(&self, o: ::grpc::RequestOptions, p: super::service::TxFilter) -> ::grpc::SingleResponse<super::service::RawTransaction>;
+    fn get_transaction(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::service::TxFilter>, resp: ::grpc::ServerResponseUnarySink<super::service::RawTransaction>) -> ::grpc::Result<()>;
 
-    fn send_transaction(&self, o: ::grpc::RequestOptions, p: super::service::RawTransaction) -> ::grpc::SingleResponse<super::service::SendResponse>;
+    fn send_transaction(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::service::RawTransaction>, resp: ::grpc::ServerResponseUnarySink<super::service::SendResponse>) -> ::grpc::Result<()>;
+
+    fn get_address_txids(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::service::TransparentAddressBlockFilter>, resp: ::grpc::ServerResponseSink<super::service::RawTransaction>) -> ::grpc::Result<()>;
+
+    fn get_lightd_info(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::service::Empty>, resp: ::grpc::ServerResponseUnarySink<super::service::LightdInfo>) -> ::grpc::Result<()>;
+
+    fn ping(&self, o: ::grpc::ServerHandlerContext, req: ::grpc::ServerRequestSingle<super::service::Duration>, resp: ::grpc::ServerResponseUnarySink<super::service::PingResponse>) -> ::grpc::Result<()>;
 }
 
 // client
 
 pub struct CompactTxStreamerClient {
     grpc_client: ::std::sync::Arc<::grpc::Client>,
-    method_GetLatestBlock: ::std::sync::Arc<::grpc::rt::MethodDescriptor<super::service::ChainSpec, super::service::BlockID>>,
-    method_GetBlock: ::std::sync::Arc<::grpc::rt::MethodDescriptor<super::service::BlockID, super::compact_formats::CompactBlock>>,
-    method_GetBlockRange: ::std::sync::Arc<::grpc::rt::MethodDescriptor<super::service::BlockRange, super::compact_formats::CompactBlock>>,
-    method_GetTransaction: ::std::sync::Arc<::grpc::rt::MethodDescriptor<super::service::TxFilter, super::service::RawTransaction>>,
-    method_SendTransaction: ::std::sync::Arc<::grpc::rt::MethodDescriptor<super::service::RawTransaction, super::service::SendResponse>>,
 }
 
 impl ::grpc::ClientStub for CompactTxStreamerClient {
     fn with_client(grpc_client: ::std::sync::Arc<::grpc::Client>) -> Self {
         CompactTxStreamerClient {
             grpc_client: grpc_client,
-            method_GetLatestBlock: ::std::sync::Arc::new(::grpc::rt::MethodDescriptor {
-                name: "/cash.z.wallet.sdk.rpc.CompactTxStreamer/GetLatestBlock".to_string(),
-                streaming: ::grpc::rt::GrpcStreaming::Unary,
-                req_marshaller: Box::new(::grpc::protobuf::MarshallerProtobuf),
-                resp_marshaller: Box::new(::grpc::protobuf::MarshallerProtobuf),
-            }),
-            method_GetBlock: ::std::sync::Arc::new(::grpc::rt::MethodDescriptor {
-                name: "/cash.z.wallet.sdk.rpc.CompactTxStreamer/GetBlock".to_string(),
-                streaming: ::grpc::rt::GrpcStreaming::Unary,
-                req_marshaller: Box::new(::grpc::protobuf::MarshallerProtobuf),
-                resp_marshaller: Box::new(::grpc::protobuf::MarshallerProtobuf),
-            }),
-            method_GetBlockRange: ::std::sync::Arc::new(::grpc::rt::MethodDescriptor {
-                name: "/cash.z.wallet.sdk.rpc.CompactTxStreamer/GetBlockRange".to_string(),
-                streaming: ::grpc::rt::GrpcStreaming::ServerStreaming,
-                req_marshaller: Box::new(::grpc::protobuf::MarshallerProtobuf),
-                resp_marshaller: Box::new(::grpc::protobuf::MarshallerProtobuf),
-            }),
-            method_GetTransaction: ::std::sync::Arc::new(::grpc::rt::MethodDescriptor {
-                name: "/cash.z.wallet.sdk.rpc.CompactTxStreamer/GetTransaction".to_string(),
-                streaming: ::grpc::rt::GrpcStreaming::Unary,
-                req_marshaller: Box::new(::grpc::protobuf::MarshallerProtobuf),
-                resp_marshaller: Box::new(::grpc::protobuf::MarshallerProtobuf),
-            }),
-            method_SendTransaction: ::std::sync::Arc::new(::grpc::rt::MethodDescriptor {
-                name: "/cash.z.wallet.sdk.rpc.CompactTxStreamer/SendTransaction".to_string(),
-                streaming: ::grpc::rt::GrpcStreaming::Unary,
-                req_marshaller: Box::new(::grpc::protobuf::MarshallerProtobuf),
-                resp_marshaller: Box::new(::grpc::protobuf::MarshallerProtobuf),
-            }),
         }
     }
 }
 
-impl CompactTxStreamer for CompactTxStreamerClient {
-    fn get_latest_block(&self, o: ::grpc::RequestOptions, p: super::service::ChainSpec) -> ::grpc::SingleResponse<super::service::BlockID> {
-        self.grpc_client.call_unary(o, p, self.method_GetLatestBlock.clone())
+impl CompactTxStreamerClient {
+    pub fn get_latest_block(&self, o: ::grpc::RequestOptions, req: super::service::ChainSpec) -> ::grpc::SingleResponse<super::service::BlockID> {
+        let descriptor = ::grpc::rt::ArcOrStatic::Static(&::grpc::rt::MethodDescriptor {
+            name: ::grpc::rt::StringOrStatic::Static("/cash.z.wallet.sdk.rpc.CompactTxStreamer/GetLatestBlock"),
+            streaming: ::grpc::rt::GrpcStreaming::Unary,
+            req_marshaller: ::grpc::rt::ArcOrStatic::Static(&::grpc_protobuf::MarshallerProtobuf),
+            resp_marshaller: ::grpc::rt::ArcOrStatic::Static(&::grpc_protobuf::MarshallerProtobuf),
+        });
+        self.grpc_client.call_unary(o, req, descriptor)
     }
 
-    fn get_block(&self, o: ::grpc::RequestOptions, p: super::service::BlockID) -> ::grpc::SingleResponse<super::compact_formats::CompactBlock> {
-        self.grpc_client.call_unary(o, p, self.method_GetBlock.clone())
+    pub fn get_block(&self, o: ::grpc::RequestOptions, req: super::service::BlockID) -> ::grpc::SingleResponse<super::compact_formats::CompactBlock> {
+        let descriptor = ::grpc::rt::ArcOrStatic::Static(&::grpc::rt::MethodDescriptor {
+            name: ::grpc::rt::StringOrStatic::Static("/cash.z.wallet.sdk.rpc.CompactTxStreamer/GetBlock"),
+            streaming: ::grpc::rt::GrpcStreaming::Unary,
+            req_marshaller: ::grpc::rt::ArcOrStatic::Static(&::grpc_protobuf::MarshallerProtobuf),
+            resp_marshaller: ::grpc::rt::ArcOrStatic::Static(&::grpc_protobuf::MarshallerProtobuf),
+        });
+        self.grpc_client.call_unary(o, req, descriptor)
     }
 
-    fn get_block_range(&self, o: ::grpc::RequestOptions, p: super::service::BlockRange) -> ::grpc::StreamingResponse<super::compact_formats::CompactBlock> {
-        self.grpc_client.call_server_streaming(o, p, self.method_GetBlockRange.clone())
+    pub fn get_block_range(&self, o: ::grpc::RequestOptions, req: super::service::BlockRange) -> ::grpc::StreamingResponse<super::compact_formats::CompactBlock> {
+        let descriptor = ::grpc::rt::ArcOrStatic::Static(&::grpc::rt::MethodDescriptor {
+            name: ::grpc::rt::StringOrStatic::Static("/cash.z.wallet.sdk.rpc.CompactTxStreamer/GetBlockRange"),
+            streaming: ::grpc::rt::GrpcStreaming::ServerStreaming,
+            req_marshaller: ::grpc::rt::ArcOrStatic::Static(&::grpc_protobuf::MarshallerProtobuf),
+            resp_marshaller: ::grpc::rt::ArcOrStatic::Static(&::grpc_protobuf::MarshallerProtobuf),
+        });
+        self.grpc_client.call_server_streaming(o, req, descriptor)
     }
 
-    fn get_transaction(&self, o: ::grpc::RequestOptions, p: super::service::TxFilter) -> ::grpc::SingleResponse<super::service::RawTransaction> {
-        self.grpc_client.call_unary(o, p, self.method_GetTransaction.clone())
+    pub fn get_transaction(&self, o: ::grpc::RequestOptions, req: super::service::TxFilter) -> ::grpc::SingleResponse<super::service::RawTransaction> {
+        let descriptor = ::grpc::rt::ArcOrStatic::Static(&::grpc::rt::MethodDescriptor {
+            name: ::grpc::rt::StringOrStatic::Static("/cash.z.wallet.sdk.rpc.CompactTxStreamer/GetTransaction"),
+            streaming: ::grpc::rt::GrpcStreaming::Unary,
+            req_marshaller: ::grpc::rt::ArcOrStatic::Static(&::grpc_protobuf::MarshallerProtobuf),
+            resp_marshaller: ::grpc::rt::ArcOrStatic::Static(&::grpc_protobuf::MarshallerProtobuf),
+        });
+        self.grpc_client.call_unary(o, req, descriptor)
     }
 
-    fn send_transaction(&self, o: ::grpc::RequestOptions, p: super::service::RawTransaction) -> ::grpc::SingleResponse<super::service::SendResponse> {
-        self.grpc_client.call_unary(o, p, self.method_SendTransaction.clone())
+    pub fn send_transaction(&self, o: ::grpc::RequestOptions, req: super::service::RawTransaction) -> ::grpc::SingleResponse<super::service::SendResponse> {
+        let descriptor = ::grpc::rt::ArcOrStatic::Static(&::grpc::rt::MethodDescriptor {
+            name: ::grpc::rt::StringOrStatic::Static("/cash.z.wallet.sdk.rpc.CompactTxStreamer/SendTransaction"),
+            streaming: ::grpc::rt::GrpcStreaming::Unary,
+            req_marshaller: ::grpc::rt::ArcOrStatic::Static(&::grpc_protobuf::MarshallerProtobuf),
+            resp_marshaller: ::grpc::rt::ArcOrStatic::Static(&::grpc_protobuf::MarshallerProtobuf),
+        });
+        self.grpc_client.call_unary(o, req, descriptor)
+    }
+
+    pub fn get_address_txids(&self, o: ::grpc::RequestOptions, req: super::service::TransparentAddressBlockFilter) -> ::grpc::StreamingResponse<super::service::RawTransaction> {
+        let descriptor = ::grpc::rt::ArcOrStatic::Static(&::grpc::rt::MethodDescriptor {
+            name: ::grpc::rt::StringOrStatic::Static("/cash.z.wallet.sdk.rpc.CompactTxStreamer/GetAddressTxids"),
+            streaming: ::grpc::rt::GrpcStreaming::ServerStreaming,
+            req_marshaller: ::grpc::rt::ArcOrStatic::Static(&::grpc_protobuf::MarshallerProtobuf),
+            resp_marshaller: ::grpc::rt::ArcOrStatic::Static(&::grpc_protobuf::MarshallerProtobuf),
+        });
+        self.grpc_client.call_server_streaming(o, req, descriptor)
+    }
+
+    pub fn get_lightd_info(&self, o: ::grpc::RequestOptions, req: super::service::Empty) -> ::grpc::SingleResponse<super::service::LightdInfo> {
+        let descriptor = ::grpc::rt::ArcOrStatic::Static(&::grpc::rt::MethodDescriptor {
+            name: ::grpc::rt::StringOrStatic::Static("/cash.z.wallet.sdk.rpc.CompactTxStreamer/GetLightdInfo"),
+            streaming: ::grpc::rt::GrpcStreaming::Unary,
+            req_marshaller: ::grpc::rt::ArcOrStatic::Static(&::grpc_protobuf::MarshallerProtobuf),
+            resp_marshaller: ::grpc::rt::ArcOrStatic::Static(&::grpc_protobuf::MarshallerProtobuf),
+        });
+        self.grpc_client.call_unary(o, req, descriptor)
+    }
+
+    pub fn ping(&self, o: ::grpc::RequestOptions, req: super::service::Duration) -> ::grpc::SingleResponse<super::service::PingResponse> {
+        let descriptor = ::grpc::rt::ArcOrStatic::Static(&::grpc::rt::MethodDescriptor {
+            name: ::grpc::rt::StringOrStatic::Static("/cash.z.wallet.sdk.rpc.CompactTxStreamer/Ping"),
+            streaming: ::grpc::rt::GrpcStreaming::Unary,
+            req_marshaller: ::grpc::rt::ArcOrStatic::Static(&::grpc_protobuf::MarshallerProtobuf),
+            resp_marshaller: ::grpc::rt::ArcOrStatic::Static(&::grpc_protobuf::MarshallerProtobuf),
+        });
+        self.grpc_client.call_unary(o, req, descriptor)
     }
 }
 
@@ -115,63 +146,99 @@ impl CompactTxStreamerServer {
         ::grpc::rt::ServerServiceDefinition::new("/cash.z.wallet.sdk.rpc.CompactTxStreamer",
             vec![
                 ::grpc::rt::ServerMethod::new(
-                    ::std::sync::Arc::new(::grpc::rt::MethodDescriptor {
-                        name: "/cash.z.wallet.sdk.rpc.CompactTxStreamer/GetLatestBlock".to_string(),
+                    ::grpc::rt::ArcOrStatic::Static(&::grpc::rt::MethodDescriptor {
+                        name: ::grpc::rt::StringOrStatic::Static("/cash.z.wallet.sdk.rpc.CompactTxStreamer/GetLatestBlock"),
                         streaming: ::grpc::rt::GrpcStreaming::Unary,
-                        req_marshaller: Box::new(::grpc::protobuf::MarshallerProtobuf),
-                        resp_marshaller: Box::new(::grpc::protobuf::MarshallerProtobuf),
+                        req_marshaller: ::grpc::rt::ArcOrStatic::Static(&::grpc_protobuf::MarshallerProtobuf),
+                        resp_marshaller: ::grpc::rt::ArcOrStatic::Static(&::grpc_protobuf::MarshallerProtobuf),
                     }),
                     {
                         let handler_copy = handler_arc.clone();
-                        ::grpc::rt::MethodHandlerUnary::new(move |o, p| handler_copy.get_latest_block(o, p))
+                        ::grpc::rt::MethodHandlerUnary::new(move |ctx, req, resp| (*handler_copy).get_latest_block(ctx, req, resp))
                     },
                 ),
                 ::grpc::rt::ServerMethod::new(
-                    ::std::sync::Arc::new(::grpc::rt::MethodDescriptor {
-                        name: "/cash.z.wallet.sdk.rpc.CompactTxStreamer/GetBlock".to_string(),
+                    ::grpc::rt::ArcOrStatic::Static(&::grpc::rt::MethodDescriptor {
+                        name: ::grpc::rt::StringOrStatic::Static("/cash.z.wallet.sdk.rpc.CompactTxStreamer/GetBlock"),
                         streaming: ::grpc::rt::GrpcStreaming::Unary,
-                        req_marshaller: Box::new(::grpc::protobuf::MarshallerProtobuf),
-                        resp_marshaller: Box::new(::grpc::protobuf::MarshallerProtobuf),
+                        req_marshaller: ::grpc::rt::ArcOrStatic::Static(&::grpc_protobuf::MarshallerProtobuf),
+                        resp_marshaller: ::grpc::rt::ArcOrStatic::Static(&::grpc_protobuf::MarshallerProtobuf),
                     }),
                     {
                         let handler_copy = handler_arc.clone();
-                        ::grpc::rt::MethodHandlerUnary::new(move |o, p| handler_copy.get_block(o, p))
+                        ::grpc::rt::MethodHandlerUnary::new(move |ctx, req, resp| (*handler_copy).get_block(ctx, req, resp))
                     },
                 ),
                 ::grpc::rt::ServerMethod::new(
-                    ::std::sync::Arc::new(::grpc::rt::MethodDescriptor {
-                        name: "/cash.z.wallet.sdk.rpc.CompactTxStreamer/GetBlockRange".to_string(),
+                    ::grpc::rt::ArcOrStatic::Static(&::grpc::rt::MethodDescriptor {
+                        name: ::grpc::rt::StringOrStatic::Static("/cash.z.wallet.sdk.rpc.CompactTxStreamer/GetBlockRange"),
                         streaming: ::grpc::rt::GrpcStreaming::ServerStreaming,
-                        req_marshaller: Box::new(::grpc::protobuf::MarshallerProtobuf),
-                        resp_marshaller: Box::new(::grpc::protobuf::MarshallerProtobuf),
+                        req_marshaller: ::grpc::rt::ArcOrStatic::Static(&::grpc_protobuf::MarshallerProtobuf),
+                        resp_marshaller: ::grpc::rt::ArcOrStatic::Static(&::grpc_protobuf::MarshallerProtobuf),
                     }),
                     {
                         let handler_copy = handler_arc.clone();
-                        ::grpc::rt::MethodHandlerServerStreaming::new(move |o, p| handler_copy.get_block_range(o, p))
+                        ::grpc::rt::MethodHandlerServerStreaming::new(move |ctx, req, resp| (*handler_copy).get_block_range(ctx, req, resp))
                     },
                 ),
                 ::grpc::rt::ServerMethod::new(
-                    ::std::sync::Arc::new(::grpc::rt::MethodDescriptor {
-                        name: "/cash.z.wallet.sdk.rpc.CompactTxStreamer/GetTransaction".to_string(),
+                    ::grpc::rt::ArcOrStatic::Static(&::grpc::rt::MethodDescriptor {
+                        name: ::grpc::rt::StringOrStatic::Static("/cash.z.wallet.sdk.rpc.CompactTxStreamer/GetTransaction"),
                         streaming: ::grpc::rt::GrpcStreaming::Unary,
-                        req_marshaller: Box::new(::grpc::protobuf::MarshallerProtobuf),
-                        resp_marshaller: Box::new(::grpc::protobuf::MarshallerProtobuf),
+                        req_marshaller: ::grpc::rt::ArcOrStatic::Static(&::grpc_protobuf::MarshallerProtobuf),
+                        resp_marshaller: ::grpc::rt::ArcOrStatic::Static(&::grpc_protobuf::MarshallerProtobuf),
                     }),
                     {
                         let handler_copy = handler_arc.clone();
-                        ::grpc::rt::MethodHandlerUnary::new(move |o, p| handler_copy.get_transaction(o, p))
+                        ::grpc::rt::MethodHandlerUnary::new(move |ctx, req, resp| (*handler_copy).get_transaction(ctx, req, resp))
                     },
                 ),
                 ::grpc::rt::ServerMethod::new(
-                    ::std::sync::Arc::new(::grpc::rt::MethodDescriptor {
-                        name: "/cash.z.wallet.sdk.rpc.CompactTxStreamer/SendTransaction".to_string(),
+                    ::grpc::rt::ArcOrStatic::Static(&::grpc::rt::MethodDescriptor {
+                        name: ::grpc::rt::StringOrStatic::Static("/cash.z.wallet.sdk.rpc.CompactTxStreamer/SendTransaction"),
                         streaming: ::grpc::rt::GrpcStreaming::Unary,
-                        req_marshaller: Box::new(::grpc::protobuf::MarshallerProtobuf),
-                        resp_marshaller: Box::new(::grpc::protobuf::MarshallerProtobuf),
+                        req_marshaller: ::grpc::rt::ArcOrStatic::Static(&::grpc_protobuf::MarshallerProtobuf),
+                        resp_marshaller: ::grpc::rt::ArcOrStatic::Static(&::grpc_protobuf::MarshallerProtobuf),
                     }),
                     {
                         let handler_copy = handler_arc.clone();
-                        ::grpc::rt::MethodHandlerUnary::new(move |o, p| handler_copy.send_transaction(o, p))
+                        ::grpc::rt::MethodHandlerUnary::new(move |ctx, req, resp| (*handler_copy).send_transaction(ctx, req, resp))
+                    },
+                ),
+                ::grpc::rt::ServerMethod::new(
+                    ::grpc::rt::ArcOrStatic::Static(&::grpc::rt::MethodDescriptor {
+                        name: ::grpc::rt::StringOrStatic::Static("/cash.z.wallet.sdk.rpc.CompactTxStreamer/GetAddressTxids"),
+                        streaming: ::grpc::rt::GrpcStreaming::ServerStreaming,
+                        req_marshaller: ::grpc::rt::ArcOrStatic::Static(&::grpc_protobuf::MarshallerProtobuf),
+                        resp_marshaller: ::grpc::rt::ArcOrStatic::Static(&::grpc_protobuf::MarshallerProtobuf),
+                    }),
+                    {
+                        let handler_copy = handler_arc.clone();
+                        ::grpc::rt::MethodHandlerServerStreaming::new(move |ctx, req, resp| (*handler_copy).get_address_txids(ctx, req, resp))
+                    },
+                ),
+                ::grpc::rt::ServerMethod::new(
+                    ::grpc::rt::ArcOrStatic::Static(&::grpc::rt::MethodDescriptor {
+                        name: ::grpc::rt::StringOrStatic::Static("/cash.z.wallet.sdk.rpc.CompactTxStreamer/GetLightdInfo"),
+                        streaming: ::grpc::rt::GrpcStreaming::Unary,
+                        req_marshaller: ::grpc::rt::ArcOrStatic::Static(&::grpc_protobuf::MarshallerProtobuf),
+                        resp_marshaller: ::grpc::rt::ArcOrStatic::Static(&::grpc_protobuf::MarshallerProtobuf),
+                    }),
+                    {
+                        let handler_copy = handler_arc.clone();
+                        ::grpc::rt::MethodHandlerUnary::new(move |ctx, req, resp| (*handler_copy).get_lightd_info(ctx, req, resp))
+                    },
+                ),
+                ::grpc::rt::ServerMethod::new(
+                    ::grpc::rt::ArcOrStatic::Static(&::grpc::rt::MethodDescriptor {
+                        name: ::grpc::rt::StringOrStatic::Static("/cash.z.wallet.sdk.rpc.CompactTxStreamer/Ping"),
+                        streaming: ::grpc::rt::GrpcStreaming::Unary,
+                        req_marshaller: ::grpc::rt::ArcOrStatic::Static(&::grpc_protobuf::MarshallerProtobuf),
+                        resp_marshaller: ::grpc::rt::ArcOrStatic::Static(&::grpc_protobuf::MarshallerProtobuf),
+                    }),
+                    {
+                        let handler_copy = handler_arc.clone();
+                        ::grpc::rt::MethodHandlerUnary::new(move |ctx, req, resp| (*handler_copy).ping(ctx, req, resp))
                     },
                 ),
             ],

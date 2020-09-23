@@ -1,31 +1,14 @@
-extern crate ff;
-extern crate futures;
-extern crate grpc;
-extern crate hex;
-extern crate httpbis;
-extern crate pairing;
-extern crate protobuf;
-extern crate tls_api;
-extern crate tls_api_rustls;
-extern crate zcash_client_backend;
-extern crate zcash_primitives;
-
 mod service;
 mod service_grpc;
 
-use ff::{PrimeField, PrimeFieldRepr};
-use futures::Stream;
+use futures::executor;
 use grpc::ClientStub;
 use httpbis::ClientTlsOption;
-use pairing::bls12_381::{Fr, FrRepr};
 use std::env;
-use std::net::ToSocketAddrs;
 use std::sync::Arc;
 use tls_api::{TlsConnector, TlsConnectorBuilder};
 use zcash_client_backend::proto::compact_formats;
 use zcash_primitives::{merkle_tree::CommitmentTree, sapling::Node};
-
-use service_grpc::CompactTxStreamer;
 
 #[cfg(feature = "mainnet")]
 const START_HEIGHT: u64 = 419200;
@@ -112,15 +95,6 @@ fn main() -> Result<(), Error> {
     let mut start_height = START_HEIGHT;
     let mut tree = CommitmentTree::new();
 
-    // If LIGHTWALLETD_HOST is behind a load balancer which resolves to multiple IP
-    // addresses, we need to select one ourselves and then use it directly, as a
-    // workaround for https://github.com/stepancheg/rust-http2/issues/7
-    let socket = (LIGHTWALLETD_HOST, LIGHTWALLETD_PORT)
-        .to_socket_addrs()?
-        .into_iter()
-        .next()
-        .expect("LIGHTWALLETD_HOST can be resolved");
-
     let tls = {
         let mut tls_connector = tls_api_rustls::TlsConnector::builder()?;
 
@@ -134,14 +108,10 @@ fn main() -> Result<(), Error> {
         ClientTlsOption::Tls(LIGHTWALLETD_HOST.to_owned(), tls_connector)
     };
 
-    let client_conf = Default::default();
-    let client = grpc::Client::new_expl::<tls_api_rustls::TlsConnector>(
-        &socket,
-        LIGHTWALLETD_HOST,
-        tls,
-        client_conf,
-    )
-    .map(|c| service_grpc::CompactTxStreamerClient::with_client(Arc::new(c)))?;
+    let client = grpc::ClientBuilder::new(LIGHTWALLETD_HOST, LIGHTWALLETD_PORT)
+        .explicit_tls(tls)
+        .build()
+        .map(|c| service_grpc::CompactTxStreamerClient::with_client(Arc::new(c)))?;
 
     loop {
         // Get the latest height
@@ -161,10 +131,11 @@ fn main() -> Result<(), Error> {
         let mut range = service::BlockRange::new();
         range.set_start(start);
         range.set_end(end);
-        let blocks = client
-            .get_block_range(grpc::RequestOptions::new(), range)
-            .drop_metadata()
-            .wait();
+        let blocks = executor::block_on_stream(
+            client
+                .get_block_range(grpc::RequestOptions::new(), range)
+                .drop_metadata(),
+        );
 
         let mut end_hash = vec![];
         let mut end_time = 0;
@@ -176,10 +147,11 @@ fn main() -> Result<(), Error> {
             for tx in block.vtx.iter() {
                 for output in tx.outputs.iter() {
                     // Append commitment to tree
-                    let mut repr = FrRepr::default();
-                    repr.read_le(&output.cmu[..])?;
-                    let cmu = Fr::from_repr(repr).map_err(|_| Error::InvalidBlock)?;
-                    let node = Node::new(cmu.into_repr());
+                    let mut repr = [0u8; 32];
+                    repr.copy_from_slice(&output.cmu[..]);
+                    let cmu: bls12_381::Scalar = Option::from(bls12_381::Scalar::from_bytes(&repr))
+                        .ok_or(Error::InvalidBlock)?;
+                    let node = Node::new(cmu.to_bytes());
                     tree.append(node).expect("tree is not full");
                 }
             }
