@@ -5,6 +5,7 @@ import cash.z.ecc.android.sdk.block.CompactBlockProcessor
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor.WalletBalance
 import cash.z.ecc.android.sdk.db.entity.ConfirmedTransaction
 import cash.z.ecc.android.sdk.db.entity.PendingTransaction
+import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.validate.AddressType
 import cash.z.ecc.android.sdk.validate.ConsensusMatchType
 import cash.z.wallet.sdk.rpc.Service
@@ -220,6 +221,18 @@ interface Synchronizer {
      * server(s) with which they operate and thereby not need this function.
      */
     suspend fun getServerInfo(): Service.LightdInfo
+
+    /**
+     * Gracefully change the server that the Synchronizer is currently using. In some cases, this
+     * will require waiting until current network activity is complete. Ideally, this would protect
+     * against accidentally switching between testnet and mainnet, by comparing the service info of
+     * the existing server with that of the new one.
+     */
+    suspend fun changeServer(
+        host: String,
+        port: Int = ZcashSdk.DEFAULT_LIGHTWALLETD_PORT,
+        errorHandler: (Throwable) -> Unit = { throw it }
+    )
 
 
     //
