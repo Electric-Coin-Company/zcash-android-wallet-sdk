@@ -280,9 +280,10 @@ interface TransactionDao {
                       ON transactions.id_tx = sent_notes.tx
                LEFT JOIN blocks
                       ON transactions.block = blocks.height
-         WHERE  ( transactions.raw IS NULL
-                 AND received_notes.is_change != 1 )
-                OR ( transactions.raw IS NOT NULL )
+        /* we want all received txs except those that are change and all sent transactions (even those that haven't been mined yet). Note: every entry in the 'send_notes' table has a non-null value for 'address' */
+        WHERE  ( sent_notes.address IS NULL 
+                 AND received_notes.is_change != 1 ) 
+                OR sent_notes.address IS NOT NULL   
          ORDER  BY ( minedheight IS NOT NULL ),
                   minedheight DESC,
                   blocktimeinseconds DESC,

@@ -69,5 +69,10 @@ fastlane/screenshots
 fastlane/test_output
 fastlane/readme.md
 
+# Rust / Cargo
+fraget/
+
 # other
 DecompileChecker.kt
+backup-dbs/
+

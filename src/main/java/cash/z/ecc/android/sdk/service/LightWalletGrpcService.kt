@@ -2,7 +2,8 @@ package cash.z.ecc.android.sdk.service
 
 import android.content.Context
 import cash.z.ecc.android.sdk.R
-import cash.z.ecc.android.sdk.exception.LightwalletException
+import cash.z.ecc.android.sdk.annotation.OpenForTesting
+import cash.z.ecc.android.sdk.exception.LightWalletException
 import cash.z.ecc.android.sdk.ext.ZcashSdk.DEFAULT_LIGHTWALLETD_PORT
 import cash.z.ecc.android.sdk.ext.twig
 import cash.z.wallet.sdk.rpc.CompactFormats
@@ -18,18 +19,19 @@ import java.util.concurrent.TimeUnit
  * Implementation of LightwalletService using gRPC for requests to lightwalletd.
  * 
  * @property channel the channel to use for communicating with the lightwalletd server.
- * @property singleRequestTimeoutSec the timeout to use for non-streaming requests. When a new stub is
- * created, it will use a deadline that is after the given duration from now.
- * @property streamingRequestTimeoutSec the timeout to use for streaming requests. When a new stub is
- * created for streaming requests, it will use a deadline that is after the given duration from now.
+ * @property singleRequestTimeoutSec the timeout to use for non-streaming requests. When a new stub
+ * is created, it will use a deadline that is after the given duration from now.
+ * @property streamingRequestTimeoutSec the timeout to use for streaming requests. When a new stub
+ * is created for streaming requests, it will use a deadline that is after the given duration from
+ * now.
  */
+@OpenForTesting
 class LightWalletGrpcService private constructor(
     var channel: ManagedChannel,
     private val singleRequestTimeoutSec: Long = 10L,
     private val streamingRequestTimeoutSec: Long = 90L
 ) : LightWalletService {
 
-    //TODO: find a better way to do this, maybe change the constructor to keep the properties
     lateinit var connectionInfo: ConnectionInfo
 
     /**
@@ -46,7 +48,8 @@ class LightWalletGrpcService private constructor(
         appContext: Context,
         host: String,
         port: Int = DEFAULT_LIGHTWALLETD_PORT,
-        usePlaintext: Boolean = appContext.resources.getBoolean(R.bool.lightwalletd_allow_very_insecure_connections)
+        usePlaintext: Boolean =
+            appContext.resources.getBoolean(R.bool.lightwalletd_allow_very_insecure_connections)
     ) : this(createDefaultChannel(appContext, host, port, usePlaintext)) {
         connectionInfo = ConnectionInfo(appContext.applicationContext, host, port, usePlaintext)
     }
@@ -57,17 +60,20 @@ class LightWalletGrpcService private constructor(
         if (heightRange.isEmpty()) return listOf()
 
         channel.resetConnectBackoff()
-        return channel.createStub(streamingRequestTimeoutSec).getBlockRange(heightRange.toBlockRange()).toList()
+        return channel.createStub(streamingRequestTimeoutSec)
+            .getBlockRange(heightRange.toBlockRange()).toList()
     }
 
     override fun getLatestBlockHeight(): Int {
         channel.resetConnectBackoff()
-        return channel.createStub(singleRequestTimeoutSec).getLatestBlock(Service.ChainSpec.newBuilder().build()).height.toInt()
+        return channel.createStub(singleRequestTimeoutSec)
+            .getLatestBlock(Service.ChainSpec.newBuilder().build()).height.toInt()
     }
 
     override fun getServerInfo(): Service.LightdInfo {
         channel.resetConnectBackoff()
-        return channel.createStub(singleRequestTimeoutSec).getLightdInfo(Service.Empty.newBuilder().build())
+        return channel.createStub(singleRequestTimeoutSec)
+            .getLightdInfo(Service.Empty.newBuilder().build())
     }
 
     override fun submitTransaction(spendTransaction: ByteArray): Service.SendResponse {
@@ -87,6 +93,7 @@ class LightWalletGrpcService private constructor(
     }
 
     override fun shutdown() {
+        twig("Shutting down channel")
         channel.shutdown()
     }
 
@@ -94,7 +101,9 @@ class LightWalletGrpcService private constructor(
         if (txId.isEmpty()) return null
 
         channel.resetConnectBackoff()
-        return channel.createStub().getTransaction(Service.TxFilter.newBuilder().setHash(ByteString.copyFrom(txId)).build())
+        return channel.createStub().getTransaction(
+            Service.TxFilter.newBuilder().setHash(ByteString.copyFrom(txId)).build()
+        )
     }
 
     override fun getTAddressTransactions(
@@ -112,8 +121,9 @@ class LightWalletGrpcService private constructor(
     }
 
     override fun reconnect() {
-        twig("closing existing channel and then reconnecting to" +
-                " ${connectionInfo.host}:${connectionInfo.port}?usePlaintext=${connectionInfo.usePlaintext}")
+        twig("closing existing channel and then reconnecting to ${connectionInfo.host}:" +
+                "${connectionInfo.port}?usePlaintext=${connectionInfo.usePlaintext}"
+        )
         channel.shutdown()
         channel = createDefaultChannel(
             connectionInfo.appContext,
@@ -128,12 +138,12 @@ class LightWalletGrpcService private constructor(
     // Utilities
     //
 
-    private fun Channel.createStub(timeoutSec: Long = 60L): CompactTxStreamerGrpc.CompactTxStreamerBlockingStub =
-        CompactTxStreamerGrpc
-            .newBlockingStub(this)
-            .withDeadlineAfter(timeoutSec, TimeUnit.SECONDS)
+    private fun Channel.createStub(timeoutSec: Long = 60L) = CompactTxStreamerGrpc
+        .newBlockingStub(this)
+        .withDeadlineAfter(timeoutSec, TimeUnit.SECONDS)
 
-    private inline fun Int.toBlockHeight(): Service.BlockID = Service.BlockID.newBuilder().setHeight(this.toLong()).build()
+    private inline fun Int.toBlockHeight(): Service.BlockID =
+        Service.BlockID.newBuilder().setHeight(this.toLong()).build()
 
     private inline fun IntRange.toBlockRange(): Service.BlockRange =
         Service.BlockRange.newBuilder()
@@ -177,7 +187,9 @@ class LightWalletGrpcService private constructor(
                 .context(appContext)
                 .apply {
                     if (usePlaintext) {
-                        if (!appContext.resources.getBoolean(R.bool.lightwalletd_allow_very_insecure_connections)) throw LightwalletException.InsecureConnection
+                        if (!appContext.resources.getBoolean(
+                                R.bool.lightwalletd_allow_very_insecure_connections
+                            )) throw LightWalletException.InsecureConnection
                         usePlaintext()
                     } else {
                         useTransportSecurity()

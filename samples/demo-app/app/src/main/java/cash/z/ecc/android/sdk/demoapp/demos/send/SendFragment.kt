@@ -7,14 +7,13 @@ import android.widget.TextView
 import androidx.lifecycle.lifecycleScope
 import cash.z.ecc.android.bip39.Mnemonics
 import cash.z.ecc.android.bip39.toSeed
+import cash.z.ecc.android.sdk.Initializer
 import cash.z.ecc.android.sdk.Synchronizer
-import cash.z.ecc.android.sdk.VkInitializer
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor
 import cash.z.ecc.android.sdk.db.entity.*
 import cash.z.ecc.android.sdk.demoapp.App
 import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
 import cash.z.ecc.android.sdk.demoapp.databinding.FragmentSendBinding
-import cash.z.ecc.android.sdk.demoapp.util.SampleStorageBridge
 import cash.z.ecc.android.sdk.demoapp.util.mainActivity
 import cash.z.ecc.android.sdk.ext.*
 import cash.z.ecc.android.sdk.tool.DerivationTool
@@ -51,9 +50,9 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
         val seed = Mnemonics.MnemonicCode(seedPhrase).toSeed()
 
         App.instance.defaultConfig.let { config ->
-            VkInitializer(App.instance) {
-                import(seed, config.birthdayHeight)
-                server(config.host, config.port)
+            Initializer(App.instance) {
+                it.import(seed, config.birthdayHeight)
+                it.server(config.host, config.port)
             }.let { initializer ->
                 synchronizer = Synchronizer(initializer)
             }

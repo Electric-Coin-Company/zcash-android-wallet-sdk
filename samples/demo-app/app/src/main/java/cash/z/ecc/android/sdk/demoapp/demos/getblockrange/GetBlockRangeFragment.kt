@@ -110,4 +110,8 @@ class GetBlockRangeFragment : BaseDemoFragment<FragmentGetBlockRangeBinding>() {
     override fun inflateBinding(layoutInflater: LayoutInflater): FragmentGetBlockRangeBinding =
         FragmentGetBlockRangeBinding.inflate(layoutInflater)
 
+    override fun onActionButtonClicked() {
+        super.onActionButtonClicked()
+    }
+
 }

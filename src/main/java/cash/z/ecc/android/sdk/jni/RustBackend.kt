@@ -12,7 +12,7 @@ import java.io.File
  * not be called directly by code outside of the SDK. Instead, one of the higher-level components
  * should be used such as Wallet.kt or CompactBlockProcessor.kt.
  */
-class RustBackend : RustBackendWelding {
+class RustBackend private constructor() : RustBackendWelding {
 
     init {
         load()
@@ -26,27 +26,6 @@ class RustBackend : RustBackendWelding {
     internal var birthdayHeight: Int = -1
         get() = if (field != -1) field else throw BirthdayException.UninitializedBirthdayException
         private set
-
-    /**
-     * Loads the library and initializes path variables. Although it is best to only call this
-     * function once, it is idempotent.
-     */
-    fun init(
-        cacheDbPath: String,
-        dataDbPath: String,
-        paramsPath: String,
-        birthdayHeight: Int? = null
-    ): RustBackend {
-        twig("Creating RustBackend") {
-            pathCacheDb = cacheDbPath
-            pathDataDb = dataDbPath
-            pathParamsDir = paramsPath
-            if (birthdayHeight != null) {
-                this.birthdayHeight = birthdayHeight
-            }
-        }
-        return this
-    }
 
     fun clear(clearCacheDb: Boolean = true, clearDataDb: Boolean = true) {
         if (clearCacheDb) {
@@ -157,6 +136,26 @@ class RustBackend : RustBackendWelding {
      */
     companion object {
         private var loaded = false
+
+        /**
+         * Loads the library and initializes path variables. Although it is best to only call this
+         * function once, it is idempotent.
+         */
+        fun init(
+            cacheDbPath: String,
+            dataDbPath: String,
+            paramsPath: String,
+            birthdayHeight: Int? = null
+        ): RustBackend {
+            return RustBackend().apply {
+                pathCacheDb = cacheDbPath
+                pathDataDb = dataDbPath
+                pathParamsDir = paramsPath
+                if (birthdayHeight != null) {
+                    this.birthdayHeight = birthdayHeight
+                }
+            }
+        }
 
         fun load() {
             // It is safe to call these things twice but not efficient. So we add a loose check and

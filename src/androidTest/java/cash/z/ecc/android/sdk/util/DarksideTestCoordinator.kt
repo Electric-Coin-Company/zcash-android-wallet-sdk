@@ -6,6 +6,7 @@ import cash.z.ecc.android.sdk.SdkSynchronizer
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.db.entity.isSubmitSuccess
 import cash.z.ecc.android.sdk.ext.*
+import cash.z.ecc.android.sdk.tool.DerivationTool
 import io.grpc.StatusRuntimeException
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
@@ -27,10 +28,10 @@ class DarksideTestCoordinator(val host: String = "127.0.0.1", val testName: Stri
     // dependencies: public
     val validator = DarksideTestValidator()
     val chainMaker = DarksideChainMaker()
-    var initializer = Initializer(context, host, port, testName)
+//    var initializer = Initializer(context, Initializer.Builder(host, port, testName))
     lateinit var synchronizer: SdkSynchronizer
 
-    val spendingKey: String get() = initializer.deriveSpendingKey(seedPhrase)
+    val spendingKey: String get() = DerivationTool.deriveSpendingKeys(SimpleMnemonics().toSeed(seedPhrase.toCharArray()))[0]
 
     //
     // High-level APIs
@@ -66,11 +67,11 @@ class DarksideTestCoordinator(val host: String = "127.0.0.1", val testName: Stri
      */
     fun initiate() {
         twig("*************** INITIALIZING TEST COORDINATOR (ONLY ONCE) ***********************")
-        initializer.importPhrase(
-            seedPhrase,
-            birthdayHeight,
-            testName
-        )
+        val initializer = Initializer(context) { config ->
+            config.seedPhrase(seedPhrase)
+            config.birthdayHeight = birthdayHeight
+            config.alias = testName
+        }
         synchronizer = Synchronizer(initializer) as SdkSynchronizer
         val channel = (synchronizer as SdkSynchronizer).channel
         darkside = DarksideApi(channel)

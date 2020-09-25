@@ -78,7 +78,7 @@ class SdkSynchronizer internal constructor(
      * the underlying channel to connect to the same service, and use other APIs
      * (such as darksidewalletd) because channels are heavyweight.
      */
-    val channel: ManagedChannel get() = (processor.downloader.lightwalletService as LightWalletGrpcService).channel
+    val channel: ManagedChannel get() = (processor.downloader.lightWalletService as LightWalletGrpcService).channel
 
     var isStarted = false
 
@@ -223,7 +223,21 @@ class SdkSynchronizer internal constructor(
      */
     override suspend fun getServerInfo(): Service.LightdInfo = processor.downloader.getServerInfo()
 
-    
+    /**
+     * Changes the server that is being used to download compact blocks. This will throw an
+     * exception if it detects that the server change is invalid e.g. switching to testnet from
+     * mainnet.
+     */
+    override suspend fun changeServer(host: String, port: Int, errorHandler: (Throwable) -> Unit) {
+        val info =
+            (processor.downloader.lightWalletService as LightWalletGrpcService).connectionInfo
+        processor.downloader.changeService(
+            LightWalletGrpcService(info.appContext, host, port),
+            errorHandler
+        )
+    }
+
+
     //
     // Storage APIs
     //
@@ -293,6 +307,15 @@ class SdkSynchronizer internal constructor(
         if (error.cause != null) twig("******** caused by ${error.cause}")
         if (error.cause?.cause != null) twig("******** caused by ${error.cause?.cause}")
         twig("********")
+
+        if (onCriticalErrorHandler == null) {
+            twig(
+                "WARNING: a critical error occurred but no callback is registered to be notified " +
+                        "of critical errors! THIS IS PROBABLY A MISTAKE. To respond to these " +
+                        "errors (perhaps to update the UI or alert the user) set " +
+                        "synchronizer.onCriticalErrorHandler to a non-null value."
+            )
+        }
 
         onCriticalErrorHandler?.invoke(error)
     }

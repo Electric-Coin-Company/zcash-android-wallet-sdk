@@ -170,7 +170,7 @@ class CompactBlockProcessor(
         if (!updateRanges()) {
             twig("Disconnection detected! Attempting to reconnect!")
             setState(Disconnected)
-            downloader.lightwalletService.reconnect()
+            downloader.lightWalletService.reconnect()
             ERROR_CODE_RECONNECT
         } else if (currentInfo.lastDownloadRange.isEmpty() && currentInfo.lastScanRange.isEmpty()) {
             twig("Nothing to process: no new blocks to download or scan, right now.")

@@ -8,9 +8,9 @@ import androidx.paging.PagedList
 import androidx.recyclerview.widget.LinearLayoutManager
 import cash.z.ecc.android.bip39.Mnemonics
 import cash.z.ecc.android.bip39.toSeed
+import cash.z.ecc.android.sdk.Initializer
 import cash.z.ecc.android.sdk.SdkSynchronizer
 import cash.z.ecc.android.sdk.Synchronizer
-import cash.z.ecc.android.sdk.VkInitializer
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor
 import cash.z.ecc.android.sdk.db.entity.ConfirmedTransaction
 import cash.z.ecc.android.sdk.demoapp.App
@@ -49,9 +49,9 @@ class ListTransactionsFragment : BaseDemoFragment<FragmentListTransactionsBindin
         val seed = Mnemonics.MnemonicCode(seedPhrase).toSeed()
 
         App.instance.defaultConfig.let { config ->
-            initializer = VkInitializer(App.instance) {
-                import(seed, config.birthdayHeight)
-                server(config.host, config.port)
+            initializer = Initializer(App.instance) {
+                it.import(seed, config.birthdayHeight)
+                it.server(config.host, config.port)
             }
             address = DerivationTool.deriveShieldedAddress(seed)
         }

@@ -1,6 +1,5 @@
 package cash.z.ecc.android.sdk.service
 
-import cash.z.ecc.android.sdk.db.entity.ConfirmedTransaction
 import cash.z.wallet.sdk.rpc.CompactFormats
 import cash.z.wallet.sdk.rpc.Service
 
@@ -9,6 +8,14 @@ import cash.z.wallet.sdk.rpc.Service
  * calls because async concerns are handled at a higher level.
  */
 interface LightWalletService {
+
+    /**
+     * Fetch the details of a known transaction.
+     *
+     * @return the full transaction info.
+     */
+    fun fetchTransaction(txId: ByteArray): Service.RawTransaction?
+
     /**
      * Return the given range of blocks.
      *
@@ -47,13 +54,6 @@ interface LightWalletService {
     fun getServerInfo(): Service.LightdInfo
 
     /**
-     * Submit a raw transaction.
-     *
-     * @return the response from the server.
-     */
-    fun submitTransaction(spendTransaction: ByteArray): Service.SendResponse
-
-    /**
      * Gets all the transactions for a given t-address over the given range.  In practice, this is
      * effectively the same as an RPC call to a node that's running an insight server. The data is
      * indexed and responses are fairly quick.
@@ -63,11 +63,10 @@ interface LightWalletService {
     fun getTAddressTransactions(tAddress: String, blockHeightRange: IntRange): List<Service.RawTransaction>
 
     /**
-     * Fetch the details of a known transaction.
-     *
-     * @return the full transaction info.
+     * Reconnect to the same or a different server. This is useful when the connection is
+     * unrecoverable. That might be time to switch to a mirror or just reconnect.
      */
-    fun fetchTransaction(txId: ByteArray): Service.RawTransaction?
+    fun reconnect()
 
     /**
      * Cleanup any connections when the service is shutting down and not going to be used again.
@@ -75,8 +74,10 @@ interface LightWalletService {
     fun shutdown()
 
     /**
-     * Reconnect to the same or a different server. This is useful when the connection is
-     * unrecoverable. That might be time to switch to a mirror or just reconnect.
+     * Submit a raw transaction.
+     *
+     * @return the response from the server.
      */
-    fun reconnect()
+    fun submitTransaction(spendTransaction: ByteArray): Service.SendResponse
+
 }

@@ -6,9 +6,10 @@ import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.Synchronizer.Status.SYNCED
 import cash.z.ecc.android.sdk.db.entity.isSubmitSuccess
 import cash.z.ecc.android.sdk.ext.*
-import cash.z.ecc.android.sdk.import
 import cash.z.ecc.android.sdk.jni.RustBackend
 import cash.z.ecc.android.sdk.service.LightWalletGrpcService
+import cash.z.ecc.android.sdk.tool.DerivationTool
+import cash.z.ecc.android.sdk.tool.WalletBirthdayTool
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
@@ -38,7 +39,7 @@ class IntegrationTest {
 
     @Test
     fun testLoadBirthday() {
-        val (height, hash, time, tree) = Initializer.DefaultBirthdayStore.loadBirthdayFromAssets(context, ZcashSdk.SAPLING_ACTIVATION_HEIGHT + 1)
+        val (height, hash, time, tree) = WalletBirthdayTool.loadNearest(context, ZcashSdk.SAPLING_ACTIVATION_HEIGHT + 1)
         assertEquals(ZcashSdk.SAPLING_ACTIVATION_HEIGHT, height)
     }
 
@@ -74,7 +75,7 @@ class IntegrationTest {
     }
 
     private suspend fun sendFunds(): Boolean {
-        val spendingKey = RustBackend().deriveSpendingKeys(seed)[0]
+        val spendingKey = DerivationTool.deriveSpendingKeys(seed)[0]
         log("sending to address")
         synchronizer.sendToAddress(
             spendingKey,
@@ -104,8 +105,10 @@ class IntegrationTest {
         val toAddress = "zs1vp7kvlqr4n9gpehztr76lcn6skkss9p8keqs3nv8avkdtjrcctrvmk9a7u494kluv756jeee5k0"
 
         private val context = InstrumentationRegistry.getInstrumentation().context
-        private val initializer = Initializer(context, host, port).apply {
-            import(seed, birthdayHeight, overwrite = true)
+        private val initializer = Initializer(context) { config ->
+            config.setSeed(seed)
+            config.server(host, port)
+            config.birthdayHeight = birthdayHeight
         }
         private val synchronizer: Synchronizer = Synchronizer(initializer)
 
