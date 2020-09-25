@@ -72,12 +72,18 @@ publishing {
                         dependencyNode.appendNode('groupId', it.group)
                         dependencyNode.appendNode('artifactId', it.name)
                         dependencyNode.appendNode('version', it.version)
+                        if (it.hasProperty('type')) {
+                            dependencyNode.appendNode('type', it.type)
+                        }
+                        if (it.hasProperty('scope')) {
+                            dependencyNode.appendNode('scope', it.scope)
+                        }
                         if (it.hasProperty('optional') && it.optional) {
                             dependencyNode.appendNode('optional', 'true')
                         }
                     }
                     // run the 'addDep' closure over each dependency
-                    configurations.compile.allDependencies.each addDep
+                    configurations.implementation.allDependencies.each addDep
                 }
             }
         }
@@ -96,7 +102,7 @@ bintray {
         publish = true
         publicDownloadNumbers = true
         userOrg = 'ecc-mobile'
-        labels = ['aar', 'android', 'zcash', 'ecc', 'sdk']
+        labels = ['aar', 'native', 'android', 'zcash', 'ecc', 'sdk', 'kotlin', 'mobile', 'electric coin company', 'open source', 'crypto', 'cryptocurrency', 'cryptography', 'privacy']
         licenses = ['MIT']
         vcsUrl = Deps.githubUrl
         dryRun = Deps.publishingDryRun

@@ -239,9 +239,6 @@ dependencies {
     // per this recommendation from Chris Povirk, given guava's decision to split ListenableFuture away from Guava: https://groups.google.com/d/msg/guava-discuss/GghaKwusjcY/bCIAKfzOEwAJ
     implementation 'com.google.guava:guava:27.0.1-android'
 
-    // Other
-    implementation "com.jakewharton.timber:timber:4.7.1"
-
     // Tests
     testImplementation 'androidx.multidex:multidex:2.0.1'
     testImplementation "org.jetbrains.kotlin:kotlin-reflect:${Deps.kotlinVersion}"
