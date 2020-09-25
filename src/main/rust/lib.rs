@@ -711,9 +711,9 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveT
         let secp = Secp256k1::new();
         let pk = PublicKey::from_secret_key(&secp, &address_sk);
         let mut hash160 = ripemd160::Ripemd160::new();
-        hash160.input(Sha256::digest(&pk.serialize()[..].to_vec()));
+        hash160.update(Sha256::digest(&pk.serialize()[..].to_vec()));
         let address_string = hash160
-            .result()
+            .finalize()
             .to_base58check(&B58_PUBKEY_ADDRESS_PREFIX, &[]);
 
         let output = env

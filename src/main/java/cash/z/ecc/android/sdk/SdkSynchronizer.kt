@@ -231,7 +231,10 @@ class SdkSynchronizer internal constructor(
     override suspend fun changeServer(host: String, port: Int, errorHandler: (Throwable) -> Unit) {
         val info =
             (processor.downloader.lightWalletService as LightWalletGrpcService).connectionInfo
-        processor.downloader.changeService(LightWalletGrpcService(info.appContext, host, port))
+        processor.downloader.changeService(
+            LightWalletGrpcService(info.appContext, host, port),
+            errorHandler
+        )
     }
 
 
@@ -304,6 +307,15 @@ class SdkSynchronizer internal constructor(
         if (error.cause != null) twig("******** caused by ${error.cause}")
         if (error.cause?.cause != null) twig("******** caused by ${error.cause?.cause}")
         twig("********")
+
+        if (onCriticalErrorHandler == null) {
+            twig(
+                "WARNING: a critical error occurred but no callback is registered to be notified " +
+                        "of critical errors! THIS IS PROBABLY A MISTAKE. To respond to these " +
+                        "errors (perhaps to update the UI or alert the user) set " +
+                        "synchronizer.onCriticalErrorHandler to a non-null value."
+            )
+        }
 
         onCriticalErrorHandler?.invoke(error)
     }

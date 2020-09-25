@@ -80,11 +80,6 @@ sealed class BirthdayException(message: String, cause: Throwable? = null) : SdkE
     class MissingBirthdayFilesException(directory: String) : BirthdayException(
         "Cannot initialize wallet because no birthday files were found in the $directory directory."
     )
-    class MissingBirthdayException(val alias: String) : BirthdayException(
-        "Failed to initialize wallet with alias=$alias because its birthday could not be found." +
-                "  Verify the alias or perhaps a new wallet should be created, instead."
-    )
-
     class ExactBirthdayNotFoundException(height: Int, nearestMatch: Int? = null): BirthdayException(
             "Unable to find birthday that exactly matches $height.${
                 if (nearestMatch != null) 
@@ -108,6 +103,18 @@ sealed class InitializerException(message: String, cause: Throwable? = null) :  
     class FalseStart(cause: Throwable?) : InitializerException("Failed to initialize accounts due to: $cause", cause)
     class AlreadyInitializedException(cause: Throwable, dbPath: String) : InitializerException("Failed to initialize the blocks table" +
             " because it already exists in $dbPath", cause)
+    object MissingBirthdayException : InitializerException(
+        "Expected a birthday for this wallet but failed to find one. This usually means that " +
+                "wallet setup did not happen correctly. A workaround might be to interpret the " +
+                "birthday,  based on the contents of the wallet data but it is probably better " +
+                "not to mask this error because the root issue should be addressed."
+    )
+    object MissingViewingKeyException : InitializerException(
+        "Expected a viewingKey for this wallet but failed to find one. This usually means that " +
+                "wallet setup happened incorrectly. A workaround might be to derive the " +
+                "viewingKey from the seed or seedPhrase, if they exist, but it is probably " +
+                "better not to mask this error because the root issue should be addressed."
+    )
     object DatabasePathException :
         InitializerException("Critical failure to locate path for storing databases. Perhaps this" +
                 " device prevents apps from storing data? We cannot initialize the wallet unless" +

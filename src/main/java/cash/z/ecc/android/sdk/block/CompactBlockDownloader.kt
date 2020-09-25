@@ -1,7 +1,6 @@
 package cash.z.ecc.android.sdk.block
 
 import cash.z.ecc.android.sdk.exception.LightWalletException
-import cash.z.ecc.android.sdk.ext.tryCatchWith
 import cash.z.ecc.android.sdk.ext.tryWarn
 import cash.z.ecc.android.sdk.service.LightWalletService
 import cash.z.wallet.sdk.rpc.Service

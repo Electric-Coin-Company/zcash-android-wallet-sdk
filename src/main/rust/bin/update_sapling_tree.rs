@@ -13,14 +13,14 @@ use zcash_primitives::{merkle_tree::CommitmentTree, sapling::Node};
 #[cfg(feature = "mainnet")]
 const START_HEIGHT: u64 = 419200;
 #[cfg(feature = "mainnet")]
-const LIGHTWALLETD_HOST: &str = "lightwalletd.z.cash";
+const LIGHTWALLETD_HOST: &str = "lightwalletd.electriccoin.co";
 #[cfg(feature = "mainnet")]
 const NETWORK: &str = "mainnet";
 
 #[cfg(not(feature = "mainnet"))]
 const START_HEIGHT: u64 = 280000;
 #[cfg(not(feature = "mainnet"))]
-const LIGHTWALLETD_HOST: &str = "lightwalletd.testnet.z.cash";
+const LIGHTWALLETD_HOST: &str = "lightwalletd.testnet.electriccoin.co";
 #[cfg(not(feature = "mainnet"))]
 const NETWORK: &str = "testnet";
 

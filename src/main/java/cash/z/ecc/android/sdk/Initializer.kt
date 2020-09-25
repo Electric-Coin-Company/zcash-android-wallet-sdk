@@ -13,7 +13,7 @@ import java.io.File
 /**
  * Simplified Initializer focused on starting from a ViewingKey.
  */
-class Initializer private constructor(appContext: Context, builder: Builder):  SdkSynchronizer.SdkInitializer {
+class Initializer constructor(appContext: Context, builder: Builder):  SdkSynchronizer.SdkInitializer {
     override val context = appContext.applicationContext
     override val rustBackend: RustBackend
     override val alias: String
@@ -255,8 +255,34 @@ class Initializer private constructor(appContext: Context, builder: Builder):  S
             importedWalletBirthday(birthdayHeight)
         }
 
-        fun new(seed: ByteArray) {
+        fun import(
+            viewingKey: String,
+            birthdayHeight: Int,
+            host: String = ZcashSdk.DEFAULT_LIGHTWALLETD_HOST,
+            port: Int = ZcashSdk.DEFAULT_LIGHTWALLETD_PORT
+        ) {
+            setViewingKeys(viewingKey)
+            server(host, port)
+            this.birthdayHeight = birthdayHeight
+        }
+
+        fun new(
+            seed: ByteArray,
+            host: String = ZcashSdk.DEFAULT_LIGHTWALLETD_HOST,
+            port: Int = ZcashSdk.DEFAULT_LIGHTWALLETD_PORT
+        ) {
             setSeed(seed)
+            server(host, port)
+            newWalletBirthday()
+        }
+
+        fun new(
+            viewingKey: String,
+            host: String = ZcashSdk.DEFAULT_LIGHTWALLETD_HOST,
+            port: Int = ZcashSdk.DEFAULT_LIGHTWALLETD_PORT
+        ) {
+            setViewingKeys(viewingKey)
+            server(host, port)
             newWalletBirthday()
         }
 
