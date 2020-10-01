@@ -175,7 +175,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_initAccount
 ) -> jboolean {
     let res = panic::catch_unwind(|| {
         let db_data = utils::java_string_to_rust(&env, db_data);
-        // TODO: avoid all this unwrapping and also surface erros, better
+        // TODO: avoid all this unwrapping and also surface errors, better
         let count = env.get_array_length(extfvks_arr).unwrap();
         let extfvks = (0..count)
             .map(|i| env.get_object_array_element(extfvks_arr, i))

@@ -16,4 +16,3 @@ internal inline fun <R> tryWarn(message: String,  block: () -> R): R? {
         return null
     }
 }
-

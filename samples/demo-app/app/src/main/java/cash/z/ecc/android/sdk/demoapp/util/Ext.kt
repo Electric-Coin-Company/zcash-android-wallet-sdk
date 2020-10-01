@@ -14,8 +14,6 @@ import cash.z.wallet.sdk.rpc.CompactFormats
 fun Fragment.mainActivity() = context as? MainActivity
 
 
-
-
 /**
  * Add locale-specific commas to a number, if it exists.
  */

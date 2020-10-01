@@ -6,8 +6,8 @@ object Deps {
     const val kotlinVersion =   "1.4.10"
     const val group =           "cash.z.ecc.android"
     const val artifactName =    "zcash-android-sdk"
-    const val versionName =     "1.1.0-beta07"
-    const val versionCode =     1_01_00_207  // last digits are alpha(0XX) beta(2XX) rc(4XX) release(8XX). Ex: 1_08_04_401 is an release candidate build of version 1.8.4 and 1_08_04_800 would be the final release.
+    const val versionName =     "1.1.0-beta08"
+    const val versionCode =     1_01_00_208  // last digits are alpha(0XX) beta(2XX) rc(4XX) release(8XX). Ex: 1_08_04_401 is an release candidate build of version 1.8.4 and 1_08_04_800 would be the final release.
     const val description =     "This lightweight SDK connects Android to Zcash. It welds together Rust and Kotlin in a minimal way, allowing third-party Android apps to send and receive shielded transactions easily, securely and privately."
     const val githubUrl =       "https://github.com/zcash/zcash-android-wallet-sdk"
 
@@ -16,7 +16,7 @@ object Deps {
     //            to publish for local development run: ./gradlew publishToMavenLocal
     //      Remember: publish both mainnet and testnet!
     const val publishingDryRun = true
-    val publishingTarget = Publication.Mainnet
+    val publishingTarget = Publication.Testnet
 
     object Publication {
         object Mainnet {

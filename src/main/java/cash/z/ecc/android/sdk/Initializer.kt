@@ -22,6 +22,14 @@ class Initializer constructor(appContext: Context, builder: Builder):  SdkSynchr
     val viewingKeys: List<String>
     val birthday: WalletBirthdayTool.WalletBirthday
 
+    /**
+     * True when accounts have been created by this initializer.
+     *
+     * NOTE: This is a code smell that the initializer should not be creating databases but that
+     * will be addressed in the next iteration and/or when the Data Access API is implemented
+     */
+    var accountsCreated = false
+
     init {
         val loadedBirthday =
             builder.birthday ?: WalletBirthdayTool.loadNearest(context, builder.birthdayHeight)
@@ -31,6 +39,7 @@ class Initializer constructor(appContext: Context, builder: Builder):  SdkSynchr
         host = builder.host
         port = builder.port
         rustBackend = initRustBackend(birthday)
+        // TODO: get rid of this by first answering the question: why is this necessary?
         initMissingDatabases(birthday, *viewingKeys.toTypedArray())
     }
 
@@ -90,6 +99,7 @@ class Initializer constructor(appContext: Context, builder: Builder):  SdkSynchr
             "Warning: did not initialize the accounts table. It probably was already initialized."
         ) {
             rustBackend.initAccountsTable(*viewingKeys)
+            accountsCreated = true
             twig("Initialized the accounts table with ${viewingKeys.size} viewingKey(s)")
         }
     }
