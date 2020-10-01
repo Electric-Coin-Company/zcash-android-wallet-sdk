@@ -1,6 +1,11 @@
 Change Log
 ==========
 
+Version 1.1.0-beta08 *(2020-10-01)*
+------------------------------------
+Fix: Publishing has been corrected by jcenter's support team.
+New: Minor improvement to initializer
+
 Version 1.1.0-beta05 *(2020-09-11)*
 ------------------------------------
 New: Synchronizer can now be started with just a viewing key.
