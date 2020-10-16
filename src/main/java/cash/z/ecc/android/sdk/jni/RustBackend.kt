@@ -19,9 +19,12 @@ class RustBackend private constructor() : RustBackendWelding {
     }
 
     // Paths
-    internal lateinit var pathDataDb: String
-    internal lateinit var pathCacheDb: String
-    internal lateinit var pathParamsDir: String
+    lateinit var pathDataDb: String
+    internal set
+    lateinit var pathCacheDb: String
+    internal set
+    lateinit var pathParamsDir: String
+    internal set
 
     internal var birthdayHeight: Int = -1
         get() = if (field != -1) field else throw BirthdayException.UninitializedBirthdayException

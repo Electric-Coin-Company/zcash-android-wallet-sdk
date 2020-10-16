@@ -23,6 +23,12 @@ interface Twig {
         return if(twig is CompositeTwig) twig.plus(this) else CompositeTwig(mutableListOf(this, twig))
     }
     companion object {
+
+        /**
+         * Access the trunk corresponding to this twig.
+         */
+        val trunk get() = Bush.trunk
+
         /**
          * Plants the twig, making it the one and only bush. Twigs can be bundled together to create the appearance of
          * multiple bushes (i.e `Twig.plant(twigA + twigB + twigC)`) even though there's only ever one bush.
@@ -45,6 +51,7 @@ interface Twig {
          * Clip all leaves from the bush.
          */
         fun prune() = Bush.leaves.clear()
+
     }
 }
 
@@ -113,7 +120,7 @@ open class TroubleshootingTwig(
  * Since there can only ever be one trunk on the bush of twigs, this class lets
  * you cheat and make that trunk be a bundle of twigs.
  */
-open class CompositeTwig(private val twigBundle: MutableList<Twig>) :
+open class CompositeTwig(open val twigBundle: MutableList<Twig>) :
     Twig {
     override operator fun plus(twig: Twig): Twig {
         if (twig is CompositeTwig) twigBundle.addAll(twig.twigBundle) else twigBundle.add(twig); return this

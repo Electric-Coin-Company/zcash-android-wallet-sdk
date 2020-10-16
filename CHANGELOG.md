@@ -1,6 +1,10 @@
 Change Log
 ==========
 
+Version 1.1.0-beta10 *(2020-10-16)*
+------------------------------------
+New: Modified visibility on a few things to facilitate partner integrations.
+
 Version 1.1.0-beta08 *(2020-10-01)*
 ------------------------------------
 Fix: Publishing has been corrected by jcenter's support team.
@@ -9,7 +13,7 @@ New: Minor improvement to initializer
 Version 1.1.0-beta05 *(2020-09-11)*
 ------------------------------------
 New: Synchronizer can now be started with just a viewing key.
-New: Initializer improvments.
+New: Initializer improvements.
 New: Added tool for loading checkpoints.
 New: Added tool for deriving keys and addresses, statically.
 New: Updated and revamped the demo apps.
