@@ -15,7 +15,7 @@ object Deps {
     //      NOTE: to upload run: ./gradlew bintrayUpload after setting BINTRAY_USER and BINTRAY_API_KEY as environment variable
     //            to publish for local development run: ./gradlew publishToMavenLocal
     //      Remember: publish both mainnet and testnet!
-    const val publishingDryRun = false
+    const val publishingDryRun = true
     val publishingTarget = Publication.Mainnet
 
     object Publication {
