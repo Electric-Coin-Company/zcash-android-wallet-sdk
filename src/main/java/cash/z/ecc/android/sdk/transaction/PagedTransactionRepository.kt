@@ -22,8 +22,8 @@ import kotlinx.coroutines.withContext
  * @param pageSize transactions per page. This influences pre-fetch and memory configuration.
  */
 open class PagedTransactionRepository(
-    private val derivedDataDb: DerivedDataDb,
-    private val pageSize: Int = 10
+    open val derivedDataDb: DerivedDataDb,
+    open val pageSize: Int = 10
 ) : TransactionRepository {
 
     /**
