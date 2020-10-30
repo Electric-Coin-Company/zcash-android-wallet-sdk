@@ -1,6 +1,11 @@
 Change Log
 ==========
 
+Version 1.2.0-beta01 *(2020-10-30)*
+------------------------------------
+New: Added ability to erase initializer data.
+Fix: Updated to latest librustzcash, fixing send functionality on Canopy.
+
 Version 1.1.0-beta10 *(2020-10-16)*
 ------------------------------------
 New: Modified visibility on a few things to facilitate partner integrations.
