@@ -65,7 +65,7 @@ class CompactBlockProcessor(
     var onProcessorErrorListener: ((Throwable) -> Boolean)? = null
 
     /**
-     * Callbaqck for reorgs. This callback is invoked when validation fails with the height at which
+     * Callback for reorgs. This callback is invoked when validation fails with the height at which
      * an error was found and the lower bound to which the data will rewind, at most.
      */
     var onChainErrorListener: ((errorHeight: Int, rewindHeight: Int) -> Any)? = null

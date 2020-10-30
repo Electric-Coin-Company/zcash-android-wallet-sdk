@@ -45,6 +45,7 @@ class Initializer constructor(appContext: Context, builder: Builder):  SdkSynchr
 
     constructor(appContext: Context, block: (Builder) -> Unit) : this(appContext, Builder(block))
 
+    fun erase() = erase(context, alias)
 
     private fun initRustBackend(birthday: WalletBirthdayTool.WalletBirthday): RustBackend {
         return RustBackend.init(
@@ -103,45 +104,6 @@ class Initializer constructor(appContext: Context, builder: Builder):  SdkSynchr
             twig("Initialized the accounts table with ${viewingKeys.size} viewingKey(s)")
         }
     }
-
-    /**
-     * Delete all local data related to this wallet, as though the wallet was never created on this
-     * device. Simply put, this call deletes the "cache db" and "data db."
-     */
-    override fun clear() {
-        rustBackend.clear()
-    }
-
-
-    //
-    // Path Helpers
-    //
-
-    /**
-     * Returns the path to the cache database that would correspond to the given alias.
-     *
-     * @param appContext the application context
-     * @param alias the alias to convert into a database path
-     */
-    fun cacheDbPath(appContext: Context, alias: String): String =
-        aliasToPath(appContext, alias, ZcashSdk.DB_CACHE_NAME)
-
-    /**
-     * Returns the path to the data database that would correspond to the given alias.
-     * @param appContext the application context
-     * @param alias the alias to convert into a database path
-     */
-    fun dataDbPath(appContext: Context, alias: String): String =
-        aliasToPath(appContext, alias, ZcashSdk.DB_DATA_NAME)
-
-    private fun aliasToPath(appContext: Context, alias: String, dbFileName: String): String {
-        val parentDir: String =
-            appContext.getDatabasePath("unused.db").parentFile?.absolutePath
-                ?: throw InitializerException.DatabasePathException
-        val prefix = if (alias.endsWith('_')) alias else "${alias}_"
-        return File(parentDir, "$prefix$dbFileName").absolutePath
-    }
-
 
     /**
      * Validate that the alias doesn't contain malicious characters by enforcing simple rules which
@@ -350,6 +312,74 @@ class Initializer constructor(appContext: Context, builder: Builder):  SdkSynchr
                 DerivationTool.validateViewingKey(it)
             }
         }
+    }
+
+    companion object : SdkSynchronizer.Erasable {
+
+        /**
+         * Delete the databases associated with this wallet. This removes all compact blocks and
+         * data derived from those blocks. For most wallets, this should not result in a loss of
+         * funds because the seed and spending keys are stored separately. This call just removes
+         * the associated data but not the seed or spending key, themselves, because those are
+         * managed separately by the wallet.
+         *
+         * @param appContext the application context.
+         * @param alias the alias used to create the local data.
+         *
+         * @return true when associated files were found. False most likely indicates that the wrong
+         * alias was provided.
+         */
+        override fun erase(appContext: Context, alias: String) =
+            delete(cacheDbPath(appContext, alias)) || delete(dataDbPath(appContext, alias))
+
+
+        //
+        // Path Helpers
+        //
+
+        /**
+         * Returns the path to the cache database that would correspond to the given alias.
+         *
+         * @param appContext the application context
+         * @param alias the alias to convert into a database path
+         */
+        internal fun cacheDbPath(appContext: Context, alias: String): String =
+            aliasToPath(appContext, alias, ZcashSdk.DB_CACHE_NAME)
+
+        /**
+         * Returns the path to the data database that would correspond to the given alias.
+         * @param appContext the application context
+         * @param alias the alias to convert into a database path
+         */
+        internal fun dataDbPath(appContext: Context, alias: String): String =
+            aliasToPath(appContext, alias, ZcashSdk.DB_DATA_NAME)
+
+        private fun aliasToPath(appContext: Context, alias: String, dbFileName: String): String {
+            val parentDir: String =
+                appContext.getDatabasePath("unused.db").parentFile?.absolutePath
+                    ?: throw InitializerException.DatabasePathException
+            val prefix = if (alias.endsWith('_')) alias else "${alias}_"
+            return File(parentDir, "$prefix$dbFileName").absolutePath
+        }
+
+        /**
+         * Delete the file at the given path.
+         *
+         * @param filePath the path of the file to erase.
+         * @return true when a file exists at the given path and was deleted.
+         */
+        private fun delete(filePath: String) : Boolean {
+            return File(filePath).let {
+                if (it.exists()) {
+                    twig("Deleting ${it.name}!")
+                    it.delete()
+                    true
+                } else {
+                    false
+                }
+            }
+        }
+
     }
 }
 
