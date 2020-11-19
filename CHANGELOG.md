@@ -1,6 +1,11 @@
 Change Log
 ==========
 
+Version 1.2.0-beta02 *(2020-11-19)*
+------------------------------------
+- New: Added latest checkpoints for testnet and mainnet.
+- New: Added display name for Canopy.
+
 Version 1.2.0-beta01 *(2020-10-30)*
 ------------------------------------
 - New: Added ability to erase initializer data.
