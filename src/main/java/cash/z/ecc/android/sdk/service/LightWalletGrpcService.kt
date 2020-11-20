@@ -113,7 +113,7 @@ class LightWalletGrpcService private constructor(
         if (blockHeightRange.isEmpty() || tAddress.isBlank()) return listOf()
 
         channel.resetConnectBackoff()
-        val result = channel.createStub().getAddressTxids(
+        val result = channel.createStub().getTaddressTxids(
             Service.TransparentAddressBlockFilter.newBuilder().setAddress(tAddress)
                 .setRange(blockHeightRange.toBlockRange()).build()
         )

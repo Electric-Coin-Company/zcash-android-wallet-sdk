@@ -263,7 +263,7 @@ dependencies {
 
     // sample mnemonic plugin
     androidTestImplementation 'com.github.zcash:zcash-android-wallet-plugins:1.0.1'
-    androidTestImplementation 'cash.z.ecc.android:kotlin-bip39:1.0.0-beta09'
+    androidTestImplementation 'cash.z.ecc.android:kotlin-bip39:1.0.1'
 }
 
 taskTree{

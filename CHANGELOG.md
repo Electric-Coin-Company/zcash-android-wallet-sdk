@@ -1,10 +1,12 @@
 Change Log
 ==========
 
-Version 1.2.0-beta02 *(2020-11-19)*
+Version 1.2.1-beta01 *(2020-11-19)*
 ------------------------------------
 - New: Added latest checkpoints for testnet and mainnet.
 - New: Added display name for Canopy.
+- New: Update to the latest lightwalletd service definition.
+- Fix: Convert Initializer.Builder to Initializer.Config to simplify the constructors.
 
 Version 1.2.0-beta01 *(2020-10-30)*
 ------------------------------------
