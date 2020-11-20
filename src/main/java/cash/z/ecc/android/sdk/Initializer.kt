@@ -13,7 +13,7 @@ import java.io.File
 /**
  * Simplified Initializer focused on starting from a ViewingKey.
  */
-class Initializer constructor(appContext: Context, builder: Builder):  SdkSynchronizer.SdkInitializer {
+class Initializer constructor(appContext: Context, config: Config):  SdkSynchronizer.SdkInitializer {
     override val context = appContext.applicationContext
     override val rustBackend: RustBackend
     override val alias: String
@@ -31,19 +31,19 @@ class Initializer constructor(appContext: Context, builder: Builder):  SdkSynchr
     var accountsCreated = false
 
     init {
-        val loadedBirthday =
-            builder.birthday ?: WalletBirthdayTool.loadNearest(context, builder.birthdayHeight)
+        config.validate()
+        val loadedBirthday = WalletBirthdayTool.loadNearest(context, config.birthdayHeight)
         birthday = loadedBirthday
-        viewingKeys = builder.viewingKeys
-        alias = builder.alias
-        host = builder.host
-        port = builder.port
+        viewingKeys = config.viewingKeys
+        alias = config.alias
+        host = config.host
+        port = config.port
         rustBackend = initRustBackend(birthday)
         // TODO: get rid of this by first answering the question: why is this necessary?
         initMissingDatabases(birthday, *viewingKeys.toTypedArray())
     }
 
-    constructor(appContext: Context, block: (Builder) -> Unit) : this(appContext, Builder(block))
+    constructor(appContext: Context, block: (Config) -> Unit) : this(appContext, Config(block))
 
     fun erase() = erase(context, alias)
 
@@ -125,46 +125,16 @@ class Initializer constructor(appContext: Context, builder: Builder):  SdkSynchr
     }
 
 
-    class Builder private constructor(
+    class Config private constructor (
          val viewingKeys: MutableList<String> = mutableListOf(),
-         var birthday: WalletBirthdayTool.WalletBirthday? = null,
          var birthdayHeight: Int? = null,
          var alias: String = ZcashSdk.DEFAULT_ALIAS,
          var host: String = ZcashSdk.DEFAULT_LIGHTWALLETD_HOST,
          var port: Int = ZcashSdk.DEFAULT_LIGHTWALLETD_PORT
     ) {
-        constructor(block: (Builder) -> Unit) : this(mutableListOf(), null, null) {
+        constructor(block: (Config) -> Unit) : this() {
             block(this)
             validate()
-        }
-        constructor(
-            viewingKeys: MutableList<String> = mutableListOf(),
-            birthday: WalletBirthdayTool.WalletBirthday? = null,
-            /* optional fields with default values */
-            alias: String = ZcashSdk.DEFAULT_ALIAS,
-            host: String = ZcashSdk.DEFAULT_LIGHTWALLETD_HOST,
-            port: Int = ZcashSdk.DEFAULT_LIGHTWALLETD_PORT
-        ) : this(viewingKeys, birthday, -1, alias, host, port) {
-            validate()
-        }
-
-        constructor(
-            viewingKeys: MutableList<String> = mutableListOf(),
-            birthdayHeight: Int = -1,
-            /* optional fields with default values */
-            alias: String = ZcashSdk.DEFAULT_ALIAS,
-            host: String = ZcashSdk.DEFAULT_LIGHTWALLETD_HOST,
-            port: Int = ZcashSdk.DEFAULT_LIGHTWALLETD_PORT
-        ) : this(viewingKeys, null, birthdayHeight, alias, host, port) {
-            validate()
-        }
-
-
-        fun build(context: Context): Initializer {
-            if (birthday == null) {
-                birthday = WalletBirthdayTool.loadNearest(context, birthdayHeight)
-            }
-            return Initializer(context, this)
         }
 
         /**
@@ -278,26 +248,12 @@ class Initializer constructor(appContext: Context, builder: Builder):  SdkSynchr
         }
 
         private fun validateBirthday() {
-            // one of the fields must be properly set
-            require((birthdayHeight ?: -1) >= ZcashSdk.SAPLING_ACTIVATION_HEIGHT
-                    || birthdayHeight != null) {
-                "Birthday is required but was not set on this initializer. Verify that a valid" +
-                        " birthday was provided when creating the Initializer such as" +
-                        " WalletBirthdayTool.loadNearest()"
-            }
-
-            // but not both
-            require((birthdayHeight ?: -1) < ZcashSdk.SAPLING_ACTIVATION_HEIGHT
-                    || birthday == null) {
-                "Ambiguous birthday. Either the birthday Object or the birthdayHeight Int should" +
-                        " be set but not both."
-            }
-
-            // the field that is set should contain a proper value
+            // allow either null or a value greater than the activation height
             require(
-                (birthdayHeight ?: birthday?.height ?: -1) >= ZcashSdk.SAPLING_ACTIVATION_HEIGHT
+                (birthdayHeight ?: ZcashSdk.SAPLING_ACTIVATION_HEIGHT)
+                        >= ZcashSdk.SAPLING_ACTIVATION_HEIGHT
             ) {
-                "Invalid birthday height of ${birthdayHeight ?: birthday?.height}. The birthday" +
+                "Invalid birthday height of $birthdayHeight. The birthday" +
                         " height must be at least the height of Sapling activation on" +
                         " ${ZcashSdk.NETWORK} (${ZcashSdk.SAPLING_ACTIVATION_HEIGHT})."
             }
