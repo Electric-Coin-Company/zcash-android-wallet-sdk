@@ -180,7 +180,7 @@ class Initializer constructor(appContext: Context, config: Config):  SdkSynchron
         /**
          * Load the most recent checkpoint available. This is useful for new wallets.
          */
-        fun newWalletBirthday() {
+        fun newWalletBirthday(): Config = apply {
             birthdayHeight = null
             defaultToOldestHeight = false
         }
@@ -190,7 +190,7 @@ class Initializer constructor(appContext: Context, config: Config):  SdkSynchron
          * importing a pre-existing wallet. It is the same as calling
          * `birthdayHeight = importedHeight`.
          */
-        fun importedWalletBirthday(importedHeight: Int) {
+        fun importedWalletBirthday(importedHeight: Int?): Config = apply {
             birthdayHeight = importedHeight
             defaultToOldestHeight = true
         }
@@ -226,42 +226,42 @@ class Initializer constructor(appContext: Context, config: Config):  SdkSynchron
         // Convenience functions
         //
 
-        fun server(host: String, port: Int) {
+        fun server(host: String, port: Int): Config = apply {
             this.host = host
             this.port = port
         }
 
-        fun import(seed: ByteArray, birthdayHeight: Int) {
+        fun importWallet(seed: ByteArray, birthdayHeight: Int? = null): Config = apply {
             setSeed(seed)
             importedWalletBirthday(birthdayHeight)
         }
 
-        fun import(
+        fun importWallet(
             viewingKey: String,
-            birthdayHeight: Int,
+            birthdayHeight: Int? = null,
             host: String = ZcashSdk.DEFAULT_LIGHTWALLETD_HOST,
             port: Int = ZcashSdk.DEFAULT_LIGHTWALLETD_PORT
-        ) {
+        ): Config = apply {
             setViewingKeys(viewingKey)
             server(host, port)
-            this.birthdayHeight = birthdayHeight
+            importedWalletBirthday(birthdayHeight)
         }
 
-        fun new(
+        fun newWallet(
             seed: ByteArray,
             host: String = ZcashSdk.DEFAULT_LIGHTWALLETD_HOST,
             port: Int = ZcashSdk.DEFAULT_LIGHTWALLETD_PORT
-        ) {
+        ): Config = apply {
             setSeed(seed)
             server(host, port)
             newWalletBirthday()
         }
 
-        fun new(
+        fun newWallet(
             viewingKey: String,
             host: String = ZcashSdk.DEFAULT_LIGHTWALLETD_HOST,
             port: Int = ZcashSdk.DEFAULT_LIGHTWALLETD_PORT
-        ) {
+        ): Config = apply {
             setViewingKeys(viewingKey)
             server(host, port)
             newWalletBirthday()
@@ -271,7 +271,7 @@ class Initializer constructor(appContext: Context, config: Config):  SdkSynchron
          * Convenience method for setting thew viewingKeys from a given seed. This is the same as
          * calling `setViewingKeys` with the keys that match this seed.
          */
-        fun setSeed(seed: ByteArray, numberOfAccounts: Int = 1) {
+        fun setSeed(seed: ByteArray, numberOfAccounts: Int = 1): Config = apply {
             setViewingKeys(*DerivationTool.deriveViewingKeys(seed, numberOfAccounts))
         }
 
@@ -280,7 +280,7 @@ class Initializer constructor(appContext: Context, config: Config):  SdkSynchron
         // Validation helpers
         //
 
-        fun validate() {
+        fun validate(): Config = apply {
             validateAlias(alias)
             validateViewingKeys()
             validateBirthday()
