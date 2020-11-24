@@ -3,6 +3,7 @@ package cash.z.ecc.android.sdk
 import android.content.Context
 import cash.z.ecc.android.sdk.exception.InitializerException
 import cash.z.ecc.android.sdk.ext.ZcashSdk
+import cash.z.ecc.android.sdk.ext.ZcashSdk.SAPLING_ACTIVATION_HEIGHT
 import cash.z.ecc.android.sdk.ext.tryWarn
 import cash.z.ecc.android.sdk.ext.twig
 import cash.z.ecc.android.sdk.jni.RustBackend
@@ -32,7 +33,9 @@ class Initializer constructor(appContext: Context, config: Config):  SdkSynchron
 
     init {
         config.validate()
-        val loadedBirthday = WalletBirthdayTool.loadNearest(context, config.birthdayHeight)
+        val heightToUse = config.birthdayHeight
+            ?: (if (config.defaultToOldestHeight == true) SAPLING_ACTIVATION_HEIGHT else null)
+        val loadedBirthday = WalletBirthdayTool.loadNearest(context, heightToUse)
         birthday = loadedBirthday
         viewingKeys = config.viewingKeys
         alias = config.alias
@@ -126,23 +129,83 @@ class Initializer constructor(appContext: Context, config: Config):  SdkSynchron
 
 
     class Config private constructor (
-         val viewingKeys: MutableList<String> = mutableListOf(),
-         var birthdayHeight: Int? = null,
-         var alias: String = ZcashSdk.DEFAULT_ALIAS,
-         var host: String = ZcashSdk.DEFAULT_LIGHTWALLETD_HOST,
-         var port: Int = ZcashSdk.DEFAULT_LIGHTWALLETD_PORT
+        val viewingKeys: MutableList<String> = mutableListOf(),
+        var alias: String = ZcashSdk.DEFAULT_ALIAS,
+        var host: String = ZcashSdk.DEFAULT_LIGHTWALLETD_HOST,
+        var port: Int = ZcashSdk.DEFAULT_LIGHTWALLETD_PORT,
     ) {
+        var birthdayHeight: Int? = null
+            private set
+
+        /**
+         * Determines the default behavior for null birthdays. When null, nothing has been specified
+         * so a null birthdayHeight value is an error. When false, null birthdays will be replaced
+         * with the most recent checkpoint height available (typically, the latest `*.json` file in
+         * `assets/zcash/saplingtree/`). When true, null birthdays will be replaced with the oldest
+         * reasonable height where a transaction could exist (typically, sapling activation but
+         * better approximations could be devised in the future, such as the date when the first
+         * BIP-39 zcash wallets came online).
+         */
+        var defaultToOldestHeight: Boolean? = null
+            private set
+
         constructor(block: (Config) -> Unit) : this() {
             block(this)
-            validate()
         }
+
+
+        //
+        // Birthday functions
+        //
+
+        /**
+         * Set the birthday height for this configuration. When the height is not known, the wallet
+         * can either default to the latest known birthday (in order to sync new wallets faster) or
+         * the oldest possible birthday (in order to import a wallet with an unknown birthday
+         * without skipping old transactions).
+         *
+         * @param height nullable birthday height to use for this configuration.
+         * @param defaultToOldestHeight determines how a null birthday height will be
+         * interpreted. Typically, `false` for new wallets and `true` for restored wallets because
+         * new wallets want to load quickly but restored wallets want to find all possible
+         * transactions.
+         *
+         */
+        fun setBirthdayHeight(height: Int?, defaultToOldestHeight: Boolean = false): Config =
+            apply {
+                this.birthdayHeight = height
+                this.defaultToOldestHeight = defaultToOldestHeight
+            }
+
+        /**
+         * Load the most recent checkpoint available. This is useful for new wallets.
+         */
+        fun newWalletBirthday() {
+            birthdayHeight = null
+            defaultToOldestHeight = false
+        }
+
+        /**
+         * Load the birthday checkpoint closest to the given wallet birthday. This is useful when
+         * importing a pre-existing wallet. It is the same as calling
+         * `birthdayHeight = importedHeight`.
+         */
+        fun importedWalletBirthday(importedHeight: Int) {
+            birthdayHeight = importedHeight
+            defaultToOldestHeight = true
+        }
+
+
+        //
+        // Viewing key functions
+        //
 
         /**
          * Add viewing keys to the set of accounts to monitor. Note: Using more than one viewing key
          * is not currently well supported. Consider it an alpha-preview feature that might work but
          * probably has serious bugs.
          */
-        fun setViewingKeys(vararg extendedFullViewingKeys: String) {
+        fun setViewingKeys(vararg extendedFullViewingKeys: String): Config = apply {
             viewingKeys.apply {
                 clear()
                 addAll(extendedFullViewingKeys)
@@ -154,32 +217,8 @@ class Initializer constructor(appContext: Context, config: Config):  SdkSynchron
          * is not currently well supported. Consider it an alpha-preview feature that might work but
          * probably has serious bugs.
          */
-        fun addViewingKey(extendedFullViewingKey: String) {
+        fun addViewingKey(extendedFullViewingKey: String): Config = apply {
             viewingKeys.add(extendedFullViewingKey)
-        }
-
-        /**
-         * Load the most recent checkpoint available. This is useful for new wallets.
-         */
-        fun newWalletBirthday() {
-            birthdayHeight = null
-        }
-
-        /**
-         * Load the birthday checkpoint closest to the given wallet birthday. This is useful when
-         * importing a pre-existing wallet. It is the same as calling
-         * `birthdayHeight = importedHeight`.
-         */
-        fun importedWalletBirthday(importedHeight: Int) {
-            birthdayHeight = importedHeight
-        }
-
-        /**
-         * Theoretically, the oldest possible birthday a wallet could have. Useful for searching
-         * all transactions on the chain. In reality, no wallets were born at this height.
-         */
-        fun saplingBirthday() {
-            birthdayHeight = ZcashSdk.SAPLING_ACTIVATION_HEIGHT
         }
 
 
@@ -248,14 +287,17 @@ class Initializer constructor(appContext: Context, config: Config):  SdkSynchron
         }
 
         private fun validateBirthday() {
+            // if birthday is missing then we need to know how to interpret it
+            // so defaultToOldestHeight ought to be set, in that case
+            if (birthdayHeight == null && defaultToOldestHeight == null) {
+                throw InitializerException.MissingDefaultBirthdayException
+            }
             // allow either null or a value greater than the activation height
-            require(
-                (birthdayHeight ?: ZcashSdk.SAPLING_ACTIVATION_HEIGHT)
-                        >= ZcashSdk.SAPLING_ACTIVATION_HEIGHT
+            if (
+                (birthdayHeight ?: SAPLING_ACTIVATION_HEIGHT)
+                < SAPLING_ACTIVATION_HEIGHT
             ) {
-                "Invalid birthday height of $birthdayHeight. The birthday" +
-                        " height must be at least the height of Sapling activation on" +
-                        " ${ZcashSdk.NETWORK} (${ZcashSdk.SAPLING_ACTIVATION_HEIGHT})."
+                throw InitializerException.InvalidBirthdayHeightException(birthdayHeight)
             }
         }
 
