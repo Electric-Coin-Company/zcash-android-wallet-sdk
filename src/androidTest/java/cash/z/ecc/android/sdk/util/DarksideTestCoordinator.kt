@@ -69,7 +69,7 @@ class DarksideTestCoordinator(val host: String = "127.0.0.1", val testName: Stri
         twig("*************** INITIALIZING TEST COORDINATOR (ONLY ONCE) ***********************")
         val initializer = Initializer(context) { config ->
             config.seedPhrase(seedPhrase)
-            config.birthdayHeight = birthdayHeight
+            config.setBirthdayHeight(birthdayHeight)
             config.alias = testName
         }
         synchronizer = Synchronizer(initializer) as SdkSynchronizer

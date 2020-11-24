@@ -65,7 +65,7 @@
         android:layout_height="0dp"
         android:layout_margin="16dp"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/text_status"
+        app:layout_constraintTop_toBottomOf="@id/text_info"
         app:layout_constraintBottom_toTopOf="@id/guideline_content_end"
         tools:itemCount="15"
         tools:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"

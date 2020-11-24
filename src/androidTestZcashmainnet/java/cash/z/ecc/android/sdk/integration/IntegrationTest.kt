@@ -108,7 +108,7 @@ class IntegrationTest {
         private val initializer = Initializer(context) { config ->
             config.setSeed(seed)
             config.server(host, port)
-            config.birthdayHeight = birthdayHeight
+            config.setBirthdayHeight(birthdayHeight)
         }
         private val synchronizer: Synchronizer = Synchronizer(initializer)
 

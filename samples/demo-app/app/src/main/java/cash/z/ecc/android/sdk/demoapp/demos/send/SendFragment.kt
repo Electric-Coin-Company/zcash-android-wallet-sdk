@@ -51,7 +51,7 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
 
         App.instance.defaultConfig.let { config ->
             Initializer(App.instance) {
-                it.import(seed, config.birthdayHeight)
+                it.importWallet(seed, config.birthdayHeight)
                 it.server(config.host, config.port)
             }.let { initializer ->
                 synchronizer = Synchronizer(initializer)
