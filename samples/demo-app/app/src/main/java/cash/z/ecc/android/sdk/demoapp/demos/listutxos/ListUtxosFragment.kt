@@ -67,7 +67,7 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
         // have the seed stored
         seed = Mnemonics.MnemonicCode(sharedViewModel.seedPhrase.value).toSeed()
         initializer = Initializer(App.instance) {
-            it.import(seed, config.birthdayHeight)
+            it.importWallet(seed, config.birthdayHeight)
             it.alias = "Demo_Utxos"
         }
         synchronizer = Synchronizer(initializer)
