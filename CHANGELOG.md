@@ -1,6 +1,11 @@
 Change Log
 ==========
 
+Version 1.2.1-beta02 *(2020-11-24)*
+------------------------------------
+- New: Improve birthday configuration and config functions.
+- Fix: Broken layout in demo app transaction list.
+
 Version 1.2.1-beta01 *(2020-11-19)*
 ------------------------------------
 - New: Added latest checkpoints for testnet and mainnet.
