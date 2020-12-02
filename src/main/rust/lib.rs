@@ -17,7 +17,6 @@ use std::path::Path;
 use std::ptr;
 use zcash_client_backend::{
     address::RecipientAddress,
-    api::AccountId,
     data_api::{
         chain::{scan_cached_blocks, validate_chain},
         error::Error,
@@ -29,7 +28,7 @@ use zcash_client_backend::{
         encode_extended_full_viewing_key, encode_extended_spending_key, encode_payment_address,
     },
     keys::spending_key,
-    wallet::OvkPolicy,
+    wallet::{AccountId, OvkPolicy},
 };
 use zcash_client_sqlite::{
     wallet::init::{init_accounts_table, init_blocks_table, init_data_database},
