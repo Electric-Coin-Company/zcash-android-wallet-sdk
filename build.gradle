@@ -136,10 +136,11 @@ android {
         targetCompatibility JavaVersion.VERSION_1_8
     }
 
-    // ExperimentalCoroutinesApi helps to clear the build warnings
+    // ExperimentalCoroutinesApi and FlowPreview help to clear the build warnings
     kotlinOptions {
         jvmTarget = "1.8"
         freeCompilerArgs += "-Xopt-in=kotlinx.coroutines.ExperimentalCoroutinesApi"
+        freeCompilerArgs += "-Xopt-in=kotlinx.coroutines.FlowPreview"
     }
 
     packagingOptions {

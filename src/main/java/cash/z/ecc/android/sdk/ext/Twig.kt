@@ -8,6 +8,7 @@ internal typealias Leaf = String
 /**
  * A tiny log.
  */
+@Suppress("NOTHING_TO_INLINE")
 interface Twig {
 
     /**
