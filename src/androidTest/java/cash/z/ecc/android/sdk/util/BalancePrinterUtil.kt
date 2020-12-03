@@ -84,7 +84,7 @@ class BalancePrinterUtil {
             }.collect { seed ->
                 // TODO: clear the dataDb but leave the cacheDb
                 val initializer = Initializer(context) { config ->
-                    config.import(seed, birthdayHeight)
+                    config.importWallet(seed, birthdayHeight)
                     config.server(host, port)
                     config.alias = alias
                 }

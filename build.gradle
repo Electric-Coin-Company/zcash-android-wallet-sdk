@@ -27,7 +27,7 @@ buildscript {
         }
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:4.0.1'
+        classpath 'com.android.tools.build:gradle:4.0.2'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${Deps.kotlinVersion}"
         classpath "org.jetbrains.kotlin:kotlin-allopen:${Deps.kotlinVersion}"
         classpath "org.jetbrains.dokka:dokka-gradle-plugin:0.10.1"
@@ -263,7 +263,7 @@ dependencies {
 
     // sample mnemonic plugin
     androidTestImplementation 'com.github.zcash:zcash-android-wallet-plugins:1.0.1'
-    androidTestImplementation 'cash.z.ecc.android:kotlin-bip39:1.0.0-beta09'
+    androidTestImplementation 'cash.z.ecc.android:kotlin-bip39:1.0.1'
 }
 
 taskTree{

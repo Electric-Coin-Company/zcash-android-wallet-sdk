@@ -50,7 +50,7 @@ class ListTransactionsFragment : BaseDemoFragment<FragmentListTransactionsBindin
 
         App.instance.defaultConfig.let { config ->
             initializer = Initializer(App.instance) {
-                it.import(seed, config.birthdayHeight)
+                it.importWallet(seed, config.birthdayHeight)
                 it.server(config.host, config.port)
             }
             address = DerivationTool.deriveShieldedAddress(seed)

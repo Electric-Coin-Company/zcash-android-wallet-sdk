@@ -1,5 +1,7 @@
 package cash.z.ecc.android.sdk.exception
 
+import cash.z.ecc.android.sdk.ext.ZcashSdk.NETWORK
+import cash.z.ecc.android.sdk.ext.ZcashSdk.SAPLING_ACTIVATION_HEIGHT
 import cash.z.wallet.sdk.rpc.Service
 import io.grpc.Status
 import io.grpc.Status.Code.UNAVAILABLE
@@ -116,9 +118,20 @@ sealed class InitializerException(message: String, cause: Throwable? = null) :  
                 "better not to mask this error because the root issue should be addressed."
     )
     object DatabasePathException :
-        InitializerException("Critical failure to locate path for storing databases. Perhaps this" +
-                " device prevents apps from storing data? We cannot initialize the wallet unless" +
-                " we can store data.")
+        InitializerException(
+            "Critical failure to locate path for storing databases. Perhaps this device prevents" +
+                    " apps from storing data? We cannot initialize the wallet unless we can store" +
+                    " data."
+        )
+
+    class InvalidBirthdayHeightException(height: Int?) : InitializerException(
+        "Invalid birthday height of $height. The birthday height must be at least the height of" +
+                " Sapling activation on $NETWORK ($SAPLING_ACTIVATION_HEIGHT)."
+    )
+
+    object MissingDefaultBirthdayException : InitializerException(
+        "The birthday height is missing and it is unclear which value to use as a default."
+    )
 }
 
 /**

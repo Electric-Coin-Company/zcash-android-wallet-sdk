@@ -12,7 +12,7 @@ import org.junit.BeforeClass
 import java.util.concurrent.TimeoutException
 
 
-fun Initializer.Builder.seedPhrase(seedPhrase: String) {
+fun Initializer.Config.seedPhrase(seedPhrase: String) {
     setSeed(SimpleMnemonics().toSeed(seedPhrase.toCharArray()))
 }
 

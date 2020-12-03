@@ -523,7 +523,19 @@ class SdkSynchronizer internal constructor(
         val host: String
         val port: Int
         val alias: String
-        fun clear()
+    }
+
+    interface Erasable {
+        /**
+         * Erase content related to this SDK.
+         *
+         * @param appContext the application context.
+         * @param alias identifier for SDK content. It is possible for multiple synchronizers to
+         * exist with different aliases.
+         *
+         * @return true when content was found for the given alias. False otherwise.
+         */
+        fun erase(appContext: Context, alias: String = ZcashSdk.DEFAULT_ALIAS): Boolean
     }
 }
 

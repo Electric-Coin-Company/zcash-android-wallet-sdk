@@ -1,8 +1,5 @@
 package cash.z.ecc.android.sdk.demoapp
 
-import cash.z.ecc.android.sdk.demoapp.util.SimpleMnemonics
-import cash.z.ecc.android.sdk.tool.WalletBirthdayTool
-
 data class DemoConfig(
     val alias: String = "SdkDemo",
     val host: String = "lightwalletd.electriccoin.co",
