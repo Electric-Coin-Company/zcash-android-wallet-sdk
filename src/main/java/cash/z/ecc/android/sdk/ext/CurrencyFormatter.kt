@@ -1,3 +1,5 @@
+@file:Suppress("NOTHING_TO_INLINE")
+
 package cash.z.ecc.android.sdk.ext
 
 import cash.z.ecc.android.sdk.ext.Conversions.USD_FORMATTER
@@ -19,7 +21,6 @@ import java.util.*
 
 //TODO: provide a dynamic way to configure this globally for the SDK
 // For now, just make these vars so at least they could be modified in one place
-@Suppress("NOTHING_TO_INLINE")
 object Conversions {
     var ONE_ZEC_IN_ZATOSHI = BigDecimal(ZATOSHI_PER_ZEC, MathContext.DECIMAL128)
     var ZEC_FORMATTER = NumberFormat.getInstance(Locale.getDefault()).apply {
