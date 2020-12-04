@@ -175,7 +175,7 @@ class WalletTransactionEncoder(
             if (response.isSuccessful) {
                 twig("fetch succeeded")
                 val file = File(destinationDir, paramFileName)
-                if(file.parentFile.exists()) {
+                if(file.parentFile?.exists() == true) {
                     twig("directory exists!")
                 } else {
                     twig("directory did not exist attempting to make it")

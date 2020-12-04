@@ -1,5 +1,6 @@
-package cash.z.ecc.android.sdk.ext
+@file:Suppress("NOTHING_TO_INLINE")
 
+package cash.z.ecc.android.sdk.ext
 import java.util.concurrent.CopyOnWriteArraySet
 import kotlin.math.roundToLong
 
