@@ -32,7 +32,7 @@ This lightweight SDK connects Android to Zcash. It welds together Rust and Kotli
 
 ## Requirements
 
-This SDK is designed to work using a light client-server [lightwalletd](https://github.com/zcash-hackworks/lightwalletd)
+This SDK is designed to work with [lightwalletd](https://github.com/zcash-hackworks/lightwalletd)
 
 ## Structure
 
