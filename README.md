@@ -61,7 +61,7 @@ The [Synchronizer](docs/-synchronizer/README.md) takes care of
     - Downloading the latest compact blocks in a privacy-sensitive way
     - Scanning and trial decrypting those blocks for shielded transactions related to the wallet
     - Processing those related transactions into useful data for the UI
-    - Sending payments to a full node through the light client-server
+    - Sending payments to a full node through [lightwalletd](https://github.com/zcash/lightwalletd)
     - Monitoring sent payments for status updates
 
 To accomplish this, these responsibilities of the SDK are divided into separate components. Each component is coordinated by the [Synchronizer](docs/-synchronizer/README.md), which is the thread that ties it all together.
