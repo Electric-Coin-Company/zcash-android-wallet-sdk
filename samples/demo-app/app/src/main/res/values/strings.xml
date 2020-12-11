@@ -10,6 +10,7 @@
     <string name="menu_home">Home</string>
     <string name="menu_private_key">Get Private Key</string>
     <string name="menu_address">Get Address</string>
+    <string name="menu_balance">Get Balance</string>
     <string name="menu_latest_height">Get Latest Height</string>
     <string name="menu_block">Get Block</string>
     <string name="menu_block_range">Get Block Range</string>
