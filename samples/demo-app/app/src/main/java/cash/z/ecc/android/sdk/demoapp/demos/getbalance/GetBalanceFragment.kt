@@ -17,8 +17,7 @@ import cash.z.ecc.android.sdk.tool.DerivationTool
 
 class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
 
-    private lateinit var synchronizer: Synchronizer
-    private lateinit var viewingKey: String
+    private lateinit var synchronize: Synchronizer
 
     override fun inflateBinding(layoutInflater: LayoutInflater): FragmentGetBalanceBinding =
         FragmentGetBalanceBinding.inflate(layoutInflater)
@@ -29,39 +28,40 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
     }
 
     private fun setup() {
-        //
-        var seedPhrase = sharedViewModel.seedPhrase.value
+        // defaults to the value of `DemoConfig.seedWords` but can also be set by the user
+        val seedPhrase = sharedViewModel.seedPhrase.value
 
+        // Use a BIP-39 library to convert a seed phrase into a byte array. Most wallets already
+        // have the seed stored
         val seed = Mnemonics.MnemonicCode(seedPhrase).toSeed()
 
-        viewingKey = DerivationTool.deriveViewingKeys(seed).first()
+        // converting seed into viewingKey
+        val viewingKey = DerivationTool.deriveViewingKeys(seed).first()
 
+        // using the ViewingKey to initialize
         App.instance.defaultConfig.let { config ->
             Initializer(App.instance) {
                 it.importWallet(viewingKey, config.birthdayHeight)
                 it.server(config.host, config.port)
             }.let { initializer ->
-                synchronizer = Synchronizer(initializer)
+                synchronize = Synchronizer(initializer)
             }
         }
     }
 
     override fun onResume() {
         super.onResume()
-        // the lifecycleScope is used to dispose of the synchronizer when the fragment dies
-        synchronizer.start(lifecycleScope)
+        // the lifecycleScope is used to dispose of the synchronize when the fragment dies
+        synchronize.start(lifecycleScope)
         monitorChanges()
     }
 
     private fun monitorChanges() {
-        synchronizer.status.collectWith(lifecycleScope, ::onStatus)
-        synchronizer.balances.collectWith(lifecycleScope, ::onBalance)
+        synchronize.status.collectWith(lifecycleScope, ::onStatus)
+        synchronize.balances.collectWith(lifecycleScope, ::onBalance)
     }
 
     private var isSyncing = true
-        set(value) {
-            field = value
-        }
 
     private fun onBalance(balance: CompactBlockProcessor.WalletBalance) {
         this.balance = balance
@@ -74,10 +74,6 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
     }
 
     private var balance = CompactBlockProcessor.WalletBalance()
-        set(value) {
-            field = value
-        }
-
 
     private fun onStatus(status: Synchronizer.Status) {
         binding.textBalance.text = "Status: $status"
