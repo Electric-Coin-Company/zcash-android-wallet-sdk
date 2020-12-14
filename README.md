@@ -32,7 +32,7 @@ This lightweight SDK connects Android to Zcash. It welds together Rust and Kotli
 
 ## Requirements
 
-This SDK is designed to work using a light client server [lightwalletd](https://github.com/zcash-hackworks/lightwalletd)
+This SDK is designed to work with [lightwalletd](https://github.com/zcash-hackworks/lightwalletd)
 
 ## Structure
 
@@ -61,7 +61,7 @@ The [Synchronizer](docs/-synchronizer/README.md) takes care of
     - Downloading the latest compact blocks in a privacy-sensitive way
     - Scanning and trial decrypting those blocks for shielded transactions related to the wallet
     - Processing those related transactions into useful data for the UI
-    - Sending payments to a full node through the light client server
+    - Sending payments to a full node through [lightwalletd](https://github.com/zcash/lightwalletd)
     - Monitoring sent payments for status updates
 
 To accomplish this, these responsibilities of the SDK are divided into separate components. Each component is coordinated by the [Synchronizer](docs/-synchronizer/README.md), which is the thread that ties it all together.
@@ -130,7 +130,7 @@ synchronizer.sendToAddress(spendingKey, zatoshi, address, memo)
 
 ## Compiling Sources
 
-:warning: Compilation is not required unless you plan to submit a patch or fork the code. Instead, it is recommended to simply add the SDK dependencies via gradle.
+:warning: Compilation is not required unless you plan to submit a patch or fork the code. Instead, it is recommended to simply add the SDK dependencies via Gradle.
 
 In the event that you *do* want to compile the SDK from sources, follow these steps:
 
@@ -182,7 +182,7 @@ This project follows [semantic versioning](https://semver.org/) with pre-release
 | **alpha** | **Sandbox.** For developers to verify behavior and try features. Things seen here might never go to production. Most bugs here can be ignored.| Unstable: Expect bugs | Internal developers | 0XX | 1.2.3-alpha04 (10203004) |
 | **beta** | **Hand-off.** For developers to present finished features. Bugs found here should be reported and immediately addressed, if they relate to recent changes. | Unstable: Report bugs | Internal stakeholders | 2XX | 1.2.3-beta04 (10203204) |
 | **release candidate** | **Hardening.** Final testing for an app release that we believe is ready to go live. The focus here is regression testing to ensure that new changes have not introduced instability in areas that were previously working.  | Stable: Hunt for bugs | External testers | 4XX | 1.2.3-rc04 (10203404) |
-| **production** | **Delivery.** Deliver new features to end users. Any bugs found here need to be prioritized. Some will require immediate attention but most can be worked into a future release. | Stable: Prioritize bugs | Public | 8XX | 1.2.3 (10203800) |
+| **production** | **Delivery.** Deliver new features to end-users. Any bugs found here need to be prioritized. Some will require immediate attention but most can be worked into a future release. | Stable: Prioritize bugs | Public | 8XX | 1.2.3 (10203800) |
 
 [Back to contents](#contents)
 
