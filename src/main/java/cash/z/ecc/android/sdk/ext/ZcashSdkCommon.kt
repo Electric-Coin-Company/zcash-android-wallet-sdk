@@ -11,7 +11,7 @@ open class ZcashSdkCommon {
     /**
      * Miner's fee in zatoshi.
      */
-    val MINERS_FEE_ZATOSHI = 10_000L
+    val MINERS_FEE_ZATOSHI = 1_000L
 
     /**
      * The number of zatoshi that equal 1 ZEC.
