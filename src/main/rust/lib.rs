@@ -1,21 +1,21 @@
 #[macro_use]
 extern crate log;
 
-mod utils;
-
 use android_logger::Config;
+use base58::ToBase58;
 use failure::format_err;
+use hdwallet::{ExtendedPrivKey, KeyIndex};
 use jni::{
-    objects::{JClass, JString},
-    sys::{jboolean, jbyteArray, jint, jlong, jobjectArray, jstring, JNI_FALSE, JNI_TRUE},
     JNIEnv,
+    objects::{JClass, JString},
+    sys::{jboolean, jbyteArray, jint, jlong, JNI_FALSE, JNI_TRUE, jobjectArray, jstring},
 };
 use log::Level;
-use std::convert::TryFrom;
-use std::panic;
-use std::path::Path;
-use std::ptr;
+use protobuf::{Message, parse_from_bytes};
+use secp256k1::{PublicKey, Secp256k1};
+use sha2::{Digest, Sha256};
 use zcash_client_backend::{
+    address::RecipientAddress,
     encoding::{
         decode_extended_full_viewing_key, decode_extended_spending_key,
         encode_extended_full_viewing_key, encode_extended_spending_key, encode_payment_address,
@@ -23,7 +23,6 @@ use zcash_client_backend::{
     keys::spending_key,
 };
 use zcash_client_sqlite::{
-    address::RecipientAddress,
     chain::{rewind_to_height, validate_combined_chain},
     error::ErrorKind,
     init::{init_accounts_table, init_blocks_table, init_data_database},
@@ -34,48 +33,48 @@ use zcash_client_sqlite::{
     scan::{decrypt_and_store_transaction, scan_cached_blocks},
     transact::{create_to_address, OvkPolicy},
 };
-
 use zcash_primitives::{
     block::BlockHash,
-    consensus::BranchId,
+    consensus::{BlockHeight, BranchId},
     note_encryption::Memo,
     transaction::{components::Amount, Transaction},
     zip32::ExtendedFullViewingKey,
 };
+#[cfg(feature = "mainnet")]
+use zcash_primitives::consensus::MainNetwork as Network;
+#[cfg(not(feature = "mainnet"))]
+use zcash_primitives::consensus::TestNetwork as Network;
+#[cfg(feature = "mainnet")]
+use zcash_primitives::constants::mainnet::{
+    COIN_TYPE, HRP_SAPLING_EXTENDED_FULL_VIEWING_KEY, HRP_SAPLING_EXTENDED_SPENDING_KEY,
+    HRP_SAPLING_PAYMENT_ADDRESS,
+};
+#[cfg(feature = "mainnet")]
+use zcash_primitives::constants::mainnet::B58_PUBKEY_ADDRESS_PREFIX;
+#[cfg(not(feature = "mainnet"))]
+use zcash_primitives::constants::testnet::{
+    COIN_TYPE, HRP_SAPLING_EXTENDED_FULL_VIEWING_KEY, HRP_SAPLING_EXTENDED_SPENDING_KEY,
+    HRP_SAPLING_PAYMENT_ADDRESS,
+};
+#[cfg(not(feature = "mainnet"))]
+use zcash_primitives::constants::testnet::B58_PUBKEY_ADDRESS_PREFIX;
+use zcash_primitives::legacy::TransparentAddress;
 use zcash_proofs::prover::LocalTxProver;
+
+use local_rpc_types::{TransactionDataList, TransparentTransaction, TransparentTransactionList};
+use std::convert::TryFrom;
+use std::convert::TryInto;
+use std::panic;
+use std::path::Path;
+use std::ptr;
 
 use crate::utils::exception::unwrap_exc_or;
 
-#[cfg(feature = "mainnet")]
-use zcash_primitives::consensus::MainNetwork as Network;
-
-#[cfg(not(feature = "mainnet"))]
-use zcash_primitives::consensus::TestNetwork as Network;
-
-#[cfg(feature = "mainnet")]
-use zcash_client_backend::constants::mainnet::{
-    COIN_TYPE, HRP_SAPLING_EXTENDED_FULL_VIEWING_KEY, HRP_SAPLING_EXTENDED_SPENDING_KEY,
-    HRP_SAPLING_PAYMENT_ADDRESS,
-};
-#[cfg(not(feature = "mainnet"))]
-use zcash_client_backend::constants::testnet::{
-    COIN_TYPE, HRP_SAPLING_EXTENDED_FULL_VIEWING_KEY, HRP_SAPLING_EXTENDED_SPENDING_KEY,
-    HRP_SAPLING_PAYMENT_ADDRESS,
-};
+mod utils;
 
 // /////////////////////////////////////////////////////////////////////////////////////////////////
 // Temporary Imports
 mod local_rpc_types;
-use base58::ToBase58;
-use local_rpc_types::{TransactionDataList, TransparentTransaction, TransparentTransactionList};
-use protobuf::{parse_from_bytes, Message};
-use sha2::{Digest, Sha256};
-use zcash_primitives::legacy::TransparentAddress;
-
-use hdwallet::{ExtendedPrivKey, KeyIndex};
-use secp256k1::{PublicKey, Secp256k1};
-use zcash_client_backend::constants::mainnet::B58_PUBKEY_ADDRESS_PREFIX;
-
 // use crate::extended_key::{key_index::KeyIndex, ExtendedPrivKey, ExtendedPubKey, KeySeed};
 // /////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -144,7 +143,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_initAccount
             .collect();
         let extfvks: Vec<_> = extsks.iter().map(ExtendedFullViewingKey::from).collect();
 
-        match init_accounts_table(&db_data, &extfvks) {
+        match init_accounts_table(&db_data, &Network, &extfvks) {
             Ok(()) => {
                 // Return the ExtendedSpendingKeys for the created accounts
                 Ok(utils::rust_vec_to_java(
@@ -187,7 +186,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_initAccount
             })
             .collect::<Vec<_>>();
 
-        match init_accounts_table(&db_data, &extfvks) {
+        match init_accounts_table(&db_data, &Network, &extfvks) {
             Ok(()) => Ok(JNI_TRUE),
             Err(e) => Err(format_err!("Error while initializing accounts: {}", e)),
         }
@@ -432,7 +431,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_isValidShie
     let res = panic::catch_unwind(|| {
         let addr = utils::java_string_to_rust(&env, addr);
 
-        match RecipientAddress::from_str(&addr) {
+        match RecipientAddress::decode(&Network, &addr) {
             Some(addr) => match addr {
                 RecipientAddress::Shielded(_) => Ok(JNI_TRUE),
                 RecipientAddress::Transparent(_) => Ok(JNI_FALSE),
@@ -452,7 +451,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_isValidTran
     let res = panic::catch_unwind(|| {
         let addr = utils::java_string_to_rust(&env, addr);
 
-        match RecipientAddress::from_str(&addr) {
+        match RecipientAddress::decode(&Network, &addr) {
             Some(addr) => match addr {
                 RecipientAddress::Shielded(_) => Ok(JNI_FALSE),
                 RecipientAddress::Transparent(_) => Ok(JNI_TRUE),
@@ -562,9 +561,12 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_validateCom
         let db_cache = utils::java_string_to_rust(&env, db_cache);
         let db_data = utils::java_string_to_rust(&env, db_data);
 
-        if let Err(e) = validate_combined_chain(&db_cache, &db_data) {
+        if let Err(e) = validate_combined_chain(Network, &db_cache, &db_data) {
             match e.kind() {
-                ErrorKind::InvalidChain(upper_bound, _) => Ok(*upper_bound),
+                ErrorKind::InvalidChain(upper_bound, _) => {
+                    let upper_bound_u32 = u32::from(*upper_bound);
+                    Ok(upper_bound_u32 as i32)
+                }
                 _ => Err(format_err!("Error while validating chain: {}", e)),
             }
         } else {
@@ -585,7 +587,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_rewindToHei
     let res = panic::catch_unwind(|| {
         let db_data = utils::java_string_to_rust(&env, db_data);
 
-        match rewind_to_height(&db_data, height) {
+        match rewind_to_height(Network, &db_data, BlockHeight::from(height as u32)) {
             Ok(()) => Ok(JNI_TRUE),
             Err(e) => Err(format_err!(
                 "Error while rewinding data DB to height {}: {}",
@@ -608,7 +610,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_scanBlocks(
         let db_cache = utils::java_string_to_rust(&env, db_cache);
         let db_data = utils::java_string_to_rust(&env, db_data);
 
-        match scan_cached_blocks(&db_cache, &db_data, None) {
+        match scan_cached_blocks(&Network, &db_cache, &db_data, None) {
             Ok(()) => Ok(JNI_TRUE),
             Err(e) => Err(format_err!("Error while scanning blocks: {}", e)),
         }
@@ -629,7 +631,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_scanBlockBa
         let db_cache = utils::java_string_to_rust(&env, db_cache);
         let db_data = utils::java_string_to_rust(&env, db_data);
 
-        match scan_cached_blocks(&db_cache, &db_data, Some(limit)) {
+        match scan_cached_blocks(&Network, &db_cache, &db_data, Some(limit.try_into().unwrap())) {
             Ok(()) => Ok(JNI_TRUE),
             Err(e) => Err(format_err!("Error while scanning blocks: {}", e)),
         }
@@ -656,7 +658,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_parseTransa
         for data in input_tx_data.data.iter() {
             let mut tx = TransparentTransaction::new();
             let parsed = Transaction::read(&data[..])?;
-            tx.set_expiryHeight(parsed.expiry_height);
+            tx.set_expiryHeight(u32::from(parsed.expiry_height));
             // Note: the wrong value is returned here (negative numbers)
             tx.set_value(i64::from(parsed.value_balance));
             tx.set_hasShieldedSpends(parsed.shielded_spends.len() > 0);
@@ -736,7 +738,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_decryptAndS
         let tx_bytes = env.convert_byte_array(tx).unwrap();
         let tx = Transaction::read(&tx_bytes[..])?;
 
-        match decrypt_and_store_transaction(&db_data, &tx) {
+        match decrypt_and_store_transaction(&db_data, &Network, &tx) {
             Ok(()) => Ok(JNI_TRUE),
             Err(e) => Err(format_err!("Error while decrypting transaction: {}", e)),
         }
@@ -786,7 +788,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_createToAdd
             }
         };
 
-        let to = match RecipientAddress::from_str(&to) {
+        let to = match RecipientAddress::decode(&Network, &to) {
             Some(to) => to,
             None => {
                 return Err(format_err!("Address is for the wrong network"));
@@ -807,6 +809,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_createToAdd
         // let branch = if
         create_to_address(
             &db_data,
+            &Network,
             branch_id,
             prover,
             (account, &extsk),
@@ -827,7 +830,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_branchIdFor
     height: jint,
 ) -> jint {
     let res = panic::catch_unwind(|| {
-        let branch: BranchId = BranchId::for_height::<Network>(height as u32);
+        let branch: BranchId = BranchId::for_height::<Network>(&Network, BlockHeight::from(height as u32));
         let branch_id: u32 = u32::from(branch);
         debug!("For height {} found consensus branch {:?}", height, branch);
         Ok(branch_id as i32)
