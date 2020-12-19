@@ -2,6 +2,7 @@ package cash.z.ecc.android.sdk.demoapp.demos.getbalance
 
 import android.os.Bundle
 import android.view.LayoutInflater
+import android.view.View
 import androidx.lifecycle.lifecycleScope
 import cash.z.ecc.android.bip39.Mnemonics
 import cash.z.ecc.android.bip39.toSeed
@@ -62,6 +63,8 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
 
     private fun monitorChanges() {
         synchronizer.status.collectWith(lifecycleScope, ::onStatus)
+        synchronizer.progress.collectWith(lifecycleScope, ::onProgress)
+        synchronizer.processorInfo.collectWith(lifecycleScope, ::onProcessorInfoUpdated)
         synchronizer.balances.collectWith(lifecycleScope, ::onBalance)
     }
 
@@ -75,11 +78,17 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
 
 
     private fun onStatus(status: Synchronizer.Status) {
-        binding.textBalance.text = "Status: $status"
+        binding.textStatus.text = "Status: $status"
         if (CompactBlockProcessor.WalletBalance().none()) {
             binding.textBalance.text = "Calculating balance..."
         } else {
             onBalance(synchronizer.latestBalance)
+        }
+    }
+
+    private fun onProgress(i: Int) {
+        if (i < 100) {
+            binding.textStatus.text = "Downloading blocks...$i%"
         }
     }
 
@@ -90,5 +99,9 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
         if(synchronizer.latestBalance.totalZatoshi == -1L
             && synchronizer.latestBalance.availableZatoshi == -1L) return true
         return false
+    }
+
+    private fun onProcessorInfoUpdated(info: CompactBlockProcessor.ProcessorInfo) {
+        if (info.isScanning) binding.textStatus.text = "Scanning blocks...${info.scanProgress}%"
     }
 }
