@@ -41,8 +41,8 @@ The demo app is not trying to show what's possible, but to present how to accomp
 Menu Item|Related Code|Description
 :-----|:-----|:-----
 Get Private Key|[GetPrivateKeyFragment.kt](app/src/main/java/cash/z/ecc/android/sdk/demoapp/demos/getprivatekey/GetPrivateKeyFragment.kt)|Given a seed, display its viewing key and spending key 
-Get Balance|[GetBalanceFragment.kt](app/src/main/java/cash/z/ecc/android/sdk/demoapp/demos/getbalance/GetBalanceFragment.kt)|Display the balance
 Get Address|[GetAddressFragment.kt](app/src/main/java/cash/z/ecc/android/sdk/demoapp/demos/getaddress/GetAddressFragment.kt)|Given a seed, display its z-addr
+Get Balance|[GetBalanceFragment.kt](app/src/main/java/cash/z/ecc/android/sdk/demoapp/demos/getbalance/GetBalanceFragment.kt)|Display the balance
 Get Latest Height|[GetLatestHeightFragment.kt](app/src/main/java/cash/z/ecc/android/sdk/demoapp/demos/getlatestheight/GetLatestHeightFragment.kt)|Given a lightwalletd server, retrieve the latest block height
 Get Block|[GetBlockFragment.kt](app/src/main/java/cash/z/ecc/android/sdk/demoapp/demos/getblock/GetBlockFragment.kt)|Given a lightwalletd server, retrieve a compact block
 Get Block Range|[GetBlockRangeFragment.kt](app/src/main/java/cash/z/ecc/android/sdk/demoapp/demos/getblockrange/GetBlockRangeFragment.kt)|Given a lightwalletd server, retrieve a range of compact blocks
