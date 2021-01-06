@@ -1,6 +1,11 @@
 Change Log
 ==========
 
+Version 1.2.1-beta04 *(2021-01-05)*
+------------------------------------
+- New: Updated to latest versions of grpc, grpc-okhttp and protoc
+- Fix: Addresses root issue of Android 11 crash on SSL sockets
+
 Version 1.2.1-beta03 *(2020-12-18)*
 ------------------------------------
 - New: Implements ZIP-313, reducing the default fee from 10,000 to 1,000 zats.
