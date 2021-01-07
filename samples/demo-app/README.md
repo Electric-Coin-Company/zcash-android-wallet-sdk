@@ -42,11 +42,13 @@ Menu Item|Related Code|Description
 :-----|:-----|:-----
 Get Private Key|[GetPrivateKeyFragment.kt](app/src/main/java/cash/z/ecc/android/sdk/demoapp/demos/getprivatekey/GetPrivateKeyFragment.kt)|Given a seed, display its viewing key and spending key 
 Get Address|[GetAddressFragment.kt](app/src/main/java/cash/z/ecc/android/sdk/demoapp/demos/getaddress/GetAddressFragment.kt)|Given a seed, display its z-addr
+Get Balance|[GetBalanceFragment.kt](app/src/main/java/cash/z/ecc/android/sdk/demoapp/demos/getbalance/GetBalanceFragment.kt)|Display the balance
 Get Latest Height|[GetLatestHeightFragment.kt](app/src/main/java/cash/z/ecc/android/sdk/demoapp/demos/getlatestheight/GetLatestHeightFragment.kt)|Given a lightwalletd server, retrieve the latest block height
 Get Block|[GetBlockFragment.kt](app/src/main/java/cash/z/ecc/android/sdk/demoapp/demos/getblock/GetBlockFragment.kt)|Given a lightwalletd server, retrieve a compact block
 Get Block Range|[GetBlockRangeFragment.kt](app/src/main/java/cash/z/ecc/android/sdk/demoapp/demos/getblockrange/GetBlockRangeFragment.kt)|Given a lightwalletd server, retrieve a range of compact blocks
 List Transactions|[ListTransactionsFragment.kt](app/src/main/java/cash/z/ecc/android/sdk/demoapp/demos/listtransactions/ListTransactionsFragment.kt)|Given a seed, list all related shielded transactions
 Send|[SendFragment.kt](app/src/main/java/cash/z/ecc/android/sdk/demoapp/demos/send/SendFragment.kt)|Send and monitor a transaction, the most complex demo
+
 
 [Back to contents](#contents)
 

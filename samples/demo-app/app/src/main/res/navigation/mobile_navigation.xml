@@ -18,6 +18,11 @@
         android:label="@string/menu_address"
         tools:layout="@layout/fragment_get_address" />
     <fragment
+        android:id="@+id/nav_balance"
+        android:name="cash.z.ecc.android.sdk.demoapp.demos.getbalance.GetBalanceFragment"
+        android:label="@string/menu_balance"
+        tools:layout="@layout/fragment_get_balance" />
+    <fragment
         android:id="@+id/nav_private_key"
         android:name="cash.z.ecc.android.sdk.demoapp.demos.getprivatekey.GetPrivateKeyFragment"
         android:label="@string/menu_private_key"
