@@ -1,3 +1,5 @@
+@file:Suppress("NOTHING_TO_INLINE")
+
 package cash.z.ecc.android.sdk.ext
 
 import cash.z.ecc.android.sdk.ext.Conversions.USD_FORMATTER
