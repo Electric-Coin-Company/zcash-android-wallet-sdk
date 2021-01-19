@@ -110,6 +110,7 @@ class SaplingParamTool {
             ).forEach { paramFileName ->
                 val file = File(destinationDir, paramFileName)
                 if(file.exists()){
+                    twig("Files does  exist!")
                     return true
                 }
             }
@@ -128,7 +129,6 @@ class SaplingParamTool {
          */
         private fun createHttpClient(): OkHttpClient {
             //TODO: add logging and timeouts
-
             return OkHttpClient()
         }
     }
