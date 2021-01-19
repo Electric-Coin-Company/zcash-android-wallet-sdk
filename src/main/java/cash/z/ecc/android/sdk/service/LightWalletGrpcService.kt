@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit
 
 /**
  * Implementation of LightwalletService using gRPC for requests to lightwalletd.
- * 
+ *
  * @property channel the channel to use for communicating with the lightwalletd server.
  * @property singleRequestTimeoutSec the timeout to use for non-streaming requests. When a new stub
  * is created, it will use a deadline that is after the given duration from now.
@@ -81,7 +81,7 @@ class LightWalletGrpcService private constructor(
             return Service.SendResponse.newBuilder().setErrorCode(3000)
                 .setErrorMessage(
                     "ERROR: failed to submit transaction because it was empty" +
-                            " so this request was ignored on the client-side."
+                        " so this request was ignored on the client-side."
                 )
                 .build()
         }
@@ -121,7 +121,8 @@ class LightWalletGrpcService private constructor(
     }
 
     override fun reconnect() {
-        twig("closing existing channel and then reconnecting to ${connectionInfo.host}:" +
+        twig(
+            "closing existing channel and then reconnecting to ${connectionInfo.host}:" +
                 "${connectionInfo.port}?usePlaintext=${connectionInfo.usePlaintext}"
         )
         channel.shutdown()
@@ -132,7 +133,6 @@ class LightWalletGrpcService private constructor(
             connectionInfo.usePlaintext
         )
     }
-
 
     //
     // Utilities
@@ -189,7 +189,8 @@ class LightWalletGrpcService private constructor(
                     if (usePlaintext) {
                         if (!appContext.resources.getBoolean(
                                 R.bool.lightwalletd_allow_very_insecure_connections
-                            )) throw LightWalletException.InsecureConnection
+                            )
+                        ) throw LightWalletException.InsecureConnection
                         usePlaintext()
                     } else {
                         useTransportSecurity()

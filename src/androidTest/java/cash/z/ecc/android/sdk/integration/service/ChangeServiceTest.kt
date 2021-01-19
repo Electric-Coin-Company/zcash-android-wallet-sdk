@@ -3,8 +3,8 @@ package cash.z.ecc.android.sdk.integration.service
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import cash.z.ecc.android.sdk.block.CompactBlockDownloader
 import cash.z.ecc.android.sdk.block.CompactBlockStore
-import cash.z.ecc.android.sdk.exception.LightWalletException
-import cash.z.ecc.android.sdk.exception.LightWalletException.ChangeServerException.*
+import cash.z.ecc.android.sdk.exception.LightWalletException.ChangeServerException.ChainInfoNotMatching
+import cash.z.ecc.android.sdk.exception.LightWalletException.ChangeServerException.StatusException
 import cash.z.ecc.android.sdk.ext.ScopedTest
 import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.ext.twig
@@ -14,7 +14,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.junit.After
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -87,7 +89,6 @@ class ChangeServiceTest : ScopedTest() {
         assertEquals(count, vendors.size)
     }
 
-
     @Test
     fun testSwitchToInvalidServer() = runBlocking {
         var caughtException: Throwable? = null
@@ -120,5 +121,4 @@ class ChangeServiceTest : ScopedTest() {
             }
         }
     }
-
 }

@@ -40,7 +40,6 @@ httpbis = { version = "0.9", optional = true }
 tls-api = { version = "0.4", optional = true }
 tls-api-rustls = { version = "0.4", optional = true }
 
-
 [build-dependencies]
 protobuf-codegen-pure = "2.14"
 

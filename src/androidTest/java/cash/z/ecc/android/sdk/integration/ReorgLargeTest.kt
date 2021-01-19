@@ -1,25 +1,25 @@
-//package cash.z.ecc.android.sdk.integration
+// package cash.z.ecc.android.sdk.integration
 //
-//import androidx.test.platform.app.InstrumentationRegistry
-//import cash.z.ecc.android.sdk.Initializer
-//import cash.z.ecc.android.sdk.SdkSynchronizer
-//import cash.z.ecc.android.sdk.Synchronizer
-//import cash.z.ecc.android.sdk.ext.ScopedTest
-//import cash.z.ecc.android.sdk.ext.import
-//import cash.z.ecc.android.sdk.ext.twig
-//import cash.z.ecc.android.sdk.util.DarksideApi
-//import io.grpc.StatusRuntimeException
-//import kotlinx.coroutines.delay
-//import kotlinx.coroutines.flow.filter
-//import kotlinx.coroutines.flow.first
-//import kotlinx.coroutines.flow.onEach
-//import kotlinx.coroutines.runBlocking
-//import org.junit.Assert.*
-//import org.junit.Before
-//import org.junit.BeforeClass
-//import org.junit.Test
+// import androidx.test.platform.app.InstrumentationRegistry
+// import cash.z.ecc.android.sdk.Initializer
+// import cash.z.ecc.android.sdk.SdkSynchronizer
+// import cash.z.ecc.android.sdk.Synchronizer
+// import cash.z.ecc.android.sdk.ext.ScopedTest
+// import cash.z.ecc.android.sdk.ext.import
+// import cash.z.ecc.android.sdk.ext.twig
+// import cash.z.ecc.android.sdk.util.DarksideApi
+// import io.grpc.StatusRuntimeException
+// import kotlinx.coroutines.delay
+// import kotlinx.coroutines.flow.filter
+// import kotlinx.coroutines.flow.first
+// import kotlinx.coroutines.flow.onEach
+// import kotlinx.coroutines.runBlocking
+// import org.junit.Assert.*
+// import org.junit.Before
+// import org.junit.BeforeClass
+// import org.junit.Test
 //
-//class ReorgHandlingTest : ScopedTest() {
+// class ReorgHandlingTest : ScopedTest() {
 //
 //    @Before
 //    fun setup() {
@@ -59,15 +59,15 @@
 //        triggerSmallReorg()
 //        assertTrue(hadReorg)
 //    }
-////    @Test
-////    fun testSync_100Blocks()= timeout(10_000L) {
-////        // validate that we are synced below the target height, at first
-////        synchronizer.validateMaxSyncHeight(targetHeight - 1)
-////        // then trigger and await more blocks
-////        synchronizer.awaitHeight(targetHeight)
-////        // validate that we are above the target height afterward
-////        synchronizer.validateMinSyncHeight(targetHeight)
-////    }
+// //    @Test
+// //    fun testSync_100Blocks()= timeout(10_000L) {
+// //        // validate that we are synced below the target height, at first
+// //        synchronizer.validateMaxSyncHeight(targetHeight - 1)
+// //        // then trigger and await more blocks
+// //        synchronizer.awaitHeight(targetHeight)
+// //        // validate that we are above the target height afterward
+// //        synchronizer.validateMinSyncHeight(targetHeight)
+// //    }
 //
 //    private fun Synchronizer.awaitSync() = runBlocking<Unit> {
 //        twig("***  Waiting for sync ***")
@@ -81,7 +81,7 @@
 //
 //    private fun Synchronizer.awaitHeight(height: Int) = runBlocking<Unit> {
 //        twig("***  Waiting for block $height ***")
-////        processorInfo.first { it.lastScannedHeight >= height }
+// //        processorInfo.first { it.lastScannedHeight >= height }
 //        processorInfo.onEach {
 //            twig("got processor info $it")
 //            delay(1000)
@@ -155,86 +155,86 @@
 //    }
 //    /*
 //
-//beginning to process new blocks (with lower bound: 663050)...
-//downloading blocks in range 663202..663202
-//found 1 missing blocks, downloading in 1 batches of 100...
-//downloaded 663202..663202 (batch 1 of 1) [663202..663202] | 10ms
-//validating blocks in range 663202..663202 in db: /data/user/0/cash.z.ecc.android.sdk.test/databases/ReorgTest22_Cache.db
-//offset = min(100, 10 * (1)) = 10
-//lowerBound = max(663201 - 10, 663050) = 663191
-//handling chain error at 663201 by rewinding to block 663191
-//Chain error detected at height: 663201. Rewinding to: 663191
-//beginning to process new blocks (with lower bound: 663050)...
-//downloading blocks in range 663192..663202
-//found 11 missing blocks, downloading in 1 batches of 100...
-//downloaded 663192..663202 (batch 1 of 1) [663192..663202] | 8ms
-//validating blocks in range 663192..663202 in db: /data/user/0/cash.z.ecc.android.sdk.test/databases/ReorgTest22_Cache.db
-//offset = min(100, 10 * (2)) = 20
-//lowerBound = max(663191 - 20, 663050) = 663171
-//handling chain error at 663191 by rewinding to block 663171
-//Chain error detected at height: 663191. Rewinding to: 663171
-//beginning to process new blocks (with lower bound: 663050)...
-//downloading blocks in range 663172..663202
-//found 31 missing blocks, downloading in 1 batches of 100...
-//downloaded 663172..663202 (batch 1 of 1) [663172..663202] | 15ms
-//validating blocks in range 663172..663202 in db: /data/user/0/cash.z.ecc.android.sdk.test/databases/ReorgTest22_Cache.db
-//scanning blocks for range 663172..663202 in batches
-//batch scanned: 663202/663202
-//batch scan complete!
-//Successfully processed new blocks. Sleeping for 20000ms
+// beginning to process new blocks (with lower bound: 663050)...
+// downloading blocks in range 663202..663202
+// found 1 missing blocks, downloading in 1 batches of 100...
+// downloaded 663202..663202 (batch 1 of 1) [663202..663202] | 10ms
+// validating blocks in range 663202..663202 in db: /data/user/0/cash.z.ecc.android.sdk.test/databases/ReorgTest22_Cache.db
+// offset = min(100, 10 * (1)) = 10
+// lowerBound = max(663201 - 10, 663050) = 663191
+// handling chain error at 663201 by rewinding to block 663191
+// chain error detected at height: 663201. Rewinding to: 663191
+// beginning to process new blocks (with lower bound: 663050)...
+// downloading blocks in range 663192..663202
+// found 11 missing blocks, downloading in 1 batches of 100...
+// downloaded 663192..663202 (batch 1 of 1) [663192..663202] | 8ms
+// validating blocks in range 663192..663202 in db: /data/user/0/cash.z.ecc.android.sdk.test/databases/ReorgTest22_Cache.db
+// offset = min(100, 10 * (2)) = 20
+// lowerBound = max(663191 - 20, 663050) = 663171
+// handling chain error at 663191 by rewinding to block 663171
+// chain error detected at height: 663191. Rewinding to: 663171
+// beginning to process new blocks (with lower bound: 663050)...
+// downloading blocks in range 663172..663202
+// found 31 missing blocks, downloading in 1 batches of 100...
+// downloaded 663172..663202 (batch 1 of 1) [663172..663202] | 15ms
+// validating blocks in range 663172..663202 in db: /data/user/0/cash.z.ecc.android.sdk.test/databases/ReorgTest22_Cache.db
+// scanning blocks for range 663172..663202 in batches
+// batch scanned: 663202/663202
+// batch scan complete!
+// Successfully processed new blocks. Sleeping for 20000ms
 //
 //     */
-////
-////    @Test
-////    fun testHeightChange() {
-////        setTargetHeight(targetHeight)
-////        synchronizer.validateSyncedTo(targetHeight)
-////    }
-////
-////    @Test
-////    fun testSmallReorgSync() {
-////        verifyReorgSync(smallReorgSize)
-////    }
-////
-////    @Test
-////    fun testSmallReorgCallback() {
-////        verifyReorgCallback(smallReorgSize)
-////    }
-////
-////    @Test
-////    fun testLargeReorgSync() {
-////        verifyReorgSync(largeReorgSize)
-////    }
-////
-////    @Test
-////    fun testLargeReorgCallback() {
-////        verifyReorgCallback(largeReorgSize)
-////    }
-////
-////
-////    //
-////    // Helper Functions
-////    //
-////
-////    fun verifyReorgSync(reorgSize: Int) {
-////        setTargetHeight(targetHeight)
-////        synchronizer.validateSyncedTo(targetHeight)
-////        getHash(targetHeight).let { initialHash ->
-////            setReorgHeight(targetHeight - reorgSize)
-////            synchronizer.validateSyncedTo(targetHeight)
-////            assertNotEquals("Hash should change after a reorg", initialHash, getHash(targetHeight))
-////        }
-////    }
-////
-////    fun verifyReorgCallback(reorgSize: Int) {
-////        setTargetHeight(targetHeight)
-////        synchronizer.validateSyncedTo(targetHeight)
-////        getHash(targetHeight).let { initialHash ->
-////            setReorgHeight(targetHeight - 10)
-////            synchronizer.validateReorgCallback()
-////        }
-////    }
+// //
+// //    @Test
+// //    fun testHeightChange() {
+// //        setTargetHeight(targetHeight)
+// //        synchronizer.validateSyncedTo(targetHeight)
+// //    }
+// //
+// //    @Test
+// //    fun testSmallReorgSync() {
+// //        verifyReorgSync(smallReorgSize)
+// //    }
+// //
+// //    @Test
+// //    fun testSmallReorgCallback() {
+// //        verifyReorgCallback(smallReorgSize)
+// //    }
+// //
+// //    @Test
+// //    fun testLargeReorgSync() {
+// //        verifyReorgSync(largeReorgSize)
+// //    }
+// //
+// //    @Test
+// //    fun testLargeReorgCallback() {
+// //        verifyReorgCallback(largeReorgSize)
+// //    }
+// //
+// //
+// //    //
+// //    // Helper Functions
+// //    //
+// //
+// //    fun verifyReorgSync(reorgSize: Int) {
+// //        setTargetHeight(targetHeight)
+// //        synchronizer.validateSyncedTo(targetHeight)
+// //        getHash(targetHeight).let { initialHash ->
+// //            setReorgHeight(targetHeight - reorgSize)
+// //            synchronizer.validateSyncedTo(targetHeight)
+// //            assertNotEquals("Hash should change after a reorg", initialHash, getHash(targetHeight))
+// //        }
+// //    }
+// //
+// //    fun verifyReorgCallback(reorgSize: Int) {
+// //        setTargetHeight(targetHeight)
+// //        synchronizer.validateSyncedTo(targetHeight)
+// //        getHash(targetHeight).let { initialHash ->
+// //            setReorgHeight(targetHeight - 10)
+// //            synchronizer.validateReorgCallback()
+// //        }
+// //    }
 //
 //
-//}
+// }
 //

@@ -40,6 +40,4 @@ class ReorgSetupTest : ScopedTest() {
             sithLord.synchronizer.start(classScope)
         }
     }
-
 }
-

@@ -20,11 +20,11 @@ class RustBackend private constructor() : RustBackendWelding {
 
     // Paths
     lateinit var pathDataDb: String
-    internal set
+        internal set
     lateinit var pathCacheDb: String
-    internal set
+        internal set
     lateinit var pathParamsDir: String
-    internal set
+        internal set
 
     internal var birthdayHeight: Int = -1
         get() = if (field != -1) field else throw BirthdayException.UninitializedBirthdayException
@@ -40,7 +40,6 @@ class RustBackend private constructor() : RustBackendWelding {
             File(pathDataDb).delete()
         }
     }
-
 
     //
     // Wrapper Functions
@@ -105,8 +104,8 @@ class RustBackend private constructor() : RustBackendWelding {
         to,
         value,
         memo ?: ByteArray(0),
-        "${pathParamsDir}/$SPEND_PARAM_FILE_NAME",
-        "${pathParamsDir}/$OUTPUT_PARAM_FILE_NAME"
+        "$pathParamsDir/$SPEND_PARAM_FILE_NAME",
+        "$pathParamsDir/$OUTPUT_PARAM_FILE_NAME"
     )
 
     override fun isValidShieldedAddr(addr: String) = isValidShieldedAddress(addr)
@@ -183,7 +182,6 @@ class RustBackend private constructor() : RustBackendWelding {
                 twig("Error while loading native library: ${e.message}")
             }
         }
-
 
         //
         // External Functions

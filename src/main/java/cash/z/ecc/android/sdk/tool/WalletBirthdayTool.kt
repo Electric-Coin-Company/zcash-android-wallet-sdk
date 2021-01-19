@@ -7,7 +7,7 @@ import cash.z.ecc.android.sdk.ext.twig
 import com.google.gson.Gson
 import com.google.gson.stream.JsonReader
 import java.io.InputStreamReader
-import java.util.*
+import java.util.Arrays
 
 /**
  * Tool for loading checkpoints for the wallet, based on the height at which the wallet was born.
@@ -86,13 +86,15 @@ class WalletBirthdayTool(appContext: Context) {
         ): WalletBirthday {
             twig("loading birthday from assets: $birthdayHeight")
             val treeFiles =
-                context.assets.list(BIRTHDAY_DIRECTORY)?.apply { sortByDescending { fileName ->
-                    try {
-                        fileName.split('.').first().toInt()
-                    } catch (t: Throwable) {
-                        ZcashSdk.SAPLING_ACTIVATION_HEIGHT
+                context.assets.list(BIRTHDAY_DIRECTORY)?.apply {
+                    sortByDescending { fileName ->
+                        try {
+                            fileName.split('.').first().toInt()
+                        } catch (t: Throwable) {
+                            ZcashSdk.SAPLING_ACTIVATION_HEIGHT
+                        }
                     }
-                } }
+                }
             if (treeFiles.isNullOrEmpty()) throw BirthdayException.MissingBirthdayFilesException(
                 BIRTHDAY_DIRECTORY
             )
@@ -112,7 +114,7 @@ class WalletBirthdayTool(appContext: Context) {
             }
             try {
                 val reader = JsonReader(
-                    InputStreamReader(context.assets.open("${BIRTHDAY_DIRECTORY}/$file"))
+                    InputStreamReader(context.assets.open("$BIRTHDAY_DIRECTORY/$file"))
                 )
                 return Gson().fromJson(reader, WalletBirthday::class.java)
             } catch (t: Throwable) {

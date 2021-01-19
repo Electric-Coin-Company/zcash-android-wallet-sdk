@@ -61,7 +61,7 @@ class SetupTest : ScopedTest() {
 //            sithLord
 //                .enterTheDarkside()
 //                    // TODO: fix this
-////                .resetBlocks(blocksUrl, startHeight = firstBlock, tipHeight = lastBlock)
+// //                .resetBlocks(blocksUrl, startHeight = firstBlock, tipHeight = lastBlock)
 //                .startSync(classScope)
 //                .await()
 //        }

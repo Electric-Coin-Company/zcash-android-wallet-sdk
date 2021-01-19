@@ -4,6 +4,7 @@ import cash.z.ecc.android.sdk.jni.RustBackend
 import cash.z.ecc.android.sdk.jni.RustBackendWelding
 
 class DerivationTool {
+
     companion object : RustBackendWelding.Derivation {
 
         /**
@@ -78,11 +79,9 @@ class DerivationTool {
             deriveTransparentAddressFromSeed(seed)
         }
 
-
         fun validateViewingKey(viewingKey: String) {
             // TODO
         }
-
 
         /**
          * A helper function to ensure that the Rust libraries are loaded before any code in this
@@ -93,7 +92,6 @@ class DerivationTool {
             RustBackend.load()
             return block()
         }
-
 
         //
         // JNI functions

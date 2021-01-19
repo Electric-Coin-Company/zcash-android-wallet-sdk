@@ -55,6 +55,4 @@ class ReorgSmallTest : ScopedTest() {
             sithLord.synchronizer.start(classScope)
         }
     }
-
 }
-

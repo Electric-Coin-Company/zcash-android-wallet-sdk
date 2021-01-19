@@ -47,7 +47,6 @@ interface Synchronizer {
      */
     fun stop()
 
-
     //
     // Flows
     //
@@ -102,7 +101,6 @@ interface Synchronizer {
      */
     val receivedTransactions: Flow<PagedList<ConfirmedTransaction>>
 
-
     //
     // Latest Properties
     //
@@ -116,7 +114,6 @@ interface Synchronizer {
      * An in-memory reference to the most recently calculated balance.
      */
     val latestBalance: WalletBalance
-
 
     //
     // Operations
@@ -153,7 +150,6 @@ interface Synchronizer {
         memo: String = "",
         fromAccountIndex: Int = 0
     ): Flow<PendingTransaction>
-
 
     /**
      * Returns true when the given address is a valid z-addr. Invalid addresses will throw an
@@ -233,7 +229,6 @@ interface Synchronizer {
         port: Int = ZcashSdk.DEFAULT_LIGHTWALLETD_PORT,
         errorHandler: (Throwable) -> Unit = { throw it }
     )
-
 
     //
     // Error Handling
@@ -319,4 +314,3 @@ interface Synchronizer {
         SYNCED
     }
 }
-

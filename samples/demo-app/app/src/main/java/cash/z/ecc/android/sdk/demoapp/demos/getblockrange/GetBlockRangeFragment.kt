@@ -46,8 +46,8 @@ class GetBlockRangeFragment : BaseDemoFragment<FragmentGetBlockRangeBinding>() {
             val processTime = System.currentTimeMillis() - start - fetchDelta
             """
                 <b>total blocks:</b> ${count.withCommas()}
-                <br/><b>fetch time:</b> ${if(fetchDelta > 1000) "%.2f sec".format(fetchDelta/1000.0) else "%d ms".format(fetchDelta)}
-                <br/><b>process time:</b> ${if(processTime > 1000) "%.2f sec".format(processTime/1000.0) else "%d ms".format(processTime)}
+                <br/><b>fetch time:</b> ${if (fetchDelta > 1000) "%.2f sec".format(fetchDelta/1000.0) else "%d ms".format(fetchDelta)}
+                <br/><b>process time:</b> ${if (processTime > 1000) "%.2f sec".format(processTime/1000.0) else "%d ms".format(processTime)}
                 <br/><b>block time range:</b> ${first().time.toRelativeTime()}<br/>&nbsp;&nbsp to ${last().time.toRelativeTime()}
                 <br/><b>total empty blocks:</b> ${emptyCount.withCommas()}
                 <br/><b>total TXs:</b> ${txCount.withCommas()}
@@ -57,9 +57,9 @@ class GetBlockRangeFragment : BaseDemoFragment<FragmentGetBlockRangeBinding>() {
                 <br/><b>avg TXs (excluding empty blocks):</b> ${"%.1f".format(txCount.toDouble()/(count - emptyCount))}
                 <br/><b>avg OUTs [per block / per TX]:</b> ${"%.1f / %.1f".format(outCount.toDouble()/(count - emptyCount), outCount.toDouble()/txCount)}
                 <br/><b>avg INs [per block / per TX]:</b> ${"%.1f / %.1f".format(inCount.toDouble()/(count - emptyCount), inCount.toDouble()/txCount)}
-                <br/><b>most shielded TXs:</b> ${if(maxTxs==null) "none" else "${maxTxs.vtxCount} in block ${maxTxs.height.withCommas()}"}
-                <br/><b>most shielded INs:</b> ${if(maxInTx==null) "none" else "${maxInTx.spendsCount} in block ${maxIns?.height.withCommas()} at tx index ${maxInTx.index}"}
-                <br/><b>most shielded OUTs:</b> ${if(maxOutTx==null) "none" else "${maxOutTx?.outputsCount} in block ${maxOuts?.height.withCommas()} at tx index ${maxOutTx?.index}"}
+                <br/><b>most shielded TXs:</b> ${if (maxTxs==null) "none" else "${maxTxs.vtxCount} in block ${maxTxs.height.withCommas()}"}
+                <br/><b>most shielded INs:</b> ${if (maxInTx==null) "none" else "${maxInTx.spendsCount} in block ${maxIns?.height.withCommas()} at tx index ${maxInTx.index}"}
+                <br/><b>most shielded OUTs:</b> ${if (maxOutTx==null) "none" else "${maxOutTx?.outputsCount} in block ${maxOuts?.height.withCommas()} at tx index ${maxOutTx?.index}"}
             """.trimIndent()
         } ?: "No blocks found in that range.")
     }

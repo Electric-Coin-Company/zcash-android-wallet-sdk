@@ -3,13 +3,20 @@ package cash.z.ecc.android.sdk.block
 import androidx.annotation.VisibleForTesting
 import cash.z.ecc.android.sdk.BuildConfig
 import cash.z.ecc.android.sdk.annotation.OpenForTesting
-import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.*
+import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Disconnected
+import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Downloading
+import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Enhancing
+import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Initialized
+import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Scanned
+import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Scanning
+import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Stopped
+import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Validating
 import cash.z.ecc.android.sdk.db.entity.ConfirmedTransaction
 import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException
 import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException.EnhanceTransactionError.EnhanceTxDecryptError
 import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException.EnhanceTransactionError.EnhanceTxDownloadError
 import cash.z.ecc.android.sdk.exception.RustLayerException
-import cash.z.ecc.android.sdk.ext.*
+import cash.z.ecc.android.sdk.ext.Twig
 import cash.z.ecc.android.sdk.ext.ZcashSdk.DOWNLOAD_BATCH_SIZE
 import cash.z.ecc.android.sdk.ext.ZcashSdk.MAX_BACKOFF_INTERVAL
 import cash.z.ecc.android.sdk.ext.ZcashSdk.MAX_REORG_SIZE
@@ -18,6 +25,11 @@ import cash.z.ecc.android.sdk.ext.ZcashSdk.RETRIES
 import cash.z.ecc.android.sdk.ext.ZcashSdk.REWIND_DISTANCE
 import cash.z.ecc.android.sdk.ext.ZcashSdk.SAPLING_ACTIVATION_HEIGHT
 import cash.z.ecc.android.sdk.ext.ZcashSdk.SCAN_BATCH_SIZE
+import cash.z.ecc.android.sdk.ext.retryUpTo
+import cash.z.ecc.android.sdk.ext.retryWithBackoff
+import cash.z.ecc.android.sdk.ext.toHexReversed
+import cash.z.ecc.android.sdk.ext.twig
+import cash.z.ecc.android.sdk.ext.twigTask
 import cash.z.ecc.android.sdk.jni.RustBackend
 import cash.z.ecc.android.sdk.jni.RustBackendWelding
 import cash.z.ecc.android.sdk.transaction.PagedTransactionRepository
@@ -124,7 +136,7 @@ class CompactBlockProcessor(
                     twig("Successfully processed new blocks${if (result == ERROR_CODE_FAILED_ENHANCE) " (but there were enhancement errors! We ignore those, for now. Memos in this block range are probably missing! This will be improved in a future release.)" else ""}. Sleeping for ${napTime}ms")
                     delay(napTime)
                 } else {
-                    if(consecutiveChainErrors.get() >= RETRIES) {
+                    if (consecutiveChainErrors.get() >= RETRIES) {
                         val errorMessage = "ERROR: unable to resolve reorg at height $result after ${consecutiveChainErrors.get()} correction attempts!"
                         fail(CompactBlockProcessorException.FailedReorgRepair(errorMessage))
                     } else {
@@ -189,7 +201,7 @@ class CompactBlockProcessor(
      *
      * @return true when the update succeeds.
      */
-    private suspend fun updateRanges(): Boolean = withContext(IO)  {
+    private suspend fun updateRanges(): Boolean = withContext(IO) {
         try {
             // TODO: rethink this and make it easier to understand what's happening. Can we reduce this
             // so that we only work with actual changing info rather than periodic snapshots? Do we need
@@ -204,10 +216,12 @@ class CompactBlockProcessor(
                     lastScannedHeight = initialInfo.lastScannedHeight,
                     lastDownloadedHeight = initialInfo.lastDownloadedHeight,
                     lastScanRange = (initialInfo.lastScannedHeight + 1)..initialInfo.networkBlockHeight,
-                    lastDownloadRange = (max(
-                        initialInfo.lastDownloadedHeight,
-                        initialInfo.lastScannedHeight
-                    ) + 1)..initialInfo.networkBlockHeight
+                    lastDownloadRange = (
+                        max(
+                            initialInfo.lastDownloadedHeight,
+                            initialInfo.lastScannedHeight
+                        ) + 1
+                        )..initialInfo.networkBlockHeight
                 )
             }
             true
@@ -304,7 +318,7 @@ class CompactBlockProcessor(
      *
      * @param range the range of blocks to download.
      */
-    @VisibleForTesting //allow mocks to verify how this is called, rather than the downloader, which is more complex
+    @VisibleForTesting // allow mocks to verify how this is called, rather than the downloader, which is more complex
     internal suspend fun downloadNewBlocks(range: IntRange) = withContext<Unit>(IO) {
         if (range.isEmpty()) {
             twig("no blocks to download")
@@ -315,10 +329,12 @@ class CompactBlockProcessor(
 
             var downloadedBlockHeight = range.first
             val missingBlockCount = range.last - range.first + 1
-            val batches = (missingBlockCount / DOWNLOAD_BATCH_SIZE
-                    + (if (missingBlockCount.rem(DOWNLOAD_BATCH_SIZE) == 0) 0 else 1))
+            val batches = (
+                missingBlockCount / DOWNLOAD_BATCH_SIZE +
+                    (if (missingBlockCount.rem(DOWNLOAD_BATCH_SIZE) == 0) 0 else 1)
+                )
             var progress: Int
-            twig("found $missingBlockCount missing blocks, downloading in $batches batches of ${DOWNLOAD_BATCH_SIZE}...")
+            twig("found $missingBlockCount missing blocks, downloading in $batches batches of $DOWNLOAD_BATCH_SIZE...")
             for (i in 1..batches) {
                 retryUpTo(RETRIES, { CompactBlockProcessorException.FailedDownload(it) }) {
                     val end = min((range.first + (i * DOWNLOAD_BATCH_SIZE)) - 1, range.last) // subtract 1 on the first value because the range is inclusive
@@ -390,8 +406,8 @@ class CompactBlockProcessor(
                         scannedNewBlocks = true
                         updateProgress(lastScannedHeight = lastScannedHeight)
                     }
-                // if we made progress toward our scan, then keep trying
-                } while(result && scannedNewBlocks && lastScannedHeight < range.last)
+                    // if we made progress toward our scan, then keep trying
+                } while (result && scannedNewBlocks && lastScannedHeight < range.last)
                 twig("batch scan complete!")
             }
             Twig.clip("scanning")
@@ -491,14 +507,14 @@ class CompactBlockProcessor(
     }
 
     /**
-    ￼* Poll on time boundaries. Per Issue #95, we want to avoid exposing computation time to a
+     ￼* Poll on time boundaries. Per Issue #95, we want to avoid exposing computation time to a
      * network observer. Instead, we poll at regular time intervals that are large enough for all
      * computation to complete so no intervals are skipped. See 95 for more details.
      *
      * @param fastIntervalDesired currently not used but sometimes we want to poll quickly, such as
      * when we unexpectedly lose server connection or are waiting for an event to happen on the
      * chain. We can pass this desire along now and later figure out how to handle it, privately.
-    ￼*/
+     ￼*/
     private fun calculatePollInterval(fastIntervalDesired: Boolean = false): Long {
         val interval = POLL_INTERVAL
         val now = System.currentTimeMillis()
@@ -599,7 +615,7 @@ class CompactBlockProcessor(
         /**
          * [State] for when we are done decrypting blocks, for now.
          */
-        class Scanned(val scannedRange:IntRange) : Connected, Syncing, State()
+        class Scanned(val scannedRange: IntRange) : Connected, Syncing, State()
 
         /**
          * [State] for when transaction details are being retrieved. This typically means the wallet
@@ -661,7 +677,7 @@ class CompactBlockProcessor(
         val lastScannedHeight: Int = -1,
         val lastDownloadedHeight: Int = -1,
         val lastDownloadRange: IntRange = 0..-1, // empty range
-        val lastScanRange: IntRange = 0..-1  // empty range
+        val lastScanRange: IntRange = 0..-1 // empty range
     ) {
 
         /**
@@ -669,19 +685,19 @@ class CompactBlockProcessor(
          *
          * @return false when all values match their defaults.
          */
-        val hasData get() = networkBlockHeight != -1
-                || lastScannedHeight != -1
-                || lastDownloadedHeight != -1
-                || lastDownloadRange != 0..-1
-                || lastScanRange != 0..-1
+        val hasData get() = networkBlockHeight != -1 ||
+            lastScannedHeight != -1 ||
+            lastDownloadedHeight != -1 ||
+            lastDownloadRange != 0..-1 ||
+            lastScanRange != 0..-1
 
         /**
          * Determines whether this instance is actively downloading compact blocks.
          *
          * @return true when there are more than zero blocks remaining to download.
          */
-        val isDownloading: Boolean get() = !lastDownloadRange.isEmpty()
-                && lastDownloadedHeight < lastDownloadRange.last
+        val isDownloading: Boolean get() = !lastDownloadRange.isEmpty() &&
+            lastDownloadedHeight < lastDownloadRange.last
 
         /**
          * Determines whether this instance is actively scanning or validating compact blocks.
@@ -689,9 +705,9 @@ class CompactBlockProcessor(
          * @return true when downloading has completed and there are more than zero blocks remaining
          * to be scanned.
          */
-        val isScanning: Boolean get() = !isDownloading
-                && !lastScanRange.isEmpty()
-                && lastScannedHeight < lastScanRange.last
+        val isScanning: Boolean get() = !isDownloading &&
+            !lastScanRange.isEmpty() &&
+            lastScannedHeight < lastScanRange.last
 
         /**
          * The amount of scan progress from 0 to 100.
@@ -715,11 +731,10 @@ class CompactBlockProcessor(
 
     data class ValidationErrorInfo(
         val errorHeight: Int,
-        val hash:  String?,
+        val hash: String?,
         val expectedPrevHash: String?,
         val actualPrevHash: String?
     )
-
 
     companion object {
         const val ERROR_CODE_NONE = -1

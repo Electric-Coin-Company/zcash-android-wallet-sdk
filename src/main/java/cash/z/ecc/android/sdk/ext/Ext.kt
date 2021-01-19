@@ -8,7 +8,7 @@ internal inline fun <R> tryNull(block: () -> R): R? {
     }
 }
 
-internal inline fun <R> tryWarn(message: String,  block: () -> R): R? {
+internal inline fun <R> tryWarn(message: String, block: () -> R): R? {
     return try {
         block()
     } catch (t: Throwable) {

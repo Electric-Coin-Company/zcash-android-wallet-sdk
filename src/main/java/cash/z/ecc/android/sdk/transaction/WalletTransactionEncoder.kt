@@ -2,7 +2,11 @@ package cash.z.ecc.android.sdk.transaction
 
 import cash.z.ecc.android.sdk.db.entity.EncodedTransaction
 import cash.z.ecc.android.sdk.exception.TransactionEncoderException
-import cash.z.ecc.android.sdk.ext.*
+import cash.z.ecc.android.sdk.ext.Bush
+import cash.z.ecc.android.sdk.ext.ZcashSdk
+import cash.z.ecc.android.sdk.ext.masked
+import cash.z.ecc.android.sdk.ext.twig
+import cash.z.ecc.android.sdk.ext.twigTask
 import cash.z.ecc.android.sdk.jni.RustBackend
 import cash.z.ecc.android.sdk.jni.RustBackendWelding
 import com.squareup.okhttp.OkHttpClient
@@ -102,8 +106,10 @@ class WalletTransactionEncoder(
         memo: ByteArray? = byteArrayOf(),
         fromAccountIndex: Int = 0
     ): Long = withContext(IO) {
-        twigTask("creating transaction to spend $zatoshi zatoshi to" +
-                " ${toAddress.masked()} with memo $memo") {
+        twigTask(
+            "creating transaction to spend $zatoshi zatoshi to" +
+                " ${toAddress.masked()} with memo $memo"
+        ) {
             try {
                 val branchId = getConsensusBranchId()
                 ensureParams((rustBackend as RustBackend).pathParamsDir)
@@ -175,7 +181,7 @@ class WalletTransactionEncoder(
             if (response.isSuccessful) {
                 twig("fetch succeeded")
                 val file = File(destinationDir, paramFileName)
-                if(file.parentFile?.exists() == true) {
+                if (file.parentFile?.exists() == true) {
                     twig("directory exists!")
                 } else {
                     twig("directory did not exist attempting to make it")
@@ -194,7 +200,6 @@ class WalletTransactionEncoder(
         if (failureMessage.isNotEmpty()) throw TransactionEncoderException.FetchParamsException(failureMessage)
     }
 
-
     //
     // Helpers
     //
@@ -206,8 +211,7 @@ class WalletTransactionEncoder(
      * @return an http client suitable for downloading params data.
      */
     private fun createHttpClient(): OkHttpClient {
-        //TODO: add logging and timeouts
+        // TODO: add logging and timeouts
         return OkHttpClient()
     }
-
 }

@@ -9,7 +9,6 @@ import cash.z.wallet.sdk.rpc.Darkside
 import cash.z.wallet.sdk.rpc.Darkside.DarksideTransactionsURL
 import cash.z.wallet.sdk.rpc.DarksideStreamerGrpc
 import cash.z.wallet.sdk.rpc.Service
-import com.google.protobuf.ByteString
 import io.grpc.ManagedChannel
 import io.grpc.stub.StreamObserver
 import java.lang.RuntimeException
@@ -36,7 +35,6 @@ class DarksideApi(
             usePlainText
         )
     )
-
 
     //
     // Service APIs
@@ -77,7 +75,7 @@ class DarksideApi(
     }
 
     fun stageTransactions(txs: Iterator<Service.RawTransaction>?, tipHeight: Int) {
-        if(txs == null) {
+        if (txs == null) {
             twig("no transactions to stage")
             return
         }
@@ -100,7 +98,6 @@ class DarksideApi(
         twig("applying blocks up to tipHeight=$tipHeight")
         createStub().applyStaged(tipHeight.toHeight())
     }
-
 
     fun getSentTransactions(): MutableIterator<Service.RawTransaction>? {
         twig("grabbing sent transactions...")
@@ -150,7 +147,6 @@ class DarksideApi(
 
     private fun String.toUrl() = Darkside.DarksideBlocksURL.newBuilder().setUrl(this).build()
     private fun Int.toHeight() = Darkside.DarksideHeight.newBuilder().setHeight(this).build()
-
 
     class EmptyResponse : StreamObserver<Service.Empty> {
         var completed = false

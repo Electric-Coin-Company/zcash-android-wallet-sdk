@@ -6,7 +6,6 @@ import cash.z.ecc.android.sdk.SdkSynchronizer
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.ext.TroubleshootingTwig
 import cash.z.ecc.android.sdk.ext.Twig
-import cash.z.ecc.android.sdk.tool.WalletBirthdayTool
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
@@ -25,7 +24,6 @@ class DataDbScannerUtil {
     private val port = 443
     private val alias = "ScannerUtil"
 
-
 //    private val mnemonics = SimpleMnemonics()
 //    private val caceDbPath = Initializer.cacheDbPath(context, alias)
 
@@ -33,11 +31,10 @@ class DataDbScannerUtil {
 //        LightWalletGrpcService(context, host, port),
 //        CompactBlockDbStore(context, caceDbPath)
 //    )
-    
-//    private val processor = CompactBlockProcessor(downloader)
-    
-//    private val rustBackend = RustBackend.init(context, cacheDbName, dataDbName)
 
+//    private val processor = CompactBlockProcessor(downloader)
+
+//    private val rustBackend = RustBackend.init(context, cacheDbName, dataDbName)
 
     private val birthdayHeight = 600_000
     private lateinit var synchronizer: Synchronizer
@@ -65,7 +62,7 @@ class DataDbScannerUtil {
 
     @Test
     fun scanExistingDb() {
-        synchronizer = Synchronizer(Initializer(context) { it.setBirthdayHeight(birthdayHeight)})
+        synchronizer = Synchronizer(Initializer(context) { it.setBirthdayHeight(birthdayHeight) })
 
         println("sync!")
         synchronizer.start()
@@ -109,22 +106,20 @@ class DataDbScannerUtil {
 //                synchronizer?.stop()
 //                synchronizer = Synchronizer(context, initializer)
 //
-////            deleteDb(dataDbPath)
-////            initWallet(seed)
-////            twig("scanning blocks for seed <$seed>")
-//////            rustBackend.scanBlocks()
-////            twig("done scanning blocks for seed $seed")
-//////            val total = rustBackend.getBalance(0)
-////            twig("found total: $total")
-//////            val available = rustBackend.getVerifiedBalance(0)
-////            twig("found available: $available")
-////            twig("xrxrx2\t$seed\t$total\t$available")
-////            println("xrxrx2\t$seed\t$total\t$available")
+// //            deleteDb(dataDbPath)
+// //            initWallet(seed)
+// //            twig("scanning blocks for seed <$seed>")
+// ////            rustBackend.scanBlocks()
+// //            twig("done scanning blocks for seed $seed")
+// ////            val total = rustBackend.getBalance(0)
+// //            twig("found total: $total")
+// ////            val available = rustBackend.getVerifiedBalance(0)
+// //            twig("found available: $available")
+// //            twig("xrxrx2\t$seed\t$total\t$available")
+// //            println("xrxrx2\t$seed\t$total\t$available")
 //        }
 //
 //        Thread.sleep(5000)
 //        assertEquals("foo", "bar")
 //    }
-
-
 }
