@@ -71,11 +71,6 @@ class SaplingParamTool {
                         twig("directory did not exist attempting to make it")
                         file.parentFile.mkdirs()
                     }
-                    Okio.buffer(Okio.sink(file)).use {
-                        twig("writing to $file")
-                        it.writeAll(response.body().source())
-                    }
-                    twig("fetch succeeded, done writing $paramFileName")
                 } else {
                     failureMessage += "Error while fetching $paramFileName : $response\n"
                     twig(failureMessage)
@@ -103,19 +98,19 @@ class SaplingParamTool {
             }
         }
 
-        fun validate(destinationDir: String): Boolean{
-            arrayOf(
+        fun validate(destinationDir: String): Boolean {
+            return arrayOf(
                 ZcashSdk.SPEND_PARAM_FILE_NAME,
                 ZcashSdk.OUTPUT_PARAM_FILE_NAME
-            ).forEach { paramFileName ->
-                val file = File(destinationDir, paramFileName)
-                if(file.exists()){
-                    twig("Files does  exist!")
-                    return true
-                }
+            ).all { paramFileName ->
+                File(destinationDir, paramFileName).exists()
+            }.also {
+                twig("Param files")
+                if(!it)
+                    twig("did not")
+                else
+                    twig("both exist!")
             }
-            twig("Error: File does not exist!")
-            return false
         }
 
         //
