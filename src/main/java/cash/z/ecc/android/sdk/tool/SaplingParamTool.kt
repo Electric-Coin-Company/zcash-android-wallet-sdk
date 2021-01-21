@@ -105,11 +105,7 @@ class SaplingParamTool {
             ).all { paramFileName ->
                 File(destinationDir, paramFileName).exists()
             }.also {
-                twig("Param files")
-                if(!it)
-                    twig("did not")
-                else
-                    twig("both exist!")
+                println("Param files${if(!it) "did not" else ""} both exist!")
             }
         }
 
