@@ -41,7 +41,7 @@ CDHCrwSovQRMHtoOWZijBNobO2y1d0FkUpzNlNw44Ssw0Vo=
 
 ## Sending Disclosures
 
-In the case where we become aware of security issues affecting other projects that have never affected Zcash, our intention is to inform those projects of security issues on a best effort basis.
+In the case where we become aware of security issues affecting other projects that have never affected Zcash, our intention is to inform those projects of security issues on a best-effort basis.
 
 In the case where we fix a security issue in Zcash that also affects the following neighboring projects, our intention is to engage in responsible disclosures with them as described in https://github.com/RD-Crypto-Spec/Responsible-Disclosure, subject to the deviations described in the section at the bottom of this document.
 
