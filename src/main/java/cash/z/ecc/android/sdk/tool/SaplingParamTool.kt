@@ -80,16 +80,16 @@ class SaplingParamTool {
             )
         }
 
-        fun clear(destinationDir: String){
-            if(validate(destinationDir)){
+        fun clear(destinationDir: String) {
+            if (validate(destinationDir)) {
                 arrayOf(
                     ZcashSdk.SPEND_PARAM_FILE_NAME,
                     ZcashSdk.OUTPUT_PARAM_FILE_NAME
                 ).forEach { paramFileName ->
                     val file = File(destinationDir, paramFileName)
-                    if(file.deleteRecursively()){
+                    if (file.deleteRecursively()) {
                         twig("Files deleted successfully")
-                    }else{
+                    } else {
                         twig("Error: Files not able to be deleted!")
                     }
                 }
@@ -103,7 +103,7 @@ class SaplingParamTool {
             ).all { paramFileName ->
                 File(destinationDir, paramFileName).exists()
             }.also {
-                println("Param files${if(!it) "did not" else ""} both exist!")
+                println("Param files${if (!it) "did not" else ""} both exist!")
             }
         }
 
@@ -117,7 +117,7 @@ class SaplingParamTool {
          * @return an http client suitable for downloading params data.
          */
         private fun createHttpClient(): OkHttpClient {
-            //TODO: add logging and timeouts
+            // TODO: add logging and timeouts
             return OkHttpClient()
         }
     }
