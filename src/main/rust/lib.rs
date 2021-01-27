@@ -31,12 +31,13 @@ use zcash_client_backend::{
     wallet::{AccountId, OvkPolicy},
 };
 use zcash_client_sqlite::{
-    wallet::init::{init_accounts_table, init_blocks_table, init_data_database},
+    error::SqliteClientError,
+    wallet::init::{init_accounts_table, init_blocks_table, init_wallet_db},
     BlockDB, NoteId, WalletDB,
 };
 use zcash_primitives::{
     block::BlockHash,
-    consensus::{BlockHeight, BranchId, Parameters},
+    consensus::{self, BlockHeight, BranchId, Parameters},
     legacy::TransparentAddress,
     note_encryption::Memo,
     transaction::{components::Amount, Transaction},
@@ -79,8 +80,8 @@ pub const NETWORK: MainNetwork = MAIN_NETWORK;
 #[cfg(not(feature = "mainnet"))]
 pub const NETWORK: TestNetwork = TEST_NETWORK;
 
-fn wallet_db(env: &JNIEnv<'_>, db_data: JString<'_>) -> Result<WalletDB, failure::Error> {
-    WalletDB::for_path(utils::java_string_to_rust(&env, db_data))
+fn wallet_db<P: Parameters>(env: &JNIEnv<'_>, params: P, db_data: JString<'_>) -> Result<WalletDB<P>, failure::Error> {
+    WalletDB::for_path(utils::java_string_to_rust(&env, db_data), params)
         .map_err(|e| format_err!("Error opening wallet database connection: {}", e))
 }
 
@@ -114,8 +115,8 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_initDataDb(
 ) -> jboolean {
     let res = panic::catch_unwind(|| {
         let db_path = utils::java_string_to_rust(&env, db_data);
-        WalletDB::for_path(db_path)
-            .and_then(|db| init_data_database(&db))
+        WalletDB::for_path(db_path, NETWORK)
+            .and_then(|db| init_wallet_db(&db))
             .map(|()| JNI_TRUE)
             .map_err(|e| format_err!("Error while initializing data DB: {}", e))
     });
@@ -131,7 +132,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_initAccount
     accounts: jint,
 ) -> jobjectArray {
     let res = panic::catch_unwind(|| {
-        let db_data = wallet_db(&env, db_data)?;
+        let db_data = wallet_db(&env, NETWORK, db_data)?;
         let seed = env.convert_byte_array(seed).unwrap();
         let accounts = if accounts >= 0 {
             accounts as u32
@@ -144,7 +145,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_initAccount
             .collect();
         let extfvks: Vec<_> = extsks.iter().map(ExtendedFullViewingKey::from).collect();
 
-        init_accounts_table(&db_data, &NETWORK, &extfvks)
+        init_accounts_table(&db_data, &extfvks)
             .map(|_| {
                 // Return the ExtendedSpendingKeys for the created accounts
                 utils::rust_vec_to_java(
@@ -174,7 +175,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_initAccount
     extfvks_arr: jobjectArray,
 ) -> jboolean {
     let res = panic::catch_unwind(|| {
-        let db_data = wallet_db(&env, db_data)?;
+        let db_data = wallet_db(&env, NETWORK, db_data)?;
         // TODO: avoid all this unwrapping and also surface errors, better
         let count = env.get_array_length(extfvks_arr).unwrap();
         let extfvks = (0..count)
@@ -190,7 +191,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_initAccount
             })
             .collect::<Vec<_>>();
 
-        match init_accounts_table(&db_data, &NETWORK, &extfvks) {
+        match init_accounts_table(&db_data, &extfvks) {
             Ok(()) => Ok(JNI_TRUE),
             Err(e) => Err(format_err!("Error while initializing accounts: {}", e)),
         }
@@ -379,7 +380,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_initBlocksT
     sapling_tree_string: JString<'_>,
 ) -> jboolean {
     let res = panic::catch_unwind(|| {
-        let db_data = wallet_db(&env, db_data)?;
+        let db_data = wallet_db(&env, NETWORK, db_data)?;
         let hash = {
             let mut hash = hex::decode(utils::java_string_to_rust(&env, hash_string)).unwrap();
             hash.reverse();
@@ -410,10 +411,10 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_getAddress(
     account: jint,
 ) -> jstring {
     let res = panic::catch_unwind(|| {
-        let db_data = wallet_db(&env, db_data)?;
+        let db_data = wallet_db(&env, NETWORK, db_data)?;
         let account = AccountId(account.try_into()?);
 
-        match (&db_data).get_address(&NETWORK, account) {
+        match (&db_data).get_address(account) {
             Ok(Some(addr)) => {
                 let addr_str = encode_payment_address(NETWORK.hrp_sapling_payment_address(), &addr);
                 let output = env
@@ -480,13 +481,23 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_getBalance(
     account: jint,
 ) -> jlong {
     let res = panic::catch_unwind(|| {
-        let db_data = wallet_db(&env, db_data)?;
+        let db_data = wallet_db(&env, NETWORK, db_data)?;
         let account = AccountId(account.try_into()?);
 
-        match (&db_data).get_balance(account) {
-            Ok(balance) => Ok(balance.into()),
-            Err(e) => Err(format_err!("Error while fetching balance: {}", e)),
-        }
+        (&db_data)
+            .get_target_and_anchor_heights()
+            .map_err(|e| format_err!("Error while fetching anchor height: {}", e))
+            .and_then(|opt_anchor| {
+                opt_anchor
+                    .map(|(h, _)| h)
+                    .ok_or(format_err!("height not available; scan required."))
+            })
+            .and_then(|height| {
+                (&db_data)
+                    .get_balance_at(account, height)
+                    .map_err(|e| format_err!("Error while fetching verified balance: {}", e))
+            })
+            .map(|amount| amount.into())
     });
     unwrap_exc_or(&env, res, -1)
 }
@@ -499,7 +510,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_getVerified
     account: jint,
 ) -> jlong {
     let res = panic::catch_unwind(|| {
-        let db_data = wallet_db(&env, db_data)?;
+        let db_data = wallet_db(&env, NETWORK, db_data)?;
         let account = AccountId(account.try_into()?);
 
         (&db_data)
@@ -512,7 +523,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_getVerified
             })
             .and_then(|anchor| {
                 (&db_data)
-                    .get_verified_balance(account, anchor)
+                    .get_balance_at(account, anchor)
                     .map_err(|e| format_err!("Error while fetching verified balance: {}", e))
             })
             .map(|amount| amount.into())
@@ -529,7 +540,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_getReceived
     id_note: jlong,
 ) -> jstring {
     let res = panic::catch_unwind(|| {
-        let db_data = wallet_db(&env, db_data)?;
+        let db_data = wallet_db(&env, NETWORK, db_data)?;
 
         let memo = match (&db_data).get_received_memo_as_utf8(NoteId(id_note)) {
             Ok(memo) => memo.unwrap_or_default(),
@@ -550,7 +561,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_getSentMemo
     id_note: jlong,
 ) -> jstring {
     let res = panic::catch_unwind(|| {
-        let db_data = wallet_db(&env, db_data)?;
+        let db_data = wallet_db(&env, NETWORK, db_data)?;
 
         let memo = (&db_data)
             .get_sent_memo_as_utf8(NoteId(id_note))
@@ -573,7 +584,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_validateCom
 ) -> jint {
     let res = panic::catch_unwind(|| {
         let block_db = block_db(&env, db_cache)?;
-        let db_data = wallet_db(&env, db_data)?;
+        let db_data = wallet_db(&env, NETWORK, db_data)?;
 
         let validate_from = (&db_data)
             .get_max_height_hash()
@@ -582,8 +593,8 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_validateCom
         let val_res = validate_chain(&NETWORK, &block_db, validate_from);
 
         if let Err(e) = val_res {
-            match e.0 {
-                Error::InvalidChain(upper_bound, _) => {
+            match e {
+                SqliteClientError::BackendError(Error::InvalidChain(upper_bound, _)) => {
                     let upper_bound_u32 = u32::from(upper_bound);
                     Ok(upper_bound_u32 as i32)
                 }
@@ -606,14 +617,14 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_rewindToHei
     height: jint,
 ) -> jboolean {
     let res = panic::catch_unwind(|| {
-        let db_data = wallet_db(&env, db_data)?;
+        let db_data = wallet_db(&env, NETWORK, db_data)?;
         let mut update_ops = (&db_data)
             .get_update_ops()
             .map_err(|e| format_err!("Could not obtain a writable database connection: {}", e))?;
 
         let height = BlockHeight::try_from(height)?;
         (&mut update_ops)
-            .transactionally(|ops| ops.rewind_to_height(&NETWORK, height))
+            .transactionally(|ops| ops.rewind_to_height(height))
             .map(|_| JNI_TRUE)
             .map_err(|e| format_err!("Error while rewinding data DB to height {}: {}", height, e))
     });
@@ -630,9 +641,10 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_scanBlocks(
 ) -> jboolean {
     let res = panic::catch_unwind(|| {
         let db_cache = block_db(&env, db_cache)?;
-        let db_data = wallet_db(&env, db_data)?;
+        let db_data = wallet_db(&env, NETWORK, db_data)?;
+        let mut db_data = db_data.get_update_ops()?;
 
-        match scan_cached_blocks(&NETWORK, &db_cache, &db_data, None) {
+        match scan_cached_blocks(&NETWORK, &db_cache, &mut db_data, None) {
             Ok(()) => Ok(JNI_TRUE),
             Err(e) => Err(format_err!("Error while scanning blocks: {}", e)),
         }
@@ -651,9 +663,9 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_scanBlockBa
 ) -> jboolean {
     let res = panic::catch_unwind(|| {
         let db_cache = block_db(&env, db_cache)?;
-        let db_data = wallet_db(&env, db_data)?;
+        let mut db_data = wallet_db(&env, NETWORK, db_data)?;
 
-        match scan_cached_blocks(&NETWORK, &db_cache, &db_data, Some(limit as u32)) {
+        match scan_cached_blocks(&NETWORK, &db_cache, &mut db_data, Some(limit as u32)) {
             Ok(()) => Ok(JNI_TRUE),
             Err(e) => Err(format_err!("Error while scanning blocks: {}", e)),
         }
@@ -760,11 +772,12 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_decryptAndS
     tx: jbyteArray,
 ) -> jboolean {
     let res = panic::catch_unwind(|| {
-        let db_data = wallet_db(&env, db_data)?;
+        let  db_data = wallet_db(&env, NETWORK, db_data)?;
+        let mut db_data = db_data.get_update_ops()?;
         let tx_bytes = env.convert_byte_array(tx).unwrap();
         let tx = Transaction::read(&tx_bytes[..])?;
 
-        match decrypt_and_store_transaction(&NETWORK, &db_data, &tx) {
+        match decrypt_and_store_transaction(&NETWORK, &mut db_data, &tx) {
             Ok(()) => Ok(JNI_TRUE),
             Err(e) => Err(format_err!("Error while decrypting transaction: {}", e)),
         }
@@ -788,7 +801,8 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_createToAdd
     output_params: JString<'_>,
 ) -> jlong {
     let res = panic::catch_unwind(|| {
-        let db_data = wallet_db(&env, db_data)?;
+        let  db_data = wallet_db(&env, NETWORK, db_data)?;
+        let mut db_data = db_data.get_update_ops()?;
         let account = if account >= 0 {
             account as u32
         } else {
@@ -830,7 +844,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_createToAdd
 
         // let branch = if
         create_spend_to_address(
-            &db_data,
+            &mut db_data,
             &NETWORK,
             prover,
             AccountId(account),
