@@ -9,7 +9,6 @@ import com.squareup.okhttp.OkHttpClient
 import com.squareup.okhttp.Request
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import okio.Okio
 import java.io.File
 
 class SaplingParamTool {
@@ -80,7 +79,6 @@ class SaplingParamTool {
                 failureMessage
             )
         }
-
 
         fun clear(destinationDir: String){
             if(validate(destinationDir)){

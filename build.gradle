@@ -296,12 +296,8 @@ taskTree{
 
 defaultTasks 'ciBuild'
 
-afterEvaluate {
-    if (project.tasks.getByName("preBuild")) {
-        preBuild.dependsOn('ktlintFormat')
-        preBuild.dependsOn('ktlint')
-        preBuild.dependsOn includeDirBugFix
-    }
-}
+preBuild.dependsOn('ktlintFormat')
+preBuild.dependsOn('ktlint')
+preBuild.dependsOn includeDirBugFix
 
 check.dependsOn dependencyCheckAggregate

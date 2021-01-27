@@ -742,3 +742,4 @@ class CompactBlockProcessor(
         const val ERROR_CODE_FAILED_ENHANCE = 40
     }
 }
+
