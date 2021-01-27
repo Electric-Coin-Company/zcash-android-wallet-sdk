@@ -43,6 +43,7 @@ buildscript {
 }
 
 apply from: 'custom-tasks.gradle'
+apply from: "$rootDir/ktlint.gradle"
 apply plugin: 'maven-publish'
 apply plugin: 'com.jfrog.bintray'
 apply plugin: 'com.android.library'
@@ -294,8 +295,6 @@ taskTree{
 }
 
 defaultTasks 'ciBuild'
-
-apply from: "$rootDir/ktlint.gradle"
 
 afterEvaluate {
     if (project.tasks.getByName("preBuild")) {
