@@ -542,7 +542,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_getReceived
     let res = panic::catch_unwind(|| {
         let db_data = wallet_db(&env, NETWORK, db_data)?;
 
-        let memo = match (&db_data).get_received_memo_as_utf8(NoteId(id_note)) {
+        let memo = match (&db_data).get_memo_as_utf8(NoteId::ReceivedNoteId(id_note)) {
             Ok(memo) => memo.unwrap_or_default(),
             Err(e) => return Err(format_err!("Error while fetching memo: {}", e)),
         };
@@ -564,7 +564,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_getSentMemo
         let db_data = wallet_db(&env, NETWORK, db_data)?;
 
         let memo = (&db_data)
-            .get_sent_memo_as_utf8(NoteId(id_note))
+            .get_memo_as_utf8(NoteId::SentNoteId(id_note))
             .map(|memo| memo.unwrap_or_default())
             .map_err(|e| format_err!("Error while fetching memo: {}", e))?;
 
@@ -663,7 +663,8 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_scanBlockBa
 ) -> jboolean {
     let res = panic::catch_unwind(|| {
         let db_cache = block_db(&env, db_cache)?;
-        let mut db_data = wallet_db(&env, NETWORK, db_data)?;
+        let db_data = wallet_db(&env, NETWORK, db_data)?;
+        let mut db_data = db_data.get_update_ops()?;
 
         match scan_cached_blocks(&NETWORK, &db_cache, &mut db_data, Some(limit as u32)) {
             Ok(()) => Ok(JNI_TRUE),

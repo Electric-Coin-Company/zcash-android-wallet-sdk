@@ -63,7 +63,7 @@ zcash_proofs = { path = '../../clones/librustzcash/zcash_proofs' }
 #zcash_proofs = {git = "https://github.com/nuttycom/librustzcash", branch = "data_access_api"}
 
 [features]
-mainnet = ["zcash_client_sqlite/mainnet"]
+mainnet = ["zcash_client_sqlite/mainnet", "zcash_client_backend/transparent-inputs", "zcash_primitives/transparent-inputs"]
 updater = ["bls12_381", "futures", "grpc", "grpc-protobuf", "httpbis", "tls-api", "tls-api-rustls"]
 
 [lib]
