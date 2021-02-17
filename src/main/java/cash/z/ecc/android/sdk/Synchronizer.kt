@@ -120,14 +120,38 @@ interface Synchronizer {
     //
 
     /**
-     * Gets the address for the given account.
+     * Gets the shielded address for the given account. This is syntactic sugar for
+     * [getShieldedAddress] because we use z-addrs by default.
      *
      * @param accountId the optional accountId whose address is of interest. By default, the first
      * account is used.
      *
-     * @return the address for the given account.
+     * @return the shielded address for the given account.
      */
-    suspend fun getAddress(accountId: Int = 0): String
+    suspend fun getAddress(accountId: Int = 0) = getShieldedAddress(accountId)
+
+    /**
+     * Gets the shielded address for the given account.
+     *
+     * @param accountId the optional accountId whose address is of interest. By default, the first
+     * account is used.
+     *
+     * @return the shielded address for the given account.
+     */
+    suspend fun getShieldedAddress(accountId: Int = 0): String
+
+
+    /**
+     * Gets the transparent address for the given account and index.
+     *
+     * @param accountId the optional accountId whose address is of interest. By default, the first
+     * account is used.
+     * @param index the optional index whose address is of interest. By default, the first index is
+     * used.
+     *
+     * @return the address for the given account and index.
+     */
+    suspend fun getTransparentAddress(seed: ByteArray, accountId: Int = 0, index: Int = 0): String
 
     /**
      * Sends zatoshi.
@@ -149,6 +173,12 @@ interface Synchronizer {
         toAddress: String,
         memo: String = "",
         fromAccountIndex: Int = 0
+    ): Flow<PendingTransaction>
+
+    fun shieldFunds(
+        spendingKey: String,
+        transparentSecretKey: String,
+        memo: String = ZcashSdk.DEFAULT_SHIELD_FUNDS_MEMO_PREFIX
     ): Flow<PendingTransaction>
 
     /**
@@ -229,6 +259,13 @@ interface Synchronizer {
         port: Int = ZcashSdk.DEFAULT_LIGHTWALLETD_PORT,
         errorHandler: (Throwable) -> Unit = { throw it }
     )
+
+    suspend fun refreshUtxos(tAddr: String, sinceHeight: Int): Int
+
+    /**
+     * Returns the balance that the wallet knows about. This should be called after [refreshUtxos].
+     */
+    suspend fun getTransparentBalance(tAddr: String): WalletBalance
 
     //
     // Error Handling

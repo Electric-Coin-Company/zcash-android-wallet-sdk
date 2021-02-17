@@ -75,8 +75,16 @@ class DerivationTool {
         // WIP probably shouldn't be used just yet. Why?
         //  - because we need the private key associated with this seed and this function doesn't return it.
         //  - the underlying implementation needs to be split out into a few lower-level calls
-        override fun deriveTransparentAddress(seed: ByteArray): String = withRustBackendLoaded {
-            deriveTransparentAddressFromSeed(seed)
+        override fun deriveTransparentAddress(seed: ByteArray, account: Int, index: Int): String = withRustBackendLoaded {
+            deriveTransparentAddressFromSeed(seed, account, index)
+        }
+
+        override fun deriveTransparentAddress(transparentSecretKey: String): String = withRustBackendLoaded {
+            deriveTransparentAddressFromSecretKey(transparentSecretKey)
+        }
+
+        override fun deriveTransparentSecretKey(seed: ByteArray, account: Int, index: Int): String = withRustBackendLoaded {
+            deriveTransparentSecretKeyFromSeed(seed, account, index)
         }
 
         fun validateViewingKey(viewingKey: String) {
@@ -122,6 +130,13 @@ class DerivationTool {
         private external fun deriveShieldedAddressFromViewingKey(key: String): String
 
         @JvmStatic
-        private external fun deriveTransparentAddressFromSeed(seed: ByteArray): String
+        private external fun deriveTransparentAddressFromSeed(seed: ByteArray, account: Int, index: Int): String
+
+        @JvmStatic
+        private external fun deriveTransparentAddressFromSecretKey(tsk: String): String
+
+        @JvmStatic
+        private external fun deriveTransparentSecretKeyFromSeed(seed: ByteArray, account: Int, index: Int): String
+
     }
 }

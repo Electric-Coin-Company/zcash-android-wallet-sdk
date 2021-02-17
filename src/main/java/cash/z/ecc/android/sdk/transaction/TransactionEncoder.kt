@@ -24,6 +24,12 @@ interface TransactionEncoder {
         fromAccountIndex: Int = 0
     ): EncodedTransaction
 
+    suspend fun createShieldingTransaction(
+        spendingKey: String,
+        transparentSecretKey: String,
+        memo: ByteArray? = byteArrayOf()
+    ): EncodedTransaction
+
     /**
      * Utility function to help with validation. This is not called during [createTransaction]
      * because this class asserts that all validation is done externally by the UI, for now.

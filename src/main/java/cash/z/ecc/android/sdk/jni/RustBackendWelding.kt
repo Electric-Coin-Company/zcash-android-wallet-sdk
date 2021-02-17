@@ -1,6 +1,6 @@
 package cash.z.ecc.android.sdk.jni
 
-import cash.z.ecc.android.sdk.rpc.LocalRpcTypes
+import cash.z.ecc.android.sdk.block.CompactBlockProcessor
 
 /**
  * Contract defining the exposed capabilities of the Rust backend.
@@ -19,6 +19,12 @@ interface RustBackendWelding {
         memo: ByteArray? = byteArrayOf()
     ): Long
 
+    fun shieldToAddress(
+        extsk: String,
+        tsk: String,
+        memo: ByteArray? = byteArrayOf()
+    ): Long
+
     fun decryptAndStoreTransaction(tx: ByteArray)
 
     fun initAccountsTable(seed: ByteArray, numberOfAccounts: Int): Array<String>
@@ -33,7 +39,9 @@ interface RustBackendWelding {
 
     fun isValidTransparentAddr(addr: String): Boolean
 
-    fun getAddress(account: Int = 0): String
+    fun getShieldedAddress(account: Int = 0): String
+
+    fun getTransparentAddress(account: Int = 0, index: Int = 0): String
 
     fun getBalance(account: Int = 0): Long
 
@@ -45,13 +53,24 @@ interface RustBackendWelding {
 
     fun getVerifiedBalance(account: Int = 0): Long
 
-    fun parseTransactionDataList(tdl: LocalRpcTypes.TransactionDataList): LocalRpcTypes.TransparentTransactionList
+//    fun parseTransactionDataList(tdl: LocalRpcTypes.TransactionDataList): LocalRpcTypes.TransparentTransactionList
 
     fun rewindToHeight(height: Int): Boolean
 
     fun scanBlocks(limit: Int = -1): Boolean
 
     fun validateCombinedChain(): Int
+
+    fun putUtxo(
+        tAddress: String,
+        txId: ByteArray,
+        index: Int,
+        script: ByteArray,
+        value: Long,
+        height: Int
+    ): Boolean
+
+    fun getDownloadedUtxoBalance(address: String): CompactBlockProcessor.WalletBalance
 
     // Implemented by `DerivationTool`
     interface Derivation {
@@ -61,7 +80,11 @@ interface RustBackendWelding {
 
         fun deriveSpendingKeys(seed: ByteArray, numberOfAccounts: Int = 1): Array<String>
 
-        fun deriveTransparentAddress(seed: ByteArray): String
+        fun deriveTransparentAddress(seed: ByteArray, account: Int = 0, index: Int = 0): String
+
+        fun deriveTransparentAddress(transparentSecretKey: String): String
+
+        fun deriveTransparentSecretKey(seed: ByteArray, account: Int = 0, index: Int = 0): String
 
         fun deriveViewingKey(spendingKey: String): String
 

@@ -139,6 +139,40 @@ class PersistentTransactionManager(
         tx
     }
 
+    override suspend fun encode(
+        spendingKey: String,
+        transparentSecretKey: String,
+        pendingTx: PendingTransaction
+    ): PendingTransaction {
+        twig("managing the creation of a shielding transaction")
+        var tx = pendingTx as PendingTransactionEntity
+        try {
+            twig("beginning to encode shielding transaction with : $encoder")
+            val encodedTx = encoder.createShieldingTransaction(
+                spendingKey,
+                transparentSecretKey,
+                tx.memo
+            )
+            twig("successfully encoded shielding transaction!")
+            safeUpdate("updating shielding transaction encoding") {
+                updateEncoding(tx.id, encodedTx.raw, encodedTx.txId, encodedTx.expiryHeight)
+            }
+        } catch (t: Throwable) {
+            val message = "failed to encode shielding transaction due to : ${t.message} caused by: ${t.cause}"
+            twig(message)
+            safeUpdate("updating shielding transaction error info") {
+                updateError(tx.id, message, ERROR_ENCODING)
+            }
+        } finally {
+            safeUpdate("incrementing shielding transaction encodeAttempts (from: ${tx.encodeAttempts})") {
+                updateEncodeAttempts(tx.id, max(1, tx.encodeAttempts + 1))
+                tx = findById(tx.id)!!
+            }
+        }
+
+        return tx
+    }
+
     override suspend fun submit(pendingTx: PendingTransaction): PendingTransaction = withContext(Dispatchers.IO) {
         // reload the tx to check for cancellation
         var tx = pendingTransactionDao { findById(pendingTx.id) }

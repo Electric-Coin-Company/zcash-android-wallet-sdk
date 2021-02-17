@@ -70,10 +70,16 @@ class SaplingParamTool {
                         twig("directory did not exist attempting to make it")
                         file.parentFile.mkdirs()
                     }
+                    Okio.buffer(Okio.sink(file)).use {
+                        twig("writing to $file")
+                        it.writeAll(response.body().source())
+                    }
                 } else {
                     failureMessage += "Error while fetching $paramFileName : $response\n"
                     twig(failureMessage)
                 }
+
+                twig("fetch succeeded, done writing $paramFileName")
             }
             if (failureMessage.isNotEmpty()) throw TransactionEncoderException.FetchParamsException(
                 failureMessage

@@ -40,6 +40,7 @@ import cash.z.ecc.android.sdk.ext.twigTask
 import cash.z.ecc.android.sdk.jni.RustBackend
 import cash.z.ecc.android.sdk.service.LightWalletGrpcService
 import cash.z.ecc.android.sdk.service.LightWalletService
+import cash.z.ecc.android.sdk.tool.DerivationTool
 import cash.z.ecc.android.sdk.transaction.OutboundTransactionManager
 import cash.z.ecc.android.sdk.transaction.PagedTransactionRepository
 import cash.z.ecc.android.sdk.transaction.PersistentTransactionManager
@@ -500,7 +501,13 @@ class SdkSynchronizer internal constructor(
 
     override suspend fun cancelSpend(pendingId: Long) = txManager.cancel(pendingId)
 
-    override suspend fun getAddress(accountId: Int): String = processor.getAddress(accountId)
+    override suspend fun getAddress(accountId: Int): String = getShieldedAddress(accountId)
+
+    override suspend fun getShieldedAddress(accountId: Int): String = processor.getShieldedAddress(accountId)
+
+    override suspend fun getTransparentAddress(seed: ByteArray, accountId: Int, index: Int): String {
+        return DerivationTool.deriveTransparentAddress(seed, accountId, index)
+    }
 
     override fun sendToAddress(
         spendingKey: String,
@@ -528,6 +535,45 @@ class SdkSynchronizer internal constructor(
         twig("Monitoring pending transaction (id: ${it.id}) for updates...")
         txManager.monitorById(it.id)
     }.distinctUntilChanged()
+
+    override fun shieldFunds(
+        spendingKey: String,
+        transparentSecretKey: String,
+        memo: String
+    ): Flow<PendingTransaction> = flow {
+        twig("Initializing shielding transaction")
+        val tAddr = DerivationTool.deriveTransparentAddress(transparentSecretKey)
+        val tBalance = processor.getUtxoCacheBalance(tAddr)
+        val zAddr = getAddress(0)
+
+
+        // Emit the placeholder transaction, then switch to monitoring the database
+        txManager.initSpend(tBalance.availableZatoshi, zAddr, memo, 0).let { placeHolderTx ->
+            emit(placeHolderTx)
+            txManager.encode(spendingKey, transparentSecretKey, placeHolderTx).let { encodedTx ->
+                // only submit if it wasn't cancelled. Otherwise cleanup, immediately for best UX.
+                if (encodedTx.isCancelled()) {
+                    twig("[cleanup] this shielding tx has been cancelled so we will cleanup instead of submitting")
+                    if (cleanupCancelledTx(encodedTx)) refreshBalance()
+                    encodedTx
+                } else {
+                    txManager.submit(encodedTx)
+                }
+            }
+        }
+    }.flatMapLatest {
+        twig("Monitoring shielding transaction (id: ${it.id}) for updates...")
+        txManager.monitorById(it.id)
+    }.distinctUntilChanged()
+
+    override suspend fun refreshUtxos(address: String, sinceHeight: Int): Int {
+        // TODO: we need to think about how we restrict this to only our taddr
+        return processor.downloadUtxos(address, sinceHeight)
+    }
+
+    override suspend fun getTransparentBalance(tAddr: String): WalletBalance {
+        return processor.getUtxoCacheBalance(tAddr)
+    }
 
     override suspend fun isValidShieldedAddr(address: String) =
         txManager.isValidShieldedAddress(address)
