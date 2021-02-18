@@ -59,14 +59,14 @@ protobuf-codegen-pure = "2.14"
 
 # Uncomment this to test someone else's librustzcash changes in a branch
 [patch.crates-io]
-zcash_client_backend = {git = "https://github.com/gmale/librustzcash", branch = "autoshield-poc-daa-edits"}
-zcash_client_sqlite = {git = "https://github.com/gmale/librustzcash", branch = "autoshield-poc-daa-edits"}
-zcash_primitives = {git = "https://github.com/gmale/librustzcash", branch = "autoshield-poc-daa-edits"}
-zcash_proofs = {git = "https://github.com/gmale/librustzcash", branch = "autoshield-poc-daa-edits"}
+zcash_client_backend = {git = "https://github.com/nuttycom/librustzcash", branch = "autoshield-poc-daa"}
+zcash_client_sqlite = {git = "https://github.com/nuttycom/librustzcash", branch = "autoshield-poc-daa"}
+zcash_primitives = {git = "https://github.com/nuttycom/librustzcash", branch = "autoshield-poc-daa"}
+zcash_proofs = {git = "https://github.com/nuttycom/librustzcash", branch = "autoshield-poc-daa"}
 
 [features]
 mainnet = ["zcash_client_sqlite/mainnet", "zcash_client_sqlite/transparent-inputs", "zcash_client_backend/transparent-inputs", "zcash_primitives/transparent-inputs"]
-testnet = ["zcash_client_backend/transparent-inputs", "zcash_primitives/transparent-inputs"]
+testnet = ["zcash_client_backend/transparent-inputs", "zcash_client_sqlite/transparent-inputs", "zcash_primitives/transparent-inputs"]
 updater = ["bls12_381", "futures", "grpc", "grpc-protobuf", "httpbis", "tls-api", "tls-api-rustls"]
 
 [lib]
