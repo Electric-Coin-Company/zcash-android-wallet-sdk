@@ -1,0 +1,96 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 2,
+    "identityHash": "11cfa01fe0b00e5d1e61a46e78f68ee2",
+    "entities": [
+      {
+        "tableName": "compactblocks",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`height` INTEGER NOT NULL, `data` BLOB NOT NULL, PRIMARY KEY(`height`))",
+        "fields": [
+          {
+            "fieldPath": "height",
+            "columnName": "height",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "data",
+            "columnName": "data",
+            "affinity": "BLOB",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "columnNames": [
+            "height"
+          ],
+          "autoGenerate": false
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "utxos",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `address` TEXT NOT NULL, `txid` BLOB, `tx_index` INTEGER, `script` BLOB, `value` INTEGER NOT NULL, `height` INTEGER)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "address",
+            "columnName": "address",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "txid",
+            "columnName": "txid",
+            "affinity": "BLOB",
+            "notNull": false
+          },
+          {
+            "fieldPath": "transactionIndex",
+            "columnName": "tx_index",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "script",
+            "columnName": "script",
+            "affinity": "BLOB",
+            "notNull": false
+          },
+          {
+            "fieldPath": "value",
+            "columnName": "value",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "height",
+            "columnName": "height",
+            "affinity": "INTEGER",
+            "notNull": false
+          }
+        ],
+        "primaryKey": {
+          "columnNames": [
+            "id"
+          ],
+          "autoGenerate": true
+        },
+        "indices": [],
+        "foreignKeys": []
+      }
+    ],
+    "views": [],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '11cfa01fe0b00e5d1e61a46e78f68ee2')"
+    ]
+  }
+}
