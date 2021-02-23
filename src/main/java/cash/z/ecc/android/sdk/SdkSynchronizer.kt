@@ -461,6 +461,15 @@ class SdkSynchronizer internal constructor(
             }
         }
 
+        // Experimental: cleanup failed transactions
+        allPendingTxs.filter { it.isSubmitted() && it.isFailedSubmit() && !it.isMarkedForDeletion()}.let { failed ->
+            failed.forEachIndexed { index, pendingTx ->
+                twig("[cleanup] FOUND (${index + 1} of ${failed.size})" +
+                        " FAILED pendingTxId: ${pendingTx.id}")
+                cleanupCancelledTx(pendingTx)
+            }
+        }
+
         twig("[cleanup] beginning to cleanup expired transactions")
         // Experimental: cleanup expired transactions
         // note: don't delete the pendingTx until the related data has been scrubbed, or else you
