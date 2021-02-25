@@ -33,7 +33,7 @@ use zcash_client_backend::{
     },
     wallet::{AccountId, OvkPolicy, WalletTransparentOutput},
 };
-use zcash_client_backend::data_api::wallet::shield_funds;
+use zcash_client_backend::data_api::wallet::{shield_funds, ANCHOR_OFFSET};
 use zcash_client_sqlite::{
     BlockDB,
     error::SqliteClientError,
@@ -523,7 +523,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_getVerified
             })
             .and_then(|anchor| {
                 (&db_data)
-                    .get_unspent_transparent_utxos(&taddr, anchor - 10)
+                    .get_unspent_transparent_utxos(&taddr, anchor - ANCHOR_OFFSET)
                     .map_err(|e| format_err!("Error while fetching verified balance: {}", e))
             })?
             .iter()
