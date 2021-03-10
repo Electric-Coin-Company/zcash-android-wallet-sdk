@@ -106,6 +106,18 @@ class LightWalletGrpcService private constructor(
         )
     }
 
+    override fun fetchUtxos(
+        tAddress: String,
+        startHeight: Int
+    ): List<Service.GetAddressUtxosReply> {
+        channel.resetConnectBackoff()
+        val result = channel.createStub().getAddressUtxos(
+            Service.GetAddressUtxosArg.newBuilder().setAddress(tAddress)
+                .setStartHeight(startHeight.toLong()).build()
+        )
+        return result.addressUtxosList
+    }
+
     override fun getTAddressTransactions(
         tAddress: String,
         blockHeightRange: IntRange

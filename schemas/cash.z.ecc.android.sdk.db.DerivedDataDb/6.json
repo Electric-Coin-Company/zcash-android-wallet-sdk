@@ -1,8 +1,8 @@
 {
   "formatVersion": 1,
   "database": {
-    "version": 5,
-    "identityHash": "9431cf7a9bc49395e07834e4c81c5ed1",
+    "version": 6,
+    "identityHash": "fa97f2995039ee4a382a54d224f4d8b9",
     "entities": [
       {
         "tableName": "transactions",
@@ -337,13 +337,13 @@
       },
       {
         "tableName": "utxos",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `address` TEXT NOT NULL, `prevout_txid` BLOB, `prevout_idx` INTEGER, `script` BLOB, `value_zat` INTEGER NOT NULL, `height` INTEGER, `spent_in_tx` INTEGER)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id_utxo` INTEGER, `address` TEXT NOT NULL, `prevout_txid` BLOB NOT NULL, `prevout_idx` INTEGER NOT NULL, `script` BLOB NOT NULL, `value_zat` INTEGER NOT NULL, `height` INTEGER NOT NULL, `spent_in_tx` INTEGER, PRIMARY KEY(`id_utxo`), FOREIGN KEY(`spent_in_tx`) REFERENCES `transactions`(`id_tx`) ON UPDATE NO ACTION ON DELETE NO ACTION )",
         "fields": [
           {
             "fieldPath": "id",
-            "columnName": "id",
+            "columnName": "id_utxo",
             "affinity": "INTEGER",
-            "notNull": true
+            "notNull": false
           },
           {
             "fieldPath": "address",
@@ -355,19 +355,19 @@
             "fieldPath": "txid",
             "columnName": "prevout_txid",
             "affinity": "BLOB",
-            "notNull": false
+            "notNull": true
           },
           {
             "fieldPath": "transactionIndex",
             "columnName": "prevout_idx",
             "affinity": "INTEGER",
-            "notNull": false
+            "notNull": true
           },
           {
             "fieldPath": "script",
             "columnName": "script",
             "affinity": "BLOB",
-            "notNull": false
+            "notNull": true
           },
           {
             "fieldPath": "value",
@@ -379,7 +379,7 @@
             "fieldPath": "height",
             "columnName": "height",
             "affinity": "INTEGER",
-            "notNull": false
+            "notNull": true
           },
           {
             "fieldPath": "spent",
@@ -390,18 +390,30 @@
         ],
         "primaryKey": {
           "columnNames": [
-            "id"
+            "id_utxo"
           ],
-          "autoGenerate": true
+          "autoGenerate": false
         },
         "indices": [],
-        "foreignKeys": []
+        "foreignKeys": [
+          {
+            "table": "transactions",
+            "onDelete": "NO ACTION",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "spent_in_tx"
+            ],
+            "referencedColumns": [
+              "id_tx"
+            ]
+          }
+        ]
       }
     ],
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '9431cf7a9bc49395e07834e4c81c5ed1')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'fa97f2995039ee4a382a54d224f4d8b9')"
     ]
   }
 }

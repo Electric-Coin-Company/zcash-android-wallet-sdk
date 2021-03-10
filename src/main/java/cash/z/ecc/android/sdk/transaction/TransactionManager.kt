@@ -39,6 +39,12 @@ interface OutboundTransactionManager {
      */
     suspend fun encode(spendingKey: String, pendingTx: PendingTransaction): PendingTransaction
 
+    suspend fun encode(
+        spendingKey: String,
+        transparentSecretKey: String,
+        pendingTx: PendingTransaction
+    ): PendingTransaction
+
     /**
      * Submits the transaction represented by [pendingTx] to lightwalletd to broadcast to the
      * network and, hopefully, include in the next block.

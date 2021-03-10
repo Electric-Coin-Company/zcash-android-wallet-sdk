@@ -34,9 +34,10 @@ import cash.z.ecc.android.sdk.ext.twig
         Block::class,
         Received::class,
         Account::class,
-        Sent::class
+        Sent::class,
+        Utxo::class
     ],
-    version = 5,
+    version = 6,
     exportSchema = true
 )
 abstract class DerivedDataDb : RoomDatabase() {
@@ -136,6 +137,26 @@ abstract class DerivedDataDb : RoomDatabase() {
                 database.execSQL("DROP TABLE received_notes;")
                 database.execSQL("ALTER TABLE received_notes_new RENAME TO received_notes;")
                 database.execSQL("PRAGMA foreign_keys = ON;")
+            }
+        }
+
+        val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS utxos (
+                        id_utxo INTEGER PRIMARY KEY,
+                        address TEXT NOT NULL, 
+                        prevout_txid BLOB NOT NULL, 
+                        prevout_idx INTEGER NOT NULL, 
+                        script BLOB NOT NULL, 
+                        value_zat INTEGER NOT NULL, 
+                        height INTEGER NOT NULL,
+                        spent_in_tx INTEGER,
+                        FOREIGN KEY (spent_in_tx) REFERENCES transactions(id_tx),
+                        CONSTRAINT tx_outpoint UNIQUE (prevout_txid, prevout_idx)
+                    ); """.trimIndent()
+                )
             }
         }
     }
@@ -394,6 +415,12 @@ interface TransactionDao {
                 twig("[cleanup] WARNING: deleting invalid sent noteId:$noteId")
                 deleteSentNote(noteId)
             }
+
+            // delete the UTXOs because these are effectively cached and we don't have a good way of knowing whether they're spent
+            deleteUtxos(transactionId).let { count ->
+                twig("[cleanup] removed $count UTXOs matching transactionId $transactionId")
+            }
+
             twig("[cleanup] WARNING: deleting invalid transactionId $transactionId")
             success = deleteTransaction(transactionId) != 0
             twig("[cleanup] removeInvalidTransaction Done. success? $success")
@@ -453,6 +480,9 @@ interface TransactionDao {
 
     @Query("UPDATE received_notes SET spent = null WHERE spent = :transactionId")
     fun unspendTransactionNotes(transactionId: Long): Int
+
+    @Query("DELETE FROM utxos WHERE spent_in_tx = :utxoId")
+    fun deleteUtxos(utxoId: Long): Int
 
     @Query(
         """

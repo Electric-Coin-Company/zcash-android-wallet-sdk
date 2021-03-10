@@ -214,8 +214,10 @@ cargo {
             defaultFeaturesAnd("mainnet")
         }
         zcashtestnetDebug {
+            defaultFeaturesAnd("testnet")
         }
         zcashtestnetRelease {
+            defaultFeaturesAnd("testnet")
         }
     }
 }

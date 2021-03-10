@@ -17,6 +17,16 @@ interface LightWalletService {
     fun fetchTransaction(txId: ByteArray): Service.RawTransaction?
 
     /**
+     * Fetch all UTXOs for the given address, going back to the start height.
+     *
+     * @param tAddress the transparent address to use.
+     * @param startHeight the starting height to use.
+     *
+     * @return the UTXOs for the given address from the startHeight.
+     */
+    fun fetchUtxos(tAddress: String, startHeight: Int): List<Service.GetAddressUtxosReply>
+
+    /**
      * Return the given range of blocks.
      *
      * @param heightRange the inclusive range to fetch. For instance if 1..5 is given, then every

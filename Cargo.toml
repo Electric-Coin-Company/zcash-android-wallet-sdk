@@ -22,13 +22,14 @@ zcash_primitives = "0.4"
 zcash_proofs = "0.4"
 
 #### Temporary additions: ####################################
-base58 = "0.1.0"
-protobuf = "2"
-sha2 = "0.9"
-bs58 = { version = "0.3", features = ["check"] }
-hdwallet = "0.2.2"
-ripemd160 = "0.9"
-secp256k1 = "0.17.2"
+#base58 = "0.1.0"
+#protobuf = "2"
+#sha2 = "0.9"
+#bs58 = { version = "0.3", features = ["check"] }
+#hdwallet = "0.2.2"
+#ripemd160 = "0.9"
+hdwallet = { git = "https://github.com/nuttycom/hdwallet", rev = "72f1f7a56c114eed484cefd6d402b7ef28158712"}
+secp256k1 = "0.19"
 ##############################################################
 
 # update-sapling-tree dependencies
@@ -43,11 +44,11 @@ tls-api-rustls = { version = "0.4", optional = true }
 [build-dependencies]
 protobuf-codegen-pure = "2.14"
 
-[patch.crates-io]
-zcash_client_backend = { git = 'https://github.com/zcash/librustzcash.git', rev='04a2bd4ad86980e0c2862706bd402b85b9dd1965' }
-zcash_client_sqlite = { git = 'https://github.com/zcash/librustzcash.git', rev='04a2bd4ad86980e0c2862706bd402b85b9dd1965' }
-zcash_primitives = { git = 'https://github.com/zcash/librustzcash.git', rev='04a2bd4ad86980e0c2862706bd402b85b9dd1965' }
-zcash_proofs = { git = 'https://github.com/zcash/librustzcash.git', rev='04a2bd4ad86980e0c2862706bd402b85b9dd1965' }
+#[patch.crates-io]
+#zcash_client_backend = { git = 'https://github.com/zcash/librustzcash.git', rev='04a2bd4ad86980e0c2862706bd402b85b9dd1965' }
+#zcash_client_sqlite = { git = 'https://github.com/zcash/librustzcash.git', rev='04a2bd4ad86980e0c2862706bd402b85b9dd1965' }
+#zcash_primitives = { git = 'https://github.com/zcash/librustzcash.git', rev='04a2bd4ad86980e0c2862706bd402b85b9dd1965' }
+#zcash_proofs = { git = 'https://github.com/zcash/librustzcash.git', rev='04a2bd4ad86980e0c2862706bd402b85b9dd1965' }
 
 # Uncomment this to test librustzcash changes locally
 #[patch.crates-io]
@@ -56,14 +57,16 @@ zcash_proofs = { git = 'https://github.com/zcash/librustzcash.git', rev='04a2bd4
 #zcash_primitives = { path = '../../clones/librustzcash/zcash_primitives' }
 #zcash_proofs = { path = '../../clones/librustzcash/zcash_proofs' }
 
+# Uncomment this to test someone else's librustzcash changes in a branch
 [patch.crates-io]
-zcash_client_backend = {git = "https://github.com/nuttycom/librustzcash", branch = "data_access_api"}
-zcash_client_sqlite = {git = "https://github.com/nuttycom/librustzcash", branch = "data_access_api"}
-zcash_primitives = {git = "https://github.com/nuttycom/librustzcash", branch = "data_access_api"}
-zcash_proofs = {git = "https://github.com/nuttycom/librustzcash", branch = "data_access_api"}
+zcash_client_backend = {git = "https://github.com/nuttycom/librustzcash", branch = "autoshield-poc-daa"}
+zcash_client_sqlite = {git = "https://github.com/nuttycom/librustzcash", branch = "autoshield-poc-daa"}
+zcash_primitives = {git = "https://github.com/nuttycom/librustzcash", branch = "autoshield-poc-daa"}
+zcash_proofs = {git = "https://github.com/nuttycom/librustzcash", branch = "autoshield-poc-daa"}
 
 [features]
-mainnet = ["zcash_client_sqlite/mainnet"]
+mainnet = ["zcash_client_sqlite/mainnet", "zcash_client_sqlite/transparent-inputs", "zcash_client_backend/transparent-inputs", "zcash_primitives/transparent-inputs"]
+testnet = ["zcash_client_backend/transparent-inputs", "zcash_client_sqlite/transparent-inputs", "zcash_primitives/transparent-inputs"]
 updater = ["bls12_381", "futures", "grpc", "grpc-protobuf", "httpbis", "tls-api", "tls-api-rustls"]
 
 [lib]

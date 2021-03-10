@@ -34,6 +34,7 @@ import cash.z.ecc.android.sdk.jni.RustBackend
 import cash.z.ecc.android.sdk.jni.RustBackendWelding
 import cash.z.ecc.android.sdk.transaction.PagedTransactionRepository
 import cash.z.ecc.android.sdk.transaction.TransactionRepository
+import cash.z.wallet.sdk.rpc.Service
 import io.grpc.StatusRuntimeException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Dispatchers.IO
@@ -313,6 +314,33 @@ class CompactBlockProcessor(
         if (!repository.isInitialized()) throw CompactBlockProcessorException.Uninitialized
     }
 
+
+    internal suspend fun downloadUtxos(tAddress: String, startHeight: Int): Int = withContext(IO) {
+        var skipped = 0
+        twig("Downloading utxos starting at height $startHeight")
+        downloader.lightWalletService.fetchUtxos(tAddress, startHeight).let { result ->
+            result.forEach { utxo: Service.GetAddressUtxosReply ->
+                twig("Found UTXO at height ${utxo.height.toInt()}")
+                try {
+                    rustBackend.putUtxo(
+                        tAddress,
+                        utxo.txid.toByteArray(),
+                        utxo.index,
+                        utxo.script.toByteArray(),
+                        utxo.valueZat,
+                        utxo.height.toInt()
+                    )
+                } catch (t: Throwable) {
+                    // TODO: more accurately track the utxos that were skipped (in theory, this could fail for other reasons)
+                    skipped++
+                    twig("Warning: Ignoring transaction at height ${utxo.height} @ index ${utxo.index} because it already exists")
+                }
+            }
+            // return the number of UTXOs that were downloaded
+            result.size - skipped
+        }
+    }
+
     /**
      * Request all blocks in the given range and persist them locally for processing, later.
      *
@@ -546,8 +574,8 @@ class CompactBlockProcessor(
      *
      * @return the address of this wallet.
      */
-    suspend fun getAddress(accountId: Int) = withContext(IO) {
-        rustBackend.getAddress(accountId)
+    suspend fun getShieldedAddress(accountId: Int) = withContext(IO) {
+        rustBackend.getShieldedAddress(accountId)
     }
 
     /**
@@ -571,6 +599,11 @@ class CompactBlockProcessor(
             }
         }
     }
+
+    suspend fun getUtxoCacheBalance(address: String): WalletBalance = withContext(IO) {
+        rustBackend.getDownloadedUtxoBalance(address)
+    }
+
 
     /**
      * Transmits the given state for this processor.

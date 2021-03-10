@@ -39,6 +39,7 @@ open class PagedTransactionRepository(
             .addMigrations(DerivedDataDb.MIGRATION_3_4)
             .addMigrations(DerivedDataDb.MIGRATION_4_3)
             .addMigrations(DerivedDataDb.MIGRATION_4_5)
+            .addMigrations(DerivedDataDb.MIGRATION_5_6)
             .build(),
         pageSize
     )

@@ -1,10 +1,10 @@
 package cash.z.ecc.android.sdk.jni
 
+import cash.z.ecc.android.sdk.block.CompactBlockProcessor
 import cash.z.ecc.android.sdk.exception.BirthdayException
 import cash.z.ecc.android.sdk.ext.ZcashSdk.OUTPUT_PARAM_FILE_NAME
 import cash.z.ecc.android.sdk.ext.ZcashSdk.SPEND_PARAM_FILE_NAME
 import cash.z.ecc.android.sdk.ext.twig
-import cash.z.ecc.android.sdk.rpc.LocalRpcTypes
 import java.io.File
 
 /**
@@ -64,7 +64,11 @@ class RustBackend private constructor() : RustBackendWelding {
         return initBlocksTable(pathDataDb, height, hash, time, saplingTree)
     }
 
-    override fun getAddress(account: Int) = getAddress(pathDataDb, account)
+    override fun getShieldedAddress(account: Int) = getShieldedAddress(pathDataDb, account)
+
+    override fun getTransparentAddress(account: Int, index: Int): String {
+        throw NotImplementedError("TODO: implement this at the zcash_client_sqlite level. But for now, use DerivationTool, instead to derive addresses from seeds")
+    }
 
     override fun getBalance(account: Int) = getBalance(pathDataDb, account)
 
@@ -108,30 +112,62 @@ class RustBackend private constructor() : RustBackendWelding {
         "$pathParamsDir/$OUTPUT_PARAM_FILE_NAME"
     )
 
+    override fun shieldToAddress(
+        extsk: String,
+        tsk: String,
+        memo: ByteArray?
+    ): Long {
+        twig("TMP: shieldToAddress with db path: $pathDataDb, ${memo?.size}")
+        return shieldToAddress(
+            pathDataDb,
+            0,
+            extsk,
+            tsk,
+            memo ?: ByteArray(0),
+            "${pathParamsDir}/$SPEND_PARAM_FILE_NAME",
+            "${pathParamsDir}/$OUTPUT_PARAM_FILE_NAME"
+        )
+    }
+
+    override fun putUtxo(
+        tAddress: String,
+        txId: ByteArray,
+        index: Int,
+        script: ByteArray,
+        value: Long,
+        height: Int
+    ): Boolean = putUtxo(pathDataDb, tAddress, txId, index, script, value, height)
+
+    override fun getDownloadedUtxoBalance(address: String): CompactBlockProcessor.WalletBalance {
+        val verified = getVerifiedTransparentBalance(pathDataDb, address)
+        val total = getTotalTransparentBalance(pathDataDb, address)
+        return CompactBlockProcessor.WalletBalance(total, verified)
+    }
+
     override fun isValidShieldedAddr(addr: String) = isValidShieldedAddress(addr)
 
     override fun isValidTransparentAddr(addr: String) = isValidTransparentAddress(addr)
 
     override fun getBranchIdForHeight(height: Int): Long = branchIdForHeight(height)
 
-    /**
-     * This is a proof-of-concept for doing Local RPC, where we are effectively using the JNI
-     * boundary as a grpc server. It is slightly inefficient in terms of both space and time but
-     * given that it is all done locally, on the heap, it seems to be a worthwhile tradeoff because
-     * it reduces the complexity and expands the capacity for the two layers to communicate.
-     *
-     * We're able to keep the "unsafe" byteArray functions private and wrap them in typeSafe
-     * equivalents and, eventually, surface any parse errors (for now, errors are only logged).
-     */
-    override fun parseTransactionDataList(tdl: LocalRpcTypes.TransactionDataList): LocalRpcTypes.TransparentTransactionList {
-        return try {
-            // serialize the list, send it over to rust and get back a serialized set of results that we parse out and return
-            return LocalRpcTypes.TransparentTransactionList.parseFrom(parseTransactionDataList(tdl.toByteArray()))
-        } catch (t: Throwable) {
-            twig("ERROR: failed to parse transaction data list due to: $t caused by: ${t.cause}")
-            LocalRpcTypes.TransparentTransactionList.newBuilder().build()
-        }
-    }
+//    /**
+//     * This is a proof-of-concept for doing Local RPC, where we are effectively using the JNI
+//     * boundary as a grpc server. It is slightly inefficient in terms of both space and time but
+//     * given that it is all done locally, on the heap, it seems to be a worthwhile tradeoff because
+//     * it reduces the complexity and expands the capacity for the two layers to communicate.
+//     *
+//     * We're able to keep the "unsafe" byteArray functions private and wrap them in typeSafe
+//     * equivalents and, eventually, surface any parse errors (for now, errors are only logged).
+//     */
+//    override fun parseTransactionDataList(tdl: LocalRpcTypes.TransactionDataList): LocalRpcTypes.TransparentTransactionList {
+//        return try {
+//            // serialize the list, send it over to rust and get back a serialized set of results that we parse out and return
+//            return LocalRpcTypes.TransparentTransactionList.parseFrom(parseTransactionDataList(tdl.toByteArray()))
+//        } catch (t: Throwable) {
+//            twig("ERROR: failed to parse transaction data list due to: $t caused by: ${t.cause}")
+//            LocalRpcTypes.TransparentTransactionList.newBuilder().build()
+//        }
+//    }
 
     /**
      * Exposes all of the librustzcash functions along with helpers for loading the static library.
@@ -208,7 +244,9 @@ class RustBackend private constructor() : RustBackendWelding {
             saplingTree: String
         ): Boolean
 
-        @JvmStatic private external fun getAddress(dbDataPath: String, account: Int): String
+        @JvmStatic private external fun getShieldedAddress(dbDataPath: String, account: Int): String
+// TODO: implement this in the zcash_client_sqlite layer. For now, use DerivationTool, instead.
+//        @JvmStatic private external fun getTransparentAddress(dbDataPath: String, account: Int): String
 
         @JvmStatic private external fun isValidShieldedAddress(addr: String): Boolean
 
@@ -244,10 +282,38 @@ class RustBackend private constructor() : RustBackendWelding {
             outputParamsPath: String
         ): Long
 
+        @JvmStatic private external fun shieldToAddress(
+            dbDataPath: String,
+            account: Int,
+            extsk: String,
+            tsk: String,
+            memo: ByteArray,
+            spendParamsPath: String,
+            outputParamsPath: String
+        ): Long
+
         @JvmStatic private external fun initLogs()
 
         @JvmStatic private external fun branchIdForHeight(height: Int): Long
 
-        @JvmStatic private external fun parseTransactionDataList(serializedList: ByteArray): ByteArray
+        @JvmStatic private external fun putUtxo(
+            dbDataPath: String,
+            tAddress: String,
+            txId: ByteArray,
+            index: Int,
+            script: ByteArray,
+            value: Long,
+            height: Int
+        ): Boolean
+
+        @JvmStatic private external fun getVerifiedTransparentBalance(
+            pathDataDb: String,
+            taddr: String
+        ): Long
+
+        @JvmStatic private external fun getTotalTransparentBalance(
+            pathDataDb: String,
+            taddr: String
+        ): Long
     }
 }

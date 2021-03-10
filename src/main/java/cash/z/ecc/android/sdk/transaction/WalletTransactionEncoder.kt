@@ -51,6 +51,17 @@ class WalletTransactionEncoder(
             ?: throw TransactionEncoderException.TransactionNotFoundException(transactionId)
     }
 
+    override suspend fun createShieldingTransaction(
+        spendingKey: String,
+        transparentSecretKey: String,
+        memo: ByteArray?
+    ): EncodedTransaction = withContext(IO) {
+        twig("TMP: createShieldingTransaction with $spendingKey and $transparentSecretKey and ${memo?.size}")
+        val transactionId = createShieldingSpend(spendingKey, transparentSecretKey, memo)
+        repository.findEncodedTransactionById(transactionId)
+            ?: throw TransactionEncoderException.TransactionNotFoundException(transactionId)
+    }
+
     /**
      * Utility function to help with validation. This is not called during [createTransaction]
      * because this class asserts that all validation is done externally by the UI, for now.
@@ -124,6 +135,31 @@ class WalletTransactionEncoder(
             }
         }.also { result ->
             twig("result of sendToAddress: $result")
+        }
+    }
+
+    private suspend fun createShieldingSpend(
+        spendingKey: String,
+        transparentSecretKey: String,
+        memo: ByteArray? = byteArrayOf()
+    ): Long = withContext(IO) {
+        twigTask("creating transaction to shield all UTXOs") {
+            try {
+                SaplingParamTool.ensureParams((rustBackend as RustBackend).pathParamsDir)
+                twig("params exist! attempting to shield...")
+                rustBackend.shieldToAddress(
+                    spendingKey,
+                    transparentSecretKey,
+                    memo
+                )
+            } catch (t: Throwable) {
+                // TODO: if this error matches: Insufficient balance (have 0, need 1000 including fee)
+                    // then consider custom error that says no UTXOs existed to shield
+                twig("Shield failed due to: ${t.message}")
+                throw t
+            }
+        }.also { result ->
+            twig("result of shieldToAddress: $result")
         }
     }
 }
