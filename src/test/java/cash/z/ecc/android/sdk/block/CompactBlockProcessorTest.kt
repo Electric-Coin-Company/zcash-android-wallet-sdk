@@ -8,9 +8,12 @@ import cash.z.ecc.android.sdk.ext.twig
 import cash.z.ecc.android.sdk.jni.RustBackend
 import cash.z.ecc.android.sdk.service.LightWalletService
 import cash.z.ecc.android.sdk.transaction.TransactionRepository
-import com.nhaarman.mockitokotlin2.*
-import kotlinx.coroutines.*
+import com.nhaarman.mockitokotlin2.atLeastOnce
+import com.nhaarman.mockitokotlin2.stub
+import com.nhaarman.mockitokotlin2.verify
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -37,13 +40,13 @@ class CompactBlockProcessorTest {
 
     @BeforeEach
     fun setUp(
-    @Mock lightwalletService: LightWalletService,
-    @Mock compactBlockStore: CompactBlockStore,
-    @Mock repository: TransactionRepository
+        @Mock lightwalletService: LightWalletService,
+        @Mock compactBlockStore: CompactBlockStore,
+        @Mock repository: TransactionRepository
     ) {
         Twig.plant(TroubleshootingTwig())
 
-     lightwalletService.stub {
+        lightwalletService.stub {
             onBlocking {
                 getBlockRange(any())
             }.thenAnswer { invocation ->
@@ -145,7 +148,7 @@ class CompactBlockProcessorTest {
             processor.start()
         }
         processor.progress.collect { i ->
-            if(i >= 100) {
+            if (i >= 100) {
                 block()
                 processor.stop()
             }

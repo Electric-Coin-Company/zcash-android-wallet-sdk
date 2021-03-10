@@ -1,8 +1,12 @@
 package cash.z.ecc.android.sdk.db
 
-import androidx.room.*
+import androidx.room.Dao
+import androidx.room.Database
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
+import androidx.room.Query
+import androidx.room.RoomDatabase
 import cash.z.ecc.android.sdk.db.entity.CompactBlockEntity
-
 
 //
 // Database
@@ -22,7 +26,6 @@ import cash.z.ecc.android.sdk.db.entity.CompactBlockEntity
 abstract class CompactBlockDb : RoomDatabase() {
     abstract fun complactBlockDao(): CompactBlockDao
 }
-
 
 //
 // Data Access Objects

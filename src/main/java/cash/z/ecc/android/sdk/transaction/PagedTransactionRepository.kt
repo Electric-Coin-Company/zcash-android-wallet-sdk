@@ -53,7 +53,6 @@ open class PagedTransactionRepository(
     private val sentTxDataSourceFactory = transactions.getSentTransactions().toRefreshable()
     private val allTxDataSourceFactory = transactions.getAllTransactions().toRefreshable()
 
-
     //
     // TransactionRepository API
     //
@@ -79,7 +78,6 @@ open class PagedTransactionRepository(
     override suspend fun findNewTransactions(blockHeightRange: IntRange): List<ConfirmedTransaction> =
         transactions.findAllTransactionsByRange(blockHeightRange.first, blockHeightRange.last)
 
-
     override suspend fun findMinedHeight(rawTransactionId: ByteArray) = withContext(IO) {
         transactions.findMinedHeight(rawTransactionId)
     }
@@ -90,10 +88,8 @@ open class PagedTransactionRepository(
     override suspend fun cleanupCancelledTx(rawTransactionId: ByteArray) = transactions.cleanupCancelledTx(rawTransactionId)
     override suspend fun deleteExpired(lastScannedHeight: Int): Int {
         // let expired transactions linger in the UI for a little while
-        return transactions.deleteExpired(lastScannedHeight - (ZcashSdk.EXPIRY_OFFSET/2))
+        return transactions.deleteExpired(lastScannedHeight - (ZcashSdk.EXPIRY_OFFSET / 2))
     }
-
-
 
     /**
      * Close the underlying database.

@@ -27,7 +27,7 @@ suspend inline fun retryUpTo(retries: Int, exceptionWrapper: (Throwable) -> Thro
             failedAttempts++
             if (failedAttempts > retries) throw exceptionWrapper(t)
             val duration = (initialDelayMillis.toDouble() * Math.pow(2.0, failedAttempts.toDouble() - 1)).toLong()
-            twig("failed due to $t retrying (${failedAttempts}/$retries) in ${duration}s...")
+            twig("failed due to $t retrying ($failedAttempts/$retries) in ${duration}s...")
             delay(duration)
         }
     }
@@ -52,7 +52,7 @@ inline fun retrySimple(retries: Int = 2, sleepTime: Long = 20L, block: (Int) -> 
         } catch (t: Throwable) {
             failedAttempts++
             if (failedAttempts > retries) throw t
-            twig("failed due to $t simply retrying (${failedAttempts}/$retries) in ${sleepTime}ms...")
+            twig("failed due to $t simply retrying ($failedAttempts/$retries) in ${sleepTime}ms...")
             Thread.sleep(sleepTime)
         }
     }
@@ -81,7 +81,7 @@ suspend inline fun retryWithBackoff(noinline onErrorListener: ((Throwable) -> Bo
 
             sequence++
             // initialDelay^(sequence/4) + jitter
-            var duration = Math.pow(initialDelayMillis.toDouble(), (sequence.toDouble()/4.0)).toLong() + Random.nextLong(1000L)
+            var duration = Math.pow(initialDelayMillis.toDouble(), (sequence.toDouble() / 4.0)).toLong() + Random.nextLong(1000L)
             if (duration > maxDelayMillis) {
                 duration = maxDelayMillis - Random.nextLong(1000L) // include jitter but don't exceed max delay
                 sequence /= 2

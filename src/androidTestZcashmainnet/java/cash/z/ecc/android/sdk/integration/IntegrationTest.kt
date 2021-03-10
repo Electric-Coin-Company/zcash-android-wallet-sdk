@@ -5,8 +5,11 @@ import cash.z.ecc.android.sdk.Initializer
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.Synchronizer.Status.SYNCED
 import cash.z.ecc.android.sdk.db.entity.isSubmitSuccess
-import cash.z.ecc.android.sdk.ext.*
-import cash.z.ecc.android.sdk.jni.RustBackend
+import cash.z.ecc.android.sdk.ext.TroubleshootingTwig
+import cash.z.ecc.android.sdk.ext.Twig
+import cash.z.ecc.android.sdk.ext.ZcashSdk
+import cash.z.ecc.android.sdk.ext.onFirst
+import cash.z.ecc.android.sdk.ext.twig
 import cash.z.ecc.android.sdk.service.LightWalletGrpcService
 import cash.z.ecc.android.sdk.tool.DerivationTool
 import cash.z.ecc.android.sdk.tool.WalletBirthdayTool
@@ -32,7 +35,8 @@ class IntegrationTest {
         val service = LightWalletGrpcService(
             context,
             host,
-            port)
+            port
+        )
         val height = service.getLatestBlockHeight()
         assertTrue(height > ZcashSdk.SAPLING_ACTIVATION_HEIGHT)
     }
@@ -52,15 +56,17 @@ class IntegrationTest {
     fun testBalance() = runBlocking {
         var availableBalance: Long = 0L
         synchronizer.balances.onFirst {
-                availableBalance = it.availableZatoshi
+            availableBalance = it.availableZatoshi
         }
 
         synchronizer.status.filter { it == SYNCED }.onFirst {
             delay(100)
         }
 
-        assertTrue("No funds available when we expected a balance greater than zero!",
-            availableBalance > 0)
+        assertTrue(
+            "No funds available when we expected a balance greater than zero!",
+            availableBalance > 0
+        )
     }
 
     @Test
@@ -92,7 +98,6 @@ class IntegrationTest {
     fun log(message: String) {
         twig("\n---\n[TESTLOG]: $message\n---\n")
     }
-
 
     companion object {
         init { Twig.plant(TroubleshootingTwig()) }

@@ -6,7 +6,7 @@ import cash.z.ecc.android.bip39.Mnemonics.MnemonicCode
 import cash.z.ecc.android.bip39.Mnemonics.WordCount
 import cash.z.ecc.android.bip39.toEntropy
 import cash.z.ecc.android.bip39.toSeed
-import java.util.*
+import java.util.Locale
 
 class SimpleMnemonics : MnemonicPlugin {
     override fun fullWordList(languageCode: String) = Mnemonics.getCachedWords(Locale.ENGLISH.language)

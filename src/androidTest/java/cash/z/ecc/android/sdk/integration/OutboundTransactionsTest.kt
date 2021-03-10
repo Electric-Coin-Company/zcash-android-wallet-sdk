@@ -1,12 +1,12 @@
-//package cash.z.ecc.android.sdk.integration
+// package cash.z.ecc.android.sdk.integration
 //
-//import cash.z.ecc.android.sdk.ext.ScopedTest
-//import cash.z.ecc.android.sdk.util.DarksideTestCoordinator
-//import org.junit.Before
-//import org.junit.BeforeClass
-//import org.junit.Test
+// import cash.z.ecc.android.sdk.ext.ScopedTest
+// import cash.z.ecc.android.sdk.util.DarksideTestCoordinator
+// import org.junit.Before
+// import org.junit.BeforeClass
+// import org.junit.Test
 //
-//class OutboundTransactionsTest : ScopedTest() {
+// class OutboundTransactionsTest : ScopedTest() {
 //
 //    @Before
 //    fun beforeEachTest() {
@@ -93,4 +93,4 @@
 //                .resetBlocks(blocksUrl)
 //        }
 //    }
-//}
+// }

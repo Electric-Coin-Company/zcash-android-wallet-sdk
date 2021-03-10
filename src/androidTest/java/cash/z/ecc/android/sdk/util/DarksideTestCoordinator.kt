@@ -4,12 +4,19 @@ import androidx.test.platform.app.InstrumentationRegistry
 import cash.z.ecc.android.sdk.Initializer
 import cash.z.ecc.android.sdk.SdkSynchronizer
 import cash.z.ecc.android.sdk.Synchronizer
-import cash.z.ecc.android.sdk.db.entity.isSubmitSuccess
-import cash.z.ecc.android.sdk.ext.*
+import cash.z.ecc.android.sdk.ext.Twig
+import cash.z.ecc.android.sdk.ext.seedPhrase
+import cash.z.ecc.android.sdk.ext.twig
 import cash.z.ecc.android.sdk.tool.DerivationTool
 import io.grpc.StatusRuntimeException
-import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -49,14 +56,14 @@ class DarksideTestCoordinator(val host: String = "127.0.0.1", val testName: Stri
                 assertTrue(
                     "Error: not on the darkside",
                     vendor.contains("dark", true)
-                            or chainName.contains("dark", true)
+                        or chainName.contains("dark", true)
                 )
             }
             twig("darkside initiation complete!")
         } catch (error: StatusRuntimeException) {
             Assert.fail(
                 "Error while fetching server status. Testing cannot begin due to:" +
-                        " ${error.message} Caused by: ${error.cause} Verify that the server is running!"
+                    " ${error.message} Caused by: ${error.cause} Verify that the server is running!"
             )
         }
         this@DarksideTestCoordinator
@@ -144,7 +151,6 @@ class DarksideTestCoordinator(val host: String = "127.0.0.1", val testName: Stri
         delay(delay)
     }
 
-
     //
     // Validation
     //
@@ -161,7 +167,8 @@ class DarksideTestCoordinator(val host: String = "127.0.0.1", val testName: Stri
             val networkBlockHeight = info.networkBlockHeight
             assertTrue(
                 "Expected latestHeight of $height but the server last reported a height of" +
-                        " $networkBlockHeight! Full details: $info", networkBlockHeight == height
+                    " $networkBlockHeight! Full details: $info",
+                networkBlockHeight == height
             )
         }
 
@@ -170,7 +177,8 @@ class DarksideTestCoordinator(val host: String = "127.0.0.1", val testName: Stri
             val lastDownloadedHeight = info.lastDownloadedHeight
             assertTrue(
                 "Expected to have at least downloaded $minHeight but the last downloaded block was" +
-                        " $lastDownloadedHeight! Full details: $info", lastDownloadedHeight >= minHeight
+                    " $lastDownloadedHeight! Full details: $info",
+                lastDownloadedHeight >= minHeight
             )
         }
 
@@ -179,7 +187,8 @@ class DarksideTestCoordinator(val host: String = "127.0.0.1", val testName: Stri
             val lastScannedHeight = info.lastScannedHeight
             assertTrue(
                 "Expected to have at least scanned $minHeight but the last scanned block was" +
-                        " $lastScannedHeight! Full details: $info", lastScannedHeight >= minHeight
+                    " $lastScannedHeight! Full details: $info",
+                lastScannedHeight >= minHeight
             )
         }
 
@@ -187,7 +196,8 @@ class DarksideTestCoordinator(val host: String = "127.0.0.1", val testName: Stri
             val lastDownloadedHeight = synchronizer.processorInfo.first().lastScannedHeight
             assertTrue(
                 "Did not expect to be synced beyond $maxHeight but we are synced to" +
-                        " $lastDownloadedHeight", lastDownloadedHeight <= maxHeight
+                    " $lastDownloadedHeight",
+                lastDownloadedHeight <= maxHeight
             )
         }
 
@@ -195,8 +205,6 @@ class DarksideTestCoordinator(val host: String = "127.0.0.1", val testName: Stri
             val hash = (synchronizer as SdkSynchronizer).findBlockHashAsHex(height)
             assertEquals(expectedHash, hash)
         }
-
-
 
         fun onReorg(callback: (errorHeight: Int, rewindHeight: Int) -> Unit) {
             synchronizer.onChainErrorHandler = callback
@@ -226,7 +234,6 @@ class DarksideTestCoordinator(val host: String = "127.0.0.1", val testName: Stri
             }
         }
     }
-
 
     //
     // Chain Creations

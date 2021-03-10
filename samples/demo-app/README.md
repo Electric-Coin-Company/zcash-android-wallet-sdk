@@ -3,7 +3,6 @@ This is a demo app that exercises code in https://github.com/zcash/zcash-android
 
 It relies on [Lightwalletd](https://github.com/zcash/lightwalletd), a backend service that provides a bandwidth-efficient interface to the Zcash blockchain. There is an equivalent [iOS demo app](https://github.com/zcash/ZcashLightClientKit). 
 
-
 ## Contents
 
 - [Requirements](#requirements)

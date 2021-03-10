@@ -2,16 +2,15 @@ package cash.z.ecc.android.sdk.transaction
 
 import cash.z.ecc.android.sdk.db.entity.EncodedTransaction
 import cash.z.ecc.android.sdk.exception.TransactionEncoderException
-import cash.z.ecc.android.sdk.ext.*
+import cash.z.ecc.android.sdk.ext.ZcashSdk
+import cash.z.ecc.android.sdk.ext.masked
+import cash.z.ecc.android.sdk.ext.twig
+import cash.z.ecc.android.sdk.ext.twigTask
 import cash.z.ecc.android.sdk.jni.RustBackend
 import cash.z.ecc.android.sdk.jni.RustBackendWelding
 import cash.z.ecc.android.sdk.tool.SaplingParamTool
-import com.squareup.okhttp.OkHttpClient
-import com.squareup.okhttp.Request
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.withContext
-import okio.Okio
-import java.io.File
 
 /**
  * Class responsible for encoding a transaction in a consistent way. This bridges the gap by
@@ -103,8 +102,10 @@ class WalletTransactionEncoder(
         memo: ByteArray? = byteArrayOf(),
         fromAccountIndex: Int = 0
     ): Long = withContext(IO) {
-        twigTask("creating transaction to spend $zatoshi zatoshi to" +
-                " ${toAddress.masked()} with memo $memo") {
+        twigTask(
+            "creating transaction to spend $zatoshi zatoshi to" +
+                " ${toAddress.masked()} with memo $memo"
+        ) {
             try {
                 val branchId = getConsensusBranchId()
                 SaplingParamTool.ensureParams((rustBackend as RustBackend).pathParamsDir)

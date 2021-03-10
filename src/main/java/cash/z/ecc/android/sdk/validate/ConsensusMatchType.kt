@@ -20,11 +20,14 @@ class ConsensusMatchType(val sdkBranch: ConsensusBranchId?, val serverBranch: Co
     val errorMessage
         get() = when {
             isValid -> null
-            hasNeither -> "Our branch is unknown and the server branch is unknown. Verify" +
+            hasNeither ->
+                "Our branch is unknown and the server branch is unknown. Verify" +
                     " that they are both using the latest consensus branch ID."
-            hasServerBranch -> "The server is on $serverBranch but our branch is unknown." +
+            hasServerBranch ->
+                "The server is on $serverBranch but our branch is unknown." +
                     " Verify that we are fully synced."
-            hasSdkBranch -> "We are on $sdkBranch but the server branch is unknown. Verify" +
+            hasSdkBranch ->
+                "We are on $sdkBranch but the server branch is unknown. Verify" +
                     " the network connection."
             else -> {
                 val newerBranch = if (isServerNewer) serverBranch else sdkBranch
@@ -32,7 +35,7 @@ class ConsensusMatchType(val sdkBranch: ConsensusBranchId?, val serverBranch: Co
                 val newerDevice = if (isServerNewer) "the server has" else "we have"
                 val olderDevice = if (isSdkNewer) "the server has" else "we have"
                 "Incompatible consensus: $newerDevice upgraded to $newerBranch but" +
-                        " $olderDevice $olderBranch."
+                    " $olderDevice $olderBranch."
             }
         }
 }

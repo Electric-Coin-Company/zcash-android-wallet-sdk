@@ -5,7 +5,6 @@ import cash.z.ecc.android.sdk.Initializer
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.Synchronizer.Status.SYNCED
 import cash.z.ecc.android.sdk.db.entity.isSubmitSuccess
-import cash.z.ecc.android.sdk.ext.*
 import cash.z.ecc.android.sdk.jni.RustBackend
 import cash.z.ecc.android.sdk.service.LightWalletGrpcService
 import kotlinx.coroutines.delay
@@ -29,7 +28,8 @@ class TestnetIntegrationTest : ScopedTest() {
         val service = LightWalletGrpcService(
             context,
             host,
-            port)
+            port
+        )
         val height = service.getLatestBlockHeight()
         assertTrue(height > ZcashSdk.SAPLING_ACTIVATION_HEIGHT)
     }
@@ -49,15 +49,17 @@ class TestnetIntegrationTest : ScopedTest() {
     fun testBalance() = runBlocking {
         var availableBalance: Long = 0L
         synchronizer.balances.onFirst {
-                availableBalance = it.availableZatoshi
+            availableBalance = it.availableZatoshi
         }
 
         synchronizer.status.filter { it == SYNCED }.onFirst {
             delay(100)
         }
 
-        assertTrue("No funds available when we expected a balance greater than zero!",
-            availableBalance > 0)
+        assertTrue(
+            "No funds available when we expected a balance greater than zero!",
+            availableBalance > 0
+        )
     }
 
     @Test
@@ -89,7 +91,6 @@ class TestnetIntegrationTest : ScopedTest() {
     fun log(message: String) {
         twig("\n---\n[TESTLOG]: $message\n---\n")
     }
-
 
     companion object {
         init { Twig.plant(TroubleshootingTwig()) }

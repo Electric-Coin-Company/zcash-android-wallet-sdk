@@ -9,7 +9,7 @@ import java.math.BigDecimal
 import java.math.MathContext
 import java.math.RoundingMode
 import java.text.NumberFormat
-import java.util.*
+import java.util.Locale
 
 /*
  * Convenience functions for converting currency values for display in user interfaces. The
@@ -18,8 +18,7 @@ import java.util.*
  * accurately rounded values to the user.
  */
 
-
-//TODO: provide a dynamic way to configure this globally for the SDK
+// TODO: provide a dynamic way to configure this globally for the SDK
 // For now, just make these vars so at least they could be modified in one place
 object Conversions {
     var ONE_ZEC_IN_ZATOSHI = BigDecimal(ZATOSHI_PER_ZEC, MathContext.DECIMAL128)
@@ -37,7 +36,6 @@ object Conversions {
     }
 }
 
-
 /**
  * Format a Zatoshi value into ZEC with the given number of digits, represented as a string.
  * Start with Zatoshi -> End with ZEC.
@@ -45,7 +43,7 @@ object Conversions {
  * @param maxDecimals the number of decimal places to use in the format. Default is 6 because ZEC is
  * better than USD.
  * @param minDecimals the minimum number of digits to allow to the right of the decimal.
- * 
+ *
  * @return this Zatoshi value represented as ZEC, in a string with at least [minDecimals] and at
  * most [maxDecimals]
  */
@@ -63,7 +61,7 @@ inline fun Long?.convertZatoshiToZecString(
  * @param maxDecimals the number of decimal places to use in the format. Default is 6 because ZEC is
  * better when right.
  * @param minDecimals the minimum number of digits to allow to the right of the decimal.
- *  
+ *
  * @return this Double ZEC value represented as a string with at least [minDecimals] and at most
  * [maxDecimals].
  */
@@ -81,7 +79,7 @@ inline fun Double?.toZecString(
  * @param maxDecimals the number of decimal places to use in the format. Default is 6 because ZEC is
  * better than bread.
  * @param minDecimals the minimum number of digits to allow to the right of the decimal.
- * 
+ *
  * @return this BigDecimal ZEC value represented as a string with at least [minDecimals] and at most
  * [maxDecimals].
  */
@@ -99,7 +97,7 @@ inline fun BigDecimal?.toZecString(
  * @param maxDecimals the number of decimal places to use in the format. Default is 6 because
  * ZEC is glorious.
  * @param minDecimals the minimum number of digits to allow to the right of the decimal.
- *  
+ *
  * @return this Double ZEC value represented as a string with at least [minDecimals] and at most
  * [maxDecimals], which is 2 by default. Zero is always represented without any decimals.
  */
@@ -107,7 +105,7 @@ inline fun Double?.toUsdString(
     maxDecimals: Int = USD_FORMATTER.maximumFractionDigits,
     minDecimals: Int = USD_FORMATTER.minimumFractionDigits
 ): String {
-    return if(this == 0.0) {
+    return if (this == 0.0) {
         "0"
     } else {
         currencyFormatter(maxDecimals, minDecimals).format(this.toUsd(maxDecimals))
@@ -117,11 +115,11 @@ inline fun Double?.toUsdString(
 /**
  * Format a USD value into USD with the given number of decimal places, represented as a string.
  * Start with USD -> end with USD.
- * 
+ *
  * @param maxDecimals the number of decimal places to use in the format. Default is 6 because ZEC is
  * glorious.
  * @param minDecimals the minimum number of digits to allow to the right of the decimal.
- * 
+ *
  * @return this BigDecimal USD value represented as a string with at least [minDecimals] and at most
  * [maxDecimals], which is 2 by default.
  */
@@ -153,8 +151,8 @@ inline fun currencyFormatter(maxDecimals: Int, minDecimals: Int): NumberFormat {
 }
 
 /**
- * Convert a Zatoshi value into ZEC, right-padded to the given number of fraction digits, 
- * represented as a BigDecimal in order to preserve rounding that minimizes cumulative error when 
+ * Convert a Zatoshi value into ZEC, right-padded to the given number of fraction digits,
+ * represented as a BigDecimal in order to preserve rounding that minimizes cumulative error when
  * applied repeatedly over a sequence of calculations.
  * Start with Zatoshi -> End with ZEC.
  *
@@ -181,14 +179,16 @@ inline fun Long?.convertZatoshiToZec(scale: Int = ZEC_FORMATTER.maximumFractionD
 inline fun BigDecimal?.convertZecToZatoshi(): Long {
     if (this == null) return 0L
     if (this < BigDecimal.ZERO) {
-        throw IllegalArgumentException("Invalid ZEC value: $this. ZEC is represented by notes and" +
-                " cannot be negative")
+        throw IllegalArgumentException(
+            "Invalid ZEC value: $this. ZEC is represented by notes and" +
+                " cannot be negative"
+        )
     }
     return this.multiply(Conversions.ONE_ZEC_IN_ZATOSHI, MathContext.DECIMAL128).toLong()
 }
 
 /**
- * Format a Double ZEC value as a BigDecimal ZEC value, right-padded to the given number of fraction 
+ * Format a Double ZEC value as a BigDecimal ZEC value, right-padded to the given number of fraction
  * digits.
  * Start with ZEC -> End with ZEC.
  *
@@ -248,7 +248,7 @@ inline fun Double?.toUsd(decimals: Int = USD_FORMATTER.maximumFractionDigits): B
 }
 
 /**
- * Format a BigDecimal USD value as a BigDecimal USD value, right-padded to the given number of 
+ * Format a BigDecimal USD value as a BigDecimal USD value, right-padded to the given number of
  * fraction digits.
  * Start with USD -> End with USD.
  *
@@ -269,10 +269,12 @@ inline fun BigDecimal?.toUsd(decimals: Int = USD_FORMATTER.maximumFractionDigits
  * @return this BigDecimal USD value converted into USD, with proper rounding and precision.
  */
 inline fun BigDecimal?.convertZecToUsd(zecPrice: BigDecimal): BigDecimal {
-    if(this == null) return BigDecimal.ZERO
-    if(this < BigDecimal.ZERO) {
-        throw IllegalArgumentException("Invalid ZEC value: ${zecPrice.toDouble()}. ZEC is" +
-                " represented by notes and cannot be negative")
+    if (this == null) return BigDecimal.ZERO
+    if (this < BigDecimal.ZERO) {
+        throw IllegalArgumentException(
+            "Invalid ZEC value: ${zecPrice.toDouble()}. ZEC is" +
+                " represented by notes and cannot be negative"
+        )
     }
     return this.multiply(zecPrice, MathContext.DECIMAL128)
 }
@@ -286,11 +288,13 @@ inline fun BigDecimal?.convertZecToUsd(zecPrice: BigDecimal): BigDecimal {
  * @return this BigDecimal USD value converted into ZEC, with proper rounding and precision.
  */
 inline fun BigDecimal?.convertUsdToZec(zecPrice: BigDecimal): BigDecimal {
-    if(this == null) return BigDecimal.ZERO
-    if(this < BigDecimal.ZERO) {
-        throw IllegalArgumentException("Invalid USD value: ${zecPrice.toDouble()}. Converting" +
+    if (this == null) return BigDecimal.ZERO
+    if (this < BigDecimal.ZERO) {
+        throw IllegalArgumentException(
+            "Invalid USD value: ${zecPrice.toDouble()}. Converting" +
                 " this would result in negative ZEC and ZEC is represented by notes and cannot be" +
-                " negative")
+                " negative"
+        )
     }
     return this.divide(zecPrice, MathContext.DECIMAL128)
 }

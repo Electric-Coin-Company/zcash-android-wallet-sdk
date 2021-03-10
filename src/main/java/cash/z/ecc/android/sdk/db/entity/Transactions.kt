@@ -7,18 +7,19 @@ import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
 import cash.z.ecc.android.sdk.ext.ZcashSdk
 
-
 //
 // Entities
 //
 
 @Entity(
     primaryKeys = ["id_tx"], tableName = "transactions",
-    foreignKeys = [ForeignKey(
-        entity = Block::class,
-        parentColumns = ["height"],
-        childColumns = ["block"]
-    )]
+    foreignKeys = [
+        ForeignKey(
+            entity = Block::class,
+            parentColumns = ["height"],
+            childColumns = ["block"]
+        )
+    ]
 )
 data class TransactionEntity(
     @ColumnInfo(name = "id_tx")
@@ -141,14 +142,11 @@ data class PendingTransactionEntity(
         result = 31 * result + (rawTransactionId?.contentHashCode() ?: 0)
         return result
     }
-
 }
-
 
 //
 // Query Objects
 //
-
 
 /**
  * A mined, shielded transaction. Since this is a [MinedTransaction], it represents data
@@ -231,7 +229,6 @@ data class EncodedTransaction(val txId: ByteArray, override val raw: ByteArray, 
     }
 }
 
-
 //
 // Transaction Interfaces
 //
@@ -282,19 +279,18 @@ interface PendingTransaction : SignedTransaction, Transaction {
     val rawTransactionId: ByteArray?
 }
 
-
 //
 // Extension-oriented design
 //
 
 fun PendingTransaction.isSameTxId(other: MinedTransaction): Boolean {
-    return rawTransactionId != null && other.rawTransactionId != null
-            && rawTransactionId!!.contentEquals(other.rawTransactionId)
+    return rawTransactionId != null && other.rawTransactionId != null &&
+        rawTransactionId!!.contentEquals(other.rawTransactionId)
 }
 
 fun PendingTransaction.isSameTxId(other: PendingTransaction): Boolean {
-    return rawTransactionId != null && other.rawTransactionId != null
-            && rawTransactionId!!.contentEquals(other.rawTransactionId!!)
+    return rawTransactionId != null && other.rawTransactionId != null &&
+        rawTransactionId!!.contentEquals(other.rawTransactionId!!)
 }
 
 fun PendingTransaction.hasRawTransactionId(): Boolean {
@@ -371,8 +367,8 @@ fun PendingTransaction.isSafeToDiscard(): Boolean {
 
 fun PendingTransaction.isPending(currentHeight: Int = -1): Boolean {
     // not mined and not expired and successfully created
-    return !isSubmitSuccess() && minedHeight == -1
-            && (expiryHeight == -1 || expiryHeight > currentHeight) && raw != null
+    return !isSubmitSuccess() && minedHeight == -1 &&
+        (expiryHeight == -1 || expiryHeight > currentHeight) && raw != null
 }
 
 fun PendingTransaction.isSubmitSuccess(): Boolean {

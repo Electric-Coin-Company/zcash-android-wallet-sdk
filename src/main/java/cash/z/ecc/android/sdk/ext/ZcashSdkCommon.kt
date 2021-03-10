@@ -110,5 +110,4 @@ open class ZcashSdkCommon {
      * this will do for now, since we're using a cloudfront URL that already redirects.
      */
     val CLOUD_PARAM_DIR_URL = "https://z.cash/downloads/"
-
 }

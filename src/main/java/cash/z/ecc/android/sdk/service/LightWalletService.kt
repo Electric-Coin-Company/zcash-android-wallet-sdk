@@ -79,5 +79,4 @@ interface LightWalletService {
      * @return the response from the server.
      */
     fun submitTransaction(spendTransaction: ByteArray): Service.SendResponse
-
 }
