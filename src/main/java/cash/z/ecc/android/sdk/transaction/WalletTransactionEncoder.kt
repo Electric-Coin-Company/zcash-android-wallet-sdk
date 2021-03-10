@@ -2,15 +2,15 @@ package cash.z.ecc.android.sdk.transaction
 
 import cash.z.ecc.android.sdk.db.entity.EncodedTransaction
 import cash.z.ecc.android.sdk.exception.TransactionEncoderException
-import cash.z.ecc.android.sdk.ext.*
+import cash.z.ecc.android.sdk.ext.ZcashSdk
+import cash.z.ecc.android.sdk.ext.masked
+import cash.z.ecc.android.sdk.ext.twig
+import cash.z.ecc.android.sdk.ext.twigTask
 import cash.z.ecc.android.sdk.jni.RustBackend
 import cash.z.ecc.android.sdk.jni.RustBackendWelding
-import com.squareup.okhttp.OkHttpClient
-import com.squareup.okhttp.Request
+import cash.z.ecc.android.sdk.tool.SaplingParamTool
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.withContext
-import okio.Okio
-import java.io.File
 
 /**
  * Class responsible for encoding a transaction in a consistent way. This bridges the gap by
@@ -102,11 +102,13 @@ class WalletTransactionEncoder(
         memo: ByteArray? = byteArrayOf(),
         fromAccountIndex: Int = 0
     ): Long = withContext(IO) {
-        twigTask("creating transaction to spend $zatoshi zatoshi to" +
-                " ${toAddress.masked()} with memo $memo") {
+        twigTask(
+            "creating transaction to spend $zatoshi zatoshi to" +
+                " ${toAddress.masked()} with memo $memo"
+        ) {
             try {
                 val branchId = getConsensusBranchId()
-                ensureParams((rustBackend as RustBackend).pathParamsDir)
+                SaplingParamTool.ensureParams((rustBackend as RustBackend).pathParamsDir)
                 twig("params exist! attempting to send with consensus branchId $branchId...")
                 rustBackend.createToAddress(
                     branchId,
@@ -124,90 +126,4 @@ class WalletTransactionEncoder(
             twig("result of sendToAddress: $result")
         }
     }
-
-    /**
-     * Checks the given directory for the output and spending params and calls [fetchParams] if
-     * they're missing.
-     *
-     * @param destinationDir the directory where the params should be stored.
-     */
-    private suspend fun ensureParams(destinationDir: String) {
-        var hadError = false
-        arrayOf(
-            ZcashSdk.SPEND_PARAM_FILE_NAME,
-            ZcashSdk.OUTPUT_PARAM_FILE_NAME
-        ).forEach { paramFileName ->
-            if (!File(destinationDir, paramFileName).exists()) {
-                twig("ERROR: $paramFileName not found at location: $destinationDir")
-                hadError = true
-            }
-        }
-        if (hadError) {
-            try {
-                Bush.trunk.twigTask("attempting to download missing params") {
-                    fetchParams(destinationDir)
-                }
-            } catch (e: Throwable) {
-                twig("failed to fetch params due to: $e")
-                throw TransactionEncoderException.MissingParamsException
-            }
-        }
-    }
-
-    /**
-     * Download and store the params into the given directory.
-     *
-     * @param destinationDir the directory where the params will be stored. It's assumed that we
-     * have write access to this directory. Typically, this should be the app's cache directory
-     * because it is not harmful if these files are cleared by the user since they are downloaded
-     * on-demand.
-     */
-    suspend fun fetchParams(destinationDir: String) = withContext(IO) {
-        val client = createHttpClient()
-        var failureMessage = ""
-        arrayOf(
-            ZcashSdk.SPEND_PARAM_FILE_NAME,
-            ZcashSdk.OUTPUT_PARAM_FILE_NAME
-        ).forEach { paramFileName ->
-            val url = "${ZcashSdk.CLOUD_PARAM_DIR_URL}/$paramFileName"
-            val request = Request.Builder().url(url).build()
-            val response = client.newCall(request).execute()
-            if (response.isSuccessful) {
-                twig("fetch succeeded")
-                val file = File(destinationDir, paramFileName)
-                if(file.parentFile.exists()) {
-                    twig("directory exists!")
-                } else {
-                    twig("directory did not exist attempting to make it")
-                    file.parentFile.mkdirs()
-                }
-                Okio.buffer(Okio.sink(file)).use {
-                    twig("writing to $file")
-                    it.writeAll(response.body().source())
-                }
-                twig("fetch succeeded, done writing $paramFileName")
-            } else {
-                failureMessage += "Error while fetching $paramFileName : $response\n"
-                twig(failureMessage)
-            }
-        }
-        if (failureMessage.isNotEmpty()) throw TransactionEncoderException.FetchParamsException(failureMessage)
-    }
-
-
-    //
-    // Helpers
-    //
-
-    /**
-     * Http client is only used for downloading sapling spend and output params data, which are
-     * necessary for the wallet to scan blocks.
-     *
-     * @return an http client suitable for downloading params data.
-     */
-    private fun createHttpClient(): OkHttpClient {
-        //TODO: add logging and timeouts
-        return OkHttpClient()
-    }
-
 }

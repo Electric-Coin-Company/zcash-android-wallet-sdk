@@ -1,15 +1,15 @@
 package cash.z.ecc.android.sdk.transaction
 
-//import cash.z.ecc.android.sdk.dao.ClearedTransaction
-//import kotlinx.coroutines.*
-//import org.junit.jupiter.api.AfterEach
-//import org.junit.jupiter.api.BeforeEach
-//import org.junit.jupiter.api.Test
+// import cash.z.ecc.android.sdk.dao.ClearedTransaction
+// import kotlinx.coroutines.*
+// import org.junit.jupiter.api.AfterEach
+// import org.junit.jupiter.api.BeforeEach
+// import org.junit.jupiter.api.Test
 //
-//import org.junit.jupiter.api.Assertions.*
-//import kotlin.random.Random
-//import kotlin.random.nextLong
-//import kotlin.system.measureTimeMillis
+// import org.junit.jupiter.api.Assertions.*
+// import kotlin.random.Random
+// import kotlin.random.nextLong
+// import kotlin.system.measureTimeMillis
 
 internal class MockSynchronizerTest {
 
@@ -164,7 +164,7 @@ internal class MockSynchronizerTest {
 //        val balanceSnapshot = balances.receive()
 //
 //        val positiveValue = transactionsSnapshot.fold(0L) { acc, tx -> acc + (if (tx.isSend) 0 else tx.value) }
-//        val negativeValue = transactionsSnapshot.fold(0L) { acc, tx -> acc + (if(!tx.isSend) 0 else tx.value) }
+//        val negativeValue = transactionsSnapshot.fold(0L) { acc, tx -> acc + (if (!tx.isSend) 0 else tx.value) }
 //        assertEquals(positiveValue - negativeValue, balanceSnapshot, "incorrect balance. negative balance: $negativeValue  positive balance: $positiveValue")
 //    }
 //

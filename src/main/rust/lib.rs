@@ -1,14 +1,14 @@
 #[macro_use]
 extern crate log;
 
-mod utils;
-
 use android_logger::Config;
+use base58::ToBase58;
 use failure::format_err;
+use hdwallet::{ExtendedPrivKey, KeyIndex};
 use jni::{
-    objects::{JClass, JString},
-    sys::{jboolean, jbyteArray, jint, jlong, jobjectArray, jstring, JNI_FALSE, JNI_TRUE},
     JNIEnv,
+    objects::{JClass, JString},
+    sys::{jboolean, jbyteArray, jint, jlong, JNI_FALSE, JNI_TRUE, jobjectArray, jstring},
 };
 use log::Level;
 use std::convert::{TryFrom, TryInto};
@@ -42,20 +42,12 @@ use zcash_primitives::{
     transaction::{components::Amount, Transaction},
     zip32::ExtendedFullViewingKey,
 };
-use zcash_proofs::prover::LocalTxProver;
-
-use crate::utils::exception::unwrap_exc_or;
-
 #[cfg(feature = "mainnet")]
 use zcash_primitives::consensus::{MainNetwork, MAIN_NETWORK};
 
 #[cfg(not(feature = "mainnet"))]
 use zcash_primitives::consensus::{TestNetwork, TEST_NETWORK};
 
-// /////////////////////////////////////////////////////////////////////////////////////////////////
-// Temporary Imports
-mod local_rpc_types;
-use base58::ToBase58;
 use local_rpc_types::{TransactionDataList, TransparentTransaction, TransparentTransactionList};
 use protobuf::{parse_from_bytes, Message};
 use sha2::{Digest, Sha256};
@@ -63,6 +55,11 @@ use sha2::{Digest, Sha256};
 use hdwallet::{ExtendedPrivKey, KeyIndex};
 use secp256k1::{PublicKey, Secp256k1};
 
+mod utils;
+
+// /////////////////////////////////////////////////////////////////////////////////////////////////
+// Temporary Imports
+mod local_rpc_types;
 // use crate::extended_key::{key_index::KeyIndex, ExtendedPrivKey, ExtendedPubKey, KeySeed};
 // /////////////////////////////////////////////////////////////////////////////////////////////////
 

@@ -14,7 +14,7 @@ import java.io.File
 /**
  * Simplified Initializer focused on starting from a ViewingKey.
  */
-class Initializer constructor(appContext: Context, config: Config):  SdkSynchronizer.SdkInitializer {
+class Initializer constructor(appContext: Context, config: Config) : SdkSynchronizer.SdkInitializer {
     override val context = appContext.applicationContext
     override val rustBackend: RustBackend
     override val alias: String
@@ -120,13 +120,14 @@ class Initializer constructor(appContext: Context, config: Config):  SdkSynchron
      * must start with a letter.
      */
     internal fun validateAlias(alias: String) {
-        require(alias.length in 1..99 && alias[0].isLetter()
-                && alias.all { it.isLetterOrDigit() || it == '_' }) {
+        require(
+            alias.length in 1..99 && alias[0].isLetter() &&
+                alias.all { it.isLetterOrDigit() || it == '_' }
+        ) {
             "ERROR: Invalid alias ($alias). For security, the alias must be shorter than 100 " +
-                    "characters and only contain letters, digits or underscores and start with a letter"
+                "characters and only contain letters, digits or underscores and start with a letter"
         }
     }
-
 
     class Config private constructor (
         val viewingKeys: MutableList<String> = mutableListOf(),
@@ -152,7 +153,6 @@ class Initializer constructor(appContext: Context, config: Config):  SdkSynchron
         constructor(block: (Config) -> Unit) : this() {
             block(this)
         }
-
 
         //
         // Birthday functions
@@ -195,7 +195,6 @@ class Initializer constructor(appContext: Context, config: Config):  SdkSynchron
             defaultToOldestHeight = true
         }
 
-
         //
         // Viewing key functions
         //
@@ -220,7 +219,6 @@ class Initializer constructor(appContext: Context, config: Config):  SdkSynchron
         fun addViewingKey(extendedFullViewingKey: String): Config = apply {
             viewingKeys.add(extendedFullViewingKey)
         }
-
 
         //
         // Convenience functions
@@ -275,7 +273,6 @@ class Initializer constructor(appContext: Context, config: Config):  SdkSynchron
             setViewingKeys(*DerivationTool.deriveViewingKeys(seed, numberOfAccounts))
         }
 
-
         //
         // Validation helpers
         //
@@ -304,7 +301,7 @@ class Initializer constructor(appContext: Context, config: Config):  SdkSynchron
         private fun validateViewingKeys() {
             require(viewingKeys.isNotEmpty()) {
                 "Viewing keys are required. Ensure that the viewing keys or seed have been set" +
-                        " on this Initializer."
+                    " on this Initializer."
             }
             viewingKeys.forEach {
                 DerivationTool.validateViewingKey(it)
@@ -329,7 +326,6 @@ class Initializer constructor(appContext: Context, config: Config):  SdkSynchron
          */
         override fun erase(appContext: Context, alias: String) =
             delete(cacheDbPath(appContext, alias)) || delete(dataDbPath(appContext, alias))
-
 
         //
         // Path Helpers
@@ -366,7 +362,7 @@ class Initializer constructor(appContext: Context, config: Config):  SdkSynchron
          * @param filePath the path of the file to erase.
          * @return true when a file exists at the given path and was deleted.
          */
-        private fun delete(filePath: String) : Boolean {
+        private fun delete(filePath: String): Boolean {
             return File(filePath).let {
                 if (it.exists()) {
                     twig("Deleting ${it.name}!")
@@ -377,7 +373,6 @@ class Initializer constructor(appContext: Context, config: Config):  SdkSynchron
                 }
             }
         }
-
     }
 }
 
@@ -393,9 +388,11 @@ class Initializer constructor(appContext: Context, config: Config):  SdkSynchron
  * must start with a letter.
  */
 internal fun validateAlias(alias: String) {
-    require(alias.length in 1..99 && alias[0].isLetter()
-            && alias.all{ it.isLetterOrDigit() || it == '_' }) {
+    require(
+        alias.length in 1..99 && alias[0].isLetter() &&
+            alias.all { it.isLetterOrDigit() || it == '_' }
+    ) {
         "ERROR: Invalid alias ($alias). For security, the alias must be shorter than 100 " +
-                "characters and only contain letters, digits or underscores and start with a letter"
+            "characters and only contain letters, digits or underscores and start with a letter"
     }
 }

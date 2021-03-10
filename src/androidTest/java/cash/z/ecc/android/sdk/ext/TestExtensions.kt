@@ -4,18 +4,23 @@ import android.content.Context
 import androidx.test.platform.app.InstrumentationRegistry
 import cash.z.ecc.android.sdk.Initializer
 import cash.z.ecc.android.sdk.util.SimpleMnemonics
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.newFixedThreadPoolContext
+import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.AfterClass
 import org.junit.Before
 import org.junit.BeforeClass
 import java.util.concurrent.TimeoutException
 
-
 fun Initializer.Config.seedPhrase(seedPhrase: String) {
     setSeed(SimpleMnemonics().toSeed(seedPhrase.toCharArray()))
 }
-
 
 open class ScopedTest(val defaultTimeout: Long = 2000L) {
     protected lateinit var testScope: CoroutineScope
@@ -27,7 +32,10 @@ open class ScopedTest(val defaultTimeout: Long = 2000L) {
     fun start() {
         twig("===================== TEST STARTED ==================================")
         testScope = CoroutineScope(
-            Job(classScope.coroutineContext[Job]!!) + newFixedThreadPoolContext(5, this.javaClass.simpleName)
+            Job(classScope.coroutineContext[Job]!!) + newFixedThreadPoolContext(
+                5,
+                this.javaClass.simpleName
+            )
         )
     }
 
@@ -61,7 +69,7 @@ open class ScopedTest(val defaultTimeout: Long = 2000L) {
 
         @AfterClass
         @JvmStatic
-        fun destroyScope() = runBlocking<Unit>{
+        fun destroyScope() = runBlocking<Unit> {
             twig("======================= CLASS CANCELLING ============================")
             classScope.cancel()
             classScope.coroutineContext[Job]?.join()
@@ -87,16 +95,16 @@ open class ScopedTest(val defaultTimeout: Long = 2000L) {
 
 object Transactions {
     val outbound = arrayOf(
-            "https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/transactions/t-shielded-spend.txt",
-            "https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/transactions/sent/c9e35e6ff444b071d63bf9bab6480409d6361760445c8a28d24179adb35c2495.txt",
-            "https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/transactions/sent/72a29d7db511025da969418880b749f7fc0fc910cdb06f52193b5fa5c0401d9d.txt",
-            "https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/transactions/sent/ff6ea36765dc29793775c7aa71de19fca039c5b5b873a0497866e9c4bc48af01.txt",
-            "https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/transactions/sent/34e507cab780546f980176f3ff2695cd404917508c7e5ee18cc1d2ff3858cb08.txt",
-            "https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/transactions/sent/6edf869063eccff3345676b0fed9f1aa6988fb2524e3d9ca7420a13cfadcd76c.txt",
-            "https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/transactions/sent/de97394ae220c28a33ba78b944e82dabec8cb404a4407650b134b3d5950358c0.txt",
-            "https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/transactions/sent/4eaa902279f8380914baf5bcc470d8b7c11d84fda809f67f517a7cb48912b87b.txt",
-            "https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/transactions/sent/73c5edf8ffba774d99155121ccf07e67fbcf14284458f7e732751fea60d3bcbc.txt"
-        )
+        "https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/transactions/t-shielded-spend.txt",
+        "https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/transactions/sent/c9e35e6ff444b071d63bf9bab6480409d6361760445c8a28d24179adb35c2495.txt",
+        "https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/transactions/sent/72a29d7db511025da969418880b749f7fc0fc910cdb06f52193b5fa5c0401d9d.txt",
+        "https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/transactions/sent/ff6ea36765dc29793775c7aa71de19fca039c5b5b873a0497866e9c4bc48af01.txt",
+        "https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/transactions/sent/34e507cab780546f980176f3ff2695cd404917508c7e5ee18cc1d2ff3858cb08.txt",
+        "https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/transactions/sent/6edf869063eccff3345676b0fed9f1aa6988fb2524e3d9ca7420a13cfadcd76c.txt",
+        "https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/transactions/sent/de97394ae220c28a33ba78b944e82dabec8cb404a4407650b134b3d5950358c0.txt",
+        "https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/transactions/sent/4eaa902279f8380914baf5bcc470d8b7c11d84fda809f67f517a7cb48912b87b.txt",
+        "https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/transactions/sent/73c5edf8ffba774d99155121ccf07e67fbcf14284458f7e732751fea60d3bcbc.txt"
+    )
 
     val inbound = arrayOf(
         "https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/transactions/recv/8f064d23c66dc36e32445e5f3b50e0f32ac3ddb78cff21fb521eb6c19c07c99a.txt",

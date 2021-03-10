@@ -5,7 +5,11 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import cash.z.ecc.android.sdk.db.PendingTransactionDao
 import cash.z.ecc.android.sdk.db.PendingTransactionDb
-import cash.z.ecc.android.sdk.db.entity.*
+import cash.z.ecc.android.sdk.db.entity.PendingTransaction
+import cash.z.ecc.android.sdk.db.entity.PendingTransactionEntity
+import cash.z.ecc.android.sdk.db.entity.isCancelled
+import cash.z.ecc.android.sdk.db.entity.isFailedEncoding
+import cash.z.ecc.android.sdk.db.entity.isSubmitted
 import cash.z.ecc.android.sdk.ext.twig
 import cash.z.ecc.android.sdk.service.LightWalletService
 import kotlinx.coroutines.Dispatchers
@@ -60,7 +64,6 @@ class PersistentTransactionManager(
         encoder,
         service
     )
-
 
     //
     // OutboundTransactionManager implementation
@@ -139,9 +142,11 @@ class PersistentTransactionManager(
     override suspend fun submit(pendingTx: PendingTransaction): PendingTransaction = withContext(Dispatchers.IO) {
         // reload the tx to check for cancellation
         var tx = pendingTransactionDao { findById(pendingTx.id) }
-            ?: throw IllegalStateException("Error while submitting transaction. No pending" +
+            ?: throw IllegalStateException(
+                "Error while submitting transaction. No pending" +
                     " transaction found that matches the one being submitted. Verify that the" +
-                    " transaction still exists among the set of pending transactions.")
+                    " transaction still exists among the set of pending transactions."
+            )
         try {
             // do nothing if failed or cancelled
             when {
@@ -151,8 +156,10 @@ class PersistentTransactionManager(
                     twig("submitting transaction with memo: ${tx.memo} amount: ${tx.value}")
                     val response = service.submitTransaction(tx.raw)
                     val error = response.errorCode < 0
-                    twig("${if (error) "FAILURE! " else "SUCCESS!"} submit transaction completed with" +
-                            " response: ${response.errorCode}: ${response.errorMessage}")
+                    twig(
+                        "${if (error) "FAILURE! " else "SUCCESS!"} submit transaction completed with" +
+                            " response: ${response.errorCode}: ${response.errorMessage}"
+                    )
 
                     safeUpdate("updating submitted transaction (hadError: $error)") {
                         updateError(tx.id, if (error) response.errorMessage else null, response.errorCode)
@@ -228,18 +235,16 @@ class PersistentTransactionManager(
 
     override fun getAll() = _dao.getAll()
 
-
     //
     // Helper functions
     //
-
 
     /**
      * Updating the pending transaction is often done at the end of a function but still should
      * happen within a try/catch block, surrounded by logging. So this helps with that while also
      * ensuring that no other coroutines are concurrently interacting with the DAO.
      */
-     private suspend fun <R> safeUpdate(logMessage: String = "", block: suspend PendingTransactionDao.() -> R ): R? {
+    private suspend fun <R> safeUpdate(logMessage: String = "", block: suspend PendingTransactionDao.() -> R): R? {
         return try {
             twig(logMessage)
             pendingTransactionDao { block() }
@@ -252,7 +257,6 @@ class PersistentTransactionManager(
             null
         }
     }
-
 
     private suspend fun <T> pendingTransactionDao(block: suspend PendingTransactionDao.() -> T): T {
         return daoMutex.withLock {
@@ -269,4 +273,3 @@ class PersistentTransactionManager(
         const val ERROR_SUBMITTING = 3000
     }
 }
-

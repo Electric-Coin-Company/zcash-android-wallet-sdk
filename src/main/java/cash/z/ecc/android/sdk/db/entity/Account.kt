@@ -8,6 +8,7 @@ import androidx.room.Entity
     primaryKeys = ["account"]
 )
 data class Account(
+
     val account: Int? = 0,
 
     @ColumnInfo(name = "extfvk")
@@ -15,4 +16,3 @@ data class Account(
 
     val address: String = ""
 )
-

@@ -1,15 +1,11 @@
 package cash.z.ecc.android.sdk.util
 
-//import cash.z.ecc.android.sdk.secure.Wallet
 import androidx.test.platform.app.InstrumentationRegistry
 import cash.z.ecc.android.sdk.Initializer
 import cash.z.ecc.android.sdk.Synchronizer
-import cash.z.ecc.android.sdk.block.CompactBlockDbStore
-import cash.z.ecc.android.sdk.block.CompactBlockDownloader
 import cash.z.ecc.android.sdk.ext.TroubleshootingTwig
 import cash.z.ecc.android.sdk.ext.Twig
 import cash.z.ecc.android.sdk.ext.twig
-import cash.z.ecc.android.sdk.service.LightWalletGrpcService
 import cash.z.ecc.android.sdk.tool.WalletBirthdayTool
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.collect
@@ -34,7 +30,6 @@ class BalancePrinterUtil {
     private val downloadBatchSize = 9_000
     private val birthdayHeight = 523240
 
-
     private val mnemonics = SimpleMnemonics()
     private val context = InstrumentationRegistry.getInstrumentation().context
     private val alias = "BalanceUtil"
@@ -44,11 +39,10 @@ class BalancePrinterUtil {
 //        LightWalletGrpcService(context, host, port),
 //        CompactBlockDbStore(context, caceDbPath)
 //    )
-    
-//    private val processor = CompactBlockProcessor(downloader)
-    
-//    private val rustBackend = RustBackend.init(context, cacheDbName, dataDbName)
 
+//    private val processor = CompactBlockProcessor(downloader)
+
+//    private val rustBackend = RustBackend.init(context, cacheDbName, dataDbName)
 
     private lateinit var birthday: WalletBirthdayTool.WalletBirthday
     private var synchronizer: Synchronizer? = null
@@ -88,51 +82,51 @@ class BalancePrinterUtil {
                     config.server(host, port)
                     config.alias = alias
                 }
-                    /*
-                what I need to do right now
-                - for each seed
-                - I can reuse the cache of blocks... so just like get the cache once
-                - I need to scan into a new database
-                    - I don't really need a new rustbackend
-                    - I definitely don't need a new grpc connection
-                - can I just use a processor and point it to a different DB?
-                + so yeah, I think I need to use the processor directly right here and just swap out its pieces
-                    - perhaps create a new initializer and use that to configure the processor?
-                    - or maybe just set the data destination for the processor
-                    - I might need to consider how state is impacting this design
-                        - can we be more stateless and thereby improve the flexibility of this code?!!!
-                      */
+                /*
+            what I need to do right now
+            - for each seed
+            - I can reuse the cache of blocks... so just like get the cache once
+            - I need to scan into a new database
+                - I don't really need a new rustbackend
+                - I definitely don't need a new grpc connection
+            - can I just use a processor and point it to a different DB?
+            + so yeah, I think I need to use the processor directly right here and just swap out its pieces
+                - perhaps create a new initializer and use that to configure the processor?
+                - or maybe just set the data destination for the processor
+                - I might need to consider how state is impacting this design
+                    - can we be more stateless and thereby improve the flexibility of this code?!!!
+                  */
                 synchronizer?.stop()
                 synchronizer = Synchronizer(initializer)
-            
+
 //            deleteDb(dataDbPath)
 //            initWallet(seed)
 //            twig("scanning blocks for seed <$seed>")
-////            rustBackend.scanBlocks()
+// //            rustBackend.scanBlocks()
 //            twig("done scanning blocks for seed $seed")
-////            val total = rustBackend.getBalance(0)
+// //            val total = rustBackend.getBalance(0)
 //            twig("found total: $total")
-////            val available = rustBackend.getVerifiedBalance(0)
+// //            val available = rustBackend.getVerifiedBalance(0)
 //            twig("found available: $available")
 //            twig("xrxrx2\t$seed\t$total\t$available")
 //            println("xrxrx2\t$seed\t$total\t$available")
-        }
+            }
 
         Thread.sleep(3000)
         assertEquals("foo", "bar")
     }
-    
+
 //    @Test
 //    fun printBalances() = runBlocking {
 //        readLines().collect { seed ->
 //            deleteDb(dataDbName)
 //            initWallet(seed)
 //            twig("scanning blocks for seed <$seed>")
-////            rustBackend.scanBlocks()
+//            rustBackend.scanBlocks()
 //            twig("done scanning blocks for seed $seed")
-////            val total = rustBackend.getBalance(0)
+//            val total = rustBackend.getBalance(0)
 //            twig("found total: $total")
-////            val available = rustBackend.getVerifiedBalance(0)
+//            val available = rustBackend.getVerifiedBalance(0)
 //            twig("found available: $available")
 //            twig("xrxrx2\t$seed\t$total\t$available")
 //            println("xrxrx2\t$seed\t$total\t$available")
@@ -175,7 +169,8 @@ class BalancePrinterUtil {
 
         var downloadedBlockHeight = range.start
         val count = range.last - range.first + 1
-        val batches = (count / downloadBatchSize + (if (count.rem(downloadBatchSize) == 0) 0 else 1))
+        val batches =
+            (count / downloadBatchSize + (if (count.rem(downloadBatchSize) == 0) 0 else 1))
         twig("found $count missing blocks, downloading in $batches batches of $downloadBatchSize...")
         for (i in 1..batches) {
             val end = Math.min(range.first + (i * downloadBatchSize), range.last + 1)
@@ -184,18 +179,16 @@ class BalancePrinterUtil {
 //                downloader.downloadBlockRange(batchRange)
             }
             downloadedBlockHeight = end
-
         }
         Twig.clip("downloading")
     }
 
 //    private fun validateNewBlocks(range: IntRange?): Int {
-////        val dummyWallet = initWallet("dummySeed")
+// //        val dummyWallet = initWallet("dummySeed")
 //        Twig.sprout("validating")
 //        twig("validating blocks in range $range")
-////        val result = rustBackend.validateCombinedChain()
+// //        val result = rustBackend.validateCombinedChain()
 //        Twig.clip("validating")
 //        return result
 //    }
-
 }

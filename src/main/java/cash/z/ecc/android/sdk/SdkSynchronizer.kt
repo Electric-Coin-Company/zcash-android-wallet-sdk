@@ -1,30 +1,77 @@
 package cash.z.ecc.android.sdk
 
 import android.content.Context
-import cash.z.ecc.android.sdk.Synchronizer.Status.*
+import cash.z.ecc.android.sdk.Synchronizer.Status.DISCONNECTED
+import cash.z.ecc.android.sdk.Synchronizer.Status.DOWNLOADING
+import cash.z.ecc.android.sdk.Synchronizer.Status.ENHANCING
+import cash.z.ecc.android.sdk.Synchronizer.Status.SCANNING
+import cash.z.ecc.android.sdk.Synchronizer.Status.STOPPED
+import cash.z.ecc.android.sdk.Synchronizer.Status.SYNCED
+import cash.z.ecc.android.sdk.Synchronizer.Status.VALIDATING
 import cash.z.ecc.android.sdk.block.CompactBlockDbStore
 import cash.z.ecc.android.sdk.block.CompactBlockDownloader
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor
-import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.*
+import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Disconnected
+import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Downloading
+import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Enhancing
+import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Initialized
+import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Scanned
+import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Scanning
+import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Stopped
+import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Validating
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor.WalletBalance
 import cash.z.ecc.android.sdk.block.CompactBlockStore
-import cash.z.ecc.android.sdk.db.entity.*
+import cash.z.ecc.android.sdk.db.entity.PendingTransaction
+import cash.z.ecc.android.sdk.db.entity.hasRawTransactionId
+import cash.z.ecc.android.sdk.db.entity.isCancelled
+import cash.z.ecc.android.sdk.db.entity.isExpired
+import cash.z.ecc.android.sdk.db.entity.isLongExpired
+import cash.z.ecc.android.sdk.db.entity.isMarkedForDeletion
+import cash.z.ecc.android.sdk.db.entity.isMined
+import cash.z.ecc.android.sdk.db.entity.isSafeToDiscard
+import cash.z.ecc.android.sdk.db.entity.isSubmitSuccess
 import cash.z.ecc.android.sdk.exception.SynchronizerException
-import cash.z.ecc.android.sdk.ext.*
+import cash.z.ecc.android.sdk.ext.ConsensusBranchId
+import cash.z.ecc.android.sdk.ext.ZcashSdk
+import cash.z.ecc.android.sdk.ext.toHexReversed
+import cash.z.ecc.android.sdk.ext.tryNull
+import cash.z.ecc.android.sdk.ext.twig
+import cash.z.ecc.android.sdk.ext.twigTask
 import cash.z.ecc.android.sdk.jni.RustBackend
 import cash.z.ecc.android.sdk.service.LightWalletGrpcService
 import cash.z.ecc.android.sdk.service.LightWalletService
-import cash.z.ecc.android.sdk.transaction.*
+import cash.z.ecc.android.sdk.transaction.OutboundTransactionManager
+import cash.z.ecc.android.sdk.transaction.PagedTransactionRepository
+import cash.z.ecc.android.sdk.transaction.PersistentTransactionManager
+import cash.z.ecc.android.sdk.transaction.TransactionEncoder
+import cash.z.ecc.android.sdk.transaction.TransactionRepository
+import cash.z.ecc.android.sdk.transaction.WalletTransactionEncoder
 import cash.z.ecc.android.sdk.validate.AddressType
 import cash.z.ecc.android.sdk.validate.AddressType.Shielded
 import cash.z.ecc.android.sdk.validate.AddressType.Transparent
 import cash.z.ecc.android.sdk.validate.ConsensusMatchType
 import cash.z.wallet.sdk.rpc.Service
 import io.grpc.ManagedChannel
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.ConflatedBroadcastChannel
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 
@@ -82,7 +129,6 @@ class SdkSynchronizer internal constructor(
 
     var isStarted = false
 
-
     //
     // Transactions
     //
@@ -92,7 +138,6 @@ class SdkSynchronizer internal constructor(
     override val pendingTransactions = txManager.getAll()
     override val sentTransactions = storage.sentTransactions
     override val receivedTransactions = storage.receivedTransactions
-
 
     //
     // Status
@@ -119,7 +164,6 @@ class SdkSynchronizer internal constructor(
      * is very helpful for conveying detailed progress and status to the user.
      */
     override val processorInfo: Flow<CompactBlockProcessor.ProcessorInfo> = processor.processorInfo
-
 
     //
     // Error Handling
@@ -154,7 +198,6 @@ class SdkSynchronizer internal constructor(
      * processor detects a missing or non-chain-sequential block (i.e. a reorg).
      */
     override var onChainErrorHandler: ((errorHeight: Int, rewindHeight: Int) -> Any)? = null
-
 
     //
     // Public API
@@ -237,7 +280,6 @@ class SdkSynchronizer internal constructor(
         )
     }
 
-
     //
     // Storage APIs
     //
@@ -259,7 +301,6 @@ class SdkSynchronizer internal constructor(
     fun refreshTransactions() {
         storage.invalidate()
     }
-
 
     //
     // Private API
@@ -311,9 +352,9 @@ class SdkSynchronizer internal constructor(
         if (onCriticalErrorHandler == null) {
             twig(
                 "WARNING: a critical error occurred but no callback is registered to be notified " +
-                        "of critical errors! THIS IS PROBABLY A MISTAKE. To respond to these " +
-                        "errors (perhaps to update the UI or alert the user) set " +
-                        "synchronizer.onCriticalErrorHandler to a non-null value."
+                    "of critical errors! THIS IS PROBABLY A MISTAKE. To respond to these " +
+                    "errors (perhaps to update the UI or alert the user) set " +
+                    "synchronizer.onCriticalErrorHandler to a non-null value."
             )
         }
 
@@ -332,15 +373,15 @@ class SdkSynchronizer internal constructor(
         if (onProcessorErrorHandler == null) {
             twig(
                 "WARNING: falling back to the default behavior for processor errors. To add" +
-                        " custom behavior, set synchronizer.onProcessorErrorHandler to" +
-                        " a non-null value"
+                    " custom behavior, set synchronizer.onProcessorErrorHandler to" +
+                    " a non-null value"
             )
             return true
         }
         return onProcessorErrorHandler?.invoke(error)?.also {
             twig(
                 "processor error handler signaled that we should " +
-                        "${if (it) "try again" else "abort"}!"
+                    "${if (it) "try again" else "abort"}!"
             )
         } == true
     }
@@ -350,8 +391,8 @@ class SdkSynchronizer internal constructor(
         if (onChainErrorHandler == null) {
             twig(
                 "WARNING: a chain error occurred but no callback is registered to be notified of " +
-                "chain errors. To respond to these errors (perhaps to update the UI or alert the" +
-                " user) set synchronizer.onChainErrorHandler to a non-null value"
+                    "chain errors. To respond to these errors (perhaps to update the UI or alert the" +
+                    " user) set synchronizer.onChainErrorHandler to a non-null value"
             )
         }
         onChainErrorHandler?.invoke(errorHeight, rewindHeight)
@@ -399,7 +440,7 @@ class SdkSynchronizer internal constructor(
                     storage.findMinedHeight(rawId)?.let { minedHeight ->
                         twig(
                             "found matching transaction for pending transaction with id" +
-                                    " ${pendingTx.id} mined at height ${minedHeight}!"
+                                " ${pendingTx.id} mined at height $minedHeight!"
                         )
                         txManager.applyMinedHeight(pendingTx, minedHeight)
                     }
@@ -411,8 +452,10 @@ class SdkSynchronizer internal constructor(
         // Experimental: cleanup cancelled transactions
         allPendingTxs.filter { it.isCancelled() && it.hasRawTransactionId() }.let { cancellable ->
             cancellable.forEachIndexed { index, pendingTx ->
-                twig("[cleanup] FOUND (${index + 1} of ${cancellable.size})" +
-                        " CANCELLED pendingTxId: ${pendingTx.id}")
+                twig(
+                    "[cleanup] FOUND (${index + 1} of ${cancellable.size})" +
+                        " CANCELLED pendingTxId: ${pendingTx.id}"
+                )
                 hasCleaned = hasCleaned || cleanupCancelledTx(pendingTx)
             }
         }
@@ -425,8 +468,10 @@ class SdkSynchronizer internal constructor(
         // the thing that we're trying to preserve to signal we no longer need it
         // sometimes apps crash or things go wrong and we get an orphaned pendingTx that we'll poll
         // forever, so maybe just get rid of all of them after a long while
-        allPendingTxs.filter { (it.isExpired(lastScannedHeight) && it.isMarkedForDeletion())
-                || it.isLongExpired(lastScannedHeight) || it.isSafeToDiscard() }
+        allPendingTxs.filter {
+            (it.isExpired(lastScannedHeight) && it.isMarkedForDeletion()) ||
+                it.isLongExpired(lastScannedHeight) || it.isSafeToDiscard()
+        }
             .forEach {
                 val result = txManager.abort(it)
                 twig("[cleanup] FOUND EXPIRED pendingTX (lastScanHeight: $lastScannedHeight  expiryHeight: ${it.expiryHeight}): and ${it.id} ${if (result > 0) "successfully removed" else "failed to remove"} it")
@@ -499,8 +544,10 @@ class SdkSynchronizer internal constructor(
                 if (isValidTransparentAddr(address)) Transparent else Shielded
             } catch (tError: Throwable) {
                 AddressType.Invalid(
-                    if (message != tError.message) "$message and ${tError.message}" else (message
-                        ?: "Invalid")
+                    if (message != tError.message) "$message and ${tError.message}" else (
+                        message
+                            ?: "Invalid"
+                        )
                 )
             }
         }
@@ -538,8 +585,6 @@ class SdkSynchronizer internal constructor(
         fun erase(appContext: Context, alias: String = ZcashSdk.DEFAULT_ALIAS): Boolean
     }
 }
-
-
 
 /**
  * Builder function for constructing a Synchronizer with flexibility for adding custom behavior. The

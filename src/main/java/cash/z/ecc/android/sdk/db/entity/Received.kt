@@ -7,19 +7,23 @@ import androidx.room.ForeignKey
 @Entity(
     tableName = "received_notes",
     primaryKeys = ["id_note"],
-    foreignKeys = [ForeignKey(
-        entity = TransactionEntity::class,
-        parentColumns = ["id_tx"],
-        childColumns = ["tx"]
-    ), ForeignKey(
-        entity = Account::class,
-        parentColumns = ["account"],
-        childColumns = ["account"]
-    ), ForeignKey(
-        entity = TransactionEntity::class,
-        parentColumns = ["id_tx"],
-        childColumns = ["spent"]
-    )]
+    foreignKeys = [
+        ForeignKey(
+            entity = TransactionEntity::class,
+            parentColumns = ["id_tx"],
+            childColumns = ["tx"]
+        ),
+        ForeignKey(
+            entity = Account::class,
+            parentColumns = ["account"],
+            childColumns = ["account"]
+        ),
+        ForeignKey(
+            entity = TransactionEntity::class,
+            parentColumns = ["id_tx"],
+            childColumns = ["spent"]
+        )
+    ]
 )
 data class Received(
     @ColumnInfo(name = "id_note")
@@ -56,6 +60,4 @@ data class Received(
 
     @ColumnInfo(typeAffinity = ColumnInfo.BLOB)
     val memo: ByteArray? = byteArrayOf()
-) {
-
-}
+)

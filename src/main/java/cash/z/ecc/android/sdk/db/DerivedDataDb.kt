@@ -1,11 +1,20 @@
 package cash.z.ecc.android.sdk.db
 
 import androidx.paging.DataSource
-import androidx.room.*
+import androidx.room.Dao
+import androidx.room.Database
+import androidx.room.Query
+import androidx.room.RoomDatabase
 import androidx.room.Transaction
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
-import cash.z.ecc.android.sdk.db.entity.*
+import cash.z.ecc.android.sdk.db.entity.Account
+import cash.z.ecc.android.sdk.db.entity.Block
+import cash.z.ecc.android.sdk.db.entity.ConfirmedTransaction
+import cash.z.ecc.android.sdk.db.entity.EncodedTransaction
+import cash.z.ecc.android.sdk.db.entity.Received
+import cash.z.ecc.android.sdk.db.entity.Sent
+import cash.z.ecc.android.sdk.db.entity.TransactionEntity
 import cash.z.ecc.android.sdk.ext.twig
 
 //
@@ -36,7 +45,6 @@ abstract class DerivedDataDb : RoomDatabase() {
     abstract fun receivedDao(): ReceivedDao
     abstract fun sentDao(): SentDao
 
-
     //
     // Migrations
     //
@@ -46,7 +54,8 @@ abstract class DerivedDataDb : RoomDatabase() {
         val MIGRATION_3_4 = object : Migration(3, 4) {
             override fun migrate(database: SupportSQLiteDatabase) {
                 database.execSQL("PRAGMA foreign_keys = OFF;")
-                database.execSQL("""
+                database.execSQL(
+                    """
                     CREATE TABLE IF NOT EXISTS received_notes_new (
                         id_note INTEGER PRIMARY KEY, tx INTEGER NOT NULL,
                         output_index INTEGER NOT NULL, account INTEGER NOT NULL,
@@ -58,7 +67,8 @@ abstract class DerivedDataDb : RoomDatabase() {
                         FOREIGN KEY (account) REFERENCES accounts(account),
                         FOREIGN KEY (spent) REFERENCES transactions(id_tx),
                         CONSTRAINT tx_output UNIQUE (tx, output_index)
-                    ); """.trimIndent()
+                    ); 
+                    """.trimIndent()
                 )
                 database.execSQL("INSERT INTO received_notes_new SELECT * FROM received_notes;")
                 database.execSQL("DROP TABLE received_notes;")
@@ -88,7 +98,8 @@ abstract class DerivedDataDb : RoomDatabase() {
                         FOREIGN KEY (account) REFERENCES accounts(account),
                         FOREIGN KEY (spent) REFERENCES transactions(id_tx),
                         CONSTRAINT tx_output UNIQUE (tx, output_index)
-                    ); """.trimIndent()
+                    ); 
+                    """.trimIndent()
                 )
                 database.execSQL("INSERT INTO received_notes_new SELECT * FROM received_notes;")
                 database.execSQL("DROP TABLE received_notes;")
@@ -96,7 +107,6 @@ abstract class DerivedDataDb : RoomDatabase() {
                 database.execSQL("PRAGMA foreign_keys = ON;")
             }
         }
-
 
         val MIGRATION_4_5 = object : Migration(4, 5) {
             override fun migrate(database: SupportSQLiteDatabase) {
@@ -119,7 +129,8 @@ abstract class DerivedDataDb : RoomDatabase() {
                         FOREIGN KEY (account) REFERENCES accounts(account),
                         FOREIGN KEY (spent) REFERENCES transactions(id_tx),
                         CONSTRAINT tx_output UNIQUE (tx, output_index)
-                    ); """.trimIndent()
+                    ); 
+                    """.trimIndent()
                 )
                 database.execSQL("INSERT INTO received_notes_new SELECT * FROM received_notes;")
                 database.execSQL("DROP TABLE received_notes;")
@@ -129,7 +140,6 @@ abstract class DerivedDataDb : RoomDatabase() {
         }
     }
 }
-
 
 //
 // Data Access Objects
@@ -146,7 +156,7 @@ interface BlockDao {
     @Query("SELECT MAX(height) FROM blocks")
     fun lastScannedHeight(): Int
 
-    @Query( "SELECT hash FROM BLOCKS WHERE height = :height")
+    @Query("SELECT hash FROM BLOCKS WHERE height = :height")
     fun findHashByHeight(height: Int): ByteArray?
 }
 
@@ -180,27 +190,32 @@ interface TransactionDao {
     @Query("SELECT COUNT(block) FROM transactions WHERE block IS NULL")
     fun countUnmined(): Int
 
-    @Query("""
+    @Query(
+        """
         SELECT transactions.txid AS txId, 
                transactions.raw  AS raw,
                transactions.expiry_height AS expiryHeight
         FROM   transactions
         WHERE  id_tx = :id AND raw is not null
-        """)
+        """
+    )
     fun findEncodedTransactionById(id: Long): EncodedTransaction?
 
-    @Query("""
+    @Query(
+        """
         SELECT transactions.block
         FROM   transactions 
         WHERE  txid = :rawTransactionId
         LIMIT  1 
-    """)
+    """
+    )
     fun findMinedHeight(rawTransactionId: ByteArray): Int?
 
     /**
      * Query sent transactions that have been mined, sorted so the newest data is at the top.
      */
-    @Query("""
+    @Query(
+        """
         SELECT transactions.id_tx         AS id,
                transactions.block         AS minedHeight,
                transactions.tx_index      AS transactionIndex,
@@ -221,15 +236,16 @@ interface TransactionDao {
                AND minedheight > 0
         ORDER  BY block IS NOT NULL, height DESC, time DESC, txid DESC
         LIMIT  :limit
-    """)
+    """
+    )
     fun getSentTransactions(limit: Int = Int.MAX_VALUE): DataSource.Factory<Int, ConfirmedTransaction>
-
 
     /**
      * Query transactions, aggregating information on send/receive, sorted carefully so the newest
      * data is at the top and the oldest transactions are at the bottom.
      */
-    @Query("""
+    @Query(
+        """
         SELECT transactions.id_tx     AS id,
                transactions.block     AS minedHeight,
                transactions.tx_index  AS transactionIndex,
@@ -246,13 +262,15 @@ interface TransactionDao {
         WHERE  received_notes.is_change != 1
         ORDER  BY minedheight DESC, blocktimeinseconds DESC, id DESC
         LIMIT  :limit
-    """)
+    """
+    )
     fun getReceivedTransactions(limit: Int = Int.MAX_VALUE): DataSource.Factory<Int, ConfirmedTransaction>
 
     /**
      * Query all transactions, joining outbound and inbound transactions into the same table.
      */
-    @Query("""
+    @Query(
+        """
          SELECT transactions.id_tx          AS id,
                transactions.block           AS minedHeight,
                transactions.tx_index        AS transactionIndex,
@@ -289,7 +307,8 @@ interface TransactionDao {
                   blocktimeinseconds DESC,
                   id DESC
          LIMIT  :limit
-    """)
+    """
+    )
     fun getAllTransactions(limit: Int = Int.MAX_VALUE): DataSource.Factory<Int, ConfirmedTransaction>
 
     /**
@@ -297,7 +316,8 @@ interface TransactionDao {
      * should not show up in most UIs. The intended purpose of this request is to find new
      * transactions that need to be enhanced via follow-up requests to the server.
      */
-    @Query("""
+    @Query(
+        """
         SELECT transactions.id_tx         AS id, 
                transactions.block         AS minedHeight, 
                transactions.tx_index      AS transactionIndex, 
@@ -332,9 +352,9 @@ interface TransactionDao {
                   blocktimeinseconds DESC, 
                   id DESC 
         LIMIT  :limit 
-    """)
+    """
+    )
     suspend fun findAllTransactionsByRange(blockRangeStart: Int, blockRangeEnd: Int = blockRangeStart, limit: Int = Int.MAX_VALUE): List<ConfirmedTransaction>
-
 
     // Experimental: cleanup cancelled transactions
     //               This should probably be a rust call but there's not a lot of bandwidth for this
@@ -392,32 +412,37 @@ interface TransactionDao {
         return count
     }
 
-
     //
     // Private-ish functions (these will move to rust, or the data access API eventually)
     //
 
-    @Query("""
+    @Query(
+        """
         SELECT transactions.id_tx AS id
         FROM   transactions 
         WHERE  txid = :rawTransactionId
                AND block IS NULL
-    """)
+    """
+    )
     fun findUnminedTransactionIds(rawTransactionId: ByteArray): List<Long>
 
-    @Query("""
+    @Query(
+        """
         SELECT transactions.id_tx AS id
         FROM   transactions 
         WHERE  txid = :rawTransactionId
         LIMIT 1
-    """)
+    """
+    )
     suspend fun findMatchingTransactionId(rawTransactionId: ByteArray): Long?
 
-    @Query("""
+    @Query(
+        """
         SELECT sent_notes.id_note AS id
         FROM   sent_notes 
         WHERE  tx = :transactionId 
-    """)
+    """
+    )
     fun findSentNoteIds(transactionId: Long): List<Int>?
 
     @Query("DELETE FROM sent_notes WHERE id_note = :id")
@@ -429,14 +454,15 @@ interface TransactionDao {
     @Query("UPDATE received_notes SET spent = null WHERE spent = :transactionId")
     fun unspendTransactionNotes(transactionId: Long): Int
 
-    @Query("""
+    @Query(
+        """
         SELECT transactions.id_tx
         FROM   transactions
         WHERE  created IS NOT NULL
             AND block IS NULL
             AND tx_index IS NULL
             AND expiry_height < :lastheight
-    """)
+    """
+    )
     suspend fun findExpiredTxs(lastheight: Int): List<Long>
-
 }

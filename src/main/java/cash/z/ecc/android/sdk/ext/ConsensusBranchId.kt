@@ -17,8 +17,7 @@ enum class ConsensusBranchId(val displayName: String, val id: Long, val hexId: S
     override fun toString(): String = displayName
 
     companion object {
-        fun fromName(name: String): ConsensusBranchId?
-                = values().firstOrNull { it.displayName.equals(name, true) }
+        fun fromName(name: String): ConsensusBranchId? = values().firstOrNull { it.displayName.equals(name, true) }
 
         fun fromId(id: Long): ConsensusBranchId? = values().firstOrNull { it.id == id }
 

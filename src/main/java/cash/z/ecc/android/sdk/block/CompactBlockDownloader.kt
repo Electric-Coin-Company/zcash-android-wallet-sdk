@@ -1,6 +1,4 @@
-package cash.z.ecc.android.sdk.block
-
-import cash.z.ecc.android.sdk.exception.LightWalletException
+package cash.z.ecc.android.sdk.block // iimport cash.z.ecc.android.sdk.exception.LightWalletException
 import cash.z.ecc.android.sdk.ext.tryWarn
 import cash.z.ecc.android.sdk.service.LightWalletService
 import cash.z.wallet.sdk.rpc.Service
@@ -122,7 +120,6 @@ open class CompactBlockDownloader private constructor(val compactBlockStore: Com
      */
     fun fetchTransaction(txId: ByteArray) = lightWalletService.fetchTransaction(txId)
 
-
     //
     // Convenience functions
     //
@@ -149,6 +146,4 @@ open class CompactBlockDownloader private constructor(val compactBlockStore: Com
                 it.add("chainName")
             }
         }
-
 }
-

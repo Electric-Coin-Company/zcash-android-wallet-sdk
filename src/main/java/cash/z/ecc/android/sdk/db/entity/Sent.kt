@@ -7,15 +7,17 @@ import androidx.room.ForeignKey
 @Entity(
     tableName = "sent_notes",
     primaryKeys = ["id_note"],
-    foreignKeys = [ForeignKey(
-        entity = TransactionEntity::class,
-        parentColumns = ["id_tx"],
-        childColumns = ["tx"]
-    ), ForeignKey(
-        entity = Account::class,
-        parentColumns = ["account"],
-        childColumns = ["from_account"]
-    )]
+    foreignKeys = [
+        ForeignKey(
+            entity = TransactionEntity::class,
+            parentColumns = ["id_tx"],
+            childColumns = ["tx"]
+        ), ForeignKey(
+            entity = Account::class,
+            parentColumns = ["account"],
+            childColumns = ["from_account"]
+        )
+    ]
 )
 data class Sent(
     @ColumnInfo(name = "id_note")
@@ -66,5 +68,4 @@ data class Sent(
         result = 31 * result + (memo?.contentHashCode() ?: 0)
         return result
     }
-
 }

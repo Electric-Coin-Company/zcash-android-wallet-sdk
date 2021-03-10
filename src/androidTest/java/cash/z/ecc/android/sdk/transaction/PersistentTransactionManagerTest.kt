@@ -1,7 +1,6 @@
 package cash.z.ecc.android.sdk.transaction
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import androidx.test.platform.app.InstrumentationRegistry
 import cash.z.ecc.android.sdk.db.entity.EncodedTransaction
 import cash.z.ecc.android.sdk.db.entity.PendingTransaction
 import cash.z.ecc.android.sdk.db.entity.isCancelled
@@ -19,7 +18,10 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import org.junit.Assert.*
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.BeforeClass
 import org.junit.Test
@@ -56,7 +58,7 @@ class PersistentTransactionManagerTest : ScopedTest() {
             }.thenAnswer { invocation ->
                 runBlocking {
                     delay(200)
-                    EncodedTransaction(byteArrayOf(1,2,3), byteArrayOf(8,9), 5_000_000)
+                    EncodedTransaction(byteArrayOf(1, 2, 3), byteArrayOf(8, 9), 5_000_000)
                 }
             }
         }
@@ -88,7 +90,7 @@ class PersistentTransactionManagerTest : ScopedTest() {
 
     @Test
     fun testCancel() = runBlocking {
-        var tx = manager.initSpend(1234,  "a", "b", 0)
+        var tx = manager.initSpend(1234, "a", "b", 0)
         assertFalse(tx.isCancelled())
         manager.cancel(tx.id)
         tx = manager.findById(tx.id)!!
@@ -97,7 +99,7 @@ class PersistentTransactionManagerTest : ScopedTest() {
 
     @Test
     fun testAbort() = runBlocking {
-        var tx: PendingTransaction? = manager.initSpend(1234,  "a", "b", 0)
+        var tx: PendingTransaction? = manager.initSpend(1234, "a", "b", 0)
         assertNotNull(tx)
         manager.abort(tx!!)
         tx = manager.findById(tx.id)

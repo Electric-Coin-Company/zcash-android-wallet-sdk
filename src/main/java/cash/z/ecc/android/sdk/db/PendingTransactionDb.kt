@@ -1,9 +1,15 @@
 package cash.z.ecc.android.sdk.db
 
-import androidx.room.*
+import androidx.room.Dao
+import androidx.room.Database
+import androidx.room.Delete
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
+import androidx.room.Query
+import androidx.room.RoomDatabase
+import androidx.room.Update
 import cash.z.ecc.android.sdk.db.entity.PendingTransactionEntity
 import kotlinx.coroutines.flow.Flow
-
 
 //
 // Database
@@ -25,7 +31,6 @@ import kotlinx.coroutines.flow.Flow
 abstract class PendingTransactionDb : RoomDatabase() {
     abstract fun pendingTransactionDao(): PendingTransactionDao
 }
-
 
 //
 // Data Access Objects
@@ -57,7 +62,6 @@ interface PendingTransactionDao {
     @Query("SELECT * FROM pending_transactions WHERE id = :id")
     fun monitorById(id: Long): Flow<PendingTransactionEntity>
 
-
     //
     // Update helper functions
     //
@@ -80,5 +84,3 @@ interface PendingTransactionDao {
     @Query("UPDATE pending_transactions SET submitAttempts = :attempts WHERE id = :id")
     suspend fun updateSubmitAttempts(id: Long, attempts: Int)
 }
-
-

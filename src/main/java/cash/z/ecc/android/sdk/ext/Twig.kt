@@ -1,5 +1,6 @@
-package cash.z.ecc.android.sdk.ext
+@file:Suppress("NOTHING_TO_INLINE")
 
+package cash.z.ecc.android.sdk.ext
 import java.util.concurrent.CopyOnWriteArraySet
 import kotlin.math.roundToLong
 
@@ -20,7 +21,7 @@ interface Twig {
      */
     operator fun plus(twig: Twig): Twig {
         // if the other twig is a composite twig, let it handle the addition
-        return if(twig is CompositeTwig) twig.plus(this) else CompositeTwig(mutableListOf(this, twig))
+        return if (twig is CompositeTwig) twig.plus(this) else CompositeTwig(mutableListOf(this, twig))
     }
     companion object {
 
@@ -51,7 +52,6 @@ interface Twig {
          * Clip all leaves from the bush.
          */
         fun prune() = Bush.leaves.clear()
-
     }
 }
 
@@ -138,7 +138,7 @@ open class CompositeTwig(open val twigBundle: MutableList<Twig>) :
  */
 inline fun <R> Twig.twig(logMessage: String, block: () -> R): R {
     val start = System.currentTimeMillis()
-    val result  = block()
+    val result = block()
     val elapsed = (System.currentTimeMillis() - start)
     twig("$logMessage | ${elapsed}ms")
     return result
@@ -155,10 +155,9 @@ inline fun <R> Twig.twig(logMessage: String, block: () -> R): R {
 inline fun <R> Twig.twigTask(logMessage: String, block: () -> R): R {
     twig("$logMessage - started    | on thread ${Thread.currentThread().name}")
     val start = System.nanoTime()
-    val result  = block()
+    val result = block()
     val elapsed = ((System.nanoTime() - start) / 1e5).roundToLong() / 10L
-    twig("$logMessage - completed  | in $elapsed ms" +
-            " on thread ${Thread.currentThread().name}")
+    twig("$logMessage - completed  | in $elapsed ms" + " on thread ${Thread.currentThread().name}")
     return result
 }
 
@@ -170,7 +169,7 @@ inline fun <R> Twig.twigTask(logMessage: String, block: () -> R): R {
  */
 inline fun spiffy(stackFrame: Int = 4, tag: String = "@TWIG"): (String) -> String = { logMessage: String ->
     val stack = Thread.currentThread().stackTrace[stackFrame]
-    val time = String.format("${tag} %1\$tD %1\$tI:%1\$tM:%1\$tS.%1\$tN", System.currentTimeMillis())
+    val time = String.format("$tag %1\$tD %1\$tI:%1\$tM:%1\$tS.%1\$tN", System.currentTimeMillis())
     val className = stack.className.split(".").lastOrNull()?.split("\$")?.firstOrNull()
     val tags = Bush.leaves.joinToString(" #", "#")
     "$time[$className:${stack.lineNumber}]($tags)    $logMessage"

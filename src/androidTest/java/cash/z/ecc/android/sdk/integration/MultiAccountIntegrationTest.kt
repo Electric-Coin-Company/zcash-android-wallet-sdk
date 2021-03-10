@@ -1,13 +1,13 @@
-//package cash.z.ecc.android.sdk.integration
+// package cash.z.ecc.android.sdk.integration
 //
-//import cash.z.ecc.android.sdk.ext.ScopedTest
-//import cash.z.ecc.android.sdk.ext.twigTask
-//import cash.z.ecc.android.sdk.util.DarksideTestCoordinator
-//import kotlinx.coroutines.runBlocking
-//import org.junit.BeforeClass
-//import org.junit.Test
+// import cash.z.ecc.android.sdk.ext.ScopedTest
+// import cash.z.ecc.android.sdk.ext.twigTask
+// import cash.z.ecc.android.sdk.util.DarksideTestCoordinator
+// import kotlinx.coroutines.runBlocking
+// import org.junit.BeforeClass
+// import org.junit.Test
 //
-//class MultiAccountIntegrationTest : ScopedTest() {
+// class MultiAccountIntegrationTest : ScopedTest() {
 //
 //    /**
 //     * Test multiple viewing keys by doing the following:
@@ -31,7 +31,7 @@
 //
 //        with(sithLord) {
 //            twigTask("importing viewing key") {
-////                synchronizer.importViewingKey(secondKey)
+//                synchronizer.importViewingKey(secondKey)
 //            }
 //
 //            twigTask("Sending funds") {
@@ -85,4 +85,4 @@
 //            sithLord.startSync(classScope).await()
 //        }
 //    }
-//}
+// }

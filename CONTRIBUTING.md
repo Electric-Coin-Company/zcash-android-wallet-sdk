@@ -93,6 +93,4 @@ By making a contribution to this project, I certify that:
       maintained indefinitely and may be redistributed consistent with
       this project or the open source license(s) involved.
 
-
-
 This contribution guide is inspired on great projects like [AlamoFire](https://github.com/Alamofire/Foundation/blob/master/CONTRIBUTING.md) and [CocoaPods](https://github.com/CocoaPods/CocoaPods/blob/master/CONTRIBUTING.md)

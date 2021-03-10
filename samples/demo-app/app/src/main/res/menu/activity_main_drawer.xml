@@ -18,6 +18,10 @@
             android:icon="@drawable/ic_menu_address"
             android:title="@string/menu_address" />
         <item
+            android:id="@+id/nav_balance"
+            android:icon="@drawable/ic_menu_balance"
+            android:title="@string/menu_balance" />
+        <item
             android:id="@+id/nav_latest_height"
             android:icon="@drawable/ic_menu_latest_height"
             android:title="@string/menu_latest_height" />

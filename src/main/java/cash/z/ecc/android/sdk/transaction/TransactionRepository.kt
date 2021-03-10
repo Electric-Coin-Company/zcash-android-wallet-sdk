@@ -1,7 +1,8 @@
 package cash.z.ecc.android.sdk.transaction
 
 import androidx.paging.PagedList
-import cash.z.ecc.android.sdk.db.entity.*
+import cash.z.ecc.android.sdk.db.entity.ConfirmedTransaction
+import cash.z.ecc.android.sdk.db.entity.EncodedTransaction
 import kotlinx.coroutines.flow.Flow
 
 /**

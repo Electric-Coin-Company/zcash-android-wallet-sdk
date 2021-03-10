@@ -1,23 +1,23 @@
-package cash.z.ecc.android.sdk.integration
+// package cash.z.ecc.android.sdk.integration
+//
+// import cash.z.ecc.android.sdk.ext.ScopedTest
+// import cash.z.ecc.android.sdk.ext.twig
+// import cash.z.ecc.android.sdk.ext.twigTask
+// import cash.z.ecc.android.sdk.service.LightWalletGrpcService
+// import cash.z.ecc.android.sdk.util.DarksideTestCoordinator
+// import cash.z.ecc.android.sdk.util.SimpleMnemonics
+// import cash.z.wallet.sdk.rpc.CompactFormats
+// import cash.z.wallet.sdk.rpc.Service
+// import io.grpc.*
+// import kotlinx.coroutines.delay
+// import kotlinx.coroutines.runBlocking
+// import org.junit.Assert.assertEquals
+// import org.junit.BeforeClass
+// import org.junit.Ignore
+// import org.junit.Test
+// import java.util.concurrent.TimeUnit
 
-import cash.z.ecc.android.sdk.ext.ScopedTest
-import cash.z.ecc.android.sdk.ext.twig
-import cash.z.ecc.android.sdk.ext.twigTask
-import cash.z.ecc.android.sdk.service.LightWalletGrpcService
-import cash.z.ecc.android.sdk.util.DarksideTestCoordinator
-import cash.z.ecc.android.sdk.util.SimpleMnemonics
-import cash.z.wallet.sdk.rpc.CompactFormats
-import cash.z.wallet.sdk.rpc.Service
-import io.grpc.*
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.runBlocking
-import org.junit.Assert.assertEquals
-import org.junit.BeforeClass
-import org.junit.Ignore
-import org.junit.Test
-import java.util.concurrent.TimeUnit
-
-//class MultiRecipientIntegrationTest : ScopedTest() {
+// class MultiRecipientIntegrationTest : ScopedTest() {
 //
 //    @Test
 //    @Ignore
@@ -29,13 +29,13 @@ import java.util.concurrent.TimeUnit
 //            }.forEach { seed ->
 //                twig("ZyZ4: I've got a seed $seed")
 //                initializer.apply {
-////                    delay(250)
+// //                    delay(250)
 //                    twig("VKZyZ: ${deriveViewingKeys(seed)[0]}")
-////                    delay(500)
+// //                    delay(500)
 //                    twig("SKZyZ: ${deriveSpendingKeys(seed)[0]}")
-////                    delay(500)
+// //                    delay(500)
 //                    twig("ADDRZyZ: ${deriveAddress(seed)}")
-////                    delay(250)
+// //                    delay(250)
 //                }
 //            }
 //        }
@@ -58,14 +58,14 @@ import java.util.concurrent.TimeUnit
 //        }
 //    }
 //
-////    private fun sendToMyHomies() {
-////        twig("uno")
-////        val rustPoc = LightWalletGrpcService(localChannel)
-////        twig("dos")
-////        val pong: Int = rustPoc.getLatestBlockHeight()
-////        twig("tres")
-////        assertEquals(800000, pong)
-////    }
+// //    private fun sendToMyHomies() {
+// //        twig("uno")
+// //        val rustPoc = LightWalletGrpcService(localChannel)
+// //        twig("dos")
+// //        val pong: Int = rustPoc.getLatestBlockHeight()
+// //        twig("tres")
+// //        assertEquals(800000, pong)
+// //    }
 //
 //
 //    private fun sendToMyHomies0() {
@@ -145,7 +145,7 @@ import java.util.concurrent.TimeUnit
 //    private fun sendToMyHomies1() = runBlocking {
 //        with(sithLord) {
 //            twigTask("Sending funds") {
-////                createAndSubmitTx(200_000, addresses[0], "multi-account works!")
+// //                createAndSubmitTx(200_000, addresses[0], "multi-account works!")
 //                chainMaker.applyPendingTransactions(663251)
 //                await(targetHeight = 663251)
 //            }
@@ -193,4 +193,4 @@ import java.util.concurrent.TimeUnit
 //            sithLord.startSync(classScope).await()
 //        }
 //    }
-//}
+// }
