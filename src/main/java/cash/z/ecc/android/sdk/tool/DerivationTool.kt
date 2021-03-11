@@ -137,6 +137,5 @@ class DerivationTool {
 
         @JvmStatic
         private external fun deriveTransparentSecretKeyFromSeed(seed: ByteArray, account: Int, index: Int): String
-
     }
 }

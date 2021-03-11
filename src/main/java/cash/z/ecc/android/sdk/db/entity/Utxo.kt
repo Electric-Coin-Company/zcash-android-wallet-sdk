@@ -3,22 +3,23 @@ package cash.z.ecc.android.sdk.db.entity
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
-import androidx.room.PrimaryKey
-import org.jetbrains.annotations.NotNull
 
-@Entity(tableName = "utxos",
+@Entity(
+    tableName = "utxos",
     primaryKeys = ["id_utxo"],
-    foreignKeys = [ForeignKey(
-        entity = TransactionEntity::class,
-        parentColumns = ["id_tx"],
-        childColumns = ["spent_in_tx"]
-    )]
+    foreignKeys = [
+        ForeignKey(
+            entity = TransactionEntity::class,
+            parentColumns = ["id_tx"],
+            childColumns = ["spent_in_tx"]
+        )
+    ]
 )
 data class Utxo(
     @ColumnInfo(name = "id_utxo")
     val id: Long? = 0L,
 
-    val address: String ="",
+    val address: String = "",
 
     @ColumnInfo(name = "prevout_txid", typeAffinity = ColumnInfo.BLOB)
     val txid: ByteArray = byteArrayOf(),
@@ -67,6 +68,4 @@ data class Utxo(
         result = 31 * result + (spent ?: 0)
         return result
     }
-
-
 }

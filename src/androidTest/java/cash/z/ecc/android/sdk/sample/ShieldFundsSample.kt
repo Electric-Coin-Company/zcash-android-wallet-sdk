@@ -26,7 +26,7 @@ import org.junit.Test
  */
 class ShieldFundsSample {
 
-    val SEED_PHRASE = "wish puppy smile loan doll curve hole maze file ginger hair nose key relax knife witness cannon grab despair throw review deal slush frame"//\"still champion voice habit trend flight survey between bitter process artefact blind carbon truly provide dizzy crush flush breeze blouse charge solid fish spread\"//\"deputy visa gentle among clean scout farm drive comfort patch skin salt ranch cool ramp warrior drink narrow normal lunch behind salt deal person"//"deputy visa gentle among clean scout farm drive comfort patch skin salt ranch cool ramp warrior drink narrow normal lunch behind salt deal person"
+    val SEED_PHRASE = "wish puppy smile loan doll curve hole maze file ginger hair nose key relax knife witness cannon grab despair throw review deal slush frame" // \"still champion voice habit trend flight survey between bitter process artefact blind carbon truly provide dizzy crush flush breeze blouse charge solid fish spread\"//\"deputy visa gentle among clean scout farm drive comfort patch skin salt ranch cool ramp warrior drink narrow normal lunch behind salt deal person"//"deputy visa gentle among clean scout farm drive comfort patch skin salt ranch cool ramp warrior drink narrow normal lunch behind salt deal person"
 
     // simple flag to turn off actually spending funds
     val IS_DRY_RUN = true
@@ -48,7 +48,6 @@ class ShieldFundsSample {
         Twig.clip("ShieldFundsSample")
         Assert.assertEquals(5, wallet.synchronizer.latestBalance.availableZatoshi)
     }
-
 
     // when startHeight is null, it will use the latest checkpoint
     class SimpleWallet(seedPhrase: String, startHeight: Int? = null) {

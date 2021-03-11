@@ -314,7 +314,6 @@ class CompactBlockProcessor(
         if (!repository.isInitialized()) throw CompactBlockProcessorException.Uninitialized
     }
 
-
     internal suspend fun downloadUtxos(tAddress: String, startHeight: Int): Int = withContext(IO) {
         var skipped = 0
         twig("Downloading utxos starting at height $startHeight")
@@ -603,7 +602,6 @@ class CompactBlockProcessor(
     suspend fun getUtxoCacheBalance(address: String): WalletBalance = withContext(IO) {
         rustBackend.getDownloadedUtxoBalance(address)
     }
-
 
     /**
      * Transmits the given state for this processor.

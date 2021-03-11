@@ -2,11 +2,9 @@ package cash.z.ecc.android.sdk.jni
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import cash.z.ecc.android.bip39.Mnemonics.MnemonicCode
-import cash.z.ecc.android.bip39.Mnemonics.WordCount.COUNT_24
 import cash.z.ecc.android.bip39.toSeed
 import cash.z.ecc.android.sdk.ext.TroubleshootingTwig
 import cash.z.ecc.android.sdk.ext.Twig
-import cash.z.ecc.android.sdk.ext.twig
 import cash.z.ecc.android.sdk.tool.DerivationTool
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -19,7 +17,6 @@ class TransparentTest {
 
     @Before
     fun setup() {
-
     }
 
     @Test
@@ -47,7 +44,6 @@ class TransparentTest {
 //        }
 //    }
 
-
     companion object {
         const val PHRASE = "deputy visa gentle among clean scout farm drive comfort patch skin salt ranch cool ramp warrior drink narrow normal lunch behind salt deal person"
         val MNEMONIC = MnemonicCode(PHRASE)
@@ -63,7 +59,7 @@ class TransparentTest {
         @BeforeClass
         @JvmStatic
         fun startup() {
-            Twig.plant(TroubleshootingTwig(formatter = {"@TWIG $it"}))
+            Twig.plant(TroubleshootingTwig(formatter = { "@TWIG $it" }))
         }
     }
 }

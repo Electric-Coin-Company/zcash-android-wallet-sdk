@@ -124,8 +124,8 @@ class RustBackend private constructor() : RustBackendWelding {
             extsk,
             tsk,
             memo ?: ByteArray(0),
-            "${pathParamsDir}/$SPEND_PARAM_FILE_NAME",
-            "${pathParamsDir}/$OUTPUT_PARAM_FILE_NAME"
+            "$pathParamsDir/$SPEND_PARAM_FILE_NAME",
+            "$pathParamsDir/$OUTPUT_PARAM_FILE_NAME"
         )
     }
 

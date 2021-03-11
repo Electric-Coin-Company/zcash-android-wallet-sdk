@@ -154,7 +154,7 @@ class WalletTransactionEncoder(
                 )
             } catch (t: Throwable) {
                 // TODO: if this error matches: Insufficient balance (have 0, need 1000 including fee)
-                    // then consider custom error that says no UTXOs existed to shield
+                // then consider custom error that says no UTXOs existed to shield
                 twig("Shield failed due to: ${t.message}")
                 throw t
             }

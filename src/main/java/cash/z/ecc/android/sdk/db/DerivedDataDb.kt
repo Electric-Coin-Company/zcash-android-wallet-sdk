@@ -15,6 +15,7 @@ import cash.z.ecc.android.sdk.db.entity.EncodedTransaction
 import cash.z.ecc.android.sdk.db.entity.Received
 import cash.z.ecc.android.sdk.db.entity.Sent
 import cash.z.ecc.android.sdk.db.entity.TransactionEntity
+import cash.z.ecc.android.sdk.db.entity.Utxo
 import cash.z.ecc.android.sdk.ext.twig
 
 //
@@ -155,7 +156,8 @@ abstract class DerivedDataDb : RoomDatabase() {
                         spent_in_tx INTEGER,
                         FOREIGN KEY (spent_in_tx) REFERENCES transactions(id_tx),
                         CONSTRAINT tx_outpoint UNIQUE (prevout_txid, prevout_idx)
-                    ); """.trimIndent()
+                    ); 
+                    """.trimIndent()
                 )
             }
         }

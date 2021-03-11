@@ -140,7 +140,6 @@ interface Synchronizer {
      */
     suspend fun getShieldedAddress(accountId: Int = 0): String
 
-
     /**
      * Gets the transparent address for the given account and index.
      *

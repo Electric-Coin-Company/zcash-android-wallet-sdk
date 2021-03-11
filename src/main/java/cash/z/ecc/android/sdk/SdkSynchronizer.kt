@@ -25,11 +25,13 @@ import cash.z.ecc.android.sdk.db.entity.PendingTransaction
 import cash.z.ecc.android.sdk.db.entity.hasRawTransactionId
 import cash.z.ecc.android.sdk.db.entity.isCancelled
 import cash.z.ecc.android.sdk.db.entity.isExpired
+import cash.z.ecc.android.sdk.db.entity.isFailedSubmit
 import cash.z.ecc.android.sdk.db.entity.isLongExpired
 import cash.z.ecc.android.sdk.db.entity.isMarkedForDeletion
 import cash.z.ecc.android.sdk.db.entity.isMined
 import cash.z.ecc.android.sdk.db.entity.isSafeToDiscard
 import cash.z.ecc.android.sdk.db.entity.isSubmitSuccess
+import cash.z.ecc.android.sdk.db.entity.isSubmitted
 import cash.z.ecc.android.sdk.exception.SynchronizerException
 import cash.z.ecc.android.sdk.ext.ConsensusBranchId
 import cash.z.ecc.android.sdk.ext.ZcashSdk
@@ -462,10 +464,12 @@ class SdkSynchronizer internal constructor(
         }
 
         // Experimental: cleanup failed transactions
-        allPendingTxs.filter { it.isSubmitted() && it.isFailedSubmit() && !it.isMarkedForDeletion()}.let { failed ->
+        allPendingTxs.filter { it.isSubmitted() && it.isFailedSubmit() && !it.isMarkedForDeletion() }.let { failed ->
             failed.forEachIndexed { index, pendingTx ->
-                twig("[cleanup] FOUND (${index + 1} of ${failed.size})" +
-                        " FAILED pendingTxId: ${pendingTx.id}")
+                twig(
+                    "[cleanup] FOUND (${index + 1} of ${failed.size})" +
+                        " FAILED pendingTxId: ${pendingTx.id}"
+                )
                 cleanupCancelledTx(pendingTx)
             }
         }
@@ -554,7 +558,6 @@ class SdkSynchronizer internal constructor(
         val tAddr = DerivationTool.deriveTransparentAddress(transparentSecretKey)
         val tBalance = processor.getUtxoCacheBalance(tAddr)
         val zAddr = getAddress(0)
-
 
         // Emit the placeholder transaction, then switch to monitoring the database
         txManager.initSpend(tBalance.availableZatoshi, zAddr, memo, 0).let { placeHolderTx ->
