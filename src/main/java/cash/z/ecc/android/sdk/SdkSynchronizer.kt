@@ -255,10 +255,17 @@ class SdkSynchronizer internal constructor(
      */
     override fun stop() {
         coroutineScope.launch {
+            // log everything to help troubleshoot shutdowns that aren't graceful
+            twig("Synchronizer::stop: STARTING")
+            twig("Synchronizer::stop: processor.stop()")
             processor.stop()
+            twig("Synchronizer::stop: coroutineScope.cancel()")
             coroutineScope.cancel()
+            twig("Synchronizer::stop: _balances.cancel()")
             _balances.cancel()
+            twig("Synchronizer::stop: _status.cancel()")
             _status.cancel()
+            twig("Synchronizer::stop: COMPLETE")
         }
     }
 
