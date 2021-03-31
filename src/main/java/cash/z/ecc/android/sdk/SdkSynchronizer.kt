@@ -300,6 +300,10 @@ class SdkSynchronizer internal constructor(
         )
     }
 
+    override suspend fun rewindToHeight(height: Int, alsoClearBlockCache: Boolean) {
+        processor.rewindToHeight(height, alsoClearBlockCache)
+    }
+
     //
     // Storage APIs
     //

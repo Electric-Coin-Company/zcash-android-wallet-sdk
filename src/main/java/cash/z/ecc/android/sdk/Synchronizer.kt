@@ -277,6 +277,8 @@ interface Synchronizer {
      */
     suspend fun getTransparentBalance(tAddr: String): WalletBalance
 
+    suspend fun rewindToHeight(height: Int, alsoClearBlockCache: Boolean = false)
+
     //
     // Error Handling
     //

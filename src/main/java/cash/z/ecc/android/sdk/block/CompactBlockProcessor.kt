@@ -228,13 +228,15 @@ class CompactBlockProcessor(
             downloader.lightWalletService.reconnect()
             ERROR_CODE_RECONNECT
         } else if (currentInfo.lastDownloadRange.isEmpty() && currentInfo.lastScanRange.isEmpty()) {
-            twig("Nothing to process: no new blocks to download or scan, right now.")
+            twig("Nothing to process: no new blocks to download or scan, right now (latest: ${currentInfo.networkBlockHeight}).")
             setState(Scanned(currentInfo.lastScanRange))
             ERROR_CODE_NONE
         } else {
             downloadNewBlocks(currentInfo.lastDownloadRange)
             val error = validateAndScanNewBlocks(currentInfo.lastScanRange)
-            if (error != ERROR_CODE_NONE) error else enhanceTransactionDetails(currentInfo.lastScanRange)
+            if (error != ERROR_CODE_NONE) error else {
+                enhanceTransactionDetails(currentInfo.lastScanRange)
+            }
         }
     }
 
@@ -561,14 +563,36 @@ class CompactBlockProcessor(
         _processorInfo.send(currentInfo)
     }
 
-    private suspend fun handleChainError(errorHeight: Int) = withContext(IO) {
+    private suspend fun handleChainError(errorHeight: Int) {
         // TODO consider an error object containing hash information
         printValidationErrorInfo(errorHeight)
         determineLowerBound(errorHeight).let { lowerBound ->
             twig("handling chain error at $errorHeight by rewinding to block $lowerBound")
             onChainErrorListener?.invoke(errorHeight, lowerBound)
-            rustBackend.rewindToHeight(lowerBound)
-            downloader.rewindToHeight(lowerBound)
+            rewindToHeight(lowerBound)
+        }
+    }
+
+    /**
+     * @param alsoClearBlockCache when true, also clear the block cache which forces a redownload of
+     * blocks. Otherwise, the cached blocks will be used in the rescan, which in most cases, is fine.
+     */
+    suspend fun rewindToHeight(height: Int, alsoClearBlockCache: Boolean = false) = withContext(IO) {
+        val lastHeight = currentInfo.lastScannedHeight
+        twig("Rewinding from $lastHeight to height: $height")
+        // TODO: think about how we might pause all processing during a rewind
+        if (height < lastHeight) {
+            rustBackend.rewindToHeight(height)
+            val range = (height + 1)..lastHeight
+            if (alsoClearBlockCache) {
+                twig("Rewound blocks will download in the next scheduled scan")
+                downloader.rewindToHeight(height)
+                // communicate that the wallet is no longer synced because it might remain this way for 20+ seconds because we only download on 20s time boundaries so we can't trigger any immediate action
+                setState(Downloading)
+            } else {
+                twig("Revalidating blocks that were rewound")
+                if (validateAndScanNewBlocks(range) == ERROR_CODE_NONE) enhanceTransactionDetails(range)
+            }
         }
     }
 
