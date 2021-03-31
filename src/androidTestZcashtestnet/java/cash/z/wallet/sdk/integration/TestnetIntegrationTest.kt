@@ -5,8 +5,15 @@ import cash.z.ecc.android.sdk.Initializer
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.Synchronizer.Status.SYNCED
 import cash.z.ecc.android.sdk.db.entity.isSubmitSuccess
-import cash.z.ecc.android.sdk.jni.RustBackend
+import cash.z.ecc.android.sdk.ext.ScopedTest
+import cash.z.ecc.android.sdk.ext.TroubleshootingTwig
+import cash.z.ecc.android.sdk.ext.Twig
+import cash.z.ecc.android.sdk.ext.ZcashSdk
+import cash.z.ecc.android.sdk.ext.onFirst
+import cash.z.ecc.android.sdk.ext.twig
 import cash.z.ecc.android.sdk.service.LightWalletGrpcService
+import cash.z.ecc.android.sdk.tool.DerivationTool
+import cash.z.ecc.android.sdk.tool.WalletBirthdayTool
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
@@ -36,7 +43,7 @@ class TestnetIntegrationTest : ScopedTest() {
 
     @Test
     fun testLoadBirthday() {
-        val (height, hash, time, tree) = Initializer.DefaultBirthdayStore.loadBirthdayFromAssets(context, ZcashSdk.SAPLING_ACTIVATION_HEIGHT + 1)
+        val (height, hash, time, tree) = WalletBirthdayTool.loadNearest(context, ZcashSdk.SAPLING_ACTIVATION_HEIGHT + 1)
         assertEquals(ZcashSdk.SAPLING_ACTIVATION_HEIGHT, height)
     }
 
@@ -74,7 +81,7 @@ class TestnetIntegrationTest : ScopedTest() {
     }
 
     private suspend fun sendFunds(): Boolean {
-        val spendingKey = RustBackend().deriveSpendingKeys(seed)[0]
+        val spendingKey = DerivationTool.deriveSpendingKeys(seed)[0]
         log("sending to address")
         synchronizer.sendToAddress(
             spendingKey,
@@ -105,13 +112,15 @@ class TestnetIntegrationTest : ScopedTest() {
         val toAddress = "zs1vp7kvlqr4n9gpehztr76lcn6skkss9p8keqs3nv8avkdtjrcctrvmk9a7u494kluv756jeee5k0"
 
         private val context = InstrumentationRegistry.getInstrumentation().context
-        private val initializer = Initializer(context, host, port, "TestnetIntegrationTests")
+        private val initializer = Initializer(context) { config ->
+            config.server(host, port)
+            config.importWallet(seed, birthdayHeight)
+        }
         private lateinit var synchronizer: Synchronizer
 
         @JvmStatic
         @BeforeClass
         fun startUp() {
-            initializer.importPhrase(seedPhrase, birthdayHeight, "TestnetIntegrationTests", false)
             synchronizer = Synchronizer(initializer)
             synchronizer.start(classScope)
         }
