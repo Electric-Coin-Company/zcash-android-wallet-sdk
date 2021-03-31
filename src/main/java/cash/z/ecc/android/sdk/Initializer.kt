@@ -93,6 +93,7 @@ class Initializer constructor(appContext: Context, config: Config) : SdkSynchron
             )
             twig("seeded the database with sapling tree at height ${birthday.height}")
         }
+        twig("database file: ${rustBackend.pathDataDb}")
     }
 
     /**
@@ -393,6 +394,14 @@ internal fun validateAlias(alias: String) {
             alias.all { it.isLetterOrDigit() || it == '_' }
     ) {
         "ERROR: Invalid alias ($alias). For security, the alias must be shorter than 100 " +
-            "characters and only contain letters, digits or underscores and start with a letter"
+            "characters and only contain letters, digits or underscores and start with a letter; " +
+                "ideally, it would also differentiate across mainnet and testnet but that is not " +
+                "enforced."
+    }
+
+    // TODO: consider exposing this as a proper warning that can be received by apps, since most apps won't use logging
+    if (alias.toLowerCase().contains(BuildConfig.FLAVOR.toLowerCase())) {
+        twig("WARNING: alias does not contain the build flavor but it probably should to help" +
+                " prevent testnet data from contaminating mainnet data.")
     }
 }
