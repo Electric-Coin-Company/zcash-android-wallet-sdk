@@ -220,6 +220,8 @@ class SdkSynchronizer internal constructor(
      */
     override val latestHeight: Int get() = processor.currentInfo.networkBlockHeight
 
+    override val latestBirthdayHeight: Int get() = processor.birthdayHeight
+
     /**
      * Starts this synchronizer within the given scope. For simplicity, attempting to start an
      * instance that has already been started will throw a [SynchronizerException.FalseStart]

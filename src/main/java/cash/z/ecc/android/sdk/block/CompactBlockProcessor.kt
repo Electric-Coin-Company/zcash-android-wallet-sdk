@@ -91,6 +91,15 @@ class CompactBlockProcessor(
     private val _processorInfo = ConflatedBroadcastChannel(ProcessorInfo())
 
     /**
+     * Flow of birthday heights. The birthday is essentially the first block that the wallet cares
+     * about. Any prior block can be ignored. This is not a fixed value because the height is
+     * influenced by the first transaction, which isn't always known. So we start with an estimation
+     * and improve it as the wallet progresses. Once the first transaction occurs, this value is
+     * effectively fixed.
+     */
+    private val _birthdayHeight = MutableStateFlow(lowerBoundHeight)
+
+    /**
      * The root source of truth for the processor's progress. All processing must be done
      * sequentially, due to the way sqlite works so it is okay for this not to be threadsafe or
      * coroutine safe because processing cannot be concurrent.
@@ -116,10 +125,18 @@ class CompactBlockProcessor(
     val processorInfo = _processorInfo.asFlow()
 
     /**
+     * The first block this wallet cares about anything prior can be ignored. If a wallet has no
+     * transactions, this value will later update to 100 blocks before the first transaction,
+     * rounded down to the nearest 100. So in some cases, this is a dynamic value.
+     */
+    val birthdayHeight = _birthdayHeight.value
+
+    /**
      * Download compact blocks, verify and scan them until [stop] is called.
      */
     suspend fun start() = withContext(IO) {
         twig("processor starting")
+        updateBirthdayHeight()
 
         // using do/while makes it easier to execute exactly one loop which helps with testing this processor quickly
         // (because you can start and then immediately set isStopped=true to always get precisely one loop)
@@ -270,6 +287,11 @@ class CompactBlockProcessor(
                 twig("no new transactions found in $lastScanRange")
             } else {
                 twig("enhancing ${newTxs.size} transaction(s)!")
+                // if the first transaction has been added
+                if (newTxs.size == repository.count()) {
+                    twig("Encountered the first transaction. This changes the birthday height!")
+                    updateBirthdayHeight()
+                }
             }
 
             newTxs?.onEach { newTransaction ->
@@ -315,6 +337,18 @@ class CompactBlockProcessor(
     }
 
     internal suspend fun downloadUtxos(tAddress: String, startHeight: Int): Int = withContext(IO) {
+    private suspend fun updateBirthdayHeight() {
+        try {
+            val betterBirthday = calculateBirthdayHeight()
+            if (betterBirthday > birthdayHeight) {
+                twig("Better birthday found! Birthday height updated from $birthdayHeight to $betterBirthday")
+                _birthdayHeight.value = betterBirthday
+            }
+        } catch (e: Throwable) {
+            twig("Warning: updating the birthday height failed due to $e")
+        }
+    }
+
         var skipped = 0
         twig("Downloading utxos starting at height $startHeight")
         downloader.lightWalletService.fetchUtxos(tAddress, startHeight).let { result ->
@@ -548,6 +582,21 @@ class CompactBlockProcessor(
         val deltaToNextInteral = interval - (now + interval).rem(interval)
         twig("sleeping for ${deltaToNextInteral}ms from $now in order to wake at ${now + deltaToNextInteral}")
         return deltaToNextInteral
+    }
+
+    suspend fun calculateBirthdayHeight(): Int {
+        var oldestTransactionHeight = 0
+        try {
+            oldestTransactionHeight = repository.receivedTransactions.first().last()?.minedHeight ?: lowerBoundHeight
+            // to be safe adjust for reorgs (and generally a little cushion is good for privacy)
+            // so we round down to the nearest 100 and then subtract 100 to ensure that the result is always at least 100 blocks away
+            oldestTransactionHeight = ZcashSdk.MAX_REORG_SIZE.let { boundary ->
+                oldestTransactionHeight.let { it - it.rem(boundary) - boundary }
+            }
+        } catch (t: Throwable) {
+            twig("failed to calculate birthday due to: $t")
+        }
+        return maxOf(lowerBoundHeight, oldestTransactionHeight, SAPLING_ACTIVATION_HEIGHT)
     }
 
     /**

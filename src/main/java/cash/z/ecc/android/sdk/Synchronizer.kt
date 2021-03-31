@@ -120,6 +120,12 @@ interface Synchronizer {
      */
     val latestBalance: WalletBalance
 
+    /**
+     * An in-memory reference to the best known birthday height, which can change if the first
+     * transaction has not yet occurred.
+     */
+    val latestBirthdayHeight: Int
+
     //
     // Operations
     //
