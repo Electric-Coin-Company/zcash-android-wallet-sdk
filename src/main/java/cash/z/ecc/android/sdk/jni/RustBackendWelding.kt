@@ -1,6 +1,7 @@
 package cash.z.ecc.android.sdk.jni
 
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor
+import cash.z.ecc.android.sdk.ext.ZcashSdk
 
 /**
  * Contract defining the exposed capabilities of the Rust backend.
@@ -69,6 +70,8 @@ interface RustBackendWelding {
         value: Long,
         height: Int
     ): Boolean
+
+    fun clearUtxos(tAddress: String, aboveHeight: Int = ZcashSdk.SAPLING_ACTIVATION_HEIGHT - 1): Boolean
 
     fun getDownloadedUtxoBalance(address: String): CompactBlockProcessor.WalletBalance
 

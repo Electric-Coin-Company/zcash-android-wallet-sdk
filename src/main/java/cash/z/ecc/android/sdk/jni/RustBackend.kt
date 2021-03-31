@@ -138,6 +138,11 @@ class RustBackend private constructor() : RustBackendWelding {
         height: Int
     ): Boolean = putUtxo(pathDataDb, tAddress, txId, index, script, value, height)
 
+    override fun clearUtxos(
+        tAddress: String,
+        aboveHeight: Int,
+    ): Boolean = clearUtxos(pathDataDb, tAddress, aboveHeight)
+
     override fun getDownloadedUtxoBalance(address: String): CompactBlockProcessor.WalletBalance {
         val verified = getVerifiedTransparentBalance(pathDataDb, address)
         val total = getTotalTransparentBalance(pathDataDb, address)
@@ -304,6 +309,12 @@ class RustBackend private constructor() : RustBackendWelding {
             script: ByteArray,
             value: Long,
             height: Int
+        ): Boolean
+
+        @JvmStatic private external fun clearUtxos(
+            dbDataPath: String,
+            tAddress: String,
+            aboveHeight: Int,
         ): Boolean
 
         @JvmStatic private external fun getVerifiedTransparentBalance(

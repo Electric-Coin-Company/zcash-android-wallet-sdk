@@ -38,7 +38,10 @@ use zcash_client_sqlite::{
     BlockDB,
     error::SqliteClientError,
     NoteId,
-    wallet::init::{init_accounts_table, init_blocks_table, init_wallet_db}, wallet::put_received_transparent_utxo, WalletDB,
+    wallet::init::{init_accounts_table, init_blocks_table, init_wallet_db},
+    wallet::{put_received_transparent_utxo, delete_utxos_above},
+    wallet::rewind_to_height,
+    WalletDB,
 };
 use zcash_primitives::{
     block::BlockHash,
@@ -774,6 +777,31 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_putUtxo(
         }
     });
     unwrap_exc_or(&env, res, JNI_FALSE)
+}
+
+
+#[no_mangle]
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_clearUtxos(
+    env: JNIEnv<'_>,
+    _: JClass<'_>,
+    db_data: JString<'_>,
+    taddress: JString<'_>,
+    above_height: jint,
+) -> jint {
+    let res = panic::catch_unwind(|| {
+    let db_data = wallet_db(&env, NETWORK, db_data)?;
+    let mut db_data = db_data.get_update_ops()?;
+    let addr = utils::java_string_to_rust(&env, taddress);
+    let taddress = TransparentAddress::decode(&NETWORK, &addr).unwrap();
+    let height = BlockHeight::from(above_height as u32);
+
+    debug!("clearing UTXOs that were found above height: {}", above_height);
+        match delete_utxos_above(&mut db_data, &taddress, height) {
+            Ok(rows) => Ok(rows as i32),
+            Err(e) => Err(format_err!("Error while clearing UTXOs: {}", e)),
+        }
+    });
+    unwrap_exc_or(&env, res, -1)
 }
 
 // ADDED BY ANDROID
