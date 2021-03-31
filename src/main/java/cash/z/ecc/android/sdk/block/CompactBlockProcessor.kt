@@ -16,6 +16,7 @@ import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException
 import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException.EnhanceTransactionError.EnhanceTxDecryptError
 import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException.EnhanceTransactionError.EnhanceTxDownloadError
 import cash.z.ecc.android.sdk.exception.RustLayerException
+import cash.z.ecc.android.sdk.ext.BatchMetrics
 import cash.z.ecc.android.sdk.ext.Twig
 import cash.z.ecc.android.sdk.ext.ZcashSdk.DOWNLOAD_BATCH_SIZE
 import cash.z.ecc.android.sdk.ext.ZcashSdk.MAX_BACKOFF_INTERVAL
@@ -82,6 +83,13 @@ class CompactBlockProcessor(
      * an error was found and the lower bound to which the data will rewind, at most.
      */
     var onChainErrorListener: ((errorHeight: Int, rewindHeight: Int) -> Any)? = null
+
+    /**
+     * Callback for apps to report scan times. As blocks are scanned in batches, this listener is
+     * invoked at the end of every batch and the second parameter is only true when all batches are
+     * complete. The first parameter contains useful information on the blocks scanned per second.
+     */
+    var onScanMetricCompleteListener: ((BatchMetrics, Boolean) -> Unit)? = null
 
     private val consecutiveChainErrors = AtomicInteger(0)
     private val lowerBoundHeight: Int = max(SAPLING_ACTIVATION_HEIGHT, minimumHeight - MAX_REORG_SIZE)
@@ -454,27 +462,33 @@ class CompactBlockProcessor(
             Twig.sprout("scanning")
             twig("scanning blocks for range $range in batches")
             var result = false
+            var metrics = BatchMetrics(range, SCAN_BATCH_SIZE, onScanMetricCompleteListener)
             // Attempt to scan a few times to work around any concurrent modification errors, then
             // rethrow as an official processorError which is handled by [start.retryWithBackoff]
             retryUpTo(3, { CompactBlockProcessorException.FailedScan(it) }) { failedAttempts ->
                 if (failedAttempts > 0) twig("retrying the scan after $failedAttempts failure(s)...")
                 do {
                     var scannedNewBlocks = false
+                    metrics.beginBatch()
                     result = rustBackend.scanBlocks(SCAN_BATCH_SIZE)
-                    val lastScannedHeight = getLastScannedHeight()
-                    twig("batch scanned: $lastScannedHeight/${range.last}")
+                    metrics.endBatch()
+                    val lastScannedHeight = range.start + metrics.cumulativeItems - 1
+                    val percent = "%.0f".format((lastScannedHeight - range.first) / (range.last - range.first).toFloat() * 100.0f)
+                    twig("batch scanned ($percent%): $lastScannedHeight/${range.last} | ${metrics.batchTime}ms, ${metrics.batchItems}blks, ${metrics.batchIps.format()}bps")
                     if (currentInfo.lastScannedHeight != lastScannedHeight) {
                         scannedNewBlocks = true
                         updateProgress(lastScannedHeight = lastScannedHeight)
                     }
                     // if we made progress toward our scan, then keep trying
                 } while (result && scannedNewBlocks && lastScannedHeight < range.last)
-                twig("batch scan complete!")
+                twig("batch scan complete! Total time: ${metrics.cumulativeTime}  Total blocks measured: ${metrics.cumulativeItems}  Cumulative bps: ${metrics.cumulativeIps.format()}")
             }
             Twig.clip("scanning")
             result
         }
     }
+
+    private fun Float.format(places: Int = 0) = "%.${places}f".format(this)
 
     /**
      * Emit an instance of processorInfo, corresponding to the provided data.
