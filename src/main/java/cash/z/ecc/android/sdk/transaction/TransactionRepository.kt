@@ -74,6 +74,8 @@ interface TransactionRepository {
 
     suspend fun deleteExpired(lastScannedHeight: Int): Int
 
+    suspend fun count(): Int
+
     //
     // Transactions
     //

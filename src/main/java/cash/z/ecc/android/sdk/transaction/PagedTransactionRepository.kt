@@ -91,7 +91,9 @@ open class PagedTransactionRepository(
         // let expired transactions linger in the UI for a little while
         return transactions.deleteExpired(lastScannedHeight - (ZcashSdk.EXPIRY_OFFSET / 2))
     }
-
+    override suspend fun count(): Int = withContext(IO) {
+        transactions.count()
+    }
     /**
      * Close the underlying database.
      */
