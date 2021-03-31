@@ -2,7 +2,7 @@ package cash.z.ecc.android.sdk.demoapp
 
 data class DemoConfig(
     val alias: String = "SdkDemo",
-    val host: String = "lightwalletd.testnet.electriccoin.co",
+    val host: String = "testnet.lightwalletd.com",
     val port: Int = 9067,
     val birthdayHeight: Int = 954_500,
     val utxoEndHeight: Int = 1075590,

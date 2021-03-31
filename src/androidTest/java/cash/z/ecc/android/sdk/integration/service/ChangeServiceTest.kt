@@ -105,7 +105,7 @@ class ChangeServiceTest : ScopedTest() {
     @Test
     fun testSwitchToTestnetFails() = runBlocking {
         var caughtException: Throwable? = null
-        downloader.changeService(LightWalletGrpcService(context, "lightwalletd.testnet.electriccoin.co", 9067)) {
+        downloader.changeService(LightWalletGrpcService(context, "testnet.lightwalletd.com", 9067)) {
             caughtException = it
         }
         assertNotNull("Using an invalid host should generate an exception.", caughtException)
