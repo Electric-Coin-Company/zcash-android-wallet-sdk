@@ -44,12 +44,14 @@ use zcash_primitives::{
     block::BlockHash,
     consensus::{BlockHeight, BranchId, Parameters},
     legacy::TransparentAddress,
-    note_encryption::Memo,
     transaction::{
         components::{Amount, OutPoint},
         Transaction
     },
     zip32::ExtendedFullViewingKey,
+    memo::{
+        Memo, MemoBytes
+    }
 };
 #[cfg(feature = "mainnet")]
 use zcash_primitives::consensus::{MAIN_NETWORK, MainNetwork};
@@ -611,10 +613,16 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_getReceived
     let res = panic::catch_unwind(|| {
         let db_data = wallet_db(&env, NETWORK, db_data)?;
 
-        let memo = match (&db_data).get_memo_as_utf8(NoteId::ReceivedNoteId(id_note)) {
-            Ok(memo) => memo.unwrap_or_default(),
-            Err(e) => return Err(format_err!("Error while fetching memo: {}", e)),
-        };
+        let memo = (&db_data)
+            .get_memo(NoteId::ReceivedNoteId(id_note))
+            .map_err(|e| format_err!("An error occurred retrieving the memo, {}", e))
+            .and_then(|memo| {
+                match memo {
+                    Memo::Empty => Ok("".to_string()),
+                    Memo::Text(memo) => Ok(memo.into()),
+                    _ => Err(format_err!("This memo does not contain UTF-8 text")),
+                }
+            })?;
 
         let output = env.new_string(memo).expect("Couldn't create Java string!");
         Ok(output.into_inner())
@@ -633,9 +641,15 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_getSentMemo
         let db_data = wallet_db(&env, NETWORK, db_data)?;
 
         let memo = (&db_data)
-            .get_memo_as_utf8(NoteId::SentNoteId(id_note))
-            .map(|memo| memo.unwrap_or_default())
-            .map_err(|e| format_err!("Error while fetching memo: {}", e))?;
+            .get_memo(NoteId::SentNoteId(id_note))
+            .map_err(|e| format_err!("An error occurred retrieving the memo, {}", e))
+            .and_then(|memo| {
+                match memo {
+                    Memo::Empty => Ok("".to_string()),
+                    Memo::Text(memo) => Ok(memo.into()),
+                    _ => Err(format_err!("This memo does not contain UTF-8 text")),
+                }
+            })?;
 
         let output = env.new_string(memo).expect("Couldn't create Java string!");
         Ok(output.into_inner())
@@ -692,11 +706,10 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_rewindToHei
             .map_err(|e| format_err!("Could not obtain a writable database connection: {}", e))?;
 
         let height = BlockHeight::try_from(height)?;
-        (&mut update_ops)
-            .transactionally(|ops| ops.rewind_to_height(height))
-            .map(|_| JNI_TRUE)
+        rewind_to_height(&db_data, height)
+            .map(|_| 1)
             .map_err(|e| format_err!("Error while rewinding data DB to height {}: {}", height, e))
-    });
+     });
 
     unwrap_exc_or(&env, res, JNI_FALSE)
 }
@@ -943,7 +956,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_createToAdd
             }
         };
 
-        let memo = Memo::from_bytes(&memo_bytes);
+        let memo = Memo::from_bytes(&memo_bytes).map_err(|_| format_err!("Invalid memo"))?;;
 
         let prover = LocalTxProver::new(Path::new(&spend_params), Path::new(&output_params));
 
@@ -956,7 +969,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_createToAdd
             &extsk,
             &to,
             value,
-            memo,
+            Some(MemoBytes::from(&memo)),
             OvkPolicy::Sender,
         )
         .map_err(|e| format_err!("Error while creating transaction: {}", e))
@@ -1014,7 +1027,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_shieldToAdd
             AccountId(account),
             &sk,
             &extsk,
-            &memo,
+            &MemoBytes::from(&memo),
             10
         )
             .map_err(|e| format_err!("Error while shielding transaction: {}", e))

@@ -16,10 +16,10 @@ hex = "0.4"
 jni = { version = "0.17", default-features = false }
 log = "0.4"
 log-panics = "2.0.0"
-zcash_client_backend = "0.4"
-zcash_client_sqlite = "0.2.1"
-zcash_primitives = "0.4"
-zcash_proofs = "0.4"
+zcash_client_backend = "0.5"
+zcash_client_sqlite = "0.3"
+zcash_primitives = "0.5"
+zcash_proofs = "0.5"
 
 #### Temporary additions: ####################################
 #base58 = "0.1.0"
