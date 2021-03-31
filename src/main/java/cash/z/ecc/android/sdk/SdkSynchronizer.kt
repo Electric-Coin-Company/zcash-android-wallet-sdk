@@ -327,13 +327,16 @@ class SdkSynchronizer internal constructor(
 
     private fun CoroutineScope.onReady() = launch(CoroutineExceptionHandler(::onCriticalError)) {
         twig("Synchronizer (${this@SdkSynchronizer}) Ready. Starting processor!")
+        var lastScanTime = 0L
         processor.onProcessorErrorListener = ::onProcessorError
         processor.onChainErrorListener = ::onChainError
         processor.state.onEach {
             when (it) {
                 is Scanned -> {
+                    val now = System.currentTimeMillis()
                     // do a bit of housekeeping and then report synced status
-                    onScanComplete(it.scannedRange)
+                    onScanComplete(it.scannedRange, now - lastScanTime)
+                    lastScanTime = now
                     SYNCED
                 }
                 is Stopped -> STOPPED
@@ -408,9 +411,16 @@ class SdkSynchronizer internal constructor(
         onChainErrorHandler?.invoke(errorHeight, rewindHeight)
     }
 
-    private suspend fun onScanComplete(scannedRange: IntRange) {
-        // TODO: optimize to skip logic here if there are no new transactions with a block height
-        //       within the given range
+    /**
+     * @param elapsedMillis the amount of time that passed since the last scan
+     */
+    private suspend fun onScanComplete(scannedRange: IntRange, elapsedMillis: Long) {
+        // We don't need to update anything if there have been no blocks
+        // refresh anyway if:
+        // - if it's the first time we finished scanning
+        // - if we check for blocks 5 times and find nothing was mined
+        val shouldRefresh = !scannedRange.isEmpty() || elapsedMillis > (ZcashSdk.POLL_INTERVAL * 5)
+        val reason = if (scannedRange.isEmpty()) "it's been a while" else "new blocks were scanned"
 
         // TRICKY:
         // Keep an eye on this section because there is a potential for concurrent DB
@@ -424,14 +434,19 @@ class SdkSynchronizer internal constructor(
         // Ultimately, refreshing the transactions just invalidates views of data that
         // already exists and it completes on another thread so it should come after the
         // balance refresh is complete.
-        twigTask("Triggering balance refresh since the processor is synced!") {
-            refreshBalance()
-        }
-        twigTask("Triggering pending transaction refresh!") {
-            refreshPendingTransactions()
-        }
-        twigTask("Triggering transaction refresh since the processor is synced!") {
-            refreshTransactions()
+        if (shouldRefresh) {
+            twigTask("Triggering utxo refresh since $reason!") {
+                refreshUtxos()
+            }
+            twigTask("Triggering balance refresh since $reason!") {
+                refreshBalance()
+            }
+            twigTask("Triggering pending transaction refresh since $reason!") {
+                refreshPendingTransactions()
+            }
+            twigTask("Triggering transaction refresh since $reason!") {
+                refreshTransactions()
+            }
         }
     }
 
