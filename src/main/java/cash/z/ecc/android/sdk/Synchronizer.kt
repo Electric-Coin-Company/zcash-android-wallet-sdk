@@ -25,6 +25,11 @@ interface Synchronizer {
     //
 
     /**
+     * Return true when this synchronizer has been started.
+     */
+    var isStarted: Boolean
+
+    /**
      * Starts this synchronizer within the given scope.
      *
      * @param parentScope the scope to use for this synchronizer, typically something with a

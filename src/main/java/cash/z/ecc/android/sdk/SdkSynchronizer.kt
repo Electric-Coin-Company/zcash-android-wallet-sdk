@@ -130,7 +130,7 @@ class SdkSynchronizer internal constructor(
      */
     val channel: ManagedChannel get() = (processor.downloader.lightWalletService as LightWalletGrpcService).channel
 
-    var isStarted = false
+    override var isStarted = false
 
     //
     // Transactions
