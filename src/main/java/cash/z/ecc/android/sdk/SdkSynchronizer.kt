@@ -197,6 +197,14 @@ class SdkSynchronizer internal constructor(
     override var onSubmissionErrorHandler: ((Throwable?) -> Boolean)? = null
 
     /**
+     * A callback to invoke whenever a processor is not setup correctly. Returning true signals that
+     * the invalid setup should be ignored. If no handler is set, then any setup error will result
+     * in a critical error. This callback is not called on the main thread so any UI work would need
+     * to switch context to the main thread.
+     */
+    override var onSetupErrorHandler: ((Throwable?) -> Boolean)? = null
+
+    /**
      * A callback to invoke whenever a chain error is encountered. These occur whenever the
      * processor detects a missing or non-chain-sequential block (i.e. a reorg).
      */
@@ -331,6 +339,7 @@ class SdkSynchronizer internal constructor(
         twig("Synchronizer (${this@SdkSynchronizer}) Ready. Starting processor!")
         var lastScanTime = 0L
         processor.onProcessorErrorListener = ::onProcessorError
+        processor.onSetupErrorListener = ::onSetupError
         processor.onChainErrorListener = ::onChainError
         processor.state.onEach {
             when (it) {
@@ -399,6 +408,17 @@ class SdkSynchronizer internal constructor(
                     "${if (it) "try again" else "abort"}!"
             )
         } == true
+    }
+
+    private fun onSetupError(error: Throwable): Boolean {
+        if (onSetupErrorHandler == null) {
+            twig(
+                "WARNING: falling back to the default behavior for setup errors. To add custom" +
+                    " behavior, set synchronizer.onSetupErrorHandler to a non-null value"
+            )
+            return false
+        }
+        return onSetupErrorHandler?.invoke(error) == true
     }
 
     private fun onChainError(errorHeight: Int, rewindHeight: Int) {

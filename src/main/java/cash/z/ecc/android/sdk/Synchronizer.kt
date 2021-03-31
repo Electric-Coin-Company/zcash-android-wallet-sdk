@@ -310,6 +310,18 @@ interface Synchronizer {
     var onSubmissionErrorHandler: ((Throwable?) -> Boolean)?
 
     /**
+     * Callback for setup errors that occur prior to processing compact blocks. Can be used to
+     * override any errors encountered during setup. When this listener is missing then all setup
+     * errors will result in the synchronizer not starting. This is particularly useful for wallets
+     * to receive a callback right before the SDK will reject a lightwalletd server because it
+     * appears not to match.
+     *
+     * @return true when the setup error should be ignored and processing should be allowed to
+     * start. Otherwise, processing will not begin.
+     */
+    var onSetupErrorHandler: ((Throwable?) -> Boolean)?
+
+    /**
      * A callback to invoke whenever a chain error is encountered. These occur whenever the
      * processor detects a missing or non-chain-sequential block (i.e. a reorg).
      */

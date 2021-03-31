@@ -88,6 +88,14 @@ sealed class CompactBlockProcessorException(message: String, cause: Throwable? =
         class EnhanceTxDownloadError(height: Int, cause: Throwable) : EnhanceTransactionError("Error while attempting to download a transaction to enhance", height, cause)
         class EnhanceTxDecryptError(height: Int, cause: Throwable) : EnhanceTransactionError("Error while attempting to decrypt and store a transaction to enhance", height, cause)
     }
+
+    class MismatchedNetwork(clientNetwork: String?, serverNetwork: String?) : CompactBlockProcessorException(
+        "Incompatible server: this client expects a server using $clientNetwork but it was $serverNetwork! Try updating the client or switching servers."
+    )
+
+    class MismatchedBranch(clientBranch: String?, serverBranch: String?) : CompactBlockProcessorException(
+        "Incompatible server: this client expects a server following consensus branch $clientBranch but it was $serverBranch! Try updating the client or switching servers."
+    )
 }
 
 /**

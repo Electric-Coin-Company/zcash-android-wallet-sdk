@@ -15,9 +15,12 @@ import cash.z.ecc.android.sdk.db.entity.ConfirmedTransaction
 import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException
 import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException.EnhanceTransactionError.EnhanceTxDecryptError
 import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException.EnhanceTransactionError.EnhanceTxDownloadError
+import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException.MismatchedBranch
+import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException.MismatchedNetwork
 import cash.z.ecc.android.sdk.exception.RustLayerException
 import cash.z.ecc.android.sdk.ext.BatchMetrics
 import cash.z.ecc.android.sdk.ext.Twig
+import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.ext.ZcashSdk.DOWNLOAD_BATCH_SIZE
 import cash.z.ecc.android.sdk.ext.ZcashSdk.MAX_BACKOFF_INTERVAL
 import cash.z.ecc.android.sdk.ext.ZcashSdk.MAX_REORG_SIZE
@@ -41,7 +44,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.channels.ConflatedBroadcastChannel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 import java.util.concurrent.atomic.AtomicInteger
@@ -83,6 +88,18 @@ class CompactBlockProcessor(
      * an error was found and the lower bound to which the data will rewind, at most.
      */
     var onChainErrorListener: ((errorHeight: Int, rewindHeight: Int) -> Any)? = null
+
+    /**
+     * Callback for setup errors that occur prior to processing compact blocks. Can be used to
+     * override any errors from [verifySetup]. When this listener is missing then all setup errors
+     * will result in the processor not starting. This is particularly useful for wallets to receive
+     * a callback right before the SDK will reject a lightwalletd server because it appears not to
+     * match.
+     *
+     * @return true when the setup error should be ignored and processing should be allowed to
+     * start. Otherwise, processing will not begin.
+     */
+    var onSetupErrorListener: ((Throwable) -> Boolean)? = null
 
     /**
      * Callback for apps to report scan times. As blocks are scanned in batches, this listener is
@@ -143,8 +160,9 @@ class CompactBlockProcessor(
      * Download compact blocks, verify and scan them until [stop] is called.
      */
     suspend fun start() = withContext(IO) {
-        twig("processor starting")
+        verifySetup()
         updateBirthdayHeight()
+        twig("setup verified. processor starting")
 
         // using do/while makes it easier to execute exactly one loop which helps with testing this processor quickly
         // (because you can start and then immediately set isStopped=true to always get precisely one loop)
@@ -202,7 +220,6 @@ class CompactBlockProcessor(
      * return the block height where an error was found.
      */
     private suspend fun processNewBlocks(): Int = withContext(IO) {
-        verifySetup()
         twig("beginning to process new blocks (with lower bound: $lowerBoundHeight)...")
 
         if (!updateRanges()) {
@@ -340,8 +357,30 @@ class CompactBlockProcessor(
     /**
      * Confirm that the wallet data is properly setup for use.
      */
-    private fun verifySetup() {
-        if (!repository.isInitialized()) throw CompactBlockProcessorException.Uninitialized
+    private suspend fun verifySetup() {
+        // verify that the data is initialized
+        var error = if (!repository.isInitialized()) {
+            CompactBlockProcessorException.Uninitialized
+        } else {
+            // verify that the server is correct
+            downloader.getServerInfo().let { info ->
+                val clientBranch = "%x".format(rustBackend.getBranchIdForHeight(info.blockHeight.toInt()))
+                when {
+                    !info.matchingNetwork(ZcashSdk.NETWORK) -> MismatchedNetwork(clientNetwork = ZcashSdk.NETWORK, serverNetwork = info.chainName)
+                    !info.matchingConsensusBranchId(clientBranch) -> MismatchedBranch(clientBranch = clientBranch, serverBranch = info.consensusBranchId)
+                    else -> null
+                }
+            }
+        }
+
+        if (error != null) {
+            // give listener a chance to override
+            if (onSetupErrorListener?.invoke(error) != true) {
+                throw error
+            } else {
+                twig("Warning: An ${error::class.java.simpleName} was encountered while verifying setup but it was ignored by the onSetupErrorHandler. Ignoring message: ${error.message}")
+            }
+        }
     }
 
     internal suspend fun downloadUtxos(tAddress: String, startHeight: Int): Int = withContext(IO) {
@@ -594,7 +633,7 @@ class CompactBlockProcessor(
         val interval = POLL_INTERVAL
         val now = System.currentTimeMillis()
         val deltaToNextInteral = interval - (now + interval).rem(interval)
-        twig("sleeping for ${deltaToNextInteral}ms from $now in order to wake at ${now + deltaToNextInteral}")
+        // twig("sleeping for ${deltaToNextInteral}ms from $now in order to wake at ${now + deltaToNextInteral}")
         return deltaToNextInteral
     }
 
@@ -829,6 +868,25 @@ class CompactBlockProcessor(
         val expectedPrevHash: String?,
         val actualPrevHash: String?
     )
+
+    //
+    // Helper Extensions
+    //
+
+    private fun Service.LightdInfo.matchingConsensusBranchId(clientBranch: String): Boolean {
+        return consensusBranchId.equals(clientBranch, true)
+    }
+
+    private fun Service.LightdInfo.matchingNetwork(network: String): Boolean {
+        fun String.toId() = toLowerCase().run {
+            when {
+                contains("main") -> "mainnet"
+                contains("test") -> "testnet"
+                else -> this
+            }
+        }
+        return chainName.toId() == network.toId()
+    }
 
     companion object {
         const val ERROR_CODE_NONE = -1
