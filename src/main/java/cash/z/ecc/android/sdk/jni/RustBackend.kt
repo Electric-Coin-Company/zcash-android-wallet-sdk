@@ -4,6 +4,8 @@ import cash.z.ecc.android.sdk.exception.BirthdayException
 import cash.z.ecc.android.sdk.ext.ZcashSdk.OUTPUT_PARAM_FILE_NAME
 import cash.z.ecc.android.sdk.ext.ZcashSdk.SPEND_PARAM_FILE_NAME
 import cash.z.ecc.android.sdk.ext.twig
+import cash.z.ecc.android.sdk.tool.DerivationTool
+import cash.z.ecc.android.sdk.type.UnifiedViewingKey
 import cash.z.ecc.android.sdk.type.WalletBalance
 import java.io.File
 
@@ -47,13 +49,24 @@ class RustBackend private constructor() : RustBackendWelding {
 
     override fun initDataDb() = initDataDb(pathDataDb)
 
-    override fun initAccountsTable(vararg extfvks: String) =
-        initAccountsTableWithKeys(pathDataDb, extfvks)
+    override fun initAccountsTable(vararg keys: UnifiedViewingKey): Boolean {
+        val extfvks = Array(keys.size) { "" }
+        val extpubs = Array(keys.size) { "" }
+        keys.forEachIndexed { i, key ->
+            extfvks[i] = key.extfvk
+            extpubs[i] = key.extpub
+        }
+        return initAccountsTableWithKeys(pathDataDb, extfvks, extpubs)
+    }
 
     override fun initAccountsTable(
         seed: ByteArray,
         numberOfAccounts: Int
-    ) = initAccountsTable(pathDataDb, seed, numberOfAccounts)
+    ): Array<UnifiedViewingKey> {
+        return DerivationTool.deriveUnifiedViewingKeys(seed, numberOfAccounts).apply {
+            initAccountsTable(*this)
+        }
+    }
 
     override fun initBlocksTable(
         height: Int,
@@ -230,15 +243,10 @@ class RustBackend private constructor() : RustBackendWelding {
 
         @JvmStatic private external fun initDataDb(dbDataPath: String): Boolean
 
-        @JvmStatic private external fun initAccountsTable(
-            dbDataPath: String,
-            seed: ByteArray,
-            accounts: Int
-        ): Array<String>
-
         @JvmStatic private external fun initAccountsTableWithKeys(
             dbDataPath: String,
-            extfvk: Array<out String>
+            extfvk: Array<out String>,
+            extpub: Array<out String>,
         ): Boolean
 
         @JvmStatic private external fun initBlocksTable(

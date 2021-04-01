@@ -9,6 +9,7 @@ import cash.z.ecc.android.sdk.ext.twig
 import cash.z.ecc.android.sdk.jni.RustBackend
 import cash.z.ecc.android.sdk.tool.DerivationTool
 import cash.z.ecc.android.sdk.tool.WalletBirthdayTool
+import cash.z.ecc.android.sdk.type.UnifiedViewingKey
 import cash.z.ecc.android.sdk.type.WalletBirthday
 import java.io.File
 
@@ -21,7 +22,7 @@ class Initializer constructor(appContext: Context, config: Config) : SdkSynchron
     override val alias: String
     override val host: String
     override val port: Int
-    val viewingKeys: List<String>
+    val viewingKeys: List<UnifiedViewingKey>
     val birthday: WalletBirthday
 
     /**
@@ -62,7 +63,7 @@ class Initializer constructor(appContext: Context, config: Config) : SdkSynchron
 
     private fun initMissingDatabases(
         birthday: WalletBirthday,
-        vararg viewingKeys: String
+        vararg viewingKeys: UnifiedViewingKey
     ) {
         maybeCreateDataDb()
         maybeInitBlocksTable(birthday)
@@ -101,9 +102,10 @@ class Initializer constructor(appContext: Context, config: Config) : SdkSynchron
     /**
      * Initialize the accounts table with the given viewing keys, if needed.
      */
-    private fun maybeInitAccountsTable(vararg viewingKeys: String) {
+    private fun maybeInitAccountsTable(vararg viewingKeys: UnifiedViewingKey) {
         tryWarn(
-            "Warning: did not initialize the accounts table. It probably was already initialized."
+            "Warning: did not initialize the accounts table. It probably was already initialized.",
+            unlessContains = "constraint failed"
         ) {
             rustBackend.initAccountsTable(*viewingKeys)
             accountsCreated = true
@@ -133,7 +135,7 @@ class Initializer constructor(appContext: Context, config: Config) : SdkSynchron
     }
 
     class Config private constructor (
-        val viewingKeys: MutableList<String> = mutableListOf(),
+        val viewingKeys: MutableList<UnifiedViewingKey> = mutableListOf(),
         var alias: String = ZcashSdk.DEFAULT_ALIAS,
         var host: String = ZcashSdk.DEFAULT_LIGHTWALLETD_HOST,
         var port: Int = ZcashSdk.DEFAULT_LIGHTWALLETD_PORT,
@@ -207,10 +209,10 @@ class Initializer constructor(appContext: Context, config: Config) : SdkSynchron
          * is not currently well supported. Consider it an alpha-preview feature that might work but
          * probably has serious bugs.
          */
-        fun setViewingKeys(vararg extendedFullViewingKeys: String): Config = apply {
+        fun setViewingKeys(vararg unifiedViewingKeys: UnifiedViewingKey): Config = apply {
             viewingKeys.apply {
                 clear()
-                addAll(extendedFullViewingKeys)
+                addAll(unifiedViewingKeys)
             }
         }
 
@@ -219,8 +221,8 @@ class Initializer constructor(appContext: Context, config: Config) : SdkSynchron
          * is not currently well supported. Consider it an alpha-preview feature that might work but
          * probably has serious bugs.
          */
-        fun addViewingKey(extendedFullViewingKey: String): Config = apply {
-            viewingKeys.add(extendedFullViewingKey)
+        fun addViewingKey(unifiedFullViewingKey: UnifiedViewingKey): Config = apply {
+            viewingKeys.add(unifiedFullViewingKey)
         }
 
         //
@@ -238,7 +240,7 @@ class Initializer constructor(appContext: Context, config: Config) : SdkSynchron
         }
 
         fun importWallet(
-            viewingKey: String,
+            viewingKey: UnifiedViewingKey,
             birthdayHeight: Int? = null,
             host: String = ZcashSdk.DEFAULT_LIGHTWALLETD_HOST,
             port: Int = ZcashSdk.DEFAULT_LIGHTWALLETD_PORT
@@ -259,7 +261,7 @@ class Initializer constructor(appContext: Context, config: Config) : SdkSynchron
         }
 
         fun newWallet(
-            viewingKey: String,
+            viewingKey: UnifiedViewingKey,
             host: String = ZcashSdk.DEFAULT_LIGHTWALLETD_HOST,
             port: Int = ZcashSdk.DEFAULT_LIGHTWALLETD_PORT
         ): Config = apply {
@@ -273,7 +275,7 @@ class Initializer constructor(appContext: Context, config: Config) : SdkSynchron
          * calling `setViewingKeys` with the keys that match this seed.
          */
         fun setSeed(seed: ByteArray, numberOfAccounts: Int = 1): Config = apply {
-            setViewingKeys(*DerivationTool.deriveViewingKeys(seed, numberOfAccounts))
+            setViewingKeys(*DerivationTool.deriveUnifiedViewingKeys(seed, numberOfAccounts))
         }
 
         //
@@ -303,11 +305,11 @@ class Initializer constructor(appContext: Context, config: Config) : SdkSynchron
 
         private fun validateViewingKeys() {
             require(viewingKeys.isNotEmpty()) {
-                "Viewing keys are required. Ensure that the viewing keys or seed have been set" +
-                    " on this Initializer."
+                "Unified Viewing keys are required. Ensure that the unified viewing keys or seed" +
+                    " have been set on this Initializer."
             }
             viewingKeys.forEach {
-                DerivationTool.validateViewingKey(it)
+                DerivationTool.validateUnifiedViewingKey(it)
             }
         }
     }
@@ -397,13 +399,15 @@ internal fun validateAlias(alias: String) {
     ) {
         "ERROR: Invalid alias ($alias). For security, the alias must be shorter than 100 " +
             "characters and only contain letters, digits or underscores and start with a letter; " +
-                "ideally, it would also differentiate across mainnet and testnet but that is not " +
-                "enforced."
+            "ideally, it would also differentiate across mainnet and testnet but that is not " +
+            "enforced."
     }
 
     // TODO: consider exposing this as a proper warning that can be received by apps, since most apps won't use logging
     if (alias.toLowerCase().contains(BuildConfig.FLAVOR.toLowerCase())) {
-        twig("WARNING: alias does not contain the build flavor but it probably should to help" +
-                " prevent testnet data from contaminating mainnet data.")
+        twig(
+            "WARNING: alias does not contain the build flavor but it probably should to help" +
+                " prevent testnet data from contaminating mainnet data."
+        )
     }
 }

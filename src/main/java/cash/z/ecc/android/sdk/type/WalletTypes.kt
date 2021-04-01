@@ -30,3 +30,15 @@ data class WalletBirthday(
     val tree: String = ""
 )
 
+/**
+ * A grouping of keys that correspond to a single wallet account but do not have spend authority.
+ *
+ * @param extfvk the extended full viewing key which provides the ability to see inbound and
+ * outbound shielded transactions. It can also be used to derive a z-addr.
+ * @param extpub the extended public key which provides the ability to see transparent
+ * transactions. It can also be used to derive a t-addr.
+ */
+data class UnifiedViewingKey(
+    val extfvk: String = "",
+    val extpub: String = ""
+)

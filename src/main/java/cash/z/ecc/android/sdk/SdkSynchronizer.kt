@@ -603,7 +603,7 @@ class SdkSynchronizer internal constructor(
         memo: String
     ): Flow<PendingTransaction> = flow {
         twig("Initializing shielding transaction")
-        val tAddr = DerivationTool.deriveTransparentAddress(transparentSecretKey)
+        val tAddr = DerivationTool.deriveTransparentAddressFromPrivateKey(transparentSecretKey)
         val tBalance = processor.getUtxoCacheBalance(tAddr)
         val zAddr = getAddress(0)
 

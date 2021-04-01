@@ -1,6 +1,7 @@
 package cash.z.ecc.android.sdk.jni
 
 import cash.z.ecc.android.sdk.ext.ZcashSdk
+import cash.z.ecc.android.sdk.type.UnifiedViewingKey
 import cash.z.ecc.android.sdk.type.WalletBalance
 
 /**
@@ -28,9 +29,9 @@ interface RustBackendWelding {
 
     fun decryptAndStoreTransaction(tx: ByteArray)
 
-    fun initAccountsTable(seed: ByteArray, numberOfAccounts: Int): Array<String>
+    fun initAccountsTable(seed: ByteArray, numberOfAccounts: Int): Array<UnifiedViewingKey>
 
-    fun initAccountsTable(vararg extfvks: String): Boolean
+    fun initAccountsTable(vararg keys: UnifiedViewingKey): Boolean
 
     fun initBlocksTable(height: Int, hash: String, time: Long, saplingTree: String): Boolean
 
@@ -85,12 +86,14 @@ interface RustBackendWelding {
 
         fun deriveTransparentAddress(seed: ByteArray, account: Int = 0, index: Int = 0): String
 
-        fun deriveTransparentAddress(transparentSecretKey: String): String
+        fun deriveTransparentAddressFromPublicKey(publicKey: String): String
+
+        fun deriveTransparentAddressFromPrivateKey(privateKey: String): String
 
         fun deriveTransparentSecretKey(seed: ByteArray, account: Int = 0, index: Int = 0): String
 
         fun deriveViewingKey(spendingKey: String): String
 
-        fun deriveViewingKeys(seed: ByteArray, numberOfAccounts: Int = 1): Array<String>
+        fun deriveUnifiedViewingKeys(seed: ByteArray, numberOfAccounts: Int = 1): Array<UnifiedViewingKey>
     }
 }

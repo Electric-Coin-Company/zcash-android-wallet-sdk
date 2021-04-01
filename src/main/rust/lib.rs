@@ -5,6 +5,7 @@ use std::convert::{TryFrom, TryInto};
 use std::panic;
 use std::path::Path;
 use std::ptr;
+use std::str::FromStr;
 
 use android_logger::Config;
 use failure::format_err;
@@ -20,7 +21,7 @@ use zcash_client_backend::{
         chain::{scan_cached_blocks, validate_chain},
         error::Error,
         wallet::{create_spend_to_address, decrypt_and_store_transaction},
-        WalletRead, WalletWrite,
+        WalletRead,
     },
     encoding::{
         AddressCodec, decode_extended_full_viewing_key,
@@ -28,7 +29,8 @@ use zcash_client_backend::{
         encode_payment_address,
     },
     keys::{
-        derive_secret_key_from_seed, derive_transparent_address_from_secret_key,
+        derive_secret_key_from_seed, derive_public_key_from_seed,
+        derive_transparent_address_from_public_key, derive_transparent_address_from_secret_key,
         spending_key, Wif,
     },
     wallet::{AccountId, OvkPolicy, WalletTransparentOutput},
@@ -61,10 +63,9 @@ use zcash_primitives::consensus::{MAIN_NETWORK, MainNetwork};
 #[cfg(not(feature = "mainnet"))]
 use zcash_primitives::consensus::{TEST_NETWORK, TestNetwork};
 use zcash_proofs::prover::LocalTxProver;
-use secp256k1::key::SecretKey;
+use secp256k1::key::{SecretKey, PublicKey};
 
 use crate::utils::exception::unwrap_exc_or;
-use zcash_client_sqlite::wallet::get_unspent_transparent_utxos;
 
 mod utils;
 
@@ -128,55 +129,12 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_initDataDb(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_initAccountsTable(
-    env: JNIEnv<'_>,
-    _: JClass<'_>,
-    db_data: JString<'_>,
-    seed: jbyteArray,
-    accounts: jint,
-) -> jobjectArray {
-    let res = panic::catch_unwind(|| {
-        let db_data = wallet_db(&env, NETWORK, db_data)?;
-        let seed = env.convert_byte_array(seed).unwrap();
-        let accounts = if accounts >= 0 {
-            accounts as u32
-        } else {
-            return Err(format_err!("accounts argument must be positive"));
-        };
-
-        let extsks: Vec<_> = (0..accounts)
-            .map(|account| spending_key(&seed, NETWORK.coin_type(), account))
-            .collect();
-        let extfvks: Vec<_> = extsks.iter().map(ExtendedFullViewingKey::from).collect();
-
-        init_accounts_table(&db_data, &extfvks)
-            .map(|_| {
-                // Return the ExtendedSpendingKeys for the created accounts
-                utils::rust_vec_to_java(
-                    &env,
-                    extsks,
-                    "java/lang/String",
-                    |env, extsk| {
-                        env.new_string(encode_extended_spending_key(
-                            NETWORK.hrp_sapling_extended_spending_key(),
-                            &extsk,
-                        ))
-                    },
-                    |env| env.new_string(""),
-                )
-            })
-            .map_err(|e| format_err!("Error while initializing accounts: {}", e))
-    });
-
-    unwrap_exc_or(&env, res, ptr::null_mut())
-}
-
-#[no_mangle]
 pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_initAccountsTableWithKeys(
     env: JNIEnv<'_>,
     _: JClass<'_>,
     db_data: JString<'_>,
     extfvks_arr: jobjectArray,
+    extpubs_arr: jobjectArray,
 ) -> jboolean {
     let res = panic::catch_unwind(|| {
         let db_data = wallet_db(&env, NETWORK, db_data)?;
@@ -195,7 +153,14 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_initAccount
             })
             .collect::<Vec<_>>();
 
-        match init_accounts_table(&db_data, &extfvks) {
+        let taddrs:Vec<_> = (0..count)
+            .map(|i| env.get_object_array_element(extpubs_arr, i))
+            .map(|jstr| utils::java_string_to_rust(&env, jstr.unwrap().into()))
+            .map(|extpub_str| PublicKey::from_str(&extpub_str).unwrap())
+            .map(|pk| derive_transparent_address_from_public_key(pk))
+            .collect();
+
+        match init_accounts_table(&db_data, &extfvks, &taddrs) {
             Ok(()) => Ok(JNI_TRUE),
             Err(e) => Err(format_err!("Error while initializing accounts: {}", e)),
         }
@@ -239,7 +204,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveE
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveExtendedFullViewingKeys(
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveUnifiedViewingKeysFromSeed(
     env: JNIEnv<'_>,
     _: JClass<'_>,
     seed: jbyteArray,
@@ -255,19 +220,26 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveE
 
         let extfvks: Vec<_> = (0..accounts)
             .map(|account| {
-                ExtendedFullViewingKey::from(&spending_key(&seed, NETWORK.coin_type(), account))
+                encode_extended_full_viewing_key(
+                    NETWORK.hrp_sapling_extended_full_viewing_key(),
+                    &ExtendedFullViewingKey::from(&spending_key(&seed, NETWORK.coin_type(), account))
+                )
             })
             .collect();
 
-        Ok(utils::rust_vec_to_java(
+        let extpubs: Vec<_> = (0..accounts)
+            .map(|account| {
+                let pk = derive_public_key_from_seed(&NETWORK, &seed, AccountId(account), 0).unwrap();
+                hex::encode(&pk.serialize())
+            })
+            .collect();
+
+        Ok(utils::rust_vec_to_java_2d(
             &env,
             extfvks,
-            "java/lang/String",
-            |env, extfvk| {
-                env.new_string(encode_extended_full_viewing_key(
-                    NETWORK.hrp_sapling_extended_full_viewing_key(),
-                    &extfvk,
-                ))
+            extpubs,
+            |env, extfvkstr| {
+                env.new_string(extfvkstr)
             },
             |env| env.new_string(""),
         ))
@@ -704,9 +676,6 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_rewindToHei
 ) -> jboolean {
     let res = panic::catch_unwind(|| {
         let db_data = wallet_db(&env, NETWORK, db_data)?;
-        let mut update_ops = (&db_data)
-            .get_update_ops()
-            .map_err(|e| format_err!("Could not obtain a writable database connection: {}", e))?;
 
         let height = BlockHeight::try_from(height)?;
         rewind_to_height(&db_data, height)
@@ -889,7 +858,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveT
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveTransparentAddressFromSecretKey(
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveTransparentAddressFromPrivKey(
     env: JNIEnv<'_>,
     _: JClass<'_>,
     secret_key: JString<'_>,
@@ -899,6 +868,29 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveT
         let sk:SecretKey = (&Wif(tsk_wif)).try_into().expect("invalid private key WIF");
         let taddr =
             derive_transparent_address_from_secret_key(sk)
+                .encode(&NETWORK);
+
+        let output = env
+            .new_string(taddr)
+            .expect("Couldn't create Java string!");
+
+        Ok(output.into_inner())
+    });
+    unwrap_exc_or(&env, res, ptr::null_mut())
+}
+
+
+#[no_mangle]
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveTransparentAddressFromPubKey(
+    env: JNIEnv<'_>,
+    _: JClass<'_>,
+    public_key: JString<'_>,
+) -> jstring {
+    let res = panic::catch_unwind(|| {
+        let public_key_str = utils::java_string_to_rust(&env, public_key);
+        let pk = PublicKey::from_str(&public_key_str)?;
+        let taddr =
+            derive_transparent_address_from_public_key(pk)
                 .encode(&NETWORK);
 
         let output = env
@@ -984,7 +976,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_createToAdd
             }
         };
 
-        let memo = Memo::from_bytes(&memo_bytes).map_err(|_| format_err!("Invalid memo"))?;;
+        let memo = Memo::from_bytes(&memo_bytes).map_err(|_| format_err!("Invalid memo"))?;
 
         let prover = LocalTxProver::new(Path::new(&spend_params), Path::new(&output_params));
 

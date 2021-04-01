@@ -5,6 +5,7 @@ import cash.z.ecc.android.bip39.Mnemonics.MnemonicCode
 import cash.z.ecc.android.bip39.toSeed
 import cash.z.ecc.android.sdk.ext.TroubleshootingTwig
 import cash.z.ecc.android.sdk.ext.Twig
+import cash.z.ecc.android.sdk.test.BuildConfig
 import cash.z.ecc.android.sdk.tool.DerivationTool
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -15,23 +16,35 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class TransparentTest {
 
+    lateinit var expected: Expected
+
     @Before
     fun setup() {
+        expected = if (BuildConfig.FLAVOR == "zcashtestnet") ExpectedTestnet else ExpectedMainnet
     }
 
     @Test
     fun deriveTransparentSecretKeyTest() {
-        assertEquals(Expected.tskCompressed, DerivationTool.deriveTransparentSecretKey(SEED))
+        assertEquals(expected.tskCompressed, DerivationTool.deriveTransparentSecretKey(SEED))
     }
 
     @Test
     fun deriveTransparentAddressTest() {
-        assertEquals(Expected.tAddr, DerivationTool.deriveTransparentAddress(SEED))
+        assertEquals(expected.tAddr, DerivationTool.deriveTransparentAddress(SEED))
     }
 
     @Test
     fun deriveTransparentAddressFromSecretKeyTest() {
-        assertEquals(Expected.tAddr, DerivationTool.deriveTransparentAddress(Expected.tskCompressed))
+        assertEquals(expected.tAddr, DerivationTool.deriveTransparentAddressFromPrivateKey(expected.tskCompressed))
+    }
+
+    @Test
+    fun deriveUnifiedViewingKeysFromSeedTest() {
+        val uvks = DerivationTool.deriveUnifiedViewingKeys(SEED)
+        assertEquals(1, uvks.size)
+        val uvk = uvks.first()
+        assertEquals(expected.zAddr, DerivationTool.deriveShieldedAddress(uvk.extfvk))
+        assertEquals(expected.tAddr, DerivationTool.deriveTransparentAddressFromPublicKey(uvk.extpub))
     }
 
 //    @Test
@@ -49,11 +62,18 @@ class TransparentTest {
         val MNEMONIC = MnemonicCode(PHRASE)
         val SEED = MNEMONIC.toSeed()
 
-        object Expected {
-            val tAddr = "t1PKtYdJJHhc3Pxowmznkg7vdTwnhEsCvR4"
+        object ExpectedMainnet : Expected {
+            override val tAddr = "t1PKtYdJJHhc3Pxowmznkg7vdTwnhEsCvR4"
+            override val zAddr = "zs1yc4sgtfwwzz6xfsy2xsradzr6m4aypgxhfw2vcn3hatrh5ryqsr08sgpemlg39vdh9kfupx20py"
+            override val tskCompressed = "L4BvDC33yLjMRxipZvdiUmdYeRfZmR8viziwsVwe72zJdGbiJPv2"
+            override val tpk = "03b1d7fb28d17c125b504d06b1530097e0a3c76ada184237e3bc0925041230a5af"
+        }
 
-            // private key in compressed Wallet Import Format (WIF)
-            val tskCompressed = "L4BvDC33yLjMRxipZvdiUmdYeRfZmR8viziwsVwe72zJdGbiJPv2"
+        object ExpectedTestnet : Expected {
+            override val tAddr = "tm9v3KTsjXK8XWSqiwFjic6Vda6eHY9Mjjq"
+            override val zAddr = "ztestsapling1wn3tw9w5rs55x5yl586gtk72e8hcfdq8zsnjzcu8p7ghm8lrx54axc74mvm335q7lmy3g0sqje6"
+            override val tskCompressed = "KzVugoXxR7AtTMdR5sdJtHxCNvMzQ4H196k7ATv4nnjoummsRC9G"
+            override val tpk = "03b1d7fb28d17c125b504d06b1530097e0a3c76ada184237e3bc0925041230a5af"
         }
 
         @BeforeClass
@@ -61,5 +81,12 @@ class TransparentTest {
         fun startup() {
             Twig.plant(TroubleshootingTwig(formatter = { "@TWIG $it" }))
         }
+    }
+
+    interface Expected {
+        val tAddr: String
+        val zAddr: String
+        val tskCompressed: String
+        val tpk: String
     }
 }

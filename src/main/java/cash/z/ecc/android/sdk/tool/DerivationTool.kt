@@ -2,6 +2,7 @@ package cash.z.ecc.android.sdk.tool
 
 import cash.z.ecc.android.sdk.jni.RustBackend
 import cash.z.ecc.android.sdk.jni.RustBackendWelding
+import cash.z.ecc.android.sdk.type.UnifiedViewingKey
 
 class DerivationTool {
 
@@ -16,9 +17,11 @@ class DerivationTool {
          *
          * @return the viewing keys that correspond to the seed, formatted as Strings.
          */
-        override fun deriveViewingKeys(seed: ByteArray, numberOfAccounts: Int): Array<String> =
+        override fun deriveUnifiedViewingKeys(seed: ByteArray, numberOfAccounts: Int): Array<UnifiedViewingKey> =
             withRustBackendLoaded {
-                deriveExtendedFullViewingKeys(seed, numberOfAccounts)
+                deriveUnifiedViewingKeysFromSeed(seed, numberOfAccounts).map {
+                    UnifiedViewingKey(it[0], it[1])
+                }.toTypedArray()
             }
 
         /**
@@ -79,15 +82,19 @@ class DerivationTool {
             deriveTransparentAddressFromSeed(seed, account, index)
         }
 
-        override fun deriveTransparentAddress(transparentSecretKey: String): String = withRustBackendLoaded {
-            deriveTransparentAddressFromSecretKey(transparentSecretKey)
+        override fun deriveTransparentAddressFromPublicKey(transparentPublicKey: String): String = withRustBackendLoaded {
+            deriveTransparentAddressFromPubKey(transparentPublicKey)
+        }
+
+        override fun deriveTransparentAddressFromPrivateKey(transparentPrivateKey: String): String = withRustBackendLoaded {
+            deriveTransparentAddressFromPrivKey(transparentPrivateKey)
         }
 
         override fun deriveTransparentSecretKey(seed: ByteArray, account: Int, index: Int): String = withRustBackendLoaded {
             deriveTransparentSecretKeyFromSeed(seed, account, index)
         }
 
-        fun validateViewingKey(viewingKey: String) {
+        fun validateUnifiedViewingKey(viewingKey: UnifiedViewingKey) {
             // TODO
         }
 
@@ -112,10 +119,10 @@ class DerivationTool {
         ): Array<String>
 
         @JvmStatic
-        private external fun deriveExtendedFullViewingKeys(
+        private external fun deriveUnifiedViewingKeysFromSeed(
             seed: ByteArray,
             numberOfAccounts: Int
-        ): Array<String>
+        ): Array<Array<String>>
 
         @JvmStatic
         private external fun deriveExtendedFullViewingKey(spendingKey: String): String
@@ -133,7 +140,10 @@ class DerivationTool {
         private external fun deriveTransparentAddressFromSeed(seed: ByteArray, account: Int, index: Int): String
 
         @JvmStatic
-        private external fun deriveTransparentAddressFromSecretKey(tsk: String): String
+        private external fun deriveTransparentAddressFromPubKey(pk: String): String
+
+        @JvmStatic
+        private external fun deriveTransparentAddressFromPrivKey(sk: String): String
 
         @JvmStatic
         private external fun deriveTransparentSecretKeyFromSeed(seed: ByteArray, account: Int, index: Int): String
