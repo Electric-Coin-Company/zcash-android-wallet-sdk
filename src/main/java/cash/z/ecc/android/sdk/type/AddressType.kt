@@ -1,4 +1,4 @@
-package cash.z.ecc.android.sdk.validate
+package cash.z.ecc.android.sdk.type
 
 /**
  * Validation helper class, representing the types of addresses, either Shielded, Transparent or

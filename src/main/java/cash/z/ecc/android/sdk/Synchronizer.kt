@@ -2,12 +2,12 @@ package cash.z.ecc.android.sdk
 
 import androidx.paging.PagedList
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor
-import cash.z.ecc.android.sdk.block.CompactBlockProcessor.WalletBalance
 import cash.z.ecc.android.sdk.db.entity.ConfirmedTransaction
 import cash.z.ecc.android.sdk.db.entity.PendingTransaction
 import cash.z.ecc.android.sdk.ext.ZcashSdk
-import cash.z.ecc.android.sdk.validate.AddressType
-import cash.z.ecc.android.sdk.validate.ConsensusMatchType
+import cash.z.ecc.android.sdk.type.AddressType
+import cash.z.ecc.android.sdk.type.ConsensusMatchType
+import cash.z.ecc.android.sdk.type.WalletBalance
 import cash.z.wallet.sdk.rpc.Service
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow

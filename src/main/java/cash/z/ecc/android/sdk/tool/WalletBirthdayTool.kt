@@ -4,6 +4,7 @@ import android.content.Context
 import cash.z.ecc.android.sdk.exception.BirthdayException
 import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.ext.twig
+import cash.z.ecc.android.sdk.type.WalletBirthday
 import com.google.gson.Gson
 import com.google.gson.stream.JsonReader
 import java.io.InputStreamReader
@@ -24,21 +25,6 @@ class WalletBirthdayTool(appContext: Context) {
     fun loadNearest(birthdayHeight: Int? = null): WalletBirthday {
         return loadBirthdayFromAssets(context, birthdayHeight)
     }
-
-    /**
-     * Model object for holding a wallet birthday.
-     *
-     * @param height the height at the time the wallet was born.
-     * @param hash the hash of the block at the height.
-     * @param time the block time at the height. Represented as seconds since the Unix epoch.
-     * @param tree the sapling tree corresponding to the height.
-     */
-    data class WalletBirthday(
-        val height: Int = -1,
-        val hash: String = "",
-        val time: Long = -1,
-        val tree: String = ""
-    )
 
     companion object {
 

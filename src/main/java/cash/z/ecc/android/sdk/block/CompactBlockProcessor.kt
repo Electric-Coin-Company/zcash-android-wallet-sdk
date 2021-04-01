@@ -38,6 +38,7 @@ import cash.z.ecc.android.sdk.jni.RustBackend
 import cash.z.ecc.android.sdk.jni.RustBackendWelding
 import cash.z.ecc.android.sdk.transaction.PagedTransactionRepository
 import cash.z.ecc.android.sdk.transaction.TransactionRepository
+import cash.z.ecc.android.sdk.type.WalletBalance
 import cash.z.wallet.sdk.rpc.Service
 import io.grpc.StatusRuntimeException
 import kotlinx.coroutines.Dispatchers
@@ -799,21 +800,6 @@ class CompactBlockProcessor(
          */
         object Initialized : State()
     }
-
-    /**
-     * Data structure to hold the total and available balance of the wallet. This is what is
-     * received on the balance channel.
-     *
-     * @param totalZatoshi the total balance, ignoring funds that cannot be used.
-     * @param availableZatoshi the amount of funds that are available for use. Typical reasons that funds
-     * may be unavailable include fairly new transactions that do not have enough confirmations or
-     * notes that are tied up because we are awaiting change from a transaction. When a note has
-     * been spent, its change cannot be used until there are enough confirmations.
-     */
-    data class WalletBalance(
-        val totalZatoshi: Long = -1,
-        val availableZatoshi: Long = -1
-    )
 
     /**
      * Data class for holding detailed information about the processor.

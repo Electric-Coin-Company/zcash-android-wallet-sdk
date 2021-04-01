@@ -1,10 +1,10 @@
 package cash.z.ecc.android.sdk.jni
 
-import cash.z.ecc.android.sdk.block.CompactBlockProcessor
 import cash.z.ecc.android.sdk.exception.BirthdayException
 import cash.z.ecc.android.sdk.ext.ZcashSdk.OUTPUT_PARAM_FILE_NAME
 import cash.z.ecc.android.sdk.ext.ZcashSdk.SPEND_PARAM_FILE_NAME
 import cash.z.ecc.android.sdk.ext.twig
+import cash.z.ecc.android.sdk.type.WalletBalance
 import java.io.File
 
 /**
@@ -143,10 +143,10 @@ class RustBackend private constructor() : RustBackendWelding {
         aboveHeight: Int,
     ): Boolean = clearUtxos(pathDataDb, tAddress, aboveHeight)
 
-    override fun getDownloadedUtxoBalance(address: String): CompactBlockProcessor.WalletBalance {
+    override fun getDownloadedUtxoBalance(address: String): WalletBalance {
         val verified = getVerifiedTransparentBalance(pathDataDb, address)
         val total = getTotalTransparentBalance(pathDataDb, address)
-        return CompactBlockProcessor.WalletBalance(total, verified)
+        return WalletBalance(total, verified)
     }
 
     override fun isValidShieldedAddr(addr: String) = isValidShieldedAddress(addr)

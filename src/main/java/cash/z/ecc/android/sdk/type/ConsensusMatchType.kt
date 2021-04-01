@@ -1,4 +1,4 @@
-package cash.z.ecc.android.sdk.validate
+package cash.z.ecc.android.sdk.type
 
 import cash.z.ecc.android.sdk.ext.ConsensusBranchId
 

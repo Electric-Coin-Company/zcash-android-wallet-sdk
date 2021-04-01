@@ -7,6 +7,7 @@ import cash.z.ecc.android.sdk.ext.TroubleshootingTwig
 import cash.z.ecc.android.sdk.ext.Twig
 import cash.z.ecc.android.sdk.ext.twig
 import cash.z.ecc.android.sdk.tool.WalletBirthdayTool
+import cash.z.ecc.android.sdk.type.WalletBirthday
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
@@ -44,7 +45,7 @@ class BalancePrinterUtil {
 
 //    private val rustBackend = RustBackend.init(context, cacheDbName, dataDbName)
 
-    private lateinit var birthday: WalletBirthdayTool.WalletBirthday
+    private lateinit var birthday: WalletBirthday
     private var synchronizer: Synchronizer? = null
 
     @Before

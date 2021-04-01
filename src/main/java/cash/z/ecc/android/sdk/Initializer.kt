@@ -9,6 +9,7 @@ import cash.z.ecc.android.sdk.ext.twig
 import cash.z.ecc.android.sdk.jni.RustBackend
 import cash.z.ecc.android.sdk.tool.DerivationTool
 import cash.z.ecc.android.sdk.tool.WalletBirthdayTool
+import cash.z.ecc.android.sdk.type.WalletBirthday
 import java.io.File
 
 /**
@@ -21,7 +22,7 @@ class Initializer constructor(appContext: Context, config: Config) : SdkSynchron
     override val host: String
     override val port: Int
     val viewingKeys: List<String>
-    val birthday: WalletBirthdayTool.WalletBirthday
+    val birthday: WalletBirthday
 
     /**
      * True when accounts have been created by this initializer.
@@ -50,7 +51,7 @@ class Initializer constructor(appContext: Context, config: Config) : SdkSynchron
 
     fun erase() = erase(context, alias)
 
-    private fun initRustBackend(birthday: WalletBirthdayTool.WalletBirthday): RustBackend {
+    private fun initRustBackend(birthday: WalletBirthday): RustBackend {
         return RustBackend.init(
             cacheDbPath(context, alias),
             dataDbPath(context, alias),
@@ -60,7 +61,7 @@ class Initializer constructor(appContext: Context, config: Config) : SdkSynchron
     }
 
     private fun initMissingDatabases(
-        birthday: WalletBirthdayTool.WalletBirthday,
+        birthday: WalletBirthday,
         vararg viewingKeys: String
     ) {
         maybeCreateDataDb()
@@ -81,9 +82,10 @@ class Initializer constructor(appContext: Context, config: Config) : SdkSynchron
     /**
      * Initialize the blocks table with the given birthday, if needed.
      */
-    private fun maybeInitBlocksTable(birthday: WalletBirthdayTool.WalletBirthday) {
+    private fun maybeInitBlocksTable(birthday: WalletBirthday) {
         tryWarn(
-            "Warning: did not initialize the blocks table. It probably was already initialized."
+            "Warning: did not initialize the blocks table. It probably was already initialized.",
+            unlessContains = "constraint failed"
         ) {
             rustBackend.initBlocksTable(
                 birthday.height,

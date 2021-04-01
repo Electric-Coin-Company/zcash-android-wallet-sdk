@@ -19,7 +19,6 @@ import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Scanned
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Scanning
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Stopped
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Validating
-import cash.z.ecc.android.sdk.block.CompactBlockProcessor.WalletBalance
 import cash.z.ecc.android.sdk.block.CompactBlockStore
 import cash.z.ecc.android.sdk.db.entity.PendingTransaction
 import cash.z.ecc.android.sdk.db.entity.hasRawTransactionId
@@ -49,10 +48,11 @@ import cash.z.ecc.android.sdk.transaction.PersistentTransactionManager
 import cash.z.ecc.android.sdk.transaction.TransactionEncoder
 import cash.z.ecc.android.sdk.transaction.TransactionRepository
 import cash.z.ecc.android.sdk.transaction.WalletTransactionEncoder
-import cash.z.ecc.android.sdk.validate.AddressType
-import cash.z.ecc.android.sdk.validate.AddressType.Shielded
-import cash.z.ecc.android.sdk.validate.AddressType.Transparent
-import cash.z.ecc.android.sdk.validate.ConsensusMatchType
+import cash.z.ecc.android.sdk.type.AddressType
+import cash.z.ecc.android.sdk.type.AddressType.Shielded
+import cash.z.ecc.android.sdk.type.AddressType.Transparent
+import cash.z.ecc.android.sdk.type.ConsensusMatchType
+import cash.z.ecc.android.sdk.type.WalletBalance
 import cash.z.wallet.sdk.rpc.Service
 import io.grpc.ManagedChannel
 import kotlinx.coroutines.CoroutineExceptionHandler
