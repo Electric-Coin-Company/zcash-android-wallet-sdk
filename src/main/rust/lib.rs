@@ -157,10 +157,10 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_initAccount
             .map(|i| env.get_object_array_element(extpubs_arr, i))
             .map(|jstr| utils::java_string_to_rust(&env, jstr.unwrap().into()))
             .map(|extpub_str| PublicKey::from_str(&extpub_str).unwrap())
-            .map(|pk| derive_transparent_address_from_public_key(pk))
-            .collect();
+            .map(|pk| derive_transparent_address_from_public_key(&pk))
+            .collect::<Vec<_>>();
 
-        match init_accounts_table(&db_data, &extfvks, &taddrs) {
+        match init_accounts_table(&db_data, &extfvks[..], &taddrs[..]) {
             Ok(()) => Ok(JNI_TRUE),
             Err(e) => Err(format_err!("Error while initializing accounts: {}", e)),
         }
@@ -184,7 +184,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveE
         };
 
         let extsks: Vec<_> = (0..accounts)
-            .map(|account| spending_key(&seed, NETWORK.coin_type(), account))
+            .map(|account| spending_key(&seed, NETWORK.coin_type(), AccountId(account)))
             .collect();
 
         Ok(utils::rust_vec_to_java(
@@ -222,7 +222,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveU
             .map(|account| {
                 encode_extended_full_viewing_key(
                     NETWORK.hrp_sapling_extended_full_viewing_key(),
-                    &ExtendedFullViewingKey::from(&spending_key(&seed, NETWORK.coin_type(), account))
+                    &ExtendedFullViewingKey::from(&spending_key(&seed, NETWORK.coin_type(), AccountId(account)))
                 )
             })
             .collect();
@@ -262,7 +262,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveS
             return Err(format_err!("accountIndex argument must be positive"));
         };
 
-        let address = spending_key(&seed, NETWORK.coin_type(), account_index)
+        let address = spending_key(&seed, NETWORK.coin_type(), AccountId(account_index))
             .default_address()
             .unwrap()
             .1;
@@ -846,7 +846,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveT
             return Err(format_err!("index argument must be positive"));
         };
         let sk = derive_secret_key_from_seed(&NETWORK, &seed, AccountId(account), index);
-        let taddr = derive_transparent_address_from_secret_key(sk.unwrap())
+        let taddr = derive_transparent_address_from_secret_key(&sk.unwrap())
             .encode(&NETWORK);
 
         let output = env
@@ -867,7 +867,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveT
         let tsk_wif = utils::java_string_to_rust(&env, secret_key);
         let sk:SecretKey = (&Wif(tsk_wif)).try_into().expect("invalid private key WIF");
         let taddr =
-            derive_transparent_address_from_secret_key(sk)
+            derive_transparent_address_from_secret_key(&sk)
                 .encode(&NETWORK);
 
         let output = env
@@ -890,7 +890,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveT
         let public_key_str = utils::java_string_to_rust(&env, public_key);
         let pk = PublicKey::from_str(&public_key_str)?;
         let taddr =
-            derive_transparent_address_from_public_key(pk)
+            derive_transparent_address_from_public_key(&pk)
                 .encode(&NETWORK);
 
         let output = env
@@ -976,7 +976,14 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_createToAdd
             }
         };
 
-        let memo = Memo::from_bytes(&memo_bytes).map_err(|_| format_err!("Invalid memo"))?;
+        // TODO: consider warning in this case somehow, rather than swallowing this error
+        let memo = match to {
+            RecipientAddress::Shielded(_) => {
+                let memo_value = Memo::from_bytes(&memo_bytes).map_err(|_| format_err!("Invalid memo"))?;
+                Some(MemoBytes::from(&memo_value))
+            },
+            RecipientAddress::Transparent(_) => None
+        };
 
         let prover = LocalTxProver::new(Path::new(&spend_params), Path::new(&output_params));
 
@@ -989,7 +996,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_createToAdd
             &extsk,
             &to,
             value,
-            Some(MemoBytes::from(&memo)),
+            memo,
             OvkPolicy::Sender,
         )
         .map_err(|e| format_err!("Error while creating transaction: {}", e))
