@@ -14,5 +14,8 @@ data class Account(
     @ColumnInfo(name = "extfvk")
     val extendedFullViewingKey: String = "",
 
-    val address: String = ""
+    val address: String = "",
+
+    @ColumnInfo(name = "transparent_address")
+    val transparentAddress: String = ""
 )

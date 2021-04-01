@@ -38,7 +38,7 @@ import cash.z.ecc.android.sdk.ext.twig
         Sent::class,
         Utxo::class
     ],
-    version = 6,
+    version = 7,
     exportSchema = true
 )
 abstract class DerivedDataDb : RoomDatabase() {
@@ -159,6 +159,26 @@ abstract class DerivedDataDb : RoomDatabase() {
                     ); 
                     """.trimIndent()
                 )
+            }
+        }
+
+        val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("PRAGMA foreign_keys = OFF;")
+                database.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS accounts_new (
+                        account INTEGER PRIMARY KEY,
+                        extfvk TEXT NOT NULL,
+                        address TEXT NOT NULL,
+                        transparent_address TEXT NOT NULL
+                    ); 
+                    """.trimIndent()
+                )
+                database.execSQL("INSERT INTO accounts_new SELECT * FROM accounts;")
+                database.execSQL("DROP TABLE accounts;")
+                database.execSQL("ALTER TABLE accounts_new RENAME TO accounts;")
+                database.execSQL("PRAGMA foreign_keys = ON;")
             }
         }
     }
