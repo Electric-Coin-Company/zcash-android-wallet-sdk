@@ -386,7 +386,6 @@ class CompactBlockProcessor(
         }
     }
 
-    internal suspend fun downloadUtxos(tAddress: String, startHeight: Int): Int = withContext(IO) {
     private suspend fun updateBirthdayHeight() {
         try {
             val betterBirthday = calculateBirthdayHeight()
@@ -399,9 +398,13 @@ class CompactBlockProcessor(
         }
     }
 
+    internal suspend fun refreshUtxos(tAddress: String, startHeight: Int): Int = withContext(IO) {
         var skipped = 0
-        twig("Downloading utxos starting at height $startHeight")
+        // todo test  what happens when this call fails
         downloader.lightWalletService.fetchUtxos(tAddress, startHeight).let { result ->
+            twig("Clearing utxos above height ${startHeight - 1}")
+            rustBackend.clearUtxos(tAddress, startHeight - 1)
+            twig("Downloading utxos starting at height $startHeight")
             result.forEach { utxo: Service.GetAddressUtxosReply ->
                 twig("Found UTXO at height ${utxo.height.toInt()}")
                 try {
@@ -570,7 +573,7 @@ class CompactBlockProcessor(
         determineLowerBound(errorHeight).let { lowerBound ->
             twig("handling chain error at $errorHeight by rewinding to block $lowerBound")
             onChainErrorListener?.invoke(errorHeight, lowerBound)
-            rewindToHeight(lowerBound)
+            rewindToHeight(lowerBound, true)
         }
     }
 
@@ -579,21 +582,24 @@ class CompactBlockProcessor(
      * blocks. Otherwise, the cached blocks will be used in the rescan, which in most cases, is fine.
      */
     suspend fun rewindToHeight(height: Int, alsoClearBlockCache: Boolean = false) = withContext(IO) {
-        val lastHeight = currentInfo.lastScannedHeight
-        twig("Rewinding from $lastHeight to height: $height")
+        val lastScannedHeight = currentInfo.lastScannedHeight
+        twig("Rewinding from $lastScannedHeight to height: $height")
         // TODO: think about how we might pause all processing during a rewind
-        if (height < lastHeight) {
+        if (height < lastScannedHeight) {
             rustBackend.rewindToHeight(height)
-            val range = (height + 1)..lastHeight
-            if (alsoClearBlockCache) {
-                twig("Rewound blocks will download in the next scheduled scan")
-                downloader.rewindToHeight(height)
-                // communicate that the wallet is no longer synced because it might remain this way for 20+ seconds because we only download on 20s time boundaries so we can't trigger any immediate action
-                setState(Downloading)
-            } else {
-                twig("Revalidating blocks that were rewound")
-                if (validateAndScanNewBlocks(range) == ERROR_CODE_NONE) enhanceTransactionDetails(range)
-            }
+        } else {
+            twig("not rewinding dataDb because the last scanned height is $lastScannedHeight which is less than the target height of $height")
+        }
+
+        if (alsoClearBlockCache) {
+            twig("Also clearing block cache back to $height. These rewound blocks will download in the next scheduled scan")
+            downloader.rewindToHeight(height)
+            // communicate that the wallet is no longer synced because it might remain this way for 20+ seconds because we only download on 20s time boundaries so we can't trigger any immediate action
+            setState(Downloading)
+        } else {
+            val range = (height + 1)..lastScannedHeight
+            twig("We kept the cache blocks in place so we don't need to wait for the next scheduled download to rescan. Instead we will rescan and validate blocks ${range.first}..${range.last}")
+            if (validateAndScanNewBlocks(range) == ERROR_CODE_NONE) enhanceTransactionDetails(range)
         }
     }
 
@@ -700,8 +706,12 @@ class CompactBlockProcessor(
      *
      * @return the address of this wallet.
      */
-    suspend fun getShieldedAddress(accountId: Int) = withContext(IO) {
-        rustBackend.getShieldedAddress(accountId)
+    suspend fun getShieldedAddress(accountId: Int = 0) = withContext(IO) {
+        repository.getAccount(accountId)!!.rawShieldedAddress
+    }
+
+    suspend fun getTransparentAddress(accountId: Int = 0) = withContext(IO) {
+        repository.getAccount(accountId)!!.rawTransparentAddress
     }
 
     /**

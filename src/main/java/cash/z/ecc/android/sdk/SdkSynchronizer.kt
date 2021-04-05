@@ -330,6 +330,11 @@ class SdkSynchronizer internal constructor(
     // Private API
     //
 
+    suspend fun refreshUtxos() {
+        twig("refreshing utxos")
+        refreshUtxos(getTransparentAddress())
+    }
+
     /**
      * Calculate the latest balance, based on the blocks that have been scanned and transmit this
      * information into the flow of [balances].
@@ -566,9 +571,7 @@ class SdkSynchronizer internal constructor(
 
     override suspend fun getShieldedAddress(accountId: Int): String = processor.getShieldedAddress(accountId)
 
-    override suspend fun getTransparentAddress(seed: ByteArray, accountId: Int, index: Int): String {
-        return DerivationTool.deriveTransparentAddress(seed, accountId, index)
-    }
+    override suspend fun getTransparentAddress(accountId: Int): String = processor.getTransparentAddress(accountId)
 
     override fun sendToAddress(
         spendingKey: String,
@@ -593,6 +596,8 @@ class SdkSynchronizer internal constructor(
             }
         }
     }.flatMapLatest {
+        // switch this flow over to monitoring the database for transactions
+        // so we emit the placeholder TX above, then watch the database for all further updates
         twig("Monitoring pending transaction (id: ${it.id}) for updates...")
         txManager.monitorById(it.id)
     }.distinctUntilChanged()
@@ -626,9 +631,8 @@ class SdkSynchronizer internal constructor(
         txManager.monitorById(it.id)
     }.distinctUntilChanged()
 
-    override suspend fun refreshUtxos(address: String, sinceHeight: Int): Int {
-        // TODO: we need to think about how we restrict this to only our taddr
-        return processor.downloadUtxos(address, sinceHeight)
+    override suspend fun refreshUtxos(address: String, startHeight: Int): Int {
+        return processor.refreshUtxos(address, startHeight)
     }
 
     override suspend fun getTransparentBalance(tAddr: String): WalletBalance {

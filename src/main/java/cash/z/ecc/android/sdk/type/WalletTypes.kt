@@ -42,3 +42,14 @@ data class UnifiedViewingKey(
     val extfvk: String = "",
     val extpub: String = ""
 )
+
+data class UnifiedAddressAccount(
+    val accountId: Int = -1,
+    override val rawShieldedAddress: String = "",
+    override val rawTransparentAddress: String = ""
+) : UnifiedAddress
+
+interface UnifiedAddress {
+    val rawShieldedAddress: String
+    val rawTransparentAddress: String
+}
