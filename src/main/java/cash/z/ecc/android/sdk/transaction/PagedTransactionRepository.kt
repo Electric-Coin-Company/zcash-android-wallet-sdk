@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.paging.PagedList
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import cash.z.ecc.android.sdk.db.AccountDao
 import cash.z.ecc.android.sdk.db.BlockDao
 import cash.z.ecc.android.sdk.db.DerivedDataDb
 import cash.z.ecc.android.sdk.db.TransactionDao
@@ -11,6 +12,7 @@ import cash.z.ecc.android.sdk.db.entity.ConfirmedTransaction
 import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.ext.android.toFlowPagedList
 import cash.z.ecc.android.sdk.ext.android.toRefreshable
+import cash.z.ecc.android.sdk.type.UnifiedAddressAccount
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.withContext
 
@@ -50,6 +52,7 @@ open class PagedTransactionRepository(
     }
 
     private val blocks: BlockDao = derivedDataDb.blockDao()
+    private val accounts: AccountDao = derivedDataDb.accountDao()
     private val transactions: TransactionDao = derivedDataDb.transactionDao()
     private val receivedTxDataSourceFactory = transactions.getReceivedTransactions().toRefreshable()
     private val sentTxDataSourceFactory = transactions.getSentTransactions().toRefreshable()
@@ -95,6 +98,9 @@ open class PagedTransactionRepository(
     override suspend fun count(): Int = withContext(IO) {
         transactions.count()
     }
+
+    override suspend fun getAccount(accountId: Int): UnifiedAddressAccount? = accounts.findAccountById(accountId)
+
     /**
      * Close the underlying database.
      */
@@ -105,4 +111,6 @@ open class PagedTransactionRepository(
     // TODO: begin converting these into Data Access API. For now, just collect the desired operations and iterate/refactor, later
     fun findBlockHash(height: Int): ByteArray? = blocks.findHashByHeight(height)
     fun getTransactionCount(): Int = transactions.count()
+
+    // TODO: convert this into a wallet repository rather than "transaction repository"
 }

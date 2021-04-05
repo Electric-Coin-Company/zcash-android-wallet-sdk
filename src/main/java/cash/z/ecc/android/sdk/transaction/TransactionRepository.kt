@@ -3,6 +3,7 @@ package cash.z.ecc.android.sdk.transaction
 import androidx.paging.PagedList
 import cash.z.ecc.android.sdk.db.entity.ConfirmedTransaction
 import cash.z.ecc.android.sdk.db.entity.EncodedTransaction
+import cash.z.ecc.android.sdk.type.UnifiedAddressAccount
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -75,6 +76,8 @@ interface TransactionRepository {
     suspend fun deleteExpired(lastScannedHeight: Int): Int
 
     suspend fun count(): Int
+
+    suspend fun getAccount(accountId: Int): UnifiedAddressAccount?
 
     //
     // Transactions

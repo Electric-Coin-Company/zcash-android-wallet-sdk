@@ -17,6 +17,7 @@ import cash.z.ecc.android.sdk.db.entity.Sent
 import cash.z.ecc.android.sdk.db.entity.TransactionEntity
 import cash.z.ecc.android.sdk.db.entity.Utxo
 import cash.z.ecc.android.sdk.ext.twig
+import cash.z.ecc.android.sdk.type.UnifiedAddressAccount
 
 //
 // Database
@@ -46,6 +47,7 @@ abstract class DerivedDataDb : RoomDatabase() {
     abstract fun blockDao(): BlockDao
     abstract fun receivedDao(): ReceivedDao
     abstract fun sentDao(): SentDao
+    abstract fun accountDao(): AccountDao
 
     //
     // Migrations
@@ -175,7 +177,6 @@ abstract class DerivedDataDb : RoomDatabase() {
                     ); 
                     """.trimIndent()
                 )
-                database.execSQL("INSERT INTO accounts_new SELECT * FROM accounts;")
                 database.execSQL("DROP TABLE accounts;")
                 database.execSQL("ALTER TABLE accounts_new RENAME TO accounts;")
                 database.execSQL("PRAGMA foreign_keys = ON;")
@@ -219,6 +220,20 @@ interface ReceivedDao {
 interface SentDao {
     @Query("SELECT COUNT(tx) FROM sent_notes")
     fun count(): Int
+}
+
+@Dao
+interface AccountDao {
+    @Query(
+        """
+        SELECT account AS accountId,
+               transparent_address AS rawTransparentAddress,
+               address AS rawShieldedAddress
+        FROM accounts
+        WHERE account = :id
+        """
+    )
+    suspend fun findAccountById(id: Int): UnifiedAddressAccount?
 }
 
 /**
