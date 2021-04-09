@@ -96,19 +96,6 @@ android {
         }
     }
 
-    flavorDimensions 'network'
-
-    productFlavors {
-        // would rather name them "testnet" and "mainnet" but product flavor names cannot start with the word "test"
-        zcashtestnet {
-            dimension 'network'
-        }
-
-        zcashmainnet {
-            dimension 'network'
-        }
-    }
-
     sourceSets {
         main {
             java {
@@ -193,20 +180,6 @@ cargo {
     profile = "release"
     forceTargets = true
     prebuiltToolchains = true
-    variants {
-        zcashmainnetDebug {
-            defaultFeaturesAnd("mainnet")
-        }
-        zcashmainnetRelease {
-            defaultFeaturesAnd("mainnet")
-        }
-        zcashtestnetDebug {
-            defaultFeaturesAnd("testnet")
-        }
-        zcashtestnetRelease {
-            defaultFeaturesAnd("testnet")
-        }
-    }
 }
 
 dependencies {
