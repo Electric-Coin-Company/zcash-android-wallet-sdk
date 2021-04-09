@@ -65,8 +65,8 @@ zcash_primitives = {git = "https://github.com/nuttycom/librustzcash", branch = "
 zcash_proofs = {git = "https://github.com/nuttycom/librustzcash", branch = "autoshield-poc-daa"}
 
 [features]
-mainnet = ["zcash_client_sqlite/mainnet", "zcash_client_sqlite/transparent-inputs", "zcash_client_backend/transparent-inputs", "zcash_primitives/transparent-inputs"]
-testnet = ["zcash_client_backend/transparent-inputs", "zcash_client_sqlite/transparent-inputs", "zcash_primitives/transparent-inputs"]
+mainnet = ["zcash_client_sqlite/mainnet"]
+testnet = []
 updater = ["bls12_381", "futures", "grpc", "grpc-protobuf", "httpbis", "tls-api", "tls-api-rustls"]
 
 [lib]

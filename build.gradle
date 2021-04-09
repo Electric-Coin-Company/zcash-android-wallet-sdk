@@ -1,7 +1,7 @@
 import cash.z.ecc.android.Deps
 
 buildscript {
-    ext.buildConfig = [
+    ext.kotlinVersion = '1.4.31'
         'compileSdkVersion': 30,
         'minSdkVersion': 16,
         'targetSdkVersion': 30
@@ -27,43 +27,30 @@ buildscript {
         }
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:4.0.2'
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${Deps.kotlinVersion}"
-        classpath "org.jetbrains.kotlin:kotlin-allopen:${Deps.kotlinVersion}"
-        classpath "org.jetbrains.dokka:dokka-gradle-plugin:0.10.1"
-        classpath "com.github.ben-manes:gradle-versions-plugin:0.31.0"
-        classpath 'com.github.dcendents:android-maven-gradle-plugin:2.1'
+        classpath 'com.android.tools.build:gradle:4.1.3'
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${kotlinVersion}"
+        classpath "org.jetbrains.kotlin:kotlin-allopen:${kotlinVersion}"
+        classpath "org.jetbrains.dokka:dokka-gradle-plugin:1.4.30"
         classpath "com.google.protobuf:protobuf-gradle-plugin:0.8.14"
-        classpath 'com.getkeepsafe.dexcount:dexcount-gradle-plugin:1.0.2'
         classpath 'com.github.str4d:rust-android-gradle:68b4ecc053'
         classpath 'org.owasp:dependency-check-gradle:6.0.0'
-        classpath "gradle.plugin.com.dorongold.plugins:task-tree:1.5"
-        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.5'
+        classpath 'com.vanniktech:gradle-maven-publish-plugin:0.14.2'
     }
 }
 
 apply from: 'custom-tasks.gradle'
 apply from: "$rootDir/ktlint.gradle"
-apply plugin: 'maven-publish'
-apply plugin: 'com.jfrog.bintray'
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
-apply plugin: 'kotlin-android-extensions'
 apply plugin: 'kotlin-kapt'
 apply plugin: 'kotlin-allopen'
 apply plugin: 'org.jetbrains.dokka'
 apply plugin: 'com.google.protobuf'
-apply plugin: 'com.github.ben-manes.versions'
-apply plugin: 'com.github.dcendents.android-maven'
-apply plugin: 'com.getkeepsafe.dexcount'
 apply plugin: 'org.mozilla.rust-android-gradle.rust-android'
 apply plugin: 'org.owasp.dependencycheck'
-apply plugin: "com.dorongold.task-tree"
-apply from: 'ci.gradle'
-apply from: 'publish.gradle'
+apply plugin: 'com.vanniktech.maven.publish'
+//apply from: 'ci.gradle'
 
-group = Deps.group
-version = Deps.versionName
 
 repositories {
     google()
@@ -287,14 +274,14 @@ dependencies {
 
     // sample mnemonic plugin
     androidTestImplementation 'com.github.zcash:zcash-android-wallet-plugins:1.0.1'
-    androidTestImplementation 'cash.z.ecc.android:kotlin-bip39:1.0.1'
+    androidTestImplementation 'cash.z.ecc.android:kotlin-bip39:1.0.2'
 }
 
-taskTree{
-    noRepeat = true  //do not print a sub-tree in the task-tree more than once
-    impliesSubProjects = true  //do not print task-tree for child projects in a multi-project
-    taskDepth = 2 // limit tree depth to 3. Equivalent to running with the --task-depth option.
-}
+//taskTree{
+//    noRepeat = true  //do not print a sub-tree in the task-tree more than once
+//    impliesSubProjects = true  //do not print task-tree for child projects in a multi-project
+//    taskDepth = 2 // limit tree depth to 3. Equivalent to running with the --task-depth option.
+//}
 
 defaultTasks 'ciBuild'
 
@@ -302,4 +289,4 @@ preBuild.dependsOn('ktlintFormat')
 preBuild.dependsOn('ktlint')
 preBuild.dependsOn includeDirBugFix
 
-check.dependsOn dependencyCheckAggregate
+//check.dependsOn dependencyCheckAggregate
