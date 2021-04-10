@@ -1,19 +1,24 @@
 package cash.z.ecc.android.sdk.jni
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.filters.SmallTest
 import cash.z.ecc.android.bip39.Mnemonics.MnemonicCode
 import cash.z.ecc.android.bip39.toSeed
+import cash.z.ecc.android.sdk.annotation.MaintainedTest
+import cash.z.ecc.android.sdk.annotation.TestPurpose
 import cash.z.ecc.android.sdk.ext.TroubleshootingTwig
 import cash.z.ecc.android.sdk.ext.Twig
-import cash.z.ecc.android.sdk.test.BuildConfig
 import cash.z.ecc.android.sdk.tool.DerivationTool
+import cash.z.ecc.android.sdk.type.ZcashNetwork
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.BeforeClass
 import org.junit.Test
 import org.junit.runner.RunWith
 
+@MaintainedTest(TestPurpose.REGRESSION)
 @RunWith(AndroidJUnit4::class)
+@SmallTest
 class TransparentTest {
 
     lateinit var expected: Expected
@@ -21,13 +26,14 @@ class TransparentTest {
 
     @Before
     fun setup() {
-        if (BuildConfig.FLAVOR == "zcashtestnet") {
-            expected = ExpectedTestnet
-            network = ZcashNetwork.Testnet
-        } else {
-            expected = ExpectedMainnet
-            network = ZcashNetwork.Mainnet
-        }
+        // TODO: parameterize this for both networks
+//        if (BuildConfig.FLAVOR == "zcashtestnet") {
+        expected = ExpectedTestnet
+        network = ZcashNetwork.Testnet
+//        } else {
+//            expected = ExpectedMainnet
+//            network = ZcashNetwork.Mainnet
+//        }
     }
 
     @Test
@@ -53,16 +59,6 @@ class TransparentTest {
         assertEquals(expected.zAddr, DerivationTool.deriveShieldedAddress(uvk.extfvk, network = network))
         assertEquals(expected.tAddr, DerivationTool.deriveTransparentAddressFromPublicKey(uvk.extpub, network = network))
     }
-
-//    @Test
-//    fun deriveTransparentAddressFromSecretKeyTest2() {
-//        while(false) {
-//            MnemonicCode(COUNT_24).let { phrase ->
-//                val addr = DerivationTool.deriveShieldedAddress(phrase.toSeed())
-//                twig("$addr${String(phrase.chars)}\t")
-//            }
-//        }
-//    }
 
     companion object {
         const val PHRASE = "deputy visa gentle among clean scout farm drive comfort patch skin salt ranch cool ramp warrior drink narrow normal lunch behind salt deal person"

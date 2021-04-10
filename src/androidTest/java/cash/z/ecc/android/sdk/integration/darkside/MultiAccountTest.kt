@@ -1,4 +1,4 @@
-package cash.z.ecc.android.sdk.integration
+package cash.z.ecc.android.sdk.integration.darkside
 
 // import cash.z.ecc.android.sdk.SdkSynchronizer
 // import cash.z.ecc.android.sdk.db.entity.isSubmitSuccess

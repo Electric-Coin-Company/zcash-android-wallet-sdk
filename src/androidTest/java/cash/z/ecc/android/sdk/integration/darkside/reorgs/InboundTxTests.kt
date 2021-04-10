@@ -1,4 +1,4 @@
-package cash.z.ecc.android.sdk.integration.reorgs
+package cash.z.ecc.android.sdk.integration.darkside.reorgs
 
 import cash.z.ecc.android.sdk.ext.ScopedTest
 import cash.z.ecc.android.sdk.ext.twig

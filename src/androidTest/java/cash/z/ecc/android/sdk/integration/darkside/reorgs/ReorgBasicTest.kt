@@ -1,4 +1,4 @@
-// package cash.z.ecc.android.sdk.integration
+package cash.z.ecc.android.sdk.integration.darkside.reorgs // package cash.z.ecc.android.sdk.integration
 //
 // import cash.z.ecc.android.sdk.ext.ScopedTest
 // import cash.z.ecc.android.sdk.util.DarksideTestCoordinator

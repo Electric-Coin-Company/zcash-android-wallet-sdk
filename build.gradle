@@ -244,6 +244,8 @@ dependencies {
     androidTestImplementation "androidx.arch.core:core-testing:2.1.0"
     androidTestImplementation 'androidx.test.ext:junit:1.1.2'
     androidTestImplementation 'androidx.test:runner:1.3.0'
+    androidTestImplementation "com.squareup.okhttp3:okhttp:3.8.0"
+    androidTestImplementation 'ru.gildor.coroutines:kotlin-coroutines-okhttp:1.0'
 
     // sample mnemonic plugin
     androidTestImplementation 'com.github.zcash:zcash-android-wallet-plugins:1.0.1'

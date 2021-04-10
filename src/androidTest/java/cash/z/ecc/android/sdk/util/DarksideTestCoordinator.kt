@@ -4,6 +4,8 @@ import androidx.test.platform.app.InstrumentationRegistry
 import cash.z.ecc.android.sdk.Initializer
 import cash.z.ecc.android.sdk.SdkSynchronizer
 import cash.z.ecc.android.sdk.Synchronizer
+import cash.z.ecc.android.sdk.db.entity.isSubmitSuccess
+import cash.z.ecc.android.sdk.ext.ScopedTest
 import cash.z.ecc.android.sdk.ext.Twig
 import cash.z.ecc.android.sdk.ext.seedPhrase
 import cash.z.ecc.android.sdk.ext.twig
@@ -14,8 +16,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert
@@ -35,8 +39,7 @@ class DarksideTestCoordinator(val host: String = "127.0.0.1", val testName: Stri
     // dependencies: public
     val validator = DarksideTestValidator()
     val chainMaker = DarksideChainMaker()
-//    var initializer = Initializer(context, Initializer.Builder(host, port, testName))
-    lateinit var synchronizer: SdkSynchronizer
+    lateinit var synchronizer: Synchronizer
 
     val spendingKey: String get() = DerivationTool.deriveSpendingKeys(SimpleMnemonics().toSeed(seedPhrase.toCharArray()), network)[0]
 
@@ -80,9 +83,10 @@ class DarksideTestCoordinator(val host: String = "127.0.0.1", val testName: Stri
             config.setBirthdayHeight(birthdayHeight)
             config.alias = testName
         }
-        synchronizer = Synchronizer(initializer) as SdkSynchronizer
+        synchronizer = Synchronizer(initializer)
         val channel = (synchronizer as SdkSynchronizer).channel
         darkside = DarksideApi(channel)
+        darkside.reset()
     }
 
 //    fun triggerSmallReorg() {
@@ -226,7 +230,7 @@ class DarksideTestCoordinator(val host: String = "127.0.0.1", val testName: Stri
             }
         }
         suspend fun validateBalance(available: Long = -1, total: Long = -1, accountIndex: Int = 0) {
-            val balance = synchronizer.processor.getBalanceInfo(accountIndex)
+            val balance = (synchronizer as SdkSynchronizer).processor.getBalanceInfo(accountIndex)
             if (available > 0) {
                 assertEquals("invalid available balance", available, balance.availableZatoshi)
             }

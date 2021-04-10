@@ -114,7 +114,7 @@ class TestnetIntegrationTest : ScopedTest() {
         private val context = InstrumentationRegistry.getInstrumentation().context
         private val initializer = Initializer(context) { config ->
             config.setNetwork(ZcashNetwork.Testnet, host)
-            config.importWallet(seed, birthdayHeight)
+            config.importWallet(seed, birthdayHeight, ZcashNetwork.Testnet)
         }
         private lateinit var synchronizer: Synchronizer
 
