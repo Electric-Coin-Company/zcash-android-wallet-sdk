@@ -186,7 +186,11 @@ class LightWalletGrpcService private constructor(
         val host: String,
         val port: Int,
         val usePlaintext: Boolean
-    )
+    ) {
+        override fun toString(): String {
+            return "$host:$port?usePlaintext=$usePlaintext"
+        }
+    }
 
     companion object {
         /**

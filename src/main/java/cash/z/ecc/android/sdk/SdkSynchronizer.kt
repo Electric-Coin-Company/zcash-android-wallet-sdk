@@ -347,6 +347,13 @@ class SdkSynchronizer internal constructor(
         _balances.send(processor.getBalanceInfo())
     }
 
+    suspend fun isValidAddress(address: String): Boolean {
+        try {
+            return !validateAddress(address).isNotValid
+        } catch (t: Throwable) { }
+        return false
+    }
+
     private fun CoroutineScope.onReady() = launch(CoroutineExceptionHandler(::onCriticalError)) {
         twig("Synchronizer (${this@SdkSynchronizer}) Ready. Starting processor!")
         var lastScanTime = 0L
@@ -684,6 +691,7 @@ class SdkSynchronizer internal constructor(
         val host: String
         val port: Int
         val alias: String
+        val onCriticalErrorHandler: ((Throwable?) -> Boolean)?
     }
 
     interface Erasable {

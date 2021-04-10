@@ -31,15 +31,25 @@ interface Twig {
         val trunk get() = Bush.trunk
 
         /**
-         * Plants the twig, making it the one and only bush. Twigs can be bundled together to create the appearance of
-         * multiple bushes (i.e `Twig.plant(twigA + twigB + twigC)`) even though there's only ever one bush.
+         * Convenience function to just turn this thing on. Twigs are silent by default so this is
+         * most useful to enable developer logging at the right time.
+         */
+        fun enabled(isEnabled: Boolean) {
+            if (isEnabled) plant(TroubleshootingTwig()) else plant(SilentTwig())
+        }
+
+        /**
+         * Plants the twig, making it the one and only bush. Twigs can be bundled together to create
+         * the appearance of multiple bushes (i.e `Twig.plant(twigA + twigB + twigC)`) even though
+         * there's only ever one bush.
          */
         fun plant(rootTwig: Twig) {
             Bush.trunk = rootTwig
         }
 
         /**
-         * Generate a leaf on the bush. Leaves show up in every log message as tags until they are clipped.
+         * Generate a leaf on the bush. Leaves show up in every log message as tags until they are
+         * clipped.
          */
         fun sprout(leaf: Leaf) = Bush.leaves.add(leaf)
 
@@ -56,9 +66,9 @@ interface Twig {
 }
 
 /**
- * A collection of tiny logs (twigs) consisting of one trunk and maybe some leaves. There can only ever be one trunk.
- * Trunks are created by planting a twig. Whenever a leaf sprouts, it will appear as a tag on every log message
- * until clipped.
+ * A collection of tiny logs (twigs) consisting of one trunk and maybe some leaves. There can only
+ * ever be one trunk. Trunks are created by planting a twig. Whenever a leaf sprouts, it will appear
+ * as a tag on every log message until clipped.
  *
  * @see [Twig.plant]
  * @see [Twig.sprout]
@@ -73,6 +83,13 @@ object Bush {
  * Makes a tiny log.
  */
 inline fun twig(message: String) = Bush.trunk.twig(message)
+
+/**
+ * Makes an exception.
+ */
+inline fun twig(t: Throwable) = t.stackTraceToString().lines().forEach {
+    twig(it)
+}
 
 /**
  * Times a tiny log.
@@ -123,7 +140,8 @@ open class TroubleshootingTwig(
 open class CompositeTwig(open val twigBundle: MutableList<Twig>) :
     Twig {
     override operator fun plus(twig: Twig): Twig {
-        if (twig is CompositeTwig) twigBundle.addAll(twig.twigBundle) else twigBundle.add(twig); return this
+        if (twig is CompositeTwig) twigBundle.addAll(twig.twigBundle) else twigBundle.add(twig)
+        return this
     }
 
     override fun twig(logMessage: String) {
@@ -145,27 +163,28 @@ inline fun <R> Twig.twig(logMessage: String, block: () -> R): R {
 }
 
 /**
- * A tiny log task. Execute the block of code with some twigging around the outside. For silent twigs, this adds a small
- * amount of overhead at the call site but still avoids logging.
+ * A tiny log task. Execute the block of code with some twigging around the outside. For silent
+ * twigs, this adds a small amount of overhead at the call site but still avoids logging.
  *
- * note: being an extension function (i.e. static rather than a member of the Twig interface) allows this function to be
- *       inlined and simplifies its use with suspend functions
+ * note: being an extension function (i.e. static rather than a member of the Twig interface) allows
+ *       this function to be inlined and simplifies its use with suspend functions
  *       (otherwise the function and its "block" param would have to suspend)
  */
 inline fun <R> Twig.twigTask(logMessage: String, block: () -> R): R {
-    twig("$logMessage - started    | on thread ${Thread.currentThread().name}")
+    twig("$logMessage - started   | on thread ${Thread.currentThread().name}")
     val start = System.nanoTime()
     val result = block()
     val elapsed = ((System.nanoTime() - start) / 1e5).roundToLong() / 10L
-    twig("$logMessage - completed  | in $elapsed ms" + " on thread ${Thread.currentThread().name}")
+    twig("$logMessage - completed | in $elapsed ms" + " on thread ${Thread.currentThread().name}")
     return result
 }
 
 /**
  * A tiny log formatter that makes twigs pretty spiffy.
  *
- * @param stackFrame the stack frame from which we try to derive the class. This can vary depending on how the code is
- * called so we expose it for flexibility. Jiggle the handle on this whenever the line numbers appear incorrect.
+ * @param stackFrame the stack frame from which we try to derive the class. This can vary depending
+ * on how the code is called so we expose it for flexibility. Jiggle the handle on this whenever the
+ * line numbers appear incorrect.
  */
 inline fun spiffy(stackFrame: Int = 4, tag: String = "@TWIG"): (String) -> String = { logMessage: String ->
     val stack = Thread.currentThread().stackTrace[stackFrame]

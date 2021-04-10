@@ -47,7 +47,8 @@ open class CompactBlockDownloader private constructor(val compactBlockStore: Com
     }
 
     /**
-     * Rewind the storage to the given height, usually to handle reorgs.
+     * Rewind the storage to the given height, usually to handle reorgs. Deletes all blocks above
+     * the given height.
      *
      * @param height the height to which the data will rewind.
      */

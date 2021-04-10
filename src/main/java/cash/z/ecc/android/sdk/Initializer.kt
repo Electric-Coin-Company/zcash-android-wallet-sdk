@@ -16,7 +16,7 @@ import java.io.File
 /**
  * Simplified Initializer focused on starting from a ViewingKey.
  */
-class Initializer constructor(appContext: Context, config: Config) : SdkSynchronizer.SdkInitializer {
+class Initializer constructor(appContext: Context, onCriticalErrorHandler: ((Throwable?) -> Boolean)? = null, config: Config) : SdkSynchronizer.SdkInitializer {
     override val context = appContext.applicationContext
     override val rustBackend: RustBackend
     override val network: ZcashNetwork
@@ -25,6 +25,14 @@ class Initializer constructor(appContext: Context, config: Config) : SdkSynchron
     override val port: Int
     val viewingKeys: List<UnifiedViewingKey>
     val birthday: WalletBirthday
+
+    /**
+     * A callback to invoke whenever an uncaught error is encountered. By definition, the return
+     * value of the function is ignored because this error is unrecoverable. The only reason the
+     * function has a return value is so that all error handlers work with the same signature which
+     * allows one function to handle all errors in simple apps.
+     */
+    override var onCriticalErrorHandler: ((Throwable?) -> Boolean)? = onCriticalErrorHandler
 
     /**
      * True when accounts have been created by this initializer.
@@ -55,7 +63,8 @@ class Initializer constructor(appContext: Context, config: Config) : SdkSynchron
         }
     }
 
-    constructor(appContext: Context, block: (Config) -> Unit) : this(appContext, Config(block))
+    constructor(appContext: Context, config: Config) : this(appContext, null, config)
+    constructor(appContext: Context, onCriticalErrorHandler: ((Throwable?) -> Boolean)? = null, block: (Config) -> Unit) : this(appContext, onCriticalErrorHandler, Config(block))
 
     fun erase() = erase(context, network, alias)
 
@@ -92,9 +101,10 @@ class Initializer constructor(appContext: Context, config: Config) : SdkSynchron
      * Initialize the blocks table with the given birthday, if needed.
      */
     private fun maybeInitBlocksTable(birthday: WalletBirthday) {
+        // TODO: consider converting these to typed exceptions in the welding layer
         tryWarn(
             "Warning: did not initialize the blocks table. It probably was already initialized.",
-            unlessContains = "constraint failed"
+            ifContains = "table is not empty"
         ) {
             rustBackend.initBlocksTable(
                 birthday.height,
@@ -111,9 +121,10 @@ class Initializer constructor(appContext: Context, config: Config) : SdkSynchron
      * Initialize the accounts table with the given viewing keys, if needed.
      */
     private fun maybeInitAccountsTable(vararg viewingKeys: UnifiedViewingKey) {
+        // TODO: consider converting these to typed exceptions in the welding layer
         tryWarn(
             "Warning: did not initialize the accounts table. It probably was already initialized.",
-            unlessContains = "constraint failed"
+            ifContains = "table is not empty"
         ) {
             rustBackend.initAccountsTable(*viewingKeys)
             accountsCreated = true
@@ -121,25 +132,27 @@ class Initializer constructor(appContext: Context, config: Config) : SdkSynchron
         }
     }
 
-    /**
-     * Validate that the alias doesn't contain malicious characters by enforcing simple rules which
-     * permit the alias to be used as part of a file name for the preferences and databases. This
-     * enables multiple wallets to exist on one device, which is also helpful for sweeping funds.
-     *
-     * @param alias the alias to validate.
-     *
-     * @throws IllegalArgumentException whenever the alias is not less than 100 characters or
-     * contains something other than alphanumeric characters. Underscores are allowed but aliases
-     * must start with a letter.
-     */
-    internal fun validateAlias(alias: String) {
-        require(
-            alias.length in 1..99 && alias[0].isLetter() &&
-                alias.all { it.isLetterOrDigit() || it == '_' }
-        ) {
-            "ERROR: Invalid alias ($alias). For security, the alias must be shorter than 100 " +
-                "characters and only contain letters, digits or underscores and start with a letter"
+    private fun onCriticalError(error: Throwable) {
+        twig("********")
+        twig("********  INITIALIZER ERROR: $error")
+        if (error.cause != null) twig("******** caused by ${error.cause}")
+        if (error.cause?.cause != null) twig("******** caused by ${error.cause?.cause}")
+        twig("********")
+        twig(error)
+
+        if (onCriticalErrorHandler == null) {
+            twig(
+                "WARNING: a critical error occurred on the Initializer but no callback is " +
+                    "registered to be notified of critical errors! THIS IS PROBABLY A MISTAKE. To " +
+                    "respond to these errors (perhaps to update the UI or alert the user) set " +
+                    "initializer.onCriticalErrorHandler to a non-null value or use the secondary " +
+                    "constructor: Initializer(context, handler) { ... }. Note that the synchronizer " +
+                    "and initializer BOTH have error handlers and since the initializer exists " +
+                    "before the synchronizer, it needs its error handler set separately."
+            )
         }
+
+        onCriticalErrorHandler?.invoke(error)
     }
 
     class Config private constructor (
@@ -188,7 +201,7 @@ class Initializer constructor(appContext: Context, config: Config) : SdkSynchron
          * @param defaultToOldestHeight determines how a null birthday height will be
          * interpreted. Typically, `false` for new wallets and `true` for restored wallets because
          * new wallets want to load quickly but restored wallets want to find all possible
-         * transactions.
+         * transactions. Again, this value is only considered when [height] is null.
          *
          */
         fun setBirthdayHeight(height: Int?, defaultToOldestHeight: Boolean = false): Config =

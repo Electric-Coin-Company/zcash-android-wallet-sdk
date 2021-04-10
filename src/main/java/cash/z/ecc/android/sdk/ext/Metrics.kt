@@ -45,7 +45,7 @@ class Sma(val window: Int = 3) {
     fun format(places: Int = 0) = "%.${places}f".format(average)
 }
 
-class BatchMetrics(val range: IntRange, val batchSize: Int, val onMetricComplete: ((BatchMetrics, Boolean) -> Unit)? = null) {
+class BatchMetrics(val range: IntRange, val batchSize: Int, private val onMetricComplete: ((BatchMetrics, Boolean) -> Unit)? = null) {
     private var completedBatches = 0
     private var rangeStartTime = 0L
     private var batchStartTime = 0L
@@ -54,8 +54,8 @@ class BatchMetrics(val range: IntRange, val batchSize: Int, val onMetricComplete
     private inline fun now() = System.currentTimeMillis()
     private inline fun ips(blocks: Int, time: Long) = 1000.0f * blocks / time
 
-    val isComplete = completedBatches * batchSize >= rangeSize
-    val isBatchComplete = batchEndTime > batchStartTime
+    val isComplete get() = completedBatches * batchSize >= rangeSize
+    val isBatchComplete get() = batchEndTime > batchStartTime
     val cumulativeItems get() = min(completedBatches * batchSize, rangeSize)
     val cumulativeTime get() = (if (isComplete) batchEndTime else now()) - rangeStartTime
     val batchTime get() = max(batchEndTime - batchStartTime, now() - batchStartTime)

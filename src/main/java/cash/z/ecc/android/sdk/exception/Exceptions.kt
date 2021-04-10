@@ -142,10 +142,10 @@ sealed class InitializerException(message: String, cause: Throwable? = null) : S
             "not to mask this error because the root issue should be addressed."
     )
     object MissingViewingKeyException : InitializerException(
-        "Expected a viewingKey for this wallet but failed to find one. This usually means that " +
-            "wallet setup happened incorrectly. A workaround might be to derive the " +
-            "viewingKey from the seed or seedPhrase, if they exist, but it is probably " +
-            "better not to mask this error because the root issue should be addressed."
+        "Expected a unified viewingKey for this wallet but failed to find one. This usually means" +
+            " that wallet setup happened incorrectly. A workaround might be to derive the" +
+            " unified viewingKey from the seed or seedPhrase, if they exist, but it is probably" +
+            " better not to mask this error because the root issue should be addressed."
     )
     object DatabasePathException :
         InitializerException(

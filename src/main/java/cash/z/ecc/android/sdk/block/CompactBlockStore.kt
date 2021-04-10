@@ -28,10 +28,7 @@ interface CompactBlockStore {
     suspend fun write(result: List<CompactFormats.CompactBlock>)
 
     /**
-     * Remove every block above and including the given height.
-     *
-     * After this operation, the data store will look the same as one that has not yet stored the given block height.
-     * Meaning, if max height is 100 block and  rewindTo(50) is called, then the highest block remaining will be 49.
+     * Remove every block above the given height.
      *
      * @param height the target height to which to rewind.
      */

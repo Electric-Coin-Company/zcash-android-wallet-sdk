@@ -49,6 +49,7 @@ import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
+import java.util.Locale
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.max
 import kotlin.math.min
@@ -105,6 +106,8 @@ class CompactBlockProcessor(
      * Callback for apps to report scan times. As blocks are scanned in batches, this listener is
      * invoked at the end of every batch and the second parameter is only true when all batches are
      * complete. The first parameter contains useful information on the blocks scanned per second.
+     *
+     * The Boolean param (isComplete) is true when this event represents the completion of a scan
      */
     var onScanMetricCompleteListener: ((BatchMetrics, Boolean) -> Unit)? = null
 
@@ -524,7 +527,8 @@ class CompactBlockProcessor(
                     result = rustBackend.scanBlocks(SCAN_BATCH_SIZE)
                     metrics.endBatch()
                     val lastScannedHeight = range.start + metrics.cumulativeItems - 1
-                    val percent = "%.0f".format((lastScannedHeight - range.first) / (range.last - range.first).toFloat() * 100.0f)
+                    val percentValue = (lastScannedHeight - range.first) / (range.last - range.first + 1).toFloat() * 100.0f
+                    val percent = "%.0f".format(percentValue.coerceAtMost(100f).coerceAtLeast(0f))
                     twig("batch scanned ($percent%): $lastScannedHeight/${range.last} | ${metrics.batchTime}ms, ${metrics.batchItems}blks, ${metrics.batchIps.format()}bps")
                     if (currentInfo.lastScannedHeight != lastScannedHeight) {
                         scannedNewBlocks = true
@@ -917,7 +921,7 @@ class CompactBlockProcessor(
     }
 
     private fun Service.LightdInfo.matchingNetwork(network: String): Boolean {
-        fun String.toId() = toLowerCase().run {
+        fun String.toId() = toLowerCase(Locale.US).run {
             when {
                 contains("main") -> "mainnet"
                 contains("test") -> "testnet"
