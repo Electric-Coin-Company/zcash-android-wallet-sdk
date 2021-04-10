@@ -5,7 +5,6 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
-import cash.z.ecc.android.sdk.ext.ZcashSdk
 
 //
 // Entities
@@ -329,15 +328,15 @@ fun PendingTransaction.isSubmitted(): Boolean {
     return submitAttempts > 0
 }
 
-fun PendingTransaction.isExpired(latestHeight: Int?): Boolean {
+fun PendingTransaction.isExpired(latestHeight: Int?, saplingActivationHeight: Int): Boolean {
     // TODO: test for off-by-one error here. Should we use <= or <
-    if (latestHeight == null || latestHeight < ZcashSdk.SAPLING_ACTIVATION_HEIGHT || expiryHeight < ZcashSdk.SAPLING_ACTIVATION_HEIGHT) return false
+    if (latestHeight == null || latestHeight < saplingActivationHeight || expiryHeight < saplingActivationHeight) return false
     return expiryHeight < latestHeight
 }
 
 // if we don't have info on a pendingtx after 100 blocks then it's probably safe to stop polling!
-fun PendingTransaction.isLongExpired(latestHeight: Int?): Boolean {
-    if (latestHeight == null || latestHeight < ZcashSdk.SAPLING_ACTIVATION_HEIGHT || expiryHeight < ZcashSdk.SAPLING_ACTIVATION_HEIGHT) return false
+fun PendingTransaction.isLongExpired(latestHeight: Int?, saplingActivationHeight: Int): Boolean {
+    if (latestHeight == null || latestHeight < saplingActivationHeight || expiryHeight < saplingActivationHeight) return false
     return (latestHeight - expiryHeight) > 100
 }
 

@@ -27,7 +27,6 @@ import cash.z.ecc.android.sdk.ext.ZcashSdk.MAX_REORG_SIZE
 import cash.z.ecc.android.sdk.ext.ZcashSdk.POLL_INTERVAL
 import cash.z.ecc.android.sdk.ext.ZcashSdk.RETRIES
 import cash.z.ecc.android.sdk.ext.ZcashSdk.REWIND_DISTANCE
-import cash.z.ecc.android.sdk.ext.ZcashSdk.SAPLING_ACTIVATION_HEIGHT
 import cash.z.ecc.android.sdk.ext.ZcashSdk.SCAN_BATCH_SIZE
 import cash.z.ecc.android.sdk.ext.retryUpTo
 import cash.z.ecc.android.sdk.ext.retryWithBackoff
@@ -74,7 +73,7 @@ class CompactBlockProcessor(
     val downloader: CompactBlockDownloader,
     private val repository: TransactionRepository,
     private val rustBackend: RustBackendWelding,
-    minimumHeight: Int = SAPLING_ACTIVATION_HEIGHT
+    minimumHeight: Int = rustBackend.network.saplingActivationHeight
 ) {
     /**
      * Callback for any non-trivial errors that occur while processing compact blocks.
@@ -110,7 +109,7 @@ class CompactBlockProcessor(
     var onScanMetricCompleteListener: ((BatchMetrics, Boolean) -> Unit)? = null
 
     private val consecutiveChainErrors = AtomicInteger(0)
-    private val lowerBoundHeight: Int = max(SAPLING_ACTIVATION_HEIGHT, minimumHeight - MAX_REORG_SIZE)
+    private val lowerBoundHeight: Int = max(rustBackend.network.saplingActivationHeight, minimumHeight - MAX_REORG_SIZE)
 
     private val _state: ConflatedBroadcastChannel<State> = ConflatedBroadcastChannel(Initialized)
     private val _progress = ConflatedBroadcastChannel(0)
@@ -131,6 +130,11 @@ class CompactBlockProcessor(
      * coroutine safe because processing cannot be concurrent.
      */
     internal var currentInfo = ProcessorInfo()
+
+    /**
+     * The zcash network that is being processed. Either Testnet or Mainnet.
+     */
+    val network = rustBackend.network
 
     /**
      * The flow of state values so that a wallet can monitor the state of this class without needing
@@ -368,8 +372,9 @@ class CompactBlockProcessor(
             // verify that the server is correct
             downloader.getServerInfo().let { info ->
                 val clientBranch = "%x".format(rustBackend.getBranchIdForHeight(info.blockHeight.toInt()))
+                val network = rustBackend.network.networkName
                 when {
-                    !info.matchingNetwork(ZcashSdk.NETWORK) -> MismatchedNetwork(clientNetwork = ZcashSdk.NETWORK, serverNetwork = info.chainName)
+                    !info.matchingNetwork(network) -> MismatchedNetwork(clientNetwork = network, serverNetwork = info.chainName)
                     !info.matchingConsensusBranchId(clientBranch) -> MismatchedBranch(clientBranch = clientBranch, serverBranch = info.consensusBranchId)
                     else -> null
                 }
@@ -459,7 +464,8 @@ class CompactBlockProcessor(
                     twig("downloaded $count blocks!")
                     progress = (i / batches.toFloat() * 100).roundToInt()
                     _progress.send(progress)
-                    updateProgress(lastDownloadedHeight = downloader.getLastDownloadedHeight())
+                    val lastDownloadedHeight = downloader.getLastDownloadedHeight().takeUnless { it < network.saplingActivationHeight } ?: -1
+                    updateProgress(lastDownloadedHeight = lastDownloadedHeight)
                     downloadedBlockHeight = end
                 }
             }
@@ -652,6 +658,19 @@ class CompactBlockProcessor(
     }
 
     /**
+     * Given a height to rewind to, check whether it goes beyond our checkpoint. Of so, we cannot
+     * use that height so go to our checkpoint instead.
+     */
+    private fun determineTargetHeight(rewindHeight: Int): Int {
+        return if (rewindHeight == network.saplingActivationHeight) {
+            rewindHeight
+        } else {
+            val checkpointHeight = repository.firstScannedHeight()
+            rewindHeight.coerceAtLeast(checkpointHeight)
+        }
+    }
+
+    /**
      ￼* Poll on time boundaries. Per Issue #95, we want to avoid exposing computation time to a
      * network observer. Instead, we poll at regular time intervals that are large enough for all
      * computation to complete so no intervals are skipped. See 95 for more details.
@@ -680,7 +699,7 @@ class CompactBlockProcessor(
         } catch (t: Throwable) {
             twig("failed to calculate birthday due to: $t")
         }
-        return maxOf(lowerBoundHeight, oldestTransactionHeight, SAPLING_ACTIVATION_HEIGHT)
+        return maxOf(lowerBoundHeight, oldestTransactionHeight, rustBackend.network.saplingActivationHeight)
     }
 
     /**

@@ -1,4 +1,4 @@
-package cash.z.ecc.android.sdk.integration
+package cash.z.wallet.sdk.integration
 
 import androidx.test.platform.app.InstrumentationRegistry
 import cash.z.ecc.android.sdk.Initializer
@@ -14,6 +14,7 @@ import cash.z.ecc.android.sdk.ext.twig
 import cash.z.ecc.android.sdk.service.LightWalletGrpcService
 import cash.z.ecc.android.sdk.tool.DerivationTool
 import cash.z.ecc.android.sdk.tool.WalletBirthdayTool
+import cash.z.ecc.android.sdk.type.ZcashNetwork
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
@@ -29,22 +30,22 @@ import java.util.concurrent.CountDownLatch
 class TestnetIntegrationTest : ScopedTest() {
 
     var stopWatch = CountDownLatch(1)
+    val saplingActivation = synchronizer.network.saplingActivationHeight
 
     @Test
     fun testLatestBlockTest() {
         val service = LightWalletGrpcService(
             context,
             host,
-            port
         )
         val height = service.getLatestBlockHeight()
-        assertTrue(height > ZcashSdk.SAPLING_ACTIVATION_HEIGHT)
+        assertTrue(height > saplingActivation)
     }
 
     @Test
     fun testLoadBirthday() {
-        val (height, hash, time, tree) = WalletBirthdayTool.loadNearest(context, ZcashSdk.SAPLING_ACTIVATION_HEIGHT + 1)
-        assertEquals(ZcashSdk.SAPLING_ACTIVATION_HEIGHT, height)
+        val (height, hash, time, tree) = WalletBirthdayTool.loadNearest(context, synchronizer.network, saplingActivation + 1)
+        assertEquals(saplingActivation, height)
     }
 
     @Test
@@ -81,7 +82,7 @@ class TestnetIntegrationTest : ScopedTest() {
     }
 
     private suspend fun sendFunds(): Boolean {
-        val spendingKey = DerivationTool.deriveSpendingKeys(seed)[0]
+        val spendingKey = DerivationTool.deriveSpendingKeys(seed, synchronizer.network)[0]
         log("sending to address")
         synchronizer.sendToAddress(
             spendingKey,
@@ -103,7 +104,6 @@ class TestnetIntegrationTest : ScopedTest() {
         init { Twig.plant(TroubleshootingTwig()) }
 
         const val host = "lightwalletd.testnet.z.cash"
-        const val port = 9067
         private const val birthdayHeight = 963150
         private const val targetHeight = 663250
         private const val seedPhrase = "still champion voice habit trend flight survey between bitter process artefact blind carbon truly provide dizzy crush flush breeze blouse charge solid fish spread"
@@ -113,7 +113,7 @@ class TestnetIntegrationTest : ScopedTest() {
 
         private val context = InstrumentationRegistry.getInstrumentation().context
         private val initializer = Initializer(context) { config ->
-            config.server(host, port)
+            config.setNetwork(ZcashNetwork.Testnet, host)
             config.importWallet(seed, birthdayHeight)
         }
         private lateinit var synchronizer: Synchronizer

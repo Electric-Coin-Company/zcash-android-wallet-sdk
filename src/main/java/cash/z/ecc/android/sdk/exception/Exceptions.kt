@@ -1,7 +1,6 @@
 package cash.z.ecc.android.sdk.exception
 
-import cash.z.ecc.android.sdk.ext.ZcashSdk.NETWORK
-import cash.z.ecc.android.sdk.ext.ZcashSdk.SAPLING_ACTIVATION_HEIGHT
+import cash.z.ecc.android.sdk.type.ZcashNetwork
 import cash.z.wallet.sdk.rpc.Service
 import io.grpc.Status
 import io.grpc.Status.Code.UNAVAILABLE
@@ -155,9 +154,9 @@ sealed class InitializerException(message: String, cause: Throwable? = null) : S
                 " data."
         )
 
-    class InvalidBirthdayHeightException(height: Int?) : InitializerException(
+    class InvalidBirthdayHeightException(height: Int?, network: ZcashNetwork) : InitializerException(
         "Invalid birthday height of $height. The birthday height must be at least the height of" +
-            " Sapling activation on $NETWORK ($SAPLING_ACTIVATION_HEIGHT)."
+            " Sapling activation on ${network.networkName} (${network.saplingActivationHeight})."
     )
 
     object MissingDefaultBirthdayException : InitializerException(

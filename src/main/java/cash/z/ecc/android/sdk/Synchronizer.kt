@@ -274,7 +274,7 @@ interface Synchronizer {
         errorHandler: (Throwable) -> Unit = { throw it }
     )
 
-    suspend fun refreshUtxos(tAddr: String, sinceHeight: Int = ZcashSdk.SAPLING_ACTIVATION_HEIGHT): Int
+    suspend fun refreshUtxos(tAddr: String, sinceHeight: Int = network.saplingActivationHeight): Int
 
     /**
      * Returns the balance that the wallet knows about. This should be called after [refreshUtxos].

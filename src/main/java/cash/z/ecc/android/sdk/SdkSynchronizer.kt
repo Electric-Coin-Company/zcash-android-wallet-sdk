@@ -539,8 +539,8 @@ class SdkSynchronizer internal constructor(
         // sometimes apps crash or things go wrong and we get an orphaned pendingTx that we'll poll
         // forever, so maybe just get rid of all of them after a long while
         allPendingTxs.filter {
-            (it.isExpired(lastScannedHeight) && it.isMarkedForDeletion()) ||
-                it.isLongExpired(lastScannedHeight) || it.isSafeToDiscard()
+            (it.isExpired(lastScannedHeight, network.saplingActivationHeight) && it.isMarkedForDeletion()) ||
+                it.isLongExpired(lastScannedHeight, network.saplingActivationHeight) || it.isSafeToDiscard()
         }
             .forEach {
                 val result = txManager.abort(it)

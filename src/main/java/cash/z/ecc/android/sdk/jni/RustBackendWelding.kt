@@ -74,7 +74,7 @@ interface RustBackendWelding {
         height: Int
     ): Boolean
 
-    fun clearUtxos(tAddress: String, aboveHeight: Int = ZcashSdk.SAPLING_ACTIVATION_HEIGHT - 1): Boolean
+    fun clearUtxos(tAddress: String, aboveHeight: Int = network.saplingActivationHeight - 1): Boolean
 
     fun getDownloadedUtxoBalance(address: String): WalletBalance
 

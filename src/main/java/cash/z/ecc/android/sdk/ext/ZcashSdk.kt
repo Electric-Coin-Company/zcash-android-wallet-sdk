@@ -1,12 +1,14 @@
 package cash.z.ecc.android.sdk.ext
 
+import cash.z.ecc.android.sdk.type.ZcashNetwork
+
 /**
  * Wrapper for all the constant values in the SDK. It is important that these values stay fixed for
  * all users of the SDK. Otherwise, if individual wallet makers are using different values, it
  * becomes easier to reduce privacy by segmenting the anonymity set of users, particularly as it
  * relates to network requests.
  */
-open class ZcashSdkCommon {
+object ZcashSdk {
 
     /**
      * Miner's fee in zatoshi.
@@ -17,14 +19,6 @@ open class ZcashSdkCommon {
      * The number of zatoshi that equal 1 ZEC.
      */
     val ZATOSHI_PER_ZEC = 100_000_000L
-
-    /**
-     * The height of the first sapling block. When it comes to shielded transactions, we do not need to consider any blocks
-     * prior to this height, at all.
-     */
-    open val SAPLING_ACTIVATION_HEIGHT = 280_000
-
-    open val NETWORK = "mainnet"
 
     /**
      * The theoretical maximum number of blocks in a reorg, due to other bottlenecks in the protocol design.
@@ -60,6 +54,11 @@ open class ZcashSdkCommon {
     val POLL_INTERVAL = 20_000L
 
     /**
+     * Estimate of the time between blocks.
+     */
+    val BLOCK_INTERVAL_MILLIS = 75_000L
+
+    /**
      * Default attempts at retrying.
      */
     val RETRIES = 5
@@ -76,23 +75,8 @@ open class ZcashSdkCommon {
      */
     val REWIND_DISTANCE = 10
 
-    /**
-     * The default port to use for connecting to lightwalletd instances.
-     */
-    open val DEFAULT_LIGHTWALLETD_PORT = 9067
-
-    /**
-     * The default host to use for lightwalletd.
-     */
-    open val DEFAULT_LIGHTWALLETD_HOST = "listwallted.electriccoin.co"
-
     val DB_DATA_NAME = "Data.db"
     val DB_CACHE_NAME = "Cache.db"
-
-    /**
-     * The default alias to use for naming database and preference files.
-     */
-    open val DEFAULT_ALIAS = "ZcashSdk"
 
     /**
      * File name for the sappling spend params
@@ -110,8 +94,11 @@ open class ZcashSdkCommon {
      * this will do for now, since we're using a cloudfront URL that already redirects.
      */
     val CLOUD_PARAM_DIR_URL = "https://z.cash/downloads/"
+
     /**
      * The default memo to use when shielding transparent funds.
      */
-    open val DEFAULT_SHIELD_FUNDS_MEMO_PREFIX = "shielding:"
+    val DEFAULT_SHIELD_FUNDS_MEMO_PREFIX = "shielding:"
+
+    val DEFAULT_ALIAS: String = "ZcashSdk"
 }

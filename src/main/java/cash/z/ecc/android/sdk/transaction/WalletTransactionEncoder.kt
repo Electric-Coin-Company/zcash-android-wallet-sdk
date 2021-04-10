@@ -2,7 +2,6 @@ package cash.z.ecc.android.sdk.transaction
 
 import cash.z.ecc.android.sdk.db.entity.EncodedTransaction
 import cash.z.ecc.android.sdk.exception.TransactionEncoderException
-import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.ext.masked
 import cash.z.ecc.android.sdk.ext.twig
 import cash.z.ecc.android.sdk.ext.twigTask
@@ -88,7 +87,7 @@ class WalletTransactionEncoder(
 
     override suspend fun getConsensusBranchId(): Long {
         val height = repository.lastScannedHeight()
-        if (height < ZcashSdk.SAPLING_ACTIVATION_HEIGHT)
+        if (height < rustBackend.network.saplingActivationHeight)
             throw TransactionEncoderException.IncompleteScanException(height)
         return rustBackend.getBranchIdForHeight(height)
     }

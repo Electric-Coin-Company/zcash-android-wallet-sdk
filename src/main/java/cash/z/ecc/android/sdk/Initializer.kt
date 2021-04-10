@@ -3,7 +3,6 @@ package cash.z.ecc.android.sdk
 import android.content.Context
 import cash.z.ecc.android.sdk.exception.InitializerException
 import cash.z.ecc.android.sdk.ext.ZcashSdk
-import cash.z.ecc.android.sdk.ext.ZcashSdk.SAPLING_ACTIVATION_HEIGHT
 import cash.z.ecc.android.sdk.ext.tryWarn
 import cash.z.ecc.android.sdk.ext.twig
 import cash.z.ecc.android.sdk.jni.RustBackend
@@ -11,6 +10,7 @@ import cash.z.ecc.android.sdk.tool.DerivationTool
 import cash.z.ecc.android.sdk.tool.WalletBirthdayTool
 import cash.z.ecc.android.sdk.type.UnifiedViewingKey
 import cash.z.ecc.android.sdk.type.WalletBirthday
+import cash.z.ecc.android.sdk.type.ZcashNetwork
 import java.io.File
 
 /**
@@ -35,19 +35,24 @@ class Initializer constructor(appContext: Context, config: Config) : SdkSynchron
     var accountsCreated = false
 
     init {
-        config.validate()
+        try {
+            config.validate()
             network = config.network
-        val heightToUse = config.birthdayHeight
-            ?: (if (config.defaultToOldestHeight == true) SAPLING_ACTIVATION_HEIGHT else null)
+            val heightToUse = config.birthdayHeight
+                ?: (if (config.defaultToOldestHeight == true) network.saplingActivationHeight else null)
             val loadedBirthday = WalletBirthdayTool.loadNearest(context, network, heightToUse)
-        birthday = loadedBirthday
-        viewingKeys = config.viewingKeys
-        alias = config.alias
-        host = config.host
-        port = config.port
+            birthday = loadedBirthday
+            viewingKeys = config.viewingKeys
+            alias = config.alias
+            host = config.host
+            port = config.port
             rustBackend = initRustBackend(network, birthday)
-        // TODO: get rid of this by first answering the question: why is this necessary?
-        initMissingDatabases(birthday, *viewingKeys.toTypedArray())
+            // TODO: get rid of this by first answering the question: why is this necessary?
+            initMissingDatabases(birthday, *viewingKeys.toTypedArray())
+        } catch (t: Throwable) {
+            onCriticalError(t)
+            throw t
+        }
     }
 
     constructor(appContext: Context, block: (Config) -> Unit) : this(appContext, Config(block))
@@ -365,8 +370,8 @@ class Initializer constructor(appContext: Context, config: Config) : SdkSynchron
             }
             // allow either null or a value greater than the activation height
             if (
-                (birthdayHeight ?: SAPLING_ACTIVATION_HEIGHT)
-                < SAPLING_ACTIVATION_HEIGHT
+                (birthdayHeight ?: network.saplingActivationHeight)
+                < network.saplingActivationHeight
             ) {
                 throw InitializerException.InvalidBirthdayHeightException(birthdayHeight, network)
             }
