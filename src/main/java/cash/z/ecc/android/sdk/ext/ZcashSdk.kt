@@ -1,7 +1,5 @@
 package cash.z.ecc.android.sdk.ext
 
-import cash.z.ecc.android.sdk.type.ZcashNetwork
-
 /**
  * Wrapper for all the constant values in the SDK. It is important that these values stay fixed for
  * all users of the SDK. Otherwise, if individual wallet makers are using different values, it
