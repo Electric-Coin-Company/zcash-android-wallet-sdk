@@ -17,34 +17,41 @@ import org.junit.runner.RunWith
 class TransparentTest {
 
     lateinit var expected: Expected
+    lateinit var network: ZcashNetwork
 
     @Before
     fun setup() {
-        expected = if (BuildConfig.FLAVOR == "zcashtestnet") ExpectedTestnet else ExpectedMainnet
+        if (BuildConfig.FLAVOR == "zcashtestnet") {
+            expected = ExpectedTestnet
+            network = ZcashNetwork.Testnet
+        } else {
+            expected = ExpectedMainnet
+            network = ZcashNetwork.Mainnet
+        }
     }
 
     @Test
     fun deriveTransparentSecretKeyTest() {
-        assertEquals(expected.tskCompressed, DerivationTool.deriveTransparentSecretKey(SEED))
+        assertEquals(expected.tskCompressed, DerivationTool.deriveTransparentSecretKey(SEED, network = network))
     }
 
     @Test
     fun deriveTransparentAddressTest() {
-        assertEquals(expected.tAddr, DerivationTool.deriveTransparentAddress(SEED))
+        assertEquals(expected.tAddr, DerivationTool.deriveTransparentAddress(SEED, network = network))
     }
 
     @Test
     fun deriveTransparentAddressFromSecretKeyTest() {
-        assertEquals(expected.tAddr, DerivationTool.deriveTransparentAddressFromPrivateKey(expected.tskCompressed))
+        assertEquals(expected.tAddr, DerivationTool.deriveTransparentAddressFromPrivateKey(expected.tskCompressed, network = network))
     }
 
     @Test
     fun deriveUnifiedViewingKeysFromSeedTest() {
-        val uvks = DerivationTool.deriveUnifiedViewingKeys(SEED)
+        val uvks = DerivationTool.deriveUnifiedViewingKeys(SEED, network = network)
         assertEquals(1, uvks.size)
         val uvk = uvks.first()
-        assertEquals(expected.zAddr, DerivationTool.deriveShieldedAddress(uvk.extfvk))
-        assertEquals(expected.tAddr, DerivationTool.deriveTransparentAddressFromPublicKey(uvk.extpub))
+        assertEquals(expected.zAddr, DerivationTool.deriveShieldedAddress(uvk.extfvk, network = network))
+        assertEquals(expected.tAddr, DerivationTool.deriveTransparentAddressFromPublicKey(uvk.extpub, network = network))
     }
 
 //    @Test

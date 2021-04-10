@@ -56,17 +56,17 @@ class ShieldFundsSample {
         )
         private val context = InstrumentationRegistry.getInstrumentation().context
         private val seed: ByteArray = Mnemonics.MnemonicCode(seedPhrase).toSeed()
-        private val shieldedSpendingKey = DerivationTool.deriveSpendingKeys(seed)[0]
-        private val transparentSecretKey = DerivationTool.deriveTransparentSecretKey(seed)
-        private val shieldedAddress = DerivationTool.deriveShieldedAddress(seed)
+        private val shieldedSpendingKey = DerivationTool.deriveSpendingKeys(seed, Testnet)[0]
+        private val transparentSecretKey = DerivationTool.deriveTransparentSecretKey(seed, Testnet)
+        private val shieldedAddress = DerivationTool.deriveShieldedAddress(seed, Testnet)
 
         // t1b9Y6PESSGavavgge3ruTtX9X83817V29s
-        private val transparentAddress = DerivationTool.deriveTransparentAddress(seed)
+        private val transparentAddress = DerivationTool.deriveTransparentAddress(seed, Testnet)
 
         private val config = Initializer.Config {
-            it.setSeed(seed)
+            it.setSeed(seed, Testnet)
             it.setBirthdayHeight(startHeight, false)
-            it.server("lightwalletd.electriccoin.co", 9067)
+            it.setNetwork(Testnet, host)
         }
 
         val synchronizer = Synchronizer(Initializer(context, config))

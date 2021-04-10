@@ -27,12 +27,14 @@ import org.mockito.Spy
 @RunWith(AndroidJUnit4::class)
 class ChangeServiceTest : ScopedTest() {
 
+    val network = ZcashNetwork.Mainnet
+
     @Mock
     lateinit var mockBlockStore: CompactBlockStore
     var mockCloseable: AutoCloseable? = null
 
     @Spy
-    val service = LightWalletGrpcService(context, ZcashSdk.DEFAULT_LIGHTWALLETD_HOST)
+    val service = LightWalletGrpcService(context, network)
 
     lateinit var downloader: CompactBlockDownloader
     lateinit var otherService: LightWalletService
@@ -105,7 +107,7 @@ class ChangeServiceTest : ScopedTest() {
     @Test
     fun testSwitchToTestnetFails() = runBlocking {
         var caughtException: Throwable? = null
-        downloader.changeService(LightWalletGrpcService(context, "testnet.lightwalletd.com", 9067)) {
+        downloader.changeService(LightWalletGrpcService(context, ZcashNetwork.Testnet)) {
             caughtException = it
         }
         assertNotNull("Using an invalid host should generate an exception.", caughtException)

@@ -8,6 +8,7 @@ import cash.z.ecc.android.sdk.ext.Twig
 import cash.z.ecc.android.sdk.ext.seedPhrase
 import cash.z.ecc.android.sdk.ext.twig
 import cash.z.ecc.android.sdk.tool.DerivationTool
+import cash.z.ecc.android.sdk.type.ZcashNetwork
 import io.grpc.StatusRuntimeException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -21,8 +22,7 @@ import org.junit.Assert
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 
-class DarksideTestCoordinator(val host: String = "127.0.0.1", val testName: String = "DarksideTestCoordinator") {
-    private val port = 9067
+class DarksideTestCoordinator(val host: String = "127.0.0.1", val testName: String = "DarksideTestCoordinator", val network: ZcashNetwork = ZcashNetwork.Mainnet, val port: Int = 9067) {
     private val birthdayHeight = 663150
     private val targetHeight = 663250
     private val seedPhrase =
@@ -38,7 +38,7 @@ class DarksideTestCoordinator(val host: String = "127.0.0.1", val testName: Stri
 //    var initializer = Initializer(context, Initializer.Builder(host, port, testName))
     lateinit var synchronizer: SdkSynchronizer
 
-    val spendingKey: String get() = DerivationTool.deriveSpendingKeys(SimpleMnemonics().toSeed(seedPhrase.toCharArray()))[0]
+    val spendingKey: String get() = DerivationTool.deriveSpendingKeys(SimpleMnemonics().toSeed(seedPhrase.toCharArray()), network)[0]
 
     //
     // High-level APIs
@@ -75,7 +75,8 @@ class DarksideTestCoordinator(val host: String = "127.0.0.1", val testName: Stri
     fun initiate() {
         twig("*************** INITIALIZING TEST COORDINATOR (ONLY ONCE) ***********************")
         val initializer = Initializer(context) { config ->
-            config.seedPhrase(seedPhrase)
+            config.setNetwork(network, host, port)
+            config.seedPhrase(seedPhrase, network)
             config.setBirthdayHeight(birthdayHeight)
             config.alias = testName
         }

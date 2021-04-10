@@ -53,6 +53,7 @@ import cash.z.ecc.android.sdk.type.AddressType.Shielded
 import cash.z.ecc.android.sdk.type.AddressType.Transparent
 import cash.z.ecc.android.sdk.type.ConsensusMatchType
 import cash.z.ecc.android.sdk.type.WalletBalance
+import cash.z.ecc.android.sdk.type.ZcashNetwork
 import cash.z.wallet.sdk.rpc.Service
 import io.grpc.ManagedChannel
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -145,6 +146,8 @@ class SdkSynchronizer internal constructor(
     //
     // Status
     //
+
+    override val network: ZcashNetwork get() = processor.network
 
     /**
      * Indicates the status of this Synchronizer. This implementation basically simplifies the
@@ -608,7 +611,7 @@ class SdkSynchronizer internal constructor(
         memo: String
     ): Flow<PendingTransaction> = flow {
         twig("Initializing shielding transaction")
-        val tAddr = DerivationTool.deriveTransparentAddressFromPrivateKey(transparentSecretKey)
+        val tAddr = DerivationTool.deriveTransparentAddressFromPrivateKey(transparentSecretKey, network)
         val tBalance = processor.getUtxoCacheBalance(tAddr)
         val zAddr = getAddress(0)
 
@@ -677,6 +680,7 @@ class SdkSynchronizer internal constructor(
     interface SdkInitializer {
         val context: Context
         val rustBackend: RustBackend
+        val network: ZcashNetwork
         val host: String
         val port: Int
         val alias: String
@@ -687,12 +691,14 @@ class SdkSynchronizer internal constructor(
          * Erase content related to this SDK.
          *
          * @param appContext the application context.
+         * @param network the network corresponding to the data being erased. Data is segmented by
+         * network in order to prevent contamination.
          * @param alias identifier for SDK content. It is possible for multiple synchronizers to
          * exist with different aliases.
          *
          * @return true when content was found for the given alias. False otherwise.
          */
-        fun erase(appContext: Context, alias: String = ZcashSdk.DEFAULT_ALIAS): Boolean
+        fun erase(appContext: Context, network: ZcashNetwork, alias: String = ZcashSdk.DEFAULT_ALIAS): Boolean
     }
 }
 

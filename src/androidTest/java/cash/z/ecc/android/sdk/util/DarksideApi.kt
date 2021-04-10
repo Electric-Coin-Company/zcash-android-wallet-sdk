@@ -2,9 +2,9 @@ package cash.z.ecc.android.sdk.util
 
 import android.content.Context
 import cash.z.ecc.android.sdk.R
-import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.ext.twig
 import cash.z.ecc.android.sdk.service.LightWalletGrpcService
+import cash.z.ecc.android.sdk.type.ZcashNetwork
 import cash.z.wallet.sdk.rpc.Darkside
 import cash.z.wallet.sdk.rpc.Darkside.DarksideTransactionsURL
 import cash.z.wallet.sdk.rpc.DarksideStreamerGrpc
@@ -23,7 +23,7 @@ class DarksideApi(
     constructor(
         appContext: Context,
         host: String,
-        port: Int = ZcashSdk.DEFAULT_LIGHTWALLETD_PORT,
+        port: Int = ZcashNetwork.Mainnet.defaultPort,
         usePlainText: Boolean = appContext.resources.getBoolean(
             R.bool.lightwalletd_allow_very_insecure_connections
         )
@@ -42,8 +42,8 @@ class DarksideApi(
 
     fun reset(
         saplingActivationHeight: Int = 419200,
-        branchId: String = "2bb40e60", // Blossom,
-        chainName: String = "darkside"
+        branchId: String = "e9ff75a6", // Canopy,
+        chainName: String = "darkside${ZcashNetwork.Mainnet.networkName}"
     ) = apply {
         twig("resetting darksidewalletd with saplingActivation=$saplingActivationHeight branchId=$branchId chainName=$chainName")
         Darkside.DarksideMetaState.newBuilder()

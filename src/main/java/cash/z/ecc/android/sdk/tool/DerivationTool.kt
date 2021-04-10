@@ -3,6 +3,7 @@ package cash.z.ecc.android.sdk.tool
 import cash.z.ecc.android.sdk.jni.RustBackend
 import cash.z.ecc.android.sdk.jni.RustBackendWelding
 import cash.z.ecc.android.sdk.type.UnifiedViewingKey
+import cash.z.ecc.android.sdk.type.ZcashNetwork
 
 class DerivationTool {
 
@@ -17,9 +18,9 @@ class DerivationTool {
          *
          * @return the viewing keys that correspond to the seed, formatted as Strings.
          */
-        override fun deriveUnifiedViewingKeys(seed: ByteArray, numberOfAccounts: Int): Array<UnifiedViewingKey> =
+        override fun deriveUnifiedViewingKeys(seed: ByteArray, network: ZcashNetwork, numberOfAccounts: Int): Array<UnifiedViewingKey> =
             withRustBackendLoaded {
-                deriveUnifiedViewingKeysFromSeed(seed, numberOfAccounts).map {
+                deriveUnifiedViewingKeysFromSeed(seed, numberOfAccounts, networkId = network.id).map {
                     UnifiedViewingKey(it[0], it[1])
                 }.toTypedArray()
             }
@@ -31,8 +32,8 @@ class DerivationTool {
          *
          * @return the viewing key that corresponds to the spending key.
          */
-        override fun deriveViewingKey(spendingKey: String): String = withRustBackendLoaded {
-            deriveExtendedFullViewingKey(spendingKey)
+        override fun deriveViewingKey(spendingKey: String, network: ZcashNetwork): String = withRustBackendLoaded {
+            deriveExtendedFullViewingKey(spendingKey, networkId = network.id)
         }
 
         /**
@@ -44,9 +45,9 @@ class DerivationTool {
          *
          * @return the spending keys that correspond to the seed, formatted as Strings.
          */
-        override fun deriveSpendingKeys(seed: ByteArray, numberOfAccounts: Int): Array<String> =
+        override fun deriveSpendingKeys(seed: ByteArray, network: ZcashNetwork, numberOfAccounts: Int): Array<String> =
             withRustBackendLoaded {
-                deriveExtendedSpendingKeys(seed, numberOfAccounts)
+                deriveExtendedSpendingKeys(seed, numberOfAccounts, networkId = network.id)
             }
 
         /**
@@ -58,9 +59,9 @@ class DerivationTool {
          *
          * @return the address that corresponds to the seed and account index.
          */
-        override fun deriveShieldedAddress(seed: ByteArray, accountIndex: Int): String =
+        override fun deriveShieldedAddress(seed: ByteArray, network: ZcashNetwork, accountIndex: Int): String =
             withRustBackendLoaded {
-                deriveShieldedAddressFromSeed(seed, accountIndex)
+                deriveShieldedAddressFromSeed(seed, accountIndex, networkId = network.id)
             }
 
         /**
@@ -71,30 +72,30 @@ class DerivationTool {
          *
          * @return the address that corresponds to the viewing key.
          */
-        override fun deriveShieldedAddress(viewingKey: String): String = withRustBackendLoaded {
-            deriveShieldedAddressFromViewingKey(viewingKey)
+        override fun deriveShieldedAddress(viewingKey: String, network: ZcashNetwork): String = withRustBackendLoaded {
+            deriveShieldedAddressFromViewingKey(viewingKey, networkId = network.id)
         }
 
         // WIP probably shouldn't be used just yet. Why?
         //  - because we need the private key associated with this seed and this function doesn't return it.
         //  - the underlying implementation needs to be split out into a few lower-level calls
-        override fun deriveTransparentAddress(seed: ByteArray, account: Int, index: Int): String = withRustBackendLoaded {
-            deriveTransparentAddressFromSeed(seed, account, index)
+        override fun deriveTransparentAddress(seed: ByteArray, network: ZcashNetwork, account: Int, index: Int): String = withRustBackendLoaded {
+            deriveTransparentAddressFromSeed(seed, account, index, networkId = network.id)
         }
 
-        override fun deriveTransparentAddressFromPublicKey(transparentPublicKey: String): String = withRustBackendLoaded {
-            deriveTransparentAddressFromPubKey(transparentPublicKey)
+        override fun deriveTransparentAddressFromPublicKey(transparentPublicKey: String, network: ZcashNetwork): String = withRustBackendLoaded {
+            deriveTransparentAddressFromPubKey(transparentPublicKey, networkId = network.id)
         }
 
-        override fun deriveTransparentAddressFromPrivateKey(transparentPrivateKey: String): String = withRustBackendLoaded {
-            deriveTransparentAddressFromPrivKey(transparentPrivateKey)
+        override fun deriveTransparentAddressFromPrivateKey(transparentPrivateKey: String, network: ZcashNetwork): String = withRustBackendLoaded {
+            deriveTransparentAddressFromPrivKey(transparentPrivateKey, networkId = network.id)
         }
 
-        override fun deriveTransparentSecretKey(seed: ByteArray, account: Int, index: Int): String = withRustBackendLoaded {
-            deriveTransparentSecretKeyFromSeed(seed, account, index)
+        override fun deriveTransparentSecretKey(seed: ByteArray, network: ZcashNetwork, account: Int, index: Int): String = withRustBackendLoaded {
+            deriveTransparentSecretKeyFromSeed(seed, account, index, networkId = network.id)
         }
 
-        fun validateUnifiedViewingKey(viewingKey: UnifiedViewingKey) {
+        fun validateUnifiedViewingKey(viewingKey: UnifiedViewingKey, networkId: Int = ZcashNetwork.Mainnet.id) {
             // TODO
         }
 
@@ -115,37 +116,40 @@ class DerivationTool {
         @JvmStatic
         private external fun deriveExtendedSpendingKeys(
             seed: ByteArray,
-            numberOfAccounts: Int
+            numberOfAccounts: Int,
+            networkId: Int,
         ): Array<String>
 
         @JvmStatic
         private external fun deriveUnifiedViewingKeysFromSeed(
             seed: ByteArray,
-            numberOfAccounts: Int
+            numberOfAccounts: Int,
+            networkId: Int,
         ): Array<Array<String>>
 
         @JvmStatic
-        private external fun deriveExtendedFullViewingKey(spendingKey: String): String
+        private external fun deriveExtendedFullViewingKey(spendingKey: String, networkId: Int): String
 
         @JvmStatic
         private external fun deriveShieldedAddressFromSeed(
             seed: ByteArray,
-            accountIndex: Int
+            accountIndex: Int,
+            networkId: Int,
         ): String
 
         @JvmStatic
-        private external fun deriveShieldedAddressFromViewingKey(key: String): String
+        private external fun deriveShieldedAddressFromViewingKey(key: String, networkId: Int): String
 
         @JvmStatic
-        private external fun deriveTransparentAddressFromSeed(seed: ByteArray, account: Int, index: Int): String
+        private external fun deriveTransparentAddressFromSeed(seed: ByteArray, account: Int, index: Int, networkId: Int): String
 
         @JvmStatic
-        private external fun deriveTransparentAddressFromPubKey(pk: String): String
+        private external fun deriveTransparentAddressFromPubKey(pk: String, networkId: Int): String
 
         @JvmStatic
-        private external fun deriveTransparentAddressFromPrivKey(sk: String): String
+        private external fun deriveTransparentAddressFromPrivKey(sk: String, networkId: Int): String
 
         @JvmStatic
-        private external fun deriveTransparentSecretKeyFromSeed(seed: ByteArray, account: Int, index: Int): String
+        private external fun deriveTransparentSecretKeyFromSeed(seed: ByteArray, account: Int, index: Int, networkId: Int): String
     }
 }

@@ -8,6 +8,7 @@ import cash.z.ecc.android.sdk.ext.Twig
 import cash.z.ecc.android.sdk.ext.twig
 import cash.z.ecc.android.sdk.tool.WalletBirthdayTool
 import cash.z.ecc.android.sdk.type.WalletBirthday
+import cash.z.ecc.android.sdk.type.ZcashNetwork
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
@@ -26,8 +27,7 @@ import java.io.IOException
 @ExperimentalCoroutinesApi
 class BalancePrinterUtil {
 
-    private val host = "lightd-main.zecwallet.co"
-    private val port = 443
+    private val network = ZcashNetwork.Mainnet
     private val downloadBatchSize = 9_000
     private val birthdayHeight = 523240
 
@@ -52,7 +52,7 @@ class BalancePrinterUtil {
     fun setup() {
         Twig.plant(TroubleshootingTwig())
         cacheBlocks()
-        birthday = WalletBirthdayTool.loadNearest(context, birthdayHeight)
+        birthday = WalletBirthdayTool.loadNearest(context, network, birthdayHeight)
     }
 
     private fun cacheBlocks() = runBlocking {
@@ -80,7 +80,7 @@ class BalancePrinterUtil {
                 // TODO: clear the dataDb but leave the cacheDb
                 val initializer = Initializer(context) { config ->
                     config.importWallet(seed, birthdayHeight)
-                    config.server(host, port)
+                    config.setNetwork(network)
                     config.alias = alias
                 }
                 /*

@@ -2,13 +2,14 @@ package cash.z.ecc.android.sdk.tool
 
 import android.content.Context
 import cash.z.ecc.android.sdk.exception.BirthdayException
-import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.ext.twig
 import cash.z.ecc.android.sdk.type.WalletBirthday
+import cash.z.ecc.android.sdk.type.ZcashNetwork
 import com.google.gson.Gson
 import com.google.gson.stream.JsonReader
 import java.io.InputStreamReader
 import java.util.Arrays
+import java.util.Locale
 
 /**
  * Tool for loading checkpoints for the wallet, based on the height at which the wallet was born.
@@ -22,39 +23,41 @@ class WalletBirthdayTool(appContext: Context) {
      * Load the nearest checkpoint to the given birthday height. If null is given, then this
      * will load the most recent checkpoint available.
      */
-    fun loadNearest(birthdayHeight: Int? = null): WalletBirthday {
-        return loadBirthdayFromAssets(context, birthdayHeight)
+    fun loadNearest(network: ZcashNetwork, birthdayHeight: Int? = null): WalletBirthday {
+        return loadBirthdayFromAssets(context, network, birthdayHeight)
     }
 
     companion object {
 
         /**
-         * Directory within the assets folder where birthday data
-         * (i.e. sapling trees for a given height) can be found.
-         */
-        private const val BIRTHDAY_DIRECTORY = "zcash/saplingtree"
-
-        /**
          * Load the nearest checkpoint to the given birthday height. If null is given, then this
          * will load the most recent checkpoint available.
          */
-        fun loadNearest(context: Context, birthdayHeight: Int? = null): WalletBirthday {
+        fun loadNearest(context: Context, network: ZcashNetwork, birthdayHeight: Int? = null): WalletBirthday {
             // TODO: potentially pull from shared preferences first
-            return loadBirthdayFromAssets(context, birthdayHeight)
+            return loadBirthdayFromAssets(context, network, birthdayHeight)
         }
 
         /**
          * Useful for when an exact checkpoint is needed, like for SAPLING_ACTIVATION_HEIGHT. In
          * most cases, loading the nearest checkpoint is preferred for privacy reasons.
          */
-        fun loadExact(context: Context, birthdayHeight: Int) =
-            loadNearest(context, birthdayHeight).also {
+        fun loadExact(context: Context, network: ZcashNetwork, birthdayHeight: Int) =
+            loadNearest(context, network, birthdayHeight).also {
                 if (it.height != birthdayHeight)
                     throw BirthdayException.ExactBirthdayNotFoundException(
                         birthdayHeight,
                         it.height
                     )
             }
+
+        /**
+         * Returns the directory within the assets folder where birthday data
+         * (i.e. sapling trees for a given height) can be found.
+         */
+        private fun birthdayDirectory(network: ZcashNetwork): String {
+            return "saplingtree/${network.networkName.toLowerCase(Locale.US)}"
+        }
 
         /**
          * Load the given birthday file from the assets of the given context. When no height is
@@ -68,21 +71,23 @@ class WalletBirthdayTool(appContext: Context) {
          */
         private fun loadBirthdayFromAssets(
             context: Context,
+            network: ZcashNetwork,
             birthdayHeight: Int? = null
         ): WalletBirthday {
             twig("loading birthday from assets: $birthdayHeight")
+            val directory = birthdayDirectory(network)
             val treeFiles =
-                context.assets.list(BIRTHDAY_DIRECTORY)?.apply {
+                context.assets.list(directory)?.apply {
                     sortByDescending { fileName ->
                         try {
                             fileName.split('.').first().toInt()
                         } catch (t: Throwable) {
-                            ZcashSdk.SAPLING_ACTIVATION_HEIGHT
+                            network.saplingActivationHeight
                         }
                     }
                 }
             if (treeFiles.isNullOrEmpty()) throw BirthdayException.MissingBirthdayFilesException(
-                BIRTHDAY_DIRECTORY
+                directory
             )
             twig("found ${treeFiles.size} sapling tree checkpoints: ${Arrays.toString(treeFiles)}")
             val file: String
@@ -94,18 +99,18 @@ class WalletBirthdayTool(appContext: Context) {
                 }
             } catch (t: Throwable) {
                 throw BirthdayException.BirthdayFileNotFoundException(
-                    BIRTHDAY_DIRECTORY,
+                    directory,
                     birthdayHeight
                 )
             }
             try {
                 val reader = JsonReader(
-                    InputStreamReader(context.assets.open("$BIRTHDAY_DIRECTORY/$file"))
+                    InputStreamReader(context.assets.open("$directory/$file"))
                 )
                 return Gson().fromJson(reader, WalletBirthday::class.java)
             } catch (t: Throwable) {
                 throw BirthdayException.MalformattedBirthdayFilesException(
-                    BIRTHDAY_DIRECTORY,
+                    directory,
                     treeFiles[0]
                 )
             }

@@ -8,6 +8,7 @@ import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.type.AddressType
 import cash.z.ecc.android.sdk.type.ConsensusMatchType
 import cash.z.ecc.android.sdk.type.WalletBalance
+import cash.z.ecc.android.sdk.type.ZcashNetwork
 import cash.z.wallet.sdk.rpc.Service
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -57,6 +58,11 @@ interface Synchronizer {
     //
 
     /* Status */
+
+    /**
+     * The network to which this synchronizer is connected and from which it is processing blocks.
+     */
+    val network: ZcashNetwork
 
     /**
      * A flow of values representing the [Status] of this Synchronizer. As the status changes, a new
@@ -264,7 +270,7 @@ interface Synchronizer {
      */
     suspend fun changeServer(
         host: String,
-        port: Int = ZcashSdk.DEFAULT_LIGHTWALLETD_PORT,
+        port: Int = network.defaultPort,
         errorHandler: (Throwable) -> Unit = { throw it }
     )
 

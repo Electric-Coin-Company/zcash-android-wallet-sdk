@@ -19,6 +19,7 @@ import java.io.File
 class Initializer constructor(appContext: Context, config: Config) : SdkSynchronizer.SdkInitializer {
     override val context = appContext.applicationContext
     override val rustBackend: RustBackend
+    override val network: ZcashNetwork
     override val alias: String
     override val host: String
     override val port: Int
@@ -35,28 +36,30 @@ class Initializer constructor(appContext: Context, config: Config) : SdkSynchron
 
     init {
         config.validate()
+            network = config.network
         val heightToUse = config.birthdayHeight
             ?: (if (config.defaultToOldestHeight == true) SAPLING_ACTIVATION_HEIGHT else null)
-        val loadedBirthday = WalletBirthdayTool.loadNearest(context, heightToUse)
+            val loadedBirthday = WalletBirthdayTool.loadNearest(context, network, heightToUse)
         birthday = loadedBirthday
         viewingKeys = config.viewingKeys
         alias = config.alias
         host = config.host
         port = config.port
-        rustBackend = initRustBackend(birthday)
+            rustBackend = initRustBackend(network, birthday)
         // TODO: get rid of this by first answering the question: why is this necessary?
         initMissingDatabases(birthday, *viewingKeys.toTypedArray())
     }
 
     constructor(appContext: Context, block: (Config) -> Unit) : this(appContext, Config(block))
 
-    fun erase() = erase(context, alias)
+    fun erase() = erase(context, network, alias)
 
-    private fun initRustBackend(birthday: WalletBirthday): RustBackend {
+    private fun initRustBackend(network: ZcashNetwork, birthday: WalletBirthday): RustBackend {
         return RustBackend.init(
-            cacheDbPath(context, alias),
-            dataDbPath(context, alias),
+            cacheDbPath(context, network, alias),
+            dataDbPath(context, network, alias),
             "${context.cacheDir.absolutePath}/params",
+            network,
             birthday.height
         )
     }
@@ -137,10 +140,17 @@ class Initializer constructor(appContext: Context, config: Config) : SdkSynchron
     class Config private constructor (
         val viewingKeys: MutableList<UnifiedViewingKey> = mutableListOf(),
         var alias: String = ZcashSdk.DEFAULT_ALIAS,
-        var host: String = ZcashSdk.DEFAULT_LIGHTWALLETD_HOST,
-        var port: Int = ZcashSdk.DEFAULT_LIGHTWALLETD_PORT,
     ) {
         var birthdayHeight: Int? = null
+            private set
+
+        lateinit var network: ZcashNetwork
+            private set
+
+        lateinit var host: String
+            private set
+
+        var port: Int = ZcashNetwork.Mainnet.defaultPort
             private set
 
         /**
@@ -229,53 +239,112 @@ class Initializer constructor(appContext: Context, config: Config) : SdkSynchron
         // Convenience functions
         //
 
-        fun server(host: String, port: Int): Config = apply {
+        /**
+         * Set the server and the network property at the same time to prevent them from getting out
+         * of sync. Ultimately, this determines which host a synchronizer will use in order to
+         * connect to lightwalletd. In most cases, the default host is sufficient but an override
+         * can be provided. The host cannot be changed without explicitly setting the network.
+         *
+         * @param network the Zcash network to use. Either testnet or mainnet.
+         * @param host the lightwalletd host to use.
+         * @param port the lightwalletd port to use.
+         */
+        fun setNetwork(
+            network: ZcashNetwork,
+            host: String = network.defaultHost,
+            port: Int = network.defaultPort
+        ): Config = apply {
+            this.network = network
             this.host = host
             this.port = port
         }
 
-        fun importWallet(seed: ByteArray, birthdayHeight: Int? = null): Config = apply {
-            setSeed(seed)
-            importedWalletBirthday(birthdayHeight)
-        }
+        /**
+         * Import a wallet using the first viewing key derived from the given seed.
+         */
+        fun importWallet(
+            seed: ByteArray,
+            birthdayHeight: Int? = null,
+            network: ZcashNetwork,
+            host: String = network.defaultHost,
+            port: Int = network.defaultPort,
+            alias: String = ZcashSdk.DEFAULT_ALIAS
+        ): Config =
+            importWallet(
+                DerivationTool.deriveUnifiedViewingKeys(seed, network = network)[0],
+                birthdayHeight,
+                network,
+                host,
+                port,
+                alias
+            )
 
+        /**
+         * Default function for importing a wallet.
+         */
         fun importWallet(
             viewingKey: UnifiedViewingKey,
             birthdayHeight: Int? = null,
-            host: String = ZcashSdk.DEFAULT_LIGHTWALLETD_HOST,
-            port: Int = ZcashSdk.DEFAULT_LIGHTWALLETD_PORT
+            network: ZcashNetwork,
+            host: String = network.defaultHost,
+            port: Int = network.defaultPort,
+            alias: String = ZcashSdk.DEFAULT_ALIAS
         ): Config = apply {
             setViewingKeys(viewingKey)
-            server(host, port)
+            setNetwork(network, host, port)
             importedWalletBirthday(birthdayHeight)
+            this.alias = alias
         }
 
+        /**
+         * Create a new wallet using the first viewing key derived from the given seed.
+         */
         fun newWallet(
             seed: ByteArray,
-            host: String = ZcashSdk.DEFAULT_LIGHTWALLETD_HOST,
-            port: Int = ZcashSdk.DEFAULT_LIGHTWALLETD_PORT
-        ): Config = apply {
-            setSeed(seed)
-            server(host, port)
-            newWalletBirthday()
-        }
+            network: ZcashNetwork,
+            host: String = network.defaultHost,
+            port: Int = network.defaultPort,
+            alias: String = ZcashSdk.DEFAULT_ALIAS
+        ): Config = newWallet(
+            DerivationTool.deriveUnifiedViewingKeys(seed, network)[0],
+            network,
+            host,
+            port,
+            alias
+        )
 
+        /**
+         * Default function for creating a new wallet.
+         */
         fun newWallet(
             viewingKey: UnifiedViewingKey,
-            host: String = ZcashSdk.DEFAULT_LIGHTWALLETD_HOST,
-            port: Int = ZcashSdk.DEFAULT_LIGHTWALLETD_PORT
+            network: ZcashNetwork,
+            host: String = network.defaultHost,
+            port: Int = network.defaultPort,
+            alias: String = ZcashSdk.DEFAULT_ALIAS
         ): Config = apply {
             setViewingKeys(viewingKey)
-            server(host, port)
+            setNetwork(network, host, port)
             newWalletBirthday()
+            this.alias = alias
         }
 
         /**
          * Convenience method for setting thew viewingKeys from a given seed. This is the same as
          * calling `setViewingKeys` with the keys that match this seed.
          */
-        fun setSeed(seed: ByteArray, numberOfAccounts: Int = 1): Config = apply {
-            setViewingKeys(*DerivationTool.deriveUnifiedViewingKeys(seed, numberOfAccounts))
+        fun setSeed(seed: ByteArray, network: ZcashNetwork, numberOfAccounts: Int = 1): Config = apply {
+            setViewingKeys(*DerivationTool.deriveUnifiedViewingKeys(seed, network, numberOfAccounts))
+        }
+
+        /**
+         * Sets the network from a network id, throwing an exception if the id is not recognized.
+         *
+         * @param networkId the ID of the network corresponding to the [ZcashNetwork] enum.
+         * Typically, it is 0 for testnet and 1 for mainnet.
+         */
+        fun setNetworkId(networkId: Int): Config = apply {
+            network = ZcashNetwork.from(networkId)
         }
 
         //
@@ -299,7 +368,7 @@ class Initializer constructor(appContext: Context, config: Config) : SdkSynchron
                 (birthdayHeight ?: SAPLING_ACTIVATION_HEIGHT)
                 < SAPLING_ACTIVATION_HEIGHT
             ) {
-                throw InitializerException.InvalidBirthdayHeightException(birthdayHeight)
+                throw InitializerException.InvalidBirthdayHeightException(birthdayHeight, network)
             }
         }
 
@@ -324,13 +393,17 @@ class Initializer constructor(appContext: Context, config: Config) : SdkSynchron
          * managed separately by the wallet.
          *
          * @param appContext the application context.
+         * @param network the network associated with the data to be erased.
          * @param alias the alias used to create the local data.
          *
-         * @return true when associated files were found. False most likely indicates that the wrong
-         * alias was provided.
+         * @return true when one of the associated files was found. False most likely indicates
+         * that the wrong alias was provided.
          */
-        override fun erase(appContext: Context, alias: String) =
-            delete(cacheDbPath(appContext, alias)) || delete(dataDbPath(appContext, alias))
+        override fun erase(appContext: Context, network: ZcashNetwork, alias: String): Boolean {
+            val cacheDeleted = deleteDb(cacheDbPath(appContext, network, alias))
+            val dataDeleted = deleteDb(dataDbPath(appContext, network, alias))
+            return dataDeleted || cacheDeleted
+        }
 
         //
         // Path Helpers
@@ -340,25 +413,29 @@ class Initializer constructor(appContext: Context, config: Config) : SdkSynchron
          * Returns the path to the cache database that would correspond to the given alias.
          *
          * @param appContext the application context
+         * @param network the network associated with the data in the cache database.
          * @param alias the alias to convert into a database path
          */
-        internal fun cacheDbPath(appContext: Context, alias: String): String =
-            aliasToPath(appContext, alias, ZcashSdk.DB_CACHE_NAME)
+        internal fun cacheDbPath(appContext: Context, network: ZcashNetwork, alias: String): String =
+            aliasToPath(appContext, network, alias, ZcashSdk.DB_CACHE_NAME)
 
         /**
          * Returns the path to the data database that would correspond to the given alias.
          * @param appContext the application context
+         * * @param network the network associated with the data in the database.
          * @param alias the alias to convert into a database path
          */
-        internal fun dataDbPath(appContext: Context, alias: String): String =
-            aliasToPath(appContext, alias, ZcashSdk.DB_DATA_NAME)
+        internal fun dataDbPath(appContext: Context, network: ZcashNetwork, alias: String): String =
+            aliasToPath(appContext, network, alias, ZcashSdk.DB_DATA_NAME)
 
-        private fun aliasToPath(appContext: Context, alias: String, dbFileName: String): String {
+        private fun aliasToPath(appContext: Context, network: ZcashNetwork, alias: String, dbFileName: String): String {
             val parentDir: String =
                 appContext.getDatabasePath("unused.db").parentFile?.absolutePath
                     ?: throw InitializerException.DatabasePathException
             val prefix = if (alias.endsWith('_')) alias else "${alias}_"
-            return File(parentDir, "$prefix$dbFileName").absolutePath
+            return File(parentDir, "$prefix${network.networkName}_$dbFileName").absolutePath
+        }
+
         }
 
         /**
@@ -398,16 +475,6 @@ internal fun validateAlias(alias: String) {
             alias.all { it.isLetterOrDigit() || it == '_' }
     ) {
         "ERROR: Invalid alias ($alias). For security, the alias must be shorter than 100 " +
-            "characters and only contain letters, digits or underscores and start with a letter; " +
-            "ideally, it would also differentiate across mainnet and testnet but that is not " +
-            "enforced."
-    }
-
-    // TODO: consider exposing this as a proper warning that can be received by apps, since most apps won't use logging
-    if (alias.toLowerCase().contains(BuildConfig.FLAVOR.toLowerCase())) {
-        twig(
-            "WARNING: alias does not contain the build flavor but it probably should to help" +
-                " prevent testnet data from contaminating mainnet data."
-        )
+            "characters and only contain letters, digits or underscores and start with a letter."
     }
 }

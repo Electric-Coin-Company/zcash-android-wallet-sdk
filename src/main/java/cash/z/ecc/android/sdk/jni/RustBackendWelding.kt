@@ -1,8 +1,8 @@
 package cash.z.ecc.android.sdk.jni
 
-import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.type.UnifiedViewingKey
 import cash.z.ecc.android.sdk.type.WalletBalance
+import cash.z.ecc.android.sdk.type.ZcashNetwork
 
 /**
  * Contract defining the exposed capabilities of the Rust backend.
@@ -11,6 +11,8 @@ import cash.z.ecc.android.sdk.type.WalletBalance
  * Instead, use the synchronizer or one of its subcomponents.
  */
 interface RustBackendWelding {
+
+    val network: ZcashNetwork
 
     fun createToAddress(
         consensusBranchId: Long,
@@ -78,22 +80,56 @@ interface RustBackendWelding {
 
     // Implemented by `DerivationTool`
     interface Derivation {
-        fun deriveShieldedAddress(viewingKey: String): String
+        fun deriveShieldedAddress(
+            viewingKey: String,
+            network: ZcashNetwork
+        ): String
 
-        fun deriveShieldedAddress(seed: ByteArray, accountIndex: Int = 0): String
+        fun deriveShieldedAddress(
+            seed: ByteArray,
+            network: ZcashNetwork,
+            accountIndex: Int = 0,
+        ): String
 
-        fun deriveSpendingKeys(seed: ByteArray, numberOfAccounts: Int = 1): Array<String>
+        fun deriveSpendingKeys(
+            seed: ByteArray,
+            network: ZcashNetwork,
+            numberOfAccounts: Int = 1,
+        ): Array<String>
 
-        fun deriveTransparentAddress(seed: ByteArray, account: Int = 0, index: Int = 0): String
+        fun deriveTransparentAddress(
+            seed: ByteArray,
+            network: ZcashNetwork,
+            account: Int = 0,
+            index: Int = 0,
+        ): String
 
-        fun deriveTransparentAddressFromPublicKey(publicKey: String): String
+        fun deriveTransparentAddressFromPublicKey(
+            publicKey: String,
+            network: ZcashNetwork
+        ): String
 
-        fun deriveTransparentAddressFromPrivateKey(privateKey: String): String
+        fun deriveTransparentAddressFromPrivateKey(
+            privateKey: String,
+            network: ZcashNetwork
+        ): String
 
-        fun deriveTransparentSecretKey(seed: ByteArray, account: Int = 0, index: Int = 0): String
+        fun deriveTransparentSecretKey(
+            seed: ByteArray,
+            network: ZcashNetwork,
+            account: Int = 0,
+            index: Int = 0,
+        ): String
 
-        fun deriveViewingKey(spendingKey: String): String
+        fun deriveViewingKey(
+            spendingKey: String,
+            network: ZcashNetwork
+        ): String
 
-        fun deriveUnifiedViewingKeys(seed: ByteArray, numberOfAccounts: Int = 1): Array<UnifiedViewingKey>
+        fun deriveUnifiedViewingKeys(
+            seed: ByteArray,
+            network: ZcashNetwork,
+            numberOfAccounts: Int = 1,
+        ): Array<UnifiedViewingKey>
     }
 }
