@@ -1,23 +1,16 @@
-import cash.z.ecc.android.Deps
+loadConfig('config.gradle')
+
+// Publishing settings
+project.group = config.publish.group
+project.version = config.publish.versionName
+project.ext.POM_ARTIFACT_ID = config.publish.artifactId
 
 buildscript {
     ext.kotlinVersion = '1.4.31'
-        'compileSdkVersion': 30,
-        'minSdkVersion': 16,
-        'targetSdkVersion': 30
-    ]
-    ext.versions = [
-        'architectureComponents': [
-            'lifecycle': '2.2.0',
-            'room': '2.2.5',
-            'paging': '2.1.2'
-        ],
-        'grpc':'1.34.1',
-        'coroutines': '1.4.2',
-        'junitJupiter': '5.6.1'
-    ]
     repositories {
+        mavenLocal()
         google()
+        mavenCentral()
         jcenter()
         maven {
             url 'https://jitpack.io'
@@ -59,21 +52,21 @@ repositories {
 }
 
 android {
-    compileSdkVersion buildConfig.compileSdkVersion
+    compileSdkVersion config.compileSdkVersion
 
     useLibrary 'android.test.runner'
 
     ndkVersion "21.1.6352462"
 
     defaultConfig {
-        minSdkVersion buildConfig.minSdkVersion
-        targetSdkVersion buildConfig.targetSdkVersion
-        versionCode = Deps.versionCode
-        versionName = Deps.versionName
+        minSdkVersion config.minSdkVersion
+        targetSdkVersion config.targetSdkVersion
+        versionCode = config.publish.versionCode
+        versionName = config.publish.versionName
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         testInstrumentationRunnerArguments clearPackageData: 'true'
         multiDexEnabled true
-        archivesBaseName = "zcash-android-sdk-${Deps.versionName}"
+        archivesBaseName = "zcash-android-sdk-${config.publish.name}"
 
         javaCompileOptions {
             annotationProcessorOptions {
@@ -131,6 +124,9 @@ android {
         exclude 'META-INF/LICENSE-notice.md'
     }
 }
+mavenPublish {
+    androidVariantToPublish = config.publish.target
+}
 
 allOpen {
     // marker for classes that we want to be able to extend in debug builds for testing purposes
@@ -141,16 +137,23 @@ clean {
     delete "$project.projectDir/src/generated/source/grpc"
 }
 
-dokka {
-    outputFormat = 'html'
-    outputDirectory = "$buildDir/docs/rtd"
+dokkaHtml.configure {
+    dokkaSourceSets {
+        configureEach {
+            outputDirectory.set(file("build/docs/rtd"))
+            displayName.set("Zcash Android SDK")
+            includes.from("packages.md")
+//            samples.from("samples/basic.kt", "samples/advanced.kt")
+        }
+    }
 }
+
 
 protobuf {
     generatedFilesBaseDir = "$projectDir/src/generated/source/grpc"
     protoc { artifact = 'com.google.protobuf:protoc:3.14.0' }
     plugins {
-        grpc { artifact = "io.grpc:protoc-gen-grpc-java:${versions.grpc}" }
+        grpc { artifact = "io.grpc:protoc-gen-grpc-java:${config.versions.grpc}" }
     }
     generateProtoTasks {
         all().each { task ->
@@ -187,27 +190,27 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.3.0-alpha02'
 
     // Architecture Components: Lifecycle
-    implementation "androidx.lifecycle:lifecycle-runtime:${versions.architectureComponents.lifecycle}"
-    implementation "androidx.lifecycle:lifecycle-extensions:${versions.architectureComponents.lifecycle}"
-    implementation "androidx.lifecycle:lifecycle-common-java8:${versions.architectureComponents.lifecycle}"
+    implementation "androidx.lifecycle:lifecycle-runtime:${config.versions.architectureComponents.lifecycle}"
+    implementation "androidx.lifecycle:lifecycle-extensions:${config.versions.architectureComponents.lifecycle}"
+    implementation "androidx.lifecycle:lifecycle-common-java8:${config.versions.architectureComponents.lifecycle}"
 
     // Architecture Components: Room
-    implementation "androidx.room:room-runtime:${versions.architectureComponents.room}"
-    implementation "androidx.room:room-common:${versions.architectureComponents.room}"
-    implementation "androidx.room:room-ktx:${versions.architectureComponents.room}"
-    implementation "androidx.paging:paging-runtime-ktx:${versions.architectureComponents.paging}"
-    kapt "androidx.room:room-compiler:${versions.architectureComponents.room}"
+    implementation "androidx.room:room-runtime:${config.versions.architectureComponents.room}"
+    implementation "androidx.room:room-common:${config.versions.architectureComponents.room}"
+    implementation "androidx.room:room-ktx:${config.versions.architectureComponents.room}"
+    implementation "androidx.paging:paging-runtime-ktx:${config.versions.architectureComponents.paging}"
+    kapt "androidx.room:room-compiler:${config.versions.architectureComponents.room}"
 
     // Kotlin
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:${Deps.kotlinVersion}"
-    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:${versions.coroutines}"
-    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:${versions.coroutines}"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:${kotlinVersion}"
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:${config.versions.coroutines}"
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:${config.versions.coroutines}"
 
     // grpc-java
-    implementation "io.grpc:grpc-okhttp:${versions.grpc}"
-    implementation "io.grpc:grpc-android:${versions.grpc}"
-    implementation "io.grpc:grpc-protobuf-lite:${versions.grpc}"
-    implementation "io.grpc:grpc-stub:${versions.grpc}"
+    implementation "io.grpc:grpc-okhttp:${config.versions.grpc}"
+    implementation "io.grpc:grpc-android:${config.versions.grpc}"
+    implementation "io.grpc:grpc-protobuf-lite:${config.versions.grpc}"
+    implementation "io.grpc:grpc-stub:${config.versions.grpc}"
     compileOnly 'javax.annotation:javax.annotation-api:1.3.2'
     // solves error: Duplicate class com.google.common.util.concurrent.ListenableFuture found in modules jetified-guava-26.0-android.jar (com.google.guava:guava:26.0-android) and listenablefuture-1.0.jar (com.google.guava:listenablefuture:1.0)
     // per this recommendation from Chris Povirk, given guava's decision to split ListenableFuture away from Guava: https://groups.google.com/d/msg/guava-discuss/GghaKwusjcY/bCIAKfzOEwAJ
@@ -225,13 +228,13 @@ dependencies {
 
     // Tests
     testImplementation 'androidx.multidex:multidex:2.0.1'
-    testImplementation "org.jetbrains.kotlin:kotlin-reflect:${Deps.kotlinVersion}"
+    testImplementation "org.jetbrains.kotlin:kotlin-reflect:${kotlinVersion}"
     testImplementation 'org.mockito:mockito-junit-jupiter:3.5.10'
     testImplementation 'com.nhaarman.mockitokotlin2:mockito-kotlin:2.2.0'
-    testImplementation "org.junit.jupiter:junit-jupiter-api:${versions.junitJupiter}"
-    testImplementation "org.junit.jupiter:junit-jupiter-engine:${versions.junitJupiter}"
-    testImplementation "org.junit.jupiter:junit-jupiter-migrationsupport:${versions.junitJupiter}"
-    testImplementation "io.grpc:grpc-testing:${versions.grpc}"
+    testImplementation "org.junit.jupiter:junit-jupiter-api:${config.versions.junitJupiter}"
+    testImplementation "org.junit.jupiter:junit-jupiter-engine:${config.versions.junitJupiter}"
+    testImplementation "org.junit.jupiter:junit-jupiter-migrationsupport:${config.versions.junitJupiter}"
+    testImplementation "io.grpc:grpc-testing:${config.versions.grpc}"
 
     // NOTE: androidTests will use JUnit4, while src/test/java tests will leverage Junit5
     // Attempting to use JUnit5 via https://github.com/mannodermaus/android-junit5 was painful. The plugin configuration
@@ -265,3 +268,8 @@ preBuild.dependsOn('ktlint')
 preBuild.dependsOn includeDirBugFix
 
 //check.dependsOn dependencyCheckAggregate
+
+def loadConfig(fileName) {
+    def config = new ConfigSlurper().parse(file(fileName).toURL())
+    project.ext.config = config
+}
