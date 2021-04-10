@@ -48,6 +48,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.util.Locale
 import java.util.concurrent.atomic.AtomicInteger
@@ -117,6 +119,7 @@ class CompactBlockProcessor(
     private val _state: ConflatedBroadcastChannel<State> = ConflatedBroadcastChannel(Initialized)
     private val _progress = ConflatedBroadcastChannel(0)
     private val _processorInfo = ConflatedBroadcastChannel(ProcessorInfo())
+    private val processingMutex = Mutex()
 
     /**
      * Flow of birthday heights. The birthday is essentially the first block that the wallet cares
@@ -176,7 +179,9 @@ class CompactBlockProcessor(
         // (because you can start and then immediately set isStopped=true to always get precisely one loop)
         do {
             retryWithBackoff(::onProcessorError, maxDelayMillis = MAX_BACKOFF_INTERVAL) {
-                val result = processNewBlocks()
+                val result = processingMutex.withLockLogged("processNewBlocks") {
+                    processNewBlocks()
+                }
                 // immediately process again after failures in order to download new blocks right away
                 if (result == ERROR_CODE_RECONNECT) {
                     val napTime = calculatePollInterval(true)
@@ -592,24 +597,39 @@ class CompactBlockProcessor(
      * blocks. Otherwise, the cached blocks will be used in the rescan, which in most cases, is fine.
      */
     suspend fun rewindToHeight(height: Int, alsoClearBlockCache: Boolean = false) = withContext(IO) {
-        val lastScannedHeight = currentInfo.lastScannedHeight
-        twig("Rewinding from $lastScannedHeight to height: $height")
-        // TODO: think about how we might pause all processing during a rewind
-        if (height < lastScannedHeight) {
-            rustBackend.rewindToHeight(height)
-        } else {
-            twig("not rewinding dataDb because the last scanned height is $lastScannedHeight which is less than the target height of $height")
-        }
+        processingMutex.withLockLogged("rewindToHeight") {
+            val lastScannedHeight = currentInfo.lastScannedHeight
+            val targetHeight = determineTargetHeight(height)
+            twig("Rewinding from $lastScannedHeight to requested height: $height using target height: $targetHeight")
+            // TODO: think about how we might pause all processing during a rewind
+            if (targetHeight < lastScannedHeight) {
+                rustBackend.rewindToHeight(targetHeight)
+            } else {
+                twig("not rewinding dataDb because the last scanned height is $lastScannedHeight which is less than the target height of $targetHeight")
+            }
 
-        if (alsoClearBlockCache) {
-            twig("Also clearing block cache back to $height. These rewound blocks will download in the next scheduled scan")
-            downloader.rewindToHeight(height)
-            // communicate that the wallet is no longer synced because it might remain this way for 20+ seconds because we only download on 20s time boundaries so we can't trigger any immediate action
-            setState(Downloading)
-        } else {
-            val range = (height + 1)..lastScannedHeight
-            twig("We kept the cache blocks in place so we don't need to wait for the next scheduled download to rescan. Instead we will rescan and validate blocks ${range.first}..${range.last}")
-            if (validateAndScanNewBlocks(range) == ERROR_CODE_NONE) enhanceTransactionDetails(range)
+            if (alsoClearBlockCache) {
+                twig("Also clearing block cache back to $targetHeight. These rewound blocks will download in the next scheduled scan")
+                downloader.rewindToHeight(targetHeight)
+                // communicate that the wallet is no longer synced because it might remain this way for 20+ seconds because we only download on 20s time boundaries so we can't trigger any immediate action
+                setState(Downloading)
+                updateProgress(
+                    lastScannedHeight = targetHeight,
+                    lastDownloadedHeight = targetHeight,
+                    lastScanRange = (targetHeight + 1)..currentInfo.networkBlockHeight,
+                    lastDownloadRange = (targetHeight + 1)..currentInfo.networkBlockHeight
+                )
+                _progress.send(0)
+            } else {
+                updateProgress(
+                    lastScannedHeight = targetHeight,
+                    lastScanRange = (targetHeight + 1)..currentInfo.networkBlockHeight,
+                )
+                _progress.send(0)
+                val range = (targetHeight + 1)..lastScannedHeight
+                twig("We kept the cache blocks in place so we don't need to wait for the next scheduled download to rescan. Instead we will rescan and validate blocks ${range.first}..${range.last}")
+                if (validateAndScanNewBlocks(range) == ERROR_CODE_NONE) enhanceTransactionDetails(range)
+            }
         }
     }
 
@@ -929,6 +949,20 @@ class CompactBlockProcessor(
             }
         }
         return chainName.toId() == network.toId()
+    }
+
+    /**
+     * Log the mutex in great detail just in case we need it for troubleshooting deadlock.
+     */
+    private suspend inline fun <T> Mutex.withLockLogged(name: String, block: () -> T): T {
+        twig("$name MUTEX: acquiring lock...")
+        this.withLock {
+            twig("$name MUTEX: ...lock acquired!")
+            return block().also {
+                twig("$name MUTEX: releasing lock")
+            }
+        }
+        twig("$name MUTEX: withLock complete")
     }
 
     companion object {

@@ -19,6 +19,13 @@ interface TransactionRepository {
     fun lastScannedHeight(): Int
 
     /**
+     * The height of the first block in this repository. This is typically the checkpoint that was
+     * used to initialize this wallet. If we overwrite this block, it breaks our ability to spend
+     * funds.
+     */
+    fun firstScannedHeight(): Int
+
+    /**
      * Returns true when this repository has been initialized and seeded with the initial checkpoint.
      *
      * @return true when this repository has been initialized and seeded with the initial checkpoint.

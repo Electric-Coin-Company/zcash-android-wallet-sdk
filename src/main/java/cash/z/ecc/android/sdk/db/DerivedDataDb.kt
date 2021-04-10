@@ -200,6 +200,9 @@ interface BlockDao {
     @Query("SELECT MAX(height) FROM blocks")
     fun lastScannedHeight(): Int
 
+    @Query("SELECT MIN(height) FROM blocks")
+    fun firstScannedHeight(): Int
+
     @Query("SELECT hash FROM BLOCKS WHERE height = :height")
     fun findHashByHeight(height: Int): ByteArray?
 }

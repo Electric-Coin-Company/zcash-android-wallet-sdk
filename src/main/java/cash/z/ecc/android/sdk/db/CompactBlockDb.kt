@@ -42,7 +42,7 @@ interface CompactBlockDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insert(block: List<CompactBlockEntity>)
 
-    @Query("DELETE FROM compactblocks WHERE height >= :height")
+    @Query("DELETE FROM compactblocks WHERE height > :height")
     fun rewindTo(height: Int)
 
     @Query("SELECT MAX(height) FROM compactblocks")

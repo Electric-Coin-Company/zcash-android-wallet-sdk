@@ -454,6 +454,16 @@ class Initializer constructor(appContext: Context, onCriticalErrorHandler: ((Thr
             return File(parentDir, "$prefix${network.networkName}_$dbFileName").absolutePath
         }
 
+        /**
+         * Delete a database and it's potential journal file at the given path.
+         *
+         * @param filePath the path of the db to erase.
+         * @return true when a file exists at the given path and was deleted.
+         */
+        private fun deleteDb(filePath: String): Boolean {
+            // just try the journal file. Doesn't matter if it's not there.
+            delete("$filePath-journal")
+            return delete(filePath)
         }
 
         /**

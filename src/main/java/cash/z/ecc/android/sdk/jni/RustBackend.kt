@@ -97,7 +97,11 @@ class RustBackend private constructor() : RustBackendWelding {
 
     override fun validateCombinedChain() = validateCombinedChain(pathCacheDb, pathDataDb, networkId = network.id,)
 
-    override fun rewindToHeight(height: Int) = rewindToHeight(pathDataDb, height)
+    /**
+     * Deletes data for all blocks above the given height. Boils down to:
+     *
+     * DELETE FROM blocks WHERE height > ?
+     */
     override fun rewindToHeight(height: Int) = rewindToHeight(pathDataDb, height, networkId = network.id)
 
     override fun scanBlocks(limit: Int): Boolean {

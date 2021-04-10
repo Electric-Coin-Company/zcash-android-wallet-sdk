@@ -72,6 +72,10 @@ open class PagedTransactionRepository(
         return blocks.lastScannedHeight()
     }
 
+    override fun firstScannedHeight(): Int {
+        return blocks.firstScannedHeight()
+    }
+
     override fun isInitialized(): Boolean {
         return blocks.count() > 0
     }
