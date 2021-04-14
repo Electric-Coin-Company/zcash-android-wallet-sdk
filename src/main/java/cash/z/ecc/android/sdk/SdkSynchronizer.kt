@@ -303,8 +303,11 @@ class SdkSynchronizer internal constructor(
         )
     }
 
-    override suspend fun rewindToHeight(height: Int, alsoClearBlockCache: Boolean) {
-        processor.rewindToHeight(height, alsoClearBlockCache)
+    override suspend fun getNearestRewindHeight(height: Int): Int =
+        processor.getNearestRewindHeight(height)
+
+    override suspend fun rewindToNearestHeight(height: Int, alsoClearBlockCache: Boolean) {
+        processor.rewindToNearestHeight(height, alsoClearBlockCache)
     }
 
     //
@@ -385,7 +388,7 @@ class SdkSynchronizer internal constructor(
         twig("Synchronizer onReady complete. Processor start has exited!")
     }
 
-    private fun onCriticalError(unused: CoroutineContext, error: Throwable) {
+    private fun onCriticalError(unused: CoroutineContext?, error: Throwable) {
         twig("********")
         twig("********  ERROR: $error")
         if (error.cause != null) twig("******** caused by ${error.cause}")

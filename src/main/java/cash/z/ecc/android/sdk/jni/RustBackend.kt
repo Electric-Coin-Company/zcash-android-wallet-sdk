@@ -97,6 +97,8 @@ class RustBackend private constructor() : RustBackendWelding {
 
     override fun validateCombinedChain() = validateCombinedChain(pathCacheDb, pathDataDb, networkId = network.id,)
 
+    override fun getNearestRewindHeight(height: Int): Int = getNearestRewindHeight(pathDataDb, height, networkId = network.id)
+
     /**
      * Deletes data for all blocks above the given height. Boils down to:
      *
@@ -312,6 +314,13 @@ class RustBackend private constructor() : RustBackendWelding {
         private external fun validateCombinedChain(
             dbCachePath: String,
             dbDataPath: String,
+            networkId: Int,
+        ): Int
+
+        @JvmStatic
+        private external fun getNearestRewindHeight(
+            dbDataPath: String,
+            height: Int,
             networkId: Int,
         ): Int
 

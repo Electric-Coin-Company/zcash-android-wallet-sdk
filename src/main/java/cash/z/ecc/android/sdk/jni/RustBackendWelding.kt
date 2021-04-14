@@ -59,6 +59,8 @@ interface RustBackendWelding {
 
 //    fun parseTransactionDataList(tdl: LocalRpcTypes.TransactionDataList): LocalRpcTypes.TransparentTransactionList
 
+    fun getNearestRewindHeight(height: Int): Int
+
     fun rewindToHeight(height: Int): Boolean
 
     fun scanBlocks(limit: Int = -1): Boolean

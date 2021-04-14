@@ -588,7 +588,15 @@ class CompactBlockProcessor(
         determineLowerBound(errorHeight).let { lowerBound ->
             twig("handling chain error at $errorHeight by rewinding to block $lowerBound")
             onChainErrorListener?.invoke(errorHeight, lowerBound)
-            rewindToHeight(lowerBound, true)
+            rewindToNearestHeight(lowerBound, true)
+        }
+    }
+
+    suspend fun getNearestRewindHeight(height: Int): Int {
+        return if (height < lowerBoundHeight) {
+            lowerBoundHeight
+        } else {
+            rustBackend.getNearestRewindHeight(height)
         }
     }
 
@@ -596,12 +604,11 @@ class CompactBlockProcessor(
      * @param alsoClearBlockCache when true, also clear the block cache which forces a redownload of
      * blocks. Otherwise, the cached blocks will be used in the rescan, which in most cases, is fine.
      */
-    suspend fun rewindToHeight(height: Int, alsoClearBlockCache: Boolean = false) = withContext(IO) {
+    suspend fun rewindToNearestHeight(height: Int, alsoClearBlockCache: Boolean = false) = withContext(IO) {
         processingMutex.withLockLogged("rewindToHeight") {
             val lastScannedHeight = currentInfo.lastScannedHeight
-            val targetHeight = determineTargetHeight(height)
+            val targetHeight = getNearestRewindHeight(height)
             twig("Rewinding from $lastScannedHeight to requested height: $height using target height: $targetHeight")
-            // TODO: think about how we might pause all processing during a rewind
             if (targetHeight < lastScannedHeight) {
                 rustBackend.rewindToHeight(targetHeight)
             } else {
@@ -678,19 +685,6 @@ class CompactBlockProcessor(
         return Math.max(errorHeight - offset, lowerBoundHeight).also {
             twig("offset = min($MAX_REORG_SIZE, $REWIND_DISTANCE * (${consecutiveChainErrors.get() + 1})) = $offset")
             twig("lowerBound = max($errorHeight - $offset, $lowerBoundHeight) = $it")
-        }
-    }
-
-    /**
-     * Given a height to rewind to, check whether it goes beyond our checkpoint. Of so, we cannot
-     * use that height so go to our checkpoint instead.
-     */
-    private fun determineTargetHeight(rewindHeight: Int): Int {
-        return if (rewindHeight == network.saplingActivationHeight) {
-            rewindHeight
-        } else {
-            val checkpointHeight = repository.firstScannedHeight()
-            rewindHeight.coerceAtLeast(checkpointHeight)
         }
     }
 
