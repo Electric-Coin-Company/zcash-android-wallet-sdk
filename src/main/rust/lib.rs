@@ -38,13 +38,12 @@ use zcash_client_backend::{
 };
 use zcash_client_backend::data_api::wallet::{ANCHOR_OFFSET, shield_funds};
 use zcash_client_sqlite::{
-    BlockDB,
+    BlockDb,
     error::SqliteClientError,
     NoteId,
-    wallet::{delete_utxos_above, put_received_transparent_utxo},
+    wallet::{delete_utxos_above, put_received_transparent_utxo, rewind_to_height, get_rewind_height},
     wallet::init::{init_accounts_table, init_blocks_table, init_wallet_db},
-    wallet::rewind_to_height,
-    WalletDB,
+    WalletDb,
 };
 use zcash_primitives::{
     block::BlockHash,
@@ -76,13 +75,13 @@ fn print_debug_state() {
     debug!("Release enabled (congrats, this is NOT a debug build).");
 }
 
-fn wallet_db<P: Parameters>(env: &JNIEnv<'_>, params: P, db_data: JString<'_>) -> Result<WalletDB<P>, failure::Error> {
-    WalletDB::for_path(utils::java_string_to_rust(&env, db_data), params)
+fn wallet_db<P: Parameters>(env: &JNIEnv<'_>, params: P, db_data: JString<'_>) -> Result<WalletDb<P>, failure::Error> {
+    WalletDb::for_path(utils::java_string_to_rust(&env, db_data), params)
         .map_err(|e| format_err!("Error opening wallet database connection: {}", e))
 }
 
-fn block_db(env: &JNIEnv<'_>, db_data: JString<'_>) -> Result<BlockDB, failure::Error> {
-    BlockDB::for_path(utils::java_string_to_rust(&env, db_data))
+fn block_db(env: &JNIEnv<'_>, db_data: JString<'_>) -> Result<BlockDb, failure::Error> {
+    BlockDb::for_path(utils::java_string_to_rust(&env, db_data))
         .map_err(|e| format_err!("Error opening block source database connection: {}", e))
 }
 
@@ -113,7 +112,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_initDataDb(
     let res = panic::catch_unwind(|| {
         let network = parse_network(network_id as u32)?;
         let db_path = utils::java_string_to_rust(&env, db_data);
-        WalletDB::for_path(db_path, network)
+        WalletDb::for_path(db_path, network)
             .and_then(|db| init_wallet_db(&db))
             .map(|()| JNI_TRUE)
             .map_err(|e| format_err!("Error while initializing data DB: {}", e))
@@ -701,6 +700,38 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_validateCom
 
     unwrap_exc_or(&env, res, 0)
 }
+
+
+#[no_mangle]
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_getNearestRewindHeight(
+    env: JNIEnv<'_>,
+    _: JClass<'_>,
+    db_data: JString<'_>,
+    height: jint,
+    network_id: jint,
+) -> jint {
+    let res = panic::catch_unwind(|| {
+        if height < 100 {
+            Ok(height)
+        } else {
+            let network = parse_network(network_id as u32)?;
+            let db_data = wallet_db(&env, network, db_data)?;
+            match get_rewind_height(&db_data) {
+                Ok(Some(best_height)) => {
+                    let first_unspent_note_height = u32::from(best_height);
+                    Ok(std::cmp::min(first_unspent_note_height as i32, height as i32))
+                },
+                Ok(None) => {
+                    Ok(height as i32)
+                },
+                Err(e) => Err(format_err!("Error while getting nearest rewind height for {}: {}", height, e)),
+            }
+        }
+    });
+
+    unwrap_exc_or(&env, res, -1)
+}
+
 
 #[no_mangle]
 pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_rewindToHeight(
