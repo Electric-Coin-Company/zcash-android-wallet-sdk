@@ -153,7 +153,7 @@ protobuf {
     generatedFilesBaseDir = "$projectDir/src/generated/source/grpc"
     protoc { artifact = 'com.google.protobuf:protoc:3.14.0' }
     plugins {
-        grpc { artifact = "io.grpc:protoc-gen-grpc-java:${config.versions.grpc}" }
+        grpc { artifact = "io.grpc:protoc-gen-grpc-java:1.37.0" }
     }
     generateProtoTasks {
         all().each { task ->
@@ -187,34 +187,40 @@ cargo {
 
 dependencies {
 
-    implementation 'androidx.appcompat:appcompat:1.3.0-rc01'
+    implementation AndroidX.appCompat
 
     // Architecture Components: Lifecycle
-    implementation "androidx.lifecycle:lifecycle-runtime-ktx:${config.versions.architectureComponents.lifecycle}"
-    implementation "androidx.lifecycle:lifecycle-common-java8:${config.versions.architectureComponents.lifecycle}"
+    implementation AndroidX.lifecycle.runtimeKtx
+    implementation AndroidX.lifecycle.commonJava8
 
     // Architecture Components: Room
-    implementation "androidx.room:room-runtime:${config.versions.architectureComponents.room}"
-    implementation "androidx.room:room-common:${config.versions.architectureComponents.room}"
-    implementation "androidx.room:room-ktx:${config.versions.architectureComponents.room}"
-    implementation "androidx.paging:paging-runtime-ktx:${config.versions.architectureComponents.paging}"
-    kapt "androidx.room:room-compiler:${config.versions.architectureComponents.room}"
+    implementation AndroidX.room.runtime
+    implementation AndroidX.room.common
+    implementation AndroidX.room.ktx
+    implementation AndroidX.room.compiler
+    implementation AndroidX.paging.runtimeKtx
+    kapt AndroidX.room.compiler
 
     // Kotlin
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:${kotlinVersion}"
-    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:${config.versions.coroutines}"
-    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:${config.versions.coroutines}"
+    implementation Kotlin.stdlib.jdk8
+    implementation KotlinX.coroutines.core
+    implementation KotlinX.coroutines.android
 
     // grpc-java
-    implementation "io.grpc:grpc-okhttp:${config.versions.grpc}"
-    implementation "io.grpc:grpc-android:${config.versions.grpc}"
-    implementation "io.grpc:grpc-protobuf-lite:${config.versions.grpc}"
-    implementation "io.grpc:grpc-stub:${config.versions.grpc}"
-    compileOnly 'javax.annotation:javax.annotation-api:1.3.2'
+    implementation "io.grpc:grpc-okhttp:_"
+    implementation "io.grpc:grpc-android:_"
+    implementation "io.grpc:grpc-protobuf-lite:_"
+    implementation "io.grpc:grpc-stub:_"
+    compileOnly 'javax.annotation:javax.annotation-api:_'
+
+
+    //
+    // Locked Versions
+    //    these should be checked regularly and removed when possible
+
     // solves error: Duplicate class com.google.common.util.concurrent.ListenableFuture found in modules jetified-guava-26.0-android.jar (com.google.guava:guava:26.0-android) and listenablefuture-1.0.jar (com.google.guava:listenablefuture:1.0)
     // per this recommendation from Chris Povirk, given guava's decision to split ListenableFuture away from Guava: https://groups.google.com/d/msg/guava-discuss/GghaKwusjcY/bCIAKfzOEwAJ
     implementation 'com.google.guava:guava:30.0-android'
-
     // Transitive dependencies used because they're already necessary for other libraries
     // GSON is available as a transitive dependency from several places so we use it for processing
     // checkpoints but also document that by explicitly including here. If dependencies like Room
@@ -227,13 +233,13 @@ dependencies {
 
     // Tests
     testImplementation 'androidx.multidex:multidex:2.0.1'
-    testImplementation "org.jetbrains.kotlin:kotlin-reflect:${kotlinVersion}"
+    testImplementation "org.jetbrains.kotlin:kotlin-reflect:_"
     testImplementation 'org.mockito:mockito-junit-jupiter:3.5.10'
     testImplementation 'com.nhaarman.mockitokotlin2:mockito-kotlin:2.2.0'
-    testImplementation "org.junit.jupiter:junit-jupiter-api:${config.versions.junitJupiter}"
-    testImplementation "org.junit.jupiter:junit-jupiter-engine:${config.versions.junitJupiter}"
-    testImplementation "org.junit.jupiter:junit-jupiter-migrationsupport:${config.versions.junitJupiter}"
-    testImplementation "io.grpc:grpc-testing:${config.versions.grpc}"
+    testImplementation "org.junit.jupiter:junit-jupiter-api:_"
+    testImplementation "org.junit.jupiter:junit-jupiter-engine:_"
+    testImplementation "org.junit.jupiter:junit-jupiter-migrationsupport:_"
+    testImplementation "io.grpc:grpc-testing:_"
 
     // NOTE: androidTests will use JUnit4, while src/test/java tests will leverage Junit5
     // Attempting to use JUnit5 via https://github.com/mannodermaus/android-junit5 was painful. The plugin configuration
@@ -242,10 +248,10 @@ dependencies {
     androidTestImplementation 'com.nhaarman.mockitokotlin2:mockito-kotlin:2.2.0'
     androidTestImplementation 'org.mockito:mockito-android:3.5.10'
     androidTestImplementation "androidx.test:runner:1.3.0"
+    androidTestImplementation 'com.android.support:support-annotations:28.0.0'
     androidTestImplementation "androidx.test:core:1.3.0"
     androidTestImplementation "androidx.arch.core:core-testing:2.1.0"
     androidTestImplementation 'androidx.test.ext:junit:1.1.2'
-    androidTestImplementation 'androidx.test:runner:1.3.0'
     androidTestImplementation 'ru.gildor.coroutines:kotlin-coroutines-okhttp:1.0'
     // used by 'ru.gildor.coroutines.okhttp.await' (to make simple suspended requests) and breaks on versions higher than 3.8.0
     androidTestImplementation "com.squareup.okhttp3:okhttp:3.8.0"
