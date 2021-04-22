@@ -75,4 +75,4 @@ fraget/
 # other
 DecompileChecker.kt
 backup-dbs/
-
+*.db
