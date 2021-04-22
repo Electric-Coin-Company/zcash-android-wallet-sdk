@@ -30,11 +30,12 @@ import java.util.concurrent.TimeoutException
  * easy to drive and nice to use.
  */
 class TestWallet(
-    seedPhrase: String,
-    alias: String = "TestWallet",
-    network: ZcashNetwork = ZcashNetwork.Testnet,
-    host: String? = null,
-    startHeight: Int? = null
+    val seedPhrase: String,
+    val alias: String = "TestWallet",
+    val network: ZcashNetwork = ZcashNetwork.Testnet,
+    val host: String = network.defaultHost,
+    startHeight: Int? = null,
+    val port: Int = network.defaultPort,
 ) {
     constructor(
         backup: Backups,
@@ -47,7 +48,6 @@ class TestWallet(
         alias = alias
     )
 
-    val hostToUse = host ?: network.defaultHost
     val walletScope = CoroutineScope(
         SupervisorJob() + newFixedThreadPoolContext(3, this.javaClass.simpleName)
     )
@@ -56,7 +56,7 @@ class TestWallet(
     private val shieldedSpendingKey = DerivationTool.deriveSpendingKeys(seed, network = network)[0]
     private val transparentSecretKey = DerivationTool.deriveTransparentSecretKey(seed, network = network)
     val initializer = Initializer(context) { config ->
-        config.importWallet(seed, startHeight, network, hostToUse, alias = alias)
+        config.importWallet(seed, startHeight, network, host, alias = alias)
     }
     val synchronizer: SdkSynchronizer = Synchronizer(initializer) as SdkSynchronizer
     val service = (synchronizer.processor.downloader.lightWalletService as LightWalletGrpcService)
@@ -94,12 +94,14 @@ class TestWallet(
         return this
     }
 
-    suspend fun send(address: String = transparentAddress, memo: String = "", amount: Long = 500L): TestWallet {
-        synchronizer.sendToAddress(shieldedSpendingKey, amount, address, memo)
+    suspend fun send(address: String = transparentAddress, memo: String = "", amount: Long = 500L, fromAccountIndex: Int = 0): TestWallet {
+        Twig.sprout("$alias sending")
+        synchronizer.sendToAddress(shieldedSpendingKey, amount, address, memo, fromAccountIndex)
             .takeWhile { it.isPending() }
             .collect {
                 twig("Updated transaction: $it")
             }
+        Twig.clip("$alias sending")
         return this
     }
 

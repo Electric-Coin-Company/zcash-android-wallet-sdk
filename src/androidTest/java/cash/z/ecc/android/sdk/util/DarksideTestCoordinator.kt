@@ -1,24 +1,17 @@
 package cash.z.ecc.android.sdk.util
 
 import androidx.test.platform.app.InstrumentationRegistry
-import cash.z.ecc.android.sdk.Initializer
 import cash.z.ecc.android.sdk.SdkSynchronizer
 import cash.z.ecc.android.sdk.Synchronizer
-import cash.z.ecc.android.sdk.db.entity.isSubmitSuccess
 import cash.z.ecc.android.sdk.ext.ScopedTest
-import cash.z.ecc.android.sdk.ext.Twig
 import cash.z.ecc.android.sdk.ext.seedPhrase
 import cash.z.ecc.android.sdk.ext.twig
-import cash.z.ecc.android.sdk.tool.DerivationTool
 import cash.z.ecc.android.sdk.type.ZcashNetwork
 import io.grpc.StatusRuntimeException
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.runBlocking
@@ -26,11 +19,17 @@ import org.junit.Assert
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 
-class DarksideTestCoordinator(val host: String = "127.0.0.1", val testName: String = "DarksideTestCoordinator", val network: ZcashNetwork = ZcashNetwork.Mainnet, val port: Int = 9067) {
-    private val birthdayHeight = 663150
+class DarksideTestCoordinator(val wallet: TestWallet) {
+    constructor(
+        alias: String = "DarksideTestCoordinator",
+        seedPhrase: String = DEFAULT_SEED_PHRASE,
+        startHeight: Int = DEFAULT_START_HEIGHT,
+        host: String = "127.0.0.1",
+        network: ZcashNetwork = ZcashNetwork.Mainnet,
+        port: Int = network.defaultPort,
+    ) : this(TestWallet(seedPhrase, alias, network, host, port, startHeight))
+
     private val targetHeight = 663250
-    private val seedPhrase =
-        "still champion voice habit trend flight survey between bitter process artefact blind carbon truly provide dizzy crush flush breeze blouse charge solid fish spread"
     private val context = InstrumentationRegistry.getInstrumentation().context
 
     // dependencies: private
@@ -39,10 +38,10 @@ class DarksideTestCoordinator(val host: String = "127.0.0.1", val testName: Stri
     // dependencies: public
     val validator = DarksideTestValidator()
     val chainMaker = DarksideChainMaker()
-    lateinit var synchronizer: Synchronizer
 
-    val spendingKey: String get() = DerivationTool.deriveSpendingKeys(SimpleMnemonics().toSeed(seedPhrase.toCharArray()), network)[0]
-
+    // wallet delegates
+    val synchronizer get() = wallet.synchronizer
+    val send get() = wallet::send
     //
     // High-level APIs
     //
@@ -77,14 +76,7 @@ class DarksideTestCoordinator(val host: String = "127.0.0.1", val testName: Stri
      */
     fun initiate() {
         twig("*************** INITIALIZING TEST COORDINATOR (ONLY ONCE) ***********************")
-        val initializer = Initializer(context) { config ->
-            config.setNetwork(network, host, port)
-            config.seedPhrase(seedPhrase, network)
-            config.setBirthdayHeight(birthdayHeight)
-            config.alias = testName
-        }
-        synchronizer = Synchronizer(initializer)
-        val channel = (synchronizer as SdkSynchronizer).channel
+        val channel = synchronizer.channel
         darkside = DarksideApi(channel)
         darkside.reset()
     }
@@ -101,6 +93,7 @@ class DarksideTestCoordinator(val host: String = "127.0.0.1", val testName: Stri
         synchronizer.start(scope)
     }
 
+    // redo this as a call to wallet but add delay time to wallet join() function
     /**
      * Waits for, at most, the given amount of time for the synchronizer to download and scan blocks
      * and reach a 'SYNCED' status.
@@ -129,27 +122,19 @@ class DarksideTestCoordinator(val host: String = "127.0.0.1", val testName: Stri
         }
     }
 
-    /**
-     * Send a transaction and wait until it has been fully created and successfully submitted, which
-     * takes about 10 seconds.
-     */
-    suspend fun createAndSubmitTx(
-        zatoshi: Long,
-        toAddress: String,
-        memo: String = "",
-        fromAccountIndex: Int = 0
-    ) = coroutineScope {
-        Twig.sprout("sending")
-        var job: Job? = null
-        job = synchronizer
-            .sendToAddress(spendingKey, zatoshi, toAddress, memo, fromAccountIndex)
-            .onEach {
-                twig("got an update submitted yet? ${it.isSubmitSuccess()}")
-                if (it.isSubmitSuccess()) job?.cancel()
-            }.launchIn(this)
-        job.join()
-        Twig.clip("sending")
-    }
+//    /**
+//     * Send a transaction and wait until it has been fully created and successfully submitted, which
+//     * takes about 10 seconds.
+//     */
+//    suspend fun createAndSubmitTx(
+//        zatoshi: Long,
+//        toAddress: String,
+//        memo: String = "",
+//        fromAccountIndex: Int = 0
+//    ) = coroutineScope {
+//
+//        wallet.send(toAddress, memo, zatoshi, fromAccountIndex)
+//    }
 
     fun stall(delay: Long = 5000L) = runBlocking {
         twig("***  Stalling for ${delay}ms ***")
@@ -319,5 +304,7 @@ class DarksideTestCoordinator(val host: String = "127.0.0.1", val testName: Stri
         private const val largeReorg =
             "https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/basic-reorg/after-large-reorg.txt"
         private const val DEFAULT_START_HEIGHT = 663150
+        private const val DEFAULT_SEED_PHRASE =
+            "still champion voice habit trend flight survey between bitter process artefact blind carbon truly provide dizzy crush flush breeze blouse charge solid fish spread"
     }
 }
