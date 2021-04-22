@@ -87,6 +87,7 @@ suspend inline fun retryWithBackoff(noinline onErrorListener: ((Throwable) -> Bo
                 sequence /= 2
             }
             twig("Failed due to $t caused by ${t.cause} backing off and retrying in ${duration}ms...")
+            twig(t)
             delay(duration)
         }
     }

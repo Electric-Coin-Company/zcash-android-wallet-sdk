@@ -3,6 +3,8 @@ package cash.z.ecc.android.sdk.ext
 import android.content.Context
 import androidx.test.platform.app.InstrumentationRegistry
 import cash.z.ecc.android.sdk.Initializer
+import cash.z.ecc.android.sdk.type.ZcashNetwork
+import cash.z.ecc.android.sdk.util.DarksideTestCoordinator
 import cash.z.ecc.android.sdk.util.SimpleMnemonics
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -12,14 +14,18 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.newFixedThreadPoolContext
 import kotlinx.coroutines.runBlocking
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import org.json.JSONObject
 import org.junit.After
 import org.junit.AfterClass
 import org.junit.Before
 import org.junit.BeforeClass
+import ru.gildor.coroutines.okhttp.await
 import java.util.concurrent.TimeoutException
 
-fun Initializer.Config.seedPhrase(seedPhrase: String) {
-    setSeed(SimpleMnemonics().toSeed(seedPhrase.toCharArray()))
+fun Initializer.Config.seedPhrase(seedPhrase: String, network: ZcashNetwork) {
+    setSeed(SimpleMnemonics().toSeed(seedPhrase.toCharArray()), network)
 }
 
 open class ScopedTest(val defaultTimeout: Long = 2000L) {
@@ -90,6 +96,39 @@ open class ScopedTest(val defaultTimeout: Long = 2000L) {
                 }
             }
         }
+    }
+}
+
+open class DarksideTest(name: String = javaClass.simpleName) : ScopedTest() {
+    val sithLord = DarksideTestCoordinator(host = host, port = port)
+    val validator = sithLord.validator
+
+    fun runOnce(block: () -> Unit) {
+        if (!ranOnce) {
+            sithLord.enterTheDarkside()
+            sithLord.synchronizer.start(classScope)
+            block()
+            ranOnce = true
+        }
+    }
+    companion object {
+        // set the host for all tests. Someday, this will need to be set by CI
+        // so have it read from the environment first and give that precidence
+        var host = "192.168.1.134"
+        val port: Int = 9067
+        private var ranOnce = false
+    }
+}
+
+object BlockExplorer {
+    suspend fun fetchLatestHeight(): Int {
+        val client = OkHttpClient()
+        val request = Request.Builder()
+            .url("https://api.blockchair.com/zcash/blocks?limit=1")
+            .build()
+        val result = client.newCall(request).await()
+        val body = result.body()?.string()
+        return JSONObject(body).getJSONArray("data").getJSONObject(0).getInt("id")
     }
 }
 

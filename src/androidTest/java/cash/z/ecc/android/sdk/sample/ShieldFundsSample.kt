@@ -10,6 +10,7 @@ import cash.z.ecc.android.sdk.ext.TroubleshootingTwig
 import cash.z.ecc.android.sdk.ext.Twig
 import cash.z.ecc.android.sdk.ext.twig
 import cash.z.ecc.android.sdk.tool.DerivationTool
+import cash.z.ecc.android.sdk.type.ZcashNetwork.Testnet
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.catch
@@ -27,9 +28,6 @@ import org.junit.Test
 class ShieldFundsSample {
 
     val SEED_PHRASE = "wish puppy smile loan doll curve hole maze file ginger hair nose key relax knife witness cannon grab despair throw review deal slush frame" // \"still champion voice habit trend flight survey between bitter process artefact blind carbon truly provide dizzy crush flush breeze blouse charge solid fish spread\"//\"deputy visa gentle among clean scout farm drive comfort patch skin salt ranch cool ramp warrior drink narrow normal lunch behind salt deal person"//"deputy visa gentle among clean scout farm drive comfort patch skin salt ranch cool ramp warrior drink narrow normal lunch behind salt deal person"
-
-    // simple flag to turn off actually spending funds
-    val IS_DRY_RUN = true
 
     /**
      * This test will construct a t2z transaction. It is safe to run this repeatedly, because
@@ -51,22 +49,25 @@ class ShieldFundsSample {
 
     // when startHeight is null, it will use the latest checkpoint
     class SimpleWallet(seedPhrase: String, startHeight: Int? = null) {
+        // simple flag to turn off actually spending funds
+        val IS_DRY_RUN = true
+
         val walletScope = CoroutineScope(
             SupervisorJob() + newFixedThreadPoolContext(3, this.javaClass.simpleName)
         )
         private val context = InstrumentationRegistry.getInstrumentation().context
         private val seed: ByteArray = Mnemonics.MnemonicCode(seedPhrase).toSeed()
-        private val shieldedSpendingKey = DerivationTool.deriveSpendingKeys(seed)[0]
-        private val transparentSecretKey = DerivationTool.deriveTransparentSecretKey(seed)
-        private val shieldedAddress = DerivationTool.deriveShieldedAddress(seed)
+        private val shieldedSpendingKey = DerivationTool.deriveSpendingKeys(seed, Testnet)[0]
+        private val transparentSecretKey = DerivationTool.deriveTransparentSecretKey(seed, Testnet)
+        private val shieldedAddress = DerivationTool.deriveShieldedAddress(seed, Testnet)
 
         // t1b9Y6PESSGavavgge3ruTtX9X83817V29s
-        private val transparentAddress = DerivationTool.deriveTransparentAddress(seed)
-
+        private val transparentAddress = DerivationTool.deriveTransparentAddress(seed, Testnet)
+        private val host = "lightwalletd.testnet.electriccoin.co"
         private val config = Initializer.Config {
-            it.setSeed(seed)
+            it.setSeed(seed, Testnet)
             it.setBirthdayHeight(startHeight, false)
-            it.server("lightwalletd.electriccoin.co", 9067)
+            it.setNetwork(Testnet, host)
         }
 
         val synchronizer = Synchronizer(Initializer(context, config))

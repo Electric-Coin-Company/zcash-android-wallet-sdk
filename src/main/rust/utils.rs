@@ -39,3 +39,32 @@ where
     }
     jret
 }
+
+// 2D array
+pub(crate) fn rust_vec_to_java_2d<'a, T, V, F, G>(
+    env: &JNIEnv<'a>,
+    data1: Vec<T>,
+    data2: Vec<T>,
+    element_map: F,
+    empty_element: G,
+) -> jobjectArray
+where
+    V: Deref<Target = JObject<'a>>,
+    F: Fn(&JNIEnv<'a>, T) -> JNIResult<V>,
+    G: Fn(&JNIEnv<'a>) -> JNIResult<V>,
+{
+    let jempty = empty_element(env).expect("Couldn't create Java string!");
+    let outer = env
+        .new_object_array(data1.len() as jsize, "[Ljava/lang/String;", *jni::objects::JObject::null())
+        .expect("Couldn't create Java array of string arrays!");
+
+    for (i, (elem1, elem2)) in data1.into_iter().zip(data2.into_iter()).enumerate() {
+        let inner = env.new_object_array(2 as jsize, "java/lang/String", *jempty).expect("Couldn't create Java array!");
+        let jelem1 = element_map(env, elem1).expect("Couldn't map element to Java!");
+        let jelem2 = element_map(env, elem2).expect("Couldn't map element to Java!");
+        env.set_object_array_element(inner, 0 as jsize, *jelem1).expect("Couldn't set Java array element!");
+        env.set_object_array_element(inner, 1 as jsize, *jelem2).expect("Couldn't set Java array element!");
+        env.set_object_array_element(outer, i as jsize, inner).expect("Couldn't set Java array element!");
+    }
+    outer
+}

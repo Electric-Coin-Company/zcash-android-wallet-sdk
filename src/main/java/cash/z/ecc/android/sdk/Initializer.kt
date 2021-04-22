@@ -3,25 +3,36 @@ package cash.z.ecc.android.sdk
 import android.content.Context
 import cash.z.ecc.android.sdk.exception.InitializerException
 import cash.z.ecc.android.sdk.ext.ZcashSdk
-import cash.z.ecc.android.sdk.ext.ZcashSdk.SAPLING_ACTIVATION_HEIGHT
 import cash.z.ecc.android.sdk.ext.tryWarn
 import cash.z.ecc.android.sdk.ext.twig
 import cash.z.ecc.android.sdk.jni.RustBackend
 import cash.z.ecc.android.sdk.tool.DerivationTool
 import cash.z.ecc.android.sdk.tool.WalletBirthdayTool
+import cash.z.ecc.android.sdk.type.UnifiedViewingKey
+import cash.z.ecc.android.sdk.type.WalletBirthday
+import cash.z.ecc.android.sdk.type.ZcashNetwork
 import java.io.File
 
 /**
  * Simplified Initializer focused on starting from a ViewingKey.
  */
-class Initializer constructor(appContext: Context, config: Config) : SdkSynchronizer.SdkInitializer {
+class Initializer constructor(appContext: Context, onCriticalErrorHandler: ((Throwable?) -> Boolean)? = null, config: Config) : SdkSynchronizer.SdkInitializer {
     override val context = appContext.applicationContext
     override val rustBackend: RustBackend
+    override val network: ZcashNetwork
     override val alias: String
     override val host: String
     override val port: Int
-    val viewingKeys: List<String>
-    val birthday: WalletBirthdayTool.WalletBirthday
+    val viewingKeys: List<UnifiedViewingKey>
+    val birthday: WalletBirthday
+
+    /**
+     * A callback to invoke whenever an uncaught error is encountered. By definition, the return
+     * value of the function is ignored because this error is unrecoverable. The only reason the
+     * function has a return value is so that all error handlers work with the same signature which
+     * allows one function to handle all errors in simple apps.
+     */
+    override var onCriticalErrorHandler: ((Throwable?) -> Boolean)? = onCriticalErrorHandler
 
     /**
      * True when accounts have been created by this initializer.
@@ -32,36 +43,44 @@ class Initializer constructor(appContext: Context, config: Config) : SdkSynchron
     var accountsCreated = false
 
     init {
-        config.validate()
-        val heightToUse = config.birthdayHeight
-            ?: (if (config.defaultToOldestHeight == true) SAPLING_ACTIVATION_HEIGHT else null)
-        val loadedBirthday = WalletBirthdayTool.loadNearest(context, heightToUse)
-        birthday = loadedBirthday
-        viewingKeys = config.viewingKeys
-        alias = config.alias
-        host = config.host
-        port = config.port
-        rustBackend = initRustBackend(birthday)
-        // TODO: get rid of this by first answering the question: why is this necessary?
-        initMissingDatabases(birthday, *viewingKeys.toTypedArray())
+        try {
+            config.validate()
+            network = config.network
+            val heightToUse = config.birthdayHeight
+                ?: (if (config.defaultToOldestHeight == true) network.saplingActivationHeight else null)
+            val loadedBirthday = WalletBirthdayTool.loadNearest(context, network, heightToUse)
+            birthday = loadedBirthday
+            viewingKeys = config.viewingKeys
+            alias = config.alias
+            host = config.host
+            port = config.port
+            rustBackend = initRustBackend(network, birthday)
+            // TODO: get rid of this by first answering the question: why is this necessary?
+            initMissingDatabases(birthday, *viewingKeys.toTypedArray())
+        } catch (t: Throwable) {
+            onCriticalError(t)
+            throw t
+        }
     }
 
-    constructor(appContext: Context, block: (Config) -> Unit) : this(appContext, Config(block))
+    constructor(appContext: Context, config: Config) : this(appContext, null, config)
+    constructor(appContext: Context, onCriticalErrorHandler: ((Throwable?) -> Boolean)? = null, block: (Config) -> Unit) : this(appContext, onCriticalErrorHandler, Config(block))
 
-    fun erase() = erase(context, alias)
+    fun erase() = erase(context, network, alias)
 
-    private fun initRustBackend(birthday: WalletBirthdayTool.WalletBirthday): RustBackend {
+    private fun initRustBackend(network: ZcashNetwork, birthday: WalletBirthday): RustBackend {
         return RustBackend.init(
-            cacheDbPath(context, alias),
-            dataDbPath(context, alias),
+            cacheDbPath(context, network, alias),
+            dataDbPath(context, network, alias),
             "${context.cacheDir.absolutePath}/params",
+            network,
             birthday.height
         )
     }
 
     private fun initMissingDatabases(
-        birthday: WalletBirthdayTool.WalletBirthday,
-        vararg viewingKeys: String
+        birthday: WalletBirthday,
+        vararg viewingKeys: UnifiedViewingKey
     ) {
         maybeCreateDataDb()
         maybeInitBlocksTable(birthday)
@@ -81,9 +100,11 @@ class Initializer constructor(appContext: Context, config: Config) : SdkSynchron
     /**
      * Initialize the blocks table with the given birthday, if needed.
      */
-    private fun maybeInitBlocksTable(birthday: WalletBirthdayTool.WalletBirthday) {
+    private fun maybeInitBlocksTable(birthday: WalletBirthday) {
+        // TODO: consider converting these to typed exceptions in the welding layer
         tryWarn(
-            "Warning: did not initialize the blocks table. It probably was already initialized."
+            "Warning: did not initialize the blocks table. It probably was already initialized.",
+            ifContains = "table is not empty"
         ) {
             rustBackend.initBlocksTable(
                 birthday.height,
@@ -93,14 +114,17 @@ class Initializer constructor(appContext: Context, config: Config) : SdkSynchron
             )
             twig("seeded the database with sapling tree at height ${birthday.height}")
         }
+        twig("database file: ${rustBackend.pathDataDb}")
     }
 
     /**
      * Initialize the accounts table with the given viewing keys, if needed.
      */
-    private fun maybeInitAccountsTable(vararg viewingKeys: String) {
+    private fun maybeInitAccountsTable(vararg viewingKeys: UnifiedViewingKey) {
+        // TODO: consider converting these to typed exceptions in the welding layer
         tryWarn(
-            "Warning: did not initialize the accounts table. It probably was already initialized."
+            "Warning: did not initialize the accounts table. It probably was already initialized.",
+            ifContains = "table is not empty"
         ) {
             rustBackend.initAccountsTable(*viewingKeys)
             accountsCreated = true
@@ -108,34 +132,43 @@ class Initializer constructor(appContext: Context, config: Config) : SdkSynchron
         }
     }
 
-    /**
-     * Validate that the alias doesn't contain malicious characters by enforcing simple rules which
-     * permit the alias to be used as part of a file name for the preferences and databases. This
-     * enables multiple wallets to exist on one device, which is also helpful for sweeping funds.
-     *
-     * @param alias the alias to validate.
-     *
-     * @throws IllegalArgumentException whenever the alias is not less than 100 characters or
-     * contains something other than alphanumeric characters. Underscores are allowed but aliases
-     * must start with a letter.
-     */
-    internal fun validateAlias(alias: String) {
-        require(
-            alias.length in 1..99 && alias[0].isLetter() &&
-                alias.all { it.isLetterOrDigit() || it == '_' }
-        ) {
-            "ERROR: Invalid alias ($alias). For security, the alias must be shorter than 100 " +
-                "characters and only contain letters, digits or underscores and start with a letter"
+    private fun onCriticalError(error: Throwable) {
+        twig("********")
+        twig("********  INITIALIZER ERROR: $error")
+        if (error.cause != null) twig("******** caused by ${error.cause}")
+        if (error.cause?.cause != null) twig("******** caused by ${error.cause?.cause}")
+        twig("********")
+        twig(error)
+
+        if (onCriticalErrorHandler == null) {
+            twig(
+                "WARNING: a critical error occurred on the Initializer but no callback is " +
+                    "registered to be notified of critical errors! THIS IS PROBABLY A MISTAKE. To " +
+                    "respond to these errors (perhaps to update the UI or alert the user) set " +
+                    "initializer.onCriticalErrorHandler to a non-null value or use the secondary " +
+                    "constructor: Initializer(context, handler) { ... }. Note that the synchronizer " +
+                    "and initializer BOTH have error handlers and since the initializer exists " +
+                    "before the synchronizer, it needs its error handler set separately."
+            )
         }
+
+        onCriticalErrorHandler?.invoke(error)
     }
 
     class Config private constructor (
-        val viewingKeys: MutableList<String> = mutableListOf(),
+        val viewingKeys: MutableList<UnifiedViewingKey> = mutableListOf(),
         var alias: String = ZcashSdk.DEFAULT_ALIAS,
-        var host: String = ZcashSdk.DEFAULT_LIGHTWALLETD_HOST,
-        var port: Int = ZcashSdk.DEFAULT_LIGHTWALLETD_PORT,
     ) {
         var birthdayHeight: Int? = null
+            private set
+
+        lateinit var network: ZcashNetwork
+            private set
+
+        lateinit var host: String
+            private set
+
+        var port: Int = ZcashNetwork.Mainnet.defaultPort
             private set
 
         /**
@@ -168,7 +201,7 @@ class Initializer constructor(appContext: Context, config: Config) : SdkSynchron
          * @param defaultToOldestHeight determines how a null birthday height will be
          * interpreted. Typically, `false` for new wallets and `true` for restored wallets because
          * new wallets want to load quickly but restored wallets want to find all possible
-         * transactions.
+         * transactions. Again, this value is only considered when [height] is null.
          *
          */
         fun setBirthdayHeight(height: Int?, defaultToOldestHeight: Boolean = false): Config =
@@ -204,10 +237,10 @@ class Initializer constructor(appContext: Context, config: Config) : SdkSynchron
          * is not currently well supported. Consider it an alpha-preview feature that might work but
          * probably has serious bugs.
          */
-        fun setViewingKeys(vararg extendedFullViewingKeys: String): Config = apply {
+        fun setViewingKeys(vararg unifiedViewingKeys: UnifiedViewingKey): Config = apply {
             viewingKeys.apply {
                 clear()
-                addAll(extendedFullViewingKeys)
+                addAll(unifiedViewingKeys)
             }
         }
 
@@ -216,61 +249,120 @@ class Initializer constructor(appContext: Context, config: Config) : SdkSynchron
          * is not currently well supported. Consider it an alpha-preview feature that might work but
          * probably has serious bugs.
          */
-        fun addViewingKey(extendedFullViewingKey: String): Config = apply {
-            viewingKeys.add(extendedFullViewingKey)
+        fun addViewingKey(unifiedFullViewingKey: UnifiedViewingKey): Config = apply {
+            viewingKeys.add(unifiedFullViewingKey)
         }
 
         //
         // Convenience functions
         //
 
-        fun server(host: String, port: Int): Config = apply {
+        /**
+         * Set the server and the network property at the same time to prevent them from getting out
+         * of sync. Ultimately, this determines which host a synchronizer will use in order to
+         * connect to lightwalletd. In most cases, the default host is sufficient but an override
+         * can be provided. The host cannot be changed without explicitly setting the network.
+         *
+         * @param network the Zcash network to use. Either testnet or mainnet.
+         * @param host the lightwalletd host to use.
+         * @param port the lightwalletd port to use.
+         */
+        fun setNetwork(
+            network: ZcashNetwork,
+            host: String = network.defaultHost,
+            port: Int = network.defaultPort
+        ): Config = apply {
+            this.network = network
             this.host = host
             this.port = port
         }
 
-        fun importWallet(seed: ByteArray, birthdayHeight: Int? = null): Config = apply {
-            setSeed(seed)
-            importedWalletBirthday(birthdayHeight)
-        }
-
+        /**
+         * Import a wallet using the first viewing key derived from the given seed.
+         */
         fun importWallet(
-            viewingKey: String,
+            seed: ByteArray,
             birthdayHeight: Int? = null,
-            host: String = ZcashSdk.DEFAULT_LIGHTWALLETD_HOST,
-            port: Int = ZcashSdk.DEFAULT_LIGHTWALLETD_PORT
+            network: ZcashNetwork,
+            host: String = network.defaultHost,
+            port: Int = network.defaultPort,
+            alias: String = ZcashSdk.DEFAULT_ALIAS
+        ): Config =
+            importWallet(
+                DerivationTool.deriveUnifiedViewingKeys(seed, network = network)[0],
+                birthdayHeight,
+                network,
+                host,
+                port,
+                alias
+            )
+
+        /**
+         * Default function for importing a wallet.
+         */
+        fun importWallet(
+            viewingKey: UnifiedViewingKey,
+            birthdayHeight: Int? = null,
+            network: ZcashNetwork,
+            host: String = network.defaultHost,
+            port: Int = network.defaultPort,
+            alias: String = ZcashSdk.DEFAULT_ALIAS
         ): Config = apply {
             setViewingKeys(viewingKey)
-            server(host, port)
+            setNetwork(network, host, port)
             importedWalletBirthday(birthdayHeight)
+            this.alias = alias
         }
 
+        /**
+         * Create a new wallet using the first viewing key derived from the given seed.
+         */
         fun newWallet(
             seed: ByteArray,
-            host: String = ZcashSdk.DEFAULT_LIGHTWALLETD_HOST,
-            port: Int = ZcashSdk.DEFAULT_LIGHTWALLETD_PORT
-        ): Config = apply {
-            setSeed(seed)
-            server(host, port)
-            newWalletBirthday()
-        }
+            network: ZcashNetwork,
+            host: String = network.defaultHost,
+            port: Int = network.defaultPort,
+            alias: String = ZcashSdk.DEFAULT_ALIAS
+        ): Config = newWallet(
+            DerivationTool.deriveUnifiedViewingKeys(seed, network)[0],
+            network,
+            host,
+            port,
+            alias
+        )
 
+        /**
+         * Default function for creating a new wallet.
+         */
         fun newWallet(
-            viewingKey: String,
-            host: String = ZcashSdk.DEFAULT_LIGHTWALLETD_HOST,
-            port: Int = ZcashSdk.DEFAULT_LIGHTWALLETD_PORT
+            viewingKey: UnifiedViewingKey,
+            network: ZcashNetwork,
+            host: String = network.defaultHost,
+            port: Int = network.defaultPort,
+            alias: String = ZcashSdk.DEFAULT_ALIAS
         ): Config = apply {
             setViewingKeys(viewingKey)
-            server(host, port)
+            setNetwork(network, host, port)
             newWalletBirthday()
+            this.alias = alias
         }
 
         /**
          * Convenience method for setting thew viewingKeys from a given seed. This is the same as
          * calling `setViewingKeys` with the keys that match this seed.
          */
-        fun setSeed(seed: ByteArray, numberOfAccounts: Int = 1): Config = apply {
-            setViewingKeys(*DerivationTool.deriveViewingKeys(seed, numberOfAccounts))
+        fun setSeed(seed: ByteArray, network: ZcashNetwork, numberOfAccounts: Int = 1): Config = apply {
+            setViewingKeys(*DerivationTool.deriveUnifiedViewingKeys(seed, network, numberOfAccounts))
+        }
+
+        /**
+         * Sets the network from a network id, throwing an exception if the id is not recognized.
+         *
+         * @param networkId the ID of the network corresponding to the [ZcashNetwork] enum.
+         * Typically, it is 0 for testnet and 1 for mainnet.
+         */
+        fun setNetworkId(networkId: Int): Config = apply {
+            network = ZcashNetwork.from(networkId)
         }
 
         //
@@ -291,20 +383,20 @@ class Initializer constructor(appContext: Context, config: Config) : SdkSynchron
             }
             // allow either null or a value greater than the activation height
             if (
-                (birthdayHeight ?: SAPLING_ACTIVATION_HEIGHT)
-                < SAPLING_ACTIVATION_HEIGHT
+                (birthdayHeight ?: network.saplingActivationHeight)
+                < network.saplingActivationHeight
             ) {
-                throw InitializerException.InvalidBirthdayHeightException(birthdayHeight)
+                throw InitializerException.InvalidBirthdayHeightException(birthdayHeight, network)
             }
         }
 
         private fun validateViewingKeys() {
             require(viewingKeys.isNotEmpty()) {
-                "Viewing keys are required. Ensure that the viewing keys or seed have been set" +
-                    " on this Initializer."
+                "Unified Viewing keys are required. Ensure that the unified viewing keys or seed" +
+                    " have been set on this Initializer."
             }
             viewingKeys.forEach {
-                DerivationTool.validateViewingKey(it)
+                DerivationTool.validateUnifiedViewingKey(it)
             }
         }
     }
@@ -319,13 +411,17 @@ class Initializer constructor(appContext: Context, config: Config) : SdkSynchron
          * managed separately by the wallet.
          *
          * @param appContext the application context.
+         * @param network the network associated with the data to be erased.
          * @param alias the alias used to create the local data.
          *
-         * @return true when associated files were found. False most likely indicates that the wrong
-         * alias was provided.
+         * @return true when one of the associated files was found. False most likely indicates
+         * that the wrong alias was provided.
          */
-        override fun erase(appContext: Context, alias: String) =
-            delete(cacheDbPath(appContext, alias)) || delete(dataDbPath(appContext, alias))
+        override fun erase(appContext: Context, network: ZcashNetwork, alias: String): Boolean {
+            val cacheDeleted = deleteDb(cacheDbPath(appContext, network, alias))
+            val dataDeleted = deleteDb(dataDbPath(appContext, network, alias))
+            return dataDeleted || cacheDeleted
+        }
 
         //
         // Path Helpers
@@ -335,25 +431,39 @@ class Initializer constructor(appContext: Context, config: Config) : SdkSynchron
          * Returns the path to the cache database that would correspond to the given alias.
          *
          * @param appContext the application context
+         * @param network the network associated with the data in the cache database.
          * @param alias the alias to convert into a database path
          */
-        internal fun cacheDbPath(appContext: Context, alias: String): String =
-            aliasToPath(appContext, alias, ZcashSdk.DB_CACHE_NAME)
+        internal fun cacheDbPath(appContext: Context, network: ZcashNetwork, alias: String): String =
+            aliasToPath(appContext, network, alias, ZcashSdk.DB_CACHE_NAME)
 
         /**
          * Returns the path to the data database that would correspond to the given alias.
          * @param appContext the application context
+         * * @param network the network associated with the data in the database.
          * @param alias the alias to convert into a database path
          */
-        internal fun dataDbPath(appContext: Context, alias: String): String =
-            aliasToPath(appContext, alias, ZcashSdk.DB_DATA_NAME)
+        internal fun dataDbPath(appContext: Context, network: ZcashNetwork, alias: String): String =
+            aliasToPath(appContext, network, alias, ZcashSdk.DB_DATA_NAME)
 
-        private fun aliasToPath(appContext: Context, alias: String, dbFileName: String): String {
+        private fun aliasToPath(appContext: Context, network: ZcashNetwork, alias: String, dbFileName: String): String {
             val parentDir: String =
                 appContext.getDatabasePath("unused.db").parentFile?.absolutePath
                     ?: throw InitializerException.DatabasePathException
             val prefix = if (alias.endsWith('_')) alias else "${alias}_"
-            return File(parentDir, "$prefix$dbFileName").absolutePath
+            return File(parentDir, "$prefix${network.networkName}_$dbFileName").absolutePath
+        }
+
+        /**
+         * Delete a database and it's potential journal file at the given path.
+         *
+         * @param filePath the path of the db to erase.
+         * @return true when a file exists at the given path and was deleted.
+         */
+        private fun deleteDb(filePath: String): Boolean {
+            // just try the journal file. Doesn't matter if it's not there.
+            delete("$filePath-journal")
+            return delete(filePath)
         }
 
         /**
@@ -393,6 +503,6 @@ internal fun validateAlias(alias: String) {
             alias.all { it.isLetterOrDigit() || it == '_' }
     ) {
         "ERROR: Invalid alias ($alias). For security, the alias must be shorter than 100 " +
-            "characters and only contain letters, digits or underscores and start with a letter"
+            "characters and only contain letters, digits or underscores and start with a letter."
     }
 }

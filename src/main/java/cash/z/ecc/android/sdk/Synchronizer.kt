@@ -2,12 +2,13 @@ package cash.z.ecc.android.sdk
 
 import androidx.paging.PagedList
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor
-import cash.z.ecc.android.sdk.block.CompactBlockProcessor.WalletBalance
 import cash.z.ecc.android.sdk.db.entity.ConfirmedTransaction
 import cash.z.ecc.android.sdk.db.entity.PendingTransaction
 import cash.z.ecc.android.sdk.ext.ZcashSdk
-import cash.z.ecc.android.sdk.validate.AddressType
-import cash.z.ecc.android.sdk.validate.ConsensusMatchType
+import cash.z.ecc.android.sdk.type.AddressType
+import cash.z.ecc.android.sdk.type.ConsensusMatchType
+import cash.z.ecc.android.sdk.type.WalletBalance
+import cash.z.ecc.android.sdk.type.ZcashNetwork
 import cash.z.wallet.sdk.rpc.Service
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -23,6 +24,11 @@ interface Synchronizer {
     //
     // Lifecycle
     //
+
+    /**
+     * Return true when this synchronizer has been started.
+     */
+    var isStarted: Boolean
 
     /**
      * Starts this synchronizer within the given scope.
@@ -52,6 +58,11 @@ interface Synchronizer {
     //
 
     /* Status */
+
+    /**
+     * The network to which this synchronizer is connected and from which it is processing blocks.
+     */
+    val network: ZcashNetwork
 
     /**
      * A flow of values representing the [Status] of this Synchronizer. As the status changes, a new
@@ -115,6 +126,12 @@ interface Synchronizer {
      */
     val latestBalance: WalletBalance
 
+    /**
+     * An in-memory reference to the best known birthday height, which can change if the first
+     * transaction has not yet occurred.
+     */
+    val latestBirthdayHeight: Int
+
     //
     // Operations
     //
@@ -141,16 +158,14 @@ interface Synchronizer {
     suspend fun getShieldedAddress(accountId: Int = 0): String
 
     /**
-     * Gets the transparent address for the given account and index.
+     * Gets the transparent address for the given account.
      *
      * @param accountId the optional accountId whose address is of interest. By default, the first
      * account is used.
-     * @param index the optional index whose address is of interest. By default, the first index is
-     * used.
      *
-     * @return the address for the given account and index.
+     * @return the address for the given account.
      */
-    suspend fun getTransparentAddress(seed: ByteArray, accountId: Int = 0, index: Int = 0): String
+    suspend fun getTransparentAddress(accountId: Int = 0): String
 
     /**
      * Sends zatoshi.
@@ -255,16 +270,26 @@ interface Synchronizer {
      */
     suspend fun changeServer(
         host: String,
-        port: Int = ZcashSdk.DEFAULT_LIGHTWALLETD_PORT,
+        port: Int = network.defaultPort,
         errorHandler: (Throwable) -> Unit = { throw it }
     )
 
-    suspend fun refreshUtxos(tAddr: String, sinceHeight: Int): Int
+    suspend fun refreshUtxos(tAddr: String, sinceHeight: Int = network.saplingActivationHeight): Int
 
     /**
      * Returns the balance that the wallet knows about. This should be called after [refreshUtxos].
      */
     suspend fun getTransparentBalance(tAddr: String): WalletBalance
+
+    suspend fun getNearestRewindHeight(height: Int): Int
+
+    /**
+     * Returns the safest height to which we can rewind, given a desire to rewind to the height
+     * provided. Due to how witness incrementing works, a wallet cannot simply rewind to any
+     * arbitrary height. This handles all that complexity yet remains flexible in the future as
+     * improvements are made.
+     */
+    suspend fun rewindToNearestHeight(height: Int, alsoClearBlockCache: Boolean = false)
 
     //
     // Error Handling
@@ -297,6 +322,18 @@ interface Synchronizer {
      * when the error is unrecoverable and the sender should [stop].
      */
     var onSubmissionErrorHandler: ((Throwable?) -> Boolean)?
+
+    /**
+     * Callback for setup errors that occur prior to processing compact blocks. Can be used to
+     * override any errors encountered during setup. When this listener is missing then all setup
+     * errors will result in the synchronizer not starting. This is particularly useful for wallets
+     * to receive a callback right before the SDK will reject a lightwalletd server because it
+     * appears not to match.
+     *
+     * @return true when the setup error should be ignored and processing should be allowed to
+     * start. Otherwise, processing will not begin.
+     */
+    var onSetupErrorHandler: ((Throwable?) -> Boolean)?
 
     /**
      * A callback to invoke whenever a chain error is encountered. These occur whenever the

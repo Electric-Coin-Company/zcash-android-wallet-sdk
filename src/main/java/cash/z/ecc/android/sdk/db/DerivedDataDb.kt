@@ -17,6 +17,7 @@ import cash.z.ecc.android.sdk.db.entity.Sent
 import cash.z.ecc.android.sdk.db.entity.TransactionEntity
 import cash.z.ecc.android.sdk.db.entity.Utxo
 import cash.z.ecc.android.sdk.ext.twig
+import cash.z.ecc.android.sdk.type.UnifiedAddressAccount
 
 //
 // Database
@@ -38,7 +39,7 @@ import cash.z.ecc.android.sdk.ext.twig
         Sent::class,
         Utxo::class
     ],
-    version = 6,
+    version = 7,
     exportSchema = true
 )
 abstract class DerivedDataDb : RoomDatabase() {
@@ -46,6 +47,7 @@ abstract class DerivedDataDb : RoomDatabase() {
     abstract fun blockDao(): BlockDao
     abstract fun receivedDao(): ReceivedDao
     abstract fun sentDao(): SentDao
+    abstract fun accountDao(): AccountDao
 
     //
     // Migrations
@@ -161,6 +163,25 @@ abstract class DerivedDataDb : RoomDatabase() {
                 )
             }
         }
+
+        val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("PRAGMA foreign_keys = OFF;")
+                database.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS accounts_new (
+                        account INTEGER PRIMARY KEY,
+                        extfvk TEXT NOT NULL,
+                        address TEXT NOT NULL,
+                        transparent_address TEXT NOT NULL
+                    ); 
+                    """.trimIndent()
+                )
+                database.execSQL("DROP TABLE accounts;")
+                database.execSQL("ALTER TABLE accounts_new RENAME TO accounts;")
+                database.execSQL("PRAGMA foreign_keys = ON;")
+            }
+        }
     }
 }
 
@@ -178,6 +199,9 @@ interface BlockDao {
 
     @Query("SELECT MAX(height) FROM blocks")
     fun lastScannedHeight(): Int
+
+    @Query("SELECT MIN(height) FROM blocks")
+    fun firstScannedHeight(): Int
 
     @Query("SELECT hash FROM BLOCKS WHERE height = :height")
     fun findHashByHeight(height: Int): ByteArray?
@@ -199,6 +223,20 @@ interface ReceivedDao {
 interface SentDao {
     @Query("SELECT COUNT(tx) FROM sent_notes")
     fun count(): Int
+}
+
+@Dao
+interface AccountDao {
+    @Query(
+        """
+        SELECT account AS accountId,
+               transparent_address AS rawTransparentAddress,
+               address AS rawShieldedAddress
+        FROM accounts
+        WHERE account = :id
+        """
+    )
+    suspend fun findAccountById(id: Int): UnifiedAddressAccount?
 }
 
 /**
@@ -395,7 +433,7 @@ interface TransactionDao {
                 twig("[cleanup] cleanupCancelledTx found ${it.size} matching transactions to cleanup")
             }.forEach { transactionId ->
                 hasInitialMatch = true
-                removeInvalidTransaction(transactionId)
+                removeInvalidOutboundTransaction(transactionId)
             }
             hasFinalMatch = findMatchingTransactionId(rawTransactionId) != null
             success = hasInitialMatch && !hasFinalMatch
@@ -407,7 +445,7 @@ interface TransactionDao {
     }
 
     @Transaction
-    suspend fun removeInvalidTransaction(transactionId: Long): Boolean {
+    suspend fun removeInvalidOutboundTransaction(transactionId: Long): Boolean {
         var success = false
         try {
             twig("[cleanup] removing invalid transactionId:$transactionId")
@@ -436,7 +474,7 @@ interface TransactionDao {
     suspend fun deleteExpired(lastHeight: Int): Int {
         var count = 0
         findExpiredTxs(lastHeight).forEach { transactionId ->
-            if (removeInvalidTransaction(transactionId)) count++
+            if (removeInvalidOutboundTransaction(transactionId)) count++
         }
         return count
     }

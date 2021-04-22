@@ -1,6 +1,9 @@
 package cash.z.ecc.android.sdk.transaction
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.filters.SmallTest
+import cash.z.ecc.android.sdk.annotation.MaintainedTest
+import cash.z.ecc.android.sdk.annotation.TestPurpose
 import cash.z.ecc.android.sdk.db.entity.EncodedTransaction
 import cash.z.ecc.android.sdk.db.entity.PendingTransaction
 import cash.z.ecc.android.sdk.db.entity.isCancelled
@@ -29,7 +32,9 @@ import org.junit.runner.RunWith
 import org.mockito.Mock
 import org.mockito.MockitoAnnotations
 
+@MaintainedTest(TestPurpose.REGRESSION)
 @RunWith(AndroidJUnit4::class)
+@SmallTest
 class PersistentTransactionManagerTest : ScopedTest() {
 
     @Mock lateinit var mockEncoder: TransactionEncoder

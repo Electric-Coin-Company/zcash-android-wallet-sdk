@@ -19,7 +19,6 @@ import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Scanned
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Scanning
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Stopped
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Validating
-import cash.z.ecc.android.sdk.block.CompactBlockProcessor.WalletBalance
 import cash.z.ecc.android.sdk.block.CompactBlockStore
 import cash.z.ecc.android.sdk.db.entity.PendingTransaction
 import cash.z.ecc.android.sdk.db.entity.hasRawTransactionId
@@ -49,10 +48,12 @@ import cash.z.ecc.android.sdk.transaction.PersistentTransactionManager
 import cash.z.ecc.android.sdk.transaction.TransactionEncoder
 import cash.z.ecc.android.sdk.transaction.TransactionRepository
 import cash.z.ecc.android.sdk.transaction.WalletTransactionEncoder
-import cash.z.ecc.android.sdk.validate.AddressType
-import cash.z.ecc.android.sdk.validate.AddressType.Shielded
-import cash.z.ecc.android.sdk.validate.AddressType.Transparent
-import cash.z.ecc.android.sdk.validate.ConsensusMatchType
+import cash.z.ecc.android.sdk.type.AddressType
+import cash.z.ecc.android.sdk.type.AddressType.Shielded
+import cash.z.ecc.android.sdk.type.AddressType.Transparent
+import cash.z.ecc.android.sdk.type.ConsensusMatchType
+import cash.z.ecc.android.sdk.type.WalletBalance
+import cash.z.ecc.android.sdk.type.ZcashNetwork
 import cash.z.wallet.sdk.rpc.Service
 import io.grpc.ManagedChannel
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -130,7 +131,7 @@ class SdkSynchronizer internal constructor(
      */
     val channel: ManagedChannel get() = (processor.downloader.lightWalletService as LightWalletGrpcService).channel
 
-    var isStarted = false
+    override var isStarted = false
 
     //
     // Transactions
@@ -145,6 +146,8 @@ class SdkSynchronizer internal constructor(
     //
     // Status
     //
+
+    override val network: ZcashNetwork get() = processor.network
 
     /**
      * Indicates the status of this Synchronizer. This implementation basically simplifies the
@@ -197,6 +200,14 @@ class SdkSynchronizer internal constructor(
     override var onSubmissionErrorHandler: ((Throwable?) -> Boolean)? = null
 
     /**
+     * A callback to invoke whenever a processor is not setup correctly. Returning true signals that
+     * the invalid setup should be ignored. If no handler is set, then any setup error will result
+     * in a critical error. This callback is not called on the main thread so any UI work would need
+     * to switch context to the main thread.
+     */
+    override var onSetupErrorHandler: ((Throwable?) -> Boolean)? = null
+
+    /**
      * A callback to invoke whenever a chain error is encountered. These occur whenever the
      * processor detects a missing or non-chain-sequential block (i.e. a reorg).
      */
@@ -219,6 +230,8 @@ class SdkSynchronizer internal constructor(
      * [processorInfo].
      */
     override val latestHeight: Int get() = processor.currentInfo.networkBlockHeight
+
+    override val latestBirthdayHeight: Int get() = processor.birthdayHeight
 
     /**
      * Starts this synchronizer within the given scope. For simplicity, attempting to start an
@@ -255,10 +268,17 @@ class SdkSynchronizer internal constructor(
      */
     override fun stop() {
         coroutineScope.launch {
+            // log everything to help troubleshoot shutdowns that aren't graceful
+            twig("Synchronizer::stop: STARTING")
+            twig("Synchronizer::stop: processor.stop()")
             processor.stop()
+            twig("Synchronizer::stop: coroutineScope.cancel()")
             coroutineScope.cancel()
+            twig("Synchronizer::stop: _balances.cancel()")
             _balances.cancel()
+            twig("Synchronizer::stop: _status.cancel()")
             _status.cancel()
+            twig("Synchronizer::stop: COMPLETE")
         }
     }
 
@@ -281,6 +301,13 @@ class SdkSynchronizer internal constructor(
             LightWalletGrpcService(info.appContext, host, port),
             errorHandler
         )
+    }
+
+    override suspend fun getNearestRewindHeight(height: Int): Int =
+        processor.getNearestRewindHeight(height)
+
+    override suspend fun rewindToNearestHeight(height: Int, alsoClearBlockCache: Boolean) {
+        processor.rewindToNearestHeight(height, alsoClearBlockCache)
     }
 
     //
@@ -309,6 +336,11 @@ class SdkSynchronizer internal constructor(
     // Private API
     //
 
+    suspend fun refreshUtxos() {
+        twig("refreshing utxos")
+        refreshUtxos(getTransparentAddress())
+    }
+
     /**
      * Calculate the latest balance, based on the blocks that have been scanned and transmit this
      * information into the flow of [balances].
@@ -318,15 +350,26 @@ class SdkSynchronizer internal constructor(
         _balances.send(processor.getBalanceInfo())
     }
 
+    suspend fun isValidAddress(address: String): Boolean {
+        try {
+            return !validateAddress(address).isNotValid
+        } catch (t: Throwable) { }
+        return false
+    }
+
     private fun CoroutineScope.onReady() = launch(CoroutineExceptionHandler(::onCriticalError)) {
         twig("Synchronizer (${this@SdkSynchronizer}) Ready. Starting processor!")
+        var lastScanTime = 0L
         processor.onProcessorErrorListener = ::onProcessorError
+        processor.onSetupErrorListener = ::onSetupError
         processor.onChainErrorListener = ::onChainError
         processor.state.onEach {
             when (it) {
                 is Scanned -> {
+                    val now = System.currentTimeMillis()
                     // do a bit of housekeeping and then report synced status
-                    onScanComplete(it.scannedRange)
+                    onScanComplete(it.scannedRange, now - lastScanTime)
+                    lastScanTime = now
                     SYNCED
                 }
                 is Stopped -> STOPPED
@@ -345,7 +388,7 @@ class SdkSynchronizer internal constructor(
         twig("Synchronizer onReady complete. Processor start has exited!")
     }
 
-    private fun onCriticalError(unused: CoroutineContext, error: Throwable) {
+    private fun onCriticalError(unused: CoroutineContext?, error: Throwable) {
         twig("********")
         twig("********  ERROR: $error")
         if (error.cause != null) twig("******** caused by ${error.cause}")
@@ -389,6 +432,17 @@ class SdkSynchronizer internal constructor(
         } == true
     }
 
+    private fun onSetupError(error: Throwable): Boolean {
+        if (onSetupErrorHandler == null) {
+            twig(
+                "WARNING: falling back to the default behavior for setup errors. To add custom" +
+                    " behavior, set synchronizer.onSetupErrorHandler to a non-null value"
+            )
+            return false
+        }
+        return onSetupErrorHandler?.invoke(error) == true
+    }
+
     private fun onChainError(errorHeight: Int, rewindHeight: Int) {
         twig("Chain error detected at height: $errorHeight. Rewinding to: $rewindHeight")
         if (onChainErrorHandler == null) {
@@ -401,9 +455,16 @@ class SdkSynchronizer internal constructor(
         onChainErrorHandler?.invoke(errorHeight, rewindHeight)
     }
 
-    private suspend fun onScanComplete(scannedRange: IntRange) {
-        // TODO: optimize to skip logic here if there are no new transactions with a block height
-        //       within the given range
+    /**
+     * @param elapsedMillis the amount of time that passed since the last scan
+     */
+    private suspend fun onScanComplete(scannedRange: IntRange, elapsedMillis: Long) {
+        // We don't need to update anything if there have been no blocks
+        // refresh anyway if:
+        // - if it's the first time we finished scanning
+        // - if we check for blocks 5 times and find nothing was mined
+        val shouldRefresh = !scannedRange.isEmpty() || elapsedMillis > (ZcashSdk.POLL_INTERVAL * 5)
+        val reason = if (scannedRange.isEmpty()) "it's been a while" else "new blocks were scanned"
 
         // TRICKY:
         // Keep an eye on this section because there is a potential for concurrent DB
@@ -417,14 +478,19 @@ class SdkSynchronizer internal constructor(
         // Ultimately, refreshing the transactions just invalidates views of data that
         // already exists and it completes on another thread so it should come after the
         // balance refresh is complete.
-        twigTask("Triggering balance refresh since the processor is synced!") {
-            refreshBalance()
-        }
-        twigTask("Triggering pending transaction refresh!") {
-            refreshPendingTransactions()
-        }
-        twigTask("Triggering transaction refresh since the processor is synced!") {
-            refreshTransactions()
+        if (shouldRefresh) {
+            twigTask("Triggering utxo refresh since $reason!") {
+                refreshUtxos()
+            }
+            twigTask("Triggering balance refresh since $reason!") {
+                refreshBalance()
+            }
+            twigTask("Triggering pending transaction refresh since $reason!") {
+                refreshPendingTransactions()
+            }
+            twigTask("Triggering transaction refresh since $reason!") {
+                refreshTransactions()
+            }
         }
     }
 
@@ -483,8 +549,8 @@ class SdkSynchronizer internal constructor(
         // sometimes apps crash or things go wrong and we get an orphaned pendingTx that we'll poll
         // forever, so maybe just get rid of all of them after a long while
         allPendingTxs.filter {
-            (it.isExpired(lastScannedHeight) && it.isMarkedForDeletion()) ||
-                it.isLongExpired(lastScannedHeight) || it.isSafeToDiscard()
+            (it.isExpired(lastScannedHeight, network.saplingActivationHeight) && it.isMarkedForDeletion()) ||
+                it.isLongExpired(lastScannedHeight, network.saplingActivationHeight) || it.isSafeToDiscard()
         }
             .forEach {
                 val result = txManager.abort(it)
@@ -518,9 +584,7 @@ class SdkSynchronizer internal constructor(
 
     override suspend fun getShieldedAddress(accountId: Int): String = processor.getShieldedAddress(accountId)
 
-    override suspend fun getTransparentAddress(seed: ByteArray, accountId: Int, index: Int): String {
-        return DerivationTool.deriveTransparentAddress(seed, accountId, index)
-    }
+    override suspend fun getTransparentAddress(accountId: Int): String = processor.getTransparentAddress(accountId)
 
     override fun sendToAddress(
         spendingKey: String,
@@ -545,6 +609,8 @@ class SdkSynchronizer internal constructor(
             }
         }
     }.flatMapLatest {
+        // switch this flow over to monitoring the database for transactions
+        // so we emit the placeholder TX above, then watch the database for all further updates
         twig("Monitoring pending transaction (id: ${it.id}) for updates...")
         txManager.monitorById(it.id)
     }.distinctUntilChanged()
@@ -555,7 +621,7 @@ class SdkSynchronizer internal constructor(
         memo: String
     ): Flow<PendingTransaction> = flow {
         twig("Initializing shielding transaction")
-        val tAddr = DerivationTool.deriveTransparentAddress(transparentSecretKey)
+        val tAddr = DerivationTool.deriveTransparentAddressFromPrivateKey(transparentSecretKey, network)
         val tBalance = processor.getUtxoCacheBalance(tAddr)
         val zAddr = getAddress(0)
 
@@ -578,9 +644,8 @@ class SdkSynchronizer internal constructor(
         txManager.monitorById(it.id)
     }.distinctUntilChanged()
 
-    override suspend fun refreshUtxos(address: String, sinceHeight: Int): Int {
-        // TODO: we need to think about how we restrict this to only our taddr
-        return processor.downloadUtxos(address, sinceHeight)
+    override suspend fun refreshUtxos(address: String, startHeight: Int): Int {
+        return processor.refreshUtxos(address, startHeight)
     }
 
     override suspend fun getTransparentBalance(tAddr: String): WalletBalance {
@@ -625,9 +690,11 @@ class SdkSynchronizer internal constructor(
     interface SdkInitializer {
         val context: Context
         val rustBackend: RustBackend
+        val network: ZcashNetwork
         val host: String
         val port: Int
         val alias: String
+        val onCriticalErrorHandler: ((Throwable?) -> Boolean)?
     }
 
     interface Erasable {
@@ -635,12 +702,14 @@ class SdkSynchronizer internal constructor(
          * Erase content related to this SDK.
          *
          * @param appContext the application context.
+         * @param network the network corresponding to the data being erased. Data is segmented by
+         * network in order to prevent contamination.
          * @param alias identifier for SDK content. It is possible for multiple synchronizers to
          * exist with different aliases.
          *
          * @return true when content was found for the given alias. False otherwise.
          */
-        fun erase(appContext: Context, alias: String = ZcashSdk.DEFAULT_ALIAS): Boolean
+        fun erase(appContext: Context, network: ZcashNetwork, alias: String = ZcashSdk.DEFAULT_ALIAS): Boolean
     }
 }
 

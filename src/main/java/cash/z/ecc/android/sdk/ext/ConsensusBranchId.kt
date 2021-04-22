@@ -1,5 +1,7 @@
 package cash.z.ecc.android.sdk.ext
 
+import java.util.Locale
+
 /**
  * Helper class for converting/displaying consensus branch ids. Activation height is intentionally
  * omitted since this is not the source of truth for branch information but rather a tool for
@@ -22,7 +24,7 @@ enum class ConsensusBranchId(val displayName: String, val id: Long, val hexId: S
         fun fromId(id: Long): ConsensusBranchId? = values().firstOrNull { it.id == id }
 
         fun fromHex(hex: String): ConsensusBranchId? = values().firstOrNull { branch ->
-            hex.toLowerCase().replace("_", "").replaceFirst("0x", "").let { sanitized ->
+            hex.toLowerCase(Locale.US).replace("_", "").replaceFirst("0x", "").let { sanitized ->
                 branch.hexId.equals(sanitized, true)
             }
         }

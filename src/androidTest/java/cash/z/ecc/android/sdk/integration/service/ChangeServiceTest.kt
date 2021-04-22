@@ -1,15 +1,18 @@
 package cash.z.ecc.android.sdk.integration.service
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.filters.SmallTest
+import cash.z.ecc.android.sdk.annotation.MaintainedTest
+import cash.z.ecc.android.sdk.annotation.TestPurpose
 import cash.z.ecc.android.sdk.block.CompactBlockDownloader
 import cash.z.ecc.android.sdk.block.CompactBlockStore
 import cash.z.ecc.android.sdk.exception.LightWalletException.ChangeServerException.ChainInfoNotMatching
 import cash.z.ecc.android.sdk.exception.LightWalletException.ChangeServerException.StatusException
 import cash.z.ecc.android.sdk.ext.ScopedTest
-import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.ext.twig
 import cash.z.ecc.android.sdk.service.LightWalletGrpcService
 import cash.z.ecc.android.sdk.service.LightWalletService
+import cash.z.ecc.android.sdk.type.ZcashNetwork
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -24,15 +27,19 @@ import org.mockito.Mock
 import org.mockito.MockitoAnnotations
 import org.mockito.Spy
 
+@MaintainedTest(TestPurpose.REGRESSION)
 @RunWith(AndroidJUnit4::class)
+@SmallTest
 class ChangeServiceTest : ScopedTest() {
+
+    val network = ZcashNetwork.Mainnet
 
     @Mock
     lateinit var mockBlockStore: CompactBlockStore
     var mockCloseable: AutoCloseable? = null
 
     @Spy
-    val service = LightWalletGrpcService(context, ZcashSdk.DEFAULT_LIGHTWALLETD_HOST)
+    val service = LightWalletGrpcService(context, network)
 
     lateinit var downloader: CompactBlockDownloader
     lateinit var otherService: LightWalletService
@@ -41,7 +48,7 @@ class ChangeServiceTest : ScopedTest() {
     fun setup() {
         initMocks()
         downloader = CompactBlockDownloader(service, mockBlockStore)
-        otherService = LightWalletGrpcService(context, "lightwalletd.electriccoin.co", 9067)
+        otherService = LightWalletGrpcService(context, "lightwalletd.electriccoin.co")
     }
 
     @After
@@ -56,7 +63,7 @@ class ChangeServiceTest : ScopedTest() {
     @Test
     fun testSanityCheck() {
         val result = service.getLatestBlockHeight()
-        assertTrue(result > ZcashSdk.SAPLING_ACTIVATION_HEIGHT)
+        assertTrue(result > network.saplingActivationHeight)
     }
 
     @Test
@@ -66,16 +73,20 @@ class ChangeServiceTest : ScopedTest() {
         assertEquals(1_001, result)
     }
 
+    /**
+     * Repeatedly connect to servers and download a range of blocks. Switch part way through and
+     * verify that the servers change over, even while actively downloading.
+     */
     @Test
     fun testSwitchWhileActive() = runBlocking {
         val start = 900_000
         val count = 5
-        val vendors = mutableListOf<String>()
-        var oldVendor = downloader.getServerInfo().vendor
+        val differentiators = mutableListOf<String>()
+        var initialValue = downloader.getServerInfo().buildUser
         val job = testScope.launch {
             repeat(count) {
-                vendors.add(downloader.getServerInfo().vendor)
-                twig("downloading from ${vendors.last()}")
+                differentiators.add(downloader.getServerInfo().buildUser)
+                twig("downloading from ${differentiators.last()}")
                 downloader.downloadBlockRange(start..(start + 100 * it))
                 delay(10L)
             }
@@ -85,8 +96,8 @@ class ChangeServiceTest : ScopedTest() {
             downloader.changeService(otherService)
         }
         job.join()
-        assertTrue(vendors.count { it == oldVendor } < vendors.size)
-        assertEquals(count, vendors.size)
+        assertTrue(differentiators.count { it == initialValue } < differentiators.size)
+        assertEquals(count, differentiators.size)
     }
 
     @Test
@@ -105,7 +116,7 @@ class ChangeServiceTest : ScopedTest() {
     @Test
     fun testSwitchToTestnetFails() = runBlocking {
         var caughtException: Throwable? = null
-        downloader.changeService(LightWalletGrpcService(context, "lightwalletd.testnet.electriccoin.co", 9067)) {
+        downloader.changeService(LightWalletGrpcService(context, ZcashNetwork.Testnet)) {
             caughtException = it
         }
         assertNotNull("Using an invalid host should generate an exception.", caughtException)
@@ -114,7 +125,7 @@ class ChangeServiceTest : ScopedTest() {
             caughtException is ChainInfoNotMatching
         )
         (caughtException as ChainInfoNotMatching).propertyNames.let { props ->
-            arrayOf("consensusBranchId", "saplingActivationHeight", "chainName").forEach {
+            arrayOf("saplingActivationHeight", "chainName").forEach {
                 assertTrue(
                     "$it should be a non-matching property but properties were [$props]", props.contains(it, true)
                 )

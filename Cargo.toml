@@ -16,10 +16,10 @@ hex = "0.4"
 jni = { version = "0.17", default-features = false }
 log = "0.4"
 log-panics = "2.0.0"
-zcash_client_backend = "0.4"
-zcash_client_sqlite = "0.2.1"
-zcash_primitives = "0.4"
-zcash_proofs = "0.4"
+zcash_client_backend = "0.5"
+zcash_client_sqlite = "0.3"
+zcash_primitives = "0.5"
+zcash_proofs = "0.5"
 
 #### Temporary additions: ####################################
 #base58 = "0.1.0"
@@ -50,7 +50,7 @@ protobuf-codegen-pure = "2.14"
 #zcash_primitives = { git = 'https://github.com/zcash/librustzcash.git', rev='04a2bd4ad86980e0c2862706bd402b85b9dd1965' }
 #zcash_proofs = { git = 'https://github.com/zcash/librustzcash.git', rev='04a2bd4ad86980e0c2862706bd402b85b9dd1965' }
 
-# Uncomment this to test librustzcash changes locally
+## Uncomment this to test librustzcash changes locally
 #[patch.crates-io]
 #zcash_client_backend = { path = '../../clones/librustzcash/zcash_client_backend' }
 #zcash_client_sqlite = { path = '../../clones/librustzcash/zcash_client_sqlite' }
@@ -59,14 +59,14 @@ protobuf-codegen-pure = "2.14"
 
 # Uncomment this to test someone else's librustzcash changes in a branch
 [patch.crates-io]
-zcash_client_backend = {git = "https://github.com/nuttycom/librustzcash", branch = "autoshield-poc-daa"}
-zcash_client_sqlite = {git = "https://github.com/nuttycom/librustzcash", branch = "autoshield-poc-daa"}
-zcash_primitives = {git = "https://github.com/nuttycom/librustzcash", branch = "autoshield-poc-daa"}
-zcash_proofs = {git = "https://github.com/nuttycom/librustzcash", branch = "autoshield-poc-daa"}
+zcash_client_backend = {git = "https://github.com/gmale/librustzcash", branch = "autoshield-poc-daa-taddr3"}
+zcash_client_sqlite = {git = "https://github.com/gmale/librustzcash", branch = "autoshield-poc-daa-taddr3"}
+zcash_primitives = {git = "https://github.com/gmale/librustzcash", branch = "autoshield-poc-daa-taddr3"}
+zcash_proofs = {git = "https://github.com/gmale/librustzcash", branch = "autoshield-poc-daa-taddr3"}
 
 [features]
-mainnet = ["zcash_client_sqlite/mainnet", "zcash_client_sqlite/transparent-inputs", "zcash_client_backend/transparent-inputs", "zcash_primitives/transparent-inputs"]
-testnet = ["zcash_client_backend/transparent-inputs", "zcash_client_sqlite/transparent-inputs", "zcash_primitives/transparent-inputs"]
+mainnet = ["zcash_client_sqlite/mainnet"]
+testnet = []
 updater = ["bls12_381", "futures", "grpc", "grpc-protobuf", "httpbis", "tls-api", "tls-api-rustls"]
 
 [lib]

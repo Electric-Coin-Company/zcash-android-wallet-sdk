@@ -1,7 +1,6 @@
 package cash.z.ecc.android.sdk.exception
 
-import cash.z.ecc.android.sdk.ext.ZcashSdk.NETWORK
-import cash.z.ecc.android.sdk.ext.ZcashSdk.SAPLING_ACTIVATION_HEIGHT
+import cash.z.ecc.android.sdk.type.ZcashNetwork
 import cash.z.wallet.sdk.rpc.Service
 import io.grpc.Status
 import io.grpc.Status.Code.UNAVAILABLE
@@ -88,6 +87,14 @@ sealed class CompactBlockProcessorException(message: String, cause: Throwable? =
         class EnhanceTxDownloadError(height: Int, cause: Throwable) : EnhanceTransactionError("Error while attempting to download a transaction to enhance", height, cause)
         class EnhanceTxDecryptError(height: Int, cause: Throwable) : EnhanceTransactionError("Error while attempting to decrypt and store a transaction to enhance", height, cause)
     }
+
+    class MismatchedNetwork(clientNetwork: String?, serverNetwork: String?) : CompactBlockProcessorException(
+        "Incompatible server: this client expects a server using $clientNetwork but it was $serverNetwork! Try updating the client or switching servers."
+    )
+
+    class MismatchedBranch(clientBranch: String?, serverBranch: String?) : CompactBlockProcessorException(
+        "Incompatible server: this client expects a server following consensus branch $clientBranch but it was $serverBranch! Try updating the client or switching servers."
+    )
 }
 
 /**
@@ -135,10 +142,10 @@ sealed class InitializerException(message: String, cause: Throwable? = null) : S
             "not to mask this error because the root issue should be addressed."
     )
     object MissingViewingKeyException : InitializerException(
-        "Expected a viewingKey for this wallet but failed to find one. This usually means that " +
-            "wallet setup happened incorrectly. A workaround might be to derive the " +
-            "viewingKey from the seed or seedPhrase, if they exist, but it is probably " +
-            "better not to mask this error because the root issue should be addressed."
+        "Expected a unified viewingKey for this wallet but failed to find one. This usually means" +
+            " that wallet setup happened incorrectly. A workaround might be to derive the" +
+            " unified viewingKey from the seed or seedPhrase, if they exist, but it is probably" +
+            " better not to mask this error because the root issue should be addressed."
     )
     object DatabasePathException :
         InitializerException(
@@ -147,9 +154,9 @@ sealed class InitializerException(message: String, cause: Throwable? = null) : S
                 " data."
         )
 
-    class InvalidBirthdayHeightException(height: Int?) : InitializerException(
+    class InvalidBirthdayHeightException(height: Int?, network: ZcashNetwork) : InitializerException(
         "Invalid birthday height of $height. The birthday height must be at least the height of" +
-            " Sapling activation on $NETWORK ($SAPLING_ACTIVATION_HEIGHT)."
+            " Sapling activation on ${network.networkName} (${network.saplingActivationHeight})."
     )
 
     object MissingDefaultBirthdayException : InitializerException(

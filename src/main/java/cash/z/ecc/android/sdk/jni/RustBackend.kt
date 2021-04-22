@@ -1,10 +1,13 @@
 package cash.z.ecc.android.sdk.jni
 
-import cash.z.ecc.android.sdk.block.CompactBlockProcessor
 import cash.z.ecc.android.sdk.exception.BirthdayException
 import cash.z.ecc.android.sdk.ext.ZcashSdk.OUTPUT_PARAM_FILE_NAME
 import cash.z.ecc.android.sdk.ext.ZcashSdk.SPEND_PARAM_FILE_NAME
 import cash.z.ecc.android.sdk.ext.twig
+import cash.z.ecc.android.sdk.tool.DerivationTool
+import cash.z.ecc.android.sdk.type.UnifiedViewingKey
+import cash.z.ecc.android.sdk.type.WalletBalance
+import cash.z.ecc.android.sdk.type.ZcashNetwork
 import java.io.File
 
 /**
@@ -26,6 +29,8 @@ class RustBackend private constructor() : RustBackendWelding {
     lateinit var pathParamsDir: String
         internal set
 
+    override lateinit var network: ZcashNetwork
+
     internal var birthdayHeight: Int = -1
         get() = if (field != -1) field else throw BirthdayException.UninitializedBirthdayException
         private set
@@ -45,15 +50,26 @@ class RustBackend private constructor() : RustBackendWelding {
     // Wrapper Functions
     //
 
-    override fun initDataDb() = initDataDb(pathDataDb)
+    override fun initDataDb() = initDataDb(pathDataDb, networkId = network.id)
 
-    override fun initAccountsTable(vararg extfvks: String) =
-        initAccountsTableWithKeys(pathDataDb, extfvks)
+    override fun initAccountsTable(vararg keys: UnifiedViewingKey): Boolean {
+        val extfvks = Array(keys.size) { "" }
+        val extpubs = Array(keys.size) { "" }
+        keys.forEachIndexed { i, key ->
+            extfvks[i] = key.extfvk
+            extpubs[i] = key.extpub
+        }
+        return initAccountsTableWithKeys(pathDataDb, extfvks, extpubs, networkId = network.id)
+    }
 
     override fun initAccountsTable(
         seed: ByteArray,
         numberOfAccounts: Int
-    ) = initAccountsTable(pathDataDb, seed, numberOfAccounts)
+    ): Array<UnifiedViewingKey> {
+        return DerivationTool.deriveUnifiedViewingKeys(seed, network, numberOfAccounts).apply {
+            initAccountsTable(*this)
+        }
+    }
 
     override fun initBlocksTable(
         height: Int,
@@ -61,37 +77,44 @@ class RustBackend private constructor() : RustBackendWelding {
         time: Long,
         saplingTree: String
     ): Boolean {
-        return initBlocksTable(pathDataDb, height, hash, time, saplingTree)
+        return initBlocksTable(pathDataDb, height, hash, time, saplingTree, networkId = network.id)
     }
 
-    override fun getShieldedAddress(account: Int) = getShieldedAddress(pathDataDb, account)
+    override fun getShieldedAddress(account: Int) = getShieldedAddress(pathDataDb, account, networkId = network.id)
 
     override fun getTransparentAddress(account: Int, index: Int): String {
         throw NotImplementedError("TODO: implement this at the zcash_client_sqlite level. But for now, use DerivationTool, instead to derive addresses from seeds")
     }
 
-    override fun getBalance(account: Int) = getBalance(pathDataDb, account)
+    override fun getBalance(account: Int) = getBalance(pathDataDb, account, networkId = network.id)
 
-    override fun getVerifiedBalance(account: Int) = getVerifiedBalance(pathDataDb, account)
+    override fun getVerifiedBalance(account: Int) = getVerifiedBalance(pathDataDb, account, networkId = network.id)
 
     override fun getReceivedMemoAsUtf8(idNote: Long) =
-        getReceivedMemoAsUtf8(pathDataDb, idNote)
+        getReceivedMemoAsUtf8(pathDataDb, idNote, networkId = network.id)
 
-    override fun getSentMemoAsUtf8(idNote: Long) = getSentMemoAsUtf8(pathDataDb, idNote)
+    override fun getSentMemoAsUtf8(idNote: Long) = getSentMemoAsUtf8(pathDataDb, idNote, networkId = network.id)
 
-    override fun validateCombinedChain() = validateCombinedChain(pathCacheDb, pathDataDb)
+    override fun validateCombinedChain() = validateCombinedChain(pathCacheDb, pathDataDb, networkId = network.id,)
 
-    override fun rewindToHeight(height: Int) = rewindToHeight(pathDataDb, height)
+    override fun getNearestRewindHeight(height: Int): Int = getNearestRewindHeight(pathDataDb, height, networkId = network.id)
+
+    /**
+     * Deletes data for all blocks above the given height. Boils down to:
+     *
+     * DELETE FROM blocks WHERE height > ?
+     */
+    override fun rewindToHeight(height: Int) = rewindToHeight(pathDataDb, height, networkId = network.id)
 
     override fun scanBlocks(limit: Int): Boolean {
         return if (limit > 0) {
-            scanBlockBatch(pathCacheDb, pathDataDb, limit)
+            scanBlockBatch(pathCacheDb, pathDataDb, limit, networkId = network.id)
         } else {
-            scanBlocks(pathCacheDb, pathDataDb)
+            scanBlocks(pathCacheDb, pathDataDb, networkId = network.id)
         }
     }
 
-    override fun decryptAndStoreTransaction(tx: ByteArray) = decryptAndStoreTransaction(pathDataDb, tx)
+    override fun decryptAndStoreTransaction(tx: ByteArray) = decryptAndStoreTransaction(pathDataDb, tx, networkId = network.id)
 
     override fun createToAddress(
         consensusBranchId: Long,
@@ -109,7 +132,8 @@ class RustBackend private constructor() : RustBackendWelding {
         value,
         memo ?: ByteArray(0),
         "$pathParamsDir/$SPEND_PARAM_FILE_NAME",
-        "$pathParamsDir/$OUTPUT_PARAM_FILE_NAME"
+        "$pathParamsDir/$OUTPUT_PARAM_FILE_NAME",
+        networkId = network.id,
     )
 
     override fun shieldToAddress(
@@ -125,7 +149,8 @@ class RustBackend private constructor() : RustBackendWelding {
             tsk,
             memo ?: ByteArray(0),
             "$pathParamsDir/$SPEND_PARAM_FILE_NAME",
-            "$pathParamsDir/$OUTPUT_PARAM_FILE_NAME"
+            "$pathParamsDir/$OUTPUT_PARAM_FILE_NAME",
+            networkId = network.id,
         )
     }
 
@@ -136,19 +161,24 @@ class RustBackend private constructor() : RustBackendWelding {
         script: ByteArray,
         value: Long,
         height: Int
-    ): Boolean = putUtxo(pathDataDb, tAddress, txId, index, script, value, height)
+    ): Boolean = putUtxo(pathDataDb, tAddress, txId, index, script, value, height, networkId = network.id)
 
-    override fun getDownloadedUtxoBalance(address: String): CompactBlockProcessor.WalletBalance {
-        val verified = getVerifiedTransparentBalance(pathDataDb, address)
-        val total = getTotalTransparentBalance(pathDataDb, address)
-        return CompactBlockProcessor.WalletBalance(total, verified)
+    override fun clearUtxos(
+        tAddress: String,
+        aboveHeight: Int,
+    ): Boolean = clearUtxos(pathDataDb, tAddress, aboveHeight, networkId = network.id)
+
+    override fun getDownloadedUtxoBalance(address: String): WalletBalance {
+        val verified = getVerifiedTransparentBalance(pathDataDb, address, networkId = network.id)
+        val total = getTotalTransparentBalance(pathDataDb, address, networkId = network.id)
+        return WalletBalance(total, verified)
     }
 
-    override fun isValidShieldedAddr(addr: String) = isValidShieldedAddress(addr)
+    override fun isValidShieldedAddr(addr: String) = isValidShieldedAddress(addr, networkId = network.id)
 
-    override fun isValidTransparentAddr(addr: String) = isValidTransparentAddress(addr)
+    override fun isValidTransparentAddr(addr: String) = isValidTransparentAddress(addr, networkId = network.id)
 
-    override fun getBranchIdForHeight(height: Int): Long = branchIdForHeight(height)
+    override fun getBranchIdForHeight(height: Int): Long = branchIdForHeight(height, networkId = network.id)
 
 //    /**
 //     * This is a proof-of-concept for doing Local RPC, where we are effectively using the JNI
@@ -183,12 +213,14 @@ class RustBackend private constructor() : RustBackendWelding {
             cacheDbPath: String,
             dataDbPath: String,
             paramsPath: String,
+            zcashNetwork: ZcashNetwork,
             birthdayHeight: Int? = null
         ): RustBackend {
             return RustBackend().apply {
                 pathCacheDb = cacheDbPath
                 pathDataDb = dataDbPath
                 pathParamsDir = paramsPath
+                network = zcashNetwork
                 if (birthdayHeight != null) {
                     this.birthdayHeight = birthdayHeight
                 }
@@ -223,17 +255,13 @@ class RustBackend private constructor() : RustBackendWelding {
         // External Functions
         //
 
-        @JvmStatic private external fun initDataDb(dbDataPath: String): Boolean
-
-        @JvmStatic private external fun initAccountsTable(
-            dbDataPath: String,
-            seed: ByteArray,
-            accounts: Int
-        ): Array<String>
+        @JvmStatic private external fun initDataDb(dbDataPath: String, networkId: Int): Boolean
 
         @JvmStatic private external fun initAccountsTableWithKeys(
             dbDataPath: String,
-            extfvk: Array<out String>
+            extfvk: Array<out String>,
+            extpub: Array<out String>,
+            networkId: Int,
         ): Boolean
 
         @JvmStatic private external fun initBlocksTable(
@@ -241,34 +269,89 @@ class RustBackend private constructor() : RustBackendWelding {
             height: Int,
             hash: String,
             time: Long,
-            saplingTree: String
+            saplingTree: String,
+            networkId: Int,
         ): Boolean
 
-        @JvmStatic private external fun getShieldedAddress(dbDataPath: String, account: Int): String
-// TODO: implement this in the zcash_client_sqlite layer. For now, use DerivationTool, instead.
-//        @JvmStatic private external fun getTransparentAddress(dbDataPath: String, account: Int): String
+        @JvmStatic
+        private external fun getShieldedAddress(
+            dbDataPath: String,
+            account: Int,
+            networkId: Int,
+        ): String
 
-        @JvmStatic private external fun isValidShieldedAddress(addr: String): Boolean
+        @JvmStatic
+        private external fun isValidShieldedAddress(addr: String, networkId: Int): Boolean
 
-        @JvmStatic private external fun isValidTransparentAddress(addr: String): Boolean
+        @JvmStatic
+        private external fun isValidTransparentAddress(addr: String, networkId: Int): Boolean
 
-        @JvmStatic private external fun getBalance(dbDataPath: String, account: Int): Long
+        @JvmStatic
+        private external fun getBalance(dbDataPath: String, account: Int, networkId: Int): Long
 
-        @JvmStatic private external fun getVerifiedBalance(dbDataPath: String, account: Int): Long
+        @JvmStatic
+        private external fun getVerifiedBalance(
+            dbDataPath: String,
+            account: Int,
+            networkId: Int,
+        ): Long
 
-        @JvmStatic private external fun getReceivedMemoAsUtf8(dbDataPath: String, idNote: Long): String
+        @JvmStatic
+        private external fun getReceivedMemoAsUtf8(
+            dbDataPath: String,
+            idNote: Long,
+            networkId: Int,
+        ): String
 
-        @JvmStatic private external fun getSentMemoAsUtf8(dbDataPath: String, idNote: Long): String
+        @JvmStatic
+        private external fun getSentMemoAsUtf8(
+            dbDataPath: String,
+            dNote: Long,
+            networkId: Int,
+        ): String
 
-        @JvmStatic private external fun validateCombinedChain(dbCachePath: String, dbDataPath: String): Int
+        @JvmStatic
+        private external fun validateCombinedChain(
+            dbCachePath: String,
+            dbDataPath: String,
+            networkId: Int,
+        ): Int
 
-        @JvmStatic private external fun rewindToHeight(dbDataPath: String, height: Int): Boolean
+        @JvmStatic
+        private external fun getNearestRewindHeight(
+            dbDataPath: String,
+            height: Int,
+            networkId: Int,
+        ): Int
 
-        @JvmStatic private external fun scanBlocks(dbCachePath: String, dbDataPath: String): Boolean
+        @JvmStatic
+        private external fun rewindToHeight(
+            dbDataPath: String,
+            height: Int,
+            networkId: Int,
+        ): Boolean
 
-        @JvmStatic private external fun scanBlockBatch(dbCachePath: String, dbDataPath: String, limit: Int): Boolean
+        @JvmStatic
+        private external fun scanBlocks(
+            dbCachePath: String,
+            dbDataPath: String,
+            networkId: Int,
+        ): Boolean
 
-        @JvmStatic private external fun decryptAndStoreTransaction(dbDataPath: String, tx: ByteArray)
+        @JvmStatic
+        private external fun scanBlockBatch(
+            dbCachePath: String,
+            dbDataPath: String,
+            limit: Int,
+            networkId: Int,
+        ): Boolean
+
+        @JvmStatic
+        private external fun decryptAndStoreTransaction(
+            dbDataPath: String,
+            tx: ByteArray,
+            networkId: Int,
+        )
 
         @JvmStatic private external fun createToAddress(
             dbDataPath: String,
@@ -279,7 +362,8 @@ class RustBackend private constructor() : RustBackendWelding {
             value: Long,
             memo: ByteArray,
             spendParamsPath: String,
-            outputParamsPath: String
+            outputParamsPath: String,
+            networkId: Int,
         ): Long
 
         @JvmStatic private external fun shieldToAddress(
@@ -289,12 +373,13 @@ class RustBackend private constructor() : RustBackendWelding {
             tsk: String,
             memo: ByteArray,
             spendParamsPath: String,
-            outputParamsPath: String
+            outputParamsPath: String,
+            networkId: Int,
         ): Long
 
         @JvmStatic private external fun initLogs()
 
-        @JvmStatic private external fun branchIdForHeight(height: Int): Long
+        @JvmStatic private external fun branchIdForHeight(height: Int, networkId: Int): Long
 
         @JvmStatic private external fun putUtxo(
             dbDataPath: String,
@@ -303,17 +388,27 @@ class RustBackend private constructor() : RustBackendWelding {
             index: Int,
             script: ByteArray,
             value: Long,
-            height: Int
+            height: Int,
+            networkId: Int,
+        ): Boolean
+
+        @JvmStatic private external fun clearUtxos(
+            dbDataPath: String,
+            tAddress: String,
+            aboveHeight: Int,
+            networkId: Int,
         ): Boolean
 
         @JvmStatic private external fun getVerifiedTransparentBalance(
             pathDataDb: String,
-            taddr: String
+            taddr: String,
+            networkId: Int,
         ): Long
 
         @JvmStatic private external fun getTotalTransparentBalance(
             pathDataDb: String,
-            taddr: String
+            taddr: String,
+            networkId: Int,
         ): Long
     }
 }

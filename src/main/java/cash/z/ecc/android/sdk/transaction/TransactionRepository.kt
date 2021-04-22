@@ -3,6 +3,7 @@ package cash.z.ecc.android.sdk.transaction
 import androidx.paging.PagedList
 import cash.z.ecc.android.sdk.db.entity.ConfirmedTransaction
 import cash.z.ecc.android.sdk.db.entity.EncodedTransaction
+import cash.z.ecc.android.sdk.type.UnifiedAddressAccount
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -16,6 +17,13 @@ interface TransactionRepository {
      * @return the last height scanned by this repository.
      */
     fun lastScannedHeight(): Int
+
+    /**
+     * The height of the first block in this repository. This is typically the checkpoint that was
+     * used to initialize this wallet. If we overwrite this block, it breaks our ability to spend
+     * funds.
+     */
+    fun firstScannedHeight(): Int
 
     /**
      * Returns true when this repository has been initialized and seeded with the initial checkpoint.
@@ -73,6 +81,10 @@ interface TransactionRepository {
     suspend fun cleanupCancelledTx(rawTransactionId: ByteArray): Boolean
 
     suspend fun deleteExpired(lastScannedHeight: Int): Int
+
+    suspend fun count(): Int
+
+    suspend fun getAccount(accountId: Int): UnifiedAddressAccount?
 
     //
     // Transactions

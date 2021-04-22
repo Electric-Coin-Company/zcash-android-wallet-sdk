@@ -22,10 +22,12 @@ This lightweight SDK connects Android to Zcash. It welds together Rust and Kotli
 
 ## Contents
 
+- [Requirements](#requirements)
 - [Structure](#structure)
 - [Overview](#overview)
   - [Components](#components)
 - [Quickstart](#quickstart)
+- [Examples](#examples)
 - [Compiling Sources](#compiling-sources)
 - [Versioning](#versioning)
 - [Examples](#examples)
@@ -125,6 +127,26 @@ Send funds to another address
 ```kotlin
 synchronizer.sendToAddress(spendingKey, zatoshi, address, memo)
 ```
+
+[Back to contents](#contents)
+
+## Examples
+
+Full working examples can be found in the [demo app](https://github.com/zcash/zcash-android-wallet-sdk/tree/master/samples/demo-app), covering all major functionality of the SDK. Each demo strives to be self-contained so that a developer can understand everything required for it to work. Testnet builds of the demo app will soon be available to [download as github releases](https://github.com/zcash/zcash-android-wallet-sdk/releases).
+
+### Demos
+
+Menu Item|Related Code|Description
+:-----|:-----|:-----
+Get Private Key|[GetPrivateKeyFragment.kt](app/src/main/java/cash/z/ecc/android/sdk/demoapp/demos/getprivatekey/GetPrivateKeyFragment.kt)|Given a seed, display its viewing key and spending key
+Get Address|[GetAddressFragment.kt](app/src/main/java/cash/z/ecc/android/sdk/demoapp/demos/getaddress/GetAddressFragment.kt)|Given a seed, display its z-addr
+Get Balance|[GetBalanceFragment.kt](app/src/main/java/cash/z/ecc/android/sdk/demoapp/demos/getbalance/GetBalanceFragment.kt)|Display the balance
+Get Latest Height|[GetLatestHeightFragment.kt](app/src/main/java/cash/z/ecc/android/sdk/demoapp/demos/getlatestheight/GetLatestHeightFragment.kt)|Given a lightwalletd server, retrieve the latest block height
+Get Block|[GetBlockFragment.kt](app/src/main/java/cash/z/ecc/android/sdk/demoapp/demos/getblock/GetBlockFragment.kt)|Given a lightwalletd server, retrieve a compact block
+Get Block Range|[GetBlockRangeFragment.kt](app/src/main/java/cash/z/ecc/android/sdk/demoapp/demos/getblockrange/GetBlockRangeFragment.kt)|Given a lightwalletd server, retrieve a range of compact blocks
+List Transactions|[ListTransactionsFragment.kt](app/src/main/java/cash/z/ecc/android/sdk/demoapp/demos/listtransactions/ListTransactionsFragment.kt)|Given a seed, list all related shielded transactions
+Send|[SendFragment.kt](app/src/main/java/cash/z/ecc/android/sdk/demoapp/demos/send/SendFragment.kt)|Send and monitor a transaction, the most complex demo
+
 
 [Back to contents](#contents)
 

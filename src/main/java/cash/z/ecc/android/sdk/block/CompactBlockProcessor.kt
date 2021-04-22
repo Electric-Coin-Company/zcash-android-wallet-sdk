@@ -15,15 +15,18 @@ import cash.z.ecc.android.sdk.db.entity.ConfirmedTransaction
 import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException
 import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException.EnhanceTransactionError.EnhanceTxDecryptError
 import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException.EnhanceTransactionError.EnhanceTxDownloadError
+import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException.MismatchedBranch
+import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException.MismatchedNetwork
 import cash.z.ecc.android.sdk.exception.RustLayerException
+import cash.z.ecc.android.sdk.ext.BatchMetrics
 import cash.z.ecc.android.sdk.ext.Twig
+import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.ext.ZcashSdk.DOWNLOAD_BATCH_SIZE
 import cash.z.ecc.android.sdk.ext.ZcashSdk.MAX_BACKOFF_INTERVAL
 import cash.z.ecc.android.sdk.ext.ZcashSdk.MAX_REORG_SIZE
 import cash.z.ecc.android.sdk.ext.ZcashSdk.POLL_INTERVAL
 import cash.z.ecc.android.sdk.ext.ZcashSdk.RETRIES
 import cash.z.ecc.android.sdk.ext.ZcashSdk.REWIND_DISTANCE
-import cash.z.ecc.android.sdk.ext.ZcashSdk.SAPLING_ACTIVATION_HEIGHT
 import cash.z.ecc.android.sdk.ext.ZcashSdk.SCAN_BATCH_SIZE
 import cash.z.ecc.android.sdk.ext.retryUpTo
 import cash.z.ecc.android.sdk.ext.retryWithBackoff
@@ -34,15 +37,21 @@ import cash.z.ecc.android.sdk.jni.RustBackend
 import cash.z.ecc.android.sdk.jni.RustBackendWelding
 import cash.z.ecc.android.sdk.transaction.PagedTransactionRepository
 import cash.z.ecc.android.sdk.transaction.TransactionRepository
+import cash.z.ecc.android.sdk.type.WalletBalance
 import cash.z.wallet.sdk.rpc.Service
 import io.grpc.StatusRuntimeException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.channels.ConflatedBroadcastChannel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import java.util.Locale
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.max
 import kotlin.math.min
@@ -67,7 +76,7 @@ class CompactBlockProcessor(
     val downloader: CompactBlockDownloader,
     private val repository: TransactionRepository,
     private val rustBackend: RustBackendWelding,
-    minimumHeight: Int = SAPLING_ACTIVATION_HEIGHT
+    minimumHeight: Int = rustBackend.network.saplingActivationHeight
 ) {
     /**
      * Callback for any non-trivial errors that occur while processing compact blocks.
@@ -83,12 +92,43 @@ class CompactBlockProcessor(
      */
     var onChainErrorListener: ((errorHeight: Int, rewindHeight: Int) -> Any)? = null
 
+    /**
+     * Callback for setup errors that occur prior to processing compact blocks. Can be used to
+     * override any errors from [verifySetup]. When this listener is missing then all setup errors
+     * will result in the processor not starting. This is particularly useful for wallets to receive
+     * a callback right before the SDK will reject a lightwalletd server because it appears not to
+     * match.
+     *
+     * @return true when the setup error should be ignored and processing should be allowed to
+     * start. Otherwise, processing will not begin.
+     */
+    var onSetupErrorListener: ((Throwable) -> Boolean)? = null
+
+    /**
+     * Callback for apps to report scan times. As blocks are scanned in batches, this listener is
+     * invoked at the end of every batch and the second parameter is only true when all batches are
+     * complete. The first parameter contains useful information on the blocks scanned per second.
+     *
+     * The Boolean param (isComplete) is true when this event represents the completion of a scan
+     */
+    var onScanMetricCompleteListener: ((BatchMetrics, Boolean) -> Unit)? = null
+
     private val consecutiveChainErrors = AtomicInteger(0)
-    private val lowerBoundHeight: Int = max(SAPLING_ACTIVATION_HEIGHT, minimumHeight - MAX_REORG_SIZE)
+    private val lowerBoundHeight: Int = max(rustBackend.network.saplingActivationHeight, minimumHeight - MAX_REORG_SIZE)
 
     private val _state: ConflatedBroadcastChannel<State> = ConflatedBroadcastChannel(Initialized)
     private val _progress = ConflatedBroadcastChannel(0)
     private val _processorInfo = ConflatedBroadcastChannel(ProcessorInfo())
+    private val processingMutex = Mutex()
+
+    /**
+     * Flow of birthday heights. The birthday is essentially the first block that the wallet cares
+     * about. Any prior block can be ignored. This is not a fixed value because the height is
+     * influenced by the first transaction, which isn't always known. So we start with an estimation
+     * and improve it as the wallet progresses. Once the first transaction occurs, this value is
+     * effectively fixed.
+     */
+    private val _birthdayHeight = MutableStateFlow(lowerBoundHeight)
 
     /**
      * The root source of truth for the processor's progress. All processing must be done
@@ -96,6 +136,11 @@ class CompactBlockProcessor(
      * coroutine safe because processing cannot be concurrent.
      */
     internal var currentInfo = ProcessorInfo()
+
+    /**
+     * The zcash network that is being processed. Either Testnet or Mainnet.
+     */
+    val network = rustBackend.network
 
     /**
      * The flow of state values so that a wallet can monitor the state of this class without needing
@@ -116,16 +161,27 @@ class CompactBlockProcessor(
     val processorInfo = _processorInfo.asFlow()
 
     /**
+     * The first block this wallet cares about anything prior can be ignored. If a wallet has no
+     * transactions, this value will later update to 100 blocks before the first transaction,
+     * rounded down to the nearest 100. So in some cases, this is a dynamic value.
+     */
+    val birthdayHeight = _birthdayHeight.value
+
+    /**
      * Download compact blocks, verify and scan them until [stop] is called.
      */
     suspend fun start() = withContext(IO) {
-        twig("processor starting")
+        verifySetup()
+        updateBirthdayHeight()
+        twig("setup verified. processor starting")
 
         // using do/while makes it easier to execute exactly one loop which helps with testing this processor quickly
         // (because you can start and then immediately set isStopped=true to always get precisely one loop)
         do {
             retryWithBackoff(::onProcessorError, maxDelayMillis = MAX_BACKOFF_INTERVAL) {
-                val result = processNewBlocks()
+                val result = processingMutex.withLockLogged("processNewBlocks") {
+                    processNewBlocks()
+                }
                 // immediately process again after failures in order to download new blocks right away
                 if (result == ERROR_CODE_RECONNECT) {
                     val napTime = calculatePollInterval(true)
@@ -177,7 +233,6 @@ class CompactBlockProcessor(
      * return the block height where an error was found.
      */
     private suspend fun processNewBlocks(): Int = withContext(IO) {
-        verifySetup()
         twig("beginning to process new blocks (with lower bound: $lowerBoundHeight)...")
 
         if (!updateRanges()) {
@@ -186,13 +241,15 @@ class CompactBlockProcessor(
             downloader.lightWalletService.reconnect()
             ERROR_CODE_RECONNECT
         } else if (currentInfo.lastDownloadRange.isEmpty() && currentInfo.lastScanRange.isEmpty()) {
-            twig("Nothing to process: no new blocks to download or scan, right now.")
+            twig("Nothing to process: no new blocks to download or scan, right now (latest: ${currentInfo.networkBlockHeight}).")
             setState(Scanned(currentInfo.lastScanRange))
             ERROR_CODE_NONE
         } else {
             downloadNewBlocks(currentInfo.lastDownloadRange)
             val error = validateAndScanNewBlocks(currentInfo.lastScanRange)
-            if (error != ERROR_CODE_NONE) error else enhanceTransactionDetails(currentInfo.lastScanRange)
+            if (error != ERROR_CODE_NONE) error else {
+                enhanceTransactionDetails(currentInfo.lastScanRange)
+            }
         }
     }
 
@@ -270,6 +327,11 @@ class CompactBlockProcessor(
                 twig("no new transactions found in $lastScanRange")
             } else {
                 twig("enhancing ${newTxs.size} transaction(s)!")
+                // if the first transaction has been added
+                if (newTxs.size == repository.count()) {
+                    twig("Encountered the first transaction. This changes the birthday height!")
+                    updateBirthdayHeight()
+                }
             }
 
             newTxs?.onEach { newTransaction ->
@@ -310,14 +372,52 @@ class CompactBlockProcessor(
     /**
      * Confirm that the wallet data is properly setup for use.
      */
-    private fun verifySetup() {
-        if (!repository.isInitialized()) throw CompactBlockProcessorException.Uninitialized
+    private suspend fun verifySetup() {
+        // verify that the data is initialized
+        var error = if (!repository.isInitialized()) {
+            CompactBlockProcessorException.Uninitialized
+        } else {
+            // verify that the server is correct
+            downloader.getServerInfo().let { info ->
+                val clientBranch = "%x".format(rustBackend.getBranchIdForHeight(info.blockHeight.toInt()))
+                val network = rustBackend.network.networkName
+                when {
+                    !info.matchingNetwork(network) -> MismatchedNetwork(clientNetwork = network, serverNetwork = info.chainName)
+                    !info.matchingConsensusBranchId(clientBranch) -> MismatchedBranch(clientBranch = clientBranch, serverBranch = info.consensusBranchId)
+                    else -> null
+                }
+            }
+        }
+
+        if (error != null) {
+            // give listener a chance to override
+            if (onSetupErrorListener?.invoke(error) != true) {
+                throw error
+            } else {
+                twig("Warning: An ${error::class.java.simpleName} was encountered while verifying setup but it was ignored by the onSetupErrorHandler. Ignoring message: ${error.message}")
+            }
+        }
     }
 
-    internal suspend fun downloadUtxos(tAddress: String, startHeight: Int): Int = withContext(IO) {
+    private suspend fun updateBirthdayHeight() {
+        try {
+            val betterBirthday = calculateBirthdayHeight()
+            if (betterBirthday > birthdayHeight) {
+                twig("Better birthday found! Birthday height updated from $birthdayHeight to $betterBirthday")
+                _birthdayHeight.value = betterBirthday
+            }
+        } catch (e: Throwable) {
+            twig("Warning: updating the birthday height failed due to $e")
+        }
+    }
+
+    internal suspend fun refreshUtxos(tAddress: String, startHeight: Int): Int = withContext(IO) {
         var skipped = 0
-        twig("Downloading utxos starting at height $startHeight")
+        // todo test  what happens when this call fails
         downloader.lightWalletService.fetchUtxos(tAddress, startHeight).let { result ->
+            twig("Clearing utxos above height ${startHeight - 1}")
+            rustBackend.clearUtxos(tAddress, startHeight - 1)
+            twig("Downloading utxos starting at height $startHeight")
             result.forEach { utxo: Service.GetAddressUtxosReply ->
                 twig("Found UTXO at height ${utxo.height.toInt()}")
                 try {
@@ -372,7 +472,8 @@ class CompactBlockProcessor(
                     twig("downloaded $count blocks!")
                     progress = (i / batches.toFloat() * 100).roundToInt()
                     _progress.send(progress)
-                    updateProgress(lastDownloadedHeight = downloader.getLastDownloadedHeight())
+                    val lastDownloadedHeight = downloader.getLastDownloadedHeight().takeUnless { it < network.saplingActivationHeight } ?: -1
+                    updateProgress(lastDownloadedHeight = lastDownloadedHeight)
                     downloadedBlockHeight = end
                 }
             }
@@ -420,27 +521,34 @@ class CompactBlockProcessor(
             Twig.sprout("scanning")
             twig("scanning blocks for range $range in batches")
             var result = false
+            var metrics = BatchMetrics(range, SCAN_BATCH_SIZE, onScanMetricCompleteListener)
             // Attempt to scan a few times to work around any concurrent modification errors, then
             // rethrow as an official processorError which is handled by [start.retryWithBackoff]
             retryUpTo(3, { CompactBlockProcessorException.FailedScan(it) }) { failedAttempts ->
                 if (failedAttempts > 0) twig("retrying the scan after $failedAttempts failure(s)...")
                 do {
                     var scannedNewBlocks = false
+                    metrics.beginBatch()
                     result = rustBackend.scanBlocks(SCAN_BATCH_SIZE)
-                    val lastScannedHeight = getLastScannedHeight()
-                    twig("batch scanned: $lastScannedHeight/${range.last}")
+                    metrics.endBatch()
+                    val lastScannedHeight = range.start + metrics.cumulativeItems - 1
+                    val percentValue = (lastScannedHeight - range.first) / (range.last - range.first + 1).toFloat() * 100.0f
+                    val percent = "%.0f".format(percentValue.coerceAtMost(100f).coerceAtLeast(0f))
+                    twig("batch scanned ($percent%): $lastScannedHeight/${range.last} | ${metrics.batchTime}ms, ${metrics.batchItems}blks, ${metrics.batchIps.format()}bps")
                     if (currentInfo.lastScannedHeight != lastScannedHeight) {
                         scannedNewBlocks = true
                         updateProgress(lastScannedHeight = lastScannedHeight)
                     }
                     // if we made progress toward our scan, then keep trying
                 } while (result && scannedNewBlocks && lastScannedHeight < range.last)
-                twig("batch scan complete!")
+                twig("batch scan complete! Total time: ${metrics.cumulativeTime}  Total blocks measured: ${metrics.cumulativeItems}  Cumulative bps: ${metrics.cumulativeIps.format()}")
             }
             Twig.clip("scanning")
             result
         }
     }
+
+    private fun Float.format(places: Int = 0) = "%.${places}f".format(this)
 
     /**
      * Emit an instance of processorInfo, corresponding to the provided data.
@@ -474,14 +582,62 @@ class CompactBlockProcessor(
         _processorInfo.send(currentInfo)
     }
 
-    private suspend fun handleChainError(errorHeight: Int) = withContext(IO) {
+    private suspend fun handleChainError(errorHeight: Int) {
         // TODO consider an error object containing hash information
         printValidationErrorInfo(errorHeight)
         determineLowerBound(errorHeight).let { lowerBound ->
             twig("handling chain error at $errorHeight by rewinding to block $lowerBound")
             onChainErrorListener?.invoke(errorHeight, lowerBound)
-            rustBackend.rewindToHeight(lowerBound)
-            downloader.rewindToHeight(lowerBound)
+            rewindToNearestHeight(lowerBound, true)
+        }
+    }
+
+    suspend fun getNearestRewindHeight(height: Int): Int {
+        return if (height < lowerBoundHeight) {
+            lowerBoundHeight
+        } else {
+            // tricky: subtract one because we delete ABOVE this block
+            rustBackend.getNearestRewindHeight(height) - 1
+        }
+    }
+
+    /**
+     * @param alsoClearBlockCache when true, also clear the block cache which forces a redownload of
+     * blocks. Otherwise, the cached blocks will be used in the rescan, which in most cases, is fine.
+     */
+    suspend fun rewindToNearestHeight(height: Int, alsoClearBlockCache: Boolean = false) = withContext(IO) {
+        processingMutex.withLockLogged("rewindToHeight") {
+            val lastScannedHeight = currentInfo.lastScannedHeight
+            val targetHeight = getNearestRewindHeight(height)
+            twig("Rewinding from $lastScannedHeight to requested height: $height using target height: $targetHeight")
+            if (targetHeight < lastScannedHeight) {
+                rustBackend.rewindToHeight(targetHeight)
+            } else {
+                twig("not rewinding dataDb because the last scanned height is $lastScannedHeight which is less than the target height of $targetHeight")
+            }
+
+            if (alsoClearBlockCache) {
+                twig("Also clearing block cache back to $targetHeight. These rewound blocks will download in the next scheduled scan")
+                downloader.rewindToHeight(targetHeight)
+                // communicate that the wallet is no longer synced because it might remain this way for 20+ seconds because we only download on 20s time boundaries so we can't trigger any immediate action
+                setState(Downloading)
+                updateProgress(
+                    lastScannedHeight = targetHeight,
+                    lastDownloadedHeight = targetHeight,
+                    lastScanRange = (targetHeight + 1)..currentInfo.networkBlockHeight,
+                    lastDownloadRange = (targetHeight + 1)..currentInfo.networkBlockHeight
+                )
+                _progress.send(0)
+            } else {
+                updateProgress(
+                    lastScannedHeight = targetHeight,
+                    lastScanRange = (targetHeight + 1)..currentInfo.networkBlockHeight,
+                )
+                _progress.send(0)
+                val range = (targetHeight + 1)..lastScannedHeight
+                twig("We kept the cache blocks in place so we don't need to wait for the next scheduled download to rescan. Instead we will rescan and validate blocks ${range.first}..${range.last}")
+                if (validateAndScanNewBlocks(range) == ERROR_CODE_NONE) enhanceTransactionDetails(range)
+            }
         }
     }
 
@@ -546,8 +702,23 @@ class CompactBlockProcessor(
         val interval = POLL_INTERVAL
         val now = System.currentTimeMillis()
         val deltaToNextInteral = interval - (now + interval).rem(interval)
-        twig("sleeping for ${deltaToNextInteral}ms from $now in order to wake at ${now + deltaToNextInteral}")
+        // twig("sleeping for ${deltaToNextInteral}ms from $now in order to wake at ${now + deltaToNextInteral}")
         return deltaToNextInteral
+    }
+
+    suspend fun calculateBirthdayHeight(): Int {
+        var oldestTransactionHeight = 0
+        try {
+            oldestTransactionHeight = repository.receivedTransactions.first().last()?.minedHeight ?: lowerBoundHeight
+            // to be safe adjust for reorgs (and generally a little cushion is good for privacy)
+            // so we round down to the nearest 100 and then subtract 100 to ensure that the result is always at least 100 blocks away
+            oldestTransactionHeight = ZcashSdk.MAX_REORG_SIZE.let { boundary ->
+                oldestTransactionHeight.let { it - it.rem(boundary) - boundary }
+            }
+        } catch (t: Throwable) {
+            twig("failed to calculate birthday due to: $t")
+        }
+        return maxOf(lowerBoundHeight, oldestTransactionHeight, rustBackend.network.saplingActivationHeight)
     }
 
     /**
@@ -573,8 +744,12 @@ class CompactBlockProcessor(
      *
      * @return the address of this wallet.
      */
-    suspend fun getShieldedAddress(accountId: Int) = withContext(IO) {
-        rustBackend.getShieldedAddress(accountId)
+    suspend fun getShieldedAddress(accountId: Int = 0) = withContext(IO) {
+        repository.getAccount(accountId)!!.rawShieldedAddress
+    }
+
+    suspend fun getTransparentAddress(accountId: Int = 0) = withContext(IO) {
+        repository.getAccount(accountId)!!.rawTransparentAddress
     }
 
     /**
@@ -675,21 +850,6 @@ class CompactBlockProcessor(
     }
 
     /**
-     * Data structure to hold the total and available balance of the wallet. This is what is
-     * received on the balance channel.
-     *
-     * @param totalZatoshi the total balance, ignoring funds that cannot be used.
-     * @param availableZatoshi the amount of funds that are available for use. Typical reasons that funds
-     * may be unavailable include fairly new transactions that do not have enough confirmations or
-     * notes that are tied up because we are awaiting change from a transaction. When a note has
-     * been spent, its change cannot be used until there are enough confirmations.
-     */
-    data class WalletBalance(
-        val totalZatoshi: Long = -1,
-        val availableZatoshi: Long = -1
-    )
-
-    /**
      * Data class for holding detailed information about the processor.
      *
      * @param networkBlockHeight the latest block available to lightwalletd that may or may not be
@@ -766,6 +926,39 @@ class CompactBlockProcessor(
         val expectedPrevHash: String?,
         val actualPrevHash: String?
     )
+
+    //
+    // Helper Extensions
+    //
+
+    private fun Service.LightdInfo.matchingConsensusBranchId(clientBranch: String): Boolean {
+        return consensusBranchId.equals(clientBranch, true)
+    }
+
+    private fun Service.LightdInfo.matchingNetwork(network: String): Boolean {
+        fun String.toId() = toLowerCase(Locale.US).run {
+            when {
+                contains("main") -> "mainnet"
+                contains("test") -> "testnet"
+                else -> this
+            }
+        }
+        return chainName.toId() == network.toId()
+    }
+
+    /**
+     * Log the mutex in great detail just in case we need it for troubleshooting deadlock.
+     */
+    private suspend inline fun <T> Mutex.withLockLogged(name: String, block: () -> T): T {
+        twig("$name MUTEX: acquiring lock...")
+        this.withLock {
+            twig("$name MUTEX: ...lock acquired!")
+            return block().also {
+                twig("$name MUTEX: releasing lock")
+            }
+        }
+        twig("$name MUTEX: withLock complete")
+    }
 
     companion object {
         const val ERROR_CODE_NONE = -1

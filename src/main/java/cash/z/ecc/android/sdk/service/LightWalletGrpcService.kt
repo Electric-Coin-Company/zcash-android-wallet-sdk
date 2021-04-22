@@ -4,8 +4,8 @@ import android.content.Context
 import cash.z.ecc.android.sdk.R
 import cash.z.ecc.android.sdk.annotation.OpenForTesting
 import cash.z.ecc.android.sdk.exception.LightWalletException
-import cash.z.ecc.android.sdk.ext.ZcashSdk.DEFAULT_LIGHTWALLETD_PORT
 import cash.z.ecc.android.sdk.ext.twig
+import cash.z.ecc.android.sdk.type.ZcashNetwork
 import cash.z.wallet.sdk.rpc.CompactFormats
 import cash.z.wallet.sdk.rpc.CompactTxStreamerGrpc
 import cash.z.wallet.sdk.rpc.Service
@@ -34,6 +34,13 @@ class LightWalletGrpcService private constructor(
 
     lateinit var connectionInfo: ConnectionInfo
 
+    constructor(
+        appContext: Context,
+        network: ZcashNetwork,
+        usePlaintext: Boolean =
+            appContext.resources.getBoolean(R.bool.lightwalletd_allow_very_insecure_connections)
+    ) : this(appContext, network.defaultHost, network.defaultPort, usePlaintext)
+
     /**
      * Construct an instance that corresponds to the given host and port.
      *
@@ -47,7 +54,7 @@ class LightWalletGrpcService private constructor(
     constructor(
         appContext: Context,
         host: String,
-        port: Int = DEFAULT_LIGHTWALLETD_PORT,
+        port: Int = ZcashNetwork.Mainnet.defaultPort,
         usePlaintext: Boolean =
             appContext.resources.getBoolean(R.bool.lightwalletd_allow_very_insecure_connections)
     ) : this(createDefaultChannel(appContext, host, port, usePlaintext)) {
@@ -179,7 +186,11 @@ class LightWalletGrpcService private constructor(
         val host: String,
         val port: Int,
         val usePlaintext: Boolean
-    )
+    ) {
+        override fun toString(): String {
+            return "$host:$port?usePlaintext=$usePlaintext"
+        }
+    }
 
     companion object {
         /**
