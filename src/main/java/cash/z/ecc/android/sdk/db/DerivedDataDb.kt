@@ -433,7 +433,7 @@ interface TransactionDao {
                 twig("[cleanup] cleanupCancelledTx found ${it.size} matching transactions to cleanup")
             }.forEach { transactionId ->
                 hasInitialMatch = true
-                removeInvalidTransaction(transactionId)
+                removeInvalidOutboundTransaction(transactionId)
             }
             hasFinalMatch = findMatchingTransactionId(rawTransactionId) != null
             success = hasInitialMatch && !hasFinalMatch
@@ -445,7 +445,7 @@ interface TransactionDao {
     }
 
     @Transaction
-    suspend fun removeInvalidTransaction(transactionId: Long): Boolean {
+    suspend fun removeInvalidOutboundTransaction(transactionId: Long): Boolean {
         var success = false
         try {
             twig("[cleanup] removing invalid transactionId:$transactionId")
@@ -474,7 +474,7 @@ interface TransactionDao {
     suspend fun deleteExpired(lastHeight: Int): Int {
         var count = 0
         findExpiredTxs(lastHeight).forEach { transactionId ->
-            if (removeInvalidTransaction(transactionId)) count++
+            if (removeInvalidOutboundTransaction(transactionId)) count++
         }
         return count
     }

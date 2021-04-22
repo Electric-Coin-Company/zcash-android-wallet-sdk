@@ -596,7 +596,8 @@ class CompactBlockProcessor(
         return if (height < lowerBoundHeight) {
             lowerBoundHeight
         } else {
-            rustBackend.getNearestRewindHeight(height)
+            // tricky: subtract one because we delete ABOVE this block
+            rustBackend.getNearestRewindHeight(height) - 1
         }
     }
 
