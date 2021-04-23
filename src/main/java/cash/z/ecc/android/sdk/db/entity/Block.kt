@@ -2,18 +2,14 @@ package cash.z.ecc.android.sdk.db.entity
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity
-import org.jetbrains.annotations.NotNull
 
 @Entity(primaryKeys = ["height"], tableName = "blocks")
 data class Block(
     val height: Int?,
     @ColumnInfo(typeAffinity = ColumnInfo.BLOB, name = "hash")
-    @NotNull
     val hash: ByteArray,
-    @NotNull
     val time: Int,
     @ColumnInfo(typeAffinity = ColumnInfo.BLOB, name = "sapling_tree")
-    @NotNull
     val saplingTree: ByteArray
 ) {
     override fun equals(other: Any?): Boolean {

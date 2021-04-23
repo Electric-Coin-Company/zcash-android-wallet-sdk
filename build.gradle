@@ -123,11 +123,6 @@ android {
         exclude 'META-INF/LICENSE.md'
         exclude 'META-INF/LICENSE-notice.md'
     }
-    configurations {
-        cleanedAnnotations
-        compile.exclude group: 'com.intellij' , module:'annotations'
-        compile.exclude group: 'org.jetbrains' , module:'annotations'
-    }
 }
 mavenPublish {
     androidVariantToPublish = config.publish.target
@@ -199,10 +194,7 @@ dependencies {
     implementation AndroidX.lifecycle.commonJava8
 
     // Architecture Components: Room
-    implementation AndroidX.room.runtime
-    implementation AndroidX.room.common
     implementation AndroidX.room.ktx
-    implementation AndroidX.room.compiler
     implementation AndroidX.paging.runtimeKtx
     kapt AndroidX.room.compiler
 
@@ -237,10 +229,10 @@ dependencies {
     implementation 'com.squareup.okio:okio:1.17.5'
 
     // Tests
-    testImplementation 'androidx.multidex:multidex:2.0.1'
+    testImplementation 'androidx.multidex:multidex:_'
     testImplementation "org.jetbrains.kotlin:kotlin-reflect:_"
-    testImplementation 'org.mockito:mockito-junit-jupiter:3.5.10'
-    testImplementation 'com.nhaarman.mockitokotlin2:mockito-kotlin:2.2.0'
+    testImplementation 'org.mockito:mockito-junit-jupiter:_'
+    testImplementation 'com.nhaarman.mockitokotlin2:mockito-kotlin:_'
     testImplementation "org.junit.jupiter:junit-jupiter-api:_"
     testImplementation "org.junit.jupiter:junit-jupiter-engine:_"
     testImplementation "org.junit.jupiter:junit-jupiter-migrationsupport:_"
@@ -250,20 +242,20 @@ dependencies {
     // Attempting to use JUnit5 via https://github.com/mannodermaus/android-junit5 was painful. The plugin configuration
     // was buggy, crashing in several places. It also would require a separate test flavor because it's minimum API 26
     // because "JUnit 5 uses Java 8-specific APIs that didn't exist on Android before the Oreo release."
-    androidTestImplementation 'com.nhaarman.mockitokotlin2:mockito-kotlin:2.2.0'
-    androidTestImplementation 'org.mockito:mockito-android:3.5.10'
-    androidTestImplementation "androidx.test:runner:1.3.0"
-    androidTestImplementation 'com.android.support:support-annotations:28.0.0'
-    androidTestImplementation "androidx.test:core:1.3.0"
-    androidTestImplementation "androidx.arch.core:core-testing:2.1.0"
-    androidTestImplementation 'androidx.test.ext:junit:1.1.2'
-    androidTestImplementation 'ru.gildor.coroutines:kotlin-coroutines-okhttp:1.0'
+    androidTestImplementation 'com.nhaarman.mockitokotlin2:mockito-kotlin:_'
+    androidTestImplementation 'org.mockito:mockito-android:_'
+    androidTestImplementation "androidx.test:runner:_"
+    androidTestImplementation 'com.android.support:support-annotations:_'
+    androidTestImplementation "androidx.test:core:_"
+    androidTestImplementation "androidx.arch.core:core-testing:_"
+    androidTestImplementation 'androidx.test.ext:junit:_'
+    androidTestImplementation 'ru.gildor.coroutines:kotlin-coroutines-okhttp:_'
     // used by 'ru.gildor.coroutines.okhttp.await' (to make simple suspended requests) and breaks on versions higher than 3.8.0
     androidTestImplementation "com.squareup.okhttp3:okhttp:3.8.0"
 
     // sample mnemonic plugin
-    androidTestImplementation 'com.github.zcash:zcash-android-wallet-plugins:1.0.1'
-    androidTestImplementation 'cash.z.ecc.android:kotlin-bip39:1.0.2'
+    androidTestImplementation 'com.github.zcash:zcash-android-wallet-plugins:_'
+    androidTestImplementation 'cash.z.ecc.android:kotlin-bip39:_'
 }
 
 //taskTree{
