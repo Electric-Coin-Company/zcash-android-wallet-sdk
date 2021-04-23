@@ -8,7 +8,7 @@ Version 1.3.0-beta05 *(2021-04-23)*
 - Major: Move off of JCenter and onto Maven Central.
 - New: Adds Ktlint [Credit: @nighthawk24]
 - Fix: Added SaplingParamTool and ability to clear param files from cache [Credit: @herou]
-- New: Added responsible disclosure document for vulnerabilities [Credit: @zebambqam]
+- New: Added responsible disclosure document for vulnerabilities [Credit: @zebambam]
 - New: UnifiedViewingKey concept.
 - New: Adds support for autoshielding, including database migrations.
 - New: Adds basic support for UTXOs, including refresh during scan.
