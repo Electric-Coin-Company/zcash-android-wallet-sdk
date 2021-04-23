@@ -1,6 +1,32 @@
 Change Log
 ==========
 
+Version 1.3.0-beta05 *(2021-04-23)*
+------------------------------------
+- Major: Consolidate product flavors into one library for the SDK instead of two.
+- Major: Integrates with latest Librustzcash including full Data Access API support.
+- Major: Move off of JCenter and onto Maven Central.
+- New: Adds Ktlint [Credit: @nighthawk24]
+- Fix: Added SaplingParamTool and ability to clear param files from cache [Credit: @herou]
+- New: Added responsible disclosure document for vulnerabilities [Credit: @zebambqam]
+- New: UnifiedViewingKey concept.
+- New: Adds support for autoshielding, including database migrations.
+- New: Adds basic support for UTXOs, including refresh during scan.
+- New: Support the ability to wipe all sqlite data and rebuild from keys.
+- New: Switches to ZOMG lightwalletd instances.
+- Fix: Only notify subscribers when a new block is detected.
+- New: Add scan metrics and callbacks for apps to measure performance.
+- Fix: Improve error handling and surface critical Initialization errors.
+- New: Adds cleanup and removal of failed transactions.
+- New: Improved logic for determining the wallet birthday.
+- New: Add the ability to rewind and rescan blocks.
+- New: Better safeguards against testnet v mainnet data contamination.
+- New: Improved troubleshooting of ungraceful shutdowns.
+- Docs: Update README to draw attention to the demo app.
+- New: Expose transaction count.
+- New: Derive sapling activation height from the active network.
+- New: Latest checkpoints for mainnet and testnet.
+
 Version 1.2.1-beta04 *(2021-01-05)*
 ------------------------------------
 - New: Updated to latest versions of grpc, grpc-okhttp and protoc
