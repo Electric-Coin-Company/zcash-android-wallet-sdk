@@ -109,6 +109,8 @@ android {
         jvmTarget = "1.8"
         freeCompilerArgs += "-Xopt-in=kotlinx.coroutines.ExperimentalCoroutinesApi"
         freeCompilerArgs += "-Xopt-in=kotlinx.coroutines.FlowPreview"
+        // Tricky: fix: By default, the kotlin_module name will not include the version. Instead it has a colon, which breaks compilation on Windows. This is one way to set it explicitly to the proper value. See https://github.com/zcash/zcash-android-wallet-sdk/issues/222 for more info.
+        freeCompilerArgs += ["-module-name", "${config.publish.artifactId}-${config.publish.versionName}_${config.publish.target}"]
     }
 
     packagingOptions {
