@@ -1,23 +1,8 @@
 package cash.z.ecc.android.sdk.sample
 
-import androidx.test.platform.app.InstrumentationRegistry
-import cash.z.ecc.android.bip39.Mnemonics
-import cash.z.ecc.android.bip39.toSeed
-import cash.z.ecc.android.sdk.Initializer
-import cash.z.ecc.android.sdk.Synchronizer
-import cash.z.ecc.android.sdk.Synchronizer.Status.SYNCED
-import cash.z.ecc.android.sdk.ext.TroubleshootingTwig
 import cash.z.ecc.android.sdk.ext.Twig
-import cash.z.ecc.android.sdk.ext.twig
-import cash.z.ecc.android.sdk.tool.DerivationTool
-import cash.z.ecc.android.sdk.type.ZcashNetwork.Testnet
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.onCompletion
-import kotlinx.coroutines.newFixedThreadPoolContext
+import cash.z.ecc.android.sdk.type.ZcashNetwork
+import cash.z.ecc.android.sdk.util.TestWallet
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert
 import org.junit.Test
@@ -27,7 +12,7 @@ import org.junit.Test
  */
 class ShieldFundsSample {
 
-    val SEED_PHRASE = "wish puppy smile loan doll curve hole maze file ginger hair nose key relax knife witness cannon grab despair throw review deal slush frame" // \"still champion voice habit trend flight survey between bitter process artefact blind carbon truly provide dizzy crush flush breeze blouse charge solid fish spread\"//\"deputy visa gentle among clean scout farm drive comfort patch skin salt ranch cool ramp warrior drink narrow normal lunch behind salt deal person"//"deputy visa gentle among clean scout farm drive comfort patch skin salt ranch cool ramp warrior drink narrow normal lunch behind salt deal person"
+    val SEED_PHRASE = "still champion voice habit trend flight survey between bitter process artefact blind carbon truly provide dizzy crush flush breeze blouse charge solid fish spread" // \"//\"deputy visa gentle among clean scout farm drive comfort patch skin salt ranch cool ramp warrior drink narrow normal lunch behind salt deal person"//"deputy visa gentle among clean scout farm drive comfort patch skin salt ranch cool ramp warrior drink narrow normal lunch behind salt deal person"
 
     /**
      * This test will construct a t2z transaction. It is safe to run this repeatedly, because
@@ -40,71 +25,12 @@ class ShieldFundsSample {
     fun constructT2Z() = runBlocking {
         Twig.sprout("ShieldFundsSample")
 
-        val wallet = SimpleWallet(SEED_PHRASE).sync()
-        wallet.shieldFunds()
+        val wallet = TestWallet(TestWallet.Backups.DEV_WALLET, ZcashNetwork.Mainnet)
+
+        Assert.assertEquals("foo", "${wallet.shieldedAddress} ${wallet.transparentAddress}")
+//        wallet.shieldFunds()
 
         Twig.clip("ShieldFundsSample")
         Assert.assertEquals(5, wallet.synchronizer.latestBalance.availableZatoshi)
-    }
-
-    // when startHeight is null, it will use the latest checkpoint
-    class SimpleWallet(seedPhrase: String, startHeight: Int? = null) {
-        // simple flag to turn off actually spending funds
-        val IS_DRY_RUN = true
-
-        val walletScope = CoroutineScope(
-            SupervisorJob() + newFixedThreadPoolContext(3, this.javaClass.simpleName)
-        )
-        private val context = InstrumentationRegistry.getInstrumentation().context
-        private val seed: ByteArray = Mnemonics.MnemonicCode(seedPhrase).toSeed()
-        private val shieldedSpendingKey = DerivationTool.deriveSpendingKeys(seed, Testnet)[0]
-        private val transparentSecretKey = DerivationTool.deriveTransparentSecretKey(seed, Testnet)
-        private val shieldedAddress = DerivationTool.deriveShieldedAddress(seed, Testnet)
-
-        // t1b9Y6PESSGavavgge3ruTtX9X83817V29s
-        private val transparentAddress = DerivationTool.deriveTransparentAddress(seed, Testnet)
-        private val host = "lightwalletd.testnet.electriccoin.co"
-        private val config = Initializer.Config {
-            it.setSeed(seed, Testnet)
-            it.setBirthdayHeight(startHeight, false)
-            it.setNetwork(Testnet, host)
-        }
-
-        val synchronizer = Synchronizer(Initializer(context, config))
-
-        suspend fun sync(): SimpleWallet {
-            twig("Starting sync")
-            synchronizer.start(walletScope)
-            // block until synced
-            synchronizer.status.first { it == SYNCED }
-            twig("Synced!")
-            return this
-        }
-
-        suspend fun shieldFunds(): SimpleWallet {
-            twig("checking $transparentAddress for transactions!")
-            synchronizer.refreshUtxos(transparentAddress, 935000).let { count ->
-                twig("FOUND $count new UTXOs")
-            }
-
-            synchronizer.getTransparentBalance(transparentAddress).let { walletBalance ->
-                twig("FOUND utxo balance of total: ${walletBalance.totalZatoshi}  available: ${walletBalance.availableZatoshi}")
-
-                if (walletBalance.availableZatoshi > 0L && !IS_DRY_RUN) {
-                    synchronizer.shieldFunds(shieldedSpendingKey, transparentSecretKey)
-                        .onCompletion { twig("done shielding funds") }
-                        .catch { twig("Failed with $it") }
-                        .collect()
-                }
-            }
-
-            return this
-        }
-
-        companion object {
-            init {
-                Twig.plant(TroubleshootingTwig())
-            }
-        }
     }
 }
