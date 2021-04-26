@@ -147,6 +147,14 @@ sealed class InitializerException(message: String, cause: Throwable? = null) : S
             " unified viewingKey from the seed or seedPhrase, if they exist, but it is probably" +
             " better not to mask this error because the root issue should be addressed."
     )
+    class MissingAddressException(description: String, cause: Throwable? = null) : InitializerException(
+        "Expected a $description address for this wallet but failed to find one. This usually" +
+            " means that wallet setup happened incorrectly. If this problem persists, a" +
+            " workaround might be to go to settings and WIPE the wallet and rescan. Doing so" +
+            " will restore any missing address information. Meanwhile, please report that" +
+            " this happened so that the root issue can be uncovered and corrected." +
+            if (cause != null) "\nCaused by: $cause" else ""
+    )
     object DatabasePathException :
         InitializerException(
             "Critical failure to locate path for storing databases. Perhaps this device prevents" +
