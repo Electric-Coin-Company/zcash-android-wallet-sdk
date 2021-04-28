@@ -1158,13 +1158,13 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_branchIdFor
     _: JClass<'_>,
     height: jint,
     network_id: jint,
-) -> jint {
+) -> jlong {
     let res = panic::catch_unwind(|| {
         let network = parse_network(network_id as u32)?;
         let branch: BranchId = BranchId::for_height(&network, BlockHeight::from(height as u32));
         let branch_id: u32 = u32::from(branch);
-        debug!("For height {} found consensus branch {:?}", height, branch);
-        Ok(branch_id as i32)
+        debug!("For height {} found consensus branch {:?} with id {}", height, branch, branch_id);
+        Ok(branch_id.into())
     });
     unwrap_exc_or(&env, res, -1)
 }

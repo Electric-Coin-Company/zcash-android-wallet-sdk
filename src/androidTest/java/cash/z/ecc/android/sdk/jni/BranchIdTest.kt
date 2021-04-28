@@ -16,15 +16,22 @@ import org.junit.runners.Parameterized
 class BranchIdTest(
     private val networkName: String,
     private val height: Int,
+    private val branchId: Long,
     private val branchHex: String,
     private val rustBackend: RustBackendWelding
 ) {
 
     @Test
-    fun testBranchId() {
+    fun testBranchId_Hex() {
         val branchId = rustBackend.getBranchIdForHeight(height)
         val clientBranch = "%x".format(branchId)
-        assertEquals("Invalid branch ID for $networkName at height $height on ${rustBackend.network.networkName}", branchHex, clientBranch)
+        assertEquals("Invalid branch Id Hex value for $networkName at height $height on ${rustBackend.network.networkName}", branchHex, clientBranch)
+    }
+
+    @Test
+    fun testBranchId_Numeric() {
+        val actual = rustBackend.getBranchIdForHeight(height)
+        assertEquals("Invalid branch ID for $networkName at height $height on ${rustBackend.network.networkName}", branchId, actual)
     }
 
     companion object {
@@ -40,16 +47,16 @@ class BranchIdTest(
             val mainnetBackend = RustBackend.init("", "", "", ZcashNetwork.Mainnet)
             return listOf(
                 // Mainnet Cases
-                arrayOf("Sapling", 419_200, "76b809bb", mainnetBackend),
-                arrayOf("Blossom", 653_600, "2bb40e60", mainnetBackend),
-                arrayOf("Heartwood", 903_000, "f5b9230b", mainnetBackend),
-                arrayOf("Canopy", 1_046_400, "e9ff75a6", mainnetBackend),
+                arrayOf("Sapling", 419_200, 1991772603L, "76b809bb", mainnetBackend),
+                arrayOf("Blossom", 653_600, 733220448L, "2bb40e60", mainnetBackend),
+                arrayOf("Heartwood", 903_000, 4122551051L, "f5b9230b", mainnetBackend),
+                arrayOf("Canopy", 1_046_400, 3925833126L, "e9ff75a6", mainnetBackend),
 
                 // Testnet Cases
-                arrayOf("Sapling", 280_000, "76b809bb", testnetBackend),
-                arrayOf("Blossom", 584_000, "2bb40e60", testnetBackend),
-                arrayOf("Heartwood", 903_800, "f5b9230b", testnetBackend),
-                arrayOf("Canopy", 1_028_500, "e9ff75a6", testnetBackend),
+                arrayOf("Sapling", 280_000, 1991772603L, "76b809bb", testnetBackend),
+                arrayOf("Blossom", 584_000, 733220448L, "2bb40e60", testnetBackend),
+                arrayOf("Heartwood", 903_800, 4122551051L, "f5b9230b", testnetBackend),
+                arrayOf("Canopy", 1_028_500, 3925833126L, "e9ff75a6", testnetBackend),
             )
         }
     }
