@@ -384,7 +384,7 @@ class CompactBlockProcessor(
                 val network = rustBackend.network.networkName
                 when {
                     !info.matchingNetwork(network) -> MismatchedNetwork(clientNetwork = network, serverNetwork = info.chainName)
-                    !info.matchingConsensusBranchId(clientBranch) -> MismatchedBranch(clientBranch = clientBranch, serverBranch = info.consensusBranchId)
+                    !info.matchingConsensusBranchId(clientBranch) -> MismatchedBranch(clientBranch = clientBranch, serverBranch = info.consensusBranchId, networkName = network)
                     else -> null
                 }
             }

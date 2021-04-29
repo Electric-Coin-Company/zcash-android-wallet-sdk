@@ -92,8 +92,8 @@ sealed class CompactBlockProcessorException(message: String, cause: Throwable? =
         "Incompatible server: this client expects a server using $clientNetwork but it was $serverNetwork! Try updating the client or switching servers."
     )
 
-    class MismatchedBranch(clientBranch: String?, serverBranch: String?) : CompactBlockProcessorException(
-        "Incompatible server: this client expects a server following consensus branch $clientBranch but it was $serverBranch! Try updating the client or switching servers."
+    class MismatchedBranch(clientBranch: String?, serverBranch: String?, networkName: String?) : CompactBlockProcessorException(
+        "Incompatible server: this client expects a server following consensus branch $clientBranch on $networkName but it was $serverBranch! Try updating the client or switching servers."
     )
 }
 
