@@ -121,7 +121,7 @@ class ChangeServiceTest : ScopedTest() {
         }
         assertNotNull("Using an invalid host should generate an exception.", caughtException)
         assertTrue(
-            "Exception was of the wrong type.",
+            "Exception was of the wrong type. Expected ${ChainInfoNotMatching::class.simpleName} but was ${caughtException!!::class.simpleName}",
             caughtException is ChainInfoNotMatching
         )
         (caughtException as ChainInfoNotMatching).propertyNames.let { props ->

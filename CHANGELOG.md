@@ -1,6 +1,14 @@
 Change Log
 ==========
 
+Version 1.3.0-beta06 *(2021-04-29)*
+------------------------------------
+- Fix: Repair publishing so that AARs work on Windows machines [issue #222].
+- Fix: Incorrect BranchId on 32-bit devics [issue #224].
+- Fix: Rescan should not go beyond the wallet checkpoint.
+- New: Drop Android Jetifier since it is no longer used.
+- Updated checkpoints, improved tests (added Test Suites) and better error messages.
+
 Version 1.3.0-beta05 *(2021-04-23)*
 ------------------------------------
 - Major: Consolidate product flavors into one library for the SDK instead of two.

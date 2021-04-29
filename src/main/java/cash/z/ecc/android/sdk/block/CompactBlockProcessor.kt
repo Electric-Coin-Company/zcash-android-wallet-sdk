@@ -17,6 +17,7 @@ import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException.EnhanceTr
 import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException.EnhanceTransactionError.EnhanceTxDownloadError
 import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException.MismatchedBranch
 import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException.MismatchedNetwork
+import cash.z.ecc.android.sdk.exception.InitializerException
 import cash.z.ecc.android.sdk.exception.RustLayerException
 import cash.z.ecc.android.sdk.ext.BatchMetrics
 import cash.z.ecc.android.sdk.ext.Twig
@@ -383,7 +384,7 @@ class CompactBlockProcessor(
                 val network = rustBackend.network.networkName
                 when {
                     !info.matchingNetwork(network) -> MismatchedNetwork(clientNetwork = network, serverNetwork = info.chainName)
-                    !info.matchingConsensusBranchId(clientBranch) -> MismatchedBranch(clientBranch = clientBranch, serverBranch = info.consensusBranchId)
+                    !info.matchingConsensusBranchId(clientBranch) -> MismatchedBranch(clientBranch = clientBranch, serverBranch = info.consensusBranchId, networkName = network)
                     else -> null
                 }
             }
@@ -593,8 +594,10 @@ class CompactBlockProcessor(
     }
 
     suspend fun getNearestRewindHeight(height: Int): Int {
-        return if (height < lowerBoundHeight) {
-            lowerBoundHeight
+        // TODO: add a concept of original checkpoint height to the processor. For now, derive it
+        val originalCheckpoint = lowerBoundHeight + MAX_REORG_SIZE + 2 // add one because we already have the checkpoint. Add one again because we delete ABOVE the block
+        return if (height < originalCheckpoint) {
+            originalCheckpoint
         } else {
             // tricky: subtract one because we delete ABOVE this block
             rustBackend.getNearestRewindHeight(height) - 1
@@ -745,11 +748,13 @@ class CompactBlockProcessor(
      * @return the address of this wallet.
      */
     suspend fun getShieldedAddress(accountId: Int = 0) = withContext(IO) {
-        repository.getAccount(accountId)!!.rawShieldedAddress
+        repository.getAccount(accountId)?.rawShieldedAddress
+            ?: throw InitializerException.MissingAddressException("shielded")
     }
 
     suspend fun getTransparentAddress(accountId: Int = 0) = withContext(IO) {
-        repository.getAccount(accountId)!!.rawTransparentAddress
+        repository.getAccount(accountId)?.rawTransparentAddress
+            ?: throw InitializerException.MissingAddressException("transparent")
     }
 
     /**

@@ -47,7 +47,7 @@ class SmokeTest {
 
     @Test
     fun testSync() = runBlocking<Unit> {
-        wallet.sync(120_000L)
+        wallet.sync(300_000L)
     }
 
     companion object {
