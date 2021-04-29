@@ -44,7 +44,7 @@ class TestWallet(
     ) : this(
         backup.seedPhrase,
         network = network,
-        startHeight = backup.testnetBirthday,
+        startHeight = if (network == ZcashNetwork.Mainnet) backup.mainnetBirthday else backup.testnetBirthday,
         alias = alias
     )
 
@@ -151,12 +151,13 @@ class TestWallet(
         }
     }
 
-    enum class Backups(val seedPhrase: String, val testnetBirthday: Int) {
-        DEFAULT("column rhythm acoustic gym cost fit keen maze fence seed mail medal shrimp tell relief clip cannon foster soldier shallow refuse lunar parrot banana", 1_355_928),
-        SAMPLE_WALLET("input frown warm senior anxiety abuse yard prefer churn reject people glimpse govern glory crumble swallow verb laptop switch trophy inform friend permit purpose", 1_330_190),
-        DEV_WALLET("still champion voice habit trend flight survey between bitter process artefact blind carbon truly provide dizzy crush flush breeze blouse charge solid fish spread", 991645),
-        ALICE("quantum whisper lion route fury lunar pelican image job client hundred sauce chimney barely life cliff spirit admit weekend message recipe trumpet impact kitten", 1_330_190),
-        BOB("canvas wine sugar acquire garment spy tongue odor hole cage year habit bullet make label human unit option top calm neutral try vocal arena", 1_330_190),
+    enum class Backups(val seedPhrase: String, val testnetBirthday: Int, val mainnetBirthday: Int) {
+        // TODO: get the proper birthday values for these wallets
+        DEFAULT("column rhythm acoustic gym cost fit keen maze fence seed mail medal shrimp tell relief clip cannon foster soldier shallow refuse lunar parrot banana", 1_355_928, 1_000_000),
+        SAMPLE_WALLET("input frown warm senior anxiety abuse yard prefer churn reject people glimpse govern glory crumble swallow verb laptop switch trophy inform friend permit purpose", 1_330_190, 1_000_000),
+        DEV_WALLET("still champion voice habit trend flight survey between bitter process artefact blind carbon truly provide dizzy crush flush breeze blouse charge solid fish spread", 1_000_000, 991645),
+        ALICE("quantum whisper lion route fury lunar pelican image job client hundred sauce chimney barely life cliff spirit admit weekend message recipe trumpet impact kitten", 1_330_190, 1_000_000),
+        BOB("canvas wine sugar acquire garment spy tongue odor hole cage year habit bullet make label human unit option top calm neutral try vocal arena", 1_330_190, 1_000_000),
         ;
     }
 }
