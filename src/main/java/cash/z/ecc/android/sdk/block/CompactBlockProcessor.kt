@@ -594,8 +594,10 @@ class CompactBlockProcessor(
     }
 
     suspend fun getNearestRewindHeight(height: Int): Int {
-        return if (height < lowerBoundHeight) {
-            lowerBoundHeight
+        // TODO: add a concept of original checkpoint height to the processor. For now, derive it
+        val originalCheckpoint = lowerBoundHeight + MAX_REORG_SIZE + 2 // add one because we already have the checkpoint. Add one again because we delete ABOVE the block
+        return if (height < originalCheckpoint) {
+            originalCheckpoint
         } else {
             // tricky: subtract one because we delete ABOVE this block
             rustBackend.getNearestRewindHeight(height) - 1
