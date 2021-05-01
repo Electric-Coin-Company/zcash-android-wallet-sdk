@@ -1,6 +1,10 @@
 Change Log
 ==========
 
+Version 1.3.0-beta07 *(2021-05-01)*
+------------------------------------
+- Fix: Address issues with key migration, allowing wallets to reset viewing keys, when needed.
+
 Version 1.3.0-beta06 *(2021-04-29)*
 ------------------------------------
 - Fix: Repair publishing so that AARs work on Windows machines [issue #222].
