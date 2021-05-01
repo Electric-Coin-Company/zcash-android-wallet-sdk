@@ -42,7 +42,7 @@ use zcash_client_sqlite::{
     error::SqliteClientError,
     NoteId,
     wallet::{delete_utxos_above, put_received_transparent_utxo, rewind_to_height, get_rewind_height},
-    wallet::init::{init_accounts_table, init_blocks_table, init_wallet_db},
+    wallet::init::{drop_accounts_table, init_accounts_table, init_blocks_table, init_wallet_db},
     WalletDb,
 };
 use zcash_primitives::{
@@ -116,6 +116,25 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_initDataDb(
             .and_then(|db| init_wallet_db(&db))
             .map(|()| JNI_TRUE)
             .map_err(|e| format_err!("Error while initializing data DB: {}", e))
+    });
+    unwrap_exc_or(&env, res, JNI_FALSE)
+}
+
+
+#[no_mangle]
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_dropAccountsTable(
+    env: JNIEnv<'_>,
+    _: JClass<'_>,
+    db_data: JString<'_>,
+    network_id: jint,
+) -> jboolean {
+    let res = panic::catch_unwind(|| {
+        let network = parse_network(network_id as u32)?;
+        let db_data = wallet_db(&env, network, db_data)?;
+         match drop_accounts_table(&db_data) {
+            Ok(()) => Ok(JNI_TRUE),
+            Err(e) => Err(format_err!("Error while dropping the accounts table: {}", e)),
+        }
     });
     unwrap_exc_or(&env, res, JNI_FALSE)
 }

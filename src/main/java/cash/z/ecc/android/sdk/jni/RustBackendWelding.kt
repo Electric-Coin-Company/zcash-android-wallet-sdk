@@ -31,6 +31,8 @@ interface RustBackendWelding {
 
     fun decryptAndStoreTransaction(tx: ByteArray)
 
+    fun dropAccountsTable(): Boolean
+
     fun initAccountsTable(seed: ByteArray, numberOfAccounts: Int): Array<UnifiedViewingKey>
 
     fun initAccountsTable(vararg keys: UnifiedViewingKey): Boolean

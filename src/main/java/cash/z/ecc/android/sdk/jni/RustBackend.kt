@@ -52,6 +52,10 @@ class RustBackend private constructor() : RustBackendWelding {
 
     override fun initDataDb() = initDataDb(pathDataDb, networkId = network.id)
 
+    override fun dropAccountsTable(): Boolean {
+        return dropAccountsTable(pathDataDb, networkId = network.id)
+    }
+
     override fun initAccountsTable(vararg keys: UnifiedViewingKey): Boolean {
         val extfvks = Array(keys.size) { "" }
         val extpubs = Array(keys.size) { "" }
@@ -256,6 +260,11 @@ class RustBackend private constructor() : RustBackendWelding {
         //
 
         @JvmStatic private external fun initDataDb(dbDataPath: String, networkId: Int): Boolean
+
+        @JvmStatic private external fun dropAccountsTable(
+            dbDataPath: String,
+            networkId: Int,
+        ): Boolean
 
         @JvmStatic private external fun initAccountsTableWithKeys(
             dbDataPath: String,

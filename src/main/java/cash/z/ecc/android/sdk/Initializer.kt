@@ -55,6 +55,7 @@ class Initializer constructor(appContext: Context, onCriticalErrorHandler: ((Thr
             host = config.host
             port = config.port
             rustBackend = initRustBackend(network, birthday)
+            if (config.resetAccounts) resetAccounts()
             // TODO: get rid of this by first answering the question: why is this necessary?
             initMissingDatabases(birthday, *viewingKeys.toTypedArray())
         } catch (t: Throwable) {
@@ -85,6 +86,14 @@ class Initializer constructor(appContext: Context, onCriticalErrorHandler: ((Thr
         maybeCreateDataDb()
         maybeInitBlocksTable(birthday)
         maybeInitAccountsTable(*viewingKeys)
+    }
+
+    private fun resetAccounts() {
+        // Short-term fix: drop and recreate accounts for key migration
+        tryWarn("Warning: did not drop the accounts table. It probably did not yet exist.") {
+            rustBackend.dropAccountsTable()
+            twig("Reset accounts table to allow for key migration")
+        }
     }
 
     /**
@@ -118,7 +127,7 @@ class Initializer constructor(appContext: Context, onCriticalErrorHandler: ((Thr
     }
 
     /**
-     * Initialize the accounts table with the given viewing keys, if needed.
+     * Initialize the accounts table with the given viewing keys.
      */
     private fun maybeInitAccountsTable(vararg viewingKeys: UnifiedViewingKey) {
         // TODO: consider converting these to typed exceptions in the welding layer
@@ -183,6 +192,9 @@ class Initializer constructor(appContext: Context, onCriticalErrorHandler: ((Thr
         var defaultToOldestHeight: Boolean? = null
             private set
 
+        var resetAccounts: Boolean = false
+            private set
+
         constructor(block: (Config) -> Unit) : this() {
             block(this)
         }
@@ -237,11 +249,16 @@ class Initializer constructor(appContext: Context, onCriticalErrorHandler: ((Thr
          * is not currently well supported. Consider it an alpha-preview feature that might work but
          * probably has serious bugs.
          */
-        fun setViewingKeys(vararg unifiedViewingKeys: UnifiedViewingKey): Config = apply {
+        fun setViewingKeys(vararg unifiedViewingKeys: UnifiedViewingKey, overwrite: Boolean = false): Config = apply {
+            resetAccounts = overwrite
             viewingKeys.apply {
                 clear()
                 addAll(unifiedViewingKeys)
             }
+        }
+
+        fun setOverwriteKeys(isOverwrite: Boolean) {
+            resetAccounts = isOverwrite
         }
 
         /**
