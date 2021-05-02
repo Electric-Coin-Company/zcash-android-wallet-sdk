@@ -29,7 +29,7 @@ class TransparentTest {
         // TODO: parameterize this for both networks
 //        if (BuildConfig.FLAVOR == "zcashtestnet") {
         expected = ExpectedTestnet
-        network = ZcashNetwork.Testnet
+        network = ZcashNetwork.Mainnet
 //        } else {
 //            expected = ExpectedMainnet
 //            network = ZcashNetwork.Mainnet
@@ -48,7 +48,7 @@ class TransparentTest {
 
     @Test
     fun deriveTransparentAddressFromSecretKeyTest() {
-        assertEquals(expected.tAddr, DerivationTool.deriveTransparentAddressFromPrivateKey(expected.tskCompressed, network = network))
+        assertEquals(expected.tAddr, DerivationTool.deriveSpendingKeys(SEED, network = network)[0])
     }
 
     @Test
@@ -61,7 +61,7 @@ class TransparentTest {
     }
 
     companion object {
-        const val PHRASE = "deputy visa gentle among clean scout farm drive comfort patch skin salt ranch cool ramp warrior drink narrow normal lunch behind salt deal person"
+        const val PHRASE = "wish puppy smile loan doll curve hole maze file ginger hair nose key relax knife witness cannon grab despair throw review deal slush frame" // "deputy visa gentle among clean scout farm drive comfort patch skin salt ranch cool ramp warrior drink narrow normal lunch behind salt deal person"
         val MNEMONIC = MnemonicCode(PHRASE)
         val SEED = MNEMONIC.toSeed()
 

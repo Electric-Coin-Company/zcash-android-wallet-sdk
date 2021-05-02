@@ -1,6 +1,10 @@
 Change Log
 ==========
 
+Version 1.3.0-beta08 *(2021-05-01)*
+------------------------------------
+- Fix: Disable librustzcash logs by default.
+
 Version 1.3.0-beta07 *(2021-05-01)*
 ------------------------------------
 - Fix: Address issues with key migration, allowing wallets to reset viewing keys, when needed.

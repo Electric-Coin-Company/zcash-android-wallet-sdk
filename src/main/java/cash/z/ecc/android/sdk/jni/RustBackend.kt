@@ -237,7 +237,7 @@ class RustBackend private constructor() : RustBackendWelding {
             if (!loaded) {
                 twig("Loading RustBackend") {
                     loadRustLibrary()
-                    initLogs()
+//                    initLogs()
                 }
             }
         }
