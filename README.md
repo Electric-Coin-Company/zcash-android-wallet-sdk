@@ -1,6 +1,6 @@
 [![license](https://img.shields.io/github/license/zcash/zcash-android-wallet-sdk.svg?maxAge=2592000&style=plastic)](https://github.com/zcash/kotlin-bip39/blob/master/LICENSE)
 [![@gmale](https://img.shields.io/badge/contact-android@z.cash-5AA9E7.svg?style=plastic)](https://github.com/gmale)
-![Bintray](https://img.shields.io/bintray/v/ecc-mobile/android/zcash-android-sdk-testnet?color=success&style=plastic)
+![Maven Central](https://img.shields.io/maven-central/v/cash.z.ecc.android/zcash-android-sdk?color=success&style=plastic)
 
 This is a beta build and is currently under active development. Please be advised of the following:
 
