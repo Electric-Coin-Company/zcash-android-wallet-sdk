@@ -1,6 +1,10 @@
 Change Log
 ==========
 
+Version 1.3.0-beta09 *(2021-05-04)*
+------------------------------------
+- New: Add quick rewind feature, which makes it easy to rescan blocks after an upgrade.
+
 Version 1.3.0-beta08 *(2021-05-01)*
 ------------------------------------
 - Fix: Disable librustzcash logs by default.
