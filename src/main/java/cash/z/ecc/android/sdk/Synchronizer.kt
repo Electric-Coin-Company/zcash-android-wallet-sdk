@@ -291,6 +291,8 @@ interface Synchronizer {
      */
     suspend fun rewindToNearestHeight(height: Int, alsoClearBlockCache: Boolean = false)
 
+    suspend fun quickRewind()
+
     //
     // Error Handling
     //

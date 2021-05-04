@@ -605,18 +605,29 @@ class CompactBlockProcessor(
     }
 
     /**
+     * Rewind back at least two weeks worth of blocks.
+     */
+    suspend fun quickRewind() = withContext(IO) {
+        val height = max(currentInfo.lastScannedHeight, repository.lastScannedHeight())
+        val blocksPerDay = 60 * 60 * 24 * 1000 / ZcashSdk.BLOCK_INTERVAL_MILLIS.toInt()
+        val twoWeeksBack = (height - blocksPerDay * 14).coerceAtLeast(lowerBoundHeight)
+        rewindToNearestHeight(twoWeeksBack, false)
+    }
+
+    /**
      * @param alsoClearBlockCache when true, also clear the block cache which forces a redownload of
      * blocks. Otherwise, the cached blocks will be used in the rescan, which in most cases, is fine.
      */
     suspend fun rewindToNearestHeight(height: Int, alsoClearBlockCache: Boolean = false) = withContext(IO) {
         processingMutex.withLockLogged("rewindToHeight") {
             val lastScannedHeight = currentInfo.lastScannedHeight
+            val lastLocalBlock = repository.lastScannedHeight()
             val targetHeight = getNearestRewindHeight(height)
-            twig("Rewinding from $lastScannedHeight to requested height: $height using target height: $targetHeight")
-            if (targetHeight < lastScannedHeight) {
+            twig("Rewinding from $lastScannedHeight to requested height: $height using target height: $targetHeight with last local block: $lastLocalBlock")
+            if (targetHeight < lastScannedHeight || (lastScannedHeight == -1 && (targetHeight < lastLocalBlock))) {
                 rustBackend.rewindToHeight(targetHeight)
             } else {
-                twig("not rewinding dataDb because the last scanned height is $lastScannedHeight which is less than the target height of $targetHeight")
+                twig("not rewinding dataDb because the last scanned height is $lastScannedHeight and the last local block is $lastLocalBlock both of which are less than the target height of $targetHeight")
             }
 
             if (alsoClearBlockCache) {

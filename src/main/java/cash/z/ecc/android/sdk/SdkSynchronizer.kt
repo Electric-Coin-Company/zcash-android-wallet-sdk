@@ -310,6 +310,10 @@ class SdkSynchronizer internal constructor(
         processor.rewindToNearestHeight(height, alsoClearBlockCache)
     }
 
+    override suspend fun quickRewind() {
+        processor.quickRewind()
+    }
+
     //
     // Storage APIs
     //
