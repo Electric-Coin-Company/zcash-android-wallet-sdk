@@ -375,22 +375,25 @@ class CompactBlockProcessor(
      */
     private suspend fun verifySetup() {
         // verify that the data is initialized
-        var error = if (!repository.isInitialized()) {
-            CompactBlockProcessorException.Uninitialized
-        } else {
-            // verify that the server is correct
-            downloader.getServerInfo().let { info ->
-                val clientBranch = "%x".format(rustBackend.getBranchIdForHeight(info.blockHeight.toInt()))
-                val network = rustBackend.network.networkName
-                when {
-                    !info.matchingNetwork(network) -> MismatchedNetwork(clientNetwork = network, serverNetwork = info.chainName)
-                    !info.matchingConsensusBranchId(clientBranch) -> MismatchedBranch(clientBranch = clientBranch, serverBranch = info.consensusBranchId, networkName = network)
-                    else -> null
+        var error = when {
+            !repository.isInitialized() -> CompactBlockProcessorException.Uninitialized
+            repository.getAccountCount() == 0 -> CompactBlockProcessorException.NoAccount
+            else -> {
+                // verify that the server is correct
+                downloader.getServerInfo().let { info ->
+                    val clientBranch = "%x".format(rustBackend.getBranchIdForHeight(info.blockHeight.toInt()))
+                    val network = rustBackend.network.networkName
+                    when {
+                        !info.matchingNetwork(network) -> MismatchedNetwork(clientNetwork = network, serverNetwork = info.chainName)
+                        !info.matchingConsensusBranchId(clientBranch) -> MismatchedBranch(clientBranch = clientBranch, serverBranch = info.consensusBranchId, networkName = network)
+                        else -> null
+                    }
                 }
             }
         }
 
         if (error != null) {
+            twig("Validating setup prior to scanning . . . ISSUE FOUND! - ${error.javaClass.simpleName}")
             // give listener a chance to override
             if (onSetupErrorListener?.invoke(error) != true) {
                 throw error

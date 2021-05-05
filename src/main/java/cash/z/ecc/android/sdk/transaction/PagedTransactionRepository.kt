@@ -105,6 +105,8 @@ open class PagedTransactionRepository(
 
     override suspend fun getAccount(accountId: Int): UnifiedAddressAccount? = accounts.findAccountById(accountId)
 
+    override suspend fun getAccountCount(): Int = accounts.count()
+
     /**
      * Close the underlying database.
      */

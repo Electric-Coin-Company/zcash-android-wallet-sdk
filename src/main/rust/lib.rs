@@ -789,7 +789,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_scanBlocks(
 
         match scan_cached_blocks(&network, &db_cache, &mut db_data, None) {
             Ok(()) => Ok(JNI_TRUE),
-            Err(e) => Err(format_err!("Error while scanning blocks: {}", e)),
+            Err(e) => Err(format_err!("Rust error while scanning blocks: {}", e)),
         }
     });
     unwrap_exc_or(&env, res, JNI_FALSE)
@@ -884,7 +884,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_scanBlockBa
 
         match scan_cached_blocks(&network, &db_cache, &mut db_data, Some(limit as u32)) {
             Ok(()) => Ok(JNI_TRUE),
-            Err(e) => Err(format_err!("Error while scanning blocks: {}", e)),
+            Err(e) => Err(format_err!("Rust error while scanning block batch: {}", e)),
         }
     });
     unwrap_exc_or(&env, res, JNI_FALSE)
