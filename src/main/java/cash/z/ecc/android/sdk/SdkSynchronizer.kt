@@ -233,6 +233,10 @@ class SdkSynchronizer internal constructor(
 
     override val latestBirthdayHeight: Int get() = processor.birthdayHeight
 
+    override fun prepare(): Synchronizer = apply {
+        storage.prepare()
+    }
+
     /**
      * Starts this synchronizer within the given scope. For simplicity, attempting to start an
      * instance that has already been started will throw a [SynchronizerException.FalseStart]
@@ -362,6 +366,9 @@ class SdkSynchronizer internal constructor(
     }
 
     private fun CoroutineScope.onReady() = launch(CoroutineExceptionHandler(::onCriticalError)) {
+        twig("Preparing to start...")
+        prepare()
+
         twig("Synchronizer (${this@SdkSynchronizer}) Ready. Starting processor!")
         var lastScanTime = 0L
         processor.onProcessorErrorListener = ::onProcessorError

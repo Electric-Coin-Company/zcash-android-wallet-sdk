@@ -32,6 +32,11 @@ sealed class RepositoryException(message: String, cause: Throwable? = null) : Sd
         "The channel is closed. Note that once a repository has stopped it " +
             "cannot be restarted. Verify that the repository is not being restarted."
     )
+    object Unprepared : RepositoryException(
+        "Unprepared repository: Data cannot be accessed before the repository is prepared." +
+            " Ensure that things have been properly initialized. In most cases, this involves" +
+            " calling 'synchronizer.prepare' before 'synchronizer.start'"
+    )
 }
 
 /**

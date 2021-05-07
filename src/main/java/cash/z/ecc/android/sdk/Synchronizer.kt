@@ -31,6 +31,13 @@ interface Synchronizer {
     var isStarted: Boolean
 
     /**
+     * Prepare the synchronizer to start. Must be called before start. This gives a clear point
+     * where setup and maintenance can occur for various Synchronizers. One that uses a database
+     * would take this opportunity to do data migrations or key migrations.
+     */
+    fun prepare(): Synchronizer
+
+    /**
      * Starts this synchronizer within the given scope.
      *
      * @param parentScope the scope to use for this synchronizer, typically something with a
@@ -357,6 +364,13 @@ interface Synchronizer {
          * When set, a UI element may want to turn red.
          */
         DISCONNECTED,
+
+        /**
+         * Indicates that this Synchronizer is actively preparing to start, which usually involves
+         * setting up database tables, migrations or taking other maintenance steps that need to
+         * occur after an upgrade.
+         */
+        PREPARING,
 
         /**
          * Indicates that this Synchronizer is actively downloading new blocks from the server.
