@@ -38,7 +38,6 @@ import cash.z.ecc.android.sdk.ext.toHexReversed
 import cash.z.ecc.android.sdk.ext.tryNull
 import cash.z.ecc.android.sdk.ext.twig
 import cash.z.ecc.android.sdk.ext.twigTask
-import cash.z.ecc.android.sdk.jni.RustBackend
 import cash.z.ecc.android.sdk.service.LightWalletGrpcService
 import cash.z.ecc.android.sdk.service.LightWalletService
 import cash.z.ecc.android.sdk.tool.DerivationTool
@@ -138,10 +137,10 @@ class SdkSynchronizer internal constructor(
     //
 
     override val balances: Flow<WalletBalance> = _balances.asFlow()
-    override val clearedTransactions = storage.allTransactions
+    override val clearedTransactions get() = storage.allTransactions
     override val pendingTransactions = txManager.getAll()
-    override val sentTransactions = storage.sentTransactions
-    override val receivedTransactions = storage.receivedTransactions
+    override val sentTransactions get() = storage.sentTransactions
+    override val receivedTransactions get() = storage.receivedTransactions
 
     //
     // Status
@@ -402,6 +401,7 @@ class SdkSynchronizer internal constructor(
     private fun onCriticalError(unused: CoroutineContext?, error: Throwable) {
         twig("********")
         twig("********  ERROR: $error")
+        twig(error)
         if (error.cause != null) twig("******** caused by ${error.cause}")
         if (error.cause?.cause != null) twig("******** caused by ${error.cause?.cause}")
         twig("********")
@@ -759,7 +759,7 @@ class SdkSynchronizer internal constructor(
 fun Synchronizer(
     initializer: Initializer,
     repository: TransactionRepository =
-        PagedTransactionRepository(initializer.context, 1000, initializer.rustBackend.pathDataDb), // TODO: fix this pagesize bug, small pages should not crash the app. It crashes with: Uncaught Exception: android.view.ViewRootImpl$CalledFromWrongThreadException: Only the original thread that created a view hierarchy can touch its views. and is probably related to FlowPagedList
+        PagedTransactionRepository(initializer.context, 1000, initializer.rustBackend, initializer.birthday, initializer.viewingKeys, initializer.overwriteVks), // TODO: fix this pagesize bug, small pages should not crash the app. It crashes with: Uncaught Exception: android.view.ViewRootImpl$CalledFromWrongThreadException: Only the original thread that created a view hierarchy can touch its views. and is probably related to FlowPagedList
     blockStore: CompactBlockStore = CompactBlockDbStore(initializer.context, initializer.rustBackend.pathCacheDb),
     service: LightWalletService = LightWalletGrpcService(initializer.context, initializer.host, initializer.port),
     encoder: TransactionEncoder = WalletTransactionEncoder(initializer.rustBackend, repository),
