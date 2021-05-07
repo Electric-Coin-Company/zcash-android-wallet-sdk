@@ -1,9 +1,10 @@
 Change Log
 ==========
 
-Version 1.3.0-beta09 *(2021-05-04)*
+Version 1.3.0-beta09 *(2021-05-07)*
 ------------------------------------
 - New: Add quick rewind feature, which makes it easy to rescan blocks after an upgrade.
+- Fix: Repair complex data migration bug that caused crashes on upgrades.
 
 Version 1.3.0-beta08 *(2021-05-01)*
 ------------------------------------
