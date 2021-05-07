@@ -93,11 +93,15 @@ class PagedTransactionRepository(
     override suspend fun getAccountCount(): Int = lazy.accounts.count()
 
     override fun prepare() {
-        twig("Preparing repository for use...")
-        initMissingDatabases()
-        // provide the database to all the lazy properties that are waiting for it to exist
-        lazy.db = buildDatabase()
-        applyKeyMigrations()
+        if (lazy.isPrepared.get()) {
+            twig("Warning: skipped the preparation step because we're already prepared!")
+        } else {
+            twig("Preparing repository for use...")
+            initMissingDatabases()
+            // provide the database to all the lazy properties that are waiting for it to exist
+            lazy.db = buildDatabase()
+            applyKeyMigrations()
+        }
     }
 
     /**
