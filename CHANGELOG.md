@@ -1,6 +1,10 @@
 Change Log
 ==========
 
+Version 1.3.0-beta10 *(2021-05-07)*
+------------------------------------
+- Fix: Make it safe to call the new prepare function more than once.
+
 Version 1.3.0-beta09 *(2021-05-07)*
 ------------------------------------
 - New: Add quick rewind feature, which makes it easy to rescan blocks after an upgrade.
