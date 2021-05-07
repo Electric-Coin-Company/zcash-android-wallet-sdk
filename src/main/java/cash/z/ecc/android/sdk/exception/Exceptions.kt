@@ -32,6 +32,11 @@ sealed class RepositoryException(message: String, cause: Throwable? = null) : Sd
         "The channel is closed. Note that once a repository has stopped it " +
             "cannot be restarted. Verify that the repository is not being restarted."
     )
+    object Unprepared : RepositoryException(
+        "Unprepared repository: Data cannot be accessed before the repository is prepared." +
+            " Ensure that things have been properly initialized. In most cases, this involves" +
+            " calling 'synchronizer.prepare' before 'synchronizer.start'"
+    )
 }
 
 /**
@@ -83,6 +88,10 @@ sealed class CompactBlockProcessorException(message: String, cause: Throwable? =
             " initialized. Verify that the seed phrase was properly created or imported. If so, then this problem" +
             " can be fixed by re-importing the wallet."
     )
+    object NoAccount : CompactBlockProcessorException(
+        "Attempting to scan without an account. This is probably a setup error or a race condition."
+    )
+
     open class EnhanceTransactionError(message: String, val height: Int, cause: Throwable) : CompactBlockProcessorException(message, cause) {
         class EnhanceTxDownloadError(height: Int, cause: Throwable) : EnhanceTransactionError("Error while attempting to download a transaction to enhance", height, cause)
         class EnhanceTxDecryptError(height: Int, cause: Throwable) : EnhanceTransactionError("Error while attempting to decrypt and store a transaction to enhance", height, cause)

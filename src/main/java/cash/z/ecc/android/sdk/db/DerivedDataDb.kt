@@ -227,6 +227,9 @@ interface SentDao {
 
 @Dao
 interface AccountDao {
+    @Query("SELECT COUNT(account) FROM accounts")
+    fun count(): Int
+
     @Query(
         """
         SELECT account AS accountId,

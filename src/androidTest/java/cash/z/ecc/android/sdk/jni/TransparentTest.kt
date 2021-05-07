@@ -1,6 +1,5 @@
 package cash.z.ecc.android.sdk.jni
 
-import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
 import cash.z.ecc.android.bip39.Mnemonics.MnemonicCode
 import cash.z.ecc.android.bip39.toSeed
@@ -11,30 +10,15 @@ import cash.z.ecc.android.sdk.ext.Twig
 import cash.z.ecc.android.sdk.tool.DerivationTool
 import cash.z.ecc.android.sdk.type.ZcashNetwork
 import org.junit.Assert.assertEquals
-import org.junit.Before
 import org.junit.BeforeClass
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.junit.runners.Parameterized
 
 @MaintainedTest(TestPurpose.REGRESSION)
-@RunWith(AndroidJUnit4::class)
+@RunWith(Parameterized::class)
 @SmallTest
-class TransparentTest {
-
-    lateinit var expected: Expected
-    lateinit var network: ZcashNetwork
-
-    @Before
-    fun setup() {
-        // TODO: parameterize this for both networks
-//        if (BuildConfig.FLAVOR == "zcashtestnet") {
-        expected = ExpectedTestnet
-        network = ZcashNetwork.Mainnet
-//        } else {
-//            expected = ExpectedMainnet
-//            network = ZcashNetwork.Mainnet
-//        }
-    }
+class TransparentTest(val expected: Expected, val network: ZcashNetwork) {
 
     @Test
     fun deriveTransparentSecretKeyTest() {
@@ -48,7 +32,8 @@ class TransparentTest {
 
     @Test
     fun deriveTransparentAddressFromSecretKeyTest() {
-        assertEquals(expected.tAddr, DerivationTool.deriveSpendingKeys(SEED, network = network)[0])
+        val pk = DerivationTool.deriveTransparentSecretKey(SEED, network = network)
+        assertEquals(expected.tAddr, DerivationTool.deriveTransparentAddressFromPrivateKey(pk, network = network))
     }
 
     @Test
@@ -61,7 +46,7 @@ class TransparentTest {
     }
 
     companion object {
-        const val PHRASE = "wish puppy smile loan doll curve hole maze file ginger hair nose key relax knife witness cannon grab despair throw review deal slush frame" // "deputy visa gentle among clean scout farm drive comfort patch skin salt ranch cool ramp warrior drink narrow normal lunch behind salt deal person"
+        const val PHRASE = "deputy visa gentle among clean scout farm drive comfort patch skin salt ranch cool ramp warrior drink narrow normal lunch behind salt deal person"
         val MNEMONIC = MnemonicCode(PHRASE)
         val SEED = MNEMONIC.toSeed()
 
@@ -84,6 +69,13 @@ class TransparentTest {
         fun startup() {
             Twig.plant(TroubleshootingTwig(formatter = { "@TWIG $it" }))
         }
+
+        @JvmStatic
+        @Parameterized.Parameters
+        fun data() = listOf(
+            arrayOf(ExpectedTestnet, ZcashNetwork.Testnet),
+            arrayOf(ExpectedMainnet, ZcashNetwork.Mainnet),
+        )
     }
 
     interface Expected {

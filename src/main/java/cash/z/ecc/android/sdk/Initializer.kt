@@ -3,7 +3,6 @@ package cash.z.ecc.android.sdk
 import android.content.Context
 import cash.z.ecc.android.sdk.exception.InitializerException
 import cash.z.ecc.android.sdk.ext.ZcashSdk
-import cash.z.ecc.android.sdk.ext.tryWarn
 import cash.z.ecc.android.sdk.ext.twig
 import cash.z.ecc.android.sdk.jni.RustBackend
 import cash.z.ecc.android.sdk.tool.DerivationTool
@@ -16,14 +15,15 @@ import java.io.File
 /**
  * Simplified Initializer focused on starting from a ViewingKey.
  */
-class Initializer constructor(appContext: Context, onCriticalErrorHandler: ((Throwable?) -> Boolean)? = null, config: Config) : SdkSynchronizer.SdkInitializer {
-    override val context = appContext.applicationContext
-    override val rustBackend: RustBackend
-    override val network: ZcashNetwork
-    override val alias: String
-    override val host: String
-    override val port: Int
+class Initializer constructor(appContext: Context, onCriticalErrorHandler: ((Throwable?) -> Boolean)? = null, config: Config) {
+    val context = appContext.applicationContext
+    val rustBackend: RustBackend
+    val network: ZcashNetwork
+    val alias: String
+    val host: String
+    val port: Int
     val viewingKeys: List<UnifiedViewingKey>
+    val overwriteVks: Boolean
     val birthday: WalletBirthday
 
     /**
@@ -32,7 +32,7 @@ class Initializer constructor(appContext: Context, onCriticalErrorHandler: ((Thr
      * function has a return value is so that all error handlers work with the same signature which
      * allows one function to handle all errors in simple apps.
      */
-    override var onCriticalErrorHandler: ((Throwable?) -> Boolean)? = onCriticalErrorHandler
+    var onCriticalErrorHandler: ((Throwable?) -> Boolean)? = onCriticalErrorHandler
 
     /**
      * True when accounts have been created by this initializer.
@@ -51,13 +51,11 @@ class Initializer constructor(appContext: Context, onCriticalErrorHandler: ((Thr
             val loadedBirthday = WalletBirthdayTool.loadNearest(context, network, heightToUse)
             birthday = loadedBirthday
             viewingKeys = config.viewingKeys
+            overwriteVks = config.overwriteVks
             alias = config.alias
             host = config.host
             port = config.port
             rustBackend = initRustBackend(network, birthday)
-            if (config.resetAccounts) resetAccounts()
-            // TODO: get rid of this by first answering the question: why is this necessary?
-            initMissingDatabases(birthday, *viewingKeys.toTypedArray())
         } catch (t: Throwable) {
             onCriticalError(t)
             throw t
@@ -77,68 +75,6 @@ class Initializer constructor(appContext: Context, onCriticalErrorHandler: ((Thr
             network,
             birthday.height
         )
-    }
-
-    private fun initMissingDatabases(
-        birthday: WalletBirthday,
-        vararg viewingKeys: UnifiedViewingKey
-    ) {
-        maybeCreateDataDb()
-        maybeInitBlocksTable(birthday)
-        maybeInitAccountsTable(*viewingKeys)
-    }
-
-    private fun resetAccounts() {
-        // Short-term fix: drop and recreate accounts for key migration
-        tryWarn("Warning: did not drop the accounts table. It probably did not yet exist.") {
-            rustBackend.dropAccountsTable()
-            twig("Reset accounts table to allow for key migration")
-        }
-    }
-
-    /**
-     * Create the dataDb and its table, if it doesn't exist.
-     */
-    private fun maybeCreateDataDb() {
-        tryWarn("Warning: did not create dataDb. It probably already exists.") {
-            rustBackend.initDataDb()
-            twig("Initialized wallet for first run")
-        }
-    }
-
-    /**
-     * Initialize the blocks table with the given birthday, if needed.
-     */
-    private fun maybeInitBlocksTable(birthday: WalletBirthday) {
-        // TODO: consider converting these to typed exceptions in the welding layer
-        tryWarn(
-            "Warning: did not initialize the blocks table. It probably was already initialized.",
-            ifContains = "table is not empty"
-        ) {
-            rustBackend.initBlocksTable(
-                birthday.height,
-                birthday.hash,
-                birthday.time,
-                birthday.tree
-            )
-            twig("seeded the database with sapling tree at height ${birthday.height}")
-        }
-        twig("database file: ${rustBackend.pathDataDb}")
-    }
-
-    /**
-     * Initialize the accounts table with the given viewing keys.
-     */
-    private fun maybeInitAccountsTable(vararg viewingKeys: UnifiedViewingKey) {
-        // TODO: consider converting these to typed exceptions in the welding layer
-        tryWarn(
-            "Warning: did not initialize the accounts table. It probably was already initialized.",
-            ifContains = "table is not empty"
-        ) {
-            rustBackend.initAccountsTable(*viewingKeys)
-            accountsCreated = true
-            twig("Initialized the accounts table with ${viewingKeys.size} viewingKey(s)")
-        }
     }
 
     private fun onCriticalError(error: Throwable) {
@@ -192,7 +128,7 @@ class Initializer constructor(appContext: Context, onCriticalErrorHandler: ((Thr
         var defaultToOldestHeight: Boolean? = null
             private set
 
-        var resetAccounts: Boolean = false
+        var overwriteVks: Boolean = false
             private set
 
         constructor(block: (Config) -> Unit) : this() {
@@ -250,7 +186,7 @@ class Initializer constructor(appContext: Context, onCriticalErrorHandler: ((Thr
          * probably has serious bugs.
          */
         fun setViewingKeys(vararg unifiedViewingKeys: UnifiedViewingKey, overwrite: Boolean = false): Config = apply {
-            resetAccounts = overwrite
+            overwriteVks = overwrite
             viewingKeys.apply {
                 clear()
                 addAll(unifiedViewingKeys)
@@ -258,7 +194,7 @@ class Initializer constructor(appContext: Context, onCriticalErrorHandler: ((Thr
         }
 
         fun setOverwriteKeys(isOverwrite: Boolean) {
-            resetAccounts = isOverwrite
+            overwriteVks = isOverwrite
         }
 
         /**
