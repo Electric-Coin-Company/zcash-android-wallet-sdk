@@ -691,16 +691,6 @@ class SdkSynchronizer internal constructor(
         )
     }
 
-    interface SdkInitializer {
-        val context: Context
-        val rustBackend: RustBackend
-        val network: ZcashNetwork
-        val host: String
-        val port: Int
-        val alias: String
-        val onCriticalErrorHandler: ((Throwable?) -> Boolean)?
-    }
-
     interface Erasable {
         /**
          * Erase content related to this SDK.
@@ -760,7 +750,7 @@ class SdkSynchronizer internal constructor(
  */
 @Suppress("FunctionName")
 fun Synchronizer(
-    initializer: SdkSynchronizer.SdkInitializer,
+    initializer: Initializer,
     repository: TransactionRepository =
         PagedTransactionRepository(initializer.context, 1000, initializer.rustBackend.pathDataDb), // TODO: fix this pagesize bug, small pages should not crash the app. It crashes with: Uncaught Exception: android.view.ViewRootImpl$CalledFromWrongThreadException: Only the original thread that created a view hierarchy can touch its views. and is probably related to FlowPagedList
     blockStore: CompactBlockStore = CompactBlockDbStore(initializer.context, initializer.rustBackend.pathCacheDb),

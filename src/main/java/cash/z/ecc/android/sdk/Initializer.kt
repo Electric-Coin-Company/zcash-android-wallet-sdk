@@ -16,13 +16,13 @@ import java.io.File
 /**
  * Simplified Initializer focused on starting from a ViewingKey.
  */
-class Initializer constructor(appContext: Context, onCriticalErrorHandler: ((Throwable?) -> Boolean)? = null, config: Config) : SdkSynchronizer.SdkInitializer {
-    override val context = appContext.applicationContext
-    override val rustBackend: RustBackend
-    override val network: ZcashNetwork
-    override val alias: String
-    override val host: String
-    override val port: Int
+class Initializer constructor(appContext: Context, onCriticalErrorHandler: ((Throwable?) -> Boolean)? = null, config: Config) {
+    val context = appContext.applicationContext
+    val rustBackend: RustBackend
+    val network: ZcashNetwork
+    val alias: String
+    val host: String
+    val port: Int
     val viewingKeys: List<UnifiedViewingKey>
     val birthday: WalletBirthday
 
@@ -32,7 +32,7 @@ class Initializer constructor(appContext: Context, onCriticalErrorHandler: ((Thr
      * function has a return value is so that all error handlers work with the same signature which
      * allows one function to handle all errors in simple apps.
      */
-    override var onCriticalErrorHandler: ((Throwable?) -> Boolean)? = onCriticalErrorHandler
+    var onCriticalErrorHandler: ((Throwable?) -> Boolean)? = onCriticalErrorHandler
 
     /**
      * True when accounts have been created by this initializer.
