@@ -99,11 +99,10 @@ productFlavors {
     }
 }
 ```
-Add the matching SDK dependency for each variant:
+Add the SDK dependency:
 
 ```groovy
-zcashmainnetImplementation 'cash.z.ecc.android:zcash-android-sdk-mainnet:1.1.0-beta05'
-zcashtestnetImplementation 'cash.z.ecc.android:zcash-android-sdk-testnet:1.1.0-beta05'
+implementation 'cash.z.ecc.android:zcash-android-sdk:1.3.0-beta10'
 ```
 
 Start the [Synchronizer](docs/-synchronizer/README.md)
