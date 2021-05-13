@@ -1,6 +1,10 @@
 Change Log
 ==========
 
+Version 1.3.0-beta11 *(2021-05-12)*
+------------------------------------
+- Fix: Remove unused flag that was breaking new wallet creation for some wallets.
+
 Version 1.3.0-beta10 *(2021-05-07)*
 ------------------------------------
 - Fix: Make it safe to call the new prepare function more than once.
