@@ -34,14 +34,6 @@ class Initializer constructor(appContext: Context, onCriticalErrorHandler: ((Thr
      */
     var onCriticalErrorHandler: ((Throwable?) -> Boolean)? = onCriticalErrorHandler
 
-    /**
-     * True when accounts have been created by this initializer.
-     *
-     * NOTE: This is a code smell that the initializer should not be creating databases but that
-     * will be addressed in the next iteration and/or when the Data Access API is implemented
-     */
-    var accountsCreated = false
-
     init {
         try {
             config.validate()
