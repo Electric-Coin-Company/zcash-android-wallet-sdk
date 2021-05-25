@@ -55,7 +55,6 @@ class WalletTransactionEncoder(
         transparentSecretKey: String,
         memo: ByteArray?
     ): EncodedTransaction = withContext(IO) {
-        twig("TMP: createShieldingTransaction with $spendingKey and $transparentSecretKey and ${memo?.size}")
         val transactionId = createShieldingSpend(spendingKey, transparentSecretKey, memo)
         repository.findEncodedTransactionById(transactionId)
             ?: throw TransactionEncoderException.TransactionNotFoundException(transactionId)
