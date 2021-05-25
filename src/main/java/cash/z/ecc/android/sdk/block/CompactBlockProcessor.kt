@@ -47,6 +47,7 @@ import kotlinx.coroutines.channels.ConflatedBroadcastChannel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.sync.Mutex
@@ -120,6 +121,7 @@ class CompactBlockProcessor(
     private val _state: ConflatedBroadcastChannel<State> = ConflatedBroadcastChannel(Initialized)
     private val _progress = ConflatedBroadcastChannel(0)
     private val _processorInfo = ConflatedBroadcastChannel(ProcessorInfo())
+    private val _networkHeight = MutableStateFlow(-1)
     private val processingMutex = Mutex()
 
     /**
@@ -160,6 +162,8 @@ class CompactBlockProcessor(
      * scanned. This gives the wallet a lot of insight into the work of this processor.
      */
     val processorInfo = _processorInfo.asFlow()
+
+    val networkHeight = _networkHeight.asStateFlow()
 
     /**
      * The first block this wallet cares about anything prior can be ignored. If a wallet has no
@@ -583,6 +587,7 @@ class CompactBlockProcessor(
             lastScanRange = lastScanRange,
             lastDownloadRange = lastDownloadRange
         )
+        _networkHeight.value = networkBlockHeight
         _processorInfo.send(currentInfo)
     }
 

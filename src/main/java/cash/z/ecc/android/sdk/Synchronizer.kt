@@ -12,6 +12,7 @@ import cash.z.ecc.android.sdk.type.ZcashNetwork
 import cash.z.wallet.sdk.rpc.Service
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.StateFlow
 
 /**
  * Primary interface for interacting with the SDK. Defines the contract that specific
@@ -90,6 +91,8 @@ interface Synchronizer {
      * lot more detail.
      */
     val processorInfo: Flow<CompactBlockProcessor.ProcessorInfo>
+
+    val networkHeight: StateFlow<Int>
 
     /**
      * A stream of balance values, separately reflecting both the available and total balance.
