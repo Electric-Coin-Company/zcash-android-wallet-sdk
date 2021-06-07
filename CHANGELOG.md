@@ -1,6 +1,11 @@
 Change Log
 ==========
 
+Version 1.3.0-beta12 *(2021-06-07)*
+------------------------------------
+- New: Expose network height as StateFlow.
+- Fix: Reconnect to lightwalletd when a service exception occurs.
+
 Version 1.3.0-beta11 *(2021-05-12)*
 ------------------------------------
 - Fix: Remove unused flag that was breaking new wallet creation for some wallets.
