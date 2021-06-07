@@ -171,6 +171,10 @@ class SdkSynchronizer internal constructor(
      */
     override val processorInfo: Flow<CompactBlockProcessor.ProcessorInfo> = processor.processorInfo
 
+    /**
+     * The latest height seen on the network while processing blocks. This may differ from the
+     * latest height scanned and is useful for determining block confirmations and expiration.
+     */
     override val networkHeight: StateFlow<Int> = processor.networkHeight
 
     //

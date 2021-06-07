@@ -163,6 +163,10 @@ class CompactBlockProcessor(
      */
     val processorInfo = _processorInfo.asFlow()
 
+    /**
+     * The flow of network height. This value is updated at the same time that [currentInfo] is
+     * updated but this allows consumers to have the information pushed instead of polling.
+     */
     val networkHeight = _networkHeight.asStateFlow()
 
     /**
