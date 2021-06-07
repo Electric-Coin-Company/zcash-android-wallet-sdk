@@ -12,6 +12,7 @@ import cash.z.ecc.android.sdk.type.ZcashNetwork
 import cash.z.wallet.sdk.rpc.Service
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.StateFlow
 
 /**
  * Primary interface for interacting with the SDK. Defines the contract that specific
@@ -90,6 +91,13 @@ interface Synchronizer {
      * lot more detail.
      */
     val processorInfo: Flow<CompactBlockProcessor.ProcessorInfo>
+
+    /**
+     * The latest height observed on the network, which does not necessarily correspond to the
+     * latest downloaded height or scanned height. Although this is present in [processorInfo], it
+     * is such a frequently used value that it is convenient to have the real-time value by itself.
+     */
+    val networkHeight: StateFlow<Int>
 
     /**
      * A stream of balance values, separately reflecting both the available and total balance.

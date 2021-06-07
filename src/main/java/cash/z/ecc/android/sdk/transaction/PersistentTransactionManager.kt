@@ -124,7 +124,8 @@ class PersistentTransactionManager(
                 updateEncoding(tx.id, encodedTx.raw, encodedTx.txId, encodedTx.expiryHeight)
             }
         } catch (t: Throwable) {
-            val message = "failed to encode transaction due to : ${t.message} caused by: ${t.cause}"
+            var message = "failed to encode transaction due to : ${t.message}"
+            t.cause?.let { message += " caused by: $it" }
             twig(message)
             safeUpdate("updating transaction error info") {
                 updateError(tx.id, message, ERROR_ENCODING)
@@ -158,7 +159,8 @@ class PersistentTransactionManager(
                 updateEncoding(tx.id, encodedTx.raw, encodedTx.txId, encodedTx.expiryHeight)
             }
         } catch (t: Throwable) {
-            val message = "failed to encode shielding transaction due to : ${t.message} caused by: ${t.cause}"
+            var message = "failed to encode auto-shielding transaction due to : ${t.message}"
+            t.cause?.let { message += " caused by: $it" }
             twig(message)
             safeUpdate("updating shielding transaction error info") {
                 updateError(tx.id, message, ERROR_ENCODING)
@@ -203,8 +205,9 @@ class PersistentTransactionManager(
             }
         } catch (t: Throwable) {
             // a non-server error has occurred
-            val message =
-                "Unknown error while submitting transaction: ${t.message} caused by: ${t.cause}"
+            var message =
+                "Unknown error while submitting transaction: ${t.message}"
+            t.cause?.let { message += " caused by: $it" }
             twig(message)
             safeUpdate("updating submission failure") {
                 updateError(tx.id, t.message, ERROR_SUBMITTING)

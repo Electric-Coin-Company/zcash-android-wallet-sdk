@@ -66,6 +66,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.ConflatedBroadcastChannel
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
@@ -169,6 +170,12 @@ class SdkSynchronizer internal constructor(
      * is very helpful for conveying detailed progress and status to the user.
      */
     override val processorInfo: Flow<CompactBlockProcessor.ProcessorInfo> = processor.processorInfo
+
+    /**
+     * The latest height seen on the network while processing blocks. This may differ from the
+     * latest height scanned and is useful for determining block confirmations and expiration.
+     */
+    override val networkHeight: StateFlow<Int> = processor.networkHeight
 
     //
     // Error Handling
