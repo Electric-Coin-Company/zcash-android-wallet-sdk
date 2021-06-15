@@ -100,9 +100,19 @@ interface Synchronizer {
     val networkHeight: StateFlow<Int>
 
     /**
-     * A stream of balance values, separately reflecting both the available and total balance.
+     * A stream of balance values for the orchard pool. Includes the available and total balance.
      */
-    val balances: Flow<WalletBalance>
+    val orchardBalances: Flow<WalletBalance>
+
+    /**
+     * A stream of balance values for the sapling pool. Includes the available and total balance.
+     */
+    val saplingBalances: Flow<WalletBalance>
+
+    /**
+     * A stream of balance values for the transparent pool. Includes the available and total balance.
+     */
+    val transparentBalances: Flow<WalletBalance>
 
     /* Transactions */
 
@@ -135,11 +145,6 @@ interface Synchronizer {
      * An in-memory reference to the latest height seen on the network.
      */
     val latestHeight: Int
-
-    /**
-     * An in-memory reference to the most recently calculated balance.
-     */
-    val latestBalance: WalletBalance
 
     /**
      * An in-memory reference to the best known birthday height, which can change if the first
