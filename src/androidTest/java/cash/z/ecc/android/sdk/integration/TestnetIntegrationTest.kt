@@ -56,7 +56,7 @@ class TestnetIntegrationTest : ScopedTest() {
     @Test
     fun testBalance() = runBlocking {
         var availableBalance: Long = 0L
-        synchronizer.balances.onFirst {
+        synchronizer.saplingBalances.onFirst {
             availableBalance = it.availableZatoshi
         }
 
@@ -74,7 +74,7 @@ class TestnetIntegrationTest : ScopedTest() {
     @Ignore
     fun testSpend() = runBlocking {
         var success = false
-        synchronizer.balances.filter { it.availableZatoshi > 0 }.onEach {
+        synchronizer.saplingBalances.filter { it.availableZatoshi > 0 }.onEach {
             success = sendFunds()
         }.first()
         log("asserting $success")
