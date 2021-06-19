@@ -11,6 +11,7 @@ import cash.z.wallet.sdk.rpc.CompactTxStreamerGrpc
 import cash.z.wallet.sdk.rpc.Service
 import com.google.protobuf.ByteString
 import io.grpc.Channel
+import io.grpc.ConnectivityState
 import io.grpc.ManagedChannel
 import io.grpc.android.AndroidChannelBuilder
 import java.util.concurrent.TimeUnit
@@ -66,20 +67,17 @@ class LightWalletGrpcService private constructor(
     override fun getBlockRange(heightRange: IntRange): List<CompactFormats.CompactBlock> {
         if (heightRange.isEmpty()) return listOf()
 
-        channel.resetConnectBackoff()
-        return channel.createStub(streamingRequestTimeoutSec)
+        return requireChannel().createStub(streamingRequestTimeoutSec)
             .getBlockRange(heightRange.toBlockRange()).toList()
     }
 
     override fun getLatestBlockHeight(): Int {
-        channel.resetConnectBackoff()
-        return channel.createStub(singleRequestTimeoutSec)
+        return requireChannel().createStub(singleRequestTimeoutSec)
             .getLatestBlock(Service.ChainSpec.newBuilder().build()).height.toInt()
     }
 
     override fun getServerInfo(): Service.LightdInfo {
-        channel.resetConnectBackoff()
-        return channel.createStub(singleRequestTimeoutSec)
+        return requireChannel().createStub(singleRequestTimeoutSec)
             .getLightdInfo(Service.Empty.newBuilder().build())
     }
 
@@ -92,11 +90,10 @@ class LightWalletGrpcService private constructor(
                 )
                 .build()
         }
-        channel.resetConnectBackoff()
         val request =
             Service.RawTransaction.newBuilder().setData(ByteString.copyFrom(spendTransaction))
                 .build()
-        return channel.createStub().sendTransaction(request)
+        return requireChannel().createStub().sendTransaction(request)
     }
 
     override fun shutdown() {
@@ -107,8 +104,7 @@ class LightWalletGrpcService private constructor(
     override fun fetchTransaction(txId: ByteArray): Service.RawTransaction? {
         if (txId.isEmpty()) return null
 
-        channel.resetConnectBackoff()
-        return channel.createStub().getTransaction(
+        return requireChannel().createStub().getTransaction(
             Service.TxFilter.newBuilder().setHash(ByteString.copyFrom(txId)).build()
         )
     }
@@ -117,8 +113,7 @@ class LightWalletGrpcService private constructor(
         tAddress: String,
         startHeight: Int
     ): List<Service.GetAddressUtxosReply> {
-        channel.resetConnectBackoff()
-        val result = channel.createStub().getAddressUtxos(
+        val result = requireChannel().createStub().getAddressUtxos(
             Service.GetAddressUtxosArg.newBuilder().setAddress(tAddress)
                 .setStartHeight(startHeight.toLong()).build()
         )
@@ -131,8 +126,7 @@ class LightWalletGrpcService private constructor(
     ): List<Service.RawTransaction> {
         if (blockHeightRange.isEmpty() || tAddress.isBlank()) return listOf()
 
-        channel.resetConnectBackoff()
-        val result = channel.createStub().getTaddressTxids(
+        val result = requireChannel().createStub().getTaddressTxids(
             Service.TransparentAddressBlockFilter.newBuilder().setAddress(tAddress)
                 .setRange(blockHeightRange.toBlockRange()).build()
         )
@@ -151,6 +145,19 @@ class LightWalletGrpcService private constructor(
             connectionInfo.port,
             connectionInfo.usePlaintext
         )
+    }
+
+    // test code
+    var stateCount = 0
+    var state: ConnectivityState? = null
+    private fun requireChannel(): ManagedChannel {
+        state = channel.getState(false).let { new ->
+            if (state == new) stateCount++ else stateCount = 0
+            new
+        }
+        channel.resetConnectBackoff()
+        twig("getting channel isShutdown: ${channel.isShutdown}  isTerminated: ${channel.isTerminated} getState: $state stateCount: $stateCount")
+        return channel
     }
 
     //
