@@ -61,7 +61,7 @@ class TestWallet(
     val synchronizer: SdkSynchronizer = Synchronizer(initializer) as SdkSynchronizer
     val service = (synchronizer.processor.downloader.lightWalletService as LightWalletGrpcService)
 
-    val available get() = synchronizer.latestBalance.availableZatoshi
+    val available get() = synchronizer.saplingBalances.value.availableZatoshi
     val shieldedAddress = DerivationTool.deriveShieldedAddress(seed, network = network)
     val transparentAddress = DerivationTool.deriveTransparentAddress(seed, network = network)
     val birthdayHeight get() = synchronizer.latestBirthdayHeight

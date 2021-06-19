@@ -1,6 +1,12 @@
 Change Log
 ==========
 
+Version 1.3.0-beta14 *(2021-06-21)*
+------------------------------------
+- New: Add separate flows for sapling, orchard and tranparent balances.
+- Fix: Continue troubleshooting and fixing server disconnects.
+- Updated dependencies.
+
 Version 1.3.0-beta12 *(2021-06-07)*
 ------------------------------------
 - New: Expose network height as StateFlow.

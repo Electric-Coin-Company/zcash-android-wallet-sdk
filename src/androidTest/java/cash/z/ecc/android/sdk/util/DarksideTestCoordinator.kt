@@ -206,7 +206,7 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
         }
 
         fun validateMinBalance(available: Long = -1, total: Long = -1) {
-            val balance = synchronizer.latestBalance
+            val balance = synchronizer.saplingBalances.value
             if (available > 0) {
                 assertTrue("invalid available balance. Expected a minimum of $available but found ${balance.availableZatoshi}", available <= balance.availableZatoshi)
             }

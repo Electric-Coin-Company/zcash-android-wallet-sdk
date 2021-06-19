@@ -66,8 +66,10 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.ConflatedBroadcastChannel
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
@@ -99,7 +101,12 @@ class SdkSynchronizer internal constructor(
     private val txManager: OutboundTransactionManager,
     val processor: CompactBlockProcessor
 ) : Synchronizer {
-    private val _balances = ConflatedBroadcastChannel(WalletBalance())
+
+    // pools
+    private val _orchardBalances = MutableStateFlow(WalletBalance())
+    private val _saplingBalances = MutableStateFlow(WalletBalance())
+    private val _transparentBalances = MutableStateFlow(WalletBalance())
+
     private val _status = ConflatedBroadcastChannel<Synchronizer.Status>(DISCONNECTED)
 
     /**
@@ -134,10 +141,17 @@ class SdkSynchronizer internal constructor(
     override var isStarted = false
 
     //
+    // Balances
+    //
+
+    override val orchardBalances = _orchardBalances.asStateFlow()
+    override val saplingBalances = _saplingBalances.asStateFlow()
+    override val transparentBalances = _transparentBalances.asStateFlow()
+
+    //
     // Transactions
     //
 
-    override val balances: Flow<WalletBalance> = _balances.asFlow()
     override val clearedTransactions get() = storage.allTransactions
     override val pendingTransactions = txManager.getAll()
     override val sentTransactions get() = storage.sentTransactions
@@ -224,12 +238,6 @@ class SdkSynchronizer internal constructor(
     //
 
     /**
-     * Convenience function for the latest balance. Instead of using this, a wallet will more likely
-     * want to consume the flow of balances using [balances].
-     */
-    override val latestBalance: WalletBalance get() = _balances.value
-
-    /**
      * Convenience function for the latest height. Specifically, this value represents the last
      * height that the synchronizer has observed from the lightwalletd server. Instead of using
      * this, a wallet will more likely want to consume the flow of processor info using
@@ -284,8 +292,6 @@ class SdkSynchronizer internal constructor(
             processor.stop()
             twig("Synchronizer::stop: coroutineScope.cancel()")
             coroutineScope.cancel()
-            twig("Synchronizer::stop: _balances.cancel()")
-            _balances.cancel()
             twig("Synchronizer::stop: _status.cancel()")
             _status.cancel()
             twig("Synchronizer::stop: COMPLETE")
@@ -359,9 +365,21 @@ class SdkSynchronizer internal constructor(
      * Calculate the latest balance, based on the blocks that have been scanned and transmit this
      * information into the flow of [balances].
      */
-    suspend fun refreshBalance() {
-        twig("refreshing balance")
-        _balances.send(processor.getBalanceInfo())
+    suspend fun refreshAllBalances() {
+        refreshSaplingBalance()
+        refreshTransparentBalance()
+        // TODO: refresh orchard balance
+        twig("Warning: Orchard balance does not yet refresh. Only some of the plumbing is in place.")
+    }
+
+    suspend fun refreshSaplingBalance() {
+        twig("refreshing sapling balance")
+        _saplingBalances.value = processor.getBalanceInfo()
+    }
+
+    suspend fun refreshTransparentBalance() {
+        twig("refreshing transparent balance")
+        _transparentBalances.value = processor.getUtxoCacheBalance(getTransparentAddress())
     }
 
     suspend fun isValidAddress(address: String): Boolean {
@@ -501,7 +519,7 @@ class SdkSynchronizer internal constructor(
                 refreshUtxos()
             }
             twigTask("Triggering balance refresh since $reason!") {
-                refreshBalance()
+                refreshAllBalances()
             }
             twigTask("Triggering pending transaction refresh since $reason!") {
                 refreshPendingTransactions()
@@ -578,7 +596,7 @@ class SdkSynchronizer internal constructor(
         twig("[cleanup] deleting expired transactions from storage")
         hasCleaned = hasCleaned || (storage.deleteExpired(lastScannedHeight) > 0)
 
-        if (hasCleaned) refreshBalance()
+        if (hasCleaned) refreshAllBalances()
         twig("[cleanup] done refreshing and cleaning up pending transactions")
     }
 
@@ -619,7 +637,7 @@ class SdkSynchronizer internal constructor(
                 // only submit if it wasn't cancelled. Otherwise cleanup, immediately for best UX.
                 if (encodedTx.isCancelled()) {
                     twig("[cleanup] this tx has been cancelled so we will cleanup instead of submitting")
-                    if (cleanupCancelledTx(encodedTx)) refreshBalance()
+                    if (cleanupCancelledTx(encodedTx)) refreshAllBalances()
                     encodedTx
                 } else {
                     txManager.submit(encodedTx)
@@ -650,7 +668,7 @@ class SdkSynchronizer internal constructor(
                 // only submit if it wasn't cancelled. Otherwise cleanup, immediately for best UX.
                 if (encodedTx.isCancelled()) {
                     twig("[cleanup] this shielding tx has been cancelled so we will cleanup instead of submitting")
-                    if (cleanupCancelledTx(encodedTx)) refreshBalance()
+                    if (cleanupCancelledTx(encodedTx)) refreshAllBalances()
                     encodedTx
                 } else {
                     txManager.submit(encodedTx)

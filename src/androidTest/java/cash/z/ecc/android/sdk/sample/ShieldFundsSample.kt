@@ -31,6 +31,6 @@ class ShieldFundsSample {
 //        wallet.shieldFunds()
 
         Twig.clip("ShieldFundsSample")
-        Assert.assertEquals(5, wallet.synchronizer.latestBalance.availableZatoshi)
+        Assert.assertEquals(5, wallet.synchronizer.saplingBalances.value.availableZatoshi)
     }
 }

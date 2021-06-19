@@ -1,5 +1,6 @@
 package cash.z.ecc.android.sdk.block // iimport cash.z.ecc.android.sdk.exception.LightWalletException
 import cash.z.ecc.android.sdk.exception.LightWalletException
+import cash.z.ecc.android.sdk.ext.retryUpTo
 import cash.z.ecc.android.sdk.ext.tryWarn
 import cash.z.ecc.android.sdk.ext.twig
 import cash.z.ecc.android.sdk.service.LightWalletService
@@ -77,13 +78,17 @@ open class CompactBlockDownloader private constructor(val compactBlockStore: Com
     }
 
     suspend fun getServerInfo(): Service.LightdInfo = withContext<Service.LightdInfo>(IO) {
+        lateinit var result: Service.LightdInfo
         try {
-            lightWalletService.getServerInfo()
+            result = lightWalletService.getServerInfo()
         } catch (e: StatusRuntimeException) {
-            twig("WARNING: reconnecting to service in response to failure: $e")
-            lightWalletService.reconnect()
-            lightWalletService.getServerInfo()
+            retryUpTo(2) {
+                twig("WARNING: reconnecting to service in response to failure (retry #${it + 1}): $e")
+                lightWalletService.reconnect()
+                result = lightWalletService.getServerInfo()
+            }
         }
+        result
     }
 
     suspend fun changeService(
