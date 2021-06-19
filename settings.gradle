@@ -1,10 +1,9 @@
-import de.fayard.refreshVersions.RefreshVersionsSetup
-
 buildscript {
     repositories { gradlePluginPortal() }
-    dependencies.classpath("de.fayard.refreshVersions:refreshVersions:0.9.7")
 }
-
-RefreshVersionsSetup.bootstrap(settings)
+plugins {
+    // See https://jmfayard.github.io/refreshVersions
+    id 'de.fayard.refreshVersions' version '0.10.1'
+}
 
 rootProject.name = 'zcash-android-sdk'
