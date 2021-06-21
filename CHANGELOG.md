@@ -1,6 +1,11 @@
 Change Log
 ==========
 
+Version 1.3.0-beta15 *(2021-06-21)*
+------------------------------------
+- Fix: Increase reconnection attempts on failed app restart.
+- New: Updated checkpoints for testnet and mainnet.
+
 Version 1.3.0-beta14 *(2021-06-21)*
 ------------------------------------
 - New: Add separate flows for sapling, orchard and tranparent balances.
