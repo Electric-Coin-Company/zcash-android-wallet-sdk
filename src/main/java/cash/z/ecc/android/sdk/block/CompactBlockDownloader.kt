@@ -82,7 +82,7 @@ open class CompactBlockDownloader private constructor(val compactBlockStore: Com
         try {
             result = lightWalletService.getServerInfo()
         } catch (e: StatusRuntimeException) {
-            retryUpTo(2) {
+            retryUpTo(6) {
                 twig("WARNING: reconnecting to service in response to failure (retry #${it + 1}): $e")
                 lightWalletService.reconnect()
                 result = lightWalletService.getServerInfo()
