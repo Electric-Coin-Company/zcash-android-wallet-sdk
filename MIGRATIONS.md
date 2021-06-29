@@ -1,4 +1,4 @@
-Change Log
+Troubleshooting Migrations
 ==========
 
 Migrating to Version 1.3.* from 1.2.*
