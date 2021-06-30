@@ -3,6 +3,16 @@ Troubleshooting Migrations
 
 Migrating to Version 1.3.* from 1.2.*
 --------------------------------------
+The biggest breaking changes in 1.3 that inspired incrementing the minor version number was simplifying down to one "network aware" library rather than two separate libraries, each dedicated to either testnet or mainnet. This greatly simplifies the gradle configuration and has lots of other benefits. Wallets can now set a network with code similar to the following:
+
+```kotlin
+// Simple example
+val network: ZcashNetwork = if (testMode) ZcashNetwork.Testnet else ZcashNetwork.Mainnet
+
+// Dependency Injection example
+@Provides @Singleton fun provideNetwork(): ZcashNetwork = ZcashNetwork.Mainnet
+```
+1.3 also adds a runtime check for wallets that are accessing properties before the synchronizer has started. By introducing a `prepare` step, we are now able to catch these errors proactively rather than allowing them to turn into subtle bugs that only surface later. We found this when code was accessing properties before database migrations completed, causing undefined results. Developers do not need to make any changes to enable these checks, they happen automatically and result in detailed error messages.
 
 | Error                           | Issue                               | Fix                      |
 | ------------------------------- | ----------------------------------- | ------------------------ |
