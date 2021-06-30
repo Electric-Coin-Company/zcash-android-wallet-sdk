@@ -1,6 +1,14 @@
 Change Log
 ==========
 
+Version 1.3.0-beta16 *(2021-06-30)*
+------------------------------------
+- Fix: Gracefully handle failures while fetching UTXOs.
+- New: Expose StateFlows for balances.
+- New: Make it easier to subscribe to transactions.
+- New: Cleanup default logs.
+- New: Convenience functions for WalletBalance objects.
+
 Version 1.3.0-beta15 *(2021-06-21)*
 ------------------------------------
 - Fix: Increase reconnection attempts on failed app restart.
