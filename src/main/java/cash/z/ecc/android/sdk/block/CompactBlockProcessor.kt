@@ -197,9 +197,11 @@ class CompactBlockProcessor(
                     twig("Unable to process new blocks because we are disconnected! Attempting to reconnect in ${napTime}ms")
                     delay(napTime)
                 } else if (result == ERROR_CODE_NONE || result == ERROR_CODE_FAILED_ENHANCE) {
+                    val noWorkDone = currentInfo.lastDownloadRange.isEmpty() && currentInfo.lastScanRange.isEmpty()
+                    val summary = if (noWorkDone) "Nothing to process: no new blocks to download or scan" else "Done processing blocks"
                     consecutiveChainErrors.set(0)
                     val napTime = calculatePollInterval()
-                    twig("Successfully processed new blocks${if (result == ERROR_CODE_FAILED_ENHANCE) " (but there were enhancement errors! We ignore those, for now. Memos in this block range are probably missing! This will be improved in a future release.)" else ""}. Sleeping for ${napTime}ms")
+                    twig("$summary${if (result == ERROR_CODE_FAILED_ENHANCE) " (but there were enhancement errors! We ignore those, for now. Memos in this block range are probably missing! This will be improved in a future release.)" else ""}! Sleeping for ${napTime}ms (latest height: ${currentInfo.networkBlockHeight}).")
                     delay(napTime)
                 } else {
                     if (consecutiveChainErrors.get() >= RETRIES) {
@@ -242,7 +244,7 @@ class CompactBlockProcessor(
      * return the block height where an error was found.
      */
     private suspend fun processNewBlocks(): Int = withContext(IO) {
-        twig("beginning to process new blocks (with lower bound: $lowerBoundHeight)...")
+        twig("beginning to process new blocks (with lower bound: $lowerBoundHeight)...", -1)
 
         if (!updateRanges()) {
             twig("Disconnection detected! Attempting to reconnect!")
@@ -250,7 +252,6 @@ class CompactBlockProcessor(
             downloader.lightWalletService.reconnect()
             ERROR_CODE_RECONNECT
         } else if (currentInfo.lastDownloadRange.isEmpty() && currentInfo.lastScanRange.isEmpty()) {
-            twig("Nothing to process: no new blocks to download or scan, right now (latest: ${currentInfo.networkBlockHeight}).")
             setState(Scanned(currentInfo.lastScanRange))
             ERROR_CODE_NONE
         } else {
@@ -423,33 +424,51 @@ class CompactBlockProcessor(
         }
     }
 
-    internal suspend fun refreshUtxos(tAddress: String, startHeight: Int): Int = withContext(IO) {
-        var skipped = 0
-        // todo test  what happens when this call fails
-        downloader.lightWalletService.fetchUtxos(tAddress, startHeight).let { result ->
-            twig("Clearing utxos above height ${startHeight - 1}")
-            rustBackend.clearUtxos(tAddress, startHeight - 1)
-            twig("Downloading utxos starting at height $startHeight")
-            result.forEach { utxo: Service.GetAddressUtxosReply ->
-                twig("Found UTXO at height ${utxo.height.toInt()}")
-                try {
-                    rustBackend.putUtxo(
-                        tAddress,
-                        utxo.txid.toByteArray(),
-                        utxo.index,
-                        utxo.script.toByteArray(),
-                        utxo.valueZat,
-                        utxo.height.toInt()
-                    )
-                } catch (t: Throwable) {
-                    // TODO: more accurately track the utxos that were skipped (in theory, this could fail for other reasons)
-                    skipped++
-                    twig("Warning: Ignoring transaction at height ${utxo.height} @ index ${utxo.index} because it already exists")
+    var failedUtxoFetches = 0
+    internal suspend fun refreshUtxos(tAddress: String, startHeight: Int): Int? = withContext(IO) {
+        var count: Int? = null
+        // todo: cleanup the way that we prevent this from running excessively
+        //       For now, try for about 5 minutes, per app launch. If the service fails it is
+        //       probably disabled on ligthtwalletd, so then stop trying until the next app launch.
+        if (failedUtxoFetches < 15) { // there are approx 3 attempts per minute so 15 ~= 5min
+            try {
+                retryUpTo(3) {
+                    val result = downloader.lightWalletService.fetchUtxos(tAddress, startHeight)
+                    count = processUtxoResult(result, tAddress, startHeight)
                 }
+            } catch (e: Throwable) {
+                failedUtxoFetches++
+                twig("Warning: Fetching UTXOs is repeatedly failing! We will only try for about ${(15 - failedUtxoFetches + 2) / 3} more minute(s) then give up for this session.")
             }
-            // return the number of UTXOs that were downloaded
-            result.size - skipped
         }
+        count
+    }
+
+    internal suspend fun processUtxoResult(result: List<Service.GetAddressUtxosReply>, tAddress: String, startHeight: Int): Int = withContext(IO) {
+        var skipped = 0
+        val aboveHeight = startHeight - 1
+        twig("Clearing utxos above height $aboveHeight", -1)
+        rustBackend.clearUtxos(tAddress, aboveHeight)
+        twig("Checking for UTXOs above height $aboveHeight")
+        result.forEach { utxo: Service.GetAddressUtxosReply ->
+            twig("Found UTXO at height ${utxo.height.toInt()} with ${utxo.valueZat} zatoshi")
+            try {
+                rustBackend.putUtxo(
+                    tAddress,
+                    utxo.txid.toByteArray(),
+                    utxo.index,
+                    utxo.script.toByteArray(),
+                    utxo.valueZat,
+                    utxo.height.toInt()
+                )
+            } catch (t: Throwable) {
+                // TODO: more accurately track the utxos that were skipped (in theory, this could fail for other reasons)
+                skipped++
+                twig("Warning: Ignoring transaction at height ${utxo.height} @ index ${utxo.index} because it already exists")
+            }
+        }
+        // return the number of UTXOs that were downloaded
+        result.size - skipped
     }
 
     /**
@@ -464,7 +483,7 @@ class CompactBlockProcessor(
         } else {
             _state.send(Downloading)
             Twig.sprout("downloading")
-            twig("downloading blocks in range $range")
+            twig("downloading blocks in range $range", -1)
 
             var downloadedBlockHeight = range.first
             val missingBlockCount = range.last - range.first + 1
@@ -788,7 +807,7 @@ class CompactBlockProcessor(
      * @return an instance of WalletBalance containing information about available and total funds.
      */
     suspend fun getBalanceInfo(accountIndex: Int = 0): WalletBalance = withContext(IO) {
-        twigTask("checking balance info") {
+        twigTask("checking balance info", -1) {
             try {
                 val balanceTotal = rustBackend.getBalance(accountIndex)
                 twig("found total balance: $balanceTotal")
@@ -978,14 +997,14 @@ class CompactBlockProcessor(
      * Log the mutex in great detail just in case we need it for troubleshooting deadlock.
      */
     private suspend inline fun <T> Mutex.withLockLogged(name: String, block: () -> T): T {
-        twig("$name MUTEX: acquiring lock...")
+        twig("$name MUTEX: acquiring lock...", -1)
         this.withLock {
-            twig("$name MUTEX: ...lock acquired!")
+            twig("$name MUTEX: ...lock acquired!", -1)
             return block().also {
-                twig("$name MUTEX: releasing lock")
+                twig("$name MUTEX: releasing lock", -1)
             }
         }
-        twig("$name MUTEX: withLock complete")
+        twig("$name MUTEX: withLock complete", -1)
     }
 
     companion object {

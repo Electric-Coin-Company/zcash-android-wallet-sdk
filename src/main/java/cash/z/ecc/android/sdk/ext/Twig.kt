@@ -14,10 +14,10 @@ interface Twig {
     /**
      * Log the message. Simple.
      */
-    fun twig(logMessage: String = "")
+    fun twig(logMessage: String = "", priority: Int = 0)
 
     /**
-     * Bundles twigs together
+     * Bundles twigs together.
      */
     operator fun plus(twig: Twig): Twig {
         // if the other twig is a composite twig, let it handle the addition
@@ -82,7 +82,7 @@ object Bush {
 /**
  * Makes a tiny log.
  */
-inline fun twig(message: String) = Bush.trunk.twig(message)
+inline fun twig(message: String, priority: Int = 0) = Bush.trunk.twig(message, priority)
 
 /**
  * Makes an exception.
@@ -94,12 +94,12 @@ inline fun twig(t: Throwable) = t.stackTraceToString().lines().forEach {
 /**
  * Times a tiny log.
  */
-inline fun <R> twig(logMessage: String, block: () -> R): R = Bush.trunk.twig(logMessage, block)
+inline fun <R> twig(logMessage: String, priority: Int = 0, block: () -> R): R = Bush.trunk.twig(logMessage, priority, block)
 
 /**
  * Meticulously times a tiny task.
  */
-inline fun <R> twigTask(logMessage: String, block: () -> R): R = Bush.trunk.twigTask(logMessage, block)
+inline fun <R> twigTask(logMessage: String, priority: Int = 0, block: () -> R): R = Bush.trunk.twigTask(logMessage, priority, block)
 
 /**
  * A tiny log that does nothing. No one hears this twig fall in the woods.
@@ -109,7 +109,7 @@ class SilentTwig : Twig {
     /**
      * Shh.
      */
-    override fun twig(logMessage: String) {
+    override fun twig(logMessage: String, priority: Int) {
         // shh
     }
 }
@@ -121,15 +121,34 @@ class SilentTwig : Twig {
  * @param printer a printer for the twigs. The default is System.err.println.
  */
 open class TroubleshootingTwig(
-    val formatter: (String) -> String = spiffy(5),
-    val printer: (String) -> Any = System.err::println
+    val formatter: (String) -> String = spiffy(6),
+    val printer: (String) -> Any = System.err::println,
+    val minPriority: Int = 0
 ) : Twig {
 
     /**
      * Actually print and format the log message, unlike the SilentTwig, which does nothing.
      */
-    override fun twig(logMessage: String) {
-        printer(formatter(logMessage))
+    override fun twig(logMessage: String, priority: Int) {
+        if (priority >= minPriority) printer(formatter(logMessage))
+    }
+
+    companion object {
+
+        /**
+         * A tiny log formatter that makes twigs pretty spiffy.
+         *
+         * @param stackFrame the stack frame from which we try to derive the class. This can vary depending
+         * on how the code is called so we expose it for flexibility. Jiggle the handle on this whenever the
+         * line numbers appear incorrect.
+         */
+        fun spiffy(stackFrame: Int = 4, tag: String = "@TWIG"): (String) -> String = { logMessage: String ->
+            val stack = Thread.currentThread().stackTrace[stackFrame]
+            val time = String.format("$tag %1\$tD %1\$tI:%1\$tM:%1\$tS.%1\$tN", System.currentTimeMillis())
+            val className = stack.className.split(".").lastOrNull()?.split("\$")?.firstOrNull()
+            val tags = Bush.leaves.joinToString(" #", "#")
+            "$time[$className:${stack.lineNumber}]($tags)    $logMessage"
+        }
     }
 }
 
@@ -144,9 +163,9 @@ open class CompositeTwig(open val twigBundle: MutableList<Twig>) :
         return this
     }
 
-    override fun twig(logMessage: String) {
+    override fun twig(logMessage: String, priority: Int) {
         for (twig in twigBundle) {
-            twig.twig(logMessage)
+            twig.twig(logMessage, priority)
         }
     }
 }
@@ -154,11 +173,11 @@ open class CompositeTwig(open val twigBundle: MutableList<Twig>) :
 /**
  * Times a tiny log. Execute the block of code on the clock.
  */
-inline fun <R> Twig.twig(logMessage: String, block: () -> R): R {
+inline fun <R> Twig.twig(logMessage: String, priority: Int = 0, block: () -> R): R {
     val start = System.currentTimeMillis()
     val result = block()
     val elapsed = (System.currentTimeMillis() - start)
-    twig("$logMessage | ${elapsed}ms")
+    twig("$logMessage | ${elapsed}ms", priority)
     return result
 }
 
@@ -170,26 +189,11 @@ inline fun <R> Twig.twig(logMessage: String, block: () -> R): R {
  *       this function to be inlined and simplifies its use with suspend functions
  *       (otherwise the function and its "block" param would have to suspend)
  */
-inline fun <R> Twig.twigTask(logMessage: String, block: () -> R): R {
-    twig("$logMessage - started   | on thread ${Thread.currentThread().name}")
+inline fun <R> Twig.twigTask(logMessage: String, priority: Int = 0, block: () -> R): R {
+    twig("$logMessage - started   | on thread ${Thread.currentThread().name}", priority)
     val start = System.nanoTime()
     val result = block()
     val elapsed = ((System.nanoTime() - start) / 1e5).roundToLong() / 10L
-    twig("$logMessage - completed | in $elapsed ms" + " on thread ${Thread.currentThread().name}")
+    twig("$logMessage - completed | in $elapsed ms" + " on thread ${Thread.currentThread().name}", priority)
     return result
-}
-
-/**
- * A tiny log formatter that makes twigs pretty spiffy.
- *
- * @param stackFrame the stack frame from which we try to derive the class. This can vary depending
- * on how the code is called so we expose it for flexibility. Jiggle the handle on this whenever the
- * line numbers appear incorrect.
- */
-inline fun spiffy(stackFrame: Int = 4, tag: String = "@TWIG"): (String) -> String = { logMessage: String ->
-    val stack = Thread.currentThread().stackTrace[stackFrame]
-    val time = String.format("$tag %1\$tD %1\$tI:%1\$tM:%1\$tS.%1\$tN", System.currentTimeMillis())
-    val className = stack.className.split(".").lastOrNull()?.split("\$")?.firstOrNull()
-    val tags = Bush.leaves.joinToString(" #", "#")
-    "$time[$className:${stack.lineNumber}]($tags)    $logMessage"
 }

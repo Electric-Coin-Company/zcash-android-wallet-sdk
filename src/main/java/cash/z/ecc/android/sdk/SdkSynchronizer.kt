@@ -357,7 +357,7 @@ class SdkSynchronizer internal constructor(
     //
 
     suspend fun refreshUtxos() {
-        twig("refreshing utxos")
+        twig("refreshing utxos", -1)
         refreshUtxos(getTransparentAddress())
     }
 
@@ -515,13 +515,13 @@ class SdkSynchronizer internal constructor(
         // already exists and it completes on another thread so it should come after the
         // balance refresh is complete.
         if (shouldRefresh) {
-            twigTask("Triggering utxo refresh since $reason!") {
+            twigTask("Triggering utxo refresh since $reason!", -1) {
                 refreshUtxos()
             }
-            twigTask("Triggering balance refresh since $reason!") {
+            twigTask("Triggering balance refresh since $reason!", -1) {
                 refreshAllBalances()
             }
-            twigTask("Triggering pending transaction refresh since $reason!") {
+            twigTask("Triggering pending transaction refresh since $reason!", -1) {
                 refreshPendingTransactions()
             }
             twigTask("Triggering transaction refresh since $reason!") {
@@ -552,7 +552,7 @@ class SdkSynchronizer internal constructor(
                 }
             }
 
-        twig("[cleanup] beginning to cleanup cancelled transactions")
+        twig("[cleanup] beginning to cleanup cancelled transactions", -1)
         var hasCleaned = false
         // Experimental: cleanup cancelled transactions
         allPendingTxs.filter { it.isCancelled() && it.hasRawTransactionId() }.let { cancellable ->
@@ -576,7 +576,7 @@ class SdkSynchronizer internal constructor(
             }
         }
 
-        twig("[cleanup] beginning to cleanup expired transactions")
+        twig("[cleanup] beginning to cleanup expired transactions", -1)
         // Experimental: cleanup expired transactions
         // note: don't delete the pendingTx until the related data has been scrubbed, or else you
         // lose the thing that identifies the other data as invalid
@@ -593,11 +593,13 @@ class SdkSynchronizer internal constructor(
                 twig("[cleanup] FOUND EXPIRED pendingTX (lastScanHeight: $lastScannedHeight  expiryHeight: ${it.expiryHeight}): and ${it.id} ${if (result > 0) "successfully removed" else "failed to remove"} it")
             }
 
-        twig("[cleanup] deleting expired transactions from storage")
-        hasCleaned = hasCleaned || (storage.deleteExpired(lastScannedHeight) > 0)
+        twig("[cleanup] deleting expired transactions from storage", -1)
+        val expiredCount = storage.deleteExpired(lastScannedHeight)
+        if (expiredCount > 0) twig("[cleanup] deleted $expiredCount expired transaction(s)!")
+        hasCleaned = hasCleaned || (expiredCount > 0)
 
         if (hasCleaned) refreshAllBalances()
-        twig("[cleanup] done refreshing and cleaning up pending transactions")
+        twig("[cleanup] done refreshing and cleaning up pending transactions", -1)
     }
 
     private suspend fun cleanupCancelledTx(pendingTx: PendingTransaction): Boolean {
@@ -680,7 +682,7 @@ class SdkSynchronizer internal constructor(
         txManager.monitorById(it.id)
     }.distinctUntilChanged()
 
-    override suspend fun refreshUtxos(address: String, startHeight: Int): Int {
+    override suspend fun refreshUtxos(address: String, startHeight: Int): Int? {
         return processor.refreshUtxos(address, startHeight)
     }
 

@@ -34,8 +34,11 @@ sealed class RepositoryException(message: String, cause: Throwable? = null) : Sd
     )
     object Unprepared : RepositoryException(
         "Unprepared repository: Data cannot be accessed before the repository is prepared." +
-            " Ensure that things have been properly initialized. In most cases, this involves" +
-            " calling 'synchronizer.prepare' before 'synchronizer.start'"
+            " Ensure that things have been properly initialized. If you see this error it most" +
+            " likely means that you are accessing transactions or other data before starting the" +
+            " Synchronizer. Previously, this was a silent bug that would cause problems later." +
+            " Mostly, during database migrations. Now, we catch this early and explicitly prevent" +
+            " it from happening."
     )
 }
 

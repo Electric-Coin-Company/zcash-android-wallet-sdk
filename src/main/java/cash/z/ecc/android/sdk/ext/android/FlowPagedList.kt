@@ -31,7 +31,7 @@ fun <Key, Value> DataSource.Factory<Key, Value>.toFlowPagedList(
     initialLoadKey: Key? = null,
     boundaryCallback: PagedList.BoundaryCallback<Value>? = null,
     fetchContext: CoroutineDispatcher = Dispatchers.IO
-): Flow<PagedList<Value>> =
+): Flow<List<Value>> =
     FlowPagedListBuilder(this, config, initialLoadKey, boundaryCallback, fetchContext)
         .build()
 
@@ -55,7 +55,7 @@ inline fun <Key, Value> DataSource.Factory<Key, Value>.toFlowPagedList(
     initialLoadKey: Key? = null,
     boundaryCallback: PagedList.BoundaryCallback<Value>? = null,
     fetchContext: CoroutineDispatcher = Dispatchers.IO
-): Flow<PagedList<Value>> =
+): Flow<List<Value>> =
     FlowPagedListBuilder(this, Config(pageSize), initialLoadKey, boundaryCallback, fetchContext)
         .build()
 

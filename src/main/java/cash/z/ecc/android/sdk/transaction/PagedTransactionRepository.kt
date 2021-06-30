@@ -21,7 +21,10 @@ import cash.z.ecc.android.sdk.type.UnifiedAddressAccount
 import cash.z.ecc.android.sdk.type.UnifiedViewingKey
 import cash.z.ecc.android.sdk.type.WalletBirthday
 import kotlinx.coroutines.Dispatchers.IO
-import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.withContext
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -207,8 +210,12 @@ class PagedTransactionRepository(
         var db: DerivedDataDb? = null
             set(value) {
                 field = value
-                if (value != null) isPrepared.set(true)
+                if (value != null) {
+                    isPrepared.set(true)
+                    trigger.value = true
+                }
             }
+        private val trigger = MutableStateFlow(false)
 
         // DAOs
         val blocks: BlockDao by lazyDb { db!!.blockDao() }
@@ -219,14 +226,26 @@ class PagedTransactionRepository(
         val allTransactionsFactory: RefreshableDataSourceFactory<Int, ConfirmedTransaction> by lazyDb {
             transactions.getAllTransactions().toRefreshable()
         }
-        val allTransactions: Flow<PagedList<ConfirmedTransaction>> by lazyDb {
-            allTransactionsFactory.toFlowPagedList(pageSize)
+
+        val allTransactions = flow<List<ConfirmedTransaction>> {
+            // emit a placeholder while we await the db to be set
+            emit(emptyList())
+            trigger.first { it }
+            emitAll(allTransactionsFactory.toFlowPagedList(pageSize))
         }
-        val receivedTransactions: Flow<PagedList<ConfirmedTransaction>> by lazyDb {
-            transactions.getReceivedTransactions().toRefreshable().toFlowPagedList(pageSize)
+
+        val receivedTransactions = flow<List<ConfirmedTransaction>> {
+            // emit a placeholder while we await the db to be set
+            emit(emptyList())
+            trigger.first { it }
+            emitAll(transactions.getReceivedTransactions().toRefreshable().toFlowPagedList(pageSize))
         }
-        val sentTransactions: Flow<PagedList<ConfirmedTransaction>> by lazyDb {
-            transactions.getSentTransactions().toRefreshable().toFlowPagedList(pageSize)
+
+        val sentTransactions = flow<List<ConfirmedTransaction>> {
+            // emit a placeholder while we await the db to be set
+            emit(emptyList())
+            trigger.first { it }
+            emitAll(transactions.getSentTransactions().toRefreshable().toFlowPagedList(pageSize))
         }
 
         /**

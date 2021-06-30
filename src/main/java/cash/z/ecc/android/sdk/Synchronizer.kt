@@ -1,6 +1,5 @@
 package cash.z.ecc.android.sdk
 
-import androidx.paging.PagedList
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor
 import cash.z.ecc.android.sdk.db.entity.ConfirmedTransaction
 import cash.z.ecc.android.sdk.db.entity.PendingTransaction
@@ -102,17 +101,17 @@ interface Synchronizer {
     /**
      * A stream of balance values for the orchard pool. Includes the available and total balance.
      */
-    val orchardBalances: Flow<WalletBalance>
+    val orchardBalances: StateFlow<WalletBalance>
 
     /**
      * A stream of balance values for the sapling pool. Includes the available and total balance.
      */
-    val saplingBalances: Flow<WalletBalance>
+    val saplingBalances: StateFlow<WalletBalance>
 
     /**
      * A stream of balance values for the transparent pool. Includes the available and total balance.
      */
-    val transparentBalances: Flow<WalletBalance>
+    val transparentBalances: StateFlow<WalletBalance>
 
     /* Transactions */
 
@@ -125,17 +124,17 @@ interface Synchronizer {
     /**
      * A flow of all the transactions that are on the blockchain.
      */
-    val clearedTransactions: Flow<PagedList<ConfirmedTransaction>>
+    val clearedTransactions: Flow<List<ConfirmedTransaction>>
 
     /**
      * A flow of all transactions related to sending funds.
      */
-    val sentTransactions: Flow<PagedList<ConfirmedTransaction>>
+    val sentTransactions: Flow<List<ConfirmedTransaction>>
 
     /**
      * A flow of all transactions related to receiving funds.
      */
-    val receivedTransactions: Flow<PagedList<ConfirmedTransaction>>
+    val receivedTransactions: Flow<List<ConfirmedTransaction>>
 
     //
     // Latest Properties
@@ -294,7 +293,7 @@ interface Synchronizer {
         errorHandler: (Throwable) -> Unit = { throw it }
     )
 
-    suspend fun refreshUtxos(tAddr: String, sinceHeight: Int = network.saplingActivationHeight): Int
+    suspend fun refreshUtxos(tAddr: String, sinceHeight: Int = network.saplingActivationHeight): Int?
 
     /**
      * Returns the balance that the wallet knows about. This should be called after [refreshUtxos].

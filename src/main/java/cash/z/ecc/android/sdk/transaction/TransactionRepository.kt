@@ -1,6 +1,5 @@
 package cash.z.ecc.android.sdk.transaction
 
-import androidx.paging.PagedList
 import cash.z.ecc.android.sdk.db.entity.ConfirmedTransaction
 import cash.z.ecc.android.sdk.db.entity.EncodedTransaction
 import cash.z.ecc.android.sdk.type.UnifiedAddressAccount
@@ -95,9 +94,9 @@ interface TransactionRepository {
     //
 
     /** A flow of all the inbound confirmed transactions */
-    val receivedTransactions: Flow<PagedList<ConfirmedTransaction>>
+    val receivedTransactions: Flow<List<ConfirmedTransaction>>
     /** A flow of all the outbound confirmed transactions */
-    val sentTransactions: Flow<PagedList<ConfirmedTransaction>>
+    val sentTransactions: Flow<List<ConfirmedTransaction>>
     /** A flow of all the inbound and outbound confirmed transactions */
-    val allTransactions: Flow<PagedList<ConfirmedTransaction>>
+    val allTransactions: Flow<List<ConfirmedTransaction>>
 }
