@@ -424,33 +424,51 @@ class CompactBlockProcessor(
         }
     }
 
-    internal suspend fun refreshUtxos(tAddress: String, startHeight: Int): Int = withContext(IO) {
-        var skipped = 0
-        // todo test  what happens when this call fails
-        downloader.lightWalletService.fetchUtxos(tAddress, startHeight).let { result ->
-            twig("Clearing utxos above height ${startHeight - 1}")
-            rustBackend.clearUtxos(tAddress, startHeight - 1)
-            twig("Downloading utxos starting at height $startHeight")
-            result.forEach { utxo: Service.GetAddressUtxosReply ->
-                twig("Found UTXO at height ${utxo.height.toInt()}")
-                try {
-                    rustBackend.putUtxo(
-                        tAddress,
-                        utxo.txid.toByteArray(),
-                        utxo.index,
-                        utxo.script.toByteArray(),
-                        utxo.valueZat,
-                        utxo.height.toInt()
-                    )
-                } catch (t: Throwable) {
-                    // TODO: more accurately track the utxos that were skipped (in theory, this could fail for other reasons)
-                    skipped++
-                    twig("Warning: Ignoring transaction at height ${utxo.height} @ index ${utxo.index} because it already exists")
+    var failedUtxoFetches = 0
+    internal suspend fun refreshUtxos(tAddress: String, startHeight: Int): Int? = withContext(IO) {
+        var count: Int? = null
+        // todo: cleanup the way that we prevent this from running excessively
+        //       For now, try for about 5 minutes, per app launch. If the service fails it is
+        //       probably disabled on ligthtwalletd, so then stop trying until the next app launch.
+        if (failedUtxoFetches < 15) { // there are approx 3 attempts per minute so 15 ~= 5min
+            try {
+                retryUpTo(3) {
+                    val result = downloader.lightWalletService.fetchUtxos(tAddress, startHeight)
+                    count = processUtxoResult(result, tAddress, startHeight)
                 }
+            } catch (e: Throwable) {
+                failedUtxoFetches++
+                twig("Warning: Fetching UTXOs is repeatedly failing! We will only try for about ${(15 - failedUtxoFetches + 2) / 3} more minute(s) then give up for this session.")
             }
-            // return the number of UTXOs that were downloaded
-            result.size - skipped
         }
+        count
+    }
+
+    internal suspend fun processUtxoResult(result: List<Service.GetAddressUtxosReply>, tAddress: String, startHeight: Int): Int = withContext(IO) {
+        var skipped = 0
+        val aboveHeight = startHeight - 1
+        twig("Clearing utxos above height $aboveHeight", -1)
+        rustBackend.clearUtxos(tAddress, aboveHeight)
+        twig("Checking for UTXOs above height $aboveHeight")
+        result.forEach { utxo: Service.GetAddressUtxosReply ->
+            twig("Found UTXO at height ${utxo.height.toInt()} with ${utxo.valueZat} zatoshi")
+            try {
+                rustBackend.putUtxo(
+                    tAddress,
+                    utxo.txid.toByteArray(),
+                    utxo.index,
+                    utxo.script.toByteArray(),
+                    utxo.valueZat,
+                    utxo.height.toInt()
+                )
+            } catch (t: Throwable) {
+                // TODO: more accurately track the utxos that were skipped (in theory, this could fail for other reasons)
+                skipped++
+                twig("Warning: Ignoring transaction at height ${utxo.height} @ index ${utxo.index} because it already exists")
+            }
+        }
+        // return the number of UTXOs that were downloaded
+        result.size - skipped
     }
 
     /**

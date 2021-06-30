@@ -682,7 +682,7 @@ class SdkSynchronizer internal constructor(
         txManager.monitorById(it.id)
     }.distinctUntilChanged()
 
-    override suspend fun refreshUtxos(address: String, startHeight: Int): Int {
+    override suspend fun refreshUtxos(address: String, startHeight: Int): Int? {
         return processor.refreshUtxos(address, startHeight)
     }
 
