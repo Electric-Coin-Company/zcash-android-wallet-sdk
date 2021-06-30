@@ -1,6 +1,5 @@
 package cash.z.ecc.android.sdk
 
-import androidx.paging.PagedList
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor
 import cash.z.ecc.android.sdk.db.entity.ConfirmedTransaction
 import cash.z.ecc.android.sdk.db.entity.PendingTransaction
@@ -125,17 +124,17 @@ interface Synchronizer {
     /**
      * A flow of all the transactions that are on the blockchain.
      */
-    val clearedTransactions: Flow<PagedList<ConfirmedTransaction>>
+    val clearedTransactions: Flow<List<ConfirmedTransaction>>
 
     /**
      * A flow of all transactions related to sending funds.
      */
-    val sentTransactions: Flow<PagedList<ConfirmedTransaction>>
+    val sentTransactions: Flow<List<ConfirmedTransaction>>
 
     /**
      * A flow of all transactions related to receiving funds.
      */
-    val receivedTransactions: Flow<PagedList<ConfirmedTransaction>>
+    val receivedTransactions: Flow<List<ConfirmedTransaction>>
 
     //
     // Latest Properties
