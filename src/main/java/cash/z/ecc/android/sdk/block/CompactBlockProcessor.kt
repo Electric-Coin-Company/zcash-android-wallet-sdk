@@ -428,9 +428,9 @@ class CompactBlockProcessor(
     internal suspend fun refreshUtxos(tAddress: String, startHeight: Int): Int? = withContext(IO) {
         var count: Int? = null
         // todo: cleanup the way that we prevent this from running excessively
-        //       For now, try for about 5 minutes, per app launch. If the service fails it is
+        //       For now, try for about 3 blocks per app launch. If the service fails it is
         //       probably disabled on ligthtwalletd, so then stop trying until the next app launch.
-        if (failedUtxoFetches < 15) { // there are approx 3 attempts per minute so 15 ~= 5min
+        if (failedUtxoFetches < 9) { // there are 3 attempts per block
             try {
                 retryUpTo(3) {
                     val result = downloader.lightWalletService.fetchUtxos(tAddress, startHeight)
@@ -438,8 +438,10 @@ class CompactBlockProcessor(
                 }
             } catch (e: Throwable) {
                 failedUtxoFetches++
-                twig("Warning: Fetching UTXOs is repeatedly failing! We will only try for about ${(15 - failedUtxoFetches + 2) / 3} more minute(s) then give up for this session.")
+                twig("Warning: Fetching UTXOs is repeatedly failing! We will only try about ${(9 - failedUtxoFetches + 2) / 3} more times then give up for this session.")
             }
+        } else {
+            twig("Warning: gave up on fetching UTXOs for this session. It seems to unavailable on lightwalletd.")
         }
         count
     }
