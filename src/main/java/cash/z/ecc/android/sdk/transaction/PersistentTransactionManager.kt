@@ -120,7 +120,7 @@ class PersistentTransactionManager(
                 tx.accountIndex
             )
             twig("successfully encoded transaction!")
-            safeUpdate("updating transaction encoding") {
+            safeUpdate("updating transaction encoding", -1) {
                 updateEncoding(tx.id, encodedTx.raw, encodedTx.txId, encodedTx.expiryHeight)
             }
         } catch (t: Throwable) {
@@ -131,7 +131,7 @@ class PersistentTransactionManager(
                 updateError(tx.id, message, ERROR_ENCODING)
             }
         } finally {
-            safeUpdate("incrementing transaction encodeAttempts (from: ${tx.encodeAttempts})") {
+            safeUpdate("incrementing transaction encodeAttempts (from: ${tx.encodeAttempts})", -1) {
                 updateEncodeAttempts(tx.id, max(1, tx.encodeAttempts + 1))
                 tx = findById(tx.id)!!
             }
@@ -189,7 +189,7 @@ class PersistentTransactionManager(
                 tx.isFailedEncoding() -> twig("Warning: this transaction will not be submitted because it failed to be encoded.")
                 tx.isCancelled() -> twig("Warning: ignoring cancelled transaction with id ${tx.id}. We will not submit it to the network because it has been cancelled.")
                 else -> {
-                    twig("submitting transaction with memo: ${tx.memo} amount: ${tx.value}")
+                    twig("submitting transaction with memo: ${tx.memo} amount: ${tx.value}", -1)
                     val response = service.submitTransaction(tx.raw)
                     val error = response.errorCode < 0
                     twig(
@@ -197,7 +197,7 @@ class PersistentTransactionManager(
                             " response: ${response.errorCode}: ${response.errorMessage}"
                     )
 
-                    safeUpdate("updating submitted transaction (hadError: $error)") {
+                    safeUpdate("updating submitted transaction (hadError: $error)", -1) {
                         updateError(tx.id, if (error) response.errorMessage else null, response.errorCode)
                         updateSubmitAttempts(tx.id, max(1, tx.submitAttempts + 1))
                     }
@@ -214,7 +214,7 @@ class PersistentTransactionManager(
                 updateSubmitAttempts(tx.id, max(1, tx.submitAttempts + 1))
             }
         } finally {
-            safeUpdate("fetching latest tx info") {
+            safeUpdate("fetching latest tx info", -1) {
                 tx = findById(tx.id)!!
             }
         }
@@ -281,7 +281,7 @@ class PersistentTransactionManager(
      * happen within a try/catch block, surrounded by logging. So this helps with that while also
      * ensuring that no other coroutines are concurrently interacting with the DAO.
      */
-    private suspend fun <R> safeUpdate(logMessage: String = "", block: suspend PendingTransactionDao.() -> R): R? {
+    private suspend fun <R> safeUpdate(logMessage: String = "", priority: Int = 0, block: suspend PendingTransactionDao.() -> R): R? {
         return try {
             twig(logMessage)
             pendingTransactionDao { block() }
