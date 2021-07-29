@@ -28,7 +28,7 @@ class SaplingParamTool {
                 ZcashSdk.OUTPUT_PARAM_FILE_NAME
             ).forEach { paramFileName ->
                 if (!File(destinationDir, paramFileName).exists()) {
-                    twig("ERROR: $paramFileName not found at location: $destinationDir")
+                    twig("WARNING: $paramFileName not found at location: $destinationDir")
                     hadError = true
                 }
             }
@@ -63,10 +63,10 @@ class SaplingParamTool {
                 val request = Request.Builder().url(url).build()
                 val response = client.newCall(request).execute()
                 if (response.isSuccessful) {
-                    twig("fetch succeeded")
+                    twig("fetch succeeded", -1)
                     val file = File(destinationDir, paramFileName)
                     if (file.parentFile.exists()) {
-                        twig("directory exists!")
+                        twig("directory exists!", -1)
                     } else {
                         twig("directory did not exist attempting to make it")
                         file.parentFile.mkdirs()

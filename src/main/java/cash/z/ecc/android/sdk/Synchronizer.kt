@@ -293,6 +293,11 @@ interface Synchronizer {
         errorHandler: (Throwable) -> Unit = { throw it }
     )
 
+    /**
+     * Download all UTXOs for the given address and store any new ones in the database.
+     *
+     * @return the number of utxos that were downloaded and addded to the UTXO table.
+     */
     suspend fun refreshUtxos(tAddr: String, sinceHeight: Int = network.saplingActivationHeight): Int?
 
     /**
@@ -358,7 +363,9 @@ interface Synchronizer {
 
     /**
      * A callback to invoke whenever a chain error is encountered. These occur whenever the
-     * processor detects a missing or non-chain-sequential block (i.e. a reorg).
+     * processor detects a missing or non-chain-sequential block (i.e. a reorg). At a minimum, it is
+     * best to log these errors because they are the most common source of bugs and unexpected
+     * behavior in wallets, due to the chain data mutating and wallets becoming out of sync.
      */
     var onChainErrorHandler: ((Int, Int) -> Any)?
 

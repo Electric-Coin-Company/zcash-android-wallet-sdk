@@ -233,10 +233,21 @@ class RustBackend private constructor() : RustBackendWelding {
             if (!loaded) {
                 twig("Loading RustBackend") {
                     loadRustLibrary()
-//                    initLogs()
                 }
             }
         }
+
+        /**
+         * Forwards Rust logs to logcat. This is a function that is intended for debug purposes. All
+         * logs will be tagged with `cash.z.rust.logs`. Typically, a developer would clone
+         * librustzcash locally and then modify Cargo.toml in this project to point to their local
+         * build (see Cargo.toml for details). From there, they can add any log messages they want
+         * and have them surfaced into the Android logging system. By default, this behavior is
+         * disabled and this is the function that enables it. Initially only the logs in
+         * [src/main/rust/lib.rs] will appear and any additional logs would need to be added by the
+         * developer.
+         */
+        fun enableRustLogs() = initLogs()
 
         /**
          * The first call made to this object in order to load the Rust backend library. All other
