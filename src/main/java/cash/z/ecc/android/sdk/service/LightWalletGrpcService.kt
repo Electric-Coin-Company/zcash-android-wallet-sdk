@@ -215,6 +215,7 @@ class LightWalletGrpcService private constructor(
             return AndroidChannelBuilder
                 .forAddress(host, port)
                 .context(appContext)
+                .enableFullStreamDecompression()
                 .apply {
                     if (usePlaintext) {
                         if (!appContext.resources.getBoolean(
