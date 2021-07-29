@@ -1145,7 +1145,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_shieldToAdd
             &sk,
             &extsk,
             &MemoBytes::from(&memo),
-            10
+            0
         )
             .map_err(|e| format_err!("Error while shielding transaction: {}", e))
     });
