@@ -1,6 +1,13 @@
 Change Log
 ==========
 
+Version 1.3.0-beta17 *(2021-07-29)*
+------------------------------------
+- Fix: Autoshielding confirmation count error so funds are available after 10 confirmations.
+- New: Allow developers to enable Rust logs.
+- New: Accept GZIP compression from lightwalletd.
+- New: Reduce the UTXO retry time
+
 Version 1.3.0-beta16 *(2021-06-30)*
 ------------------------------------
 - Fix: Gracefully handle failures while fetching UTXOs.
