@@ -1,12 +1,17 @@
 Change Log
 ==========
 
+Version 1.3.0-beta18 *(2021-08-10)*
+------------------------------------
+- Fix: Corrected logic when calculating birthdates for wallets with zero received notes.
+
+
 Version 1.3.0-beta17 *(2021-07-29)*
 ------------------------------------
 - Fix: Autoshielding confirmation count error so funds are available after 10 confirmations.
 - New: Allow developers to enable Rust logs.
 - New: Accept GZIP compression from lightwalletd.
-- New: Reduce the UTXO retry time
+- New: Reduce the UTXO retry time.
 
 Version 1.3.0-beta16 *(2021-06-30)*
 ------------------------------------

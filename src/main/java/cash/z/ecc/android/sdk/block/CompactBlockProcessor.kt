@@ -756,7 +756,7 @@ class CompactBlockProcessor(
     suspend fun calculateBirthdayHeight(): Int {
         var oldestTransactionHeight = 0
         try {
-            oldestTransactionHeight = repository.receivedTransactions.first().last()?.minedHeight ?: lowerBoundHeight
+            oldestTransactionHeight = repository.receivedTransactions.first().lastOrNull()?.minedHeight ?: lowerBoundHeight
             // to be safe adjust for reorgs (and generally a little cushion is good for privacy)
             // so we round down to the nearest 100 and then subtract 100 to ensure that the result is always at least 100 blocks away
             oldestTransactionHeight = ZcashSdk.MAX_REORG_SIZE.let { boundary ->
