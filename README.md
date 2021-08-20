@@ -212,3 +212,10 @@ This project follows [semantic versioning](https://semver.org/) with pre-release
 Examples can be found in the [Demo App](/samples/demo-app)
 
 [Back to contents](#contents)
+
+## Publishing
+
+Publishing instructions for maintainers of this repository can be found in [PUBLISHING.md](PUBLISHING.md)
+
+[Back to contents](#contents)
+
