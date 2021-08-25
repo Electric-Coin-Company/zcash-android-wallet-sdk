@@ -10,7 +10,6 @@ buildscript {
         mavenLocal()
         google()
         mavenCentral()
-        jcenter()
         maven {
             url 'https://jitpack.io'
         }
@@ -48,7 +47,6 @@ apply plugin: 'com.vanniktech.maven.publish'
 repositories {
     google()
     mavenCentral()
-    jcenter()
     maven { url 'https://jitpack.io' }
 }
 
