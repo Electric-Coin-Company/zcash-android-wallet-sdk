@@ -1,6 +1,6 @@
 [package]
 name = "zcash-android-wallet-sdk"
-version = "0.0.4"
+version = "0.0.8"
 authors = [
     "Jack Grigg <jack@z.cash>",
     "Kevin Gorham <kevin.gorham@z.cash>",
@@ -20,20 +20,23 @@ zcash_client_backend = "0.5"
 zcash_client_sqlite = "0.3"
 zcash_primitives = "0.5"
 zcash_proofs = "0.5"
+zcash_note_encryption =  "0.0.0"
 
 #### Temporary additions: ####################################
 #base58 = "0.1.0"
 #protobuf = "2"
 #sha2 = "0.9"
 #bs58 = { version = "0.3", features = ["check"] }
-#hdwallet = "0.2.2"
+
 #ripemd160 = "0.9"
-hdwallet = { git = "https://github.com/nuttycom/hdwallet", rev = "72f1f7a56c114eed484cefd6d402b7ef28158712"}
+hdwallet = "0.3.0"
 secp256k1 = "0.19"
+funty = "=1.2.0"
+bitvec = "0.22"
 ##############################################################
 
 # update-sapling-tree dependencies
-bls12_381 = { version = "0.3", optional = true }
+bls12_381 = { version = "0.5", optional = true }
 futures = { version = "0.3", optional = true }
 grpc = { version = "0.8", optional = true }
 grpc-protobuf = { version = "0.8", optional = true }
@@ -59,10 +62,19 @@ protobuf-codegen-pure = "2.14"
 
 # Uncomment this to test someone else's librustzcash changes in a branch
 [patch.crates-io]
-zcash_client_backend = {git = "https://github.com/gmale/librustzcash", branch = "autoshield-poc-daa-taddr3"}
-zcash_client_sqlite = {git = "https://github.com/gmale/librustzcash", branch = "autoshield-poc-daa-taddr3"}
-zcash_primitives = {git = "https://github.com/gmale/librustzcash", branch = "autoshield-poc-daa-taddr3"}
-zcash_proofs = {git = "https://github.com/gmale/librustzcash", branch = "autoshield-poc-daa-taddr3"}
+zcash_client_backend = {git = "https://github.com/nuttycom/librustzcash", branch = "autoshield-poc-daa_min-confs" }
+zcash_client_sqlite = {git = "https://github.com/nuttycom/librustzcash", branch = "autoshield-poc-daa_min-confs" }
+zcash_primitives = {git = "https://github.com/nuttycom/librustzcash", branch = "autoshield-poc-daa_min-confs" }
+zcash_proofs = {git = "https://github.com/nuttycom/librustzcash", branch = "autoshield-poc-daa_min-confs" }
+zcash_note_encryption = { git = "https://github.com/zcash/librustzcash.git", rev = "13b023387bafdc7b5712c933dc0e16ee94b96a6a" }
+# In development.
+halo2 = { git = "https://github.com/zcash/halo2.git", rev = "27c4187673a9c6ade13fbdbd4f20955530c22d7f" }
+orchard = { git = "https://github.com/zcash/orchard.git", rev = "d0baa18fc6105df4a7847de2b6dc50c5919b3123" }
+incrementalmerkletree = { git = "https://github.com/zcash/incrementalmerkletree.git", rev = "b7bd6246122a6e9ace8edb51553fbf5228906cbb" }
+
+
+# Unreleased
+jubjub = { git = "https://github.com/zkcrypto/jubjub.git", rev = "96ab4162b83303378eae32a326b54d88b75bffc2" }
 
 [features]
 mainnet = ["zcash_client_sqlite/mainnet"]

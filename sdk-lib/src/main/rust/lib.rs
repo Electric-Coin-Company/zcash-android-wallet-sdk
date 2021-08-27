@@ -36,7 +36,7 @@ use zcash_client_backend::{
     },
     wallet::{AccountId, OvkPolicy, WalletTransparentOutput},
 };
-use zcash_client_backend::data_api::wallet::{ANCHOR_OFFSET, shield_funds};
+use zcash_client_backend::data_api::wallet::shield_funds;
 use zcash_client_sqlite::{
     BlockDb,
     error::SqliteClientError,
@@ -64,7 +64,7 @@ use zcash_proofs::prover::LocalTxProver;
 use crate::utils::exception::unwrap_exc_or;
 
 mod utils;
-
+const ANCHOR_OFFSET: u32 = 10;
 #[cfg(debug_assertions)]
 fn print_debug_state() {
     debug!("WARNING! Debugging enabled! This will likely slow things down 10X!");
@@ -483,7 +483,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_getBalance(
         let account = AccountId(accountj.try_into()?);
 
         (&db_data)
-            .get_target_and_anchor_heights()
+            .get_target_and_anchor_heights(ANCHOR_OFFSET)
             .map_err(|e| format_err!("Error while fetching anchor height: {}", e))
             .and_then(|opt_anchor| {
                 opt_anchor
@@ -515,7 +515,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_getVerified
         let taddr = TransparentAddress::decode(&network, &addr).unwrap();
 
         let amount = (&db_data)
-            .get_target_and_anchor_heights()
+            .get_target_and_anchor_heights(ANCHOR_OFFSET)
             .map_err(|e| format_err!("Error while fetching anchor height: {}", e))
             .and_then(|opt_anchor| {
                 opt_anchor
@@ -524,12 +524,12 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_getVerified
             })
             .and_then(|anchor| {
                 (&db_data)
-                    .get_unspent_transparent_utxos(&taddr, anchor - ANCHOR_OFFSET)
+                    .get_unspent_transparent_utxos(&taddr, anchor)
                     .map_err(|e| format_err!("Error while fetching verified balance: {}", e))
             })?
             .iter()
             .map(|utxo| utxo.value)
-            .sum::<Amount>();
+            .sum::<Option<Amount>>().unwrap();
 
         Ok(amount.into())
     });
@@ -552,7 +552,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_getTotalTra
         let taddr = TransparentAddress::decode(&network, &addr).unwrap();
 
         let amount = (&db_data)
-            .get_target_and_anchor_heights()
+            .get_target_and_anchor_heights(ANCHOR_OFFSET)
             .map_err(|e| format_err!("Error while fetching anchor height: {}", e))
             .and_then(|opt_anchor| {
                 opt_anchor
@@ -566,7 +566,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_getTotalTra
             })?
             .iter()
             .map(|utxo| utxo.value)
-            .sum::<Amount>();
+            .sum::<Option<Amount>>().unwrap();
 
         Ok(amount.into())
     });
@@ -588,7 +588,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_getVerified
         let account = AccountId(account.try_into()?);
 
         (&db_data)
-            .get_target_and_anchor_heights()
+            .get_target_and_anchor_heights(ANCHOR_OFFSET)
             .map_err(|e| format_err!("Error while fetching anchor height: {}", e))
             .and_then(|opt_anchor| {
                 opt_anchor
@@ -992,6 +992,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_decryptAndS
     _: JClass<'_>,
     db_data: JString<'_>,
     tx: jbyteArray,
+    mined_height: jint,
     network_id: jint,
 ) -> jboolean {
     let res = panic::catch_unwind(|| {
@@ -999,7 +1000,11 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_decryptAndS
         let  db_data = wallet_db(&env, network, db_data)?;
         let mut db_data = db_data.get_update_ops()?;
         let tx_bytes = env.convert_byte_array(tx).unwrap();
-        let tx = Transaction::read(&tx_bytes[..])?;
+        let mined_height = mined_height as u32;
+        let block_height = BlockHeight::from_u32(mined_height);
+        let branch_id = BranchId::for_height(&network,block_height);
+        
+        let tx = Transaction::read(&tx_bytes[..],branch_id)?;
 
         match decrypt_and_store_transaction(&network, &mut db_data, &tx) {
             Ok(()) => Ok(JNI_TRUE),
@@ -1086,6 +1091,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_createToAdd
             value,
             memo,
             OvkPolicy::Sender,
+            ANCHOR_OFFSET
         )
         .map_err(|e| format_err!("Error while creating transaction: {}", e))
     });
@@ -1145,7 +1151,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_shieldToAdd
             &sk,
             &extsk,
             &MemoBytes::from(&memo),
-            0
+            ANCHOR_OFFSET
         )
             .map_err(|e| format_err!("Error while shielding transaction: {}", e))
     });
