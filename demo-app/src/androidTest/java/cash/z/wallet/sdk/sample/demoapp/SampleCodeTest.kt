@@ -25,22 +25,22 @@ class SampleCodeTest {
 
     // ///////////////////////////////////////////////////
     // Seed derivation
-    @Ignore @Test fun createBip39Seed_fromSeedPhrase() {
+    @Ignore("This test is not implemented") @Test fun createBip39Seed_fromSeedPhrase() {
         // TODO: log(seedPhrase.asRawEntropy().asBip39seed())
     }
 
-    @Ignore @Test fun createRawEntropy() {
+    @Ignore("This test is not implemented") @Test fun createRawEntropy() {
         // TODO: call: Mnemonic::from_phrase(seed_phrase, Language::English).unwrap().entropy()
         // log(seedPhrase.asRawEntropy())
     }
 
-    @Ignore @Test fun createBip39Seed_fromRawEntropy() {
+    @Ignore("This test is not implemented") @Test fun createBip39Seed_fromRawEntropy() {
         // get the 64 byte bip39 entropy
         // TODO: call: bip39::Seed::new(&Mnemonic::from_entropy(&seed_bytes, Language::English).unwrap(), "")
         // log(rawEntropy.asBip39Seed())
     }
 
-    @Ignore @Test fun deriveSeedPhraseFrom() {
+    @Ignore("This test is not implemented") @Test fun deriveSeedPhraseFrom() {
         // TODO: let mnemonic = Mnemonic::from_entropy(entropy, Language::English).unwrap();
         // log(entropy.asSeedPhrase())
     }

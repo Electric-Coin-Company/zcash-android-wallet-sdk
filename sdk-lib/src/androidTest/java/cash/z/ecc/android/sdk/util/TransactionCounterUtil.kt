@@ -20,7 +20,7 @@ class TransactionCounterUtil {
     }
 
     @Test
-    @Ignore
+    @Ignore("This test is broken")
     fun testBlockSize() {
         val sizes = mutableMapOf<Int, Int>()
         service.getBlockRange(900_000..910_000).forEach { b ->
@@ -32,7 +32,7 @@ class TransactionCounterUtil {
     }
 
     @Test
-    @Ignore
+    @Ignore("This test is broken")
     fun testCountTransactions() {
         val txCounts = mutableMapOf<Int, Int>()
         val outputCounts = mutableMapOf<Int, Int>()

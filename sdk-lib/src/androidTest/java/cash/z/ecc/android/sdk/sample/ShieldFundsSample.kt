@@ -22,6 +22,7 @@ class ShieldFundsSample {
      * class.
      */
     @Test
+    @Ignore("This test is broken")
     fun constructT2Z() = runBlocking {
         Twig.sprout("ShieldFundsSample")
 

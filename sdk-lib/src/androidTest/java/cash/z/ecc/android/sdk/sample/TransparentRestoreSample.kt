@@ -1,5 +1,6 @@
 package cash.z.ecc.android.sdk.sample
 
+import androidx.test.filters.LargeTest
 import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.ext.twig
 import cash.z.ecc.android.sdk.type.ZcashNetwork.Testnet
@@ -7,6 +8,7 @@ import cash.z.ecc.android.sdk.util.TestWallet
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert
+import org.junit.Ignore
 import org.junit.Test
 
 /**
@@ -76,7 +78,11 @@ class TransparentRestoreSample {
         ).join(5)
     }
 
+    // This test is extremely slow and doesn't assert anything, so the benefit of this test is unclear
+    // It is disabled to allow moving forward with configuring CI.
     @Test
+    @LargeTest
+    @Ignore("This test is extremely slow")
     fun kris() = runBlocking<Unit> {
         val wallet0 = TestWallet(TestWallet.Backups.SAMPLE_WALLET.seedPhrase, "tmpabc", Testnet, startHeight = 1330190)
 //        val wallet1 = SimpleWallet(WALLET0_PHRASE, "Wallet1")

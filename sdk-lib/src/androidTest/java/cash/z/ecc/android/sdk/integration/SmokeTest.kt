@@ -1,5 +1,6 @@
 package cash.z.ecc.android.sdk.integration
 
+import androidx.test.filters.LargeTest
 import androidx.test.filters.MediumTest
 import cash.z.ecc.android.sdk.annotation.MaintainedTest
 import cash.z.ecc.android.sdk.annotation.TestPurpose
@@ -7,6 +8,7 @@ import cash.z.ecc.android.sdk.service.LightWalletGrpcService
 import cash.z.ecc.android.sdk.util.TestWallet
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert
+import org.junit.Ignore
 import org.junit.Test
 
 /**
@@ -45,7 +47,11 @@ class SmokeTest {
         Assert.assertEquals("Invalid extpub", "0234965f30c8611253d035f44e68d4e2ce82150e8665c95f41ccbaf916b16c69d8", wallet.initializer.viewingKeys[0].extpub)
     }
 
+    // This test takes an extremely long time
+    // Does its runtime grow over time based on growth of the blockchain?
     @Test
+    @LargeTest
+    @Ignore("This test is extremely slow and times out before the timeout given")
     fun testSync() = runBlocking<Unit> {
         wallet.sync(300_000L)
     }

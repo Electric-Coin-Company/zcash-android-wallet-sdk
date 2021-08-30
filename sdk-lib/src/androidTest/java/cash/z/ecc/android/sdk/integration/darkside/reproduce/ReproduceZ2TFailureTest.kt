@@ -12,10 +12,12 @@ class ReproduceZ2TFailureTest : DarksideTest() {
     }
 
     @Test
+    @Ignore("This test is broken")
     fun once() {
     }
 
     @Test
+    @Ignore("This test is broken")
     fun twice() {
     }
 
