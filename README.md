@@ -131,20 +131,20 @@ synchronizer.sendToAddress(spendingKey, zatoshi, address, memo)
 
 ## Examples
 
-Full working examples can be found in the [demo app](https://github.com/zcash/zcash-android-wallet-sdk/tree/master/samples/demo-app), covering all major functionality of the SDK. Each demo strives to be self-contained so that a developer can understand everything required for it to work. Testnet builds of the demo app will soon be available to [download as github releases](https://github.com/zcash/zcash-android-wallet-sdk/releases).
+Full working examples can be found in the [demo app](demo-app), covering all major functionality of the SDK. Each demo strives to be self-contained so that a developer can understand everything required for it to work. Testnet builds of the demo app will soon be available to [download as github releases](https://github.com/zcash/zcash-android-wallet-sdk/releases).
 
 ### Demos
 
 Menu Item|Related Code|Description
 :-----|:-----|:-----
-Get Private Key|[GetPrivateKeyFragment.kt](app/src/main/java/cash/z/ecc/android/sdk/demoapp/demos/getprivatekey/GetPrivateKeyFragment.kt)|Given a seed, display its viewing key and spending key
-Get Address|[GetAddressFragment.kt](app/src/main/java/cash/z/ecc/android/sdk/demoapp/demos/getaddress/GetAddressFragment.kt)|Given a seed, display its z-addr
-Get Balance|[GetBalanceFragment.kt](app/src/main/java/cash/z/ecc/android/sdk/demoapp/demos/getbalance/GetBalanceFragment.kt)|Display the balance
-Get Latest Height|[GetLatestHeightFragment.kt](app/src/main/java/cash/z/ecc/android/sdk/demoapp/demos/getlatestheight/GetLatestHeightFragment.kt)|Given a lightwalletd server, retrieve the latest block height
-Get Block|[GetBlockFragment.kt](app/src/main/java/cash/z/ecc/android/sdk/demoapp/demos/getblock/GetBlockFragment.kt)|Given a lightwalletd server, retrieve a compact block
-Get Block Range|[GetBlockRangeFragment.kt](app/src/main/java/cash/z/ecc/android/sdk/demoapp/demos/getblockrange/GetBlockRangeFragment.kt)|Given a lightwalletd server, retrieve a range of compact blocks
-List Transactions|[ListTransactionsFragment.kt](app/src/main/java/cash/z/ecc/android/sdk/demoapp/demos/listtransactions/ListTransactionsFragment.kt)|Given a seed, list all related shielded transactions
-Send|[SendFragment.kt](app/src/main/java/cash/z/ecc/android/sdk/demoapp/demos/send/SendFragment.kt)|Send and monitor a transaction, the most complex demo
+Get Private Key|[GetPrivateKeyFragment.kt](demo-app/src/main/java/cash/z/ecc/android/sdk/demoapp/demos/getprivatekey/GetPrivateKeyFragment.kt)|Given a seed, display its viewing key and spending key
+Get Address|[GetAddressFragment.kt](demo-app/src/main/java/cash/z/ecc/android/sdk/demoapp/demos/getaddress/GetAddressFragment.kt)|Given a seed, display its z-addr
+Get Balance|[GetBalanceFragment.kt](demo-app/src/main/java/cash/z/ecc/android/sdk/demoapp/demos/getbalance/GetBalanceFragment.kt)|Display the balance
+Get Latest Height|[GetLatestHeightFragment.kt](demo-app/src/main/java/cash/z/ecc/android/sdk/demoapp/demos/getlatestheight/GetLatestHeightFragment.kt)|Given a lightwalletd server, retrieve the latest block height
+Get Block|[GetBlockFragment.kt](demo-app/src/main/java/cash/z/ecc/android/sdk/demoapp/demos/getblock/GetBlockFragment.kt)|Given a lightwalletd server, retrieve a compact block
+Get Block Range|[GetBlockRangeFragment.kt](demo-app/src/main/java/cash/z/ecc/android/sdk/demoapp/demos/getblockrange/GetBlockRangeFragment.kt)|Given a lightwalletd server, retrieve a range of compact blocks
+List Transactions|[ListTransactionsFragment.kt](demo-app/src/main/java/cash/z/ecc/android/sdk/demoapp/demos/listtransactions/ListTransactionsFragment.kt)|Given a seed, list all related shielded transactions
+Send|[SendFragment.kt](demo-app/src/main/java/cash/z/ecc/android/sdk/demoapp/demos/send/SendFragment.kt)|Send and monitor a transaction, the most complex demo
 
 
 [Back to contents](#contents)
@@ -185,7 +185,7 @@ rustup target add armv7-linux-androideabi aarch64-linux-android i686-linux-andro
   ./gradlew publishToMavenLocal
   ```
 
-This creates a build of the SDK under `build/outputs/aar/` that can be used to preview functionality. For more detailed examples, checkout the [demo app](samples/demo-app). Note that merely using the SDK does not require installing Rust or Cargo--that is only required when compiling from source.
+This creates a build of the SDK under `build/outputs/aar/` that can be used to preview functionality. For more detailed examples, see the [demo app](demo-app). Note that merely using the SDK does not require installing Rust or Cargo--that is only required when compiling from source.
 
 The repo also contains a small demo application, to verify integration with the SDK.  Note that by default, the demo application is configured to retrieve dependencies from artifact hosting and therefore does not rely on the local compilation of the SDK.  This can be changed by publishing to maven local as described above, as local maven publications will take precedence over hosted publications in the demo app.
 1. [Create an emulator](https://developer.android.com/studio/run/managing-avds) if you don’t already have one (recommended target: API 29)
@@ -219,7 +219,7 @@ This project follows [semantic versioning](https://semver.org/) with pre-release
 
 ## Examples
 
-Examples can be found in the [Demo App](/samples/demo-app)
+Examples can be found in the [Demo App](demo-app)
 
 [Back to contents](#contents)
 
