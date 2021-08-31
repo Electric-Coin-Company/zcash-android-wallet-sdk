@@ -17,15 +17,15 @@ apply plugin: 'org.mozilla.rust-android-gradle.rust-android'
 apply plugin: 'com.vanniktech.maven.publish'
 
 android {
-    compileSdkVersion config.compileSdkVersion
+    compileSdkVersion Integer.parseInt(project.property("compileSdkVersion"))
 
     useLibrary 'android.test.runner'
 
-    ndkVersion "21.1.6352462"
+    ndkVersion project.property("ndkVersion")
 
     defaultConfig {
-        minSdkVersion config.minSdkVersion
-        targetSdkVersion config.targetSdkVersion
+        minSdkVersion Integer.parseInt(project.property("minSdkVersion"))
+        targetSdkVersion Integer.parseInt(project.property("targetSdkVersion"))
         versionCode = config.publish.versionCode
         versionName = config.publish.versionName
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
