@@ -620,7 +620,7 @@ dependencies = [
 [[package]]
 name = "equihash"
 version = "0.1.0"
-source = "git+https://github.com/nuttycom/librustzcash?branch=autoshield-poc-daa_min-confs#7d819b68a3da3ad568629bc6f51a63e39c2d7d6a"
+source = "git+https://github.com/nuttycom/librustzcash?rev=7d819b68a3da3ad568629bc6f51a63e39c2d7d6a#7d819b68a3da3ad568629bc6f51a63e39c2d7d6a"
 dependencies = [
  "blake2b_simd",
  "byteorder",
@@ -2314,7 +2314,7 @@ dependencies = [
 [[package]]
 name = "zcash_client_backend"
 version = "0.5.0"
-source = "git+https://github.com/nuttycom/librustzcash?branch=autoshield-poc-daa_min-confs#7d819b68a3da3ad568629bc6f51a63e39c2d7d6a"
+source = "git+https://github.com/nuttycom/librustzcash?rev=7d819b68a3da3ad568629bc6f51a63e39c2d7d6a#7d819b68a3da3ad568629bc6f51a63e39c2d7d6a"
 dependencies = [
  "base64 0.13.0",
  "bech32",
@@ -2336,14 +2336,14 @@ dependencies = [
  "sha2",
  "subtle",
  "time",
- "zcash_note_encryption 0.0.0 (git+https://github.com/nuttycom/librustzcash?branch=autoshield-poc-daa_min-confs)",
+ "zcash_note_encryption 0.0.0 (git+https://github.com/nuttycom/librustzcash?rev=7d819b68a3da3ad568629bc6f51a63e39c2d7d6a)",
  "zcash_primitives",
 ]
 
 [[package]]
 name = "zcash_client_sqlite"
 version = "0.3.0"
-source = "git+https://github.com/nuttycom/librustzcash?branch=autoshield-poc-daa_min-confs#7d819b68a3da3ad568629bc6f51a63e39c2d7d6a"
+source = "git+https://github.com/nuttycom/librustzcash?rev=7d819b68a3da3ad568629bc6f51a63e39c2d7d6a#7d819b68a3da3ad568629bc6f51a63e39c2d7d6a"
 dependencies = [
  "bech32",
  "bs58",
@@ -2362,7 +2362,7 @@ dependencies = [
 [[package]]
 name = "zcash_note_encryption"
 version = "0.0.0"
-source = "git+https://github.com/nuttycom/librustzcash?branch=autoshield-poc-daa_min-confs#7d819b68a3da3ad568629bc6f51a63e39c2d7d6a"
+source = "git+https://github.com/zcash/librustzcash.git?rev=13b023387bafdc7b5712c933dc0e16ee94b96a6a#13b023387bafdc7b5712c933dc0e16ee94b96a6a"
 dependencies = [
  "blake2b_simd",
  "byteorder",
@@ -2376,7 +2376,7 @@ dependencies = [
 [[package]]
 name = "zcash_note_encryption"
 version = "0.0.0"
-source = "git+https://github.com/zcash/librustzcash.git?rev=13b023387bafdc7b5712c933dc0e16ee94b96a6a#13b023387bafdc7b5712c933dc0e16ee94b96a6a"
+source = "git+https://github.com/nuttycom/librustzcash?rev=7d819b68a3da3ad568629bc6f51a63e39c2d7d6a#7d819b68a3da3ad568629bc6f51a63e39c2d7d6a"
 dependencies = [
  "blake2b_simd",
  "byteorder",
@@ -2390,7 +2390,7 @@ dependencies = [
 [[package]]
 name = "zcash_primitives"
 version = "0.5.0"
-source = "git+https://github.com/nuttycom/librustzcash?branch=autoshield-poc-daa_min-confs#7d819b68a3da3ad568629bc6f51a63e39c2d7d6a"
+source = "git+https://github.com/nuttycom/librustzcash?rev=7d819b68a3da3ad568629bc6f51a63e39c2d7d6a#7d819b68a3da3ad568629bc6f51a63e39c2d7d6a"
 dependencies = [
  "aes 0.7.5",
  "bip0039",
@@ -2418,13 +2418,13 @@ dependencies = [
  "secp256k1",
  "sha2",
  "subtle",
- "zcash_note_encryption 0.0.0 (git+https://github.com/nuttycom/librustzcash?branch=autoshield-poc-daa_min-confs)",
+ "zcash_note_encryption 0.0.0 (git+https://github.com/nuttycom/librustzcash?rev=7d819b68a3da3ad568629bc6f51a63e39c2d7d6a)",
 ]
 
 [[package]]
 name = "zcash_proofs"
 version = "0.5.0"
-source = "git+https://github.com/nuttycom/librustzcash?branch=autoshield-poc-daa_min-confs#7d819b68a3da3ad568629bc6f51a63e39c2d7d6a"
+source = "git+https://github.com/nuttycom/librustzcash?rev=7d819b68a3da3ad568629bc6f51a63e39c2d7d6a#7d819b68a3da3ad568629bc6f51a63e39c2d7d6a"
 dependencies = [
  "bellman",
  "blake2b_simd",
