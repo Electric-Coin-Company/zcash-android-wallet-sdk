@@ -13,7 +13,6 @@ dependencyResolutionManagement {
         google()
         mavenCentral()
         maven("https://jitpack.io")
-        jcenter() // still needed by one dependency in the demo-app project
     }
 }
 
