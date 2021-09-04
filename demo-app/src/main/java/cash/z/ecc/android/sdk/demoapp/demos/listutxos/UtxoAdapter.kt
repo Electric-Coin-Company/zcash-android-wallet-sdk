@@ -2,16 +2,16 @@ package cash.z.ecc.android.sdk.demoapp.demos.listutxos
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
-import androidx.paging.PagedListAdapter
 import androidx.recyclerview.widget.DiffUtil
-import cash.z.ecc.android.sdk.demoapp.R
+import androidx.recyclerview.widget.ListAdapter
 import cash.z.ecc.android.sdk.db.entity.ConfirmedTransaction
+import cash.z.ecc.android.sdk.demoapp.R
 
 /**
  * Simple adapter implementation that knows how to bind a recyclerview to ClearedTransactions.
  */
 class UtxoAdapter<T : ConfirmedTransaction> :
-    PagedListAdapter<T, UtxoViewHolder<T>>(
+    ListAdapter<T, UtxoViewHolder<T>>(
         object : DiffUtil.ItemCallback<T>() {
             override fun areItemsTheSame(
                 oldItem: T,
@@ -21,7 +21,7 @@ class UtxoAdapter<T : ConfirmedTransaction> :
             override fun areContentsTheSame(
                 oldItem: T,
                 newItem: T
-            ) = oldItem.equals(newItem)
+            ) = oldItem == newItem
         }
     ) {
 

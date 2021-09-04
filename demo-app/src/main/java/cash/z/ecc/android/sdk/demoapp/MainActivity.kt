@@ -17,8 +17,10 @@ import androidx.navigation.ui.navigateUp
 import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
 import androidx.viewbinding.ViewBinding
+import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.service.LightWalletGrpcService
 import cash.z.ecc.android.sdk.service.LightWalletService
+import cash.z.ecc.android.sdk.type.ZcashNetwork
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.navigation.NavigationView
 
@@ -65,7 +67,7 @@ class MainActivity : AppCompatActivity(), ClipboardManager.OnPrimaryClipChangedL
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)
         drawerLayout.addDrawerListener(this)
-        
+
         initService()
     }
 
@@ -73,7 +75,7 @@ class MainActivity : AppCompatActivity(), ClipboardManager.OnPrimaryClipChangedL
         super.onDestroy()
         lightwalletService?.shutdown()
     }
-    
+
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         // Inflate the menu; this adds items to the action bar if it is present.
         menuInflater.inflate(R.menu.main, menu)
@@ -99,21 +101,19 @@ class MainActivity : AppCompatActivity(), ClipboardManager.OnPrimaryClipChangedL
     //
     // Private functions
     //
-    
+
     private fun initService() {
         if (lightwalletService != null) {
             lightwalletService?.shutdown()
         }
-        with(App.instance.defaultConfig) {
-            lightwalletService = LightWalletGrpcService(App.instance, host, port)
-        }
+        lightwalletService = LightWalletGrpcService(applicationContext, ZcashNetwork.fromResources(applicationContext))
     }
 
     private fun onFabClicked(view: View) {
         fabListener?.onActionButtonClicked()
     }
 
-    
+
     //
     // Helpers
     //

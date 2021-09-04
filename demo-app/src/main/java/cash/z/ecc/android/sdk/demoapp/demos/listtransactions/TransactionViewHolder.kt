@@ -35,7 +35,7 @@ class TransactionViewHolder<T : ConfirmedTransaction>(itemView: View) : Recycler
 
         icon.rotation = if (isInbound) 0f else 180f
         icon.rotation = if (isInbound) 0f else 180f
-        icon.setColorFilter(ContextCompat.getColor(App.instance, if (isInbound) R.color.tx_inbound else R.color.tx_outbound))
+        icon.setColorFilter(ContextCompat.getColor(itemView.context, if (isInbound) R.color.tx_inbound else R.color.tx_outbound))
     }
 
     private fun getMemoString(transaction: T?): String {

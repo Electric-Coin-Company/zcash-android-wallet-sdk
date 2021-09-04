@@ -7,6 +7,7 @@ import android.view.View
 import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
 import cash.z.ecc.android.sdk.demoapp.R
 import cash.z.ecc.android.sdk.demoapp.databinding.FragmentGetBlockRangeBinding
+import cash.z.ecc.android.sdk.demoapp.ext.requireApplicationContext
 import cash.z.ecc.android.sdk.demoapp.util.mainActivity
 import cash.z.ecc.android.sdk.demoapp.util.toRelativeTime
 import cash.z.ecc.android.sdk.demoapp.util.withCommas
@@ -48,7 +49,7 @@ class GetBlockRangeFragment : BaseDemoFragment<FragmentGetBlockRangeBinding>() {
                 <b>total blocks:</b> ${count.withCommas()}
                 <br/><b>fetch time:</b> ${if (fetchDelta > 1000) "%.2f sec".format(fetchDelta/1000.0) else "%d ms".format(fetchDelta)}
                 <br/><b>process time:</b> ${if (processTime > 1000) "%.2f sec".format(processTime/1000.0) else "%d ms".format(processTime)}
-                <br/><b>block time range:</b> ${first().time.toRelativeTime()}<br/>&nbsp;&nbsp to ${last().time.toRelativeTime()}
+                <br/><b>block time range:</b> ${first().time.toRelativeTime(requireApplicationContext())}<br/>&nbsp;&nbsp to ${last().time.toRelativeTime(requireApplicationContext())}
                 <br/><b>total empty blocks:</b> ${emptyCount.withCommas()}
                 <br/><b>total TXs:</b> ${txCount.withCommas()}
                 <br/><b>total outputs:</b> ${outCount.withCommas()}

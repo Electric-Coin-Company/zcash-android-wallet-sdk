@@ -3,9 +3,7 @@ package cash.z.ecc.android.sdk.demoapp.demos.listutxos
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
-import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
-import androidx.paging.PagedList
 import androidx.recyclerview.widget.LinearLayoutManager
 import cash.z.ecc.android.bip39.Mnemonics
 import cash.z.ecc.android.bip39.toSeed
@@ -16,16 +14,15 @@ import cash.z.ecc.android.sdk.block.CompactBlockProcessor
 import cash.z.ecc.android.sdk.db.entity.ConfirmedTransaction
 import cash.z.ecc.android.sdk.demoapp.App
 import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
+import cash.z.ecc.android.sdk.demoapp.DemoConstants
 import cash.z.ecc.android.sdk.demoapp.databinding.FragmentListUtxosBinding
+import cash.z.ecc.android.sdk.demoapp.ext.requireApplicationContext
+import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.demoapp.util.mainActivity
-import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.ext.collectWith
 import cash.z.ecc.android.sdk.ext.twig
-import cash.z.ecc.android.sdk.service.LightWalletGrpcService
-import cash.z.ecc.android.sdk.service.LightWalletService
-import cash.z.ecc.android.sdk.rpc.LocalRpcTypes
 import cash.z.ecc.android.sdk.tool.DerivationTool
-import cash.z.ecc.android.sdk.tool.WalletBirthdayTool
+import cash.z.ecc.android.sdk.type.ZcashNetwork
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -45,9 +42,8 @@ import kotlinx.coroutines.withContext
  * database in a paged format that works natively with RecyclerViews.
  */
 class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
-    private val config = App.instance.defaultConfig
     private lateinit var seed: ByteArray
-    private lateinit var initializer: SdkSynchronizer.SdkInitializer
+    private lateinit var initializer: Initializer
     private lateinit var synchronizer: Synchronizer
     private lateinit var adapter: UtxoAdapter<ConfirmedTransaction>
     private val address: String = "t1RwbKka1CnktvAJ1cSqdn7c6PXWG4tZqgd"
@@ -66,22 +62,22 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
         // Use a BIP-39 library to convert a seed phrase into a byte array. Most wallets already
         // have the seed stored
         seed = Mnemonics.MnemonicCode(sharedViewModel.seedPhrase.value).toSeed()
-        initializer = Initializer(App.instance) {
-            it.importWallet(seed, config.birthdayHeight)
+        initializer = Initializer(requireApplicationContext()) {
+            it.importWallet(seed, network = ZcashNetwork.fromResources(requireApplicationContext()))
             it.alias = "Demo_Utxos"
         }
         synchronizer = Synchronizer(initializer)
     }
 
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
         setup()
     }
 
     fun initUi() {
         binding.inputAddress.setText(address)
-        binding.inputRangeStart.setText(ZcashSdk.SAPLING_ACTIVATION_HEIGHT.toString())
-        binding.inputRangeEnd.setText(config.utxoEndHeight.toString())
+        binding.inputRangeStart.setText(ZcashNetwork.fromResources(requireApplicationContext()).saplingActivationHeight.toString())
+        binding.inputRangeEnd.setText(DemoConstants.utxoEndHeight.toString())
 
         binding.buttonLoad.setOnClickListener {
             mainActivity()?.hideKeyboard()
@@ -97,8 +93,8 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
         binding.textStatus.post {
             binding.textStatus.requestFocus()
             val addressToUse = binding.inputAddress.text.toString()
-            val startToUse = binding.inputRangeStart.text.toString().toIntOrNull() ?: ZcashSdk.SAPLING_ACTIVATION_HEIGHT
-            val endToUse = binding.inputRangeEnd.text.toString().toIntOrNull() ?: config.utxoEndHeight
+            val startToUse = binding.inputRangeStart.text.toString().toIntOrNull() ?: ZcashNetwork.fromResources(requireApplicationContext()).saplingActivationHeight
+            val endToUse = binding.inputRangeEnd.text.toString().toIntOrNull() ?: DemoConstants.utxoEndHeight
             var allStart = now
             twig("loading transactions in range $startToUse..$endToUse")
             val txids = lightwalletService?.getTAddressTransactions(addressToUse, startToUse..endToUse)
@@ -114,11 +110,13 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
                     }
                 }
             }?.let { txData ->
-                val parseStart = now
-                val tList = LocalRpcTypes.TransactionDataList.newBuilder().addAllData(txData).build()
-                val parsedTransactions = initializer.rustBackend.parseTransactionDataList(tList)
-                delta = now - parseStart
-                updateStatus("parsed txs in ${delta}ms.")
+                // Disabled during migration to newer SDK version; this appears to have been
+                // leveraging non-public  APIs in the SDK so perhaps should be removed
+//                val parseStart = now
+//                val tList = LocalRpcTypes.TransactionDataList.newBuilder().addAllData(txData).build()
+//                val parsedTransactions = initializer.rustBackend.parseTransactionDataList(tList)
+//                delta = now - parseStart
+//                updateStatus("parsed txs in ${delta}ms.")
             }
             (synchronizer as SdkSynchronizer).refreshTransactions()
 //            val finalCount = (synchronizer as SdkSynchronizer).getTransactionCount()
@@ -158,7 +156,7 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
         super.onResume()
         resetInBackground()
         val seed = Mnemonics.MnemonicCode(sharedViewModel.seedPhrase.value).toSeed()
-        binding.inputAddress.setText(DerivationTool.deriveTransparentAddress(seed))
+        binding.inputAddress.setText(DerivationTool.deriveTransparentAddress(seed, ZcashNetwork.fromResources(requireApplicationContext())))
     }
 
 
@@ -168,6 +166,7 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
         try {
             lifecycleScope.launch {
                 withContext(Dispatchers.IO) {
+                    synchronizer.prepare()
                     initialCount = (synchronizer as SdkSynchronizer).getTransactionCount()
                 }
             }
@@ -232,7 +231,7 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
         binding.textStatus.visibility = View.INVISIBLE
     }
 
-    private fun onTransactionsUpdated(transactions: PagedList<ConfirmedTransaction>) {
+    private fun onTransactionsUpdated(transactions: List<ConfirmedTransaction>) {
         twig("got a new paged list of transactions of size ${transactions.size}")
         adapter.submitList(transactions)
     }
