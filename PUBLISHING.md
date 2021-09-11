@@ -3,18 +3,18 @@
 Publishing requires:
 
 ### One time only
-* Get your dev environment setup to [compile the SDK](https://github.com/zcash/zcash-android-wallet-sdk/tree/6d5cf6eefb3c2f793b66162c513790d86f368e49#compiling-sources)
-* copy the GPG key to a directory with proper permissions (chmod 600)
+* Get your dev environment setup to [compile the SDK](https://github.com/zcash/zcash-android-wallet-sdk/#compiling-sources)
+* copy the GPG key to a directory with proper permissions (chmod 600). Note: If you'd like to quickly locally without subsequently publishing to Maven Central, configure a Gradle property `RELEASE_SIGNING_ENABLED=false`
 * Create file `~/.gradle/gradle.properties` per the [instructions in this guide](https://proandroiddev.com/publishing-a-maven-artifact-3-3-step-by-step-instructions-to-mavencentral-publishing-bd661081645d)
   * add your sonotype credentials to it
   * point it to the GPG key
 
 
 ### Every time
-1. Update the [build number](https://github.com/zcash/zcash-android-wallet-sdk/blob/6d5cf6eefb3c2f793b66162c513790d86f368e49/config.gradle) and the [CHANGELOG](https://github.com/zcash/zcash-android-wallet-sdk/blob/6d5cf6eefb3c2f793b66162c513790d86f368e49/CHANGELOG.md)
-2. Build locally    
+1. Update the [build number](https://github.com/zcash/zcash-android-wallet-sdk/blob/master/sdk-lib/config.gradle) and the [CHANGELOG](https://github.com/zcash/zcash-android-wallet-sdk/blob/master/CHANGELOG.md)
+2. Build locally
     * Critical Note: Building once does not copy the *.so files and results in an artifact <1MB in size. Building twice fixes that problem and results in an artifact >5MB in size. This is probably a bug in the gradle cargo plugin that we use.
-    * This will install the files in your local maven repo at ~/.m2/repository/cash/z/ecc/android/
+    * This will install the files in your local maven repo at `~/.m2/repository/cash/z/ecc/android/`
     * Build twice (first with a clean, then without):
 ```zsh
 ./gradlew clean publishToMavenLocal && ./gradlew publishToMavenLocal
