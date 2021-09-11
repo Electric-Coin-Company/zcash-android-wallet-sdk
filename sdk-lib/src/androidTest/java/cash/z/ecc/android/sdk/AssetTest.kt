@@ -2,7 +2,6 @@ package cash.z.ecc.android.sdk
 
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
-import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
 import cash.z.ecc.android.sdk.tool.WalletBirthdayTool
 import cash.z.ecc.android.sdk.type.ZcashNetwork
@@ -11,15 +10,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import org.junit.runner.RunWith
 
-@RunWith(AndroidJUnit4::class)
 class AssetTest {
-    @Test
-    @SmallTest
-    fun birthday_height_from_filename() {
-        assertEquals(123, WalletBirthdayTool.birthdayHeight("123.json"))
-    }
 
     @Test
     @SmallTest
