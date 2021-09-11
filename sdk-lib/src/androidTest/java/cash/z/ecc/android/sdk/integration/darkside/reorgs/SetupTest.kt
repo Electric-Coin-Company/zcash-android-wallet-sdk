@@ -5,6 +5,7 @@ import cash.z.ecc.android.sdk.ext.toHex
 import cash.z.ecc.android.sdk.util.DarksideTestCoordinator
 import cash.z.ecc.android.sdk.util.SimpleMnemonics
 import org.junit.Assert.assertEquals
+import org.junit.Ignore
 import org.junit.Test
 
 class SetupTest : ScopedTest() {
