@@ -7,6 +7,7 @@ import cash.z.ecc.android.sdk.ext.ZcashSdk
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert
 import org.junit.Before
+import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
