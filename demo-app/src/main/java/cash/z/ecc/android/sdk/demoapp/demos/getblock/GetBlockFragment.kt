@@ -6,6 +6,7 @@ import android.view.LayoutInflater
 import android.view.View
 import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
 import cash.z.ecc.android.sdk.demoapp.databinding.FragmentGetBlockBinding
+import cash.z.ecc.android.sdk.demoapp.ext.requireApplicationContext
 import cash.z.ecc.android.sdk.demoapp.util.mainActivity
 import cash.z.ecc.android.sdk.demoapp.util.toHtml
 import cash.z.ecc.android.sdk.demoapp.util.toRelativeTime
@@ -27,7 +28,7 @@ class GetBlockFragment : BaseDemoFragment<FragmentGetBlockBinding>() {
         binding.textInfo.text = Html.fromHtml(
             """
                 <b>block height:</b> ${block?.height.withCommas()}
-                <br/><b>block time:</b> ${block?.time.toRelativeTime()}
+                <br/><b>block time:</b> ${block?.time.toRelativeTime(requireApplicationContext())}
                 <br/><b>number of shielded TXs:</b> ${block?.vtxCount}
                 <br/><b>hash:</b> ${block?.hash?.toByteArray()?.toHex()}
                 <br/><b>prevHash:</b> ${block?.prevHash?.toByteArray()?.toHex()}

@@ -11,12 +11,16 @@ import cash.z.ecc.android.sdk.Initializer
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor
 import cash.z.ecc.android.sdk.db.entity.*
-import cash.z.ecc.android.sdk.demoapp.App
 import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
+import cash.z.ecc.android.sdk.demoapp.DemoConstants
 import cash.z.ecc.android.sdk.demoapp.databinding.FragmentSendBinding
+import cash.z.ecc.android.sdk.demoapp.ext.requireApplicationContext
+import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.demoapp.util.mainActivity
 import cash.z.ecc.android.sdk.ext.*
 import cash.z.ecc.android.sdk.tool.DerivationTool
+import cash.z.ecc.android.sdk.type.WalletBalance
+import cash.z.ecc.android.sdk.type.ZcashNetwork
 
 /**
  * Demonstrates sending funds to an address. This is the most complex example that puts all of the
@@ -49,22 +53,20 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
         // have the seed stored
         val seed = Mnemonics.MnemonicCode(seedPhrase).toSeed()
 
-        App.instance.defaultConfig.let { config ->
-            Initializer(App.instance) {
-                it.importWallet(seed, config.birthdayHeight)
-                it.server(config.host, config.port)
-            }.let { initializer ->
-                synchronizer = Synchronizer(initializer)
-            }
-            spendingKey = DerivationTool.deriveSpendingKeys(seed).first()
+        Initializer(requireApplicationContext()) {
+            it.importWallet(seed, network = ZcashNetwork.fromResources(requireApplicationContext()))
+            it.setNetwork(ZcashNetwork.fromResources(requireApplicationContext()))
+        }.let { initializer ->
+            synchronizer = Synchronizer(initializer)
         }
+        spendingKey = DerivationTool.deriveSpendingKeys(seed, ZcashNetwork.fromResources(requireApplicationContext())).first()
     }
 
     //
     // Observable properties (done without livedata or flows for simplicity)
     //
 
-    private var balance = CompactBlockProcessor.WalletBalance()
+    private var balance = WalletBalance()
         set(value) {
             field = value
             onUpdateSendButton()
@@ -87,13 +89,11 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
     //
 
     private fun initSendUi() {
-        App.instance.defaultConfig.let { config ->
-            amountInput = binding.inputAmount.apply {
-                setText(config.sendAmount.toZecString())
-            }
-            addressInput = binding.inputAddress.apply {
-                setText(config.toAddress)
-            }
+        amountInput = binding.inputAmount.apply {
+            setText(DemoConstants.sendAmount.toZecString())
+        }
+        addressInput = binding.inputAddress.apply {
+            setText(DemoConstants.toAddress)
         }
         binding.buttonSend.setOnClickListener(::onSend)
     }
@@ -102,7 +102,7 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
         synchronizer.status.collectWith(lifecycleScope, ::onStatus)
         synchronizer.progress.collectWith(lifecycleScope, ::onProgress)
         synchronizer.processorInfo.collectWith(lifecycleScope, ::onProcessorInfoUpdated)
-        synchronizer.balances.collectWith(lifecycleScope, ::onBalance)
+        synchronizer.saplingBalances.collectWith(lifecycleScope, ::onBalance)
     }
 
 
@@ -133,7 +133,7 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
         if (info.isScanning) binding.textStatus.text = "Scanning blocks...${info.scanProgress}%"
     }
 
-    private fun onBalance(balance: CompactBlockProcessor.WalletBalance) {
+    private fun onBalance(balance: WalletBalance) {
         this.balance = balance
         if (!isSyncing) {
             binding.textBalance.text = """

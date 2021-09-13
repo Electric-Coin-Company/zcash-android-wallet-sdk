@@ -12,9 +12,13 @@ import cash.z.ecc.android.sdk.block.CompactBlockProcessor
 import cash.z.ecc.android.sdk.demoapp.App
 import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
 import cash.z.ecc.android.sdk.demoapp.databinding.FragmentGetBalanceBinding
+import cash.z.ecc.android.sdk.demoapp.ext.requireApplicationContext
+import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.ext.collectWith
 import cash.z.ecc.android.sdk.ext.convertZatoshiToZecString
 import cash.z.ecc.android.sdk.tool.DerivationTool
+import cash.z.ecc.android.sdk.type.WalletBalance
+import cash.z.ecc.android.sdk.type.ZcashNetwork
 
 /**
  * Displays the available balance && total balance associated with the seed defined by the default config.
@@ -27,8 +31,8 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
     override fun inflateBinding(layoutInflater: LayoutInflater): FragmentGetBalanceBinding =
         FragmentGetBalanceBinding.inflate(layoutInflater)
 
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
         setup()
     }
 
@@ -41,17 +45,15 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
         val seed = Mnemonics.MnemonicCode(seedPhrase).toSeed()
 
         // converting seed into viewingKey
-        val viewingKey = DerivationTool.deriveViewingKeys(seed).first()
+        val viewingKey = DerivationTool.deriveUnifiedViewingKeys(seed, ZcashNetwork.fromResources(requireApplicationContext())).first()
 
         // using the ViewingKey to initialize
-        App.instance.defaultConfig.let { config ->
-            Initializer(App.instance) {
-                it.importWallet(viewingKey, config.birthdayHeight)
-                it.server(config.host, config.port)
+            Initializer(requireApplicationContext()) {
+                it.setNetwork(ZcashNetwork.fromResources(requireApplicationContext()))
+                it.importWallet(viewingKey, network = ZcashNetwork.fromResources(requireApplicationContext()))
             }.let { initializer ->
                 synchronizer = Synchronizer(initializer)
             }
-        }
     }
 
     override fun onResume() {
@@ -65,10 +67,10 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
         synchronizer.status.collectWith(lifecycleScope, ::onStatus)
         synchronizer.progress.collectWith(lifecycleScope, ::onProgress)
         synchronizer.processorInfo.collectWith(lifecycleScope, ::onProcessorInfoUpdated)
-        synchronizer.balances.collectWith(lifecycleScope, ::onBalance)
+        synchronizer.saplingBalances.collectWith(lifecycleScope, ::onBalance)
     }
 
-    private fun onBalance(balance: CompactBlockProcessor.WalletBalance) {
+    private fun onBalance(balance: WalletBalance) {
             binding.textBalance.text = """
                 Available balance: ${balance.availableZatoshi.convertZatoshiToZecString(12)}
                 Total balance: ${balance.totalZatoshi.convertZatoshiToZecString(12)}
@@ -79,10 +81,10 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
 
     private fun onStatus(status: Synchronizer.Status) {
         binding.textStatus.text = "Status: $status"
-        if (CompactBlockProcessor.WalletBalance().none()) {
+        if (WalletBalance().none()) {
             binding.textBalance.text = "Calculating balance..."
         } else {
-            onBalance(synchronizer.latestBalance)
+            onBalance(synchronizer.saplingBalances.value)
         }
     }
 
@@ -95,9 +97,9 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
     /**
      * Extension function which checks if the balance has been updated or its -1
      */
-    private fun CompactBlockProcessor.WalletBalance.none(): Boolean{
-        if(synchronizer.latestBalance.totalZatoshi == -1L
-            && synchronizer.latestBalance.availableZatoshi == -1L) return true
+    private fun WalletBalance.none(): Boolean{
+        if(synchronizer.saplingBalances.value.totalZatoshi == -1L
+            && synchronizer.saplingBalances.value.availableZatoshi == -1L) return true
         return false
     }
 

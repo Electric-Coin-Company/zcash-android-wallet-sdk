@@ -9,10 +9,10 @@ import cash.z.ecc.android.sdk.demoapp.App
             "show how to bridge to an existing key storage mechanism. Instead, use the Android " +
             "Keystore system or a 3rd party library that leverages it."
 )
-class SampleStorage {
+class SampleStorage(context: Context) {
 
-    private val prefs = 
-        App.instance.getSharedPreferences("ExtremelyInsecureStorage", Context.MODE_PRIVATE)
+    private val prefs =
+        context.applicationContext.getSharedPreferences("ExtremelyInsecureStorage", Context.MODE_PRIVATE)
     
     fun saveSensitiveString(key: String, value: String) {
         prefs.edit().putString(key, value).apply()
@@ -33,8 +33,8 @@ class SampleStorage {
  * the SDK. This class delegates to the storage object. For demo purposes, we're using an insecure
  * SampleStorage implementation but this can easily be swapped for a truly secure storage solution.
  */
-class SampleStorageBridge() {
-    private val delegate = SampleStorage()
+class SampleStorageBridge(context: Context) {
+    private val delegate = SampleStorage(context.applicationContext)
 
     /**
      * Just a sugar method to help with being explicit in sample code. We want to show developers

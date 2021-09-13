@@ -4,7 +4,6 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import androidx.lifecycle.lifecycleScope
-import androidx.paging.PagedList
 import androidx.recyclerview.widget.LinearLayoutManager
 import cash.z.ecc.android.bip39.Mnemonics
 import cash.z.ecc.android.bip39.toSeed
@@ -16,9 +15,12 @@ import cash.z.ecc.android.sdk.db.entity.ConfirmedTransaction
 import cash.z.ecc.android.sdk.demoapp.App
 import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
 import cash.z.ecc.android.sdk.demoapp.databinding.FragmentListTransactionsBinding
+import cash.z.ecc.android.sdk.demoapp.ext.requireApplicationContext
+import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.ext.collectWith
 import cash.z.ecc.android.sdk.ext.twig
 import cash.z.ecc.android.sdk.tool.DerivationTool
+import cash.z.ecc.android.sdk.type.ZcashNetwork
 
 /**
  * List all transactions related to the given seed, since the given birthday. This begins by
@@ -28,7 +30,7 @@ import cash.z.ecc.android.sdk.tool.DerivationTool
  * database in a paged format that works natively with RecyclerViews.
  */
 class ListTransactionsFragment : BaseDemoFragment<FragmentListTransactionsBinding>() {
-    private lateinit var initializer: SdkSynchronizer.SdkInitializer
+    private lateinit var initializer: Initializer
     private lateinit var synchronizer: Synchronizer
     private lateinit var adapter: TransactionAdapter<ConfirmedTransaction>
     private lateinit var address: String
@@ -48,13 +50,11 @@ class ListTransactionsFragment : BaseDemoFragment<FragmentListTransactionsBindin
         // have the seed stored
         val seed = Mnemonics.MnemonicCode(seedPhrase).toSeed()
 
-        App.instance.defaultConfig.let { config ->
-            initializer = Initializer(App.instance) {
-                it.importWallet(seed, config.birthdayHeight)
-                it.server(config.host, config.port)
-            }
-            address = DerivationTool.deriveShieldedAddress(seed)
+        initializer = Initializer(requireApplicationContext()) {
+            it.importWallet(seed, network = ZcashNetwork.fromResources(requireApplicationContext()))
+            it.setNetwork(ZcashNetwork.fromResources(requireApplicationContext()))
         }
+        address = DerivationTool.deriveShieldedAddress(seed, ZcashNetwork.fromResources(requireApplicationContext()))
         synchronizer = Synchronizer(initializer)
     }
 
@@ -96,7 +96,7 @@ class ListTransactionsFragment : BaseDemoFragment<FragmentListTransactionsBindin
         binding.textInfo.visibility = View.INVISIBLE
     }
 
-    private fun onTransactionsUpdated(transactions: PagedList<ConfirmedTransaction>) {
+    private fun onTransactionsUpdated(transactions: List<ConfirmedTransaction>) {
         twig("got a new paged list of transactions")
         adapter.submitList(transactions)
 

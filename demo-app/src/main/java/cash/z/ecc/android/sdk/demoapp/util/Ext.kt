@@ -1,5 +1,6 @@
 package cash.z.ecc.android.sdk.demoapp.util
 
+import android.content.Context
 import android.text.format.DateUtils
 import androidx.fragment.app.Fragment
 import cash.z.ecc.android.sdk.demoapp.App
@@ -22,10 +23,10 @@ fun Number?.withCommas() = this?.let { "%,d".format(it) } ?: "Unknown"
 /**
  * Convert date time in seconds to relative time like (4 days ago).
  */
-fun Int?.toRelativeTime() =
+fun Int?.toRelativeTime(context: Context) =
     this?.let { timeInSeconds ->
         DateUtils.getRelativeDateTimeString(
-            App.instance,
+            context,
             timeInSeconds * 1000L,
             DateUtils.SECOND_IN_MILLIS,
             DateUtils.WEEK_IN_MILLIS,

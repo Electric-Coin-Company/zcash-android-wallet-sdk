@@ -2,8 +2,8 @@ package cash.z.ecc.android.sdk.demoapp.demos.listtransactions
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
-import androidx.paging.PagedListAdapter
 import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 import cash.z.ecc.android.sdk.demoapp.R
 import cash.z.ecc.android.sdk.db.entity.ConfirmedTransaction
 
@@ -11,7 +11,7 @@ import cash.z.ecc.android.sdk.db.entity.ConfirmedTransaction
  * Simple adapter implementation that knows how to bind a recyclerview to ClearedTransactions.
  */
 class TransactionAdapter<T : ConfirmedTransaction> :
-    PagedListAdapter<T, TransactionViewHolder<T>>(
+    ListAdapter<T, TransactionViewHolder<T>>(
         object : DiffUtil.ItemCallback<T>() {
             override fun areItemsTheSame(
                 oldItem: T,
@@ -21,7 +21,7 @@ class TransactionAdapter<T : ConfirmedTransaction> :
             override fun areContentsTheSame(
                 oldItem: T,
                 newItem: T
-            ) = oldItem.equals(newItem)
+            ) = oldItem == newItem
         }
     ) {
 
