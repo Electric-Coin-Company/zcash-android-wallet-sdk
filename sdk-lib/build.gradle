@@ -154,7 +154,6 @@ cargo {
         "x86_64"
     ]
     profile = "release"
-    forceTargets = true
     prebuiltToolchains = true
 }
 

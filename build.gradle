@@ -14,7 +14,7 @@ buildscript {
         classpath "org.jetbrains.kotlin:kotlin-allopen:_"
         classpath "org.jetbrains.dokka:dokka-gradle-plugin:_"
         classpath "com.google.protobuf:protobuf-gradle-plugin:_"
-        classpath "com.github.str4d:rust-android-gradle:68b4ecc053"
+        classpath 'org.mozilla.rust-android-gradle:plugin:0.9.0'
         classpath "org.owasp:dependency-check-gradle:_"
         classpath 'com.vanniktech:gradle-maven-publish-plugin:0.17.0'
         classpath "androidx.navigation:navigation-safe-args-gradle-plugin:_"
