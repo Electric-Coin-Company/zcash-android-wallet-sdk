@@ -9,6 +9,10 @@ class App : Application() {
     override fun onCreate() {
         super.onCreate()
 
+        if (BuildConfig.DEBUG) {
+            StrictModeHelper.enableStrictMode()
+        }
+
         Twig.plant(TroubleshootingTwig())
     }
 }
