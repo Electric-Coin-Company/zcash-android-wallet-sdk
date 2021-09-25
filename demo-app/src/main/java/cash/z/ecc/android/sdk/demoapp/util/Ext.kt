@@ -3,7 +3,6 @@ package cash.z.ecc.android.sdk.demoapp.util
 import android.content.Context
 import android.text.format.DateUtils
 import androidx.fragment.app.Fragment
-import cash.z.ecc.android.sdk.demoapp.App
 import cash.z.ecc.android.sdk.demoapp.MainActivity
 import cash.z.wallet.sdk.rpc.CompactFormats
 
@@ -11,9 +10,7 @@ import cash.z.wallet.sdk.rpc.CompactFormats
  * Lazy extensions to make demo life easier.
  */
 
-
 fun Fragment.mainActivity() = context as? MainActivity
-
 
 /**
  * Add locale-specific commas to a number, if it exists.
@@ -34,7 +31,6 @@ fun Int?.toRelativeTime(context: Context) =
         ).toString()
     } ?: "Unknown"
 
-
 fun List<CompactFormats.CompactTx>?.toHtml() =
     this.takeUnless { it.isNullOrEmpty() }?.let { txs ->
         buildString {
@@ -42,4 +38,3 @@ fun List<CompactFormats.CompactTx>?.toHtml() =
             txs.forEach { append("<br/><b>&nbsp;&nbsp;tx${it.index}:</b> ${it.spendsCount} / ${it.outputsCount}") }
         }
     } ?: ""
-

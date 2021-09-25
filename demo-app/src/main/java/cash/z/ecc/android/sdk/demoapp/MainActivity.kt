@@ -24,7 +24,9 @@ import cash.z.ecc.android.sdk.type.ZcashNetwork
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.navigation.NavigationView
 
-class MainActivity : AppCompatActivity(), ClipboardManager.OnPrimaryClipChangedListener,
+class MainActivity :
+    AppCompatActivity(),
+    ClipboardManager.OnPrimaryClipChangedListener,
     DrawerLayout.DrawerListener {
     private lateinit var appBarConfiguration: AppBarConfiguration
     private lateinit var clipboard: ClipboardManager
@@ -38,7 +40,7 @@ class MainActivity : AppCompatActivity(), ClipboardManager.OnPrimaryClipChangedL
      * automatically sync with the server.
      */
     var lightwalletService: LightWalletService? = null
-    private set
+        private set
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -62,7 +64,8 @@ class MainActivity : AppCompatActivity(), ClipboardManager.OnPrimaryClipChangedL
                 R.id.nav_home, R.id.nav_address, R.id.nav_balance, R.id.nav_block, R.id.nav_private_key,
                 R.id.nav_latest_height, R.id.nav_block_range,
                 R.id.nav_transactions, R.id.nav_utxos, R.id.nav_send
-            ), drawerLayout
+            ),
+            drawerLayout
         )
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)
@@ -97,7 +100,6 @@ class MainActivity : AppCompatActivity(), ClipboardManager.OnPrimaryClipChangedL
         return navController.navigateUp(appBarConfiguration) || super.onSupportNavigateUp()
     }
 
-
     //
     // Private functions
     //
@@ -112,7 +114,6 @@ class MainActivity : AppCompatActivity(), ClipboardManager.OnPrimaryClipChangedL
     private fun onFabClicked(view: View) {
         fabListener?.onActionButtonClicked()
     }
-
 
     //
     // Helpers
@@ -142,7 +143,6 @@ class MainActivity : AppCompatActivity(), ClipboardManager.OnPrimaryClipChangedL
         val windowToken = window.decorView.rootView.windowToken
         getSystemService<InputMethodManager>()?.hideSoftInputFromWindow(windowToken, 0)
     }
-
 
     /* DrawerListener implementation */
 

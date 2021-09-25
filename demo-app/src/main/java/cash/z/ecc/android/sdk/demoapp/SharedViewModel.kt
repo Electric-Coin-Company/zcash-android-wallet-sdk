@@ -29,6 +29,6 @@ class SharedViewModel : ViewModel() {
         return try {
             Mnemonics.MnemonicCode(phrase).validate()
             true
-        } catch (t: Throwable){ false }
+        } catch (t: Throwable) { false }
     }
 }

@@ -1,19 +1,17 @@
 package cash.z.ecc.android.sdk.demoapp.util
 
 import android.content.Context
-import cash.z.ecc.android.sdk.demoapp.App
-
 
 @Deprecated(
     message = "Do not use this! It is insecure and only intended for demo purposes to " +
-            "show how to bridge to an existing key storage mechanism. Instead, use the Android " +
-            "Keystore system or a 3rd party library that leverages it."
+        "show how to bridge to an existing key storage mechanism. Instead, use the Android " +
+        "Keystore system or a 3rd party library that leverages it."
 )
 class SampleStorage(context: Context) {
 
     private val prefs =
         context.applicationContext.getSharedPreferences("ExtremelyInsecureStorage", Context.MODE_PRIVATE)
-    
+
     fun saveSensitiveString(key: String, value: String) {
         prefs.edit().putString(key, value).apply()
     }
@@ -54,8 +52,8 @@ class SampleStorageBridge(context: Context) {
         return this
     }
 
-     val seed: ByteArray get() = delegate.loadSensitiveBytes(KEY_SEED)!!
-     val key get() = delegate.loadSensitiveString(KEY_PK)!!
+    val seed: ByteArray get() = delegate.loadSensitiveBytes(KEY_SEED)!!
+    val key get() = delegate.loadSensitiveString(KEY_PK)!!
 
     companion object {
         private const val KEY_SEED = "cash.z.ecc.android.sdk.demoapp.SEED"

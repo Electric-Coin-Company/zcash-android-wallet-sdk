@@ -37,7 +37,7 @@ class GetPrivateKeyFragment : BaseDemoFragment<FragmentGetPrivateKeyBinding>() {
     private fun displayKeys() {
         // derive the keys from the seed:
         // demonstrate deriving spending keys for five accounts but only take the first one
-        val spendingKey = DerivationTool.deriveSpendingKeys(seed, ZcashNetwork.fromResources(requireApplicationContext()),5).first()
+        val spendingKey = DerivationTool.deriveSpendingKeys(seed, ZcashNetwork.fromResources(requireApplicationContext()), 5).first()
 
         // derive the key that allows you to view but not spend transactions
         val viewingKey = DerivationTool.deriveViewingKey(spendingKey, ZcashNetwork.fromResources(requireApplicationContext()))
@@ -45,7 +45,6 @@ class GetPrivateKeyFragment : BaseDemoFragment<FragmentGetPrivateKeyBinding>() {
         // display the keys in the UI
         binding.textInfo.setText("Spending Key:\n$spendingKey\n\nViewing Key:\n$viewingKey")
     }
-
 
     //
     // Android Lifecycle overrides
@@ -61,7 +60,6 @@ class GetPrivateKeyFragment : BaseDemoFragment<FragmentGetPrivateKeyBinding>() {
         displayKeys()
     }
 
-
     //
     // Base Fragment overrides
     //
@@ -75,5 +73,4 @@ class GetPrivateKeyFragment : BaseDemoFragment<FragmentGetPrivateKeyBinding>() {
 
     override fun inflateBinding(layoutInflater: LayoutInflater): FragmentGetPrivateKeyBinding =
         FragmentGetPrivateKeyBinding.inflate(layoutInflater)
-
 }

@@ -36,5 +36,4 @@ class UtxoAdapter<T : ConfirmedTransaction> :
         holder: UtxoViewHolder<T>,
         position: Int
     ) = holder.bindTo(getItem(position))
-
 }

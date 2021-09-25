@@ -4,8 +4,8 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
-import cash.z.ecc.android.sdk.demoapp.R
 import cash.z.ecc.android.sdk.db.entity.ConfirmedTransaction
+import cash.z.ecc.android.sdk.demoapp.R
 
 /**
  * Simple adapter implementation that knows how to bind a recyclerview to ClearedTransactions.
@@ -36,5 +36,4 @@ class TransactionAdapter<T : ConfirmedTransaction> :
         holder: TransactionViewHolder<T>,
         position: Int
     ) = holder.bindTo(getItem(position))
-
 }

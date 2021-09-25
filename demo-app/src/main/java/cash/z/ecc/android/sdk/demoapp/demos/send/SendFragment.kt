@@ -10,14 +10,25 @@ import cash.z.ecc.android.bip39.toSeed
 import cash.z.ecc.android.sdk.Initializer
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor
-import cash.z.ecc.android.sdk.db.entity.*
+import cash.z.ecc.android.sdk.db.entity.PendingTransaction
+import cash.z.ecc.android.sdk.db.entity.isCreated
+import cash.z.ecc.android.sdk.db.entity.isCreating
+import cash.z.ecc.android.sdk.db.entity.isFailedEncoding
+import cash.z.ecc.android.sdk.db.entity.isFailedSubmit
+import cash.z.ecc.android.sdk.db.entity.isMined
+import cash.z.ecc.android.sdk.db.entity.isSubmitSuccess
 import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
 import cash.z.ecc.android.sdk.demoapp.DemoConstants
 import cash.z.ecc.android.sdk.demoapp.databinding.FragmentSendBinding
 import cash.z.ecc.android.sdk.demoapp.ext.requireApplicationContext
 import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.demoapp.util.mainActivity
-import cash.z.ecc.android.sdk.ext.*
+import cash.z.ecc.android.sdk.ext.Twig
+import cash.z.ecc.android.sdk.ext.collectWith
+import cash.z.ecc.android.sdk.ext.convertZatoshiToZecString
+import cash.z.ecc.android.sdk.ext.convertZecToZatoshi
+import cash.z.ecc.android.sdk.ext.toZecString
+import cash.z.ecc.android.sdk.ext.twig
 import cash.z.ecc.android.sdk.tool.DerivationTool
 import cash.z.ecc.android.sdk.type.WalletBalance
 import cash.z.ecc.android.sdk.type.ZcashNetwork
@@ -39,7 +50,6 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
     // in a normal app, this would be stored securely with the trusted execution environment (TEE)
     // but since this is a demo, we'll derive it on the fly
     private lateinit var spendingKey: String
-
 
     /**
      * Initialize the required values that would normally live outside the demo but are repeated
@@ -83,7 +93,6 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
             onUpdateSendButton()
         }
 
-
     //
     // Private functions
     //
@@ -104,7 +113,6 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
         synchronizer.processorInfo.collectWith(lifecycleScope, ::onProcessorInfoUpdated)
         synchronizer.saplingBalances.collectWith(lifecycleScope, ::onBalance)
     }
-
 
     //
     // Change listeners
@@ -198,7 +206,6 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
         binding.textInfo.text = "Active Transaction:"
     }
 
-
     //
     // Android Lifecycle overrides
     //
@@ -226,5 +233,4 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
 
     override fun inflateBinding(layoutInflater: LayoutInflater): FragmentSendBinding =
         FragmentSendBinding.inflate(layoutInflater)
-
 }
