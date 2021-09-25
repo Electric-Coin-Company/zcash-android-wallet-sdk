@@ -59,24 +59,18 @@ android {
 dependencies {
     // SDK
     implementation(projects.sdkLib)
-    //implementation('cash.z.ecc.android:zcash-android-sdk:1.3.0-beta17')
 
     // sample mnemonic plugin
-    implementation("com.github.zcash:zcash-android-wallet-plugins:1.0.1")
-    implementation("cash.z.ecc.android:kotlin-bip39:1.0.2")
+    implementation(libs.zcashwalletplgn)
+    implementation(libs.bip39)
 
     // Android
-    implementation("androidx.core:core-ktx:1.3.2")
-    implementation("androidx.constraintlayout:constraintlayout:2.0.4")
-    implementation("androidx.navigation:navigation-fragment-ktx:2.3.1")
-    implementation("androidx.navigation:navigation-ui-ktx:2.3.1")
-    implementation("com.google.android.material:material:1.3.0-alpha03")
-    testImplementation("junit:junit:4.13")
-    androidTestImplementation("androidx.test.ext:junit:1.1.2")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.3.0")
+    implementation(libs.androidx.core)
+    implementation(libs.androidx.constraintlayout)
+    implementation(libs.androidx.navigation.fragment)
+    implementation(libs.androidx.navigation.ui)
+    implementation(libs.material)
+    androidTestImplementation(libs.bundles.androidx.test)
 
-    implementation("io.grpc:grpc-android:${libs.versions.grpc.get()}")
-    implementation("io.grpc:grpc-okhttp:${libs.versions.grpc.get()}")
-    implementation("io.grpc:grpc-protobuf-lite:${libs.versions.grpc.get()}")
-    implementation("io.grpc:grpc-stub:${libs.versions.grpc.get()}")
+    implementation(libs.bundles.grpc)
 }

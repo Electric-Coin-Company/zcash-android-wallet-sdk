@@ -2,15 +2,12 @@ buildscript {
     repositories {
         google()
         gradlePluginPortal()
-        mavenCentral()
-        maven("https://jitpack.io")
     }
     dependencies {
-        //noinspection GradlePluginVersion
-        classpath("com.android.tools.build:gradle:${properties["ANDROID_GRADLE_PLUGIN_VERSION"]}")
-        classpath("org.mozilla.rust-android-gradle:plugin:0.9.0")
-        classpath("com.vanniktech:gradle-maven-publish-plugin:0.17.0")
-        classpath("androidx.navigation:navigation-safe-args-gradle-plugin:_")
+        classpath(libs.gradle.plugin.android)
+        classpath(libs.gradle.plugin.rust)
+        classpath(libs.gradle.plugin.publish)
+        classpath(libs.gradle.plugin.navigation)
     }
 }
 
