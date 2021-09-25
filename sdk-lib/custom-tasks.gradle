@@ -1,7 +1,0 @@
-def protoIncludeDir = "build/extracted-include-protos/main"
-
-tasks.register("includeDirBugFix") {
-    doFirst {
-        mkdir(protoIncludeDir)
-    }
-}

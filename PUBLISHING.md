@@ -11,13 +11,11 @@ Publishing requires:
 
 
 ### Every time
-1. Update the [build number](https://github.com/zcash/zcash-android-wallet-sdk/blob/master/sdk-lib/config.gradle) and the [CHANGELOG](https://github.com/zcash/zcash-android-wallet-sdk/blob/master/CHANGELOG.md)
+1. Update the [build number](https://github.com/zcash/zcash-android-wallet-sdk/blob/master/gradle.properties) and the [CHANGELOG](https://github.com/zcash/zcash-android-wallet-sdk/blob/master/CHANGELOG.md)
 2. Build locally
-    * Critical Note: Building once does not copy the *.so files and results in an artifact <1MB in size. Building twice fixes that problem and results in an artifact >5MB in size. This is probably a bug in the gradle cargo plugin that we use.
     * This will install the files in your local maven repo at `~/.m2/repository/cash/z/ecc/android/`
-    * Build twice (first with a clean, then without):
 ```zsh
-./gradlew clean publishToMavenLocal && ./gradlew publishToMavenLocal
+./gradlew publishToMavenLocal
 ```
 3. Publish via the following command:
 ```zsh
@@ -32,6 +30,5 @@ Publishing requires:
 
 Note:
 Our existing artifacts can be found here and here:
-https://search.maven.org/artifact/cash.z.ecc.android/zcash-android-sdk 
-https://repo1.maven.org/maven2/cash/z/ecc/android/ 
-
+https://search.maven.org/artifact/cash.z.ecc.android/zcash-android-sdk
+https://repo1.maven.org/maven2/cash/z/ecc/android/

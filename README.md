@@ -219,7 +219,9 @@ This project follows [semantic versioning](https://semver.org/) with pre-release
 
 ## Examples
 
-Examples can be found in the [Demo App](demo-app)
+A primitive example to exercise the SDK exists in this repo, under [Demo App](demo-app).
+
+There's also a more comprehensive [Sample Wallet](https://github.com/zcash/zcash-android-wallet).
 
 [Back to contents](#contents)
 
@@ -229,3 +231,6 @@ Publishing instructions for maintainers of this repository can be found in [PUBL
 
 [Back to contents](#contents)
 
+# Known Issues
+
+1. During builds, a warning will be printed that says "Unable to detect AGP versions for included builds. All projects in the build should use the same AGP version."  This can be safely ignored.  The version under build-conventions is the same as the version used elsewhere in the application.
