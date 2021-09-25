@@ -16,6 +16,7 @@ plugins {
     id("org.owasp.dependencycheck")
     id("zcash.ktlint-conventions")
     id("io.gitlab.arturbosch.detekt")
+    id("com.github.ben-manes.versions")
 }
 
 tasks {
@@ -32,4 +33,26 @@ tasks {
         config.setFrom(files("${rootProject.projectDir}/tools/detekt.yml"))
         buildUponDefaultConfig = true
     }
+
+    withType<com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask> {
+        gradleReleaseChannel = "current"
+
+        resolutionStrategy {
+            componentSelection {
+                all {
+                    if (isNonStable(candidate.version) && !isNonStable(currentVersion)) {
+                        reject("Unstable")
+                    }
+                }
+            }
+        }
+    }
+}
+
+val unstableKeywords = listOf("alpha", "beta", "rc", "m", "ea", "build")
+
+fun isNonStable(version: String): Boolean {
+    val versionLowerCase = version.toLowerCase()
+
+    return unstableKeywords.any { versionLowerCase.contains(it) }
 }
