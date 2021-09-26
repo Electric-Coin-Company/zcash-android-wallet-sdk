@@ -1,11 +1,15 @@
-package cash.z.ecc.android.sdk.integration.darkside.reorgs
+package cash.z.ecc.android.sdk.darkside.reorgs
 
-import cash.z.ecc.android.sdk.ext.ScopedTest
+
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import cash.z.ecc.android.sdk.darkside.test.ScopedTest
 import cash.z.ecc.android.sdk.ext.twig
-import cash.z.ecc.android.sdk.util.DarksideTestCoordinator
+import cash.z.ecc.android.sdk.darkside.test.DarksideTestCoordinator
 import org.junit.BeforeClass
 import org.junit.Test
+import org.junit.runner.RunWith
 
+@RunWith(AndroidJUnit4::class)
 class InboundTxTests : ScopedTest() {
 
     @Test
@@ -78,7 +82,7 @@ class InboundTxTests : ScopedTest() {
         private const val firstBlock = 663150
         private const val targetTxBlock = 663188
         private const val lastBlockHash = "2fc7b4682f5ba6ba6f86e170b40f0aa9302e1d3becb2a6ee0db611ff87835e4a"
-        private val sithLord = DarksideTestCoordinator("192.168.1.134")
+        private val sithLord = DarksideTestCoordinator()
         private val validator = sithLord.validator
         private val chainMaker = sithLord.chainMaker
 
@@ -92,7 +96,8 @@ class InboundTxTests : ScopedTest() {
                 .stageEmptyBlocks(firstBlock + 1, 100)
                 .applyTipHeight(targetTxBlock - 1)
 
-            sithLord.startSync(classScope).await()
+            sithLord.synchronizer.start(classScope)
+            sithLord.await()
         }
     }
 }

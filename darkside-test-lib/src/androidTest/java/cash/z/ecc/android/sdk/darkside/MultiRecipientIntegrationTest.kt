@@ -1,10 +1,10 @@
-package cash.z.ecc.android.sdk.integration.darkside // package cash.z.ecc.android.sdk.integration
+package cash.z.ecc.android.sdk.darkside // package cash.z.ecc.android.sdk.integration
 //
-// import cash.z.ecc.android.sdk.ext.ScopedTest
+// import cash.z.ecc.android.sdk.test.ScopedTest
 // import cash.z.ecc.android.sdk.ext.twig
 // import cash.z.ecc.android.sdk.ext.twigTask
 // import cash.z.ecc.android.sdk.service.LightWalletGrpcService
-// import cash.z.ecc.android.sdk.util.DarksideTestCoordinator
+// import cash.z.ecc.android.sdk.darkside.test.DarksideTestCoordinator
 // import cash.z.ecc.android.sdk.util.SimpleMnemonics
 // import cash.z.wallet.sdk.rpc.CompactFormats
 // import cash.z.wallet.sdk.rpc.Service
@@ -153,7 +153,7 @@ package cash.z.ecc.android.sdk.integration.darkside // package cash.z.ecc.androi
 //    }
 //
 //    companion object {
-//        private val sithLord = DarksideTestCoordinator("192.168.1.134", "MultiRecipientInRust")
+//        private val sithLord = DarksideTestCoordinator(, "MultiRecipientInRust")
 //
 //        private val randomPhrases = listOf(
 //            "profit save black expose rude feature early rocket alter borrow finish october few duty flush kick spell bean burden enforce bitter theme silent uphold",

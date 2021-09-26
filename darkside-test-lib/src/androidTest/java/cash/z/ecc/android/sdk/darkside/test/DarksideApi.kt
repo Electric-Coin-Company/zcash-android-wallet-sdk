@@ -1,4 +1,4 @@
-package cash.z.ecc.android.sdk.util
+package cash.z.ecc.android.sdk.darkside.test
 
 import android.content.Context
 import cash.z.ecc.android.sdk.R

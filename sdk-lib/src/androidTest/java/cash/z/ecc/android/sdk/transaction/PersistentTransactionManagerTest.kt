@@ -7,11 +7,11 @@ import cash.z.ecc.android.sdk.annotation.TestPurpose
 import cash.z.ecc.android.sdk.db.entity.EncodedTransaction
 import cash.z.ecc.android.sdk.db.entity.PendingTransaction
 import cash.z.ecc.android.sdk.db.entity.isCancelled
-import cash.z.ecc.android.sdk.ext.ScopedTest
 import cash.z.ecc.android.sdk.ext.TroubleshootingTwig
 import cash.z.ecc.android.sdk.ext.Twig
 import cash.z.ecc.android.sdk.ext.twig
 import cash.z.ecc.android.sdk.service.LightWalletService
+import cash.z.ecc.android.sdk.test.ScopedTest
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.stub
 import kotlinx.coroutines.cancel

@@ -141,7 +141,6 @@ dependencyResolutionManagement {
                 listOf(
                     "androidx-espresso-core",
                     "androidx-espresso-intents",
-                    "androidx-espresso-contrib",
                     "androidx-test-junit",
                     "androidx-test-core"
                 )
@@ -173,5 +172,6 @@ rootProject.name = "zcash-android-sdk"
 
 includeBuild("build-conventions")
 
+include("darkside-test-lib")
 include("sdk-lib")
 include("demo-app")

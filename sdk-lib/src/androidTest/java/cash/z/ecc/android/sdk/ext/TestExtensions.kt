@@ -1,123 +1,15 @@
 package cash.z.ecc.android.sdk.ext
 
-import android.content.Context
-import androidx.test.platform.app.InstrumentationRegistry
 import cash.z.ecc.android.sdk.Initializer
 import cash.z.ecc.android.sdk.type.ZcashNetwork
-import cash.z.ecc.android.sdk.util.DarksideTestCoordinator
 import cash.z.ecc.android.sdk.util.SimpleMnemonics
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.newFixedThreadPoolContext
-import kotlinx.coroutines.runBlocking
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONObject
-import org.junit.After
-import org.junit.AfterClass
-import org.junit.Before
-import org.junit.BeforeClass
 import ru.gildor.coroutines.okhttp.await
-import java.util.concurrent.TimeoutException
 
 fun Initializer.Config.seedPhrase(seedPhrase: String, network: ZcashNetwork) {
     setSeed(SimpleMnemonics().toSeed(seedPhrase.toCharArray()), network)
-}
-
-open class ScopedTest(val defaultTimeout: Long = 2000L) {
-    protected lateinit var testScope: CoroutineScope
-
-    // if an androidTest doesn't need a context, then maybe it should be a unit test instead?!
-    val context: Context = InstrumentationRegistry.getInstrumentation().context
-
-    @Before
-    fun start() {
-        twig("===================== TEST STARTED ==================================")
-        testScope = CoroutineScope(
-            Job(classScope.coroutineContext[Job]!!) + newFixedThreadPoolContext(
-                5,
-                this.javaClass.simpleName
-            )
-        )
-    }
-
-    @After
-    fun end() = runBlocking<Unit> {
-        twig("======================= TEST CANCELLING =============================")
-        testScope.cancel()
-        testScope.coroutineContext[Job]?.join()
-        twig("======================= TEST ENDED ==================================")
-    }
-
-    fun timeout(duration: Long, block: suspend () -> Unit) = timeoutWith(testScope, duration, block)
-
-    companion object {
-        @JvmStatic
-        lateinit var classScope: CoroutineScope
-
-        init {
-            Twig.plant(TroubleshootingTwig())
-            twig("================================================================ INIT")
-        }
-
-        @BeforeClass
-        @JvmStatic
-        fun createScope() {
-            twig("======================= CLASS STARTED ===============================")
-            classScope = CoroutineScope(
-                SupervisorJob() + newFixedThreadPoolContext(2, this.javaClass.simpleName)
-            )
-        }
-
-        @AfterClass
-        @JvmStatic
-        fun destroyScope() = runBlocking<Unit> {
-            twig("======================= CLASS CANCELLING ============================")
-            classScope.cancel()
-            classScope.coroutineContext[Job]?.join()
-            twig("======================= CLASS ENDED =================================")
-        }
-
-        @JvmStatic
-        fun timeoutWith(scope: CoroutineScope, duration: Long, block: suspend () -> Unit) {
-            scope.launch {
-                delay(duration)
-                val message = "ERROR: Test timed out after ${duration}ms"
-                twig(message)
-                throw TimeoutException(message)
-            }.let { selfDestruction ->
-                scope.launch {
-                    block()
-                    selfDestruction.cancel()
-                }
-            }
-        }
-    }
-}
-
-open class DarksideTest(name: String = javaClass.simpleName) : ScopedTest() {
-    val sithLord = DarksideTestCoordinator(host = host, port = port)
-    val validator = sithLord.validator
-
-    fun runOnce(block: () -> Unit) {
-        if (!ranOnce) {
-            sithLord.enterTheDarkside()
-            sithLord.synchronizer.start(classScope)
-            block()
-            ranOnce = true
-        }
-    }
-    companion object {
-        // set the host for all tests. Someday, this will need to be set by CI
-        // so have it read from the environment first and give that precidence
-        var host = "192.168.1.134"
-        val port: Int = 9067
-        private var ranOnce = false
-    }
 }
 
 object BlockExplorer {

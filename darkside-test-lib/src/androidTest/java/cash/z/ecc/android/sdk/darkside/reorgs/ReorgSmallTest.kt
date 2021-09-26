@@ -1,13 +1,16 @@
-package cash.z.ecc.android.sdk.integration.darkside.reorgs
+package cash.z.ecc.android.sdk.darkside.reorgs
 
-import cash.z.ecc.android.sdk.ext.ScopedTest
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import cash.z.ecc.android.sdk.ext.twig
-import cash.z.ecc.android.sdk.util.DarksideTestCoordinator
+import cash.z.ecc.android.sdk.darkside.test.DarksideTestCoordinator
+import cash.z.ecc.android.sdk.darkside.test.ScopedTest
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.BeforeClass
 import org.junit.Test
+import org.junit.runner.RunWith
 
+@RunWith(AndroidJUnit4::class)
 class ReorgSmallTest : ScopedTest() {
 
     private val targetHeight = 663250
@@ -41,7 +44,7 @@ class ReorgSmallTest : ScopedTest() {
 
     companion object {
 
-        private val sithLord = DarksideTestCoordinator("192.168.1.134")
+        private val sithLord = DarksideTestCoordinator()
         private val validator = sithLord.validator
         private var hadReorg = false
 

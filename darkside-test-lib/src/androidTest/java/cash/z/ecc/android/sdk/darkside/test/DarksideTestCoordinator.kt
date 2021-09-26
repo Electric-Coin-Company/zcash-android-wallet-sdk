@@ -1,10 +1,8 @@
-package cash.z.ecc.android.sdk.util
+package cash.z.ecc.android.sdk.darkside.test
 
 import androidx.test.platform.app.InstrumentationRegistry
 import cash.z.ecc.android.sdk.SdkSynchronizer
 import cash.z.ecc.android.sdk.Synchronizer
-import cash.z.ecc.android.sdk.ext.ScopedTest
-import cash.z.ecc.android.sdk.ext.seedPhrase
 import cash.z.ecc.android.sdk.ext.twig
 import cash.z.ecc.android.sdk.type.ZcashNetwork
 import io.grpc.StatusRuntimeException
@@ -24,10 +22,10 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
         alias: String = "DarksideTestCoordinator",
         seedPhrase: String = DEFAULT_SEED_PHRASE,
         startHeight: Int = DEFAULT_START_HEIGHT,
-        host: String = "127.0.0.1",
+        host: String = COMPUTER_LOCALHOST,
         network: ZcashNetwork = ZcashNetwork.Mainnet,
         port: Int = network.defaultPort,
-    ) : this(TestWallet(seedPhrase, alias, network, host, port, startHeight))
+    ) : this(TestWallet(seedPhrase, alias, network, host, startHeight = startHeight, port = port))
 
     private val targetHeight = 663250
     private val context = InstrumentationRegistry.getInstrumentation().context
@@ -88,10 +86,6 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
 //    fun triggerLargeReorg() {
 //        darkside.setBlocksUrl(largeReorg)
 //    }
-
-    fun startSync(scope: CoroutineScope): DarksideTestCoordinator = apply {
-        synchronizer.start(scope)
-    }
 
     // redo this as a call to wallet but add delay time to wallet join() function
     /**
@@ -296,6 +290,12 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
     }
 
     companion object {
+        /**
+         * This is a special localhost value on the Android emulator, which allows it to contact
+         * the localhost of the computer running the emulator.
+         */
+        const val COMPUTER_LOCALHOST = "10.0.2.2"
+
         // Block URLS
         private const val beforeReorg =
             "https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/basic-reorg/before-reorg.txt"
