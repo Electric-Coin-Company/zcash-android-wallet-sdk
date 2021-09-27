@@ -1,11 +1,6 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="publishToMavenLocal" type="GradleRunConfiguration" factoryName="Gradle">
+  <configuration default="false" name="dependencyUpdates" type="GradleRunConfiguration" factoryName="Gradle">
     <ExternalSystemSettings>
-      <option name="env">
-        <map>
-          <entry key="ORG_GRADLE_PROJECT_RELEASE_SIGNING_ENABLED" value="false" />
-        </map>
-      </option>
       <option name="executionName" />
       <option name="externalProjectPath" value="$PROJECT_DIR$" />
       <option name="externalSystemIdString" value="GRADLE" />
@@ -15,7 +10,7 @@
       </option>
       <option name="taskNames">
         <list>
-          <option value="publishToMavenLocal" />
+          <option value="dependencyUpdates" />
         </list>
       </option>
       <option name="vmOptions" value="" />

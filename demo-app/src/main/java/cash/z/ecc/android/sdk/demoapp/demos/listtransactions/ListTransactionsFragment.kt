@@ -8,11 +8,9 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import cash.z.ecc.android.bip39.Mnemonics
 import cash.z.ecc.android.bip39.toSeed
 import cash.z.ecc.android.sdk.Initializer
-import cash.z.ecc.android.sdk.SdkSynchronizer
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor
 import cash.z.ecc.android.sdk.db.entity.ConfirmedTransaction
-import cash.z.ecc.android.sdk.demoapp.App
 import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
 import cash.z.ecc.android.sdk.demoapp.databinding.FragmentListTransactionsBinding
 import cash.z.ecc.android.sdk.demoapp.ext.requireApplicationContext
@@ -36,7 +34,6 @@ class ListTransactionsFragment : BaseDemoFragment<FragmentListTransactionsBindin
     private lateinit var address: String
     private var status: Synchronizer.Status? = null
     private val isSynced get() = status == Synchronizer.Status.SYNCED
-
 
     /**
      * Initialize the required values that would normally live outside the demo but are repeated
@@ -73,7 +70,6 @@ class ListTransactionsFragment : BaseDemoFragment<FragmentListTransactionsBindin
         synchronizer.clearedTransactions.collectWith(lifecycleScope, ::onTransactionsUpdated)
     }
 
-
     //
     // Change listeners
     //
@@ -107,7 +103,7 @@ class ListTransactionsFragment : BaseDemoFragment<FragmentListTransactionsBindin
                     visibility = View.VISIBLE
                     text =
                         "No transactions found. Try to either change the seed words " +
-                                "or send funds to this address (tap the FAB to copy it):\n\n $address"
+                        "or send funds to this address (tap the FAB to copy it):\n\n $address"
                 } else {
                     visibility = View.INVISIBLE
                     text = ""
@@ -115,7 +111,6 @@ class ListTransactionsFragment : BaseDemoFragment<FragmentListTransactionsBindin
             }
         }
     }
-
 
     //
     // Android Lifecycle overrides
@@ -138,7 +133,6 @@ class ListTransactionsFragment : BaseDemoFragment<FragmentListTransactionsBindin
         monitorChanges()
     }
 
-
     //
     // Base Fragment overrides
     //
@@ -149,5 +143,4 @@ class ListTransactionsFragment : BaseDemoFragment<FragmentListTransactionsBindin
 
     override fun inflateBinding(layoutInflater: LayoutInflater): FragmentListTransactionsBinding =
         FragmentListTransactionsBinding.inflate(layoutInflater)
-
 }

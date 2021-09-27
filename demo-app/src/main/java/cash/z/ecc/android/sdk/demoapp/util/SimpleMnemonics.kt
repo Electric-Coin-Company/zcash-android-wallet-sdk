@@ -6,7 +6,7 @@ import cash.z.ecc.android.bip39.Mnemonics.MnemonicCode
 import cash.z.ecc.android.bip39.Mnemonics.WordCount
 import cash.z.ecc.android.bip39.toEntropy
 import cash.z.ecc.android.bip39.toSeed
-import java.util.*
+import java.util.Locale
 
 /**
  * A sample implementation of a plugin for handling Mnemonic phrases. Any library can easily be

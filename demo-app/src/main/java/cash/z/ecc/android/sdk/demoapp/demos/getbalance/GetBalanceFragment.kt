@@ -2,14 +2,12 @@ package cash.z.ecc.android.sdk.demoapp.demos.getbalance
 
 import android.os.Bundle
 import android.view.LayoutInflater
-import android.view.View
 import androidx.lifecycle.lifecycleScope
 import cash.z.ecc.android.bip39.Mnemonics
 import cash.z.ecc.android.bip39.toSeed
 import cash.z.ecc.android.sdk.Initializer
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor
-import cash.z.ecc.android.sdk.demoapp.App
 import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
 import cash.z.ecc.android.sdk.demoapp.databinding.FragmentGetBalanceBinding
 import cash.z.ecc.android.sdk.demoapp.ext.requireApplicationContext
@@ -48,12 +46,12 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
         val viewingKey = DerivationTool.deriveUnifiedViewingKeys(seed, ZcashNetwork.fromResources(requireApplicationContext())).first()
 
         // using the ViewingKey to initialize
-            Initializer(requireApplicationContext()) {
-                it.setNetwork(ZcashNetwork.fromResources(requireApplicationContext()))
-                it.importWallet(viewingKey, network = ZcashNetwork.fromResources(requireApplicationContext()))
-            }.let { initializer ->
-                synchronizer = Synchronizer(initializer)
-            }
+        Initializer(requireApplicationContext()) {
+            it.setNetwork(ZcashNetwork.fromResources(requireApplicationContext()))
+            it.importWallet(viewingKey, network = ZcashNetwork.fromResources(requireApplicationContext()))
+        }.let { initializer ->
+            synchronizer = Synchronizer(initializer)
+        }
     }
 
     override fun onResume() {
@@ -71,13 +69,11 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
     }
 
     private fun onBalance(balance: WalletBalance) {
-            binding.textBalance.text = """
+        binding.textBalance.text = """
                 Available balance: ${balance.availableZatoshi.convertZatoshiToZecString(12)}
                 Total balance: ${balance.totalZatoshi.convertZatoshiToZecString(12)}
-            """.trimIndent()
-
+        """.trimIndent()
     }
-
 
     private fun onStatus(status: Synchronizer.Status) {
         binding.textStatus.text = "Status: $status"
@@ -97,9 +93,10 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
     /**
      * Extension function which checks if the balance has been updated or its -1
      */
-    private fun WalletBalance.none(): Boolean{
-        if(synchronizer.saplingBalances.value.totalZatoshi == -1L
-            && synchronizer.saplingBalances.value.availableZatoshi == -1L) return true
+    private fun WalletBalance.none(): Boolean {
+        if (synchronizer.saplingBalances.value.totalZatoshi == -1L &&
+            synchronizer.saplingBalances.value.availableZatoshi == -1L
+        ) return true
         return false
     }
 

@@ -3,11 +3,11 @@ package cash.z.ecc.android.sdk.demoapp.demos.listutxos
 import android.view.View
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import cash.z.ecc.android.sdk.demoapp.R
 import cash.z.ecc.android.sdk.db.entity.ConfirmedTransaction
+import cash.z.ecc.android.sdk.demoapp.R
 import cash.z.ecc.android.sdk.ext.convertZatoshiToZecString
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Locale
 
 /**
  * Simple view holder for displaying confirmed transactions in the recyclerview.

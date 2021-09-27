@@ -1,18 +1,17 @@
 package cash.z.ecc.android.sdk.sample.demoapp
 
 import androidx.test.platform.app.InstrumentationRegistry
-import cash.z.ecc.android.sdk.Initializer
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.entity.isFailure
-import cash.z.ecc.android.sdk.transaction.*
-import cash.z.ecc.android.sdk.ext.*
+import cash.z.ecc.android.sdk.ext.TroubleshootingTwig
+import cash.z.ecc.android.sdk.ext.Twig
+import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.jni.RustBackend
 import cash.z.ecc.android.sdk.service.LightWalletGrpcService
-import kotlinx.coroutines.cancel
+import cash.z.ecc.android.sdk.transaction.PagedTransactionRepository
+import cash.z.ecc.android.sdk.transaction.WalletTransactionEncoder
 import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
-import org.junit.Assert.*
 import org.junit.BeforeClass
 import org.junit.Ignore
 import org.junit.Test
@@ -45,8 +44,7 @@ class SampleCodeTest {
         // log(entropy.asSeedPhrase())
     }
 
-
-    /////////////////////////////////////////////////////
+    // ///////////////////////////////////////////////////
     // Derive Extended Spending Key
     @Test fun deriveSpendingKey() {
         val spendingKeys = RustBackend().deriveSpendingKeys(seed)
@@ -54,7 +52,7 @@ class SampleCodeTest {
         log("Spending Key: ${spendingKeys?.get(0)}")
     }
 
-    /////////////////////////////////////////////////////
+    // ///////////////////////////////////////////////////
     // Get Address
     @Test fun getAddress() = runBlocking {
         val address = synchronizer.getAddress()
@@ -62,10 +60,9 @@ class SampleCodeTest {
         log("Address: $address")
     }
 
-    /////////////////////////////////////////////////////
+    // ///////////////////////////////////////////////////
     // Derive address from Extended Full Viewing Key
     @Test fun getAddressFromViewingKey() {
-
     }
 
     // ///////////////////////////////////////////////////
@@ -91,13 +88,11 @@ class SampleCodeTest {
     // ///////////////////////////////////////////////////
     // Query account outgoing transactions
     @Test fun queryOutgoingTransactions() {
-
     }
 
     // ///////////////////////////////////////////////////
     // Query account incoming transactions
     @Test fun queryIncomingTransactions() {
-
     }
 
     // ///////////////////////////////////////////////////
@@ -131,10 +126,9 @@ class SampleCodeTest {
         }
     }
 
-
-    ///////////////////////////////////////////////////////
+    // /////////////////////////////////////////////////////
     // Utility Functions
-    //////////////////////////////////////////////////////
+    // ////////////////////////////////////////////////////
 
     companion object {
         private val seed = "Insert seed for testing".toByteArray()

@@ -60,7 +60,6 @@ class GetAddressFragment : BaseDemoFragment<FragmentGetAddressBinding>() {
         displayAddress()
     }
 
-
     //
     // Base Fragment overrides
     //
@@ -74,5 +73,4 @@ class GetAddressFragment : BaseDemoFragment<FragmentGetAddressBinding>() {
 
     override fun inflateBinding(layoutInflater: LayoutInflater): FragmentGetAddressBinding =
         FragmentGetAddressBinding.inflate(layoutInflater)
-
 }

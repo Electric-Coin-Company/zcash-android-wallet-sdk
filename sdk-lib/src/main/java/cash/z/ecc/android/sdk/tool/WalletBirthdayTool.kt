@@ -10,6 +10,7 @@ import com.google.gson.Gson
 import com.google.gson.stream.JsonReader
 import java.io.IOException
 import java.io.InputStreamReader
+import java.util.Locale
 
 /**
  * Tool for loading checkpoints for the wallet, based on the height at which the wallet was born.
@@ -73,7 +74,7 @@ class WalletBirthdayTool(appContext: Context) {
          */
         @VisibleForTesting
         internal fun birthdayDirectory(network: ZcashNetwork) =
-            "saplingtree/${network.networkName.lowercase()}"
+            "saplingtree/${(network.networkName as java.lang.String).toLowerCase(Locale.US)}"
 
         internal fun birthdayHeight(fileName: String) = fileName.split('.').first().toInt()
 

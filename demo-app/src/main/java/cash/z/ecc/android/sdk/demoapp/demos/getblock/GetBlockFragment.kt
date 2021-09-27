@@ -52,7 +52,6 @@ class GetBlockFragment : BaseDemoFragment<FragmentGetBlockBinding>() {
         onApply()
     }
 
-
     //
     // Android Lifecycle overrides
     //
@@ -67,7 +66,6 @@ class GetBlockFragment : BaseDemoFragment<FragmentGetBlockBinding>() {
             loadNext(1)
         }
     }
-
 
     //
     // Base Fragment overrides

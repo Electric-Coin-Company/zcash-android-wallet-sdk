@@ -18,7 +18,6 @@ class GetLatestHeightFragment : BaseDemoFragment<FragmentGetLatestHeightBinding>
         binding.textInfo.text = lightwalletService?.getLatestBlockHeight().toString()
     }
 
-
     //
     // Android Lifecycle overrides
     //
@@ -27,7 +26,6 @@ class GetLatestHeightFragment : BaseDemoFragment<FragmentGetLatestHeightBinding>
         super.onResume()
         displayLatestHeight()
     }
-
 
     //
     // Base Fragment overrides

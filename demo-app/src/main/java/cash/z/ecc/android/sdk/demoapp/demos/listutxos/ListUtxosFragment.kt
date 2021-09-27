@@ -12,7 +12,6 @@ import cash.z.ecc.android.sdk.SdkSynchronizer
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor
 import cash.z.ecc.android.sdk.db.entity.ConfirmedTransaction
-import cash.z.ecc.android.sdk.demoapp.App
 import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
 import cash.z.ecc.android.sdk.demoapp.DemoConstants
 import cash.z.ecc.android.sdk.demoapp.databinding.FragmentListUtxosBinding
@@ -27,7 +26,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-
 
 /**
  * ===============================================================================================
@@ -159,7 +157,6 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
         binding.inputAddress.setText(DerivationTool.deriveTransparentAddress(seed, ZcashNetwork.fromResources(requireApplicationContext())))
     }
 
-
     var initialCount: Int = 0
     var finalCount: Int = 0
     fun resetInBackground() {
@@ -193,12 +190,11 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
         adapter = UtxoAdapter()
         binding.recyclerTransactions.adapter = adapter
 //        lifecycleScope.launch {
-////            address = synchronizer.getAddress()
+// //            address = synchronizer.getAddress()
 //            synchronizer.receivedTransactions.onEach {
 //                onTransactionsUpdated(it)
 //            }.launchIn(this)
 //        }
-
     }
 
     private fun startSynchronizer() {

@@ -1,19 +1,15 @@
 package cash.z.ecc.android.sdk.demoapp.demos.listtransactions
 
-import android.content.res.ColorStateList
 import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
-import androidx.annotation.ColorRes
 import androidx.core.content.ContextCompat
-import androidx.core.content.res.ResourcesCompat
 import androidx.recyclerview.widget.RecyclerView
 import cash.z.ecc.android.sdk.db.entity.ConfirmedTransaction
-import cash.z.ecc.android.sdk.demoapp.App
 import cash.z.ecc.android.sdk.demoapp.R
 import cash.z.ecc.android.sdk.ext.convertZatoshiToZecString
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Locale
 
 /**
  * Simple view holder for displaying confirmed transactions in the recyclerview.

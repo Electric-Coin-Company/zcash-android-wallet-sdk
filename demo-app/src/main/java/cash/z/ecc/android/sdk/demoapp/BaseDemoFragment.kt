@@ -12,8 +12,6 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.viewbinding.ViewBinding
 import cash.z.ecc.android.sdk.demoapp.util.mainActivity
-import cash.z.ecc.android.sdk.ext.TroubleshootingTwig
-import cash.z.ecc.android.sdk.ext.Twig
 import com.google.android.material.snackbar.Snackbar
 
 abstract class BaseDemoFragment<T : ViewBinding> : Fragment() {
@@ -24,11 +22,11 @@ abstract class BaseDemoFragment<T : ViewBinding> : Fragment() {
      * synchronizer because it wraps the service.
      */
     val lightwalletService get() = mainActivity()?.lightwalletService
-    
+
     // contains view information provided by the user
     val sharedViewModel: SharedViewModel by activityViewModels()
     lateinit var binding: T
-    
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,

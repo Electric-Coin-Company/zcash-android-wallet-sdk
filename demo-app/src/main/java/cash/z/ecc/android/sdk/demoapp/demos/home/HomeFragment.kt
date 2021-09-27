@@ -5,17 +5,11 @@ import android.graphics.Color
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
-import android.view.ViewGroup
-import androidx.fragment.app.Fragment
-import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
-import cash.z.ecc.android.sdk.demoapp.App
 import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
-import cash.z.ecc.android.sdk.demoapp.SharedViewModel
 import cash.z.ecc.android.sdk.demoapp.databinding.FragmentHomeBinding
 import cash.z.ecc.android.sdk.demoapp.util.mainActivity
-import cash.z.ecc.android.sdk.ext.twig
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
@@ -121,4 +115,3 @@ class HomeFragment : BaseDemoFragment<FragmentHomeBinding>() {
         }
     }
 }
-
