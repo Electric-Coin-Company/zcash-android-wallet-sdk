@@ -1,8 +1,8 @@
-package cash.z.ecc.android.sdk.integration.darkside // package cash.z.ecc.android.sdk.integration
+package cash.z.ecc.android.sdk.darkside // package cash.z.ecc.android.sdk.integration
 //
-// import cash.z.ecc.android.sdk.ext.ScopedTest
+// import cash.z.ecc.android.sdk.test.ScopedTest
 // import cash.z.ecc.android.sdk.ext.twigTask
-// import cash.z.ecc.android.sdk.util.DarksideTestCoordinator
+// import cash.z.ecc.android.sdk.darkside.test.DarksideTestCoordinator
 // import kotlinx.coroutines.runBlocking
 // import org.junit.BeforeClass
 // import org.junit.Test
@@ -73,7 +73,7 @@ package cash.z.ecc.android.sdk.integration.darkside // package cash.z.ecc.androi
 //
 //
 //    companion object {
-//        private val sithLord = DarksideTestCoordinator("192.168.1.134")
+//        private val sithLord = DarksideTestCoordinator()
 //        private val secondAddress = "zs15tzaulx5weua5c7l47l4pku2pw9fzwvvnsp4y80jdpul0y3nwn5zp7tmkcclqaca3mdjqjkl7hx"
 //        private val secondKey = "zxviews1q0w208wwqqqqpqyxp978kt2qgq5gcyx4er907zhczxpepnnhqn0a47ztefjnk65w2573v7g5fd3hhskrg7srpxazfvrj4n2gm4tphvr74a9xnenpaxy645dmuqkevkjtkf5jld2f7saqs3xyunwquhksjpqwl4zx8zj73m8gk2d5d30pck67v5hua8u3chwtxyetmzjya8jdjtyn2aum7au0agftfh5q9m4g596tev9k365s84jq8n3laa5f4palt330dq0yede053sdyfv6l"
 //

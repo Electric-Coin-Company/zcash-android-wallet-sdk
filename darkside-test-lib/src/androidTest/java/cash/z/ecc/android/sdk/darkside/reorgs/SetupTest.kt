@@ -1,13 +1,16 @@
-package cash.z.ecc.android.sdk.integration.darkside.reorgs
+package cash.z.ecc.android.sdk.darkside.reorgs
 
-import cash.z.ecc.android.sdk.ext.ScopedTest
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import cash.z.ecc.android.sdk.ext.toHex
-import cash.z.ecc.android.sdk.util.DarksideTestCoordinator
-import cash.z.ecc.android.sdk.util.SimpleMnemonics
+import cash.z.ecc.android.sdk.darkside.test.DarksideTestCoordinator
+import cash.z.ecc.android.sdk.darkside.test.ScopedTest
+import cash.z.ecc.android.sdk.darkside.test.SimpleMnemonics
 import org.junit.Assert.assertEquals
 import org.junit.Ignore
 import org.junit.Test
+import org.junit.runner.RunWith
 
+@RunWith(AndroidJUnit4::class)
 class SetupTest : ScopedTest() {
 
 //    @Test

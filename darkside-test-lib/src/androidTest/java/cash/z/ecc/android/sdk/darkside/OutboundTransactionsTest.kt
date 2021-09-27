@@ -1,7 +1,7 @@
-package cash.z.ecc.android.sdk.integration.darkside // package cash.z.ecc.android.sdk.integration
+package cash.z.ecc.android.sdk.darkside // package cash.z.ecc.android.sdk.integration
 //
-// import cash.z.ecc.android.sdk.ext.ScopedTest
-// import cash.z.ecc.android.sdk.util.DarksideTestCoordinator
+// import cash.z.ecc.android.sdk.test.ScopedTest
+// import cash.z.ecc.android.sdk.darkside.test.DarksideTestCoordinator
 // import org.junit.Before
 // import org.junit.BeforeClass
 // import org.junit.Test

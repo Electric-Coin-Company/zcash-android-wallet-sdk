@@ -1,17 +1,16 @@
-package cash.z.ecc.android.sdk.integration.darkside
+package cash.z.ecc.android.sdk.darkside
 
-import cash.z.ecc.android.sdk.annotation.MaintainedTest
-import cash.z.ecc.android.sdk.annotation.TestPurpose.DARKSIDE
-import cash.z.ecc.android.sdk.annotation.TestPurpose.REGRESSION
-import cash.z.ecc.android.sdk.ext.DarksideTest
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import cash.z.ecc.android.sdk.darkside.test.DarksideTest
 import org.junit.Before
 import org.junit.Ignore
 import org.junit.Test
+import org.junit.runner.RunWith
 
 /**
  * Integration test to run in order to catch any regressions in transparent behavior.
  */
-@MaintainedTest(DARKSIDE, REGRESSION)
+@RunWith(AndroidJUnit4::class)
 class TransparentIntegrationTest : DarksideTest() {
     @Before
     fun setup() = runOnce {

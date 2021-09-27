@@ -1,13 +1,13 @@
-package cash.z.ecc.android.sdk.integration.darkside.reorgs // package cash.z.ecc.android.sdk.integration
+package cash.z.ecc.android.sdk.darkside.reorgs // package cash.z.ecc.android.sdk.integration
 //
 // import androidx.test.platform.app.InstrumentationRegistry
 // import cash.z.ecc.android.sdk.Initializer
 // import cash.z.ecc.android.sdk.SdkSynchronizer
 // import cash.z.ecc.android.sdk.Synchronizer
-// import cash.z.ecc.android.sdk.ext.ScopedTest
+// import cash.z.ecc.android.sdk.test.ScopedTest
 // import cash.z.ecc.android.sdk.ext.import
 // import cash.z.ecc.android.sdk.ext.twig
-// import cash.z.ecc.android.sdk.util.DarksideApi
+// import cash.z.ecc.android.sdk.darkside.test.DarksideApi
 // import io.grpc.StatusRuntimeException
 // import kotlinx.coroutines.delay
 // import kotlinx.coroutines.flow.filter
@@ -109,7 +109,6 @@ package cash.z.ecc.android.sdk.integration.darkside.reorgs // package cash.z.ecc
 //        get() = (synchronizer as SdkSynchronizer).processor.downloader.lightwalletService
 //
 //    companion object {
-//        private const val host = "192.168.1.134"
 //        private const val port = 9067
 //        private const val birthdayHeight = 663150
 //        private const val targetHeight = 663200
