@@ -238,8 +238,6 @@ class CompactBlockProcessor(
     }
 
     /**
-     * Process new blocks returning false whenever an error was found.
-     *
      * @return -1 when processing was successful and did not encounter errors during validation or scanning. Otherwise
      * return the block height where an error was found.
      */
