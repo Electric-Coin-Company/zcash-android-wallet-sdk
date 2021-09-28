@@ -16,6 +16,12 @@ android {
         jvmTarget = libs.versions.java.get()
         allWarningsAsErrors = project.property("IS_TREAT_WARNINGS_AS_ERRORS").toString().toBoolean()
     }
+
+    packagingOptions {
+        resources.excludes.addAll(
+            listOf("META-INF/AL2.0", "META-INF/LGPL2.1",)
+        )
+    }
 }
 
 dependencies {
@@ -27,6 +33,7 @@ dependencies {
     implementation(libs.bundles.grpc)
 
     androidTestImplementation(libs.bundles.androidx.test)
+    androidTestImplementation(libs.kotlinx.coroutines.test)
 
     androidTestImplementation(libs.zcashwalletplgn)
     androidTestImplementation(libs.bip39)

@@ -81,16 +81,18 @@ android {
     packagingOptions {
         resources.excludes.addAll(
             listOf(
+                "META-INF/AL2.0",
+                "META-INF/ASL2.0",
                 "META-INF/DEPENDENCIES",
+                "META-INF/LGPL2.1",
                 "META-INF/LICENSE",
+                "META-INF/LICENSE-notice.md",
+                "META-INF/LICENSE.md",
                 "META-INF/LICENSE.txt",
-                "META-INF/license.txt",
                 "META-INF/NOTICE",
                 "META-INF/NOTICE.txt",
+                "META-INF/license.txt",
                 "META-INF/notice.txt",
-                "META-INF/ASL2.0",
-                "META-INF/LICENSE.md",
-                "META-INF/LICENSE-notice.md"
             )
         )
     }
