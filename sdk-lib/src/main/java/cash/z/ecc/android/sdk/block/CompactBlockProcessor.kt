@@ -727,8 +727,8 @@ class CompactBlockProcessor(
     }
 
     private fun determineLowerBound(errorHeight: Int): Int {
-        val offset = Math.min(MAX_REORG_SIZE, REWIND_DISTANCE * (consecutiveChainErrors.get() + 1))
-        return Math.max(errorHeight - offset, lowerBoundHeight).also {
+        val offset = min(MAX_REORG_SIZE, REWIND_DISTANCE * (consecutiveChainErrors.get() + 1))
+        return max(errorHeight - offset, lowerBoundHeight).also {
             twig("offset = min($MAX_REORG_SIZE, $REWIND_DISTANCE * (${consecutiveChainErrors.get() + 1})) = $offset")
             twig("lowerBound = max($errorHeight - $offset, $lowerBoundHeight) = $it")
         }
