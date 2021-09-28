@@ -30,4 +30,13 @@ dependencies {
 
     androidTestImplementation(libs.zcashwalletplgn)
     androidTestImplementation(libs.bip39)
+
+    // Need to figure out the right syntax to move this into build-conventions
+    if (project.property("IS_USE_TEST_ORCHESTRATOR").toString().toBoolean()) {
+        androidTestUtil(libs.androidx.testOrchestrator) {
+            artifact {
+                type = "apk"
+            }
+        }
+    }
 }

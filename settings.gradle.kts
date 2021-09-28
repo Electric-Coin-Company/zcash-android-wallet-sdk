@@ -47,7 +47,7 @@ dependencyResolutionManagement {
             val androidxPagingVersion = extra["ANDROIDX_PAGING_VERSION"].toString()
             val androidxRoomVersion = extra["ANDROIDX_ROOM_VERSION"].toString()
             val androidxTestJunitVersion = extra["ANDROIDX_TEST_JUNIT_VERSION"].toString()
-            val androidxTestOrchestratorVersion = extra["ANDROIDX_ESPRESSO_VERSION"].toString()
+            val androidxTestOrchestratorVersion = extra["ANDROIDX_TEST_ORCHESTRATOR_VERSION"].toString()
             val androidxTestVersion = extra["ANDROIDX_TEST_VERSION"].toString()
             val androidxUiAutomatorVersion = extra["ANDROIDX_UI_AUTOMATOR_VERSION"].toString()
             val bip39Version = extra["BIP39_VERSION"].toString()
