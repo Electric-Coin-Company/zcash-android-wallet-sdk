@@ -37,7 +37,7 @@ class InboundTxTests : ScopedTest() {
         twig("ADDING TRANSACTIONS!!!")
         // add 2 transactions to block 663188 and 'mine' that block
         addTransactions(targetTxBlock, tx663174, tx663188)
-        sithLord.await(timeout = 30_000L, targetHeight = targetTxBlock)
+        sithLord.await(targetHeight = targetTxBlock)
         validator.validateTxCount(2)
     }
 

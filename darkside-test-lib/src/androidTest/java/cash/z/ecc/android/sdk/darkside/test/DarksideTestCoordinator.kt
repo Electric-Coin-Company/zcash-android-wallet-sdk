@@ -1,34 +1,25 @@
 package cash.z.ecc.android.sdk.darkside.test
 
-import androidx.test.platform.app.InstrumentationRegistry
 import cash.z.ecc.android.sdk.SdkSynchronizer
 import cash.z.ecc.android.sdk.Synchronizer
+import cash.z.ecc.android.sdk.darkside.fixture.FixtureTransaction
 import cash.z.ecc.android.sdk.ext.twig
 import cash.z.ecc.android.sdk.type.ZcashNetwork
 import io.grpc.StatusRuntimeException
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import org.junit.Assert
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import kotlin.time.Duration
+import kotlin.time.ExperimentalTime
 
-class DarksideTestCoordinator(val wallet: TestWallet) {
-    constructor(
-        alias: String = "DarksideTestCoordinator",
-        seedPhrase: String = DEFAULT_SEED_PHRASE,
-        startHeight: Int = DEFAULT_START_HEIGHT,
-        host: String = COMPUTER_LOCALHOST,
-        network: ZcashNetwork = ZcashNetwork.Mainnet,
-        port: Int = network.defaultPort,
-    ) : this(TestWallet(seedPhrase, alias, network, host, startHeight = startHeight, port = port))
-
-    private val targetHeight = 663250
-    private val context = InstrumentationRegistry.getInstrumentation().context
+class DarksideTestCoordinator(val wallet: TestWallet = newDarksideTestWallet()) {
 
     // dependencies: private
     private lateinit var darkside: DarksideApi
@@ -47,11 +38,13 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
     /**
      * Setup dependencies, including the synchronizer and the darkside API connection
      */
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun enterTheDarkside(): DarksideTestCoordinator = runBlocking {
         // verify that we are on the darkside
         try {
             twig("entering the darkside")
-            initiate()
+            darkside = DarksideApi(synchronizer.channel)
+            darkside.reset()
             synchronizer.getServerInfo().apply {
                 assertTrue(
                     "Error: not on the darkside",
@@ -63,21 +56,19 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
         } catch (error: StatusRuntimeException) {
             Assert.fail(
                 "Error while fetching server status. Testing cannot begin due to:" +
-                    " ${error.message} Caused by: ${error.cause} Verify that the server is running!"
+                        " ${error.message} Caused by: ${error.cause} Verify that the server is running! Please see https://github.com/zcash/zcash-android-wallet-sdk/blob/master/docs/tests/Darkside.md"
             )
         }
         this@DarksideTestCoordinator
     }
 
-    /**
-     * Setup the synchronizer and darksidewalletd with their initial state
-     */
-    fun initiate() {
-        twig("*************** INITIALIZING TEST COORDINATOR (ONLY ONCE) ***********************")
-        val channel = synchronizer.channel
-        darkside = DarksideApi(channel)
-        darkside.reset()
-    }
+    fun reset(
+        saplingActivationHeight: Int,
+        branchId: String,
+        chainName: String
+    ) = darkside.reset(saplingActivationHeight, branchId, chainName)
+
+    fun stageBlocks(url: String) = darkside.stageBlocks(url)
 
 //    fun triggerSmallReorg() {
 //        darkside.setBlocksUrl(smallReorg)
@@ -92,8 +83,9 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
      * Waits for, at most, the given amount of time for the synchronizer to download and scan blocks
      * and reach a 'SYNCED' status.
      */
-    fun await(timeout: Long = 60_000L, targetHeight: Int = -1) = runBlocking {
-        ScopedTest.timeoutWith(this, timeout) {
+    @OptIn(ExperimentalTime::class)
+    fun await(timeout: Duration = Duration.seconds(15), targetHeight: Int = -1) = runBlocking {
+        withTimeout(timeout) {
             twig("***  Waiting up to ${timeout / 1_000}s for sync ***")
             synchronizer.status.onEach {
                 twig("got processor status $it")
@@ -111,7 +103,10 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
                 } else {
                     it
                 }
-            }.filter { it == Synchronizer.Status.SYNCED }.first()
+            }.filter {
+                it == Synchronizer.Status.SYNCED
+            }.first()
+
             twig("***  Done waiting for sync! ***")
         }
     }
@@ -129,11 +124,6 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
 //
 //        wallet.send(toAddress, memo, zatoshi, fromAccountIndex)
 //    }
-
-    fun stall(delay: Long = 5000L) = runBlocking {
-        twig("***  Stalling for ${delay}ms ***")
-        delay(delay)
-    }
 
     //
     // Validation
@@ -241,6 +231,9 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
             applyTipHeight(tipHeight)
         }
 
+        fun stageTransaction(transaction: FixtureTransaction) =
+            stageTransaction(transaction.url, transaction.height)
+
         fun stageTransaction(url: String, targetHeight: Int): DarksideChainMaker = apply {
             darkside.stageTransactions(url, targetHeight)
         }
@@ -306,5 +299,24 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
         private const val DEFAULT_START_HEIGHT = 663150
         private const val DEFAULT_SEED_PHRASE =
             "still champion voice habit trend flight survey between bitter process artefact blind carbon truly provide dizzy crush flush breeze blouse charge solid fish spread"
+
+        /**
+         * @return A wallet appropriate for passing into [DarksideTestCoordinator].
+         */
+        fun newDarksideTestWallet(
+            alias: String = "DarksideTestCoordinator",
+            seedPhrase: String = DEFAULT_SEED_PHRASE,
+            startHeight: Int = DEFAULT_START_HEIGHT,
+            host: String = COMPUTER_LOCALHOST,
+            network: ZcashNetwork = ZcashNetwork.Mainnet,
+            port: Int = network.defaultPort,
+        ) = TestWallet(
+            seedPhrase,
+            alias,
+            network,
+            host,
+            startHeight = startHeight,
+            port = port
+        )
     }
 }
