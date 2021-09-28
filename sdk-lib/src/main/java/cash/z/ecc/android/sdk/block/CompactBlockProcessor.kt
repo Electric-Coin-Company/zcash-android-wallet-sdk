@@ -118,6 +118,10 @@ class CompactBlockProcessor(
     private val consecutiveChainErrors = AtomicInteger(0)
     private val lowerBoundHeight: Int = max(rustBackend.network.saplingActivationHeight, minimumHeight - MAX_REORG_SIZE)
 
+    init {
+        twig("lowerBoundHeight=$lowerBoundHeight")
+    }
+
     private val _state: ConflatedBroadcastChannel<State> = ConflatedBroadcastChannel(Initialized)
     private val _progress = ConflatedBroadcastChannel(0)
     private val _processorInfo = ConflatedBroadcastChannel(ProcessorInfo())
@@ -242,7 +246,7 @@ class CompactBlockProcessor(
      * return the block height where an error was found.
      */
     private suspend fun processNewBlocks(): Int = withContext(IO) {
-        twig("beginning to process new blocks (with lower bound: $lowerBoundHeight)...", -1)
+        twig("beginning to process new blocks (with lower bound: $lowerBoundHeight)...")
 
         if (!updateRanges()) {
             twig("Disconnection detected! Attempting to reconnect!")
@@ -268,6 +272,7 @@ class CompactBlockProcessor(
      * @return true when the update succeeds.
      */
     private suspend fun updateRanges(): Boolean = withContext(IO) {
+        twig("Update ranges lowerBoundHeight $lowerBoundHeight")
         try {
             // TODO: rethink this and make it easier to understand what's happening. Can we reduce this
             // so that we only work with actual changing info rather than periodic snapshots? Do we need
@@ -277,6 +282,7 @@ class CompactBlockProcessor(
                 lastScannedHeight = getLastScannedHeight(),
                 lastDownloadedHeight = max(getLastDownloadedHeight(), lowerBoundHeight - 1)
             ).let { initialInfo ->
+                twig("initial info $initialInfo and birthdayHeight $birthdayHeight")
                 updateProgress(
                     networkBlockHeight = initialInfo.networkBlockHeight,
                     lastScannedHeight = initialInfo.lastScannedHeight,
@@ -483,7 +489,7 @@ class CompactBlockProcessor(
         } else {
             _state.send(Downloading)
             Twig.sprout("downloading")
-            twig("downloading blocks in range $range", -1)
+            twig("downloading blocks in range $range")
 
             var downloadedBlockHeight = range.first
             val missingBlockCount = range.last - range.first + 1
@@ -504,6 +510,7 @@ class CompactBlockProcessor(
                     progress = (i / batches.toFloat() * 100).roundToInt()
                     _progress.send(progress)
                     val lastDownloadedHeight = downloader.getLastDownloadedHeight().takeUnless { it < network.saplingActivationHeight } ?: -1
+                    twig("Download new blocks")
                     updateProgress(lastDownloadedHeight = lastDownloadedHeight)
                     downloadedBlockHeight = end
                 }
@@ -568,6 +575,7 @@ class CompactBlockProcessor(
                     twig("batch scanned ($percent%): $lastScannedHeight/${range.last} | ${metrics.batchTime}ms, ${metrics.batchItems}blks, ${metrics.batchIps.format()}bps")
                     if (currentInfo.lastScannedHeight != lastScannedHeight) {
                         scannedNewBlocks = true
+                        twig("Scan new blocks")
                         updateProgress(lastScannedHeight = lastScannedHeight)
                     }
                     // if we made progress toward our scan, then keep trying
@@ -611,6 +619,7 @@ class CompactBlockProcessor(
             lastDownloadRange = lastDownloadRange
         )
         _networkHeight.value = networkBlockHeight
+        twig("Update progress: networkBlockHeight $networkBlockHeight, currentInfo $currentInfo")
         _processorInfo.send(currentInfo)
     }
 
@@ -666,6 +675,7 @@ class CompactBlockProcessor(
                 downloader.rewindToHeight(targetHeight)
                 // communicate that the wallet is no longer synced because it might remain this way for 20+ seconds because we only download on 20s time boundaries so we can't trigger any immediate action
                 setState(Downloading)
+                twig("Rewind to nearest height")
                 updateProgress(
                     lastScannedHeight = targetHeight,
                     lastDownloadedHeight = targetHeight,
@@ -674,6 +684,7 @@ class CompactBlockProcessor(
                 )
                 _progress.send(0)
             } else {
+                twig("Rewind to nearest height")
                 updateProgress(
                     lastScannedHeight = targetHeight,
                     lastScanRange = (targetHeight + 1)..currentInfo.networkBlockHeight,
