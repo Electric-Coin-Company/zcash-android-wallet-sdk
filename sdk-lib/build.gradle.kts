@@ -152,6 +152,13 @@ cargo {
         "x86",
         "x86_64"
     )
+    apiLevels = mapOf(
+        "arm" to 16,
+        "arm64" to 21,
+        "x86" to 16,
+        "x86_64" to 21,
+    )
+
     profile = "release"
     prebuiltToolchains = true
 }
@@ -222,11 +229,22 @@ dependencies {
     androidTestImplementation(libs.bip39)
 }
 
-tasks.getByName("preBuild").dependsOn(tasks.create("bugfixTask") {
-    doFirst {
-        mkdir("build/extracted-include-protos/main")
-    }
-})
+tasks {
+    getByName("preBuild").dependsOn(create("bugfixTask") {
+        doFirst {
+            mkdir("build/extracted-include-protos/main")
+        }
+    })
+
+    /*
+     * The Mozilla Rust Gradle plugin caches the native build data under the "target" directory,
+     * which does not normally get deleted during a clean. The following task and dependency solves
+     * that.
+     */
+    getByName<Delete>("clean").dependsOn(create<Delete>("cleanRustBuildOutput") {
+        delete("target")
+    })
+}
 
 project.afterEvaluate {
     val cargoTask = tasks.getByName("cargoBuild")
@@ -234,4 +252,5 @@ project.afterEvaluate {
     tasks.getByName("javaPreCompileRelease").dependsOn(cargoTask)
 }
 
-fun MinimalExternalModuleDependency.asCoordinateString() = "${module.group}:${module.name}:${versionConstraint.displayName}"
+fun MinimalExternalModuleDependency.asCoordinateString() =
+    "${module.group}:${module.name}:${versionConstraint.displayName}"
