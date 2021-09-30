@@ -164,7 +164,7 @@ In the event that you *do* want to compile the SDK from sources, follow these st
 rustup target add armv7-linux-androideabi aarch64-linux-android i686-linux-android x86_64-linux-android
 ```
 3. Clone this repo 
-4. [Install Android Studio](https://developer.android.com/studio/install) and open this project via `/your/path/to/zcash-android-wallet-sdk/build.gradle`
+4. [Install Android Studio](https://developer.android.com/studio/install) and open this project via `/your/path/to/zcash-android-wallet-sdk/build.gradle.kts`
 5. Open Android Studio’s SDK manager
 <p align="center">
     <img src="assets/sdk-manager-icon.png?raw=true" width="70%"/>
@@ -178,17 +178,19 @@ rustup target add armv7-linux-androideabi aarch64-linux-android i686-linux-andro
 
   8. To build from the command line, run:
   ```bash
-  ./gradlew clean assemble
+  ./gradlew assemble
   
-  // or to install in MavenLocal, set properties in Deps.kt then run
+  // or to install in MavenLocal
   
   ./gradlew publishToMavenLocal
   ```
 
-This creates a build of the SDK under `build/outputs/aar/` that can be used to preview functionality. For more detailed examples, see the [demo app](demo-app). Note that merely using the SDK does not require installing Rust or Cargo--that is only required when compiling from source.
+This creates a build of the SDK under `build/outputs/aar/` that can be used to preview functionality. For more detailed examples, see the [demo app](demo-app).
+
+Note that merely using the SDK does not require installing Rust or Cargo--that is only required when compiling from source. Also note that the Mozilla Rust Gradle plugin puts outputs under `sdk-lib/targets`, which has implications for manually testing build script changes. This is discussed further under [docs/tests/Build.md](docs/tests/Build.md).
 
 The repo also contains a small demo application, to verify integration with the SDK.  Note that by default, the demo application is configured to retrieve dependencies from artifact hosting and therefore does not rely on the local compilation of the SDK.  This can be changed by publishing to maven local as described above, as local maven publications will take precedence over hosted publications in the demo app.
-1. [Create an emulator](https://developer.android.com/studio/run/managing-avds) if you don’t already have one (recommended target: API 29)
+1. [Create an emulator](https://developer.android.com/studio/run/managing-avds) if you don’t already have one (recommended target: API 31)
 2. Import the subdirectory samples/demo-app as a separate Android Studio project
 3. Select your desired build variant. Currently, we recommend `zcashmainnetDebug` as the testnet variants are slower to sync to current height due to a lack of checkpoints.
 <p align="center">
