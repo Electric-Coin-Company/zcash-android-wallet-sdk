@@ -152,6 +152,13 @@ cargo {
         "x86",
         "x86_64"
     )
+    apiLevels = mapOf(
+        "arm" to 16,
+        "arm64" to 21,
+        "x86" to 16,
+        "x86_64" to 21,
+    )
+
     profile = "release"
     prebuiltToolchains = true
 }
