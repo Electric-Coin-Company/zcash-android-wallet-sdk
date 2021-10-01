@@ -18,6 +18,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import kotlin.time.Duration
 import kotlin.time.ExperimentalTime
+import kotlin.random.Random
 
 class DarksideTestCoordinator(val wallet: TestWallet = newDarksideTestWallet()) {
 
@@ -70,6 +71,10 @@ class DarksideTestCoordinator(val wallet: TestWallet = newDarksideTestWallet()) 
 
     fun stageBlocks(url: String) = darkside.stageBlocks(url)
 
+    fun stageEmptyBlocks(startHeight: Int,
+                         count: Int = 10,
+                         nonce: Int = Random.nextInt()) =
+            darkside.stageEmptyBlocks(startHeight,count, nonce)
 //    fun triggerSmallReorg() {
 //        darkside.setBlocksUrl(smallReorg)
 //    }

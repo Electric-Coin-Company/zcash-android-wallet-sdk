@@ -15,11 +15,11 @@ class RestoreTest : DarksideTestPrerequisites() {
     fun tenPlusBlock() = runBlockingTest {
         val coordinator = DarksideFixture.newDarksideTestCoordinator()
         coordinator.reset(saplingActivationHeight = 663150, branchId = "2bb40e60", chainName = "main")
-        coordinator.stageBlocks(DarksideFixture.blocksUrl)
+        coordinator.stageEmptyBlocks(663150,250)
         coordinator.chainMaker.apply {
             stageTransaction(DarksideFixture.tx663174)
             stageTransaction(DarksideFixture.tx663188)
-            applyTipHeight(663200)
+            applyTipHeight(663300)
         }
 
         val synchronizer = coordinator.synchronizer
@@ -27,7 +27,6 @@ class RestoreTest : DarksideTestPrerequisites() {
             synchronizer.start()
 
             coordinator.await()
-
         } finally {
             synchronizer.stop()
         }
