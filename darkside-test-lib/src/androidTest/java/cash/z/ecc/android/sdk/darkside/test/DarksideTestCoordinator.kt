@@ -4,6 +4,7 @@ import cash.z.ecc.android.sdk.SdkSynchronizer
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.darkside.fixture.FixtureTransaction
 import cash.z.ecc.android.sdk.ext.twig
+import cash.z.ecc.android.sdk.type.NetworkType
 import cash.z.ecc.android.sdk.type.ZcashNetwork
 import io.grpc.StatusRuntimeException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -309,12 +310,12 @@ class DarksideTestCoordinator(val wallet: TestWallet = newDarksideTestWallet()) 
          * @return A wallet appropriate for passing into [DarksideTestCoordinator].
          */
         fun newDarksideTestWallet(
-            alias: String = "DarksideTestCoordinator",
-            seedPhrase: String = DEFAULT_SEED_PHRASE,
-            startHeight: Int = DEFAULT_START_HEIGHT,
-            host: String = COMPUTER_LOCALHOST,
-            network: ZcashNetwork = ZcashNetwork.Mainnet,
-            port: Int = network.defaultPort,
+                alias: String = "DarksideTestCoordinator",
+                seedPhrase: String = DEFAULT_SEED_PHRASE,
+                startHeight: Int = DEFAULT_START_HEIGHT,
+                host: String = COMPUTER_LOCALHOST,
+                network: ZcashNetwork = DarksideNetwork(),
+                port: Int = network.defaultPort,
         ) = TestWallet(
             seedPhrase,
             alias,
@@ -324,4 +325,13 @@ class DarksideTestCoordinator(val wallet: TestWallet = newDarksideTestWallet()) 
             port = port
         )
     }
+}
+
+
+private class DarksideNetwork: ZcashNetwork {
+    override val id: Int = 1
+    override val networkName: String = "mainnet"
+    override val saplingActivationHeight: Int = 663150
+    override val defaultHost: String = "10.0.2.2"
+    override val defaultPort: Int = 9067
 }

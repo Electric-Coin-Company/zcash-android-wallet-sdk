@@ -2,6 +2,7 @@ package cash.z.ecc.android.sdk.tool
 
 import cash.z.ecc.android.sdk.jni.RustBackend
 import cash.z.ecc.android.sdk.jni.RustBackendWelding
+import cash.z.ecc.android.sdk.type.NetworkType
 import cash.z.ecc.android.sdk.type.UnifiedViewingKey
 import cash.z.ecc.android.sdk.type.ZcashNetwork
 
@@ -95,7 +96,7 @@ class DerivationTool {
             deriveTransparentSecretKeyFromSeed(seed, account, index, networkId = network.id)
         }
 
-        fun validateUnifiedViewingKey(viewingKey: UnifiedViewingKey, networkId: Int = ZcashNetwork.Mainnet.id) {
+        fun validateUnifiedViewingKey(viewingKey: UnifiedViewingKey, networkId: Int = NetworkType.Mainnet.id) {
             // TODO
         }
 

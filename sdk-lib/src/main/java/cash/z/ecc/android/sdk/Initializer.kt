@@ -7,6 +7,7 @@ import cash.z.ecc.android.sdk.ext.twig
 import cash.z.ecc.android.sdk.jni.RustBackend
 import cash.z.ecc.android.sdk.tool.DerivationTool
 import cash.z.ecc.android.sdk.tool.WalletBirthdayTool
+import cash.z.ecc.android.sdk.type.NetworkType
 import cash.z.ecc.android.sdk.type.UnifiedViewingKey
 import cash.z.ecc.android.sdk.type.WalletBirthday
 import cash.z.ecc.android.sdk.type.ZcashNetwork
@@ -105,7 +106,7 @@ class Initializer constructor(appContext: Context, onCriticalErrorHandler: ((Thr
         lateinit var host: String
             private set
 
-        var port: Int = ZcashNetwork.Mainnet.defaultPort
+        var port: Int = NetworkType.Mainnet.defaultPort
             private set
 
         /**
@@ -307,7 +308,7 @@ class Initializer constructor(appContext: Context, onCriticalErrorHandler: ((Thr
          * Typically, it is 0 for testnet and 1 for mainnet.
          */
         fun setNetworkId(networkId: Int): Config = apply {
-            network = ZcashNetwork.from(networkId)
+            network = NetworkType.from(networkId)
         }
 
         //

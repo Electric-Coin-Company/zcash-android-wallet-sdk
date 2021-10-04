@@ -6,11 +6,18 @@ import cash.z.ecc.android.bip39.toSeed
 import cash.z.ecc.android.sdk.Initializer
 import cash.z.ecc.android.sdk.SdkSynchronizer
 import cash.z.ecc.android.sdk.Synchronizer
+import cash.z.ecc.android.sdk.block.CompactBlockDbStore
+import cash.z.ecc.android.sdk.block.CompactBlockDownloader
+import cash.z.ecc.android.sdk.block.CompactBlockProcessor
 import cash.z.ecc.android.sdk.db.entity.isPending
 import cash.z.ecc.android.sdk.ext.Twig
 import cash.z.ecc.android.sdk.ext.twig
 import cash.z.ecc.android.sdk.service.LightWalletGrpcService
 import cash.z.ecc.android.sdk.tool.DerivationTool
+import cash.z.ecc.android.sdk.transaction.PagedTransactionRepository
+import cash.z.ecc.android.sdk.transaction.PersistentTransactionManager
+import cash.z.ecc.android.sdk.transaction.WalletTransactionEncoder
+import cash.z.ecc.android.sdk.type.NetworkType
 import cash.z.ecc.android.sdk.type.WalletBalance
 import cash.z.ecc.android.sdk.type.ZcashNetwork
 import kotlinx.coroutines.CoroutineScope
@@ -30,21 +37,21 @@ import java.util.concurrent.TimeoutException
  * easy to drive and nice to use.
  */
 class TestWallet(
-    val seedPhrase: String,
-    val alias: String = "TestWallet",
-    val network: ZcashNetwork = ZcashNetwork.Testnet,
-    val host: String = network.defaultHost,
-    startHeight: Int? = null,
-    val port: Int = network.defaultPort,
+        val seedPhrase: String,
+        val alias: String = "TestWallet",
+        val network: ZcashNetwork = NetworkType.Testnet,
+        val host: String = network.defaultHost,
+        startHeight: Int? = null,
+        val port: Int = network.defaultPort,
 ) {
     constructor(
-        backup: Backups,
-        network: ZcashNetwork = ZcashNetwork.Testnet,
-        alias: String = "TestWallet"
+            backup: Backups,
+            network: ZcashNetwork = NetworkType.Testnet,
+            alias: String = "TestWallet"
     ) : this(
         backup.seedPhrase,
         network = network,
-        startHeight = if (network == ZcashNetwork.Mainnet) backup.mainnetBirthday else backup.testnetBirthday,
+        startHeight = if (network == NetworkType.Mainnet) backup.mainnetBirthday else backup.testnetBirthday,
         alias = alias
     )
 
@@ -58,7 +65,7 @@ class TestWallet(
     val initializer = Initializer(context) { config ->
         config.importWallet(seed, startHeight, network, host, alias = alias)
     }
-    val synchronizer: SdkSynchronizer = Synchronizer(initializer) as SdkSynchronizer
+    val synchronizer: SdkSynchronizer = TestWallet.buildbuildSynchronizer(initializer, startHeight!!)
     val service = (synchronizer.processor.downloader.lightWalletService as LightWalletGrpcService)
 
     val available get() = synchronizer.saplingBalances.value.availableZatoshi
@@ -160,4 +167,23 @@ class TestWallet(
         BOB("canvas wine sugar acquire garment spy tongue odor hole cage year habit bullet make label human unit option top calm neutral try vocal arena", 1_330_190, 1_000_000),
         ;
     }
+}
+
+private fun TestWallet.Companion.buildbuildSynchronizer(initializer: Initializer, saplingActivationHeight: Int): SdkSynchronizer {
+    val repository = PagedTransactionRepository(initializer.context, 1000, initializer.rustBackend, initializer.birthday, initializer.viewingKeys, initializer.overwriteVks)
+    val blockStore = CompactBlockDbStore(initializer.context, initializer.rustBackend.pathCacheDb)
+    val service = LightWalletGrpcService(initializer.context, initializer.host, initializer.port)
+    val downloader = CompactBlockDownloader(service, blockStore)
+    val encoder = WalletTransactionEncoder(initializer.rustBackend, repository)
+    val txManager = PersistentTransactionManager(initializer.context, encoder, service)
+
+    val processor = CompactBlockProcessor(downloader, repository, initializer.rustBackend, saplingActivationHeight)
+    return Synchronizer(initializer,
+            repository,
+            blockStore,
+            service,
+            encoder,
+            downloader,
+            txManager,
+            processor) as SdkSynchronizer
 }

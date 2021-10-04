@@ -5,6 +5,7 @@ import cash.z.ecc.android.sdk.R
 import cash.z.ecc.android.sdk.annotation.OpenForTesting
 import cash.z.ecc.android.sdk.exception.LightWalletException
 import cash.z.ecc.android.sdk.ext.twig
+import cash.z.ecc.android.sdk.type.NetworkType
 import cash.z.ecc.android.sdk.type.ZcashNetwork
 import cash.z.wallet.sdk.rpc.CompactFormats
 import cash.z.wallet.sdk.rpc.CompactTxStreamerGrpc
@@ -53,10 +54,10 @@ class LightWalletGrpcService private constructor(
      * it requires jumping through a few more hoops.
      */
     constructor(
-        appContext: Context,
-        host: String,
-        port: Int = ZcashNetwork.Mainnet.defaultPort,
-        usePlaintext: Boolean =
+            appContext: Context,
+            host: String,
+            port: Int = NetworkType.Mainnet.defaultPort,
+            usePlaintext: Boolean =
             appContext.resources.getBoolean(R.bool.lightwalletd_allow_very_insecure_connections)
     ) : this(createDefaultChannel(appContext, host, port, usePlaintext)) {
         connectionInfo = ConnectionInfo(appContext.applicationContext, host, port, usePlaintext)
