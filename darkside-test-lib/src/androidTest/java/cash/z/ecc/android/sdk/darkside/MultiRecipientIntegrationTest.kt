@@ -3,7 +3,7 @@ package cash.z.ecc.android.sdk.darkside // package cash.z.ecc.android.sdk.integr
 // import cash.z.ecc.android.sdk.test.ScopedTest
 // import cash.z.ecc.android.sdk.ext.twig
 // import cash.z.ecc.android.sdk.ext.twigTask
-// import cash.z.ecc.android.sdk.service.LightWalletGrpcService
+// import cash.z.ecc.android.sdk.internal.service.LightWalletGrpcService
 // import cash.z.ecc.android.sdk.darkside.test.DarksideTestCoordinator
 // import cash.z.ecc.android.sdk.util.SimpleMnemonics
 // import cash.z.wallet.sdk.rpc.CompactFormats

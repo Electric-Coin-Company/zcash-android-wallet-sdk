@@ -4,7 +4,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import cash.z.ecc.android.sdk.ext.TroubleshootingTwig
 import cash.z.ecc.android.sdk.ext.Twig
 import cash.z.ecc.android.sdk.ext.twig
-import cash.z.ecc.android.sdk.service.LightWalletGrpcService
+import cash.z.ecc.android.sdk.internal.service.LightWalletGrpcService
 import cash.z.ecc.android.sdk.type.ZcashNetwork
 import org.junit.Ignore
 import org.junit.Test
