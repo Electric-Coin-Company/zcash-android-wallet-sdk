@@ -4,7 +4,6 @@ import cash.z.ecc.android.sdk.SdkSynchronizer
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.darkside.fixture.FixtureTransaction
 import cash.z.ecc.android.sdk.ext.twig
-import cash.z.ecc.android.sdk.type.NetworkType
 import cash.z.ecc.android.sdk.type.ZcashNetwork
 import io.grpc.StatusRuntimeException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -17,9 +16,9 @@ import kotlinx.coroutines.withTimeout
 import org.junit.Assert
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import kotlin.random.Random
 import kotlin.time.Duration
 import kotlin.time.ExperimentalTime
-import kotlin.random.Random
 
 class DarksideTestCoordinator(val wallet: TestWallet = newDarksideTestWallet()) {
 
@@ -305,10 +304,10 @@ class DarksideTestCoordinator(val wallet: TestWallet = newDarksideTestWallet()) 
          * @return A wallet appropriate for passing into [DarksideTestCoordinator].
          */
         fun newDarksideTestWallet(
-                alias: String = "DarksideTestCoordinator",
-                seedPhrase: String = DEFAULT_SEED_PHRASE,
-                startHeight: Int = DarksideNetwork.DEFAULT_START_HEIGHT,
-                network: ZcashNetwork = DarksideNetwork(),
+            alias: String = "DarksideTestCoordinator",
+            seedPhrase: String = DEFAULT_SEED_PHRASE,
+            startHeight: Int = DarksideNetwork.DEFAULT_START_HEIGHT,
+            network: ZcashNetwork = DarksideNetwork(saplingActivationHeight = startHeight),
         ) = TestWallet(
             seedPhrase,
             alias,
@@ -320,12 +319,13 @@ class DarksideTestCoordinator(val wallet: TestWallet = newDarksideTestWallet()) 
     }
 }
 
-private class DarksideNetwork: ZcashNetwork {
-    override val id: Int = 1
-    override val networkName: String = "mainnet"
-    override val saplingActivationHeight: Int = DEFAULT_START_HEIGHT
-    override val defaultHost: String = COMPUTER_LOCALHOST
+private data class DarksideNetwork(
+    override val id: Int = 1,
+    override val networkName: String = "mainnet",
+    override val saplingActivationHeight: Int = DEFAULT_START_HEIGHT,
+    override val defaultHost: String = COMPUTER_LOCALHOST,
     override val defaultPort: Int = DEFAULT_PORT
+) : ZcashNetwork {
 
     companion object {
         /**
