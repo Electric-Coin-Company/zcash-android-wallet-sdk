@@ -79,9 +79,18 @@ interface ZcashNetwork {
     val saplingActivationHeight: Int
     val defaultHost: String
     val defaultPort: Int
+
+    // Required to enable extension functions
+    companion object
 }
 
-enum class NetworkType(override val id: Int,override val networkName: String,override val saplingActivationHeight: Int,override val defaultHost: String,override val defaultPort: Int): ZcashNetwork {
+enum class NetworkType(
+    override val id: Int,
+    override val networkName: String,
+    override val saplingActivationHeight: Int,
+    override val defaultHost: String,
+    override val defaultPort: Int
+) : ZcashNetwork {
     Testnet(0, "testnet", 280_000, "testnet.lightwalletd.com", 9067),
     Mainnet(1, "mainnet", 419_200, "mainnet.lightwalletd.com", 9067);
 

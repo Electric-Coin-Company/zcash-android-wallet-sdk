@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.filters.SmallTest
 import cash.z.ecc.android.sdk.tool.WalletBirthdayTool
+import cash.z.ecc.android.sdk.type.NetworkType
 import cash.z.ecc.android.sdk.type.ZcashNetwork
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
@@ -16,7 +17,7 @@ class AssetTest {
     @Test
     @SmallTest
     fun validate_mainnet_assets() {
-        val network = ZcashNetwork.Mainnet
+        val network = NetworkType.Mainnet
         val assets = listAssets(network)
 
         assertFilesExist(assets)
@@ -27,7 +28,7 @@ class AssetTest {
     @Test
     @SmallTest
     fun validate_testnet_assets() {
-        val network = ZcashNetwork.Testnet
+        val network = NetworkType.Testnet
         val assets = listAssets(network)
 
         assertFilesExist(assets)
@@ -74,8 +75,9 @@ class AssetTest {
             assertTrue(jsonObject.has("tree"))
 
             val expectedNetworkName = when (network) {
-                ZcashNetwork.Mainnet -> "main"
-                ZcashNetwork.Testnet -> "test"
+                NetworkType.Mainnet -> "main"
+                NetworkType.Testnet -> "test"
+                else -> throw AssertionError("Unknown network $network")
             }
             assertEquals("File: ${it.filename}", expectedNetworkName, jsonObject.getString("network"))
 

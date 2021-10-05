@@ -1,4 +1,4 @@
-package cash.z.ecc.android.sdk.sample.demoapp
+package cash.z.wallet.sdk.sample.demoapp
 
 import androidx.test.platform.app.InstrumentationRegistry
 import cash.z.ecc.android.sdk.Synchronizer

@@ -3,6 +3,7 @@ package cash.z.ecc.android.sdk.integration
 import cash.z.ecc.android.sdk.annotation.MaintainedTest
 import cash.z.ecc.android.sdk.annotation.TestPurpose
 import cash.z.ecc.android.sdk.ext.BlockExplorer
+import cash.z.ecc.android.sdk.type.NetworkType
 import cash.z.ecc.android.sdk.type.ZcashNetwork
 import cash.z.ecc.android.sdk.util.TestWallet
 import kotlinx.coroutines.runBlocking
@@ -123,7 +124,7 @@ class SanityTest(
             ),
             // Mainnet wallet
             arrayOf(
-                TestWallet(TestWallet.Backups.SAMPLE_WALLET, ZcashNetwork.Mainnet),
+                TestWallet(TestWallet.Backups.SAMPLE_WALLET, NetworkType.Mainnet),
                 "zxviews1q0hxkupsqqqqpqzsffgrk2smjuccedua7zswf5e3rgtv3ga9nhvhjug670egshd6me53r5n083s2m9mf4va4z7t39ltd3wr7hawnjcw09eu85q0ammsg0tsgx24p4ma0uvr4p8ltx5laum2slh2whc23ctwlnxme9w4dw92kalwk5u4wyem8dynknvvqvs68ktvm8qh7nx9zg22xfc77acv8hk3qqll9k3x4v2fa26puu2939ea7hy4hh60ywma69xtqhcy4037ne8g2sg8sq",
                 "031c6355641237643317e2d338f5e8734c57e8aa8ce960ee22283cf2d76bef73be",
                 1000000

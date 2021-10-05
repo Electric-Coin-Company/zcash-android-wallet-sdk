@@ -1,6 +1,7 @@
 package cash.z.ecc.android.sdk.sample
 
 import cash.z.ecc.android.sdk.ext.Twig
+import cash.z.ecc.android.sdk.type.NetworkType
 import cash.z.ecc.android.sdk.type.ZcashNetwork
 import cash.z.ecc.android.sdk.util.TestWallet
 import kotlinx.coroutines.runBlocking
@@ -27,7 +28,7 @@ class ShieldFundsSample {
     fun constructT2Z() = runBlocking {
         Twig.sprout("ShieldFundsSample")
 
-        val wallet = TestWallet(TestWallet.Backups.DEV_WALLET, ZcashNetwork.Mainnet)
+        val wallet = TestWallet(TestWallet.Backups.DEV_WALLET, NetworkType.Mainnet)
 
         Assert.assertEquals("foo", "${wallet.shieldedAddress} ${wallet.transparentAddress}")
 //        wallet.shieldFunds()

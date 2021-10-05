@@ -11,6 +11,7 @@ import cash.z.ecc.android.sdk.ext.Twig
 import cash.z.ecc.android.sdk.ext.twig
 import cash.z.ecc.android.sdk.service.LightWalletGrpcService
 import cash.z.ecc.android.sdk.tool.DerivationTool
+import cash.z.ecc.android.sdk.type.NetworkType
 import cash.z.ecc.android.sdk.type.WalletBalance
 import cash.z.ecc.android.sdk.type.ZcashNetwork
 import kotlinx.coroutines.CoroutineScope
@@ -32,19 +33,19 @@ import java.util.concurrent.TimeoutException
 class TestWallet(
     val seedPhrase: String,
     val alias: String = "TestWallet",
-    val network: ZcashNetwork = ZcashNetwork.Testnet,
+    val network: ZcashNetwork = NetworkType.Testnet,
     val host: String = network.defaultHost,
     startHeight: Int? = null,
     val port: Int = network.defaultPort,
 ) {
     constructor(
         backup: Backups,
-        network: ZcashNetwork = ZcashNetwork.Testnet,
+        network: ZcashNetwork = NetworkType.Testnet,
         alias: String = "TestWallet"
     ) : this(
         backup.seedPhrase,
         network = network,
-        startHeight = if (network == ZcashNetwork.Mainnet) backup.mainnetBirthday else backup.testnetBirthday,
+        startHeight = if (network == NetworkType.Mainnet) backup.mainnetBirthday else backup.testnetBirthday,
         alias = alias
     )
 

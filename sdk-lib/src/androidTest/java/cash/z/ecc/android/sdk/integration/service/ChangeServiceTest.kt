@@ -12,6 +12,7 @@ import cash.z.ecc.android.sdk.ext.twig
 import cash.z.ecc.android.sdk.service.LightWalletGrpcService
 import cash.z.ecc.android.sdk.service.LightWalletService
 import cash.z.ecc.android.sdk.test.ScopedTest
+import cash.z.ecc.android.sdk.type.NetworkType
 import cash.z.ecc.android.sdk.type.ZcashNetwork
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -33,7 +34,7 @@ import org.mockito.Spy
 @SmallTest
 class ChangeServiceTest : ScopedTest() {
 
-    val network = ZcashNetwork.Mainnet
+    val network = NetworkType.Mainnet
 
     @Mock
     lateinit var mockBlockStore: CompactBlockStore
@@ -118,7 +119,7 @@ class ChangeServiceTest : ScopedTest() {
     @Test
     fun testSwitchToTestnetFails() = runBlocking {
         var caughtException: Throwable? = null
-        downloader.changeService(LightWalletGrpcService(context, ZcashNetwork.Testnet)) {
+        downloader.changeService(LightWalletGrpcService(context, NetworkType.Testnet)) {
             caughtException = it
         }
         assertNotNull("Using an invalid host should generate an exception.", caughtException)

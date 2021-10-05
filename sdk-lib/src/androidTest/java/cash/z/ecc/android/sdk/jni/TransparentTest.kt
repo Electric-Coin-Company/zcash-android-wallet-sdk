@@ -8,6 +8,7 @@ import cash.z.ecc.android.sdk.annotation.TestPurpose
 import cash.z.ecc.android.sdk.ext.TroubleshootingTwig
 import cash.z.ecc.android.sdk.ext.Twig
 import cash.z.ecc.android.sdk.tool.DerivationTool
+import cash.z.ecc.android.sdk.type.NetworkType
 import cash.z.ecc.android.sdk.type.ZcashNetwork
 import org.junit.Assert.assertEquals
 import org.junit.BeforeClass
@@ -73,8 +74,8 @@ class TransparentTest(val expected: Expected, val network: ZcashNetwork) {
         @JvmStatic
         @Parameterized.Parameters
         fun data() = listOf(
-            arrayOf(ExpectedTestnet, ZcashNetwork.Testnet),
-            arrayOf(ExpectedMainnet, ZcashNetwork.Mainnet),
+            arrayOf(ExpectedTestnet, NetworkType.Testnet),
+            arrayOf(ExpectedMainnet, NetworkType.Mainnet),
         )
     }
 

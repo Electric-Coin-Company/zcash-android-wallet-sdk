@@ -5,13 +5,14 @@ import cash.z.ecc.android.sdk.ext.TroubleshootingTwig
 import cash.z.ecc.android.sdk.ext.Twig
 import cash.z.ecc.android.sdk.ext.twig
 import cash.z.ecc.android.sdk.service.LightWalletGrpcService
+import cash.z.ecc.android.sdk.type.NetworkType
 import cash.z.ecc.android.sdk.type.ZcashNetwork
 import org.junit.Ignore
 import org.junit.Test
 
 class TransactionCounterUtil {
 
-    private val network = ZcashNetwork.Mainnet
+    private val network = NetworkType.Mainnet
     private val context = InstrumentationRegistry.getInstrumentation().context
     private val service = LightWalletGrpcService(context, network)
 

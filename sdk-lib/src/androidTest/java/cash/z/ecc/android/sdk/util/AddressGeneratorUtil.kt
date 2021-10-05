@@ -2,6 +2,7 @@ package cash.z.ecc.android.sdk.util
 
 import androidx.test.platform.app.InstrumentationRegistry
 import cash.z.ecc.android.sdk.tool.DerivationTool
+import cash.z.ecc.android.sdk.type.NetworkType
 import cash.z.ecc.android.sdk.type.ZcashNetwork
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.collect
@@ -36,7 +37,7 @@ class AddressGeneratorUtil {
             .map { seedPhrase ->
                 mnemonics.toSeed(seedPhrase.toCharArray())
             }.map { seed ->
-                DerivationTool.deriveShieldedAddress(seed, ZcashNetwork.Mainnet)
+                DerivationTool.deriveShieldedAddress(seed, NetworkType.Mainnet)
             }.collect { address ->
                 println("xrxrx2\t$address")
                 assertTrue(address.startsWith("zs1"))

@@ -15,6 +15,7 @@ import cash.z.ecc.android.sdk.service.LightWalletGrpcService
 import cash.z.ecc.android.sdk.test.ScopedTest
 import cash.z.ecc.android.sdk.tool.DerivationTool
 import cash.z.ecc.android.sdk.tool.WalletBirthdayTool
+import cash.z.ecc.android.sdk.type.NetworkType
 import cash.z.ecc.android.sdk.type.ZcashNetwork
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.filter
@@ -119,8 +120,8 @@ class TestnetIntegrationTest : ScopedTest() {
 
         private val context = InstrumentationRegistry.getInstrumentation().context
         private val initializer = Initializer(context) { config ->
-            config.setNetwork(ZcashNetwork.Testnet, host)
-            config.importWallet(seed, birthdayHeight, ZcashNetwork.Testnet)
+            config.setNetwork(NetworkType.Testnet, host)
+            config.importWallet(seed, birthdayHeight, NetworkType.Testnet)
         }
         private lateinit var synchronizer: Synchronizer
 

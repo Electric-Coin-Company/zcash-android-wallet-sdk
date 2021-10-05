@@ -3,7 +3,7 @@ package cash.z.ecc.android.sdk.sample
 import androidx.test.filters.LargeTest
 import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.ext.twig
-import cash.z.ecc.android.sdk.type.ZcashNetwork.Testnet
+import cash.z.ecc.android.sdk.type.NetworkType.Testnet
 import cash.z.ecc.android.sdk.util.TestWallet
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking

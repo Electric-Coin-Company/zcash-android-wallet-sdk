@@ -7,6 +7,7 @@ import cash.z.ecc.android.sdk.ext.TroubleshootingTwig
 import cash.z.ecc.android.sdk.ext.Twig
 import cash.z.ecc.android.sdk.ext.twig
 import cash.z.ecc.android.sdk.tool.WalletBirthdayTool
+import cash.z.ecc.android.sdk.type.NetworkType
 import cash.z.ecc.android.sdk.type.WalletBirthday
 import cash.z.ecc.android.sdk.type.ZcashNetwork
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -27,7 +28,7 @@ import java.io.IOException
 @ExperimentalCoroutinesApi
 class BalancePrinterUtil {
 
-    private val network = ZcashNetwork.Mainnet
+    private val network: ZcashNetwork = NetworkType.Mainnet
     private val downloadBatchSize = 9_000
     private val birthdayHeight = 523240
 

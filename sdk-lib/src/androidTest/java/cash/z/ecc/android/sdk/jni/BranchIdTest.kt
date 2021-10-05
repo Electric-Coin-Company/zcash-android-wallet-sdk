@@ -2,6 +2,7 @@ package cash.z.ecc.android.sdk.jni
 
 import cash.z.ecc.android.sdk.annotation.MaintainedTest
 import cash.z.ecc.android.sdk.annotation.TestPurpose
+import cash.z.ecc.android.sdk.type.NetworkType
 import cash.z.ecc.android.sdk.type.ZcashNetwork
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -43,8 +44,8 @@ class BranchIdTest(
             // is an abnormal use of the SDK because this really should run at the rust level
             // However, due to quirks on certain devices, we created this test at the Android level,
             // as a sanity check
-            val testnetBackend = RustBackend.init("", "", "", ZcashNetwork.Testnet)
-            val mainnetBackend = RustBackend.init("", "", "", ZcashNetwork.Mainnet)
+            val testnetBackend = RustBackend.init("", "", "", NetworkType.Testnet)
+            val mainnetBackend = RustBackend.init("", "", "", NetworkType.Mainnet)
             return listOf(
                 // Mainnet Cases
                 arrayOf("Sapling", 419_200, 1991772603L, "76b809bb", mainnetBackend),
