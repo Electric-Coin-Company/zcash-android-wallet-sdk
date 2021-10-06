@@ -1,6 +1,10 @@
 Troubleshooting Migrations
 ==========
 
+Upcoming Migrating to Version 1.4.* from 1.3.*
+--------------------------------------
+`ZcashNetwork` is now an interface, with a concrete implementation provided by `NetworkType`.  To migrate, replace calls to `ZcashNetwork.Mainnet` with `NetworkType.Mainnet` or `ZcashNetwork.Testnet` with `NetworkType.Testnet`.
+
 Migrating to Version 1.3.* from 1.2.*
 --------------------------------------
 The biggest breaking changes in 1.3 that inspired incrementing the minor version number was simplifying down to one "network aware" library rather than two separate libraries, each dedicated to either testnet or mainnet. This greatly simplifies the gradle configuration and has lots of other benefits. Wallets can now set a network with code similar to the following:

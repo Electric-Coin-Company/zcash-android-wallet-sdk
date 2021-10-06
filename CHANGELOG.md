@@ -1,6 +1,11 @@
 Change Log
 ==========
 
+Upcoming
+------------------------------------
+- API change: `ZcashNetwork` is now an interface, with a concrete implementation provided by `NetworkType`
+- Fix: Testnet now works correctly #270
+
 Version 1.3.0-beta18 *(2021-08-10)*
 ------------------------------------
 - Fix: Corrected logic when calculating birthdates for wallets with zero received notes.
