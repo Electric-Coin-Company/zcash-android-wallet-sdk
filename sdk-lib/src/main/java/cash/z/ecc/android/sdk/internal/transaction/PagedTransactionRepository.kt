@@ -15,7 +15,7 @@ import cash.z.ecc.android.sdk.internal.ext.android.RefreshableDataSourceFactory
 import cash.z.ecc.android.sdk.internal.ext.android.toFlowPagedList
 import cash.z.ecc.android.sdk.internal.ext.android.toRefreshable
 import cash.z.ecc.android.sdk.internal.ext.tryWarn
-import cash.z.ecc.android.sdk.ext.twig
+import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.jni.RustBackend
 import cash.z.ecc.android.sdk.type.UnifiedAddressAccount
 import cash.z.ecc.android.sdk.type.UnifiedViewingKey

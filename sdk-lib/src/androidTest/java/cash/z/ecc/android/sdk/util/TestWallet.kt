@@ -7,8 +7,8 @@ import cash.z.ecc.android.sdk.Initializer
 import cash.z.ecc.android.sdk.SdkSynchronizer
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.db.entity.isPending
-import cash.z.ecc.android.sdk.ext.Twig
-import cash.z.ecc.android.sdk.ext.twig
+import cash.z.ecc.android.sdk.internal.Twig
+import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.internal.service.LightWalletGrpcService
 import cash.z.ecc.android.sdk.tool.DerivationTool
 import cash.z.ecc.android.sdk.type.WalletBalance

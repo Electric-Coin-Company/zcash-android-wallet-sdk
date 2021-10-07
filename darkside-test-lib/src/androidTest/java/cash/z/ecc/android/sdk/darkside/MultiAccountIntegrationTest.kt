@@ -1,7 +1,7 @@
 package cash.z.ecc.android.sdk.darkside // package cash.z.ecc.android.sdk.integration
 //
 // import cash.z.ecc.android.sdk.test.ScopedTest
-// import cash.z.ecc.android.sdk.ext.twigTask
+// import cash.z.ecc.android.sdk.internal.twigTask
 // import cash.z.ecc.android.sdk.darkside.test.DarksideTestCoordinator
 // import kotlinx.coroutines.runBlocking
 // import org.junit.BeforeClass

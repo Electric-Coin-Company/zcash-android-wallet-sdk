@@ -10,7 +10,7 @@ import cash.z.ecc.android.sdk.db.entity.PendingTransactionEntity
 import cash.z.ecc.android.sdk.db.entity.isCancelled
 import cash.z.ecc.android.sdk.db.entity.isFailedEncoding
 import cash.z.ecc.android.sdk.db.entity.isSubmitted
-import cash.z.ecc.android.sdk.ext.twig
+import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.internal.service.LightWalletService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Dispatchers.IO

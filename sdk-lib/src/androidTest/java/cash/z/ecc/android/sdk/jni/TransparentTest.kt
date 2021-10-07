@@ -5,8 +5,8 @@ import cash.z.ecc.android.bip39.Mnemonics.MnemonicCode
 import cash.z.ecc.android.bip39.toSeed
 import cash.z.ecc.android.sdk.annotation.MaintainedTest
 import cash.z.ecc.android.sdk.annotation.TestPurpose
-import cash.z.ecc.android.sdk.ext.TroubleshootingTwig
-import cash.z.ecc.android.sdk.ext.Twig
+import cash.z.ecc.android.sdk.internal.TroubleshootingTwig
+import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.tool.DerivationTool
 import cash.z.ecc.android.sdk.type.ZcashNetwork
 import org.junit.Assert.assertEquals

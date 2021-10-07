@@ -4,8 +4,8 @@ import androidx.test.platform.app.InstrumentationRegistry
 import cash.z.ecc.android.sdk.Initializer
 import cash.z.ecc.android.sdk.SdkSynchronizer
 import cash.z.ecc.android.sdk.Synchronizer
-import cash.z.ecc.android.sdk.ext.TroubleshootingTwig
-import cash.z.ecc.android.sdk.ext.Twig
+import cash.z.ecc.android.sdk.internal.TroubleshootingTwig
+import cash.z.ecc.android.sdk.internal.Twig
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch

@@ -3,7 +3,7 @@ package cash.z.ecc.android.sdk.darkside
 // import cash.z.ecc.android.sdk.SdkSynchronizer
 // import cash.z.ecc.android.sdk.db.entity.isSubmitSuccess
 // import cash.z.ecc.android.sdk.test.ScopedTest
-// import cash.z.ecc.android.sdk.ext.twig
+// import cash.z.ecc.android.sdk.internal.twig
 // import cash.z.ecc.android.sdk.darkside.test.DarksideTestCoordinator
 // import kotlinx.coroutines.Job
 // import kotlinx.coroutines.delay

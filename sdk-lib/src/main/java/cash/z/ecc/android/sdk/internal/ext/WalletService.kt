@@ -2,7 +2,7 @@ package cash.z.ecc.android.sdk.internal.ext
 
 import android.content.Context
 import cash.z.ecc.android.sdk.ext.ZcashSdk.MAX_BACKOFF_INTERVAL
-import cash.z.ecc.android.sdk.ext.twig
+import cash.z.ecc.android.sdk.internal.twig
 import kotlinx.coroutines.delay
 import java.io.File
 import kotlin.random.Random

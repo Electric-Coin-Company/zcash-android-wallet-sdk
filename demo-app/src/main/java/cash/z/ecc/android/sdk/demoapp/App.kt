@@ -1,8 +1,8 @@
 package cash.z.ecc.android.sdk.demoapp
 
 import android.app.Application
-import cash.z.ecc.android.sdk.ext.TroubleshootingTwig
-import cash.z.ecc.android.sdk.ext.Twig
+import cash.z.ecc.android.sdk.internal.TroubleshootingTwig
+import cash.z.ecc.android.sdk.internal.Twig
 
 class App : Application() {
 

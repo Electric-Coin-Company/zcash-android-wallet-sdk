@@ -1,6 +1,6 @@
 package cash.z.ecc.android.sdk.sample
 
-import cash.z.ecc.android.sdk.ext.Twig
+import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.type.ZcashNetwork
 import cash.z.ecc.android.sdk.util.TestWallet
 import kotlinx.coroutines.runBlocking

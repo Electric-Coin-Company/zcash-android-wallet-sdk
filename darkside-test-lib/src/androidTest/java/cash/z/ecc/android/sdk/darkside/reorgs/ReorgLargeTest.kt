@@ -6,7 +6,7 @@ package cash.z.ecc.android.sdk.darkside.reorgs // package cash.z.ecc.android.sdk
 // import cash.z.ecc.android.sdk.Synchronizer
 // import cash.z.ecc.android.sdk.test.ScopedTest
 // import cash.z.ecc.android.sdk.ext.import
-// import cash.z.ecc.android.sdk.ext.twig
+// import cash.z.ecc.android.sdk.internal.twig
 // import cash.z.ecc.android.sdk.darkside.test.DarksideApi
 // import io.grpc.StatusRuntimeException
 // import kotlinx.coroutines.delay
