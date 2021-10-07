@@ -1,10 +1,13 @@
 Change Log
 ==========
 
+Upcoming
+------------------------------------
+- Repackaged internal classes to a new `internal` package name
+
 Version 1.3.0-beta18 *(2021-08-10)*
 ------------------------------------
 - Fix: Corrected logic when calculating birthdates for wallets with zero received notes.
-
 
 Version 1.3.0-beta17 *(2021-07-29)*
 ------------------------------------

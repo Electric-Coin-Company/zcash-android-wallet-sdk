@@ -1,6 +1,10 @@
 Troubleshooting Migrations
 ==========
 
+Upcoming Migrating to Version 1.4.* from 1.3.*
+--------------------------------------
+Various APIs that have always been considered private have been moved into a new package called `internal`.  While this should not be a breaking change, clients that might have relied on these internal classes should stop doing so.
+
 Migrating to Version 1.3.* from 1.2.*
 --------------------------------------
 The biggest breaking changes in 1.3 that inspired incrementing the minor version number was simplifying down to one "network aware" library rather than two separate libraries, each dedicated to either testnet or mainnet. This greatly simplifies the gradle configuration and has lots of other benefits. Wallets can now set a network with code similar to the following:
