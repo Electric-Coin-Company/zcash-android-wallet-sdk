@@ -7,14 +7,8 @@ fun ByteArray.toHex(): String {
     return sb.toString()
 }
 
-fun ByteArray.toHexReversed(): String {
-    val sb = StringBuilder(size * 2)
-    var i = size - 1
-    while (i >= 0)
-        sb.append(String.format("%02x", this[i--]))
-    return sb.toString()
-}
-
+// Not used within the SDK, but is used by the Wallet app
+@Suppress("unused")
 fun String.fromHex(): ByteArray {
     val len = length
     val data = ByteArray(len / 2)

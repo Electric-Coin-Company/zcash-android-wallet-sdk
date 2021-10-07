@@ -1,17 +1,26 @@
-package cash.z.ecc.android.sdk.sample.demoapp
+package cash.z.wallet.sdk.sample.demoapp
 
 import androidx.test.platform.app.InstrumentationRegistry
+import cash.z.ecc.android.sdk.Initializer
 import cash.z.ecc.android.sdk.Synchronizer
-import cash.z.ecc.android.sdk.entity.isFailure
+import cash.z.ecc.android.sdk.db.entity.isFailure
 import cash.z.ecc.android.sdk.ext.TroubleshootingTwig
 import cash.z.ecc.android.sdk.ext.Twig
 import cash.z.ecc.android.sdk.ext.ZcashSdk
+import cash.z.ecc.android.sdk.ext.convertZecToZatoshi
+import cash.z.ecc.android.sdk.ext.toHex
+import cash.z.ecc.android.sdk.ext.twig
 import cash.z.ecc.android.sdk.jni.RustBackend
-import cash.z.ecc.android.sdk.service.LightWalletGrpcService
-import cash.z.ecc.android.sdk.transaction.PagedTransactionRepository
-import cash.z.ecc.android.sdk.transaction.WalletTransactionEncoder
+import cash.z.ecc.android.sdk.internal.service.LightWalletGrpcService
+import cash.z.ecc.android.sdk.internal.transaction.PagedTransactionRepository
+import cash.z.ecc.android.sdk.internal.transaction.WalletTransactionEncoder
+import cash.z.ecc.android.sdk.tool.DerivationTool
+import cash.z.ecc.android.sdk.type.ZcashNetwork
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.runBlocking
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.BeforeClass
 import org.junit.Ignore
 import org.junit.Test
@@ -47,7 +56,7 @@ class SampleCodeTest {
     // ///////////////////////////////////////////////////
     // Derive Extended Spending Key
     @Test fun deriveSpendingKey() {
-        val spendingKeys = RustBackend().deriveSpendingKeys(seed)
+        val spendingKeys = DerivationTool.deriveSpendingKeys(seed, ZcashNetwork.Mainnet)
         assertEquals(1, spendingKeys.size)
         log("Spending Key: ${spendingKeys?.get(0)}")
     }
@@ -95,22 +104,22 @@ class SampleCodeTest {
     @Test fun queryIncomingTransactions() {
     }
 
-    // ///////////////////////////////////////////////////
-    // Create a signed transaction (with memo)
-    @Test fun createTransaction() = runBlocking {
-        val rustBackend = RustBackend().init(context)
-        val repository = PagedTransactionRepository(context)
-        val encoder = WalletTransactionEncoder(rustBackend, repository)
-        val spendingKey = rustBackend.deriveSpendingKeys(seed)[0]
-
-        val amount = 0.123.convertZecToZatoshi()
-        val address = "ztestsapling1tklsjr0wyw0d58f3p7wufvrj2cyfv6q6caumyueadq8qvqt8lda6v6tpx474rfru9y6u75u7qnw"
-        val memo = "Test Transaction".toByteArray()
-
-        val encodedTx = encoder.createTransaction(spendingKey, amount, address, memo)
-        assertTrue(encodedTx.raw.isNotEmpty())
-        log("Transaction ID: ${encodedTx.txId.toHex()}")
-    }
+//    // ///////////////////////////////////////////////////
+//    // Create a signed transaction (with memo)
+//    @Test fun createTransaction() = runBlocking {
+//        val rustBackend = RustBackend.init(context)
+//        val repository = PagedTransactionRepository(context)
+//        val encoder = WalletTransactionEncoder(rustBackend, repository)
+//        val spendingKey = DerivationTool.deriveSpendingKeys(seed, ZcashNetwork.Mainnet)[0]
+//
+//        val amount = 0.123.convertZecToZatoshi()
+//        val address = "ztestsapling1tklsjr0wyw0d58f3p7wufvrj2cyfv6q6caumyueadq8qvqt8lda6v6tpx474rfru9y6u75u7qnw"
+//        val memo = "Test Transaction".toByteArray()
+//
+//        val encodedTx = encoder.createTransaction(spendingKey, amount, address, memo)
+//        assertTrue(encodedTx.raw.isNotEmpty())
+//        log("Transaction ID: ${encodedTx.txId.toHex()}")
+//    }
 
     // ///////////////////////////////////////////////////
     // Create a signed transaction (with memo) and broadcast
@@ -118,11 +127,11 @@ class SampleCodeTest {
         val amount = 0.123.convertZecToZatoshi()
         val address = "ztestsapling1tklsjr0wyw0d58f3p7wufvrj2cyfv6q6caumyueadq8qvqt8lda6v6tpx474rfru9y6u75u7qnw"
         val memo = "Test Transaction"
-        val spendingKey = RustBackend().deriveSpendingKeys(seed)[0]
+        val spendingKey = DerivationTool.deriveSpendingKeys(seed, ZcashNetwork.Mainnet)[0]
         val transactionFlow = synchronizer.sendToAddress(spendingKey, amount, address, memo)
         transactionFlow.collect {
             log("pending transaction updated $it")
-            assertTrue("Failed to send funds. See log for details.", it?.isFailure() == false)
+            assertTrue("Failed to send funds. See log for details.", !it?.isFailure())
         }
     }
 
@@ -132,10 +141,10 @@ class SampleCodeTest {
 
     companion object {
         private val seed = "Insert seed for testing".toByteArray()
-        private val lightwalletdHost: String = ZcashSdk.DEFAULT_LIGHTWALLETD_HOST
+        private val lightwalletdHost: String = ZcashNetwork.Mainnet.defaultHost
 
         private val context = InstrumentationRegistry.getInstrumentation().targetContext
-        private val synchronizer = Synchronizer(context, lightwalletdHost, seed)
+        private val synchronizer = Synchronizer(Initializer(context) {})
 
         @BeforeClass
         @JvmStatic

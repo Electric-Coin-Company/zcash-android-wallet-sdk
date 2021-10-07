@@ -4,13 +4,13 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
 import cash.z.ecc.android.sdk.annotation.MaintainedTest
 import cash.z.ecc.android.sdk.annotation.TestPurpose
-import cash.z.ecc.android.sdk.block.CompactBlockDownloader
-import cash.z.ecc.android.sdk.block.CompactBlockStore
+import cash.z.ecc.android.sdk.internal.block.CompactBlockDownloader
+import cash.z.ecc.android.sdk.internal.block.CompactBlockStore
 import cash.z.ecc.android.sdk.exception.LightWalletException.ChangeServerException.ChainInfoNotMatching
 import cash.z.ecc.android.sdk.exception.LightWalletException.ChangeServerException.StatusException
 import cash.z.ecc.android.sdk.ext.twig
-import cash.z.ecc.android.sdk.service.LightWalletGrpcService
-import cash.z.ecc.android.sdk.service.LightWalletService
+import cash.z.ecc.android.sdk.internal.service.LightWalletGrpcService
+import cash.z.ecc.android.sdk.internal.service.LightWalletService
 import cash.z.ecc.android.sdk.test.ScopedTest
 import cash.z.ecc.android.sdk.type.ZcashNetwork
 import kotlinx.coroutines.delay

@@ -11,7 +11,7 @@ import cash.z.ecc.android.sdk.ext.Twig
 import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.ext.onFirst
 import cash.z.ecc.android.sdk.ext.twig
-import cash.z.ecc.android.sdk.service.LightWalletGrpcService
+import cash.z.ecc.android.sdk.internal.service.LightWalletGrpcService
 import cash.z.ecc.android.sdk.test.ScopedTest
 import cash.z.ecc.android.sdk.tool.DerivationTool
 import cash.z.ecc.android.sdk.tool.WalletBirthdayTool

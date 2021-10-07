@@ -18,8 +18,8 @@ import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
 import androidx.viewbinding.ViewBinding
 import cash.z.ecc.android.sdk.demoapp.util.fromResources
-import cash.z.ecc.android.sdk.service.LightWalletGrpcService
-import cash.z.ecc.android.sdk.service.LightWalletService
+import cash.z.ecc.android.sdk.internal.service.LightWalletGrpcService
+import cash.z.ecc.android.sdk.internal.service.LightWalletService
 import cash.z.ecc.android.sdk.type.ZcashNetwork
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.navigation.NavigationView
