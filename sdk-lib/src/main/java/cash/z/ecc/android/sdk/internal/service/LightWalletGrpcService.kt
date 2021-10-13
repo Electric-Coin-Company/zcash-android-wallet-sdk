@@ -4,7 +4,7 @@ import android.content.Context
 import cash.z.ecc.android.sdk.R
 import cash.z.ecc.android.sdk.annotation.OpenForTesting
 import cash.z.ecc.android.sdk.exception.LightWalletException
-import cash.z.ecc.android.sdk.ext.twig
+import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.type.ZcashNetwork
 import cash.z.wallet.sdk.rpc.CompactFormats
 import cash.z.wallet.sdk.rpc.CompactTxStreamerGrpc

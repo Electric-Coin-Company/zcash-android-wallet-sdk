@@ -23,12 +23,12 @@ import cash.z.ecc.android.sdk.demoapp.databinding.FragmentSendBinding
 import cash.z.ecc.android.sdk.demoapp.ext.requireApplicationContext
 import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.demoapp.util.mainActivity
-import cash.z.ecc.android.sdk.ext.Twig
+import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.ext.collectWith
 import cash.z.ecc.android.sdk.ext.convertZatoshiToZecString
 import cash.z.ecc.android.sdk.ext.convertZecToZatoshi
 import cash.z.ecc.android.sdk.ext.toZecString
-import cash.z.ecc.android.sdk.ext.twig
+import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.tool.DerivationTool
 import cash.z.ecc.android.sdk.type.WalletBalance
 import cash.z.ecc.android.sdk.type.ZcashNetwork

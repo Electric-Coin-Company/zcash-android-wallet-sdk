@@ -20,7 +20,7 @@ import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException.Mismatche
 import cash.z.ecc.android.sdk.exception.InitializerException
 import cash.z.ecc.android.sdk.exception.RustLayerException
 import cash.z.ecc.android.sdk.ext.BatchMetrics
-import cash.z.ecc.android.sdk.ext.Twig
+import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.ext.ZcashSdk.DOWNLOAD_BATCH_SIZE
 import cash.z.ecc.android.sdk.ext.ZcashSdk.MAX_BACKOFF_INTERVAL
@@ -32,8 +32,8 @@ import cash.z.ecc.android.sdk.ext.ZcashSdk.SCAN_BATCH_SIZE
 import cash.z.ecc.android.sdk.internal.ext.retryUpTo
 import cash.z.ecc.android.sdk.internal.ext.retryWithBackoff
 import cash.z.ecc.android.sdk.internal.ext.toHexReversed
-import cash.z.ecc.android.sdk.ext.twig
-import cash.z.ecc.android.sdk.ext.twigTask
+import cash.z.ecc.android.sdk.internal.twig
+import cash.z.ecc.android.sdk.internal.twigTask
 import cash.z.ecc.android.sdk.internal.block.CompactBlockDownloader
 import cash.z.ecc.android.sdk.jni.RustBackend
 import cash.z.ecc.android.sdk.jni.RustBackendWelding

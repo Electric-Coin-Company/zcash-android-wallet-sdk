@@ -2,7 +2,7 @@ package cash.z.ecc.android.sdk.internal.block
 import cash.z.ecc.android.sdk.exception.LightWalletException
 import cash.z.ecc.android.sdk.internal.ext.retryUpTo
 import cash.z.ecc.android.sdk.internal.ext.tryWarn
-import cash.z.ecc.android.sdk.ext.twig
+import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.internal.service.LightWalletService
 import cash.z.wallet.sdk.rpc.Service
 import io.grpc.StatusRuntimeException

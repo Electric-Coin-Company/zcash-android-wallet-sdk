@@ -1,6 +1,6 @@
 package cash.z.ecc.android.sdk.internal.ext
 
-import cash.z.ecc.android.sdk.ext.twig
+import cash.z.ecc.android.sdk.internal.twig
 
 internal inline fun <R> tryNull(block: () -> R): R? {
     return try {

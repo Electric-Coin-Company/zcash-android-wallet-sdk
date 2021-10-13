@@ -6,8 +6,8 @@ import android.os.Looper
 import androidx.paging.Config
 import androidx.paging.DataSource
 import androidx.paging.PagedList
-import cash.z.ecc.android.sdk.ext.Twig
-import cash.z.ecc.android.sdk.ext.twig
+import cash.z.ecc.android.sdk.internal.Twig
+import cash.z.ecc.android.sdk.internal.twig
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExecutorCoroutineDispatcher

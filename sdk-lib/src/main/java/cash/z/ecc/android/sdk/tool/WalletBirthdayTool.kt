@@ -3,7 +3,7 @@ package cash.z.ecc.android.sdk.tool
 import android.content.Context
 import androidx.annotation.VisibleForTesting
 import cash.z.ecc.android.sdk.exception.BirthdayException
-import cash.z.ecc.android.sdk.ext.twig
+import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.type.WalletBirthday
 import cash.z.ecc.android.sdk.type.ZcashNetwork
 import com.google.gson.Gson

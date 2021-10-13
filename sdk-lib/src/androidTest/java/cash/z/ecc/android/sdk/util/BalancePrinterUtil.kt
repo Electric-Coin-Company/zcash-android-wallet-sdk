@@ -3,9 +3,9 @@ package cash.z.ecc.android.sdk.util
 import androidx.test.platform.app.InstrumentationRegistry
 import cash.z.ecc.android.sdk.Initializer
 import cash.z.ecc.android.sdk.Synchronizer
-import cash.z.ecc.android.sdk.ext.TroubleshootingTwig
-import cash.z.ecc.android.sdk.ext.Twig
-import cash.z.ecc.android.sdk.ext.twig
+import cash.z.ecc.android.sdk.internal.TroubleshootingTwig
+import cash.z.ecc.android.sdk.internal.Twig
+import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.tool.WalletBirthdayTool
 import cash.z.ecc.android.sdk.type.WalletBirthday
 import cash.z.ecc.android.sdk.type.ZcashNetwork

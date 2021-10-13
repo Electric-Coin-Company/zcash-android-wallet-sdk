@@ -16,7 +16,7 @@ import cash.z.ecc.android.sdk.db.entity.Received
 import cash.z.ecc.android.sdk.db.entity.Sent
 import cash.z.ecc.android.sdk.db.entity.TransactionEntity
 import cash.z.ecc.android.sdk.db.entity.Utxo
-import cash.z.ecc.android.sdk.ext.twig
+import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.type.UnifiedAddressAccount
 
 //

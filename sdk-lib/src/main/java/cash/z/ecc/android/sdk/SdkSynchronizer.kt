@@ -36,8 +36,8 @@ import cash.z.ecc.android.sdk.ext.ConsensusBranchId
 import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.internal.ext.toHexReversed
 import cash.z.ecc.android.sdk.internal.ext.tryNull
-import cash.z.ecc.android.sdk.ext.twig
-import cash.z.ecc.android.sdk.ext.twigTask
+import cash.z.ecc.android.sdk.internal.twig
+import cash.z.ecc.android.sdk.internal.twigTask
 import cash.z.ecc.android.sdk.internal.service.LightWalletGrpcService
 import cash.z.ecc.android.sdk.internal.service.LightWalletService
 import cash.z.ecc.android.sdk.tool.DerivationTool
