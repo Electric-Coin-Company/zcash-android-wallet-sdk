@@ -17,6 +17,7 @@ import cash.z.ecc.android.sdk.ext.convertZatoshiToZecString
 import cash.z.ecc.android.sdk.tool.DerivationTool
 import cash.z.ecc.android.sdk.type.WalletBalance
 import cash.z.ecc.android.sdk.type.ZcashNetwork
+import kotlinx.coroutines.runBlocking
 
 /**
  * Displays the available balance && total balance associated with the seed defined by the default config.
@@ -43,13 +44,13 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
         val seed = Mnemonics.MnemonicCode(seedPhrase).toSeed()
 
         // converting seed into viewingKey
-        val viewingKey = DerivationTool.deriveUnifiedViewingKeys(seed, ZcashNetwork.fromResources(requireApplicationContext())).first()
+        val viewingKey = runBlocking { DerivationTool.deriveUnifiedViewingKeys(seed, ZcashNetwork.fromResources(requireApplicationContext())).first() }
 
         // using the ViewingKey to initialize
-        Initializer(requireApplicationContext()) {
+        runBlocking {Initializer.new(requireApplicationContext(), null) {
             it.setNetwork(ZcashNetwork.fromResources(requireApplicationContext()))
             it.importWallet(viewingKey, network = ZcashNetwork.fromResources(requireApplicationContext()))
-        }.let { initializer ->
+        }}.let { initializer ->
             synchronizer = Synchronizer(initializer)
         }
     }

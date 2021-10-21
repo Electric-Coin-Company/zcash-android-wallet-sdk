@@ -16,10 +16,12 @@ import cash.z.ecc.android.sdk.internal.ext.android.toFlowPagedList
 import cash.z.ecc.android.sdk.internal.ext.android.toRefreshable
 import cash.z.ecc.android.sdk.internal.ext.tryWarn
 import cash.z.ecc.android.sdk.internal.twig
+import cash.z.ecc.android.sdk.internal.SdkDispatchers
 import cash.z.ecc.android.sdk.jni.RustBackend
 import cash.z.ecc.android.sdk.type.UnifiedAddressAccount
 import cash.z.ecc.android.sdk.type.UnifiedViewingKey
 import cash.z.ecc.android.sdk.type.WalletBirthday
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.emitAll
@@ -95,7 +97,7 @@ class PagedTransactionRepository(
 
     override suspend fun getAccountCount(): Int = lazy.accounts.count()
 
-    override fun prepare() {
+    override suspend fun prepare() {
         if (lazy.isPrepared.get()) {
             twig("Warning: skipped the preparation step because we're already prepared!")
         } else {
@@ -112,7 +114,7 @@ class PagedTransactionRepository(
      * side because Rust was intended to own the "dataDb" and Kotlin just reads from it. Since then,
      * it has been more clear that Kotlin should own the data and just let Rust use it.
      */
-    private fun initMissingDatabases() {
+    private suspend fun initMissingDatabases() {
         maybeCreateDataDb()
         maybeInitBlocksTable(birthday)
         maybeInitAccountsTable(viewingKeys)
@@ -121,7 +123,7 @@ class PagedTransactionRepository(
     /**
      * Create the dataDb and its table, if it doesn't exist.
      */
-    private fun maybeCreateDataDb() {
+    private suspend fun maybeCreateDataDb() {
         tryWarn("Warning: did not create dataDb. It probably already exists.") {
             rustBackend.initDataDb()
             twig("Initialized wallet for first run file: ${rustBackend.pathDataDb}")
@@ -131,7 +133,7 @@ class PagedTransactionRepository(
     /**
      * Initialize the blocks table with the given birthday, if needed.
      */
-    private fun maybeInitBlocksTable(birthday: WalletBirthday) {
+    private suspend fun maybeInitBlocksTable(birthday: WalletBirthday) {
         // TODO: consider converting these to typed exceptions in the welding layer
         tryWarn(
             "Warning: did not initialize the blocks table. It probably was already initialized.",
@@ -151,7 +153,7 @@ class PagedTransactionRepository(
     /**
      * Initialize the accounts table with the given viewing keys.
      */
-    private fun maybeInitAccountsTable(viewingKeys: List<UnifiedViewingKey>) {
+    private suspend fun maybeInitAccountsTable(viewingKeys: List<UnifiedViewingKey>) {
         // TODO: consider converting these to typed exceptions in the welding layer
         tryWarn(
             "Warning: did not initialize the accounts table. It probably was already initialized.",
@@ -181,7 +183,7 @@ class PagedTransactionRepository(
             }
     }
 
-    private fun applyKeyMigrations() {
+    private suspend fun applyKeyMigrations() {
         if (overwriteVks) {
             twig("applying key migrations . . .")
             maybeInitAccountsTable(viewingKeys)
@@ -191,8 +193,10 @@ class PagedTransactionRepository(
     /**
      * Close the underlying database.
      */
-    fun close() {
-        lazy.db?.close()
+    suspend fun close() {
+        withContext(Dispatchers.IO) {
+            lazy.db?.close()
+        }
     }
 
     // TODO: begin converting these into Data Access API. For now, just collect the desired operations and iterate/refactor, later

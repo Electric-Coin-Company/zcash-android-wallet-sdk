@@ -5,6 +5,7 @@ import cash.z.ecc.android.sdk.Initializer
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.internal.TroubleshootingTwig
 import cash.z.ecc.android.sdk.internal.Twig
+import cash.z.ecc.android.sdk.internal.ext.deleteSuspend
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.tool.WalletBirthdayTool
 import cash.z.ecc.android.sdk.type.WalletBirthday
@@ -52,7 +53,7 @@ class BalancePrinterUtil {
     fun setup() {
         Twig.plant(TroubleshootingTwig())
         cacheBlocks()
-        birthday = WalletBirthdayTool.loadNearest(context, network, birthdayHeight)
+        birthday = runBlocking { WalletBirthdayTool.loadNearest(context, network, birthdayHeight) }
     }
 
     private fun cacheBlocks() = runBlocking {
@@ -66,8 +67,8 @@ class BalancePrinterUtil {
 //        assertEquals(-1, error)
     }
 
-    private fun deleteDb(dbName: String) {
-        context.getDatabasePath(dbName).absoluteFile.delete()
+    private suspend fun deleteDb(dbName: String) {
+        context.getDatabasePath(dbName).absoluteFile.deleteSuspend()
     }
 
     @Test
@@ -79,8 +80,8 @@ class BalancePrinterUtil {
                 mnemonics.toSeed(seedPhrase.toCharArray())
             }.collect { seed ->
                 // TODO: clear the dataDb but leave the cacheDb
-                val initializer = Initializer(context) { config ->
-                    config.importWallet(seed, birthdayHeight, network)
+                val initializer = Initializer.new(context) { config ->
+                    runBlocking { config.importWallet(seed, birthdayHeight, network) }
                     config.setNetwork(network)
                     config.alias = alias
                 }

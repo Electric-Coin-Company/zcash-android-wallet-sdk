@@ -23,6 +23,7 @@ import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.newFixedThreadPoolContext
+import kotlinx.coroutines.runBlocking
 import java.util.concurrent.TimeoutException
 
 /**
@@ -51,19 +52,29 @@ class TestWallet(
     val walletScope = CoroutineScope(
         SupervisorJob() + newFixedThreadPoolContext(3, this.javaClass.simpleName)
     )
+
+    // Although runBlocking isn't great, this usage is OK because this is only used within the
+    // automated tests
+
     private val context = InstrumentationRegistry.getInstrumentation().context
     private val seed: ByteArray = Mnemonics.MnemonicCode(seedPhrase).toSeed()
-    private val shieldedSpendingKey = DerivationTool.deriveSpendingKeys(seed, network = network)[0]
-    private val transparentSecretKey = DerivationTool.deriveTransparentSecretKey(seed, network = network)
-    val initializer = Initializer(context) { config ->
-        config.importWallet(seed, startHeight, network, host, alias = alias)
+    private val shieldedSpendingKey =
+        runBlocking { DerivationTool.deriveSpendingKeys(seed, network = network)[0] }
+    private val transparentSecretKey =
+        runBlocking { DerivationTool.deriveTransparentSecretKey(seed, network = network) }
+    val initializer = runBlocking {
+        Initializer.new(context) { config ->
+            runBlocking { config.importWallet(seed, startHeight, network, host, alias = alias) }
+        }
     }
     val synchronizer: SdkSynchronizer = Synchronizer(initializer) as SdkSynchronizer
     val service = (synchronizer.processor.downloader.lightWalletService as LightWalletGrpcService)
 
     val available get() = synchronizer.saplingBalances.value.availableZatoshi
-    val shieldedAddress = DerivationTool.deriveShieldedAddress(seed, network = network)
-    val transparentAddress = DerivationTool.deriveTransparentAddress(seed, network = network)
+    val shieldedAddress =
+        runBlocking { DerivationTool.deriveShieldedAddress(seed, network = network) }
+    val transparentAddress =
+        runBlocking { DerivationTool.deriveTransparentAddress(seed, network = network) }
     val birthdayHeight get() = synchronizer.latestBirthdayHeight
     val networkName get() = synchronizer.network.networkName
     val connectionInfo get() = service.connectionInfo.toString()

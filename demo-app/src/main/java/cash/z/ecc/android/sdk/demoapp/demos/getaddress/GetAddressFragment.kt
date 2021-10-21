@@ -2,6 +2,7 @@ package cash.z.ecc.android.sdk.demoapp.demos.getaddress
 
 import android.os.Bundle
 import android.view.LayoutInflater
+import androidx.lifecycle.lifecycleScope
 import cash.z.ecc.android.bip39.Mnemonics
 import cash.z.ecc.android.bip39.toSeed
 import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
@@ -11,6 +12,8 @@ import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.tool.DerivationTool
 import cash.z.ecc.android.sdk.type.UnifiedViewingKey
 import cash.z.ecc.android.sdk.type.ZcashNetwork
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 
 /**
  * Displays the address associated with the seed defined by the default config. To modify the seed
@@ -34,14 +37,16 @@ class GetAddressFragment : BaseDemoFragment<FragmentGetAddressBinding>() {
         seed = Mnemonics.MnemonicCode(seedPhrase).toSeed()
 
         // the derivation tool can be used for generating keys and addresses
-        viewingKey = DerivationTool.deriveUnifiedViewingKeys(seed, ZcashNetwork.fromResources(requireApplicationContext())).first()
+        viewingKey = runBlocking { DerivationTool.deriveUnifiedViewingKeys(seed, ZcashNetwork.fromResources(requireApplicationContext())).first() }
     }
 
     private fun displayAddress() {
         // a full fledged app would just get the address from the synchronizer
-        val zaddress = DerivationTool.deriveShieldedAddress(seed, ZcashNetwork.fromResources(requireApplicationContext()))
-        val taddress = DerivationTool.deriveTransparentAddress(seed, ZcashNetwork.fromResources(requireApplicationContext()))
-        binding.textInfo.text = "z-addr:\n$zaddress\n\n\nt-addr:\n$taddress"
+        viewLifecycleOwner.lifecycleScope.launchWhenStarted {
+            val zaddress = DerivationTool.deriveShieldedAddress(seed, ZcashNetwork.fromResources(requireApplicationContext()))
+            val taddress = DerivationTool.deriveTransparentAddress(seed, ZcashNetwork.fromResources(requireApplicationContext()))
+            binding.textInfo.text = "z-addr:\n$zaddress\n\n\nt-addr:\n$taddress"
+        }
     }
 
     // TODO: show an example with the synchronizer
@@ -65,10 +70,15 @@ class GetAddressFragment : BaseDemoFragment<FragmentGetAddressBinding>() {
     //
 
     override fun onActionButtonClicked() {
-        copyToClipboard(
-            DerivationTool.deriveShieldedAddress(viewingKey.extfvk, ZcashNetwork.fromResources(requireApplicationContext())),
-            "Shielded address copied to clipboard!"
-        )
+        viewLifecycleOwner.lifecycleScope.launch {
+            copyToClipboard(
+                DerivationTool.deriveShieldedAddress(
+                    viewingKey.extfvk,
+                    ZcashNetwork.fromResources(requireApplicationContext())
+                ),
+                "Shielded address copied to clipboard!"
+            )
+        }
     }
 
     override fun inflateBinding(layoutInflater: LayoutInflater): FragmentGetAddressBinding =

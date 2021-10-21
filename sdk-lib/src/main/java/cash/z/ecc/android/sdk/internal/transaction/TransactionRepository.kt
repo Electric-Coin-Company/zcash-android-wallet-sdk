@@ -87,7 +87,7 @@ interface TransactionRepository {
 
     suspend fun getAccountCount(): Int
 
-    fun prepare()
+    suspend fun prepare()
 
     //
     // Transactions

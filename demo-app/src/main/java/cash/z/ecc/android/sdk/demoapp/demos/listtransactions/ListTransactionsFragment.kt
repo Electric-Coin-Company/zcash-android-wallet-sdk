@@ -19,6 +19,7 @@ import cash.z.ecc.android.sdk.ext.collectWith
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.tool.DerivationTool
 import cash.z.ecc.android.sdk.type.ZcashNetwork
+import kotlinx.coroutines.runBlocking
 
 /**
  * List all transactions related to the given seed, since the given birthday. This begins by
@@ -47,11 +48,16 @@ class ListTransactionsFragment : BaseDemoFragment<FragmentListTransactionsBindin
         // have the seed stored
         val seed = Mnemonics.MnemonicCode(seedPhrase).toSeed()
 
-        initializer = Initializer(requireApplicationContext()) {
-            it.importWallet(seed, network = ZcashNetwork.fromResources(requireApplicationContext()))
+        initializer = runBlocking {Initializer.new(requireApplicationContext()) {
+            runBlocking { it.importWallet(seed, network = ZcashNetwork.fromResources(requireApplicationContext())) }
             it.setNetwork(ZcashNetwork.fromResources(requireApplicationContext()))
+        }}
+        address = runBlocking {
+            DerivationTool.deriveShieldedAddress(
+                seed,
+                ZcashNetwork.fromResources(requireApplicationContext())
+            )
         }
-        address = DerivationTool.deriveShieldedAddress(seed, ZcashNetwork.fromResources(requireApplicationContext()))
         synchronizer = Synchronizer(initializer)
     }
 

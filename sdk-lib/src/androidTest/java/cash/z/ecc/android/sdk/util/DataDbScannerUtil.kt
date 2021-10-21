@@ -64,7 +64,13 @@ class DataDbScannerUtil {
     @Test
     @Ignore("This test is broken")
     fun scanExistingDb() {
-        synchronizer = Synchronizer(Initializer(context) { it.setBirthdayHeight(birthdayHeight) })
+        synchronizer = Synchronizer(runBlocking {
+            Initializer.new(context) {
+                it.setBirthdayHeight(
+                    birthdayHeight
+                )
+            }
+        })
 
         println("sync!")
         synchronizer.start()

@@ -46,7 +46,13 @@ class TestnetIntegrationTest : ScopedTest() {
 
     @Test
     fun testLoadBirthday() {
-        val (height, hash, time, tree) = WalletBirthdayTool.loadNearest(context, synchronizer.network, saplingActivation + 1)
+        val (height, hash, time, tree) = runBlocking {
+            WalletBirthdayTool.loadNearest(
+                context,
+                synchronizer.network,
+                saplingActivation + 1
+            )
+        }
         assertEquals(saplingActivation, height)
     }
 
@@ -118,9 +124,11 @@ class TestnetIntegrationTest : ScopedTest() {
         val toAddress = "zs1vp7kvlqr4n9gpehztr76lcn6skkss9p8keqs3nv8avkdtjrcctrvmk9a7u494kluv756jeee5k0"
 
         private val context = InstrumentationRegistry.getInstrumentation().context
-        private val initializer = Initializer(context) { config ->
-            config.setNetwork(ZcashNetwork.Testnet, host)
-            config.importWallet(seed, birthdayHeight, ZcashNetwork.Testnet)
+        private val initializer = runBlocking {
+            Initializer.new(context) { config ->
+                config.setNetwork(ZcashNetwork.Testnet, host)
+                runBlocking { config.importWallet(seed, birthdayHeight, ZcashNetwork.Testnet) }
+            }
         }
         private lateinit var synchronizer: Synchronizer
 

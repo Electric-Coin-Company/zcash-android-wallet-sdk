@@ -4,7 +4,8 @@ import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
-import cash.z.ecc.android.sdk.tool.WalletBirthdayTool.Companion.IS_FALLBACK_ON_FAILURE
+import cash.z.ecc.android.sdk.tool.WalletBirthdayTool.IS_FALLBACK_ON_FAILURE
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -25,11 +26,13 @@ class WalletBirthdayToolTest {
         val directory = "saplingtree/goodnet"
 
         val context = ApplicationProvider.getApplicationContext<Context>()
-        val birthday = WalletBirthdayTool.getFirstValidWalletBirthday(
-            context,
-            directory,
-            listOf("1300000.json", "1290000.json")
-        )
+        val birthday = runBlocking {
+            WalletBirthdayTool.getFirstValidWalletBirthday(
+                context,
+                directory,
+                listOf("1300000.json", "1290000.json")
+            )
+        }
         assertEquals(1300000, birthday.height)
     }
 
@@ -42,11 +45,13 @@ class WalletBirthdayToolTest {
 
         val directory = "saplingtree/badnet"
         val context = ApplicationProvider.getApplicationContext<Context>()
-        val birthday = WalletBirthdayTool.getFirstValidWalletBirthday(
-            context,
-            directory,
-            listOf("1300000.json", "1290000.json")
-        )
+        val birthday = runBlocking {
+            WalletBirthdayTool.getFirstValidWalletBirthday(
+                context,
+                directory,
+                listOf("1300000.json", "1290000.json")
+            )
+        }
         assertEquals(1290000, birthday.height)
     }
 }

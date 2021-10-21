@@ -9,6 +9,7 @@ import cash.z.ecc.android.sdk.internal.TroubleshootingTwig
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.tool.DerivationTool
 import cash.z.ecc.android.sdk.type.ZcashNetwork
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.BeforeClass
 import org.junit.Test
@@ -21,23 +22,23 @@ import org.junit.runners.Parameterized
 class TransparentTest(val expected: Expected, val network: ZcashNetwork) {
 
     @Test
-    fun deriveTransparentSecretKeyTest() {
+    fun deriveTransparentSecretKeyTest() = runBlocking {
         assertEquals(expected.tskCompressed, DerivationTool.deriveTransparentSecretKey(SEED, network = network))
     }
 
     @Test
-    fun deriveTransparentAddressTest() {
+    fun deriveTransparentAddressTest() = runBlocking {
         assertEquals(expected.tAddr, DerivationTool.deriveTransparentAddress(SEED, network = network))
     }
 
     @Test
-    fun deriveTransparentAddressFromSecretKeyTest() {
+    fun deriveTransparentAddressFromSecretKeyTest() = runBlocking {
         val pk = DerivationTool.deriveTransparentSecretKey(SEED, network = network)
         assertEquals(expected.tAddr, DerivationTool.deriveTransparentAddressFromPrivateKey(pk, network = network))
     }
 
     @Test
-    fun deriveUnifiedViewingKeysFromSeedTest() {
+    fun deriveUnifiedViewingKeysFromSeedTest() = runBlocking {
         val uvks = DerivationTool.deriveUnifiedViewingKeys(SEED, network = network)
         assertEquals(1, uvks.size)
         val uvk = uvks.first()

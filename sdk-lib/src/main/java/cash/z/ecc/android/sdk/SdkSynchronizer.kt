@@ -58,7 +58,6 @@ import io.grpc.ManagedChannel
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
@@ -247,7 +246,7 @@ class SdkSynchronizer internal constructor(
 
     override val latestBirthdayHeight: Int get() = processor.birthdayHeight
 
-    override fun prepare(): Synchronizer = apply {
+    override suspend fun prepare(): Synchronizer = apply {
         storage.prepare()
     }
 
@@ -336,15 +335,15 @@ class SdkSynchronizer internal constructor(
 
     // TODO: turn this section into the data access API. For now, just aggregate all the things that we want to do with the underlying data
 
-    fun findBlockHash(height: Int): ByteArray? {
+    suspend fun findBlockHash(height: Int): ByteArray? {
         return (storage as? PagedTransactionRepository)?.findBlockHash(height)
     }
 
-    fun findBlockHashAsHex(height: Int): String? {
+    suspend fun findBlockHashAsHex(height: Int): String? {
         return findBlockHash(height)?.toHexReversed()
     }
 
-    fun getTransactionCount(): Int {
+    suspend fun getTransactionCount(): Int {
         return (storage as? PagedTransactionRepository)?.getTransactionCount() ?: 0
     }
 
@@ -530,7 +529,7 @@ class SdkSynchronizer internal constructor(
         }
     }
 
-    private suspend fun refreshPendingTransactions() = withContext(IO) {
+    private suspend fun refreshPendingTransactions() = withContext(Dispatchers.IO) {
         twig("[cleanup] beginning to refresh and clean up pending transactions")
         // TODO: this would be the place to clear out any stale pending transactions. Remove filter
         //  logic and then delete any pending transaction with sufficient confirmations (all in one
@@ -737,7 +736,7 @@ class SdkSynchronizer internal constructor(
          *
          * @return true when content was found for the given alias. False otherwise.
          */
-        fun erase(appContext: Context, network: ZcashNetwork, alias: String = ZcashSdk.DEFAULT_ALIAS): Boolean
+        suspend fun erase(appContext: Context, network: ZcashNetwork, alias: String = ZcashSdk.DEFAULT_ALIAS): Boolean
     }
 }
 
