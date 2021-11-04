@@ -141,8 +141,10 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
     inner class DarksideTestValidator {
 
         fun validateHasBlock(height: Int) {
-            assertTrue((synchronizer as SdkSynchronizer).findBlockHashAsHex(height) != null)
-            assertTrue((synchronizer as SdkSynchronizer).findBlockHash(height)?.size ?: 0 > 0)
+            runBlocking {
+                assertTrue((synchronizer as SdkSynchronizer).findBlockHashAsHex(height) != null)
+                assertTrue((synchronizer as SdkSynchronizer).findBlockHash(height)?.size ?: 0 > 0)
+            }
         }
 
         fun validateLatestHeight(height: Int) = runBlocking<Unit> {
@@ -185,7 +187,7 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
         }
 
         fun validateBlockHash(height: Int, expectedHash: String) {
-            val hash = (synchronizer as SdkSynchronizer).findBlockHashAsHex(height)
+            val hash = runBlocking { (synchronizer as SdkSynchronizer).findBlockHashAsHex(height) }
             assertEquals(expectedHash, hash)
         }
 
@@ -194,7 +196,7 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
         }
 
         fun validateTxCount(count: Int) {
-            val txCount = (synchronizer as SdkSynchronizer).getTransactionCount()
+            val txCount = runBlocking { (synchronizer as SdkSynchronizer).getTransactionCount() }
             assertEquals("Expected $count transactions but found $txCount instead!", count, txCount)
         }
 

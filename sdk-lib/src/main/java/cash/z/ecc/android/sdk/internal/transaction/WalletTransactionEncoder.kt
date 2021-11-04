@@ -8,7 +8,8 @@ import cash.z.ecc.android.sdk.internal.twigTask
 import cash.z.ecc.android.sdk.jni.RustBackend
 import cash.z.ecc.android.sdk.jni.RustBackendWelding
 import cash.z.ecc.android.sdk.internal.SaplingParamTool
-import kotlinx.coroutines.Dispatchers.IO
+import cash.z.ecc.android.sdk.internal.SdkDispatchers
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /**
@@ -44,7 +45,7 @@ class WalletTransactionEncoder(
         toAddress: String,
         memo: ByteArray?,
         fromAccountIndex: Int
-    ): EncodedTransaction = withContext(IO) {
+    ): EncodedTransaction = withContext(SdkDispatchers.IO) {
         val transactionId = createSpend(spendingKey, zatoshi, toAddress, memo)
         repository.findEncodedTransactionById(transactionId)
             ?: throw TransactionEncoderException.TransactionNotFoundException(transactionId)
@@ -54,7 +55,7 @@ class WalletTransactionEncoder(
         spendingKey: String,
         transparentSecretKey: String,
         memo: ByteArray?
-    ): EncodedTransaction = withContext(IO) {
+    ): EncodedTransaction = withContext(SdkDispatchers.IO) {
         val transactionId = createShieldingSpend(spendingKey, transparentSecretKey, memo)
         repository.findEncodedTransactionById(transactionId)
             ?: throw TransactionEncoderException.TransactionNotFoundException(transactionId)
@@ -68,7 +69,7 @@ class WalletTransactionEncoder(
      *
      * @return true when the given address is a valid z-addr
      */
-    override suspend fun isValidShieldedAddress(address: String): Boolean = withContext(IO) {
+    override suspend fun isValidShieldedAddress(address: String): Boolean = withContext(Dispatchers.IO) {
         rustBackend.isValidShieldedAddr(address)
     }
 
@@ -80,7 +81,7 @@ class WalletTransactionEncoder(
      *
      * @return true when the given address is a valid t-addr
      */
-    override suspend fun isValidTransparentAddress(address: String): Boolean = withContext(IO) {
+    override suspend fun isValidTransparentAddress(address: String): Boolean = withContext(Dispatchers.IO) {
         rustBackend.isValidTransparentAddr(address)
     }
 
@@ -110,7 +111,7 @@ class WalletTransactionEncoder(
         toAddress: String,
         memo: ByteArray? = byteArrayOf(),
         fromAccountIndex: Int = 0
-    ): Long = withContext(IO) {
+    ): Long = withContext(Dispatchers.IO) {
         twigTask(
             "creating transaction to spend $zatoshi zatoshi to" +
                 " ${toAddress.masked()} with memo $memo"
@@ -140,7 +141,7 @@ class WalletTransactionEncoder(
         spendingKey: String,
         transparentSecretKey: String,
         memo: ByteArray? = byteArrayOf()
-    ): Long = withContext(IO) {
+    ): Long = withContext(Dispatchers.IO) {
         twigTask("creating transaction to shield all UTXOs") {
             try {
                 SaplingParamTool.ensureParams((rustBackend as RustBackend).pathParamsDir)

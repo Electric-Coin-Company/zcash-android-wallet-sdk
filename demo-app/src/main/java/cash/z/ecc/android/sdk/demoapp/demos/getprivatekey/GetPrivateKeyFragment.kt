@@ -2,6 +2,7 @@ package cash.z.ecc.android.sdk.demoapp.demos.getprivatekey
 
 import android.os.Bundle
 import android.view.LayoutInflater
+import androidx.lifecycle.lifecycleScope
 import cash.z.ecc.android.bip39.Mnemonics
 import cash.z.ecc.android.bip39.toSeed
 import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
@@ -10,6 +11,7 @@ import cash.z.ecc.android.sdk.demoapp.ext.requireApplicationContext
 import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.tool.DerivationTool
 import cash.z.ecc.android.sdk.type.ZcashNetwork
+import kotlinx.coroutines.launch
 
 /**
  * Displays the viewing key and spending key associated with the seed used during the demo. The
@@ -37,13 +39,22 @@ class GetPrivateKeyFragment : BaseDemoFragment<FragmentGetPrivateKeyBinding>() {
     private fun displayKeys() {
         // derive the keys from the seed:
         // demonstrate deriving spending keys for five accounts but only take the first one
-        val spendingKey = DerivationTool.deriveSpendingKeys(seed, ZcashNetwork.fromResources(requireApplicationContext()), 5).first()
+        lifecycleScope.launchWhenStarted {
+            val spendingKey = DerivationTool.deriveSpendingKeys(
+                seed,
+                ZcashNetwork.fromResources(requireApplicationContext()),
+                5
+            ).first()
 
-        // derive the key that allows you to view but not spend transactions
-        val viewingKey = DerivationTool.deriveViewingKey(spendingKey, ZcashNetwork.fromResources(requireApplicationContext()))
+            // derive the key that allows you to view but not spend transactions
+            val viewingKey = DerivationTool.deriveViewingKey(
+                spendingKey,
+                ZcashNetwork.fromResources(requireApplicationContext())
+            )
 
-        // display the keys in the UI
-        binding.textInfo.setText("Spending Key:\n$spendingKey\n\nViewing Key:\n$viewingKey")
+            // display the keys in the UI
+            binding.textInfo.setText("Spending Key:\n$spendingKey\n\nViewing Key:\n$viewingKey")
+        }
     }
 
     //
@@ -65,10 +76,15 @@ class GetPrivateKeyFragment : BaseDemoFragment<FragmentGetPrivateKeyBinding>() {
     //
 
     override fun onActionButtonClicked() {
-        copyToClipboard(
-            DerivationTool.deriveUnifiedViewingKeys(seed, ZcashNetwork.fromResources(requireApplicationContext())).first().extpub,
-            "ViewingKey copied to clipboard!"
-        )
+        lifecycleScope.launch {
+            copyToClipboard(
+                DerivationTool.deriveUnifiedViewingKeys(
+                    seed,
+                    ZcashNetwork.fromResources(requireApplicationContext())
+                ).first().extpub,
+                "ViewingKey copied to clipboard!"
+            )
+        }
     }
 
     override fun inflateBinding(layoutInflater: LayoutInflater): FragmentGetPrivateKeyBinding =

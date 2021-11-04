@@ -37,5 +37,5 @@ interface CompactBlockStore {
     /**
      * Close any connections to the block store.
      */
-    fun close()
+    suspend fun close()
 }

@@ -4,10 +4,14 @@ import cash.z.ecc.android.sdk.exception.BirthdayException
 import cash.z.ecc.android.sdk.ext.ZcashSdk.OUTPUT_PARAM_FILE_NAME
 import cash.z.ecc.android.sdk.ext.ZcashSdk.SPEND_PARAM_FILE_NAME
 import cash.z.ecc.android.sdk.internal.twig
+import cash.z.ecc.android.sdk.internal.SdkDispatchers
+import cash.z.ecc.android.sdk.internal.ext.deleteSuspend
 import cash.z.ecc.android.sdk.tool.DerivationTool
 import cash.z.ecc.android.sdk.type.UnifiedViewingKey
 import cash.z.ecc.android.sdk.type.WalletBalance
 import cash.z.ecc.android.sdk.type.ZcashNetwork
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.io.File
 
 /**
@@ -16,10 +20,6 @@ import java.io.File
  * should be used such as Wallet.kt or CompactBlockProcessor.kt.
  */
 class RustBackend private constructor() : RustBackendWelding {
-
-    init {
-        load()
-    }
 
     // Paths
     lateinit var pathDataDb: String
@@ -35,14 +35,14 @@ class RustBackend private constructor() : RustBackendWelding {
         get() = if (field != -1) field else throw BirthdayException.UninitializedBirthdayException
         private set
 
-    fun clear(clearCacheDb: Boolean = true, clearDataDb: Boolean = true) {
+    suspend fun clear(clearCacheDb: Boolean = true, clearDataDb: Boolean = true) {
         if (clearCacheDb) {
             twig("Deleting the cache database!")
-            File(pathCacheDb).delete()
+            File(pathCacheDb).deleteSuspend()
         }
         if (clearDataDb) {
             twig("Deleting the data database!")
-            File(pathDataDb).delete()
+            File(pathDataDb).deleteSuspend()
         }
     }
 
@@ -50,19 +50,31 @@ class RustBackend private constructor() : RustBackendWelding {
     // Wrapper Functions
     //
 
-    override fun initDataDb() = initDataDb(pathDataDb, networkId = network.id)
+    override suspend fun initDataDb() = withContext(SdkDispatchers.IO) {
+        initDataDb(
+            pathDataDb,
+            networkId = network.id
+        )
+    }
 
-    override fun initAccountsTable(vararg keys: UnifiedViewingKey): Boolean {
+    override suspend fun initAccountsTable(vararg keys: UnifiedViewingKey): Boolean {
         val extfvks = Array(keys.size) { "" }
         val extpubs = Array(keys.size) { "" }
         keys.forEachIndexed { i, key ->
             extfvks[i] = key.extfvk
             extpubs[i] = key.extpub
         }
-        return initAccountsTableWithKeys(pathDataDb, extfvks, extpubs, networkId = network.id)
+        return withContext(SdkDispatchers.IO) {
+            initAccountsTableWithKeys(
+                pathDataDb,
+                extfvks,
+                extpubs,
+                networkId = network.id
+            )
+        }
     }
 
-    override fun initAccountsTable(
+    override suspend fun initAccountsTable(
         seed: ByteArray,
         numberOfAccounts: Int
     ): Array<UnifiedViewingKey> {
@@ -71,82 +83,131 @@ class RustBackend private constructor() : RustBackendWelding {
         }
     }
 
-    override fun initBlocksTable(
+    override suspend fun initBlocksTable(
         height: Int,
         hash: String,
         time: Long,
         saplingTree: String
     ): Boolean {
-        return initBlocksTable(pathDataDb, height, hash, time, saplingTree, networkId = network.id)
+        return withContext(SdkDispatchers.IO) {
+            initBlocksTable(
+                pathDataDb,
+                height,
+                hash,
+                time,
+                saplingTree,
+                networkId = network.id
+            )
+        }
     }
 
-    override fun getShieldedAddress(account: Int) = getShieldedAddress(pathDataDb, account, networkId = network.id)
+    override suspend fun getShieldedAddress(account: Int) = withContext(SdkDispatchers.IO) {
+        getShieldedAddress(
+            pathDataDb,
+            account,
+            networkId = network.id
+        )
+    }
 
-    override fun getTransparentAddress(account: Int, index: Int): String {
+    override suspend fun getTransparentAddress(account: Int, index: Int): String {
         throw NotImplementedError("TODO: implement this at the zcash_client_sqlite level. But for now, use DerivationTool, instead to derive addresses from seeds")
     }
 
-    override fun getBalance(account: Int) = getBalance(pathDataDb, account, networkId = network.id)
+    override suspend fun getBalance(account: Int) = withContext(SdkDispatchers.IO) {
+        getBalance(
+            pathDataDb,
+            account,
+            networkId = network.id
+        )
+    }
 
-    override fun getVerifiedBalance(account: Int) = getVerifiedBalance(pathDataDb, account, networkId = network.id)
+    override suspend fun getVerifiedBalance(account: Int) = withContext(SdkDispatchers.IO) {
+        getVerifiedBalance(
+            pathDataDb,
+            account,
+            networkId = network.id
+        )
+    }
 
-    override fun getReceivedMemoAsUtf8(idNote: Long) =
-        getReceivedMemoAsUtf8(pathDataDb, idNote, networkId = network.id)
+    override suspend fun getReceivedMemoAsUtf8(idNote: Long) =
+        withContext(SdkDispatchers.IO) { getReceivedMemoAsUtf8(pathDataDb, idNote, networkId = network.id) }
 
-    override fun getSentMemoAsUtf8(idNote: Long) = getSentMemoAsUtf8(pathDataDb, idNote, networkId = network.id)
+    override suspend fun getSentMemoAsUtf8(idNote: Long) = withContext(SdkDispatchers.IO) {
+        getSentMemoAsUtf8(
+            pathDataDb,
+            idNote,
+            networkId = network.id
+        )
+    }
 
-    override fun validateCombinedChain() = validateCombinedChain(pathCacheDb, pathDataDb, networkId = network.id,)
+    override suspend fun validateCombinedChain() = withContext(SdkDispatchers.IO) {
+        validateCombinedChain(
+            pathCacheDb,
+            pathDataDb,
+            networkId = network.id,
+        )
+    }
 
-    override fun getNearestRewindHeight(height: Int): Int = getNearestRewindHeight(pathDataDb, height, networkId = network.id)
+    override suspend fun getNearestRewindHeight(height: Int): Int = withContext(SdkDispatchers.IO) {
+        getNearestRewindHeight(
+            pathDataDb,
+            height,
+            networkId = network.id
+        )
+    }
 
     /**
      * Deletes data for all blocks above the given height. Boils down to:
      *
      * DELETE FROM blocks WHERE height > ?
      */
-    override fun rewindToHeight(height: Int) = rewindToHeight(pathDataDb, height, networkId = network.id)
+    override suspend fun rewindToHeight(height: Int) =
+        withContext(SdkDispatchers.IO) { rewindToHeight(pathDataDb, height, networkId = network.id) }
 
-    override fun scanBlocks(limit: Int): Boolean {
+    override suspend fun scanBlocks(limit: Int): Boolean {
         return if (limit > 0) {
-            scanBlockBatch(pathCacheDb, pathDataDb, limit, networkId = network.id)
+            withContext(SdkDispatchers.IO) {
+                scanBlockBatch(
+                    pathCacheDb,
+                    pathDataDb,
+                    limit,
+                    networkId = network.id
+                )
+            }
         } else {
-            scanBlocks(pathCacheDb, pathDataDb, networkId = network.id)
+            withContext(SdkDispatchers.IO) {
+                scanBlocks(
+                    pathCacheDb,
+                    pathDataDb,
+                    networkId = network.id
+                )
+            }
         }
     }
 
-    override fun decryptAndStoreTransaction(tx: ByteArray) = decryptAndStoreTransaction(pathDataDb, tx, networkId = network.id)
+    override suspend fun decryptAndStoreTransaction(tx: ByteArray) = withContext(SdkDispatchers.IO) {
+        decryptAndStoreTransaction(
+            pathDataDb,
+            tx,
+            networkId = network.id
+        )
+    }
 
-    override fun createToAddress(
+    override suspend fun createToAddress(
         consensusBranchId: Long,
         account: Int,
         extsk: String,
         to: String,
         value: Long,
         memo: ByteArray?
-    ): Long = createToAddress(
-        pathDataDb,
-        consensusBranchId,
-        account,
-        extsk,
-        to,
-        value,
-        memo ?: ByteArray(0),
-        "$pathParamsDir/$SPEND_PARAM_FILE_NAME",
-        "$pathParamsDir/$OUTPUT_PARAM_FILE_NAME",
-        networkId = network.id,
-    )
-
-    override fun shieldToAddress(
-        extsk: String,
-        tsk: String,
-        memo: ByteArray?
-    ): Long {
-        twig("TMP: shieldToAddress with db path: $pathDataDb, ${memo?.size}")
-        return shieldToAddress(
+    ): Long = withContext(SdkDispatchers.IO) {
+        createToAddress(
             pathDataDb,
-            0,
+            consensusBranchId,
+            account,
             extsk,
-            tsk,
+            to,
+            value,
             memo ?: ByteArray(0),
             "$pathParamsDir/$SPEND_PARAM_FILE_NAME",
             "$pathParamsDir/$OUTPUT_PARAM_FILE_NAME",
@@ -154,31 +215,84 @@ class RustBackend private constructor() : RustBackendWelding {
         )
     }
 
-    override fun putUtxo(
+    override suspend fun shieldToAddress(
+        extsk: String,
+        tsk: String,
+        memo: ByteArray?
+    ): Long {
+        twig("TMP: shieldToAddress with db path: $pathDataDb, ${memo?.size}")
+        return withContext(SdkDispatchers.IO) {
+            shieldToAddress(
+                pathDataDb,
+                0,
+                extsk,
+                tsk,
+                memo ?: ByteArray(0),
+                "$pathParamsDir/$SPEND_PARAM_FILE_NAME",
+                "$pathParamsDir/$OUTPUT_PARAM_FILE_NAME",
+                networkId = network.id,
+            )
+        }
+    }
+
+    override suspend fun putUtxo(
         tAddress: String,
         txId: ByteArray,
         index: Int,
         script: ByteArray,
         value: Long,
         height: Int
-    ): Boolean = putUtxo(pathDataDb, tAddress, txId, index, script, value, height, networkId = network.id)
+    ): Boolean = withContext(SdkDispatchers.IO) {
+        putUtxo(
+            pathDataDb,
+            tAddress,
+            txId,
+            index,
+            script,
+            value,
+            height,
+            networkId = network.id
+        )
+    }
 
-    override fun clearUtxos(
+    override suspend fun clearUtxos(
         tAddress: String,
         aboveHeight: Int,
-    ): Boolean = clearUtxos(pathDataDb, tAddress, aboveHeight, networkId = network.id)
+    ): Boolean = withContext(SdkDispatchers.IO) {
+        clearUtxos(
+            pathDataDb,
+            tAddress,
+            aboveHeight,
+            networkId = network.id
+        )
+    }
 
-    override fun getDownloadedUtxoBalance(address: String): WalletBalance {
-        val verified = getVerifiedTransparentBalance(pathDataDb, address, networkId = network.id)
-        val total = getTotalTransparentBalance(pathDataDb, address, networkId = network.id)
+    override suspend fun getDownloadedUtxoBalance(address: String): WalletBalance {
+        val verified = withContext(SdkDispatchers.IO) {
+            getVerifiedTransparentBalance(
+                pathDataDb,
+                address,
+                networkId = network.id
+            )
+        }
+        val total = withContext(SdkDispatchers.IO) {
+            getTotalTransparentBalance(
+                pathDataDb,
+                address,
+                networkId = network.id
+            )
+        }
         return WalletBalance(total, verified)
     }
 
-    override fun isValidShieldedAddr(addr: String) = isValidShieldedAddress(addr, networkId = network.id)
+    override fun isValidShieldedAddr(addr: String) =
+        isValidShieldedAddress(addr, networkId = network.id)
 
-    override fun isValidTransparentAddr(addr: String) = isValidTransparentAddress(addr, networkId = network.id)
+    override fun isValidTransparentAddr(addr: String) =
+        isValidTransparentAddress(addr, networkId = network.id)
 
-    override fun getBranchIdForHeight(height: Int): Long = branchIdForHeight(height, networkId = network.id)
+    override fun getBranchIdForHeight(height: Int): Long =
+        branchIdForHeight(height, networkId = network.id)
 
 //    /**
 //     * This is a proof-of-concept for doing Local RPC, where we are effectively using the JNI
@@ -203,19 +317,21 @@ class RustBackend private constructor() : RustBackendWelding {
      * Exposes all of the librustzcash functions along with helpers for loading the static library.
      */
     companion object {
-        private var loaded = false
+        internal val rustLibraryLoader = NativeLibraryLoader("zcashwalletsdk")
 
         /**
          * Loads the library and initializes path variables. Although it is best to only call this
          * function once, it is idempotent.
          */
-        fun init(
+        suspend fun init(
             cacheDbPath: String,
             dataDbPath: String,
             paramsPath: String,
             zcashNetwork: ZcashNetwork,
             birthdayHeight: Int? = null
         ): RustBackend {
+            rustLibraryLoader.load()
+
             return RustBackend().apply {
                 pathCacheDb = cacheDbPath
                 pathDataDb = dataDbPath
@@ -223,16 +339,6 @@ class RustBackend private constructor() : RustBackendWelding {
                 network = zcashNetwork
                 if (birthdayHeight != null) {
                     this.birthdayHeight = birthdayHeight
-                }
-            }
-        }
-
-        fun load() {
-            // It is safe to call these things twice but not efficient. So we add a loose check and
-            // ignore the fact that it's not thread-safe.
-            if (!loaded) {
-                twig("Loading RustBackend") {
-                    loadRustLibrary()
                 }
             }
         }
@@ -249,33 +355,24 @@ class RustBackend private constructor() : RustBackendWelding {
          */
         fun enableRustLogs() = initLogs()
 
-        /**
-         * The first call made to this object in order to load the Rust backend library. All other
-         * external function calls will fail if the libraries have not been loaded.
-         */
-        private fun loadRustLibrary() {
-            try {
-                System.loadLibrary("zcashwalletsdk")
-                loaded = true
-            } catch (e: Throwable) {
-                twig("Error while loading native library: ${e.message}")
-            }
-        }
 
         //
         // External Functions
         //
 
-        @JvmStatic private external fun initDataDb(dbDataPath: String, networkId: Int): Boolean
+        @JvmStatic
+        private external fun initDataDb(dbDataPath: String, networkId: Int): Boolean
 
-        @JvmStatic private external fun initAccountsTableWithKeys(
+        @JvmStatic
+        private external fun initAccountsTableWithKeys(
             dbDataPath: String,
             extfvk: Array<out String>,
             extpub: Array<out String>,
             networkId: Int,
         ): Boolean
 
-        @JvmStatic private external fun initBlocksTable(
+        @JvmStatic
+        private external fun initBlocksTable(
             dbDataPath: String,
             height: Int,
             hash: String,
@@ -364,7 +461,8 @@ class RustBackend private constructor() : RustBackendWelding {
             networkId: Int,
         )
 
-        @JvmStatic private external fun createToAddress(
+        @JvmStatic
+        private external fun createToAddress(
             dbDataPath: String,
             consensusBranchId: Long,
             account: Int,
@@ -377,7 +475,8 @@ class RustBackend private constructor() : RustBackendWelding {
             networkId: Int,
         ): Long
 
-        @JvmStatic private external fun shieldToAddress(
+        @JvmStatic
+        private external fun shieldToAddress(
             dbDataPath: String,
             account: Int,
             extsk: String,
@@ -388,11 +487,14 @@ class RustBackend private constructor() : RustBackendWelding {
             networkId: Int,
         ): Long
 
-        @JvmStatic private external fun initLogs()
+        @JvmStatic
+        private external fun initLogs()
 
-        @JvmStatic private external fun branchIdForHeight(height: Int, networkId: Int): Long
+        @JvmStatic
+        private external fun branchIdForHeight(height: Int, networkId: Int): Long
 
-        @JvmStatic private external fun putUtxo(
+        @JvmStatic
+        private external fun putUtxo(
             dbDataPath: String,
             tAddress: String,
             txId: ByteArray,
@@ -403,23 +505,27 @@ class RustBackend private constructor() : RustBackendWelding {
             networkId: Int,
         ): Boolean
 
-        @JvmStatic private external fun clearUtxos(
+        @JvmStatic
+        private external fun clearUtxos(
             dbDataPath: String,
             tAddress: String,
             aboveHeight: Int,
             networkId: Int,
         ): Boolean
 
-        @JvmStatic private external fun getVerifiedTransparentBalance(
+        @JvmStatic
+        private external fun getVerifiedTransparentBalance(
             pathDataDb: String,
             taddr: String,
             networkId: Int,
         ): Long
 
-        @JvmStatic private external fun getTotalTransparentBalance(
+        @JvmStatic
+        private external fun getTotalTransparentBalance(
             pathDataDb: String,
             taddr: String,
             networkId: Int,
         ): Long
     }
 }
+

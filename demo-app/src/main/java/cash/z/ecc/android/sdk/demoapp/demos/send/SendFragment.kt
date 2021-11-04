@@ -32,6 +32,7 @@ import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.tool.DerivationTool
 import cash.z.ecc.android.sdk.type.WalletBalance
 import cash.z.ecc.android.sdk.type.ZcashNetwork
+import kotlinx.coroutines.runBlocking
 
 /**
  * Demonstrates sending funds to an address. This is the most complex example that puts all of the
@@ -63,13 +64,13 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
         // have the seed stored
         val seed = Mnemonics.MnemonicCode(seedPhrase).toSeed()
 
-        Initializer(requireApplicationContext()) {
-            it.importWallet(seed, network = ZcashNetwork.fromResources(requireApplicationContext()))
+        runBlocking { Initializer.new(requireApplicationContext()) {
+            runBlocking { it.importWallet(seed, network = ZcashNetwork.fromResources(requireApplicationContext())) }
             it.setNetwork(ZcashNetwork.fromResources(requireApplicationContext()))
-        }.let { initializer ->
+        }}.let { initializer ->
             synchronizer = Synchronizer(initializer)
         }
-        spendingKey = DerivationTool.deriveSpendingKeys(seed, ZcashNetwork.fromResources(requireApplicationContext())).first()
+        spendingKey = runBlocking { DerivationTool.deriveSpendingKeys(seed, ZcashNetwork.fromResources(requireApplicationContext())).first() }
     }
 
     //

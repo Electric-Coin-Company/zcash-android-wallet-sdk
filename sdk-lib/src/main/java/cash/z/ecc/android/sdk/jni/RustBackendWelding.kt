@@ -14,7 +14,7 @@ interface RustBackendWelding {
 
     val network: ZcashNetwork
 
-    fun createToAddress(
+    suspend fun createToAddress(
         consensusBranchId: Long,
         account: Int,
         extsk: String,
@@ -23,51 +23,51 @@ interface RustBackendWelding {
         memo: ByteArray? = byteArrayOf()
     ): Long
 
-    fun shieldToAddress(
+    suspend fun shieldToAddress(
         extsk: String,
         tsk: String,
         memo: ByteArray? = byteArrayOf()
     ): Long
 
-    fun decryptAndStoreTransaction(tx: ByteArray)
+    suspend fun decryptAndStoreTransaction(tx: ByteArray)
 
-    fun initAccountsTable(seed: ByteArray, numberOfAccounts: Int): Array<UnifiedViewingKey>
+    suspend fun initAccountsTable(seed: ByteArray, numberOfAccounts: Int): Array<UnifiedViewingKey>
 
-    fun initAccountsTable(vararg keys: UnifiedViewingKey): Boolean
+    suspend fun initAccountsTable(vararg keys: UnifiedViewingKey): Boolean
 
-    fun initBlocksTable(height: Int, hash: String, time: Long, saplingTree: String): Boolean
+    suspend fun initBlocksTable(height: Int, hash: String, time: Long, saplingTree: String): Boolean
 
-    fun initDataDb(): Boolean
+    suspend fun initDataDb(): Boolean
 
     fun isValidShieldedAddr(addr: String): Boolean
 
     fun isValidTransparentAddr(addr: String): Boolean
 
-    fun getShieldedAddress(account: Int = 0): String
+    suspend fun getShieldedAddress(account: Int = 0): String
 
-    fun getTransparentAddress(account: Int = 0, index: Int = 0): String
+    suspend fun getTransparentAddress(account: Int = 0, index: Int = 0): String
 
-    fun getBalance(account: Int = 0): Long
+    suspend fun getBalance(account: Int = 0): Long
 
     fun getBranchIdForHeight(height: Int): Long
 
-    fun getReceivedMemoAsUtf8(idNote: Long): String
+    suspend fun getReceivedMemoAsUtf8(idNote: Long): String
 
-    fun getSentMemoAsUtf8(idNote: Long): String
+    suspend fun getSentMemoAsUtf8(idNote: Long): String
 
-    fun getVerifiedBalance(account: Int = 0): Long
+    suspend fun getVerifiedBalance(account: Int = 0): Long
 
 //    fun parseTransactionDataList(tdl: LocalRpcTypes.TransactionDataList): LocalRpcTypes.TransparentTransactionList
 
-    fun getNearestRewindHeight(height: Int): Int
+    suspend fun getNearestRewindHeight(height: Int): Int
 
-    fun rewindToHeight(height: Int): Boolean
+    suspend fun rewindToHeight(height: Int): Boolean
 
-    fun scanBlocks(limit: Int = -1): Boolean
+    suspend fun scanBlocks(limit: Int = -1): Boolean
 
-    fun validateCombinedChain(): Int
+    suspend fun validateCombinedChain(): Int
 
-    fun putUtxo(
+    suspend fun putUtxo(
         tAddress: String,
         txId: ByteArray,
         index: Int,
@@ -76,59 +76,59 @@ interface RustBackendWelding {
         height: Int
     ): Boolean
 
-    fun clearUtxos(tAddress: String, aboveHeight: Int = network.saplingActivationHeight - 1): Boolean
+    suspend fun clearUtxos(tAddress: String, aboveHeight: Int = network.saplingActivationHeight - 1): Boolean
 
-    fun getDownloadedUtxoBalance(address: String): WalletBalance
+    suspend fun getDownloadedUtxoBalance(address: String): WalletBalance
 
     // Implemented by `DerivationTool`
     interface Derivation {
-        fun deriveShieldedAddress(
+        suspend fun deriveShieldedAddress(
             viewingKey: String,
             network: ZcashNetwork
         ): String
 
-        fun deriveShieldedAddress(
+        suspend fun deriveShieldedAddress(
             seed: ByteArray,
             network: ZcashNetwork,
             accountIndex: Int = 0,
         ): String
 
-        fun deriveSpendingKeys(
+        suspend fun deriveSpendingKeys(
             seed: ByteArray,
             network: ZcashNetwork,
             numberOfAccounts: Int = 1,
         ): Array<String>
 
-        fun deriveTransparentAddress(
+        suspend fun deriveTransparentAddress(
             seed: ByteArray,
             network: ZcashNetwork,
             account: Int = 0,
             index: Int = 0,
         ): String
 
-        fun deriveTransparentAddressFromPublicKey(
+        suspend fun deriveTransparentAddressFromPublicKey(
             publicKey: String,
             network: ZcashNetwork
         ): String
 
-        fun deriveTransparentAddressFromPrivateKey(
+        suspend fun deriveTransparentAddressFromPrivateKey(
             privateKey: String,
             network: ZcashNetwork
         ): String
 
-        fun deriveTransparentSecretKey(
+        suspend fun deriveTransparentSecretKey(
             seed: ByteArray,
             network: ZcashNetwork,
             account: Int = 0,
             index: Int = 0,
         ): String
 
-        fun deriveViewingKey(
+        suspend fun deriveViewingKey(
             spendingKey: String,
             network: ZcashNetwork
         ): String
 
-        fun deriveUnifiedViewingKeys(
+        suspend fun deriveUnifiedViewingKeys(
             seed: ByteArray,
             network: ZcashNetwork,
             numberOfAccounts: Int = 1,

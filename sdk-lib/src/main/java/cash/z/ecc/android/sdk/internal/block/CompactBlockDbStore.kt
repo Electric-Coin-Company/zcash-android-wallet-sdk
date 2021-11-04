@@ -6,8 +6,9 @@ import androidx.room.RoomDatabase
 import cash.z.ecc.android.sdk.internal.db.CompactBlockDao
 import cash.z.ecc.android.sdk.internal.db.CompactBlockDb
 import cash.z.ecc.android.sdk.db.entity.CompactBlockEntity
+import cash.z.ecc.android.sdk.internal.SdkDispatchers
 import cash.z.wallet.sdk.rpc.CompactFormats
-import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /**
@@ -38,7 +39,7 @@ class CompactBlockDbStore(
             .build()
     }
 
-    override suspend fun getLatestHeight(): Int = withContext(IO) {
+    override suspend fun getLatestHeight(): Int = withContext(SdkDispatchers.IO) {
         Math.max(0, cacheDao.latestBlockHeight())
     }
 
@@ -46,15 +47,17 @@ class CompactBlockDbStore(
         return cacheDao.findCompactBlock(height)?.let { CompactFormats.CompactBlock.parseFrom(it) }
     }
 
-    override suspend fun write(result: List<CompactFormats.CompactBlock>) = withContext(IO) {
+    override suspend fun write(result: List<CompactFormats.CompactBlock>) = withContext(SdkDispatchers.IO) {
         cacheDao.insert(result.map { CompactBlockEntity(it.height.toInt(), it.toByteArray()) })
     }
 
-    override suspend fun rewindTo(height: Int) = withContext(IO) {
+    override suspend fun rewindTo(height: Int) = withContext(SdkDispatchers.IO) {
         cacheDao.rewindTo(height)
     }
 
-    override fun close() {
-        cacheDb.close()
+    override suspend fun close() {
+        withContext(SdkDispatchers.IO) {
+            cacheDb.close()
+        }
     }
 }

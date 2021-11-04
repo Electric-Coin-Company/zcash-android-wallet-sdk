@@ -5,6 +5,7 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.filters.SmallTest
 import cash.z.ecc.android.sdk.tool.WalletBirthdayTool
 import cash.z.ecc.android.sdk.type.ZcashNetwork
+import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -92,9 +93,9 @@ class AssetTest {
     private data class JsonFile(val jsonObject: JSONObject, val filename: String)
 
     companion object {
-        fun listAssets(network: ZcashNetwork) = WalletBirthdayTool.listBirthdayDirectoryContents(
+        fun listAssets(network: ZcashNetwork) = runBlocking { WalletBirthdayTool.listBirthdayDirectoryContents(
             ApplicationProvider.getApplicationContext<Context>(),
-            WalletBirthdayTool.birthdayDirectory(network)
-        )
+            WalletBirthdayTool.birthdayDirectory(network))
+        }
     }
 }

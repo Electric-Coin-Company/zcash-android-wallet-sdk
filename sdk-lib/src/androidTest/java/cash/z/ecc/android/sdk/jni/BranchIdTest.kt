@@ -3,6 +3,7 @@ package cash.z.ecc.android.sdk.jni
 import cash.z.ecc.android.sdk.annotation.MaintainedTest
 import cash.z.ecc.android.sdk.annotation.TestPurpose
 import cash.z.ecc.android.sdk.type.ZcashNetwork
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -43,8 +44,8 @@ class BranchIdTest(
             // is an abnormal use of the SDK because this really should run at the rust level
             // However, due to quirks on certain devices, we created this test at the Android level,
             // as a sanity check
-            val testnetBackend = RustBackend.init("", "", "", ZcashNetwork.Testnet)
-            val mainnetBackend = RustBackend.init("", "", "", ZcashNetwork.Mainnet)
+            val testnetBackend = runBlocking { RustBackend.init("", "", "", ZcashNetwork.Testnet) }
+            val mainnetBackend = runBlocking { RustBackend.init("", "", "", ZcashNetwork.Mainnet) }
             return listOf(
                 // Mainnet Cases
                 arrayOf("Sapling", 419_200, 1991772603L, "76b809bb", mainnetBackend),

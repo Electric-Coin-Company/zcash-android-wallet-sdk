@@ -526,7 +526,7 @@ class CompactBlockProcessor(
      *  @return [ERROR_CODE_NONE] when there is no problem. Otherwise, return the lowest height where an error was
      *  found. In other words, validation starts at the back of the chain and works toward the tip.
      */
-    private fun validateNewBlocks(range: IntRange?): Int {
+    private suspend fun validateNewBlocks(range: IntRange?): Int {
         if (range?.isEmpty() != false) {
             twig("no blocks to validate: $range")
             return ERROR_CODE_NONE

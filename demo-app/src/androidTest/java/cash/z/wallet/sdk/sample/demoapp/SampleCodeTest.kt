@@ -52,7 +52,12 @@ class SampleCodeTest {
     // ///////////////////////////////////////////////////
     // Derive Extended Spending Key
     @Test fun deriveSpendingKey() {
-        val spendingKeys = DerivationTool.deriveSpendingKeys(seed, ZcashNetwork.Mainnet)
+        val spendingKeys = runBlocking {
+            DerivationTool.deriveSpendingKeys(
+                seed,
+                ZcashNetwork.Mainnet
+            )
+        }
         assertEquals(1, spendingKeys.size)
         log("Spending Key: ${spendingKeys?.get(0)}")
     }
@@ -140,7 +145,7 @@ class SampleCodeTest {
         private val lightwalletdHost: String = ZcashNetwork.Mainnet.defaultHost
 
         private val context = InstrumentationRegistry.getInstrumentation().targetContext
-        private val synchronizer = Synchronizer(Initializer(context) {})
+        private val synchronizer = Synchronizer(runBlocking { Initializer.new(context) {} })
 
         @BeforeClass
         @JvmStatic

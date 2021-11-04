@@ -7,6 +7,7 @@ import cash.z.ecc.android.sdk.internal.service.LightWalletService
 import cash.z.wallet.sdk.rpc.Service
 import io.grpc.StatusRuntimeException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -122,8 +123,10 @@ open class CompactBlockDownloader private constructor(val compactBlockStore: Com
     /**
      * Stop this downloader and cleanup any resources being used.
      */
-    fun stop() {
-        lightWalletService.shutdown()
+    suspend fun stop() {
+        withContext(Dispatchers.IO) {
+            lightWalletService.shutdown()
+        }
         compactBlockStore.close()
     }
 

@@ -25,6 +25,7 @@ import cash.z.ecc.android.sdk.type.ZcashNetwork
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 
 /**
@@ -60,10 +61,10 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
         // Use a BIP-39 library to convert a seed phrase into a byte array. Most wallets already
         // have the seed stored
         seed = Mnemonics.MnemonicCode(sharedViewModel.seedPhrase.value).toSeed()
-        initializer = Initializer(requireApplicationContext()) {
-            it.importWallet(seed, network = ZcashNetwork.fromResources(requireApplicationContext()))
+        initializer = runBlocking {Initializer.new(requireApplicationContext()) {
+            runBlocking { it.importWallet(seed, network = ZcashNetwork.fromResources(requireApplicationContext())) }
             it.alias = "Demo_Utxos"
-        }
+        }}
         synchronizer = Synchronizer(initializer)
     }
 
@@ -102,7 +103,7 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
             txids?.map {
                 it.data.apply {
                     try {
-                        initializer.rustBackend.decryptAndStoreTransaction(toByteArray())
+                        runBlocking { initializer.rustBackend.decryptAndStoreTransaction(toByteArray()) }
                     } catch (t: Throwable) {
                         twig("failed to decrypt and store transaction due to: $t")
                     }
@@ -154,7 +155,9 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
         super.onResume()
         resetInBackground()
         val seed = Mnemonics.MnemonicCode(sharedViewModel.seedPhrase.value).toSeed()
-        binding.inputAddress.setText(DerivationTool.deriveTransparentAddress(seed, ZcashNetwork.fromResources(requireApplicationContext())))
+        viewLifecycleOwner.lifecycleScope.launchWhenStarted {
+            binding.inputAddress.setText(DerivationTool.deriveTransparentAddress(seed, ZcashNetwork.fromResources(requireApplicationContext())))
+        }
     }
 
     var initialCount: Int = 0

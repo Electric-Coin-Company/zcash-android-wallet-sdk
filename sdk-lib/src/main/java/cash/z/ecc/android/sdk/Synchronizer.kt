@@ -35,7 +35,7 @@ interface Synchronizer {
      * where setup and maintenance can occur for various Synchronizers. One that uses a database
      * would take this opportunity to do data migrations or key migrations.
      */
-    fun prepare(): Synchronizer
+    suspend fun prepare(): Synchronizer
 
     /**
      * Starts this synchronizer within the given scope.
