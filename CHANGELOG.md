@@ -1,6 +1,11 @@
 Change Log
 ==========
 
+Next version
+------------------------------------
+- Fix: Added ProGuard rules so that SDK clients can use R8 to shrink their apps
+- Updated dependencies
+
 Version 1.3.0-beta19 *(2021-11-22)*
 ------------------------------------
 - New: Updated checkpoints for Mainnet and Testnet

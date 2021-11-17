@@ -1,0 +1,3 @@
+# Allow for debuggable stacktraces
+-keepattributes SourceFile,LineNumberTable
+-renamesourcefileattribute SourceFile

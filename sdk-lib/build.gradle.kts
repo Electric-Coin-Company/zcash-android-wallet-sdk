@@ -38,6 +38,8 @@ android {
                 argument("room.schemaLocation", "$projectDir/schemas")
             }
         }
+
+        consumerProguardFiles("proguard-consumer.txt")
     }
 
     buildTypes {
@@ -45,20 +47,14 @@ android {
             // test builds exceed the dex limit because they pull in large test libraries
             multiDexEnabled = true
             isMinifyEnabled = false
-            proguardFiles.addAll(
-                listOf(
-                    getDefaultProguardFile("proguard-android-optimize.txt"),
-                    File("proguard-rules.pro")
-                )
-            )
         }
         getByName("release").apply {
             multiDexEnabled = false
-            isMinifyEnabled = project.property("IS_MINIFY_ENABLED").toString().toBoolean()
+            isMinifyEnabled = project.property("IS_MINIFY_SDK_ENABLED").toString().toBoolean()
             proguardFiles.addAll(
                 listOf(
                     getDefaultProguardFile("proguard-android-optimize.txt"),
-                    File("proguard-rules.pro")
+                    File("proguard-project.txt")
                 )
             )
         }
