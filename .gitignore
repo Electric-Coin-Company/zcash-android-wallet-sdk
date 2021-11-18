@@ -76,3 +76,4 @@ fraget/
 DecompileChecker.kt
 backup-dbs/
 *.db
+.DS_Store
