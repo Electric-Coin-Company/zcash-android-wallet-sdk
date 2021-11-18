@@ -3,14 +3,13 @@ package cash.z.ecc.android.sdk.jni
 import cash.z.ecc.android.sdk.exception.BirthdayException
 import cash.z.ecc.android.sdk.ext.ZcashSdk.OUTPUT_PARAM_FILE_NAME
 import cash.z.ecc.android.sdk.ext.ZcashSdk.SPEND_PARAM_FILE_NAME
-import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.internal.SdkDispatchers
 import cash.z.ecc.android.sdk.internal.ext.deleteSuspend
+import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.tool.DerivationTool
 import cash.z.ecc.android.sdk.type.UnifiedViewingKey
 import cash.z.ecc.android.sdk.type.WalletBalance
 import cash.z.ecc.android.sdk.type.ZcashNetwork
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 
@@ -355,7 +354,6 @@ class RustBackend private constructor() : RustBackendWelding {
          */
         fun enableRustLogs() = initLogs()
 
-
         //
         // External Functions
         //
@@ -528,4 +526,3 @@ class RustBackend private constructor() : RustBackendWelding {
         ): Long
     }
 }
-

@@ -3,12 +3,11 @@ package cash.z.ecc.android.sdk.internal.block
 import android.content.Context
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import cash.z.ecc.android.sdk.internal.db.CompactBlockDao
-import cash.z.ecc.android.sdk.internal.db.CompactBlockDb
 import cash.z.ecc.android.sdk.db.entity.CompactBlockEntity
 import cash.z.ecc.android.sdk.internal.SdkDispatchers
+import cash.z.ecc.android.sdk.internal.db.CompactBlockDao
+import cash.z.ecc.android.sdk.internal.db.CompactBlockDb
 import cash.z.wallet.sdk.rpc.CompactFormats
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /**

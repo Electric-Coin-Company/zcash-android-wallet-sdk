@@ -3,8 +3,8 @@ package cash.z.ecc.android.sdk.util
 import androidx.test.platform.app.InstrumentationRegistry
 import cash.z.ecc.android.sdk.internal.TroubleshootingTwig
 import cash.z.ecc.android.sdk.internal.Twig
-import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.internal.service.LightWalletGrpcService
+import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.type.ZcashNetwork
 import org.junit.Ignore
 import org.junit.Test

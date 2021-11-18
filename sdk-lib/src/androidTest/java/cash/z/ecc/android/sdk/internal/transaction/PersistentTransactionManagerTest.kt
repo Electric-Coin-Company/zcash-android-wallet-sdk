@@ -9,8 +9,8 @@ import cash.z.ecc.android.sdk.db.entity.PendingTransaction
 import cash.z.ecc.android.sdk.db.entity.isCancelled
 import cash.z.ecc.android.sdk.internal.TroubleshootingTwig
 import cash.z.ecc.android.sdk.internal.Twig
-import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.internal.service.LightWalletService
+import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.test.ScopedTest
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.stub

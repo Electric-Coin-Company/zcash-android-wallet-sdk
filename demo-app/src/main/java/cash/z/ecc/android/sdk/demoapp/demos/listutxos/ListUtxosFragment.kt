@@ -61,10 +61,12 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
         // Use a BIP-39 library to convert a seed phrase into a byte array. Most wallets already
         // have the seed stored
         seed = Mnemonics.MnemonicCode(sharedViewModel.seedPhrase.value).toSeed()
-        initializer = runBlocking {Initializer.new(requireApplicationContext()) {
-            runBlocking { it.importWallet(seed, network = ZcashNetwork.fromResources(requireApplicationContext())) }
-            it.alias = "Demo_Utxos"
-        }}
+        initializer = runBlocking {
+            Initializer.new(requireApplicationContext()) {
+                runBlocking { it.importWallet(seed, network = ZcashNetwork.fromResources(requireApplicationContext())) }
+                it.alias = "Demo_Utxos"
+            }
+        }
         synchronizer = Synchronizer(initializer)
     }
 

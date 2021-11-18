@@ -18,7 +18,12 @@ import kotlin.random.Random
  * @param block the code to execute, which will be wrapped in a try/catch and retried whenever an
  * exception is thrown up to [retries] attempts.
  */
-suspend inline fun retryUpTo(retries: Int, exceptionWrapper: (Throwable) -> Throwable = { it }, initialDelayMillis: Long = 500L, block: (Int) -> Unit) {
+suspend inline fun retryUpTo(
+    retries: Int,
+    exceptionWrapper: (Throwable) -> Throwable = { it },
+    initialDelayMillis: Long = 500L,
+    block: (Int) -> Unit
+) {
     var failedAttempts = 0
     while (failedAttempts <= retries) {
         try {
@@ -68,7 +73,12 @@ inline fun retrySimple(retries: Int = 2, sleepTime: Long = 20L, block: (Int) -> 
  * @param maxDelayMillis the maximum delay between retries.
  * @param block the logic to run once and then run again if it fails.
  */
-suspend inline fun retryWithBackoff(noinline onErrorListener: ((Throwable) -> Boolean)? = null, initialDelayMillis: Long = 1000L, maxDelayMillis: Long = MAX_BACKOFF_INTERVAL, block: () -> Unit) {
+suspend inline fun retryWithBackoff(
+    noinline onErrorListener: ((Throwable) -> Boolean)? = null,
+    initialDelayMillis: Long = 1000L,
+    maxDelayMillis: Long = MAX_BACKOFF_INTERVAL,
+    block: () -> Unit
+) {
     var sequence = 0 // count up to the max and then reset to half. So that we don't repeat the max but we also don't repeat too much.
     while (true) {
         try {

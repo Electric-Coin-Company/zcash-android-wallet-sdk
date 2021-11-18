@@ -47,10 +47,12 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
         val viewingKey = runBlocking { DerivationTool.deriveUnifiedViewingKeys(seed, ZcashNetwork.fromResources(requireApplicationContext())).first() }
 
         // using the ViewingKey to initialize
-        runBlocking {Initializer.new(requireApplicationContext(), null) {
-            it.setNetwork(ZcashNetwork.fromResources(requireApplicationContext()))
-            it.importWallet(viewingKey, network = ZcashNetwork.fromResources(requireApplicationContext()))
-        }}.let { initializer ->
+        runBlocking {
+            Initializer.new(requireApplicationContext(), null) {
+                it.setNetwork(ZcashNetwork.fromResources(requireApplicationContext()))
+                it.importWallet(viewingKey, network = ZcashNetwork.fromResources(requireApplicationContext()))
+            }
+        }.let { initializer ->
             synchronizer = Synchronizer(initializer)
         }
     }

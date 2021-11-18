@@ -4,12 +4,12 @@ import androidx.test.platform.app.InstrumentationRegistry
 import cash.z.ecc.android.sdk.Initializer
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.db.entity.isFailure
-import cash.z.ecc.android.sdk.internal.TroubleshootingTwig
-import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.ext.convertZecToZatoshi
 import cash.z.ecc.android.sdk.ext.toHex
-import cash.z.ecc.android.sdk.internal.twig
+import cash.z.ecc.android.sdk.internal.TroubleshootingTwig
+import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.service.LightWalletGrpcService
+import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.tool.DerivationTool
 import cash.z.ecc.android.sdk.type.ZcashNetwork
 import kotlinx.coroutines.flow.collect

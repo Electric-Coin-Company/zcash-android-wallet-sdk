@@ -21,9 +21,9 @@ open class DarksideTestPrerequisites {
         private fun isProbablyEmulator(context: Context): Boolean {
             if (isDebuggable(context)) {
                 // This is imperfect and could break in the future
-                if (null == Build.DEVICE
-                    || "generic" == Build.DEVICE //$NON-NLS
-                    || ("generic_x86" == Build.DEVICE) //$NON-NLS
+                if (null == Build.DEVICE ||
+                    "generic" == Build.DEVICE || // $NON-NLS
+                    ("generic_x86" == Build.DEVICE) // $NON-NLS
                 ) {
                     return true
                 }

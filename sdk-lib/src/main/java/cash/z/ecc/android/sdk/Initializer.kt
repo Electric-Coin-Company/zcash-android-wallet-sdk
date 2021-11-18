@@ -3,17 +3,16 @@ package cash.z.ecc.android.sdk
 import android.content.Context
 import cash.z.ecc.android.sdk.exception.InitializerException
 import cash.z.ecc.android.sdk.ext.ZcashSdk
-import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.internal.SdkDispatchers
 import cash.z.ecc.android.sdk.internal.ext.getCacheDirSuspend
 import cash.z.ecc.android.sdk.internal.ext.getDatabasePathSuspend
+import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.jni.RustBackend
 import cash.z.ecc.android.sdk.tool.DerivationTool
 import cash.z.ecc.android.sdk.tool.WalletBirthdayTool
 import cash.z.ecc.android.sdk.type.UnifiedViewingKey
 import cash.z.ecc.android.sdk.type.WalletBirthday
 import cash.z.ecc.android.sdk.type.ZcashNetwork
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 
@@ -294,13 +293,12 @@ class Initializer private constructor(
         private fun validateViewingKeys() {
             require(viewingKeys.isNotEmpty()) {
                 "Unified Viewing keys are required. Ensure that the unified viewing keys or seed" +
-                        " have been set on this Initializer."
+                    " have been set on this Initializer."
             }
             viewingKeys.forEach {
                 DerivationTool.validateUnifiedViewingKey(it)
             }
         }
-
     }
 
     companion object : SdkSynchronizer.Erasable {
@@ -350,12 +348,12 @@ class Initializer private constructor(
             if (onCriticalErrorHandler == null) {
                 twig(
                     "WARNING: a critical error occurred on the Initializer but no callback is " +
-                            "registered to be notified of critical errors! THIS IS PROBABLY A MISTAKE. To " +
-                            "respond to these errors (perhaps to update the UI or alert the user) set " +
-                            "initializer.onCriticalErrorHandler to a non-null value or use the secondary " +
-                            "constructor: Initializer(context, handler) { ... }. Note that the synchronizer " +
-                            "and initializer BOTH have error handlers and since the initializer exists " +
-                            "before the synchronizer, it needs its error handler set separately."
+                        "registered to be notified of critical errors! THIS IS PROBABLY A MISTAKE. To " +
+                        "respond to these errors (perhaps to update the UI or alert the user) set " +
+                        "initializer.onCriticalErrorHandler to a non-null value or use the secondary " +
+                        "constructor: Initializer(context, handler) { ... }. Note that the synchronizer " +
+                        "and initializer BOTH have error handlers and since the initializer exists " +
+                        "before the synchronizer, it needs its error handler set separately."
                 )
             }
 
@@ -494,9 +492,9 @@ class Initializer private constructor(
 internal fun validateAlias(alias: String) {
     require(
         alias.length in 1..99 && alias[0].isLetter() &&
-                alias.all { it.isLetterOrDigit() || it == '_' }
+            alias.all { it.isLetterOrDigit() || it == '_' }
     ) {
         "ERROR: Invalid alias ($alias). For security, the alias must be shorter than 100 " +
-                "characters and only contain letters, digits or underscores and start with a letter."
+            "characters and only contain letters, digits or underscores and start with a letter."
     }
 }

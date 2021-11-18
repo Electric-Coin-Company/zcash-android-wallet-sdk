@@ -1,10 +1,9 @@
 package cash.z.ecc.android.sdk.darkside.reorgs
 
-
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import cash.z.ecc.android.sdk.darkside.test.DarksideTestCoordinator
 import cash.z.ecc.android.sdk.darkside.test.ScopedTest
 import cash.z.ecc.android.sdk.internal.twig
-import cash.z.ecc.android.sdk.darkside.test.DarksideTestCoordinator
 import org.junit.BeforeClass
 import org.junit.Test
 import org.junit.runner.RunWith

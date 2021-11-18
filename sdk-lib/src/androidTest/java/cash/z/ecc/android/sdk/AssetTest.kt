@@ -93,9 +93,11 @@ class AssetTest {
     private data class JsonFile(val jsonObject: JSONObject, val filename: String)
 
     companion object {
-        fun listAssets(network: ZcashNetwork) = runBlocking { WalletBirthdayTool.listBirthdayDirectoryContents(
-            ApplicationProvider.getApplicationContext<Context>(),
-            WalletBirthdayTool.birthdayDirectory(network))
+        fun listAssets(network: ZcashNetwork) = runBlocking {
+            WalletBirthdayTool.listBirthdayDirectoryContents(
+                ApplicationProvider.getApplicationContext<Context>(),
+                WalletBirthdayTool.birthdayDirectory(network)
+            )
         }
     }
 }

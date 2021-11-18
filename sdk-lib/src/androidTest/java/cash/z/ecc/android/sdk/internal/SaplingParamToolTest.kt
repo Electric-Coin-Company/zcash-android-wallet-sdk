@@ -4,7 +4,6 @@ import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import cash.z.ecc.android.sdk.ext.ZcashSdk
-import cash.z.ecc.android.sdk.internal.SaplingParamTool
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert
 import org.junit.Before

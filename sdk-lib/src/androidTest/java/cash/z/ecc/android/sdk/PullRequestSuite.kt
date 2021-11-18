@@ -3,9 +3,9 @@ package cash.z.ecc.android.sdk
 import cash.z.ecc.android.sdk.integration.SanityTest
 import cash.z.ecc.android.sdk.integration.SmokeTest
 import cash.z.ecc.android.sdk.integration.service.ChangeServiceTest
+import cash.z.ecc.android.sdk.internal.transaction.PersistentTransactionManagerTest
 import cash.z.ecc.android.sdk.jni.BranchIdTest
 import cash.z.ecc.android.sdk.jni.TransparentTest
-import cash.z.ecc.android.sdk.internal.transaction.PersistentTransactionManagerTest
 import org.junit.runner.RunWith
 import org.junit.runners.Suite
 

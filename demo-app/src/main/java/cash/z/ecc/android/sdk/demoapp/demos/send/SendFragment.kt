@@ -23,11 +23,11 @@ import cash.z.ecc.android.sdk.demoapp.databinding.FragmentSendBinding
 import cash.z.ecc.android.sdk.demoapp.ext.requireApplicationContext
 import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.demoapp.util.mainActivity
-import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.ext.collectWith
 import cash.z.ecc.android.sdk.ext.convertZatoshiToZecString
 import cash.z.ecc.android.sdk.ext.convertZecToZatoshi
 import cash.z.ecc.android.sdk.ext.toZecString
+import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.tool.DerivationTool
 import cash.z.ecc.android.sdk.type.WalletBalance
@@ -64,10 +64,12 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
         // have the seed stored
         val seed = Mnemonics.MnemonicCode(seedPhrase).toSeed()
 
-        runBlocking { Initializer.new(requireApplicationContext()) {
-            runBlocking { it.importWallet(seed, network = ZcashNetwork.fromResources(requireApplicationContext())) }
-            it.setNetwork(ZcashNetwork.fromResources(requireApplicationContext()))
-        }}.let { initializer ->
+        runBlocking {
+            Initializer.new(requireApplicationContext()) {
+                runBlocking { it.importWallet(seed, network = ZcashNetwork.fromResources(requireApplicationContext())) }
+                it.setNetwork(ZcashNetwork.fromResources(requireApplicationContext()))
+            }
+        }.let { initializer ->
             synchronizer = Synchronizer(initializer)
         }
         spendingKey = runBlocking { DerivationTool.deriveSpendingKeys(seed, ZcashNetwork.fromResources(requireApplicationContext())).first() }

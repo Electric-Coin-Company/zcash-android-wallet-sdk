@@ -2,8 +2,8 @@ package cash.z.ecc.android.sdk.darkside.test
 
 import android.content.Context
 import cash.z.ecc.android.sdk.R
-import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.internal.service.LightWalletGrpcService
+import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.type.ZcashNetwork
 import cash.z.wallet.sdk.rpc.Darkside
 import cash.z.wallet.sdk.rpc.Darkside.DarksideTransactionsURL
