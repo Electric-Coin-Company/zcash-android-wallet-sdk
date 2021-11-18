@@ -236,4 +236,4 @@ Publishing instructions for maintainers of this repository can be found in [PUBL
 # Known Issues
 
 1. During builds, a warning will be printed that says "Unable to detect AGP versions for included builds. All projects in the build should use the same AGP version."  This can be safely ignored.  The version under build-conventions is the same as the version used elsewhere in the application.
-1. `ktlintFormat` may fail on Java 16 or greater.  A temporary workaround is to install an older JDK and explicitly set the JDK version when executing the task.  For example: `./gradlew ktlintFormat -Dorg.gradle.java.home=/Library/Java/JavaVirtualMachines/temurin-11.jdk/Contents/Home`
+1. Android Studio will warn about the Gradle checksum.  This is a [known issue](https://github.com/gradle/gradle/issues/9361) and can be safely ignored.1. `ktlintFormat` may fail on Java 16 or greater.  A temporary workaround is to install an older JDK and explicitly set the JDK version when executing the task.  For example: `./gradlew ktlintFormat -Dorg.gradle.java.home=/Library/Java/JavaVirtualMachines/temurin-11.jdk/Contents/Home`
