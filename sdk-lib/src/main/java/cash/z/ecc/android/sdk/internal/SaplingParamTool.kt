@@ -6,7 +6,8 @@ import com.squareup.okhttp.OkHttpClient
 import com.squareup.okhttp.Request
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import okio.Okio
+import okio.buffer
+import okio.sink
 import java.io.File
 
 class SaplingParamTool {
@@ -68,7 +69,7 @@ class SaplingParamTool {
                         twig("directory did not exist attempting to make it")
                         file.parentFile.mkdirs()
                     }
-                    Okio.buffer(Okio.sink(file)).use {
+                    file.sink().buffer().use {
                         twig("writing to $file")
                         it.writeAll(response.body().source())
                     }
