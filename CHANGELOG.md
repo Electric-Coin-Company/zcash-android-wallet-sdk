@@ -1,9 +1,12 @@
 Change Log
 ==========
 
-Upcoming
+Version 1.3.0-beta19 *(2021-11-22)*
 ------------------------------------
-- Repackaged internal classes to a new `internal` package name
+- New: Updated checkpoints for Mainnet and Testnet
+- Fix: Repackaged internal classes to a new `internal` package name
+- Fix: Testnet checkpoints have been corrected
+- Updated dependencies
 
 Version 1.3.0-beta18 *(2021-08-10)*
 ------------------------------------
