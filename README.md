@@ -170,7 +170,7 @@ rustup target add armv7-linux-androideabi aarch64-linux-android i686-linux-andro
     <img src="assets/sdk-manager-icon.png?raw=true" width="70%"/>
 </p>    
 
-  6. Then, install NDK ~~20.0.5594570~~ 24.0.7856742
+  6. Then, install NDK ~~20.0.5594570~~ 22.1.7171670
      (pro tip: `build.gradle -> ndkVersion` defines the actual required version. Use that because this README may get out-of-date. Also note that the "Show Package Details" box in the bottom right corner must be checked in order to install specific versions of the NDK.)
 <p align="center">
     <img src="assets/ndk-window.png?raw=true" width="85%"/>
@@ -236,4 +236,6 @@ Publishing instructions for maintainers of this repository can be found in [PUBL
 # Known Issues
 
 1. During builds, a warning will be printed that says "Unable to detect AGP versions for included builds. All projects in the build should use the same AGP version."  This can be safely ignored.  The version under build-conventions is the same as the version used elsewhere in the application.
-1. Android Studio will warn about the Gradle checksum.  This is a [known issue](https://github.com/gradle/gradle/issues/9361) and can be safely ignored.1. `ktlintFormat` may fail on Java 16 or greater.  A temporary workaround is to install an older JDK and explicitly set the JDK version when executing the task.  For example: `./gradlew ktlintFormat -Dorg.gradle.java.home=/Library/Java/JavaVirtualMachines/temurin-11.jdk/Contents/Home`
+1. Android Studio will warn about the Gradle checksum.  This is a [known issue](https://github.com/gradle/gradle/issues/9361) and can be safely ignored.
+1. `ktlintFormat` may fail on Java 16 or greater.  A temporary workaround is to install an older JDK and explicitly set the JDK version when executing the task.  For example: `./gradlew ktlintFormat -Dorg.gradle.java.home=/Library/Java/JavaVirtualMachines/temurin-11.jdk/Contents/Home`
+1. Some JDK distributions don't offer older versions for M1 Macs.  [Azul Zulu](https://www.azul.com/downloads/?os=macos&architecture=arm-64-bit&package=jdk) does offer JDK 11 and JDK 15 for M1 Macs, which should be compatible with our builds.
