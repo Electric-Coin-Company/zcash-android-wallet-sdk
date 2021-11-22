@@ -30,6 +30,7 @@ zcash_proofs = "0.5"
 #ripemd160 = "0.9"
 hdwallet = { git = "https://github.com/nuttycom/hdwallet", rev = "72f1f7a56c114eed484cefd6d402b7ef28158712"}
 secp256k1 = "0.19"
+num-bigint = "0.3.3"
 ##############################################################
 
 # update-sapling-tree dependencies
