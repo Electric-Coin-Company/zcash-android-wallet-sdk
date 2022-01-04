@@ -234,8 +234,6 @@ Publishing instructions for maintainers of this repository can be found in [PUBL
 [Back to contents](#contents)
 
 # Known Issues
-1. [#330](https://github.com/zcash/zcash-android-wallet-sdk/issues/330) The SDK will fail to build on Java 16 or later.  It is recommended that at least Java 11 is installed. If a newer JDK is needed, Java 15 can also be installed.
-    1. Some JDK distributions don't offer older versions for Apple Silicon.  [Azul Zulu](https://www.azul.com/downloads/?os=macos&architecture=arm-64-bit&package=jdk) does offer JDK 11 and JDK 15 for Apple Silicon, which should be compatible with our builds.
-   1. `ktlintFormat` may fail on Java 16 or greater.  As a workaround, the task is run under Java 11.  This requires that JDK 11 be installed, even if a newer JDK is also installed.  While this is configured to use the Java toolchain API, [toolchain support for Java 11 does not work on Apple Silicon](https://github.com/gradle/gradle/issues/19140)
+1. `ktlintFormat` may fail on Java 16 or greater.  As a workaround, the task is run under Java 11.  This requires that JDK 11 be installed, even if a newer JDK is also installed.  While this is configured to use the Java toolchain API, [toolchain support for Java 11 does not work on Apple Silicon](https://github.com/gradle/gradle/issues/19140)
 1. During builds, a warning will be printed that says "Unable to detect AGP versions for included builds. All projects in the build should use the same AGP version."  This can be safely ignored.  The version under build-conventions is the same as the version used elsewhere in the application.
 1. Android Studio will warn about the Gradle checksum.  This is a [known issue](https://github.com/gradle/gradle/issues/9361) and can be safely ignored.

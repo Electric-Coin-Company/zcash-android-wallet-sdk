@@ -4,6 +4,7 @@ buildscript {
         gradlePluginPortal()
     }
     dependencies {
+        classpath(kotlin("gradle-plugin", version = libs.versions.kotlin.get()))
         classpath(libs.gradle.plugin.android)
         classpath(libs.gradle.plugin.rust)
         classpath(libs.gradle.plugin.publish)
