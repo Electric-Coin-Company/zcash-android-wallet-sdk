@@ -12,10 +12,12 @@ pluginManagement {
         val dokkaVersion = extra["DOKKA_VERSION"].toString()
         val gradleVersionsPluginVersion = extra["GRADLE_VERSIONS_PLUGIN_VERSION"].toString()
         val kotlinVersion = extra["KOTLIN_VERSION"].toString()
+        val kspVersion = extra["KSP_VERSION"].toString()
         val owaspVersion = extra["OWASP_DEPENDENCY_CHECK_VERSION"].toString()
         val protobufVersion = extra["PROTOBUF_GRADLE_PLUGIN_VERSION"].toString()
 
         id("com.github.ben-manes.versions") version (gradleVersionsPluginVersion) apply (false)
+        id("com.google.devtools.ksp") version(kspVersion) apply (false)
         id("com.google.protobuf") version (protobufVersion) apply (false)
         id("io.gitlab.arturbosch.detekt") version (detektVersion) apply (false)
         id("org.jetbrains.dokka") version (dokkaVersion) apply (false)
@@ -73,6 +75,7 @@ dependencyResolutionManagement {
             // Standalone versions
             version("grpc", grpcVersion)
             version("java", javaVersion)
+            version("kotlin", kotlinVersion)
             version("protoc", protocVersion)
 
             // Aliases

@@ -9,7 +9,7 @@ plugins {
     id("com.android.library")
     id("zcash.android-build-conventions")
     kotlin("android")
-    kotlin("kapt")
+    id("com.google.devtools.ksp")
     id("org.jetbrains.kotlin.plugin.allopen")
     id("org.jetbrains.dokka")
     id("com.google.protobuf")
@@ -170,7 +170,7 @@ dependencies {
     // Architecture Components: Room
     implementation(libs.androidx.room.core)
     implementation(libs.androidx.paging)
-    kapt(libs.androidx.room.compiler)
+    ksp(libs.androidx.room.compiler)
 
     // Kotlin
     implementation(libs.kotlin.stdlib)
