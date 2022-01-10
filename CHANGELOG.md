@@ -3,6 +3,7 @@ Change Log
 
 Next version
 ------------------------------------
+- The minumum version of Android supported is now API 19
 - Fix: Added ProGuard rules so that SDK clients can use R8 to shrink their apps
 - Updated dependencies
 
