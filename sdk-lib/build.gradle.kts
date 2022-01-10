@@ -18,14 +18,37 @@ plugins {
 }
 
 // Publishing information
+val version = project.property("LIBRARY_VERSION").toString()
 val ARTIFACT_ID = project.property("POM_ARTIFACT_ID").toString()
 project.group = "cash.z.ecc.android"
-project.version = project.property("LIBRARY_VERSION").toString()
+project.version = version
 publishing {
+    // Snapshot repo for be manually configured
+    // Release repo is configured automatically by the com.vanniktech.maven.publish plugin
+    if (version.contains("snapshot")) {
+        val mavenCentralUsername = project.property("mavenCentralUsername").toString()
+        val mavenCentralPassword = project.property("mavenCentralPassword").toString()
+        if (mavenCentralUsername.isNotBlank() && mavenCentralPassword.isNotBlank()) {
+            repositories {
+                maven("https://oss.sonatype.org/content/repositories/snapshots") {
+                    credentials {
+                        username = mavenCentralUsername
+                        password = mavenCentralPassword
+                    }
+                }
+            }
+        }
+    }
     publications {
         publications.withType<MavenPublication>().all {
             artifactId = ARTIFACT_ID
         }
+    }
+}
+
+if (version.contains("snapshot")) {
+    mavenPublish {
+        sonatypeHost = null
     }
 }
 
