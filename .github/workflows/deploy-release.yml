@@ -1,0 +1,85 @@
+# Expected secrets
+# MAVEN_CENTRAL_USERNAME - Username for Maven Central.
+# MAVEN_CENTRAL_PASSWORD - Password for Maven Central.
+# MAVEN_SIGNING_KEYRING_FILE_BASE64 - Base64 encoded GPG keyring file.
+# MAVEN_SIGNING_KEY_ID - ID for the key in the GPG keyring file.
+# MAVEN_SIGNING_PASSWORD - Password for the key in the GPG keyring file.
+
+name: Deploy Release
+
+on:
+  workflow_dispatch:
+
+concurrency: deploy_release
+
+jobs:
+  validate_gradle_wrapper:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        timeout-minutes: 1
+        uses: actions/checkout@v2.4.0
+      # Gradle Wrapper validation can be flaky
+      # https://github.com/gradle/wrapper-validation-action/issues/40
+      - name: Gradle Wrapper Validation
+        timeout-minutes: 1
+        uses: gradle/wrapper-validation-action@v1.0.4
+
+  deploy_release:
+    needs: validate_gradle_wrapper
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        timeout-minutes: 1
+        uses: actions/checkout@v2.4.0
+      - name: Setup
+        id: setup
+        timeout-minutes: 25
+        uses: ./.github/actions/setup
+      - name: Export Maven Signing Key
+        env:
+          MAVEN_SIGNING_KEYRING_FILE_BASE64: ${{ secrets.MAVEN_SIGNING_KEYRING_FILE_BASE64 }}
+          GPG_KEY_PATH: ${{ format('{0}/keyring.gpg', env.home) }}
+        shell: bash
+        run: |
+          echo ${MAVEN_SIGNING_KEYRING_FILE_BASE64} | base64 --decode > ${GPG_KEY_PATH}
+      # While not strictly necessary, this sanity checks the build before attempting to upload.
+      # This adds minimal additional build time, since most of the work is cached and re-used
+      # in the next step.
+      - name: Deploy to Maven Local
+        timeout-minutes: 25
+        run: |
+          ./gradlew publishToMavenLocal
+      - name: Deploy to Maven Central
+        timeout-minutes: 5
+        env:
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          ORG_GRADLE_PROJECT_signing.secretKeyRingFile: ${{ format('{0}/keyring.gpg', env.home) }}
+          ORG_GRADLE_PROJECT_signing.keyId: ${{ secrets.MAVEN_SIGNING_KEY_ID }}
+          ORG_GRADLE_PROJECT_signing.password: ${{ secrets.MAVEN_SIGNING_PASSWORD }}
+          ORG_GRADLE_PROJECT_IS_SNAPSHOT: false
+        run: |
+          ./gradlew publish --no-parallel
+          ./gradlew closeAndReleaseRepository
+      - name: Collect Artifacts
+        timeout-minutes: 1
+        if: ${{ always() }}
+        env:
+          ARTIFACTS_DIR_PATH: ${{ format('{0}/artifacts', env.home) }}
+          BINARIES_ZIP_PATH: ${{ format('{0}/artifacts/release_binaries.zip', env.home) }}
+        run: |
+          mkdir ${ARTIFACTS_DIR_PATH}
+
+          zip -r ${BINARIES_ZIP_PATH} . -i build/outputs/*
+      - name: Upload Artifacts
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v2
+        timeout-minutes: 1
+        with:
+          name: Release binaries
+          path: ~/artifacts

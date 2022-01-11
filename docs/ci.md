@@ -1,51 +1,46 @@
 # Continuous Integration
+Continuous integration is set up with GitHub Actions.  The workflows are defined in this repo under [/.github/workflows](../.github/workflows).
 
-In order to ensure code changes comply with the target integrations, the following policies should be observed.
+Workflows exist for:
+ * Pull request - On pull request, static analysis and testing is performed.
+ * Snapshot deployment - On merge to the main branch, a snapshot release is deployed to Maven Central.  Concurrency limits are in place, to ensure that only one snapshot deployment can happen at a time.
+ * Release deployment - Work in progress.  Manually invoked workflow to deploy to Maven Central.  Concurrency limits are in place, to ensure that only one release deployment can happen at a time.
 
-## Changes to the GitHub project
+## Setup
+When forking this repository, some secrets need to be defined to set up new continuous integration builds.
 
-The `master` branch is the git repositories default branch.
+The secrets passed to GitHub Actions then map to Gradle properties set up within our build scripts.  Necessary secrets are documented at the top of each GitHub workflow yml file, as well as reiterated here.
 
-Jobs are managed by PR labels. The following labels are actionable.
+### Pull request
+* `FIREBASE_TEST_LAB_PROJECT` - Firebase Test Lab project name.
+* `FIREBASE_TEST_LAB_SERVICE_ACCOUNT` - Email address of Firebase Test Lab service account.
+* `FIREBASE_TEST_LAB_WORKLOAD_IDENTITY_PROVIDER` - Workload identity provider to generate temporary service account key.
 
-|label|targets|
-|----|---|
-|`safe-to-ci`| `ciBuild`, `ciLintPr`
+To obtain the values for these, you'll need to enable the necessary Google Cloud APIs to enable automated access to Firebase Test Lab.
+* Configure Firebase Test Lab.  Google has [documentation for Jenkins](https://firebase.google.com/docs/test-lab/android/continuous).  Although we're using GitHub Actions, the initial requirements are the same.
+* Configure [workload identity federation](https://github.com/google-github-actions/auth#setting-up-workload-identity-federation)
 
-### Code changes to the master branch
+Once configured, these allow for generation of a temporary key which is then provided to the build through the Gradle property `ZCASH_FIREBASE_TEST_LAB_API_KEY_PATH`.
 
-These changes are identified by modifications to files under the `src` directory or files matching `^.*\.(gradle|toml)$`
+Note: Pull requests do not currently run darkside tests.  See #361.
 
-- build the project
-- save artifacts to GCP bucket with short git hash, and `master`
-- update code documentation via `docs` gradle target
+### Snapshot deployment
+* `MAVEN_CENTRAL_USERNAME` — Username for Maven Central, which maps to the Gradle property `mavenCentralUsername`.
+* `MAVEN_CENTRAL_PASSWORD` — Password for Maven Central, which maps to the Gradle property `mavenCentralPassword`.
 
-### New tag is created
+GPG keys are not needed for snapshot deployment.
 
-- build the project, save artifacts to GCP bucket with tag
-- push artifacts to bintray
-- send notification to Slack channel
+Note: For documentation on the Gradle properties for Maven deployment, see [Gradle Maven Publish Plugin](https://github.com/vanniktech/gradle-maven-publish-plugin).
 
-## Time based changes
+Note: Snapshot builds are configured with a Gradle property `IS_SNAPSHOT`.  The workflow automatically sets this property to true for snapshot deployments.  This will suffix the version with `-snapshot` and will upload to the snapshot repository.
 
-Periodic continous integration tasks
+### Release deployment
+* `MAVEN_CENTRAL_USERNAME` — Username for Maven Central, which maps to the Gradle property `mavenCentralUsername`.
+* `MAVEN_CENTRAL_PASSWORD` — Password for Maven Central, which maps to the Gradle property `mavenCentralPassword`.
+* `MAVEN_SIGNING_KEYRING_FILE_BASE64` — GPG keyring file, base64 encoded.  Maps to Gradle property `signing.secretKeyRingFile`.
+* `MAVEN_SIGNING_KEY_ID` — Name of key inside GPG keyring file.  Maps to Gradle property `signing.keyId`.
+* `MAVEN_SIGNING_PASSWORD` — Password for key inside GPG keyring file.  Maps to Gradle property `signing.password`.
 
-### Nightly
+Note: For documentation on the Gradle properties for Maven deployment, see [Gradle Maven Publish Plugin](https://github.com/vanniktech/gradle-maven-publish-plugin).
 
-- run integration tests
-- send notifications for failed builds or failed nightly integrations
-
-## Targets
-
-Run gradle targets with the following command.  
-Note: it is recommended to NOT install `gradle` because the wrapper command (gradlew) takes care of that automatically.
-```
-./gradlew <target>
-```
-Where `<target>` is one of the following
-
-- **ciBuild** : build the project and produce the AAR artifact under `build/outputs/aar`
-- **ciDeploy** : deploy the AAR artifact to bintray. This will invoke **ciBuild**, if necessary.
-- **ciLintPr** : lint the code in response to a PR to verify codestyle and formatting.
-- **ciTestPr** : run the basic PR test suite. This will invoke **ciBuild**, if necessary.
-- **ciTestNightly** : run the full nightly integration test suite
+Note: Snapshot builds are configured with a Gradle property `IS_SNAPSHOT`.  The workflow automatically sets this property to false for release deployments.

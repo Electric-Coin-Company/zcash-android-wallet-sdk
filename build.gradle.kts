@@ -13,11 +13,12 @@ buildscript {
 }
 
 plugins {
+    id("com.github.ben-manes.versions")
+    id("com.osacky.fulladle")
+    id("io.gitlab.arturbosch.detekt")
     id("org.jetbrains.dokka")
     id("org.owasp.dependencycheck")
     id("zcash.ktlint-conventions")
-    id("io.gitlab.arturbosch.detekt")
-    id("com.github.ben-manes.versions")
 }
 
 tasks {
@@ -57,4 +58,33 @@ fun isNonStable(version: String): Boolean {
     val versionLowerCase = version.toLowerCase()
 
     return unstableKeywords.any { versionLowerCase.contains(it) }
+}
+
+// Firebase Test Lab has min and max values that might differ from our project's
+// These are determined by `gcloud firebase test android models list`
+@Suppress("MagicNumber", "PropertyName", "VariableNaming")
+val FIREBASE_TEST_LAB_MIN_API = 23
+@Suppress("MagicNumber", "PropertyName", "VariableNaming")
+val FIREBASE_TEST_LAB_MAX_API = 30
+
+val firebaseTestLabKeyPath = project.properties["ZCASH_FIREBASE_TEST_LAB_API_KEY_PATH"].toString()
+if (firebaseTestLabKeyPath.isNotBlank()) {
+    val minSdkVersion = run {
+        val buildMinSdk = project.properties["ANDROID_MIN_SDK_VERSION"].toString().toInt()
+        buildMinSdk.coerceAtLeast(FIREBASE_TEST_LAB_MIN_API).toString()
+    }
+    val targetSdkVersion = run {
+        val buildTargetSdk = project.properties["ANDROID_TARGET_SDK_VERSION"].toString().toInt()
+        buildTargetSdk.coerceAtMost(FIREBASE_TEST_LAB_MAX_API).toString()
+    }
+    fladle {
+        serviceAccountCredentials.set(File(firebaseTestLabKeyPath))
+        devices.addAll(
+            mapOf("model" to "NexusLowRes", "version" to minSdkVersion),
+            mapOf("model" to "NexusLowRes", "version" to targetSdkVersion)
+        )
+
+        @Suppress("MagicNumber")
+        flakyTestAttempts.set(2)
+    }
 }

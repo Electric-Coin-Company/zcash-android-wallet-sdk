@@ -10,6 +10,7 @@ pluginManagement {
     plugins {
         val detektVersion = extra["DETEKT_VERSION"].toString()
         val dokkaVersion = extra["DOKKA_VERSION"].toString()
+        val fulladleVersion = extra["FULLADLE_VERSION_MATCHER"].toString()
         val gradleVersionsPluginVersion = extra["GRADLE_VERSIONS_PLUGIN_VERSION"].toString()
         val kotlinVersion = extra["KOTLIN_VERSION"].toString()
         val kspVersion = extra["KSP_VERSION"].toString()
@@ -19,6 +20,7 @@ pluginManagement {
         id("com.github.ben-manes.versions") version (gradleVersionsPluginVersion) apply (false)
         id("com.google.devtools.ksp") version(kspVersion) apply (false)
         id("com.google.protobuf") version (protobufVersion) apply (false)
+        id("com.osacky.fulladle") version (fulladleVersion) apply (false)
         id("io.gitlab.arturbosch.detekt") version (detektVersion) apply (false)
         id("org.jetbrains.dokka") version (dokkaVersion) apply (false)
         id("org.jetbrains.kotlin.plugin.allopen") version (kotlinVersion) apply (false)

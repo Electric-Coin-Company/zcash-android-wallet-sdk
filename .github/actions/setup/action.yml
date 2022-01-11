@@ -1,0 +1,87 @@
+name: 'Setup Java, Rust, and Dependency Cache'
+description: "Configures the build environment and caches Gradle, dependencies, and build outputs."
+runs:
+  using: "composite"
+  steps:
+    - name: Set Env
+      shell: bash
+      run: |
+        echo "home=${HOME}" >> "$GITHUB_ENV"
+    - name: Set up Java
+      uses: actions/setup-java@v2
+      with:
+        distribution: 'zulu'
+        java-version: 17
+    - name: Setup Rust
+      shell: bash
+      run: |
+        rustup target add armv7-linux-androideabi aarch64-linux-android i686-linux-android x86_64-linux-android
+    - name: Disable Gradle Daemon
+      shell: bash
+      run: |
+        mkdir ~/.gradle
+
+        echo "org.gradle.daemon=false" >> ~/.gradle/gradle.properties
+    - name: Gradle Wrapper Cache
+      id: gradle-wrapper-cache
+      uses: actions/cache@v2.1.7
+      with:
+        path: ~/.gradle/wrapper
+        key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles(format('{0}{1}', github.workspace, '/gradle/wrapper/gradle-wrapper.properties')) }}
+    - name: Gradle Dependency Cache
+      id: gradle-dependency-cache
+      uses: actions/cache@v2.1.7
+      with:
+        path: ~/.gradle/caches/modules-2
+        key: ${{ runner.os }}-gradle-deps-${{ hashFiles(format('{0}{1}', github.workspace, '/gradle.properties')) }}
+        restore-keys: |
+          ${{ runner.os }}-gradle-deps
+    # This tries to fall back to the build cache from the main branch, while ensuring that
+    # main branch builds repopulate the cache each time.
+    - name: Gradle Build Cache Main
+      id: gradle-build-cache-main
+      if: github.event.pull_request.head.sha == ''
+      uses: actions/cache@v2.1.7
+      with:
+        path: |
+          ~/.gradle/caches/build-cache-1
+          ~/.gradle/caches/transforms-3
+        key: ${{ runner.os }}-gradle-build-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-gradle-build
+    - name: Gradle Build Cache Pull Request
+      id: gradle-build-cache-pr
+      if: github.event.pull_request.head.sha != ''
+      uses: actions/cache@v2.1.7
+      with:
+        path: |
+          ~/.gradle/caches/build-cache-1
+          ~/.gradle/caches/transforms-3
+        key: ${{ runner.os }}-gradle-build-${{ github.event.pull_request.base.sha }}
+        restore-keys: |
+          ${{ runner.os }}-gradle-build
+    - name: Rust Cache
+      id: rust-cache
+      uses: actions/cache@v2.1.7
+      with:
+        path: |
+          sdk-lib/target
+          ~/.cargo
+        key: ${{ runner.os }}-rust-${{ hashFiles(format('{0}{1}', github.workspace, '/sdk-lib/Cargo.lock'), format('{0}{1}', github.workspace, '/sdk-lib/Cargo.toml'), format('{0}{1}', github.workspace, '/sdk-lib/build.gradle.kts'), format('{0}{1}', github.workspace, '/gradle.properties')) }}
+    - name: Download Gradle
+      if: steps.gradle-wrapper-cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        ./gradlew --version
+    - name: Download Gradle Dependencies
+      if: steps.gradle-dependency-cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        ./gradlew dependencies :sdk-lib:dependencies :demo-app:dependencies
+    - name: Compile
+      if: steps.gradle-build-cache-main.outputs.cache-hit != 'true' && steps.gradle-build-cache-pr.outputs.cache-hit != 'true'
+      shell: bash
+      env:
+        ORG_GRADLE_PROJECT_IS_MINIFY_APP_ENABLED: "false"
+      run: |
+        ./gradlew assemble assembleAndroidTest
