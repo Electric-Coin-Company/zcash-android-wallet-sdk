@@ -22,7 +22,7 @@ class SaplingParamToolTest {
     @Before
     fun setup() {
         // clear the param files
-        SaplingParamTool.clear(cacheDir)
+        runBlocking { SaplingParamTool.clear(cacheDir) }
     }
 
     @Test

@@ -779,10 +779,11 @@ object DefaultSynchronizerFactory {
     }
 
     // TODO [#242]: Don't hard code page size.  It is a workaround for Uncaught Exception: android.view.ViewRootImpl$CalledFromWrongThreadException: Only the original thread that created a view hierarchy can touch its views. and is probably related to FlowPagedList
+    private const val DEFAULT_PAGE_SIZE = 1000
     suspend fun defaultTransactionRepository(initializer: Initializer): TransactionRepository =
         PagedTransactionRepository.new(
             initializer.context,
-            1000,
+            DEFAULT_PAGE_SIZE,
             initializer.rustBackend,
             initializer.birthday,
             initializer.viewingKeys,

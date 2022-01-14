@@ -46,6 +46,7 @@ class GetBlockRangeFragment : BaseDemoFragment<FragmentGetBlockRangeBinding>() {
                 val inCount = sumBy { block -> block.vtxList.sumBy { it.spendsCount } }
 
                 val processTime = System.currentTimeMillis() - start - fetchDelta
+                @Suppress("MaxLineLength")
                 """
                 <b>total blocks:</b> ${count.withCommas()}
                 <br/><b>fetch time:</b> ${if (fetchDelta > 1000) "%.2f sec".format(fetchDelta / 1000.0) else "%d ms".format(fetchDelta)}
