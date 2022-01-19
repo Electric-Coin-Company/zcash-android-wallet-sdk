@@ -195,16 +195,16 @@ abstract class DerivedDataDb : RoomDatabase() {
 @Dao
 interface BlockDao {
     @Query("SELECT COUNT(height) FROM blocks")
-    fun count(): Int
+    suspend fun count(): Int
 
     @Query("SELECT MAX(height) FROM blocks")
-    fun lastScannedHeight(): Int
+    suspend fun lastScannedHeight(): Int
 
     @Query("SELECT MIN(height) FROM blocks")
-    fun firstScannedHeight(): Int
+    suspend fun firstScannedHeight(): Int
 
     @Query("SELECT hash FROM BLOCKS WHERE height = :height")
-    fun findHashByHeight(height: Int): ByteArray?
+    suspend fun findHashByHeight(height: Int): ByteArray?
 }
 
 /**
@@ -213,7 +213,7 @@ interface BlockDao {
 @Dao
 interface ReceivedDao {
     @Query("SELECT COUNT(tx) FROM received_notes")
-    fun count(): Int
+    suspend fun count(): Int
 }
 
 /**
@@ -222,13 +222,13 @@ interface ReceivedDao {
 @Dao
 interface SentDao {
     @Query("SELECT COUNT(tx) FROM sent_notes")
-    fun count(): Int
+    suspend fun count(): Int
 }
 
 @Dao
 interface AccountDao {
     @Query("SELECT COUNT(account) FROM accounts")
-    fun count(): Int
+    suspend fun count(): Int
 
     @Query(
         """
@@ -249,10 +249,10 @@ interface AccountDao {
 @Dao
 interface TransactionDao {
     @Query("SELECT COUNT(id_tx) FROM transactions")
-    fun count(): Int
+    suspend fun count(): Int
 
     @Query("SELECT COUNT(block) FROM transactions WHERE block IS NULL")
-    fun countUnmined(): Int
+    suspend fun countUnmined(): Int
 
     @Query(
         """
@@ -263,7 +263,7 @@ interface TransactionDao {
         WHERE  id_tx = :id AND raw is not null
         """
     )
-    fun findEncodedTransactionById(id: Long): EncodedTransaction?
+    suspend fun findEncodedTransactionById(id: Long): EncodedTransaction?
 
     @Query(
         """
@@ -273,7 +273,7 @@ interface TransactionDao {
         LIMIT  1 
     """
     )
-    fun findMinedHeight(rawTransactionId: ByteArray): Int?
+    suspend fun findMinedHeight(rawTransactionId: ByteArray): Int?
 
     /**
      * Query sent transactions that have been mined, sorted so the newest data is at the top.
@@ -494,7 +494,7 @@ interface TransactionDao {
                AND block IS NULL
     """
     )
-    fun findUnminedTransactionIds(rawTransactionId: ByteArray): List<Long>
+    suspend fun findUnminedTransactionIds(rawTransactionId: ByteArray): List<Long>
 
     @Query(
         """
@@ -513,19 +513,19 @@ interface TransactionDao {
         WHERE  tx = :transactionId 
     """
     )
-    fun findSentNoteIds(transactionId: Long): List<Int>?
+    suspend fun findSentNoteIds(transactionId: Long): List<Int>?
 
     @Query("DELETE FROM sent_notes WHERE id_note = :id")
-    fun deleteSentNote(id: Int): Int
+    suspend fun deleteSentNote(id: Int): Int
 
     @Query("DELETE FROM transactions WHERE id_tx = :id")
-    fun deleteTransaction(id: Long): Int
+    suspend fun deleteTransaction(id: Long): Int
 
     @Query("UPDATE received_notes SET spent = null WHERE spent = :transactionId")
-    fun unspendTransactionNotes(transactionId: Long): Int
+    suspend fun unspendTransactionNotes(transactionId: Long): Int
 
     @Query("DELETE FROM utxos WHERE spent_in_tx = :utxoId")
-    fun deleteUtxos(utxoId: Long): Int
+    suspend fun deleteUtxos(utxoId: Long): Int
 
     @Query(
         """

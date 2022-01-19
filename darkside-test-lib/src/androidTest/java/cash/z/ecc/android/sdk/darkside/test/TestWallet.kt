@@ -67,7 +67,7 @@ class TestWallet(
             runBlocking { config.importWallet(seed, startHeight, network, host, alias = alias) }
         }
     }
-    val synchronizer: SdkSynchronizer = Synchronizer(initializer) as SdkSynchronizer
+    val synchronizer: SdkSynchronizer = runBlocking { Synchronizer.new(initializer) } as SdkSynchronizer
     val service = (synchronizer.processor.downloader.lightWalletService as LightWalletGrpcService)
 
     val available get() = synchronizer.saplingBalances.value.availableZatoshi

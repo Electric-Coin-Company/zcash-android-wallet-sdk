@@ -145,7 +145,10 @@ class SampleCodeTest {
         private val lightwalletdHost: String = ZcashNetwork.Mainnet.defaultHost
 
         private val context = InstrumentationRegistry.getInstrumentation().targetContext
-        private val synchronizer = Synchronizer(runBlocking { Initializer.new(context) {} })
+        private val synchronizer: Synchronizer = run {
+            val initializer = runBlocking { Initializer.new(context) {} }
+            Synchronizer.newBlocking(initializer)
+        }
 
         @BeforeClass
         @JvmStatic

@@ -25,7 +25,7 @@ class SaplingParamTool {
                 ZcashSdk.SPEND_PARAM_FILE_NAME,
                 ZcashSdk.OUTPUT_PARAM_FILE_NAME
             ).forEach { paramFileName ->
-                if (!File(destinationDir, paramFileName).exists()) {
+                if (!File(destinationDir, paramFileName).existsSuspend()) {
                     twig("WARNING: $paramFileName not found at location: $destinationDir")
                     hadError = true
                 }
@@ -50,7 +50,7 @@ class SaplingParamTool {
          * because it is not harmful if these files are cleared by the user since they are downloaded
          * on-demand.
          */
-        suspend fun fetchParams(destinationDir: String) = withContext(Dispatchers.IO) {
+        suspend fun fetchParams(destinationDir: String) {
             val client = createHttpClient()
             var failureMessage = ""
             arrayOf(
@@ -59,19 +59,21 @@ class SaplingParamTool {
             ).forEach { paramFileName ->
                 val url = "${ZcashSdk.CLOUD_PARAM_DIR_URL}/$paramFileName"
                 val request = Request.Builder().url(url).build()
-                val response = client.newCall(request).execute()
+                val response = withContext(Dispatchers.IO) { client.newCall(request).execute() }
                 if (response.isSuccessful) {
                     twig("fetch succeeded", -1)
                     val file = File(destinationDir, paramFileName)
-                    if (file.parentFile.exists()) {
+                    if (file.parentFile?.existsSuspend() == true) {
                         twig("directory exists!", -1)
                     } else {
                         twig("directory did not exist attempting to make it")
-                        file.parentFile.mkdirs()
+                        file.parentFile?.mkdirsSuspend()
                     }
-                    file.sink().buffer().use {
-                        twig("writing to $file")
-                        it.writeAll(response.body().source())
+                    withContext(Dispatchers.IO) {
+                        file.sink().buffer().use {
+                            twig("writing to $file")
+                            it.writeAll(response.body().source())
+                        }
                     }
                 } else {
                     failureMessage += "Error while fetching $paramFileName : $response\n"
@@ -85,14 +87,14 @@ class SaplingParamTool {
             )
         }
 
-        fun clear(destinationDir: String) {
+        suspend fun clear(destinationDir: String) {
             if (validate(destinationDir)) {
                 arrayOf(
                     ZcashSdk.SPEND_PARAM_FILE_NAME,
                     ZcashSdk.OUTPUT_PARAM_FILE_NAME
                 ).forEach { paramFileName ->
                     val file = File(destinationDir, paramFileName)
-                    if (file.deleteRecursively()) {
+                    if (file.deleteRecursivelySuspend()) {
                         twig("Files deleted successfully")
                     } else {
                         twig("Error: Files not able to be deleted!")
@@ -101,12 +103,12 @@ class SaplingParamTool {
             }
         }
 
-        fun validate(destinationDir: String): Boolean {
+        suspend fun validate(destinationDir: String): Boolean {
             return arrayOf(
                 ZcashSdk.SPEND_PARAM_FILE_NAME,
                 ZcashSdk.OUTPUT_PARAM_FILE_NAME
             ).all { paramFileName ->
-                File(destinationDir, paramFileName).exists()
+                File(destinationDir, paramFileName).existsSuspend()
             }.also {
                 println("Param files${if (!it) "did not" else ""} both exist!")
             }
@@ -127,3 +129,7 @@ class SaplingParamTool {
         }
     }
 }
+
+suspend fun File.existsSuspend() = withContext(Dispatchers.IO) { exists() }
+suspend fun File.mkdirsSuspend() = withContext(Dispatchers.IO) { mkdirs() }
+suspend fun File.deleteRecursivelySuspend() = withContext(Dispatchers.IO) { deleteRecursively() }

@@ -49,7 +49,7 @@ class RustBackend private constructor() : RustBackendWelding {
     // Wrapper Functions
     //
 
-    override suspend fun initDataDb() = withContext(SdkDispatchers.IO) {
+    override suspend fun initDataDb() = withContext(SdkDispatchers.DATABASE_IO) {
         initDataDb(
             pathDataDb,
             networkId = network.id
@@ -63,7 +63,7 @@ class RustBackend private constructor() : RustBackendWelding {
             extfvks[i] = key.extfvk
             extpubs[i] = key.extpub
         }
-        return withContext(SdkDispatchers.IO) {
+        return withContext(SdkDispatchers.DATABASE_IO) {
             initAccountsTableWithKeys(
                 pathDataDb,
                 extfvks,
@@ -88,7 +88,7 @@ class RustBackend private constructor() : RustBackendWelding {
         time: Long,
         saplingTree: String
     ): Boolean {
-        return withContext(SdkDispatchers.IO) {
+        return withContext(SdkDispatchers.DATABASE_IO) {
             initBlocksTable(
                 pathDataDb,
                 height,
@@ -100,7 +100,7 @@ class RustBackend private constructor() : RustBackendWelding {
         }
     }
 
-    override suspend fun getShieldedAddress(account: Int) = withContext(SdkDispatchers.IO) {
+    override suspend fun getShieldedAddress(account: Int) = withContext(SdkDispatchers.DATABASE_IO) {
         getShieldedAddress(
             pathDataDb,
             account,
@@ -112,7 +112,7 @@ class RustBackend private constructor() : RustBackendWelding {
         throw NotImplementedError("TODO: implement this at the zcash_client_sqlite level. But for now, use DerivationTool, instead to derive addresses from seeds")
     }
 
-    override suspend fun getBalance(account: Int) = withContext(SdkDispatchers.IO) {
+    override suspend fun getBalance(account: Int) = withContext(SdkDispatchers.DATABASE_IO) {
         getBalance(
             pathDataDb,
             account,
@@ -120,7 +120,7 @@ class RustBackend private constructor() : RustBackendWelding {
         )
     }
 
-    override suspend fun getVerifiedBalance(account: Int) = withContext(SdkDispatchers.IO) {
+    override suspend fun getVerifiedBalance(account: Int) = withContext(SdkDispatchers.DATABASE_IO) {
         getVerifiedBalance(
             pathDataDb,
             account,
@@ -129,9 +129,9 @@ class RustBackend private constructor() : RustBackendWelding {
     }
 
     override suspend fun getReceivedMemoAsUtf8(idNote: Long) =
-        withContext(SdkDispatchers.IO) { getReceivedMemoAsUtf8(pathDataDb, idNote, networkId = network.id) }
+        withContext(SdkDispatchers.DATABASE_IO) { getReceivedMemoAsUtf8(pathDataDb, idNote, networkId = network.id) }
 
-    override suspend fun getSentMemoAsUtf8(idNote: Long) = withContext(SdkDispatchers.IO) {
+    override suspend fun getSentMemoAsUtf8(idNote: Long) = withContext(SdkDispatchers.DATABASE_IO) {
         getSentMemoAsUtf8(
             pathDataDb,
             idNote,
@@ -139,7 +139,7 @@ class RustBackend private constructor() : RustBackendWelding {
         )
     }
 
-    override suspend fun validateCombinedChain() = withContext(SdkDispatchers.IO) {
+    override suspend fun validateCombinedChain() = withContext(SdkDispatchers.DATABASE_IO) {
         validateCombinedChain(
             pathCacheDb,
             pathDataDb,
@@ -147,7 +147,7 @@ class RustBackend private constructor() : RustBackendWelding {
         )
     }
 
-    override suspend fun getNearestRewindHeight(height: Int): Int = withContext(SdkDispatchers.IO) {
+    override suspend fun getNearestRewindHeight(height: Int): Int = withContext(SdkDispatchers.DATABASE_IO) {
         getNearestRewindHeight(
             pathDataDb,
             height,
@@ -161,11 +161,11 @@ class RustBackend private constructor() : RustBackendWelding {
      * DELETE FROM blocks WHERE height > ?
      */
     override suspend fun rewindToHeight(height: Int) =
-        withContext(SdkDispatchers.IO) { rewindToHeight(pathDataDb, height, networkId = network.id) }
+        withContext(SdkDispatchers.DATABASE_IO) { rewindToHeight(pathDataDb, height, networkId = network.id) }
 
     override suspend fun scanBlocks(limit: Int): Boolean {
         return if (limit > 0) {
-            withContext(SdkDispatchers.IO) {
+            withContext(SdkDispatchers.DATABASE_IO) {
                 scanBlockBatch(
                     pathCacheDb,
                     pathDataDb,
@@ -174,7 +174,7 @@ class RustBackend private constructor() : RustBackendWelding {
                 )
             }
         } else {
-            withContext(SdkDispatchers.IO) {
+            withContext(SdkDispatchers.DATABASE_IO) {
                 scanBlocks(
                     pathCacheDb,
                     pathDataDb,
@@ -184,7 +184,7 @@ class RustBackend private constructor() : RustBackendWelding {
         }
     }
 
-    override suspend fun decryptAndStoreTransaction(tx: ByteArray) = withContext(SdkDispatchers.IO) {
+    override suspend fun decryptAndStoreTransaction(tx: ByteArray) = withContext(SdkDispatchers.DATABASE_IO) {
         decryptAndStoreTransaction(
             pathDataDb,
             tx,
@@ -199,7 +199,7 @@ class RustBackend private constructor() : RustBackendWelding {
         to: String,
         value: Long,
         memo: ByteArray?
-    ): Long = withContext(SdkDispatchers.IO) {
+    ): Long = withContext(SdkDispatchers.DATABASE_IO) {
         createToAddress(
             pathDataDb,
             consensusBranchId,
@@ -220,7 +220,7 @@ class RustBackend private constructor() : RustBackendWelding {
         memo: ByteArray?
     ): Long {
         twig("TMP: shieldToAddress with db path: $pathDataDb, ${memo?.size}")
-        return withContext(SdkDispatchers.IO) {
+        return withContext(SdkDispatchers.DATABASE_IO) {
             shieldToAddress(
                 pathDataDb,
                 0,
@@ -241,7 +241,7 @@ class RustBackend private constructor() : RustBackendWelding {
         script: ByteArray,
         value: Long,
         height: Int
-    ): Boolean = withContext(SdkDispatchers.IO) {
+    ): Boolean = withContext(SdkDispatchers.DATABASE_IO) {
         putUtxo(
             pathDataDb,
             tAddress,
@@ -257,7 +257,7 @@ class RustBackend private constructor() : RustBackendWelding {
     override suspend fun clearUtxos(
         tAddress: String,
         aboveHeight: Int,
-    ): Boolean = withContext(SdkDispatchers.IO) {
+    ): Boolean = withContext(SdkDispatchers.DATABASE_IO) {
         clearUtxos(
             pathDataDb,
             tAddress,
@@ -267,14 +267,14 @@ class RustBackend private constructor() : RustBackendWelding {
     }
 
     override suspend fun getDownloadedUtxoBalance(address: String): WalletBalance {
-        val verified = withContext(SdkDispatchers.IO) {
+        val verified = withContext(SdkDispatchers.DATABASE_IO) {
             getVerifiedTransparentBalance(
                 pathDataDb,
                 address,
                 networkId = network.id
             )
         }
-        val total = withContext(SdkDispatchers.IO) {
+        val total = withContext(SdkDispatchers.DATABASE_IO) {
             getTotalTransparentBalance(
                 pathDataDb,
                 address,

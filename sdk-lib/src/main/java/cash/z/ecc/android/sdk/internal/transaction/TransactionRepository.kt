@@ -15,21 +15,21 @@ interface TransactionRepository {
      *
      * @return the last height scanned by this repository.
      */
-    fun lastScannedHeight(): Int
+    suspend fun lastScannedHeight(): Int
 
     /**
      * The height of the first block in this repository. This is typically the checkpoint that was
      * used to initialize this wallet. If we overwrite this block, it breaks our ability to spend
      * funds.
      */
-    fun firstScannedHeight(): Int
+    suspend fun firstScannedHeight(): Int
 
     /**
      * Returns true when this repository has been initialized and seeded with the initial checkpoint.
      *
      * @return true when this repository has been initialized and seeded with the initial checkpoint.
      */
-    fun isInitialized(): Boolean
+    suspend fun isInitialized(): Boolean
 
     /**
      * Find the encoded transaction associated with the given id.
@@ -87,16 +87,16 @@ interface TransactionRepository {
 
     suspend fun getAccountCount(): Int
 
-    suspend fun prepare()
-
     //
     // Transactions
     //
 
     /** A flow of all the inbound confirmed transactions */
     val receivedTransactions: Flow<List<ConfirmedTransaction>>
+
     /** A flow of all the outbound confirmed transactions */
     val sentTransactions: Flow<List<ConfirmedTransaction>>
+
     /** A flow of all the inbound and outbound confirmed transactions */
     val allTransactions: Flow<List<ConfirmedTransaction>>
 }

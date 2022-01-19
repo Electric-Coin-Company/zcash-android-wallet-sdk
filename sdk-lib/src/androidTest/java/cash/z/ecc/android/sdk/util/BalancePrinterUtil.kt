@@ -11,11 +11,11 @@ import cash.z.ecc.android.sdk.tool.WalletBirthdayTool
 import cash.z.ecc.android.sdk.type.WalletBirthday
 import cash.z.ecc.android.sdk.type.ZcashNetwork
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.runBlocking
-import okio.Okio
+import okio.buffer
+import okio.source
 import org.junit.Before
 import org.junit.Ignore
 import org.junit.Test
@@ -100,7 +100,7 @@ class BalancePrinterUtil {
                     - can we be more stateless and thereby improve the flexibility of this code?!!!
                   */
                 synchronizer?.stop()
-                synchronizer = Synchronizer(initializer).apply {
+                synchronizer = Synchronizer.new(initializer).apply {
                     start()
                 }
 
@@ -141,7 +141,7 @@ class BalancePrinterUtil {
     @Throws(IOException::class)
     fun readLines() = flow<String> {
         val seedFile = javaClass.getResourceAsStream("/utils/seeds.txt")!!
-        Okio.buffer(Okio.source(seedFile)).use { source ->
+        seedFile.source().buffer().use { source ->
             var line: String? = source.readUtf8Line()
             while (line != null) {
                 emit(line)

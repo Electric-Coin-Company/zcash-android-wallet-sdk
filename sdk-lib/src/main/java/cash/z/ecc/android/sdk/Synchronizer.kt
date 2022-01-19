@@ -12,6 +12,7 @@ import cash.z.wallet.sdk.rpc.Service
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.runBlocking
 
 /**
  * Primary interface for interacting with the SDK. Defines the contract that specific
@@ -298,7 +299,10 @@ interface Synchronizer {
      *
      * @return the number of utxos that were downloaded and addded to the UTXO table.
      */
-    suspend fun refreshUtxos(tAddr: String, sinceHeight: Int = network.saplingActivationHeight): Int?
+    suspend fun refreshUtxos(
+        tAddr: String,
+        sinceHeight: Int = network.saplingActivationHeight
+    ): Int?
 
     /**
      * Returns the balance that the wallet knows about. This should be called after [refreshUtxos].
@@ -420,5 +424,48 @@ interface Synchronizer {
          * When set, a UI element may want to turn green. In this state, the balance can be trusted.
          */
         SYNCED
+    }
+
+    companion object {
+
+        /**
+         * Primary method that SDK clients will use to construct a synchronizer.
+         *
+         * If customized initialization is required (e.g. for dependency injection or testing), see
+         * [DefaultSynchronizerFactory].
+         *
+         * @param initializer the helper that is leveraged for creating all the components that the
+         * Synchronizer requires. It contains all information necessary to build a synchronizer and it is
+         * mainly responsible for initializing the databases associated with this synchronizer and loading
+         * the rust backend.
+         */
+        suspend fun new(
+            initializer: Initializer
+        ): Synchronizer {
+            val repository = DefaultSynchronizerFactory.defaultTransactionRepository(initializer)
+            val blockStore = DefaultSynchronizerFactory.defaultBlockStore(initializer)
+            val service = DefaultSynchronizerFactory.defaultService(initializer)
+            val encoder = DefaultSynchronizerFactory.defaultEncoder(initializer, repository)
+            val downloader = DefaultSynchronizerFactory.defaultDownloader(service, blockStore)
+            val txManager =
+                DefaultSynchronizerFactory.defaultTxManager(initializer, encoder, service)
+            val processor =
+                DefaultSynchronizerFactory.defaultProcessor(initializer, downloader, repository)
+
+            return SdkSynchronizer(
+                repository,
+                txManager,
+                processor
+            )
+        }
+
+        /**
+         * Effectively the same as [new] although designed to be a blocking call with better
+         * interoperability with Java clients.
+         *
+         * This is a blocking call, so it should not be called from the main thread.
+         */
+        @JvmStatic
+        fun newBlocking(initializer: Initializer): Synchronizer = runBlocking { new(initializer) }
     }
 }

@@ -47,7 +47,9 @@ data class WalletBirthday(
     val hash: String = "",
     val time: Long = -1,
     val tree: String = ""
-)
+) {
+    companion object
+}
 
 /**
  * A grouping of keys that correspond to a single wallet account but do not have spend authority.

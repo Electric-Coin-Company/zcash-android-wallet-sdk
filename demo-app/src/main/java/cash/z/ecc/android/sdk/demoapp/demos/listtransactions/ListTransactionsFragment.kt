@@ -60,7 +60,7 @@ class ListTransactionsFragment : BaseDemoFragment<FragmentListTransactionsBindin
                 ZcashNetwork.fromResources(requireApplicationContext())
             )
         }
-        synchronizer = Synchronizer(initializer)
+        synchronizer = Synchronizer.newBlocking(initializer)
     }
 
     private fun initTransactionUI() {

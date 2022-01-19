@@ -20,7 +20,7 @@ object BlockExplorer {
             .url("https://api.blockchair.com/zcash/blocks?limit=1")
             .build()
         val result = client.newCall(request).await()
-        val body = result.body()?.string()
+        val body = result.body?.string()
         return JSONObject(body).getJSONArray("data").getJSONObject(0).getInt("id")
     }
 }

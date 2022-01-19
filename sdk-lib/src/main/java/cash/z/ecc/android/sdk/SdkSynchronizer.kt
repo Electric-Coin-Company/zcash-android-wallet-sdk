@@ -76,7 +76,6 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 
@@ -247,7 +246,7 @@ class SdkSynchronizer internal constructor(
     override val latestBirthdayHeight: Int get() = processor.birthdayHeight
 
     override suspend fun prepare(): Synchronizer = apply {
-        storage.prepare()
+        // Do nothing; this could likely be removed
     }
 
     /**
@@ -384,7 +383,8 @@ class SdkSynchronizer internal constructor(
     suspend fun isValidAddress(address: String): Boolean {
         try {
             return !validateAddress(address).isNotValid
-        } catch (t: Throwable) { }
+        } catch (t: Throwable) {
+        }
         return false
     }
 
@@ -529,7 +529,7 @@ class SdkSynchronizer internal constructor(
         }
     }
 
-    private suspend fun refreshPendingTransactions() = withContext(Dispatchers.IO) {
+    private suspend fun refreshPendingTransactions() {
         twig("[cleanup] beginning to refresh and clean up pending transactions")
         // TODO: this would be the place to clear out any stale pending transactions. Remove filter
         //  logic and then delete any pending transaction with sufficient confirmations (all in one
@@ -565,15 +565,16 @@ class SdkSynchronizer internal constructor(
         }
 
         // Experimental: cleanup failed transactions
-        allPendingTxs.filter { it.isSubmitted() && it.isFailedSubmit() && !it.isMarkedForDeletion() }.let { failed ->
-            failed.forEachIndexed { index, pendingTx ->
-                twig(
-                    "[cleanup] FOUND (${index + 1} of ${failed.size})" +
-                        " FAILED pendingTxId: ${pendingTx.id}"
-                )
-                cleanupCancelledTx(pendingTx)
+        allPendingTxs.filter { it.isSubmitted() && it.isFailedSubmit() && !it.isMarkedForDeletion() }
+            .let { failed ->
+                failed.forEachIndexed { index, pendingTx ->
+                    twig(
+                        "[cleanup] FOUND (${index + 1} of ${failed.size})" +
+                            " FAILED pendingTxId: ${pendingTx.id}"
+                    )
+                    cleanupCancelledTx(pendingTx)
+                }
             }
-        }
 
         twig("[cleanup] beginning to cleanup expired transactions", -1)
         // Experimental: cleanup expired transactions
@@ -584,8 +585,16 @@ class SdkSynchronizer internal constructor(
         // sometimes apps crash or things go wrong and we get an orphaned pendingTx that we'll poll
         // forever, so maybe just get rid of all of them after a long while
         allPendingTxs.filter {
-            (it.isExpired(lastScannedHeight, network.saplingActivationHeight) && it.isMarkedForDeletion()) ||
-                it.isLongExpired(lastScannedHeight, network.saplingActivationHeight) || it.isSafeToDiscard()
+            (
+                it.isExpired(
+                    lastScannedHeight,
+                    network.saplingActivationHeight
+                ) && it.isMarkedForDeletion()
+                ) ||
+                it.isLongExpired(
+                    lastScannedHeight,
+                    network.saplingActivationHeight
+                ) || it.isSafeToDiscard()
         }
             .forEach {
                 val result = txManager.abort(it)
@@ -619,9 +628,11 @@ class SdkSynchronizer internal constructor(
 
     override suspend fun getAddress(accountId: Int): String = getShieldedAddress(accountId)
 
-    override suspend fun getShieldedAddress(accountId: Int): String = processor.getShieldedAddress(accountId)
+    override suspend fun getShieldedAddress(accountId: Int): String =
+        processor.getShieldedAddress(accountId)
 
-    override suspend fun getTransparentAddress(accountId: Int): String = processor.getTransparentAddress(accountId)
+    override suspend fun getTransparentAddress(accountId: Int): String =
+        processor.getTransparentAddress(accountId)
 
     override fun sendToAddress(
         spendingKey: String,
@@ -658,7 +669,8 @@ class SdkSynchronizer internal constructor(
         memo: String
     ): Flow<PendingTransaction> = flow {
         twig("Initializing shielding transaction")
-        val tAddr = DerivationTool.deriveTransparentAddressFromPrivateKey(transparentSecretKey, network)
+        val tAddr =
+            DerivationTool.deriveTransparentAddressFromPrivateKey(transparentSecretKey, network)
         val tBalance = processor.getUtxoCacheBalance(tAddr)
         val zAddr = getAddress(0)
 
@@ -736,71 +748,78 @@ class SdkSynchronizer internal constructor(
          *
          * @return true when content was found for the given alias. False otherwise.
          */
-        suspend fun erase(appContext: Context, network: ZcashNetwork, alias: String = ZcashSdk.DEFAULT_ALIAS): Boolean
+        suspend fun erase(
+            appContext: Context,
+            network: ZcashNetwork,
+            alias: String = ZcashSdk.DEFAULT_ALIAS
+        ): Boolean
     }
 }
 
 /**
- * Builder function for constructing a Synchronizer with flexibility for adding custom behavior. The
- * Initializer is the only thing required because it takes care of loading the Rust libraries
- * properly; everything else has a reasonable default. For a wallet, the most common flow is to
- * first call either [Initializer.new] or [Initializer.import] on the first run and then
- * [Initializer.open] for all subsequent launches of the wallet. From there, the initializer is
- * passed to this function in order to start syncing from where the wallet left off.
+ * Provides a way of constructing a synchronizer where dependencies are injected in.
  *
- * The remaining parameters are all optional and they allow a wallet maker to customize any
- * subcomponent of the Synchronizer. For example, this function could be used to inject an in-memory
- * CompactBlockStore rather than a SQL implementation or a downloader that does not use gRPC:
- *
- * ```
- * val initializer = Initializer(context, host, port).import(seedPhrase, birthdayHeight)
- * val synchronizer = Synchronizer(initializer,
- *      blockStore = MyInMemoryBlockStore(),
- *      downloader = MyRestfulServiceForBlocks()
- * )
- * ```
- *
- * Note: alternatively, all the objects required to build a Synchronizer (the object graph) can be
- * supplied by a dependency injection framework like Dagger or Koin. This builder just makes that
- * process a bit easier so developers can get started syncing the blockchain without the overhead of
- * configuring a bunch of objects, first.
- *
- * @param initializer the helper that is leveraged for creating all the components that the
- * Synchronizer requires. It contains all information necessary to build a synchronizer and it is
- * mainly responsible for initializing the databases associated with this synchronizer and loading
- * the rust backend.
- * @param repository repository of wallet data, providing an interface to the underlying info.
- * @param blockStore component responsible for storing compact blocks downloaded from lightwalletd.
- * @param service the lightwalletd service that can provide compact blocks and submit transactions.
- * @param encoder the component responsible for encoding transactions.
- * @param downloader the component responsible for downloading ranges of compact blocks.
- * @param txManager the component that manages outbound transactions in order to report which ones are
- * still pending, particularly after failed attempts or dropped connectivity. The intent is to help
- * monitor outbound transactions status through to completion.
- * @param processor the component responsible for processing compact blocks. This is effectively the
- * brains of the synchronizer that implements most of the high-level business logic and determines
- * the current state of the wallet.
+ * See the helper methods for generating default values.
  */
-@Suppress("FunctionName")
-fun Synchronizer(
-    initializer: Initializer,
-    repository: TransactionRepository =
-        PagedTransactionRepository(initializer.context, 1000, initializer.rustBackend, initializer.birthday, initializer.viewingKeys, initializer.overwriteVks), // TODO: fix this pagesize bug, small pages should not crash the app. It crashes with: Uncaught Exception: android.view.ViewRootImpl$CalledFromWrongThreadException: Only the original thread that created a view hierarchy can touch its views. and is probably related to FlowPagedList
-    blockStore: CompactBlockStore = CompactBlockDbStore(initializer.context, initializer.rustBackend.pathCacheDb),
-    service: LightWalletService = LightWalletGrpcService(initializer.context, initializer.host, initializer.port),
-    encoder: TransactionEncoder = WalletTransactionEncoder(initializer.rustBackend, repository),
-    downloader: CompactBlockDownloader = CompactBlockDownloader(service, blockStore),
-    txManager: OutboundTransactionManager =
-        PersistentTransactionManager(initializer.context, encoder, service),
-    processor: CompactBlockProcessor =
-        CompactBlockProcessor(downloader, repository, initializer.rustBackend, initializer.rustBackend.birthdayHeight)
-): Synchronizer {
-    // call the actual constructor now that all dependencies have been injected
-    // alternatively, this entire object graph can be supplied by Dagger
-    // This builder just makes that easier.
-    return SdkSynchronizer(
+object DefaultSynchronizerFactory {
+
+    fun new(
+        repository: TransactionRepository,
+        txManager: OutboundTransactionManager,
+        processor: CompactBlockProcessor,
+    ): Synchronizer {
+        // call the actual constructor now that all dependencies have been injected
+        // alternatively, this entire object graph can be supplied by Dagger
+        // This builder just makes that easier.
+        return SdkSynchronizer(
+            repository,
+            txManager,
+            processor
+        )
+    }
+
+    // TODO [#242]: Don't hard code page size.  It is a workaround for Uncaught Exception: android.view.ViewRootImpl$CalledFromWrongThreadException: Only the original thread that created a view hierarchy can touch its views. and is probably related to FlowPagedList
+    suspend fun defaultTransactionRepository(initializer: Initializer): TransactionRepository =
+        PagedTransactionRepository.new(
+            initializer.context,
+            1000,
+            initializer.rustBackend,
+            initializer.birthday,
+            initializer.viewingKeys,
+            initializer.overwriteVks
+        )
+
+    fun defaultBlockStore(initializer: Initializer): CompactBlockStore =
+        CompactBlockDbStore.new(initializer.context, initializer.rustBackend.pathCacheDb)
+
+    fun defaultService(initializer: Initializer): LightWalletService =
+        LightWalletGrpcService(initializer.context, initializer.host, initializer.port)
+
+    fun defaultEncoder(
+        initializer: Initializer,
+        repository: TransactionRepository
+    ): TransactionEncoder = WalletTransactionEncoder(initializer.rustBackend, repository)
+
+    fun defaultDownloader(
+        service: LightWalletService,
+        blockStore: CompactBlockStore
+    ): CompactBlockDownloader = CompactBlockDownloader(service, blockStore)
+
+    fun defaultTxManager(
+        initializer: Initializer,
+        encoder: TransactionEncoder,
+        service: LightWalletService
+    ): OutboundTransactionManager =
+        PersistentTransactionManager(initializer.context, encoder, service)
+
+    fun defaultProcessor(
+        initializer: Initializer,
+        downloader: CompactBlockDownloader,
+        repository: TransactionRepository
+    ): CompactBlockProcessor = CompactBlockProcessor(
+        downloader,
         repository,
-        txManager,
-        processor
+        initializer.rustBackend,
+        initializer.rustBackend.birthdayHeight
     )
 }

@@ -8,7 +8,8 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.runBlocking
-import okio.Okio
+import okio.buffer
+import okio.source
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -46,7 +47,7 @@ class AddressGeneratorUtil {
     @Throws(IOException::class)
     fun readLines() = flow<String> {
         val seedFile = javaClass.getResourceAsStream("/utils/seeds.txt")!!
-        Okio.buffer(Okio.source(seedFile)).use { source ->
+        seedFile.source().buffer().use { source ->
             var line: String? = source.readUtf8Line()
             while (line != null) {
                 emit(line)

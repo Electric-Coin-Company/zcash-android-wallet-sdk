@@ -70,7 +70,7 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
                 it.setNetwork(ZcashNetwork.fromResources(requireApplicationContext()))
             }
         }.let { initializer ->
-            synchronizer = Synchronizer(initializer)
+            synchronizer = Synchronizer.newBlocking(initializer)
         }
         spendingKey = runBlocking { DerivationTool.deriveSpendingKeys(seed, ZcashNetwork.fromResources(requireApplicationContext())).first() }
     }

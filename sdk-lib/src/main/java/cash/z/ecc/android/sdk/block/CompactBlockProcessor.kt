@@ -641,7 +641,7 @@ class CompactBlockProcessor(
     /**
      * Rewind back at least two weeks worth of blocks.
      */
-    suspend fun quickRewind() = withContext(IO) {
+    suspend fun quickRewind() {
         val height = max(currentInfo.lastScannedHeight, repository.lastScannedHeight())
         val blocksPerDay = 60 * 60 * 24 * 1000 / ZcashSdk.BLOCK_INTERVAL_MILLIS.toInt()
         val twoWeeksBack = (height - blocksPerDay * 14).coerceAtLeast(lowerBoundHeight)
@@ -774,33 +774,29 @@ class CompactBlockProcessor(
      *
      * @return the last downloaded height reported by the downloader.
      */
-    suspend fun getLastDownloadedHeight() = withContext(IO) {
+    suspend fun getLastDownloadedHeight() =
         downloader.getLastDownloadedHeight()
-    }
 
     /**
      * Get the height of the last block that was scanned by this processor.
      *
      * @return the last scanned height reported by the repository.
      */
-    suspend fun getLastScannedHeight() = withContext(IO) {
+    suspend fun getLastScannedHeight() =
         repository.lastScannedHeight()
-    }
 
     /**
      * Get address corresponding to the given account for this wallet.
      *
      * @return the address of this wallet.
      */
-    suspend fun getShieldedAddress(accountId: Int = 0) = withContext(IO) {
+    suspend fun getShieldedAddress(accountId: Int = 0) =
         repository.getAccount(accountId)?.rawShieldedAddress
             ?: throw InitializerException.MissingAddressException("shielded")
-    }
 
-    suspend fun getTransparentAddress(accountId: Int = 0) = withContext(IO) {
+    suspend fun getTransparentAddress(accountId: Int = 0) =
         repository.getAccount(accountId)?.rawTransparentAddress
             ?: throw InitializerException.MissingAddressException("transparent")
-    }
 
     /**
      * Calculates the latest balance info. Defaults to the first account.
@@ -809,7 +805,7 @@ class CompactBlockProcessor(
      *
      * @return an instance of WalletBalance containing information about available and total funds.
      */
-    suspend fun getBalanceInfo(accountIndex: Int = 0): WalletBalance = withContext(IO) {
+    suspend fun getBalanceInfo(accountIndex: Int = 0): WalletBalance =
         twigTask("checking balance info", -1) {
             try {
                 val balanceTotal = rustBackend.getBalance(accountIndex)
@@ -822,11 +818,8 @@ class CompactBlockProcessor(
                 throw RustLayerException.BalanceException(t)
             }
         }
-    }
 
-    suspend fun getUtxoCacheBalance(address: String): WalletBalance = withContext(IO) {
-        rustBackend.getDownloadedUtxoBalance(address)
-    }
+    suspend fun getUtxoCacheBalance(address: String): WalletBalance = rustBackend.getDownloadedUtxoBalance(address)
 
     /**
      * Transmits the given state for this processor.

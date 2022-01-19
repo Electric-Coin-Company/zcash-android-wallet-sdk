@@ -53,7 +53,7 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
                 it.importWallet(viewingKey, network = ZcashNetwork.fromResources(requireApplicationContext()))
             }
         }.let { initializer ->
-            synchronizer = Synchronizer(initializer)
+            synchronizer = Synchronizer.newBlocking(initializer)
         }
     }
 

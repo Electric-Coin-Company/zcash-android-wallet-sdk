@@ -7,7 +7,6 @@ import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.internal.TroubleshootingTwig
 import cash.z.ecc.android.sdk.internal.Twig
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.junit.Before
@@ -64,15 +63,23 @@ class DataDbScannerUtil {
     @Test
     @Ignore("This test is broken")
     fun scanExistingDb() {
-        synchronizer = Synchronizer(
-            runBlocking {
+        synchronizer = run {
+            val initializer = runBlocking {
                 Initializer.new(context) {
                     it.setBirthdayHeight(
                         birthdayHeight
                     )
                 }
             }
-        )
+
+            val synchronizer = runBlocking {
+                Synchronizer.new(
+                    initializer
+                )
+            }
+
+            synchronizer
+        }
 
         println("sync!")
         synchronizer.start()

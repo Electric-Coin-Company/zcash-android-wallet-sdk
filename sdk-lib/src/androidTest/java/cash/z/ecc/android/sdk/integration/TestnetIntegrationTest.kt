@@ -135,7 +135,7 @@ class TestnetIntegrationTest : ScopedTest() {
         @JvmStatic
         @BeforeClass
         fun startUp() {
-            synchronizer = Synchronizer(initializer)
+            synchronizer = Synchronizer.newBlocking(initializer)
             synchronizer.start(classScope)
         }
     }

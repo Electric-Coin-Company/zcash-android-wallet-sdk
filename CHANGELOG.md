@@ -3,7 +3,9 @@ Change Log
 
 Next version
 ------------------------------------
+- Main entrypoint to the SDK has changed.  See [MIGRATIONS.md](MIGRATIONS.md)
 - The minumum version of Android supported is now API 19
+- Fix: Internal bugfixes around concurrent access to resources, which could cause transient failures and data corruption
 - Fix: Added ProGuard rules so that SDK clients can use R8 to shrink their apps
 - Updated dependencies
 

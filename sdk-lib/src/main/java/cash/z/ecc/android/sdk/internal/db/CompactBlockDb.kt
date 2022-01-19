@@ -24,7 +24,7 @@ import cash.z.ecc.android.sdk.db.entity.CompactBlockEntity
     exportSchema = true
 )
 abstract class CompactBlockDb : RoomDatabase() {
-    abstract fun complactBlockDao(): CompactBlockDao
+    abstract fun compactBlockDao(): CompactBlockDao
 }
 
 //
@@ -37,17 +37,17 @@ abstract class CompactBlockDb : RoomDatabase() {
 @Dao
 interface CompactBlockDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insert(block: CompactBlockEntity)
+    suspend fun insert(block: CompactBlockEntity)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insert(block: List<CompactBlockEntity>)
+    suspend fun insert(block: List<CompactBlockEntity>)
 
     @Query("DELETE FROM compactblocks WHERE height > :height")
-    fun rewindTo(height: Int)
+    suspend fun rewindTo(height: Int)
 
     @Query("SELECT MAX(height) FROM compactblocks")
-    fun latestBlockHeight(): Int
+    suspend fun latestBlockHeight(): Int
 
     @Query("SELECT data FROM compactblocks WHERE height = :height")
-    fun findCompactBlock(height: Int): ByteArray?
+    suspend fun findCompactBlock(height: Int): ByteArray?
 }

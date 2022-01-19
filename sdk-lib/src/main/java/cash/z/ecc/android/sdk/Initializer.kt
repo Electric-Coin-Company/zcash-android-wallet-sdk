@@ -13,6 +13,7 @@ import cash.z.ecc.android.sdk.tool.WalletBirthdayTool
 import cash.z.ecc.android.sdk.type.UnifiedViewingKey
 import cash.z.ecc.android.sdk.type.WalletBirthday
 import cash.z.ecc.android.sdk.type.ZcashNetwork
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import java.io.File
 
@@ -299,11 +300,21 @@ class Initializer private constructor(
                 DerivationTool.validateUnifiedViewingKey(it)
             }
         }
+
+        companion object
     }
 
     companion object : SdkSynchronizer.Erasable {
 
         suspend fun new(appContext: Context, config: Config) = new(appContext, null, config)
+
+        fun newBlocking(appContext: Context, config: Config) = runBlocking {
+            new(
+                appContext,
+                null,
+                config
+            )
+        }
 
         suspend fun new(
             appContext: Context,
@@ -464,7 +475,7 @@ class Initializer private constructor(
          */
         private suspend fun delete(filePath: String): Boolean {
             return File(filePath).let {
-                withContext(SdkDispatchers.IO) {
+                withContext(SdkDispatchers.DATABASE_IO) {
                     if (it.exists()) {
                         twig("Deleting ${it.name}!")
                         it.delete()

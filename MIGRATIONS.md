@@ -3,9 +3,13 @@ Troubleshooting Migrations
 
 UPCOMING
 --------------------------------------
+The main entrypoint to the SDK has changed.
+
+Previously, a Synchronizer was initialized with `Synchronizer(initializer)` and now it is initialized with `Synchronizer.new(initializer)` which is also now a suspending function.  For clients needing more complex initialization, the previous default method arguments for `Synchronizer()` were moved to `DefaultSynchronizerFactory`.
+
 The minimum Android version supported is now API 19.
 
-Migrating to Version 1.3.0-beta18 from 1.3.0-beta19
+Upcoming Migrating to Version 1.3.0-beta18 from 1.3.0-beta19
 --------------------------------------
 Various APIs that have always been considered private have been moved into a new package called `internal`.  While this should not be a breaking change, clients that might have relied on these internal classes should stop doing so.  If necessary, these calls can be migrated by changing the import to the new `internal` package name.
 

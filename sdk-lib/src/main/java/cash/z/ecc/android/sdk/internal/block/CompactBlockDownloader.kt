@@ -55,28 +55,25 @@ open class CompactBlockDownloader private constructor(val compactBlockStore: Com
      *
      * @param height the height to which the data will rewind.
      */
-    suspend fun rewindToHeight(height: Int) = withContext(IO) {
+    suspend fun rewindToHeight(height: Int) =
         // TODO: cancel anything in flight
         compactBlockStore.rewindTo(height)
-    }
 
     /**
      * Return the latest block height known by the lightwalletService.
      *
      * @return the latest block height.
      */
-    suspend fun getLatestBlockHeight() = withContext(IO) {
+    suspend fun getLatestBlockHeight() =
         lightWalletService.getLatestBlockHeight()
-    }
 
     /**
      * Return the latest block height that has been persisted into the [CompactBlockStore].
      *
      * @return the latest block height that has been persisted.
      */
-    suspend fun getLastDownloadedHeight() = withContext(IO) {
+    suspend fun getLastDownloadedHeight() =
         compactBlockStore.getLatestHeight()
-    }
 
     suspend fun getServerInfo(): Service.LightdInfo = withContext<Service.LightdInfo>(IO) {
         lateinit var result: Service.LightdInfo
