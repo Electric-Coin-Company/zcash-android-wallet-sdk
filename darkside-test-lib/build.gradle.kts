@@ -1,7 +1,7 @@
 plugins {
     id("com.android.library")
     id("zcash.android-build-conventions")
-    id("kotlin-android")
+    id("org.jetbrains.kotlin.android")
     id("kotlin-kapt")
 }
 

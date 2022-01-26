@@ -1,7 +1,7 @@
 plugins {
     id("com.android.application")
     id("zcash.android-build-conventions")
-    id("kotlin-android")
+    id("org.jetbrains.kotlin.android")
     id("kotlin-parcelize")
     id("androidx.navigation.safeargs")
 }
@@ -52,7 +52,7 @@ android {
     }
 
     lint {
-        baseline(File("lint-baseline.xml"))
+        baseline = File("lint-baseline.xml")
     }
 }
 
