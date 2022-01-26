@@ -8,7 +8,7 @@ import com.google.protobuf.gradle.protoc
 plugins {
     id("com.android.library")
     id("zcash.android-build-conventions")
-    kotlin("android")
+    id("org.jetbrains.kotlin.android")
     id("com.google.devtools.ksp")
     id("org.jetbrains.kotlin.plugin.allopen")
     id("org.jetbrains.dokka")
@@ -120,7 +120,7 @@ android {
     }
 
     lint {
-        baseline(File("lint-baseline.xml"))
+        baseline = File("lint-baseline.xml")
     }
 }
 

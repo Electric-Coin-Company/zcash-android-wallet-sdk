@@ -5,7 +5,6 @@ buildscript {
     }
     dependencies {
         classpath(kotlin("gradle-plugin", version = libs.versions.kotlin.get()))
-        classpath(libs.gradle.plugin.android)
         classpath(libs.gradle.plugin.rust)
         classpath(libs.gradle.plugin.publish)
         classpath(libs.gradle.plugin.navigation)

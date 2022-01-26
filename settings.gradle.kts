@@ -8,6 +8,7 @@ pluginManagement {
     }
 
     plugins {
+        val androidGradlePluginVersion = extra["ANDROID_GRADLE_PLUGIN_VERSION"].toString()
         val detektVersion = extra["DETEKT_VERSION"].toString()
         val dokkaVersion = extra["DOKKA_VERSION"].toString()
         val fulladleVersion = extra["FULLADLE_VERSION_MATCHER"].toString()
@@ -17,12 +18,15 @@ pluginManagement {
         val owaspVersion = extra["OWASP_DEPENDENCY_CHECK_VERSION"].toString()
         val protobufVersion = extra["PROTOBUF_GRADLE_PLUGIN_VERSION"].toString()
 
+        id("com.android.application") version (androidGradlePluginVersion) apply (false)
+        id("com.android.library") version (androidGradlePluginVersion) apply (false)
         id("com.github.ben-manes.versions") version (gradleVersionsPluginVersion) apply (false)
         id("com.google.devtools.ksp") version(kspVersion) apply (false)
         id("com.google.protobuf") version (protobufVersion) apply (false)
         id("com.osacky.fulladle") version (fulladleVersion) apply (false)
         id("io.gitlab.arturbosch.detekt") version (detektVersion) apply (false)
         id("org.jetbrains.dokka") version (dokkaVersion) apply (false)
+        id("org.jetbrains.kotlin.android") version (kotlinVersion) apply (false)
         id("org.jetbrains.kotlin.plugin.allopen") version (kotlinVersion) apply (false)
         id("org.owasp.dependencycheck") version (owaspVersion) apply (false)
     }
