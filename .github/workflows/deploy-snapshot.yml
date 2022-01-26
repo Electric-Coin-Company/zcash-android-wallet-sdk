@@ -53,6 +53,9 @@ jobs:
       # in the next step.
       - name: Deploy to Maven Local
         timeout-minutes: 25
+        env:
+          ORG_GRADLE_PROJECT_IS_SNAPSHOT: true
+          ORG_GRADLE_PROJECT_RELEASE_SIGNING_ENABLED: false
         run: |
           ./gradlew publishToMavenLocal
       - name: Deploy to Maven Central
@@ -61,6 +64,7 @@ jobs:
           ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
           ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
           ORG_GRADLE_PROJECT_IS_SNAPSHOT: true
+          ORG_GRADLE_PROJECT_RELEASE_SIGNING_ENABLED: false
         run: |
           ./gradlew publish --no-parallel
       - name: Collect Artifacts
