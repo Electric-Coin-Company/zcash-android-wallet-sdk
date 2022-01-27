@@ -38,7 +38,7 @@ jobs:
         uses: actions/checkout@v2.4.0
       - name: Setup
         id: setup
-        timeout-minutes: 25
+        timeout-minutes: 30
         uses: ./.github/actions/setup
       - name: Export Maven Signing Key
         env:

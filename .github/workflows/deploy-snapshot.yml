@@ -46,7 +46,7 @@ jobs:
         uses: actions/checkout@v2.4.0
       - name: Setup
         id: setup
-        timeout-minutes: 25
+        timeout-minutes: 30
         uses: ./.github/actions/setup
       # While not strictly necessary, this sanity checks the build before attempting to upload.
       # This adds minimal additional build time, since most of the work is cached and re-used
