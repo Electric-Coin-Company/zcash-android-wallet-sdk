@@ -52,6 +52,11 @@ jobs:
       # in the next step.
       - name: Deploy to Maven Local
         timeout-minutes: 25
+        env:
+          ORG_GRADLE_PROJECT_signing.secretKeyRingFile: ${{ format('{0}/keyring.gpg', env.home) }}
+          ORG_GRADLE_PROJECT_signing.keyId: ${{ secrets.MAVEN_SIGNING_KEY_ID }}
+          ORG_GRADLE_PROJECT_signing.password: ${{ secrets.MAVEN_SIGNING_PASSWORD }}
+          ORG_GRADLE_PROJECT_IS_SNAPSHOT: false
         run: |
           ./gradlew publishToMavenLocal
       - name: Deploy to Maven Central
