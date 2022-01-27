@@ -1,13 +1,17 @@
 Change Log
 ==========
 
-Next version
+Version 1.4.0-beta01 *(2022-01-28)*
 ------------------------------------
 - Main entrypoint to the SDK has changed.  See [MIGRATIONS.md](MIGRATIONS.md)
 - The minumum version of Android supported is now API 19
 - Fix: Internal bugfixes around concurrent access to resources, which could cause transient failures and data corruption
 - Fix: Added ProGuard rules so that SDK clients can use R8 to shrink their apps
-- Updated dependencies
+- Updated dependencies, including Kotlin 1.6.10
+
+Version 1.3.0-beta20 *(2022-01-27)*
+------------------------------------
+- New: Updated checkpoints for Mainnet and Testnet
 
 Version 1.3.0-beta19 *(2021-11-22)*
 ------------------------------------
