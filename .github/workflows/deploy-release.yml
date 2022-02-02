@@ -28,6 +28,7 @@ jobs:
         uses: gradle/wrapper-validation-action@v1.0.4
 
   deploy_release:
+    environment: deployment
     needs: validate_gradle_wrapper
     runs-on: ubuntu-latest
     permissions:
