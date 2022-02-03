@@ -81,7 +81,7 @@ jobs:
         run: |
           mkdir ${ARTIFACTS_DIR_PATH}
 
-          zip -r ${BINARIES_ZIP_PATH} . -i build/outputs/*
+          zip -r ${BINARIES_ZIP_PATH} . -i *build/outputs/*
       - name: Upload Artifacts
         if: ${{ always() }}
         uses: actions/upload-artifact@v2
