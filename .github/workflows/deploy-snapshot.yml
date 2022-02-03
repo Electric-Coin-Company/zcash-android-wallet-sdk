@@ -68,6 +68,7 @@ jobs:
           ORG_GRADLE_PROJECT_RELEASE_SIGNING_ENABLED: false
         run: |
           ./gradlew publish --no-parallel
+          ./gradlew closeAndReleaseRepository
       - name: Collect Artifacts
         timeout-minutes: 1
         if: ${{ always() }}
