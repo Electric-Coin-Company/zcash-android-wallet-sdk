@@ -23,7 +23,7 @@ val version = project.property("LIBRARY_VERSION").toString()
 val ARTIFACT_ID = project.property("POM_ARTIFACT_ID").toString()
 project.group = "cash.z.ecc.android"
 project.version = if (isSnapshot) {
-    "$version-snapshot"
+    "$version-SNAPSHOT"
 } else {
     version
 }
