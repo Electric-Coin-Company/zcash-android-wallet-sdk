@@ -102,7 +102,7 @@ productFlavors {
 Add the SDK dependency:
 
 ```groovy
-implementation 'cash.z.ecc.android:zcash-android-sdk:1.3.0-beta10'
+implementation 'cash.z.ecc.android:zcash-android-sdk:1.3.0-beta20'
 ```
 
 Start the [Synchronizer](docs/-synchronizer/README.md)
