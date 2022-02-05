@@ -20,6 +20,8 @@ plugins {
     id("zcash.ktlint-conventions")
 }
 
+apply(plugin = "com.vanniktech.maven.publish")
+
 tasks {
     register("detektAll", io.gitlab.arturbosch.detekt.Detekt::class) {
         parallel = true
