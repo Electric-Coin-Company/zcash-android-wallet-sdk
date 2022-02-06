@@ -297,4 +297,4 @@ jobs:
           ORG_GRADLE_PROJECT_ZCASH_FIREBASE_TEST_LAB_API_KEY_PATH: ${{ steps.auth_test_lab.outputs.credentials_file_path }}
         run: |
           unzip ${BINARIES_ZIP_PATH}
-          ./gradlew :app:runFlankSanityConfig
+          ./gradlew :demo-app:runFlankSanityConfig
