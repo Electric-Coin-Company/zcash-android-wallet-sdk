@@ -63,13 +63,13 @@ jobs:
         env:
           ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
           ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
-          ORG_GRADLE_PROJECT_signing.secretKeyRingFile: ${{ format('{0}/keyring.gpg', env.home) }}
-          ORG_GRADLE_PROJECT_signing.keyId: ${{ secrets.MAVEN_SIGNING_KEY_ID }}
-          ORG_GRADLE_PROJECT_signing.password: ${{ secrets.MAVEN_SIGNING_PASSWORD }}
           ORG_GRADLE_PROJECT_IS_SNAPSHOT: false
           ORG_GRADLE_PROJECT_RELEASE_SIGNING_ENABLED: true
+          GPG_KEY_PATH: ${{ format('{0}/keyring.gpg', env.home) }}
+          GPG_KEY_ID: ${{ secrets.MAVEN_SIGNING_KEY_ID }}
+          GPG_PASSWORD: ${{ secrets.MAVEN_SIGNING_PASSWORD }}
         run: |
-          ./gradlew publish --no-parallel
+          ./gradlew publish -Psigning.secretKeyRingFile=$GPG_KEY_PATH -Psigning.keyId=$GPG_KEY_ID -Psigning.password=$GPG_PASSWORD --no-parallel
           ./gradlew closeAndReleaseRepository
       - name: Collect Artifacts
         timeout-minutes: 1
