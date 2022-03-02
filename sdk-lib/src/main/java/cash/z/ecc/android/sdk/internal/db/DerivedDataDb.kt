@@ -271,7 +271,7 @@ interface TransactionDao {
         FROM   transactions 
         WHERE  txid = :rawTransactionId
         LIMIT  1 
-    """
+        """
     )
     suspend fun findMinedHeight(rawTransactionId: ByteArray): Int?
 
@@ -300,7 +300,7 @@ interface TransactionDao {
                AND minedheight > 0
         ORDER  BY block IS NOT NULL, height DESC, time DESC, txid DESC
         LIMIT  :limit
-    """
+        """
     )
     fun getSentTransactions(limit: Int = Int.MAX_VALUE): DataSource.Factory<Int, ConfirmedTransaction>
 
@@ -326,7 +326,7 @@ interface TransactionDao {
         WHERE  received_notes.is_change != 1
         ORDER  BY minedheight DESC, blocktimeinseconds DESC, id DESC
         LIMIT  :limit
-    """
+        """
     )
     fun getReceivedTransactions(limit: Int = Int.MAX_VALUE): DataSource.Factory<Int, ConfirmedTransaction>
 
@@ -371,7 +371,7 @@ interface TransactionDao {
                   blocktimeinseconds DESC,
                   id DESC
          LIMIT  :limit
-    """
+        """
     )
     fun getAllTransactions(limit: Int = Int.MAX_VALUE): DataSource.Factory<Int, ConfirmedTransaction>
 
@@ -416,7 +416,7 @@ interface TransactionDao {
                   blocktimeinseconds DESC, 
                   id DESC 
         LIMIT  :limit 
-    """
+        """
     )
     suspend fun findAllTransactionsByRange(blockRangeStart: Int, blockRangeEnd: Int = blockRangeStart, limit: Int = Int.MAX_VALUE): List<ConfirmedTransaction>
 
@@ -492,7 +492,7 @@ interface TransactionDao {
         FROM   transactions 
         WHERE  txid = :rawTransactionId
                AND block IS NULL
-    """
+        """
     )
     suspend fun findUnminedTransactionIds(rawTransactionId: ByteArray): List<Long>
 
@@ -502,7 +502,7 @@ interface TransactionDao {
         FROM   transactions 
         WHERE  txid = :rawTransactionId
         LIMIT 1
-    """
+        """
     )
     suspend fun findMatchingTransactionId(rawTransactionId: ByteArray): Long?
 
@@ -511,7 +511,7 @@ interface TransactionDao {
         SELECT sent_notes.id_note AS id
         FROM   sent_notes 
         WHERE  tx = :transactionId 
-    """
+        """
     )
     suspend fun findSentNoteIds(transactionId: Long): List<Int>?
 
@@ -535,7 +535,7 @@ interface TransactionDao {
             AND block IS NULL
             AND tx_index IS NULL
             AND expiry_height < :lastheight
-    """
+        """
     )
     suspend fun findExpiredTxs(lastheight: Int): List<Long>
 }
