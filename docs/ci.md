@@ -4,8 +4,9 @@ Continuous integration is set up with GitHub Actions.  The workflows are defined
 Workflows exist for:
  * Pull request - On pull request, static analysis and testing is performed.
  * Snapshot deployment - On merge to the main branch, a snapshot release is deployed to Maven Central.  Concurrency limits are in place, to ensure that only one snapshot deployment can happen at a time.
- * Release deployment - Work in progress.  Manually invoked workflow to deploy to Maven Central.  Concurrency limits are in place, to ensure that only one release deployment can happen at a time.
-
+ * Release deployment - Manually invoked workflow to deploy to Maven Central.  Concurrency limits are in place, to ensure that only one release deployment can happen at a time.
+ * Unwedge — If Snapshot deployment fails, it will often be due to multiple unclosed repositories.  This workflow can take a given open repository name and attempt to close it.
+ 
 ## Setup
 When forking this repository, some secrets need to be defined to set up new continuous integration builds.
 
@@ -44,3 +45,7 @@ Note: Snapshot builds are configured with a Gradle property `IS_SNAPSHOT`.  The 
 Note: For documentation on the Gradle properties for Maven deployment, see [Gradle Maven Publish Plugin](https://github.com/vanniktech/gradle-maven-publish-plugin).
 
 Note: Snapshot builds are configured with a Gradle property `IS_SNAPSHOT`.  The workflow automatically sets this property to false for release deployments.
+
+### Unwedge
+* `MAVEN_CENTRAL_USERNAME` — Username for Maven Central, which maps to the Gradle property `mavenCentralUsername`.
+* `MAVEN_CENTRAL_PASSWORD` — Password for Maven Central, which maps to the Gradle property `mavenCentralPassword`.
