@@ -28,32 +28,10 @@ project.version = if (isSnapshot) {
     version
 }
 publishing {
-    // Snapshot repo must be manually configured
-    // Release repo is configured automatically by the com.vanniktech.maven.publish plugin
-    if (isSnapshot) {
-        val mavenCentralUsername = project.property("mavenCentralUsername").toString()
-        val mavenCentralPassword = project.property("mavenCentralPassword").toString()
-        if (mavenCentralUsername.isNotBlank() && mavenCentralPassword.isNotBlank()) {
-            repositories {
-                maven("https://oss.sonatype.org/content/repositories/snapshots") {
-                    credentials {
-                        username = mavenCentralUsername
-                        password = mavenCentralPassword
-                    }
-                }
-            }
-        }
-    }
     publications {
         publications.withType<MavenPublication>().all {
             artifactId = ARTIFACT_ID
         }
-    }
-}
-
-if (isSnapshot) {
-    mavenPublish {
-        sonatypeHost = null
     }
 }
 
