@@ -12,10 +12,10 @@ This code review checklist is intended to serve as a starting point for the auth
 
 # Reviewer
 
-- [ ] Checklist review: Did you go through the code with the [Code Review Guidelines](../blob/main/CODE_REVIEW_GUIDELINES.md) checklist?
+- [ ] Checklist review: Did you go through the code with the [Code Review Guidelines](../blob/main/docs/CODE_REVIEW_GUIDELINES.md) checklist?
 - [ ] Ad hoc review: Did you perform an ad hoc review?  _In addition to a first pass using the code review guidelines, do a second pass using your best judgement and experience which may identify additional questions or comments. Research shows that code review is most effective when done in multiple passes, where reviewers look for different things through each pass._
 - [ ] Automated tests: Did you review the automated tests?
 - [ ] Manual tests: Did you review the manual tests?
-- [ ] How is Code Coverage affected by this PR? _We encourage you to compare coverage before and after your changes and when possible, leave it in a better place._
+- [ ] How is Code Coverage affected by this PR? _We encourage you to compare coverage before and after changes and when possible, leave it in a better place._
 - [ ] Documentation: Did you review Docs, [README.md](../blob/main/README.md), and [Architecture.md](../blob/main/docs/Architecture.md) as appropriate?
 - [ ] Run the app: Did you run the demo app and try the changes? _While the CI server runs the app to look for build failures or crashes, humans running the app are more likely to notice unexpected log messages, UI inconsistencies, or bad output data. Perform this step last, after verifying the code changes are safe to run locally._
