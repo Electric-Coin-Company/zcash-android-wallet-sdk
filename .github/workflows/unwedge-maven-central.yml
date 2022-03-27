@@ -5,7 +5,7 @@
 # MAVEN_CENTRAL_USERNAME - Username for Maven Central
 # MAVEN_CENTRAL_PASSWORD - Password for Maven Central
 
-name: Deploy Snapshot
+name: Close and release repository
 
 on:
   workflow_dispatch:
@@ -14,7 +14,7 @@ on:
         description: 'Repository name to close'
         required: true
 
-concurrency: deploy_snapshot
+concurrency: deploy_release
 
 jobs:
   validate_gradle_wrapper:
