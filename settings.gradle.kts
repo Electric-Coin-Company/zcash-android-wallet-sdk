@@ -10,7 +10,7 @@ pluginManagement {
         val androidGradlePluginVersion = extra["ANDROID_GRADLE_PLUGIN_VERSION"].toString()
         val detektVersion = extra["DETEKT_VERSION"].toString()
         val dokkaVersion = extra["DOKKA_VERSION"].toString()
-        val fulladleVersion = extra["FULLADLE_VERSION_MATCHER"].toString()
+        val fulladleVersion = extra["FULLADLE_VERSION"].toString()
         val gradleVersionsPluginVersion = extra["GRADLE_VERSIONS_PLUGIN_VERSION"].toString()
         val kotlinVersion = extra["KOTLIN_VERSION"].toString()
         val kspVersion = extra["KSP_VERSION"].toString()
@@ -59,6 +59,7 @@ dependencyResolutionManagement {
             val androidxUiAutomatorVersion = extra["ANDROIDX_UI_AUTOMATOR_VERSION"].toString()
             val bip39Version = extra["BIP39_VERSION"].toString()
             val coroutinesOkhttpVersion = extra["COROUTINES_OKHTTP"].toString()
+            val flankVersion = extra["FLANK_VERSION"].toString()
             val googleMaterialVersion = extra["GOOGLE_MATERIAL_VERSION"].toString()
             val grpcVersion = extra["GRPC_VERSION"].toString()
             val gsonVersion = extra["GSON_VERSION"].toString()
@@ -78,6 +79,7 @@ dependencyResolutionManagement {
             val zcashWalletPluginVersion = extra["ZCASH_WALLET_PLUGINS_VERSION"].toString()
 
             // Standalone versions
+            version("flank", flankVersion)
             version("grpc", grpcVersion)
             version("java", javaVersion)
             version("kotlin", kotlinVersion)

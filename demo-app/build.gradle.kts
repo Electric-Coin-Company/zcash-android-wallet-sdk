@@ -116,6 +116,8 @@ if (firebaseTestLabKeyPath.isNotBlank()) {
                     mapOf("model" to "NexusLowRes", "version" to minSdkVersion),
                     mapOf("model" to "NexusLowRes", "version" to targetSdkVersion)
                 )
+
+                flankVersion.set(libs.versions.flank.get())
             }
         }
     }
