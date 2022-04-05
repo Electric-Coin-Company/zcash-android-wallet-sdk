@@ -87,5 +87,7 @@ if (firebaseTestLabKeyPath.isNotBlank()) {
 
         @Suppress("MagicNumber")
         flakyTestAttempts.set(2)
+
+        flankVersion.set(libs.versions.flank.get())
     }
 }
