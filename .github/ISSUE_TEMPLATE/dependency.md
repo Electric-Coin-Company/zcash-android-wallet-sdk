@@ -16,7 +16,6 @@ For a Gradle dependency:
 1. Are there any new APIs or possible migrations for this dependency?
 
 For Gradle itself:
-For Gradle itself:
 1. Update the Gradle version in `gradle/wrapper/gradle-wrapper.properties`
 1. Update the [Gradle SHA](https://gradle.org/release-checksums/) in `gradle/wrapper/gradle-wrapper.properties`
 1. Update the Gradle wrapper by running `./gradlew wrapper`
