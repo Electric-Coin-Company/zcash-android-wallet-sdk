@@ -7,7 +7,7 @@ Version 1.4.0-beta01 *(2022-01-28)*
 - The minumum version of Android supported is now API 19
 - Fix: Internal bugfixes around concurrent access to resources, which could cause transient failures and data corruption
 - Fix: Added ProGuard rules so that SDK clients can use R8 to shrink their apps
-- Updated dependencies, including Kotlin 1.6.10
+- Updated dependencies, including Kotlin 1.6.21
 
 Version 1.3.0-beta20 *(2022-01-27)*
 ------------------------------------
