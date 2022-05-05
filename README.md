@@ -227,6 +227,11 @@ There's also a more comprehensive [Sample Wallet](https://github.com/zcash/zcash
 
 [Back to contents](#contents)
 
+## Checkpoints
+To improve the speed of syncing with the Zcash network, the SDK contains a series of embedded checkpoints.  These should be updated periodically, as new transactions are added to the network.  Checkpoints are stored under the [assets](sdk-lib/src/main/assets) directory as JSON files.  Checkpoints for both mainnet and testnet are bundled into the SDK.
+
+To update the checkpoints, see [Checkmate](https://github.com/zcash-hackworks/checkmate).
+
 ## Publishing
 
 Publishing instructions for maintainers of this repository can be found in [PUBLISHING.md](PUBLISHING.md)
