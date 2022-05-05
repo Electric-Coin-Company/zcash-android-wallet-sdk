@@ -2,10 +2,10 @@ package cash.z.ecc.android.sdk.internal
 
 import cash.z.ecc.android.sdk.exception.TransactionEncoderException
 import cash.z.ecc.android.sdk.ext.ZcashSdk
-import com.squareup.okhttp.OkHttpClient
-import com.squareup.okhttp.Request
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import okio.buffer
 import okio.sink
 import java.io.File
@@ -70,9 +70,13 @@ class SaplingParamTool {
                         file.parentFile?.mkdirsSuspend()
                     }
                     withContext(Dispatchers.IO) {
-                        file.sink().buffer().use {
-                            twig("writing to $file")
-                            it.writeAll(response.body().source())
+                        response.body?.let { body ->
+                            body.source().use { source ->
+                                file.sink().buffer().use { sink ->
+                                    twig("writing to $file")
+                                    sink.writeAll(source)
+                                }
+                            }
                         }
                     }
                 } else {

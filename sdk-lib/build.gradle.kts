@@ -204,6 +204,7 @@ dependencies {
     // replaced if needed. For compatibility, we match the library version used in grpc-okhttp:
     // https://github.com/grpc/grpc-java/blob/v1.37.x/build.gradle#L159
     implementation(libs.okio)
+    implementation(libs.okhttp)
 
     // Tests
     testImplementation(libs.kotlin.reflect)
