@@ -1,5 +1,4 @@
 [![license](https://img.shields.io/github/license/zcash/zcash-android-wallet-sdk.svg?maxAge=2592000&style=plastic)](https://github.com/zcash/zcash-android-wallet-sdk/blob/master/LICENSE)
-[![@gmale](https://img.shields.io/badge/contact-android@z.cash-5AA9E7.svg?style=plastic)](https://github.com/gmale)
 ![Maven Central](https://img.shields.io/maven-central/v/cash.z.ecc.android/zcash-android-sdk?color=success&style=plastic)
 
 This is a beta build and is currently under active development. Please be advised of the following:
@@ -85,6 +84,8 @@ To accomplish this, these responsibilities of the SDK are divided into separate 
 ## Quickstart
 
 Add flavors for testnet v mainnet. Since `productFlavors` cannot start with the word 'test' we recommend:
+
+build.gradle:
 ```groovy
 flavorDimensions 'network'
 productFlavors {
@@ -99,10 +100,29 @@ productFlavors {
     }
 }
 ```
+
+build.gradle.kts
+```kotlin
+flavorDimensions.add("network")
+
+productFlavors {
+    // would rather name them "testnet" and "mainnet" but product flavor names cannot start with the word "test"
+    create("zcashtestnet") {
+        dimension = "network"
+        matchingFallbacks.addAll(listOf("zcashtestnet", "debug"))
+    }
+
+    create("zcashmainnet") {
+        dimension = "network"
+        matchingFallbacks.addAll(listOf("zcashmainnet", "release"))
+    }
+}
+```
+
 Add the SDK dependency:
 
-```groovy
-implementation 'cash.z.ecc.android:zcash-android-sdk:1.3.0-beta20'
+```kotlin
+implementation("cash.z.ecc.android:zcash-android-sdk:1.4.0-beta01")
 ```
 
 Start the [Synchronizer](docs/-synchronizer/README.md)
@@ -170,8 +190,8 @@ rustup target add armv7-linux-androideabi aarch64-linux-android i686-linux-andro
     <img src="assets/sdk-manager-icon.png?raw=true" width="70%"/>
 </p>    
 
-  6. Then, install NDK ~~20.0.5594570~~ 22.1.7171670
-     (pro tip: `build.gradle -> ndkVersion` defines the actual required version. Use that because this README may get out-of-date. Also note that the "Show Package Details" box in the bottom right corner must be checked in order to install specific versions of the NDK.)
+  6. Then, install NDK ~~20.0.5594570~~ 23.1.7779620
+     (`gradle.properties` defines the actual required version. Use that because this README may get out-of-date. Also note that the "Show Package Details" box in the bottom right corner must be checked in order to install specific versions of the NDK. NDK 24+ is not yet supported.)
 <p align="center">
     <img src="assets/ndk-window.png?raw=true" width="85%"/>
 </p>
