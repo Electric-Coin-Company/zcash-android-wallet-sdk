@@ -633,17 +633,6 @@ dependencies = [
 
 [[package]]
 name = "hdwallet"
-version = "0.2.5"
-source = "git+https://github.com/nuttycom/hdwallet?rev=72f1f7a56c114eed484cefd6d402b7ef28158712#72f1f7a56c114eed484cefd6d402b7ef28158712"
-dependencies = [
- "lazy_static",
- "rand_core 0.6.3",
- "ring",
- "secp256k1",
-]
-
-[[package]]
-name = "hdwallet"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2033326faddc94885c26775db24683819bf3ae9461e016c45df18b910bdeedd7"
@@ -1549,7 +1538,6 @@ version = "0.0.4"
 dependencies = [
  "android_logger",
  "failure",
- "hdwallet 0.2.5",
  "hex",
  "jni",
  "log",
@@ -1572,7 +1560,7 @@ dependencies = [
  "bs58",
  "ff",
  "group",
- "hdwallet 0.3.0",
+ "hdwallet",
  "hex",
  "jubjub",
  "log",

@@ -22,13 +22,6 @@ zcash_primitives = "0.5"
 zcash_proofs = "0.5"
 
 #### Temporary additions: ####################################
-#base58 = "0.1.0"
-#protobuf = "2"
-#sha2 = "0.9"
-#bs58 = { version = "0.3", features = ["check"] }
-#hdwallet = "0.2.2"
-#ripemd160 = "0.9"
-hdwallet = { git = "https://github.com/nuttycom/hdwallet", rev = "72f1f7a56c114eed484cefd6d402b7ef28158712"}
 secp256k1 = "0.19"
 ##############################################################
 
