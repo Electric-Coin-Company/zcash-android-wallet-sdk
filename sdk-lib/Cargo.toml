@@ -32,18 +32,6 @@ hdwallet = { git = "https://github.com/nuttycom/hdwallet", rev = "72f1f7a56c114e
 secp256k1 = "0.19"
 ##############################################################
 
-# update-sapling-tree dependencies
-bls12_381 = { version = "0.3", optional = true }
-futures = { version = "0.3", optional = true }
-grpc = { version = "0.8", optional = true }
-grpc-protobuf = { version = "0.8", optional = true }
-httpbis = { version = "0.9", optional = true }
-tls-api = { version = "0.4", optional = true }
-tls-api-rustls = { version = "0.4", optional = true }
-
-[build-dependencies]
-protobuf-codegen-pure = "2.14"
-
 #[patch.crates-io]
 #zcash_client_backend = { git = 'https://github.com/zcash/librustzcash.git', rev='04a2bd4ad86980e0c2862706bd402b85b9dd1965' }
 #zcash_client_sqlite = { git = 'https://github.com/zcash/librustzcash.git', rev='04a2bd4ad86980e0c2862706bd402b85b9dd1965' }
@@ -67,14 +55,8 @@ zcash_proofs = {git = "https://github.com/zcash/librustzcash", branch = "autoshi
 [features]
 mainnet = ["zcash_client_sqlite/mainnet"]
 testnet = []
-updater = ["bls12_381", "futures", "grpc", "grpc-protobuf", "httpbis", "tls-api", "tls-api-rustls"]
 
 [lib]
 name = "zcashwalletsdk"
 path = "src/main/rust/lib.rs"
 crate-type = ["staticlib", "cdylib"]
-
-[[bin]]
-name = "update-sapling-tree"
-path = "src/main/rust/bin/update_sapling_tree.rs"
-required-features = ["updater"]
