@@ -213,7 +213,7 @@ interface Synchronizer {
 
     fun shieldFunds(
         spendingKey: String,
-        transparentSecretKey: String,
+        transparentAccountPrivateKey: String,
         memo: String = ZcashSdk.DEFAULT_SHIELD_FUNDS_MEMO_PREFIX
     ): Flow<PendingTransaction>
 

@@ -144,7 +144,7 @@ class PersistentTransactionManager(
 
     override suspend fun encode(
         spendingKey: String,
-        transparentSecretKey: String,
+        transparentAccountPrivateKey: String,
         pendingTx: PendingTransaction
     ): PendingTransaction {
         twig("managing the creation of a shielding transaction")
@@ -153,7 +153,7 @@ class PersistentTransactionManager(
             twig("beginning to encode shielding transaction with : $encoder")
             val encodedTx = encoder.createShieldingTransaction(
                 spendingKey,
-                transparentSecretKey,
+                transparentAccountPrivateKey,
                 tx.memo
             )
             twig("successfully encoded shielding transaction!")

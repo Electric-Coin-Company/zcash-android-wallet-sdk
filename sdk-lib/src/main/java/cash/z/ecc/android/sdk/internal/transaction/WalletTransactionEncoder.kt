@@ -51,10 +51,10 @@ internal class WalletTransactionEncoder(
 
     override suspend fun createShieldingTransaction(
         spendingKey: String,
-        transparentSecretKey: String,
+        transparentAccountPrivateKey: String,
         memo: ByteArray?
     ): EncodedTransaction {
-        val transactionId = createShieldingSpend(spendingKey, transparentSecretKey, memo)
+        val transactionId = createShieldingSpend(spendingKey, transparentAccountPrivateKey, memo)
         return repository.findEncodedTransactionById(transactionId)
             ?: throw TransactionEncoderException.TransactionNotFoundException(transactionId)
     }
@@ -136,7 +136,7 @@ internal class WalletTransactionEncoder(
 
     private suspend fun createShieldingSpend(
         spendingKey: String,
-        transparentSecretKey: String,
+        transparentAccountPrivateKey: String,
         memo: ByteArray? = byteArrayOf()
     ): Long {
         return twigTask("creating transaction to shield all UTXOs") {
@@ -145,7 +145,7 @@ internal class WalletTransactionEncoder(
                 twig("params exist! attempting to shield...")
                 rustBackend.shieldToAddress(
                     spendingKey,
-                    transparentSecretKey,
+                    transparentAccountPrivateKey,
                     memo
                 )
             } catch (t: Throwable) {

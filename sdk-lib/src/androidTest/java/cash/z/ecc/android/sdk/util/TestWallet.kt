@@ -63,8 +63,8 @@ class TestWallet(
     private val seed: ByteArray = Mnemonics.MnemonicCode(seedPhrase).toSeed()
     private val shieldedSpendingKey =
         runBlocking { DerivationTool.deriveSpendingKeys(seed, network = network)[0] }
-    private val transparentSecretKey =
-        runBlocking { DerivationTool.deriveTransparentSecretKey(seed, network = network) }
+    private val transparentAccountPrivateKey =
+        runBlocking { DerivationTool.deriveTransparentAccountPrivateKey(seed, network = network) }
     val initializer = runBlocking {
         Initializer.new(context) { config ->
             runBlocking { config.importWallet(seed, startHeight, network, endpoint, alias = alias) }
@@ -133,7 +133,7 @@ class TestWallet(
             twig("FOUND utxo balance of total: ${walletBalance.total}  available: ${walletBalance.available}")
 
             if (walletBalance.available.value > 0L) {
-                synchronizer.shieldFunds(shieldedSpendingKey, transparentSecretKey)
+                synchronizer.shieldFunds(shieldedSpendingKey, transparentAccountPrivateKey)
                     .onCompletion { twig("done shielding funds") }
                     .catch { twig("Failed with $it") }
                     .collect()
