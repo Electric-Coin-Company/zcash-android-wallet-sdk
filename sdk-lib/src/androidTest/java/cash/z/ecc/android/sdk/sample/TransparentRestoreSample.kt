@@ -162,7 +162,7 @@ class TransparentRestoreSample {
 //        private val context = InstrumentationRegistry.getInstrumentation().context
 //        private val seed: ByteArray = Mnemonics.MnemonicCode(seedPhrase).toSeed()
 //        private val shieldedSpendingKey = DerivationTool.deriveSpendingKeys(seed, Testnet)[0]
-//        private val transparentSecretKey = DerivationTool.deriveTransparentSecretKey(seed, Testnet)
+//        private val transparentAccountPrivateKey = DerivationTool.deriveTransparentAccountPrivateKey(seed, Testnet)
 //        private val host = "lightwalletd.testnet.electriccoin.co"
 //        private val initializer = Initializer(context) { config ->
 //            config.importWallet(seed, startHeight)
@@ -219,7 +219,7 @@ class TransparentRestoreSample {
 //                twig("FOUND utxo balance of total: ${walletBalance.totalZatoshi}  available: ${walletBalance.availableZatoshi}")
 //
 //                if (walletBalance.availableZatoshi > 0L) {
-//                    synchronizer.shieldFunds(shieldedSpendingKey, transparentSecretKey)
+//                    synchronizer.shieldFunds(shieldedSpendingKey, transparentAccountPrivateKey)
 //                        .onCompletion { twig("done shielding funds") }
 //                        .catch { twig("Failed with $it") }
 //                        .collect()

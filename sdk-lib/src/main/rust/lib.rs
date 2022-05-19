@@ -9,13 +9,14 @@ use std::str::FromStr;
 
 use android_logger::Config;
 use failure::format_err;
+use hdwallet::traits::{Deserialize, Serialize};
 use jni::{
     objects::{JClass, JString},
     sys::{jboolean, jbyteArray, jint, jlong, jobjectArray, jstring, JNI_FALSE, JNI_TRUE},
     JNIEnv,
 };
 use log::Level;
-use secp256k1::key::{PublicKey, SecretKey};
+use secp256k1::key::PublicKey;
 use zcash_client_backend::data_api::wallet::{shield_funds, ANCHOR_OFFSET};
 use zcash_client_backend::{
     address::RecipientAddress,
@@ -31,7 +32,7 @@ use zcash_client_backend::{
     },
     keys::{
         derive_secret_key_from_seed, derive_transparent_address_from_public_key,
-        derive_transparent_address_from_secret_key, spending_key, Wif,
+        derive_transparent_address_from_secret_key, spending_key,
     },
     wallet::{AccountId, OvkPolicy, WalletTransparentOutput},
 };
@@ -869,31 +870,30 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_scanBlockBa
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveTransparentSecretKeyFromSeed(
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveTransparentAccountPrivKeyFromSeed(
     env: JNIEnv<'_>,
     _: JClass<'_>,
     seed: jbyteArray,
     account: jint,
-    index: jint,
     network_id: jint,
 ) -> jstring {
     let res = panic::catch_unwind(|| {
         let network = parse_network(network_id as u32)?;
         let seed = env.convert_byte_array(seed).unwrap();
         let account = if account >= 0 {
-            account as u32
+            AccountId(account as u32)
         } else {
             return Err(format_err!("account argument must be positive"));
         };
-        let index = if index >= 0 {
-            index as u32
-        } else {
-            return Err(format_err!("index argument must be positive"));
+        // Derive the BIP 32 extended privkey.
+        let xprv = match utils::p2pkh_xprv(&network, &seed, account) {
+            Ok(xprv) => xprv,
+            Err(e) => return Err(format_err!("Invalid transparent account privkey: {:?}", e)),
         };
-        let sk = derive_secret_key_from_seed(&network, &seed, AccountId(account), index).unwrap();
-        let sk_wif = Wif::from_secret_key(&sk, true);
+        // Encode using the BIP 32 xprv serialization format.
+        let xprv_str: String = xprv.serialize();
         let output = env
-            .new_string(sk_wif.0)
+            .new_string(xprv_str)
             .expect("Couldn't create Java string for private key!");
         Ok(output.into_inner())
     });
@@ -934,17 +934,31 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveT
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveTransparentAddressFromPrivKey(
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveTransparentAddressFromAccountPrivKey(
     env: JNIEnv<'_>,
     _: JClass<'_>,
     secret_key: JString<'_>,
+    index: jint,
     network_id: jint,
 ) -> jstring {
     let res = panic::catch_unwind(|| {
         let network = parse_network(network_id as u32)?;
-        let tsk_wif = utils::java_string_to_rust(&env, secret_key);
-        let sk: SecretKey = (&Wif(tsk_wif)).try_into().expect("invalid private key WIF");
-        let taddr = derive_transparent_address_from_secret_key(&sk).encode(&network);
+        let index = if index >= 0 {
+            index as u32
+        } else {
+            return Err(format_err!("index argument must be positive"));
+        };
+        let xprv_str = utils::java_string_to_rust(&env, secret_key);
+        let xprv = match hdwallet_bitcoin::PrivKey::deserialize(xprv_str) {
+            Ok(xprv) => xprv,
+            Err(e) => return Err(format_err!("Invalid transparent extended privkey: {:?}", e)),
+        };
+        let tfvk = hdwallet::ExtendedPubKey::from_private_key(&xprv.extended_key);
+        let taddr = match utils::p2pkh_addr_with_u32_index(tfvk, index) {
+            Ok(taddr) => taddr,
+            Err(e) => return Err(format_err!("Couldn't derive transparent address: {:?}", e)),
+        };
+        let taddr = taddr.encode(&network);
 
         let output = env.new_string(taddr).expect("Couldn't create Java string!");
 
@@ -1087,7 +1101,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_shieldToAdd
     db_data: JString<'_>,
     account: jint,
     extsk: JString<'_>,
-    tsk: JString<'_>,
+    xprv: JString<'_>,
     memo: jbyteArray,
     spend_params: JString<'_>,
     output_params: JString<'_>,
@@ -1103,7 +1117,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_shieldToAdd
             return Err(format_err!("account argument {} must be positive", account));
         };
         let extsk = utils::java_string_to_rust(&env, extsk);
-        let tsk_wif = utils::java_string_to_rust(&env, tsk);
+        let xprv_str = utils::java_string_to_rust(&env, xprv);
         let memo_bytes = env.convert_byte_array(memo).unwrap();
         let spend_params = utils::java_string_to_rust(&env, spend_params);
         let output_params = utils::java_string_to_rust(&env, output_params);
@@ -1119,7 +1133,19 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_shieldToAdd
                 }
             };
 
-        let sk: SecretKey = (&Wif(tsk_wif)).try_into().expect("invalid private key WIF");
+        let xprv = match hdwallet_bitcoin::PrivKey::deserialize(xprv_str) {
+            Ok(xprv) => xprv,
+            Err(e) => return Err(format_err!("Invalid transparent extended privkey: {:?}", e)),
+        };
+        let sk = match utils::p2pkh_secret_key(xprv.extended_key, 0) {
+            Ok(sk) => sk,
+            Err(e) => {
+                return Err(format_err!(
+                    "Transparent extended privkey can't derive spending key 0: {:?}",
+                    e
+                ))
+            }
+        };
 
         let memo = Memo::from_bytes(&memo_bytes).unwrap();
 

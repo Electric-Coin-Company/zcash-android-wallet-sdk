@@ -8,6 +8,8 @@ Change Log
   Key as specified in [ZIP 316](https://zips.z.cash/zip-0316#encoding-of-unified-full-incoming-viewing-keys).
   - TODO: Actually encode per ZIP 316.
 - `cash.z.ecc.android.sdk.tool`:
+  - `DerivationTool.deriveTransparentAccountPrivateKey`
+  - `DerivationTool.deriveTransparentAddressFromAccountPrivateKey`
   - `DerivationTool.deriveUnifiedAddress`
   - `DerivationTool.deriveUnifiedFullViewingKeys`
   - `DerivationTool.validateUnifiedFullViewingKey`
@@ -21,6 +23,9 @@ Change Log
       - `Initializer.Config.importWallet`
       - `Initializer.Config.newWallet`
       - `Initializer.Config.setViewingKeys`
+- `cash.z.ecc.android.sdk`:
+  - `Synchronizer.shieldFunds` now takes a transparent account private key (representing
+    all transparent secret keys within an account) instead of a transparent secret key.
 
 ### Removed
 - `cash.z.ecc.android.sdk.type.UnifiedViewingKey`
@@ -28,6 +33,10 @@ Change Log
     public key, and not the extended public key as intended. This made it incompatible
     with ZIP 316.
 - `cash.z.ecc.android.sdk.tool`:
+  - `DerivationTool.deriveTransparentAddressFromPrivateKey` (use
+    `DerivationTool.deriveTransparentAddressFromAccountPrivateKey` instead).
+  - `DerivationTool.deriveTransparentSecretKey` (use
+    `DerivationTool.deriveTransparentAccountPrivateKey` instead).
   - `DerivationTool.deriveShieldedAddress`
     - TODO: Do we still need to be able to derive Sapling shielded addresses for legacy
       support? Currently removed because `UnifiedFullViewingKey` doesn't expose the

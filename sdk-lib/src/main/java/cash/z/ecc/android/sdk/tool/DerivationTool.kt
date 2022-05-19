@@ -87,12 +87,12 @@ class DerivationTool {
             deriveTransparentAddressFromPubKey(transparentPublicKey, networkId = network.id)
         }
 
-        override suspend fun deriveTransparentAddressFromPrivateKey(transparentPrivateKey: String, network: ZcashNetwork): String = withRustBackendLoaded {
-            deriveTransparentAddressFromPrivKey(transparentPrivateKey, networkId = network.id)
+        override suspend fun deriveTransparentAddressFromAccountPrivateKey(transparentPrivateKey: String, network: ZcashNetwork, index: Int): String = withRustBackendLoaded {
+            deriveTransparentAddressFromAccountPrivKey(transparentPrivateKey, index, networkId = network.id)
         }
 
-        override suspend fun deriveTransparentSecretKey(seed: ByteArray, network: ZcashNetwork, account: Int, index: Int): String = withRustBackendLoaded {
-            deriveTransparentSecretKeyFromSeed(seed, account, index, networkId = network.id)
+        override suspend fun deriveTransparentAccountPrivateKey(seed: ByteArray, network: ZcashNetwork, account: Int): String = withRustBackendLoaded {
+            deriveTransparentAccountPrivKeyFromSeed(seed, account, networkId = network.id)
         }
 
         @Suppress("UnusedPrivateMember")
@@ -148,9 +148,9 @@ class DerivationTool {
         private external fun deriveTransparentAddressFromPubKey(pk: String, networkId: Int): String
 
         @JvmStatic
-        private external fun deriveTransparentAddressFromPrivKey(sk: String, networkId: Int): String
+        private external fun deriveTransparentAddressFromAccountPrivKey(sk: String, index: Int, networkId: Int): String
 
         @JvmStatic
-        private external fun deriveTransparentSecretKeyFromSeed(seed: ByteArray, account: Int, index: Int, networkId: Int): String
+        private external fun deriveTransparentAccountPrivKeyFromSeed(seed: ByteArray, account: Int, networkId: Int): String
     }
 }

@@ -117,16 +117,16 @@ internal interface RustBackendWelding {
             network: ZcashNetwork
         ): String
 
-        suspend fun deriveTransparentAddressFromPrivateKey(
+        suspend fun deriveTransparentAddressFromAccountPrivateKey(
             privateKey: String,
-            network: ZcashNetwork
+            network: ZcashNetwork,
+            index: Int = 0
         ): String
 
-        suspend fun deriveTransparentSecretKey(
+        suspend fun deriveTransparentAccountPrivateKey(
             seed: ByteArray,
             network: ZcashNetwork,
-            account: Int = 0,
-            index: Int = 0
+            account: Int = 0
         ): String
 
         suspend fun deriveViewingKey(

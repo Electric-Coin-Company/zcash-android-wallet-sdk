@@ -13,6 +13,7 @@ edition = "2018"
 android_logger = "0.9"
 failure = "0.1"
 hdwallet = "=0.3.0"
+hdwallet-bitcoin = "0.3"
 hex = "0.4"
 jni = { version = "0.17", default-features = false }
 log = "0.4"

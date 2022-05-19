@@ -656,19 +656,19 @@ class SdkSynchronizer internal constructor(
 
     override fun shieldFunds(
         spendingKey: String,
-        transparentSecretKey: String,
+        transparentAccountPrivateKey: String,
         memo: String
     ): Flow<PendingTransaction> = flow {
         twig("Initializing shielding transaction")
         val tAddr =
-            DerivationTool.deriveTransparentAddressFromPrivateKey(transparentSecretKey, network)
+            DerivationTool.deriveTransparentAddressFromAccountPrivateKey(transparentAccountPrivateKey, network)
         val tBalance = processor.getUtxoCacheBalance(tAddr)
         val zAddr = getAddress(0)
 
         // Emit the placeholder transaction, then switch to monitoring the database
         txManager.initSpend(tBalance.available, zAddr, memo, 0).let { placeHolderTx ->
             emit(placeHolderTx)
-            txManager.encode(spendingKey, transparentSecretKey, placeHolderTx).let { encodedTx ->
+            txManager.encode(spendingKey, transparentAccountPrivateKey, placeHolderTx).let { encodedTx ->
                 // only submit if it wasn't cancelled. Otherwise cleanup, immediately for best UX.
                 if (encodedTx.isCancelled()) {
                     twig("[cleanup] this shielding tx has been cancelled so we will cleanup instead of submitting")

@@ -22,8 +22,8 @@ import org.junit.runners.Parameterized
 class TransparentTest(val expected: Expected, val network: ZcashNetwork) {
 
     @Test
-    fun deriveTransparentSecretKeyTest() = runBlocking {
-        assertEquals(expected.tskCompressed, DerivationTool.deriveTransparentSecretKey(SEED, network = network))
+    fun deriveTransparentAccountPrivateKeyTest() = runBlocking {
+        assertEquals(expected.tskCompressed, DerivationTool.deriveTransparentAccountPrivateKey(SEED, network = network))
     }
 
     @Test
@@ -32,9 +32,9 @@ class TransparentTest(val expected: Expected, val network: ZcashNetwork) {
     }
 
     @Test
-    fun deriveTransparentAddressFromSecretKeyTest() = runBlocking {
-        val pk = DerivationTool.deriveTransparentSecretKey(SEED, network = network)
-        assertEquals(expected.tAddr, DerivationTool.deriveTransparentAddressFromPrivateKey(pk, network = network))
+    fun deriveTransparentAddressFromAccountPrivateKeyTest() = runBlocking {
+        val pk = DerivationTool.deriveTransparentAccountPrivateKey(SEED, network = network)
+        assertEquals(expected.tAddr, DerivationTool.deriveTransparentAddressFromAccountPrivateKey(pk, network = network))
     }
 
     @Test

@@ -234,7 +234,7 @@ internal class RustBackend private constructor(
 
     override suspend fun shieldToAddress(
         extsk: String,
-        tsk: String,
+        xprv: String,
         memo: ByteArray?
     ): Long {
         twig("TMP: shieldToAddress with db path: $pathDataDb, ${memo?.size}")
@@ -243,7 +243,7 @@ internal class RustBackend private constructor(
                 pathDataDb,
                 0,
                 extsk,
-                tsk,
+                xprv,
                 memo ?: ByteArray(0),
                 "$pathParamsDir/$SPEND_PARAM_FILE_NAME",
                 "$pathParamsDir/$OUTPUT_PARAM_FILE_NAME",
@@ -491,11 +491,12 @@ internal class RustBackend private constructor(
         ): Long
 
         @JvmStatic
+        @Suppress("LongParameterList")
         private external fun shieldToAddress(
             dbDataPath: String,
             account: Int,
             extsk: String,
-            tsk: String,
+            xprv: String,
             memo: ByteArray,
             spendParamsPath: String,
             outputParamsPath: String,

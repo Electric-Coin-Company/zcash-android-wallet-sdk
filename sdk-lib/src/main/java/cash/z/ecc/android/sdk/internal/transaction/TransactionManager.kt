@@ -43,7 +43,7 @@ interface OutboundTransactionManager {
 
     suspend fun encode(
         spendingKey: String,
-        transparentSecretKey: String,
+        transparentAccountPrivateKey: String,
         pendingTx: PendingTransaction
     ): PendingTransaction
 
