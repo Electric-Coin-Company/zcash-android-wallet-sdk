@@ -1,6 +1,10 @@
 Change Log
 ==========
 
+Version 1.5.0-beta01
+------------------------------------
+- New: Transactions can be created after NU5 activation.
+
 Version 1.4.0-beta01
 ------------------------------------
 - Main entrypoint to the SDK has changed.  See [MIGRATIONS.md](MIGRATIONS.md)

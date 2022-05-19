@@ -468,7 +468,7 @@ dependencies = [
 [[package]]
 name = "equihash"
 version = "0.1.0"
-source = "git+https://github.com/zcash/librustzcash?branch=autoshielding-poc-sdk-dnm#8e3e7de50c3c35bd7c18988bb629dd1baeb1a3d1"
+source = "git+https://github.com/zcash/librustzcash.git?rev=098dcc2ae02841e6a2b17bbb6253de970b1ff41c#098dcc2ae02841e6a2b17bbb6253de970b1ff41c"
 dependencies = [
  "blake2b_simd",
  "byteorder",
@@ -1552,7 +1552,7 @@ dependencies = [
 [[package]]
 name = "zcash_client_backend"
 version = "0.5.0"
-source = "git+https://github.com/zcash/librustzcash?branch=autoshielding-poc-sdk-dnm#8e3e7de50c3c35bd7c18988bb629dd1baeb1a3d1"
+source = "git+https://github.com/zcash/librustzcash.git?rev=098dcc2ae02841e6a2b17bbb6253de970b1ff41c#098dcc2ae02841e6a2b17bbb6253de970b1ff41c"
 dependencies = [
  "base64",
  "bech32",
@@ -1581,7 +1581,7 @@ dependencies = [
 [[package]]
 name = "zcash_client_sqlite"
 version = "0.3.0"
-source = "git+https://github.com/zcash/librustzcash?branch=autoshielding-poc-sdk-dnm#8e3e7de50c3c35bd7c18988bb629dd1baeb1a3d1"
+source = "git+https://github.com/zcash/librustzcash.git?rev=098dcc2ae02841e6a2b17bbb6253de970b1ff41c#098dcc2ae02841e6a2b17bbb6253de970b1ff41c"
 dependencies = [
  "bech32",
  "bs58",
@@ -1600,7 +1600,7 @@ dependencies = [
 [[package]]
 name = "zcash_note_encryption"
 version = "0.0.0"
-source = "git+https://github.com/zcash/librustzcash?branch=autoshielding-poc-sdk-dnm#8e3e7de50c3c35bd7c18988bb629dd1baeb1a3d1"
+source = "git+https://github.com/zcash/librustzcash.git?rev=098dcc2ae02841e6a2b17bbb6253de970b1ff41c#098dcc2ae02841e6a2b17bbb6253de970b1ff41c"
 dependencies = [
  "blake2b_simd",
  "byteorder",
@@ -1614,7 +1614,7 @@ dependencies = [
 [[package]]
 name = "zcash_primitives"
 version = "0.5.0"
-source = "git+https://github.com/zcash/librustzcash?branch=autoshielding-poc-sdk-dnm#8e3e7de50c3c35bd7c18988bb629dd1baeb1a3d1"
+source = "git+https://github.com/zcash/librustzcash.git?rev=098dcc2ae02841e6a2b17bbb6253de970b1ff41c#098dcc2ae02841e6a2b17bbb6253de970b1ff41c"
 dependencies = [
  "aes",
  "bitvec 0.18.5",
@@ -1644,7 +1644,7 @@ dependencies = [
 [[package]]
 name = "zcash_proofs"
 version = "0.5.0"
-source = "git+https://github.com/zcash/librustzcash?branch=autoshielding-poc-sdk-dnm#8e3e7de50c3c35bd7c18988bb629dd1baeb1a3d1"
+source = "git+https://github.com/zcash/librustzcash.git?rev=098dcc2ae02841e6a2b17bbb6253de970b1ff41c#098dcc2ae02841e6a2b17bbb6253de970b1ff41c"
 dependencies = [
  "bellman",
  "blake2b_simd",

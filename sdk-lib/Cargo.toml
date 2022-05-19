@@ -25,11 +25,14 @@ zcash_proofs = "0.5"
 secp256k1 = "0.19"
 ##############################################################
 
-#[patch.crates-io]
-#zcash_client_backend = { git = 'https://github.com/zcash/librustzcash.git', rev='04a2bd4ad86980e0c2862706bd402b85b9dd1965' }
-#zcash_client_sqlite = { git = 'https://github.com/zcash/librustzcash.git', rev='04a2bd4ad86980e0c2862706bd402b85b9dd1965' }
-#zcash_primitives = { git = 'https://github.com/zcash/librustzcash.git', rev='04a2bd4ad86980e0c2862706bd402b85b9dd1965' }
-#zcash_proofs = { git = 'https://github.com/zcash/librustzcash.git', rev='04a2bd4ad86980e0c2862706bd402b85b9dd1965' }
+# Revision corresponds to the partially-complete auto-shielding version, with the NU5
+# consensus branch ID and activation heights backported onto it.
+# https://github.com/zcash/librustzcash/pull/555
+[patch.crates-io]
+zcash_client_backend = { git = 'https://github.com/zcash/librustzcash.git', rev='098dcc2ae02841e6a2b17bbb6253de970b1ff41c' }
+zcash_client_sqlite = { git = 'https://github.com/zcash/librustzcash.git', rev='098dcc2ae02841e6a2b17bbb6253de970b1ff41c' }
+zcash_primitives = { git = 'https://github.com/zcash/librustzcash.git', rev='098dcc2ae02841e6a2b17bbb6253de970b1ff41c' }
+zcash_proofs = { git = 'https://github.com/zcash/librustzcash.git', rev='098dcc2ae02841e6a2b17bbb6253de970b1ff41c' }
 
 ## Uncomment this to test librustzcash changes locally
 #[patch.crates-io]
@@ -38,12 +41,12 @@ secp256k1 = "0.19"
 #zcash_primitives = { path = '../../clones/librustzcash/zcash_primitives' }
 #zcash_proofs = { path = '../../clones/librustzcash/zcash_proofs' }
 
-# Uncomment this to test someone else's librustzcash changes in a branch
-[patch.crates-io]
-zcash_client_backend = {git = "https://github.com/zcash/librustzcash", branch = "autoshielding-poc-sdk-dnm"}
-zcash_client_sqlite = {git = "https://github.com/zcash/librustzcash", branch = "autoshielding-poc-sdk-dnm"}
-zcash_primitives = {git = "https://github.com/zcash/librustzcash", branch = "autoshielding-poc-sdk-dnm"}
-zcash_proofs = {git = "https://github.com/zcash/librustzcash", branch = "autoshielding-poc-sdk-dnm"}
+## Uncomment this to test someone else's librustzcash changes in a branch
+#[patch.crates-io]
+#zcash_client_backend = { git = "https://github.com/zcash/librustzcash", branch = "branch-name" }
+#zcash_client_sqlite = { git = "https://github.com/zcash/librustzcash", branch = "branch-name" }
+#zcash_primitives = { git = "https://github.com/zcash/librustzcash", branch = "branch-name" }
+#zcash_proofs = { git = "https://github.com/zcash/librustzcash", branch = "branch-name" }
 
 [features]
 mainnet = ["zcash_client_sqlite/mainnet"]
