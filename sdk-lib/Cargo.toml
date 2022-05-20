@@ -26,13 +26,14 @@ secp256k1 = "0.19"
 ##############################################################
 
 # Revision corresponds to the partially-complete auto-shielding version, with the NU5
-# consensus branch ID and activation heights backported onto it.
+# consensus branch ID and activation heights, and v5 transaction parsing, backported.
 # https://github.com/zcash/librustzcash/pull/555
+# https://github.com/zcash/librustzcash/pull/558
 [patch.crates-io]
-zcash_client_backend = { git = 'https://github.com/zcash/librustzcash.git', rev='098dcc2ae02841e6a2b17bbb6253de970b1ff41c' }
-zcash_client_sqlite = { git = 'https://github.com/zcash/librustzcash.git', rev='098dcc2ae02841e6a2b17bbb6253de970b1ff41c' }
-zcash_primitives = { git = 'https://github.com/zcash/librustzcash.git', rev='098dcc2ae02841e6a2b17bbb6253de970b1ff41c' }
-zcash_proofs = { git = 'https://github.com/zcash/librustzcash.git', rev='098dcc2ae02841e6a2b17bbb6253de970b1ff41c' }
+zcash_client_backend = { git = 'https://github.com/zcash/librustzcash.git', rev='36dad6282ef8101a147512ef6daa34bbb2a4b55a' }
+zcash_client_sqlite = { git = 'https://github.com/zcash/librustzcash.git', rev='36dad6282ef8101a147512ef6daa34bbb2a4b55a' }
+zcash_primitives = { git = 'https://github.com/zcash/librustzcash.git', rev='36dad6282ef8101a147512ef6daa34bbb2a4b55a' }
+zcash_proofs = { git = 'https://github.com/zcash/librustzcash.git', rev='36dad6282ef8101a147512ef6daa34bbb2a4b55a' }
 
 ## Uncomment this to test librustzcash changes locally
 #[patch.crates-io]
