@@ -96,6 +96,13 @@ android {
     lint {
         baseline = File("lint-baseline.xml")
     }
+
+    publishing {
+        singleVariant("release") {
+            withSourcesJar()
+            withJavadocJar()
+        }
+    }
 }
 
 mavenPublish {
