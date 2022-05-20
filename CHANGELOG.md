@@ -4,6 +4,7 @@ Change Log
 Version 1.5.0-beta01
 ------------------------------------
 - New: Transactions can be created after NU5 activation.
+- New: Support for receiving v5 transactions.
 
 Version 1.4.0-beta01
 ------------------------------------
