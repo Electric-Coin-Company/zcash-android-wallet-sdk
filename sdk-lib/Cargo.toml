@@ -30,10 +30,10 @@ secp256k1 = "0.19"
 # https://github.com/zcash/librustzcash/pull/555
 # https://github.com/zcash/librustzcash/pull/558
 [patch.crates-io]
-zcash_client_backend = { git = 'https://github.com/zcash/librustzcash.git', rev='36dad6282ef8101a147512ef6daa34bbb2a4b55a' }
-zcash_client_sqlite = { git = 'https://github.com/zcash/librustzcash.git', rev='36dad6282ef8101a147512ef6daa34bbb2a4b55a' }
-zcash_primitives = { git = 'https://github.com/zcash/librustzcash.git', rev='36dad6282ef8101a147512ef6daa34bbb2a4b55a' }
-zcash_proofs = { git = 'https://github.com/zcash/librustzcash.git', rev='36dad6282ef8101a147512ef6daa34bbb2a4b55a' }
+zcash_client_backend = { git = 'https://github.com/zcash/librustzcash.git', rev='0a1ed9b8acf336bdc20ba49083c66f114ecf6877' }
+zcash_client_sqlite = { git = 'https://github.com/zcash/librustzcash.git', rev='0a1ed9b8acf336bdc20ba49083c66f114ecf6877' }
+zcash_primitives = { git = 'https://github.com/zcash/librustzcash.git', rev='0a1ed9b8acf336bdc20ba49083c66f114ecf6877' }
+zcash_proofs = { git = 'https://github.com/zcash/librustzcash.git', rev='0a1ed9b8acf336bdc20ba49083c66f114ecf6877' }
 
 ## Uncomment this to test librustzcash changes locally
 #[patch.crates-io]

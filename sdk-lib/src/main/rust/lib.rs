@@ -997,7 +997,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_decryptAndS
         let tx_bytes = env.convert_byte_array(tx).unwrap();
         let tx = Transaction::read(&tx_bytes[..])?;
 
-        match decrypt_and_store_transaction(&network, &mut db_data, &tx) {
+        match decrypt_and_store_transaction(&network, &mut db_data, &tx_bytes, &tx) {
             Ok(()) => Ok(JNI_TRUE),
             Err(e) => Err(format_err!("Error while decrypting transaction: {}", e)),
         }
