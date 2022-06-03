@@ -1,6 +1,10 @@
 Change Log
 ==========
 
+Upcoming
+------------------------------------
+- Fix: SDK can now be used on Intel x86_64 emulators
+
 Version 1.5.0-beta01
 ------------------------------------
 - New: Transactions can be created after NU5 activation.
