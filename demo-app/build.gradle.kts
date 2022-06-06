@@ -1,7 +1,7 @@
 plugins {
     id("com.android.application")
-    id("zcash.android-build-conventions")
     id("org.jetbrains.kotlin.android")
+    id("zcash-sdk.android-conventions")
     id("kotlin-parcelize")
     id("androidx.navigation.safeargs")
     id("com.osacky.fladle")
@@ -45,11 +45,6 @@ android {
                 )
             )
         }
-    }
-
-    kotlinOptions {
-        jvmTarget = libs.versions.java.get()
-        allWarningsAsErrors = project.property("IS_TREAT_WARNINGS_AS_ERRORS").toString().toBoolean()
     }
 
     lint {

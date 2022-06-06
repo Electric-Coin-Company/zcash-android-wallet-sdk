@@ -17,7 +17,7 @@ plugins {
     id("io.gitlab.arturbosch.detekt")
     id("org.jetbrains.dokka")
     id("org.owasp.dependencycheck")
-    id("zcash.ktlint-conventions")
+    id("zcash-sdk.ktlint-conventions")
 }
 
 apply(plugin = "com.vanniktech.maven.publish")

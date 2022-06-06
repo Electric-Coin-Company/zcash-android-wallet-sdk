@@ -1,7 +1,7 @@
 plugins {
     id("com.android.library")
-    id("zcash.android-build-conventions")
     id("org.jetbrains.kotlin.android")
+    id("zcash-sdk.android-conventions")
     id("kotlin-kapt")
 }
 
@@ -9,12 +9,6 @@ android {
     defaultConfig {
         //targetSdk = 30 //Integer.parseInt(project.property("targetSdkVersion"))
         multiDexEnabled = true
-    }
-
-    // Need to figure out how to move this into the build-conventions
-    kotlinOptions {
-        jvmTarget = libs.versions.java.get()
-        allWarningsAsErrors = project.property("IS_TREAT_WARNINGS_AS_ERRORS").toString().toBoolean()
     }
 }
 
