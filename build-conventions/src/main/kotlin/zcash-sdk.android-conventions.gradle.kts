@@ -1,3 +1,6 @@
+import com.android.build.api.dsl.CommonExtension
+import org.jetbrains.kotlin.gradle.dsl.KotlinJvmOptions
+
 pluginManager.withPlugin("com.android.application") {
     project.the<com.android.build.gradle.AppExtension>().apply {
         configureBaseExtension()
@@ -60,7 +63,8 @@ fun com.android.build.gradle.BaseExtension.configureBaseExtension() {
 
     buildTypes {
         getByName("debug").apply {
-            isTestCoverageEnabled = project.property("IS_COVERAGE_ENABLED").toString().toBoolean()
+            isTestCoverageEnabled = project.property("IS_ANDROID_INSTRUMENTATION_TEST_COVERAGE_ENABLED")
+                .toString().toBoolean()
         }
     }
 
@@ -82,4 +86,17 @@ fun com.android.build.gradle.BaseExtension.configureBaseExtension() {
             execution = "ANDROIDX_TEST_ORCHESTRATOR"
         }
     }
+
+    if (this is CommonExtension<*, *, *, *>) {
+        kotlinOptions {
+            jvmTarget = project.property("ANDROID_JVM_TARGET").toString()
+            allWarningsAsErrors = project.property("ZCASH_IS_TREAT_WARNINGS_AS_ERRORS").toString().toBoolean()
+            freeCompilerArgs = freeCompilerArgs + "-opt-in=kotlin.RequiresOptIn" +
+                "-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi" + "-opt-in=kotlinx.coroutines.FlowPreview"
+        }
+    }
+}
+
+fun CommonExtension<*, *, *, *>.kotlinOptions(block: KotlinJvmOptions.() -> Unit) {
+    (this as ExtensionAware).extensions.configure("kotlinOptions", block)
 }

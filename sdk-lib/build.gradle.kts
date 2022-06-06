@@ -7,8 +7,8 @@ import com.google.protobuf.gradle.protoc
 
 plugins {
     id("com.android.library")
-    id("zcash.android-build-conventions")
     id("org.jetbrains.kotlin.android")
+    id("zcash-sdk.android-conventions")
     id("com.google.devtools.ksp")
     id("org.jetbrains.kotlin.plugin.allopen")
     id("org.jetbrains.dokka")
@@ -72,10 +72,6 @@ android {
     }
 
     kotlinOptions {
-        jvmTarget = libs.versions.java.get()
-        allWarningsAsErrors = project.property("IS_TREAT_WARNINGS_AS_ERRORS").toString().toBoolean()
-        freeCompilerArgs += "-Xopt-in=kotlinx.coroutines.ExperimentalCoroutinesApi"
-        freeCompilerArgs += "-Xopt-in=kotlinx.coroutines.FlowPreview"
         // Tricky: fix: By default, the kotlin_module name will not include the version (in classes.jar/META-INF). Instead it has a colon, which breaks compilation on Windows. This is one way to set it explicitly to the proper value. See https://github.com/zcash/zcash-android-wallet-sdk/issues/222 for more info.
         freeCompilerArgs += listOf("-module-name", "$ARTIFACT_ID-${project.version}_release")
     }
