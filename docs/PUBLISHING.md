@@ -70,7 +70,7 @@ See [ci.md](ci.md), which describes the continuous integration workflow for depl
      * `signing.secretKeyRingFile`
 
 ## Every time
-1. Update the [build number](https://github.com/zcash/zcash-android-wallet-sdk/blob/master/gradle.properties) and the [CHANGELOG](https://github.com/zcash/zcash-android-wallet-sdk/blob/master/CHANGELOG.md).  For release builds, suffix the Gradle invocations below with `-PIS_SNAPSHOT=false`.
+1. Update the [build number](https://github.com/zcash/zcash-android-wallet-sdk/blob/main/gradle.properties) and the [CHANGELOG](https://github.com/zcash/zcash-android-wallet-sdk/blob/main/CHANGELOG.md).  For release builds, suffix the Gradle invocations below with `-PIS_SNAPSHOT=false`.
 3. Build locally
     * This will install the files in your local maven repo at `~/.m2/repository/cash/z/ecc/android/`
 ```zsh
