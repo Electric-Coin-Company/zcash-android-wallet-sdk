@@ -63,7 +63,7 @@ object WalletBirthdayTool {
      */
     @VisibleForTesting
     internal fun birthdayDirectory(network: ZcashNetwork) =
-        "saplingtree/${(network.networkName as java.lang.String).toLowerCase(Locale.ROOT)}"
+        "co.electriccoin.zcash/checkpoint/${(network.networkName as java.lang.String).toLowerCase(Locale.ROOT)}"
 
     internal fun birthdayHeight(fileName: String) = fileName.split('.').first().toInt()
 
