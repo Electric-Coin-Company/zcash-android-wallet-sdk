@@ -191,11 +191,6 @@ dependencies {
     // solves error: Duplicate class com.google.common.util.concurrent.ListenableFuture found in modules jetified-guava-26.0-android.jar (com.google.guava:guava:26.0-android) and listenablefuture-1.0.jar (com.google.guava:listenablefuture:1.0)
     // per this recommendation from Chris Povirk, given guava's decision to split ListenableFuture away from Guava: https://groups.google.com/d/msg/guava-discuss/GghaKwusjcY/bCIAKfzOEwAJ
     implementation(libs.guava)
-    // Transitive dependencies used because they're already necessary for other libraries
-    // GSON is available as a transitive dependency from several places so we use it for processing
-    // checkpoints but also document that by explicitly including here. If dependencies like Room
-    // or grpc-okhttp stop including GSON, then we should switch to something else for parsing JSON.
-    implementation(libs.gson)
     // OKIO is a transitive dependency used when writing param files to disk. Like GSON, this can be
     // replaced if needed. For compatibility, we match the library version used in grpc-okhttp:
     // https://github.com/grpc/grpc-java/blob/v1.37.x/build.gradle#L159

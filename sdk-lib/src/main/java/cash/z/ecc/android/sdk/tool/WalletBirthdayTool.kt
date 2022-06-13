@@ -3,16 +3,15 @@ package cash.z.ecc.android.sdk.tool
 import android.content.Context
 import androidx.annotation.VisibleForTesting
 import cash.z.ecc.android.sdk.exception.BirthdayException
+import cash.z.ecc.android.sdk.internal.from
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.type.WalletBirthday
 import cash.z.ecc.android.sdk.type.ZcashNetwork
-import com.google.gson.Gson
-import com.google.gson.stream.JsonReader
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.io.BufferedReader
 import java.io.IOException
-import java.io.InputStreamReader
-import java.util.Locale
+import java.util.*
 
 /**
  * Tool for loading checkpoints for the wallet, based on the height at which the wallet was born.
@@ -64,7 +63,7 @@ object WalletBirthdayTool {
      */
     @VisibleForTesting
     internal fun birthdayDirectory(network: ZcashNetwork) =
-        "saplingtree/${(network.networkName as java.lang.String).toLowerCase(Locale.US)}"
+        "saplingtree/${(network.networkName as java.lang.String).toLowerCase(Locale.ROOT)}"
 
     internal fun birthdayHeight(fileName: String) = fileName.split('.').first().toInt()
 
@@ -133,19 +132,22 @@ object WalletBirthdayTool {
         var lastException: Exception? = null
         treeFiles.forEach { treefile ->
             try {
-                return withContext(Dispatchers.IO) {
+                val jsonString = withContext(Dispatchers.IO) {
                     context.assets.open("$directory/$treefile").use { inputStream ->
-                        InputStreamReader(inputStream).use { inputStreamReader ->
-                            JsonReader(inputStreamReader).use { jsonReader ->
-                                Gson().fromJson(jsonReader, WalletBirthday::class.java)
+                        inputStream.reader().use { inputStreamReader ->
+                            BufferedReader(inputStreamReader).use { bufferedReader ->
+                                bufferedReader.readText()
                             }
                         }
                     }
                 }
+
+                return WalletBirthday.from(jsonString)
             } catch (t: Throwable) {
                 val exception = BirthdayException.MalformattedBirthdayFilesException(
                     directory,
-                    treefile
+                    treefile,
+                    t
                 )
                 lastException = exception
 
