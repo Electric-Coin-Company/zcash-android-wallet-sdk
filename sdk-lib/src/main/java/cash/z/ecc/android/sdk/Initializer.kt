@@ -54,7 +54,7 @@ class Initializer private constructor(
          * Determines the default behavior for null birthdays. When null, nothing has been specified
          * so a null birthdayHeight value is an error. When false, null birthdays will be replaced
          * with the most recent checkpoint height available (typically, the latest `*.json` file in
-         * `assets/zcash/saplingtree/`). When true, null birthdays will be replaced with the oldest
+         * `assets/co.electriccoin.zcash/checkpoint/`). When true, null birthdays will be replaced with the oldest
          * reasonable height where a transaction could exist (typically, sapling activation but
          * better approximations could be devised in the future, such as the date when the first
          * BIP-39 zcash wallets came online).

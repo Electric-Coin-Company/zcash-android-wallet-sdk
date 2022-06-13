@@ -23,7 +23,7 @@ class WalletBirthdayToolTest {
     fun load_latest_birthday() {
         // Using a separate directory, so that we don't have to keep updating this test each time
         // mainnet or testnet changes
-        val directory = "saplingtree/goodnet"
+        val directory = "co.electriccoin.zcash/checkpoint/goodnet"
 
         val context = ApplicationProvider.getApplicationContext<Context>()
         val birthday = runBlocking {
@@ -43,7 +43,7 @@ class WalletBirthdayToolTest {
             return
         }
 
-        val directory = "saplingtree/badnet"
+        val directory = "co.electriccoin.zcash/checkpoint/badnet"
         val context = ApplicationProvider.getApplicationContext<Context>()
         val birthday = runBlocking {
             WalletBirthdayTool.getFirstValidWalletBirthday(
