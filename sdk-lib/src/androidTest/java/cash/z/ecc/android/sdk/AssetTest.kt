@@ -72,7 +72,7 @@ class AssetTest {
             assertTrue(jsonObject.has("height"))
             assertTrue(jsonObject.has("hash"))
             assertTrue(jsonObject.has("time"))
-            assertTrue(jsonObject.has("tree"))
+            assertTrue(jsonObject.has("saplingTree"))
 
             val expectedNetworkName = when (network) {
                 ZcashNetwork.Mainnet -> "main"

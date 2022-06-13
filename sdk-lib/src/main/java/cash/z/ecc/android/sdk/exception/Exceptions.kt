@@ -131,9 +131,10 @@ sealed class BirthdayException(message: String, cause: Throwable? = null) : SdkE
     class BirthdayFileNotFoundException(directory: String, height: Int?) : BirthdayException(
         "Unable to find birthday file for $height verify that $directory/$height.json exists."
     )
-    class MalformattedBirthdayFilesException(directory: String, file: String) : BirthdayException(
+    class MalformattedBirthdayFilesException(directory: String, file: String, cause: Throwable?) : BirthdayException(
         "Failed to parse file $directory/$file verify that it is formatted as #####.json, " +
-            "where the first portion is an Int representing the height of the tree contained in the file"
+            "where the first portion is an Int representing the height of the tree contained in the file",
+        cause
     )
 }
 

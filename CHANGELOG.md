@@ -3,8 +3,9 @@ Change Log
 
 Upcoming
 ------------------------------------
+- Updated checkpoints for Mainnet and Testnet
 - Fix: SDK can now be used on Intel x86_64 emulators
-- Prevent R8 warnings for apps consuming the SDK 
+- Prevent R8 warnings for apps consuming the SDK
 
 Version 1.5.0-beta01
 ------------------------------------
@@ -15,7 +16,7 @@ Version 1.5.0-beta01
 Version 1.4.0-beta01
 ------------------------------------
 - Main entrypoint to the SDK has changed.  See [MIGRATIONS.md](MIGRATIONS.md)
-- The minumum version of Android supported is now API 19
+- The minimum version of Android supported is now API 19
 - Updated checkpoints for Mainnet and Testnet
 - Internal bugfixes around concurrent access to resources, which could cause transient failures and data corruption
 - Added ProGuard rules so that SDK clients can use R8 to shrink their apps

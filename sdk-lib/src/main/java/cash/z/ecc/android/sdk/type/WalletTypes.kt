@@ -46,6 +46,7 @@ data class WalletBirthday(
     val height: Int = -1,
     val hash: String = "",
     val time: Long = -1,
+    // Note: this field does NOT match the name of the JSON, so will break with field-based JSON parsing
     val tree: String = ""
 ) {
     companion object
