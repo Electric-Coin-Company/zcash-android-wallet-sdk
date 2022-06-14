@@ -1,6 +1,7 @@
 package cash.z.ecc.android.sdk.sample
 
 import cash.z.ecc.android.sdk.internal.Twig
+import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.type.ZcashNetwork
 import cash.z.ecc.android.sdk.util.TestWallet
 import kotlinx.coroutines.runBlocking
@@ -33,6 +34,6 @@ class ShieldFundsSample {
 //        wallet.shieldFunds()
 
         Twig.clip("ShieldFundsSample")
-        Assert.assertEquals(5, wallet.synchronizer.saplingBalances.value.availableZatoshi)
+        Assert.assertEquals(Zatoshi(5), wallet.synchronizer.saplingBalances.value?.available)
     }
 }

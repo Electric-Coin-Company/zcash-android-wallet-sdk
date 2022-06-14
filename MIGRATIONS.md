@@ -1,6 +1,14 @@
 Troubleshooting Migrations
 ==========
 
+Upcoming Migration to Version 1.7 from 1.6
+--------------------------------------
+Various APIs used `Long` value to represent Zatoshi currency amounts.  Those APIs now use a typesafe `Zatoshi` class.  When passing amounts, simply wrap Long values with the Zatoshi constructor `Zatoshi(Long)`.  When receiving values, simply unwrap Long values with `Zatoshi.value`.
+
+`WalletBalance` no longer has uninitialized default values.  This means that `Synchronizer` fields that expose a WalletBalance now use `null` to signal an uninitialized value.  Specifically this means `Synchronizer.orchardBalances`, `Synchronzier.saplingBalances`, and `Synchronizer.transparentBalances` have nullable values now.
+
+`ZcashSdk.ZATOSHI_PER_ZEC` has been moved to `Zatoshi.ZATOSHI_PER_ZEC`.
+
 Upcoming Migrating to Version 1.4.* from 1.3.*
 --------------------------------------
 The main entrypoint to the SDK has changed.

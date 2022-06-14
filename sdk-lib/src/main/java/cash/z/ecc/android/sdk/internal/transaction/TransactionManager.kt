@@ -1,6 +1,7 @@
 package cash.z.ecc.android.sdk.internal.transaction
 
 import cash.z.ecc.android.sdk.db.entity.PendingTransaction
+import cash.z.ecc.android.sdk.model.Zatoshi
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -21,7 +22,7 @@ interface OutboundTransactionManager {
      * @return the associated pending transaction whose ID can be used to monitor for changes.
      */
     suspend fun initSpend(
-        zatoshi: Long,
+        zatoshi: Zatoshi,
         toAddress: String,
         memo: String,
         fromAccountIndex: Int

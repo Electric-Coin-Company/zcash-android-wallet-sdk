@@ -58,8 +58,8 @@ class TransparentRestoreSample {
         val tbalance = wallet.transparentBalance()
         val address = wallet.transparentAddress
 
-        twig("t-avail: ${tbalance.availableZatoshi}  t-total: ${tbalance.totalZatoshi}")
-        Assert.assertTrue("Not enough funds to run sample. Expected some Zatoshi but found ${tbalance.availableZatoshi}. Try adding funds to $address", tbalance.availableZatoshi > 0)
+        twig("t-avail: ${tbalance.available}  t-total: ${tbalance.total}")
+        Assert.assertTrue("Not enough funds to run sample. Expected some Zatoshi but found ${tbalance.available}. Try adding funds to $address", tbalance.available > 0)
 
         twig("Shielding available transparent funds!")
 //        wallet.shieldFunds()

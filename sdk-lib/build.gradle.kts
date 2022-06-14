@@ -244,6 +244,7 @@ dependencies {
 
     // Tests
     testImplementation(libs.kotlin.reflect)
+    testImplementation(libs.kotlin.test)
     testImplementation(libs.mockito.junit)
     testImplementation(libs.mockito.kotlin)
     testImplementation(libs.bundles.junit)

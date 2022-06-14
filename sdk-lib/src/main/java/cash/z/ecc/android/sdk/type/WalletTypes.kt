@@ -1,37 +1,32 @@
 package cash.z.ecc.android.sdk.type
 
+import cash.z.ecc.android.sdk.model.Zatoshi
+
 /**
  * Data structure to hold the total and available balance of the wallet. This is what is
  * received on the balance channel.
  *
- * @param totalZatoshi the total balance, ignoring funds that cannot be used.
- * @param availableZatoshi the amount of funds that are available for use. Typical reasons that funds
+ * @param total the total balance, ignoring funds that cannot be used.
+ * @param available the amount of funds that are available for use. Typical reasons that funds
  * may be unavailable include fairly new transactions that do not have enough confirmations or
  * notes that are tied up because we are awaiting change from a transaction. When a note has
  * been spent, its change cannot be used until there are enough confirmations.
  */
 data class WalletBalance(
-    val totalZatoshi: Long = -1,
-    val availableZatoshi: Long = -1
+    val total: Zatoshi,
+    val available: Zatoshi
 ) {
-    val pendingZatoshi = totalZatoshi.coerceAtLeast(0) - availableZatoshi.coerceAtLeast(0)
-    operator fun plus(other: WalletBalance): WalletBalance {
-        return if (
-            totalZatoshi == -1L && other.totalZatoshi == -1L &&
-            availableZatoshi == -1L && other.availableZatoshi == -1L
-        ) {
-            // if everything is uninitialized, then return the same
-            WalletBalance(-1L, -1L)
-        } else {
-            // otherwise, ignore any uninitialized values
-            WalletBalance(
-                totalZatoshi = totalZatoshi.coerceAtLeast(0) + other.totalZatoshi.coerceAtLeast(0),
-                availableZatoshi = availableZatoshi.coerceAtLeast(0) + other.availableZatoshi.coerceAtLeast(
-                    0
-                )
-            )
-        }
+    init {
+        require(total.value >= available.value) { "Wallet total balance must be >= available balance" }
     }
+
+    val pending = total - available
+
+    operator fun plus(other: WalletBalance): WalletBalance =
+        WalletBalance(
+            total + other.total,
+            available + other.available
+        )
 }
 
 /**
@@ -76,7 +71,13 @@ interface UnifiedAddress {
     val rawTransparentAddress: String
 }
 
-enum class ZcashNetwork(val id: Int, val networkName: String, val saplingActivationHeight: Int, val defaultHost: String, val defaultPort: Int) {
+enum class ZcashNetwork(
+    val id: Int,
+    val networkName: String,
+    val saplingActivationHeight: Int,
+    val defaultHost: String,
+    val defaultPort: Int
+) {
     Testnet(0, "testnet", 280_000, "testnet.lightwalletd.com", 9067),
     Mainnet(1, "mainnet", 419_200, "mainnet.lightwalletd.com", 9067);
 

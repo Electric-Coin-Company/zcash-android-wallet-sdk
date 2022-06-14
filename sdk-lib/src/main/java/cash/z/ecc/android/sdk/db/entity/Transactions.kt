@@ -5,6 +5,7 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
+import cash.z.ecc.android.sdk.model.Zatoshi
 
 //
 // Entities
@@ -166,6 +167,7 @@ data class ConfirmedTransaction(
     val expiryHeight: Int? = null,
     override val raw: ByteArray? = byteArrayOf()
 ) : MinedTransaction, SignedTransaction {
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is ConfirmedTransaction) return false
@@ -206,6 +208,9 @@ data class ConfirmedTransaction(
         return result
     }
 }
+
+val ConfirmedTransaction.valueInZatoshi
+    get() = Zatoshi(value)
 
 data class EncodedTransaction(val txId: ByteArray, override val raw: ByteArray, val expiryHeight: Int?) :
     SignedTransaction {
@@ -283,8 +288,7 @@ interface PendingTransaction : SignedTransaction, Transaction {
 //
 
 fun PendingTransaction.isSameTxId(other: MinedTransaction): Boolean {
-    return rawTransactionId != null && other.rawTransactionId != null &&
-        rawTransactionId!!.contentEquals(other.rawTransactionId)
+    return rawTransactionId != null && rawTransactionId!!.contentEquals(other.rawTransactionId)
 }
 
 fun PendingTransaction.isSameTxId(other: PendingTransaction): Boolean {

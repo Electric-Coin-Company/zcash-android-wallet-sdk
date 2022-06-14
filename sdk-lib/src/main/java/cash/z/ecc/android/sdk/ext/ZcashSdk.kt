@@ -14,11 +14,6 @@ object ZcashSdk {
     val MINERS_FEE_ZATOSHI = 1_000L
 
     /**
-     * The number of zatoshi that equal 1 ZEC.
-     */
-    val ZATOSHI_PER_ZEC = 100_000_000L
-
-    /**
      * The theoretical maximum number of blocks in a reorg, due to other bottlenecks in the protocol design.
      */
     val MAX_REORG_SIZE = 100

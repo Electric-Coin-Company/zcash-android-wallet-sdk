@@ -70,7 +70,7 @@ class TestWallet(
     val synchronizer: SdkSynchronizer = Synchronizer.newBlocking(initializer) as SdkSynchronizer
     val service = (synchronizer.processor.downloader.lightWalletService as LightWalletGrpcService)
 
-    val available get() = synchronizer.saplingBalances.value.availableZatoshi
+    val available get() = synchronizer.saplingBalances.value.available
     val shieldedAddress =
         runBlocking { DerivationTool.deriveShieldedAddress(seed, network = network) }
     val transparentAddress =
@@ -128,9 +128,9 @@ class TestWallet(
         }
 
         synchronizer.getTransparentBalance(transparentAddress).let { walletBalance ->
-            twig("FOUND utxo balance of total: ${walletBalance.totalZatoshi}  available: ${walletBalance.availableZatoshi}")
+            twig("FOUND utxo balance of total: ${walletBalance.total}  available: ${walletBalance.available}")
 
-            if (walletBalance.availableZatoshi > 0L) {
+            if (walletBalance.available > 0L) {
                 synchronizer.shieldFunds(shieldedSpendingKey, transparentSecretKey)
                     .onCompletion { twig("done shielding funds") }
                     .catch { twig("Failed with $it") }

@@ -6,6 +6,7 @@ import cash.z.ecc.android.sdk.ext.ZcashSdk.SPEND_PARAM_FILE_NAME
 import cash.z.ecc.android.sdk.internal.SdkDispatchers
 import cash.z.ecc.android.sdk.internal.ext.deleteSuspend
 import cash.z.ecc.android.sdk.internal.twig
+import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.tool.DerivationTool
 import cash.z.ecc.android.sdk.type.UnifiedViewingKey
 import cash.z.ecc.android.sdk.type.WalletBalance
@@ -100,36 +101,51 @@ class RustBackend private constructor() : RustBackendWelding {
         }
     }
 
-    override suspend fun getShieldedAddress(account: Int) = withContext(SdkDispatchers.DATABASE_IO) {
-        getShieldedAddress(
-            pathDataDb,
-            account,
-            networkId = network.id
-        )
-    }
+    override suspend fun getShieldedAddress(account: Int) =
+        withContext(SdkDispatchers.DATABASE_IO) {
+            getShieldedAddress(
+                pathDataDb,
+                account,
+                networkId = network.id
+            )
+        }
 
     override suspend fun getTransparentAddress(account: Int, index: Int): String {
         throw NotImplementedError("TODO: implement this at the zcash_client_sqlite level. But for now, use DerivationTool, instead to derive addresses from seeds")
     }
 
-    override suspend fun getBalance(account: Int) = withContext(SdkDispatchers.DATABASE_IO) {
-        getBalance(
-            pathDataDb,
-            account,
-            networkId = network.id
-        )
+    override suspend fun getBalance(account: Int): Zatoshi {
+        val longValue = withContext(SdkDispatchers.DATABASE_IO) {
+            getBalance(
+                pathDataDb,
+                account,
+                networkId = network.id
+            )
+        }
+
+        return Zatoshi(longValue)
     }
 
-    override suspend fun getVerifiedBalance(account: Int) = withContext(SdkDispatchers.DATABASE_IO) {
-        getVerifiedBalance(
-            pathDataDb,
-            account,
-            networkId = network.id
-        )
+    override suspend fun getVerifiedBalance(account: Int): Zatoshi {
+        val longValue = withContext(SdkDispatchers.DATABASE_IO) {
+            getVerifiedBalance(
+                pathDataDb,
+                account,
+                networkId = network.id
+            )
+        }
+
+        return Zatoshi(longValue)
     }
 
     override suspend fun getReceivedMemoAsUtf8(idNote: Long) =
-        withContext(SdkDispatchers.DATABASE_IO) { getReceivedMemoAsUtf8(pathDataDb, idNote, networkId = network.id) }
+        withContext(SdkDispatchers.DATABASE_IO) {
+            getReceivedMemoAsUtf8(
+                pathDataDb,
+                idNote,
+                networkId = network.id
+            )
+        }
 
     override suspend fun getSentMemoAsUtf8(idNote: Long) = withContext(SdkDispatchers.DATABASE_IO) {
         getSentMemoAsUtf8(
@@ -147,13 +163,14 @@ class RustBackend private constructor() : RustBackendWelding {
         )
     }
 
-    override suspend fun getNearestRewindHeight(height: Int): Int = withContext(SdkDispatchers.DATABASE_IO) {
-        getNearestRewindHeight(
-            pathDataDb,
-            height,
-            networkId = network.id
-        )
-    }
+    override suspend fun getNearestRewindHeight(height: Int): Int =
+        withContext(SdkDispatchers.DATABASE_IO) {
+            getNearestRewindHeight(
+                pathDataDb,
+                height,
+                networkId = network.id
+            )
+        }
 
     /**
      * Deletes data for all blocks above the given height. Boils down to:
@@ -161,7 +178,13 @@ class RustBackend private constructor() : RustBackendWelding {
      * DELETE FROM blocks WHERE height > ?
      */
     override suspend fun rewindToHeight(height: Int) =
-        withContext(SdkDispatchers.DATABASE_IO) { rewindToHeight(pathDataDb, height, networkId = network.id) }
+        withContext(SdkDispatchers.DATABASE_IO) {
+            rewindToHeight(
+                pathDataDb,
+                height,
+                networkId = network.id
+            )
+        }
 
     override suspend fun scanBlocks(limit: Int): Boolean {
         return if (limit > 0) {
@@ -184,13 +207,14 @@ class RustBackend private constructor() : RustBackendWelding {
         }
     }
 
-    override suspend fun decryptAndStoreTransaction(tx: ByteArray) = withContext(SdkDispatchers.DATABASE_IO) {
-        decryptAndStoreTransaction(
-            pathDataDb,
-            tx,
-            networkId = network.id
-        )
-    }
+    override suspend fun decryptAndStoreTransaction(tx: ByteArray) =
+        withContext(SdkDispatchers.DATABASE_IO) {
+            decryptAndStoreTransaction(
+                pathDataDb,
+                tx,
+                networkId = network.id
+            )
+        }
 
     override suspend fun createToAddress(
         consensusBranchId: Long,
@@ -281,7 +305,7 @@ class RustBackend private constructor() : RustBackendWelding {
                 networkId = network.id
             )
         }
-        return WalletBalance(total, verified)
+        return WalletBalance(Zatoshi(total), Zatoshi(verified))
     }
 
     override fun isValidShieldedAddr(addr: String) =

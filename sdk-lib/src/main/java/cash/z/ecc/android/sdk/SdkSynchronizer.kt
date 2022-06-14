@@ -46,6 +46,7 @@ import cash.z.ecc.android.sdk.internal.transaction.TransactionRepository
 import cash.z.ecc.android.sdk.internal.transaction.WalletTransactionEncoder
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.internal.twigTask
+import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.tool.DerivationTool
 import cash.z.ecc.android.sdk.type.AddressType
 import cash.z.ecc.android.sdk.type.AddressType.Shielded
@@ -101,9 +102,9 @@ class SdkSynchronizer internal constructor(
 ) : Synchronizer {
 
     // pools
-    private val _orchardBalances = MutableStateFlow(WalletBalance())
-    private val _saplingBalances = MutableStateFlow(WalletBalance())
-    private val _transparentBalances = MutableStateFlow(WalletBalance())
+    private val _orchardBalances = MutableStateFlow<WalletBalance?>(null)
+    private val _saplingBalances = MutableStateFlow<WalletBalance?>(null)
+    private val _transparentBalances = MutableStateFlow<WalletBalance?>(null)
 
     private val _status = ConflatedBroadcastChannel<Synchronizer.Status>(DISCONNECTED)
 
@@ -636,14 +637,14 @@ class SdkSynchronizer internal constructor(
 
     override fun sendToAddress(
         spendingKey: String,
-        zatoshi: Long,
+        amount: Zatoshi,
         toAddress: String,
         memo: String,
         fromAccountIndex: Int
     ): Flow<PendingTransaction> = flow {
         twig("Initializing pending transaction")
         // Emit the placeholder transaction, then switch to monitoring the database
-        txManager.initSpend(zatoshi, toAddress, memo, fromAccountIndex).let { placeHolderTx ->
+        txManager.initSpend(amount, toAddress, memo, fromAccountIndex).let { placeHolderTx ->
             emit(placeHolderTx)
             txManager.encode(spendingKey, placeHolderTx).let { encodedTx ->
                 // only submit if it wasn't cancelled. Otherwise cleanup, immediately for best UX.
@@ -675,7 +676,7 @@ class SdkSynchronizer internal constructor(
         val zAddr = getAddress(0)
 
         // Emit the placeholder transaction, then switch to monitoring the database
-        txManager.initSpend(tBalance.availableZatoshi, zAddr, memo, 0).let { placeHolderTx ->
+        txManager.initSpend(tBalance.available, zAddr, memo, 0).let { placeHolderTx ->
             emit(placeHolderTx)
             txManager.encode(spendingKey, transparentSecretKey, placeHolderTx).let { encodedTx ->
                 // only submit if it wasn't cancelled. Otherwise cleanup, immediately for best UX.

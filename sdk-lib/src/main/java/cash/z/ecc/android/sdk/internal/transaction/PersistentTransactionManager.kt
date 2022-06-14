@@ -12,6 +12,7 @@ import cash.z.ecc.android.sdk.internal.db.PendingTransactionDao
 import cash.z.ecc.android.sdk.internal.db.PendingTransactionDb
 import cash.z.ecc.android.sdk.internal.service.LightWalletService
 import cash.z.ecc.android.sdk.internal.twig
+import cash.z.ecc.android.sdk.model.Zatoshi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.flow.Flow
@@ -70,14 +71,14 @@ class PersistentTransactionManager(
     //
 
     override suspend fun initSpend(
-        zatoshiValue: Long,
+        value: Zatoshi,
         toAddress: String,
         memo: String,
         fromAccountIndex: Int
     ): PendingTransaction = withContext(Dispatchers.IO) {
         twig("constructing a placeholder transaction")
         var tx = PendingTransactionEntity(
-            value = zatoshiValue,
+            value = value.value,
             toAddress = toAddress,
             memo = memo.toByteArray(),
             accountIndex = fromAccountIndex

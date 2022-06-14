@@ -1,6 +1,8 @@
 Change Log
 ==========
 
+- Added `Zatoshi` typesafe object to represent amounts instead.
+
 Upcoming
 ------------------------------------
 - Updated checkpoints for Mainnet and Testnet

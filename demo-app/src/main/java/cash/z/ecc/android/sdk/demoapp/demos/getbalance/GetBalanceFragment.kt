@@ -17,6 +17,7 @@ import cash.z.ecc.android.sdk.ext.convertZatoshiToZecString
 import cash.z.ecc.android.sdk.tool.DerivationTool
 import cash.z.ecc.android.sdk.type.WalletBalance
 import cash.z.ecc.android.sdk.type.ZcashNetwork
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.runBlocking
 
 /**
@@ -68,22 +69,23 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
         synchronizer.status.collectWith(lifecycleScope, ::onStatus)
         synchronizer.progress.collectWith(lifecycleScope, ::onProgress)
         synchronizer.processorInfo.collectWith(lifecycleScope, ::onProcessorInfoUpdated)
-        synchronizer.saplingBalances.collectWith(lifecycleScope, ::onBalance)
+        synchronizer.saplingBalances.filterNotNull().collectWith(lifecycleScope, ::onBalance)
     }
 
     private fun onBalance(balance: WalletBalance) {
         binding.textBalance.text = """
-                Available balance: ${balance.availableZatoshi.convertZatoshiToZecString(12)}
-                Total balance: ${balance.totalZatoshi.convertZatoshiToZecString(12)}
+                Available balance: ${balance.available.convertZatoshiToZecString(12)}
+                Total balance: ${balance.total.convertZatoshiToZecString(12)}
         """.trimIndent()
     }
 
     private fun onStatus(status: Synchronizer.Status) {
         binding.textStatus.text = "Status: $status"
-        if (WalletBalance().none()) {
+        val balance = synchronizer.saplingBalances.value
+        if (null == balance) {
             binding.textBalance.text = "Calculating balance..."
         } else {
-            onBalance(synchronizer.saplingBalances.value)
+            onBalance(balance)
         }
     }
 
@@ -91,16 +93,6 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
         if (i < 100) {
             binding.textStatus.text = "Downloading blocks...$i%"
         }
-    }
-
-    /**
-     * Extension function which checks if the balance has been updated or its -1
-     */
-    private fun WalletBalance.none(): Boolean {
-        if (synchronizer.saplingBalances.value.totalZatoshi == -1L &&
-            synchronizer.saplingBalances.value.availableZatoshi == -1L
-        ) return true
-        return false
     }
 
     private fun onProcessorInfoUpdated(info: CompactBlockProcessor.ProcessorInfo) {

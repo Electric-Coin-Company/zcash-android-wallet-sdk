@@ -79,7 +79,7 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
     // Observable properties (done without livedata or flows for simplicity)
     //
 
-    private var balance = WalletBalance()
+    private var balance: WalletBalance? = null
         set(value) {
             field = value
             onUpdateSendButton()
@@ -144,12 +144,12 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
         if (info.isScanning) binding.textStatus.text = "Scanning blocks...${info.scanProgress}%"
     }
 
-    private fun onBalance(balance: WalletBalance) {
+    private fun onBalance(balance: WalletBalance?) {
         this.balance = balance
         if (!isSyncing) {
             binding.textBalance.text = """
-                Available balance: ${balance.availableZatoshi.convertZatoshiToZecString(12)}
-                Total balance: ${balance.totalZatoshi.convertZatoshiToZecString(12)}
+                Available balance: ${balance?.available.convertZatoshiToZecString(12)}
+                Total balance: ${balance?.total.convertZatoshiToZecString(12)}
             """.trimIndent()
         }
     }
@@ -196,7 +196,7 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
                     text = "⌛ syncing"
                     isEnabled = false
                 }
-                balance.availableZatoshi <= 0 -> isEnabled = false
+                (balance?.available?.value ?: 0) <= 0 -> isEnabled = false
                 else -> {
                     text = "send"
                     isEnabled = true
