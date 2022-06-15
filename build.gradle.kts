@@ -15,6 +15,7 @@ plugins {
     id("com.osacky.fulladle")
     id("io.gitlab.arturbosch.detekt")
     id("zcash-sdk.ktlint-conventions")
+    id("zcash-sdk.rosetta-conventions")
 }
 
 tasks {
