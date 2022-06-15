@@ -18,6 +18,7 @@ plugins {
     id("org.jetbrains.dokka")
     id("org.owasp.dependencycheck")
     id("zcash-sdk.ktlint-conventions")
+    id("zcash-sdk.rosetta-conventions")
 }
 
 apply(plugin = "com.vanniktech.maven.publish")
