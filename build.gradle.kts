@@ -6,7 +6,6 @@ buildscript {
     dependencies {
         classpath(kotlin("gradle-plugin", version = libs.versions.kotlin.get()))
         classpath(libs.gradle.plugin.rust)
-        classpath(libs.gradle.plugin.publish)
         classpath(libs.gradle.plugin.navigation)
     }
 }
@@ -15,12 +14,8 @@ plugins {
     id("com.github.ben-manes.versions")
     id("com.osacky.fulladle")
     id("io.gitlab.arturbosch.detekt")
-    id("org.jetbrains.dokka")
-    id("org.owasp.dependencycheck")
     id("zcash-sdk.ktlint-conventions")
 }
-
-apply(plugin = "com.vanniktech.maven.publish")
 
 tasks {
     register("detektAll", io.gitlab.arturbosch.detekt.Detekt::class) {

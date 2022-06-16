@@ -14,23 +14,25 @@ plugins {
     id("org.jetbrains.dokka")
     id("com.google.protobuf")
     id("org.mozilla.rust-android-gradle.rust-android")
-    id("com.vanniktech.maven.publish")
+    id("com.vanniktech.maven.publish.base")
 }
 
 // Publishing information
 val isSnapshot = project.property("IS_SNAPSHOT").toString().toBoolean()
 val version = project.property("LIBRARY_VERSION").toString()
-val ARTIFACT_ID = project.property("POM_ARTIFACT_ID").toString()
 project.group = "cash.z.ecc.android"
 project.version = if (isSnapshot) {
     "$version-SNAPSHOT"
 } else {
     version
 }
+
+val myArtifactId = "zcash-android-sdk"
+
 publishing {
     publications {
         publications.withType<MavenPublication>().all {
-            artifactId = ARTIFACT_ID
+            artifactId = myArtifactId
         }
     }
 }
@@ -73,7 +75,7 @@ android {
 
     kotlinOptions {
         // Tricky: fix: By default, the kotlin_module name will not include the version (in classes.jar/META-INF). Instead it has a colon, which breaks compilation on Windows. This is one way to set it explicitly to the proper value. See https://github.com/zcash/zcash-android-wallet-sdk/issues/222 for more info.
-        freeCompilerArgs += listOf("-module-name", "$ARTIFACT_ID-${project.version}_release")
+        freeCompilerArgs += listOf("-module-name", "$myArtifactId-${project.version}_release")
     }
 
     packagingOptions {
@@ -97,16 +99,53 @@ android {
         baseline = File("lint-baseline.xml")
     }
 
-    publishing {
-        singleVariant("release") {
-            withSourcesJar()
-            withJavadocJar()
-        }
-    }
+    // Handled by com.vanniktech.maven.publish.AndroidSingleVariantLibrary below
+    // publishing {
+    //     singleVariant("release") {
+    //         withSourcesJar()
+    //         withJavadocJar()
+    //     }
+    // }
 }
 
-mavenPublish {
-    androidVariantToPublish = "release"
+mavenPublishing {
+    publishToMavenCentral(com.vanniktech.maven.publish.SonatypeHost.DEFAULT)
+    signAllPublications()
+
+    pom {
+        name.set("Zcash Android Wallet SDK")
+        description.set("This lightweight SDK connects Android to Zcash, allowing third-party Android " +
+            "apps to send and receive shielded transactions easily, securely and privately.")
+        url.set("https://github.com/zcash/zcash-android-wallet-sdk/")
+        inceptionYear.set("2018")
+        scm {
+            url.set("https://github.com/zcash/zcash-android-wallet-sdk/")
+            connection.set("scm:git:git://github.com/zcash/zcash-android-wallet-sdk.git")
+            developerConnection.set("scm:git:ssh://git@github.com/zcash/zcash-android-wallet-sdk.git")
+        }
+        developers {
+            developer {
+                id.set("zcash")
+                name.set("Zcash")
+                url.set("https://github.com/zcash/")
+            }
+        }
+        licenses {
+            license {
+                name.set("The MIT License")
+                url.set("http://opensource.org/licenses/MIT")
+                distribution.set("repo")
+            }
+        }
+    }
+
+    configure(
+        com.vanniktech.maven.publish.AndroidSingleVariantLibrary(
+            "release",
+            sourcesJar = true,
+            publishJavadocJar = true
+        )
+    )
 }
 
 allOpen {
@@ -189,7 +228,6 @@ dependencies {
     // grpc-java
     implementation(libs.bundles.grpc)
     compileOnly(libs.javax.annotation)
-
 
     //
     // Locked Versions
