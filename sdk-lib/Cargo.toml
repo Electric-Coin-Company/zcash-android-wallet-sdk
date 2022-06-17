@@ -12,30 +12,27 @@ edition = "2018"
 [dependencies]
 android_logger = "0.9"
 failure = "0.1"
-hdwallet = "=0.3.0"
+hdwallet = "0.3.1"
 hdwallet-bitcoin = "0.3"
 hex = "0.4"
 jni = { version = "0.17", default-features = false }
 log = "0.4"
 log-panics = "2.0.0"
-zcash_client_backend = "0.5"
-zcash_client_sqlite = "0.3"
-zcash_primitives = "0.5"
-zcash_proofs = "0.5"
+secp256k1 = "0.21"
+zcash_client_backend = { version = "0.5", features = ["transparent-inputs"] }
+zcash_client_sqlite = { version = "0.3", features = ["transparent-inputs"] }
+zcash_primitives = "0.6"
+zcash_proofs = "0.6"
 
-#### Temporary additions: ####################################
-secp256k1 = "0.19"
-##############################################################
-
-# Revision corresponds to the partially-complete auto-shielding version, with the NU5
-# consensus branch ID and activation heights, and v5 transaction parsing, backported.
-# https://github.com/zcash/librustzcash/pull/555
-# https://github.com/zcash/librustzcash/pull/558
+# Revision corresponds to zcash_primitives 0.6.0 plus the NU5 mainnet activation height.
+# We also need zcash_client_backend and zcash_client_sqlite, which haven't been published
+# with NU5 updates yet.
 [patch.crates-io]
-zcash_client_backend = { git = 'https://github.com/zcash/librustzcash.git', rev='0a1ed9b8acf336bdc20ba49083c66f114ecf6877' }
-zcash_client_sqlite = { git = 'https://github.com/zcash/librustzcash.git', rev='0a1ed9b8acf336bdc20ba49083c66f114ecf6877' }
-zcash_primitives = { git = 'https://github.com/zcash/librustzcash.git', rev='0a1ed9b8acf336bdc20ba49083c66f114ecf6877' }
-zcash_proofs = { git = 'https://github.com/zcash/librustzcash.git', rev='0a1ed9b8acf336bdc20ba49083c66f114ecf6877' }
+zcash_client_backend = { git = 'https://github.com/zcash/librustzcash.git', rev='b52e949bd6ee1dbbc0324437440bed8b3c423f79' }
+zcash_client_sqlite = { git = 'https://github.com/zcash/librustzcash.git', rev='b52e949bd6ee1dbbc0324437440bed8b3c423f79' }
+zcash_note_encryption = { git = 'https://github.com/zcash/librustzcash.git', rev='b52e949bd6ee1dbbc0324437440bed8b3c423f79' }
+zcash_primitives = { git = 'https://github.com/zcash/librustzcash.git', rev='b52e949bd6ee1dbbc0324437440bed8b3c423f79' }
+zcash_proofs = { git = 'https://github.com/zcash/librustzcash.git', rev='b52e949bd6ee1dbbc0324437440bed8b3c423f79' }
 
 ## Uncomment this to test librustzcash changes locally
 #[patch.crates-io]

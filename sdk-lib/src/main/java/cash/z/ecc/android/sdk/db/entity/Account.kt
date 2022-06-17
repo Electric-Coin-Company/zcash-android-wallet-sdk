@@ -11,11 +11,11 @@ data class Account(
 
     val account: Int? = 0,
 
-    @ColumnInfo(name = "extfvk")
-    val extendedFullViewingKey: String = "",
+    @ColumnInfo(name = "ufvk")
+    val unifiedFullViewingKey: String? = "",
 
-    val address: String = "",
+    val address: String? = "",
 
     @ColumnInfo(name = "transparent_address")
-    val transparentAddress: String = ""
+    val transparentAddress: String? = ""
 )
