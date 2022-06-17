@@ -4,9 +4,8 @@ Change Log
 ## Unreleased
 
 ### Added
-- `cash.z.ecc.android.sdk.type.UnifiedFullViewingKey`, representing a Unified Full Viewing
-  Key as specified in [ZIP 316](https://zips.z.cash/zip-0316#encoding-of-unified-full-incoming-viewing-keys).
-  - TODO: Actually encode per ZIP 316.
+- `cash.z.ecc.android.sdk`:
+  - `Synchronizer.isValidUnifiedAddr`
 - `cash.z.ecc.android.sdk.tool`:
   - `DerivationTool.deriveTransparentAccountPrivateKey`
   - `DerivationTool.deriveTransparentAddressFromAccountPrivateKey`
@@ -14,6 +13,11 @@ Change Log
   - `DerivationTool.deriveUnifiedFullViewingKeys`
   - `DerivationTool.validateUnifiedFullViewingKey`
     - Still unimplemented.
+- `cash.z.ecc.android.sdk.type`:
+  - `AddressType.Unified`
+  - `UnifiedFullViewingKey`, representing a Unified Full Viewing Key as specified in
+    [ZIP 316](https://zips.z.cash/zip-0316#encoding-of-unified-full-incoming-viewing-keys).
+    - TODO: Actually encode per ZIP 316.
 
 ### Changed
 - The following methods now take or return `UnifiedFullViewingKey` instead of

@@ -467,6 +467,27 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_isValidTran
 }
 
 #[no_mangle]
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_isValidUnifiedAddress(
+    env: JNIEnv<'_>,
+    _: JClass<'_>,
+    addr: JString<'_>,
+    network_id: jint,
+) -> jboolean {
+    let res = panic::catch_unwind(|| {
+        let network = parse_network(network_id as u32)?;
+        let addr = utils::java_string_to_rust(&env, addr);
+
+        match RecipientAddress::decode(&network, &addr) {
+            Some(addr) => match addr {
+                RecipientAddress::Shielded(_) | RecipientAddress::Transparent(_) => Ok(JNI_FALSE),
+            },
+            None => Err(format_err!("Address is for the wrong network")),
+        }
+    });
+    unwrap_exc_or(&env, res, JNI_FALSE)
+}
+
+#[no_mangle]
 pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_getBalance(
     env: JNIEnv<'_>,
     _: JClass<'_>,

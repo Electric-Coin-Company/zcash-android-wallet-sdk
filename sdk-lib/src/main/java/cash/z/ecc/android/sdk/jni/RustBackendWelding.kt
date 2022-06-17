@@ -46,6 +46,8 @@ internal interface RustBackendWelding {
 
     fun isValidTransparentAddr(addr: String): Boolean
 
+    fun isValidUnifiedAddr(addr: String): Boolean
+
     suspend fun getShieldedAddress(account: Int = 0): String
 
     suspend fun getTransparentAddress(account: Int = 0, index: Int = 0): String

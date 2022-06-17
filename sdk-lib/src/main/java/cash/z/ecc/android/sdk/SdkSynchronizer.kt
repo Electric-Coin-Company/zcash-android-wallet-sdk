@@ -55,6 +55,7 @@ import cash.z.ecc.android.sdk.tool.DerivationTool
 import cash.z.ecc.android.sdk.type.AddressType
 import cash.z.ecc.android.sdk.type.AddressType.Shielded
 import cash.z.ecc.android.sdk.type.AddressType.Transparent
+import cash.z.ecc.android.sdk.type.AddressType.Unified
 import cash.z.ecc.android.sdk.type.ConsensusMatchType
 import cash.z.wallet.sdk.rpc.Service
 import io.grpc.ManagedChannel
@@ -698,21 +699,22 @@ class SdkSynchronizer internal constructor(
     override suspend fun isValidTransparentAddr(address: String) =
         txManager.isValidTransparentAddress(address)
 
+    override suspend fun isValidUnifiedAddr(address: String) =
+        txManager.isValidUnifiedAddress(address)
+
     override suspend fun validateAddress(address: String): AddressType {
         return try {
-            if (isValidShieldedAddr(address)) Shielded else Transparent
-        } catch (zError: Throwable) {
-            var message = zError.message
-            try {
-                if (isValidTransparentAddr(address)) Transparent else Shielded
-            } catch (tError: Throwable) {
-                AddressType.Invalid(
-                    if (message != tError.message) "$message and ${tError.message}" else (
-                        message
-                            ?: "Invalid"
-                        )
-                )
+            if (isValidShieldedAddr(address)) {
+                Shielded
+            } else if (isValidTransparentAddr(address)) {
+                Transparent
+            } else if (isValidUnifiedAddr(address)) {
+                Unified
+            } else {
+                AddressType.Invalid("Not a Zcash address")
             }
+        } catch (@Suppress("TooGenericExceptionCaught") error: Throwable) {
+            AddressType.Invalid(error.message ?: "Invalid")
         }
     }
 

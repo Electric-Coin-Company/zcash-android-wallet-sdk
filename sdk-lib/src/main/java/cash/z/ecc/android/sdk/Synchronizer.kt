@@ -242,6 +242,20 @@ interface Synchronizer {
     suspend fun isValidTransparentAddr(address: String): Boolean
 
     /**
+     * Returns true when the given address is a valid ZIP 316 unified address.
+     *
+     * This method is intended for type checking (e.g. form validation). Invalid
+     * addresses will throw an exception.
+     *
+     * @param address the address to validate.
+     *
+     * @return true when the given address is a valid unified address.
+     *
+     * @throws RuntimeException when the address is invalid.
+     */
+    suspend fun isValidUnifiedAddr(address: String): Boolean
+
+    /**
      * Validate whether the server and this SDK share the same consensus branch. This is
      * particularly important to check around network updates so that any wallet that's connected to
      * an incompatible server can surface that information effectively. For the SDK, the consensus
@@ -256,10 +270,11 @@ interface Synchronizer {
 
     /**
      * Validates the given address, returning information about why it is invalid. This is a
-     * convenience method that combines the behavior of [isValidShieldedAddr] and
-     * [isValidTransparentAddr] into one call so that the developer doesn't have to worry about
-     * handling the exceptions that they throw. Rather, exceptions are converted to
-     * [AddressType.Invalid] which has a `reason` property describing why it is invalid.
+     * convenience method that combines the behavior of [isValidShieldedAddr],
+     * [isValidTransparentAddr], and [isValidUnifiedAddr] into one call so that the developer
+     * doesn't have to worry about handling the exceptions that they throw. Rather, exceptions
+     * are converted to [AddressType.Invalid] which has a `reason` property describing why it is
+     * invalid.
      *
      * @param address the address to validate.
      *

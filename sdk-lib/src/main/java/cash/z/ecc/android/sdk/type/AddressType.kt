@@ -1,8 +1,9 @@
 package cash.z.ecc.android.sdk.type
 
 /**
- * Validation helper class, representing the types of addresses, either Shielded, Transparent or
- * Invalid. Used in conjuction with [cash.z.ecc.android.sdk.Synchronizer.validateAddress].
+ * Validation helper class, representing the types of addresses, either Shielded,
+ * Transparent, Unified, or Invalid. Used in conjuction with
+ * [cash.z.ecc.android.sdk.Synchronizer.validateAddress].
  */
 sealed class AddressType {
     /**
@@ -19,6 +20,11 @@ sealed class AddressType {
      * An instance of [AddressType] corresponding to a valid t-addr.
      */
     object Transparent : Valid, AddressType()
+
+    /**
+     * An instance of [AddressType] corresponding to a valid ZIP 316 unified address.
+     */
+    object Unified : Valid, AddressType()
 
     /**
      * An instance of [AddressType] corresponding to an invalid address.
