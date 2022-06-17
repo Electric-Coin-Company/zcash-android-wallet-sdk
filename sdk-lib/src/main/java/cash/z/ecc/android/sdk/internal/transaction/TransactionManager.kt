@@ -98,6 +98,15 @@ interface OutboundTransactionManager {
     suspend fun isValidTransparentAddress(address: String): Boolean
 
     /**
+     * Return true when the given address is a valid ZIP 316 Unified Address.
+     *
+     * @param address the address to validate.
+     *
+     * @return true when the given address is a valid ZIP 316 Unified Address.
+     */
+    suspend fun isValidUnifiedAddress(address: String): Boolean
+
+    /**
      * Attempt to cancel a transaction.
      *
      * @param pendingTx the transaction matching the ID of the transaction to cancel.

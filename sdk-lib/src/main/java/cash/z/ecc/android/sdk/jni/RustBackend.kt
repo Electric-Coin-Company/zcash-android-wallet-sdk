@@ -310,6 +310,9 @@ internal class RustBackend private constructor(
     override fun isValidTransparentAddr(addr: String) =
         isValidTransparentAddress(addr, networkId = network.id)
 
+    override fun isValidUnifiedAddr(addr: String) =
+        isValidUnifiedAddress(addr, networkId = network.id)
+
     override fun getBranchIdForHeight(height: BlockHeight): Long =
         branchIdForHeight(height.value, networkId = network.id)
 
@@ -408,6 +411,9 @@ internal class RustBackend private constructor(
 
         @JvmStatic
         private external fun isValidTransparentAddress(addr: String, networkId: Int): Boolean
+
+        @JvmStatic
+        private external fun isValidUnifiedAddress(addr: String, networkId: Int): Boolean
 
         @JvmStatic
         private external fun getBalance(dbDataPath: String, account: Int, networkId: Int): Long

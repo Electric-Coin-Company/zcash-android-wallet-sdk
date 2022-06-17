@@ -52,6 +52,16 @@ interface TransactionEncoder {
     suspend fun isValidTransparentAddress(address: String): Boolean
 
     /**
+     * Utility function to help with validation. This is not called during [createTransaction]
+     * because this class asserts that all validation is done externally by the UI, for now.
+     *
+     * @param address the address to validate
+     *
+     * @return true when the given address is a valid ZIP 316 Unified Address
+     */
+    suspend fun isValidUnifiedAddress(address: String): Boolean
+
+    /**
      * Return the consensus branch that the encoder is using when making transactions.
      */
     suspend fun getConsensusBranchId(): Long

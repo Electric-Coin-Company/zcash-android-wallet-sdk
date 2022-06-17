@@ -234,6 +234,9 @@ class PersistentTransactionManager(
     override suspend fun isValidTransparentAddress(address: String) =
         encoder.isValidTransparentAddress(address)
 
+    override suspend fun isValidUnifiedAddress(address: String) =
+        encoder.isValidUnifiedAddress(address)
+
     override suspend fun cancel(pendingId: Long): Boolean {
         return pendingTransactionDao {
             val tx = findById(pendingId)

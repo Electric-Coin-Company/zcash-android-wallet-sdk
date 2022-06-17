@@ -81,6 +81,17 @@ internal class WalletTransactionEncoder(
     override suspend fun isValidTransparentAddress(address: String): Boolean =
         rustBackend.isValidTransparentAddr(address)
 
+    /**
+     * Utility function to help with validation. This is not called during [createTransaction]
+     * because this class asserts that all validation is done externally by the UI, for now.
+     *
+     * @param address the address to validate
+     *
+     * @return true when the given address is a valid ZIP 316 Unified Address
+     */
+    override suspend fun isValidUnifiedAddress(address: String): Boolean =
+        rustBackend.isValidUnifiedAddr(address)
+
     override suspend fun getConsensusBranchId(): Long {
         val height = repository.lastScannedHeight()
         if (height < rustBackend.network.saplingActivationHeight) {
