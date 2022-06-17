@@ -1,7 +1,4 @@
-use hdwallet::{
-    traits::{Deserialize, Serialize},
-    ExtendedPrivKey, ExtendedPubKey, KeyChain, KeyIndex,
-};
+use hdwallet::{ExtendedPrivKey, KeyChain};
 use jni::{
     descriptors::Desc,
     errors::Result as JNIResult,
@@ -9,16 +6,16 @@ use jni::{
     sys::{jobjectArray, jsize},
     JNIEnv,
 };
-use secp256k1::SecretKey;
-use zcash_client_backend::{keys::derive_transparent_address_from_public_key, wallet::AccountId};
 use zcash_primitives::{
     consensus,
-    legacy::TransparentAddress,
-    sapling::PaymentAddress,
-    zip32::{DiversifierIndex, ExtendedFullViewingKey},
+    legacy::{
+        keys::{AccountPubKey, IncomingViewingKey},
+        TransparentAddress,
+    },
+    zip32::AccountId,
 };
 
-use std::{convert::TryInto, ops::Deref};
+use std::ops::Deref;
 
 pub(crate) mod exception;
 
@@ -98,7 +95,7 @@ pub(crate) fn p2pkh_xprv<P: consensus::Parameters>(
 ) -> Result<hdwallet_bitcoin::PrivKey, hdwallet::error::Error> {
     let master_key = ExtendedPrivKey::with_seed(&seed)?;
     let key_chain = hdwallet::DefaultKeyChain::new(master_key);
-    let chain_path = format!("m/44H/{}H/{}H", params.coin_type(), account.0).into();
+    let chain_path = format!("m/44H/{}H/{}H", params.coin_type(), u32::from(account)).into();
     let (extended_key, derivation) = key_chain.derive_private_key(chain_path)?;
     Ok(hdwallet_bitcoin::PrivKey {
         network: hdwallet_bitcoin::Network::MainNet,
@@ -107,111 +104,10 @@ pub(crate) fn p2pkh_xprv<P: consensus::Parameters>(
     })
 }
 
-pub(crate) fn p2pkh_full_viewing_key<P: consensus::Parameters>(
-    params: &P,
-    seed: &[u8],
-    account: AccountId,
-) -> Result<ExtendedPubKey, hdwallet::error::Error> {
-    let pk = ExtendedPrivKey::with_seed(&seed)?;
-    let private_key = pk
-        .derive_private_key(KeyIndex::hardened_from_normalize_index(44)?)?
-        .derive_private_key(KeyIndex::hardened_from_normalize_index(params.coin_type())?)?
-        .derive_private_key(KeyIndex::hardened_from_normalize_index(account.0)?)?;
-    Ok(ExtendedPubKey::from_private_key(&private_key))
-}
-
 pub(crate) fn p2pkh_addr(
-    fvk: ExtendedPubKey,
-    index: DiversifierIndex,
-) -> Result<TransparentAddress, hdwallet::error::Error> {
-    p2pkh_addr_with_u32_index(fvk, u32::from_le_bytes(index.0[..4].try_into().unwrap()))
-}
-
-pub(crate) fn p2pkh_addr_with_u32_index(
-    fvk: ExtendedPubKey,
+    tfvk: AccountPubKey,
     index: u32,
 ) -> Result<TransparentAddress, hdwallet::error::Error> {
-    let pubkey = fvk
-        .derive_public_key(KeyIndex::Normal(0))?
-        .derive_public_key(KeyIndex::Normal(index))?
-        .public_key;
-    Ok(derive_transparent_address_from_public_key(&pubkey))
-}
-
-pub(crate) fn p2pkh_secret_key(
-    tsk: ExtendedPrivKey,
-    index: u32,
-) -> Result<SecretKey, hdwallet::error::Error> {
-    tsk.derive_private_key(KeyIndex::Normal(0))?
-        .derive_private_key(KeyIndex::Normal(index))
-        .map(|k| k.private_key)
-}
-
-/// This is temporary, and will be replaced by `zcash_address::unified::Ufvk`.
-pub(crate) fn fake_ufvk_encode(p2pkh: &ExtendedPubKey, sapling: &ExtendedFullViewingKey) -> String {
-    let mut ufvk = p2pkh.serialize();
-    sapling.write(&mut ufvk).unwrap();
-    format!("DONOTUSEUFVK{}", hex::encode(&ufvk))
-}
-
-/// This is temporary, and will be replaced by `zcash_address::unified::Ufvk`.
-pub(crate) fn fake_ufvk_decode(encoding: &str) -> Option<(ExtendedPubKey, ExtendedFullViewingKey)> {
-    encoding
-        .strip_prefix("DONOTUSEUFVK")
-        .and_then(|data| hex::decode(data).ok())
-        .and_then(|data| {
-            ExtendedPubKey::deserialize(&data[..65])
-                .ok()
-                .zip(ExtendedFullViewingKey::read(&data[65..]).ok())
-        })
-}
-
-/// This is temporary, and will be replaced by `zcash_address::unified::Address`.
-pub(crate) fn fake_ua_encode(p2pkh: &TransparentAddress, sapling: &PaymentAddress) -> String {
-    format!(
-        "DONOTUSEUA{}{}",
-        hex::encode(match p2pkh {
-            TransparentAddress::PublicKey(data) => data,
-            TransparentAddress::Script(_) => panic!(),
-        }),
-        hex::encode(&sapling.to_bytes())
-    )
-}
-
-// This is temporary, and will be replaced by `zcash_address::unified::Address`.
-// pub(crate) fn fake_ua_decode(encoding: &str) -> Option<(TransparentAddress, PaymentAddress)> {
-//     encoding
-//         .strip_prefix("DONOTUSEUA")
-//         .and_then(|data| hex::decode(data).ok())
-//         .and_then(|data| {
-//             PaymentAddress::from_bytes(&data[20..].try_into().unwrap()).map(|pa| {
-//                 (
-//                     TransparentAddress::PublicKey(data[..20].try_into().unwrap()),
-//                     pa,
-//                 )
-//             })
-//         })
-// }
-
-#[cfg(test)]
-mod tests {
-    use hdwallet::ExtendedPubKey;
-    use zcash_client_backend::wallet::AccountId;
-    use zcash_primitives::consensus::MAIN_NETWORK;
-
-    use super::{p2pkh_full_viewing_key, p2pkh_xprv};
-
-    #[test]
-    fn test_transparent_xprv() {
-        let params = MAIN_NETWORK;
-        let seed = [0; 32];
-        let account = AccountId(0);
-
-        assert_eq!(
-            ExtendedPubKey::from_private_key(
-                &p2pkh_xprv(&params, &seed, account).unwrap().extended_key
-            ),
-            p2pkh_full_viewing_key(&params, &seed, account).unwrap(),
-        );
-    }
+    tfvk.derive_external_ivk()
+        .and_then(|tivk| tivk.derive_address(index))
 }

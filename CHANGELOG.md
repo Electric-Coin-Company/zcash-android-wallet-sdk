@@ -17,7 +17,6 @@ Change Log
   - `AddressType.Unified`
   - `UnifiedFullViewingKey`, representing a Unified Full Viewing Key as specified in
     [ZIP 316](https://zips.z.cash/zip-0316#encoding-of-unified-full-incoming-viewing-keys).
-    - TODO: Actually encode per ZIP 316.
 
 ### Changed
 - The following methods now take or return `UnifiedFullViewingKey` instead of

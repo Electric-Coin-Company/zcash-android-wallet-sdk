@@ -26,6 +26,9 @@ data class Sent(
     @ColumnInfo(name = "tx")
     val transactionId: Long = 0,
 
+    @ColumnInfo(name = "output_pool")
+    val outputPool: Int = 0,
+
     @ColumnInfo(name = "output_index")
     val outputIndex: Int = 0,
 
@@ -46,6 +49,7 @@ data class Sent(
 
         if (id != other.id) return false
         if (transactionId != other.transactionId) return false
+        if (outputPool != other.outputPool) return false
         if (outputIndex != other.outputIndex) return false
         if (account != other.account) return false
         if (address != other.address) return false
@@ -61,6 +65,7 @@ data class Sent(
     override fun hashCode(): Int {
         var result = id ?: 0
         result = 31 * result + transactionId.hashCode()
+        result = 31 * result + outputPool
         result = 31 * result + outputIndex
         result = 31 * result + account
         result = 31 * result + address.hashCode()
