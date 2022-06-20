@@ -13,15 +13,16 @@ When forking this repository, some secrets need to be defined to set up new cont
 The secrets passed to GitHub Actions then map to Gradle properties set up within our build scripts.  Necessary secrets are documented at the top of each GitHub workflow yml file, as well as reiterated here.
 
 ### Pull request
+* `EMULATOR_WTF_API_KEY` - API key for [Emulator.wtf](https://emulator.wtf)
 * `FIREBASE_TEST_LAB_PROJECT` - Firebase Test Lab project name.
 * `FIREBASE_TEST_LAB_SERVICE_ACCOUNT` - Email address of Firebase Test Lab service account.
 * `FIREBASE_TEST_LAB_WORKLOAD_IDENTITY_PROVIDER` - Workload identity provider to generate temporary service account key.
 
-To obtain the values for these, you'll need to enable the necessary Google Cloud APIs to enable automated access to Firebase Test Lab.
+The Pull Request workflow supports testing of the app and libraries with both Emulator.wtf and Firebase Test Lab.  By default Emulator.wtf is used for library instrumentation tests, while Firebase Test Lab is used for a robo test.
+
+To configure Firebase Test Lab, you'll need to enable the necessary Google Cloud APIs to enable automated access to Firebase Test Lab.
 * Configure Firebase Test Lab.  Google has [documentation for Jenkins](https://firebase.google.com/docs/test-lab/android/continuous).  Although we're using GitHub Actions, the initial requirements are the same.
 * Configure [workload identity federation](https://github.com/google-github-actions/auth#setting-up-workload-identity-federation)
-
-Once configured, these allow for generation of a temporary key which is then provided to the build through the Gradle property `ZCASH_FIREBASE_TEST_LAB_API_KEY_PATH`.
 
 Note: Pull requests do not currently run darkside tests.  See #361.
 
@@ -33,7 +34,7 @@ GPG keys are not needed for snapshot deployment.
 
 Note: For documentation on the Gradle properties for Maven deployment, see [Gradle Maven Publish Plugin](https://github.com/vanniktech/gradle-maven-publish-plugin).
 
-Note: Snapshot builds are configured with a Gradle property `IS_SNAPSHOT`.  The workflow automatically sets this property to true for snapshot deployments.  This will suffix the version with `-snapshot` and will upload to the snapshot repository.
+Note: Snapshot builds are configured with a Gradle property `IS_SNAPSHOT`.  The workflow automatically sets this property to true for snapshot deployments.  This will suffix the version with `-SNAPSHOT` and will upload to the snapshot repository.
 
 ### Release deployment
 * `MAVEN_CENTRAL_USERNAME` — Username for Maven Central, which maps to the Gradle property `mavenCentralUsername`.

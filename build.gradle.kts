@@ -57,15 +57,15 @@ fun isNonStable(version: String): Boolean {
     return unstableKeywords.any { versionLowerCase.contains(it) }
 }
 
-// Firebase Test Lab has min and max values that might differ from our project's
-// These are determined by `gcloud firebase test android models list`
-@Suppress("MagicNumber", "PropertyName", "VariableNaming")
-val FIREBASE_TEST_LAB_MIN_API = 23
-@Suppress("MagicNumber", "PropertyName", "VariableNaming")
-val FIREBASE_TEST_LAB_MAX_API = 30
+fladle {
+    // Firebase Test Lab has min and max values that might differ from our project's
+    // These are determined by `gcloud firebase test android models list`
+    @Suppress("MagicNumber", "PropertyName", "VariableNaming")
+    val FIREBASE_TEST_LAB_MIN_API = 23
 
-val firebaseTestLabKeyPath = project.properties["ZCASH_FIREBASE_TEST_LAB_API_KEY_PATH"].toString()
-if (firebaseTestLabKeyPath.isNotBlank()) {
+    @Suppress("MagicNumber", "PropertyName", "VariableNaming")
+    val FIREBASE_TEST_LAB_MAX_API = 30
+
     val minSdkVersion = run {
         val buildMinSdk = project.properties["ANDROID_MIN_SDK_VERSION"].toString().toInt()
         buildMinSdk.coerceAtLeast(FIREBASE_TEST_LAB_MIN_API).toString()
@@ -74,16 +74,32 @@ if (firebaseTestLabKeyPath.isNotBlank()) {
         val buildTargetSdk = project.properties["ANDROID_TARGET_SDK_VERSION"].toString().toInt()
         buildTargetSdk.coerceAtMost(FIREBASE_TEST_LAB_MAX_API).toString()
     }
-    fladle {
+
+    val firebaseTestLabKeyPath = project.properties["ZCASH_FIREBASE_TEST_LAB_API_KEY_PATH"].toString()
+    val firebaseProject = project.properties["ZCASH_FIREBASE_TEST_LAB_PROJECT"].toString()
+
+    if (firebaseTestLabKeyPath.isNotEmpty()) {
         serviceAccountCredentials.set(File(firebaseTestLabKeyPath))
-        devices.addAll(
-            mapOf("model" to "NexusLowRes", "version" to minSdkVersion),
-            mapOf("model" to "NexusLowRes", "version" to targetSdkVersion)
-        )
-
-        @Suppress("MagicNumber")
-        flakyTestAttempts.set(2)
-
-        flankVersion.set(libs.versions.flank.get())
+    } else if (firebaseProject.isNotEmpty()) {
+        projectId.set(firebaseProject)
     }
+
+    devices.addAll(
+        mapOf("model" to "Pixel2", "version" to minSdkVersion),
+        mapOf("model" to "Pixel2", "version" to targetSdkVersion)
+    )
+
+    @Suppress("MagicNumber")
+    flakyTestAttempts.set(2)
+
+    flankVersion.set(libs.versions.flank.get())
+
+    filesToDownload.set(listOf(
+        "*/matrix_*/*test_results_merged\\.xml",
+        "*/matrix_*/*/artifacts/sdcard/googletest/test_outputfiles/*\\.png"
+    ))
+
+    directoriesToPull.set(listOf(
+        "/sdcard/googletest/test_outputfiles"
+    ))
 }
