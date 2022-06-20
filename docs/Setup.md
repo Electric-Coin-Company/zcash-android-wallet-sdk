@@ -41,7 +41,7 @@ Start by making sure the command line with Gradle works first, because **all the
     1. Install the Android NDK
         1. Go to the Android SDK Manager inside Android Studio
         1. Click the checkbox for "Show Package Details"
-        1. Install the exact NDK version listed in [gradle.properties](~/.gradle.properties) under `ANDROID_NDK_VERSION`
+        1. Install the exact NDK version listed in [gradle.properties](../gradle.properties) under `ANDROID_NDK_VERSION`
     1. Configure a device for development and testing
         1. Android virtual device
             1. Inside Android Studio, the small More Actions button has an option to open the Virtual Device Manager
@@ -68,7 +68,7 @@ Start by making sure the command line with Gradle works first, because **all the
         1. Note: When first opening the project, Android Studio will warn that Gradle checksums are not fully supported.  Choose the "Use checksum" option.  This is a security feature that we have explicitly enabled.
         1. Shortly after opening the project, Android Studio may prompt about updating the Android Gradle Plugin.  DO NOT DO THIS.  If you do so, the build will fail because the project also has dependency locking enabled as a security feature.  To learn more, see [Build integrity.md](Build%20Integrity.md)
         1. Android Studio may prompt about updating the Kotlin plugin.  Do this.  Our application often uses a newer version of Kotlin than is bundled with Android Studio.
-    1. After Android Studio finishes syncing with Gradle, look for the green "play" run button in the toolbar.  To the left of it, choose the "demo" run configuration under the dropdown menu.  Then hit the run button.
+    1. After Android Studio finishes syncing with Gradle, look for the green "play" run button in the toolbar.  To the left of it, choose the "demo-app" run configuration under the dropdown menu.  Then hit the run button.
         1. Note: The SDK supports both testnet and mainnet.  The decision to switch between them is made at the application level.  To switch between build variants, look for "Build Variants" which is usually a small button in the left gutter of the Android Studio window.
 
 ## Troubleshooting
