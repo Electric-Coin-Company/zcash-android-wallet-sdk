@@ -4,6 +4,7 @@ import cash.z.ecc.android.sdk.block.CompactBlockProcessor
 import cash.z.ecc.android.sdk.db.entity.ConfirmedTransaction
 import cash.z.ecc.android.sdk.db.entity.PendingTransaction
 import cash.z.ecc.android.sdk.ext.ZcashSdk
+import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.type.AddressType
 import cash.z.ecc.android.sdk.type.ConsensusMatchType
 import cash.z.ecc.android.sdk.type.WalletBalance
@@ -102,17 +103,17 @@ interface Synchronizer {
     /**
      * A stream of balance values for the orchard pool. Includes the available and total balance.
      */
-    val orchardBalances: StateFlow<WalletBalance>
+    val orchardBalances: StateFlow<WalletBalance?>
 
     /**
      * A stream of balance values for the sapling pool. Includes the available and total balance.
      */
-    val saplingBalances: StateFlow<WalletBalance>
+    val saplingBalances: StateFlow<WalletBalance?>
 
     /**
      * A stream of balance values for the transparent pool. Includes the available and total balance.
      */
-    val transparentBalances: StateFlow<WalletBalance>
+    val transparentBalances: StateFlow<WalletBalance?>
 
     /* Transactions */
 
@@ -203,7 +204,7 @@ interface Synchronizer {
      */
     fun sendToAddress(
         spendingKey: String,
-        zatoshi: Long,
+        amount: Zatoshi,
         toAddress: String,
         memo: String = "",
         fromAccountIndex: Int = 0

@@ -1,5 +1,6 @@
 package cash.z.ecc.android.sdk.jni
 
+import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.type.UnifiedViewingKey
 import cash.z.ecc.android.sdk.type.WalletBalance
 import cash.z.ecc.android.sdk.type.ZcashNetwork
@@ -47,7 +48,7 @@ interface RustBackendWelding {
 
     suspend fun getTransparentAddress(account: Int = 0, index: Int = 0): String
 
-    suspend fun getBalance(account: Int = 0): Long
+    suspend fun getBalance(account: Int = 0): Zatoshi
 
     fun getBranchIdForHeight(height: Int): Long
 
@@ -55,7 +56,7 @@ interface RustBackendWelding {
 
     suspend fun getSentMemoAsUtf8(idNote: Long): String
 
-    suspend fun getVerifiedBalance(account: Int = 0): Long
+    suspend fun getVerifiedBalance(account: Int = 0): Zatoshi
 
 //    fun parseTransactionDataList(tdl: LocalRpcTypes.TransactionDataList): LocalRpcTypes.TransparentTransactionList
 

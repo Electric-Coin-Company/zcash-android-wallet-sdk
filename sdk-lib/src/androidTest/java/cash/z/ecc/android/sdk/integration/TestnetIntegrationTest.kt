@@ -12,12 +12,14 @@ import cash.z.ecc.android.sdk.internal.TroubleshootingTwig
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.service.LightWalletGrpcService
 import cash.z.ecc.android.sdk.internal.twig
+import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.test.ScopedTest
 import cash.z.ecc.android.sdk.tool.DerivationTool
 import cash.z.ecc.android.sdk.tool.WalletBirthdayTool
 import cash.z.ecc.android.sdk.type.ZcashNetwork
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.runBlocking
@@ -67,9 +69,9 @@ class TestnetIntegrationTest : ScopedTest() {
     @LargeTest
     @Ignore("This test is extremely slow")
     fun testBalance() = runBlocking {
-        var availableBalance: Long = 0L
+        var availableBalance: Zatoshi? = null
         synchronizer.saplingBalances.onFirst {
-            availableBalance = it.availableZatoshi
+            availableBalance = it?.available
         }
 
         synchronizer.status.filter { it == SYNCED }.onFirst {
@@ -78,7 +80,7 @@ class TestnetIntegrationTest : ScopedTest() {
 
         assertTrue(
             "No funds available when we expected a balance greater than zero!",
-            availableBalance > 0
+            availableBalance!!.value > 0
         )
     }
 
@@ -86,7 +88,7 @@ class TestnetIntegrationTest : ScopedTest() {
     @Ignore("This test is broken")
     fun testSpend() = runBlocking {
         var success = false
-        synchronizer.saplingBalances.filter { it.availableZatoshi > 0 }.onEach {
+        synchronizer.saplingBalances.filterNotNull().onEach {
             success = sendFunds()
         }.first()
         log("asserting $success")
@@ -98,7 +100,7 @@ class TestnetIntegrationTest : ScopedTest() {
         log("sending to address")
         synchronizer.sendToAddress(
             spendingKey,
-            ZcashSdk.MINERS_FEE_ZATOSHI,
+            ZcashSdk.MINERS_FEE,
             toAddress,
             "first mainnet tx from the SDK"
         ).filter { it?.isSubmitSuccess() == true }.onFirst {

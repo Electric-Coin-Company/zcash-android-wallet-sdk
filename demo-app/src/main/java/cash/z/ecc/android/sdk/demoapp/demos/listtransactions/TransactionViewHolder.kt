@@ -6,6 +6,7 @@ import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import cash.z.ecc.android.sdk.db.entity.ConfirmedTransaction
+import cash.z.ecc.android.sdk.db.entity.valueInZatoshi
 import cash.z.ecc.android.sdk.demoapp.R
 import cash.z.ecc.android.sdk.ext.convertZatoshiToZecString
 import java.text.SimpleDateFormat
@@ -23,7 +24,7 @@ class TransactionViewHolder<T : ConfirmedTransaction>(itemView: View) : Recycler
 
     fun bindTo(transaction: T?) {
         val isInbound = transaction?.toAddress.isNullOrEmpty()
-        amountText.text = transaction?.value.convertZatoshiToZecString()
+        amountText.text = transaction?.valueInZatoshi.convertZatoshiToZecString()
         timeText.text =
             if (transaction == null || transaction?.blockTimeInSeconds == 0L) "Pending"
             else formatter.format(transaction.blockTimeInSeconds * 1000L)

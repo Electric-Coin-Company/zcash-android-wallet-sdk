@@ -161,6 +161,7 @@ dependencyResolutionManagement {
             library("junit-api", "org.junit.jupiter:junit-jupiter-api:$junitVersion")
             library("junit-engine", "org.junit.jupiter:junit-jupiter-engine:$junitVersion")
             library("junit-migration", "org.junit.jupiter:junit-jupiter-migrationsupport:$junitVersion")
+            library("kotlin-test", "org.jetbrains.kotlin:kotlin-test:$kotlinVersion")
             library("kotlinx-coroutines-test", "org.jetbrains.kotlinx:kotlinx-coroutines-test:$kotlinxCoroutinesVersion")
             library("mockito-android", "org.mockito:mockito-android:$mockitoVersion")
             library("mockito-junit", "org.mockito:mockito-junit-jupiter:$mockitoVersion")

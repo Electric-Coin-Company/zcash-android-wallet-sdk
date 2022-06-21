@@ -3,6 +3,7 @@ package cash.z.ecc.android.sdk.sample
 import androidx.test.filters.LargeTest
 import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.internal.twig
+import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.type.ZcashNetwork.Testnet
 import cash.z.ecc.android.sdk.util.TestWallet
 import kotlinx.coroutines.delay
@@ -18,7 +19,7 @@ import org.junit.Test
  */
 class TransparentRestoreSample {
 
-    val TX_VALUE = ZcashSdk.MINERS_FEE_ZATOSHI / 2
+    val TX_VALUE = Zatoshi(ZcashSdk.MINERS_FEE.value / 2)
 
 //    val walletA = SimpleWallet(SEED_PHRASE, "WalletA")
 
@@ -58,8 +59,8 @@ class TransparentRestoreSample {
         val tbalance = wallet.transparentBalance()
         val address = wallet.transparentAddress
 
-        twig("t-avail: ${tbalance.availableZatoshi}  t-total: ${tbalance.totalZatoshi}")
-        Assert.assertTrue("Not enough funds to run sample. Expected some Zatoshi but found ${tbalance.availableZatoshi}. Try adding funds to $address", tbalance.availableZatoshi > 0)
+        twig("t-avail: ${tbalance.available}  t-total: ${tbalance.total}")
+        Assert.assertTrue("Not enough funds to run sample. Expected some Zatoshi but found ${tbalance.available}. Try adding funds to $address", tbalance.available.value > 0)
 
         twig("Shielding available transparent funds!")
 //        wallet.shieldFunds()

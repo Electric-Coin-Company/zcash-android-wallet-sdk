@@ -4,7 +4,7 @@ package cash.z.ecc.android.sdk.ext
 
 import cash.z.ecc.android.sdk.ext.Conversions.USD_FORMATTER
 import cash.z.ecc.android.sdk.ext.Conversions.ZEC_FORMATTER
-import cash.z.ecc.android.sdk.ext.ZcashSdk.ZATOSHI_PER_ZEC
+import cash.z.ecc.android.sdk.model.Zatoshi
 import java.math.BigDecimal
 import java.math.MathContext
 import java.math.RoundingMode
@@ -21,7 +21,7 @@ import java.util.Locale
 // TODO: provide a dynamic way to configure this globally for the SDK
 // For now, just make these vars so at least they could be modified in one place
 object Conversions {
-    var ONE_ZEC_IN_ZATOSHI = BigDecimal(ZATOSHI_PER_ZEC, MathContext.DECIMAL128)
+    var ONE_ZEC_IN_ZATOSHI = BigDecimal(Zatoshi.ZATOSHI_PER_ZEC, MathContext.DECIMAL128)
     var ZEC_FORMATTER = NumberFormat.getInstance(Locale.getDefault()).apply {
         roundingMode = RoundingMode.HALF_EVEN
         maximumFractionDigits = 6
@@ -47,11 +47,11 @@ object Conversions {
  * @return this Zatoshi value represented as ZEC, in a string with at least [minDecimals] and at
  * most [maxDecimals]
  */
-inline fun Long?.convertZatoshiToZecString(
+inline fun Zatoshi?.convertZatoshiToZecString(
     maxDecimals: Int = ZEC_FORMATTER.maximumFractionDigits,
     minDecimals: Int = ZEC_FORMATTER.minimumFractionDigits
 ): String {
-    return currencyFormatter(maxDecimals, minDecimals).format(this.convertZatoshiToZec(maxDecimals))
+    return currencyFormatter(maxDecimals, minDecimals).format(convertZatoshiToZec(maxDecimals))
 }
 
 /**
@@ -162,8 +162,8 @@ inline fun currencyFormatter(maxDecimals: Int, minDecimals: Int): NumberFormat {
  * @return this Long Zatoshi value represented as ZEC using a BigDecimal with the given scale,
  * rounded accurately out to 128 digits.
  */
-inline fun Long?.convertZatoshiToZec(scale: Int = ZEC_FORMATTER.maximumFractionDigits): BigDecimal {
-    return BigDecimal(this ?: 0L, MathContext.DECIMAL128).divide(
+inline fun Zatoshi?.convertZatoshiToZec(scale: Int = ZEC_FORMATTER.maximumFractionDigits): BigDecimal {
+    return BigDecimal(this?.value ?: 0L, MathContext.DECIMAL128).divide(
         Conversions.ONE_ZEC_IN_ZATOSHI,
         MathContext.DECIMAL128
     ).setScale(scale, ZEC_FORMATTER.roundingMode)
@@ -176,15 +176,15 @@ inline fun Long?.convertZatoshiToZec(scale: Int = ZEC_FORMATTER.maximumFractionD
  * @return this ZEC value represented as Zatoshi, rounded accurately out to 128 digits, in order to
  * minimize cumulative errors when applied repeatedly over a sequence of calculations.
  */
-inline fun BigDecimal?.convertZecToZatoshi(): Long {
-    if (this == null) return 0L
+inline fun BigDecimal?.convertZecToZatoshi(): Zatoshi {
+    if (this == null) return Zatoshi(0L)
     if (this < BigDecimal.ZERO) {
         throw IllegalArgumentException(
             "Invalid ZEC value: $this. ZEC is represented by notes and" +
                 " cannot be negative"
         )
     }
-    return this.multiply(Conversions.ONE_ZEC_IN_ZATOSHI, MathContext.DECIMAL128).toLong()
+    return Zatoshi(this.multiply(Conversions.ONE_ZEC_IN_ZATOSHI, MathContext.DECIMAL128).toLong())
 }
 
 /**
@@ -214,7 +214,7 @@ inline fun Double?.toZec(decimals: Int = ZEC_FORMATTER.maximumFractionDigits): B
  * @return this Double ZEC value converted into Zatoshi, with proper rounding and precision by
  * leveraging an intermediate BigDecimal object.
  */
-inline fun Double?.convertZecToZatoshi(decimals: Int = ZEC_FORMATTER.maximumFractionDigits): Long {
+inline fun Double?.convertZecToZatoshi(decimals: Int = ZEC_FORMATTER.maximumFractionDigits): Zatoshi {
     return this.toZec(decimals).convertZecToZatoshi()
 }
 
