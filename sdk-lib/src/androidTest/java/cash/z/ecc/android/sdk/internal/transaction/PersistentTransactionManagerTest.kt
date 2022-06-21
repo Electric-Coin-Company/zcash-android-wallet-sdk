@@ -11,6 +11,7 @@ import cash.z.ecc.android.sdk.internal.TroubleshootingTwig
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.service.LightWalletService
 import cash.z.ecc.android.sdk.internal.twig
+import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.test.ScopedTest
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.stub
@@ -71,7 +72,7 @@ class PersistentTransactionManagerTest : ScopedTest() {
 
     @Test
     fun testCancellation_RaceCondition() = runBlocking {
-        val tx = manager.initSpend(1234, "taddr", "memo-good", 0)
+        val tx = manager.initSpend(Zatoshi(1234), "taddr", "memo-good", 0)
         val txFlow = manager.monitorById(tx.id)
 
         // encode TX
@@ -95,7 +96,7 @@ class PersistentTransactionManagerTest : ScopedTest() {
 
     @Test
     fun testCancel() = runBlocking {
-        var tx = manager.initSpend(1234, "a", "b", 0)
+        var tx = manager.initSpend(Zatoshi(1234), "a", "b", 0)
         assertFalse(tx.isCancelled())
         manager.cancel(tx.id)
         tx = manager.findById(tx.id)!!
@@ -104,7 +105,7 @@ class PersistentTransactionManagerTest : ScopedTest() {
 
     @Test
     fun testAbort() = runBlocking {
-        var tx: PendingTransaction? = manager.initSpend(1234, "a", "b", 0)
+        var tx: PendingTransaction? = manager.initSpend(Zatoshi(1234), "a", "b", 0)
         assertNotNull(tx)
         manager.abort(tx!!)
         tx = manager.findById(tx.id)

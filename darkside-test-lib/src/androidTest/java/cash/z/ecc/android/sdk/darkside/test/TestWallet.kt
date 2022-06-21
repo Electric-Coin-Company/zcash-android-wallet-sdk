@@ -10,6 +10,7 @@ import cash.z.ecc.android.sdk.db.entity.isPending
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.service.LightWalletGrpcService
 import cash.z.ecc.android.sdk.internal.twig
+import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.tool.DerivationTool
 import cash.z.ecc.android.sdk.type.WalletBalance
 import cash.z.ecc.android.sdk.type.ZcashNetwork
@@ -70,7 +71,7 @@ class TestWallet(
     val synchronizer: SdkSynchronizer = runBlocking { Synchronizer.new(initializer) } as SdkSynchronizer
     val service = (synchronizer.processor.downloader.lightWalletService as LightWalletGrpcService)
 
-    val available get() = synchronizer.saplingBalances.value.available
+    val available get() = synchronizer.saplingBalances.value?.available
     val shieldedAddress =
         runBlocking { DerivationTool.deriveShieldedAddress(seed, network = network) }
     val transparentAddress =
@@ -105,7 +106,7 @@ class TestWallet(
         return this
     }
 
-    suspend fun send(address: String = transparentAddress, memo: String = "", amount: Long = 500L, fromAccountIndex: Int = 0): TestWallet {
+    suspend fun send(address: String = transparentAddress, memo: String = "", amount: Zatoshi = Zatoshi(500L), fromAccountIndex: Int = 0): TestWallet {
         Twig.sprout("$alias sending")
         synchronizer.sendToAddress(shieldedSpendingKey, amount, address, memo, fromAccountIndex)
             .takeWhile { it.isPending() }
@@ -130,7 +131,7 @@ class TestWallet(
         synchronizer.getTransparentBalance(transparentAddress).let { walletBalance ->
             twig("FOUND utxo balance of total: ${walletBalance.total}  available: ${walletBalance.available}")
 
-            if (walletBalance.available > 0L) {
+            if (walletBalance.available.value > 0L) {
                 synchronizer.shieldFunds(shieldedSpendingKey, transparentSecretKey)
                     .onCompletion { twig("done shielding funds") }
                     .catch { twig("Failed with $it") }
