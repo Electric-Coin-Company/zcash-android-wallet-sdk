@@ -9,8 +9,8 @@ package cash.z.ecc.android.sdk.model
  */
 data class Zatoshi(val value: Long) {
     init {
-        require(value >= MIN_INCLUSIVE) { "Zatoshi must be in the range [0, $MAX_INCLUSIVE]" }
-        require(value <= MAX_INCLUSIVE) { "Zatoshi must be in the range [0, $MAX_INCLUSIVE]" }
+        require(value >= MIN_INCLUSIVE) { "Zatoshi must be in the range [$MIN_INCLUSIVE, $MAX_INCLUSIVE]" }
+        require(value <= MAX_INCLUSIVE) { "Zatoshi must be in the range [$MIN_INCLUSIVE, $MAX_INCLUSIVE]" }
     }
 
     operator fun plus(other: Zatoshi) = Zatoshi(value + other.value)
