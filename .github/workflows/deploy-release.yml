@@ -54,7 +54,7 @@ jobs:
       - name: Deploy to Maven Local
         timeout-minutes: 25
         env:
-          ORG_GRADLE_PROJECT_IS_SNAPSHOT: false
+          ORG_GRADLE_PROJECT_IS_SNAPSHOT: true
           ORG_GRADLE_PROJECT_RELEASE_SIGNING_ENABLED: false
         run: |
           ./gradlew publishToMavenLocal --no-parallel
