@@ -2,6 +2,7 @@ package cash.z.ecc.android.sdk.darkside.test
 
 import android.content.Context
 import android.content.pm.ApplicationInfo
+import android.content.pm.PackageManager
 import android.os.Build
 import androidx.test.core.app.ApplicationProvider
 import org.junit.Before
@@ -37,7 +38,15 @@ open class DarksideTestPrerequisites {
          * ApplicationInfo object (`BuildInfo` is useless for libraries.)
          */
         private fun isDebuggable(context: Context): Boolean {
-            val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
+            val packageInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                context.packageManager.getPackageInfo(
+                    context.packageName,
+                    PackageManager.PackageInfoFlags.of(0L)
+                )
+            } else {
+                @Suppress("Deprecation")
+                context.packageManager.getPackageInfo(context.packageName, 0)
+            }
 
             // Normally shouldn't be null, but could be with a MockContext
             return packageInfo.applicationInfo?.let {
