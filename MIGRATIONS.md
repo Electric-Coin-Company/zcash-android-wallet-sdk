@@ -9,6 +9,8 @@ Various APIs used `Long` value to represent Zatoshi currency amounts.  Those API
 
 `ZcashSdk.ZATOSHI_PER_ZEC` has been moved to `Zatoshi.ZATOSHI_PER_ZEC`.
 
+`ZcashSdk.MINERS_FEE_ZATOSHI` has been renamed to `ZcashSdk.MINERS_FEE` and the type has changed from `Long` to `Zatoshi`.
+
 Upcoming Migrating to Version 1.4.* from 1.3.*
 --------------------------------------
 The main entrypoint to the SDK has changed.
