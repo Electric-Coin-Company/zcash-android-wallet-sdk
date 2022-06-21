@@ -1,9 +1,11 @@
 Change Log
 ==========
 
+Upcoming
+------------------------------------
 - Added `Zatoshi` typesafe object to represent amounts instead.
 
-Upcoming
+Version 1.6.0-beta01
 ------------------------------------
 - Updated checkpoints for Mainnet and Testnet
 - Fix: SDK can now be used on Intel x86_64 emulators
