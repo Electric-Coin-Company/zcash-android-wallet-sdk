@@ -2,6 +2,14 @@ enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 pluginManagement {
     repositories {
+        val isRepoRestrictionEnabled = true
+        mavenCentral {
+            if (isRepoRestrictionEnabled) {
+                content {
+                    includeGroup("wtf.emulator")
+                }
+            }
+        }
         gradlePluginPortal()
         google()
     }
@@ -10,6 +18,7 @@ pluginManagement {
         val androidGradlePluginVersion = extra["ANDROID_GRADLE_PLUGIN_VERSION"].toString()
         val detektVersion = extra["DETEKT_VERSION"].toString()
         val dokkaVersion = extra["DOKKA_VERSION"].toString()
+        val emulatorWtfGradlePluginVersion = extra["EMULATOR_WTF_GRADLE_PLUGIN_VERSION"].toString()
         val fulladleVersion = extra["FULLADLE_VERSION"].toString()
         val gradleVersionsPluginVersion = extra["GRADLE_VERSIONS_PLUGIN_VERSION"].toString()
         val kotlinVersion = extra["KOTLIN_VERSION"].toString()
@@ -28,15 +37,27 @@ pluginManagement {
         id("org.jetbrains.dokka") version (dokkaVersion) apply (false)
         id("org.jetbrains.kotlin.android") version (kotlinVersion) apply (false)
         id("org.jetbrains.kotlin.plugin.allopen") version (kotlinVersion) apply (false)
+        id("wtf.emulator.gradle") version (emulatorWtfGradlePluginVersion) apply (false)
     }
 }
 
 dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+
     repositories {
+        val isRepoRestrictionEnabled = true
+
         google()
         mavenCentral()
         maven("https://jitpack.io")
         maven("https://maven.pkg.jetbrains.space/public/p/kotlinx-html/maven")
+        maven("https://maven.emulator.wtf/releases/") {
+            if (isRepoRestrictionEnabled) {
+                content {
+                    includeGroup("wtf.emulator")
+                }
+            }
+        }
     }
 
     @Suppress("UnstableApiUsage", "MaxLineLength")

@@ -9,12 +9,15 @@ plugins {
     id("com.android.library")
     id("org.jetbrains.kotlin.android")
     id("zcash-sdk.android-conventions")
+
     id("com.google.devtools.ksp")
     id("org.jetbrains.kotlin.plugin.allopen")
     id("org.jetbrains.dokka")
     id("com.google.protobuf")
     id("org.mozilla.rust-android-gradle.rust-android")
     id("com.vanniktech.maven.publish.base")
+    id("wtf.emulator.gradle")
+    id("zcash-sdk.emulator-wtf-conventions")
 }
 
 // Publishing information

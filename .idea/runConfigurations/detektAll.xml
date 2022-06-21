@@ -1,10 +1,10 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="ktlintFormat" type="GradleRunConfiguration" factoryName="Gradle">
+  <configuration default="false" name="detektAll" type="GradleRunConfiguration" factoryName="Gradle">
     <ExternalSystemSettings>
       <option name="executionName" />
       <option name="externalProjectPath" value="$PROJECT_DIR$" />
       <option name="externalSystemIdString" value="GRADLE" />
-      <option name="scriptParameters" value="ktlintFormat" />
+      <option name="scriptParameters" value="detektAll" />
       <option name="taskDescriptions">
         <list />
       </option>

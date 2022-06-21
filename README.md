@@ -173,54 +173,7 @@ Send|[SendFragment.kt](demo-app/src/main/java/cash/z/ecc/android/sdk/demoapp/dem
 
 :warning: Compilation is not required unless you plan to submit a patch or fork the code. Instead, it is recommended to simply add the SDK dependencies via Gradle.
 
-In the event that you *do* want to compile the SDK from sources, follow these steps:
-
-1. [Install rust](https://www.rust-lang.org/learn/get-started)
-   1. If you're a macOS user with homebrew already installed
-       1. `brew install rustup`
-       1. `rustup-init`
-2. Then, add the android targets via:
-```bash
-rustup target add armv7-linux-androideabi aarch64-linux-android i686-linux-android x86_64-linux-android
-```
-3. Clone this repo 
-4. [Install Android Studio](https://developer.android.com/studio/install) and open this project via `/your/path/to/zcash-android-wallet-sdk/build.gradle.kts`
-5. Open Android Studio’s SDK manager
-<p align="center">
-    <img src="assets/sdk-manager-icon.png?raw=true" width="70%"/>
-</p>    
-
-  6. Then, install NDK ~~20.0.5594570~~ 23.1.7779620
-     (`gradle.properties` defines the actual required version. Use that because this README may get out-of-date. Also note that the "Show Package Details" box in the bottom right corner must be checked in order to install specific versions of the NDK. NDK 24+ is not yet supported.)
-<p align="center">
-    <img src="assets/ndk-window.png?raw=true" width="85%"/>
-</p>
-
-  8. To build from the command line, run:
-  ```bash
-  ./gradlew assemble
-  
-  // or to install in MavenLocal
-  
-  ./gradlew publishToMavenLocal
-  ```
-
-This creates a build of the SDK under `build/outputs/aar/` that can be used to preview functionality. For more detailed examples, see the [demo app](demo-app).
-
-Note that merely using the SDK does not require installing Rust or Cargo--that is only required when compiling from source. Also note that the Mozilla Rust Gradle plugin puts outputs under `sdk-lib/targets`, which has implications for manually testing build script changes. This is discussed further under [docs/tests/Build.md](docs/tests/Build.md).
-
-The repo also contains a small demo application, to verify integration with the SDK.  Note that by default, the demo application is configured to retrieve dependencies from artifact hosting and therefore does not rely on the local compilation of the SDK.  This can be changed by publishing to maven local as described above, as local maven publications will take precedence over hosted publications in the demo app.
-1. [Create an emulator](https://developer.android.com/studio/run/managing-avds) if you don’t already have one (recommended target: API 31)
-2. Import the subdirectory samples/demo-app as a separate Android Studio project
-3. Select your desired build variant. Currently, we recommend `zcashmainnetDebug` as the testnet variants are slower to sync to current height due to a lack of checkpoints.
-<p align="center">
-    <img src="assets/build-variants.png?raw=true" width="54%"/>
-</p>
-
-4. Sync project with Gradle files, and build from the IDE. Alternatively, to build from the command line run:
-  ```bash
-  ./gradlew clean assembleZcashmainnetDebug
-  ```
+In the event that you *do* want to compile the SDK from sources, please see [Setup.md](docs/Setup.md).
 
 [Back to contents](#contents)
 

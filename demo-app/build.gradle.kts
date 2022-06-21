@@ -71,16 +71,15 @@ dependencies {
     implementation(libs.bundles.grpc)
 }
 
+fladle {
 // Firebase Test Lab has min and max values that might differ from our project's
 // These are determined by `gcloud firebase test android models list`
-@Suppress("MagicNumber", "PropertyName", "VariableNaming")
-val FIREBASE_TEST_LAB_MIN_API = 23
+    @Suppress("MagicNumber", "PropertyName", "VariableNaming")
+    val FIREBASE_TEST_LAB_MIN_API = 23
 
-@Suppress("MagicNumber", "PropertyName", "VariableNaming")
-val FIREBASE_TEST_LAB_MAX_API = 30
+    @Suppress("MagicNumber", "PropertyName", "VariableNaming")
+    val FIREBASE_TEST_LAB_MAX_API = 30
 
-val firebaseTestLabKeyPath = project.properties["ZCASH_FIREBASE_TEST_LAB_API_KEY_PATH"].toString()
-if (firebaseTestLabKeyPath.isNotBlank()) {
     val minSdkVersion = run {
         val buildMinSdk =
             project.properties["ANDROID_MIN_SDK_VERSION"].toString().toInt()
@@ -92,28 +91,33 @@ if (firebaseTestLabKeyPath.isNotBlank()) {
         buildTargetSdk.coerceAtMost(FIREBASE_TEST_LAB_MAX_API).toString()
     }
 
-    fladle {
+    val firebaseTestLabKeyPath = project.properties["ZCASH_FIREBASE_TEST_LAB_API_KEY_PATH"].toString()
+    val firebaseProject = project.properties["ZCASH_FIREBASE_TEST_LAB_PROJECT"].toString()
+
+    if (firebaseTestLabKeyPath.isNotEmpty()) {
         serviceAccountCredentials.set(File(firebaseTestLabKeyPath))
+    } else if (firebaseProject.isNotEmpty()) {
+        projectId.set(firebaseProject)
+    }
 
-        configs {
-            create("sanityConfig") {
-                clearPropertiesForSanityRobo()
+    configs {
+        create("sanityConfig") {
+            clearPropertiesForSanityRobo()
 
-                debugApk.set(
-                    project.provider {
-                        "${buildDir}/outputs/apk/zcashmainnet/release/demo-app-zcashmainnet-release.apk"
-                    }
-                )
+            debugApk.set(
+                project.provider {
+                    "${buildDir}/outputs/apk/zcashmainnet/release/demo-app-zcashmainnet-release.apk"
+                }
+            )
 
-                testTimeout.set("5m")
+            testTimeout.set("5m")
 
-                devices.addAll(
-                    mapOf("model" to "NexusLowRes", "version" to minSdkVersion),
-                    mapOf("model" to "NexusLowRes", "version" to targetSdkVersion)
-                )
+            devices.addAll(
+                mapOf("model" to "Pixel2", "version" to minSdkVersion),
+                mapOf("model" to "Pixel2", "version" to targetSdkVersion)
+            )
 
-                flankVersion.set(libs.versions.flank.get())
-            }
+            flankVersion.set(libs.versions.flank.get())
         }
     }
 }
