@@ -37,7 +37,7 @@ class TestWallet(
     val network: ZcashNetwork = ZcashNetwork.Testnet,
     val host: String = network.defaultHost,
     startHeight: Int? = null,
-    val port: Int = network.defaultPort,
+    val port: Int = network.defaultPort
 ) {
     constructor(
         backup: Backups,

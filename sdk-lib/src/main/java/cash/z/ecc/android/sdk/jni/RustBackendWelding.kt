@@ -91,20 +91,20 @@ interface RustBackendWelding {
         suspend fun deriveShieldedAddress(
             seed: ByteArray,
             network: ZcashNetwork,
-            accountIndex: Int = 0,
+            accountIndex: Int = 0
         ): String
 
         suspend fun deriveSpendingKeys(
             seed: ByteArray,
             network: ZcashNetwork,
-            numberOfAccounts: Int = 1,
+            numberOfAccounts: Int = 1
         ): Array<String>
 
         suspend fun deriveTransparentAddress(
             seed: ByteArray,
             network: ZcashNetwork,
             account: Int = 0,
-            index: Int = 0,
+            index: Int = 0
         ): String
 
         suspend fun deriveTransparentAddressFromPublicKey(
@@ -121,7 +121,7 @@ interface RustBackendWelding {
             seed: ByteArray,
             network: ZcashNetwork,
             account: Int = 0,
-            index: Int = 0,
+            index: Int = 0
         ): String
 
         suspend fun deriveViewingKey(
@@ -132,7 +132,7 @@ interface RustBackendWelding {
         suspend fun deriveUnifiedViewingKeys(
             seed: ByteArray,
             network: ZcashNetwork,
-            numberOfAccounts: Int = 1,
+            numberOfAccounts: Int = 1
         ): Array<UnifiedViewingKey>
     }
 }

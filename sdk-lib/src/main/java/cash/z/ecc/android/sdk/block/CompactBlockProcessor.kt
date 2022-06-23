@@ -679,7 +679,7 @@ class CompactBlockProcessor(
             } else {
                 updateProgress(
                     lastScannedHeight = targetHeight,
-                    lastScanRange = (targetHeight + 1)..currentInfo.networkBlockHeight,
+                    lastScanRange = (targetHeight + 1)..currentInfo.networkBlockHeight
                 )
                 _progress.send(0)
                 val range = (targetHeight + 1)..lastScannedHeight

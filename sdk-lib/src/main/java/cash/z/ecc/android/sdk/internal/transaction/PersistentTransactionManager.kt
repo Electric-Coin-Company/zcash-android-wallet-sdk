@@ -307,6 +307,7 @@ class PersistentTransactionManager(
     companion object {
         /** Error code for an error while encoding a transaction */
         const val ERROR_ENCODING = 2000
+
         /** Error code for an error while submitting a transaction */
         const val ERROR_SUBMITTING = 3000
     }

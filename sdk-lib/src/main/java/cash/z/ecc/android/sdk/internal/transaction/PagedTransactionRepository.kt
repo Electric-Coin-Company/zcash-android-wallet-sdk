@@ -115,7 +115,7 @@ class PagedTransactionRepository private constructor(
             rustBackend: RustBackend,
             birthday: WalletBirthday,
             viewingKeys: List<UnifiedViewingKey>,
-            overwriteVks: Boolean = false,
+            overwriteVks: Boolean = false
         ): PagedTransactionRepository {
             initMissingDatabases(rustBackend, birthday, viewingKeys)
 
@@ -156,7 +156,7 @@ class PagedTransactionRepository private constructor(
         private suspend fun initMissingDatabases(
             rustBackend: RustBackend,
             birthday: WalletBirthday,
-            viewingKeys: List<UnifiedViewingKey>,
+            viewingKeys: List<UnifiedViewingKey>
         ) {
             maybeCreateDataDb(rustBackend)
             maybeInitBlocksTable(rustBackend, birthday)

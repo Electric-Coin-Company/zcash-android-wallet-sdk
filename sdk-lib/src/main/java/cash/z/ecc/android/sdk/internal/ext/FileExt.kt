@@ -1,3 +1,5 @@
+@file:Suppress("ktlint:filename")
+
 package cash.z.ecc.android.sdk.internal.ext
 
 import kotlinx.coroutines.Dispatchers

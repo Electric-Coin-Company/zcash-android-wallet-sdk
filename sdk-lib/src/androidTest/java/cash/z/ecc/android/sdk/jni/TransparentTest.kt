@@ -75,7 +75,7 @@ class TransparentTest(val expected: Expected, val network: ZcashNetwork) {
         @Parameterized.Parameters
         fun data() = listOf(
             arrayOf(ExpectedTestnet, ZcashNetwork.Testnet),
-            arrayOf(ExpectedMainnet, ZcashNetwork.Mainnet),
+            arrayOf(ExpectedMainnet, ZcashNetwork.Mainnet)
         )
     }
 

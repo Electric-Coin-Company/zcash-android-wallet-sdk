@@ -23,7 +23,7 @@ class SanityTest(
     private val wallet: TestWallet,
     private val extfvk: String,
     private val extpub: String,
-    private val birthday: Int,
+    private val birthday: Int
 
 ) {
 

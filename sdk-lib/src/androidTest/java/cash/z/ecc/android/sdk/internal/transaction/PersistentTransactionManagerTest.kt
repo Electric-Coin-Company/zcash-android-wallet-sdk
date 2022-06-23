@@ -39,6 +39,7 @@ import org.mockito.MockitoAnnotations
 class PersistentTransactionManagerTest : ScopedTest() {
 
     @Mock lateinit var mockEncoder: TransactionEncoder
+
     @Mock lateinit var mockService: LightWalletService
 
     val pendingDbName = "PersistentTxMgrTest_Pending.db"

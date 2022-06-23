@@ -2,7 +2,6 @@
 <SmellBaseline>
   <ManuallySuppressedIssues/>
   <CurrentIssues>
-    <ID>ComplexCondition:WalletTypes.kt$WalletBalance$totalZatoshi == -1L &amp;&amp; other.totalZatoshi == -1L &amp;&amp; availableZatoshi == -1L &amp;&amp; other.availableZatoshi == -1L</ID>
     <ID>ComplexMethod:SdkSynchronizer.kt$SdkSynchronizer$private suspend fun refreshPendingTransactions()</ID>
     <ID>ComplexMethod:SendFragment.kt$SendFragment$private fun onPendingTxUpdated(pendingTransaction: PendingTransaction?)</ID>
     <ID>ComplexMethod:Transactions.kt$ConfirmedTransaction$override fun equals(other: Any?): Boolean</ID>
@@ -52,11 +51,11 @@
     <ID>LongParameterList:Initializer.kt$Initializer$( val context: Context, val rustBackend: RustBackend, val network: ZcashNetwork, val alias: String, val host: String, val port: Int, val viewingKeys: List&lt;UnifiedViewingKey>, val overwriteVks: Boolean, val birthday: WalletBirthday )</ID>
     <ID>LongParameterList:Initializer.kt$Initializer.Config$( seed: ByteArray, birthdayHeight: Int? = null, network: ZcashNetwork, host: String = network.defaultHost, port: Int = network.defaultPort, alias: String = ZcashSdk.DEFAULT_ALIAS )</ID>
     <ID>LongParameterList:Initializer.kt$Initializer.Config$( viewingKey: UnifiedViewingKey, birthdayHeight: Int? = null, network: ZcashNetwork, host: String = network.defaultHost, port: Int = network.defaultPort, alias: String = ZcashSdk.DEFAULT_ALIAS )</ID>
-    <ID>LongParameterList:PagedTransactionRepository.kt$PagedTransactionRepository.Companion$( appContext: Context, pageSize: Int = 10, rustBackend: RustBackend, birthday: WalletBirthday, viewingKeys: List&lt;UnifiedViewingKey>, overwriteVks: Boolean = false, )</ID>
-    <ID>LongParameterList:RustBackend.kt$RustBackend.Companion$( dbDataPath: String, account: Int, extsk: String, tsk: String, memo: ByteArray, spendParamsPath: String, outputParamsPath: String, networkId: Int, )</ID>
-    <ID>LongParameterList:RustBackend.kt$RustBackend.Companion$( dbDataPath: String, consensusBranchId: Long, account: Int, extsk: String, to: String, value: Long, memo: ByteArray, spendParamsPath: String, outputParamsPath: String, networkId: Int, )</ID>
-    <ID>LongParameterList:RustBackend.kt$RustBackend.Companion$( dbDataPath: String, height: Int, hash: String, time: Long, saplingTree: String, networkId: Int, )</ID>
-    <ID>LongParameterList:RustBackend.kt$RustBackend.Companion$( dbDataPath: String, tAddress: String, txId: ByteArray, index: Int, script: ByteArray, value: Long, height: Int, networkId: Int, )</ID>
+    <ID>LongParameterList:PagedTransactionRepository.kt$PagedTransactionRepository.Companion$( appContext: Context, pageSize: Int = 10, rustBackend: RustBackend, birthday: WalletBirthday, viewingKeys: List&lt;UnifiedViewingKey>, overwriteVks: Boolean = false )</ID>
+    <ID>LongParameterList:RustBackend.kt$RustBackend.Companion$( dbDataPath: String, account: Int, extsk: String, tsk: String, memo: ByteArray, spendParamsPath: String, outputParamsPath: String, networkId: Int )</ID>
+    <ID>LongParameterList:RustBackend.kt$RustBackend.Companion$( dbDataPath: String, consensusBranchId: Long, account: Int, extsk: String, to: String, value: Long, memo: ByteArray, spendParamsPath: String, outputParamsPath: String, networkId: Int )</ID>
+    <ID>LongParameterList:RustBackend.kt$RustBackend.Companion$( dbDataPath: String, height: Int, hash: String, time: Long, saplingTree: String, networkId: Int )</ID>
+    <ID>LongParameterList:RustBackend.kt$RustBackend.Companion$( dbDataPath: String, tAddress: String, txId: ByteArray, index: Int, script: ByteArray, value: Long, height: Int, networkId: Int )</ID>
     <ID>LongParameterList:RustBackendWelding.kt$RustBackendWelding$( consensusBranchId: Long, account: Int, extsk: String, to: String, value: Long, memo: ByteArray? = byteArrayOf() )</ID>
     <ID>LongParameterList:RustBackendWelding.kt$RustBackendWelding$( tAddress: String, txId: ByteArray, index: Int, script: ByteArray, value: Long, height: Int )</ID>
     <ID>MagicNumber:BatchMetrics.kt$BatchMetrics$1000.0f</ID>
@@ -121,7 +120,6 @@
     <ID>MagicNumber:WalletTypes.kt$ZcashNetwork.Testnet$9067</ID>
     <ID>MagicNumber:ZcashSdk.kt$ZcashSdk$10</ID>
     <ID>MagicNumber:ZcashSdk.kt$ZcashSdk$100</ID>
-    <ID>MagicNumber:ZcashSdk.kt$ZcashSdk$100_000_000L</ID>
     <ID>MagicNumber:ZcashSdk.kt$ZcashSdk$150</ID>
     <ID>MagicNumber:ZcashSdk.kt$ZcashSdk$1_000L</ID>
     <ID>MagicNumber:ZcashSdk.kt$ZcashSdk$20</ID>
@@ -178,8 +176,8 @@
     <ID>MaxLineLength:DarksideTestCoordinator.kt$DarksideTestCoordinator.Companion$"https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/basic-reorg/before-reorg.txt"</ID>
     <ID>MaxLineLength:DarksideTestCoordinator.kt$DarksideTestCoordinator.Companion$"still champion voice habit trend flight survey between bitter process artefact blind carbon truly provide dizzy crush flush breeze blouse charge solid fish spread"</ID>
     <ID>MaxLineLength:DarksideTestCoordinator.kt$DarksideTestCoordinator.DarksideChainMaker$.</ID>
-    <ID>MaxLineLength:DarksideTestCoordinator.kt$DarksideTestCoordinator.DarksideTestValidator$assertTrue("invalid available balance. Expected a minimum of $available but found ${balance.availableZatoshi}", available &lt;= balance.availableZatoshi)</ID>
-    <ID>MaxLineLength:DarksideTestCoordinator.kt$DarksideTestCoordinator.DarksideTestValidator$assertTrue("invalid total balance. Expected a minimum of $total but found ${balance.totalZatoshi}", total &lt;= balance.totalZatoshi)</ID>
+    <ID>MaxLineLength:DarksideTestCoordinator.kt$DarksideTestCoordinator.DarksideTestValidator$assertTrue("invalid available balance. Expected a minimum of $available but found ${balance?.available}", available &lt;= balance?.available?.value!!)</ID>
+    <ID>MaxLineLength:DarksideTestCoordinator.kt$DarksideTestCoordinator.DarksideTestValidator$assertTrue("invalid total balance. Expected a minimum of $total but found ${balance?.total}", total &lt;= balance?.total?.value!!)</ID>
     <ID>MaxLineLength:DarksideTestPrerequisites.kt$DarksideTestPrerequisites$"Darkside tests are configured to only run on the Android Emulator. Please see https://github.com/zcash/zcash-android-wallet-sdk/blob/master/docs/tests/Darkside.md"</ID>
     <ID>MaxLineLength:DemoConstants.kt$DemoConstants$"wish puppy smile loan doll curve hole maze file ginger hair nose key relax knife witness cannon grab despair throw review deal slush frame"</ID>
     <ID>MaxLineLength:DemoConstants.kt$DemoConstants$// corresponds to seed: urban kind wise collect social marble riot primary craft lucky head cause syrup odor artist decorate rhythm phone style benefit portion bus truck top</ID>
@@ -317,7 +315,6 @@
     <ID>MaxLineLength:TestExtensions.kt$Transactions$"https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/transactions/sent/ff6ea36765dc29793775c7aa71de19fca039c5b5b873a0497866e9c4bc48af01.txt"</ID>
     <ID>MaxLineLength:TestExtensions.kt$Transactions$"https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/transactions/t-shielded-spend.txt"</ID>
     <ID>MaxLineLength:TestWallet.kt$TestWallet$suspend</ID>
-    <ID>MaxLineLength:TestWallet.kt$TestWallet$twig("FOUND utxo balance of total: ${walletBalance.totalZatoshi} available: ${walletBalance.availableZatoshi}")</ID>
     <ID>MaxLineLength:TestWallet.kt$TestWallet.Backups$ALICE : Backups</ID>
     <ID>MaxLineLength:TestWallet.kt$TestWallet.Backups$DEV_WALLET : Backups</ID>
     <ID>MaxLineLength:TestWallet.kt$TestWallet.Backups$SAMPLE_WALLET : Backups</ID>
@@ -329,7 +326,7 @@
     <ID>MaxLineLength:TransparentRestoreSample.kt$TransparentRestoreSample$// Assert.assertTrue("Not enough funds to run sample. Expected at least $TX_VALUE Zatoshi but found $value. Try adding funds to $address", value >= TX_VALUE)</ID>
     <ID>MaxLineLength:TransparentRestoreSample.kt$TransparentRestoreSample$// twig("FOUND utxo balance of total: ${walletBalance.totalZatoshi} available: ${walletBalance.availableZatoshi}")</ID>
     <ID>MaxLineLength:TransparentRestoreSample.kt$TransparentRestoreSample$// walletA.send(TX_VALUE, walletA.transparentAddress, "${TransparentRestoreSample::class.java.simpleName} z->t")</ID>
-    <ID>MaxLineLength:TransparentRestoreSample.kt$TransparentRestoreSample$Assert.assertTrue("Not enough funds to run sample. Expected some Zatoshi but found ${tbalance.availableZatoshi}. Try adding funds to $address", tbalance.availableZatoshi > 0)</ID>
+    <ID>MaxLineLength:TransparentRestoreSample.kt$TransparentRestoreSample$Assert.assertTrue("Not enough funds to run sample. Expected some Zatoshi but found ${tbalance.available}. Try adding funds to $address", tbalance.available.value > 0)</ID>
     <ID>MaxLineLength:TransparentRestoreSample.kt$TransparentRestoreSample$val walletSandbox = TestWallet(TestWallet.Backups.SAMPLE_WALLET.seedPhrase, "WalletC", Testnet, startHeight = 1330190)</ID>
     <ID>MaxLineLength:TransparentTest.kt$TransparentTest$assertEquals(expected.tAddr, DerivationTool.deriveTransparentAddressFromPublicKey(uvk.extpub, network = network))</ID>
     <ID>MaxLineLength:TransparentTest.kt$TransparentTest.Companion$const val PHRASE = "deputy visa gentle among clean scout farm drive comfort patch skin salt ranch cool ramp warrior drink narrow normal lunch behind salt deal person"</ID>
@@ -338,7 +335,6 @@
     <ID>MaxLineLength:WalletBirthdayTool.kt$WalletBirthdayTool$* @param treeFiles A list of files, sorted in descending order based on `int` value of the first part of the filename.</ID>
     <ID>MaxLineLength:WalletService.kt$var duration = Math.pow(initialDelayMillis.toDouble(), (sequence.toDouble() / 4.0)).toLong() + Random.nextLong(1000L)</ID>
     <ID>MaxLineLength:WalletService.kt$var sequence = 0 // count up to the max and then reset to half. So that we don't repeat the max but we also don't repeat too much.</ID>
-    <ID>MaxLineLength:WalletTypes.kt$ZcashNetwork$enum</ID>
     <ID>MaxLineLength:ZcashSdk.kt$ZcashSdk$*</ID>
     <ID>MaxLineLength:build.gradle.kts$// Tricky: fix: By default, the kotlin_module name will not include the version (in classes.jar/META-INF). Instead it has a colon, which breaks compilation on Windows. This is one way to set it explicitly to the proper value. See https://github.com/zcash/zcash-android-wallet-sdk/issues/222 for more info.</ID>
     <ID>MaxLineLength:build.gradle.kts$// solves error: Duplicate class com.google.common.util.concurrent.ListenableFuture found in modules jetified-guava-26.0-android.jar (com.google.guava:guava:26.0-android) and listenablefuture-1.0.jar (com.google.guava:listenablefuture:1.0)</ID>
@@ -361,13 +357,11 @@
     <ID>MayBeConst:ZcashSdk.kt$ZcashSdk$/** * Estimate of the time between blocks. */ val BLOCK_INTERVAL_MILLIS = 75_000L</ID>
     <ID>MayBeConst:ZcashSdk.kt$ZcashSdk$/** * File name for the sapling output params */ val OUTPUT_PARAM_FILE_NAME = "sapling-output.params"</ID>
     <ID>MayBeConst:ZcashSdk.kt$ZcashSdk$/** * File name for the sappling spend params */ val SPEND_PARAM_FILE_NAME = "sapling-spend.params"</ID>
-    <ID>MayBeConst:ZcashSdk.kt$ZcashSdk$/** * Miner's fee in zatoshi. */ val MINERS_FEE_ZATOSHI = 1_000L</ID>
     <ID>MayBeConst:ZcashSdk.kt$ZcashSdk$/** * The Url that is used by default in zcashd. * We'll want to make this externally configurable, rather than baking it into the SDK but * this will do for now, since we're using a cloudfront URL that already redirects. */ val CLOUD_PARAM_DIR_URL = "https://z.cash/downloads/"</ID>
     <ID>MayBeConst:ZcashSdk.kt$ZcashSdk$/** * The amount of blocks ahead of the current height where new transactions are set to expire. This value is controlled * by the rust backend but it is helpful to know what it is set to and should be kept in sync. */ val EXPIRY_OFFSET = 20</ID>
     <ID>MayBeConst:ZcashSdk.kt$ZcashSdk$/** * The default maximum amount of time to wait during retry backoff intervals. Failed loops will never wait longer than * this before retyring. */ val MAX_BACKOFF_INTERVAL = 600_000L</ID>
     <ID>MayBeConst:ZcashSdk.kt$ZcashSdk$/** * The default memo to use when shielding transparent funds. */ val DEFAULT_SHIELD_FUNDS_MEMO_PREFIX = "shielding:"</ID>
     <ID>MayBeConst:ZcashSdk.kt$ZcashSdk$/** * The maximum length of a memo. */ val MAX_MEMO_SIZE = 512</ID>
-    <ID>MayBeConst:ZcashSdk.kt$ZcashSdk$/** * The number of zatoshi that equal 1 ZEC. */ val ZATOSHI_PER_ZEC = 100_000_000L</ID>
     <ID>MayBeConst:ZcashSdk.kt$ZcashSdk$/** * The theoretical maximum number of blocks in a reorg, due to other bottlenecks in the protocol design. */ val MAX_REORG_SIZE = 100</ID>
     <ID>MayBeConst:ZcashSdk.kt$ZcashSdk$val DB_CACHE_NAME = "Cache.db"</ID>
     <ID>MayBeConst:ZcashSdk.kt$ZcashSdk$val DB_DATA_NAME = "Data.db"</ID>
@@ -467,6 +461,5 @@
     <ID>UtilityClassWithPublicConstructor:DerivationTool.kt$DerivationTool</ID>
     <ID>UtilityClassWithPublicConstructor:Placeholders.kt$SeedGenerator</ID>
     <ID>UtilityClassWithPublicConstructor:SaplingParamTool.kt$SaplingParamTool</ID>
-    <ID>VariableNaming:build.gradle.kts$val ARTIFACT_ID = project.property("POM_ARTIFACT_ID").toString()</ID>
   </CurrentIssues>
 </SmellBaseline>
