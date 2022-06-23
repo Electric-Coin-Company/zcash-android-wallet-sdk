@@ -767,7 +767,7 @@ object DefaultSynchronizerFactory {
     fun new(
         repository: TransactionRepository,
         txManager: OutboundTransactionManager,
-        processor: CompactBlockProcessor,
+        processor: CompactBlockProcessor
     ): Synchronizer {
         // call the actual constructor now that all dependencies have been injected
         // alternatively, this entire object graph can be supplied by Dagger

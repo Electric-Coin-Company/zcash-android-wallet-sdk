@@ -43,11 +43,12 @@ object WalletBirthdayTool {
      */
     suspend fun loadExact(context: Context, network: ZcashNetwork, birthdayHeight: Int) =
         loadNearest(context, network, birthdayHeight).also {
-            if (it.height != birthdayHeight)
+            if (it.height != birthdayHeight) {
                 throw BirthdayException.ExactBirthdayNotFoundException(
                     birthdayHeight,
                     it.height
                 )
+            }
         }
 
     // Converting this to suspending will then propagate
@@ -97,7 +98,7 @@ object WalletBirthdayTool {
     private suspend fun getFilteredFileNames(
         context: Context,
         directory: String,
-        birthdayHeight: Int? = null,
+        birthdayHeight: Int? = null
     ): List<String> {
         val unfilteredTreeFiles = listBirthdayDirectoryContents(context, directory)
         if (unfilteredTreeFiles.isNullOrEmpty()) {

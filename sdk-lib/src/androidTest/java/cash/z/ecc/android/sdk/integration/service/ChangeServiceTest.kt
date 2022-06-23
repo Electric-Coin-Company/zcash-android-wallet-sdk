@@ -129,7 +129,8 @@ class ChangeServiceTest : ScopedTest() {
         (caughtException as ChainInfoNotMatching).propertyNames.let { props ->
             arrayOf("saplingActivationHeight", "chainName").forEach {
                 assertTrue(
-                    "$it should be a non-matching property but properties were [$props]", props.contains(it, true)
+                    "$it should be a non-matching property but properties were [$props]",
+                    props.contains(it, true)
                 )
             }
         }

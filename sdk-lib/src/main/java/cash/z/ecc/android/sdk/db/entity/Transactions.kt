@@ -12,7 +12,8 @@ import cash.z.ecc.android.sdk.model.Zatoshi
 //
 
 @Entity(
-    primaryKeys = ["id_tx"], tableName = "transactions",
+    primaryKeys = ["id_tx"],
+    tableName = "transactions",
     foreignKeys = [
         ForeignKey(
             entity = Block::class,

@@ -57,7 +57,7 @@ class BranchIdTest(
                 arrayOf("Sapling", 280_000, 1991772603L, "76b809bb", testnetBackend),
                 arrayOf("Blossom", 584_000, 733220448L, "2bb40e60", testnetBackend),
                 arrayOf("Heartwood", 903_800, 4122551051L, "f5b9230b", testnetBackend),
-                arrayOf("Canopy", 1_028_500, 3925833126L, "e9ff75a6", testnetBackend),
+                arrayOf("Canopy", 1_028_500, 3925833126L, "e9ff75a6", testnetBackend)
             )
         }
     }

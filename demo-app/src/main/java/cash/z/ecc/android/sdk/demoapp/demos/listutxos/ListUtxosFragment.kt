@@ -89,7 +89,6 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
     }
 
     fun downloadTransactions() {
-
         binding.textStatus.text = "loading..."
         binding.textStatus.post {
             binding.textStatus.requestFocus()

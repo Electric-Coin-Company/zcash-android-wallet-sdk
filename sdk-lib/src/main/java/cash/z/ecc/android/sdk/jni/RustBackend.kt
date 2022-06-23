@@ -159,7 +159,7 @@ class RustBackend private constructor() : RustBackendWelding {
         validateCombinedChain(
             pathCacheDb,
             pathDataDb,
-            networkId = network.id,
+            networkId = network.id
         )
     }
 
@@ -234,7 +234,7 @@ class RustBackend private constructor() : RustBackendWelding {
             memo ?: ByteArray(0),
             "$pathParamsDir/$SPEND_PARAM_FILE_NAME",
             "$pathParamsDir/$OUTPUT_PARAM_FILE_NAME",
-            networkId = network.id,
+            networkId = network.id
         )
     }
 
@@ -253,7 +253,7 @@ class RustBackend private constructor() : RustBackendWelding {
                 memo ?: ByteArray(0),
                 "$pathParamsDir/$SPEND_PARAM_FILE_NAME",
                 "$pathParamsDir/$OUTPUT_PARAM_FILE_NAME",
-                networkId = network.id,
+                networkId = network.id
             )
         }
     }
@@ -280,7 +280,7 @@ class RustBackend private constructor() : RustBackendWelding {
 
     override suspend fun clearUtxos(
         tAddress: String,
-        aboveHeight: Int,
+        aboveHeight: Int
     ): Boolean = withContext(SdkDispatchers.DATABASE_IO) {
         clearUtxos(
             pathDataDb,
@@ -390,7 +390,7 @@ class RustBackend private constructor() : RustBackendWelding {
             dbDataPath: String,
             extfvk: Array<out String>,
             extpub: Array<out String>,
-            networkId: Int,
+            networkId: Int
         ): Boolean
 
         @JvmStatic
@@ -400,14 +400,14 @@ class RustBackend private constructor() : RustBackendWelding {
             hash: String,
             time: Long,
             saplingTree: String,
-            networkId: Int,
+            networkId: Int
         ): Boolean
 
         @JvmStatic
         private external fun getShieldedAddress(
             dbDataPath: String,
             account: Int,
-            networkId: Int,
+            networkId: Int
         ): String
 
         @JvmStatic
@@ -423,49 +423,49 @@ class RustBackend private constructor() : RustBackendWelding {
         private external fun getVerifiedBalance(
             dbDataPath: String,
             account: Int,
-            networkId: Int,
+            networkId: Int
         ): Long
 
         @JvmStatic
         private external fun getReceivedMemoAsUtf8(
             dbDataPath: String,
             idNote: Long,
-            networkId: Int,
+            networkId: Int
         ): String
 
         @JvmStatic
         private external fun getSentMemoAsUtf8(
             dbDataPath: String,
             dNote: Long,
-            networkId: Int,
+            networkId: Int
         ): String
 
         @JvmStatic
         private external fun validateCombinedChain(
             dbCachePath: String,
             dbDataPath: String,
-            networkId: Int,
+            networkId: Int
         ): Int
 
         @JvmStatic
         private external fun getNearestRewindHeight(
             dbDataPath: String,
             height: Int,
-            networkId: Int,
+            networkId: Int
         ): Int
 
         @JvmStatic
         private external fun rewindToHeight(
             dbDataPath: String,
             height: Int,
-            networkId: Int,
+            networkId: Int
         ): Boolean
 
         @JvmStatic
         private external fun scanBlocks(
             dbCachePath: String,
             dbDataPath: String,
-            networkId: Int,
+            networkId: Int
         ): Boolean
 
         @JvmStatic
@@ -473,14 +473,14 @@ class RustBackend private constructor() : RustBackendWelding {
             dbCachePath: String,
             dbDataPath: String,
             limit: Int,
-            networkId: Int,
+            networkId: Int
         ): Boolean
 
         @JvmStatic
         private external fun decryptAndStoreTransaction(
             dbDataPath: String,
             tx: ByteArray,
-            networkId: Int,
+            networkId: Int
         )
 
         @JvmStatic
@@ -494,7 +494,7 @@ class RustBackend private constructor() : RustBackendWelding {
             memo: ByteArray,
             spendParamsPath: String,
             outputParamsPath: String,
-            networkId: Int,
+            networkId: Int
         ): Long
 
         @JvmStatic
@@ -506,7 +506,7 @@ class RustBackend private constructor() : RustBackendWelding {
             memo: ByteArray,
             spendParamsPath: String,
             outputParamsPath: String,
-            networkId: Int,
+            networkId: Int
         ): Long
 
         @JvmStatic
@@ -524,7 +524,7 @@ class RustBackend private constructor() : RustBackendWelding {
             script: ByteArray,
             value: Long,
             height: Int,
-            networkId: Int,
+            networkId: Int
         ): Boolean
 
         @JvmStatic
@@ -532,21 +532,21 @@ class RustBackend private constructor() : RustBackendWelding {
             dbDataPath: String,
             tAddress: String,
             aboveHeight: Int,
-            networkId: Int,
+            networkId: Int
         ): Boolean
 
         @JvmStatic
         private external fun getVerifiedTransparentBalance(
             pathDataDb: String,
             taddr: String,
-            networkId: Int,
+            networkId: Int
         ): Long
 
         @JvmStatic
         private external fun getTotalTransparentBalance(
             pathDataDb: String,
             taddr: String,
-            networkId: Int,
+            networkId: Int
         ): Long
     }
 }

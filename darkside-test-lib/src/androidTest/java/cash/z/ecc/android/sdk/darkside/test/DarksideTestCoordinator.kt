@@ -23,7 +23,7 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
         startHeight: Int = DEFAULT_START_HEIGHT,
         host: String = COMPUTER_LOCALHOST,
         network: ZcashNetwork = ZcashNetwork.Mainnet,
-        port: Int = network.defaultPort,
+        port: Int = network.defaultPort
     ) : this(TestWallet(seedPhrase, alias, network, host, startHeight = startHeight, port = port))
 
     private val targetHeight = 663250

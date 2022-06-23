@@ -82,8 +82,9 @@ class WalletTransactionEncoder(
 
     override suspend fun getConsensusBranchId(): Long {
         val height = repository.lastScannedHeight()
-        if (height < rustBackend.network.saplingActivationHeight)
+        if (height < rustBackend.network.saplingActivationHeight) {
             throw TransactionEncoderException.IncompleteScanException(height)
+        }
         return rustBackend.getBranchIdForHeight(height)
     }
 

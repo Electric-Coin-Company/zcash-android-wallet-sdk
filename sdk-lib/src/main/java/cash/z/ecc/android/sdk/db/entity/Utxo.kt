@@ -39,7 +39,7 @@ data class Utxo(
      * A reference to the transaction this note was later spent in
      */
     @ColumnInfo(name = "spent_in_tx")
-    val spent: Int? = 0,
+    val spent: Int? = 0
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

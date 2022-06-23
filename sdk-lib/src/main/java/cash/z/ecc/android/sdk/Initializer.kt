@@ -36,7 +36,7 @@ class Initializer private constructor(
 
     class Config private constructor(
         val viewingKeys: MutableList<UnifiedViewingKey> = mutableListOf(),
-        var alias: String = ZcashSdk.DEFAULT_ALIAS,
+        var alias: String = ZcashSdk.DEFAULT_ALIAS
     ) {
         var birthdayHeight: Int? = null
             private set

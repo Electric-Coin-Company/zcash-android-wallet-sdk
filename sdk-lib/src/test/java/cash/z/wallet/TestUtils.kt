@@ -1,3 +1,5 @@
+@file:Suppress("ktlint:filename")
+
 package cash.z.wallet
 
 import org.mockito.Mockito

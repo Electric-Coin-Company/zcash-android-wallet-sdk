@@ -40,7 +40,7 @@ class TestnetIntegrationTest : ScopedTest() {
     fun testLatestBlockTest() {
         val service = LightWalletGrpcService(
             context,
-            host,
+            host
         )
         val height = service.getLatestBlockHeight()
         assertTrue(height > saplingActivation)

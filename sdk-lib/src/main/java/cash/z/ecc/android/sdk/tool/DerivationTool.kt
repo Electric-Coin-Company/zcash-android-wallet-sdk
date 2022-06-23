@@ -117,14 +117,14 @@ class DerivationTool {
         private external fun deriveExtendedSpendingKeys(
             seed: ByteArray,
             numberOfAccounts: Int,
-            networkId: Int,
+            networkId: Int
         ): Array<String>
 
         @JvmStatic
         private external fun deriveUnifiedViewingKeysFromSeed(
             seed: ByteArray,
             numberOfAccounts: Int,
-            networkId: Int,
+            networkId: Int
         ): Array<Array<String>>
 
         @JvmStatic
@@ -134,7 +134,7 @@ class DerivationTool {
         private external fun deriveShieldedAddressFromSeed(
             seed: ByteArray,
             accountIndex: Int,
-            networkId: Int,
+            networkId: Int
         ): String
 
         @JvmStatic

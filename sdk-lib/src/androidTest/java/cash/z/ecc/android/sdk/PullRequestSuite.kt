@@ -28,6 +28,6 @@ import org.junit.runners.Suite
 
     // potentially exclude because these hit external services
     ChangeServiceTest::class,
-    SmokeTest::class,
+    SmokeTest::class
 )
 class PullRequestSuite
