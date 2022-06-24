@@ -205,6 +205,16 @@ To improve the speed of syncing with the Zcash network, the SDK contains a serie
 
 To update the checkpoints, see [Checkmate](https://github.com/zcash-hackworks/checkmate).
 
+We generally recommend adding new checkpoints every few weeks.  By convention, checkpoints are added in block increments of 10,000 which provides a reasonable tradeoff in terms of number of checkpoints versus performance.
+
+There are two special checkpoints, one for sapling activation and another for orchard activation.  These are mentioned because they don't follow the "round 10,000" rule.
+ * Sapling activation
+     * Mainnet: 419200
+     * Testnet: 280000
+ * Orchard activation
+     * Mainnet: 1687104
+     * Testnet: 1842420
+
 ## Publishing
 
 Publishing instructions for maintainers of this repository can be found in [PUBLISHING.md](PUBLISHING.md)
