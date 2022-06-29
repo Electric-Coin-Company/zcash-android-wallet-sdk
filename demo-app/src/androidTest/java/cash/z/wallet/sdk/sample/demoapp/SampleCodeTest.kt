@@ -140,7 +140,7 @@ class SampleCodeTest {
         val transactionFlow = synchronizer.sendToAddress(spendingKey, amount, address, memo)
         transactionFlow.collect {
             log("pending transaction updated $it")
-            assertTrue("Failed to send funds. See log for details.", !it?.isFailure())
+            assertTrue("Failed to send funds. See log for details.", !it.isFailure())
         }
     }
 
