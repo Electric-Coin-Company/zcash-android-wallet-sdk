@@ -4,6 +4,7 @@ Change Log
 Upcoming
 ------------------------------------
 - Added `Zatoshi` typesafe object to represent amounts instead.
+- Kotlin 1.7.0
 
 Version 1.6.0-beta01
 ------------------------------------
