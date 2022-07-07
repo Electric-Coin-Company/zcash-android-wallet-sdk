@@ -115,7 +115,7 @@ class PersistentTransactionManager(
             twig("beginning to encode transaction with : $encoder")
             val encodedTx = encoder.createTransaction(
                 spendingKey,
-                tx.value,
+                tx.valueZatoshi,
                 tx.toAddress,
                 tx.memo,
                 tx.accountIndex

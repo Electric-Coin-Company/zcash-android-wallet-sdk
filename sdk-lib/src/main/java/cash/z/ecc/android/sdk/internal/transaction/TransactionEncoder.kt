@@ -1,6 +1,7 @@
 package cash.z.ecc.android.sdk.internal.transaction
 
 import cash.z.ecc.android.sdk.db.entity.EncodedTransaction
+import cash.z.ecc.android.sdk.model.Zatoshi
 
 interface TransactionEncoder {
     /**
@@ -18,7 +19,7 @@ interface TransactionEncoder {
      */
     suspend fun createTransaction(
         spendingKey: String,
-        zatoshi: Long,
+        amount: Zatoshi,
         toAddress: String,
         memo: ByteArray? = byteArrayOf(),
         fromAccountIndex: Int = 0

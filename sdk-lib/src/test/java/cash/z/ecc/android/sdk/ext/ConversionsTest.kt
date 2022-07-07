@@ -1,5 +1,6 @@
 package cash.z.ecc.android.sdk.ext
 
+import cash.z.ecc.android.sdk.model.Zatoshi
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import java.math.BigDecimal
@@ -9,7 +10,7 @@ internal class ConversionsTest {
 
     @Test
     fun `default right padding is 6`() {
-        assertEquals(1.13.toZec(6), 113000000L.convertZatoshiToZec())
+        assertEquals(1.13.toZec(6), Zatoshi(113000000L).convertZatoshiToZec())
         assertEquals(1.13.toZec(6), 1.13.toZec())
     }
 
@@ -21,12 +22,12 @@ internal class ConversionsTest {
 
     @Test
     fun `toZecString defaults to 6 digits`() {
-        assertEquals("1.123457", 112345678L.convertZatoshiToZecString())
+        assertEquals("1.123457", Zatoshi(112345678L).convertZatoshiToZecString())
     }
 
     @Test
     fun `toZecString uses banker's rounding`() {
-        assertEquals("1.123456", 112345650L.convertZatoshiToZecString())
+        assertEquals("1.123456", Zatoshi(112345650L).convertZatoshiToZecString())
     }
 
     @Test
@@ -72,7 +73,7 @@ internal class ConversionsTest {
 
     @Test
     fun `toZecString zatoshi converts`() {
-        assertEquals("1.123456", 112345650L.convertZatoshiToZecString(6, 0))
+        assertEquals("1.123456", Zatoshi(112345650L).convertZatoshiToZecString(6, 0))
     }
 
     @Test

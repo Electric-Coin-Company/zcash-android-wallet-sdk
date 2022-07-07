@@ -7,6 +7,8 @@ Various APIs used `Long` value to represent Zatoshi currency amounts.  Those API
 
 `WalletBalance` no longer has uninitialized default values.  This means that `Synchronizer` fields that expose a WalletBalance now use `null` to signal an uninitialized value.  Specifically this means `Synchronizer.orchardBalances`, `Synchronzier.saplingBalances`, and `Synchronizer.transparentBalances` have nullable values now.
 
+`WalletBalance` has been moved from the package `cash.z.ecc.android.sdk.type` to `cash.z.ecc.android.sdk.model` 
+
 `ZcashSdk.ZATOSHI_PER_ZEC` has been moved to `Zatoshi.ZATOSHI_PER_ZEC`.
 
 `ZcashSdk.MINERS_FEE_ZATOSHI` has been renamed to `ZcashSdk.MINERS_FEE` and the type has changed from `Long` to `Zatoshi`.
