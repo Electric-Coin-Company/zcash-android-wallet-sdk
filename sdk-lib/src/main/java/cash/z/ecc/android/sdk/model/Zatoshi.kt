@@ -7,7 +7,7 @@ package cash.z.ecc.android.sdk.model
  * with ZEC, which is a decimal value represented only as a String.  ZEC are not used internally,
  * to avoid floating point imprecision.
  */
-data class Zatoshi(val value: Long) {
+data class Zatoshi(val value: Long) : Comparable<Zatoshi> {
     init {
         require(value >= MIN_INCLUSIVE) { "Zatoshi must be in the range [$MIN_INCLUSIVE, $MAX_INCLUSIVE]" }
         require(value <= MAX_INCLUSIVE) { "Zatoshi must be in the range [$MIN_INCLUSIVE, $MAX_INCLUSIVE]" }
@@ -15,6 +15,8 @@ data class Zatoshi(val value: Long) {
 
     operator fun plus(other: Zatoshi) = Zatoshi(value + other.value)
     operator fun minus(other: Zatoshi) = Zatoshi(value - other.value)
+
+    override fun compareTo(other: Zatoshi) = value.compareTo(other.value)
 
     companion object {
         /**
