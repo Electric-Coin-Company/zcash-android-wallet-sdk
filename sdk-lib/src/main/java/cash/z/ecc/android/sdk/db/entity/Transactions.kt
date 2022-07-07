@@ -96,6 +96,10 @@ data class PendingTransactionEntity(
     @ColumnInfo(typeAffinity = ColumnInfo.BLOB)
     override val rawTransactionId: ByteArray? = byteArrayOf()
 ) : PendingTransaction {
+
+    val valueZatoshi: Zatoshi
+        get() = Zatoshi(value)
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is PendingTransactionEntity) return false

@@ -8,6 +8,7 @@ import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.internal.twigTask
 import cash.z.ecc.android.sdk.jni.RustBackend
 import cash.z.ecc.android.sdk.jni.RustBackendWelding
+import cash.z.ecc.android.sdk.model.Zatoshi
 
 /**
  * Class responsible for encoding a transaction in a consistent way. This bridges the gap by
@@ -18,7 +19,7 @@ import cash.z.ecc.android.sdk.jni.RustBackendWelding
  * @property repository the repository that stores information about the transactions being created
  * such as the raw bytes and raw txId.
  */
-class WalletTransactionEncoder(
+internal class WalletTransactionEncoder(
     private val rustBackend: RustBackendWelding,
     private val repository: TransactionRepository
 ) : TransactionEncoder {
@@ -29,7 +30,7 @@ class WalletTransactionEncoder(
      * exception ourselves (rather than using double-bangs for things).
      *
      * @param spendingKey the key associated with the notes that will be spent.
-     * @param zatoshi the amount of zatoshi to send.
+     * @param amount the amount of zatoshi to send.
      * @param toAddress the recipient's address.
      * @param memo the optional memo to include as part of the transaction.
      * @param fromAccountIndex the optional account id to use. By default, the 1st account is used.
@@ -38,12 +39,12 @@ class WalletTransactionEncoder(
      */
     override suspend fun createTransaction(
         spendingKey: String,
-        zatoshi: Long,
+        amount: Zatoshi,
         toAddress: String,
         memo: ByteArray?,
         fromAccountIndex: Int
     ): EncodedTransaction {
-        val transactionId = createSpend(spendingKey, zatoshi, toAddress, memo)
+        val transactionId = createSpend(spendingKey, amount, toAddress, memo)
         return repository.findEncodedTransactionById(transactionId)
             ?: throw TransactionEncoderException.TransactionNotFoundException(transactionId)
     }
@@ -93,7 +94,7 @@ class WalletTransactionEncoder(
      * the result in the database. On average, this call takes over 10 seconds.
      *
      * @param spendingKey the key associated with the notes that will be spent.
-     * @param zatoshi the amount of zatoshi to send.
+     * @param amount the amount of zatoshi to send.
      * @param toAddress the recipient's address.
      * @param memo the optional memo to include as part of the transaction.
      * @param fromAccountIndex the optional account id to use. By default, the 1st account is used.
@@ -103,13 +104,13 @@ class WalletTransactionEncoder(
      */
     private suspend fun createSpend(
         spendingKey: String,
-        zatoshi: Long,
+        amount: Zatoshi,
         toAddress: String,
         memo: ByteArray? = byteArrayOf(),
         fromAccountIndex: Int = 0
     ): Long {
         return twigTask(
-            "creating transaction to spend $zatoshi zatoshi to" +
+            "creating transaction to spend $amount zatoshi to" +
                 " ${toAddress.masked()} with memo $memo"
         ) {
             try {
@@ -121,7 +122,7 @@ class WalletTransactionEncoder(
                     fromAccountIndex,
                     spendingKey,
                     toAddress,
-                    zatoshi,
+                    amount.value,
                     memo
                 )
             } catch (t: Throwable) {
