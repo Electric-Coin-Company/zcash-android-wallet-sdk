@@ -6,9 +6,9 @@ import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.internal.TroubleshootingTwig
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.ext.deleteSuspend
+import cash.z.ecc.android.sdk.internal.model.Checkpoint
 import cash.z.ecc.android.sdk.internal.twig
-import cash.z.ecc.android.sdk.tool.WalletBirthdayTool
-import cash.z.ecc.android.sdk.type.WalletBirthday
+import cash.z.ecc.android.sdk.tool.CheckpointTool
 import cash.z.ecc.android.sdk.type.ZcashNetwork
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flow
@@ -46,14 +46,14 @@ class BalancePrinterUtil {
 
 //    private val rustBackend = RustBackend.init(context, cacheDbName, dataDbName)
 
-    private lateinit var birthday: WalletBirthday
+    private lateinit var birthday: Checkpoint
     private var synchronizer: Synchronizer? = null
 
     @Before
     fun setup() {
         Twig.plant(TroubleshootingTwig())
         cacheBlocks()
-        birthday = runBlocking { WalletBirthdayTool.loadNearest(context, network, birthdayHeight) }
+        birthday = runBlocking { CheckpointTool.loadNearest(context, network, birthdayHeight) }
     }
 
     private fun cacheBlocks() = runBlocking {

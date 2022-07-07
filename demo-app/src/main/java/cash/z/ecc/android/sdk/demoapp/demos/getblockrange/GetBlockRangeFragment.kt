@@ -8,9 +8,13 @@ import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
 import cash.z.ecc.android.sdk.demoapp.R
 import cash.z.ecc.android.sdk.demoapp.databinding.FragmentGetBlockRangeBinding
 import cash.z.ecc.android.sdk.demoapp.ext.requireApplicationContext
+import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.demoapp.util.mainActivity
 import cash.z.ecc.android.sdk.demoapp.util.toRelativeTime
 import cash.z.ecc.android.sdk.demoapp.util.withCommas
+import cash.z.ecc.android.sdk.model.BlockHeight
+import cash.z.ecc.android.sdk.type.ZcashNetwork
+import kotlin.math.max
 
 /**
  * Retrieves a range of compact block from the lightwalletd service and displays basic information
@@ -20,7 +24,7 @@ import cash.z.ecc.android.sdk.demoapp.util.withCommas
  */
 class GetBlockRangeFragment : BaseDemoFragment<FragmentGetBlockRangeBinding>() {
 
-    private fun setBlockRange(blockRange: IntRange) {
+    private fun setBlockRange(blockRange: ClosedRange<BlockHeight>) {
         val start = System.currentTimeMillis()
         val blocks =
             lightwalletService?.getBlockRange(blockRange)
@@ -69,8 +73,9 @@ class GetBlockRangeFragment : BaseDemoFragment<FragmentGetBlockRangeBinding>() {
     }
 
     private fun onApply(_unused: View) {
-        val start = binding.textStartHeight.text.toString().toInt()
-        val end = binding.textEndHeight.text.toString().toInt()
+        val network = ZcashNetwork.fromResources(requireApplicationContext())
+        val start = max(binding.textStartHeight.text.toString().toLongOrNull() ?: network.saplingActivationHeight.value, network.saplingActivationHeight.value)
+        val end = max(binding.textEndHeight.text.toString().toLongOrNull() ?: network.saplingActivationHeight.value, network.saplingActivationHeight.value)
         if (start <= end) {
             try {
                 with(binding.buttonApply) {
@@ -78,7 +83,7 @@ class GetBlockRangeFragment : BaseDemoFragment<FragmentGetBlockRangeBinding>() {
                     setText(R.string.loading)
                     binding.textInfo.setText(R.string.loading)
                     post {
-                        setBlockRange(start..end)
+                        setBlockRange(BlockHeight.new(network, start)..BlockHeight.new(network, end))
                         isEnabled = true
                         setText(R.string.apply)
                     }

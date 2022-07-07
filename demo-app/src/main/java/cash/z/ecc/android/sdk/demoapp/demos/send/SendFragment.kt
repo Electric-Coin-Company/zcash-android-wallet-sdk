@@ -66,7 +66,7 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
 
         runBlocking {
             Initializer.new(requireApplicationContext()) {
-                runBlocking { it.importWallet(seed, network = ZcashNetwork.fromResources(requireApplicationContext())) }
+                runBlocking { it.newWallet(seed, network = ZcashNetwork.fromResources(requireApplicationContext())) }
                 it.setNetwork(ZcashNetwork.fromResources(requireApplicationContext()))
             }
         }.let { initializer ->

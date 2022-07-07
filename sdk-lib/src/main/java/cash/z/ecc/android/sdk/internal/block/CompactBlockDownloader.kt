@@ -4,6 +4,7 @@ import cash.z.ecc.android.sdk.internal.ext.retryUpTo
 import cash.z.ecc.android.sdk.internal.ext.tryWarn
 import cash.z.ecc.android.sdk.internal.service.LightWalletService
 import cash.z.ecc.android.sdk.internal.twig
+import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.wallet.sdk.rpc.Service
 import io.grpc.StatusRuntimeException
 import kotlinx.coroutines.CoroutineScope
@@ -43,7 +44,7 @@ open class CompactBlockDownloader private constructor(val compactBlockStore: Com
      *
      * @return the number of blocks that were returned in the results from the lightwalletService.
      */
-    suspend fun downloadBlockRange(heightRange: IntRange): Int = withContext(IO) {
+    suspend fun downloadBlockRange(heightRange: ClosedRange<BlockHeight>): Int = withContext(IO) {
         val result = lightWalletService.getBlockRange(heightRange)
         compactBlockStore.write(result)
         result.size
@@ -55,7 +56,7 @@ open class CompactBlockDownloader private constructor(val compactBlockStore: Com
      *
      * @param height the height to which the data will rewind.
      */
-    suspend fun rewindToHeight(height: Int) =
+    suspend fun rewindToHeight(height: BlockHeight) =
         // TODO: cancel anything in flight
         compactBlockStore.rewindTo(height)
 

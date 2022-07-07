@@ -61,7 +61,7 @@ class SanityTest(
         assertEquals(
             "$name has invalid birthday height",
             birthday,
-            wallet.initializer.birthday.height
+            wallet.initializer.checkpoint.height
         )
     }
 

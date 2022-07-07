@@ -14,8 +14,8 @@ import cash.z.ecc.android.sdk.internal.service.LightWalletGrpcService
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.test.ScopedTest
+import cash.z.ecc.android.sdk.tool.CheckpointTool
 import cash.z.ecc.android.sdk.tool.DerivationTool
-import cash.z.ecc.android.sdk.tool.WalletBirthdayTool
 import cash.z.ecc.android.sdk.type.ZcashNetwork
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.filter
@@ -49,7 +49,7 @@ class TestnetIntegrationTest : ScopedTest() {
     @Test
     fun testLoadBirthday() {
         val (height, hash, time, tree) = runBlocking {
-            WalletBirthdayTool.loadNearest(
+            CheckpointTool.loadNearest(
                 context,
                 synchronizer.network,
                 saplingActivation + 1

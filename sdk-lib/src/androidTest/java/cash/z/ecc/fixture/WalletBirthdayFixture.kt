@@ -6,7 +6,7 @@ import cash.z.ecc.android.sdk.internal.KEY_HEIGHT
 import cash.z.ecc.android.sdk.internal.KEY_TREE
 import cash.z.ecc.android.sdk.internal.KEY_VERSION
 import cash.z.ecc.android.sdk.internal.VERSION_1
-import cash.z.ecc.android.sdk.type.WalletBirthday
+import cash.z.ecc.android.sdk.internal.model.Checkpoint
 import org.json.JSONObject
 
 object WalletBirthdayFixture {
@@ -24,13 +24,13 @@ object WalletBirthdayFixture {
         hash: String = HASH,
         time: Long = EPOCH_SECONDS,
         tree: String = TREE
-    ) = WalletBirthday(height = height, hash = hash, time = time, tree = tree)
+    ) = Checkpoint(height = height, hash = hash, epochSeconds = time, tree = tree)
 }
 
-fun WalletBirthday.toJson() = JSONObject().apply {
-    put(WalletBirthday.KEY_VERSION, WalletBirthday.VERSION_1)
-    put(WalletBirthday.KEY_HEIGHT, height)
-    put(WalletBirthday.KEY_HASH, hash)
-    put(WalletBirthday.KEY_EPOCH_SECONDS, time)
-    put(WalletBirthday.KEY_TREE, tree)
+fun Checkpoint.toJson() = JSONObject().apply {
+    put(Checkpoint.KEY_VERSION, Checkpoint.VERSION_1)
+    put(Checkpoint.KEY_HEIGHT, height)
+    put(Checkpoint.KEY_HASH, hash)
+    put(Checkpoint.KEY_EPOCH_SECONDS, epochSeconds)
+    put(Checkpoint.KEY_TREE, tree)
 }.toString()

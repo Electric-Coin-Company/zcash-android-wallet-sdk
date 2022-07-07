@@ -1,11 +1,12 @@
 package cash.z.ecc.android.sdk.jni
 
-import cash.z.ecc.android.sdk.exception.BirthdayException
 import cash.z.ecc.android.sdk.ext.ZcashSdk.OUTPUT_PARAM_FILE_NAME
 import cash.z.ecc.android.sdk.ext.ZcashSdk.SPEND_PARAM_FILE_NAME
 import cash.z.ecc.android.sdk.internal.SdkDispatchers
 import cash.z.ecc.android.sdk.internal.ext.deleteSuspend
+import cash.z.ecc.android.sdk.internal.model.Checkpoint
 import cash.z.ecc.android.sdk.internal.twig
+import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.tool.DerivationTool
@@ -19,21 +20,13 @@ import java.io.File
  * not be called directly by code outside of the SDK. Instead, one of the higher-level components
  * should be used such as Wallet.kt or CompactBlockProcessor.kt.
  */
-class RustBackend private constructor() : RustBackendWelding {
-
-    // Paths
-    lateinit var pathDataDb: String
-        internal set
-    lateinit var pathCacheDb: String
-        internal set
-    lateinit var pathParamsDir: String
-        internal set
-
-    override lateinit var network: ZcashNetwork
-
-    internal var birthdayHeight: Int = -1
-        get() = if (field != -1) field else throw BirthdayException.UninitializedBirthdayException
-        private set
+internal class RustBackend private constructor(
+    override val network: ZcashNetwork,
+    val birthdayHeight: BlockHeight,
+    val pathDataDb: String,
+    val pathCacheDb: String,
+    val pathParamsDir: String
+) : RustBackendWelding {
 
     suspend fun clear(clearCacheDb: Boolean = true, clearDataDb: Boolean = true) {
         if (clearCacheDb) {
@@ -84,18 +77,15 @@ class RustBackend private constructor() : RustBackendWelding {
     }
 
     override suspend fun initBlocksTable(
-        height: Int,
-        hash: String,
-        time: Long,
-        saplingTree: String
+        checkpoint: Checkpoint
     ): Boolean {
         return withContext(SdkDispatchers.DATABASE_IO) {
             initBlocksTable(
                 pathDataDb,
-                height,
-                hash,
-                time,
-                saplingTree,
+                checkpoint.height.value,
+                checkpoint.hash,
+                checkpoint.epochSeconds,
+                checkpoint.tree,
                 networkId = network.id
             )
         }
@@ -156,19 +146,28 @@ class RustBackend private constructor() : RustBackendWelding {
     }
 
     override suspend fun validateCombinedChain() = withContext(SdkDispatchers.DATABASE_IO) {
-        validateCombinedChain(
+        val validationResult = validateCombinedChain(
             pathCacheDb,
             pathDataDb,
             networkId = network.id
         )
+
+        if (-1L == validationResult) {
+            null
+        } else {
+            BlockHeight.new(network, validationResult)
+        }
     }
 
-    override suspend fun getNearestRewindHeight(height: Int): Int =
+    override suspend fun getNearestRewindHeight(height: BlockHeight): BlockHeight =
         withContext(SdkDispatchers.DATABASE_IO) {
-            getNearestRewindHeight(
-                pathDataDb,
-                height,
-                networkId = network.id
+            BlockHeight.new(
+                network,
+                getNearestRewindHeight(
+                    pathDataDb,
+                    height.value,
+                    networkId = network.id
+                )
             )
         }
 
@@ -177,11 +176,11 @@ class RustBackend private constructor() : RustBackendWelding {
      *
      * DELETE FROM blocks WHERE height > ?
      */
-    override suspend fun rewindToHeight(height: Int) =
+    override suspend fun rewindToHeight(height: BlockHeight) =
         withContext(SdkDispatchers.DATABASE_IO) {
             rewindToHeight(
                 pathDataDb,
-                height,
+                height.value,
                 networkId = network.id
             )
         }
@@ -264,7 +263,7 @@ class RustBackend private constructor() : RustBackendWelding {
         index: Int,
         script: ByteArray,
         value: Long,
-        height: Int
+        height: BlockHeight
     ): Boolean = withContext(SdkDispatchers.DATABASE_IO) {
         putUtxo(
             pathDataDb,
@@ -273,19 +272,19 @@ class RustBackend private constructor() : RustBackendWelding {
             index,
             script,
             value,
-            height,
+            height.value,
             networkId = network.id
         )
     }
 
     override suspend fun clearUtxos(
         tAddress: String,
-        aboveHeight: Int
+        aboveHeight: BlockHeight
     ): Boolean = withContext(SdkDispatchers.DATABASE_IO) {
         clearUtxos(
             pathDataDb,
             tAddress,
-            aboveHeight,
+            aboveHeight.value,
             networkId = network.id
         )
     }
@@ -314,8 +313,8 @@ class RustBackend private constructor() : RustBackendWelding {
     override fun isValidTransparentAddr(addr: String) =
         isValidTransparentAddress(addr, networkId = network.id)
 
-    override fun getBranchIdForHeight(height: Int): Long =
-        branchIdForHeight(height, networkId = network.id)
+    override fun getBranchIdForHeight(height: BlockHeight): Long =
+        branchIdForHeight(height.value, networkId = network.id)
 
 //    /**
 //     * This is a proof-of-concept for doing Local RPC, where we are effectively using the JNI
@@ -351,19 +350,17 @@ class RustBackend private constructor() : RustBackendWelding {
             dataDbPath: String,
             paramsPath: String,
             zcashNetwork: ZcashNetwork,
-            birthdayHeight: Int? = null
+            birthdayHeight: BlockHeight
         ): RustBackend {
             rustLibraryLoader.load()
 
-            return RustBackend().apply {
-                pathCacheDb = cacheDbPath
-                pathDataDb = dataDbPath
+            return RustBackend(
+                zcashNetwork,
+                birthdayHeight,
+                pathDataDb = dataDbPath,
+                pathCacheDb = cacheDbPath,
                 pathParamsDir = paramsPath
-                network = zcashNetwork
-                if (birthdayHeight != null) {
-                    this.birthdayHeight = birthdayHeight
-                }
-            }
+            )
         }
 
         /**
@@ -396,7 +393,7 @@ class RustBackend private constructor() : RustBackendWelding {
         @JvmStatic
         private external fun initBlocksTable(
             dbDataPath: String,
-            height: Int,
+            height: Long,
             hash: String,
             time: Long,
             saplingTree: String,
@@ -445,19 +442,19 @@ class RustBackend private constructor() : RustBackendWelding {
             dbCachePath: String,
             dbDataPath: String,
             networkId: Int
-        ): Int
+        ): Long
 
         @JvmStatic
         private external fun getNearestRewindHeight(
             dbDataPath: String,
-            height: Int,
+            height: Long,
             networkId: Int
-        ): Int
+        ): Long
 
         @JvmStatic
         private external fun rewindToHeight(
             dbDataPath: String,
-            height: Int,
+            height: Long,
             networkId: Int
         ): Boolean
 
@@ -513,7 +510,7 @@ class RustBackend private constructor() : RustBackendWelding {
         private external fun initLogs()
 
         @JvmStatic
-        private external fun branchIdForHeight(height: Int, networkId: Int): Long
+        private external fun branchIdForHeight(height: Long, networkId: Int): Long
 
         @JvmStatic
         private external fun putUtxo(
@@ -523,7 +520,7 @@ class RustBackend private constructor() : RustBackendWelding {
             index: Int,
             script: ByteArray,
             value: Long,
-            height: Int,
+            height: Long,
             networkId: Int
         ): Boolean
 
@@ -531,7 +528,7 @@ class RustBackend private constructor() : RustBackendWelding {
         private external fun clearUtxos(
             dbDataPath: String,
             tAddress: String,
-            aboveHeight: Int,
+            aboveHeight: Long,
             networkId: Int
         ): Boolean
 

@@ -1,7 +1,12 @@
 package cash.z.ecc.android.sdk.demoapp
 
+import android.content.Context
+import cash.z.ecc.android.sdk.demoapp.util.fromResources
+import cash.z.ecc.android.sdk.model.BlockHeight
+import cash.z.ecc.android.sdk.type.ZcashNetwork
+
 object DemoConstants {
-    val utxoEndHeight: Int = 968085
+    fun getUxtoEndHeight(context: Context) = BlockHeight.new(ZcashNetwork.fromResources(context), 968085)
     val sendAmount: Double = 0.000018
 
     // corresponds to address: zs15tzaulx5weua5c7l47l4pku2pw9fzwvvnsp4y80jdpul0y3nwn5zp7tmkcclqaca3mdjqjkl7hx

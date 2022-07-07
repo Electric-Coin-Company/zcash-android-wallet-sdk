@@ -5,6 +5,7 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
+import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.Zatoshi
 
 //
@@ -81,8 +82,8 @@ data class PendingTransactionEntity(
     override val value: Long = -1,
     override val memo: ByteArray? = byteArrayOf(),
     override val accountIndex: Int,
-    override val minedHeight: Int = -1,
-    override val expiryHeight: Int = -1,
+    override val minedHeight: Long = -1,
+    override val expiryHeight: Long = -1,
 
     override val cancelled: Int = 0,
     override val encodeAttempts: Int = -1,
@@ -135,8 +136,8 @@ data class PendingTransactionEntity(
         result = 31 * result + value.hashCode()
         result = 31 * result + (memo?.contentHashCode() ?: 0)
         result = 31 * result + accountIndex
-        result = 31 * result + minedHeight
-        result = 31 * result + expiryHeight
+        result = 31 * result + minedHeight.hashCode()
+        result = 31 * result + expiryHeight.hashCode()
         result = 31 * result + cancelled
         result = 31 * result + encodeAttempts
         result = 31 * result + submitAttempts
@@ -163,7 +164,7 @@ data class ConfirmedTransaction(
     override val memo: ByteArray? = ByteArray(0),
     override val noteId: Long = 0L,
     override val blockTimeInSeconds: Long = 0L,
-    override val minedHeight: Int = -1,
+    override val minedHeight: Long = -1,
     override val transactionIndex: Int,
     override val rawTransactionId: ByteArray = ByteArray(0),
 
@@ -172,6 +173,13 @@ data class ConfirmedTransaction(
     val expiryHeight: Int? = null,
     override val raw: ByteArray? = byteArrayOf()
 ) : MinedTransaction, SignedTransaction {
+
+    val minedBlockHeight
+        get() = if (minedHeight == -1L) {
+            null
+        } else {
+            BlockHeight(minedHeight)
+        }
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -204,7 +212,7 @@ data class ConfirmedTransaction(
         result = 31 * result + (memo?.contentHashCode() ?: 0)
         result = 31 * result + noteId.hashCode()
         result = 31 * result + blockTimeInSeconds.hashCode()
-        result = 31 * result + minedHeight
+        result = 31 * result + minedHeight.hashCode()
         result = 31 * result + transactionIndex
         result = 31 * result + rawTransactionId.contentHashCode()
         result = 31 * result + (toAddress?.hashCode() ?: 0)
@@ -217,8 +225,12 @@ data class ConfirmedTransaction(
 val ConfirmedTransaction.valueInZatoshi
     get() = Zatoshi(value)
 
-data class EncodedTransaction(val txId: ByteArray, override val raw: ByteArray, val expiryHeight: Int?) :
+data class EncodedTransaction(val txId: ByteArray, override val raw: ByteArray, val expiryHeight: Long?) :
     SignedTransaction {
+
+    val expiryBlockHeight
+        get() = expiryHeight?.let { BlockHeight(it) }
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is EncodedTransaction) return false
@@ -233,7 +245,7 @@ data class EncodedTransaction(val txId: ByteArray, override val raw: ByteArray, 
     override fun hashCode(): Int {
         var result = txId.contentHashCode()
         result = 31 * result + raw.contentHashCode()
-        result = 31 * result + (expiryHeight ?: 0)
+        result = 31 * result + (expiryHeight?.hashCode() ?: 0)
         return result
     }
 }
@@ -264,7 +276,7 @@ interface SignedTransaction {
  * one list for things like history. A mined tx should have all properties, except possibly a memo.
  */
 interface MinedTransaction : Transaction {
-    val minedHeight: Int
+    val minedHeight: Long
     val noteId: Long
     val blockTimeInSeconds: Long
     val transactionIndex: Int
@@ -277,8 +289,8 @@ interface PendingTransaction : SignedTransaction, Transaction {
     override val memo: ByteArray?
     val toAddress: String
     val accountIndex: Int
-    val minedHeight: Int
-    val expiryHeight: Int
+    val minedHeight: Long // apparently this can be -1 as an uninitialized value
+    val expiryHeight: Long // apparently this can be -1 as an uninitialized value
     val cancelled: Int
     val encodeAttempts: Int
     val submitAttempts: Int
@@ -337,16 +349,16 @@ fun PendingTransaction.isSubmitted(): Boolean {
     return submitAttempts > 0
 }
 
-fun PendingTransaction.isExpired(latestHeight: Int?, saplingActivationHeight: Int): Boolean {
+fun PendingTransaction.isExpired(latestHeight: BlockHeight?, saplingActivationHeight: BlockHeight): Boolean {
     // TODO: test for off-by-one error here. Should we use <= or <
-    if (latestHeight == null || latestHeight < saplingActivationHeight || expiryHeight < saplingActivationHeight) return false
-    return expiryHeight < latestHeight
+    if (latestHeight == null || latestHeight.value < saplingActivationHeight.value || expiryHeight < saplingActivationHeight.value) return false
+    return expiryHeight < latestHeight.value
 }
 
 // if we don't have info on a pendingtx after 100 blocks then it's probably safe to stop polling!
-fun PendingTransaction.isLongExpired(latestHeight: Int?, saplingActivationHeight: Int): Boolean {
-    if (latestHeight == null || latestHeight < saplingActivationHeight || expiryHeight < saplingActivationHeight) return false
-    return (latestHeight - expiryHeight) > 100
+fun PendingTransaction.isLongExpired(latestHeight: BlockHeight?, saplingActivationHeight: BlockHeight): Boolean {
+    if (latestHeight == null || latestHeight.value < saplingActivationHeight.value || expiryHeight < saplingActivationHeight.value) return false
+    return (latestHeight.value - expiryHeight) > 100
 }
 
 fun PendingTransaction.isMarkedForDeletion(): Boolean {
@@ -373,10 +385,10 @@ fun PendingTransaction.isSafeToDiscard(): Boolean {
     }
 }
 
-fun PendingTransaction.isPending(currentHeight: Int = -1): Boolean {
+fun PendingTransaction.isPending(currentHeight: BlockHeight): Boolean {
     // not mined and not expired and successfully created
-    return !isSubmitSuccess() && minedHeight == -1 &&
-        (expiryHeight == -1 || expiryHeight > currentHeight) && raw != null
+    return !isSubmitSuccess() && minedHeight == -1L &&
+        (expiryHeight == -1L || expiryHeight > currentHeight.value) && raw != null
 }
 
 fun PendingTransaction.isSubmitSuccess(): Boolean {

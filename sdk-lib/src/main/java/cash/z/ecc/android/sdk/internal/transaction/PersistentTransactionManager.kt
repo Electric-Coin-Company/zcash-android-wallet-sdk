@@ -12,6 +12,7 @@ import cash.z.ecc.android.sdk.internal.db.PendingTransactionDao
 import cash.z.ecc.android.sdk.internal.db.PendingTransactionDb
 import cash.z.ecc.android.sdk.internal.service.LightWalletService
 import cash.z.ecc.android.sdk.internal.twig
+import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.Zatoshi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Dispatchers.IO
@@ -98,10 +99,10 @@ class PersistentTransactionManager(
         tx
     }
 
-    override suspend fun applyMinedHeight(pendingTx: PendingTransaction, minedHeight: Int) {
+    override suspend fun applyMinedHeight(pendingTx: PendingTransaction, minedHeight: BlockHeight) {
         twig("a pending transaction has been mined!")
         safeUpdate("updating mined height for pending tx id: ${pendingTx.id} to $minedHeight") {
-            updateMinedHeight(pendingTx.id, minedHeight)
+            updateMinedHeight(pendingTx.id, minedHeight.value)
         }
     }
 

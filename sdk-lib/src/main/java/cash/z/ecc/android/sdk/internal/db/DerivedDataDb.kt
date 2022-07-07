@@ -198,13 +198,13 @@ interface BlockDao {
     suspend fun count(): Int
 
     @Query("SELECT MAX(height) FROM blocks")
-    suspend fun lastScannedHeight(): Int
+    suspend fun lastScannedHeight(): Long
 
     @Query("SELECT MIN(height) FROM blocks")
-    suspend fun firstScannedHeight(): Int
+    suspend fun firstScannedHeight(): Long
 
     @Query("SELECT hash FROM BLOCKS WHERE height = :height")
-    suspend fun findHashByHeight(height: Int): ByteArray?
+    suspend fun findHashByHeight(height: Long): ByteArray?
 }
 
 /**
@@ -273,7 +273,7 @@ interface TransactionDao {
         LIMIT  1 
         """
     )
-    suspend fun findMinedHeight(rawTransactionId: ByteArray): Int?
+    suspend fun findMinedHeight(rawTransactionId: ByteArray): Long?
 
     /**
      * Query sent transactions that have been mined, sorted so the newest data is at the top.
@@ -418,7 +418,7 @@ interface TransactionDao {
         LIMIT  :limit 
         """
     )
-    suspend fun findAllTransactionsByRange(blockRangeStart: Int, blockRangeEnd: Int = blockRangeStart, limit: Int = Int.MAX_VALUE): List<ConfirmedTransaction>
+    suspend fun findAllTransactionsByRange(blockRangeStart: Long, blockRangeEnd: Long = blockRangeStart, limit: Int = Int.MAX_VALUE): List<ConfirmedTransaction>
 
     // Experimental: cleanup cancelled transactions
     //               This should probably be a rust call but there's not a lot of bandwidth for this
@@ -474,7 +474,7 @@ interface TransactionDao {
     }
 
     @Transaction
-    suspend fun deleteExpired(lastHeight: Int): Int {
+    suspend fun deleteExpired(lastHeight: Long): Int {
         var count = 0
         findExpiredTxs(lastHeight).forEach { transactionId ->
             if (removeInvalidOutboundTransaction(transactionId)) count++
@@ -537,5 +537,5 @@ interface TransactionDao {
             AND expiry_height < :lastheight
         """
     )
-    suspend fun findExpiredTxs(lastheight: Int): List<Long>
+    suspend fun findExpiredTxs(lastheight: Long): List<Long>
 }
