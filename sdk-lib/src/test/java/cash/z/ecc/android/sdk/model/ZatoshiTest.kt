@@ -3,6 +3,7 @@ package cash.z.ecc.android.sdk.model
 import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertTrue
 
 class ZatoshiTest {
     @Test
@@ -27,6 +28,21 @@ class ZatoshiTest {
     @Test
     fun minus() {
         assertEquals(Zatoshi(3), Zatoshi(4) - Zatoshi(1))
+    }
+
+    @Test
+    fun compare_equal() {
+        assertEquals(0, Zatoshi(1).compareTo(Zatoshi(1)))
+    }
+
+    @Test
+    fun compare_greater() {
+        assertTrue(Zatoshi(2) > Zatoshi(1))
+    }
+
+    @Test
+    fun compare_less() {
+        assertTrue(Zatoshi(1) < Zatoshi(2))
     }
 
     @Test
