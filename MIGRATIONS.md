@@ -1,7 +1,7 @@
 Troubleshooting Migrations
 ==========
 
-Upcoming Migration to Version 1.7 from 1.6
+Migration to Version 1.7 from 1.6
 --------------------------------------
 Various APIs used `Long` value to represent Zatoshi currency amounts.  Those APIs now use a typesafe `Zatoshi` class.  When passing amounts, simply wrap Long values with the Zatoshi constructor `Zatoshi(Long)`.  When receiving values, simply unwrap Long values with `Zatoshi.value`.
 
@@ -13,7 +13,7 @@ Various APIs used `Long` value to represent Zatoshi currency amounts.  Those API
 
 `ZcashSdk.MINERS_FEE_ZATOSHI` has been renamed to `ZcashSdk.MINERS_FEE` and the type has changed from `Long` to `Zatoshi`.
 
-Upcoming Migrating to Version 1.4.* from 1.3.*
+Migrating to Version 1.4.* from 1.3.*
 --------------------------------------
 The main entrypoint to the SDK has changed.
 
