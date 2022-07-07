@@ -1,9 +1,9 @@
 Change Log
 ==========
 
-Upcoming
+Version 1.7.0-beta01
 ------------------------------------
-- Added `Zatoshi` typesafe object to represent amounts instead.
+- Added `Zatoshi` typesafe object to represent amounts.
 - Kotlin 1.7.0
 
 Version 1.6.0-beta01
