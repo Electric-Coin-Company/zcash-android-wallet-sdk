@@ -2,6 +2,7 @@ package cash.z.ecc.android.sdk.internal
 
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
 import cash.z.ecc.android.sdk.model.BlockHeight
+import cash.z.ecc.android.sdk.type.ZcashNetwork
 import org.json.JSONObject
 
 // Version is not returned from the server, so version 1 is implied.  A version is declared here
@@ -19,17 +20,24 @@ internal val Checkpoint.Companion.KEY_EPOCH_SECONDS
 internal val Checkpoint.Companion.KEY_TREE
     get() = "saplingTree"
 
-internal fun Checkpoint.Companion.from(jsonString: String) = from(JSONObject(jsonString))
+internal fun Checkpoint.Companion.from(zcashNetwork: ZcashNetwork, jsonString: String) =
+    from(zcashNetwork, JSONObject(jsonString))
 
-private fun Checkpoint.Companion.from(jsonObject: JSONObject): Checkpoint {
+private fun Checkpoint.Companion.from(
+    zcashNetwork: ZcashNetwork,
+    jsonObject: JSONObject
+): Checkpoint {
     when (val version = jsonObject.optInt(Checkpoint.KEY_VERSION, Checkpoint.VERSION_1)) {
         Checkpoint.VERSION_1 -> {
-            val height = jsonObject.getLong(Checkpoint.KEY_HEIGHT)
+            val height = run {
+                val heightLong = jsonObject.getLong(Checkpoint.KEY_HEIGHT)
+                BlockHeight.new(zcashNetwork, heightLong)
+            }
             val hash = jsonObject.getString(Checkpoint.KEY_HASH)
             val epochSeconds = jsonObject.getLong(Checkpoint.KEY_EPOCH_SECONDS)
             val tree = jsonObject.getString(Checkpoint.KEY_TREE)
 
-            return Checkpoint(BlockHeight(height), hash, epochSeconds, tree)
+            return Checkpoint(height, hash, epochSeconds, tree)
         }
         else -> {
             throw IllegalArgumentException("Unsupported version $version")

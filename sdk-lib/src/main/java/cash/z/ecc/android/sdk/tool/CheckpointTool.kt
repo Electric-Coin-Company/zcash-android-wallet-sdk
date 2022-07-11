@@ -98,7 +98,7 @@ internal object CheckpointTool {
 
         twig("found ${treeFiles.size} sapling tree checkpoints: $treeFiles")
 
-        return getFirstValidWalletBirthday(context, directory, treeFiles)
+        return getFirstValidWalletBirthday(context, network, directory, treeFiles)
     }
 
     private suspend fun getFilteredFileNames(
@@ -134,6 +134,7 @@ internal object CheckpointTool {
     @VisibleForTesting
     internal suspend fun getFirstValidWalletBirthday(
         context: Context,
+        network: ZcashNetwork,
         directory: String,
         treeFiles: List<String>
     ): Checkpoint {
@@ -150,7 +151,7 @@ internal object CheckpointTool {
                     }
                 }
 
-                return Checkpoint.from(jsonString)
+                return Checkpoint.from(network, jsonString)
             } catch (t: Throwable) {
                 val exception = BirthdayException.MalformattedBirthdayFilesException(
                     directory,
