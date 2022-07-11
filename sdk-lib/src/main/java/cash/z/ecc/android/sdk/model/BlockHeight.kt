@@ -5,10 +5,12 @@ import cash.z.ecc.android.sdk.type.ZcashNetwork
 /**
  * Represents a block height, which is a UInt32.  SDK clients use this class to represent the "birthday" of a wallet.
  *
+ * New instances are constructed using the [new] factory method.
+ *
  * @param value The block height.  Must be in range of a UInt32.
  */
 /*
- * For compatibility with Java clients, this class represents the height value as a Long with
+ * For easier compatibility with Java clients, this class represents the height value as a Long with
  * assertions to ensure that it is a 32-bit unsigned integer.
  */
 data class BlockHeight internal constructor(val value: Long) : Comparable<BlockHeight> {
@@ -21,8 +23,7 @@ data class BlockHeight internal constructor(val value: Long) : Comparable<BlockH
     operator fun plus(other: BlockHeight) = BlockHeight(value + other.value)
 
     internal operator fun plus(other: Int): BlockHeight {
-        // -1 also isn't valid, but we have a few use cases inside the SDK where we do a -1 so we need to allow that.
-        if (other < -1) {
+        if (other < 0) {
             throw IllegalArgumentException("Cannot add negative value $other to BlockHeight")
         }
 
@@ -30,8 +31,7 @@ data class BlockHeight internal constructor(val value: Long) : Comparable<BlockH
     }
 
     internal operator fun plus(other: Long): BlockHeight {
-        // -1 also isn't valid, but we have a few use cases inside the SDK where we do a -1 so we need to allow that.
-        if (other < -1) {
+        if (other < 0) {
             throw IllegalArgumentException("Cannot add negative value $other to BlockHeight")
         }
 

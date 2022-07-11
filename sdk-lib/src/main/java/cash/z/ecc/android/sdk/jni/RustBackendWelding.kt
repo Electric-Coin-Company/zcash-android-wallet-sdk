@@ -82,8 +82,7 @@ internal interface RustBackendWelding {
         height: BlockHeight
     ): Boolean
 
-    // TODO: here we are creating an invalid BlockHeight
-    suspend fun clearUtxos(tAddress: String, aboveHeight: BlockHeight = BlockHeight(network.saplingActivationHeight.value - 1)): Boolean
+    suspend fun clearUtxos(tAddress: String, aboveHeightInclusive: BlockHeight = BlockHeight(network.saplingActivationHeight.value)): Boolean
 
     suspend fun getDownloadedUtxoBalance(address: String): WalletBalance
 

@@ -279,12 +279,14 @@ internal class RustBackend private constructor(
 
     override suspend fun clearUtxos(
         tAddress: String,
-        aboveHeight: BlockHeight
+        aboveHeightInclusive: BlockHeight
     ): Boolean = withContext(SdkDispatchers.DATABASE_IO) {
         clearUtxos(
             pathDataDb,
             tAddress,
-            aboveHeight.value,
+            // The Kotlin API is inclusive, but the Rust API is exclusive.
+            // This can create invalid BlockHeights if the height is saplingActivationHeight.
+            aboveHeightInclusive.value - 1,
             networkId = network.id
         )
     }

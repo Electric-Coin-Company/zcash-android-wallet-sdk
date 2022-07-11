@@ -510,7 +510,7 @@ class CompactBlockProcessor internal constructor(
         startHeight: BlockHeight
     ): Int = withContext(IO) {
         var skipped = 0
-        val aboveHeight = startHeight + -1
+        val aboveHeight = startHeight
         twig("Clearing utxos above height $aboveHeight", -1)
         rustBackend.clearUtxos(tAddress, aboveHeight)
         twig("Checking for UTXOs above height $aboveHeight")
@@ -632,7 +632,7 @@ class CompactBlockProcessor internal constructor(
                     metrics.beginBatch()
                     result = rustBackend.scanBlocks(SCAN_BATCH_SIZE)
                     metrics.endBatch()
-                    val lastScannedHeight = range.start + metrics.cumulativeItems + -1
+                    val lastScannedHeight = BlockHeight.new(network, range.start.value + metrics.cumulativeItems - 1)
                     val percentValue =
                         (lastScannedHeight.value - range.start.value) / (range.endInclusive.value - range.start.value + 1).toFloat() * 100.0f
                     val percent = "%.0f".format(percentValue.coerceAtMost(100f).coerceAtLeast(0f))
@@ -703,7 +703,9 @@ class CompactBlockProcessor internal constructor(
             originalCheckpoint
         } else {
             // tricky: subtract one because we delete ABOVE this block
-            rustBackend.getNearestRewindHeight(height) + -1
+            // This could create an invalid height if if height was saplingActivationHeight
+            val rewindHeight = BlockHeight(height.value - 1)
+            rustBackend.getNearestRewindHeight(rewindHeight)
         }
     }
 
@@ -799,7 +801,7 @@ class CompactBlockProcessor internal constructor(
         errorInfo = fetchValidationErrorInfo(errorHeight + 1)
         twig("The next block block: ${errorInfo.errorHeight} which had hash ${errorInfo.actualPrevHash} but the expected hash was ${errorInfo.expectedPrevHash}")
 
-        twig("=================== BLOCKS [$errorHeight..${errorHeight + count + -1}]: START ========")
+        twig("=================== BLOCKS [$errorHeight..${errorHeight.value + count - 1}]: START ========")
         repeat(count) { i ->
             val height = errorHeight + i
             val block = downloader.compactBlockStore.findCompactBlock(height)
@@ -812,7 +814,7 @@ class CompactBlockProcessor internal constructor(
                 }"
             )
         }
-        twig("=================== BLOCKS [$errorHeight..${errorHeight + count + -1}]: END ========")
+        twig("=================== BLOCKS [$errorHeight..${errorHeight.value + count - 1}]: END ========")
     }
 
     private suspend fun fetchValidationErrorInfo(errorHeight: BlockHeight): ValidationErrorInfo {
