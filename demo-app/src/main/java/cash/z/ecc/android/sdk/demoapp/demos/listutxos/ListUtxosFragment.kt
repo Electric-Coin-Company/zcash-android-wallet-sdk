@@ -1,5 +1,6 @@
 package cash.z.ecc.android.sdk.demoapp.demos.listutxos
 
+import android.content.Context
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -80,7 +81,7 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
     fun initUi() {
         binding.inputAddress.setText(address)
         binding.inputRangeStart.setText(ZcashNetwork.fromResources(requireApplicationContext()).saplingActivationHeight.toString())
-        binding.inputRangeEnd.setText(DemoConstants.getUxtoEndHeight(requireApplicationContext()).value.toString())
+        binding.inputRangeEnd.setText(getUxtoEndHeight(requireApplicationContext()).value.toString())
 
         binding.buttonLoad.setOnClickListener {
             mainActivity()?.hideKeyboard()
@@ -97,7 +98,7 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
             binding.textStatus.requestFocus()
             val addressToUse = binding.inputAddress.text.toString()
             val startToUse = max(binding.inputRangeStart.text.toString().toLongOrNull() ?: network.saplingActivationHeight.value, network.saplingActivationHeight.value)
-            val endToUse = binding.inputRangeEnd.text.toString().toLongOrNull() ?: DemoConstants.getUxtoEndHeight(requireApplicationContext()).value
+            val endToUse = binding.inputRangeEnd.text.toString().toLongOrNull() ?: getUxtoEndHeight(requireApplicationContext()).value
             var allStart = now
             twig("loading transactions in range $startToUse..$endToUse")
             val txids = lightwalletService?.getTAddressTransactions(addressToUse, BlockHeight.new(network, startToUse)..BlockHeight.new(network, endToUse))
@@ -250,5 +251,9 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
                 twig("current count: ${(synchronizer as SdkSynchronizer).getTransactionCount()}")
             }
         }
+    }
+
+    private fun getUxtoEndHeight(context: Context): BlockHeight {
+        return BlockHeight.new(ZcashNetwork.fromResources(context), 968085L)
     }
 }
