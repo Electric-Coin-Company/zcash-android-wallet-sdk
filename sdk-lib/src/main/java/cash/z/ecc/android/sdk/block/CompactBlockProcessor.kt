@@ -221,9 +221,14 @@ class CompactBlockProcessor internal constructor(
                         delay(napTime)
                     }
                     is BlockProcessingResult.Error -> {
-                        val napTime = calculatePollInterval(true)
-                        twig("Unable to process new blocks because they failed validation! Attempting to reconnect in ${napTime}ms")
-                        delay(napTime)
+                        if (consecutiveChainErrors.get() >= RETRIES) {
+                            val errorMessage =
+                                "ERROR: unable to resolve reorg at height $result after ${consecutiveChainErrors.get()} correction attempts!"
+                            fail(CompactBlockProcessorException.FailedReorgRepair(errorMessage))
+                        } else {
+                            handleChainError(result.failedAtHeight)
+                        }
+                        consecutiveChainErrors.getAndIncrement()
                     }
                     is BlockProcessingResult.Success -> {
                         // Do nothing. We are done.
