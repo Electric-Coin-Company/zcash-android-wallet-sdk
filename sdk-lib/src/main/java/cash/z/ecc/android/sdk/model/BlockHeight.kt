@@ -1,5 +1,7 @@
 package cash.z.ecc.android.sdk.model
 
+import android.content.Context
+import cash.z.ecc.android.sdk.tool.CheckpointTool
 import cash.z.ecc.android.sdk.type.ZcashNetwork
 
 /**
@@ -51,6 +53,16 @@ data class BlockHeight internal constructor(val value: Long) : Comparable<BlockH
             }
 
             return BlockHeight(blockHeight)
+        }
+
+        /**
+         * Useful when creating a new wallet to reduce sync times.
+         *
+         * @param zcashNetwork Network to use for the block height.
+         * @return The block height of the newest checkpoint known by the SDK.
+         */
+        suspend fun ofLatestCheckpoint(context: Context, zcashNetwork: ZcashNetwork): BlockHeight {
+            return CheckpointTool.loadNearest(context, zcashNetwork, null).height
         }
     }
 }
