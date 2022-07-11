@@ -10,6 +10,7 @@ import cash.z.ecc.android.sdk.internal.TroubleshootingTwig
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.service.LightWalletGrpcService
 import cash.z.ecc.android.sdk.internal.twig
+import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.tool.DerivationTool
 import cash.z.ecc.android.sdk.type.ZcashNetwork
 import kotlinx.coroutines.flow.collect
@@ -93,10 +94,10 @@ class SampleCodeTest {
     // ///////////////////////////////////////////////////
     // Download compact block range
     @Test fun getBlockRange() {
-        val blockRange = 500_000..500_009
+        val blockRange = BlockHeight.new(ZcashNetwork.Mainnet, 500_000)..BlockHeight.new(ZcashNetwork.Mainnet, 500_009)
         val lightwalletService = LightWalletGrpcService(context, lightwalletdHost)
         val blocks = lightwalletService.getBlockRange(blockRange)
-        assertEquals(blockRange.count(), blocks.size)
+        assertEquals(blockRange.endInclusive.value - blockRange.start.value, blocks.size)
 
         blocks.forEachIndexed { i, block ->
             log("Block #$i:    height:${block.height}   hash:${block.hash.toByteArray().toHex()}")

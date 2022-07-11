@@ -80,7 +80,7 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
     fun initUi() {
         binding.inputAddress.setText(address)
         binding.inputRangeStart.setText(ZcashNetwork.fromResources(requireApplicationContext()).saplingActivationHeight.toString())
-        binding.inputRangeEnd.setText(DemoConstants.getUxtoEndHeight(requireApplicationContext()).toString())
+        binding.inputRangeEnd.setText(DemoConstants.getUxtoEndHeight(requireApplicationContext()).value.toString())
 
         binding.buttonLoad.setOnClickListener {
             mainActivity()?.hideKeyboard()
