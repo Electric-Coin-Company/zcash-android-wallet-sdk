@@ -3,9 +3,11 @@ package cash.z.ecc.android.sdk
 import android.content.Context
 import cash.z.ecc.android.sdk.exception.InitializerException
 import cash.z.ecc.android.sdk.ext.ZcashSdk
+import cash.z.ecc.android.sdk.internal.AndroidApiVersion
 import cash.z.ecc.android.sdk.internal.SdkDispatchers
 import cash.z.ecc.android.sdk.internal.ext.getCacheDirSuspend
 import cash.z.ecc.android.sdk.internal.ext.getDatabasePathSuspend
+import cash.z.ecc.android.sdk.internal.ext.getNoBackupPathSuspend
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.jni.RustBackend
 import cash.z.ecc.android.sdk.tool.DerivationTool
@@ -430,8 +432,9 @@ class Initializer private constructor(
 
         /**
          * Returns the path to the data database that would correspond to the given alias.
+         *
          * @param appContext the application context
-         * * @param network the network associated with the data in the database.
+         * @param network the network associated with the data in the database.
          * @param alias the alias to convert into a database path
          */
         private suspend fun dataDbPath(
@@ -441,21 +444,101 @@ class Initializer private constructor(
         ): String =
             aliasToPath(appContext, network, alias, ZcashSdk.DB_DATA_NAME)
 
+        /**
+         * Transforms ZcashNetwork, alias, and dbFileName parameters into valid database file path.
+         * From SDK API 21 it places database files into no_backup folder, as it does not allow
+         * automatic backup. On older APIs it places database files into databases folder, which
+         * allows automatic backup. It also moves database files between these two folders, if older
+         * folder usage is detected.
+         *
+         * @param appContext the application context
+         * @param network the network associated with the data in the database.
+         * @param alias the alias to convert into a database path
+         * @param dbFileName the name of the new database file
+         */
         private suspend fun aliasToPath(
             appContext: Context,
             network: ZcashNetwork,
             alias: String,
             dbFileName: String
         ): String {
-            val parentDir: String =
-                appContext.getDatabasePathSuspend("unused.db").parentFile?.absolutePath
-                    ?: throw InitializerException.DatabasePathException
+            val resultDbFile = if (AndroidApiVersion.isAtLeastL) {
+                val parentDir: String =
+                    appContext.getNoBackupPathSuspend().absolutePath
+                        ?: throw InitializerException.DatabasePathException
+
+                var preferredLocationDbFile = getDbFile(
+                    network,
+                    alias,
+                    dbFileName,
+                    parentDir
+                )
+                // first we check if the db file doesn't exist in legacy folder already
+                if (!preferredLocationDbFile.exists()) {
+                    val legacyLocationDbFile = getDbFile(
+                        network,
+                        alias,
+                        dbFileName,
+                        getLegacyDbParentDirPath(appContext)
+                    )
+                    if (legacyLocationDbFile.exists()) {
+                        preferredLocationDbFile = legacyLocationDbFile.copyTo(preferredLocationDbFile)
+                        // We check the copy operation result and delete the legacy db files, or
+                        // fallback to the legacy one if anything went wrong.
+                        if (!preferredLocationDbFile.exists() ||
+                            !deleteDb(legacyLocationDbFile.absolutePath)
+                        ) {
+                            preferredLocationDbFile = legacyLocationDbFile
+                        }
+                    }
+                }
+                preferredLocationDbFile
+            } else {
+                getDbFile(
+                    network,
+                    alias,
+                    dbFileName,
+                    getLegacyDbParentDirPath(appContext)
+                )
+            }
+            return resultDbFile.absolutePath
+        }
+
+        /**
+         * This function returns previously used database folder path. The databases folder is
+         * deprecated now, as it allows automatic data backup, which is not permitted for our
+         * database files.
+         *
+         * @param appContext the application context
+         */
+        private suspend fun getLegacyDbParentDirPath(appContext: Context): String {
+            return appContext.getDatabasePathSuspend("unused.db").parentFile?.absolutePath
+                ?: throw InitializerException.DatabasePathException
+        }
+
+        /**
+         * Simple helper function, which prepares a database file object by input parameters.
+         *
+         * @param network the network associated with the data in the database.
+         * @param alias the alias to convert into a database path
+         * @param dbFileName the name of the new database file
+         * @param parentDir the name of the parent directory, in which the file should be placed
+         */
+        private fun getDbFile(
+            network: ZcashNetwork,
+            alias: String,
+            dbFileName: String,
+            parentDir: String
+        ): File {
             val prefix = if (alias.endsWith('_')) alias else "${alias}_"
-            return File(parentDir, "$prefix${network.networkName}_$dbFileName").absolutePath
+            return File(parentDir, "$prefix${network.networkName}_$dbFileName")
         }
 
         /**
          * Delete a database and it's potential journal file at the given path.
+         *
+         * The rollback journal file is a temporary file used to implement atomic commit and
+         * rollback capabilities in SQLite.
          *
          * @param filePath the path of the db to erase.
          * @return true when a file exists at the given path and was deleted.
