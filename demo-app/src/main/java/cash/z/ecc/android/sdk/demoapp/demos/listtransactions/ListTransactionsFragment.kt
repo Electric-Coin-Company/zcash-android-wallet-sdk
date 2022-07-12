@@ -50,7 +50,7 @@ class ListTransactionsFragment : BaseDemoFragment<FragmentListTransactionsBindin
 
         initializer = runBlocking {
             Initializer.new(requireApplicationContext()) {
-                runBlocking { it.importWallet(seed, network = ZcashNetwork.fromResources(requireApplicationContext())) }
+                runBlocking { it.newWallet(seed, network = ZcashNetwork.fromResources(requireApplicationContext())) }
                 it.setNetwork(ZcashNetwork.fromResources(requireApplicationContext()))
             }
         }

@@ -7,11 +7,15 @@ import android.view.View
 import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
 import cash.z.ecc.android.sdk.demoapp.databinding.FragmentGetBlockBinding
 import cash.z.ecc.android.sdk.demoapp.ext.requireApplicationContext
+import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.demoapp.util.mainActivity
 import cash.z.ecc.android.sdk.demoapp.util.toHtml
 import cash.z.ecc.android.sdk.demoapp.util.toRelativeTime
 import cash.z.ecc.android.sdk.demoapp.util.withCommas
 import cash.z.ecc.android.sdk.ext.toHex
+import cash.z.ecc.android.sdk.model.BlockHeight
+import cash.z.ecc.android.sdk.type.ZcashNetwork
+import kotlin.math.min
 
 /**
  * Retrieves a compact block from the lightwalletd service and displays basic information about it.
@@ -20,7 +24,7 @@ import cash.z.ecc.android.sdk.ext.toHex
  */
 class GetBlockFragment : BaseDemoFragment<FragmentGetBlockBinding>() {
 
-    private fun setBlockHeight(blockHeight: Int) {
+    private fun setBlockHeight(blockHeight: BlockHeight) {
         val blocks =
             lightwalletService?.getBlockRange(blockHeight..blockHeight)
         val block = blocks?.firstOrNull()
@@ -38,8 +42,11 @@ class GetBlockFragment : BaseDemoFragment<FragmentGetBlockBinding>() {
     }
 
     private fun onApply(_unused: View? = null) {
+        val network = ZcashNetwork.fromResources(requireApplicationContext())
+        val newHeight = min(binding.textBlockHeight.text.toString().toLongOrNull() ?: network.saplingActivationHeight.value, network.saplingActivationHeight.value)
+
         try {
-            setBlockHeight(binding.textBlockHeight.text.toString().toInt())
+            setBlockHeight(BlockHeight.new(network, newHeight))
         } catch (t: Throwable) {
             toast("Error: $t")
         }

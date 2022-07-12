@@ -2,6 +2,7 @@ package cash.z.ecc.android.sdk.internal.transaction
 
 import cash.z.ecc.android.sdk.db.entity.ConfirmedTransaction
 import cash.z.ecc.android.sdk.db.entity.EncodedTransaction
+import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.type.UnifiedAddressAccount
 import kotlinx.coroutines.flow.Flow
 
@@ -15,14 +16,14 @@ interface TransactionRepository {
      *
      * @return the last height scanned by this repository.
      */
-    suspend fun lastScannedHeight(): Int
+    suspend fun lastScannedHeight(): BlockHeight
 
     /**
      * The height of the first block in this repository. This is typically the checkpoint that was
      * used to initialize this wallet. If we overwrite this block, it breaks our ability to spend
      * funds.
      */
-    suspend fun firstScannedHeight(): Int
+    suspend fun firstScannedHeight(): BlockHeight
 
     /**
      * Returns true when this repository has been initialized and seeded with the initial checkpoint.
@@ -51,7 +52,7 @@ interface TransactionRepository {
      *
      * @return a list of transactions that were mined in the given range, inclusive.
      */
-    suspend fun findNewTransactions(blockHeightRange: IntRange): List<ConfirmedTransaction>
+    suspend fun findNewTransactions(blockHeightRange: ClosedRange<BlockHeight>): List<ConfirmedTransaction>
 
     /**
      * Find the mined height that matches the given raw tx_id in bytes. This is useful for matching
@@ -61,7 +62,7 @@ interface TransactionRepository {
      *
      * @return the mined height of the given transaction, if it is known to this wallet.
      */
-    suspend fun findMinedHeight(rawTransactionId: ByteArray): Int?
+    suspend fun findMinedHeight(rawTransactionId: ByteArray): BlockHeight?
 
     suspend fun findMatchingTransactionId(rawTransactionId: ByteArray): Long?
 
@@ -79,7 +80,7 @@ interface TransactionRepository {
      */
     suspend fun cleanupCancelledTx(rawTransactionId: ByteArray): Boolean
 
-    suspend fun deleteExpired(lastScannedHeight: Int): Int
+    suspend fun deleteExpired(lastScannedHeight: BlockHeight): Int
 
     suspend fun count(): Int
 

@@ -4,6 +4,7 @@ import android.content.Context
 import cash.z.ecc.android.sdk.R
 import cash.z.ecc.android.sdk.internal.service.LightWalletGrpcService
 import cash.z.ecc.android.sdk.internal.twig
+import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.type.ZcashNetwork
 import cash.z.wallet.sdk.rpc.Darkside
 import cash.z.wallet.sdk.rpc.Darkside.DarksideTransactionsURL
@@ -41,7 +42,7 @@ class DarksideApi(
     //
 
     fun reset(
-        saplingActivationHeight: Int = 419200,
+        saplingActivationHeight: BlockHeight = ZcashNetwork.Mainnet.saplingActivationHeight,
         branchId: String = "e9ff75a6", // Canopy,
         chainName: String = "darkside${ZcashNetwork.Mainnet.networkName}"
     ) = apply {
@@ -49,7 +50,7 @@ class DarksideApi(
         Darkside.DarksideMetaState.newBuilder()
             .setBranchID(branchId)
             .setChainName(chainName)
-            .setSaplingActivation(saplingActivationHeight)
+            .setSaplingActivation(saplingActivationHeight.value.toInt())
             .build().let { request ->
                 createStub().reset(request)
             }
@@ -60,21 +61,21 @@ class DarksideApi(
         createStub().stageBlocks(url.toUrl())
     }
 
-    fun stageTransactions(url: String, targetHeight: Int) = apply {
+    fun stageTransactions(url: String, targetHeight: BlockHeight) = apply {
         twig("staging transaction at height=$targetHeight from url=$url")
         createStub().stageTransactions(
-            DarksideTransactionsURL.newBuilder().setHeight(targetHeight).setUrl(url).build()
+            DarksideTransactionsURL.newBuilder().setHeight(targetHeight.value).setUrl(url).build()
         )
     }
 
-    fun stageEmptyBlocks(startHeight: Int, count: Int = 10, nonce: Int = Random.nextInt()) = apply {
+    fun stageEmptyBlocks(startHeight: BlockHeight, count: Int = 10, nonce: Int = Random.nextInt()) = apply {
         twig("staging $count empty blocks starting at $startHeight with nonce $nonce")
         createStub().stageBlocksCreate(
-            Darkside.DarksideEmptyBlocks.newBuilder().setHeight(startHeight).setCount(count).setNonce(nonce).build()
+            Darkside.DarksideEmptyBlocks.newBuilder().setHeight(startHeight.value).setCount(count).setNonce(nonce).build()
         )
     }
 
-    fun stageTransactions(txs: Iterator<Service.RawTransaction>?, tipHeight: Int) {
+    fun stageTransactions(txs: Iterator<Service.RawTransaction>?, tipHeight: BlockHeight) {
         if (txs == null) {
             twig("no transactions to stage")
             return
@@ -84,7 +85,7 @@ class DarksideApi(
         createStreamingStub().stageTransactionsStream(response).apply {
             txs.forEach {
                 twig("stageTransactions: onNext calling!!!")
-                onNext(it.newBuilderForType().setData(it.data).setHeight(tipHeight.toLong()).build()) // apply the tipHeight because the passed in txs might not know their destination height (if they were created via SendTransaction)
+                onNext(it.newBuilderForType().setData(it.data).setHeight(tipHeight.value).build()) // apply the tipHeight because the passed in txs might not know their destination height (if they were created via SendTransaction)
                 twig("stageTransactions: onNext called")
             }
             twig("stageTransactions: onCompleted calling!!!")
@@ -94,7 +95,7 @@ class DarksideApi(
         response.await()
     }
 
-    fun applyBlocks(tipHeight: Int) {
+    fun applyBlocks(tipHeight: BlockHeight) {
         twig("applying blocks up to tipHeight=$tipHeight")
         createStub().applyStaged(tipHeight.toHeight())
     }
@@ -146,7 +147,7 @@ class DarksideApi(
             .withDeadlineAfter(singleRequestTimeoutSec, TimeUnit.SECONDS)
 
     private fun String.toUrl() = Darkside.DarksideBlocksURL.newBuilder().setUrl(this).build()
-    private fun Int.toHeight() = Darkside.DarksideHeight.newBuilder().setHeight(this).build()
+    private fun BlockHeight.toHeight() = Darkside.DarksideHeight.newBuilder().setHeight(this.value).build()
 
     class EmptyResponse : StreamObserver<Service.Empty> {
         var completed = false

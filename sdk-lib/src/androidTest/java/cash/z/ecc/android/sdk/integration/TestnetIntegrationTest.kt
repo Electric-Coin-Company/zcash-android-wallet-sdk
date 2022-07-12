@@ -12,10 +12,11 @@ import cash.z.ecc.android.sdk.internal.TroubleshootingTwig
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.service.LightWalletGrpcService
 import cash.z.ecc.android.sdk.internal.twig
+import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.test.ScopedTest
+import cash.z.ecc.android.sdk.tool.CheckpointTool
 import cash.z.ecc.android.sdk.tool.DerivationTool
-import cash.z.ecc.android.sdk.tool.WalletBirthdayTool
 import cash.z.ecc.android.sdk.type.ZcashNetwork
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.filter
@@ -49,7 +50,7 @@ class TestnetIntegrationTest : ScopedTest() {
     @Test
     fun testLoadBirthday() {
         val (height, hash, time, tree) = runBlocking {
-            WalletBirthdayTool.loadNearest(
+            CheckpointTool.loadNearest(
                 context,
                 synchronizer.network,
                 saplingActivation + 1
@@ -118,7 +119,7 @@ class TestnetIntegrationTest : ScopedTest() {
         init { Twig.plant(TroubleshootingTwig()) }
 
         const val host = "lightwalletd.testnet.z.cash"
-        private const val birthdayHeight = 963150
+        private const val birthdayHeight = 963150L
         private const val targetHeight = 663250
         private const val seedPhrase = "still champion voice habit trend flight survey between bitter process artefact blind carbon truly provide dizzy crush flush breeze blouse charge solid fish spread"
         val seed = "cash.z.ecc.android.sdk.integration.IntegrationTest.seed.value.64bytes".toByteArray()
@@ -129,7 +130,7 @@ class TestnetIntegrationTest : ScopedTest() {
         private val initializer = runBlocking {
             Initializer.new(context) { config ->
                 config.setNetwork(ZcashNetwork.Testnet, host)
-                runBlocking { config.importWallet(seed, birthdayHeight, ZcashNetwork.Testnet) }
+                runBlocking { config.importWallet(seed, BlockHeight.new(ZcashNetwork.Testnet, birthdayHeight), ZcashNetwork.Testnet) }
             }
         }
         private lateinit var synchronizer: Synchronizer

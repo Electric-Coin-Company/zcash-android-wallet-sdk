@@ -43,11 +43,11 @@ interface CompactBlockDao {
     suspend fun insert(block: List<CompactBlockEntity>)
 
     @Query("DELETE FROM compactblocks WHERE height > :height")
-    suspend fun rewindTo(height: Int)
+    suspend fun rewindTo(height: Long)
 
     @Query("SELECT MAX(height) FROM compactblocks")
-    suspend fun latestBlockHeight(): Int
+    suspend fun latestBlockHeight(): Long
 
     @Query("SELECT data FROM compactblocks WHERE height = :height")
-    suspend fun findCompactBlock(height: Int): ByteArray?
+    suspend fun findCompactBlock(height: Long): ByteArray?
 }

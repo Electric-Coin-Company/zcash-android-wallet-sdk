@@ -1,5 +1,6 @@
 package cash.z.ecc.android.sdk.demoapp.demos.listutxos
 
+import android.content.Context
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -13,13 +14,13 @@ import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor
 import cash.z.ecc.android.sdk.db.entity.ConfirmedTransaction
 import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
-import cash.z.ecc.android.sdk.demoapp.DemoConstants
 import cash.z.ecc.android.sdk.demoapp.databinding.FragmentListUtxosBinding
 import cash.z.ecc.android.sdk.demoapp.ext.requireApplicationContext
 import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.demoapp.util.mainActivity
 import cash.z.ecc.android.sdk.ext.collectWith
 import cash.z.ecc.android.sdk.internal.twig
+import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.tool.DerivationTool
 import cash.z.ecc.android.sdk.type.ZcashNetwork
 import kotlinx.coroutines.Dispatchers
@@ -27,6 +28,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import kotlin.math.max
 
 /**
  * ===============================================================================================
@@ -63,7 +65,7 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
         seed = Mnemonics.MnemonicCode(sharedViewModel.seedPhrase.value).toSeed()
         initializer = runBlocking {
             Initializer.new(requireApplicationContext()) {
-                runBlocking { it.importWallet(seed, network = ZcashNetwork.fromResources(requireApplicationContext())) }
+                runBlocking { it.newWallet(seed, network = ZcashNetwork.fromResources(requireApplicationContext())) }
                 it.alias = "Demo_Utxos"
             }
         }
@@ -78,7 +80,7 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
     fun initUi() {
         binding.inputAddress.setText(address)
         binding.inputRangeStart.setText(ZcashNetwork.fromResources(requireApplicationContext()).saplingActivationHeight.toString())
-        binding.inputRangeEnd.setText(DemoConstants.utxoEndHeight.toString())
+        binding.inputRangeEnd.setText(getUxtoEndHeight(requireApplicationContext()).value.toString())
 
         binding.buttonLoad.setOnClickListener {
             mainActivity()?.hideKeyboard()
@@ -91,24 +93,28 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
     fun downloadTransactions() {
         binding.textStatus.text = "loading..."
         binding.textStatus.post {
+            val network = ZcashNetwork.fromResources(requireApplicationContext())
             binding.textStatus.requestFocus()
             val addressToUse = binding.inputAddress.text.toString()
-            val startToUse = binding.inputRangeStart.text.toString().toIntOrNull() ?: ZcashNetwork.fromResources(requireApplicationContext()).saplingActivationHeight
-            val endToUse = binding.inputRangeEnd.text.toString().toIntOrNull() ?: DemoConstants.utxoEndHeight
+            val startToUse = max(binding.inputRangeStart.text.toString().toLongOrNull() ?: network.saplingActivationHeight.value, network.saplingActivationHeight.value)
+            val endToUse = binding.inputRangeEnd.text.toString().toLongOrNull()
+                ?: getUxtoEndHeight(requireApplicationContext()).value
             var allStart = now
             twig("loading transactions in range $startToUse..$endToUse")
-            val txids = lightwalletService?.getTAddressTransactions(addressToUse, startToUse..endToUse)
+            val txids = lightwalletService?.getTAddressTransactions(addressToUse, BlockHeight.new(network, startToUse)..BlockHeight.new(network, endToUse))
             var delta = now - allStart
             updateStatus("found ${txids?.size} transactions in ${delta}ms.", false)
 
             txids?.map {
-                it.data.apply {
-                    try {
-                        runBlocking { initializer.rustBackend.decryptAndStoreTransaction(toByteArray()) }
-                    } catch (t: Throwable) {
-                        twig("failed to decrypt and store transaction due to: $t")
-                    }
-                }
+                // Disabled during migration to newer SDK version; this appears to have been
+                // leveraging non-public  APIs in the SDK so perhaps should be removed
+                // it.data.apply {
+                //     try {
+                //         runBlocking { initializer.rustBackend.decryptAndStoreTransaction(toByteArray()) }
+                //     } catch (t: Throwable) {
+                //         twig("failed to decrypt and store transaction due to: $t")
+                //     }
+                // }
             }?.let { txData ->
                 // Disabled during migration to newer SDK version; this appears to have been
                 // leveraging non-public  APIs in the SDK so perhaps should be removed
@@ -245,5 +251,10 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
                 twig("current count: ${(synchronizer as SdkSynchronizer).getTransactionCount()}")
             }
         }
+    }
+
+    @Suppress("MagicNumber")
+    private fun getUxtoEndHeight(context: Context): BlockHeight {
+        return BlockHeight.new(ZcashNetwork.fromResources(context), 968085L)
     }
 }

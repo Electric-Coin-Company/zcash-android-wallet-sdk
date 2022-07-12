@@ -5,6 +5,7 @@ import cash.z.ecc.android.sdk.R
 import cash.z.ecc.android.sdk.annotation.OpenForTesting
 import cash.z.ecc.android.sdk.exception.LightWalletException
 import cash.z.ecc.android.sdk.internal.twig
+import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.type.ZcashNetwork
 import cash.z.wallet.sdk.rpc.CompactFormats
 import cash.z.wallet.sdk.rpc.CompactTxStreamerGrpc
@@ -15,22 +16,24 @@ import io.grpc.ConnectivityState
 import io.grpc.ManagedChannel
 import io.grpc.android.AndroidChannelBuilder
 import java.util.concurrent.TimeUnit
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * Implementation of LightwalletService using gRPC for requests to lightwalletd.
  *
  * @property channel the channel to use for communicating with the lightwalletd server.
- * @property singleRequestTimeoutSec the timeout to use for non-streaming requests. When a new stub
+ * @property singleRequestTimeout the timeout to use for non-streaming requests. When a new stub
  * is created, it will use a deadline that is after the given duration from now.
- * @property streamingRequestTimeoutSec the timeout to use for streaming requests. When a new stub
+ * @property streamingRequestTimeout the timeout to use for streaming requests. When a new stub
  * is created for streaming requests, it will use a deadline that is after the given duration from
  * now.
  */
 @OpenForTesting
 class LightWalletGrpcService private constructor(
     var channel: ManagedChannel,
-    private val singleRequestTimeoutSec: Long = 10L,
-    private val streamingRequestTimeoutSec: Long = 90L
+    private val singleRequestTimeout: Duration = 10.seconds,
+    private val streamingRequestTimeout: Duration = 90.seconds
 ) : LightWalletService {
 
     lateinit var connectionInfo: ConnectionInfo
@@ -64,20 +67,22 @@ class LightWalletGrpcService private constructor(
 
     /* LightWalletService implementation */
 
-    override fun getBlockRange(heightRange: IntRange): List<CompactFormats.CompactBlock> {
+    override fun getBlockRange(heightRange: ClosedRange<BlockHeight>): List<CompactFormats.CompactBlock> {
         if (heightRange.isEmpty()) return listOf()
 
-        return requireChannel().createStub(streamingRequestTimeoutSec)
+        return requireChannel().createStub(streamingRequestTimeout)
             .getBlockRange(heightRange.toBlockRange()).toList()
     }
 
-    override fun getLatestBlockHeight(): Int {
-        return requireChannel().createStub(singleRequestTimeoutSec)
-            .getLatestBlock(Service.ChainSpec.newBuilder().build()).height.toInt()
+    override fun getLatestBlockHeight(): BlockHeight {
+        return BlockHeight(
+            requireChannel().createStub(singleRequestTimeout)
+                .getLatestBlock(Service.ChainSpec.newBuilder().build()).height
+        )
     }
 
     override fun getServerInfo(): Service.LightdInfo {
-        return requireChannel().createStub(singleRequestTimeoutSec)
+        return requireChannel().createStub(singleRequestTimeout)
             .getLightdInfo(Service.Empty.newBuilder().build())
     }
 
@@ -111,18 +116,18 @@ class LightWalletGrpcService private constructor(
 
     override fun fetchUtxos(
         tAddress: String,
-        startHeight: Int
+        startHeight: BlockHeight
     ): List<Service.GetAddressUtxosReply> {
         val result = requireChannel().createStub().getAddressUtxos(
             Service.GetAddressUtxosArg.newBuilder().setAddress(tAddress)
-                .setStartHeight(startHeight.toLong()).build()
+                .setStartHeight(startHeight.value).build()
         )
         return result.addressUtxosList
     }
 
     override fun getTAddressTransactions(
         tAddress: String,
-        blockHeightRange: IntRange
+        blockHeightRange: ClosedRange<BlockHeight>
     ): List<Service.RawTransaction> {
         if (blockHeightRange.isEmpty() || tAddress.isBlank()) return listOf()
 
@@ -164,18 +169,9 @@ class LightWalletGrpcService private constructor(
     // Utilities
     //
 
-    private fun Channel.createStub(timeoutSec: Long = 60L) = CompactTxStreamerGrpc
+    private fun Channel.createStub(timeoutSec: Duration = 60.seconds) = CompactTxStreamerGrpc
         .newBlockingStub(this)
-        .withDeadlineAfter(timeoutSec, TimeUnit.SECONDS)
-
-    private inline fun Int.toBlockHeight(): Service.BlockID =
-        Service.BlockID.newBuilder().setHeight(this.toLong()).build()
-
-    private inline fun IntRange.toBlockRange(): Service.BlockRange =
-        Service.BlockRange.newBuilder()
-            .setStart(first.toBlockHeight())
-            .setEnd(last.toBlockHeight())
-            .build()
+        .withDeadlineAfter(timeoutSec.inWholeSeconds, TimeUnit.SECONDS)
 
     /**
      * This function effectively parses streaming responses. Each call to next(), on the iterators
@@ -231,3 +227,12 @@ class LightWalletGrpcService private constructor(
         }
     }
 }
+
+private fun BlockHeight.toBlockHeight(): Service.BlockID =
+    Service.BlockID.newBuilder().setHeight(value).build()
+
+private fun ClosedRange<BlockHeight>.toBlockRange(): Service.BlockRange =
+    Service.BlockRange.newBuilder()
+        .setStart(start.toBlockHeight())
+        .setEnd(endInclusive.toBlockHeight())
+        .build()

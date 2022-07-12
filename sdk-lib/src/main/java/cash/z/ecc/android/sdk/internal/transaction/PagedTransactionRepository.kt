@@ -12,12 +12,13 @@ import cash.z.ecc.android.sdk.internal.db.DerivedDataDb
 import cash.z.ecc.android.sdk.internal.ext.android.toFlowPagedList
 import cash.z.ecc.android.sdk.internal.ext.android.toRefreshable
 import cash.z.ecc.android.sdk.internal.ext.tryWarn
+import cash.z.ecc.android.sdk.internal.model.Checkpoint
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.jni.RustBackend
+import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.type.UnifiedViewingKey
-import cash.z.ecc.android.sdk.type.WalletBirthday
+import cash.z.ecc.android.sdk.type.ZcashNetwork
 import kotlinx.coroutines.flow.emitAll
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.withContext
 
@@ -28,7 +29,8 @@ import kotlinx.coroutines.withContext
  *
  * @param pageSize transactions per page. This influences pre-fetch and memory configuration.
  */
-class PagedTransactionRepository private constructor(
+internal class PagedTransactionRepository private constructor(
+    private val zcashNetwork: ZcashNetwork,
     private val db: DerivedDataDb,
     private val pageSize: Int
 ) : TransactionRepository {
@@ -62,20 +64,20 @@ class PagedTransactionRepository private constructor(
 
     override fun invalidate() = allTransactionsFactory.refresh()
 
-    override suspend fun lastScannedHeight() = blocks.lastScannedHeight()
+    override suspend fun lastScannedHeight() = BlockHeight.new(zcashNetwork, blocks.lastScannedHeight())
 
-    override suspend fun firstScannedHeight() = blocks.firstScannedHeight()
+    override suspend fun firstScannedHeight() = BlockHeight.new(zcashNetwork, blocks.firstScannedHeight())
 
     override suspend fun isInitialized() = blocks.count() > 0
 
     override suspend fun findEncodedTransactionById(txId: Long) =
         transactions.findEncodedTransactionById(txId)
 
-    override suspend fun findNewTransactions(blockHeightRange: IntRange): List<ConfirmedTransaction> =
-        transactions.findAllTransactionsByRange(blockHeightRange.first, blockHeightRange.last)
+    override suspend fun findNewTransactions(blockHeightRange: ClosedRange<BlockHeight>): List<ConfirmedTransaction> =
+        transactions.findAllTransactionsByRange(blockHeightRange.start.value, blockHeightRange.endInclusive.value)
 
     override suspend fun findMinedHeight(rawTransactionId: ByteArray) =
-        transactions.findMinedHeight(rawTransactionId)
+        transactions.findMinedHeight(rawTransactionId)?.let { BlockHeight.new(zcashNetwork, it) }
 
     override suspend fun findMatchingTransactionId(rawTransactionId: ByteArray): Long? =
         transactions.findMatchingTransactionId(rawTransactionId)
@@ -84,8 +86,8 @@ class PagedTransactionRepository private constructor(
         transactions.cleanupCancelledTx(rawTransactionId)
 
     // let expired transactions linger in the UI for a little while
-    override suspend fun deleteExpired(lastScannedHeight: Int) =
-        transactions.deleteExpired(lastScannedHeight - (ZcashSdk.EXPIRY_OFFSET / 2))
+    override suspend fun deleteExpired(lastScannedHeight: BlockHeight) =
+        transactions.deleteExpired(lastScannedHeight.value - (ZcashSdk.EXPIRY_OFFSET / 2))
 
     override suspend fun count() = transactions.count()
 
@@ -103,17 +105,18 @@ class PagedTransactionRepository private constructor(
     }
 
     // TODO: begin converting these into Data Access API. For now, just collect the desired operations and iterate/refactor, later
-    suspend fun findBlockHash(height: Int): ByteArray? = blocks.findHashByHeight(height)
+    suspend fun findBlockHash(height: BlockHeight): ByteArray? = blocks.findHashByHeight(height.value)
     suspend fun getTransactionCount(): Int = transactions.count()
 
     // TODO: convert this into a wallet repository rather than "transaction repository"
 
     companion object {
-        suspend fun new(
+        internal suspend fun new(
             appContext: Context,
+            zcashNetwork: ZcashNetwork,
             pageSize: Int = 10,
             rustBackend: RustBackend,
-            birthday: WalletBirthday,
+            birthday: Checkpoint,
             viewingKeys: List<UnifiedViewingKey>,
             overwriteVks: Boolean = false
         ): PagedTransactionRepository {
@@ -122,7 +125,7 @@ class PagedTransactionRepository private constructor(
             val db = buildDatabase(appContext.applicationContext, rustBackend.pathDataDb)
             applyKeyMigrations(rustBackend, overwriteVks, viewingKeys)
 
-            return PagedTransactionRepository(db, pageSize)
+            return PagedTransactionRepository(zcashNetwork, db, pageSize)
         }
 
         /**
@@ -155,7 +158,7 @@ class PagedTransactionRepository private constructor(
          */
         private suspend fun initMissingDatabases(
             rustBackend: RustBackend,
-            birthday: WalletBirthday,
+            birthday: Checkpoint,
             viewingKeys: List<UnifiedViewingKey>
         ) {
             maybeCreateDataDb(rustBackend)
@@ -178,20 +181,15 @@ class PagedTransactionRepository private constructor(
          */
         private suspend fun maybeInitBlocksTable(
             rustBackend: RustBackend,
-            birthday: WalletBirthday
+            checkpoint: Checkpoint
         ) {
             // TODO: consider converting these to typed exceptions in the welding layer
             tryWarn(
                 "Warning: did not initialize the blocks table. It probably was already initialized.",
                 ifContains = "table is not empty"
             ) {
-                rustBackend.initBlocksTable(
-                    birthday.height,
-                    birthday.hash,
-                    birthday.time,
-                    birthday.tree
-                )
-                twig("seeded the database with sapling tree at height ${birthday.height}")
+                rustBackend.initBlocksTable(checkpoint)
+                twig("seeded the database with sapling tree at height ${checkpoint.height}")
             }
             twig("database file: ${rustBackend.pathDataDb}")
         }
