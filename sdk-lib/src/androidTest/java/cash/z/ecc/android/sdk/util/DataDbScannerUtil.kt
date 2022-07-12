@@ -71,7 +71,8 @@ class DataDbScannerUtil {
                     it.setBirthdayHeight(
                         BlockHeight.new(
                             ZcashNetwork.Mainnet,
-                            birthdayHeight)
+                            birthdayHeight
+                        )
                     )
                 }
             }

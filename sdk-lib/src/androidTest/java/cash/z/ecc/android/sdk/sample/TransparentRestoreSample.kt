@@ -87,8 +87,15 @@ class TransparentRestoreSample {
     @LargeTest
     @Ignore("This test is extremely slow")
     fun kris() = runBlocking<Unit> {
-        val wallet0 = TestWallet(TestWallet.Backups.SAMPLE_WALLET.seedPhrase, "tmpabc", Testnet, startHeight = BlockHeight.new(
-            ZcashNetwork.Testnet, 1330190))
+        val wallet0 = TestWallet(
+            TestWallet.Backups.SAMPLE_WALLET.seedPhrase,
+            "tmpabc",
+            Testnet,
+            startHeight = BlockHeight.new(
+                ZcashNetwork.Testnet,
+                1330190
+            )
+        )
 //        val wallet1 = SimpleWallet(WALLET0_PHRASE, "Wallet1")
 
         wallet0.sync() // .shieldFunds()

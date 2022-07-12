@@ -25,7 +25,7 @@ class InboundTxTests : ScopedTest() {
 
     @Test
     fun testLatestHeight() {
-        validator.validateLatestHeight(BlockHeight.new(ZcashNetwork.Mainnet,targetTxBlock.value - 1))
+        validator.validateLatestHeight(BlockHeight.new(ZcashNetwork.Mainnet, targetTxBlock.value - 1))
     }
 
     @Test

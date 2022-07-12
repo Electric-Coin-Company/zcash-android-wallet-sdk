@@ -16,7 +16,9 @@ import org.junit.runner.RunWith
 class ReorgSmallTest : ScopedTest() {
 
     private val targetHeight = BlockHeight.new(
-        ZcashNetwork.Mainnet, 663250)
+        ZcashNetwork.Mainnet,
+        663250
+    )
     private val hashBeforeReorg = "09ec0d5de30d290bc5a2318fbf6a2427a81c7db4790ce0e341a96aeac77108b9"
     private val hashAfterReorg = "tbd"
 

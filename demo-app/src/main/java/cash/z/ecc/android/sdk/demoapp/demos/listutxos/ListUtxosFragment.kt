@@ -14,7 +14,6 @@ import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor
 import cash.z.ecc.android.sdk.db.entity.ConfirmedTransaction
 import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
-import cash.z.ecc.android.sdk.demoapp.DemoConstants
 import cash.z.ecc.android.sdk.demoapp.databinding.FragmentListUtxosBinding
 import cash.z.ecc.android.sdk.demoapp.ext.requireApplicationContext
 import cash.z.ecc.android.sdk.demoapp.util.fromResources
@@ -98,7 +97,8 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
             binding.textStatus.requestFocus()
             val addressToUse = binding.inputAddress.text.toString()
             val startToUse = max(binding.inputRangeStart.text.toString().toLongOrNull() ?: network.saplingActivationHeight.value, network.saplingActivationHeight.value)
-            val endToUse = binding.inputRangeEnd.text.toString().toLongOrNull() ?: getUxtoEndHeight(requireApplicationContext()).value
+            val endToUse = binding.inputRangeEnd.text.toString().toLongOrNull()
+                ?: getUxtoEndHeight(requireApplicationContext()).value
             var allStart = now
             twig("loading transactions in range $startToUse..$endToUse")
             val txids = lightwalletService?.getTAddressTransactions(addressToUse, BlockHeight.new(network, startToUse)..BlockHeight.new(network, endToUse))
@@ -253,6 +253,7 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
         }
     }
 
+    @Suppress("MagicNumber")
     private fun getUxtoEndHeight(context: Context): BlockHeight {
         return BlockHeight.new(ZcashNetwork.fromResources(context), 968085L)
     }
