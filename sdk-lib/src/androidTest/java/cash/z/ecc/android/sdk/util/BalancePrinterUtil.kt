@@ -8,6 +8,7 @@ import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.ext.deleteSuspend
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
 import cash.z.ecc.android.sdk.internal.twig
+import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.tool.CheckpointTool
 import cash.z.ecc.android.sdk.type.ZcashNetwork
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -30,7 +31,7 @@ class BalancePrinterUtil {
 
     private val network = ZcashNetwork.Mainnet
     private val downloadBatchSize = 9_000
-    private val birthdayHeight = 523240
+    private val birthdayHeight = BlockHeight.new(network, 523240)
 
     private val mnemonics = SimpleMnemonics()
     private val context = InstrumentationRegistry.getInstrumentation().context

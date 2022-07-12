@@ -6,6 +6,8 @@ import cash.z.ecc.android.sdk.SdkSynchronizer
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.internal.TroubleshootingTwig
 import cash.z.ecc.android.sdk.internal.Twig
+import cash.z.ecc.android.sdk.model.BlockHeight
+import cash.z.ecc.android.sdk.type.ZcashNetwork
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -36,7 +38,7 @@ class DataDbScannerUtil {
 
 //    private val rustBackend = RustBackend.init(context, cacheDbName, dataDbName)
 
-    private val birthdayHeight = 600_000
+    private val birthdayHeight = 600_000L
     private lateinit var synchronizer: Synchronizer
 
     @Before
@@ -67,7 +69,9 @@ class DataDbScannerUtil {
             val initializer = runBlocking {
                 Initializer.new(context) {
                     it.setBirthdayHeight(
-                        birthdayHeight
+                        BlockHeight.new(
+                            ZcashNetwork.Mainnet,
+                            birthdayHeight)
                     )
                 }
             }

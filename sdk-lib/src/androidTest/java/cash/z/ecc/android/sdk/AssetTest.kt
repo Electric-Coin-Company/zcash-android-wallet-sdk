@@ -82,7 +82,7 @@ class AssetTest {
 
             assertEquals(
                 "File: ${it.filename}",
-                CheckpointTool.checkpointHeightFromFilename(it.filename),
+                CheckpointTool.checkpointHeightFromFilename(network, it.filename),
                 jsonObject.getInt("height")
             )
 

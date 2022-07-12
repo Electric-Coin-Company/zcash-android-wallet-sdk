@@ -14,14 +14,14 @@ fun Initializer.Config.seedPhrase(seedPhrase: String, network: ZcashNetwork) {
 }
 
 object BlockExplorer {
-    suspend fun fetchLatestHeight(): Int {
+    suspend fun fetchLatestHeight(): Long {
         val client = OkHttpClient()
         val request = Request.Builder()
             .url("https://api.blockchair.com/zcash/blocks?limit=1")
             .build()
         val result = client.newCall(request).await()
         val body = result.body?.string()
-        return JSONObject(body).getJSONArray("data").getJSONObject(0).getInt("id")
+        return JSONObject(body).getJSONArray("data").getJSONObject(0).getLong("id")
     }
 }
 

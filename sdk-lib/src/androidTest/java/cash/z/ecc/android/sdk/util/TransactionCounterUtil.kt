@@ -5,6 +5,7 @@ import cash.z.ecc.android.sdk.internal.TroubleshootingTwig
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.service.LightWalletGrpcService
 import cash.z.ecc.android.sdk.internal.twig
+import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.type.ZcashNetwork
 import org.junit.Ignore
 import org.junit.Test
@@ -23,7 +24,12 @@ class TransactionCounterUtil {
     @Ignore("This test is broken")
     fun testBlockSize() {
         val sizes = mutableMapOf<Int, Int>()
-        service.getBlockRange(900_000..910_000).forEach { b ->
+        service.getBlockRange(
+            BlockHeight.new(ZcashNetwork.Mainnet, 900_000)..BlockHeight.new(
+                ZcashNetwork.Mainnet,
+                910_000
+            )
+        ).forEach { b ->
             twig("h: ${b.header.size()}")
             val s = b.serializedSize
             sizes[s] = (sizes[s] ?: 0) + 1
@@ -38,7 +44,12 @@ class TransactionCounterUtil {
         val outputCounts = mutableMapOf<Int, Int>()
         var totalOutputs = 0
         var totalTxs = 0
-        service.getBlockRange(900_000..950_000).forEach { b ->
+        service.getBlockRange(
+            BlockHeight.new(ZcashNetwork.Mainnet, 900_000)..BlockHeight.new(
+                ZcashNetwork.Mainnet,
+                950_000
+            )
+        ).forEach { b ->
             b.header.size()
             b.vtxList.map { it.outputsCount }.forEach { oCount ->
                 outputCounts[oCount] = (outputCounts[oCount] ?: 0) + oCount.coerceAtLeast(1)

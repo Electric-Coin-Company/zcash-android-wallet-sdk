@@ -3,7 +3,9 @@ package cash.z.ecc.android.sdk.sample
 import androidx.test.filters.LargeTest
 import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.internal.twig
+import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.Zatoshi
+import cash.z.ecc.android.sdk.type.ZcashNetwork
 import cash.z.ecc.android.sdk.type.ZcashNetwork.Testnet
 import cash.z.ecc.android.sdk.util.TestWallet
 import kotlinx.coroutines.delay
@@ -73,7 +75,7 @@ class TransparentRestoreSample {
 //        wallet.rewindToHeight(1343500).join(45_000)
         val wallet = TestWallet(TestWallet.Backups.SAMPLE_WALLET, alias = "WalletC")
 //        wallet.sync().rewindToHeight(1339178).join(10000)
-        wallet.sync().rewindToHeight(1339178).send(
+        wallet.sync().rewindToHeight(BlockHeight.new(ZcashNetwork.Testnet, 1339178)).send(
             "ztestsapling17zazsl8rryl8kjaqxnr2r29rw9d9a2mud37ugapm0s8gmyv0ue43h9lqwmhdsp3nu9dazeqfs6l",
             "is send broken?"
         ).join(5)
@@ -85,7 +87,8 @@ class TransparentRestoreSample {
     @LargeTest
     @Ignore("This test is extremely slow")
     fun kris() = runBlocking<Unit> {
-        val wallet0 = TestWallet(TestWallet.Backups.SAMPLE_WALLET.seedPhrase, "tmpabc", Testnet, startHeight = 1330190)
+        val wallet0 = TestWallet(TestWallet.Backups.SAMPLE_WALLET.seedPhrase, "tmpabc", Testnet, startHeight = BlockHeight.new(
+            ZcashNetwork.Testnet, 1330190))
 //        val wallet1 = SimpleWallet(WALLET0_PHRASE, "Wallet1")
 
         wallet0.sync() // .shieldFunds()
@@ -107,7 +110,7 @@ class TransparentRestoreSample {
      */
 //    @Test
     fun hasFunds() = runBlocking<Unit> {
-        val walletSandbox = TestWallet(TestWallet.Backups.SAMPLE_WALLET.seedPhrase, "WalletC", Testnet, startHeight = 1330190)
+        val walletSandbox = TestWallet(TestWallet.Backups.SAMPLE_WALLET.seedPhrase, "WalletC", Testnet, startHeight = BlockHeight.new(ZcashNetwork.Testnet, 1330190))
         //        val job = walletA.walletScope.launch {
         //            twig("Syncing WalletA")
         //            walletA.sync()
@@ -125,7 +128,7 @@ class TransparentRestoreSample {
         // send z->t
         //        walletA.send(TX_VALUE, walletA.transparentAddress, "${TransparentRestoreSample::class.java.simpleName} z->t")
 
-        walletSandbox.rewindToHeight(1339178)
+        walletSandbox.rewindToHeight(BlockHeight.new(ZcashNetwork.Testnet, 1339178))
         twig("Done REWINDING!")
         twig("T-ADDR (for the win!): ${walletSandbox.transparentAddress}")
         delay(500)
