@@ -6,10 +6,12 @@ import cash.z.ecc.android.bip39.toSeed
 import cash.z.ecc.android.sdk.Initializer
 import cash.z.ecc.android.sdk.SdkSynchronizer
 import cash.z.ecc.android.sdk.Synchronizer
+import cash.z.ecc.android.sdk.db.entity.Block
 import cash.z.ecc.android.sdk.db.entity.isPending
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.service.LightWalletGrpcService
 import cash.z.ecc.android.sdk.internal.twig
+import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.tool.DerivationTool
@@ -36,7 +38,7 @@ class TestWallet(
     val alias: String = "TestWallet",
     val network: ZcashNetwork = ZcashNetwork.Testnet,
     val host: String = network.defaultHost,
-    startHeight: Int? = null,
+    startHeight: BlockHeight? = null,
     val port: Int = network.defaultPort
 ) {
     constructor(
@@ -109,7 +111,7 @@ class TestWallet(
     suspend fun send(address: String = transparentAddress, memo: String = "", amount: Zatoshi = Zatoshi(500L), fromAccountIndex: Int = 0): TestWallet {
         Twig.sprout("$alias sending")
         synchronizer.sendToAddress(shieldedSpendingKey, amount, address, memo, fromAccountIndex)
-            .takeWhile { it.isPending() }
+            .takeWhile { it.isPending(null) }
             .collect {
                 twig("Updated transaction: $it")
             }
@@ -117,14 +119,14 @@ class TestWallet(
         return this
     }
 
-    suspend fun rewindToHeight(height: Int): TestWallet {
+    suspend fun rewindToHeight(height: BlockHeight): TestWallet {
         synchronizer.rewindToNearestHeight(height, false)
         return this
     }
 
     suspend fun shieldFunds(): TestWallet {
         twig("checking $transparentAddress for transactions!")
-        synchronizer.refreshUtxos(transparentAddress, 935000).let { count ->
+        synchronizer.refreshUtxos(transparentAddress, BlockHeight.new(ZcashNetwork.Mainnet, 935000)).let { count ->
             twig("FOUND $count new UTXOs")
         }
 
@@ -163,13 +165,13 @@ class TestWallet(
         }
     }
 
-    enum class Backups(val seedPhrase: String, val testnetBirthday: Int, val mainnetBirthday: Int) {
+    enum class Backups(val seedPhrase: String, val testnetBirthday: BlockHeight, val mainnetBirthday: BlockHeight) {
         // TODO: get the proper birthday values for these wallets
-        DEFAULT("column rhythm acoustic gym cost fit keen maze fence seed mail medal shrimp tell relief clip cannon foster soldier shallow refuse lunar parrot banana", 1_355_928, 1_000_000),
-        SAMPLE_WALLET("input frown warm senior anxiety abuse yard prefer churn reject people glimpse govern glory crumble swallow verb laptop switch trophy inform friend permit purpose", 1_330_190, 1_000_000),
-        DEV_WALLET("still champion voice habit trend flight survey between bitter process artefact blind carbon truly provide dizzy crush flush breeze blouse charge solid fish spread", 1_000_000, 991645),
-        ALICE("quantum whisper lion route fury lunar pelican image job client hundred sauce chimney barely life cliff spirit admit weekend message recipe trumpet impact kitten", 1_330_190, 1_000_000),
-        BOB("canvas wine sugar acquire garment spy tongue odor hole cage year habit bullet make label human unit option top calm neutral try vocal arena", 1_330_190, 1_000_000),
+        DEFAULT("column rhythm acoustic gym cost fit keen maze fence seed mail medal shrimp tell relief clip cannon foster soldier shallow refuse lunar parrot banana", BlockHeight.new(ZcashNetwork.Testnet, 1_355_928), BlockHeight.new(ZcashNetwork.Mainnet,1_000_000)),
+        SAMPLE_WALLET("input frown warm senior anxiety abuse yard prefer churn reject people glimpse govern glory crumble swallow verb laptop switch trophy inform friend permit purpose", BlockHeight.new(ZcashNetwork.Testnet,1_330_190), BlockHeight.new(ZcashNetwork.Mainnet,1_000_000)),
+        DEV_WALLET("still champion voice habit trend flight survey between bitter process artefact blind carbon truly provide dizzy crush flush breeze blouse charge solid fish spread", BlockHeight.new(ZcashNetwork.Testnet,1_000_000), BlockHeight.new(ZcashNetwork.Mainnet,991645)),
+        ALICE("quantum whisper lion route fury lunar pelican image job client hundred sauce chimney barely life cliff spirit admit weekend message recipe trumpet impact kitten", BlockHeight.new(ZcashNetwork.Testnet,1_330_190), BlockHeight.new(ZcashNetwork.Mainnet,1_000_000)),
+        BOB("canvas wine sugar acquire garment spy tongue odor hole cage year habit bullet make label human unit option top calm neutral try vocal arena", BlockHeight.new(ZcashNetwork.Testnet,1_330_190), BlockHeight.new(ZcashNetwork.Mainnet,1_000_000)),
         ;
     }
 }

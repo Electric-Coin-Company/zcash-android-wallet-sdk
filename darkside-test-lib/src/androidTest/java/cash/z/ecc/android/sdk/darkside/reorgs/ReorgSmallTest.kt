@@ -4,6 +4,8 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import cash.z.ecc.android.sdk.darkside.test.DarksideTestCoordinator
 import cash.z.ecc.android.sdk.darkside.test.ScopedTest
 import cash.z.ecc.android.sdk.internal.twig
+import cash.z.ecc.android.sdk.model.BlockHeight
+import cash.z.ecc.android.sdk.type.ZcashNetwork
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.BeforeClass
@@ -13,7 +15,8 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class ReorgSmallTest : ScopedTest() {
 
-    private val targetHeight = 663250
+    private val targetHeight = BlockHeight.new(
+        ZcashNetwork.Mainnet, 663250)
     private val hashBeforeReorg = "09ec0d5de30d290bc5a2318fbf6a2427a81c7db4790ce0e341a96aeac77108b9"
     private val hashAfterReorg = "tbd"
 

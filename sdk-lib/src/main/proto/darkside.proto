@@ -29,16 +29,16 @@ message DarksideBlocksURL {
 // of hex-encoded transactions, one per line, that are to be associated
 // with the given height (fake-mined into the block at that height)
 message DarksideTransactionsURL {
-    int32 height = 1;
+    int64 height = 1;
     string url = 2;
 }
 
 message DarksideHeight {
-    int32 height = 1;
+    int64 height = 1;
 }
 
 message DarksideEmptyBlocks {
-    int32 height = 1;
+    int64 height = 1;
     int32 nonce = 2;
     int32 count = 3;
 }

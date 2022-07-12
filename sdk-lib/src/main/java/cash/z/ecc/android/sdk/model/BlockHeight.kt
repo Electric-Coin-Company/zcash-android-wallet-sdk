@@ -24,7 +24,7 @@ data class BlockHeight internal constructor(val value: Long) : Comparable<BlockH
 
     operator fun plus(other: BlockHeight) = BlockHeight(value + other.value)
 
-    internal operator fun plus(other: Int): BlockHeight {
+    operator fun plus(other: Int): BlockHeight {
         if (other < 0) {
             throw IllegalArgumentException("Cannot add negative value $other to BlockHeight")
         }
@@ -32,7 +32,7 @@ data class BlockHeight internal constructor(val value: Long) : Comparable<BlockH
         return BlockHeight(value + other.toLong())
     }
 
-    internal operator fun plus(other: Long): BlockHeight {
+    operator fun plus(other: Long): BlockHeight {
         if (other < 0) {
             throw IllegalArgumentException("Cannot add negative value $other to BlockHeight")
         }

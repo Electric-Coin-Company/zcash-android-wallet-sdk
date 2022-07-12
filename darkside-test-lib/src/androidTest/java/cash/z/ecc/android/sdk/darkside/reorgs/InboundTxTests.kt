@@ -4,6 +4,8 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import cash.z.ecc.android.sdk.darkside.test.DarksideTestCoordinator
 import cash.z.ecc.android.sdk.darkside.test.ScopedTest
 import cash.z.ecc.android.sdk.internal.twig
+import cash.z.ecc.android.sdk.model.BlockHeight
+import cash.z.ecc.android.sdk.type.ZcashNetwork
 import org.junit.BeforeClass
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -18,12 +20,12 @@ class InboundTxTests : ScopedTest() {
 
     @Test
     fun testTargetBlock_scanned() {
-        validator.validateMinHeightScanned(targetTxBlock - 1)
+        validator.validateMinHeightScanned(BlockHeight.new(ZcashNetwork.Mainnet, targetTxBlock.value - 1))
     }
 
     @Test
     fun testLatestHeight() {
-        validator.validateLatestHeight(targetTxBlock - 1)
+        validator.validateLatestHeight(BlockHeight.new(ZcashNetwork.Mainnet,targetTxBlock.value - 1))
     }
 
     @Test
@@ -40,7 +42,7 @@ class InboundTxTests : ScopedTest() {
         validator.validateTxCount(2)
     }
 
-    private fun addTransactions(targetHeight: Int, vararg txs: String) {
+    private fun addTransactions(targetHeight: BlockHeight, vararg txs: String) {
         val overwriteBlockCount = 5
         chainMaker
 //            .stageEmptyBlocks(targetHeight, overwriteBlockCount)
@@ -78,8 +80,8 @@ class InboundTxTests : ScopedTest() {
             "https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/transactions/recv/71935e29127a7de0b96081f4c8a42a9c11584d83adedfaab414362a6f3d965cf.txt"
         )
 
-        private const val firstBlock = 663150
-        private const val targetTxBlock = 663188
+        private val firstBlock = BlockHeight.new(ZcashNetwork.Mainnet, 663150L)
+        private val targetTxBlock = BlockHeight.new(ZcashNetwork.Mainnet, 663188L)
         private const val lastBlockHash = "2fc7b4682f5ba6ba6f86e170b40f0aa9302e1d3becb2a6ee0db611ff87835e4a"
         private val sithLord = DarksideTestCoordinator()
         private val validator = sithLord.validator
@@ -93,7 +95,7 @@ class InboundTxTests : ScopedTest() {
             chainMaker
                 .resetBlocks(blocksUrl, startHeight = firstBlock, tipHeight = targetTxBlock)
                 .stageEmptyBlocks(firstBlock + 1, 100)
-                .applyTipHeight(targetTxBlock - 1)
+                .applyTipHeight(BlockHeight.new(ZcashNetwork.Mainnet, targetTxBlock.value - 1))
 
             sithLord.synchronizer.start(classScope)
             sithLord.await()

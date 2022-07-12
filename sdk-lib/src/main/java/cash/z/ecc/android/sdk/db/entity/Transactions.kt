@@ -385,10 +385,10 @@ fun PendingTransaction.isSafeToDiscard(): Boolean {
     }
 }
 
-fun PendingTransaction.isPending(currentHeight: BlockHeight): Boolean {
+fun PendingTransaction.isPending(currentHeight: BlockHeight?): Boolean {
     // not mined and not expired and successfully created
     return !isSubmitSuccess() && minedHeight == -1L &&
-        (expiryHeight == -1L || expiryHeight > currentHeight.value) && raw != null
+        (expiryHeight == -1L || expiryHeight > (currentHeight?.value ?: 0L)) && raw != null
 }
 
 fun PendingTransaction.isSubmitSuccess(): Boolean {
