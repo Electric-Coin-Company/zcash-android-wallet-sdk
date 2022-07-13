@@ -807,12 +807,24 @@ object DefaultSynchronizerFactory {
         blockStore: CompactBlockStore
     ): CompactBlockDownloader = CompactBlockDownloader(service, blockStore)
 
-    fun defaultTxManager(
+    suspend fun defaultTxManager(
         initializer: Initializer,
         encoder: TransactionEncoder,
         service: LightWalletService
-    ): OutboundTransactionManager =
-        PersistentTransactionManager(initializer.context, encoder, service)
+    ): OutboundTransactionManager {
+        val databasePath = Initializer.pendingTransactionsDbPath(
+            initializer.context,
+            initializer.network,
+            initializer.alias
+        )
+
+        return PersistentTransactionManager(
+            initializer.context,
+            encoder,
+            service,
+            databasePath
+        )
+    }
 
     fun defaultProcessor(
         initializer: Initializer,

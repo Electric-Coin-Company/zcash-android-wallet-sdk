@@ -1,6 +1,8 @@
 package cash.z.ecc.android.sdk
 
 import android.content.Context
+import android.os.Build
+import androidx.annotation.RequiresApi
 import cash.z.ecc.android.sdk.exception.InitializerException
 import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.internal.AndroidApiVersion
@@ -15,6 +17,7 @@ import cash.z.ecc.android.sdk.tool.WalletBirthdayTool
 import cash.z.ecc.android.sdk.type.UnifiedViewingKey
 import cash.z.ecc.android.sdk.type.WalletBirthday
 import cash.z.ecc.android.sdk.type.ZcashNetwork
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -413,11 +416,12 @@ class Initializer private constructor(
         }
 
         //
-        // Path Helpers
+        // Database Path Helpers
         //
 
         /**
-         * Returns the path to the cache database that would correspond to the given alias.
+         * Returns the path to the Cache database that would correspond to the given alias
+         * and network attributes.
          *
          * @param appContext the application context
          * @param network the network associated with the data in the cache database.
@@ -427,11 +431,22 @@ class Initializer private constructor(
             appContext: Context,
             network: ZcashNetwork,
             alias: String
-        ): String =
-            aliasToPath(appContext, network, alias, ZcashSdk.DB_CACHE_NAME)
+        ): String {
+            val dbLocationsPair = prepareDbFiles(
+                appContext,
+                network,
+                alias,
+                ZcashSdk.DB_CACHE_NAME
+            )
+            return checkDbPath(
+                dbLocationsPair.first,
+                dbLocationsPair.second
+            )
+        }
 
         /**
-         * Returns the path to the data database that would correspond to the given alias.
+         * Returns the path to the Data database that would correspond to the given alias
+         * and network attributes.
          *
          * @param appContext the application context
          * @param network the network associated with the data in the database.
@@ -441,78 +456,158 @@ class Initializer private constructor(
             appContext: Context,
             network: ZcashNetwork,
             alias: String
-        ): String =
-            aliasToPath(appContext, network, alias, ZcashSdk.DB_DATA_NAME)
+        ): String {
+            val dbLocationsPair = prepareDbFiles(
+                appContext,
+                network,
+                alias,
+                ZcashSdk.DB_DATA_NAME
+            )
+            return checkDbPath(
+                dbLocationsPair.first,
+                dbLocationsPair.second
+            )
+        }
 
         /**
-         * Transforms ZcashNetwork, alias, and dbFileName parameters into valid database file path.
-         * From SDK API 21 it places database files into no_backup folder, as it does not allow
-         * automatic backup. On older APIs it places database files into databases folder, which
-         * allows automatic backup. It also moves database files between these two folders, if older
-         * folder usage is detected.
+         * Returns the path to the PendingTransaction database that would correspond to the given
+         * alias and network attributes. As the originally created file was called just
+         * PendingTransactions.db, we choose slightly different approach, but it also leads to
+         * original database files migration with additional renaming too.
          *
          * @param appContext the application context
          * @param network the network associated with the data in the database.
          * @param alias the alias to convert into a database path
-         * @param dbFileName the name of the new database file
          */
-        private suspend fun aliasToPath(
+        suspend fun pendingTransactionsDbPath(
             appContext: Context,
             network: ZcashNetwork,
-            alias: String,
-            dbFileName: String
+            alias: String
         ): String {
-            val resultDbFile = if (AndroidApiVersion.isAtLeastL) {
-                val parentDir: String =
-                    appContext.getNoBackupPathSuspend().absolutePath
-                        ?: throw InitializerException.DatabasePathException
-
-                var preferredLocationDbFile = getDbFile(
-                    network,
-                    alias,
-                    dbFileName,
-                    parentDir
-                )
-                // first we check if the db file doesn't exist in legacy folder already
-                if (!preferredLocationDbFile.exists()) {
-                    val legacyLocationDbFile = getDbFile(
-                        network,
-                        alias,
-                        dbFileName,
-                        getLegacyDbParentDirPath(appContext)
-                    )
-                    if (legacyLocationDbFile.exists()) {
-                        preferredLocationDbFile = legacyLocationDbFile.copyTo(preferredLocationDbFile)
-                        // We check the copy operation result and delete the legacy db files, or
-                        // fallback to the legacy one if anything went wrong.
-                        if (!preferredLocationDbFile.exists() ||
-                            !deleteDb(legacyLocationDbFile.absolutePath)
-                        ) {
-                            preferredLocationDbFile = legacyLocationDbFile
-                        }
-                    }
-                }
-                preferredLocationDbFile
-            } else {
+            val legacyLocationDbFile = getDbFile(
+                null,
+                null,
+                ZcashSdk.DB_PENDING_TRANSACTIONS_NAME,
+                getLegacyDbParentDirPath(appContext)
+            )
+            val preferredLocationDbFile = if (AndroidApiVersion.isAtLeastL) {
                 getDbFile(
                     network,
                     alias,
-                    dbFileName,
-                    getLegacyDbParentDirPath(appContext)
+                    ZcashSdk.DB_PENDING_TRANSACTIONS_NAME,
+                    getDbParentDirPath(appContext)
                 )
+            } else {
+                null
             }
-            return resultDbFile.absolutePath
+            return checkDbPath(
+                legacyLocationDbFile,
+                preferredLocationDbFile
+            )
         }
 
         /**
-         * This function returns previously used database folder path. The databases folder is
-         * deprecated now, as it allows automatic data backup, which is not permitted for our
-         * database files.
+         * This helper function prepares a legacy (i.e. previously created) database file, as well
+         * as the preferred (i.e. newly created) file for subsequent use (and eventually move).
+         *
+         * Note: move of the database file is not performed for devices with Android SDK level lower
+         * than 21.
+         *
+         * @param appContext the application context
+         * @param network the network associated with the data in the database.
+         * @param alias the alias to convert into a database path
+         * @param databaseName the name of the new database file
+         */
+        private suspend fun prepareDbFiles(
+            appContext: Context,
+            network: ZcashNetwork,
+            alias: String,
+            databaseName: String
+        ): Pair<File, File?> {
+            val legacyLocationDbFile = getDbFile(
+                network,
+                alias,
+                databaseName,
+                getLegacyDbParentDirPath(appContext)
+            )
+            val preferredLocationDbFile = if (AndroidApiVersion.isAtLeastL) {
+                getDbFile(
+                    network,
+                    alias,
+                    databaseName,
+                    getDbParentDirPath(appContext)
+                )
+            } else {
+                null
+            }
+
+            return Pair(
+                legacyLocationDbFile,
+                preferredLocationDbFile
+            )
+        }
+
+        /**
+         * This function do actual database file move or simply validate the file and return it.
+         * From the Android SDK level 21 it places database files into no_backup folder, as it does
+         * not allow automatic backup. On older APIs it places database files into databases folder,
+         * which allows automatic backup. It also moves database files between these two folders,
+         * if older folder usage is detected.
+         *
+         * @param legacyLocationDbFile the previously used file location
+         * @param preferredLocationDbFile the newly used file location
+         */
+        private suspend fun checkDbPath(
+            legacyLocationDbFile: File,
+            preferredLocationDbFile: File?,
+        ): String = withContext(Dispatchers.IO) {
+            var preferredDbFile = preferredLocationDbFile
+
+            // we run on Android SDK 21 at least
+            val resultDbFile = if (preferredDbFile != null) {
+
+                // first we check if the db file doesn't exist in legacy folder already
+                if (!preferredDbFile.exists()) {
+
+                    if (legacyLocationDbFile.exists()) {
+                        preferredDbFile = legacyLocationDbFile.copyTo(preferredDbFile)
+                        // We check the copy operation result and delete the legacy db files, or
+                        // fallback to the legacy one if anything went wrong.
+                        if (!preferredDbFile.exists() || !deleteDb(legacyLocationDbFile.absolutePath)
+                        ) {
+                            preferredDbFile = legacyLocationDbFile
+                        }
+                    }
+                }
+                preferredDbFile
+            } else {
+                legacyLocationDbFile
+            }
+            resultDbFile.absolutePath
+        }
+
+        /**
+         * This function returns previously used database folder path (i.e. databases). The databases
+         * folder is deprecated now, as it allows automatic data backup, which is not permitted for
+         * our database files.
          *
          * @param appContext the application context
          */
         private suspend fun getLegacyDbParentDirPath(appContext: Context): String {
             return appContext.getDatabasePathSuspend("unused.db").parentFile?.absolutePath
+                ?: throw InitializerException.DatabasePathException
+        }
+
+        /**
+         * This function returns a newly used database folder path (i.e. no_backup). The databases
+         * folder is deprecated now and we use no_backup to avoid automatic backup of large possibly
+         * sensitive data.
+         *
+         * @param appContext the application context
+         */
+        @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
+        private suspend fun getDbParentDirPath(appContext: Context): String {
+            return appContext.getNoBackupPathSuspend().absolutePath
                 ?: throw InitializerException.DatabasePathException
         }
 
@@ -525,13 +620,26 @@ class Initializer private constructor(
          * @param parentDir the name of the parent directory, in which the file should be placed
          */
         private fun getDbFile(
-            network: ZcashNetwork,
-            alias: String,
+            network: ZcashNetwork?,
+            alias: String?,
             dbFileName: String,
             parentDir: String
         ): File {
-            val prefix = if (alias.endsWith('_')) alias else "${alias}_"
-            return File(parentDir, "$prefix${network.networkName}_$dbFileName")
+            val aliasPrefix = if (alias == null) {
+                ""
+            } else if (alias.endsWith('_')) {
+                alias
+            } else {
+                "${alias}_"
+            }
+
+            val networkPrefix = network?.networkName ?: ""
+
+            return if (aliasPrefix.isNotEmpty()) {
+                File(parentDir, "$aliasPrefix${networkPrefix}_$dbFileName")
+            } else {
+                File(parentDir, dbFileName)
+            }
         }
 
         /**

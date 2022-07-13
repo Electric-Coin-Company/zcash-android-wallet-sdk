@@ -72,6 +72,7 @@ object ZcashSdk {
 
     val DB_DATA_NAME = "Data.db"
     val DB_CACHE_NAME = "Cache.db"
+    val DB_PENDING_TRANSACTIONS_NAME = "PendingTransactions.db"
 
     /**
      * File name for the sappling spend params

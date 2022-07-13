@@ -55,12 +55,12 @@ class PersistentTransactionManager(
         appContext: Context,
         encoder: TransactionEncoder,
         service: LightWalletService,
-        dataDbName: String = "PendingTransactions.db"
+        databasePath: String
     ) : this(
         Room.databaseBuilder(
             appContext,
             PendingTransactionDb::class.java,
-            dataDbName
+            databasePath
         ).setJournalMode(RoomDatabase.JournalMode.TRUNCATE).build(),
         encoder,
         service
