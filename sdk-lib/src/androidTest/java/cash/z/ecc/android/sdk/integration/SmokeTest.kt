@@ -38,7 +38,7 @@ class SmokeTest {
 
     @Test
     fun testBirthday() {
-        Assert.assertEquals("Invalid birthday height", 1_320_000, wallet.initializer.birthday.height)
+        Assert.assertEquals("Invalid birthday height", 1_320_000, wallet.initializer.checkpoint.height)
     }
 
     @Test

@@ -51,7 +51,7 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
         runBlocking {
             Initializer.new(requireApplicationContext(), null) {
                 it.setNetwork(ZcashNetwork.fromResources(requireApplicationContext()))
-                it.importWallet(viewingKey, network = ZcashNetwork.fromResources(requireApplicationContext()))
+                it.newWallet(viewingKey, network = ZcashNetwork.fromResources(requireApplicationContext()))
             }
         }.let { initializer ->
             synchronizer = Synchronizer.newBlocking(initializer)
@@ -81,7 +81,7 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
 
     private fun onStatus(status: Synchronizer.Status) {
         binding.textStatus.text = "Status: $status"
-        val balance = synchronizer.saplingBalances.value
+        val balance: WalletBalance? = synchronizer.saplingBalances.value
         if (null == balance) {
             binding.textBalance.text = "Calculating balance..."
         } else {

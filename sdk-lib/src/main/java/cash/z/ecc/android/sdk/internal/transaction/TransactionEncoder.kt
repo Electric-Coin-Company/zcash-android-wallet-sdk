@@ -10,7 +10,7 @@ interface TransactionEncoder {
      * exception ourselves (rather than using double-bangs for things).
      *
      * @param spendingKey the key associated with the notes that will be spent.
-     * @param zatoshi the amount of zatoshi to send.
+     * @param amount the amount of zatoshi to send.
      * @param toAddress the recipient's address.
      * @param memo the optional memo to include as part of the transaction.
      * @param fromAccountIndex the optional account id to use. By default, the 1st account is used.

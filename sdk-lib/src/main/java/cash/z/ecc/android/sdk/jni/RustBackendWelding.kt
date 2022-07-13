@@ -1,5 +1,7 @@
 package cash.z.ecc.android.sdk.jni
 
+import cash.z.ecc.android.sdk.internal.model.Checkpoint
+import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.type.UnifiedViewingKey
@@ -11,7 +13,7 @@ import cash.z.ecc.android.sdk.type.ZcashNetwork
  * It is not documented because it is not intended to be used, directly.
  * Instead, use the synchronizer or one of its subcomponents.
  */
-interface RustBackendWelding {
+internal interface RustBackendWelding {
 
     val network: ZcashNetwork
 
@@ -36,7 +38,7 @@ interface RustBackendWelding {
 
     suspend fun initAccountsTable(vararg keys: UnifiedViewingKey): Boolean
 
-    suspend fun initBlocksTable(height: Int, hash: String, time: Long, saplingTree: String): Boolean
+    suspend fun initBlocksTable(checkpoint: Checkpoint): Boolean
 
     suspend fun initDataDb(): Boolean
 
@@ -50,7 +52,7 @@ interface RustBackendWelding {
 
     suspend fun getBalance(account: Int = 0): Zatoshi
 
-    fun getBranchIdForHeight(height: Int): Long
+    fun getBranchIdForHeight(height: BlockHeight): Long
 
     suspend fun getReceivedMemoAsUtf8(idNote: Long): String
 
@@ -60,13 +62,16 @@ interface RustBackendWelding {
 
 //    fun parseTransactionDataList(tdl: LocalRpcTypes.TransactionDataList): LocalRpcTypes.TransparentTransactionList
 
-    suspend fun getNearestRewindHeight(height: Int): Int
+    suspend fun getNearestRewindHeight(height: BlockHeight): BlockHeight
 
-    suspend fun rewindToHeight(height: Int): Boolean
+    suspend fun rewindToHeight(height: BlockHeight): Boolean
 
     suspend fun scanBlocks(limit: Int = -1): Boolean
 
-    suspend fun validateCombinedChain(): Int
+    /**
+     * @return Null if successful. If an error occurs, the height will be the height where the error was detected.
+     */
+    suspend fun validateCombinedChain(): BlockHeight?
 
     suspend fun putUtxo(
         tAddress: String,
@@ -74,10 +79,10 @@ interface RustBackendWelding {
         index: Int,
         script: ByteArray,
         value: Long,
-        height: Int
+        height: BlockHeight
     ): Boolean
 
-    suspend fun clearUtxos(tAddress: String, aboveHeight: Int = network.saplingActivationHeight - 1): Boolean
+    suspend fun clearUtxos(tAddress: String, aboveHeightInclusive: BlockHeight = BlockHeight(network.saplingActivationHeight.value)): Boolean
 
     suspend fun getDownloadedUtxoBalance(address: String): WalletBalance
 

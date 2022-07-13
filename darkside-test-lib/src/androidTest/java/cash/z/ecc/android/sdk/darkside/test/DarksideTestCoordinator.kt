@@ -4,6 +4,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import cash.z.ecc.android.sdk.SdkSynchronizer
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.internal.twig
+import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.type.ZcashNetwork
 import io.grpc.StatusRuntimeException
 import kotlinx.coroutines.delay
@@ -14,19 +15,20 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 
 class DarksideTestCoordinator(val wallet: TestWallet) {
     constructor(
         alias: String = "DarksideTestCoordinator",
         seedPhrase: String = DEFAULT_SEED_PHRASE,
-        startHeight: Int = DEFAULT_START_HEIGHT,
+        startHeight: BlockHeight = DEFAULT_START_HEIGHT,
         host: String = COMPUTER_LOCALHOST,
         network: ZcashNetwork = ZcashNetwork.Mainnet,
         port: Int = network.defaultPort
     ) : this(TestWallet(seedPhrase, alias, network, host, startHeight = startHeight, port = port))
 
-    private val targetHeight = 663250
+    private val targetHeight = BlockHeight.new(wallet.network, 663250)
     private val context = InstrumentationRegistry.getInstrumentation().context
 
     // dependencies: private
@@ -91,20 +93,20 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
      * Waits for, at most, the given amount of time for the synchronizer to download and scan blocks
      * and reach a 'SYNCED' status.
      */
-    fun await(timeout: Long = 60_000L, targetHeight: Int = -1) = runBlocking {
+    fun await(timeout: Long = 60_000L, targetHeight: BlockHeight? = null) = runBlocking {
         ScopedTest.timeoutWith(this, timeout) {
             twig("***  Waiting up to ${timeout / 1_000}s for sync ***")
             synchronizer.status.onEach {
                 twig("got processor status $it")
                 if (it == Synchronizer.Status.DISCONNECTED) {
                     twig("waiting a bit before giving up on connection...")
-                } else if (targetHeight != -1 && (synchronizer as SdkSynchronizer).processor.getLastScannedHeight() < targetHeight) {
+                } else if (targetHeight != null && (synchronizer as SdkSynchronizer).processor.getLastScannedHeight() < targetHeight) {
                     twig("awaiting new blocks from server...")
                 }
             }.map {
                 // whenever we're waiting for a target height, for simplicity, if we're sleeping,
                 // and in between polls, then consider it that we're not synced
-                if (targetHeight != -1 && (synchronizer as SdkSynchronizer).processor.getLastScannedHeight() < targetHeight) {
+                if (targetHeight != null && (synchronizer as SdkSynchronizer).processor.getLastScannedHeight() < targetHeight) {
                     twig("switching status to DOWNLOADING because we're still waiting for height $targetHeight")
                     Synchronizer.Status.DOWNLOADING
                 } else {
@@ -140,14 +142,14 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
 
     inner class DarksideTestValidator {
 
-        fun validateHasBlock(height: Int) {
+        fun validateHasBlock(height: BlockHeight) {
             runBlocking {
                 assertTrue((synchronizer as SdkSynchronizer).findBlockHashAsHex(height) != null)
                 assertTrue((synchronizer as SdkSynchronizer).findBlockHash(height)?.size ?: 0 > 0)
             }
         }
 
-        fun validateLatestHeight(height: Int) = runBlocking<Unit> {
+        fun validateLatestHeight(height: BlockHeight) = runBlocking<Unit> {
             val info = synchronizer.processorInfo.first()
             val networkBlockHeight = info.networkBlockHeight
             assertTrue(
@@ -157,41 +159,44 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
             )
         }
 
-        fun validateMinHeightDownloaded(minHeight: Int) = runBlocking<Unit> {
+        fun validateMinHeightDownloaded(minHeight: BlockHeight) = runBlocking<Unit> {
             val info = synchronizer.processorInfo.first()
             val lastDownloadedHeight = info.lastDownloadedHeight
+            assertNotNull(lastDownloadedHeight)
             assertTrue(
                 "Expected to have at least downloaded $minHeight but the last downloaded block was" +
                     " $lastDownloadedHeight! Full details: $info",
-                lastDownloadedHeight >= minHeight
+                lastDownloadedHeight!! >= minHeight
             )
         }
 
-        fun validateMinHeightScanned(minHeight: Int) = runBlocking<Unit> {
+        fun validateMinHeightScanned(minHeight: BlockHeight) = runBlocking<Unit> {
             val info = synchronizer.processorInfo.first()
             val lastScannedHeight = info.lastScannedHeight
+            assertNotNull(lastScannedHeight)
             assertTrue(
                 "Expected to have at least scanned $minHeight but the last scanned block was" +
                     " $lastScannedHeight! Full details: $info",
-                lastScannedHeight >= minHeight
+                lastScannedHeight!! >= minHeight
             )
         }
 
-        fun validateMaxHeightScanned(maxHeight: Int) = runBlocking<Unit> {
+        fun validateMaxHeightScanned(maxHeight: BlockHeight) = runBlocking<Unit> {
             val lastDownloadedHeight = synchronizer.processorInfo.first().lastScannedHeight
+            assertNotNull(lastDownloadedHeight)
             assertTrue(
                 "Did not expect to be synced beyond $maxHeight but we are synced to" +
                     " $lastDownloadedHeight",
-                lastDownloadedHeight <= maxHeight
+                lastDownloadedHeight!! <= maxHeight
             )
         }
 
-        fun validateBlockHash(height: Int, expectedHash: String) {
+        fun validateBlockHash(height: BlockHeight, expectedHash: String) {
             val hash = runBlocking { (synchronizer as SdkSynchronizer).findBlockHashAsHex(height) }
             assertEquals(expectedHash, hash)
         }
 
-        fun onReorg(callback: (errorHeight: Int, rewindHeight: Int) -> Unit) {
+        fun onReorg(callback: (errorHeight: BlockHeight, rewindHeight: BlockHeight) -> Unit) {
             synchronizer.onChainErrorHandler = callback
         }
 
@@ -225,7 +230,7 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
     //
 
     inner class DarksideChainMaker {
-        var lastTipHeight = -1
+        var lastTipHeight: BlockHeight? = null
 
         /**
          * Resets the darksidelightwalletd server, stages the blocks represented by the given URL, then
@@ -233,8 +238,8 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
          */
         fun resetBlocks(
             blocksUrl: String,
-            startHeight: Int = DEFAULT_START_HEIGHT,
-            tipHeight: Int = startHeight + 100
+            startHeight: BlockHeight = DEFAULT_START_HEIGHT,
+            tipHeight: BlockHeight = startHeight + 100
         ): DarksideChainMaker = apply {
             darkside
                 .reset(startHeight)
@@ -242,23 +247,23 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
             applyTipHeight(tipHeight)
         }
 
-        fun stageTransaction(url: String, targetHeight: Int): DarksideChainMaker = apply {
+        fun stageTransaction(url: String, targetHeight: BlockHeight): DarksideChainMaker = apply {
             darkside.stageTransactions(url, targetHeight)
         }
 
-        fun stageTransactions(targetHeight: Int, vararg urls: String): DarksideChainMaker = apply {
+        fun stageTransactions(targetHeight: BlockHeight, vararg urls: String): DarksideChainMaker = apply {
             urls.forEach {
                 darkside.stageTransactions(it, targetHeight)
             }
         }
 
-        fun stageEmptyBlocks(startHeight: Int, count: Int = 10): DarksideChainMaker = apply {
+        fun stageEmptyBlocks(startHeight: BlockHeight, count: Int = 10): DarksideChainMaker = apply {
             darkside.stageEmptyBlocks(startHeight, count)
         }
 
-        fun stageEmptyBlock() = stageEmptyBlocks(lastTipHeight + 1, 1)
+        fun stageEmptyBlock() = stageEmptyBlocks(lastTipHeight!! + 1, 1)
 
-        fun applyTipHeight(tipHeight: Int): DarksideChainMaker = apply {
+        fun applyTipHeight(tipHeight: BlockHeight): DarksideChainMaker = apply {
             twig("applying tip height of $tipHeight")
             darkside.applyBlocks(tipHeight)
             lastTipHeight = tipHeight
@@ -277,14 +282,14 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
         }
 
         fun advanceBy(numEmptyBlocks: Int) {
-            val nextBlock = lastTipHeight + 1
+            val nextBlock = lastTipHeight!! + 1
             twig("adding $numEmptyBlocks empty blocks to the chain starting at $nextBlock")
             darkside.stageEmptyBlocks(nextBlock, numEmptyBlocks)
             applyTipHeight(nextBlock + numEmptyBlocks)
         }
 
-        fun applyPendingTransactions(targetHeight: Int = lastTipHeight + 1) {
-            stageEmptyBlocks(lastTipHeight + 1, targetHeight - lastTipHeight)
+        fun applyPendingTransactions(targetHeight: BlockHeight = lastTipHeight!! + 1) {
+            stageEmptyBlocks(lastTipHeight!! + 1, (targetHeight.value - lastTipHeight!!.value).toInt())
             darkside.stageTransactions(darkside.getSentTransactions()?.iterator(), targetHeight)
             applyTipHeight(targetHeight)
         }
@@ -304,7 +309,7 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
             "https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/basic-reorg/after-small-reorg.txt"
         private const val largeReorg =
             "https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/basic-reorg/after-large-reorg.txt"
-        private const val DEFAULT_START_HEIGHT = 663150
+        private val DEFAULT_START_HEIGHT = BlockHeight.new(ZcashNetwork.Mainnet, 663150)
         private const val DEFAULT_SEED_PHRASE =
             "still champion voice habit trend flight survey between bitter process artefact blind carbon truly provide dizzy crush flush breeze blouse charge solid fish spread"
     }

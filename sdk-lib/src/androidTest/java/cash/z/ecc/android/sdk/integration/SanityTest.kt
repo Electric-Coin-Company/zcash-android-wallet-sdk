@@ -3,6 +3,7 @@ package cash.z.ecc.android.sdk.integration
 import cash.z.ecc.android.sdk.annotation.MaintainedTest
 import cash.z.ecc.android.sdk.annotation.TestPurpose
 import cash.z.ecc.android.sdk.ext.BlockExplorer
+import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.type.ZcashNetwork
 import cash.z.ecc.android.sdk.util.TestWallet
 import kotlinx.coroutines.runBlocking
@@ -61,7 +62,7 @@ class SanityTest(
         assertEquals(
             "$name has invalid birthday height",
             birthday,
-            wallet.initializer.birthday.height
+            wallet.initializer.checkpoint.height
         )
     }
 
@@ -97,7 +98,7 @@ class SanityTest(
             val info = wallet.connectionInfo
             assertTrue(
                 "$info\n ${wallet.networkName} Lightwalletd is too far behind. Downloader height $downloaderHeight is more than 10 blocks behind block explorer height $expectedHeight",
-                expectedHeight - 10 < downloaderHeight
+                expectedHeight - 10 < downloaderHeight.value
             )
         }
     }
@@ -105,9 +106,9 @@ class SanityTest(
     @Test
     fun testSingleBlockDownload() = runBlocking {
         // fetch block directly because the synchronizer hasn't started, yet
-        val height = 1_000_000
+        val height = BlockHeight.new(wallet.network, 1_000_000)
         val block = wallet.service.getBlockRange(height..height)[0]
-        assertTrue("$networkName failed to return a proper block. Height was ${block.height} but we expected $height", block.height.toInt() == height)
+        assertTrue("$networkName failed to return a proper block. Height was ${block.height} but we expected $height", block.height == height.value)
     }
 
     companion object {

@@ -4,8 +4,9 @@ import android.content.Context
 import androidx.annotation.VisibleForTesting
 import cash.z.ecc.android.sdk.exception.BirthdayException
 import cash.z.ecc.android.sdk.internal.from
+import cash.z.ecc.android.sdk.internal.model.Checkpoint
 import cash.z.ecc.android.sdk.internal.twig
-import cash.z.ecc.android.sdk.type.WalletBirthday
+import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.type.ZcashNetwork
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -16,7 +17,7 @@ import java.util.*
 /**
  * Tool for loading checkpoints for the wallet, based on the height at which the wallet was born.
  */
-object WalletBirthdayTool {
+internal object CheckpointTool {
 
     // Behavior change implemented as a fix for issue #270.  Temporarily adding a boolean
     // that allows the change to be rolled back quickly if needed, although long-term
@@ -31,29 +32,29 @@ object WalletBirthdayTool {
     suspend fun loadNearest(
         context: Context,
         network: ZcashNetwork,
-        birthdayHeight: Int? = null
-    ): WalletBirthday {
+        birthdayHeight: BlockHeight?
+    ): Checkpoint {
         // TODO: potentially pull from shared preferences first
-        return loadBirthdayFromAssets(context, network, birthdayHeight)
+        return loadCheckpointFromAssets(context, network, birthdayHeight)
     }
 
     /**
      * Useful for when an exact checkpoint is needed, like for SAPLING_ACTIVATION_HEIGHT. In
      * most cases, loading the nearest checkpoint is preferred for privacy reasons.
      */
-    suspend fun loadExact(context: Context, network: ZcashNetwork, birthdayHeight: Int) =
-        loadNearest(context, network, birthdayHeight).also {
-            if (it.height != birthdayHeight) {
+    suspend fun loadExact(context: Context, network: ZcashNetwork, birthday: BlockHeight) =
+        loadNearest(context, network, birthday).also {
+            if (it.height != birthday) {
                 throw BirthdayException.ExactBirthdayNotFoundException(
-                    birthdayHeight,
-                    it.height
+                    birthday,
+                    it
                 )
             }
         }
 
     // Converting this to suspending will then propagate
     @Throws(IOException::class)
-    internal suspend fun listBirthdayDirectoryContents(context: Context, directory: String) =
+    internal suspend fun listCheckpointDirectoryContents(context: Context, directory: String) =
         withContext(Dispatchers.IO) {
             context.assets.list(directory)
         }
@@ -63,58 +64,64 @@ object WalletBirthdayTool {
      * (i.e. sapling trees for a given height) can be found.
      */
     @VisibleForTesting
-    internal fun birthdayDirectory(network: ZcashNetwork) =
-        "co.electriccoin.zcash/checkpoint/${(network.networkName as java.lang.String).toLowerCase(Locale.ROOT)}"
+    internal fun checkpointDirectory(network: ZcashNetwork) =
+        "co.electriccoin.zcash/checkpoint/${
+        (network.networkName as java.lang.String).toLowerCase(
+            Locale.ROOT
+        )
+        }"
 
-    internal fun birthdayHeight(fileName: String) = fileName.split('.').first().toInt()
+    internal fun checkpointHeightFromFilename(zcashNetwork: ZcashNetwork, fileName: String) =
+        BlockHeight.new(zcashNetwork, fileName.split('.').first().toLong())
 
-    private fun Array<String>.sortDescending() =
-        apply { sortByDescending { birthdayHeight(it) } }
+    private fun Array<String>.sortDescending(zcashNetwork: ZcashNetwork) =
+        apply { sortByDescending { checkpointHeightFromFilename(zcashNetwork, it).value } }
 
     /**
      * Load the given birthday file from the assets of the given context. When no height is
      * specified, we default to the file with the greatest name.
      *
      * @param context the context from which to load assets.
-     * @param birthdayHeight the height file to look for among the file names.
+     * @param birthday the height file to look for among the file names.
      *
      * @return a WalletBirthday that reflects the contents of the file or an exception when
      * parsing fails.
      */
-    private suspend fun loadBirthdayFromAssets(
+    private suspend fun loadCheckpointFromAssets(
         context: Context,
         network: ZcashNetwork,
-        birthdayHeight: Int? = null
-    ): WalletBirthday {
-        twig("loading birthday from assets: $birthdayHeight")
-        val directory = birthdayDirectory(network)
-        val treeFiles = getFilteredFileNames(context, directory, birthdayHeight)
+        birthday: BlockHeight?
+    ): Checkpoint {
+        twig("loading checkpoint from assets: $birthday")
+        val directory = checkpointDirectory(network)
+        val treeFiles = getFilteredFileNames(context, network, directory, birthday)
 
         twig("found ${treeFiles.size} sapling tree checkpoints: $treeFiles")
 
-        return getFirstValidWalletBirthday(context, directory, treeFiles)
+        return getFirstValidWalletBirthday(context, network, directory, treeFiles)
     }
 
     private suspend fun getFilteredFileNames(
         context: Context,
+        network: ZcashNetwork,
         directory: String,
-        birthdayHeight: Int? = null
+        birthday: BlockHeight? = null
     ): List<String> {
-        val unfilteredTreeFiles = listBirthdayDirectoryContents(context, directory)
+        val unfilteredTreeFiles = listCheckpointDirectoryContents(context, directory)
         if (unfilteredTreeFiles.isNullOrEmpty()) {
             throw BirthdayException.MissingBirthdayFilesException(directory)
         }
 
         val filteredTreeFiles = unfilteredTreeFiles
-            .sortDescending()
+            .sortDescending(network)
             .filter { filename ->
-                birthdayHeight?.let { birthdayHeight(filename) <= it } ?: true
+                birthday?.let { checkpointHeightFromFilename(network, filename) <= it } ?: true
             }
 
         if (filteredTreeFiles.isEmpty()) {
             throw BirthdayException.BirthdayFileNotFoundException(
                 directory,
-                birthdayHeight
+                birthday
             )
         }
 
@@ -127,9 +134,10 @@ object WalletBirthdayTool {
     @VisibleForTesting
     internal suspend fun getFirstValidWalletBirthday(
         context: Context,
+        network: ZcashNetwork,
         directory: String,
         treeFiles: List<String>
-    ): WalletBirthday {
+    ): Checkpoint {
         var lastException: Exception? = null
         treeFiles.forEach { treefile ->
             try {
@@ -143,7 +151,7 @@ object WalletBirthdayTool {
                     }
                 }
 
-                return WalletBirthday.from(jsonString)
+                return Checkpoint.from(network, jsonString)
             } catch (t: Throwable) {
                 val exception = BirthdayException.MalformattedBirthdayFilesException(
                     directory,

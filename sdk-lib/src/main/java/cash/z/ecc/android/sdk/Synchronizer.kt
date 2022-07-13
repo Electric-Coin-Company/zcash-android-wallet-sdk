@@ -4,6 +4,7 @@ import cash.z.ecc.android.sdk.block.CompactBlockProcessor
 import cash.z.ecc.android.sdk.db.entity.ConfirmedTransaction
 import cash.z.ecc.android.sdk.db.entity.PendingTransaction
 import cash.z.ecc.android.sdk.ext.ZcashSdk
+import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.type.AddressType
@@ -98,7 +99,7 @@ interface Synchronizer {
      * latest downloaded height or scanned height. Although this is present in [processorInfo], it
      * is such a frequently used value that it is convenient to have the real-time value by itself.
      */
-    val networkHeight: StateFlow<Int>
+    val networkHeight: StateFlow<BlockHeight?>
 
     /**
      * A stream of balance values for the orchard pool. Includes the available and total balance.
@@ -145,13 +146,13 @@ interface Synchronizer {
     /**
      * An in-memory reference to the latest height seen on the network.
      */
-    val latestHeight: Int
+    val latestHeight: BlockHeight?
 
     /**
      * An in-memory reference to the best known birthday height, which can change if the first
      * transaction has not yet occurred.
      */
-    val latestBirthdayHeight: Int
+    val latestBirthdayHeight: BlockHeight?
 
     //
     // Operations
@@ -302,7 +303,7 @@ interface Synchronizer {
      */
     suspend fun refreshUtxos(
         tAddr: String,
-        sinceHeight: Int = network.saplingActivationHeight
+        since: BlockHeight = network.saplingActivationHeight
     ): Int?
 
     /**
@@ -310,7 +311,7 @@ interface Synchronizer {
      */
     suspend fun getTransparentBalance(tAddr: String): WalletBalance
 
-    suspend fun getNearestRewindHeight(height: Int): Int
+    suspend fun getNearestRewindHeight(height: BlockHeight): BlockHeight
 
     /**
      * Returns the safest height to which we can rewind, given a desire to rewind to the height
@@ -318,7 +319,7 @@ interface Synchronizer {
      * arbitrary height. This handles all that complexity yet remains flexible in the future as
      * improvements are made.
      */
-    suspend fun rewindToNearestHeight(height: Int, alsoClearBlockCache: Boolean = false)
+    suspend fun rewindToNearestHeight(height: BlockHeight, alsoClearBlockCache: Boolean = false)
 
     suspend fun quickRewind()
 
@@ -372,7 +373,7 @@ interface Synchronizer {
      * best to log these errors because they are the most common source of bugs and unexpected
      * behavior in wallets, due to the chain data mutating and wallets becoming out of sync.
      */
-    var onChainErrorHandler: ((Int, Int) -> Any)?
+    var onChainErrorHandler: ((BlockHeight, BlockHeight) -> Any)?
 
     /**
      * Represents the status of this Synchronizer, which is useful for communicating to the user.

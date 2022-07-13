@@ -2,6 +2,7 @@ package cash.z.ecc.android.sdk.jni
 
 import cash.z.ecc.android.sdk.annotation.MaintainedTest
 import cash.z.ecc.android.sdk.annotation.TestPurpose
+import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.type.ZcashNetwork
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -14,9 +15,9 @@ import org.junit.runners.Parameterized
  */
 @MaintainedTest(TestPurpose.REGRESSION)
 @RunWith(Parameterized::class)
-class BranchIdTest(
+class BranchIdTest internal constructor(
     private val networkName: String,
-    private val height: Int,
+    private val height: BlockHeight,
     private val branchId: Long,
     private val branchHex: String,
     private val rustBackend: RustBackendWelding
@@ -44,8 +45,8 @@ class BranchIdTest(
             // is an abnormal use of the SDK because this really should run at the rust level
             // However, due to quirks on certain devices, we created this test at the Android level,
             // as a sanity check
-            val testnetBackend = runBlocking { RustBackend.init("", "", "", ZcashNetwork.Testnet) }
-            val mainnetBackend = runBlocking { RustBackend.init("", "", "", ZcashNetwork.Mainnet) }
+            val testnetBackend = runBlocking { RustBackend.init("", "", "", ZcashNetwork.Testnet, ZcashNetwork.Testnet.saplingActivationHeight) }
+            val mainnetBackend = runBlocking { RustBackend.init("", "", "", ZcashNetwork.Mainnet, ZcashNetwork.Mainnet.saplingActivationHeight) }
             return listOf(
                 // Mainnet Cases
                 arrayOf("Sapling", 419_200, 1991772603L, "76b809bb", mainnetBackend),

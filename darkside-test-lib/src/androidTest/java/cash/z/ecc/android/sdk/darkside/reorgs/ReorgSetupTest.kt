@@ -3,6 +3,8 @@ package cash.z.ecc.android.sdk.darkside.reorgs
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import cash.z.ecc.android.sdk.darkside.test.DarksideTestCoordinator
 import cash.z.ecc.android.sdk.darkside.test.ScopedTest
+import cash.z.ecc.android.sdk.model.BlockHeight
+import cash.z.ecc.android.sdk.type.ZcashNetwork
 import org.junit.Before
 import org.junit.BeforeClass
 import org.junit.Test
@@ -11,8 +13,8 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class ReorgSetupTest : ScopedTest() {
 
-    private val birthdayHeight = 663150
-    private val targetHeight = 663250
+    private val birthdayHeight = BlockHeight.new(ZcashNetwork.Mainnet, 663150)
+    private val targetHeight = BlockHeight.new(ZcashNetwork.Mainnet, 663250)
 
     @Before
     fun setup() {

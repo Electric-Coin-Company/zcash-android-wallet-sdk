@@ -10,12 +10,13 @@ import cash.z.ecc.android.sdk.internal.SdkDispatchers
 import cash.z.ecc.android.sdk.internal.ext.getCacheDirSuspend
 import cash.z.ecc.android.sdk.internal.ext.getDatabasePathSuspend
 import cash.z.ecc.android.sdk.internal.ext.getNoBackupPathSuspend
+import cash.z.ecc.android.sdk.internal.model.Checkpoint
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.jni.RustBackend
+import cash.z.ecc.android.sdk.model.BlockHeight
+import cash.z.ecc.android.sdk.tool.CheckpointTool
 import cash.z.ecc.android.sdk.tool.DerivationTool
-import cash.z.ecc.android.sdk.tool.WalletBirthdayTool
 import cash.z.ecc.android.sdk.type.UnifiedViewingKey
-import cash.z.ecc.android.sdk.type.WalletBirthday
 import cash.z.ecc.android.sdk.type.ZcashNetwork
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
@@ -27,14 +28,14 @@ import java.io.File
  */
 class Initializer private constructor(
     val context: Context,
-    val rustBackend: RustBackend,
+    internal val rustBackend: RustBackend,
     val network: ZcashNetwork,
     val alias: String,
     val host: String,
     val port: Int,
     val viewingKeys: List<UnifiedViewingKey>,
     val overwriteVks: Boolean,
-    val birthday: WalletBirthday
+    internal val checkpoint: Checkpoint
 ) {
 
     suspend fun erase() = erase(context, network, alias)
@@ -43,7 +44,7 @@ class Initializer private constructor(
         val viewingKeys: MutableList<UnifiedViewingKey> = mutableListOf(),
         var alias: String = ZcashSdk.DEFAULT_ALIAS
     ) {
-        var birthdayHeight: Int? = null
+        var birthdayHeight: BlockHeight? = null
             private set
 
         lateinit var network: ZcashNetwork
@@ -91,7 +92,7 @@ class Initializer private constructor(
          * transactions. Again, this value is only considered when [height] is null.
          *
          */
-        fun setBirthdayHeight(height: Int?, defaultToOldestHeight: Boolean = false): Config =
+        fun setBirthdayHeight(height: BlockHeight?, defaultToOldestHeight: Boolean = false): Config =
             apply {
                 this.birthdayHeight = height
                 this.defaultToOldestHeight = defaultToOldestHeight
@@ -110,7 +111,7 @@ class Initializer private constructor(
          * importing a pre-existing wallet. It is the same as calling
          * `birthdayHeight = importedHeight`.
          */
-        fun importedWalletBirthday(importedHeight: Int?): Config = apply {
+        fun importedWalletBirthday(importedHeight: BlockHeight?): Config = apply {
             birthdayHeight = importedHeight
             defaultToOldestHeight = true
         }
@@ -177,7 +178,7 @@ class Initializer private constructor(
          */
         suspend fun importWallet(
             seed: ByteArray,
-            birthdayHeight: Int? = null,
+            birthday: BlockHeight?,
             network: ZcashNetwork,
             host: String = network.defaultHost,
             port: Int = network.defaultPort,
@@ -185,7 +186,7 @@ class Initializer private constructor(
         ): Config =
             importWallet(
                 DerivationTool.deriveUnifiedViewingKeys(seed, network = network)[0],
-                birthdayHeight,
+                birthday,
                 network,
                 host,
                 port,
@@ -197,7 +198,7 @@ class Initializer private constructor(
          */
         fun importWallet(
             viewingKey: UnifiedViewingKey,
-            birthdayHeight: Int? = null,
+            birthday: BlockHeight?,
             network: ZcashNetwork,
             host: String = network.defaultHost,
             port: Int = network.defaultPort,
@@ -205,7 +206,7 @@ class Initializer private constructor(
         ): Config = apply {
             setViewingKeys(viewingKey)
             setNetwork(network, host, port)
-            importedWalletBirthday(birthdayHeight)
+            importedWalletBirthday(birthday)
             this.alias = alias
         }
 
@@ -289,8 +290,8 @@ class Initializer private constructor(
             }
             // allow either null or a value greater than the activation height
             if (
-                (birthdayHeight ?: network.saplingActivationHeight)
-                < network.saplingActivationHeight
+                (birthdayHeight?.value ?: network.saplingActivationHeight.value)
+                < network.saplingActivationHeight.value
             ) {
                 throw InitializerException.InvalidBirthdayHeightException(birthdayHeight, network)
             }
@@ -336,9 +337,9 @@ class Initializer private constructor(
             val heightToUse = config.birthdayHeight
                 ?: (if (config.defaultToOldestHeight == true) config.network.saplingActivationHeight else null)
             val loadedBirthday =
-                WalletBirthdayTool.loadNearest(context, config.network, heightToUse)
+                CheckpointTool.loadNearest(context, config.network, heightToUse)
 
-            val rustBackend = initRustBackend(context, config.network, config.alias, loadedBirthday)
+            val rustBackend = initRustBackend(context, config.network, config.alias, loadedBirthday.height)
 
             return Initializer(
                 context.applicationContext,
@@ -380,14 +381,14 @@ class Initializer private constructor(
             context: Context,
             network: ZcashNetwork,
             alias: String,
-            birthday: WalletBirthday
+            blockHeight: BlockHeight
         ): RustBackend {
             return RustBackend.init(
                 cacheDbPath(context, network, alias),
                 dataDbPath(context, network, alias),
                 File(context.getCacheDirSuspend(), "params").absolutePath,
                 network,
-                birthday.height
+                blockHeight
             )
         }
 

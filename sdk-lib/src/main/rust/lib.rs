@@ -367,7 +367,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_initBlocksT
     env: JNIEnv<'_>,
     _: JClass<'_>,
     db_data: JString<'_>,
-    height: jint,
+    height: jlong,
     hash_string: JString<'_>,
     time: jlong,
     sapling_tree_string: JString<'_>,
@@ -390,7 +390,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_initBlocksT
             hex::decode(utils::java_string_to_rust(&env, sapling_tree_string)).unwrap();
 
         debug!("initializing blocks table with height {}", height);
-        match init_blocks_table(&db_data, height.try_into()?, hash, time, &sapling_tree) {
+        match init_blocks_table(&db_data, (height as u32).try_into()?, hash, time, &sapling_tree) {
             Ok(()) => Ok(JNI_TRUE),
             Err(e) => Err(format_err!("Error while initializing blocks table: {}", e)),
         }
@@ -673,7 +673,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_validateCom
     db_cache: JString<'_>,
     db_data: JString<'_>,
     network_id: jint,
-) -> jint {
+) -> jlong {
     let res = panic::catch_unwind(|| {
         let network = parse_network(network_id as u32)?;
         let block_db = block_db(&env, db_cache)?;
@@ -689,7 +689,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_validateCom
             match e {
                 SqliteClientError::BackendError(Error::InvalidChain(upper_bound, _)) => {
                     let upper_bound_u32 = u32::from(upper_bound);
-                    Ok(upper_bound_u32 as i32)
+                    Ok(upper_bound_u32 as i64)
                 }
                 _ => Err(format_err!("Error while validating chain: {}", e)),
             }
@@ -699,7 +699,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_validateCom
         }
     });
 
-    unwrap_exc_or(&env, res, 0)
+    unwrap_exc_or(&env, res, 0) as jlong
 }
 
 #[no_mangle]
@@ -707,9 +707,9 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_getNearestR
     env: JNIEnv<'_>,
     _: JClass<'_>,
     db_data: JString<'_>,
-    height: jint,
+    height: jlong,
     network_id: jint,
-) -> jint {
+) -> jlong {
     let res = panic::catch_unwind(|| {
         if height < 100 {
             Ok(height)
@@ -720,11 +720,11 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_getNearestR
                 Ok(Some(best_height)) => {
                     let first_unspent_note_height = u32::from(best_height);
                     Ok(std::cmp::min(
-                        first_unspent_note_height as i32,
-                        height as i32,
+                        first_unspent_note_height as i64,
+                        height as i64,
                     ))
                 }
-                Ok(None) => Ok(height as i32),
+                Ok(None) => Ok(height as i64),
                 Err(e) => Err(format_err!(
                     "Error while getting nearest rewind height for {}: {}",
                     height,
@@ -734,7 +734,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_getNearestR
         }
     });
 
-    unwrap_exc_or(&env, res, -1)
+    unwrap_exc_or(&env, res, -1) as jlong
 }
 
 #[no_mangle]
@@ -742,7 +742,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_rewindToHei
     env: JNIEnv<'_>,
     _: JClass<'_>,
     db_data: JString<'_>,
-    height: jint,
+    height: jlong,
     network_id: jint,
 ) -> jboolean {
     let res = panic::catch_unwind(|| {
@@ -830,7 +830,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_clearUtxos(
     _: JClass<'_>,
     db_data: JString<'_>,
     taddress: JString<'_>,
-    above_height: jint,
+    above_height: jlong,
     network_id: jint,
 ) -> jint {
     let res = panic::catch_unwind(|| {
@@ -1153,7 +1153,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_shieldToAdd
 pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_branchIdForHeight(
     env: JNIEnv<'_>,
     _: JClass<'_>,
-    height: jint,
+    height: jlong,
     network_id: jint,
 ) -> jlong {
     let res = panic::catch_unwind(|| {
