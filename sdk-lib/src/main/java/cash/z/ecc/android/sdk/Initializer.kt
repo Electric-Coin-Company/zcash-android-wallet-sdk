@@ -22,6 +22,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.util.*
 
 /**
  * Simplified Initializer focused on starting from a ViewingKey.
@@ -439,7 +440,7 @@ class Initializer private constructor(
                 alias,
                 ZcashSdk.DB_CACHE_NAME
             )
-            return checkDbPath(
+            return checkAndCopyDatabaseFiles(
                 dbLocationsPair.first,
                 dbLocationsPair.second
             )
@@ -464,7 +465,7 @@ class Initializer private constructor(
                 alias,
                 ZcashSdk.DB_DATA_NAME
             )
-            return checkDbPath(
+            return checkAndCopyDatabaseFiles(
                 dbLocationsPair.first,
                 dbLocationsPair.second
             )
@@ -501,7 +502,7 @@ class Initializer private constructor(
             } else {
                 null
             }
-            return checkDbPath(
+            return checkAndCopyDatabaseFiles(
                 legacyLocationDbFile,
                 preferredLocationDbFile
             )
@@ -549,33 +550,30 @@ class Initializer private constructor(
         }
 
         /**
-         * This function do actual database file move or simply validate the file and return it.
+         * This function do actual database file copy or simply validate the file and return it.
          * From the Android SDK level 21 it places database files into no_backup folder, as it does
          * not allow automatic backup. On older APIs it places database files into databases folder,
-         * which allows automatic backup. It also moves database files between these two folders,
+         * which allows automatic backup. It also copies database files between these two folders,
          * if older folder usage is detected.
          *
          * @param legacyLocationDbFile the previously used file location
          * @param preferredLocationDbFile the newly used file location
          */
-        private suspend fun checkDbPath(
+        private suspend fun checkAndCopyDatabaseFiles(
             legacyLocationDbFile: File,
             preferredLocationDbFile: File?
         ): String = withContext(Dispatchers.IO) {
             var preferredDbFile = preferredLocationDbFile
 
-            // we run on Android SDK 21 at least
+            // we run the copy action only on Android SDK 21 and higher
             val resultDbFile = if (preferredDbFile != null) {
-                // first we check if the db file doesn't exist in legacy folder already
-                if (!preferredDbFile.exists()) {
-                    if (legacyLocationDbFile.exists()) {
-                        preferredDbFile = legacyLocationDbFile.copyTo(preferredDbFile)
-                        // We check the copy operation result and delete the legacy db files, or
-                        // fallback to the legacy one if anything went wrong.
-                        if (!preferredDbFile.exists() || !deleteDb(legacyLocationDbFile.absolutePath)
-                        ) {
-                            preferredDbFile = legacyLocationDbFile
-                        }
+
+                // check if the copy wasn't already performed and if it's needed
+                if (!preferredDbFile.exists() && legacyLocationDbFile.exists()) {
+                    // We check the copy operation result and fallback to the legacy file, if
+                    // anything went wrong.
+                    if (!copyDatabaseFile(legacyLocationDbFile, preferredDbFile)) {
+                        preferredDbFile = legacyLocationDbFile
                     }
                 }
                 preferredDbFile
@@ -583,6 +581,55 @@ class Initializer private constructor(
                 legacyLocationDbFile
             }
             resultDbFile.absolutePath
+        }
+
+        /**
+         * The purpose of this function is to copy database files between the old location (given by
+         * the legacyLocationDbFile parameter) and the new location (given by preferredLocationDbFile).
+         * The actual copy operation is performed with the renameTo function, which simply renames
+         * a file path and persists the metadata information. The mechanism deals with the additional
+         * database files -journal and -wal too, if they exist.
+         *
+         * @param legacyLocationDbFile the previously used file location (rename from)
+         * @param preferredLocationDbFile the newly used file location (rename to)
+         */
+        private fun copyDatabaseFile(legacyLocationDbFile: File, preferredLocationDbFile: File): Boolean {
+            val filesToBeRenamed = LinkedList<Pair<File, File>>()
+            filesToBeRenamed.add(Pair(legacyLocationDbFile, preferredLocationDbFile))
+
+            // add journal database file, if exists
+            val journalSuffixedDbFile = File(
+                legacyLocationDbFile.absolutePath + ZcashSdk.DATABASE_FILE_JOURNAL_SUFFIX
+            )
+            if (journalSuffixedDbFile.exists()) {
+                filesToBeRenamed.add(
+                    Pair(
+                        journalSuffixedDbFile,
+                        File(preferredLocationDbFile.absolutePath + ZcashSdk.DATABASE_FILE_JOURNAL_SUFFIX)
+                    )
+                )
+            }
+
+            // add wal database file, if exists
+            val walSuffixedDbFile = File(
+                legacyLocationDbFile.absolutePath + ZcashSdk.DATABASE_FILE_WAL_SUFFIX
+            )
+            if (walSuffixedDbFile.exists()) {
+                filesToBeRenamed.add(
+                    Pair(
+                        walSuffixedDbFile,
+                        File(preferredLocationDbFile.absolutePath + ZcashSdk.DATABASE_FILE_WAL_SUFFIX)
+                    )
+                )
+            }
+
+            return runCatching {
+                return@runCatching filesToBeRenamed.all {
+                    it.first.renameTo(it.second)
+                }
+            }.onFailure {
+                twig("Failed while renaming database files with: $it")
+            }.getOrDefault(false)
         }
 
         /**
