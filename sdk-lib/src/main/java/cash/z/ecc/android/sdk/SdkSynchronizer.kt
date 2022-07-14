@@ -17,6 +17,7 @@ import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Scanned
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Scanning
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Stopped
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Validating
+import cash.z.ecc.android.sdk.db.DatabaseCoordinator
 import cash.z.ecc.android.sdk.db.entity.PendingTransaction
 import cash.z.ecc.android.sdk.db.entity.hasRawTransactionId
 import cash.z.ecc.android.sdk.db.entity.isCancelled
@@ -817,8 +818,7 @@ object DefaultSynchronizerFactory {
         encoder: TransactionEncoder,
         service: LightWalletService
     ): OutboundTransactionManager {
-        val databasePath = Initializer.pendingTransactionsDbPath(
-            initializer.context,
+        val databasePath = DatabaseCoordinator.getInstance(initializer.context).pendingTransactionsDbPath(
             initializer.network,
             initializer.alias
         )

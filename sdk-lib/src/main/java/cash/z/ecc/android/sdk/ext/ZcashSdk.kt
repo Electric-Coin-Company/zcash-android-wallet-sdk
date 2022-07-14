@@ -70,13 +70,6 @@ object ZcashSdk {
      */
     val REWIND_DISTANCE = 10
 
-    const val DB_DATA_NAME = "Data.db" // $NON-NLS
-    const val DB_CACHE_NAME = "Cache.db" // $NON-NLS
-    const val DB_PENDING_TRANSACTIONS_NAME = "PendingTransactions.db" // $NON-NLS
-
-    const val DATABASE_FILE_JOURNAL_SUFFIX = "-journal" // $NON-NLS
-    const val DATABASE_FILE_WAL_SUFFIX = "-wal" // $NON-NLS
-
     /**
      * File name for the sappling spend params
      */
