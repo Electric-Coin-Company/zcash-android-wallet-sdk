@@ -70,9 +70,9 @@ object ZcashSdk {
      */
     val REWIND_DISTANCE = 10
 
-    val DB_DATA_NAME = "Data.db"
-    val DB_CACHE_NAME = "Cache.db"
-    val DB_PENDING_TRANSACTIONS_NAME = "PendingTransactions.db"
+    const val DB_DATA_NAME = "Data.db"
+    const val DB_CACHE_NAME = "Cache.db"
+    const val DB_PENDING_TRANSACTIONS_NAME = "PendingTransactions.db"
 
     /**
      * File name for the sappling spend params

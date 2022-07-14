@@ -560,16 +560,14 @@ class Initializer private constructor(
          */
         private suspend fun checkDbPath(
             legacyLocationDbFile: File,
-            preferredLocationDbFile: File?,
+            preferredLocationDbFile: File?
         ): String = withContext(Dispatchers.IO) {
             var preferredDbFile = preferredLocationDbFile
 
             // we run on Android SDK 21 at least
             val resultDbFile = if (preferredDbFile != null) {
-
                 // first we check if the db file doesn't exist in legacy folder already
                 if (!preferredDbFile.exists()) {
-
                     if (legacyLocationDbFile.exists()) {
                         preferredDbFile = legacyLocationDbFile.copyTo(preferredDbFile)
                         // We check the copy operation result and delete the legacy db files, or
