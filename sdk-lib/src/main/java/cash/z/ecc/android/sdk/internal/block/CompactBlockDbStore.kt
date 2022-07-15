@@ -11,7 +11,6 @@ import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.type.ZcashNetwork
 import cash.z.wallet.sdk.rpc.CompactFormats
 import kotlinx.coroutines.withContext
-import kotlin.math.max
 
 /**
  * An implementation of CompactBlockStore that persists information to a database in the given
@@ -24,7 +23,9 @@ class CompactBlockDbStore private constructor(
 
     private val cacheDao = cacheDb.compactBlockDao()
 
-    override suspend fun getLatestHeight(): BlockHeight = BlockHeight.new(network, max(0L, cacheDao.latestBlockHeight()))
+    override suspend fun getLatestHeight(): BlockHeight? = runCatching {
+        BlockHeight.new(network, cacheDao.latestBlockHeight())
+    }.getOrNull()
 
     override suspend fun findCompactBlock(height: BlockHeight): CompactFormats.CompactBlock? =
         cacheDao.findCompactBlock(height.value)?.let { CompactFormats.CompactBlock.parseFrom(it) }
