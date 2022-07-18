@@ -8,7 +8,6 @@ import cash.z.ecc.android.sdk.internal.AndroidApiVersion
 import cash.z.ecc.android.sdk.internal.SdkDispatchers
 import cash.z.ecc.android.sdk.internal.ext.android.LazyWithArgument
 import cash.z.ecc.android.sdk.internal.ext.getDatabasePathSuspend
-import cash.z.ecc.android.sdk.internal.ext.getNoBackupPathSuspend
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.type.ZcashNetwork
 import kotlinx.coroutines.Dispatchers
@@ -17,13 +16,6 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.*
-
-const val DB_DATA_NAME = "Data.db" // $NON-NLS
-const val DB_CACHE_NAME = "Cache.db" // $NON-NLS
-const val DB_PENDING_TRANSACTIONS_NAME = "PendingTransactions.db" // $NON-NLS
-
-const val DATABASE_FILE_JOURNAL_SUFFIX = "journal" // $NON-NLS
-const val DATABASE_FILE_WAL_SUFFIX = "wal" // $NON-NLS
 
 /**
  * Wrapper class for various SDK databases operations. It always guaranties exclusive access to
@@ -38,7 +30,19 @@ class DatabaseCoordinator(context: Context) {
     private val accessMutex = Mutex()
 
     companion object {
-        private val lazy = LazyWithArgument<Context, DatabaseCoordinator> { DatabaseCoordinator(it) }
+        private const val DB_DATA_NAME = "Data.db" // $NON-NLS
+        private const val DB_CACHE_NAME = "Cache.db" // $NON-NLS
+        private const val DB_PENDING_TRANSACTIONS_NAME = "PendingTransactions.db" // $NON-NLS
+
+        private const val DATABASE_FILE_JOURNAL_SUFFIX = "journal" // $NON-NLS
+        private const val DATABASE_FILE_WAL_SUFFIX = "wal" // $NON-NLS
+
+        const val INTERNAL_DATABASE_PATH = "co.electricoin.zcash"  // $NON-NLS
+        const val FAKE_NO_BACKUP_FOLDER = "no_backup"  // $NON-NLS
+
+        private val lazy =
+            LazyWithArgument<Context, DatabaseCoordinator> { DatabaseCoordinator(it) }
+
         fun getInstance(context: Context) = lazy.getInstance(context)
     }
 
@@ -111,17 +115,22 @@ class DatabaseCoordinator(context: Context) {
             null,
             null,
             DB_PENDING_TRANSACTIONS_NAME,
-            getLegacyDbParentDirPath(applicationContext)
+            getDatabaseParentDirPath(applicationContext)
         )
         val preferredLocationDbFile = if (AndroidApiVersion.isAtLeastL) {
             getDbFile(
                 network,
                 alias,
                 DB_PENDING_TRANSACTIONS_NAME,
-                getDbParentDirPath(applicationContext)
+                getNoBackupDirPath(applicationContext)
             )
         } else {
-            null
+            getDbFile(
+                network,
+                alias,
+                DB_PENDING_TRANSACTIONS_NAME,
+                getFakeNoBackupDirPath(applicationContext)
+            )
         }
 
         accessMutex.withLock {
@@ -159,8 +168,8 @@ class DatabaseCoordinator(context: Context) {
      * This helper function prepares a legacy (i.e. previously created) database file, as well
      * as the preferred (i.e. newly created) file for subsequent use (and eventually move).
      *
-     * Note: move of the database file is not performed for devices with Android SDK level lower
-     * than 21.
+     * Note: the database file placed under the fake no_backup folder for devices with Android SDK
+     * level lower than 21.
      *
      * @param appContext the application context
      * @param network the network associated with the data in the database.
@@ -172,22 +181,27 @@ class DatabaseCoordinator(context: Context) {
         network: ZcashNetwork,
         alias: String,
         databaseName: String
-    ): Pair<File, File?> {
+    ): Pair<File, File> {
         val legacyLocationDbFile = getDbFile(
             network,
             alias,
             databaseName,
-            getLegacyDbParentDirPath(appContext)
+            getDatabaseParentDirPath(appContext)
         )
         val preferredLocationDbFile = if (AndroidApiVersion.isAtLeastL) {
             getDbFile(
                 network,
                 alias,
                 databaseName,
-                getDbParentDirPath(appContext)
+                getNoBackupDirPath(appContext)
             )
         } else {
-            null
+            getDbFile(
+                network,
+                alias,
+                databaseName,
+                getFakeNoBackupDirPath(appContext)
+            )
         }
 
         return Pair(
@@ -208,23 +222,17 @@ class DatabaseCoordinator(context: Context) {
      */
     private suspend fun checkAndCopyDatabaseFiles(
         legacyLocationDbFile: File,
-        preferredLocationDbFile: File?
+        preferredLocationDbFile: File
     ): String = withContext(Dispatchers.IO) {
-        var preferredDbFile = preferredLocationDbFile
+        var resultDbFile = preferredLocationDbFile
 
-        // we run the copy action only on Android SDK 21 and higher
-        val resultDbFile = if (preferredDbFile != null) {
-            // check if the copy wasn't already performed and if it's needed
-            if (!preferredDbFile.exists() && legacyLocationDbFile.exists()) {
-                // We check the copy operation result and fallback to the legacy file, if
-                // anything went wrong.
-                if (!copyDatabaseFile(legacyLocationDbFile, preferredDbFile)) {
-                    preferredDbFile = legacyLocationDbFile
-                }
+         // check if the copy wasn't already performed and if it's needed
+        if (!preferredLocationDbFile.exists() && legacyLocationDbFile.exists()) {
+            // We check the copy operation result and fallback to the legacy file, if
+            // anything went wrong.
+            if (!copyDatabaseFile(legacyLocationDbFile, preferredLocationDbFile)) {
+                resultDbFile = legacyLocationDbFile
             }
-            preferredDbFile
-        } else {
-            legacyLocationDbFile
         }
         resultDbFile.absolutePath
     }
@@ -239,7 +247,10 @@ class DatabaseCoordinator(context: Context) {
      * @param legacyLocationDbFile the previously used file location (rename from)
      * @param preferredLocationDbFile the newly used file location (rename to)
      */
-    private fun copyDatabaseFile(legacyLocationDbFile: File, preferredLocationDbFile: File): Boolean {
+    private fun copyDatabaseFile(
+        legacyLocationDbFile: File,
+        preferredLocationDbFile: File
+    ): Boolean {
         val filesToBeRenamed = LinkedList<Pair<File, File>>()
         filesToBeRenamed.add(Pair(legacyLocationDbFile, preferredLocationDbFile))
 
@@ -289,7 +300,7 @@ class DatabaseCoordinator(context: Context) {
      *
      * @param appContext the application context
      */
-    private suspend fun getLegacyDbParentDirPath(appContext: Context): String {
+    private suspend fun getDatabaseParentDirPath(appContext: Context): String {
         return appContext.getDatabasePathSuspend("unused.db").parentFile?.absolutePath
             ?: throw InitializerException.DatabasePathException
     }
@@ -297,14 +308,63 @@ class DatabaseCoordinator(context: Context) {
     /**
      * This function returns a newly used database folder path (i.e. no_backup). The databases
      * folder is deprecated now and we use no_backup to avoid automatic backup of large possibly
-     * sensitive data.
+     * sensitive data. It creates the needed folders on the path and then returns the absolute path
+     * to the directory.
      *
      * @param appContext the application context
      */
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
-    private suspend fun getDbParentDirPath(appContext: Context): String {
-        return appContext.getNoBackupPathSuspend().absolutePath
-            ?: throw InitializerException.DatabasePathException
+    private suspend fun getNoBackupDirPath(appContext: Context): String {
+        return withContext(Dispatchers.IO) {
+            val noBackupDir = appContext.noBackupFilesDir.absolutePath
+                ?: throw InitializerException.DatabasePathException
+            val noBackupFile = File(
+                "$noBackupDir/$INTERNAL_DATABASE_PATH"
+            )
+
+            if (noBackupFile.exists()) {
+                return@withContext noBackupFile.absolutePath
+            }
+
+            return@withContext noBackupFile.mkdir().let {
+                if (!it) {
+                    throw InitializerException.DatabasePathException
+                }
+                noBackupFile.absolutePath
+            }
+        }
+    }
+
+    /**
+     * This function returns a newly used database folder path (i.e. no_backup). The databases
+     * folder is deprecated now and we use no_backup to avoid automatic backup of large possibly
+     * sensitive data. It creates the needed folders on the path and then returns the absolute path
+     * to the directory.
+     *
+     * Note: this returns a new fake no_backup folder, as we are on older Android SDK level than 21,
+     * which does not provide it by default.
+     *
+     * @param appContext the application context
+     */
+    private suspend fun getFakeNoBackupDirPath(appContext: Context): String {
+        return withContext(Dispatchers.IO) {
+            val filesDir = appContext.filesDir.absolutePath
+                ?: throw InitializerException.DatabasePathException
+            val fakeNoBackupFile = File(
+                "$filesDir/$FAKE_NO_BACKUP_FOLDER/$INTERNAL_DATABASE_PATH"
+            )
+
+            if (fakeNoBackupFile.exists()) {
+                return@withContext fakeNoBackupFile.absolutePath
+            }
+
+            return@withContext fakeNoBackupFile.mkdir().let {
+                if (!it) {
+                    throw InitializerException.DatabasePathException
+                }
+                fakeNoBackupFile.absolutePath
+            }
+        }
     }
 
     /**

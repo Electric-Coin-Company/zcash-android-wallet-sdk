@@ -15,3 +15,6 @@ suspend fun Context.getNoBackupPathSuspend() =
 
 suspend fun Context.getCacheDirSuspend() =
     withContext(Dispatchers.IO) { cacheDir }
+
+suspend fun Context.getFilesDirSuspend() =
+    withContext(Dispatchers.IO) { filesDir }
