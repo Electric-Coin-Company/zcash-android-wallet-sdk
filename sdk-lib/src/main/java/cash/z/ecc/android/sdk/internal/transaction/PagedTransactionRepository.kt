@@ -2,8 +2,8 @@ package cash.z.ecc.android.sdk.internal.transaction
 
 import android.content.Context
 import androidx.paging.PagedList
-import androidx.room.Room
 import androidx.room.RoomDatabase
+import cash.z.ecc.android.sdk.db.databaseBuilderNoBackupContext
 import cash.z.ecc.android.sdk.db.entity.ConfirmedTransaction
 import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.internal.SdkDispatchers
@@ -133,7 +133,11 @@ internal class PagedTransactionRepository private constructor(
          */
         private suspend fun buildDatabase(context: Context, databasePath: String): DerivedDataDb {
             twig("Building dataDb and applying migrations")
-            return Room.databaseBuilder(context, DerivedDataDb::class.java, databasePath)
+            return databaseBuilderNoBackupContext(
+                context,
+                DerivedDataDb::class.java,
+                databasePath
+            )
                 .setJournalMode(RoomDatabase.JournalMode.TRUNCATE)
                 .setQueryExecutor(SdkExecutors.DATABASE_IO)
                 .setTransactionExecutor(SdkExecutors.DATABASE_IO)

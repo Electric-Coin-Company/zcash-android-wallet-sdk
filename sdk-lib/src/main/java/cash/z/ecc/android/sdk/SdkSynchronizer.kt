@@ -18,6 +18,7 @@ import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Scanning
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Stopped
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Validating
 import cash.z.ecc.android.sdk.db.DatabaseCoordinator
+import cash.z.ecc.android.sdk.db.NoBackupContextWrapper
 import cash.z.ecc.android.sdk.db.entity.PendingTransaction
 import cash.z.ecc.android.sdk.db.entity.hasRawTransactionId
 import cash.z.ecc.android.sdk.db.entity.isCancelled
@@ -798,7 +799,11 @@ object DefaultSynchronizerFactory {
         )
 
     fun defaultBlockStore(initializer: Initializer): CompactBlockStore =
-        CompactBlockDbStore.new(initializer.context, initializer.network, initializer.rustBackend.pathCacheDb)
+        CompactBlockDbStore.new(
+            NoBackupContextWrapper(initializer.context),
+            initializer.network,
+            initializer.rustBackend.pathCacheDb
+        )
 
     fun defaultService(initializer: Initializer): LightWalletService =
         LightWalletGrpcService(initializer.context, initializer.host, initializer.port)

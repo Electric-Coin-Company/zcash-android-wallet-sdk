@@ -1,8 +1,8 @@
 package cash.z.ecc.android.sdk.internal.block
 
 import android.content.Context
-import androidx.room.Room
 import androidx.room.RoomDatabase
+import cash.z.ecc.android.sdk.db.databaseBuilderNoBackupContext
 import cash.z.ecc.android.sdk.db.entity.CompactBlockEntity
 import cash.z.ecc.android.sdk.internal.SdkDispatchers
 import cash.z.ecc.android.sdk.internal.SdkExecutors
@@ -56,7 +56,11 @@ class CompactBlockDbStore private constructor(
             appContext: Context,
             dbPath: String
         ): CompactBlockDb {
-            return Room.databaseBuilder(appContext, CompactBlockDb::class.java, dbPath)
+            return databaseBuilderNoBackupContext(
+                appContext,
+                CompactBlockDb::class.java,
+                dbPath
+            )
                 .setJournalMode(RoomDatabase.JournalMode.TRUNCATE)
                 // this is a simple cache of blocks. destroying the db should be benign
                 .fallbackToDestructiveMigration()

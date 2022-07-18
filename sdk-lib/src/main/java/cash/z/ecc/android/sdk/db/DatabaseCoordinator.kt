@@ -3,6 +3,8 @@ package cash.z.ecc.android.sdk.db
 import android.content.Context
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.room.Room
+import androidx.room.RoomDatabase
 import cash.z.ecc.android.sdk.exception.InitializerException
 import cash.z.ecc.android.sdk.internal.AndroidApiVersion
 import cash.z.ecc.android.sdk.internal.SdkDispatchers
@@ -434,4 +436,28 @@ class DatabaseCoordinator(context: Context) {
             }
         }
     }
+}
+
+/**
+ * The purpose of this function is to provide Room.Builder via a static Room.databaseBuilder with
+ * an injection of our NoBackupContextWrapper to override the behavior of getDatabasePath().
+ *
+ * Note: ideally we'd make this extension function or override the Room.databaseBuilder function,
+ * but it's not possible, as it's a static function on Room class, which does not allow its
+ * instantiation.
+ *
+ * @param name    The name of the database file.
+ * @param <T>     The type of the database class.
+ * @return A {@code RoomDatabaseBuilder<T>} which you can use to create the database.
+ */
+fun <T : RoomDatabase?> databaseBuilderNoBackupContext(
+    context: Context,
+    klass: Class<T>,
+    name: String
+): RoomDatabase.Builder<T> {
+    return Room.databaseBuilder(
+        NoBackupContextWrapper(context),
+        klass,
+        name
+    )
 }
