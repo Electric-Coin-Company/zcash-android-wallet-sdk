@@ -12,7 +12,7 @@ interface CompactBlockStore {
      *
      * @return the latest block height.
      */
-    suspend fun getLatestHeight(): BlockHeight
+    suspend fun getLatestHeight(): BlockHeight?
 
     /**
      * Fetch the compact block for the given height, if it exists.

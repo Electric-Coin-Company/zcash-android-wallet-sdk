@@ -304,13 +304,15 @@ class CompactBlockProcessor internal constructor(
             ProcessorInfo(
                 networkBlockHeight = downloader.getLatestBlockHeight(),
                 lastScannedHeight = getLastScannedHeight(),
-                lastDownloadedHeight = BlockHeight.new(
-                    network,
-                    max(
-                        getLastDownloadedHeight().value,
-                        lowerBoundHeight.value - 1
+                lastDownloadedHeight = getLastDownloadedHeight()?.let {
+                    BlockHeight.new(
+                        network,
+                        max(
+                            it.value,
+                            lowerBoundHeight.value - 1
+                        )
                     )
-                ),
+                },
                 lastDownloadRange = null,
                 lastScanRange = null
             ).let { initialInfo ->
@@ -574,7 +576,6 @@ class CompactBlockProcessor internal constructor(
                         progress = (i / batches.toFloat() * 100).roundToInt()
                         _progress.send(progress)
                         val lastDownloadedHeight = downloader.getLastDownloadedHeight()
-                            .takeUnless { it < network.saplingActivationHeight }
                         updateProgress(lastDownloadedHeight = lastDownloadedHeight)
                         downloadedBlockHeight = end
                     }
