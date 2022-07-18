@@ -39,8 +39,8 @@ class DatabaseCoordinator(context: Context) {
         private const val DATABASE_FILE_JOURNAL_SUFFIX = "journal" // $NON-NLS
         private const val DATABASE_FILE_WAL_SUFFIX = "wal" // $NON-NLS
 
-        const val INTERNAL_DATABASE_PATH = "co.electricoin.zcash"  // $NON-NLS
-        const val FAKE_NO_BACKUP_FOLDER = "no_backup"  // $NON-NLS
+        const val INTERNAL_DATABASE_PATH = "co.electricoin.zcash" // $NON-NLS
+        const val FAKE_NO_BACKUP_FOLDER = "no_backup" // $NON-NLS
 
         private val lazy =
             LazyWithArgument<Context, DatabaseCoordinator> { DatabaseCoordinator(it) }
@@ -228,7 +228,7 @@ class DatabaseCoordinator(context: Context) {
     ): String = withContext(Dispatchers.IO) {
         var resultDbFile = preferredLocationDbFile
 
-         // check if the copy wasn't already performed and if it's needed
+        // check if the copy wasn't already performed and if it's needed
         if (!preferredLocationDbFile.exists() && legacyLocationDbFile.exists()) {
             // We check the copy operation result and fallback to the legacy file, if
             // anything went wrong.
