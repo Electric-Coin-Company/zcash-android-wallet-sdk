@@ -832,7 +832,7 @@ object DefaultSynchronizerFactory {
             initializer.context,
             encoder,
             service,
-            databasePath
+            databasePath.absolutePath
         )
     }
 

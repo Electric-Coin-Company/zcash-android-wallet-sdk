@@ -377,8 +377,8 @@ class Initializer private constructor(
             blockHeight: BlockHeight
         ): RustBackend {
             return RustBackend.init(
-                DatabaseCoordinator.getInstance(context).cacheDbPath(network, alias),
-                DatabaseCoordinator.getInstance(context).dataDbPath(network, alias),
+                DatabaseCoordinator.getInstance(context).cacheDbFile(network, alias).absolutePath,
+                DatabaseCoordinator.getInstance(context).dataDbFile(network, alias).absolutePath,
                 File(context.getCacheDirSuspend(), "params").absolutePath,
                 network,
                 blockHeight

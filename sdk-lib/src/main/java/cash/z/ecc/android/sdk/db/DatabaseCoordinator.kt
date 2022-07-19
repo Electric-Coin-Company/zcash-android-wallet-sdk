@@ -32,7 +32,7 @@ import java.io.File
  * @param context the application context
  */
 @SuppressWarnings("TooManyFunctions")
-class DatabaseCoordinator(context: Context) {
+internal class DatabaseCoordinator(context: Context) {
 
     private val applicationContext = context.applicationContext
     private val accessMutex = Mutex()
@@ -60,10 +60,10 @@ class DatabaseCoordinator(context: Context) {
      * @param network the network associated with the data in the cache database.
      * @param alias the alias to convert into a database path
      */
-    internal suspend fun cacheDbPath(
+    internal suspend fun cacheDbFile(
         network: ZcashNetwork,
         alias: String
-    ): String {
+    ): File {
         val dbLocationsPair = prepareDbFiles(
             applicationContext,
             network,
@@ -86,10 +86,10 @@ class DatabaseCoordinator(context: Context) {
      * @param network the network associated with the data in the database.
      * @param alias the alias to convert into a database path
      */
-    internal suspend fun dataDbPath(
+    internal suspend fun dataDbFile(
         network: ZcashNetwork,
         alias: String
-    ): String {
+    ): File {
         val dbLocationsPair = prepareDbFiles(
             applicationContext,
             network,
@@ -117,12 +117,12 @@ class DatabaseCoordinator(context: Context) {
     internal suspend fun pendingTransactionsDbPath(
         network: ZcashNetwork,
         alias: String
-    ): String {
+    ): File {
         val legacyLocationDbFile = getDbFile(
             null,
             null,
             DB_PENDING_TRANSACTIONS_NAME,
-            getDatabaseParentDirPath(applicationContext)
+            getDatabaseParentDir(applicationContext)
         )
         val preferredLocationDbFile = if (AndroidApiVersion.isAtLeastL) {
             getDbFile(
@@ -161,10 +161,10 @@ class DatabaseCoordinator(context: Context) {
     ): Boolean {
         accessMutex.withLock {
             val dataDeleted = deleteDatabase(
-                dataDbPath(network, alias)
+                dataDbFile(network, alias)
             )
             val cacheDeleted = deleteDatabase(
-                dataDbPath(network, alias)
+                dataDbFile(network, alias)
             )
 
             return dataDeleted || cacheDeleted
@@ -193,7 +193,7 @@ class DatabaseCoordinator(context: Context) {
             network,
             alias,
             databaseName,
-            getDatabaseParentDirPath(appContext)
+            getDatabaseParentDir(appContext)
         )
         val preferredLocationDbFile = if (AndroidApiVersion.isAtLeastL) {
             getDbFile(
@@ -230,7 +230,7 @@ class DatabaseCoordinator(context: Context) {
     private suspend fun checkAndMoveDatabaseFiles(
         legacyLocationDbFile: File,
         preferredLocationDbFile: File
-    ): String {
+    ): File {
         var resultDbFile = preferredLocationDbFile
 
         // check if the copy wasn't already performed and if it's needed
@@ -242,7 +242,7 @@ class DatabaseCoordinator(context: Context) {
             }
         }
 
-        return resultDbFile.absolutePath
+        return resultDbFile
     }
 
     /**
@@ -309,8 +309,8 @@ class DatabaseCoordinator(context: Context) {
      *
      * @param appContext the application context
      */
-    private suspend fun getDatabaseParentDirPath(appContext: Context): String {
-        return appContext.getDatabasePathSuspend("unused.db").parentFile?.absolutePath
+    private suspend fun getDatabaseParentDir(appContext: Context): File {
+        return appContext.getDatabasePathSuspend("unused.db").parentFile
             ?: throw InitializerException.DatabasePathException
     }
 
@@ -323,23 +323,22 @@ class DatabaseCoordinator(context: Context) {
      * @param appContext the application context
      */
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
-    private suspend fun getNoBackupDirPath(appContext: Context): String {
+    private suspend fun getNoBackupDirPath(appContext: Context): File {
         return withContext(Dispatchers.IO) {
-            val noBackupDir = appContext.getNoBackupFilesDirSuspend().absolutePath
+            val noBackupDir = appContext.getNoBackupFilesDirSuspend()
                 ?: throw InitializerException.DatabasePathException
-            val noBackupFile = File(
-                "$noBackupDir/${Files.NO_BACKUP_SUBDIRECTORY}"
-            )
+
+            val noBackupFile = File(noBackupDir, Files.NO_BACKUP_SUBDIRECTORY)
 
             if (noBackupFile.exists()) {
-                return@withContext noBackupFile.absolutePath
+                return@withContext noBackupFile
             }
 
             return@withContext noBackupFile.mkdirsSuspend().let {
                 if (!it) {
                     throw InitializerException.DatabasePathException
                 }
-                noBackupFile.absolutePath
+                noBackupFile
             }
         }
     }
@@ -355,22 +354,21 @@ class DatabaseCoordinator(context: Context) {
      *
      * @param appContext the application context
      */
-    private suspend fun getFakeNoBackupDirPath(appContext: Context): String {
-        val filesDir = appContext.getFilesDirSuspend().absolutePath
+    private suspend fun getFakeNoBackupDirPath(appContext: Context): File {
+        val filesDir = appContext.getFilesDirSuspend()
             ?: throw InitializerException.DatabasePathException
-        val fakeNoBackupFile = File(
-            "$filesDir/$FAKE_NO_BACKUP_FOLDER/${Files.NO_BACKUP_SUBDIRECTORY}"
-        )
+        val fakeNoBackupFile =
+            File(File(filesDir, FAKE_NO_BACKUP_FOLDER), Files.NO_BACKUP_SUBDIRECTORY)
 
         if (fakeNoBackupFile.existsSuspend()) {
-            return fakeNoBackupFile.absolutePath
+            return fakeNoBackupFile
         }
 
         return fakeNoBackupFile.mkdirsSuspend().let {
             if (!it) {
                 throw InitializerException.DatabasePathException
             }
-            fakeNoBackupFile.absolutePath
+            fakeNoBackupFile
         }
     }
 
@@ -386,7 +384,7 @@ class DatabaseCoordinator(context: Context) {
         network: ZcashNetwork?,
         alias: String?,
         dbFileName: String,
-        parentDir: String
+        parentDir: File
     ): File {
         val aliasPrefix = if (alias == null) {
             ""
@@ -411,33 +409,15 @@ class DatabaseCoordinator(context: Context) {
      * The rollback journal (or newer wal) file is a temporary file used to implement atomic commit
      * and rollback capabilities in SQLite.
      *
-     * @param filePath the path of the db to erase.
+     * @param file the path of the db to erase.
      * @return true when a file exists at the given path and was deleted.
      */
-    private suspend fun deleteDatabase(filePath: String): Boolean {
+    private suspend fun deleteDatabase(file: File): Boolean {
         // Just try the journal and wal files too. Doesn't matter if they're not there.
-        delete("$filePath-$DATABASE_FILE_JOURNAL_SUFFIX")
-        delete("$filePath-$DATABASE_FILE_WAL_SUFFIX")
+        File("${file.absolutePath}-$DATABASE_FILE_JOURNAL_SUFFIX").deleteSuspend()
+        File("${file.absolutePath}-$DATABASE_FILE_WAL_SUFFIX").deleteSuspend()
 
-        return delete(filePath)
-    }
-
-    /**
-     * Delete the file at the given path.
-     *
-     * @param filePath the path of the file to erase.
-     * @return true when a file exists at the given path and was deleted.
-     */
-    private suspend fun delete(filePath: String): Boolean {
-        return File(filePath).let {
-            if (it.existsSuspend()) {
-                twig("Deleting ${it.name}!")
-                it.deleteSuspend()
-                true
-            } else {
-                false
-            }
-        }
+        return file.deleteSuspend()
     }
 }
 
