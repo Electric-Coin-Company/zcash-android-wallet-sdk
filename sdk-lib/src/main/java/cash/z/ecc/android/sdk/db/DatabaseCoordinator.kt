@@ -32,7 +32,7 @@ import java.io.File
  * @param context the application context
  */
 @SuppressWarnings("TooManyFunctions")
-internal class DatabaseCoordinator(context: Context) {
+internal class DatabaseCoordinator private constructor(context: Context) {
 
     private val applicationContext = context.applicationContext
     private val accessMutex = Mutex()
