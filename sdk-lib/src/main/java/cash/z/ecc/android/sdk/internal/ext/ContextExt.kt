@@ -10,7 +10,7 @@ suspend fun Context.getDatabasePathSuspend(fileName: String) =
     withContext(Dispatchers.IO) { getDatabasePath(fileName) }
 
 @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
-suspend fun Context.getNoBackupPathSuspend() =
+suspend fun Context.getNoBackupFilesDirSuspend() =
     withContext(Dispatchers.IO) { noBackupFilesDir }
 
 suspend fun Context.getCacheDirSuspend() =

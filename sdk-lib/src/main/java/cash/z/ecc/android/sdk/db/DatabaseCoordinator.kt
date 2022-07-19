@@ -8,10 +8,15 @@ import androidx.room.RoomDatabase
 import cash.z.ecc.android.sdk.exception.InitializerException
 import cash.z.ecc.android.sdk.internal.AndroidApiVersion
 import cash.z.ecc.android.sdk.internal.Files
-import cash.z.ecc.android.sdk.internal.SdkDispatchers
 import cash.z.ecc.android.sdk.internal.LazyWithArgument
 import cash.z.ecc.android.sdk.internal.NoBackupContextWrapper
+import cash.z.ecc.android.sdk.internal.ext.deleteSuspend
+import cash.z.ecc.android.sdk.internal.ext.existsSuspend
 import cash.z.ecc.android.sdk.internal.ext.getDatabasePathSuspend
+import cash.z.ecc.android.sdk.internal.ext.getFilesDirSuspend
+import cash.z.ecc.android.sdk.internal.ext.getNoBackupFilesDirSuspend
+import cash.z.ecc.android.sdk.internal.ext.mkdirsSuspend
+import cash.z.ecc.android.sdk.internal.ext.renameToSuspend
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.type.ZcashNetwork
 import kotlinx.coroutines.Dispatchers
@@ -19,7 +24,6 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
-import java.util.*
 
 /**
  * Wrapper class for various SDK databases operations. It always guaranties exclusive access to
@@ -68,7 +72,7 @@ class DatabaseCoordinator(context: Context) {
         )
 
         accessMutex.withLock {
-            return checkAndCopyDatabaseFiles(
+            return checkAndMoveDatabaseFiles(
                 dbLocationsPair.first,
                 dbLocationsPair.second
             )
@@ -94,7 +98,7 @@ class DatabaseCoordinator(context: Context) {
         )
 
         accessMutex.withLock {
-            return checkAndCopyDatabaseFiles(
+            return checkAndMoveDatabaseFiles(
                 dbLocationsPair.first,
                 dbLocationsPair.second
             )
@@ -137,7 +141,7 @@ class DatabaseCoordinator(context: Context) {
         }
 
         accessMutex.withLock {
-            return checkAndCopyDatabaseFiles(
+            return checkAndMoveDatabaseFiles(
                 legacyLocationDbFile,
                 preferredLocationDbFile
             )
@@ -223,21 +227,22 @@ class DatabaseCoordinator(context: Context) {
      * @param legacyLocationDbFile the previously used file location
      * @param preferredLocationDbFile the newly used file location
      */
-    private suspend fun checkAndCopyDatabaseFiles(
+    private suspend fun checkAndMoveDatabaseFiles(
         legacyLocationDbFile: File,
         preferredLocationDbFile: File
-    ): String = withContext(Dispatchers.IO) {
+    ): String {
         var resultDbFile = preferredLocationDbFile
 
         // check if the copy wasn't already performed and if it's needed
-        if (!preferredLocationDbFile.exists() && legacyLocationDbFile.exists()) {
-            // We check the copy operation result and fallback to the legacy file, if
+        if (!preferredLocationDbFile.existsSuspend() && legacyLocationDbFile.existsSuspend()) {
+            // We check the move operation result and fallback to the legacy file, if
             // anything went wrong.
-            if (!copyDatabaseFile(legacyLocationDbFile, preferredLocationDbFile)) {
+            if (!moveDatabaseFile(legacyLocationDbFile, preferredLocationDbFile)) {
                 resultDbFile = legacyLocationDbFile
             }
         }
-        resultDbFile.absolutePath
+
+        return resultDbFile.absolutePath
     }
 
     /**
@@ -250,18 +255,19 @@ class DatabaseCoordinator(context: Context) {
      * @param legacyLocationDbFile the previously used file location (rename from)
      * @param preferredLocationDbFile the newly used file location (rename to)
      */
-    private fun copyDatabaseFile(
+    private suspend fun moveDatabaseFile(
         legacyLocationDbFile: File,
         preferredLocationDbFile: File
     ): Boolean {
-        val filesToBeRenamed = LinkedList<Pair<File, File>>()
-        filesToBeRenamed.add(Pair(legacyLocationDbFile, preferredLocationDbFile))
+        val filesToBeRenamed = mutableListOf<Pair<File, File>>().apply {
+            add(Pair(legacyLocationDbFile, preferredLocationDbFile))
+        }
 
         // add journal database file, if exists
         val journalSuffixedDbFile = File(
             "${legacyLocationDbFile.absolutePath}-$DATABASE_FILE_JOURNAL_SUFFIX"
         )
-        if (journalSuffixedDbFile.exists()) {
+        if (journalSuffixedDbFile.existsSuspend()) {
             filesToBeRenamed.add(
                 Pair(
                     journalSuffixedDbFile,
@@ -289,7 +295,7 @@ class DatabaseCoordinator(context: Context) {
 
         return runCatching {
             return@runCatching filesToBeRenamed.all {
-                it.first.renameTo(it.second)
+                it.first.renameToSuspend(it.second)
             }
         }.onFailure {
             twig("Failed while renaming database files with: $it")
@@ -319,7 +325,7 @@ class DatabaseCoordinator(context: Context) {
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     private suspend fun getNoBackupDirPath(appContext: Context): String {
         return withContext(Dispatchers.IO) {
-            val noBackupDir = appContext.noBackupFilesDir.absolutePath
+            val noBackupDir = appContext.getNoBackupFilesDirSuspend().absolutePath
                 ?: throw InitializerException.DatabasePathException
             val noBackupFile = File(
                 "$noBackupDir/${Files.NO_BACKUP_SUBDIRECTORY}"
@@ -329,7 +335,7 @@ class DatabaseCoordinator(context: Context) {
                 return@withContext noBackupFile.absolutePath
             }
 
-            return@withContext noBackupFile.mkdir().let {
+            return@withContext noBackupFile.mkdirsSuspend().let {
                 if (!it) {
                     throw InitializerException.DatabasePathException
                 }
@@ -350,23 +356,21 @@ class DatabaseCoordinator(context: Context) {
      * @param appContext the application context
      */
     private suspend fun getFakeNoBackupDirPath(appContext: Context): String {
-        return withContext(Dispatchers.IO) {
-            val filesDir = appContext.filesDir.absolutePath
-                ?: throw InitializerException.DatabasePathException
-            val fakeNoBackupFile = File(
-                "$filesDir/$FAKE_NO_BACKUP_FOLDER/${Files.NO_BACKUP_SUBDIRECTORY}"
-            )
+        val filesDir = appContext.getFilesDirSuspend().absolutePath
+            ?: throw InitializerException.DatabasePathException
+        val fakeNoBackupFile = File(
+            "$filesDir/$FAKE_NO_BACKUP_FOLDER/${Files.NO_BACKUP_SUBDIRECTORY}"
+        )
 
-            if (fakeNoBackupFile.exists()) {
-                return@withContext fakeNoBackupFile.absolutePath
-            }
+        if (fakeNoBackupFile.existsSuspend()) {
+            return fakeNoBackupFile.absolutePath
+        }
 
-            return@withContext fakeNoBackupFile.mkdir().let {
-                if (!it) {
-                    throw InitializerException.DatabasePathException
-                }
-                fakeNoBackupFile.absolutePath
+        return fakeNoBackupFile.mkdirsSuspend().let {
+            if (!it) {
+                throw InitializerException.DatabasePathException
             }
+            fakeNoBackupFile.absolutePath
         }
     }
 
@@ -426,14 +430,12 @@ class DatabaseCoordinator(context: Context) {
      */
     private suspend fun delete(filePath: String): Boolean {
         return File(filePath).let {
-            withContext(SdkDispatchers.DATABASE_IO) {
-                if (it.exists()) {
-                    twig("Deleting ${it.name}!")
-                    it.delete()
-                    true
-                } else {
-                    false
-                }
+            if (it.existsSuspend()) {
+                twig("Deleting ${it.name}!")
+                it.deleteSuspend()
+                true
+            } else {
+                false
             }
         }
     }
@@ -451,7 +453,7 @@ class DatabaseCoordinator(context: Context) {
  * @param <T>     The type of the database class.
  * @return A {@code RoomDatabaseBuilder<T>} which you can use to create the database.
  */
-fun <T : RoomDatabase?> databaseBuilderNoBackupContext(
+internal fun <T : RoomDatabase?> databaseBuilderNoBackupContext(
     context: Context,
     klass: Class<T>,
     name: String
