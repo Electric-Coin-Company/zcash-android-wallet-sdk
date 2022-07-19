@@ -1,11 +1,11 @@
-package cash.z.ecc.android.sdk.internal.ext.android
+package cash.z.ecc.android.sdk.internal
 
 /**
  * Implements a lazy singleton pattern with an input argument.
  *
  * This class is thread-safe.
  */
-class LazyWithArgument<in Input, out Output>(private val deferredCreator: ((Input) -> Output)) {
+internal class LazyWithArgument<in Input, out Output>(private val deferredCreator: ((Input) -> Output)) {
     @Volatile
     private var singletonInstance: Output? = null
 

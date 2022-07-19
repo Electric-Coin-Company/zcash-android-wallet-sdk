@@ -8,7 +8,7 @@ import androidx.room.RoomDatabase
 import cash.z.ecc.android.sdk.exception.InitializerException
 import cash.z.ecc.android.sdk.internal.AndroidApiVersion
 import cash.z.ecc.android.sdk.internal.SdkDispatchers
-import cash.z.ecc.android.sdk.internal.ext.android.LazyWithArgument
+import cash.z.ecc.android.sdk.internal.LazyWithArgument
 import cash.z.ecc.android.sdk.internal.ext.getDatabasePathSuspend
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.type.ZcashNetwork
