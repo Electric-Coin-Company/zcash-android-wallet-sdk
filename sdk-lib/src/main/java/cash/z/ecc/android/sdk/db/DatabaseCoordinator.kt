@@ -1,28 +1,20 @@
 package cash.z.ecc.android.sdk.db
 
 import android.content.Context
-import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import cash.z.ecc.android.sdk.exception.InitializerException
-import cash.z.ecc.android.sdk.internal.AndroidApiVersion
 import cash.z.ecc.android.sdk.internal.Files
 import cash.z.ecc.android.sdk.internal.LazyWithArgument
 import cash.z.ecc.android.sdk.internal.NoBackupContextWrapper
 import cash.z.ecc.android.sdk.internal.ext.deleteSuspend
 import cash.z.ecc.android.sdk.internal.ext.existsSuspend
 import cash.z.ecc.android.sdk.internal.ext.getDatabasePathSuspend
-import cash.z.ecc.android.sdk.internal.ext.getFilesDirSuspend
-import cash.z.ecc.android.sdk.internal.ext.getNoBackupFilesDirSuspend
-import cash.z.ecc.android.sdk.internal.ext.mkdirsSuspend
 import cash.z.ecc.android.sdk.internal.ext.renameToSuspend
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.type.ZcashNetwork
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withContext
 import java.io.File
 
 /**

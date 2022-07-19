@@ -3,10 +3,7 @@ package cash.z.ecc.android.sdk.internal.ext
 import android.content.Context
 import android.os.Build
 import androidx.annotation.RequiresApi
-import cash.z.ecc.android.sdk.db.DatabaseCoordinator
-import cash.z.ecc.android.sdk.exception.InitializerException
 import cash.z.ecc.android.sdk.internal.AndroidApiVersion
-import cash.z.ecc.android.sdk.internal.Files
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File

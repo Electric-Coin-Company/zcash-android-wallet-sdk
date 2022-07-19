@@ -2,7 +2,6 @@ package cash.z.ecc.android.sdk.internal
 
 import android.content.Context
 import android.content.ContextWrapper
-import cash.z.ecc.android.sdk.internal.twig
 import java.io.File
 
 internal class NoBackupContextWrapper(context: Context) : ContextWrapper(context.applicationContext) {
