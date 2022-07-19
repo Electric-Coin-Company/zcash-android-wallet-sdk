@@ -34,6 +34,15 @@ import java.io.File
 @SuppressWarnings("TooManyFunctions")
 internal class DatabaseCoordinator private constructor(context: Context) {
 
+    /*
+     * This implementation is thread-safe but is not multi-process safe.
+     *
+     * The mutex helps to ensure that two instances of the SDK being initialized in the same
+     * process do not have conflicts with regard to moving the databases around.  However if an
+     * application decides to use multiple processes this could cause a problem during the one-time
+     * the database path migration.
+     */
+
     private val applicationContext = context.applicationContext
     private val accessMutex = Mutex()
 
@@ -44,8 +53,6 @@ internal class DatabaseCoordinator private constructor(context: Context) {
 
         private const val DATABASE_FILE_JOURNAL_SUFFIX = "journal" // $NON-NLS
         private const val DATABASE_FILE_WAL_SUFFIX = "wal" // $NON-NLS
-
-        const val FAKE_NO_BACKUP_FOLDER = "no_backup" // $NON-NLS
 
         private val lazy =
             LazyWithArgument<Context, DatabaseCoordinator> { DatabaseCoordinator(it) }
@@ -118,27 +125,18 @@ internal class DatabaseCoordinator private constructor(context: Context) {
         network: ZcashNetwork,
         alias: String
     ): File {
-        val legacyLocationDbFile = getDbFile(
+        val legacyLocationDbFile = newDatabaseFilePointer(
             null,
             null,
             DB_PENDING_TRANSACTIONS_NAME,
             getDatabaseParentDir(applicationContext)
         )
-        val preferredLocationDbFile = if (AndroidApiVersion.isAtLeastL) {
-            getDbFile(
-                network,
-                alias,
-                DB_PENDING_TRANSACTIONS_NAME,
-                getNoBackupDirPath(applicationContext)
-            )
-        } else {
-            getDbFile(
-                network,
-                alias,
-                DB_PENDING_TRANSACTIONS_NAME,
-                getFakeNoBackupDirPath(applicationContext)
-            )
-        }
+        val preferredLocationDbFile = newDatabaseFilePointer(
+            network,
+            alias,
+            DB_PENDING_TRANSACTIONS_NAME,
+            Files.getZcashNoBackupSubdirectory(applicationContext)
+        )
 
         accessMutex.withLock {
             return checkAndMoveDatabaseFiles(
@@ -189,27 +187,18 @@ internal class DatabaseCoordinator private constructor(context: Context) {
         alias: String,
         databaseName: String
     ): Pair<File, File> {
-        val legacyLocationDbFile = getDbFile(
+        val legacyLocationDbFile = newDatabaseFilePointer(
             network,
             alias,
             databaseName,
             getDatabaseParentDir(appContext)
         )
-        val preferredLocationDbFile = if (AndroidApiVersion.isAtLeastL) {
-            getDbFile(
-                network,
-                alias,
-                databaseName,
-                getNoBackupDirPath(appContext)
-            )
-        } else {
-            getDbFile(
-                network,
-                alias,
-                databaseName,
-                getFakeNoBackupDirPath(appContext)
-            )
-        }
+        val preferredLocationDbFile = newDatabaseFilePointer(
+            network,
+            alias,
+            databaseName,
+            Files.getZcashNoBackupSubdirectory(appContext)
+        )
 
         return Pair(
             legacyLocationDbFile,
@@ -315,72 +304,15 @@ internal class DatabaseCoordinator private constructor(context: Context) {
     }
 
     /**
-     * This function returns a newly used database folder path (i.e. no_backup). The databases
-     * folder is deprecated now and we use no_backup to avoid automatic backup of large possibly
-     * sensitive data. It creates the needed folders on the path and then returns the absolute path
-     * to the directory.
-     *
-     * @param appContext the application context
-     */
-    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
-    private suspend fun getNoBackupDirPath(appContext: Context): File {
-        return withContext(Dispatchers.IO) {
-            val noBackupDir = appContext.getNoBackupFilesDirSuspend()
-                ?: throw InitializerException.DatabasePathException
-
-            val noBackupFile = File(noBackupDir, Files.NO_BACKUP_SUBDIRECTORY)
-
-            if (noBackupFile.exists()) {
-                return@withContext noBackupFile
-            }
-
-            return@withContext noBackupFile.mkdirsSuspend().let {
-                if (!it) {
-                    throw InitializerException.DatabasePathException
-                }
-                noBackupFile
-            }
-        }
-    }
-
-    /**
-     * This function returns a newly used database folder path (i.e. no_backup). The databases
-     * folder is deprecated now and we use no_backup to avoid automatic backup of large possibly
-     * sensitive data. It creates the needed folders on the path and then returns the absolute path
-     * to the directory.
-     *
-     * Note: this returns a new fake no_backup folder, as we are on older Android SDK level than 21,
-     * which does not provide it by default.
-     *
-     * @param appContext the application context
-     */
-    private suspend fun getFakeNoBackupDirPath(appContext: Context): File {
-        val filesDir = appContext.getFilesDirSuspend()
-            ?: throw InitializerException.DatabasePathException
-        val fakeNoBackupFile =
-            File(File(filesDir, FAKE_NO_BACKUP_FOLDER), Files.NO_BACKUP_SUBDIRECTORY)
-
-        if (fakeNoBackupFile.existsSuspend()) {
-            return fakeNoBackupFile
-        }
-
-        return fakeNoBackupFile.mkdirsSuspend().let {
-            if (!it) {
-                throw InitializerException.DatabasePathException
-            }
-            fakeNoBackupFile
-        }
-    }
-
-    /**
-     * Simple helper function, which prepares a database file object by input parameters.
+     * Simple helper function, which prepares a database file object by input parameters. It does
+     * not create the file, just determines the file path.
      *
      * @param network the network associated with the data in the database.
      * @param alias the alias to convert into a database path
      * @param dbFileName the name of the new database file
      * @param parentDir the name of the parent directory, in which the file should be placed
      */
-    private fun getDbFile(
+    private fun newDatabaseFilePointer(
         network: ZcashNetwork?,
         alias: String?,
         dbFileName: String,

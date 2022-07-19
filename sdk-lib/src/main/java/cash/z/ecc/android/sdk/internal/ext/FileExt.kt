@@ -12,6 +12,8 @@ internal suspend fun File.existsSuspend() = withContext(Dispatchers.IO) { exists
 
 internal suspend fun File.mkdirsSuspend() = withContext(Dispatchers.IO) { mkdirs() }
 
+internal suspend fun File.canWriteSuspend() = withContext(Dispatchers.IO) { canWrite() }
+
 internal suspend fun File.renameToSuspend(dest: File) = withContext(Dispatchers.IO) { renameTo(dest) }
 
 suspend fun File.deleteRecursivelySuspend() = withContext(Dispatchers.IO) { deleteRecursively() }
