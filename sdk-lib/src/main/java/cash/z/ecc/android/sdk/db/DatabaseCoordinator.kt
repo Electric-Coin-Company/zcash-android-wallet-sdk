@@ -7,6 +7,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import cash.z.ecc.android.sdk.exception.InitializerException
 import cash.z.ecc.android.sdk.internal.AndroidApiVersion
+import cash.z.ecc.android.sdk.internal.Files
 import cash.z.ecc.android.sdk.internal.SdkDispatchers
 import cash.z.ecc.android.sdk.internal.LazyWithArgument
 import cash.z.ecc.android.sdk.internal.NoBackupContextWrapper
@@ -40,7 +41,6 @@ class DatabaseCoordinator(context: Context) {
         private const val DATABASE_FILE_JOURNAL_SUFFIX = "journal" // $NON-NLS
         private const val DATABASE_FILE_WAL_SUFFIX = "wal" // $NON-NLS
 
-        const val INTERNAL_DATABASE_PATH = "co.electricoin.zcash" // $NON-NLS
         const val FAKE_NO_BACKUP_FOLDER = "no_backup" // $NON-NLS
 
         private val lazy =
@@ -322,7 +322,7 @@ class DatabaseCoordinator(context: Context) {
             val noBackupDir = appContext.noBackupFilesDir.absolutePath
                 ?: throw InitializerException.DatabasePathException
             val noBackupFile = File(
-                "$noBackupDir/$INTERNAL_DATABASE_PATH"
+                "$noBackupDir/${Files.NO_BACKUP_SUBDIRECTORY}"
             )
 
             if (noBackupFile.exists()) {
@@ -354,7 +354,7 @@ class DatabaseCoordinator(context: Context) {
             val filesDir = appContext.filesDir.absolutePath
                 ?: throw InitializerException.DatabasePathException
             val fakeNoBackupFile = File(
-                "$filesDir/$FAKE_NO_BACKUP_FOLDER/$INTERNAL_DATABASE_PATH"
+                "$filesDir/$FAKE_NO_BACKUP_FOLDER/${Files.NO_BACKUP_SUBDIRECTORY}"
             )
 
             if (fakeNoBackupFile.exists()) {
