@@ -1,11 +1,11 @@
-package cash.z.ecc.android.sdk.db
+package cash.z.ecc.android.sdk.internal
 
 import android.content.Context
 import android.content.ContextWrapper
 import cash.z.ecc.android.sdk.internal.twig
 import java.io.File
 
-class NoBackupContextWrapper(val context: Context) : ContextWrapper(context.applicationContext) {
+internal class NoBackupContextWrapper(context: Context) : ContextWrapper(context.applicationContext) {
 
     /**
      * Overriding this function gives us ability to control the result database file location.
