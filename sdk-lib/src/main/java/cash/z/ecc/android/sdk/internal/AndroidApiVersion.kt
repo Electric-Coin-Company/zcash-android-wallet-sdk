@@ -4,7 +4,7 @@ import android.os.Build
 import androidx.annotation.ChecksSdkIntAtLeast
 import androidx.annotation.IntRange
 
-object AndroidApiVersion {
+internal object AndroidApiVersion {
     /**
      * @param sdk SDK version number to test against the current environment.
      * @return `true` if [android.os.Build.VERSION.SDK_INT] is greater than or equal to
