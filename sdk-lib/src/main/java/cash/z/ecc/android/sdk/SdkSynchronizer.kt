@@ -800,9 +800,9 @@ object DefaultSynchronizerFactory {
 
     fun defaultBlockStore(initializer: Initializer): CompactBlockStore =
         CompactBlockDbStore.new(
-            NoBackupContextWrapper(initializer.context),
+            NoBackupContextWrapper(initializer.context, initializer.rustBackend.cacheDbFile.parentFile),
             initializer.network,
-            initializer.rustBackend.pathCacheDb
+            initializer.rustBackend.cacheDbFile
         )
 
     fun defaultService(initializer: Initializer): LightWalletService =
@@ -823,7 +823,7 @@ object DefaultSynchronizerFactory {
         encoder: TransactionEncoder,
         service: LightWalletService
     ): OutboundTransactionManager {
-        val databasePath = DatabaseCoordinator.getInstance(initializer.context).pendingTransactionsDbPath(
+        val databaseFile = DatabaseCoordinator.getInstance(initializer.context).pendingTransactionsDbPath(
             initializer.network,
             initializer.alias
         )
@@ -832,7 +832,7 @@ object DefaultSynchronizerFactory {
             initializer.context,
             encoder,
             service,
-            databasePath.absolutePath
+            databaseFile
         )
     }
 

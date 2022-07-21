@@ -13,6 +13,8 @@ import cash.z.ecc.android.sdk.internal.service.LightWalletService
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.test.ScopedTest
+import cash.z.ecc.fixture.DatabaseNameFixture
+import cash.z.ecc.fixture.DatabasePathFixture
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.stub
 import kotlinx.coroutines.cancel
@@ -32,6 +34,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.mockito.Mock
 import org.mockito.MockitoAnnotations
+import java.io.File
 
 @MaintainedTest(TestPurpose.REGRESSION)
 @RunWith(AndroidJUnit4::class)
@@ -42,19 +45,26 @@ class PersistentTransactionManagerTest : ScopedTest() {
 
     @Mock lateinit var mockService: LightWalletService
 
-    val pendingDbName = "PersistentTxMgrTest_Pending.db"
-    val dataDbName = "PersistentTxMgrTest_Data.db"
+    private val pendingDbFile = File(
+        "${DatabasePathFixture.new()}/${DatabaseNameFixture.newDb(name = "PersistentTxMgrTest_Pending.db")}"
+    ).apply {
+        assertTrue(parentFile != null)
+        parentFile!!.mkdirs()
+        assertTrue(parentFile!!.exists())
+        createNewFile()
+        assertTrue(exists())
+    }
     private lateinit var manager: OutboundTransactionManager
 
     @Before
     fun setup() {
         initMocks()
         deleteDb()
-        manager = PersistentTransactionManager(context, mockEncoder, mockService, pendingDbName)
+        manager = PersistentTransactionManager(context, mockEncoder, mockService, pendingDbFile)
     }
 
     private fun deleteDb() {
-        context.getDatabasePath(pendingDbName).delete()
+        pendingDbFile.deleteRecursively()
     }
 
     private fun initMocks() {

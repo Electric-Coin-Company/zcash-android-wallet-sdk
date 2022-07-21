@@ -4,19 +4,29 @@ import android.content.Context
 import android.content.ContextWrapper
 import java.io.File
 
-internal class NoBackupContextWrapper(context: Context) : ContextWrapper(context.applicationContext) {
+/**
+ * Context class wrapped used for building our database classes. The advantage of this implementation
+ * is that we can control actions run on this context class.
+ *
+ * @param context
+ * @param parentDir The directory in which is the database file placed.
+ * @return Wrapped context class.
+ */
+internal class NoBackupContextWrapper(
+    context: Context,
+    private val parentDir: File?
+) : ContextWrapper(context.applicationContext) {
 
     /**
      * Overriding this function gives us ability to control the result database file location.
-     * We extend the input parameter with an additional package name path inside the result database
-     * file.
      *
-     * @param name Database file name with the full absolute path to the file
-     * @return File located under [Context.getNoBackupFilesDir].
+     * @param name Database file name.
+     * @return File located under no_backup/co.electricoin.zcash directory.
      */
     override fun getDatabasePath(name: String): File {
-        twig("Database: $name")
-        return File(name)
+        twig("Database: $name in directory: ${parentDir?.absolutePath}")
+        assert(parentDir != null) { "Null database parent file." }
+        return File(parentDir, name)
     }
 
     override fun getApplicationContext(): Context {

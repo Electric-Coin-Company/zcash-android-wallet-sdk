@@ -1,6 +1,8 @@
 package cash.z.ecc.android.sdk.integration.service
 
+import android.os.Build
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.filters.SdkSuppress
 import androidx.test.filters.SmallTest
 import cash.z.ecc.android.sdk.annotation.MaintainedTest
 import cash.z.ecc.android.sdk.annotation.TestPurpose
@@ -29,6 +31,7 @@ import org.mockito.Mock
 import org.mockito.MockitoAnnotations
 import org.mockito.Spy
 
+@SdkSuppress(minSdkVersion = Build.VERSION_CODES.N)
 @MaintainedTest(TestPurpose.REGRESSION)
 @RunWith(AndroidJUnit4::class)
 @SmallTest

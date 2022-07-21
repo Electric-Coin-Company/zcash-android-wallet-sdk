@@ -24,7 +24,7 @@ class SanityTest(
     private val wallet: TestWallet,
     private val extfvk: String,
     private val extpub: String,
-    private val birthday: Int
+    private val birthday: Long
 
 ) {
 
@@ -42,13 +42,13 @@ class SanityTest(
     fun testFilePaths() {
         assertEquals(
             "$name has invalid DataDB file",
-            "/data/user/0/cash.z.ecc.android.sdk.test/databases/TestWallet_${networkName}_Data.db",
-            wallet.initializer.rustBackend.pathDataDb
+            "/data/user/0/cash.z.ecc.android.sdk.test/no_backup/co.electricoin.zcash/TestWallet_${networkName}_Data.db",
+            wallet.initializer.rustBackend.dataDbFile.absolutePath
         )
         assertEquals(
             "$name has invalid CacheDB file",
-            "/data/user/0/cash.z.ecc.android.sdk.test/databases/TestWallet_${networkName}_Cache.db",
-            wallet.initializer.rustBackend.pathCacheDb
+            "/data/user/0/cash.z.ecc.android.sdk.test/no_backup/co.electricoin.zcash/TestWallet_${networkName}_Cache.db",
+            wallet.initializer.rustBackend.cacheDbFile.absolutePath
         )
         assertEquals(
             "$name has invalid CacheDB params dir",
@@ -62,7 +62,7 @@ class SanityTest(
         assertEquals(
             "$name has invalid birthday height",
             birthday,
-            wallet.initializer.checkpoint.height
+            wallet.initializer.checkpoint.height.value
         )
     }
 
@@ -120,7 +120,7 @@ class SanityTest(
                 TestWallet(TestWallet.Backups.SAMPLE_WALLET),
                 "zxviewtestsapling1qv0ue89kqqqqpqqyt4cl5wvssx4wqq30e5m948p07dnwl9x3u75vvnzvjwwpjkrf8yk2gva0kkxk9p8suj4xawlzw9pajuxgap83wykvsuyzfrm33a2p2m4jz2205kgzx0l2lj2kyegtnuph6crkyvyjqmfxut84nu00wxgrstu5fy3eu49nzl8jzr4chmql4ysgg2t8htn9dtvxy8c7wx9rvcerqsjqm6lqln9syk3g8rr3xpy3l4nj0kawenzpcdtnv9qmy98vdhqzaf063",
                 "0234965f30c8611253d035f44e68d4e2ce82150e8665c95f41ccbaf916b16c69d8",
-                1320000
+                1330000
             ),
             // Mainnet wallet
             arrayOf(

@@ -11,6 +11,7 @@ import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.type.ZcashNetwork
 import cash.z.wallet.sdk.rpc.CompactFormats
 import kotlinx.coroutines.withContext
+import java.io.File
 
 /**
  * An implementation of CompactBlockStore that persists information to a database in the given
@@ -45,22 +46,22 @@ class CompactBlockDbStore private constructor(
     companion object {
         /**
          * @param appContext the application context. This is used for creating the database.
-         * @property dbPath the absolute path to the database.
+         * @property databaseFile the database file.
          */
-        fun new(appContext: Context, zcashNetwork: ZcashNetwork, dbPath: String): CompactBlockDbStore {
-            val cacheDb = createCompactBlockCacheDb(appContext.applicationContext, dbPath)
+        fun new(appContext: Context, zcashNetwork: ZcashNetwork, databaseFile: File): CompactBlockDbStore {
+            val cacheDb = createCompactBlockCacheDb(appContext.applicationContext, databaseFile)
 
             return CompactBlockDbStore(zcashNetwork, cacheDb)
         }
 
         private fun createCompactBlockCacheDb(
             appContext: Context,
-            dbPath: String
+            databaseFile: File
         ): CompactBlockDb {
             return databaseBuilderNoBackupContext(
                 appContext,
                 CompactBlockDb::class.java,
-                dbPath
+                databaseFile
             )
                 .setJournalMode(RoomDatabase.JournalMode.TRUNCATE)
                 // this is a simple cache of blocks. destroying the db should be benign

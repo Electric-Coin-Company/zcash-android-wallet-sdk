@@ -354,18 +354,19 @@ internal class DatabaseCoordinator private constructor(context: Context) {
  * but it's not possible, as it's a static function on Room class, which does not allow its
  * instantiation.
  *
- * @param name    The name of the database file.
- * @param <T>     The type of the database class.
+ * @param context
+ * @param klass The database class.
+ * @param databaseFile  The database file.
  * @return A {@code RoomDatabaseBuilder<T>} which you can use to create the database.
  */
 internal fun <T : RoomDatabase?> databaseBuilderNoBackupContext(
     context: Context,
     klass: Class<T>,
-    name: String
+    databaseFile: File
 ): RoomDatabase.Builder<T> {
     return Room.databaseBuilder(
-        NoBackupContextWrapper(context),
+        NoBackupContextWrapper(context, databaseFile.parentFile),
         klass,
-        name
+        databaseFile.name
     )
 }

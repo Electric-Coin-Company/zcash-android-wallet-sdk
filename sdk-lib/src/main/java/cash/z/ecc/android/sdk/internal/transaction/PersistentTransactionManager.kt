@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import java.io.File
 import java.io.PrintWriter
 import java.io.StringWriter
 import kotlin.math.max
@@ -56,12 +57,12 @@ class PersistentTransactionManager(
         appContext: Context,
         encoder: TransactionEncoder,
         service: LightWalletService,
-        databasePath: String
+        databaseFile: File
     ) : this(
         databaseBuilderNoBackupContext(
             appContext,
             PendingTransactionDb::class.java,
-            databasePath
+            databaseFile
         ).setJournalMode(RoomDatabase.JournalMode.TRUNCATE).build(),
         encoder,
         service
