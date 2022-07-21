@@ -1,8 +1,6 @@
 package cash.z.ecc.android.sdk.db
 
 import androidx.test.filters.SmallTest
-import cash.z.ecc.android.sdk.internal.ext.getDatabasePathSuspend
-import cash.z.ecc.android.sdk.internal.ext.getNoBackupFilesDirCompat
 import cash.z.ecc.android.sdk.test.getAppContext
 import cash.z.ecc.android.sdk.type.ZcashNetwork
 import cash.z.ecc.fixture.DatabaseNameFixture
@@ -15,7 +13,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
-import org.junit.Ignore
 import org.junit.Test
 import java.io.File
 
@@ -24,9 +21,11 @@ class DatabaseCoordinatorTest {
     private val dbCoordinator = DatabaseCoordinator.getInstance(getAppContext())
 
     @Before
-    fun clear_test_files() = runTest {
-        assertTrue(getAppContext().getDatabasePathSuspend("empty.db").deleteRecursively())
-        assertTrue(getAppContext().getNoBackupFilesDirCompat().deleteRecursively())
+    fun clear_test_files() {
+        val databaseDir = DatabasePathFixture.new(baseFolderPath = DatabasePathFixture.DATABASE_DIR_PATH)
+        val noBackupDir = DatabasePathFixture.new(baseFolderPath = DatabasePathFixture.NO_BACKUP_DIR_PATH)
+        File(databaseDir).deleteRecursively()
+        File(noBackupDir).deleteRecursively()
     }
 
     // Sanity check of the database coordinator instance and its thread-safe implementation. Our aim
@@ -154,7 +153,6 @@ class DatabaseCoordinatorTest {
         }
     }
 
-    @Ignore
     @Test
     @SmallTest
     fun delete_database_files_test() = runTest {

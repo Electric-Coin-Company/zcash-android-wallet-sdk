@@ -36,7 +36,8 @@ internal class DatabaseCoordinator private constructor(context: Context) {
      */
 
     private val applicationContext = context.applicationContext
-    private val accessMutex = Mutex()
+    private val createFileMutex = Mutex()
+    private val deleteFileMutex = Mutex()
 
     companion object {
         const val DB_DATA_NAME = "Data.db" // $NON-NLS
@@ -70,7 +71,7 @@ internal class DatabaseCoordinator private constructor(context: Context) {
             DB_CACHE_NAME
         )
 
-        accessMutex.withLock {
+        createFileMutex.withLock {
             return checkAndMoveDatabaseFiles(
                 dbLocationsPair.first,
                 dbLocationsPair.second
@@ -96,7 +97,7 @@ internal class DatabaseCoordinator private constructor(context: Context) {
             DB_DATA_NAME
         )
 
-        accessMutex.withLock {
+        createFileMutex.withLock {
             return checkAndMoveDatabaseFiles(
                 dbLocationsPair.first,
                 dbLocationsPair.second
@@ -130,7 +131,7 @@ internal class DatabaseCoordinator private constructor(context: Context) {
             Files.getZcashNoBackupSubdirectory(applicationContext)
         )
 
-        accessMutex.withLock {
+        createFileMutex.withLock {
             return checkAndMoveDatabaseFiles(
                 legacyLocationDbFile,
                 preferredLocationDbFile
@@ -149,12 +150,12 @@ internal class DatabaseCoordinator private constructor(context: Context) {
         network: ZcashNetwork,
         alias: String
     ): Boolean {
-        accessMutex.withLock {
+        deleteFileMutex.withLock {
             val dataDeleted = deleteDatabase(
                 dataDbFile(network, alias)
             )
             val cacheDeleted = deleteDatabase(
-                dataDbFile(network, alias)
+                cacheDbFile(network, alias)
             )
 
             return dataDeleted || cacheDeleted
@@ -199,7 +200,7 @@ internal class DatabaseCoordinator private constructor(context: Context) {
     }
 
     /**
-     * This function do actual database file copy or simply validate the file and return it.
+     * This function do actual database file move or simply validate the file and return it.
      * From the Android SDK level 21 it places database files into no_backup folder, as it does
      * not allow automatic backup. On older APIs it places database files into databases folder,
      * which allows automatic backup. It also copies database files between these two folders,
@@ -214,7 +215,7 @@ internal class DatabaseCoordinator private constructor(context: Context) {
     ): File {
         var resultDbFile = preferredLocationDbFile
 
-        // check if the copy wasn't already performed and if it's needed
+        // check if the move wasn't already performed and if it's needed
         if (!preferredLocationDbFile.existsSuspend() && legacyLocationDbFile.existsSuspend()) {
             // We check the move operation result and fallback to the legacy file, if
             // anything went wrong.
@@ -227,9 +228,9 @@ internal class DatabaseCoordinator private constructor(context: Context) {
     }
 
     /**
-     * The purpose of this function is to copy database files between the old location (given by
+     * The purpose of this function is to move database files between the old location (given by
      * the legacyLocationDbFile parameter) and the new location (given by preferredLocationDbFile).
-     * The actual copy operation is performed with the renameTo function, which simply renames
+     * The actual move operation is performed with the renameTo function, which simply renames
      * a file path and persists the metadata information. The mechanism deals with the additional
      * database files -journal and -wal too, if they exist.
      *
