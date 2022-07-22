@@ -1,6 +1,12 @@
 Change Log
 ==========
 
+Version 1.8.0-beta01
+------------------------------------
+- Enabled automated unit tests run on the CI server 
+- The SDK now stores database files in `no_backup/co.electricoin.zcash` folder instead of the `database` folder. It moves all the SDK database files (rollback files included) to the preferred `no_backup` folder only once on the first client app run with the updated SDK. **No action required from client app**.
+- Gradle 7.5
+
 Version 1.7.0-beta01
 ------------------------------------
 - Added `Zatoshi` typesafe object to represent amounts.
