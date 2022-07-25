@@ -75,6 +75,7 @@ interface Twig {
  * @see [Twig.clip]
  */
 object Bush {
+    @Volatile
     var trunk: Twig = SilentTwig()
     val leaves: MutableSet<Leaf> = CopyOnWriteArraySet<Leaf>()
 }

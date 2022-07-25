@@ -48,12 +48,18 @@ class ListTransactionsFragment : BaseDemoFragment<FragmentListTransactionsBindin
         // have the seed stored
         val seed = Mnemonics.MnemonicCode(seedPhrase).toSeed()
 
-        initializer = runBlocking {
-            Initializer.new(requireApplicationContext()) {
-                runBlocking { it.newWallet(seed, network = ZcashNetwork.fromResources(requireApplicationContext())) }
-                it.setNetwork(ZcashNetwork.fromResources(requireApplicationContext()))
+        initializer = Initializer.newBlocking(
+            requireApplicationContext(),
+            Initializer.Config {
+                runBlocking {
+                    it.importWallet(
+                        seed,
+                        birthday = null,
+                        network = ZcashNetwork.fromResources(requireApplicationContext())
+                    )
+                }
             }
-        }
+        )
         address = runBlocking {
             DerivationTool.deriveShieldedAddress(
                 seed,
