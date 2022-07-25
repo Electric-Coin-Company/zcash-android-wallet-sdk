@@ -105,7 +105,7 @@ internal object CheckpointTool {
         context: Context,
         network: ZcashNetwork,
         directory: String,
-        birthday: BlockHeight? = null
+        birthday: BlockHeight?
     ): List<String> {
         val unfilteredTreeFiles = listCheckpointDirectoryContents(context, directory)
         if (unfilteredTreeFiles.isNullOrEmpty()) {
