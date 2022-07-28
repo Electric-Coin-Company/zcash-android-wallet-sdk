@@ -566,7 +566,8 @@ class CompactBlockProcessor internal constructor(
                 twig("found $missingBlockCount missing blocks, downloading in $batches batches of $DOWNLOAD_BATCH_SIZE...")
                 for (i in 1..batches) {
                     retryUpTo(RETRIES, { CompactBlockProcessorException.FailedDownload(it) }) {
-                        val end = BlockHeight(
+                        val end = BlockHeight.new(
+                            network,
                             min(
                                 (range.start.value + (i * DOWNLOAD_BATCH_SIZE)) - 1,
                                 range.endInclusive.value
@@ -581,7 +582,7 @@ class CompactBlockProcessor internal constructor(
                         _progress.send(progress)
                         val lastDownloadedHeight = downloader.getLastDownloadedHeight()
                         updateProgress(lastDownloadedHeight = lastDownloadedHeight)
-                        downloadedBlockHeight = end
+                        downloadedBlockHeight = end + 1
                     }
                 }
                 Twig.clip("downloading")
