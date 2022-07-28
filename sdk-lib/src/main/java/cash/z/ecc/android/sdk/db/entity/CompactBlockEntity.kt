@@ -5,7 +5,7 @@ import androidx.room.Entity
 
 @Entity(primaryKeys = ["height"], tableName = "compactblocks")
 data class CompactBlockEntity(
-    val height: Int,
+    val height: Long,
     @ColumnInfo(typeAffinity = ColumnInfo.BLOB)
     val data: ByteArray
 ) {
@@ -20,7 +20,7 @@ data class CompactBlockEntity(
     }
 
     override fun hashCode(): Int {
-        var result = height
+        var result = height.hashCode()
         result = 31 * result + data.contentHashCode()
         return result
     }

@@ -36,7 +36,7 @@ interface LightWalletService {
      * @return a list of compact blocks for the given range
      *
      */
-    fun getBlockRange(heightRange: ClosedRange<BlockHeight>): List<CompactFormats.CompactBlock>
+    fun getBlockRange(heightRange: ClosedRange<BlockHeight>): Sequence<CompactFormats.CompactBlock>
 
     /**
      * Return the latest block height known to the service.

@@ -25,8 +25,9 @@ interface CompactBlockStore {
      * Write the given blocks to this store, which may be anything from an in-memory cache to a DB.
      *
      * @param result the list of compact blocks to persist.
+     * @return Number of blocks that were written.
      */
-    suspend fun write(result: List<CompactFormats.CompactBlock>)
+    suspend fun write(result: Sequence<CompactFormats.CompactBlock>): Int
 
     /**
      * Remove every block above the given height.
