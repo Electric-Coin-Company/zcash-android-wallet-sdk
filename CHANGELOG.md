@@ -1,6 +1,13 @@
 Change Log
 ==========
 
+Version 1.8.0-beta01
+------------------------------------
+- Added `BlockHeight` typesafe object to represent block heights
+- Significantly reduced memory usage, fixing potential OutOfMemoryError during block download
+- Kotlin 1.7.10
+- Updated checkpoints
+
 Version 1.7.0-beta01
 ------------------------------------
 - Added `Zatoshi` typesafe object to represent amounts.
