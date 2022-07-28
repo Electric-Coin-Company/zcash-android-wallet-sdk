@@ -67,11 +67,13 @@ class LightWalletGrpcService private constructor(
 
     /* LightWalletService implementation */
 
-    override fun getBlockRange(heightRange: ClosedRange<BlockHeight>): List<CompactFormats.CompactBlock> {
-        if (heightRange.isEmpty()) return listOf()
+    override fun getBlockRange(heightRange: ClosedRange<BlockHeight>): Sequence<CompactFormats.CompactBlock> {
+        if (heightRange.isEmpty()) {
+            return emptySequence()
+        }
 
         return requireChannel().createStub(streamingRequestTimeout)
-            .getBlockRange(heightRange.toBlockRange()).toList()
+            .getBlockRange(heightRange.toBlockRange()).iterator().asSequence()
     }
 
     override fun getLatestBlockHeight(): BlockHeight {
@@ -161,7 +163,12 @@ class LightWalletGrpcService private constructor(
             new
         }
         channel.resetConnectBackoff()
-        twig("getting channel isShutdown: ${channel.isShutdown}  isTerminated: ${channel.isTerminated} getState: $state stateCount: $stateCount", -1)
+        twig(
+            "getting channel isShutdown: ${channel.isShutdown}  " +
+                "isTerminated: ${channel.isTerminated} " +
+                "getState: $state stateCount: $stateCount",
+            -1
+        )
         return channel
     }
 

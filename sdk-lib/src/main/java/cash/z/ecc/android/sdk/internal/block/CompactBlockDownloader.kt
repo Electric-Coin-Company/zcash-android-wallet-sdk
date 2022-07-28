@@ -47,7 +47,6 @@ open class CompactBlockDownloader private constructor(val compactBlockStore: Com
     suspend fun downloadBlockRange(heightRange: ClosedRange<BlockHeight>): Int = withContext(IO) {
         val result = lightWalletService.getBlockRange(heightRange)
         compactBlockStore.write(result)
-        result.size
     }
 
     /**

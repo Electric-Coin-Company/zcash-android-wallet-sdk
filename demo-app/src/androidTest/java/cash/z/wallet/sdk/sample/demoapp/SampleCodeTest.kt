@@ -97,7 +97,7 @@ class SampleCodeTest {
         val blockRange = BlockHeight.new(ZcashNetwork.Mainnet, 500_000)..BlockHeight.new(ZcashNetwork.Mainnet, 500_009)
         val lightwalletService = LightWalletGrpcService(context, lightwalletdHost)
         val blocks = lightwalletService.getBlockRange(blockRange)
-        assertEquals(blockRange.endInclusive.value - blockRange.start.value, blocks.size)
+        assertEquals(blockRange.endInclusive.value - blockRange.start.value, blocks.count())
 
         blocks.forEachIndexed { i, block ->
             log("Block #$i:    height:${block.height}   hash:${block.hash.toByteArray().toHex()}")

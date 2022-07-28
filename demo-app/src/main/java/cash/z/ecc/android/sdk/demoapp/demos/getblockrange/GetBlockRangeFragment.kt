@@ -31,9 +31,10 @@ class GetBlockRangeFragment : BaseDemoFragment<FragmentGetBlockRangeBinding>() {
         val fetchDelta = System.currentTimeMillis() - start
 
         // Note: This is a demo so we won't worry about iterating efficiently over these blocks
-
+        // Note: Converting the blocks sequence to a list can consume a lot of memory and may
+        // cause OOM.
         binding.textInfo.text = Html.fromHtml(
-            blocks?.run {
+            blocks?.toList()?.run {
                 val count = size
                 val emptyCount = count { it.vtxCount == 0 }
                 val maxTxs = maxByOrNull { it.vtxCount }
@@ -45,9 +46,9 @@ class GetBlockRangeFragment : BaseDemoFragment<FragmentGetBlockRangeBinding>() {
                     block.vtxList.maxOfOrNull { it.outputsCount } ?: -1
                 }
                 val maxOutTx = maxOuts?.vtxList?.maxByOrNull { it.outputsCount }
-                val txCount = sumBy { it.vtxCount }
-                val outCount = sumBy { block -> block.vtxList.sumBy { it.outputsCount } }
-                val inCount = sumBy { block -> block.vtxList.sumBy { it.spendsCount } }
+                val txCount = sumOf { it.vtxCount }
+                val outCount = sumOf { block -> block.vtxList.sumOf { it.outputsCount } }
+                val inCount = sumOf { block -> block.vtxList.sumOf { it.spendsCount } }
 
                 val processTime = System.currentTimeMillis() - start - fetchDelta
                 @Suppress("MaxLineLength")
