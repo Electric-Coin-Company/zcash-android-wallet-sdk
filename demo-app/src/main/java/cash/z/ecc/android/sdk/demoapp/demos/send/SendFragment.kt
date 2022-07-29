@@ -29,9 +29,11 @@ import cash.z.ecc.android.sdk.ext.convertZecToZatoshi
 import cash.z.ecc.android.sdk.ext.toZecString
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.twig
+import cash.z.ecc.android.sdk.model.LightwalletdServer
 import cash.z.ecc.android.sdk.model.WalletBalance
+import cash.z.ecc.android.sdk.model.ZcashNetwork
+import cash.z.ecc.android.sdk.model.defaultForNetwork
 import cash.z.ecc.android.sdk.tool.DerivationTool
-import cash.z.ecc.android.sdk.type.ZcashNetwork
 import kotlinx.coroutines.runBlocking
 
 /**
@@ -66,8 +68,14 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
 
         runBlocking {
             Initializer.new(requireApplicationContext()) {
-                runBlocking { it.newWallet(seed, network = ZcashNetwork.fromResources(requireApplicationContext())) }
-                it.setNetwork(ZcashNetwork.fromResources(requireApplicationContext()))
+                val network = ZcashNetwork.fromResources(requireApplicationContext())
+                runBlocking {
+                    it.newWallet(
+                        seed,
+                        network = network,
+                        lightwalletdServer = LightwalletdServer.defaultForNetwork(network)
+                    )
+                }
             }
         }.let { initializer ->
             synchronizer = Synchronizer.newBlocking(initializer)

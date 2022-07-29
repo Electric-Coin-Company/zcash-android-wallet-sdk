@@ -1,6 +1,10 @@
 Change Log
 ==========
 
+Upcoming
+------------------------------------
+ - Split `ZcashNetwork` into `ZcashNetwork` and `LightwalletdServer` to decouple network and server configuration
+
 Version 1.8.0-beta01
 ------------------------------------
 - Added `BlockHeight` typesafe object to represent block heights

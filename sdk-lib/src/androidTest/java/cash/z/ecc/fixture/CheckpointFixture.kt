@@ -8,7 +8,7 @@ import cash.z.ecc.android.sdk.internal.KEY_VERSION
 import cash.z.ecc.android.sdk.internal.VERSION_1
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
 import cash.z.ecc.android.sdk.model.BlockHeight
-import cash.z.ecc.android.sdk.type.ZcashNetwork
+import cash.z.ecc.android.sdk.model.ZcashNetwork
 import org.json.JSONObject
 
 object CheckpointFixture {

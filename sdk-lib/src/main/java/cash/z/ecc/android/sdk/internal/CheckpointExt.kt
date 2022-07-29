@@ -2,7 +2,7 @@ package cash.z.ecc.android.sdk.internal
 
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
 import cash.z.ecc.android.sdk.model.BlockHeight
-import cash.z.ecc.android.sdk.type.ZcashNetwork
+import cash.z.ecc.android.sdk.model.ZcashNetwork
 import org.json.JSONObject
 
 // Version is not returned from the server, so version 1 is implied.  A version is declared here

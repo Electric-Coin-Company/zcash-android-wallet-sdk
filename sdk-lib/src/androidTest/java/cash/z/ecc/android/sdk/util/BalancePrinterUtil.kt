@@ -9,8 +9,8 @@ import cash.z.ecc.android.sdk.internal.ext.deleteSuspend
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.BlockHeight
+import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.tool.CheckpointTool
-import cash.z.ecc.android.sdk.type.ZcashNetwork
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map

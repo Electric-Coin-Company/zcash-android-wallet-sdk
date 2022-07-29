@@ -50,12 +50,12 @@ import cash.z.ecc.android.sdk.internal.twigTask
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
+import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.tool.DerivationTool
 import cash.z.ecc.android.sdk.type.AddressType
 import cash.z.ecc.android.sdk.type.AddressType.Shielded
 import cash.z.ecc.android.sdk.type.AddressType.Transparent
 import cash.z.ecc.android.sdk.type.ConsensusMatchType
-import cash.z.ecc.android.sdk.type.ZcashNetwork
 import cash.z.wallet.sdk.rpc.Service
 import io.grpc.ManagedChannel
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -307,20 +307,6 @@ class SdkSynchronizer internal constructor(
      * server(s) with which they operate.
      */
     override suspend fun getServerInfo(): Service.LightdInfo = processor.downloader.getServerInfo()
-
-    /**
-     * Changes the server that is being used to download compact blocks. This will throw an
-     * exception if it detects that the server change is invalid e.g. switching to testnet from
-     * mainnet.
-     */
-    override suspend fun changeServer(host: String, port: Int, errorHandler: (Throwable) -> Unit) {
-        val info =
-            (processor.downloader.lightWalletService as LightWalletGrpcService).connectionInfo
-        processor.downloader.changeService(
-            LightWalletGrpcService(info.appContext, host, port),
-            errorHandler
-        )
-    }
 
     override suspend fun getNearestRewindHeight(height: BlockHeight): BlockHeight =
         processor.getNearestRewindHeight(height)
@@ -800,7 +786,7 @@ object DefaultSynchronizerFactory {
         CompactBlockDbStore.new(initializer.context, initializer.network, initializer.rustBackend.pathCacheDb)
 
     fun defaultService(initializer: Initializer): LightWalletService =
-        LightWalletGrpcService(initializer.context, initializer.host, initializer.port)
+        LightWalletGrpcService.new(initializer.context, initializer.lightwalletdServer)
 
     fun defaultEncoder(
         initializer: Initializer,

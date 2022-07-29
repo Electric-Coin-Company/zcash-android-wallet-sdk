@@ -5,7 +5,7 @@ import cash.z.ecc.android.sdk.SdkSynchronizer
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.BlockHeight
-import cash.z.ecc.android.sdk.type.ZcashNetwork
+import cash.z.ecc.android.sdk.model.ZcashNetwork
 import io.grpc.StatusRuntimeException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.filter

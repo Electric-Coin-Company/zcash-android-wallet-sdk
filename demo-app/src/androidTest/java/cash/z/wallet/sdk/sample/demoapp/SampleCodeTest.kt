@@ -11,9 +11,8 @@ import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.service.LightWalletGrpcService
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.BlockHeight
+import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.tool.DerivationTool
-import cash.z.ecc.android.sdk.type.ZcashNetwork
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -94,7 +93,10 @@ class SampleCodeTest {
     // ///////////////////////////////////////////////////
     // Download compact block range
     @Test fun getBlockRange() {
-        val blockRange = BlockHeight.new(ZcashNetwork.Mainnet, 500_000)..BlockHeight.new(ZcashNetwork.Mainnet, 500_009)
+        val blockRange = BlockHeight.new(ZcashNetwork.Mainnet, 500_000)..BlockHeight.new(
+            ZcashNetwork.Mainnet,
+            500_009
+        )
         val lightwalletService = LightWalletGrpcService(context, lightwalletdHost)
         val blocks = lightwalletService.getBlockRange(blockRange)
         assertEquals(blockRange.endInclusive.value - blockRange.start.value, blocks.count())

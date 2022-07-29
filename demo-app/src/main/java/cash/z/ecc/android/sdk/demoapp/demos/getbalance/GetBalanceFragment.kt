@@ -14,9 +14,11 @@ import cash.z.ecc.android.sdk.demoapp.ext.requireApplicationContext
 import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.ext.collectWith
 import cash.z.ecc.android.sdk.ext.convertZatoshiToZecString
+import cash.z.ecc.android.sdk.model.LightwalletdServer
 import cash.z.ecc.android.sdk.model.WalletBalance
+import cash.z.ecc.android.sdk.model.ZcashNetwork
+import cash.z.ecc.android.sdk.model.defaultForNetwork
 import cash.z.ecc.android.sdk.tool.DerivationTool
-import cash.z.ecc.android.sdk.type.ZcashNetwork
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.runBlocking
 
@@ -50,8 +52,12 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
         // using the ViewingKey to initialize
         runBlocking {
             Initializer.new(requireApplicationContext(), null) {
-                it.setNetwork(ZcashNetwork.fromResources(requireApplicationContext()))
-                it.newWallet(viewingKey, network = ZcashNetwork.fromResources(requireApplicationContext()))
+                val network = ZcashNetwork.fromResources(requireApplicationContext())
+                it.newWallet(
+                    viewingKey,
+                    network = network,
+                    lightwalletdServer = LightwalletdServer.defaultForNetwork(network)
+                )
             }
         }.let { initializer ->
             synchronizer = Synchronizer.newBlocking(initializer)

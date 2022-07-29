@@ -3,8 +3,8 @@ package cash.z.ecc.android.sdk
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.filters.SmallTest
+import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.tool.CheckpointTool
-import cash.z.ecc.android.sdk.type.ZcashNetwork
 import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
@@ -75,8 +75,8 @@ class AssetTest {
             assertTrue(jsonObject.has("saplingTree"))
 
             val expectedNetworkName = when (network) {
-                ZcashNetwork.Mainnet -> "main"
-                ZcashNetwork.Testnet -> "test"
+                is ZcashNetwork.Mainnet -> "main"
+                is ZcashNetwork.Testnet -> "test"
             }
             assertEquals("File: ${it.filename}", expectedNetworkName, jsonObject.getString("network"))
 

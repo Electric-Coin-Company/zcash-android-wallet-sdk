@@ -1,12 +1,10 @@
 package cash.z.ecc.android.sdk.internal.service
 
 import android.content.Context
-import cash.z.ecc.android.sdk.R
 import cash.z.ecc.android.sdk.annotation.OpenForTesting
-import cash.z.ecc.android.sdk.exception.LightWalletException
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.BlockHeight
-import cash.z.ecc.android.sdk.type.ZcashNetwork
+import cash.z.ecc.android.sdk.model.LightwalletdServer
 import cash.z.wallet.sdk.rpc.CompactFormats
 import cash.z.wallet.sdk.rpc.CompactTxStreamerGrpc
 import cash.z.wallet.sdk.rpc.Service
@@ -31,39 +29,14 @@ import kotlin.time.Duration.Companion.seconds
  */
 @OpenForTesting
 class LightWalletGrpcService private constructor(
+    context: Context,
+    private val lightwalletdServer: LightwalletdServer,
     var channel: ManagedChannel,
     private val singleRequestTimeout: Duration = 10.seconds,
     private val streamingRequestTimeout: Duration = 90.seconds
 ) : LightWalletService {
 
-    lateinit var connectionInfo: ConnectionInfo
-
-    constructor(
-        appContext: Context,
-        network: ZcashNetwork,
-        usePlaintext: Boolean =
-            appContext.resources.getBoolean(R.bool.lightwalletd_allow_very_insecure_connections)
-    ) : this(appContext, network.defaultHost, network.defaultPort, usePlaintext)
-
-    /**
-     * Construct an instance that corresponds to the given host and port.
-     *
-     * @param appContext the application context used to check whether TLS is required by this build
-     * flavor.
-     * @param host the host of the server to use.
-     * @param port the port of the server to use.
-     * @param usePlaintext whether to use TLS or plaintext for requests. Plaintext is dangerous so
-     * it requires jumping through a few more hoops.
-     */
-    constructor(
-        appContext: Context,
-        host: String,
-        port: Int = ZcashNetwork.Mainnet.defaultPort,
-        usePlaintext: Boolean =
-            appContext.resources.getBoolean(R.bool.lightwalletd_allow_very_insecure_connections)
-    ) : this(createDefaultChannel(appContext, host, port, usePlaintext)) {
-        connectionInfo = ConnectionInfo(appContext.applicationContext, host, port, usePlaintext)
-    }
+    private val applicationContext = context.applicationContext
 
     /* LightWalletService implementation */
 
@@ -141,22 +114,14 @@ class LightWalletGrpcService private constructor(
     }
 
     override fun reconnect() {
-        twig(
-            "closing existing channel and then reconnecting to ${connectionInfo.host}:" +
-                "${connectionInfo.port}?usePlaintext=${connectionInfo.usePlaintext}"
-        )
+        twig("closing existing channel and then reconnecting")
         channel.shutdown()
-        channel = createDefaultChannel(
-            connectionInfo.appContext,
-            connectionInfo.host,
-            connectionInfo.port,
-            connectionInfo.usePlaintext
-        )
+        channel = createDefaultChannel(applicationContext, lightwalletdServer)
     }
 
     // test code
-    var stateCount = 0
-    var state: ConnectivityState? = null
+    internal var stateCount = 0
+    internal var state: ConnectivityState? = null
     private fun requireChannel(): ManagedChannel {
         state = channel.getState(false).let { new ->
             if (state == new) stateCount++ else stateCount = 0
@@ -172,68 +137,46 @@ class LightWalletGrpcService private constructor(
         return channel
     }
 
-    //
-    // Utilities
-    //
-
-    private fun Channel.createStub(timeoutSec: Duration = 60.seconds) = CompactTxStreamerGrpc
-        .newBlockingStub(this)
-        .withDeadlineAfter(timeoutSec.inWholeSeconds, TimeUnit.SECONDS)
-
-    /**
-     * This function effectively parses streaming responses. Each call to next(), on the iterators
-     * returned from grpc, triggers a network call.
-     */
-    private fun <T> Iterator<T>.toList(): List<T> =
-        mutableListOf<T>().apply {
-            while (hasNext()) {
-                this@apply += next()
-            }
-        }
-
-    inner class ConnectionInfo(
-        val appContext: Context,
-        val host: String,
-        val port: Int,
-        val usePlaintext: Boolean
-    ) {
-        override fun toString(): String {
-            return "$host:$port?usePlaintext=$usePlaintext"
-        }
-    }
-
     companion object {
-        /**
-         * Convenience function for creating the default channel to be used for all connections. It
-         * is important that this channel can handle transitioning from WiFi to Cellular connections
-         * and is properly setup to support TLS, when required.
-         */
-        fun createDefaultChannel(
-            appContext: Context,
-            host: String,
-            port: Int,
-            usePlaintext: Boolean
-        ): ManagedChannel {
-            twig("Creating channel that will connect to $host:$port?usePlaintext=$usePlaintext")
-            return AndroidChannelBuilder
-                .forAddress(host, port)
-                .context(appContext)
-                .enableFullStreamDecompression()
-                .apply {
-                    if (usePlaintext) {
-                        if (!appContext.resources.getBoolean(
-                                R.bool.lightwalletd_allow_very_insecure_connections
-                            )
-                        ) throw LightWalletException.InsecureConnection
-                        usePlaintext()
-                    } else {
-                        useTransportSecurity()
-                    }
-                }
-                .build()
+        fun new(context: Context, lightwalletdServer: LightwalletdServer): LightWalletGrpcService {
+            val channel = createDefaultChannel(context, lightwalletdServer)
+
+            return LightWalletGrpcService(context, lightwalletdServer, channel)
         }
     }
 }
+
+/**
+ * Convenience function for creating the default channel to be used for all connections. It
+ * is important that this channel can handle transitioning from WiFi to Cellular connections
+ * and is properly setup to support TLS, when required.
+ */
+private fun createDefaultChannel(
+    appContext: Context,
+    lightwalletdServer: LightwalletdServer
+): ManagedChannel {
+    twig(
+        "Creating channel that will connect to" +
+            "${lightwalletdServer.host}:${lightwalletdServer.port}/?usePlaintext=${!lightwalletdServer.isSecure}"
+    )
+    return AndroidChannelBuilder
+        .forAddress(lightwalletdServer.host, lightwalletdServer.port)
+        .context(appContext)
+        .enableFullStreamDecompression()
+        .apply {
+            if (lightwalletdServer.isSecure) {
+                useTransportSecurity()
+            } else {
+                twig("WARNING: Using insecure channel")
+                usePlaintext()
+            }
+        }
+        .build()
+}
+
+private fun Channel.createStub(timeoutSec: Duration = 60.seconds) = CompactTxStreamerGrpc
+    .newBlockingStub(this)
+    .withDeadlineAfter(timeoutSec.inWholeSeconds, TimeUnit.SECONDS)
 
 private fun BlockHeight.toBlockHeight(): Service.BlockID =
     Service.BlockID.newBuilder().setHeight(value).build()
@@ -243,3 +186,14 @@ private fun ClosedRange<BlockHeight>.toBlockRange(): Service.BlockRange =
         .setStart(start.toBlockHeight())
         .setEnd(endInclusive.toBlockHeight())
         .build()
+
+/**
+ * This function effectively parses streaming responses. Each call to next(), on the iterators
+ * returned from grpc, triggers a network call.
+ */
+private fun <T> Iterator<T>.toList(): List<T> =
+    mutableListOf<T>().apply {
+        while (hasNext()) {
+            this@apply += next()
+        }
+    }

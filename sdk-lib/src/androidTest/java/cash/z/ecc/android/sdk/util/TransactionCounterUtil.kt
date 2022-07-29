@@ -6,7 +6,7 @@ import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.service.LightWalletGrpcService
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.BlockHeight
-import cash.z.ecc.android.sdk.type.ZcashNetwork
+import cash.z.ecc.android.sdk.model.ZcashNetwork
 import org.junit.Ignore
 import org.junit.Test
 

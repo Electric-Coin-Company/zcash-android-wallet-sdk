@@ -4,7 +4,7 @@ import cash.z.ecc.android.sdk.annotation.MaintainedTest
 import cash.z.ecc.android.sdk.annotation.TestPurpose
 import cash.z.ecc.android.sdk.ext.BlockExplorer
 import cash.z.ecc.android.sdk.model.BlockHeight
-import cash.z.ecc.android.sdk.type.ZcashNetwork
+import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.util.TestWallet
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals

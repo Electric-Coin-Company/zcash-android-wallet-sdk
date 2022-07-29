@@ -21,8 +21,10 @@ import cash.z.ecc.android.sdk.demoapp.util.mainActivity
 import cash.z.ecc.android.sdk.ext.collectWith
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.BlockHeight
+import cash.z.ecc.android.sdk.model.LightwalletdServer
+import cash.z.ecc.android.sdk.model.ZcashNetwork
+import cash.z.ecc.android.sdk.model.defaultForNetwork
 import cash.z.ecc.android.sdk.tool.DerivationTool
-import cash.z.ecc.android.sdk.type.ZcashNetwork
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -64,8 +66,15 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
         // have the seed stored
         seed = Mnemonics.MnemonicCode(sharedViewModel.seedPhrase.value).toSeed()
         initializer = runBlocking {
+            val network = ZcashNetwork.fromResources(requireApplicationContext())
             Initializer.new(requireApplicationContext()) {
-                runBlocking { it.newWallet(seed, network = ZcashNetwork.fromResources(requireApplicationContext())) }
+                runBlocking {
+                    it.newWallet(
+                        seed,
+                        network = network,
+                        lightwalletdServer = LightwalletdServer.defaultForNetwork(network)
+                    )
+                }
                 it.alias = "Demo_Utxos"
             }
         }
@@ -96,12 +105,19 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
             val network = ZcashNetwork.fromResources(requireApplicationContext())
             binding.textStatus.requestFocus()
             val addressToUse = binding.inputAddress.text.toString()
-            val startToUse = max(binding.inputRangeStart.text.toString().toLongOrNull() ?: network.saplingActivationHeight.value, network.saplingActivationHeight.value)
+            val startToUse = max(
+                binding.inputRangeStart.text.toString().toLongOrNull()
+                    ?: network.saplingActivationHeight.value,
+                network.saplingActivationHeight.value
+            )
             val endToUse = binding.inputRangeEnd.text.toString().toLongOrNull()
                 ?: getUxtoEndHeight(requireApplicationContext()).value
             var allStart = now
             twig("loading transactions in range $startToUse..$endToUse")
-            val txids = lightwalletService?.getTAddressTransactions(addressToUse, BlockHeight.new(network, startToUse)..BlockHeight.new(network, endToUse))
+            val txids = lightwalletService?.getTAddressTransactions(
+                addressToUse,
+                BlockHeight.new(network, startToUse)..BlockHeight.new(network, endToUse)
+            )
             var delta = now - allStart
             updateStatus("found ${txids?.size} transactions in ${delta}ms.", false)
 
@@ -163,7 +179,12 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
         resetInBackground()
         val seed = Mnemonics.MnemonicCode(sharedViewModel.seedPhrase.value).toSeed()
         viewLifecycleOwner.lifecycleScope.launchWhenStarted {
-            binding.inputAddress.setText(DerivationTool.deriveTransparentAddress(seed, ZcashNetwork.fromResources(requireApplicationContext())))
+            binding.inputAddress.setText(
+                DerivationTool.deriveTransparentAddress(
+                    seed,
+                    ZcashNetwork.fromResources(requireApplicationContext())
+                )
+            )
         }
     }
 

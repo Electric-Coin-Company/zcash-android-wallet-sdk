@@ -2,7 +2,7 @@ package cash.z.ecc.android.sdk.exception
 
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
 import cash.z.ecc.android.sdk.model.BlockHeight
-import cash.z.ecc.android.sdk.type.ZcashNetwork
+import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.wallet.sdk.rpc.Service
 import io.grpc.Status
 import io.grpc.Status.Code.UNAVAILABLE

@@ -1,6 +1,5 @@
 package cash.z.ecc.android.sdk.model
 
-import cash.z.ecc.android.sdk.type.ZcashNetwork
 import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith

@@ -3,7 +3,7 @@ package cash.z.ecc.android.sdk.jni
 import cash.z.ecc.android.sdk.annotation.MaintainedTest
 import cash.z.ecc.android.sdk.annotation.TestPurpose
 import cash.z.ecc.android.sdk.model.BlockHeight
-import cash.z.ecc.android.sdk.type.ZcashNetwork
+import cash.z.ecc.android.sdk.model.ZcashNetwork
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Test

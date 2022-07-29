@@ -5,8 +5,8 @@ import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.Zatoshi
-import cash.z.ecc.android.sdk.type.ZcashNetwork
-import cash.z.ecc.android.sdk.type.ZcashNetwork.Testnet
+import cash.z.ecc.android.sdk.model.ZcashNetwork
+import cash.z.ecc.android.sdk.model.ZcashNetwork.Testnet
 import cash.z.ecc.android.sdk.util.TestWallet
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
@@ -117,7 +117,15 @@ class TransparentRestoreSample {
      */
 //    @Test
     fun hasFunds() = runBlocking<Unit> {
-        val walletSandbox = TestWallet(TestWallet.Backups.SAMPLE_WALLET.seedPhrase, "WalletC", Testnet, startHeight = BlockHeight.new(ZcashNetwork.Testnet, 1330190))
+        val walletSandbox = TestWallet(
+            TestWallet.Backups.SAMPLE_WALLET.seedPhrase,
+            "WalletC",
+            Testnet,
+            startHeight = BlockHeight.new(
+                ZcashNetwork.Testnet,
+                1330190
+            )
+        )
         //        val job = walletA.walletScope.launch {
         //            twig("Syncing WalletA")
         //            walletA.sync()
