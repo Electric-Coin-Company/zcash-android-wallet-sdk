@@ -24,7 +24,7 @@ class NoBackupContextWrapperTest {
     @Test
     @SmallTest
     fun get_database_path_test() {
-        val testDbPath = "${DatabasePathFixture.new()}/${DatabaseNameFixture.newDb()}"
+        val testDbPath = File(DatabasePathFixture.new(), DatabaseNameFixture.newDb()).absolutePath
         val testDbFile = noBackupContextWrapper.getDatabasePath(testDbPath)
 
         testDbFile.absolutePath.also {

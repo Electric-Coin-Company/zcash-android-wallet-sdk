@@ -5,6 +5,7 @@ import cash.z.ecc.android.sdk.internal.ext.getDatabasePathSuspend
 import cash.z.ecc.android.sdk.internal.ext.getNoBackupFilesDirCompat
 import cash.z.ecc.android.sdk.test.getAppContext
 import kotlinx.coroutines.runBlocking
+import java.io.File
 
 object DatabasePathFixture {
     val NO_BACKUP_DIR_PATH: String = runBlocking {
@@ -24,5 +25,5 @@ object DatabasePathFixture {
     internal fun new(
         baseFolderPath: String = NO_BACKUP_DIR_PATH,
         internalPath: String = INTERNAL_DATABASE_PATH
-    ) = "$baseFolderPath/$internalPath"
+    ) = File(baseFolderPath, internalPath).absolutePath
 }

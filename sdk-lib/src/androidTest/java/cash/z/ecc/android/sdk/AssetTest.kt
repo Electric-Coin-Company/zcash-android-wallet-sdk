@@ -93,9 +93,9 @@ class AssetTest {
     private data class JsonFile(val jsonObject: JSONObject, val filename: String)
 
     companion object {
-        fun listAssets(network: ZcashNetwork) = runBlocking {
+        fun listAssets(network: ZcashNetwork): Array<String>? = runBlocking {
             CheckpointTool.listCheckpointDirectoryContents(
-                ApplicationProvider.getApplicationContext<Context>(),
+                ApplicationProvider.getApplicationContext(),
                 CheckpointTool.checkpointDirectory(network)
             )
         }

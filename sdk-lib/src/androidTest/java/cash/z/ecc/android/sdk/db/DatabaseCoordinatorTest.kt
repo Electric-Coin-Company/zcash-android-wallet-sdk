@@ -140,13 +140,13 @@ class DatabaseCoordinatorTest {
         )
 
         val expectedDbFile = File(
-            "${DatabasePathFixture.new()}/${DatabaseNameFixture.newDb(name = DatabaseCoordinator.DB_CACHE_NAME)}"
+            DatabasePathFixture.new(), DatabaseNameFixture.newDb(name = DatabaseCoordinator.DB_CACHE_NAME)
         )
         val expectedDbJournalFile = File(
-            "${DatabasePathFixture.new()}/${DatabaseNameFixture.newDbJournal(name = DatabaseCoordinator.DB_CACHE_NAME)}"
+            DatabasePathFixture.new(), DatabaseNameFixture.newDbJournal(name = DatabaseCoordinator.DB_CACHE_NAME)
         )
         val expectedDbWalFile = File(
-            "${DatabasePathFixture.new()}/${DatabaseNameFixture.newDbWal(name = DatabaseCoordinator.DB_CACHE_NAME)}"
+            DatabasePathFixture.new(), DatabaseNameFixture.newDbWal(name = DatabaseCoordinator.DB_CACHE_NAME)
         )
 
         dbCoordinator.cacheDbFile(

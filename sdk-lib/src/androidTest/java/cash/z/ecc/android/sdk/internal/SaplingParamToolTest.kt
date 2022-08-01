@@ -42,7 +42,7 @@ class SaplingParamToolTest {
     fun testOnlySpendFileExits() = runBlocking {
         // Given
         SaplingParamTool.fetchParams(cacheDir)
-        File("$cacheDir/${ZcashSdk.OUTPUT_PARAM_FILE_NAME}").delete()
+        File(cacheDir, ZcashSdk.OUTPUT_PARAM_FILE_NAME).delete()
 
         // When
         val result = SaplingParamTool.validate(cacheDir)
@@ -55,7 +55,7 @@ class SaplingParamToolTest {
     fun testOnlyOutputOFileExits() = runBlocking {
         // Given
         SaplingParamTool.fetchParams(cacheDir)
-        File("$cacheDir/${ZcashSdk.SPEND_PARAM_FILE_NAME}").delete()
+        File(cacheDir, ZcashSdk.SPEND_PARAM_FILE_NAME).delete()
 
         // When
         val result = SaplingParamTool.validate(cacheDir)
