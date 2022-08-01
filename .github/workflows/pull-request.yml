@@ -177,6 +177,41 @@ jobs:
           name: Android Lint static analysis results
           path: ~/artifacts
 
+  test_android_modules_unit:
+    needs: [ prime_cache ]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        timeout-minutes: 1
+        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
+      - name: Setup
+        id: setup
+        timeout-minutes: 5
+        uses: ./.github/actions/setup
+      - name: Build and test
+        timeout-minutes: 25
+        run: |
+          ./gradlew test
+      - name: Collect Artifacts
+        if: ${{ always() }}
+        timeout-minutes: 1
+        env:
+          ARTIFACTS_DIR_PATH: ${{ format('{0}/artifacts', env.home) }}
+          TEST_RESULTS_ZIP_PATH: ${{ format('{0}/artifacts/test_results.zip', env.home) }}
+        run: |
+          mkdir ${ARTIFACTS_DIR_PATH}
+
+          zip -r ${TEST_RESULTS_ZIP_PATH} . -i \*/build/test-results/\* \*/build/reports/\*
+      - name: Upload Artifacts
+        if: ${{ always() }}
+        uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8
+        timeout-minutes: 1
+        with:
+          name: Test Android modules with Unit Tests
+          path: ~/artifacts
+
   # Emulator.wtf is preferred if it has an API key.
   test_android_modules_ftl:
     if: needs.check_firebase_secrets.outputs.has-secrets == 'true' && needs.check_emulator_wtf_secrets.outputs.has-secrets == 'false'
