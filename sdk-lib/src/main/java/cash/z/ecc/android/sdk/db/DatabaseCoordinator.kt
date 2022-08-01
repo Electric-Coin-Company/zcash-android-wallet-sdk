@@ -264,7 +264,7 @@ internal class DatabaseCoordinator private constructor(context: Context) {
         val walSuffixedDbFile = File(
             "${legacyLocationDbFile.absolutePath}-$DATABASE_FILE_WAL_SUFFIX"
         )
-        if (walSuffixedDbFile.exists()) {
+        if (walSuffixedDbFile.existsSuspend()) {
             filesToBeRenamed.add(
                 Pair(
                     walSuffixedDbFile,
