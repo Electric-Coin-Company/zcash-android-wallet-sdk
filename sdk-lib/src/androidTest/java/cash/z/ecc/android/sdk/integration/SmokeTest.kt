@@ -8,6 +8,7 @@ import cash.z.ecc.android.sdk.internal.service.LightWalletGrpcService
 import cash.z.ecc.android.sdk.util.TestWallet
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Assert.assertFalse
 import org.junit.Ignore
 import org.junit.Test
@@ -32,20 +33,21 @@ class SmokeTest {
 
     @Test
     fun testFilePaths() {
-        assertEquals(
+        assertTrue(
             "Invalid DataDB file",
-            "/data/user/0/cash.z.ecc.android.sdk.test/no_backup/co.electricoin.zcash/TestWallet_testnet_Data.db",
-            wallet.initializer.rustBackend.dataDbFile.absolutePath
+            wallet.initializer.rustBackend.dataDbFile.absolutePath.endsWith(
+                "no_backup/co.electricoin.zcash/TestWallet_testnet_Data.db"
+            )
         )
-        assertEquals(
+        assertTrue(
             "Invalid CacheDB file",
-            "/data/user/0/cash.z.ecc.android.sdk.test/no_backup/co.electricoin.zcash/TestWallet_testnet_Cache.db",
-            wallet.initializer.rustBackend.cacheDbFile.absolutePath
+            wallet.initializer.rustBackend.cacheDbFile.absolutePath.endsWith(
+                "no_backup/co.electricoin.zcash/TestWallet_testnet_Cache.db"
+            )
         )
-        assertEquals(
+        assertTrue(
             "Invalid CacheDB params dir",
-            "/data/user/0/cash.z.ecc.android.sdk.test/cache/params",
-            wallet.initializer.rustBackend.pathParamsDir
+            wallet.initializer.rustBackend.pathParamsDir.endsWith("cache/params")
         )
     }
 

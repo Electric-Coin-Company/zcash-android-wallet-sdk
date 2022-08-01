@@ -41,20 +41,23 @@ class SanityTest(
 
     @Test
     fun testFilePaths() {
-        assertEquals(
+        assertTrue(
             "$name has invalid DataDB file",
-            "/data/user/0/cash.z.ecc.android.sdk.test/no_backup/co.electricoin.zcash/TestWallet_${networkName}_Data.db",
-            wallet.initializer.rustBackend.dataDbFile.absolutePath
+            wallet.initializer.rustBackend.dataDbFile.absolutePath.endsWith(
+                "no_backup/co.electricoin.zcash/TestWallet_${networkName}_Data.db"
+            )
         )
-        assertEquals(
+        assertTrue(
             "$name has invalid CacheDB file",
-            "/data/user/0/cash.z.ecc.android.sdk.test/no_backup/co.electricoin.zcash/TestWallet_${networkName}_Cache.db",
-            wallet.initializer.rustBackend.cacheDbFile.absolutePath
+            wallet.initializer.rustBackend.cacheDbFile.absolutePath.endsWith(
+                "no_backup/co.electricoin.zcash/TestWallet_${networkName}_Cache.db"
+            )
         )
-        assertEquals(
+        assertTrue(
             "$name has invalid CacheDB params dir",
-            "/data/user/0/cash.z.ecc.android.sdk.test/cache/params",
-            wallet.initializer.rustBackend.pathParamsDir
+            wallet.initializer.rustBackend.pathParamsDir.endsWith(
+                "cache/params"
+            )
         )
     }
 
