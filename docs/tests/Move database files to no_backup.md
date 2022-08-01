@@ -1,19 +1,17 @@
 # About
-This manual test case provides information on how to manually test an implemented action of moving all of our databases files from default `/databases/` to preferred `/no_bakcup/co.electricoin.zcash` directory. The benefit of this approach is that the content `no_backup` folder is not part of automatic user data backup to user's cloud storage. Our databases can contain potentially big and sensitive data.
+This manual test case provides information on how to manually test an implemented action of moving all of our databases files from default `/databases/` to preferred `/no_backup/co.electricoin.zcash` directory. The benefit of this approach is that the content `no_backup` folder is not part of automatic user data backup to user's cloud storage. Our databases can contain potentially big and sensitive data.
 
 The move feature takes all related files (database file itself as well as `journal` and `wal` rollback files) and moves them only once on app start (before first database access) when a client app uses an updated version of this SDK.
 
 # Prerequisite
 - Installed Android Studio
-- Ideally two emulators, e.g.
-  - Pixel 2 Android SDK 21
-  - Pixel 2 Android SDK 31
+- Ideally two emulators with min and max supported API level
 - A working git client
 - Cloned Zcash Android SDK repository
 
 # Prepare steps
 1. Install a previous version of the SDK and its demo-app to create database files in the original `database` folder
-1. Switch back to commit **Bump version to 1.8.0-beta01 [3fda6da]** from Jul 11 2022 on the **Main** branch in your git client
+1. Switch back to commit **Bump version to 1.8.0-beta01 [3fda6da]** from Jul 11 2022 on the **Main** branch in your git client, or with this git command `git checkout 3fda6da1cae5b83174e5b1e020c91dfe95d93458`  
 2. Update dependencies lock (if needed) and sync Gradle files
 3. Run the demo-app on selected emulator
 4. Once it's opened go through the app to let the SDK create all the database files. Visit these screens step by step from the side menu:
