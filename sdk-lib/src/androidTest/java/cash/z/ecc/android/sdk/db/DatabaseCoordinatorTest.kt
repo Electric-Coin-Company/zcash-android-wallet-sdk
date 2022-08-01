@@ -119,9 +119,11 @@ class DatabaseCoordinatorTest {
     @Test
     @SmallTest
     fun database_files_move_test() = runTest {
-        val parentFile = File(DatabasePathFixture.new(
-            baseFolderPath = DatabasePathFixture.DATABASE_DIR_PATH,
-            internalPath = "")
+        val parentFile = File(
+            DatabasePathFixture.new(
+                baseFolderPath = DatabasePathFixture.DATABASE_DIR_PATH,
+                internalPath = ""
+            )
         )
 
         val originalDbFile = getEmptyFile(
@@ -140,13 +142,16 @@ class DatabaseCoordinatorTest {
         )
 
         val expectedDbFile = File(
-            DatabasePathFixture.new(), DatabaseNameFixture.newDb(name = DatabaseCoordinator.DB_CACHE_NAME)
+            DatabasePathFixture.new(),
+            DatabaseNameFixture.newDb(name = DatabaseCoordinator.DB_CACHE_NAME)
         )
         val expectedDbJournalFile = File(
-            DatabasePathFixture.new(), DatabaseNameFixture.newDbJournal(name = DatabaseCoordinator.DB_CACHE_NAME)
+            DatabasePathFixture.new(),
+            DatabaseNameFixture.newDbJournal(name = DatabaseCoordinator.DB_CACHE_NAME)
         )
         val expectedDbWalFile = File(
-            DatabasePathFixture.new(), DatabaseNameFixture.newDbWal(name = DatabaseCoordinator.DB_CACHE_NAME)
+            DatabasePathFixture.new(),
+            DatabaseNameFixture.newDbWal(name = DatabaseCoordinator.DB_CACHE_NAME)
         )
 
         dbCoordinator.cacheDbFile(
@@ -180,9 +185,11 @@ class DatabaseCoordinatorTest {
     @Test
     @SmallTest
     fun delete_database_files_test() = runTest {
-        val parentFile = File(DatabasePathFixture.new(
-            baseFolderPath = DatabasePathFixture.DATABASE_DIR_PATH,
-            internalPath = "")
+        val parentFile = File(
+            DatabasePathFixture.new(
+                baseFolderPath = DatabasePathFixture.DATABASE_DIR_PATH,
+                internalPath = ""
+            )
         )
 
         val dbFile = getEmptyFile(

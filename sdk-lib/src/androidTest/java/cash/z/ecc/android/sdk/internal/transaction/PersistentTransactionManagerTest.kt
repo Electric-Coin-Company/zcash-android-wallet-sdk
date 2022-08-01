@@ -46,7 +46,8 @@ class PersistentTransactionManagerTest : ScopedTest() {
     @Mock lateinit var mockService: LightWalletService
 
     private val pendingDbFile = File(
-        DatabasePathFixture.new(), DatabaseNameFixture.newDb(name = "PersistentTxMgrTest_Pending.db")
+        DatabasePathFixture.new(),
+        DatabaseNameFixture.newDb(name = "PersistentTxMgrTest_Pending.db")
     ).apply {
         assertTrue(parentFile != null)
         parentFile!!.mkdirs()
