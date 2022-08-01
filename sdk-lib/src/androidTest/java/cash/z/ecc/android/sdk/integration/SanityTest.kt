@@ -141,14 +141,14 @@ class SanityTest(
                 TestWallet(TestWallet.Backups.SAMPLE_WALLET),
                 "zxviewtestsapling1qv0ue89kqqqqpqqyt4cl5wvssx4wqq30e5m948p07dnwl9x3u75vvnzvjwwpjkrf8yk2gva0kkxk9p8suj4xawlzw9pajuxgap83wykvsuyzfrm33a2p2m4jz2205kgzx0l2lj2kyegtnuph6crkyvyjqmfxut84nu00wxgrstu5fy3eu49nzl8jzr4chmql4ysgg2t8htn9dtvxy8c7wx9rvcerqsjqm6lqln9syk3g8rr3xpy3l4nj0kawenzpcdtnv9qmy98vdhqzaf063",
                 "0234965f30c8611253d035f44e68d4e2ce82150e8665c95f41ccbaf916b16c69d8",
-                BlockHeight(1330000)
+                BlockHeight.new(ZcashNetwork.Testnet, 1330000)
             ),
             // Mainnet wallet
             arrayOf(
                 TestWallet(TestWallet.Backups.SAMPLE_WALLET, ZcashNetwork.Mainnet),
                 "zxviews1q0hxkupsqqqqpqzsffgrk2smjuccedua7zswf5e3rgtv3ga9nhvhjug670egshd6me53r5n083s2m9mf4va4z7t39ltd3wr7hawnjcw09eu85q0ammsg0tsgx24p4ma0uvr4p8ltx5laum2slh2whc23ctwlnxme9w4dw92kalwk5u4wyem8dynknvvqvs68ktvm8qh7nx9zg22xfc77acv8hk3qqll9k3x4v2fa26puu2939ea7hy4hh60ywma69xtqhcy4037ne8g2sg8sq",
                 "031c6355641237643317e2d338f5e8734c57e8aa8ce960ee22283cf2d76bef73be",
-                BlockHeight(1000000)
+                BlockHeight.new(ZcashNetwork.Mainnet, 1000000)
             )
         )
     }
