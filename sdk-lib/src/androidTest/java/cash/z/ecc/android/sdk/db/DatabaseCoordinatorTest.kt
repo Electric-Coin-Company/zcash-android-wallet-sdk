@@ -1,5 +1,6 @@
 package cash.z.ecc.android.sdk.db
 
+import androidx.test.filters.MediumTest
 import androidx.test.filters.SmallTest
 import cash.z.ecc.android.sdk.test.getAppContext
 import cash.z.ecc.android.sdk.type.ZcashNetwork
@@ -29,8 +30,8 @@ class DatabaseCoordinatorTest {
     }
 
     // Sanity check of the database coordinator instance and its thread-safe implementation. Our aim
-    // here is to run two jobs in parallel at the same time to test mutex implementation and correct
-    // DatabaseCoordinator function call result.
+    // here is to run two jobs in parallel (the second one runs immediately after the first was started)
+    // to test mutex implementation and correct DatabaseCoordinator function call result.
     @Test
     @SmallTest
     fun mutex_test() = runTest {
@@ -44,14 +45,14 @@ class DatabaseCoordinatorTest {
             )
         }
         val job2 = launch {
-            delay(1000)
+            delay(1001)
             testResult = dbCoordinator.cacheDbFile(
                 ZcashNetwork.Mainnet,
                 "TestZcashSdk"
             )
         }
 
-        advanceTimeBy(1001)
+        advanceTimeBy(1002)
 
         job2.join().also {
             assertTrue(testResult != null)
@@ -62,10 +63,20 @@ class DatabaseCoordinatorTest {
     }
 
     @Test
+    @MediumTest
+    fun mutex_stress_test() {
+        // We run the mutex test multiple times sequentially to catch a possible problem.
+        for (x in 0..50) {
+            mutex_test()
+        }
+    }
+
+    @Test
     @SmallTest
     fun database_cache_file_creation_test() = runTest {
-        val expectedFilePath =
-            "${DatabasePathFixture.new()}/${DatabaseNameFixture.newDb(name = DatabaseCoordinator.DB_CACHE_NAME)}"
+        val directory = File(DatabasePathFixture.new())
+        val fileName = DatabaseNameFixture.newDb(name = DatabaseCoordinator.DB_CACHE_NAME)
+        val expectedFilePath = File(directory, fileName).path
 
         dbCoordinator.cacheDbFile(
             DatabaseNameFixture.TEST_DB_NETWORK,
@@ -78,8 +89,9 @@ class DatabaseCoordinatorTest {
     @Test
     @SmallTest
     fun database_data_file_creation_test() = runTest {
-        val expectedFilePath =
-            "${DatabasePathFixture.new()}/${DatabaseNameFixture.newDb(name = DatabaseCoordinator.DB_DATA_NAME)}"
+        val directory = File(DatabasePathFixture.new())
+        val fileName = DatabaseNameFixture.newDb(name = DatabaseCoordinator.DB_DATA_NAME)
+        val expectedFilePath = File(directory, fileName).path
 
         dbCoordinator.dataDbFile(
             DatabaseNameFixture.TEST_DB_NETWORK,
@@ -92,10 +104,9 @@ class DatabaseCoordinatorTest {
     @Test
     @SmallTest
     fun database_transactions_file_creation_test() = runTest {
-        val expectedFilePath =
-            "${DatabasePathFixture.new()}/${DatabaseNameFixture.newDb(
-                name = DatabaseCoordinator.DB_PENDING_TRANSACTIONS_NAME
-            )}"
+        val directory = File(DatabasePathFixture.new())
+        val fileName = DatabaseNameFixture.newDb(name = DatabaseCoordinator.DB_PENDING_TRANSACTIONS_NAME)
+        val expectedFilePath = File(directory, fileName).path
 
         dbCoordinator.pendingTransactionsDbPath(
             DatabaseNameFixture.TEST_DB_NETWORK,
@@ -108,12 +119,25 @@ class DatabaseCoordinatorTest {
     @Test
     @SmallTest
     fun database_files_move_test() = runTest {
-        val originalDbFile =
-            getEmptyFile("${DatabasePathFixture.new(baseFolderPath = DatabasePathFixture.DATABASE_DIR_PATH, internalPath = "")}/${DatabaseNameFixture.newDb(name = DatabaseCoordinator.DB_CACHE_NAME)}")
-        val originalDbJournalFile =
-            getEmptyFile("${DatabasePathFixture.new(baseFolderPath = DatabasePathFixture.DATABASE_DIR_PATH, internalPath = "")}/${DatabaseNameFixture.newDbJournal(name = DatabaseCoordinator.DB_CACHE_NAME)}")
-        val originalDbWalFile =
-            getEmptyFile("${DatabasePathFixture.new(baseFolderPath = DatabasePathFixture.DATABASE_DIR_PATH, internalPath = "")}/${DatabaseNameFixture.newDbWal(name = DatabaseCoordinator.DB_CACHE_NAME)}")
+        val parentFile = File(DatabasePathFixture.new(
+            baseFolderPath = DatabasePathFixture.DATABASE_DIR_PATH,
+            internalPath = "")
+        )
+
+        val originalDbFile = getEmptyFile(
+            parent = parentFile,
+            fileName = DatabaseNameFixture.newDb(name = DatabaseCoordinator.DB_CACHE_NAME)
+        )
+
+        val originalDbJournalFile = getEmptyFile(
+            parent = parentFile,
+            fileName = DatabaseNameFixture.newDbJournal(name = DatabaseCoordinator.DB_CACHE_NAME)
+        )
+
+        val originalDbWalFile = getEmptyFile(
+            parent = parentFile,
+            fileName = DatabaseNameFixture.newDbWal(name = DatabaseCoordinator.DB_CACHE_NAME)
+        )
 
         val expectedDbFile = File(
             "${DatabasePathFixture.new()}/${DatabaseNameFixture.newDb(name = DatabaseCoordinator.DB_CACHE_NAME)}"
@@ -142,8 +166,8 @@ class DatabaseCoordinatorTest {
         }
     }
 
-    private fun getEmptyFile(pathName: String): File {
-        return File(pathName).apply {
+    private fun getEmptyFile(parent: File, fileName: String): File {
+        return File(parent, fileName).apply {
             assertTrue(parentFile != null)
             parentFile!!.mkdirs()
             assertTrue(parentFile!!.exists())
@@ -156,14 +180,24 @@ class DatabaseCoordinatorTest {
     @Test
     @SmallTest
     fun delete_database_files_test() = runTest {
+        val parentFile = File(DatabasePathFixture.new(
+            baseFolderPath = DatabasePathFixture.DATABASE_DIR_PATH,
+            internalPath = "")
+        )
+
         val dbFile = getEmptyFile(
-            "${DatabasePathFixture.new()}/${DatabaseNameFixture.newDb(name = DatabaseCoordinator.DB_CACHE_NAME)}"
+            parent = parentFile,
+            fileName = DatabaseNameFixture.newDb(name = DatabaseCoordinator.DB_CACHE_NAME)
         )
+
         val dbJournalFile = getEmptyFile(
-            "${DatabasePathFixture.new()}/${DatabaseNameFixture.newDbJournal(name = DatabaseCoordinator.DB_CACHE_NAME)}"
+            parent = parentFile,
+            fileName = DatabaseNameFixture.newDbJournal(name = DatabaseCoordinator.DB_CACHE_NAME)
         )
+
         val dbWalFile = getEmptyFile(
-            "${DatabasePathFixture.new()}/${DatabaseNameFixture.newDbWal(name = DatabaseCoordinator.DB_CACHE_NAME)}"
+            parent = parentFile,
+            fileName = DatabaseNameFixture.newDbWal(name = DatabaseCoordinator.DB_CACHE_NAME)
         )
 
         assertTrue(dbFile.exists())
