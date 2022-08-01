@@ -31,8 +31,8 @@ class CompactBlockDbStore private constructor(
     override suspend fun findCompactBlock(height: BlockHeight): CompactFormats.CompactBlock? =
         cacheDao.findCompactBlock(height.value)?.let { CompactFormats.CompactBlock.parseFrom(it) }
 
-    override suspend fun write(result: List<CompactFormats.CompactBlock>) =
-        cacheDao.insert(result.map { CompactBlockEntity(it.height.toInt(), it.toByteArray()) })
+    override suspend fun write(result: Sequence<CompactFormats.CompactBlock>) =
+        cacheDao.insert(result.map { CompactBlockEntity(it.height, it.toByteArray()) })
 
     override suspend fun rewindTo(height: BlockHeight) =
         cacheDao.rewindTo(height.value)
@@ -48,7 +48,11 @@ class CompactBlockDbStore private constructor(
          * @param appContext the application context. This is used for creating the database.
          * @property databaseFile the database file.
          */
-        fun new(appContext: Context, zcashNetwork: ZcashNetwork, databaseFile: File): CompactBlockDbStore {
+        fun new(
+            appContext: Context,
+            zcashNetwork: ZcashNetwork,
+            databaseFile: File
+        ): CompactBlockDbStore {
             val cacheDb = createCompactBlockCacheDb(appContext.applicationContext, databaseFile)
 
             return CompactBlockDbStore(zcashNetwork, cacheDb)

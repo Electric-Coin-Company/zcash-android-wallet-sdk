@@ -107,7 +107,7 @@ class SanityTest(
     fun testSingleBlockDownload() = runBlocking {
         // fetch block directly because the synchronizer hasn't started, yet
         val height = BlockHeight.new(wallet.network, 1_000_000)
-        val block = wallet.service.getBlockRange(height..height)[0]
+        val block = wallet.service.getBlockRange(height..height).first()
         assertTrue("$networkName failed to return a proper block. Height was ${block.height} but we expected $height", block.height == height.value)
     }
 

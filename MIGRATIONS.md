@@ -1,6 +1,11 @@
 Troubleshooting Migrations
 ==========
 
+Migration to Version 1.8 from 1.7
+Various APIs used `Int` to represent network block heights.  Those APIs now use a typesafe `BlockHeight` type.  BlockHeight is constructed with a factory method `BlockHeight.new(ZcashNetwork, Long)` which uses the network to validate the height is above the network's sapling activation height.
+
+`WalletBirthday` has been renamed to `Checkpoint` and removed from the public API.  Where clients previously passed in a `WalletBirthday` object, now a `BlockHeight` can be passed in instead.
+
 Migration to Version 1.7 from 1.6
 --------------------------------------
 Various APIs used `Long` value to represent Zatoshi currency amounts.  Those APIs now use a typesafe `Zatoshi` class.  When passing amounts, simply wrap Long values with the Zatoshi constructor `Zatoshi(Long)`.  When receiving values, simply unwrap Long values with `Zatoshi.value`.

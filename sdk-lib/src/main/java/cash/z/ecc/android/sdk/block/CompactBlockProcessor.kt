@@ -147,6 +147,9 @@ class CompactBlockProcessor internal constructor(
      * sequentially, due to the way sqlite works so it is okay for this not to be threadsafe or
      * coroutine safe because processing cannot be concurrent.
      */
+    // This accessed by the Dispatchers.IO thread, which means multiple threads are reading/writing
+    // concurrently.
+    @Volatile
     internal var currentInfo = ProcessorInfo(null, null, null, null, null)
 
     /**
@@ -325,13 +328,14 @@ class CompactBlockProcessor internal constructor(
                     } else {
                         null
                     },
-                    lastDownloadRange = if (initialInfo.lastDownloadedHeight != null && initialInfo.lastScannedHeight != null && initialInfo.networkBlockHeight != null) {
+                    lastDownloadRange = if (initialInfo.networkBlockHeight != null) {
                         BlockHeight.new(
                             network,
-                            max(
-                                initialInfo.lastDownloadedHeight.value,
-                                initialInfo.lastScannedHeight.value
-                            ) + 1
+                            buildList {
+                                add(network.saplingActivationHeight.value)
+                                initialInfo.lastDownloadedHeight?.let { add(it.value + 1) }
+                                initialInfo.lastScannedHeight?.let { add(it.value + 1) }
+                            }.max()
                         )..initialInfo.networkBlockHeight
                     } else {
                         null
@@ -562,7 +566,8 @@ class CompactBlockProcessor internal constructor(
                 twig("found $missingBlockCount missing blocks, downloading in $batches batches of $DOWNLOAD_BATCH_SIZE...")
                 for (i in 1..batches) {
                     retryUpTo(RETRIES, { CompactBlockProcessorException.FailedDownload(it) }) {
-                        val end = BlockHeight(
+                        val end = BlockHeight.new(
+                            network,
                             min(
                                 (range.start.value + (i * DOWNLOAD_BATCH_SIZE)) - 1,
                                 range.endInclusive.value
@@ -577,7 +582,7 @@ class CompactBlockProcessor internal constructor(
                         _progress.send(progress)
                         val lastDownloadedHeight = downloader.getLastDownloadedHeight()
                         updateProgress(lastDownloadedHeight = lastDownloadedHeight)
-                        downloadedBlockHeight = end
+                        downloadedBlockHeight = end + 1
                     }
                 }
                 Twig.clip("downloading")
@@ -633,7 +638,8 @@ class CompactBlockProcessor internal constructor(
                     metrics.beginBatch()
                     result = rustBackend.scanBlocks(SCAN_BATCH_SIZE)
                     metrics.endBatch()
-                    val lastScannedHeight = BlockHeight.new(network, range.start.value + metrics.cumulativeItems - 1)
+                    val lastScannedHeight =
+                        BlockHeight.new(network, range.start.value + metrics.cumulativeItems - 1)
                     val percentValue =
                         (lastScannedHeight.value - range.start.value) / (range.endInclusive.value - range.start.value + 1).toFloat() * 100.0f
                     val percent = "%.0f".format(percentValue.coerceAtMost(100f).coerceAtLeast(0f))
@@ -674,7 +680,7 @@ class CompactBlockProcessor internal constructor(
         lastDownloadedHeight: BlockHeight? = currentInfo.lastDownloadedHeight,
         lastScanRange: ClosedRange<BlockHeight>? = currentInfo.lastScanRange,
         lastDownloadRange: ClosedRange<BlockHeight>? = currentInfo.lastDownloadRange
-    ): Unit = withContext(IO) {
+    ) {
         currentInfo = currentInfo.copy(
             networkBlockHeight = networkBlockHeight,
             lastScannedHeight = lastScannedHeight,
@@ -682,8 +688,11 @@ class CompactBlockProcessor internal constructor(
             lastScanRange = lastScanRange,
             lastDownloadRange = lastDownloadRange
         )
-        _networkHeight.value = networkBlockHeight
-        _processorInfo.send(currentInfo)
+
+        withContext(IO) {
+            _networkHeight.value = networkBlockHeight
+            _processorInfo.send(currentInfo)
+        }
     }
 
     private suspend fun handleChainError(errorHeight: BlockHeight) {

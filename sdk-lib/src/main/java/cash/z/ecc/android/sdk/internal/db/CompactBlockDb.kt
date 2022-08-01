@@ -6,6 +6,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.RoomDatabase
+import androidx.room.Transaction
 import cash.z.ecc.android.sdk.db.entity.CompactBlockEntity
 
 //
@@ -41,6 +42,18 @@ interface CompactBlockDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(block: List<CompactBlockEntity>)
+
+    @Transaction
+    suspend fun insert(blocks: Sequence<CompactBlockEntity>): Int {
+        var count = 0
+
+        blocks.forEach {
+            insert(it)
+            count++
+        }
+
+        return count
+    }
 
     @Query("DELETE FROM compactblocks WHERE height > :height")
     suspend fun rewindTo(height: Long)

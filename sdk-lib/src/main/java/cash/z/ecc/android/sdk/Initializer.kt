@@ -85,7 +85,7 @@ class Initializer private constructor(
          * transactions. Again, this value is only considered when [height] is null.
          *
          */
-        fun setBirthdayHeight(height: BlockHeight?, defaultToOldestHeight: Boolean = false): Config =
+        fun setBirthdayHeight(height: BlockHeight?, defaultToOldestHeight: Boolean): Config =
             apply {
                 this.birthdayHeight = height
                 this.defaultToOldestHeight = defaultToOldestHeight
@@ -327,12 +327,23 @@ class Initializer private constructor(
             config: Config
         ): Initializer {
             config.validate()
-            val heightToUse = config.birthdayHeight
-                ?: (if (config.defaultToOldestHeight == true) config.network.saplingActivationHeight else null)
-            val loadedBirthday =
-                CheckpointTool.loadNearest(context, config.network, heightToUse)
 
-            val rustBackend = initRustBackend(context, config.network, config.alias, loadedBirthday.height)
+            val loadedCheckpoint = run {
+                val height = config.birthdayHeight
+                    ?: if (config.defaultToOldestHeight == true) {
+                        config.network.saplingActivationHeight
+                    } else {
+                        null
+                    }
+
+                CheckpointTool.loadNearest(
+                    context,
+                    config.network,
+                    height
+                )
+            }
+
+            val rustBackend = initRustBackend(context, config.network, config.alias, loadedCheckpoint.height)
 
             return Initializer(
                 context.applicationContext,
@@ -343,7 +354,7 @@ class Initializer private constructor(
                 config.port,
                 config.viewingKeys,
                 config.overwriteVks,
-                loadedBirthday
+                loadedCheckpoint
             )
         }
 
