@@ -39,7 +39,7 @@ class TestWallet(
     val alias: String = "TestWallet",
     val network: ZcashNetwork = ZcashNetwork.Testnet,
     val endpoint: LightWalletEndpoint = LightWalletEndpoint.Darkside,
-    startHeight: BlockHeight? = null,
+    startHeight: BlockHeight? = null
 ) {
     constructor(
         backup: Backups,

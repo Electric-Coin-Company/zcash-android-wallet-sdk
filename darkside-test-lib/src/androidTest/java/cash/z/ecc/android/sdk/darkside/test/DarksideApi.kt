@@ -1,7 +1,6 @@
 package cash.z.ecc.android.sdk.darkside.test
 
 import android.content.Context
-import cash.z.ecc.android.sdk.R
 import cash.z.ecc.android.sdk.internal.service.LightWalletGrpcService
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.BlockHeight
