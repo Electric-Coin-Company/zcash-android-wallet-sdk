@@ -155,7 +155,8 @@ class LightWalletGrpcService private constructor(
         ): ManagedChannel {
             twig(
                 "Creating channel that will connect to " +
-                    "${lightWalletEndpoint.host}:${lightWalletEndpoint.port}/?usePlaintext=${!lightWalletEndpoint.isSecure}"
+                    "${lightWalletEndpoint.host}:${lightWalletEndpoint.port}" +
+                    "/?usePlaintext=${!lightWalletEndpoint.isSecure}"
             )
             return AndroidChannelBuilder
                 .forAddress(lightWalletEndpoint.host, lightWalletEndpoint.port)
