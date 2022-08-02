@@ -10,7 +10,7 @@ import cash.z.ecc.android.sdk.internal.model.Checkpoint
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.jni.RustBackend
 import cash.z.ecc.android.sdk.model.BlockHeight
-import cash.z.ecc.android.sdk.model.LightwalletdServer
+import cash.z.ecc.android.sdk.model.LightWalletEndpoint
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.tool.CheckpointTool
 import cash.z.ecc.android.sdk.tool.DerivationTool
@@ -28,7 +28,7 @@ class Initializer private constructor(
     internal val rustBackend: RustBackend,
     val network: ZcashNetwork,
     val alias: String,
-    val lightwalletdServer: LightwalletdServer,
+    val lightWalletEndpoint: LightWalletEndpoint,
     val viewingKeys: List<UnifiedViewingKey>,
     val overwriteVks: Boolean,
     internal val checkpoint: Checkpoint
@@ -46,7 +46,7 @@ class Initializer private constructor(
         lateinit var network: ZcashNetwork
             private set
 
-        lateinit var lightwalletdServer: LightwalletdServer
+        lateinit var lightWalletEndpoint: LightWalletEndpoint
             private set
 
         /**
@@ -158,10 +158,10 @@ class Initializer private constructor(
          */
         fun setNetwork(
             network: ZcashNetwork,
-            lightwalletdServer: LightwalletdServer
+            lightWalletEndpoint: LightWalletEndpoint
         ): Config = apply {
             this.network = network
-            this.lightwalletdServer = lightwalletdServer
+            this.lightWalletEndpoint = lightWalletEndpoint
         }
 
         /**
@@ -171,14 +171,14 @@ class Initializer private constructor(
             seed: ByteArray,
             birthday: BlockHeight?,
             network: ZcashNetwork,
-            lightwalletdServer: LightwalletdServer,
+            lightWalletEndpoint: LightWalletEndpoint,
             alias: String = ZcashSdk.DEFAULT_ALIAS
         ): Config =
             importWallet(
                 DerivationTool.deriveUnifiedViewingKeys(seed, network = network)[0],
                 birthday,
                 network,
-                lightwalletdServer,
+                lightWalletEndpoint,
                 alias
             )
 
@@ -189,11 +189,11 @@ class Initializer private constructor(
             viewingKey: UnifiedViewingKey,
             birthday: BlockHeight?,
             network: ZcashNetwork,
-            lightwalletdServer: LightwalletdServer,
+            lightWalletEndpoint: LightWalletEndpoint,
             alias: String = ZcashSdk.DEFAULT_ALIAS
         ): Config = apply {
             setViewingKeys(viewingKey)
-            setNetwork(network, lightwalletdServer)
+            setNetwork(network, lightWalletEndpoint)
             importedWalletBirthday(birthday)
             this.alias = alias
         }
@@ -204,12 +204,12 @@ class Initializer private constructor(
         suspend fun newWallet(
             seed: ByteArray,
             network: ZcashNetwork,
-            lightwalletdServer: LightwalletdServer,
+            lightWalletEndpoint: LightWalletEndpoint,
             alias: String = ZcashSdk.DEFAULT_ALIAS
         ): Config = newWallet(
             DerivationTool.deriveUnifiedViewingKeys(seed, network)[0],
             network,
-            lightwalletdServer,
+            lightWalletEndpoint,
             alias
         )
 
@@ -219,11 +219,11 @@ class Initializer private constructor(
         fun newWallet(
             viewingKey: UnifiedViewingKey,
             network: ZcashNetwork,
-            lightwalletdServer: LightwalletdServer,
+            lightWalletEndpoint: LightWalletEndpoint,
             alias: String = ZcashSdk.DEFAULT_ALIAS
         ): Config = apply {
             setViewingKeys(viewingKey)
-            setNetwork(network, lightwalletdServer)
+            setNetwork(network, lightWalletEndpoint)
             newWalletBirthday()
             this.alias = alias
         }
@@ -342,7 +342,7 @@ class Initializer private constructor(
                 rustBackend,
                 config.network,
                 config.alias,
-                config.lightwalletdServer,
+                config.lightWalletEndpoint,
                 config.viewingKeys,
                 config.overwriteVks,
                 loadedCheckpoint

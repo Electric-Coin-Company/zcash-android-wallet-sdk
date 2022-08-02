@@ -3,14 +3,14 @@ package cash.z.ecc.android.sdk.model
 import org.junit.Test
 import kotlin.test.assertTrue
 
-class LightwalletdServerTest {
+class LightWalletEndpointTest {
     @Test
     fun requireSecureMainnet() {
-        assertTrue(LightwalletdServer.Mainnet.isSecure)
+        assertTrue(LightWalletEndpoint.Mainnet.isSecure)
     }
 
     @Test
     fun requireSecureTestnet() {
-        assertTrue(LightwalletdServer.Testnet.isSecure)
+        assertTrue(LightWalletEndpoint.Testnet.isSecure)
     }
 }

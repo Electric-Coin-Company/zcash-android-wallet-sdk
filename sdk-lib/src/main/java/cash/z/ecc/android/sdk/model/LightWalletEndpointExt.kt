@@ -6,10 +6,10 @@ package cash.z.ecc.android.sdk.model
  * This is a set of extension functions currently, because we expect them to change in the future.
  */
 
-fun LightwalletdServer.Companion.defaultForNetwork(zcashNetwork: ZcashNetwork): LightwalletdServer {
+fun LightWalletEndpoint.Companion.defaultForNetwork(zcashNetwork: ZcashNetwork): LightWalletEndpoint {
     return when (zcashNetwork.id) {
-        ZcashNetwork.Mainnet.id -> LightwalletdServer.Mainnet
-        ZcashNetwork.Testnet.id -> LightwalletdServer.Testnet
+        ZcashNetwork.Mainnet.id -> LightWalletEndpoint.Mainnet
+        ZcashNetwork.Testnet.id -> LightWalletEndpoint.Testnet
         else -> error("Unknown network id: ${zcashNetwork.id}")
     }
 }
@@ -22,23 +22,22 @@ private const val COMPUTER_LOCALHOST = "10.0.2.2"
 
 private const val DEFAULT_PORT = 9087
 
-val LightwalletdServer.Companion.Mainnet
-    get() = LightwalletdServer(
+val LightWalletEndpoint.Companion.Mainnet
+    get() = LightWalletEndpoint(
         "mainnet.lightwalletd.com",
-        @Suppress("MagicNumber")
         DEFAULT_PORT,
         isSecure = true
     )
 
-val LightwalletdServer.Companion.Testnet
-    get() = LightwalletdServer(
+val LightWalletEndpoint.Companion.Testnet
+    get() = LightWalletEndpoint(
         "testnet.lightwalletd.com",
         DEFAULT_PORT,
         isSecure = true
     )
 
-val LightwalletdServer.Companion.Darkside
-    get() = LightwalletdServer(
+val LightWalletEndpoint.Companion.Darkside
+    get() = LightWalletEndpoint(
         COMPUTER_LOCALHOST,
         DEFAULT_PORT,
         isSecure = false

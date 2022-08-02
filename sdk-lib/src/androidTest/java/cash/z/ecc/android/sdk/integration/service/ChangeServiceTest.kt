@@ -12,7 +12,7 @@ import cash.z.ecc.android.sdk.internal.service.LightWalletGrpcService
 import cash.z.ecc.android.sdk.internal.service.LightWalletService
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.BlockHeight
-import cash.z.ecc.android.sdk.model.LightwalletdServer
+import cash.z.ecc.android.sdk.model.LightWalletEndpoint
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.test.ScopedTest
 import kotlinx.coroutines.delay
@@ -36,14 +36,14 @@ import org.mockito.Spy
 class ChangeServiceTest : ScopedTest() {
 
     val network = ZcashNetwork.Mainnet
-    val lightwalletdServer = LightwalletdServer("mainnet.lightwalletd.com", 9087)
+    val lightWalletEndpoint = LightWalletEndpoint("mainnet.lightwalletd.com", 9087)
 
     @Mock
     lateinit var mockBlockStore: CompactBlockStore
     var mockCloseable: AutoCloseable? = null
 
     @Spy
-    val service = LightWalletGrpcService(context, network, lightwalletdServer)
+    val service = LightWalletGrpcService(context, network, lightWalletEndpoint)
 
     lateinit var downloader: CompactBlockDownloader
     lateinit var otherService: LightWalletService
@@ -52,7 +52,7 @@ class ChangeServiceTest : ScopedTest() {
     fun setup() {
         initMocks()
         downloader = CompactBlockDownloader(service, mockBlockStore)
-        otherService = LightWalletGrpcService(context, LightwalletdServer("lightwalletd.electriccoin.co", 9087))
+        otherService = LightWalletGrpcService(context, LightWalletEndpoint("lightwalletd.electriccoin.co", 9087))
     }
 
     @After

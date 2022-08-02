@@ -13,7 +13,7 @@ import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.service.LightWalletGrpcService
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.BlockHeight
-import cash.z.ecc.android.sdk.model.LightwalletdServer
+import cash.z.ecc.android.sdk.model.LightWalletEndpoint
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.test.ScopedTest
@@ -42,7 +42,7 @@ class TestnetIntegrationTest : ScopedTest() {
     fun testLatestBlockTest() {
         val service = LightWalletGrpcService(
             context,
-            lightwalletdServer
+            lightWalletEndpoint
         )
         val height = service.getLatestBlockHeight()
         assertTrue(height > saplingActivation)
@@ -119,7 +119,7 @@ class TestnetIntegrationTest : ScopedTest() {
     companion object {
         init { Twig.plant(TroubleshootingTwig()) }
 
-        val lightwalletdServer = LightwalletdServer("lightwalletd.testnet.z.cash", 9087)
+        val lightWalletEndpoint = LightWalletEndpoint("lightwalletd.testnet.z.cash", 9087)
         private const val birthdayHeight = 963150L
         private const val targetHeight = 663250
         private const val seedPhrase = "still champion voice habit trend flight survey between bitter process artefact blind carbon truly provide dizzy crush flush breeze blouse charge solid fish spread"
@@ -130,7 +130,7 @@ class TestnetIntegrationTest : ScopedTest() {
         private val context = InstrumentationRegistry.getInstrumentation().context
         private val initializer = runBlocking {
             Initializer.new(context) { config ->
-                config.setNetwork(ZcashNetwork.Testnet, lightwalletdServer)
+                config.setNetwork(ZcashNetwork.Testnet, lightWalletEndpoint)
                 runBlocking { config.importWallet(seed, BlockHeight.new(ZcashNetwork.Testnet, birthdayHeight), ZcashNetwork.Testnet) }
             }
         }

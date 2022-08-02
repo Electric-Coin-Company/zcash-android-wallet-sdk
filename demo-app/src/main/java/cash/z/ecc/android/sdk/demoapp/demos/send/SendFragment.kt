@@ -29,7 +29,7 @@ import cash.z.ecc.android.sdk.ext.convertZecToZatoshi
 import cash.z.ecc.android.sdk.ext.toZecString
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.twig
-import cash.z.ecc.android.sdk.model.LightwalletdServer
+import cash.z.ecc.android.sdk.model.LightWalletEndpoint
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.model.defaultForNetwork
@@ -73,7 +73,7 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
                     it.newWallet(
                         seed,
                         network = network,
-                        lightwalletdServer = LightwalletdServer.defaultForNetwork(network)
+                        lightWalletEndpoint = LightWalletEndpoint.defaultForNetwork(network)
                     )
                 }
             }

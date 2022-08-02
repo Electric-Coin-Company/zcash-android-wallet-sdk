@@ -17,7 +17,7 @@ import cash.z.ecc.android.sdk.demoapp.ext.requireApplicationContext
 import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.ext.collectWith
 import cash.z.ecc.android.sdk.internal.twig
-import cash.z.ecc.android.sdk.model.LightwalletdServer
+import cash.z.ecc.android.sdk.model.LightWalletEndpoint
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.model.defaultForNetwork
 import cash.z.ecc.android.sdk.tool.DerivationTool
@@ -59,7 +59,7 @@ class ListTransactionsFragment : BaseDemoFragment<FragmentListTransactionsBindin
                         seed,
                         birthday = null,
                         network = network,
-                        lightwalletdServer = LightwalletdServer.defaultForNetwork(network)
+                        lightWalletEndpoint = LightWalletEndpoint.defaultForNetwork(network)
                     )
                 }
             }

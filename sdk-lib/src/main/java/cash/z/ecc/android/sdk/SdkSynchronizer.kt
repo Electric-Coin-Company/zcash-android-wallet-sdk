@@ -786,7 +786,7 @@ object DefaultSynchronizerFactory {
         CompactBlockDbStore.new(initializer.context, initializer.network, initializer.rustBackend.pathCacheDb)
 
     fun defaultService(initializer: Initializer): LightWalletService =
-        LightWalletGrpcService.new(initializer.context, initializer.lightwalletdServer)
+        LightWalletGrpcService.new(initializer.context, initializer.lightWalletEndpoint)
 
     fun defaultEncoder(
         initializer: Initializer,

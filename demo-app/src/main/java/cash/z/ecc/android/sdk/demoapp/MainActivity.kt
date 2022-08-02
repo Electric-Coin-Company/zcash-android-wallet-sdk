@@ -20,7 +20,7 @@ import androidx.viewbinding.ViewBinding
 import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.internal.service.LightWalletGrpcService
 import cash.z.ecc.android.sdk.internal.service.LightWalletService
-import cash.z.ecc.android.sdk.model.LightwalletdServer
+import cash.z.ecc.android.sdk.model.LightWalletEndpoint
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.model.defaultForNetwork
 import com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -113,7 +113,7 @@ class MainActivity :
         val network = ZcashNetwork.fromResources(applicationContext)
         lightwalletService = LightWalletGrpcService.new(
             applicationContext,
-            LightwalletdServer.defaultForNetwork(network)
+            LightWalletEndpoint.defaultForNetwork(network)
         )
     }
 

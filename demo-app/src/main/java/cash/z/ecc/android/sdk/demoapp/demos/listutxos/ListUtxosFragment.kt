@@ -21,7 +21,7 @@ import cash.z.ecc.android.sdk.demoapp.util.mainActivity
 import cash.z.ecc.android.sdk.ext.collectWith
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.BlockHeight
-import cash.z.ecc.android.sdk.model.LightwalletdServer
+import cash.z.ecc.android.sdk.model.LightWalletEndpoint
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.model.defaultForNetwork
 import cash.z.ecc.android.sdk.tool.DerivationTool
@@ -72,7 +72,7 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
                     it.newWallet(
                         seed,
                         network = network,
-                        lightwalletdServer = LightwalletdServer.defaultForNetwork(network)
+                        lightWalletEndpoint = LightWalletEndpoint.defaultForNetwork(network)
                     )
                 }
                 it.alias = "Demo_Utxos"

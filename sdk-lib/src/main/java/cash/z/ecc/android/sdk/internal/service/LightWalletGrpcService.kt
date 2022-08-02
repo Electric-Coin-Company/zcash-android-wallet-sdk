@@ -4,7 +4,7 @@ import android.content.Context
 import cash.z.ecc.android.sdk.annotation.OpenForTesting
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.BlockHeight
-import cash.z.ecc.android.sdk.model.LightwalletdServer
+import cash.z.ecc.android.sdk.model.LightWalletEndpoint
 import cash.z.wallet.sdk.rpc.CompactFormats
 import cash.z.wallet.sdk.rpc.CompactTxStreamerGrpc
 import cash.z.wallet.sdk.rpc.Service
@@ -30,7 +30,7 @@ import kotlin.time.Duration.Companion.seconds
 @OpenForTesting
 class LightWalletGrpcService private constructor(
     context: Context,
-    private val lightwalletdServer: LightwalletdServer,
+    private val lightWalletEndpoint: LightWalletEndpoint,
     var channel: ManagedChannel,
     private val singleRequestTimeout: Duration = 10.seconds,
     private val streamingRequestTimeout: Duration = 90.seconds
@@ -116,7 +116,7 @@ class LightWalletGrpcService private constructor(
     override fun reconnect() {
         twig("closing existing channel and then reconnecting")
         channel.shutdown()
-        channel = createDefaultChannel(applicationContext, lightwalletdServer)
+        channel = createDefaultChannel(applicationContext, lightWalletEndpoint)
     }
 
     // test code
@@ -138,10 +138,10 @@ class LightWalletGrpcService private constructor(
     }
 
     companion object {
-        fun new(context: Context, lightwalletdServer: LightwalletdServer): LightWalletGrpcService {
-            val channel = createDefaultChannel(context, lightwalletdServer)
+        fun new(context: Context, lightWalletEndpoint: LightWalletEndpoint): LightWalletGrpcService {
+            val channel = createDefaultChannel(context, lightWalletEndpoint)
 
-            return LightWalletGrpcService(context, lightwalletdServer, channel)
+            return LightWalletGrpcService(context, lightWalletEndpoint, channel)
         }
     }
 }
@@ -153,18 +153,18 @@ class LightWalletGrpcService private constructor(
  */
 private fun createDefaultChannel(
     appContext: Context,
-    lightwalletdServer: LightwalletdServer
+    lightWalletEndpoint: LightWalletEndpoint
 ): ManagedChannel {
     twig(
         "Creating channel that will connect to" +
-            "${lightwalletdServer.host}:${lightwalletdServer.port}/?usePlaintext=${!lightwalletdServer.isSecure}"
+            "${lightWalletEndpoint.host}:${lightWalletEndpoint.port}/?usePlaintext=${!lightWalletEndpoint.isSecure}"
     )
     return AndroidChannelBuilder
-        .forAddress(lightwalletdServer.host, lightwalletdServer.port)
+        .forAddress(lightWalletEndpoint.host, lightWalletEndpoint.port)
         .context(appContext)
         .enableFullStreamDecompression()
         .apply {
-            if (lightwalletdServer.isSecure) {
+            if (lightWalletEndpoint.isSecure) {
                 useTransportSecurity()
             } else {
                 twig("WARNING: Using insecure channel")
