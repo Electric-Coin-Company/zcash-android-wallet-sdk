@@ -20,7 +20,7 @@ fun LightWalletEndpoint.Companion.defaultForNetwork(zcashNetwork: ZcashNetwork):
  */
 private const val COMPUTER_LOCALHOST = "10.0.2.2"
 
-private const val DEFAULT_PORT = 9087
+private const val DEFAULT_PORT = 9067
 
 val LightWalletEndpoint.Companion.Mainnet
     get() = LightWalletEndpoint(
