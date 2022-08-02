@@ -2,7 +2,6 @@ package cash.z.ecc.android.sdk.model
 
 import android.content.Context
 import cash.z.ecc.android.sdk.tool.CheckpointTool
-import cash.z.ecc.android.sdk.type.ZcashNetwork
 
 /**
  * Represents a block height, which is a UInt32.  SDK clients use this class to represent the "birthday" of a wallet.

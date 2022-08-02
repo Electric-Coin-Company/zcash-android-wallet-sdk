@@ -1,11 +1,12 @@
 package cash.z.ecc.android.sdk.darkside.test
 
 import android.content.Context
-import cash.z.ecc.android.sdk.R
 import cash.z.ecc.android.sdk.internal.service.LightWalletGrpcService
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.BlockHeight
-import cash.z.ecc.android.sdk.type.ZcashNetwork
+import cash.z.ecc.android.sdk.model.Darkside
+import cash.z.ecc.android.sdk.model.LightWalletEndpoint
+import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.wallet.sdk.rpc.Darkside
 import cash.z.wallet.sdk.rpc.Darkside.DarksideTransactionsURL
 import cash.z.wallet.sdk.rpc.DarksideStreamerGrpc
@@ -23,17 +24,11 @@ class DarksideApi(
 
     constructor(
         appContext: Context,
-        host: String,
-        port: Int = ZcashNetwork.Mainnet.defaultPort,
-        usePlainText: Boolean = appContext.resources.getBoolean(
-            R.bool.lightwalletd_allow_very_insecure_connections
-        )
+        lightWalletEndpoint: LightWalletEndpoint
     ) : this(
         LightWalletGrpcService.createDefaultChannel(
             appContext,
-            host,
-            port,
-            usePlainText
+            lightWalletEndpoint
         )
     )
 

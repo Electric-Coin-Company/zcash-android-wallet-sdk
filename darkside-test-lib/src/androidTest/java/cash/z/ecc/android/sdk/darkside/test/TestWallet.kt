@@ -11,10 +11,12 @@ import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.service.LightWalletGrpcService
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.BlockHeight
+import cash.z.ecc.android.sdk.model.Darkside
+import cash.z.ecc.android.sdk.model.LightWalletEndpoint
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
+import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.tool.DerivationTool
-import cash.z.ecc.android.sdk.type.ZcashNetwork
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
@@ -36,9 +38,8 @@ class TestWallet(
     val seedPhrase: String,
     val alias: String = "TestWallet",
     val network: ZcashNetwork = ZcashNetwork.Testnet,
-    val host: String = network.defaultHost,
-    startHeight: BlockHeight? = null,
-    val port: Int = network.defaultPort
+    val endpoint: LightWalletEndpoint = LightWalletEndpoint.Darkside,
+    startHeight: BlockHeight? = null
 ) {
     constructor(
         backup: Backups,
@@ -66,7 +67,7 @@ class TestWallet(
         runBlocking { DerivationTool.deriveTransparentSecretKey(seed, network = network) }
     val initializer = runBlocking {
         Initializer.new(context) { config ->
-            runBlocking { config.importWallet(seed, startHeight, network, host, alias = alias) }
+            runBlocking { config.importWallet(seed, startHeight, network, endpoint, alias = alias) }
         }
     }
     val synchronizer: SdkSynchronizer = runBlocking { Synchronizer.new(initializer) } as SdkSynchronizer
@@ -79,7 +80,6 @@ class TestWallet(
         runBlocking { DerivationTool.deriveTransparentAddress(seed, network = network) }
     val birthdayHeight get() = synchronizer.latestBirthdayHeight
     val networkName get() = synchronizer.network.networkName
-    val connectionInfo get() = service.connectionInfo.toString()
 
     suspend fun transparentBalance(): WalletBalance {
         synchronizer.refreshUtxos(transparentAddress, synchronizer.latestBirthdayHeight)
@@ -166,11 +166,46 @@ class TestWallet(
 
     enum class Backups(val seedPhrase: String, val testnetBirthday: BlockHeight, val mainnetBirthday: BlockHeight) {
         // TODO: get the proper birthday values for these wallets
-        DEFAULT("column rhythm acoustic gym cost fit keen maze fence seed mail medal shrimp tell relief clip cannon foster soldier shallow refuse lunar parrot banana", BlockHeight.new(ZcashNetwork.Testnet, 1_355_928), BlockHeight.new(ZcashNetwork.Mainnet, 1_000_000)),
-        SAMPLE_WALLET("input frown warm senior anxiety abuse yard prefer churn reject people glimpse govern glory crumble swallow verb laptop switch trophy inform friend permit purpose", BlockHeight.new(ZcashNetwork.Testnet, 1_330_190), BlockHeight.new(ZcashNetwork.Mainnet, 1_000_000)),
-        DEV_WALLET("still champion voice habit trend flight survey between bitter process artefact blind carbon truly provide dizzy crush flush breeze blouse charge solid fish spread", BlockHeight.new(ZcashNetwork.Testnet, 1_000_000), BlockHeight.new(ZcashNetwork.Mainnet, 991645)),
-        ALICE("quantum whisper lion route fury lunar pelican image job client hundred sauce chimney barely life cliff spirit admit weekend message recipe trumpet impact kitten", BlockHeight.new(ZcashNetwork.Testnet, 1_330_190), BlockHeight.new(ZcashNetwork.Mainnet, 1_000_000)),
-        BOB("canvas wine sugar acquire garment spy tongue odor hole cage year habit bullet make label human unit option top calm neutral try vocal arena", BlockHeight.new(ZcashNetwork.Testnet, 1_330_190), BlockHeight.new(ZcashNetwork.Mainnet, 1_000_000)),
+        DEFAULT(
+            "column rhythm acoustic gym cost fit keen maze fence seed mail medal shrimp tell relief clip cannon foster soldier shallow refuse lunar parrot banana",
+            BlockHeight.new(
+                ZcashNetwork.Testnet,
+                1_355_928
+            ),
+            BlockHeight.new(ZcashNetwork.Mainnet, 1_000_000)
+        ),
+        SAMPLE_WALLET(
+            "input frown warm senior anxiety abuse yard prefer churn reject people glimpse govern glory crumble swallow verb laptop switch trophy inform friend permit purpose",
+            BlockHeight.new(
+                ZcashNetwork.Testnet,
+                1_330_190
+            ),
+            BlockHeight.new(ZcashNetwork.Mainnet, 1_000_000)
+        ),
+        DEV_WALLET(
+            "still champion voice habit trend flight survey between bitter process artefact blind carbon truly provide dizzy crush flush breeze blouse charge solid fish spread",
+            BlockHeight.new(
+                ZcashNetwork.Testnet,
+                1_000_000
+            ),
+            BlockHeight.new(ZcashNetwork.Mainnet, 991645)
+        ),
+        ALICE(
+            "quantum whisper lion route fury lunar pelican image job client hundred sauce chimney barely life cliff spirit admit weekend message recipe trumpet impact kitten",
+            BlockHeight.new(
+                ZcashNetwork.Testnet,
+                1_330_190
+            ),
+            BlockHeight.new(ZcashNetwork.Mainnet, 1_000_000)
+        ),
+        BOB(
+            "canvas wine sugar acquire garment spy tongue odor hole cage year habit bullet make label human unit option top calm neutral try vocal arena",
+            BlockHeight.new(
+                ZcashNetwork.Testnet,
+                1_330_190
+            ),
+            BlockHeight.new(ZcashNetwork.Mainnet, 1_000_000)
+        ),
         ;
     }
 }

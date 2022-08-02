@@ -1,4 +1,4 @@
-package cash.z.wallet.sdk.integration
+package cash.z.ecc.android.sdk.integration
 
 import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
@@ -13,11 +13,12 @@ import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.service.LightWalletGrpcService
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.BlockHeight
+import cash.z.ecc.android.sdk.model.LightWalletEndpoint
 import cash.z.ecc.android.sdk.model.Zatoshi
+import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.test.ScopedTest
 import cash.z.ecc.android.sdk.tool.CheckpointTool
 import cash.z.ecc.android.sdk.tool.DerivationTool
-import cash.z.ecc.android.sdk.type.ZcashNetwork
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
@@ -39,9 +40,9 @@ class TestnetIntegrationTest : ScopedTest() {
     @Test
     @Ignore("This test is broken")
     fun testLatestBlockTest() {
-        val service = LightWalletGrpcService(
+        val service = LightWalletGrpcService.new(
             context,
-            host
+            lightWalletEndpoint
         )
         val height = service.getLatestBlockHeight()
         assertTrue(height > saplingActivation)
@@ -118,7 +119,7 @@ class TestnetIntegrationTest : ScopedTest() {
     companion object {
         init { Twig.plant(TroubleshootingTwig()) }
 
-        const val host = "lightwalletd.testnet.z.cash"
+        val lightWalletEndpoint = LightWalletEndpoint("lightwalletd.testnet.z.cash", 9087, true)
         private const val birthdayHeight = 963150L
         private const val targetHeight = 663250
         private const val seedPhrase = "still champion voice habit trend flight survey between bitter process artefact blind carbon truly provide dizzy crush flush breeze blouse charge solid fish spread"
@@ -129,8 +130,8 @@ class TestnetIntegrationTest : ScopedTest() {
         private val context = InstrumentationRegistry.getInstrumentation().context
         private val initializer = runBlocking {
             Initializer.new(context) { config ->
-                config.setNetwork(ZcashNetwork.Testnet, host)
-                runBlocking { config.importWallet(seed, BlockHeight.new(ZcashNetwork.Testnet, birthdayHeight), ZcashNetwork.Testnet) }
+                config.setNetwork(ZcashNetwork.Testnet, lightWalletEndpoint)
+                runBlocking { config.importWallet(seed, BlockHeight.new(ZcashNetwork.Testnet, birthdayHeight), ZcashNetwork.Testnet, lightWalletEndpoint) }
             }
         }
         private lateinit var synchronizer: Synchronizer

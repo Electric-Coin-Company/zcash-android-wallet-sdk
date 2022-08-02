@@ -6,7 +6,9 @@ import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.service.LightWalletGrpcService
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.BlockHeight
-import cash.z.ecc.android.sdk.type.ZcashNetwork
+import cash.z.ecc.android.sdk.model.LightWalletEndpoint
+import cash.z.ecc.android.sdk.model.Mainnet
+import cash.z.ecc.android.sdk.model.ZcashNetwork
 import org.junit.Ignore
 import org.junit.Test
 
@@ -14,7 +16,7 @@ class TransactionCounterUtil {
 
     private val network = ZcashNetwork.Mainnet
     private val context = InstrumentationRegistry.getInstrumentation().context
-    private val service = LightWalletGrpcService(context, network)
+    private val service = LightWalletGrpcService.new(context, LightWalletEndpoint.Mainnet)
 
     init {
         Twig.plant(TroubleshootingTwig())

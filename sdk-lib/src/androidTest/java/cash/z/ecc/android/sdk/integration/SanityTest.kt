@@ -4,11 +4,10 @@ import cash.z.ecc.android.sdk.annotation.MaintainedTest
 import cash.z.ecc.android.sdk.annotation.TestPurpose
 import cash.z.ecc.android.sdk.ext.BlockExplorer
 import cash.z.ecc.android.sdk.model.BlockHeight
-import cash.z.ecc.android.sdk.type.ZcashNetwork
+import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.util.TestWallet
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -30,13 +29,6 @@ class SanityTest(
 
     val networkName = wallet.networkName
     val name = "$networkName wallet"
-
-    @Test
-    fun testNotPlaintext() {
-        val message =
-            "is using plaintext. This will cause problems for the test. Ensure that the `lightwalletd_allow_very_insecure_connections` resource value is false"
-        assertFalse("$name $message", wallet.service.connectionInfo.usePlaintext)
-    }
 
     @Test
     fun testFilePaths() {
@@ -81,23 +73,13 @@ class SanityTest(
     }
 
     @Test
-    fun testServerConnection() {
-        assertEquals(
-            "$name has an invalid server connection",
-            "$networkName.lightwalletd.com:9067?usePlaintext=false",
-            wallet.connectionInfo
-        )
-    }
-
-    @Test
     fun testLatestHeight() = runBlocking {
         if (wallet.networkName == "mainnet") {
             val expectedHeight = BlockExplorer.fetchLatestHeight()
             // fetch height directly because the synchronizer hasn't started, yet
             val downloaderHeight = wallet.service.getLatestBlockHeight()
-            val info = wallet.connectionInfo
             assertTrue(
-                "$info\n ${wallet.networkName} Lightwalletd is too far behind. Downloader height $downloaderHeight is more than 10 blocks behind block explorer height $expectedHeight",
+                "${wallet.endpoint} ${wallet.networkName} Lightwalletd is too far behind. Downloader height $downloaderHeight is more than 10 blocks behind block explorer height $expectedHeight",
                 expectedHeight - 10 < downloaderHeight.value
             )
         }

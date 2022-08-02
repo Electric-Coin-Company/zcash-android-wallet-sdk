@@ -1,7 +1,16 @@
 Troubleshooting Migrations
 ==========
 
+Upcoming
+--------------------------------------
+`ZcashNetwork` is no longer an enum. The prior enum values are now declared as object properties `ZcashNetwork.Mainnet` and `ZcashNetwork.Testnet`.  For the most part, this change should have minimal impact.  ZcashNetwork was also moved from the package `cash.z.ecc.android.sdk.type` to `cash.z.ecc.android.sdk.model`, which will require a change to your import statements.  The server fields have been removed from `ZcashNetwork`, allowing server and network configuration to be done independently.
+
+`LightWalletEndpoint` is a new object to represent server information.  Default values can be obtained from `LightWalletEndpoint.defaultForNetwork(ZcashNetwork)`
+
+`Synchronizer` no longer allows changing the endpoint after construction.  Instead, construct a new `Synchronizer` with the desired endpoint.
+
 Migration to Version 1.8 from 1.7
+--------------------------------------
 Various APIs used `Int` to represent network block heights.  Those APIs now use a typesafe `BlockHeight` type.  BlockHeight is constructed with a factory method `BlockHeight.new(ZcashNetwork, Long)` which uses the network to validate the height is above the network's sapling activation height.
 
 `WalletBirthday` has been renamed to `Checkpoint` and removed from the public API.  Where clients previously passed in a `WalletBirthday` object, now a `BlockHeight` can be passed in instead.

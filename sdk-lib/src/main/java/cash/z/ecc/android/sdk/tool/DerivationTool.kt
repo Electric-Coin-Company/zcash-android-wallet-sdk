@@ -2,8 +2,8 @@ package cash.z.ecc.android.sdk.tool
 
 import cash.z.ecc.android.sdk.jni.RustBackend
 import cash.z.ecc.android.sdk.jni.RustBackendWelding
+import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.type.UnifiedViewingKey
-import cash.z.ecc.android.sdk.type.ZcashNetwork
 
 class DerivationTool {
 

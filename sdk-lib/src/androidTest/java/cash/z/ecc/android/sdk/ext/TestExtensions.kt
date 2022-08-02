@@ -1,7 +1,7 @@
 package cash.z.ecc.android.sdk.ext
 
 import cash.z.ecc.android.sdk.Initializer
-import cash.z.ecc.android.sdk.type.ZcashNetwork
+import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.util.SimpleMnemonics
 import kotlinx.coroutines.runBlocking
 import okhttp3.OkHttpClient

@@ -4,7 +4,6 @@ import androidx.test.filters.LargeTest
 import androidx.test.filters.MediumTest
 import cash.z.ecc.android.sdk.annotation.MaintainedTest
 import cash.z.ecc.android.sdk.annotation.TestPurpose
-import cash.z.ecc.android.sdk.internal.service.LightWalletGrpcService
 import cash.z.ecc.android.sdk.util.TestWallet
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert
@@ -18,16 +17,6 @@ import org.junit.Test
 @MaintainedTest(TestPurpose.COMMIT)
 @MediumTest
 class SmokeTest {
-
-    @Test
-    fun testNotPlaintext() {
-        val service =
-            wallet.synchronizer.processor.downloader.lightWalletService as LightWalletGrpcService
-        Assert.assertFalse(
-            "Wallet is using plaintext. This will cause problems for the test. Ensure that the `lightwalletd_allow_very_insecure_connections` resource value is false",
-            service.connectionInfo.usePlaintext
-        )
-    }
 
     @Test
     fun testFilePaths() {

@@ -5,7 +5,7 @@ import cash.z.ecc.android.sdk.darkside.test.DarksideTestCoordinator
 import cash.z.ecc.android.sdk.darkside.test.ScopedTest
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.BlockHeight
-import cash.z.ecc.android.sdk.type.ZcashNetwork
+import cash.z.ecc.android.sdk.model.ZcashNetwork
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.BeforeClass

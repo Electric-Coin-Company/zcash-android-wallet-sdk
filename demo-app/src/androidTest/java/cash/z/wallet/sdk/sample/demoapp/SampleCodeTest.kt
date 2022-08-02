@@ -11,8 +11,10 @@ import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.service.LightWalletGrpcService
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.BlockHeight
+import cash.z.ecc.android.sdk.model.LightWalletEndpoint
+import cash.z.ecc.android.sdk.model.Mainnet
+import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.tool.DerivationTool
-import cash.z.ecc.android.sdk.type.ZcashNetwork
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -87,15 +89,18 @@ class SampleCodeTest {
     // ///////////////////////////////////////////////////
     // Query latest block height
     @Test fun getLatestBlockHeightTest() {
-        val lightwalletService = LightWalletGrpcService(context, lightwalletdHost)
+        val lightwalletService = LightWalletGrpcService.new(context, lightwalletdHost)
         log("Latest Block: ${lightwalletService.getLatestBlockHeight()}")
     }
 
     // ///////////////////////////////////////////////////
     // Download compact block range
     @Test fun getBlockRange() {
-        val blockRange = BlockHeight.new(ZcashNetwork.Mainnet, 500_000)..BlockHeight.new(ZcashNetwork.Mainnet, 500_009)
-        val lightwalletService = LightWalletGrpcService(context, lightwalletdHost)
+        val blockRange = BlockHeight.new(ZcashNetwork.Mainnet, 500_000)..BlockHeight.new(
+            ZcashNetwork.Mainnet,
+            500_009
+        )
+        val lightwalletService = LightWalletGrpcService.new(context, lightwalletdHost)
         val blocks = lightwalletService.getBlockRange(blockRange)
         assertEquals(blockRange.endInclusive.value - blockRange.start.value, blocks.count())
 
@@ -151,7 +156,7 @@ class SampleCodeTest {
 
     companion object {
         private val seed = "Insert seed for testing".toByteArray()
-        private val lightwalletdHost: String = ZcashNetwork.Mainnet.defaultHost
+        private val lightwalletdHost = LightWalletEndpoint.Mainnet
 
         private val context = InstrumentationRegistry.getInstrumentation().targetContext
         private val synchronizer: Synchronizer = run {
