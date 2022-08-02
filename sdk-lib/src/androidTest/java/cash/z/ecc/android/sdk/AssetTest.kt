@@ -75,8 +75,9 @@ class AssetTest {
             assertTrue(jsonObject.has("saplingTree"))
 
             val expectedNetworkName = when (network) {
-                is ZcashNetwork.Mainnet -> "main"
-                is ZcashNetwork.Testnet -> "test"
+                ZcashNetwork.Mainnet -> "main"
+                ZcashNetwork.Testnet -> "test"
+                else -> IllegalArgumentException("Unsupported network $network")
             }
             assertEquals("File: ${it.filename}", expectedNetworkName, jsonObject.getString("network"))
 

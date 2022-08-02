@@ -9,7 +9,9 @@ import cash.z.ecc.android.sdk.internal.ext.deleteSuspend
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.BlockHeight
+import cash.z.ecc.android.sdk.model.LightWalletEndpoint
 import cash.z.ecc.android.sdk.model.ZcashNetwork
+import cash.z.ecc.android.sdk.model.defaultForNetwork
 import cash.z.ecc.android.sdk.tool.CheckpointTool
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flow
@@ -82,8 +84,8 @@ class BalancePrinterUtil {
             }.collect { seed ->
                 // TODO: clear the dataDb but leave the cacheDb
                 val initializer = Initializer.new(context) { config ->
-                    runBlocking { config.importWallet(seed, birthdayHeight, network) }
-                    config.setNetwork(network)
+                    val endpoint = LightWalletEndpoint.defaultForNetwork(network)
+                    runBlocking { config.importWallet(seed, birthdayHeight, network, endpoint) }
                     config.alias = alias
                 }
                 /*

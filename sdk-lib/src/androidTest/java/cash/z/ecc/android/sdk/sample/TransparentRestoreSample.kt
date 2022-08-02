@@ -6,7 +6,6 @@ import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
-import cash.z.ecc.android.sdk.model.ZcashNetwork.Testnet
 import cash.z.ecc.android.sdk.util.TestWallet
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
@@ -90,7 +89,7 @@ class TransparentRestoreSample {
         val wallet0 = TestWallet(
             TestWallet.Backups.SAMPLE_WALLET.seedPhrase,
             "tmpabc",
-            Testnet,
+            ZcashNetwork.Testnet,
             startHeight = BlockHeight.new(
                 ZcashNetwork.Testnet,
                 1330190
@@ -120,7 +119,7 @@ class TransparentRestoreSample {
         val walletSandbox = TestWallet(
             TestWallet.Backups.SAMPLE_WALLET.seedPhrase,
             "WalletC",
-            Testnet,
+            ZcashNetwork.Testnet,
             startHeight = BlockHeight.new(
                 ZcashNetwork.Testnet,
                 1330190

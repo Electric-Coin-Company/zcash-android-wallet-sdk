@@ -20,16 +20,6 @@ import org.junit.Test
 class SmokeTest {
 
     @Test
-    fun testNotPlaintext() {
-        val service =
-            wallet.synchronizer.processor.downloader.lightWalletService as LightWalletGrpcService
-        Assert.assertFalse(
-            "Wallet is using plaintext. This will cause problems for the test. Ensure that the `lightwalletd_allow_very_insecure_connections` resource value is false",
-            service.connectionInfo.usePlaintext
-        )
-    }
-
-    @Test
     fun testFilePaths() {
         Assert.assertEquals("Invalid DataDB file", "/data/user/0/cash.z.ecc.android.sdk.test/databases/TestWallet_testnet_Data.db", wallet.initializer.rustBackend.pathDataDb)
         Assert.assertEquals("Invalid CacheDB file", "/data/user/0/cash.z.ecc.android.sdk.test/databases/TestWallet_testnet_Cache.db", wallet.initializer.rustBackend.pathCacheDb)

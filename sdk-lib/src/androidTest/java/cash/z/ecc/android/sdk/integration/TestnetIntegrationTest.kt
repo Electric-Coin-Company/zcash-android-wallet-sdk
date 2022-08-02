@@ -40,7 +40,7 @@ class TestnetIntegrationTest : ScopedTest() {
     @Test
     @Ignore("This test is broken")
     fun testLatestBlockTest() {
-        val service = LightWalletGrpcService(
+        val service = LightWalletGrpcService.new(
             context,
             lightWalletEndpoint
         )
@@ -119,7 +119,7 @@ class TestnetIntegrationTest : ScopedTest() {
     companion object {
         init { Twig.plant(TroubleshootingTwig()) }
 
-        val lightWalletEndpoint = LightWalletEndpoint("lightwalletd.testnet.z.cash", 9087)
+        val lightWalletEndpoint = LightWalletEndpoint("lightwalletd.testnet.z.cash", 9087, true)
         private const val birthdayHeight = 963150L
         private const val targetHeight = 663250
         private const val seedPhrase = "still champion voice habit trend flight survey between bitter process artefact blind carbon truly provide dizzy crush flush breeze blouse charge solid fish spread"
@@ -131,7 +131,7 @@ class TestnetIntegrationTest : ScopedTest() {
         private val initializer = runBlocking {
             Initializer.new(context) { config ->
                 config.setNetwork(ZcashNetwork.Testnet, lightWalletEndpoint)
-                runBlocking { config.importWallet(seed, BlockHeight.new(ZcashNetwork.Testnet, birthdayHeight), ZcashNetwork.Testnet) }
+                runBlocking { config.importWallet(seed, BlockHeight.new(ZcashNetwork.Testnet, birthdayHeight), ZcashNetwork.Testnet, lightWalletEndpoint) }
             }
         }
         private lateinit var synchronizer: Synchronizer

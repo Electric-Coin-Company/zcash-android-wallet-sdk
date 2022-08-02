@@ -143,35 +143,35 @@ class LightWalletGrpcService private constructor(
 
             return LightWalletGrpcService(context, lightWalletEndpoint, channel)
         }
-    }
-}
 
-/**
- * Convenience function for creating the default channel to be used for all connections. It
- * is important that this channel can handle transitioning from WiFi to Cellular connections
- * and is properly setup to support TLS, when required.
- */
-private fun createDefaultChannel(
-    appContext: Context,
-    lightWalletEndpoint: LightWalletEndpoint
-): ManagedChannel {
-    twig(
-        "Creating channel that will connect to " +
-            "${lightWalletEndpoint.host}:${lightWalletEndpoint.port}/?usePlaintext=${!lightWalletEndpoint.isSecure}"
-    )
-    return AndroidChannelBuilder
-        .forAddress(lightWalletEndpoint.host, lightWalletEndpoint.port)
-        .context(appContext)
-        .enableFullStreamDecompression()
-        .apply {
-            if (lightWalletEndpoint.isSecure) {
-                useTransportSecurity()
-            } else {
-                twig("WARNING: Using insecure channel")
-                usePlaintext()
-            }
+        /**
+         * Convenience function for creating the default channel to be used for all connections. It
+         * is important that this channel can handle transitioning from WiFi to Cellular connections
+         * and is properly setup to support TLS, when required.
+         */
+        fun createDefaultChannel(
+            appContext: Context,
+            lightWalletEndpoint: LightWalletEndpoint
+        ): ManagedChannel {
+            twig(
+                "Creating channel that will connect to " +
+                    "${lightWalletEndpoint.host}:${lightWalletEndpoint.port}/?usePlaintext=${!lightWalletEndpoint.isSecure}"
+            )
+            return AndroidChannelBuilder
+                .forAddress(lightWalletEndpoint.host, lightWalletEndpoint.port)
+                .context(appContext)
+                .enableFullStreamDecompression()
+                .apply {
+                    if (lightWalletEndpoint.isSecure) {
+                        useTransportSecurity()
+                    } else {
+                        twig("WARNING: Using insecure channel")
+                        usePlaintext()
+                    }
+                }
+                .build()
         }
-        .build()
+    }
 }
 
 private fun Channel.createStub(timeoutSec: Duration = 60.seconds) = CompactTxStreamerGrpc

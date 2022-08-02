@@ -11,6 +11,8 @@ import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.service.LightWalletGrpcService
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.BlockHeight
+import cash.z.ecc.android.sdk.model.LightWalletEndpoint
+import cash.z.ecc.android.sdk.model.Testnet
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
@@ -36,9 +38,8 @@ class TestWallet(
     val seedPhrase: String,
     val alias: String = "TestWallet",
     val network: ZcashNetwork = ZcashNetwork.Testnet,
-    val host: String = network.defaultHost,
+    val endpoint: LightWalletEndpoint = LightWalletEndpoint.Testnet,
     startHeight: BlockHeight? = null,
-    val port: Int = network.defaultPort
 ) {
     constructor(
         backup: Backups,
@@ -66,7 +67,7 @@ class TestWallet(
         runBlocking { DerivationTool.deriveTransparentSecretKey(seed, network = network) }
     val initializer = runBlocking {
         Initializer.new(context) { config ->
-            runBlocking { config.importWallet(seed, startHeight, network, host, alias = alias) }
+            runBlocking { config.importWallet(seed, startHeight, network, endpoint, alias = alias) }
         }
     }
     val synchronizer: SdkSynchronizer = Synchronizer.newBlocking(initializer) as SdkSynchronizer
@@ -79,7 +80,6 @@ class TestWallet(
         runBlocking { DerivationTool.deriveTransparentAddress(seed, network = network) }
     val birthdayHeight get() = synchronizer.latestBirthdayHeight
     val networkName get() = synchronizer.network.networkName
-    val connectionInfo get() = service.connectionInfo.toString()
 
     suspend fun transparentBalance(): WalletBalance {
         synchronizer.refreshUtxos(transparentAddress, synchronizer.latestBirthdayHeight)
