@@ -14,7 +14,7 @@ import java.io.File
  */
 internal class NoBackupContextWrapper(
     context: Context,
-    private val parentDir: File?
+    private val parentDir: File
 ) : ContextWrapper(context.applicationContext) {
 
     /**
@@ -24,8 +24,7 @@ internal class NoBackupContextWrapper(
      * @return File located under no_backup/co.electricoin.zcash directory.
      */
     override fun getDatabasePath(name: String): File {
-        twig("Database: $name in directory: ${parentDir?.absolutePath}")
-        assert(parentDir != null) { "Null database parent file." }
+        twig("Database: $name in directory: ${parentDir.absolutePath}")
         return File(parentDir, name)
     }
 

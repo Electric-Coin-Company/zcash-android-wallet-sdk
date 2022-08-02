@@ -29,6 +29,7 @@ import cash.z.ecc.android.sdk.db.entity.isMined
 import cash.z.ecc.android.sdk.db.entity.isSafeToDiscard
 import cash.z.ecc.android.sdk.db.entity.isSubmitSuccess
 import cash.z.ecc.android.sdk.db.entity.isSubmitted
+import cash.z.ecc.android.sdk.exception.InitializerException
 import cash.z.ecc.android.sdk.exception.SynchronizerException
 import cash.z.ecc.android.sdk.ext.ConsensusBranchId
 import cash.z.ecc.android.sdk.ext.ZcashSdk
@@ -800,7 +801,9 @@ object DefaultSynchronizerFactory {
 
     fun defaultBlockStore(initializer: Initializer): CompactBlockStore =
         CompactBlockDbStore.new(
-            NoBackupContextWrapper(initializer.context, initializer.rustBackend.cacheDbFile.parentFile),
+            NoBackupContextWrapper(
+                initializer.context,
+                initializer.rustBackend.cacheDbFile.parentFile  ?: throw InitializerException.DatabasePathException),
             initializer.network,
             initializer.rustBackend.cacheDbFile
         )

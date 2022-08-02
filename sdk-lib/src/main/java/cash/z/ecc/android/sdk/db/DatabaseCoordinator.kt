@@ -365,7 +365,10 @@ internal fun <T : RoomDatabase?> databaseBuilderNoBackupContext(
     databaseFile: File
 ): RoomDatabase.Builder<T> {
     return Room.databaseBuilder(
-        NoBackupContextWrapper(context, databaseFile.parentFile),
+        NoBackupContextWrapper(
+            context,
+            databaseFile.parentFile ?: throw InitializerException.DatabasePathException
+        ),
         klass,
         databaseFile.name
     )
