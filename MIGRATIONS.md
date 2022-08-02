@@ -7,7 +7,7 @@ Upcoming
 
 `LightWalletEndpoint` is a new object to represent server information.  Default values can be obtained from `LightWalletEndpoint.defaultForNetwork(ZcashNetwork)`
 
-`Synchonizer` no longer allows changing the endpoint after construction.  Instead, construct a new `Synchonizer` with the desired endpoint.
+`Synchronizer` no longer allows changing the endpoint after construction.  Instead, construct a new `Synchronizer` with the desired endpoint.
 
 Migration to Version 1.8 from 1.7
 --------------------------------------
