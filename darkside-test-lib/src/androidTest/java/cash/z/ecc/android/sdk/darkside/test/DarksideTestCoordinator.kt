@@ -5,7 +5,9 @@ import cash.z.ecc.android.sdk.SdkSynchronizer
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.BlockHeight
-import cash.z.ecc.android.sdk.type.ZcashNetwork
+import cash.z.ecc.android.sdk.model.Darkside
+import cash.z.ecc.android.sdk.model.LightWalletEndpoint
+import cash.z.ecc.android.sdk.model.ZcashNetwork
 import io.grpc.StatusRuntimeException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.filter
@@ -23,10 +25,9 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
         alias: String = "DarksideTestCoordinator",
         seedPhrase: String = DEFAULT_SEED_PHRASE,
         startHeight: BlockHeight = DEFAULT_START_HEIGHT,
-        host: String = COMPUTER_LOCALHOST,
         network: ZcashNetwork = ZcashNetwork.Mainnet,
-        port: Int = network.defaultPort
-    ) : this(TestWallet(seedPhrase, alias, network, host, startHeight = startHeight, port = port))
+        endpoint: LightWalletEndpoint = LightWalletEndpoint.Darkside
+    ) : this(TestWallet(seedPhrase, alias, network, endpoint, startHeight = startHeight))
 
     private val targetHeight = BlockHeight.new(wallet.network, 663250)
     private val context = InstrumentationRegistry.getInstrumentation().context

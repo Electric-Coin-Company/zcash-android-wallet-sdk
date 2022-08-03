@@ -9,23 +9,24 @@ import cash.z.ecc.android.sdk.internal.model.Checkpoint
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.jni.RustBackend
 import cash.z.ecc.android.sdk.model.BlockHeight
+import cash.z.ecc.android.sdk.model.LightWalletEndpoint
+import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.tool.CheckpointTool
 import cash.z.ecc.android.sdk.tool.DerivationTool
 import cash.z.ecc.android.sdk.type.UnifiedViewingKey
-import cash.z.ecc.android.sdk.type.ZcashNetwork
 import kotlinx.coroutines.runBlocking
 import java.io.File
 
 /**
  * Simplified Initializer focused on starting from a ViewingKey.
  */
+@Suppress("LongParameterList")
 class Initializer private constructor(
     val context: Context,
     internal val rustBackend: RustBackend,
     val network: ZcashNetwork,
     val alias: String,
-    val host: String,
-    val port: Int,
+    val lightWalletEndpoint: LightWalletEndpoint,
     val viewingKeys: List<UnifiedViewingKey>,
     val overwriteVks: Boolean,
     internal val checkpoint: Checkpoint
@@ -43,10 +44,7 @@ class Initializer private constructor(
         lateinit var network: ZcashNetwork
             private set
 
-        lateinit var host: String
-            private set
-
-        var port: Int = ZcashNetwork.Mainnet.defaultPort
+        lateinit var lightWalletEndpoint: LightWalletEndpoint
             private set
 
         /**
@@ -158,12 +156,10 @@ class Initializer private constructor(
          */
         fun setNetwork(
             network: ZcashNetwork,
-            host: String = network.defaultHost,
-            port: Int = network.defaultPort
+            lightWalletEndpoint: LightWalletEndpoint
         ): Config = apply {
             this.network = network
-            this.host = host
-            this.port = port
+            this.lightWalletEndpoint = lightWalletEndpoint
         }
 
         /**
@@ -173,16 +169,14 @@ class Initializer private constructor(
             seed: ByteArray,
             birthday: BlockHeight?,
             network: ZcashNetwork,
-            host: String = network.defaultHost,
-            port: Int = network.defaultPort,
+            lightWalletEndpoint: LightWalletEndpoint,
             alias: String = ZcashSdk.DEFAULT_ALIAS
         ): Config =
             importWallet(
                 DerivationTool.deriveUnifiedViewingKeys(seed, network = network)[0],
                 birthday,
                 network,
-                host,
-                port,
+                lightWalletEndpoint,
                 alias
             )
 
@@ -193,12 +187,11 @@ class Initializer private constructor(
             viewingKey: UnifiedViewingKey,
             birthday: BlockHeight?,
             network: ZcashNetwork,
-            host: String = network.defaultHost,
-            port: Int = network.defaultPort,
+            lightWalletEndpoint: LightWalletEndpoint,
             alias: String = ZcashSdk.DEFAULT_ALIAS
         ): Config = apply {
             setViewingKeys(viewingKey)
-            setNetwork(network, host, port)
+            setNetwork(network, lightWalletEndpoint)
             importedWalletBirthday(birthday)
             this.alias = alias
         }
@@ -209,14 +202,12 @@ class Initializer private constructor(
         suspend fun newWallet(
             seed: ByteArray,
             network: ZcashNetwork,
-            host: String = network.defaultHost,
-            port: Int = network.defaultPort,
+            lightWalletEndpoint: LightWalletEndpoint,
             alias: String = ZcashSdk.DEFAULT_ALIAS
         ): Config = newWallet(
             DerivationTool.deriveUnifiedViewingKeys(seed, network)[0],
             network,
-            host,
-            port,
+            lightWalletEndpoint,
             alias
         )
 
@@ -226,12 +217,11 @@ class Initializer private constructor(
         fun newWallet(
             viewingKey: UnifiedViewingKey,
             network: ZcashNetwork,
-            host: String = network.defaultHost,
-            port: Int = network.defaultPort,
+            lightWalletEndpoint: LightWalletEndpoint,
             alias: String = ZcashSdk.DEFAULT_ALIAS
         ): Config = apply {
             setViewingKeys(viewingKey)
-            setNetwork(network, host, port)
+            setNetwork(network, lightWalletEndpoint)
             newWalletBirthday()
             this.alias = alias
         }
@@ -350,8 +340,7 @@ class Initializer private constructor(
                 rustBackend,
                 config.network,
                 config.alias,
-                config.host,
-                config.port,
+                config.lightWalletEndpoint,
                 config.viewingKeys,
                 config.overwriteVks,
                 loadedCheckpoint

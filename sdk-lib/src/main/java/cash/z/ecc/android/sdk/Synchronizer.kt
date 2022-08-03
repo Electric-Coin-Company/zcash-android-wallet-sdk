@@ -7,9 +7,9 @@ import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
+import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.type.AddressType
 import cash.z.ecc.android.sdk.type.ConsensusMatchType
-import cash.z.ecc.android.sdk.type.ZcashNetwork
 import cash.z.wallet.sdk.rpc.Service
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -283,18 +283,6 @@ interface Synchronizer {
      * server(s) with which they operate and thereby not need this function.
      */
     suspend fun getServerInfo(): Service.LightdInfo
-
-    /**
-     * Gracefully change the server that the Synchronizer is currently using. In some cases, this
-     * will require waiting until current network activity is complete. Ideally, this would protect
-     * against accidentally switching between testnet and mainnet, by comparing the service info of
-     * the existing server with that of the new one.
-     */
-    suspend fun changeServer(
-        host: String,
-        port: Int = network.defaultPort,
-        errorHandler: (Throwable) -> Unit = { throw it }
-    )
 
     /**
      * Download all UTXOs for the given address and store any new ones in the database.

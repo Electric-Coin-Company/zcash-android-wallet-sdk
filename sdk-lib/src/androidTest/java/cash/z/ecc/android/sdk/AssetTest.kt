@@ -3,8 +3,8 @@ package cash.z.ecc.android.sdk
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.filters.SmallTest
+import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.tool.CheckpointTool
-import cash.z.ecc.android.sdk.type.ZcashNetwork
 import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
@@ -77,6 +77,7 @@ class AssetTest {
             val expectedNetworkName = when (network) {
                 ZcashNetwork.Mainnet -> "main"
                 ZcashNetwork.Testnet -> "test"
+                else -> IllegalArgumentException("Unsupported network $network")
             }
             assertEquals("File: ${it.filename}", expectedNetworkName, jsonObject.getString("network"))
 

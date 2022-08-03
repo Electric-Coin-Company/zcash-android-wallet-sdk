@@ -1,6 +1,10 @@
 Change Log
 ==========
 
+Upcoming
+------------------------------------
+ - Split `ZcashNetwork` into `ZcashNetwork` and `LightWalletEndpoint` to decouple network and server configuration
+
 Version 1.8.0-beta01
 ------------------------------------
 - Enabled automated unit tests run on the CI server 

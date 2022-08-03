@@ -3,8 +3,8 @@ package cash.z.ecc.android.sdk.db
 import androidx.test.filters.FlakyTest
 import androidx.test.filters.MediumTest
 import androidx.test.filters.SmallTest
+import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.test.getAppContext
-import cash.z.ecc.android.sdk.type.ZcashNetwork
 import cash.z.ecc.fixture.DatabaseNameFixture
 import cash.z.ecc.fixture.DatabasePathFixture
 import kotlinx.coroutines.delay

@@ -17,8 +17,10 @@ import cash.z.ecc.android.sdk.demoapp.ext.requireApplicationContext
 import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.ext.collectWith
 import cash.z.ecc.android.sdk.internal.twig
+import cash.z.ecc.android.sdk.model.LightWalletEndpoint
+import cash.z.ecc.android.sdk.model.ZcashNetwork
+import cash.z.ecc.android.sdk.model.defaultForNetwork
 import cash.z.ecc.android.sdk.tool.DerivationTool
-import cash.z.ecc.android.sdk.type.ZcashNetwork
 import kotlinx.coroutines.runBlocking
 
 /**
@@ -51,11 +53,13 @@ class ListTransactionsFragment : BaseDemoFragment<FragmentListTransactionsBindin
         initializer = Initializer.newBlocking(
             requireApplicationContext(),
             Initializer.Config {
+                val network = ZcashNetwork.fromResources(requireApplicationContext())
                 runBlocking {
                     it.importWallet(
                         seed,
                         birthday = null,
-                        network = ZcashNetwork.fromResources(requireApplicationContext())
+                        network = network,
+                        lightWalletEndpoint = LightWalletEndpoint.defaultForNetwork(network)
                     )
                 }
             }

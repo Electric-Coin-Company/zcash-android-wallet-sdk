@@ -88,7 +88,8 @@ Start by making sure the command line with Gradle works first, because **all the
 ## Gradle Tasks
 A variety of Gradle tasks are set up within the project, and these tasks are also accessible in Android Studio as run configurations.
  * `assemble` - Compiles the SDK and demo application but does not deploy it
- * `sdk-lib:connectedAndroidTest` - Runs the tests against the SDK
+ * `sdk-lib:test` - Runs unit tests in the SDK that don't require Android.  This is generally a small number of tests against plain Kotlin code without Android dependencies.
+ * `sdk-lib:connectedAndroidTest` - Runs the tests against the SDK that require integration with Android.
  * `darkside-test-lib:connectedAndroidTest` - Runs the tests against the SDK which require a localhost lightwalletd server running in darkside mode
  * `assembleAndroidTest` - Compiles the application and tests, but does not deploy the application or run the tests.  The Android Studio run configuration actually runs all of these tasks because the debug APKs are necessary to run the tests: `assembleDebug assembleZcashmainnetDebug assembleZcashtestnetDebug assembleAndroidTest`
  * `detektAll` - Performs static analysis with Detekt
@@ -128,4 +129,4 @@ For Continuous Integration, see [CI.md](CI.md).  The rest of this section is reg
     1. If you are an Electric Coin Co team member: We are still setting up a process for this, because emulator.wtf does not yet support individual API tokens
     1. If you are an open source contributor: Visit http://emulator.wtf and request an API key
 1. Set the emulator.wtf API key as a global Gradle property `ZCASH_EMULATOR_WTF_API_KEY` under `~/.gradle/gradle.properties` 
-1. Run the Gradle task `./gradlew testDebugWithEmulatorWtf :app:testZcashmainnetDebugWithEmulatorWtf` (emulator.wtf tasks do build the app, so you don't need to build them beforehand)
+1. Run the Gradle task `./gradlew testDebugWithEmulatorWtf` (emulator.wtf tasks do build the tests and test APKs, so you don't need to build them beforehand.  This is a different behavior compared to Firebase Test Lab)

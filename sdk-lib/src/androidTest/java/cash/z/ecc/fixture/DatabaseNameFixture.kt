@@ -1,7 +1,7 @@
 package cash.z.ecc.fixture
 
 import cash.z.ecc.android.sdk.db.DatabaseCoordinator
-import cash.z.ecc.android.sdk.type.ZcashNetwork
+import cash.z.ecc.android.sdk.model.ZcashNetwork
 
 object DatabaseNameFixture {
     const val TEST_DB_NAME = "empty.db"
