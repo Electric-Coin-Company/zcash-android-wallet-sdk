@@ -15,6 +15,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 
+// TODO [#650]: https://github.com/zcash/zcash-android-wallet-sdk/issues/650
+
 /**
  * This test is intended to run to make sure that basic things are functional and pinpoint what is
  * not working. It was originally developed after a major refactor to find what broke.

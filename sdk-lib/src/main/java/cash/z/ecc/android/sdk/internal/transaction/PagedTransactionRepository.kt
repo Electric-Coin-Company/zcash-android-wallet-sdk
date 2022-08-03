@@ -150,6 +150,7 @@ internal class PagedTransactionRepository private constructor(
                 .build().also {
                     // TODO: document why we do this. My guess is to catch database issues early or to trigger migrations--I forget why it was added but there was a good reason?
                     withContext(SdkDispatchers.DATABASE_IO) {
+                        // TODO [#649]: https://github.com/zcash/zcash-android-wallet-sdk/issues/649
                         it.openHelper.writableDatabase.beginTransaction()
                         it.openHelper.writableDatabase.endTransaction()
                     }

@@ -803,7 +803,8 @@ object DefaultSynchronizerFactory {
         CompactBlockDbStore.new(
             NoBackupContextWrapper(
                 initializer.context,
-                initializer.rustBackend.cacheDbFile.parentFile  ?: throw InitializerException.DatabasePathException),
+                initializer.rustBackend.cacheDbFile.parentFile ?: throw InitializerException.DatabasePathException
+            ),
             initializer.network,
             initializer.rustBackend.cacheDbFile
         )

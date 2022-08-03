@@ -1,5 +1,6 @@
 package cash.z.ecc.android.sdk.db
 
+import androidx.test.filters.FlakyTest
 import androidx.test.filters.MediumTest
 import androidx.test.filters.SmallTest
 import cash.z.ecc.android.sdk.test.getAppContext
@@ -62,11 +63,12 @@ class DatabaseCoordinatorTest {
         }
     }
 
+    @FlakyTest
     @Test
     @MediumTest
     fun mutex_stress_test() {
         // We run the mutex test multiple times sequentially to catch a possible problem.
-        for (x in 0..50) {
+        for (x in 0..9) {
             mutex_test()
         }
     }
