@@ -40,9 +40,14 @@ internal class DatabaseCoordinator private constructor(context: Context) {
     private val deleteFileMutex = Mutex()
 
     companion object {
-        const val DB_DATA_NAME = "Data.db" // $NON-NLS
-        const val DB_CACHE_NAME = "Cache.db" // $NON-NLS
-        const val DB_PENDING_TRANSACTIONS_NAME = "PendingTransactions.db" // $NON-NLS
+        const val DB_DATA_NAME_LEGACY = "Data.db" // $NON-NLS
+        const val DB_DATA_NAME = "data.sqlite3" // $NON-NLS
+
+        const val DB_CACHE_NAME_LEGACY = "Cache.db" // $NON-NLS
+        const val DB_CACHE_NAME = "cache.sqlite3" // $NON-NLS
+
+        const val DB_PENDING_TRANSACTIONS_NAME_LEGACY = "PendingTransactions.db" // $NON-NLS
+        const val DB_PENDING_TRANSACTIONS_NAME = "pending_transactions.sqlite3" // $NON-NLS
 
         const val DATABASE_FILE_JOURNAL_SUFFIX = "journal" // $NON-NLS
         const val DATABASE_FILE_WAL_SUFFIX = "wal" // $NON-NLS
@@ -68,6 +73,7 @@ internal class DatabaseCoordinator private constructor(context: Context) {
             applicationContext,
             network,
             alias,
+            DB_CACHE_NAME_LEGACY,
             DB_CACHE_NAME
         )
 
@@ -94,6 +100,7 @@ internal class DatabaseCoordinator private constructor(context: Context) {
             applicationContext,
             network,
             alias,
+            DB_DATA_NAME_LEGACY,
             DB_DATA_NAME
         )
 
@@ -121,7 +128,7 @@ internal class DatabaseCoordinator private constructor(context: Context) {
         val legacyLocationDbFile = newDatabaseFilePointer(
             null,
             null,
-            DB_PENDING_TRANSACTIONS_NAME,
+            DB_PENDING_TRANSACTIONS_NAME_LEGACY,
             getDatabaseParentDir(applicationContext)
         )
         val preferredLocationDbFile = newDatabaseFilePointer(
@@ -178,12 +185,13 @@ internal class DatabaseCoordinator private constructor(context: Context) {
         appContext: Context,
         network: ZcashNetwork,
         alias: String,
+        databaseNameLegacy: String,
         databaseName: String
     ): Pair<File, File> {
         val legacyLocationDbFile = newDatabaseFilePointer(
             network,
             alias,
-            databaseName,
+            databaseNameLegacy,
             getDatabaseParentDir(appContext)
         )
         val preferredLocationDbFile = newDatabaseFilePointer(

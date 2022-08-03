@@ -8,7 +8,7 @@ object DatabaseNameFixture {
     const val TEST_DB_JOURNAL_NAME_SUFFIX = DatabaseCoordinator.DATABASE_FILE_JOURNAL_SUFFIX
     const val TEST_DB_WAL_NAME_SUFFIX = DatabaseCoordinator.DATABASE_FILE_WAL_SUFFIX
 
-    const val TEST_DB_ALIAS = "ZcashSdk"
+    const val TEST_DB_ALIAS = "zcash_sdk"
     val TEST_DB_NETWORK = ZcashNetwork.Testnet
 
     internal fun newDb(

@@ -2,6 +2,7 @@ package cash.z.ecc.android.sdk.integration
 
 import cash.z.ecc.android.sdk.annotation.MaintainedTest
 import cash.z.ecc.android.sdk.annotation.TestPurpose
+import cash.z.ecc.android.sdk.db.DatabaseCoordinator
 import cash.z.ecc.android.sdk.ext.BlockExplorer
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.BlockHeight
@@ -38,13 +39,13 @@ class SanityTest(
         assertTrue(
             "$name has invalid DataDB file",
             wallet.initializer.rustBackend.dataDbFile.absolutePath.endsWith(
-                "no_backup/co.electricoin.zcash/TestWallet_${networkName}_Data.db"
+                "no_backup/co.electricoin.zcash/TestWallet_${networkName}_${DatabaseCoordinator.DB_DATA_NAME}"
             )
         )
         assertTrue(
             "$name has invalid CacheDB file",
             wallet.initializer.rustBackend.cacheDbFile.absolutePath.endsWith(
-                "no_backup/co.electricoin.zcash/TestWallet_${networkName}_Cache.db"
+                "no_backup/co.electricoin.zcash/TestWallet_${networkName}_${DatabaseCoordinator.DB_CACHE_NAME}"
             )
         )
         assertTrue(

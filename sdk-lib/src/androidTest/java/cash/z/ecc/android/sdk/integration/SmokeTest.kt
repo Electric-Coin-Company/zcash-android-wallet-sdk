@@ -4,6 +4,7 @@ import androidx.test.filters.LargeTest
 import androidx.test.filters.MediumTest
 import cash.z.ecc.android.sdk.annotation.MaintainedTest
 import cash.z.ecc.android.sdk.annotation.TestPurpose
+import cash.z.ecc.android.sdk.db.DatabaseCoordinator
 import cash.z.ecc.android.sdk.util.TestWallet
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -24,13 +25,13 @@ class SmokeTest {
         assertTrue(
             "Invalid DataDB file",
             wallet.initializer.rustBackend.dataDbFile.absolutePath.endsWith(
-                "no_backup/co.electricoin.zcash/TestWallet_testnet_Data.db"
+                "no_backup/co.electricoin.zcash/TestWallet_testnet_${DatabaseCoordinator.DB_DATA_NAME}"
             )
         )
         assertTrue(
             "Invalid CacheDB file",
             wallet.initializer.rustBackend.cacheDbFile.absolutePath.endsWith(
-                "no_backup/co.electricoin.zcash/TestWallet_testnet_Cache.db"
+                "no_backup/co.electricoin.zcash/TestWallet_testnet_${DatabaseCoordinator.DB_CACHE_NAME}"
             )
         )
         assertTrue(
