@@ -56,6 +56,7 @@ class FlowPagedListBuilder<Key, Value>(
                 var initializeKey = initialLoadKey
                 if (::list.isInitialized) {
                     twig("list is initialized")
+                    @Suppress("UNCHECKED_CAST")
                     initializeKey = list.lastKey as Key
                 }
 
