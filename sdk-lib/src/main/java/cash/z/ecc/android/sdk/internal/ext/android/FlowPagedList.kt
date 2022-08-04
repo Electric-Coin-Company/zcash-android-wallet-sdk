@@ -49,8 +49,7 @@ fun <Key, Value> DataSource.Factory<Key, Value>.toFlowPagedList(
  *
  * @see FlowPagedListBuilder
  */
-@SuppressLint("RestrictedApi")
-inline fun <Key, Value> DataSource.Factory<Key, Value>.toFlowPagedList(
+fun <Key, Value> DataSource.Factory<Key, Value>.toFlowPagedList(
     pageSize: Int,
     initialLoadKey: Key? = null,
     boundaryCallback: PagedList.BoundaryCallback<Value>? = null,
