@@ -65,11 +65,7 @@ internal object CheckpointTool {
      */
     @VisibleForTesting
     internal fun checkpointDirectory(network: ZcashNetwork) =
-        "co.electriccoin.zcash/checkpoint/${
-        (network.networkName as java.lang.String).toLowerCase(
-            Locale.ROOT
-        )
-        }"
+        "co.electriccoin.zcash/checkpoint/${network.networkName.lowercase(Locale.ROOT)}"
 
     internal fun checkpointHeightFromFilename(zcashNetwork: ZcashNetwork, fileName: String) =
         BlockHeight.new(zcashNetwork, fileName.split('.').first().toLong())
