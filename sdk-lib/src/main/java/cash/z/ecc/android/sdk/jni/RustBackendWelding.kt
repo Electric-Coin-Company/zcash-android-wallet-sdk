@@ -5,7 +5,7 @@ import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
-import cash.z.ecc.android.sdk.type.UnifiedViewingKey
+import cash.z.ecc.android.sdk.type.UnifiedFullViewingKey
 
 /**
  * Contract defining the exposed capabilities of the Rust backend.
@@ -34,9 +34,9 @@ internal interface RustBackendWelding {
 
     suspend fun decryptAndStoreTransaction(tx: ByteArray)
 
-    suspend fun initAccountsTable(seed: ByteArray, numberOfAccounts: Int): Array<UnifiedViewingKey>
+    suspend fun initAccountsTable(seed: ByteArray, numberOfAccounts: Int): Array<UnifiedFullViewingKey>
 
-    suspend fun initAccountsTable(vararg keys: UnifiedViewingKey): Boolean
+    suspend fun initAccountsTable(vararg keys: UnifiedFullViewingKey): Boolean
 
     suspend fun initBlocksTable(checkpoint: Checkpoint): Boolean
 
@@ -88,12 +88,12 @@ internal interface RustBackendWelding {
 
     // Implemented by `DerivationTool`
     interface Derivation {
-        suspend fun deriveShieldedAddress(
+        suspend fun deriveUnifiedAddress(
             viewingKey: String,
             network: ZcashNetwork
         ): String
 
-        suspend fun deriveShieldedAddress(
+        suspend fun deriveUnifiedAddress(
             seed: ByteArray,
             network: ZcashNetwork,
             accountIndex: Int = 0
@@ -134,10 +134,10 @@ internal interface RustBackendWelding {
             network: ZcashNetwork
         ): String
 
-        suspend fun deriveUnifiedViewingKeys(
+        suspend fun deriveUnifiedFullViewingKeys(
             seed: ByteArray,
             network: ZcashNetwork,
             numberOfAccounts: Int = 1
-        ): Array<UnifiedViewingKey>
+        ): Array<UnifiedFullViewingKey>
     }
 }

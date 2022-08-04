@@ -26,14 +26,12 @@ use zcash_client_backend::{
         WalletRead,
     },
     encoding::{
-        decode_extended_full_viewing_key, decode_extended_spending_key,
-        encode_extended_full_viewing_key, encode_extended_spending_key, encode_payment_address,
-        AddressCodec,
+        decode_extended_spending_key, encode_extended_full_viewing_key,
+        encode_extended_spending_key, encode_payment_address, AddressCodec,
     },
     keys::{
-        derive_public_key_from_seed, derive_secret_key_from_seed,
-        derive_transparent_address_from_public_key, derive_transparent_address_from_secret_key,
-        spending_key, Wif,
+        derive_secret_key_from_seed, derive_transparent_address_from_public_key,
+        derive_transparent_address_from_secret_key, spending_key, Wif,
     },
     wallet::{AccountId, OvkPolicy, WalletTransparentOutput},
 };
@@ -127,42 +125,39 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_initAccount
     env: JNIEnv<'_>,
     _: JClass<'_>,
     db_data: JString<'_>,
-    extfvks_arr: jobjectArray,
-    extpubs_arr: jobjectArray,
+    ufvks_arr: jobjectArray,
     network_id: jint,
 ) -> jboolean {
     let res = panic::catch_unwind(|| {
         let network = parse_network(network_id as u32)?;
         let db_data = wallet_db(&env, network, db_data)?;
         // TODO: avoid all this unwrapping and also surface errors, better
-        let count = env.get_array_length(extfvks_arr).unwrap();
-        let extfvks = (0..count)
-            .map(|i| env.get_object_array_element(extfvks_arr, i))
+        let count = env.get_array_length(ufvks_arr).unwrap();
+        let ufvks = (0..count)
+            .map(|i| env.get_object_array_element(ufvks_arr, i))
             .map(|jstr| utils::java_string_to_rust(&env, jstr.unwrap().into()))
-            .map(|vkstr| {
-                decode_extended_full_viewing_key(
-                    network.hrp_sapling_extended_full_viewing_key(),
-                    &vkstr,
-                )
-                    .map_err(|err| format_err!("Invalid bech32: {}", err))
-                    .and_then(|extfvk|
-                        extfvk.ok_or_else(|| {
+            .map(|ufvkstr| {
+                // TODO: replace with `zcash_address::unified::Ufvk`
+                utils::fake_ufvk_decode(&ufvkstr).ok_or_else(|| {
                             let (network_name, other) = if network == TestNetwork {
                                 ("testnet", "mainnet")
                             } else {
                                 ("mainnet", "testnet")
                             };
                             format_err!("Error: Wrong network! Unable to decode viewing key for {}. Check whether this is a key for {}.", network_name, other)
-                        }))
+                        })
             })
             .collect::<Result<Vec<_>, _>>()?;
 
-        let taddrs: Vec<_> = (0..count)
-            .map(|i| env.get_object_array_element(extpubs_arr, i))
-            .map(|jstr| utils::java_string_to_rust(&env, jstr.unwrap().into()))
-            .map(|extpub_str| PublicKey::from_str(&extpub_str).unwrap())
-            .map(|pk| derive_transparent_address_from_public_key(&pk))
-            .collect::<Vec<_>>();
+        let (taddrs, extfvks): (Vec<_>, Vec<_>) = ufvks
+            .into_iter()
+            .map(|(extpub, extfvk)| {
+                (
+                    derive_transparent_address_from_public_key(&extpub.public_key),
+                    extfvk,
+                )
+            })
+            .unzip();
 
         match init_accounts_table(&db_data, &extfvks[..], &taddrs[..]) {
             Ok(()) => Ok(JNI_TRUE),
@@ -210,7 +205,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveE
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveUnifiedViewingKeysFromSeed(
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveUnifiedFullViewingKeysFromSeed(
     env: JNIEnv<'_>,
     _: JClass<'_>,
     seed: jbyteArray,
@@ -226,32 +221,25 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveU
             return Err(format_err!("accounts argument must be greater than zero"));
         };
 
-        let extfvks: Vec<_> = (0..accounts)
+        let ufvks: Vec<_> = (0..accounts)
             .map(|account| {
-                encode_extended_full_viewing_key(
-                    network.hrp_sapling_extended_full_viewing_key(),
-                    &ExtendedFullViewingKey::from(&spending_key(
-                        &seed,
-                        network.coin_type(),
-                        AccountId(account),
-                    )),
-                )
+                let sapling = ExtendedFullViewingKey::from(&spending_key(
+                    &seed,
+                    network.coin_type(),
+                    AccountId(account),
+                ));
+                let p2pkh =
+                    utils::p2pkh_full_viewing_key(&network, &seed, AccountId(account)).unwrap();
+                // TODO: Replace with `zcash_address::unified::Ufvk`
+                utils::fake_ufvk_encode(&p2pkh, &sapling)
             })
             .collect();
 
-        let extpubs: Vec<_> = (0..accounts)
-            .map(|account| {
-                let pk =
-                    derive_public_key_from_seed(&network, &seed, AccountId(account), 0).unwrap();
-                hex::encode(&pk.serialize())
-            })
-            .collect();
-
-        Ok(utils::rust_vec_to_java_2d(
+        Ok(utils::rust_vec_to_java(
             &env,
-            extfvks,
-            extpubs,
-            |env, extfvkstr| env.new_string(extfvkstr),
+            ufvks,
+            "java/lang/String",
+            |env, ufvk| env.new_string(ufvk),
             |env| env.new_string(""),
         ))
     });
@@ -259,7 +247,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveU
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveShieldedAddressFromSeed(
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveUnifiedAddressFromSeed(
     env: JNIEnv<'_>,
     _: JClass<'_>,
     seed: jbyteArray,
@@ -275,11 +263,16 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveS
             return Err(format_err!("accountIndex argument must be positive"));
         };
 
-        let address = spending_key(&seed, network.coin_type(), AccountId(account_index))
+        let (di, sapling) = spending_key(&seed, network.coin_type(), AccountId(account_index))
             .default_address()
-            .unwrap()
-            .1;
-        let address_str = encode_payment_address(network.hrp_sapling_payment_address(), &address);
+            .unwrap();
+        let p2pkh = utils::p2pkh_addr(
+            utils::p2pkh_full_viewing_key(&network, &seed, AccountId(account_index)).unwrap(),
+            di,
+        )
+        .unwrap();
+        // TODO: replace this with `zcash_address::unified::Address`.
+        let address_str = utils::fake_ua_encode(&p2pkh, &sapling);
         let output = env
             .new_string(address_str)
             .expect("Couldn't create Java string!");
@@ -289,33 +282,31 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveS
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveShieldedAddressFromViewingKey(
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveUnifiedAddressFromViewingKey(
     env: JNIEnv<'_>,
     _: JClass<'_>,
-    extfvk_string: JString<'_>,
-    network_id: jint,
+    ufvk_string: JString<'_>,
+    _network_id: jint,
 ) -> jstring {
     let res = panic::catch_unwind(|| {
-        let network = parse_network(network_id as u32)?;
-        let extfvk_string = utils::java_string_to_rust(&env, extfvk_string);
-        let extfvk = match decode_extended_full_viewing_key(
-            network.hrp_sapling_extended_full_viewing_key(),
-            &extfvk_string,
-        ) {
-            Ok(Some(extfvk)) => extfvk,
-            Ok(None) => {
-                return Err(format_err!("Failed to parse viewing key string in order to derive the address. Deriving a viewing key from the string returned no results. Encoding was valid but type was incorrect."));
-            }
-            Err(e) => {
+        //let network = parse_network(network_id as u32)?;
+        let ufvk_string = utils::java_string_to_rust(&env, ufvk_string);
+        let ufvk = match utils::fake_ufvk_decode(&ufvk_string) {
+            Some(ufvk) => ufvk,
+            None => {
                 return Err(format_err!(
-                    "Error while deriving viewing key from string input: {}",
-                    e
+                    "Error while deriving viewing key from string input"
                 ));
             }
         };
 
-        let address = extfvk.default_address().unwrap().1;
-        let address_str = encode_payment_address(network.hrp_sapling_payment_address(), &address);
+        // Derive the default Sapling payment address (like older SDKs used).
+        let (di, sapling) = ufvk.1.default_address().unwrap();
+        // Derive the transparent address corresponding to the default Sapling diversifier
+        // index (matching ZIP 316).
+        let p2pkh = utils::p2pkh_addr(ufvk.0, di).unwrap();
+        // TODO: replace this with `zcash_address::unified::Address`.
+        let address_str = utils::fake_ua_encode(&p2pkh, &sapling);
         let output = env
             .new_string(address_str)
             .expect("Couldn't create Java string!");

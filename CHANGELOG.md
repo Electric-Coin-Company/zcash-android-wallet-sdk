@@ -1,7 +1,41 @@
 Change Log
 ==========
 
-Upcoming
+## Unreleased
+
+### Added
+- `cash.z.ecc.android.sdk.type.UnifiedFullViewingKey`, representing a Unified Full Viewing
+  Key as specified in [ZIP 316](https://zips.z.cash/zip-0316#encoding-of-unified-full-incoming-viewing-keys).
+  - TODO: Actually encode per ZIP 316.
+- `cash.z.ecc.android.sdk.tool`:
+  - `DerivationTool.deriveUnifiedAddress`
+  - `DerivationTool.deriveUnifiedFullViewingKeys`
+  - `DerivationTool.validateUnifiedFullViewingKey`
+    - Still unimplemented.
+
+### Changed
+- The following methods now take or return `UnifiedFullViewingKey` instead of
+  `UnifiedViewingKey`:
+    - `cash.z.ecc.android.sdk`:
+      - `Initializer.Config.addViewingKey`
+      - `Initializer.Config.importWallet`
+      - `Initializer.Config.newWallet`
+      - `Initializer.Config.setViewingKeys`
+
+### Removed
+- `cash.z.ecc.android.sdk.type.UnifiedViewingKey`
+  - This type had a bug where the `extpub` field actually was storing a plain transparent
+    public key, and not the extended public key as intended. This made it incompatible
+    with ZIP 316.
+- `cash.z.ecc.android.sdk.tool`:
+  - `DerivationTool.deriveShieldedAddress`
+    - TODO: Do we still need to be able to derive Sapling shielded addresses for legacy
+      support? Currently removed because `UnifiedFullViewingKey` doesn't expose the
+      Sapling FVK on the Kotlin side (unlike the previous `UnifiedViewingKey`).
+  - `DerivationTool.deriveUnifiedViewingKeys`
+  - `DerivationTool.validateUnifiedViewingKey`
+
+1.9.0-beta01
 ------------------------------------
  - Split `ZcashNetwork` into `ZcashNetwork` and `LightWalletEndpoint` to decouple network and server configuration
 

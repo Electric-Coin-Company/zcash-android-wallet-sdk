@@ -74,8 +74,8 @@ class TestWallet(
     val service = (synchronizer.processor.downloader.lightWalletService as LightWalletGrpcService)
 
     val available get() = synchronizer.saplingBalances.value?.available
-    val shieldedAddress =
-        runBlocking { DerivationTool.deriveShieldedAddress(seed, network = network) }
+    val unifiedAddress =
+        runBlocking { DerivationTool.deriveUnifiedAddress(seed, network = network) }
     val transparentAddress =
         runBlocking { DerivationTool.deriveTransparentAddress(seed, network = network) }
     val birthdayHeight get() = synchronizer.latestBirthdayHeight

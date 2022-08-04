@@ -38,12 +38,12 @@ class TransparentTest(val expected: Expected, val network: ZcashNetwork) {
     }
 
     @Test
-    fun deriveUnifiedViewingKeysFromSeedTest() = runBlocking {
-        val uvks = DerivationTool.deriveUnifiedViewingKeys(SEED, network = network)
+    fun deriveUnifiedFullViewingKeysFromSeedTest() = runBlocking {
+        val uvks = DerivationTool.deriveUnifiedFullViewingKeys(SEED, network = network)
         assertEquals(1, uvks.size)
         val uvk = uvks.first()
-        assertEquals(expected.zAddr, DerivationTool.deriveShieldedAddress(uvk.extfvk, network = network))
-        assertEquals(expected.tAddr, DerivationTool.deriveTransparentAddressFromPublicKey(uvk.extpub, network = network))
+        assertEquals(expected.zAddr, DerivationTool.deriveUnifiedAddress(uvk.encoding, network = network))
+        assertEquals(expected.tAddr, DerivationTool.deriveTransparentAddressFromPublicKey(uvk.encoding, network = network))
     }
 
     companion object {

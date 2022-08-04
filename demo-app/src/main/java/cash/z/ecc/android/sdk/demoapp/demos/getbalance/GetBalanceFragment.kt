@@ -47,7 +47,12 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
         val seed = Mnemonics.MnemonicCode(seedPhrase).toSeed()
 
         // converting seed into viewingKey
-        val viewingKey = runBlocking { DerivationTool.deriveUnifiedViewingKeys(seed, ZcashNetwork.fromResources(requireApplicationContext())).first() }
+        val viewingKey = runBlocking {
+            DerivationTool.deriveUnifiedFullViewingKeys(
+                seed,
+                ZcashNetwork.fromResources(requireApplicationContext())
+            ).first()
+        }
 
         // using the ViewingKey to initialize
         runBlocking {

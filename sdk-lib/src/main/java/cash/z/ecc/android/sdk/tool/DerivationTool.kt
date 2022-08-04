@@ -3,25 +3,25 @@ package cash.z.ecc.android.sdk.tool
 import cash.z.ecc.android.sdk.jni.RustBackend
 import cash.z.ecc.android.sdk.jni.RustBackendWelding
 import cash.z.ecc.android.sdk.model.ZcashNetwork
-import cash.z.ecc.android.sdk.type.UnifiedViewingKey
+import cash.z.ecc.android.sdk.type.UnifiedFullViewingKey
 
 class DerivationTool {
 
     companion object : RustBackendWelding.Derivation {
 
         /**
-         * Given a seed and a number of accounts, return the associated viewing keys.
+         * Given a seed and a number of accounts, return the associated Unified Full Viewing Keys.
          *
          * @param seed the seed from which to derive viewing keys.
          * @param numberOfAccounts the number of accounts to use. Multiple accounts are not fully
          * supported so the default value of 1 is recommended.
          *
-         * @return the viewing keys that correspond to the seed, formatted as Strings.
+         * @return the UFVKs derived from the seed, encoded as Strings.
          */
-        override suspend fun deriveUnifiedViewingKeys(seed: ByteArray, network: ZcashNetwork, numberOfAccounts: Int): Array<UnifiedViewingKey> =
+        override suspend fun deriveUnifiedFullViewingKeys(seed: ByteArray, network: ZcashNetwork, numberOfAccounts: Int): Array<UnifiedFullViewingKey> =
             withRustBackendLoaded {
-                deriveUnifiedViewingKeysFromSeed(seed, numberOfAccounts, networkId = network.id).map {
-                    UnifiedViewingKey(it[0], it[1])
+                deriveUnifiedFullViewingKeysFromSeed(seed, numberOfAccounts, networkId = network.id).map {
+                    UnifiedFullViewingKey(it)
                 }.toTypedArray()
             }
 
@@ -51,7 +51,7 @@ class DerivationTool {
             }
 
         /**
-         * Given a seed and account index, return the associated address.
+         * Given a seed and account index, return the associated Unified Address.
          *
          * @param seed the seed from which to derive the address.
          * @param accountIndex the index of the account to use for deriving the address. Multiple
@@ -59,21 +59,21 @@ class DerivationTool {
          *
          * @return the address that corresponds to the seed and account index.
          */
-        override suspend fun deriveShieldedAddress(seed: ByteArray, network: ZcashNetwork, accountIndex: Int): String =
+        override suspend fun deriveUnifiedAddress(seed: ByteArray, network: ZcashNetwork, accountIndex: Int): String =
             withRustBackendLoaded {
-                deriveShieldedAddressFromSeed(seed, accountIndex, networkId = network.id)
+                deriveUnifiedAddressFromSeed(seed, accountIndex, networkId = network.id)
             }
 
         /**
-         * Given a viewing key string, return the associated address.
+         * Given a Unified Full Viewing Key string, return the associated Unified Address.
          *
          * @param viewingKey the viewing key to use for deriving the address. The viewing key is tied to
          * a specific account so no account index is required.
          *
          * @return the address that corresponds to the viewing key.
          */
-        override suspend fun deriveShieldedAddress(viewingKey: String, network: ZcashNetwork): String = withRustBackendLoaded {
-            deriveShieldedAddressFromViewingKey(viewingKey, networkId = network.id)
+        override suspend fun deriveUnifiedAddress(viewingKey: String, network: ZcashNetwork): String = withRustBackendLoaded {
+            deriveUnifiedAddressFromViewingKey(viewingKey, networkId = network.id)
         }
 
         // WIP probably shouldn't be used just yet. Why?
@@ -95,7 +95,8 @@ class DerivationTool {
             deriveTransparentSecretKeyFromSeed(seed, account, index, networkId = network.id)
         }
 
-        fun validateUnifiedViewingKey(viewingKey: UnifiedViewingKey, networkId: Int = ZcashNetwork.Mainnet.id) {
+        @Suppress("UnusedPrivateMember")
+        fun validateUnifiedFullViewingKey(viewingKey: UnifiedFullViewingKey, networkId: Int = ZcashNetwork.Mainnet.id) {
             // TODO
         }
 
@@ -121,24 +122,24 @@ class DerivationTool {
         ): Array<String>
 
         @JvmStatic
-        private external fun deriveUnifiedViewingKeysFromSeed(
+        private external fun deriveUnifiedFullViewingKeysFromSeed(
             seed: ByteArray,
             numberOfAccounts: Int,
             networkId: Int
-        ): Array<Array<String>>
+        ): Array<String>
 
         @JvmStatic
         private external fun deriveExtendedFullViewingKey(spendingKey: String, networkId: Int): String
 
         @JvmStatic
-        private external fun deriveShieldedAddressFromSeed(
+        private external fun deriveUnifiedAddressFromSeed(
             seed: ByteArray,
             accountIndex: Int,
             networkId: Int
         ): String
 
         @JvmStatic
-        private external fun deriveShieldedAddressFromViewingKey(key: String, networkId: Int): String
+        private external fun deriveUnifiedAddressFromViewingKey(key: String, networkId: Int): String
 
         @JvmStatic
         private external fun deriveTransparentAddressFromSeed(seed: ByteArray, account: Int, index: Int, networkId: Int): String

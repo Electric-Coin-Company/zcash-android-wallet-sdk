@@ -1538,6 +1538,7 @@ version = "0.0.4"
 dependencies = [
  "android_logger",
  "failure",
+ "hdwallet",
  "hex",
  "jni",
  "log",

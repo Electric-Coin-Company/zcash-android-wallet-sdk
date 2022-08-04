@@ -11,7 +11,7 @@ import cash.z.ecc.android.sdk.demoapp.ext.requireApplicationContext
 import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.tool.DerivationTool
-import cash.z.ecc.android.sdk.type.UnifiedViewingKey
+import cash.z.ecc.android.sdk.type.UnifiedFullViewingKey
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 
@@ -21,7 +21,7 @@ import kotlinx.coroutines.runBlocking
  */
 class GetAddressFragment : BaseDemoFragment<FragmentGetAddressBinding>() {
 
-    private lateinit var viewingKey: UnifiedViewingKey
+    private lateinit var viewingKey: UnifiedFullViewingKey
     private lateinit var seed: ByteArray
 
     /**
@@ -37,15 +37,22 @@ class GetAddressFragment : BaseDemoFragment<FragmentGetAddressBinding>() {
         seed = Mnemonics.MnemonicCode(seedPhrase).toSeed()
 
         // the derivation tool can be used for generating keys and addresses
-        viewingKey = runBlocking { DerivationTool.deriveUnifiedViewingKeys(seed, ZcashNetwork.fromResources(requireApplicationContext())).first() }
+        viewingKey = runBlocking {
+            DerivationTool.deriveUnifiedFullViewingKeys(
+                seed,
+                ZcashNetwork.fromResources(requireApplicationContext())
+            ).first()
+        }
     }
 
     private fun displayAddress() {
         // a full fledged app would just get the address from the synchronizer
         viewLifecycleOwner.lifecycleScope.launchWhenStarted {
-            val zaddress = DerivationTool.deriveShieldedAddress(seed, ZcashNetwork.fromResources(requireApplicationContext()))
-            val taddress = DerivationTool.deriveTransparentAddress(seed, ZcashNetwork.fromResources(requireApplicationContext()))
-            binding.textInfo.text = "z-addr:\n$zaddress\n\n\nt-addr:\n$taddress"
+            val uaddress = DerivationTool.deriveUnifiedAddress(
+                seed,
+                ZcashNetwork.fromResources(requireApplicationContext())
+            )
+            binding.textInfo.text = "address:\n$uaddress"
         }
     }
 
@@ -72,11 +79,11 @@ class GetAddressFragment : BaseDemoFragment<FragmentGetAddressBinding>() {
     override fun onActionButtonClicked() {
         viewLifecycleOwner.lifecycleScope.launch {
             copyToClipboard(
-                DerivationTool.deriveShieldedAddress(
-                    viewingKey.extfvk,
+                DerivationTool.deriveUnifiedAddress(
+                    viewingKey.encoding,
                     ZcashNetwork.fromResources(requireApplicationContext())
                 ),
-                "Shielded address copied to clipboard!"
+                "Unified address copied to clipboard!"
             )
         }
     }
