@@ -1,7 +1,22 @@
 Troubleshooting Migrations
 ==========
 
-Upcoming
+Migration to Version 1.10
+---------------------------------
+To support Network Upgrade 5, the way keys are generated has changed.
+
+For SDK clients that regenerate the keys from a mnemonic, migration might look like:
+ * Replace usage of `UnifiedViewingKey` with `UnifiedFullViewingKey`
+ * Replace `DerivationTool.deriveUnifiedViewingKeys` with `DerivationTool.deriveUnifiedFullViewingKeys`
+
+For SDK clients that store the key separately from the mnemonic, the migration might look like:
+ * Replace usage of `UnifiedViewingKey(extfvk: String, extpub: String)` with `UnifiedFullViewingKey(encoding: String)`
+ * Replace `DerivationTool.deriveUnifiedViewingKeys` with `DerivationTool.deriveUnifiedFullViewingKeys`
+ * Delete any previously persisted values for `UnifiedViewingKey(extfvk: String, extpub: String)`,
+   provided that they can be rederived from the mnemonic.
+ * Re-generate the key from the mnemonic using `DerivationTool.deriveUnifiedFullViewingKeys`
+
+Migration to Version 1.9
 --------------------------------------
 `ZcashNetwork` is no longer an enum. The prior enum values are now declared as object properties `ZcashNetwork.Mainnet` and `ZcashNetwork.Testnet`.  For the most part, this change should have minimal impact.  ZcashNetwork was also moved from the package `cash.z.ecc.android.sdk.type` to `cash.z.ecc.android.sdk.model`, which will require a change to your import statements.  The server fields have been removed from `ZcashNetwork`, allowing server and network configuration to be done independently.
 
