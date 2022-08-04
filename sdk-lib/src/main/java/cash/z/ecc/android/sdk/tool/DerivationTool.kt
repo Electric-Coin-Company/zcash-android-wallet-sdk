@@ -83,12 +83,12 @@ class DerivationTool {
             deriveTransparentAddressFromSeed(seed, account, index, networkId = network.id)
         }
 
-        override suspend fun deriveTransparentAddressFromPublicKey(transparentPublicKey: String, network: ZcashNetwork): String = withRustBackendLoaded {
-            deriveTransparentAddressFromPubKey(transparentPublicKey, networkId = network.id)
+        override suspend fun deriveTransparentAddressFromPublicKey(publicKey: String, network: ZcashNetwork): String = withRustBackendLoaded {
+            deriveTransparentAddressFromPubKey(pk = publicKey, networkId = network.id)
         }
 
-        override suspend fun deriveTransparentAddressFromPrivateKey(transparentPrivateKey: String, network: ZcashNetwork): String = withRustBackendLoaded {
-            deriveTransparentAddressFromPrivKey(transparentPrivateKey, networkId = network.id)
+        override suspend fun deriveTransparentAddressFromPrivateKey(privateKey: String, network: ZcashNetwork): String = withRustBackendLoaded {
+            deriveTransparentAddressFromPrivKey(sk = privateKey, networkId = network.id)
         }
 
         override suspend fun deriveTransparentSecretKey(seed: ByteArray, network: ZcashNetwork, account: Int, index: Int): String = withRustBackendLoaded {
