@@ -95,8 +95,9 @@ class DerivationTool {
             deriveTransparentSecretKeyFromSeed(seed, account, index, networkId = network.id)
         }
 
+        @Suppress("UNUSED_PARAMETER")
         fun validateUnifiedViewingKey(viewingKey: UnifiedViewingKey, networkId: Int = ZcashNetwork.Mainnet.id) {
-            // TODO
+            // TODO [#654] https://github.com/zcash/zcash-android-wallet-sdk/issues/654
         }
 
         /**
