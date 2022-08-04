@@ -5,6 +5,7 @@ import androidx.room.Dao
 import androidx.room.Database
 import androidx.room.Query
 import androidx.room.RoomDatabase
+import androidx.room.RoomWarnings
 import androidx.room.Transaction
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
@@ -302,6 +303,7 @@ interface TransactionDao {
         LIMIT  :limit
         """
     )
+    @SuppressWarnings(RoomWarnings.CURSOR_MISMATCH)
     fun getSentTransactions(limit: Int = Int.MAX_VALUE): DataSource.Factory<Int, ConfirmedTransaction>
 
     /**
@@ -328,6 +330,7 @@ interface TransactionDao {
         LIMIT  :limit
         """
     )
+    @SuppressWarnings(RoomWarnings.CURSOR_MISMATCH)
     fun getReceivedTransactions(limit: Int = Int.MAX_VALUE): DataSource.Factory<Int, ConfirmedTransaction>
 
     /**
