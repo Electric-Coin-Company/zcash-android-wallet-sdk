@@ -286,13 +286,14 @@ class PersistentTransactionManager(
      */
     private suspend fun <R> safeUpdate(logMessage: String = "", priority: Int = 0, block: suspend PendingTransactionDao.() -> R): R? {
         return try {
-            twig(logMessage)
+            twig(logMessage, priority)
             pendingTransactionDao { block() }
         } catch (t: Throwable) {
             val stacktrace = StringWriter().also { t.printStackTrace(PrintWriter(it)) }.toString()
             twig(
                 "Unknown error while attempting to '$logMessage':" +
-                    " ${t.message} caused by: ${t.cause} stacktrace: $stacktrace"
+                    " ${t.message} caused by: ${t.cause} stacktrace: $stacktrace",
+                priority
             )
             null
         }
