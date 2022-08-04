@@ -44,10 +44,8 @@ android {
     useLibrary("android.test.runner")
 
     defaultConfig {
-        javaCompileOptions {
-            annotationProcessorOptions {
-                argument("room.schemaLocation", "$projectDir/schemas")
-            }
+        ksp {
+            arg("room.schemaLocation", "$projectDir/schemas")
         }
 
         consumerProguardFiles("proguard-consumer.txt")
