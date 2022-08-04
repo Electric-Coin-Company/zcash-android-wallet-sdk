@@ -255,7 +255,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveU
         let account_index = if account_index >= 0 {
             account_index as u32
         } else {
-            return Err(format_err!("accountIndex argument must be positive"));
+            return Err(format_err!("accountIndex argument must be nonnegative"));
         };
 
         let account_id = AccountId::from(account_index);
@@ -540,7 +540,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_getVerified
             .iter()
             .map(|utxo| utxo.txout.value)
             .sum::<Option<Amount>>()
-            .ok_or_else(|| format_err!("Balance overflowed MAX_MONEY. Lucky you!"))?;
+            .ok_or_else(|| format_err!("Balance overflowed MAX_MONEY."))?;
 
         Ok(amount.into())
     });
@@ -578,7 +578,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_getTotalTra
             .iter()
             .map(|utxo| utxo.txout.value)
             .sum::<Option<Amount>>()
-            .ok_or_else(|| format_err!("Balance overflowed MAX_MONEY. Lucky you!"))?;
+            .ok_or_else(|| format_err!("Balance overflowed MAX_MONEY"))?;
 
         Ok(amount.into())
     });
@@ -904,7 +904,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveT
         let account = if account >= 0 {
             AccountId::from(account as u32)
         } else {
-            return Err(format_err!("account argument must be positive"));
+            return Err(format_err!("account argument must be nonnegative"));
         };
         // Derive the USK to ensure it exists, and fetch its transparent component.
         let usk = UnifiedSpendingKey::from_seed(&network, &seed, account)
@@ -944,12 +944,12 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveT
         let account = if account >= 0 {
             account as u32
         } else {
-            return Err(format_err!("account argument must be positive"));
+            return Err(format_err!("account argument must be nonnegative"));
         };
         let index = if index >= 0 {
             index as u32
         } else {
-            return Err(format_err!("index argument must be positive"));
+            return Err(format_err!("index argument must be nonnegative"));
         };
         let tfvk = UnifiedSpendingKey::from_seed(&network, &seed, AccountId::from(account))
             .map_err(|e| format_err!("error generating unified spending key from seed: {:?}", e))
@@ -981,7 +981,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveT
         let index = if index >= 0 {
             index as u32
         } else {
-            return Err(format_err!("index argument must be positive"));
+            return Err(format_err!("index argument must be nonnegative"));
         };
         let xprv_str = utils::java_string_to_rust(&env, secret_key);
         let xprv = match hdwallet_bitcoin::PrivKey::deserialize(xprv_str) {
@@ -1075,7 +1075,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_createToAdd
         let account = if account >= 0 {
             account as u32
         } else {
-            return Err(format_err!("account argument must be positive"));
+            return Err(format_err!("account argument must be nonnegative"));
         };
         let extsk = utils::java_string_to_rust(&env, extsk);
         let to = utils::java_string_to_rust(&env, to);
@@ -1157,7 +1157,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_shieldToAdd
         let account = if account == 0 {
             account as u32
         } else {
-            return Err(format_err!("account argument {} must be positive", account));
+            return Err(format_err!("account argument {} must be nonnegative", account));
         };
         let extsk = utils::java_string_to_rust(&env, extsk);
         let xprv_str = utils::java_string_to_rust(&env, xprv);
