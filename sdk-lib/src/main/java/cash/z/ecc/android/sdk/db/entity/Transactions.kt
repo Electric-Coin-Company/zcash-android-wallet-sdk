@@ -38,7 +38,7 @@ data class TransactionEntity(
     @ColumnInfo(name = "expiry_height")
     val expiryHeight: Int?,
 
-    @ColumnInfo(name = "block")
+    @ColumnInfo(name = "block", index = true)
     val minedHeight: Int?,
 
     @ColumnInfo(typeAffinity = ColumnInfo.BLOB)

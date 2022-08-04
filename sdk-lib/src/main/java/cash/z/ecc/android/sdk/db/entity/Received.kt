@@ -32,18 +32,20 @@ data class Received(
     /**
      * A reference to the transaction this note was received in
      */
-    @ColumnInfo(name = "tx")
+    @ColumnInfo(name = "tx", index = true)
     val transactionId: Int = 0,
 
     @ColumnInfo(name = "output_index")
     val outputIndex: Int = 0,
 
+    @ColumnInfo(index = true)
     val account: Int = 0,
     val value: Long = 0,
 
     /**
      * A reference to the transaction this note was later spent in
      */
+    @ColumnInfo(index = true)
     val spent: Int? = 0,
 
     @ColumnInfo(typeAffinity = ColumnInfo.BLOB)

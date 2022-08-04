@@ -23,13 +23,13 @@ data class Sent(
     @ColumnInfo(name = "id_note")
     val id: Int? = 0,
 
-    @ColumnInfo(name = "tx")
+    @ColumnInfo(name = "tx", index = true)
     val transactionId: Long = 0,
 
     @ColumnInfo(name = "output_index")
     val outputIndex: Int = 0,
 
-    @ColumnInfo(name = "from_account")
+    @ColumnInfo(name = "from_account", index = true)
     val account: Int = 0,
 
     val address: String = "",
