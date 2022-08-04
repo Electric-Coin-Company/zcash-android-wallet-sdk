@@ -17,7 +17,7 @@ import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.jni.RustBackend
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.ZcashNetwork
-import cash.z.ecc.android.sdk.type.UnifiedViewingKey
+import cash.z.ecc.android.sdk.type.UnifiedFullViewingKey
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.withContext
@@ -111,13 +111,14 @@ internal class PagedTransactionRepository private constructor(
     // TODO: convert this into a wallet repository rather than "transaction repository"
 
     companion object {
-        internal suspend fun new(
+        @Suppress("LongParameterList")
+        suspend fun new(
             appContext: Context,
             zcashNetwork: ZcashNetwork,
             pageSize: Int = 10,
             rustBackend: RustBackend,
             birthday: Checkpoint,
-            viewingKeys: List<UnifiedViewingKey>,
+            viewingKeys: List<UnifiedFullViewingKey>,
             overwriteVks: Boolean = false
         ): PagedTransactionRepository {
             initMissingDatabases(rustBackend, birthday, viewingKeys)
@@ -159,7 +160,7 @@ internal class PagedTransactionRepository private constructor(
         private suspend fun initMissingDatabases(
             rustBackend: RustBackend,
             birthday: Checkpoint,
-            viewingKeys: List<UnifiedViewingKey>
+            viewingKeys: List<UnifiedFullViewingKey>
         ) {
             maybeCreateDataDb(rustBackend)
             maybeInitBlocksTable(rustBackend, birthday)
@@ -199,7 +200,7 @@ internal class PagedTransactionRepository private constructor(
          */
         private suspend fun maybeInitAccountsTable(
             rustBackend: RustBackend,
-            viewingKeys: List<UnifiedViewingKey>
+            viewingKeys: List<UnifiedFullViewingKey>
         ) {
             // TODO: consider converting these to typed exceptions in the welding layer
             tryWarn(
@@ -214,7 +215,7 @@ internal class PagedTransactionRepository private constructor(
         private suspend fun applyKeyMigrations(
             rustBackend: RustBackend,
             overwriteVks: Boolean,
-            viewingKeys: List<UnifiedViewingKey>
+            viewingKeys: List<UnifiedFullViewingKey>
         ) {
             if (overwriteVks) {
                 twig("applying key migrations . . .")

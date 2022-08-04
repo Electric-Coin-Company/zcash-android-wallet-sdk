@@ -65,7 +65,7 @@ class ListTransactionsFragment : BaseDemoFragment<FragmentListTransactionsBindin
             }
         )
         address = runBlocking {
-            DerivationTool.deriveShieldedAddress(
+            DerivationTool.deriveUnifiedAddress(
                 seed,
                 ZcashNetwork.fromResources(requireApplicationContext())
             )

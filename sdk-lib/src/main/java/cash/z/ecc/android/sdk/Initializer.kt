@@ -14,7 +14,7 @@ import cash.z.ecc.android.sdk.model.LightWalletEndpoint
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.tool.CheckpointTool
 import cash.z.ecc.android.sdk.tool.DerivationTool
-import cash.z.ecc.android.sdk.type.UnifiedViewingKey
+import cash.z.ecc.android.sdk.type.UnifiedFullViewingKey
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -29,7 +29,7 @@ class Initializer private constructor(
     val network: ZcashNetwork,
     val alias: String,
     val lightWalletEndpoint: LightWalletEndpoint,
-    val viewingKeys: List<UnifiedViewingKey>,
+    val viewingKeys: List<UnifiedFullViewingKey>,
     val overwriteVks: Boolean,
     internal val checkpoint: Checkpoint
 ) {
@@ -37,7 +37,7 @@ class Initializer private constructor(
     suspend fun erase() = erase(context, network, alias)
 
     class Config private constructor(
-        val viewingKeys: MutableList<UnifiedViewingKey> = mutableListOf(),
+        val viewingKeys: MutableList<UnifiedFullViewingKey> = mutableListOf(),
         var alias: String = ZcashSdk.DEFAULT_ALIAS
     ) {
         var birthdayHeight: BlockHeight? = null
@@ -119,13 +119,13 @@ class Initializer private constructor(
          * probably has serious bugs.
          */
         fun setViewingKeys(
-            vararg unifiedViewingKeys: UnifiedViewingKey,
+            vararg unifiedFullViewingKeys: UnifiedFullViewingKey,
             overwrite: Boolean = false
         ): Config = apply {
             overwriteVks = overwrite
             viewingKeys.apply {
                 clear()
-                addAll(unifiedViewingKeys)
+                addAll(unifiedFullViewingKeys)
             }
         }
 
@@ -138,7 +138,7 @@ class Initializer private constructor(
          * is not currently well supported. Consider it an alpha-preview feature that might work but
          * probably has serious bugs.
          */
-        fun addViewingKey(unifiedFullViewingKey: UnifiedViewingKey): Config = apply {
+        fun addViewingKey(unifiedFullViewingKey: UnifiedFullViewingKey): Config = apply {
             viewingKeys.add(unifiedFullViewingKey)
         }
 
@@ -175,7 +175,7 @@ class Initializer private constructor(
             alias: String = ZcashSdk.DEFAULT_ALIAS
         ): Config =
             importWallet(
-                DerivationTool.deriveUnifiedViewingKeys(seed, network = network)[0],
+                DerivationTool.deriveUnifiedFullViewingKeys(seed, network = network)[0],
                 birthday,
                 network,
                 lightWalletEndpoint,
@@ -185,8 +185,9 @@ class Initializer private constructor(
         /**
          * Default function for importing a wallet.
          */
+        @Suppress("LongParameterList")
         fun importWallet(
-            viewingKey: UnifiedViewingKey,
+            viewingKey: UnifiedFullViewingKey,
             birthday: BlockHeight?,
             network: ZcashNetwork,
             lightWalletEndpoint: LightWalletEndpoint,
@@ -207,7 +208,7 @@ class Initializer private constructor(
             lightWalletEndpoint: LightWalletEndpoint,
             alias: String = ZcashSdk.DEFAULT_ALIAS
         ): Config = newWallet(
-            DerivationTool.deriveUnifiedViewingKeys(seed, network)[0],
+            DerivationTool.deriveUnifiedFullViewingKeys(seed, network)[0],
             network,
             lightWalletEndpoint,
             alias
@@ -217,7 +218,7 @@ class Initializer private constructor(
          * Default function for creating a new wallet.
          */
         fun newWallet(
-            viewingKey: UnifiedViewingKey,
+            viewingKey: UnifiedFullViewingKey,
             network: ZcashNetwork,
             lightWalletEndpoint: LightWalletEndpoint,
             alias: String = ZcashSdk.DEFAULT_ALIAS
@@ -232,6 +233,7 @@ class Initializer private constructor(
          * Convenience method for setting thew viewingKeys from a given seed. This is the same as
          * calling `setViewingKeys` with the keys that match this seed.
          */
+        @Suppress("SpreadOperator")
         suspend fun setSeed(
             seed: ByteArray,
             network: ZcashNetwork,
@@ -239,7 +241,7 @@ class Initializer private constructor(
         ): Config =
             apply {
                 setViewingKeys(
-                    *DerivationTool.deriveUnifiedViewingKeys(
+                    *DerivationTool.deriveUnifiedFullViewingKeys(
                         seed,
                         network,
                         numberOfAccounts
@@ -288,7 +290,7 @@ class Initializer private constructor(
                     " have been set on this Initializer."
             }
             viewingKeys.forEach {
-                DerivationTool.validateUnifiedViewingKey(it)
+                DerivationTool.validateUnifiedFullViewingKey(it)
             }
         }
 

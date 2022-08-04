@@ -78,11 +78,11 @@ class GetPrivateKeyFragment : BaseDemoFragment<FragmentGetPrivateKeyBinding>() {
     override fun onActionButtonClicked() {
         lifecycleScope.launch {
             copyToClipboard(
-                DerivationTool.deriveUnifiedViewingKeys(
+                DerivationTool.deriveUnifiedFullViewingKeys(
                     seed,
                     ZcashNetwork.fromResources(requireApplicationContext())
-                ).first().extpub,
-                "ViewingKey copied to clipboard!"
+                ).first().encoding,
+                "UnifiedFullViewingKey copied to clipboard!"
             )
         }
     }

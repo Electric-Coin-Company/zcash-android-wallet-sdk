@@ -1,16 +1,16 @@
 package cash.z.ecc.android.sdk.type
 
 /**
- * A grouping of keys that correspond to a single wallet account but do not have spend authority.
+ * A [ZIP 316] Unified Full Viewing Key, corresponding to a single wallet account.
  *
- * @param extfvk the extended full viewing key which provides the ability to see inbound and
- * outbound shielded transactions. It can also be used to derive a z-addr.
- * @param extpub the extended public key which provides the ability to see transparent
- * transactions. It can also be used to derive a t-addr.
+ * A `UnifiedFullViewingKey` has the authority to view transactions for an account, but
+ * does not have spend authority. It can be used to derive a [UnifiedAddress] for the
+ * account.
+ *
+ * @param[encoding] The string encoding of the UFVK.
  */
-data class UnifiedViewingKey(
-    val extfvk: String = "",
-    val extpub: String = ""
+data class UnifiedFullViewingKey(
+    val encoding: String = ""
 )
 
 data class UnifiedAddressAccount(

@@ -36,7 +36,7 @@ class AddressGeneratorUtil {
             .map { seedPhrase ->
                 mnemonics.toSeed(seedPhrase.toCharArray())
             }.map { seed ->
-                DerivationTool.deriveShieldedAddress(seed, ZcashNetwork.Mainnet)
+                DerivationTool.deriveUnifiedAddress(seed, ZcashNetwork.Mainnet)
             }.collect { address ->
                 println("xrxrx2\t$address")
                 assertTrue(address.startsWith("zs1"))

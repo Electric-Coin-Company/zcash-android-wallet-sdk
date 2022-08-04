@@ -11,7 +11,7 @@ import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.tool.DerivationTool
-import cash.z.ecc.android.sdk.type.UnifiedViewingKey
+import cash.z.ecc.android.sdk.type.UnifiedFullViewingKey
 import kotlinx.coroutines.withContext
 import java.io.File
 
@@ -50,18 +50,13 @@ internal class RustBackend private constructor(
         )
     }
 
-    override suspend fun initAccountsTable(vararg keys: UnifiedViewingKey): Boolean {
-        val extfvks = Array(keys.size) { "" }
-        val extpubs = Array(keys.size) { "" }
-        keys.forEachIndexed { i, key ->
-            extfvks[i] = key.extfvk
-            extpubs[i] = key.extpub
-        }
+    override suspend fun initAccountsTable(vararg keys: UnifiedFullViewingKey): Boolean {
+        val ufvks = Array(keys.size) { keys[it].encoding }
+
         return withContext(SdkDispatchers.DATABASE_IO) {
             initAccountsTableWithKeys(
                 pathDataDb,
-                extfvks,
-                extpubs,
+                ufvks,
                 networkId = network.id
             )
         }
@@ -70,8 +65,8 @@ internal class RustBackend private constructor(
     override suspend fun initAccountsTable(
         seed: ByteArray,
         numberOfAccounts: Int
-    ): Array<UnifiedViewingKey> {
-        return DerivationTool.deriveUnifiedViewingKeys(seed, network, numberOfAccounts).apply {
+    ): Array<UnifiedFullViewingKey> {
+        return DerivationTool.deriveUnifiedFullViewingKeys(seed, network, numberOfAccounts).apply {
             initAccountsTable(*this)
         }
     }
@@ -387,8 +382,7 @@ internal class RustBackend private constructor(
         @JvmStatic
         private external fun initAccountsTableWithKeys(
             dbDataPath: String,
-            extfvk: Array<out String>,
-            extpub: Array<out String>,
+            ufvks: Array<out String>,
             networkId: Int
         ): Boolean
 
