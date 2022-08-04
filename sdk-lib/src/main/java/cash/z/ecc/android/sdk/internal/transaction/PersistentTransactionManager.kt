@@ -73,14 +73,14 @@ class PersistentTransactionManager(
     //
 
     override suspend fun initSpend(
-        value: Zatoshi,
+        zatoshi: Zatoshi,
         toAddress: String,
         memo: String,
         fromAccountIndex: Int
     ): PendingTransaction = withContext(Dispatchers.IO) {
         twig("constructing a placeholder transaction")
         var tx = PendingTransactionEntity(
-            value = value.value,
+            value = zatoshi.value,
             toAddress = toAddress,
             memo = memo.toByteArray(),
             accountIndex = fromAccountIndex
@@ -264,12 +264,14 @@ class PersistentTransactionManager(
     /**
      * Remove a transaction and pretend it never existed.
      *
+     * @param transaction the transaction to be processed.
+     *
      * @return the final number of transactions that were removed from the database.
      */
-    override suspend fun abort(existingTransaction: PendingTransaction): Int {
+    override suspend fun abort(transaction: PendingTransaction): Int {
         return pendingTransactionDao {
-            twig("[cleanup] Deleting pendingTxId: ${existingTransaction.id}")
-            delete(existingTransaction as PendingTransactionEntity)
+            twig("[cleanup] Deleting pendingTxId: ${transaction.id}")
+            delete(transaction as PendingTransactionEntity)
         }
     }
 
