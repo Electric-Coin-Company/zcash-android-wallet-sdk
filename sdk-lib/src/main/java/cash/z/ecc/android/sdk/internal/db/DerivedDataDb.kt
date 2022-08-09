@@ -433,7 +433,6 @@ interface TransactionDao {
         var success = false
         try {
             var hasInitialMatch = false
-            var hasFinalMatch = true
             twig("[cleanup] cleanupCancelledTx starting...")
             findUnminedTransactionIds(rawTransactionId).also {
                 twig("[cleanup] cleanupCancelledTx found ${it.size} matching transactions to cleanup")
@@ -441,7 +440,7 @@ interface TransactionDao {
                 hasInitialMatch = true
                 removeInvalidOutboundTransaction(transactionId)
             }
-            hasFinalMatch = findMatchingTransactionId(rawTransactionId) != null
+            val hasFinalMatch = findMatchingTransactionId(rawTransactionId) != null
             success = hasInitialMatch && !hasFinalMatch
             twig("[cleanup] cleanupCancelledTx Done. success? $success")
         } catch (t: Throwable) {
