@@ -1119,7 +1119,7 @@ class CompactBlockProcessor internal constructor(
     }
 
     private fun Service.LightdInfo.matchingNetwork(network: String): Boolean {
-        fun String.toId() = toLowerCase(Locale.US).run {
+        fun String.toId() = lowercase(Locale.US).run {
             when {
                 contains("main") -> "mainnet"
                 contains("test") -> "testnet"
