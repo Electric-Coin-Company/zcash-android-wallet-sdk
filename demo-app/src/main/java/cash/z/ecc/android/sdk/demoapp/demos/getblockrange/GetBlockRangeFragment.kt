@@ -27,7 +27,7 @@ class GetBlockRangeFragment : BaseDemoFragment<FragmentGetBlockRangeBinding>() {
     private fun setBlockRange(blockRange: ClosedRange<BlockHeight>) {
         val start = System.currentTimeMillis()
         val blocks =
-            lightwalletService?.getBlockRange(blockRange)
+            lightWalletService?.getBlockRange(blockRange)
         val fetchDelta = System.currentTimeMillis() - start
 
         // Note: This is a demo so we won't worry about iterating efficiently over these blocks

@@ -41,7 +41,7 @@ class MainActivity :
      * this object because it would utilize the synchronizer, instead, which exposes APIs that
      * automatically sync with the server.
      */
-    var lightwalletService: LightWalletService? = null
+    var lightWalletService: LightWalletService? = null
         private set
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -78,7 +78,7 @@ class MainActivity :
 
     override fun onDestroy() {
         super.onDestroy()
-        lightwalletService?.shutdown()
+        lightWalletService?.shutdown()
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -107,11 +107,11 @@ class MainActivity :
     //
 
     private fun initService() {
-        if (lightwalletService != null) {
-            lightwalletService?.shutdown()
+        if (lightWalletService != null) {
+            lightWalletService?.shutdown()
         }
         val network = ZcashNetwork.fromResources(applicationContext)
-        lightwalletService = LightWalletGrpcService.new(
+        lightWalletService = LightWalletGrpcService.new(
             applicationContext,
             LightWalletEndpoint.defaultForNetwork(network)
         )

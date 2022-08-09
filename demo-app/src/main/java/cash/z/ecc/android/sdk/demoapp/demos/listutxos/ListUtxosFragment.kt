@@ -114,7 +114,7 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
                 ?: getUxtoEndHeight(requireApplicationContext()).value
             var allStart = now
             twig("loading transactions in range $startToUse..$endToUse")
-            val txids = lightwalletService?.getTAddressTransactions(
+            val txids = lightWalletService?.getTAddressTransactions(
                 addressToUse,
                 BlockHeight.new(network, startToUse)..BlockHeight.new(network, endToUse)
             )

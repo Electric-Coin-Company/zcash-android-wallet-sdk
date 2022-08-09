@@ -26,7 +26,7 @@ class GetBlockFragment : BaseDemoFragment<FragmentGetBlockBinding>() {
 
     private fun setBlockHeight(blockHeight: BlockHeight) {
         val blocks =
-            lightwalletService?.getBlockRange(blockHeight..blockHeight)
+            lightWalletService?.getBlockRange(blockHeight..blockHeight)
         val block = blocks?.firstOrNull()
         binding.textInfo.visibility = View.VISIBLE
         binding.textInfo.text = Html.fromHtml(
