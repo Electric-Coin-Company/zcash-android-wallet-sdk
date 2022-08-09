@@ -53,8 +53,8 @@ class MainActivity :
         setSupportActionBar(toolbar)
 
         val fab: FloatingActionButton = findViewById(R.id.fab)
-        fab.setOnClickListener { view ->
-            onFabClicked(view)
+        fab.setOnClickListener {
+            onFabClicked()
         }
         val drawerLayout: DrawerLayout = findViewById(R.id.drawer_layout)
         val navView: NavigationView = findViewById(R.id.nav_view)
@@ -117,7 +117,7 @@ class MainActivity :
         )
     }
 
-    private fun onFabClicked(view: View) {
+    private fun onFabClicked() {
         fabListener?.onActionButtonClicked()
     }
 
