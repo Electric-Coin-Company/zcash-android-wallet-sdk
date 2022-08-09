@@ -1,9 +1,9 @@
 package cash.z.ecc.android.sdk.demoapp.demos.getblock
 
 import android.os.Bundle
-import android.text.Html
 import android.view.LayoutInflater
 import android.view.View
+import androidx.core.text.HtmlCompat
 import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
 import cash.z.ecc.android.sdk.demoapp.databinding.FragmentGetBlockBinding
 import cash.z.ecc.android.sdk.demoapp.ext.requireApplicationContext
@@ -29,7 +29,7 @@ class GetBlockFragment : BaseDemoFragment<FragmentGetBlockBinding>() {
             lightWalletService?.getBlockRange(blockHeight..blockHeight)
         val block = blocks?.firstOrNull()
         binding.textInfo.visibility = View.VISIBLE
-        binding.textInfo.text = Html.fromHtml(
+        binding.textInfo.text = HtmlCompat.fromHtml(
             """
                 <b>block height:</b> ${block?.height.withCommas()}
                 <br/><b>block time:</b> ${block?.time.toRelativeTime(requireApplicationContext())}
@@ -37,7 +37,8 @@ class GetBlockFragment : BaseDemoFragment<FragmentGetBlockBinding>() {
                 <br/><b>hash:</b> ${block?.hash?.toByteArray()?.toHex()}
                 <br/><b>prevHash:</b> ${block?.prevHash?.toByteArray()?.toHex()}
                 ${block?.vtxList.toHtml()}
-            """.trimIndent()
+            """.trimIndent(),
+            HtmlCompat.FROM_HTML_MODE_LEGACY
         )
     }
 
