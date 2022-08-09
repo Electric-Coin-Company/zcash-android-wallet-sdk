@@ -126,8 +126,10 @@ class MainActivity :
     //
 
     fun getClipboardText(): String? {
-        return with(clipboard) {
-            if (!hasPrimaryClip()) return null
+        with(clipboard) {
+            if (!hasPrimaryClip()) {
+                return null
+            }
             return primaryClip!!.getItemAt(0)?.coerceToText(this@MainActivity)?.toString()
         }
     }
