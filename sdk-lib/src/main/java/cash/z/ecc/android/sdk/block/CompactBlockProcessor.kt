@@ -1140,7 +1140,6 @@ class CompactBlockProcessor internal constructor(
                 twig("$name MUTEX: releasing lock", -1)
             }
         }
-        twig("$name MUTEX: withLock complete", -1)
     }
 }
 
