@@ -31,6 +31,7 @@ class SampleStorage(context: Context) {
  * the SDK. This class delegates to the storage object. For demo purposes, we're using an insecure
  * SampleStorage implementation but this can easily be swapped for a truly secure storage solution.
  */
+@Suppress("deprecation")
 class SampleStorageBridge(context: Context) {
     private val delegate = SampleStorage(context.applicationContext)
 
