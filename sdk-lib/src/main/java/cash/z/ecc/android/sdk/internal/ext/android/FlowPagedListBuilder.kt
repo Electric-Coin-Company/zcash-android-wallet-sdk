@@ -1,6 +1,5 @@
 package cash.z.ecc.android.sdk.internal.ext.android
 
-import android.annotation.SuppressLint
 import android.os.Handler
 import android.os.Looper
 import androidx.paging.Config
@@ -29,7 +28,7 @@ class FlowPagedListBuilder<Key, Value>(
      * Creates a FlowPagedListBuilder with required parameters.
      *
      * @param dataSourceFactory DataSource factory providing DataSource generations.
-     * @param config Paging configuration.
+     * @param pageSize List page size.
      */
     constructor(dataSourceFactory: DataSource.Factory<Key, Value>, pageSize: Int) : this(
         dataSourceFactory,
@@ -44,7 +43,6 @@ class FlowPagedListBuilder<Key, Value>(
      *
      * @return The Flow of PagedLists
      */
-    @SuppressLint("RestrictedApi")
     fun build(): Flow<List<Value>> {
         return object : ComputableFlow<List<Value>>(fetchContext) {
             private lateinit var dataSource: DataSource<Key, Value>
