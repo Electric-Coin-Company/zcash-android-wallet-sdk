@@ -7,6 +7,7 @@
     <ID>ComplexMethod:SendFragment.kt$SendFragment$private fun onPendingTxUpdated(pendingTransaction: PendingTransaction?)</ID>
     <ID>ComplexMethod:Transactions.kt$ConfirmedTransaction$override fun equals(other: Any?): Boolean</ID>
     <ID>ComplexMethod:Transactions.kt$PendingTransactionEntity$override fun equals(other: Any?): Boolean</ID>
+    <ID>DestructuringDeclarationWithTooManyEntries:TestnetIntegrationTest.kt$TestnetIntegrationTest$val (height, hash, time, tree) = runBlocking { CheckpointTool.loadNearest( context, synchronizer.network, saplingActivation + 1 ) }</ID>
     <ID>EmptyCatchBlock:SdkSynchronizer.kt$SdkSynchronizer${ }</ID>
     <ID>EmptyFunctionBlock:MainActivity.kt$MainActivity${ }</ID>
     <ID>EmptyFunctionBlock:Placeholders.kt$SampleSpendingKeyProvider${ }</ID>
@@ -48,11 +49,9 @@
     <ID>ImplicitDefaultLocale:BlockExt.kt$String.format("%02x", b)</ID>
     <ID>ImplicitDefaultLocale:BlockExt.kt$String.format("%02x", this[i--])</ID>
     <ID>ImplicitDefaultLocale:Twig.kt$TroubleshootingTwig.Companion$String.format("$tag %1\$tD %1\$tI:%1\$tM:%1\$tS.%1\$tN", System.currentTimeMillis())</ID>
+    <ID>InvalidPackageDeclaration:OpenForTesting.kt$package cash.z.ecc.android.sdk.annotation</ID>
     <ID>LargeClass:CompactBlockProcessor.kt$CompactBlockProcessor</ID>
     <ID>LongMethod:SdkSynchronizer.kt$SdkSynchronizer$private suspend fun refreshPendingTransactions()</ID>
-    <ID>LongParameterList:Initializer.kt$Initializer$( val context: Context, internal val rustBackend: RustBackend, val network: ZcashNetwork, val alias: String, val host: String, val port: Int, val viewingKeys: List&lt;UnifiedViewingKey>, val overwriteVks: Boolean, internal val checkpoint: Checkpoint )</ID>
-    <ID>LongParameterList:Initializer.kt$Initializer.Config$( seed: ByteArray, birthday: BlockHeight?, network: ZcashNetwork, host: String = network.defaultHost, port: Int = network.defaultPort, alias: String = ZcashSdk.DEFAULT_ALIAS )</ID>
-    <ID>LongParameterList:Initializer.kt$Initializer.Config$( viewingKey: UnifiedViewingKey, birthday: BlockHeight?, network: ZcashNetwork, host: String = network.defaultHost, port: Int = network.defaultPort, alias: String = ZcashSdk.DEFAULT_ALIAS )</ID>
     <ID>LongParameterList:PagedTransactionRepository.kt$PagedTransactionRepository.Companion$( appContext: Context, zcashNetwork: ZcashNetwork, pageSize: Int = 10, rustBackend: RustBackend, birthday: Checkpoint, viewingKeys: List&lt;UnifiedViewingKey>, overwriteVks: Boolean = false )</ID>
     <ID>LongParameterList:RustBackend.kt$RustBackend.Companion$( dbDataPath: String, account: Int, extsk: String, tsk: String, memo: ByteArray, spendParamsPath: String, outputParamsPath: String, networkId: Int )</ID>
     <ID>LongParameterList:RustBackend.kt$RustBackend.Companion$( dbDataPath: String, consensusBranchId: Long, account: Int, extsk: String, to: String, value: Long, memo: ByteArray, spendParamsPath: String, outputParamsPath: String, networkId: Int )</ID>
@@ -85,7 +84,6 @@
     <ID>MagicNumber:DemoConstants.kt$DemoConstants$0.000018</ID>
     <ID>MagicNumber:DemoConstants.kt$DemoConstants$0.00017</ID>
     <ID>MagicNumber:DemoConstants.kt$DemoConstants$1075590</ID>
-    <ID>MagicNumber:DemoConstants.kt$DemoConstants$968085</ID>
     <ID>MagicNumber:DerivedDataDb.kt$DerivedDataDb.Companion.&lt;no name provided>$3</ID>
     <ID>MagicNumber:DerivedDataDb.kt$DerivedDataDb.Companion.&lt;no name provided>$4</ID>
     <ID>MagicNumber:DerivedDataDb.kt$DerivedDataDb.Companion.&lt;no name provided>$5</ID>
@@ -116,10 +114,6 @@
     <ID>MagicNumber:UtxoViewHolder.kt$UtxoViewHolder$1000L</ID>
     <ID>MagicNumber:WalletService.kt$1000L</ID>
     <ID>MagicNumber:WalletService.kt$4.0</ID>
-    <ID>MagicNumber:ZcashNetwork.kt$ZcashNetwork.Mainnet$419_200</ID>
-    <ID>MagicNumber:ZcashNetwork.kt$ZcashNetwork.Mainnet$9067</ID>
-    <ID>MagicNumber:ZcashNetwork.kt$ZcashNetwork.Testnet$280_000</ID>
-    <ID>MagicNumber:ZcashNetwork.kt$ZcashNetwork.Testnet$9067</ID>
     <ID>MagicNumber:ZcashSdk.kt$ZcashSdk$10</ID>
     <ID>MagicNumber:ZcashSdk.kt$ZcashSdk$100</ID>
     <ID>MagicNumber:ZcashSdk.kt$ZcashSdk$150</ID>
@@ -130,16 +124,16 @@
     <ID>MagicNumber:ZcashSdk.kt$ZcashSdk$512</ID>
     <ID>MagicNumber:ZcashSdk.kt$ZcashSdk$600_000L</ID>
     <ID>MagicNumber:ZcashSdk.kt$ZcashSdk$75_000L</ID>
-    <ID>MagicNumber:build.gradle.kts$16</ID>
-    <ID>MagicNumber:build.gradle.kts$21</ID>
     <ID>MatchingDeclarationName:CurrencyFormatter.kt$Conversions</ID>
     <ID>MaxLineLength:BatchMetrics.kt$BatchMetrics$class</ID>
     <ID>MaxLineLength:BlockHeight.kt$BlockHeight.Companion$*</ID>
     <ID>MaxLineLength:BranchIdTest.kt$BranchIdTest$assertEquals("Invalid branch ID for $networkName at height $height on ${rustBackend.network.networkName}", branchId, actual)</ID>
     <ID>MaxLineLength:BranchIdTest.kt$BranchIdTest$assertEquals("Invalid branch Id Hex value for $networkName at height $height on ${rustBackend.network.networkName}", branchHex, clientBranch)</ID>
+    <ID>MaxLineLength:BranchIdTest.kt$BranchIdTest.Companion$val mainnetBackend = runBlocking { RustBackend.init("", "", "", ZcashNetwork.Mainnet, ZcashNetwork.Mainnet.saplingActivationHeight) }</ID>
+    <ID>MaxLineLength:BranchIdTest.kt$BranchIdTest.Companion$val testnetBackend = runBlocking { RustBackend.init("", "", "", ZcashNetwork.Testnet, ZcashNetwork.Testnet.saplingActivationHeight) }</ID>
     <ID>MaxLineLength:ChangeServiceTest.kt$ChangeServiceTest$"Exception was of the wrong type. Expected ${ChainInfoNotMatching::class.simpleName} but was ${caughtException!!::class.simpleName}"</ID>
+    <ID>MaxLineLength:ChangeServiceTest.kt$ChangeServiceTest$downloader</ID>
     <ID>MaxLineLength:CheckpointTool.kt$CheckpointTool$* @param treeFiles A list of files, sorted in descending order based on `int` value of the first part of the filename.</ID>
-    <ID>MaxLineLength:CompactBlockDbStore.kt$CompactBlockDbStore$override suspend fun getLatestHeight(): BlockHeight</ID>
     <ID>MaxLineLength:CompactBlockProcessor.kt$CompactBlockProcessor$"ERROR: unable to resolve reorg at height $result after ${consecutiveChainErrors.get()} correction attempts!"</ID>
     <ID>MaxLineLength:CompactBlockProcessor.kt$CompactBlockProcessor$(lastScannedHeight.value - range.start.value) / (range.endInclusive.value - range.start.value + 1).toFloat() * 100.0f</ID>
     <ID>MaxLineLength:CompactBlockProcessor.kt$CompactBlockProcessor$// Note: blocks are public information so it's okay to print them but, still, let's not unless we're debugging something</ID>
@@ -149,7 +143,6 @@
     <ID>MaxLineLength:CompactBlockProcessor.kt$CompactBlockProcessor$// sometimes the initial block was inserted via checkpoint and will not appear in the cache. We can get the hash another way but prevHash is correctly null.</ID>
     <ID>MaxLineLength:CompactBlockProcessor.kt$CompactBlockProcessor$currentInfo.lastDownloadRange?.isEmpty() ?: true &amp;&amp; currentInfo.lastScanRange?.isEmpty() ?: true</ID>
     <ID>MaxLineLength:CompactBlockProcessor.kt$CompactBlockProcessor$if</ID>
-    <ID>MaxLineLength:CompactBlockProcessor.kt$CompactBlockProcessor$lastDownloadRange</ID>
     <ID>MaxLineLength:CompactBlockProcessor.kt$CompactBlockProcessor$lastScanRange</ID>
     <ID>MaxLineLength:CompactBlockProcessor.kt$CompactBlockProcessor$lowerBoundHeight + MAX_REORG_SIZE + 2</ID>
     <ID>MaxLineLength:CompactBlockProcessor.kt$CompactBlockProcessor$tempOldestTransactionHeight.value - tempOldestTransactionHeight.value.rem(ZcashSdk.MAX_REORG_SIZE) - ZcashSdk.MAX_REORG_SIZE.toLong()</ID>
@@ -169,7 +162,8 @@
     <ID>MaxLineLength:CompactBlockProcessor.kt$CompactBlockProcessor$twig("not rewinding dataDb because the last scanned height is $lastScannedHeight and the last local block is $lastLocalBlock both of which are less than the target height of $targetHeight")</ID>
     <ID>MaxLineLength:CompactBlockProcessor.kt$CompactBlockProcessor$twig("validation failed at block ${errorInfo.errorHeight} which had hash ${errorInfo.actualPrevHash} but the expected hash was ${errorInfo.expectedPrevHash}")</ID>
     <ID>MaxLineLength:ConsensusBranchId.kt$ConsensusBranchId.SPROUT$// TODO: see if we can find a way to not rely on this separate source of truth (either stop converting from hex to display name in the apps or use Rust to get this info)</ID>
-    <ID>MaxLineLength:DarksideApi.kt$DarksideApi$onNext(it.newBuilderForType().setData(it.data).setHeight(tipHeight.toLong()).build())</ID>
+    <ID>MaxLineLength:DarksideApi.kt$DarksideApi$Darkside.DarksideEmptyBlocks.newBuilder().setHeight(startHeight.value).setCount(count).setNonce(nonce).build()</ID>
+    <ID>MaxLineLength:DarksideApi.kt$DarksideApi$onNext(it.newBuilderForType().setData(it.data).setHeight(tipHeight.value).build())</ID>
     <ID>MaxLineLength:DarksideApi.kt$DarksideApi$twig("resetting darksidewalletd with saplingActivation=$saplingActivationHeight branchId=$branchId chainName=$chainName")</ID>
     <ID>MaxLineLength:DarksideApi.kt$DarksideApi.EmptyResponse$if (error != null) throw RuntimeException("Server responded with an error: $error caused by ${error?.cause}")</ID>
     <ID>MaxLineLength:DarksideTestCoordinator.kt$DarksideTestCoordinator$if</ID>
@@ -238,13 +232,8 @@
     <ID>MaxLineLength:InitializerTest.kt$InitializerTest$// assertEquals("Height should equal sapling activation height when defaultToOldestHeight is true", ZcashSdk.SAPLING_ACTIVATION_HEIGHT, initializer.birthday.height)</ID>
     <ID>MaxLineLength:InitializerTest.kt$InitializerTest$// assertEquals("Incorrect height used for import.", ZcashSdk.SAPLING_ACTIVATION_HEIGHT, initializer.birthday.height)</ID>
     <ID>MaxLineLength:InitializerTest.kt$InitializerTest$// assertNotEquals("Height should not equal sapling activation height when defaultToOldestHeight is false", ZcashSdk.SAPLING_ACTIVATION_HEIGHT, h)</ID>
-    <ID>MaxLineLength:LightWalletGrpcService.kt$LightWalletGrpcService$twig("getting channel isShutdown: ${channel.isShutdown} isTerminated: ${channel.isTerminated} getState: $state stateCount: $stateCount", -1)</ID>
     <ID>MaxLineLength:LightWalletService.kt$LightWalletService$fun</ID>
-    <ID>MaxLineLength:ListUtxosFragment.kt$ListUtxosFragment$binding.inputAddress.setText(DerivationTool.deriveTransparentAddress(seed, ZcashNetwork.fromResources(requireApplicationContext())))</ID>
     <ID>MaxLineLength:ListUtxosFragment.kt$ListUtxosFragment$binding.inputRangeStart.setText(ZcashNetwork.fromResources(requireApplicationContext()).saplingActivationHeight.toString())</ID>
-    <ID>MaxLineLength:ListUtxosFragment.kt$ListUtxosFragment$val endToUse = binding.inputRangeEnd.text.toString().toLongOrNull() ?: DemoConstants.getUxtoEndHeight(requireApplicationContext()).value</ID>
-    <ID>MaxLineLength:ListUtxosFragment.kt$ListUtxosFragment$val startToUse = max(binding.inputRangeStart.text.toString().toLongOrNull() ?: network.saplingActivationHeight.value, network.saplingActivationHeight.value)</ID>
-    <ID>MaxLineLength:ListUtxosFragment.kt$ListUtxosFragment$val txids = lightwalletService?.getTAddressTransactions(addressToUse, BlockHeight.new(network, startToUse)..BlockHeight.new(network, endToUse))</ID>
     <ID>MaxLineLength:MaintainedTest.kt$TestPurpose.DARKSIDE$* These tests require a running instance of [darksidewalletd](https://github.com/zcash/lightwalletd/blob/master/docs/darksidewalletd.md).</ID>
     <ID>MaxLineLength:MultiAccountIntegrationTest.kt$// private val secondKey = "zxviews1q0w208wwqqqqpqyxp978kt2qgq5gcyx4er907zhczxpepnnhqn0a47ztefjnk65w2573v7g5fd3hhskrg7srpxazfvrj4n2gm4tphvr74a9xnenpaxy645dmuqkevkjtkf5jld2f7saqs3xyunwquhksjpqwl4zx8zj73m8gk2d5d30pck67v5hua8u3chwtxyetmzjya8jdjtyn2aum7au0agftfh5q9m4g596tev9k365s84jq8n3laa5f4palt330dq0yede053sdyfv6l"</ID>
     <ID>MaxLineLength:MultiAccountTest.kt$// private const val blocksUrl = "https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/basic-reorg/before-reorg.txt"</ID>
@@ -286,9 +275,8 @@
     <ID>MaxLineLength:RustBackend.kt$RustBackend$// override fun parseTransactionDataList(tdl: LocalRpcTypes.TransactionDataList): LocalRpcTypes.TransparentTransactionList {</ID>
     <ID>MaxLineLength:RustBackend.kt$RustBackend$throw NotImplementedError("TODO: implement this at the zcash_client_sqlite level. But for now, use DerivationTool, instead to derive addresses from seeds")</ID>
     <ID>MaxLineLength:RustBackendWelding.kt$RustBackendWelding$suspend fun clearUtxos(tAddress: String, aboveHeightInclusive: BlockHeight = BlockHeight(network.saplingActivationHeight.value)): Boolean</ID>
-    <ID>MaxLineLength:SanityTest.kt$SanityTest$"$info\n ${wallet.networkName} Lightwalletd is too far behind. Downloader height $downloaderHeight is more than 10 blocks behind block explorer height $expectedHeight"</ID>
-    <ID>MaxLineLength:SanityTest.kt$SanityTest$"is using plaintext. This will cause problems for the test. Ensure that the `lightwalletd_allow_very_insecure_connections` resource value is false"</ID>
-    <ID>MaxLineLength:SanityTest.kt$SanityTest$assertTrue("$networkName failed to return a proper block. Height was ${block.height} but we expected $height", block.height.toInt() == height)</ID>
+    <ID>MaxLineLength:SanityTest.kt$SanityTest$"${wallet.endpoint} ${wallet.networkName} Lightwalletd is too far behind. Downloader height $downloaderHeight is more than 10 blocks behind block explorer height $expectedHeight"</ID>
+    <ID>MaxLineLength:SanityTest.kt$SanityTest$assertTrue("$networkName failed to return a proper block. Height was ${block.height} but we expected $height", block.height == height.value)</ID>
     <ID>MaxLineLength:SanityTest.kt$SanityTest.Companion$"zxviews1q0hxkupsqqqqpqzsffgrk2smjuccedua7zswf5e3rgtv3ga9nhvhjug670egshd6me53r5n083s2m9mf4va4z7t39ltd3wr7hawnjcw09eu85q0ammsg0tsgx24p4ma0uvr4p8ltx5laum2slh2whc23ctwlnxme9w4dw92kalwk5u4wyem8dynknvvqvs68ktvm8qh7nx9zg22xfc77acv8hk3qqll9k3x4v2fa26puu2939ea7hy4hh60ywma69xtqhcy4037ne8g2sg8sq"</ID>
     <ID>MaxLineLength:SanityTest.kt$SanityTest.Companion$"zxviewtestsapling1qv0ue89kqqqqpqqyt4cl5wvssx4wqq30e5m948p07dnwl9x3u75vvnzvjwwpjkrf8yk2gva0kkxk9p8suj4xawlzw9pajuxgap83wykvsuyzfrm33a2p2m4jz2205kgzx0l2lj2kyegtnuph6crkyvyjqmfxut84nu00wxgrstu5fy3eu49nzl8jzr4chmql4ysgg2t8htn9dtvxy8c7wx9rvcerqsjqm6lqln9syk3g8rr3xpy3l4nj0kawenzpcdtnv9qmy98vdhqzaf063"</ID>
     <ID>MaxLineLength:SdkSynchronizer.kt$DefaultSynchronizerFactory$// TODO [#242]: Don't hard code page size. It is a workaround for Uncaught Exception: android.view.ViewRootImpl$CalledFromWrongThreadException: Only the original thread that created a view hierarchy can touch its views. and is probably related to FlowPagedList</ID>
@@ -300,7 +288,6 @@
     <ID>MaxLineLength:SetupTest.kt$SetupTest$val phrase = "still champion voice habit trend flight survey between bitter process artefact blind carbon truly provide dizzy crush flush breeze blouse charge solid fish spread"</ID>
     <ID>MaxLineLength:SetupTest.kt$SetupTest.Companion$private const val blocksUrl = "https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/basic-reorg/before-reorg.txt"</ID>
     <ID>MaxLineLength:ShieldFundsSample.kt$ShieldFundsSample$val SEED_PHRASE = "still champion voice habit trend flight survey between bitter process artefact blind carbon truly provide dizzy crush flush breeze blouse charge solid fish spread" // \"//\"deputy visa gentle among clean scout farm drive comfort patch skin salt ranch cool ramp warrior drink narrow normal lunch behind salt deal person"//"deputy visa gentle among clean scout farm drive comfort patch skin salt ranch cool ramp warrior drink narrow normal lunch behind salt deal person"</ID>
-    <ID>MaxLineLength:SmokeTest.kt$SmokeTest$"Wallet is using plaintext. This will cause problems for the test. Ensure that the `lightwalletd_allow_very_insecure_connections` resource value is false"</ID>
     <ID>MaxLineLength:SmokeTest.kt$SmokeTest$Assert.assertEquals("Invalid CacheDB file", "/data/user/0/cash.z.ecc.android.sdk.test/databases/TestWallet_testnet_Cache.db", wallet.initializer.rustBackend.pathCacheDb)</ID>
     <ID>MaxLineLength:SmokeTest.kt$SmokeTest$Assert.assertEquals("Invalid CacheDB params dir", "/data/user/0/cash.z.ecc.android.sdk.test/cache/params", wallet.initializer.rustBackend.pathParamsDir)</ID>
     <ID>MaxLineLength:SmokeTest.kt$SmokeTest$Assert.assertEquals("Invalid DataDB file", "/data/user/0/cash.z.ecc.android.sdk.test/databases/TestWallet_testnet_Data.db", wallet.initializer.rustBackend.pathDataDb)</ID>
@@ -326,19 +313,19 @@
     <ID>MaxLineLength:TestExtensions.kt$Transactions$"https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/transactions/sent/ff6ea36765dc29793775c7aa71de19fca039c5b5b873a0497866e9c4bc48af01.txt"</ID>
     <ID>MaxLineLength:TestExtensions.kt$Transactions$"https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/transactions/t-shielded-spend.txt"</ID>
     <ID>MaxLineLength:TestWallet.kt$TestWallet$suspend</ID>
-    <ID>MaxLineLength:TestWallet.kt$TestWallet.Backups$ALICE : Backups</ID>
-    <ID>MaxLineLength:TestWallet.kt$TestWallet.Backups$DEV_WALLET : Backups</ID>
-    <ID>MaxLineLength:TestWallet.kt$TestWallet.Backups$SAMPLE_WALLET : Backups</ID>
-    <ID>MaxLineLength:TestWallet.kt$TestWallet.Backups.BOB$BOB</ID>
-    <ID>MaxLineLength:TestWallet.kt$TestWallet.Backups.DEFAULT$DEFAULT</ID>
+    <ID>MaxLineLength:TestWallet.kt$TestWallet.Backups.ALICE$"quantum whisper lion route fury lunar pelican image job client hundred sauce chimney barely life cliff spirit admit weekend message recipe trumpet impact kitten"</ID>
+    <ID>MaxLineLength:TestWallet.kt$TestWallet.Backups.BOB$"canvas wine sugar acquire garment spy tongue odor hole cage year habit bullet make label human unit option top calm neutral try vocal arena"</ID>
+    <ID>MaxLineLength:TestWallet.kt$TestWallet.Backups.DEFAULT$"column rhythm acoustic gym cost fit keen maze fence seed mail medal shrimp tell relief clip cannon foster soldier shallow refuse lunar parrot banana"</ID>
+    <ID>MaxLineLength:TestWallet.kt$TestWallet.Backups.DEV_WALLET$"still champion voice habit trend flight survey between bitter process artefact blind carbon truly provide dizzy crush flush breeze blouse charge solid fish spread"</ID>
+    <ID>MaxLineLength:TestWallet.kt$TestWallet.Backups.SAMPLE_WALLET$"input frown warm senior anxiety abuse yard prefer churn reject people glimpse govern glory crumble swallow verb laptop switch trophy inform friend permit purpose"</ID>
     <ID>MaxLineLength:TestnetIntegrationTest.kt$TestnetIntegrationTest.Companion$private const val seedPhrase = "still champion voice habit trend flight survey between bitter process artefact blind carbon truly provide dizzy crush flush breeze blouse charge solid fish spread"</ID>
+    <ID>MaxLineLength:TestnetIntegrationTest.kt$TestnetIntegrationTest.Companion$runBlocking { config.importWallet(seed, BlockHeight.new(ZcashNetwork.Testnet, birthdayHeight), ZcashNetwork.Testnet, lightWalletEndpoint) }</ID>
     <ID>MaxLineLength:TransactionViewHolder.kt$TransactionViewHolder$icon.setColorFilter(ContextCompat.getColor(itemView.context, if (isInbound) R.color.tx_inbound else R.color.tx_outbound))</ID>
     <ID>MaxLineLength:Transactions.kt$if (latestHeight == null || latestHeight.value &lt; saplingActivationHeight.value || expiryHeight &lt; saplingActivationHeight.value) return false</ID>
     <ID>MaxLineLength:TransparentRestoreSample.kt$TransparentRestoreSample$// Assert.assertTrue("Not enough funds to run sample. Expected at least $TX_VALUE Zatoshi but found $value. Try adding funds to $address", value >= TX_VALUE)</ID>
     <ID>MaxLineLength:TransparentRestoreSample.kt$TransparentRestoreSample$// twig("FOUND utxo balance of total: ${walletBalance.totalZatoshi} available: ${walletBalance.availableZatoshi}")</ID>
     <ID>MaxLineLength:TransparentRestoreSample.kt$TransparentRestoreSample$// walletA.send(TX_VALUE, walletA.transparentAddress, "${TransparentRestoreSample::class.java.simpleName} z->t")</ID>
     <ID>MaxLineLength:TransparentRestoreSample.kt$TransparentRestoreSample$Assert.assertTrue("Not enough funds to run sample. Expected some Zatoshi but found ${tbalance.available}. Try adding funds to $address", tbalance.available.value > 0)</ID>
-    <ID>MaxLineLength:TransparentRestoreSample.kt$TransparentRestoreSample$val walletSandbox = TestWallet(TestWallet.Backups.SAMPLE_WALLET.seedPhrase, "WalletC", Testnet, startHeight = 1330190)</ID>
     <ID>MaxLineLength:TransparentTest.kt$TransparentTest$assertEquals(expected.tAddr, DerivationTool.deriveTransparentAddressFromPublicKey(uvk.extpub, network = network))</ID>
     <ID>MaxLineLength:TransparentTest.kt$TransparentTest.Companion$const val PHRASE = "deputy visa gentle among clean scout farm drive comfort patch skin salt ranch cool ramp warrior drink narrow normal lunch behind salt deal person"</ID>
     <ID>MaxLineLength:TransparentTest.kt$TransparentTest.Companion.ExpectedTestnet$override val zAddr = "ztestsapling1wn3tw9w5rs55x5yl586gtk72e8hcfdq8zsnjzcu8p7ghm8lrx54axc74mvm335q7lmy3g0sqje6"</ID>
@@ -361,7 +348,6 @@
     <ID>MayBeConst:ZcashSdk.kt$ZcashSdk$/** * Default amount of time, in milliseconds, to poll for new blocks. Typically, this should be about half the average * block time. */ val POLL_INTERVAL = 20_000L</ID>
     <ID>MayBeConst:ZcashSdk.kt$ZcashSdk$/** * Default attempts at retrying. */ val RETRIES = 5</ID>
     <ID>MayBeConst:ZcashSdk.kt$ZcashSdk$/** * Default number of blocks to rewind when a chain reorg is detected. This should be large enough to recover from the * reorg but smaller than the theoretical max reorg size of 100. */ val REWIND_DISTANCE = 10</ID>
-    <ID>MayBeConst:ZcashSdk.kt$ZcashSdk$/** * Default size of batches of blocks to request from the compact block service. */ val DOWNLOAD_BATCH_SIZE = 100</ID>
     <ID>MayBeConst:ZcashSdk.kt$ZcashSdk$/** * Default size of batches of blocks to scan via librustzcash. The smaller this number the more granular information * can be provided about scan state. Unfortunately, it may also lead to a lot of overhead during scanning. */ val SCAN_BATCH_SIZE = 150</ID>
     <ID>MayBeConst:ZcashSdk.kt$ZcashSdk$/** * Estimate of the time between blocks. */ val BLOCK_INTERVAL_MILLIS = 75_000L</ID>
     <ID>MayBeConst:ZcashSdk.kt$ZcashSdk$/** * File name for the sapling output params */ val OUTPUT_PARAM_FILE_NAME = "sapling-output.params"</ID>
@@ -377,7 +363,7 @@
     <ID>MayBeConst:ZcashSdk.kt$ZcashSdk$val DEFAULT_ALIAS: String = "ZcashSdk"</ID>
     <ID>PrintStackTrace:CompactBlockProcessor.kt$CompactBlockProcessor$t</ID>
     <ID>PrintStackTrace:PersistentTransactionManager.kt$PersistentTransactionManager$t</ID>
-    <ID>ReturnCount:CurrencyFormatter.kt$ inline fun String?.safelyConvertToBigDecimal(): BigDecimal?</ID>
+    <ID>ReturnCount:CurrencyFormatter.kt$inline fun String?.safelyConvertToBigDecimal(): BigDecimal?</ID>
     <ID>ReturnCount:MainActivity.kt$MainActivity$fun getClipboardText(): String?</ID>
     <ID>SpreadOperator:Initializer.kt$Initializer.Config$( *DerivationTool.deriveUnifiedViewingKeys( seed, network, numberOfAccounts ) )</ID>
     <ID>SpreadOperator:PagedTransactionRepository.kt$PagedTransactionRepository.Companion$(*viewingKeys.toTypedArray())</ID>
@@ -415,7 +401,6 @@
     <ID>TooManyFunctions:HomeFragment.kt$HomeFragment : BaseDemoFragment</ID>
     <ID>TooManyFunctions:Initializer.kt$Initializer$Companion : Erasable</ID>
     <ID>TooManyFunctions:Initializer.kt$Initializer$Config</ID>
-    <ID>TooManyFunctions:LightWalletGrpcService.kt$LightWalletGrpcService : LightWalletService</ID>
     <ID>TooManyFunctions:ListTransactionsFragment.kt$ListTransactionsFragment : BaseDemoFragment</ID>
     <ID>TooManyFunctions:ListUtxosFragment.kt$ListUtxosFragment : BaseDemoFragment</ID>
     <ID>TooManyFunctions:MainActivity.kt$MainActivity : AppCompatActivityOnPrimaryClipChangedListenerDrawerListener</ID>
@@ -467,8 +452,13 @@
     <ID>UnusedPrivateMember:SetupTest.kt$SetupTest.Companion$private const val lastBlockHash = "2fc7b4682f5ba6ba6f86e170b40f0aa9302e1d3becb2a6ee0db611ff87835e4a"</ID>
     <ID>UnusedPrivateMember:TestnetIntegrationTest.kt$TestnetIntegrationTest.Companion$private const val seedPhrase = "still champion voice habit trend flight survey between bitter process artefact blind carbon truly provide dizzy crush flush breeze blouse charge solid fish spread"</ID>
     <ID>UnusedPrivateMember:TestnetIntegrationTest.kt$TestnetIntegrationTest.Companion$private const val targetHeight = 663250</ID>
+    <ID>UnusedPrivateMember:TransactionCounterUtil.kt$TransactionCounterUtil$private val network = ZcashNetwork.Mainnet</ID>
+    <ID>UseCheckOrError:FlowPagedListBuilder.kt$FlowPagedListBuilder$throw IllegalStateException("Unable to create executor based on dispatcher: $this")</ID>
+    <ID>UseCheckOrError:Placeholders.kt$SampleSpendingKeyProvider$throw IllegalStateException("This sample provider only supports the dummy seed")</ID>
     <ID>UtilityClassWithPublicConstructor:DerivationTool.kt$DerivationTool</ID>
     <ID>UtilityClassWithPublicConstructor:Placeholders.kt$SeedGenerator</ID>
     <ID>UtilityClassWithPublicConstructor:SaplingParamTool.kt$SaplingParamTool</ID>
+    <ID>VariableNaming:ShieldFundsSample.kt$ShieldFundsSample$val SEED_PHRASE = "still champion voice habit trend flight survey between bitter process artefact blind carbon truly provide dizzy crush flush breeze blouse charge solid fish spread" // \"//\"deputy visa gentle among clean scout farm drive comfort patch skin salt ranch cool ramp warrior drink narrow normal lunch behind salt deal person"//"deputy visa gentle among clean scout farm drive comfort patch skin salt ranch cool ramp warrior drink narrow normal lunch behind salt deal person"</ID>
+    <ID>VariableNaming:TransparentRestoreSample.kt$TransparentRestoreSample$val TX_VALUE = Zatoshi(ZcashSdk.MINERS_FEE.value / 2)</ID>
   </CurrentIssues>
 </SmellBaseline>
