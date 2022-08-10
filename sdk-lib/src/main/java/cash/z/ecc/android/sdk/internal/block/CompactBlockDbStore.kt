@@ -2,7 +2,7 @@ package cash.z.ecc.android.sdk.internal.block
 
 import android.content.Context
 import androidx.room.RoomDatabase
-import cash.z.ecc.android.sdk.db.databaseBuilderNoBackupContext
+import cash.z.ecc.android.sdk.db.commonDatabaseBuilder
 import cash.z.ecc.android.sdk.db.entity.CompactBlockEntity
 import cash.z.ecc.android.sdk.internal.SdkDispatchers
 import cash.z.ecc.android.sdk.internal.SdkExecutors
@@ -62,7 +62,7 @@ class CompactBlockDbStore private constructor(
             appContext: Context,
             databaseFile: File
         ): CompactBlockDb {
-            return databaseBuilderNoBackupContext(
+            return commonDatabaseBuilder(
                 appContext,
                 CompactBlockDb::class.java,
                 databaseFile

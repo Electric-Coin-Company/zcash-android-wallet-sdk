@@ -2,7 +2,7 @@ package cash.z.ecc.android.sdk.internal.transaction
 
 import android.content.Context
 import androidx.room.RoomDatabase
-import cash.z.ecc.android.sdk.db.databaseBuilderNoBackupContext
+import cash.z.ecc.android.sdk.db.commonDatabaseBuilder
 import cash.z.ecc.android.sdk.db.entity.PendingTransaction
 import cash.z.ecc.android.sdk.db.entity.PendingTransactionEntity
 import cash.z.ecc.android.sdk.db.entity.isCancelled
@@ -59,7 +59,7 @@ class PersistentTransactionManager(
         service: LightWalletService,
         databaseFile: File
     ) : this(
-        databaseBuilderNoBackupContext(
+        commonDatabaseBuilder(
             appContext,
             PendingTransactionDb::class.java,
             databaseFile

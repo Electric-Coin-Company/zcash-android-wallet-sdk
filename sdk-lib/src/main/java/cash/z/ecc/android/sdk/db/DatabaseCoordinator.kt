@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import cash.z.ecc.android.sdk.exception.InitializerException
+import cash.z.ecc.android.sdk.internal.AndroidApiVersion
 import cash.z.ecc.android.sdk.internal.Files
 import cash.z.ecc.android.sdk.internal.LazyWithArgument
 import cash.z.ecc.android.sdk.internal.NoBackupContextWrapper
@@ -356,7 +357,8 @@ internal class DatabaseCoordinator private constructor(context: Context) {
 
 /**
  * The purpose of this function is to provide Room.Builder via a static Room.databaseBuilder with
- * an injection of our NoBackupContextWrapper to override the behavior of getDatabasePath().
+ * an injection of our NoBackupContextWrapper to override the behavior of getDatabasePath() for
+ * Android SDK level 27 and higher and regular Context class for the Android SDK level 26 and lower.
  *
  * Note: ideally we'd make this extension function or override the Room.databaseBuilder function,
  * but it's not possible, as it's a static function on Room class, which does not allow its
@@ -367,17 +369,25 @@ internal class DatabaseCoordinator private constructor(context: Context) {
  * @param databaseFile  The database file.
  * @return A {@code RoomDatabaseBuilder<T>} which you can use to create the database.
  */
-internal fun <T : RoomDatabase?> databaseBuilderNoBackupContext(
+internal fun <T : RoomDatabase?> commonDatabaseBuilder(
     context: Context,
     klass: Class<T>,
     databaseFile: File
 ): RoomDatabase.Builder<T> {
-    return Room.databaseBuilder(
-        NoBackupContextWrapper(
+    return if (AndroidApiVersion.isAtLeastO_MR1) {
+        Room.databaseBuilder(
+            NoBackupContextWrapper(
+                context,
+                databaseFile.parentFile ?: throw InitializerException.DatabasePathException
+            ),
+            klass,
+            databaseFile.name
+        )
+    } else {
+        Room.databaseBuilder(
             context,
-            databaseFile.parentFile ?: throw InitializerException.DatabasePathException
-        ),
-        klass,
-        databaseFile.name
-    )
+            klass,
+            databaseFile.absolutePath
+        )
+    }
 }

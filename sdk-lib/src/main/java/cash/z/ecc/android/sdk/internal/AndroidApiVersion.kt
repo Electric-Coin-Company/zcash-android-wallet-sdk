@@ -27,6 +27,9 @@ internal object AndroidApiVersion {
     @ChecksSdkIntAtLeast(api = Build.VERSION_CODES.O)
     val isAtLeastO = isAtLeast(Build.VERSION_CODES.O)
 
+    @ChecksSdkIntAtLeast(api = Build.VERSION_CODES.O_MR1)
+    val isAtLeastO_MR1 = isAtLeast(Build.VERSION_CODES.O_MR1)
+
     @ChecksSdkIntAtLeast(api = Build.VERSION_CODES.P)
     val isAtLeastP = isAtLeast(Build.VERSION_CODES.P)
 
