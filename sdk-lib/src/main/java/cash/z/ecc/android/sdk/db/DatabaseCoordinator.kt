@@ -1,9 +1,11 @@
 package cash.z.ecc.android.sdk.db
 
 import android.content.Context
+import androidx.annotation.VisibleForTesting
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import cash.z.ecc.android.sdk.exception.InitializerException
+import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.internal.AndroidApiVersion
 import cash.z.ecc.android.sdk.internal.Files
 import cash.z.ecc.android.sdk.internal.LazyWithArgument
@@ -41,19 +43,23 @@ internal class DatabaseCoordinator private constructor(context: Context) {
     private val deleteFileMutex = Mutex()
 
     companion object {
-        const val DB_DATA_NAME_LEGACY = "Data.db" // $NON-NLS
+        @VisibleForTesting
+        internal const val DB_DATA_NAME_LEGACY = "Data.db" // $NON-NLS
         const val DB_DATA_NAME = "data.sqlite3" // $NON-NLS
 
-        const val DB_CACHE_NAME_LEGACY = "Cache.db" // $NON-NLS
+        @VisibleForTesting
+        internal const val DB_CACHE_NAME_LEGACY = "Cache.db" // $NON-NLS
         const val DB_CACHE_NAME = "cache.sqlite3" // $NON-NLS
 
-        const val DB_PENDING_TRANSACTIONS_NAME_LEGACY = "PendingTransactions.db" // $NON-NLS
+        @VisibleForTesting
+        internal const val DB_PENDING_TRANSACTIONS_NAME_LEGACY = "PendingTransactions.db" // $NON-NLS
         const val DB_PENDING_TRANSACTIONS_NAME = "pending_transactions.sqlite3" // $NON-NLS
 
         const val DATABASE_FILE_JOURNAL_SUFFIX = "journal" // $NON-NLS
         const val DATABASE_FILE_WAL_SUFFIX = "wal" // $NON-NLS
 
-        const val ALIAS_LEGACY = "ZcashSdk" // $NON-NLS
+        @VisibleForTesting
+        internal const val ALIAS_LEGACY = "ZcashSdk" // $NON-NLS
 
         private val lazy =
             LazyWithArgument<Context, DatabaseCoordinator> { DatabaseCoordinator(it) }
@@ -77,7 +83,6 @@ internal class DatabaseCoordinator private constructor(context: Context) {
         val dbLocationsPair = prepareDbFiles(
             applicationContext,
             network,
-            ALIAS_LEGACY,
             alias,
             DB_CACHE_NAME_LEGACY,
             DB_CACHE_NAME
@@ -107,7 +112,6 @@ internal class DatabaseCoordinator private constructor(context: Context) {
         val dbLocationsPair = prepareDbFiles(
             applicationContext,
             network,
-            ALIAS_LEGACY,
             alias,
             DB_DATA_NAME_LEGACY,
             DB_DATA_NAME
@@ -195,11 +199,19 @@ internal class DatabaseCoordinator private constructor(context: Context) {
     private suspend fun prepareDbFiles(
         appContext: Context,
         network: ZcashNetwork,
-        aliasLegacy: String,
         alias: String,
         databaseNameLegacy: String,
         databaseName: String
     ): Pair<File, File> {
+        // Here we change the alias to be lowercase and underscored only if we work with the default
+        // Zcash alias, otherwise we need to keep an SDK caller alias the same to avoid the database
+        // files move breakage.
+        val aliasLegacy = if (ZcashSdk.DEFAULT_ALIAS == alias) {
+            ALIAS_LEGACY
+        } else {
+            alias
+        }
+
         val legacyLocationDbFile = newDatabaseFilePointer(
             network,
             aliasLegacy,
