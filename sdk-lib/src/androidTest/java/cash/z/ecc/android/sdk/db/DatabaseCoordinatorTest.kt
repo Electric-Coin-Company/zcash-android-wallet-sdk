@@ -110,7 +110,7 @@ class DatabaseCoordinatorTest {
         val fileName = DatabaseNameFixture.newDb(name = DatabaseCoordinator.DB_PENDING_TRANSACTIONS_NAME)
         val expectedFilePath = File(directory, fileName).path
 
-        dbCoordinator.pendingTransactionsDbPath(
+        dbCoordinator.pendingTransactionsDbFile(
             DatabaseNameFixture.TEST_DB_NETWORK,
             DatabaseNameFixture.TEST_DB_ALIAS
         ).also { resultFile ->

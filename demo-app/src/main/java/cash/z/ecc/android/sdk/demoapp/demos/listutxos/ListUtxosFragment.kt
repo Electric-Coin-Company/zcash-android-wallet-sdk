@@ -75,7 +75,7 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
                         lightWalletEndpoint = LightWalletEndpoint.defaultForNetwork(network)
                     )
                 }
-                it.alias = "demo_utxos"
+                it.alias = "Demo_Utxos"
             }
         }
         synchronizer = runBlocking { Synchronizer.new(initializer) }

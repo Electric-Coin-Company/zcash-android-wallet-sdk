@@ -808,7 +808,7 @@ object DefaultSynchronizerFactory {
         encoder: TransactionEncoder,
         service: LightWalletService
     ): OutboundTransactionManager {
-        val databaseFile = DatabaseCoordinator.getInstance(initializer.context).pendingTransactionsDbPath(
+        val databaseFile = DatabaseCoordinator.getInstance(initializer.context).pendingTransactionsDbFile(
             initializer.network,
             initializer.alias
         )

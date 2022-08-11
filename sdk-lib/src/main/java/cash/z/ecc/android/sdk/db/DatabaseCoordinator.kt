@@ -62,11 +62,13 @@ internal class DatabaseCoordinator private constructor(context: Context) {
     }
 
     /**
-     * Returns the path to the Cache database that would correspond to the given alias
+     * Returns the file of the Cache database that would correspond to the given alias
      * and network attributes.
      *
      * @param network the network associated with the data in the cache database.
      * @param alias the alias to convert into a database path
+     *
+     * @return the Cache database file
      */
     internal suspend fun cacheDbFile(
         network: ZcashNetwork,
@@ -90,11 +92,13 @@ internal class DatabaseCoordinator private constructor(context: Context) {
     }
 
     /**
-     * Returns the path to the Data database that would correspond to the given alias
+     * Returns the file of the Data database that would correspond to the given alias
      * and network attributes.
      *
      * @param network the network associated with the data in the database.
      * @param alias the alias to convert into a database path
+     *
+     * @return the Data database file
      */
     internal suspend fun dataDbFile(
         network: ZcashNetwork,
@@ -118,15 +122,17 @@ internal class DatabaseCoordinator private constructor(context: Context) {
     }
 
     /**
-     * Returns the path to the PendingTransaction database that would correspond to the given
+     * Returns the file of the PendingTransaction database that would correspond to the given
      * alias and network attributes. As the originally created file was called just
      * PendingTransactions.db, we choose slightly different approach, but it also leads to
      * original database files migration with additional renaming too.
      *
      * @param network the network associated with the data in the database.
      * @param alias the alias to convert into a database path
+     *
+     * @return the PendingTransaction database file
      */
-    internal suspend fun pendingTransactionsDbPath(
+    internal suspend fun pendingTransactionsDbFile(
         network: ZcashNetwork,
         alias: String
     ): File {
