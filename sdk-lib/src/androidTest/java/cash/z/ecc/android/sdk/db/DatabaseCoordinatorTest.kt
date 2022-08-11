@@ -130,17 +130,26 @@ class DatabaseCoordinatorTest {
 
         val originalDbFile = getEmptyFile(
             parent = parentFile,
-            fileName = DatabaseNameFixture.newDb(name = DatabaseCoordinator.DB_CACHE_NAME_LEGACY)
+            fileName = DatabaseNameFixture.newDb(
+                name = DatabaseCoordinator.DB_CACHE_NAME_LEGACY,
+                alias = DatabaseCoordinator.ALIAS_LEGACY
+            )
         )
 
         val originalDbJournalFile = getEmptyFile(
             parent = parentFile,
-            fileName = DatabaseNameFixture.newDbJournal(name = DatabaseCoordinator.DB_CACHE_NAME_LEGACY)
+            fileName = DatabaseNameFixture.newDbJournal(
+                name = DatabaseCoordinator.DB_CACHE_NAME_LEGACY,
+                alias = DatabaseCoordinator.ALIAS_LEGACY
+            )
         )
 
         val originalDbWalFile = getEmptyFile(
             parent = parentFile,
-            fileName = DatabaseNameFixture.newDbWal(name = DatabaseCoordinator.DB_CACHE_NAME_LEGACY)
+            fileName = DatabaseNameFixture.newDbWal(
+                name = DatabaseCoordinator.DB_CACHE_NAME_LEGACY,
+                alias = DatabaseCoordinator.ALIAS_LEGACY
+            )
         )
 
         val expectedDbFile = File(
@@ -155,6 +164,14 @@ class DatabaseCoordinatorTest {
             DatabasePathFixture.new(),
             DatabaseNameFixture.newDbWal(name = DatabaseCoordinator.DB_CACHE_NAME)
         )
+
+        assertTrue(originalDbFile.exists())
+        assertTrue(originalDbJournalFile.exists())
+        assertTrue(originalDbWalFile.exists())
+
+        assertFalse(expectedDbFile.exists())
+        assertFalse(expectedDbJournalFile.exists())
+        assertFalse(expectedDbWalFile.exists())
 
         dbCoordinator.cacheDbFile(
             DatabaseNameFixture.TEST_DB_NETWORK,

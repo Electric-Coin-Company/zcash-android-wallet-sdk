@@ -53,6 +53,8 @@ internal class DatabaseCoordinator private constructor(context: Context) {
         const val DATABASE_FILE_JOURNAL_SUFFIX = "journal" // $NON-NLS
         const val DATABASE_FILE_WAL_SUFFIX = "wal" // $NON-NLS
 
+        const val ALIAS_LEGACY = "ZcashSdk" // $NON-NLS
+
         private val lazy =
             LazyWithArgument<Context, DatabaseCoordinator> { DatabaseCoordinator(it) }
 
@@ -73,6 +75,7 @@ internal class DatabaseCoordinator private constructor(context: Context) {
         val dbLocationsPair = prepareDbFiles(
             applicationContext,
             network,
+            ALIAS_LEGACY,
             alias,
             DB_CACHE_NAME_LEGACY,
             DB_CACHE_NAME
@@ -100,6 +103,7 @@ internal class DatabaseCoordinator private constructor(context: Context) {
         val dbLocationsPair = prepareDbFiles(
             applicationContext,
             network,
+            ALIAS_LEGACY,
             alias,
             DB_DATA_NAME_LEGACY,
             DB_DATA_NAME
@@ -185,13 +189,14 @@ internal class DatabaseCoordinator private constructor(context: Context) {
     private suspend fun prepareDbFiles(
         appContext: Context,
         network: ZcashNetwork,
+        aliasLegacy: String,
         alias: String,
         databaseNameLegacy: String,
         databaseName: String
     ): Pair<File, File> {
         val legacyLocationDbFile = newDatabaseFilePointer(
             network,
-            alias,
+            aliasLegacy,
             databaseNameLegacy,
             getDatabaseParentDir(appContext)
         )
