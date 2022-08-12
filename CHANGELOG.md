@@ -1,6 +1,10 @@
 Change Log
 ==========
 
+Version 1.9.0-beta03
+------------------------------------
+- No changes; this release is a test of a new deployment process
+
 Version 1.9.0-beta02
 ------------------------------------
 - The SDK now stores database files in `no_backup/co.electricoin.zcash` folder instead of the `database` folder. **No action required from client app**.
