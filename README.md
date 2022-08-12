@@ -44,8 +44,8 @@ There are also more comprehensive sample walletes:
 If you're building the SDK from source or modifying the SDK:
  * [Setup.md](docs/Setup.md) to configure building from source
  * [Architecture.md](docs/Architecture.md) to understand the high level architecture of the code
- * [CI.md](docs/ci.md) to understand the Continuous Integration build scripts
- * [Deployment.md](docs/Deployment.md) to understand our deployment process
+ * [CI.md](docs/CI.md) to understand the Continuous Integration build scripts
+ * [PUBLISHING.md](docs/PUBLISHING.md) to understand our deployment process
 
 Note that we aim for the main branch of this repository to be stable and releasable.  We continuously deploy snapshot builds after a merge to the main branch, then manually deploy release builds.  Our continuous deployment of snapshots implies two things:
  * A pull request containing API changes should also bump the version
