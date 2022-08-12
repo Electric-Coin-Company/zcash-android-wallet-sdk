@@ -1,15 +1,19 @@
 Change Log
 ==========
 
-Upcoming
+Version 1.9.0-beta02
+------------------------------------
+- The SDK now stores database files in `no_backup/co.electricoin.zcash` folder instead of the `database` folder. **No action required from client app**.
+
+Version 1.9.0-beta01
 ------------------------------------
  - Split `ZcashNetwork` into `ZcashNetwork` and `LightWalletEndpoint` to decouple network and server configuration
+ - Gradle 7.5.1
+ - Updated checkpoints
 
 Version 1.8.0-beta01
 ------------------------------------
 - Enabled automated unit tests run on the CI server 
-- The SDK now stores database files in `no_backup/co.electricoin.zcash` folder instead of the `database` folder. It moves all the SDK database files (rollback files included) to the preferred `no_backup` folder only once on the first client app run with the updated SDK. **No action required from client app**.
-- Gradle 7.5
 - Added `BlockHeight` typesafe object to represent block heights
 - Significantly reduced memory usage, fixing potential OutOfMemoryError during block download
 - Kotlin 1.7.10
