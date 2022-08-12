@@ -3,6 +3,7 @@ package cash.z.ecc.android.sdk.internal.ext
 import android.content.Context
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.core.content.ContextCompat
 import cash.z.ecc.android.sdk.internal.AndroidApiVersion
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -21,6 +22,9 @@ internal suspend fun Context.getCacheDirSuspend() =
 internal suspend fun Context.getFilesDirSuspend() =
     withContext(Dispatchers.IO) { filesDir }
 
+internal suspend fun Context.getDataDirCompatSuspend() =
+    withContext(Dispatchers.IO) { ContextCompat.getDataDir(this@getDataDirCompatSuspend) }
+
 private const val FAKE_NO_BACKUP_FOLDER = "no_backup" // $NON-NLS
 
 /**
@@ -30,7 +34,7 @@ internal suspend fun Context.getNoBackupFilesDirCompat(): File {
     val dir = if (AndroidApiVersion.isAtLeastL) {
         getNoBackupFilesDirSuspend()
     } else {
-        File(getFilesDirSuspend(), FAKE_NO_BACKUP_FOLDER)
+        File(getDataDirCompatSuspend(), FAKE_NO_BACKUP_FOLDER)
     }
 
     if (!dir.existsSuspend()) {
