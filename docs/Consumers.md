@@ -1,5 +1,5 @@
 # Configuring your build
-Add flavors for testnet v mainnet. Since `productFlavors` cannot start with the word 'test' we recommend:
+Add flavors for testnet and mainnet. Since `productFlavors` cannot start with the word 'test' we recommend:
 
 build.gradle
 ```groovy
@@ -73,7 +73,7 @@ implementation("cash.z.ecc.android:zcash-android-sdk:$LATEST_VERSION")
 ```
 
 # Using the SDK
-Start the [Synchronizer](docs/-synchronizer/README.md)
+Start the [Synchronizer](-synchronizer/README.md)
 
 ```kotlin
 synchronizer.start(this)
@@ -100,11 +100,11 @@ The [Synchronizer](-synchronizer/README.md) is the primary entrypoint for the SD
 1. Start the [Synchronizer](-synchronizer/README.md)
 2. Subscribe to wallet data
 
-The [Synchronizer](-synchronizer/README.md) takes care of
+The [Synchronizer](-synchronizer/README.md) takes care of:
 
-    - Connecting to the light wallet server
-    - Downloading the latest compact blocks in a privacy-sensitive way
-    - Scanning and trial decrypting those blocks for shielded transactions related to the wallet
-    - Processing those related transactions into useful data for the UI
-    - Sending payments to a full node through [lightwalletd](https://github.com/zcash/lightwalletd)
-    - Monitoring sent payments for status updates
+- Connecting to the light wallet server 
+- Downloading the latest compact blocks in a privacy-sensitive way
+- Scanning and trial decrypting those blocks for shielded transactions related to the wallet
+- Processing those related transactions into useful data for the UI
+- Sending payments to a full node through [lightwalletd](https://github.com/zcash/lightwalletd)
+- Monitoring sent payments for status updates
