@@ -1,26 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<issues format="5" by="lint 4.2.1" client="gradle" variant="all" version="4.2.1">
-
-    <issue
-        id="OldTargetApi"
-        message="Not targeting the latest versions of Android; compatibility modes apply. Consider testing and updating this version. Consult the android.os.Build.VERSION_CODES javadoc for details."
-        errorLine1="        targetSdkVersion 29"
-        errorLine2="        ~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="build.gradle"
-            line="13"
-            column="9"/>
-    </issue>
+<issues format="6" by="lint 7.2.2" type="baseline" client="gradle" dependencies="false" name="AGP (7.2.2)" variant="all" version="7.2.2">
 
     <issue
         id="UnusedAttribute"
-        message="Attribute `drawableTint` is only used in API level 23 and higher (current min is 21)"
+        message="Attribute `drawableTint` is only used in API level 23 and higher (current min is 19)"
         errorLine1="        android:drawableTint=&quot;@color/colorPrimary&quot;"
         errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/layout/fragment_home.xml"
             line="15"
             column="9"/>
+    </issue>
+
+    <issue
+        id="UnusedAttribute"
+        message="Attribute `elevation` is only used in API level 21 and higher (current min is 19)"
+        errorLine1="    android:elevation=&quot;1dp&quot;"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/item_transaction.xml"
+            line="9"
+            column="5"/>
     </issue>
 
     <issue
@@ -35,102 +35,146 @@
     </issue>
 
     <issue
-        id="GradleDependency"
-        message="A newer version of cash.z.ecc.android:kotlin-bip39 than 1.0.1 is available: 1.0.2"
-        errorLine1="    implementation &apos;cash.z.ecc.android:kotlin-bip39:1.0.1&apos;"
-        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        id="RedundantLabel"
+        message="Redundant label can be removed"
+        errorLine1="            android:label=&quot;@string/app_name&quot;"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="build.gradle"
-            line="61"
-            column="20"/>
+            file="src/main/AndroidManifest.xml"
+            line="16"
+            column="13"/>
     </issue>
 
     <issue
-        id="GradleDependency"
-        message="A newer version of androidx.core:core-ktx than 1.3.2 is available: 1.6.0"
-        errorLine1="    implementation &apos;androidx.core:core-ktx:1.3.2&apos;"
-        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        id="VectorDrawableCompat"
+        message="To use VectorDrawableCompat, you need to set `android.defaultConfig.vectorDrawables.useSupportLibrary = true` in `:demo-app/build.gradle`"
+        errorLine1="        app:srcCompat=&quot;@drawable/ic_floating_action&quot; />"
+        errorLine2="        ~~~~~~~~~~~~~">
         <location
-            file="build.gradle"
-            line="64"
-            column="20"/>
+            file="src/main/res/layout/app_bar_main.xml"
+            line="32"
+            column="9"/>
     </issue>
 
     <issue
-        id="GradleDependency"
-        message="A newer version of androidx.constraintlayout:constraintlayout than 2.0.4 is available: 2.1.0"
-        errorLine1="    implementation &apos;androidx.constraintlayout:constraintlayout:2.0.4&apos;"
-        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        id="VectorDrawableCompat"
+        message="To use VectorDrawableCompat, you need to set `android.defaultConfig.vectorDrawables.useSupportLibrary = true` in `:demo-app/build.gradle`"
+        errorLine1="        app:srcCompat=&quot;@drawable/ic_receive&quot;"
+        errorLine2="        ~~~~~~~~~~~~~">
         <location
-            file="build.gradle"
-            line="65"
-            column="20"/>
+            file="src/main/res/layout/item_transaction.xml"
+            line="21"
+            column="9"/>
     </issue>
 
     <issue
-        id="GradleDependency"
-        message="A newer version of androidx.navigation:navigation-fragment-ktx than 2.3.1 is available: 2.3.5"
-        errorLine1="    implementation &apos;androidx.navigation:navigation-fragment-ktx:2.3.1&apos;"
-        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        id="VectorRaster"
+        message="Resource references will not work correctly in images generated for this vector icon for API &lt; 21; check generated icon to make sure it looks acceptable"
+        errorLine1="    android:tint=&quot;?attr/colorControlNormal&quot;>"
+        errorLine2="                  ~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="build.gradle"
-            line="66"
-            column="20"/>
+            file="src/main/res/drawable/ic_baseline_check_24.xml"
+            line="6"
+            column="19"/>
     </issue>
 
     <issue
-        id="GradleDependency"
-        message="A newer version of androidx.navigation:navigation-ui-ktx than 2.3.1 is available: 2.3.5"
-        errorLine1="    implementation &apos;androidx.navigation:navigation-ui-ktx:2.3.1&apos;"
-        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        id="VectorRaster"
+        message="Resource references will not work correctly in images generated for this vector icon for API &lt; 21; check generated icon to make sure it looks acceptable"
+        errorLine1="      android:fillColor=&quot;@android:color/white&quot;"
+        errorLine2="                         ~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="build.gradle"
-            line="67"
-            column="20"/>
+            file="src/main/res/drawable/ic_baseline_check_24.xml"
+            line="8"
+            column="26"/>
     </issue>
 
     <issue
-        id="GradleDependency"
-        message="A newer version of com.google.android.material:material than 1.3.0-alpha03 is available: 1.5.0-alpha02"
-        errorLine1="    implementation &quot;com.google.android.material:material:1.3.0-alpha03&quot;"
-        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        id="VectorRaster"
+        message="Resource references will not work correctly in images generated for this vector icon for API &lt; 21; check generated icon to make sure it looks acceptable"
+        errorLine1="    android:tint=&quot;?attr/colorControlNormal&quot;>"
+        errorLine2="                  ~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="build.gradle"
-            line="68"
-            column="20"/>
+            file="src/main/res/drawable/ic_baseline_close_24.xml"
+            line="6"
+            column="19"/>
     </issue>
 
     <issue
-        id="GradleDependency"
-        message="A newer version of junit:junit than 4.13 is available: 4.13.2"
-        errorLine1="    testImplementation &apos;junit:junit:4.13&apos;"
-        errorLine2="                       ~~~~~~~~~~~~~~~~~~">
+        id="VectorRaster"
+        message="Resource references will not work correctly in images generated for this vector icon for API &lt; 21; check generated icon to make sure it looks acceptable"
+        errorLine1="      android:fillColor=&quot;@android:color/white&quot;"
+        errorLine2="                         ~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="build.gradle"
-            line="69"
-            column="24"/>
+            file="src/main/res/drawable/ic_baseline_close_24.xml"
+            line="8"
+            column="26"/>
     </issue>
 
     <issue
-        id="GradleDependency"
-        message="A newer version of androidx.test.ext:junit than 1.1.2 is available: 1.1.3"
-        errorLine1="    androidTestImplementation &apos;androidx.test.ext:junit:1.1.2&apos;"
-        errorLine2="                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        id="VectorRaster"
+        message="Resource references will not work correctly in images generated for this vector icon for API &lt; 21; check generated icon to make sure it looks acceptable"
+        errorLine1="    android:tint=&quot;?attr/colorControlNormal&quot;>"
+        errorLine2="                  ~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="build.gradle"
-            line="70"
-            column="31"/>
+            file="src/main/res/drawable/ic_baseline_edit_24.xml"
+            line="6"
+            column="19"/>
     </issue>
 
     <issue
-        id="GradleDependency"
-        message="A newer version of androidx.test.espresso:espresso-core than 3.3.0 is available: 3.4.0"
-        errorLine1="    androidTestImplementation &apos;androidx.test.espresso:espresso-core:3.3.0&apos;"
-        errorLine2="                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        id="VectorRaster"
+        message="Resource references will not work correctly in images generated for this vector icon for API &lt; 21; check generated icon to make sure it looks acceptable"
+        errorLine1="      android:fillColor=&quot;@android:color/white&quot;"
+        errorLine2="                         ~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="build.gradle"
-            line="71"
-            column="31"/>
+            file="src/main/res/drawable/ic_baseline_edit_24.xml"
+            line="8"
+            column="26"/>
+    </issue>
+
+    <issue
+        id="VectorRaster"
+        message="Resource references will not work correctly in images generated for this vector icon for API &lt; 21; check generated icon to make sure it looks acceptable"
+        errorLine1="    android:tint=&quot;?attr/colorControlNormal&quot;>"
+        errorLine2="                  ~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/drawable/ic_baseline_move_to_inbox_24.xml"
+            line="6"
+            column="19"/>
+    </issue>
+
+    <issue
+        id="VectorRaster"
+        message="Resource references will not work correctly in images generated for this vector icon for API &lt; 21; check generated icon to make sure it looks acceptable"
+        errorLine1="      android:fillColor=&quot;@android:color/white&quot;"
+        errorLine2="                         ~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/drawable/ic_baseline_move_to_inbox_24.xml"
+            line="8"
+            column="26"/>
+    </issue>
+
+    <issue
+        id="VectorRaster"
+        message="Resource references will not work correctly in images generated for this vector icon for API &lt; 21; check generated icon to make sure it looks acceptable"
+        errorLine1="    android:tint=&quot;?attr/colorControlNormal&quot;>"
+        errorLine2="                  ~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/drawable/ic_menu_balance.xml"
+            line="6"
+            column="19"/>
+    </issue>
+
+    <issue
+        id="VectorRaster"
+        message="Resource references will not work correctly in images generated for this vector icon for API &lt; 21; check generated icon to make sure it looks acceptable"
+        errorLine1="      android:fillColor=&quot;@android:color/black&quot;"
+        errorLine2="                         ~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/drawable/ic_menu_balance.xml"
+            line="8"
+            column="26"/>
     </issue>
 
     <issue
@@ -156,10 +200,14 @@
     </issue>
 
     <issue
-        id="ObsoleteSdkInt"
-        message="This folder configuration (`v21`) is unnecessary; `minSdkVersion` is 21. Merge all the resources in this folder into `values`.">
+        id="DataExtractionRules"
+        message="The attribute `android:allowBackup` is deprecated from Android 12 and higher and may be removed in future versions. Consider adding the attribute `android:dataExtractionRules` specifying an `@xml` resource which configures cloud backups and device transfers on Android 12 and higher."
+        errorLine1="        android:allowBackup=&quot;false&quot;"
+        errorLine2="                             ~~~~~">
         <location
-            file="src/main/res/values-v21"/>
+            file="src/main/AndroidManifest.xml"
+            line="8"
+            column="30"/>
     </issue>
 
     <issue
@@ -363,66 +411,66 @@
     <issue
         id="SetTextI18n"
         message="Do not concatenate text displayed with `setText`. Use resource string with placeholders."
-        errorLine1="        binding.textInfo.text = &quot;z-addr:\n$zaddress\n\n\nt-addr:\n$taddress&quot;"
-        errorLine2="                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        errorLine1="            binding.textInfo.text = &quot;z-addr:\n$zaddress\n\n\nt-addr:\n$taddress&quot;"
+        errorLine2="                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/cash/z/ecc/android/sdk/demoapp/demos/getaddress/GetAddressFragment.kt"
-            line="41"
-            column="33"/>
+            line="48"
+            column="37"/>
     </issue>
 
     <issue
         id="SetTextI18n"
         message="String literal in `setText` can not be translated. Use Android resources instead."
-        errorLine1="        binding.textInfo.text = &quot;z-addr:\n$zaddress\n\n\nt-addr:\n$taddress&quot;"
-        errorLine2="                                 ~~~~~~~">
+        errorLine1="            binding.textInfo.text = &quot;z-addr:\n$zaddress\n\n\nt-addr:\n$taddress&quot;"
+        errorLine2="                                     ~~~~~~~">
         <location
             file="src/main/java/cash/z/ecc/android/sdk/demoapp/demos/getaddress/GetAddressFragment.kt"
-            line="41"
-            column="34"/>
+            line="48"
+            column="38"/>
     </issue>
 
     <issue
         id="SetTextI18n"
         message="String literal in `setText` can not be translated. Use Android resources instead."
-        errorLine1="        binding.textInfo.text = &quot;z-addr:\n$zaddress\n\n\nt-addr:\n$taddress&quot;"
-        errorLine2="                                                         ~~~~~~~">
+        errorLine1="            binding.textInfo.text = &quot;z-addr:\n$zaddress\n\n\nt-addr:\n$taddress&quot;"
+        errorLine2="                                                             ~~~~~~~">
         <location
             file="src/main/java/cash/z/ecc/android/sdk/demoapp/demos/getaddress/GetAddressFragment.kt"
-            line="41"
-            column="58"/>
+            line="48"
+            column="62"/>
     </issue>
 
     <issue
         id="SetTextI18n"
         message="Do not concatenate text displayed with `setText`. Use resource string with placeholders."
-        errorLine1="            binding.textBalance.text = &quot;&quot;&quot;"
-        errorLine2="                                       ^">
+        errorLine1="        binding.textBalance.text = &quot;&quot;&quot;"
+        errorLine2="                                   ^">
         <location
             file="src/main/java/cash/z/ecc/android/sdk/demoapp/demos/getbalance/GetBalanceFragment.kt"
-            line="72"
-            column="40"/>
+            line="82"
+            column="36"/>
     </issue>
 
     <issue
         id="SetTextI18n"
         message="String literal in `setText` can not be translated. Use Android resources instead."
-        errorLine1="                Available balance: ${balance.availableZatoshi.convertZatoshiToZecString(12)}"
+        errorLine1="                Available balance: ${balance.available.convertZatoshiToZecString(12)}"
         errorLine2="~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/cash/z/ecc/android/sdk/demoapp/demos/getbalance/GetBalanceFragment.kt"
-            line="73"
+            line="83"
             column="1"/>
     </issue>
 
     <issue
         id="SetTextI18n"
         message="String literal in `setText` can not be translated. Use Android resources instead."
-        errorLine1="                Total balance: ${balance.totalZatoshi.convertZatoshiToZecString(12)}"
+        errorLine1="                Total balance: ${balance.total.convertZatoshiToZecString(12)}"
         errorLine2="~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/cash/z/ecc/android/sdk/demoapp/demos/getbalance/GetBalanceFragment.kt"
-            line="74"
+            line="84"
             column="1"/>
     </issue>
 
@@ -433,7 +481,7 @@
         errorLine2="                                  ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/cash/z/ecc/android/sdk/demoapp/demos/getbalance/GetBalanceFragment.kt"
-            line="81"
+            line="89"
             column="35"/>
     </issue>
 
@@ -444,7 +492,7 @@
         errorLine2="                                   ~~~~~~~~">
         <location
             file="src/main/java/cash/z/ecc/android/sdk/demoapp/demos/getbalance/GetBalanceFragment.kt"
-            line="81"
+            line="89"
             column="36"/>
     </issue>
 
@@ -455,7 +503,7 @@
         errorLine2="                                        ~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/cash/z/ecc/android/sdk/demoapp/demos/getbalance/GetBalanceFragment.kt"
-            line="83"
+            line="92"
             column="41"/>
     </issue>
 
@@ -466,7 +514,7 @@
         errorLine2="                                      ~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/cash/z/ecc/android/sdk/demoapp/demos/getbalance/GetBalanceFragment.kt"
-            line="91"
+            line="100"
             column="39"/>
     </issue>
 
@@ -477,7 +525,7 @@
         errorLine2="                                       ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/cash/z/ecc/android/sdk/demoapp/demos/getbalance/GetBalanceFragment.kt"
-            line="91"
+            line="100"
             column="40"/>
     </issue>
 
@@ -510,7 +558,7 @@
         errorLine2="                                ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/cash/z/ecc/android/sdk/demoapp/demos/getblockrange/GetBlockRangeFragment.kt"
-            line="92"
+            line="102"
             column="33"/>
     </issue>
 
@@ -521,41 +569,41 @@
         errorLine2="                                 ~~~~~~~">
         <location
             file="src/main/java/cash/z/ecc/android/sdk/demoapp/demos/getblockrange/GetBlockRangeFragment.kt"
-            line="92"
+            line="102"
             column="34"/>
     </issue>
 
     <issue
         id="SetTextI18n"
         message="Do not concatenate text displayed with `setText`. Use resource string with placeholders."
-        errorLine1="        binding.textInfo.setText(&quot;Spending Key:\n$spendingKey\n\nViewing Key:\n$viewingKey&quot;)"
-        errorLine2="                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        errorLine1="            binding.textInfo.setText(&quot;Spending Key:\n$spendingKey\n\nViewing Key:\n$viewingKey&quot;)"
+        errorLine2="                                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/cash/z/ecc/android/sdk/demoapp/demos/getprivatekey/GetPrivateKeyFragment.kt"
-            line="43"
-            column="34"/>
+            line="56"
+            column="38"/>
     </issue>
 
     <issue
         id="SetTextI18n"
         message="String literal in `setText` can not be translated. Use Android resources instead."
-        errorLine1="        binding.textInfo.setText(&quot;Spending Key:\n$spendingKey\n\nViewing Key:\n$viewingKey&quot;)"
-        errorLine2="                                  ~~~~~~~~~~~~~">
+        errorLine1="            binding.textInfo.setText(&quot;Spending Key:\n$spendingKey\n\nViewing Key:\n$viewingKey&quot;)"
+        errorLine2="                                      ~~~~~~~~~~~~~">
         <location
             file="src/main/java/cash/z/ecc/android/sdk/demoapp/demos/getprivatekey/GetPrivateKeyFragment.kt"
-            line="43"
-            column="35"/>
+            line="56"
+            column="39"/>
     </issue>
 
     <issue
         id="SetTextI18n"
         message="String literal in `setText` can not be translated. Use Android resources instead."
-        errorLine1="        binding.textInfo.setText(&quot;Spending Key:\n$spendingKey\n\nViewing Key:\n$viewingKey&quot;)"
-        errorLine2="                                                                 ~~~~~~~~~~~~">
+        errorLine1="            binding.textInfo.setText(&quot;Spending Key:\n$spendingKey\n\nViewing Key:\n$viewingKey&quot;)"
+        errorLine2="                                                                     ~~~~~~~~~~~~">
         <location
             file="src/main/java/cash/z/ecc/android/sdk/demoapp/demos/getprivatekey/GetPrivateKeyFragment.kt"
-            line="43"
-            column="66"/>
+            line="56"
+            column="70"/>
     </issue>
 
     <issue
@@ -565,7 +613,7 @@
         errorLine2="                                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/cash/z/ecc/android/sdk/demoapp/demos/home/HomeFragment.kt"
-            line="48"
+            line="42"
             column="47"/>
     </issue>
 
@@ -576,7 +624,7 @@
         errorLine2="                                               ~~~~~~~~~~~~~">
         <location
             file="src/main/java/cash/z/ecc/android/sdk/demoapp/demos/home/HomeFragment.kt"
-            line="48"
+            line="42"
             column="48"/>
     </issue>
 
@@ -587,7 +635,7 @@
         errorLine2="                                                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/cash/z/ecc/android/sdk/demoapp/demos/listtransactions/ListTransactionsFragment.kt"
-            line="82"
+            line="96"
             column="54"/>
     </issue>
 
@@ -598,7 +646,7 @@
         errorLine2="                                                      ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/cash/z/ecc/android/sdk/demoapp/demos/listtransactions/ListTransactionsFragment.kt"
-            line="82"
+            line="96"
             column="55"/>
     </issue>
 
@@ -609,7 +657,7 @@
         errorLine2="                                             ~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/cash/z/ecc/android/sdk/demoapp/demos/listtransactions/ListTransactionsFragment.kt"
-            line="86"
+            line="100"
             column="46"/>
     </issue>
 
@@ -620,7 +668,7 @@
         errorLine2="                                              ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/cash/z/ecc/android/sdk/demoapp/demos/listtransactions/ListTransactionsFragment.kt"
-            line="86"
+            line="100"
             column="47"/>
     </issue>
 
@@ -631,7 +679,7 @@
         errorLine2="                                  ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/cash/z/ecc/android/sdk/demoapp/demos/listtransactions/ListTransactionsFragment.kt"
-            line="91"
+            line="105"
             column="35"/>
     </issue>
 
@@ -642,7 +690,7 @@
         errorLine2="                                   ~~~~~~~~">
         <location
             file="src/main/java/cash/z/ecc/android/sdk/demoapp/demos/listtransactions/ListTransactionsFragment.kt"
-            line="91"
+            line="105"
             column="36"/>
     </issue>
 
@@ -653,7 +701,7 @@
         errorLine2="                        ^">
         <location
             file="src/main/java/cash/z/ecc/android/sdk/demoapp/demos/listtransactions/ListTransactionsFragment.kt"
-            line="109"
+            line="123"
             column="25"/>
     </issue>
 
@@ -664,30 +712,30 @@
         errorLine2="                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/cash/z/ecc/android/sdk/demoapp/demos/listtransactions/ListTransactionsFragment.kt"
-            line="109"
+            line="123"
             column="26"/>
     </issue>
 
     <issue
         id="SetTextI18n"
         message="Do not concatenate text displayed with `setText`. Use resource string with placeholders."
-        errorLine1="                                &quot;or send funds to this address (tap the FAB to copy it):\n\n $address&quot;"
-        errorLine2="                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        errorLine1="                        &quot;or send funds to this address (tap the FAB to copy it):\n\n $address&quot;"
+        errorLine2="                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/cash/z/ecc/android/sdk/demoapp/demos/listtransactions/ListTransactionsFragment.kt"
-            line="110"
-            column="33"/>
+            line="124"
+            column="25"/>
     </issue>
 
     <issue
         id="SetTextI18n"
         message="String literal in `setText` can not be translated. Use Android resources instead."
-        errorLine1="                                &quot;or send funds to this address (tap the FAB to copy it):\n\n $address&quot;"
-        errorLine2="                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        errorLine1="                        &quot;or send funds to this address (tap the FAB to copy it):\n\n $address&quot;"
+        errorLine2="                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/cash/z/ecc/android/sdk/demoapp/demos/listtransactions/ListTransactionsFragment.kt"
-            line="110"
-            column="34"/>
+            line="124"
+            column="26"/>
     </issue>
 
     <issue
@@ -697,7 +745,7 @@
         errorLine2="                                   ~~~~~~~~~~">
         <location
             file="src/main/java/cash/z/ecc/android/sdk/demoapp/demos/listutxos/ListUtxosFragment.kt"
-            line="96"
+            line="103"
             column="36"/>
     </issue>
 
@@ -708,7 +756,7 @@
         errorLine2="                                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/cash/z/ecc/android/sdk/demoapp/demos/listutxos/ListUtxosFragment.kt"
-            line="145"
+            line="165"
             column="39"/>
     </issue>
 
@@ -719,7 +767,7 @@
         errorLine2="                                                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/cash/z/ecc/android/sdk/demoapp/demos/listutxos/ListUtxosFragment.kt"
-            line="218"
+            line="244"
             column="56"/>
     </issue>
 
@@ -730,7 +778,7 @@
         errorLine2="                                                        ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/cash/z/ecc/android/sdk/demoapp/demos/listutxos/ListUtxosFragment.kt"
-            line="218"
+            line="244"
             column="57"/>
     </issue>
 
@@ -741,7 +789,7 @@
         errorLine2="                                               ~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/cash/z/ecc/android/sdk/demoapp/demos/listutxos/ListUtxosFragment.kt"
-            line="222"
+            line="248"
             column="48"/>
     </issue>
 
@@ -752,7 +800,7 @@
         errorLine2="                                                ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/cash/z/ecc/android/sdk/demoapp/demos/listutxos/ListUtxosFragment.kt"
-            line="222"
+            line="248"
             column="49"/>
     </issue>
 
@@ -763,7 +811,7 @@
         errorLine2="                                  ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/cash/z/ecc/android/sdk/demoapp/demos/listutxos/ListUtxosFragment.kt"
-            line="227"
+            line="253"
             column="35"/>
     </issue>
 
@@ -774,7 +822,7 @@
         errorLine2="                                   ~~~~~~~~">
         <location
             file="src/main/java/cash/z/ecc/android/sdk/demoapp/demos/listutxos/ListUtxosFragment.kt"
-            line="227"
+            line="253"
             column="36"/>
     </issue>
 
@@ -785,7 +833,7 @@
         errorLine2="                                  ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/cash/z/ecc/android/sdk/demoapp/demos/send/SendFragment.kt"
-            line="114"
+            line="133"
             column="35"/>
     </issue>
 
@@ -796,7 +844,7 @@
         errorLine2="                                   ~~~~~~~~">
         <location
             file="src/main/java/cash/z/ecc/android/sdk/demoapp/demos/send/SendFragment.kt"
-            line="114"
+            line="133"
             column="36"/>
     </issue>
 
@@ -807,7 +855,7 @@
         errorLine2="                                        ~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/cash/z/ecc/android/sdk/demoapp/demos/send/SendFragment.kt"
-            line="117"
+            line="136"
             column="41"/>
     </issue>
 
@@ -818,7 +866,7 @@
         errorLine2="                                      ~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/cash/z/ecc/android/sdk/demoapp/demos/send/SendFragment.kt"
-            line="125"
+            line="144"
             column="39"/>
     </issue>
 
@@ -829,7 +877,7 @@
         errorLine2="                                       ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/cash/z/ecc/android/sdk/demoapp/demos/send/SendFragment.kt"
-            line="125"
+            line="144"
             column="40"/>
     </issue>
 
@@ -840,7 +888,7 @@
         errorLine2="                                                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/cash/z/ecc/android/sdk/demoapp/demos/send/SendFragment.kt"
-            line="133"
+            line="152"
             column="56"/>
     </issue>
 
@@ -851,7 +899,7 @@
         errorLine2="                                                        ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/cash/z/ecc/android/sdk/demoapp/demos/send/SendFragment.kt"
-            line="133"
+            line="152"
             column="57"/>
     </issue>
 
@@ -862,29 +910,29 @@
         errorLine2="                                       ^">
         <location
             file="src/main/java/cash/z/ecc/android/sdk/demoapp/demos/send/SendFragment.kt"
-            line="139"
+            line="158"
             column="40"/>
     </issue>
 
     <issue
         id="SetTextI18n"
         message="String literal in `setText` can not be translated. Use Android resources instead."
-        errorLine1="                Available balance: ${balance.availableZatoshi.convertZatoshiToZecString(12)}"
+        errorLine1="                Available balance: ${balance?.available.convertZatoshiToZecString(12)}"
         errorLine2="~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/cash/z/ecc/android/sdk/demoapp/demos/send/SendFragment.kt"
-            line="140"
+            line="159"
             column="1"/>
     </issue>
 
     <issue
         id="SetTextI18n"
         message="String literal in `setText` can not be translated. Use Android resources instead."
-        errorLine1="                Total balance: ${balance.totalZatoshi.convertZatoshiToZecString(12)}"
+        errorLine1="                Total balance: ${balance?.total.convertZatoshiToZecString(12)}"
         errorLine2="~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/cash/z/ecc/android/sdk/demoapp/demos/send/SendFragment.kt"
-            line="141"
+            line="160"
             column="1"/>
     </issue>
 
@@ -895,7 +943,7 @@
         errorLine2="                   ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/cash/z/ecc/android/sdk/demoapp/demos/send/SendFragment.kt"
-            line="173"
+            line="192"
             column="20"/>
     </issue>
 
@@ -906,7 +954,7 @@
         errorLine2="                            ~~~~~~~~~">
         <location
             file="src/main/java/cash/z/ecc/android/sdk/demoapp/demos/send/SendFragment.kt"
-            line="181"
+            line="200"
             column="29"/>
     </issue>
 
@@ -917,7 +965,7 @@
         errorLine2="                            ~~~~~~~~~">
         <location
             file="src/main/java/cash/z/ecc/android/sdk/demoapp/demos/send/SendFragment.kt"
-            line="185"
+            line="204"
             column="29"/>
     </issue>
 
@@ -928,7 +976,7 @@
         errorLine2="                            ~~~~">
         <location
             file="src/main/java/cash/z/ecc/android/sdk/demoapp/demos/send/SendFragment.kt"
-            line="190"
+            line="209"
             column="29"/>
     </issue>
 
@@ -939,7 +987,7 @@
         errorLine2="                                 ~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/cash/z/ecc/android/sdk/demoapp/demos/send/SendFragment.kt"
-            line="198"
+            line="217"
             column="34"/>
     </issue>
 

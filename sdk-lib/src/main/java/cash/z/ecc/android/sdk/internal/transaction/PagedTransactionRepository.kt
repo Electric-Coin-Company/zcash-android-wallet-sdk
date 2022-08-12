@@ -2,8 +2,8 @@ package cash.z.ecc.android.sdk.internal.transaction
 
 import android.content.Context
 import androidx.paging.PagedList
-import androidx.room.Room
 import androidx.room.RoomDatabase
+import cash.z.ecc.android.sdk.db.commonDatabaseBuilder
 import cash.z.ecc.android.sdk.db.entity.ConfirmedTransaction
 import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.internal.SdkDispatchers
@@ -21,6 +21,7 @@ import cash.z.ecc.android.sdk.type.UnifiedViewingKey
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.withContext
+import java.io.File
 
 /**
  * Example of a repository that leverages the Room paging library to return a [PagedList] of
@@ -122,7 +123,7 @@ internal class PagedTransactionRepository private constructor(
         ): PagedTransactionRepository {
             initMissingDatabases(rustBackend, birthday, viewingKeys)
 
-            val db = buildDatabase(appContext.applicationContext, rustBackend.pathDataDb)
+            val db = buildDatabase(appContext.applicationContext, rustBackend.dataDbFile)
             applyKeyMigrations(rustBackend, overwriteVks, viewingKeys)
 
             return PagedTransactionRepository(zcashNetwork, db, pageSize)
@@ -131,9 +132,13 @@ internal class PagedTransactionRepository private constructor(
         /**
          * Build the database and apply migrations.
          */
-        private suspend fun buildDatabase(context: Context, databasePath: String): DerivedDataDb {
+        private suspend fun buildDatabase(context: Context, databaseFile: File): DerivedDataDb {
             twig("Building dataDb and applying migrations")
-            return Room.databaseBuilder(context, DerivedDataDb::class.java, databasePath)
+            return commonDatabaseBuilder(
+                context,
+                DerivedDataDb::class.java,
+                databaseFile
+            )
                 .setJournalMode(RoomDatabase.JournalMode.TRUNCATE)
                 .setQueryExecutor(SdkExecutors.DATABASE_IO)
                 .setTransactionExecutor(SdkExecutors.DATABASE_IO)
@@ -145,6 +150,7 @@ internal class PagedTransactionRepository private constructor(
                 .build().also {
                     // TODO: document why we do this. My guess is to catch database issues early or to trigger migrations--I forget why it was added but there was a good reason?
                     withContext(SdkDispatchers.DATABASE_IO) {
+                        // TODO [#649]: https://github.com/zcash/zcash-android-wallet-sdk/issues/649
                         it.openHelper.writableDatabase.beginTransaction()
                         it.openHelper.writableDatabase.endTransaction()
                     }
@@ -172,7 +178,7 @@ internal class PagedTransactionRepository private constructor(
         private suspend fun maybeCreateDataDb(rustBackend: RustBackend) {
             tryWarn("Warning: did not create dataDb. It probably already exists.") {
                 rustBackend.initDataDb()
-                twig("Initialized wallet for first run file: ${rustBackend.pathDataDb}")
+                twig("Initialized wallet for first run file: ${rustBackend.dataDbFile}")
             }
         }
 
@@ -191,7 +197,7 @@ internal class PagedTransactionRepository private constructor(
                 rustBackend.initBlocksTable(checkpoint)
                 twig("seeded the database with sapling tree at height ${checkpoint.height}")
             }
-            twig("database file: ${rustBackend.pathDataDb}")
+            twig("database file: ${rustBackend.dataDbFile}")
         }
 
         /**
