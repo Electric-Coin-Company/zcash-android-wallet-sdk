@@ -872,6 +872,7 @@ class CompactBlockProcessor internal constructor(
      * when we unexpectedly lose server connection or are waiting for an event to happen on the
      * chain. We can pass this desire along now and later figure out how to handle it, privately.
      ￼*/
+    @Suppress("UNUSED_PARAMETER")
     private fun calculatePollInterval(fastIntervalDesired: Boolean = false): Long {
         val interval = POLL_INTERVAL
         val now = System.currentTimeMillis()
