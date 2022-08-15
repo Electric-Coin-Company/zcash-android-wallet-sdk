@@ -96,7 +96,7 @@ import kotlin.coroutines.EmptyCoroutineContext
  * @property processor saves the downloaded compact blocks to the cache and then scans those blocks for
  * data related to this wallet.
  */
-@ExperimentalCoroutinesApi
+@OptIn(kotlinx.coroutines.ObsoleteCoroutinesApi::class)
 @FlowPreview
 class SdkSynchronizer internal constructor(
     private val storage: TransactionRepository,
@@ -109,6 +109,8 @@ class SdkSynchronizer internal constructor(
     private val _saplingBalances = MutableStateFlow<WalletBalance?>(null)
     private val _transparentBalances = MutableStateFlow<WalletBalance?>(null)
 
+    // TODO [#288]: Remove Deprecated Usage of ConflatedBroadcastChannel
+    // TODO [#288]: https://github.com/zcash/zcash-android-wallet-sdk/issues/288
     private val _status = ConflatedBroadcastChannel<Synchronizer.Status>(DISCONNECTED)
 
     /**
@@ -171,6 +173,9 @@ class SdkSynchronizer internal constructor(
      * processor is finished scanning, the synchronizer updates transaction and balance info and
      * then emits a [SYNCED] status.
      */
+    // TODO [#658] Replace ComputableFlow and asFlow() obsolete Coroutine usage
+    // TODO [#658] https://github.com/zcash/zcash-android-wallet-sdk/issues/658
+    @Suppress("DEPRECATION")
     override val status = _status.asFlow()
 
     /**
