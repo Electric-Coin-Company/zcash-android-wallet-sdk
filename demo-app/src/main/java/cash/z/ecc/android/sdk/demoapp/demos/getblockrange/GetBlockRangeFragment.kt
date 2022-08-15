@@ -66,14 +66,15 @@ class GetBlockRangeFragment : BaseDemoFragment<FragmentGetBlockRangeBinding>() {
                 <br/><b>avg OUTs [per block / per TX]:</b> ${"%.1f / %.1f".format(outCount.toDouble() / (count - emptyCount), outCount.toDouble() / txCount)}
                 <br/><b>avg INs [per block / per TX]:</b> ${"%.1f / %.1f".format(inCount.toDouble() / (count - emptyCount), inCount.toDouble() / txCount)}
                 <br/><b>most shielded TXs:</b> ${if (maxTxs == null) "none" else "${maxTxs.vtxCount} in block ${maxTxs.height.withCommas()}"}
-                <br/><b>most shielded INs:</b> ${if (maxInTx == null) "none" else "${maxInTx.spendsCount} in block ${maxIns?.height.withCommas()} at tx index ${maxInTx.index}"}
-                <br/><b>most shielded OUTs:</b> ${if (maxOutTx == null) "none" else "${maxOutTx?.outputsCount} in block ${maxOuts?.height.withCommas()} at tx index ${maxOutTx?.index}"}
+                <br/><b>most shielded INs:</b> ${if (maxInTx == null) "none" else "${maxInTx.spendsCount} in block ${maxIns.height.withCommas()} at tx index ${maxInTx.index}"}
+                <br/><b>most shielded OUTs:</b> ${if (maxOutTx == null) "none" else "${maxOutTx.outputsCount} in block ${maxOuts.height.withCommas()} at tx index ${maxOutTx.index}"}
                 """.trimIndent()
             } ?: "No blocks found in that range.",
             HtmlCompat.FROM_HTML_MODE_LEGACY
         )
     }
 
+    @Suppress("UNUSED_PARAMETER")
     private fun onApply(_unused: View) {
         val network = ZcashNetwork.fromResources(requireApplicationContext())
         val start = max(binding.textStartHeight.text.toString().toLongOrNull() ?: network.saplingActivationHeight.value, network.saplingActivationHeight.value)
