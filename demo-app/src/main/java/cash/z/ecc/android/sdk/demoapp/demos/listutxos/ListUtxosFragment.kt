@@ -86,7 +86,7 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
         setup()
     }
 
-    fun initUi() {
+    private fun initUi() {
         binding.inputAddress.setText(address)
         binding.inputRangeStart.setText(ZcashNetwork.fromResources(requireApplicationContext()).saplingActivationHeight.toString())
         binding.inputRangeEnd.setText(getUxtoEndHeight(requireApplicationContext()).value.toString())
@@ -99,7 +99,7 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
         initTransactionUi()
     }
 
-    fun downloadTransactions() {
+    private fun downloadTransactions() {
         binding.textStatus.text = "loading..."
         binding.textStatus.post {
             val network = ZcashNetwork.fromResources(requireApplicationContext())
@@ -131,18 +131,16 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
                 //         twig("failed to decrypt and store transaction due to: $t")
                 //     }
                 // }
-            }?.let { txData ->
+            }?.let { _ ->
                 // Disabled during migration to newer SDK version; this appears to have been
                 // leveraging non-public  APIs in the SDK so perhaps should be removed
-//                val parseStart = now
-//                val tList = LocalRpcTypes.TransactionDataList.newBuilder().addAllData(txData).build()
-//                val parsedTransactions = initializer.rustBackend.parseTransactionDataList(tList)
-//                delta = now - parseStart
-//                updateStatus("parsed txs in ${delta}ms.")
+                // val parseStart = now
+                // val tList = LocalRpcTypes.TransactionDataList.newBuilder().addAllData(txData).build()
+                // val parsedTransactions = initializer.rustBackend.parseTransactionDataList(tList)
+                // delta = now - parseStart
+                // updateStatus("parsed txs in ${delta}ms.")
             }
             (synchronizer as SdkSynchronizer).refreshTransactions()
-//            val finalCount = (synchronizer as SdkSynchronizer).getTransactionCount()
-//            "found ${finalCount - initialCount} shielded outputs.
             delta = now - allStart
             updateStatus("Total time ${delta}ms.")
 
@@ -199,7 +197,7 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
                 }
             }
             synchronizer.clearedTransactions.collectWith(lifecycleScope, ::onTransactionsUpdated)
-//            synchronizer.receivedTransactions.collectWith(lifecycleScope, ::onTransactionsUpdated)
+            // synchronizer.receivedTransactions.collectWith(lifecycleScope, ::onTransactionsUpdated)
         } catch (t: Throwable) {
             twig("failed to start the synchronizer!!! due to : $t")
         }
@@ -220,12 +218,12 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
             LinearLayoutManager(activity, LinearLayoutManager.VERTICAL, false)
         adapter = UtxoAdapter()
         binding.recyclerTransactions.adapter = adapter
-//        lifecycleScope.launch {
-// //            address = synchronizer.getAddress()
-//            synchronizer.receivedTransactions.onEach {
-//                onTransactionsUpdated(it)
-//            }.launchIn(this)
-//        }
+        // lifecycleScope.launch {
+        //     address = synchronizer.getAddress()
+        //     synchronizer.receivedTransactions.onEach {
+        //         onTransactionsUpdated(it)
+        //     }.launchIn(this)
+        // }
     }
 
     private fun startSynchronizer() {
