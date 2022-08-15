@@ -3,6 +3,7 @@ package cash.z.ecc.android.sdk.demoapp.demos.listtransactions
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import cash.z.ecc.android.bip39.Mnemonics
@@ -134,9 +135,14 @@ class ListTransactionsFragment : BaseDemoFragment<FragmentListTransactionsBindin
     // Android Lifecycle overrides
     //
 
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View? {
+        val view = super.onCreateView(inflater, container, savedInstanceState)
         setup()
+        return view
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
