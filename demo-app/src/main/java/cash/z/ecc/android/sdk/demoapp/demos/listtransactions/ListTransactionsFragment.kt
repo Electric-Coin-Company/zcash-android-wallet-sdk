@@ -34,7 +34,7 @@ import kotlinx.coroutines.runBlocking
 class ListTransactionsFragment : BaseDemoFragment<FragmentListTransactionsBinding>() {
     private lateinit var initializer: Initializer
     private lateinit var synchronizer: Synchronizer
-    private lateinit var adapter: TransactionAdapter<ConfirmedTransaction>
+    private lateinit var adapter: TransactionAdapter
     private lateinit var address: String
     private var status: Synchronizer.Status? = null
     private val isSynced get() = status == Synchronizer.Status.SYNCED

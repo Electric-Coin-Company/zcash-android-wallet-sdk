@@ -48,7 +48,7 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
     private lateinit var seed: ByteArray
     private lateinit var initializer: Initializer
     private lateinit var synchronizer: Synchronizer
-    private lateinit var adapter: UtxoAdapter<ConfirmedTransaction>
+    private lateinit var adapter: UtxoAdapter
     private val address: String = "t1RwbKka1CnktvAJ1cSqdn7c6PXWG4tZqgd"
     private var status: Synchronizer.Status? = null
 

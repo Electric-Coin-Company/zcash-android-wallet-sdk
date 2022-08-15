@@ -10,23 +10,23 @@ import cash.z.ecc.android.sdk.db.entity.valueInZatoshi
 import cash.z.ecc.android.sdk.demoapp.R
 import cash.z.ecc.android.sdk.ext.convertZatoshiToZecString
 import java.text.SimpleDateFormat
-import java.util.Locale
+import java.util.*
 
 /**
  * Simple view holder for displaying confirmed transactions in the recyclerview.
  */
-class TransactionViewHolder<T : ConfirmedTransaction>(itemView: View) : RecyclerView.ViewHolder(itemView) {
+class TransactionViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
     private val amountText = itemView.findViewById<TextView>(R.id.text_transaction_amount)
     private val infoText = itemView.findViewById<TextView>(R.id.text_transaction_info)
     private val timeText = itemView.findViewById<TextView>(R.id.text_transaction_timestamp)
     private val icon = itemView.findViewById<ImageView>(R.id.image_transaction_type)
     private val formatter = SimpleDateFormat("M/d h:mma", Locale.getDefault())
 
-    fun bindTo(transaction: T?) {
+    fun bindTo(transaction: ConfirmedTransaction?) {
         val isInbound = transaction?.toAddress.isNullOrEmpty()
         amountText.text = transaction?.valueInZatoshi.convertZatoshiToZecString()
         timeText.text =
-            if (transaction == null || transaction?.blockTimeInSeconds == 0L) "Pending"
+            if (transaction == null || transaction.blockTimeInSeconds == 0L) "Pending"
             else formatter.format(transaction.blockTimeInSeconds * 1000L)
         infoText.text = getMemoString(transaction)
 
@@ -35,7 +35,7 @@ class TransactionViewHolder<T : ConfirmedTransaction>(itemView: View) : Recycler
         icon.setColorFilter(ContextCompat.getColor(itemView.context, if (isInbound) R.color.tx_inbound else R.color.tx_outbound))
     }
 
-    private fun getMemoString(transaction: T?): String {
+    private fun getMemoString(transaction: ConfirmedTransaction?): String {
         return transaction?.memo?.takeUnless { it[0] < 0 }?.let { String(it) } ?: "no memo"
     }
 }
