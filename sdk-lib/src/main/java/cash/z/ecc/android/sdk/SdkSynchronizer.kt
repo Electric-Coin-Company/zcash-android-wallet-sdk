@@ -646,8 +646,9 @@ class SdkSynchronizer internal constructor(
                 // only submit if it wasn't cancelled. Otherwise cleanup, immediately for best UX.
                 if (encodedTx.isCancelled()) {
                     twig("[cleanup] this tx has been cancelled so we will cleanup instead of submitting")
-                    if (cleanupCancelledTx(encodedTx)) refreshAllBalances()
-                    encodedTx
+                    if (cleanupCancelledTx(encodedTx)) {
+                        refreshAllBalances()
+                    }
                 } else {
                     txManager.submit(encodedTx)
                 }
@@ -678,8 +679,9 @@ class SdkSynchronizer internal constructor(
                 // only submit if it wasn't cancelled. Otherwise cleanup, immediately for best UX.
                 if (encodedTx.isCancelled()) {
                     twig("[cleanup] this shielding tx has been cancelled so we will cleanup instead of submitting")
-                    if (cleanupCancelledTx(encodedTx)) refreshAllBalances()
-                    encodedTx
+                    if (cleanupCancelledTx(encodedTx)) {
+                        refreshAllBalances()
+                    }
                 } else {
                     txManager.submit(encodedTx)
                 }
