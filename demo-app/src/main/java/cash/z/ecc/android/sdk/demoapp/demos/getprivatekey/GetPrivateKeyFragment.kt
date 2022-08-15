@@ -62,7 +62,7 @@ class GetPrivateKeyFragment : BaseDemoFragment<FragmentGetPrivateKeyBinding>() {
     //
     // Android Lifecycle overrides
     //
-    
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
