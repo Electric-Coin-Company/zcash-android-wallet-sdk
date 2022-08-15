@@ -56,7 +56,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import java.util.Locale
+import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.max
 import kotlin.math.min
@@ -76,6 +76,7 @@ import kotlin.math.roundToInt
  * in when considering initial range to download. In most cases, this should be the birthday height
  * of the current wallet--the height before which we do not need to scan for transactions.
  */
+@OptIn(kotlinx.coroutines.ObsoleteCoroutinesApi::class)
 @OpenForTesting
 class CompactBlockProcessor internal constructor(
     val downloader: CompactBlockDownloader,
@@ -126,6 +127,8 @@ class CompactBlockProcessor internal constructor(
         )
     )
 
+    // TODO [#288]: Remove Deprecated Usage of ConflatedBroadcastChannel
+    // TODO [#288]: https://github.com/zcash/zcash-android-wallet-sdk/issues/288
     private val _state: ConflatedBroadcastChannel<State> = ConflatedBroadcastChannel(Initialized)
     private val _progress = ConflatedBroadcastChannel(0)
     private val _processorInfo =
@@ -161,18 +164,27 @@ class CompactBlockProcessor internal constructor(
      * The flow of state values so that a wallet can monitor the state of this class without needing
      * to poll.
      */
+    // TODO [#658] Replace ComputableFlow and asFlow() obsolete Coroutine usage
+    // TODO [#658] https://github.com/zcash/zcash-android-wallet-sdk/issues/658
+    @Suppress("DEPRECATION")
     val state = _state.asFlow()
 
     /**
      * The flow of progress values so that a wallet can monitor how much downloading remains
      * without needing to poll.
      */
+    // TODO [#658] Replace ComputableFlow and asFlow() obsolete Coroutine usage
+    // TODO [#658] https://github.com/zcash/zcash-android-wallet-sdk/issues/658
+    @Suppress("DEPRECATION")
     val progress = _progress.asFlow()
 
     /**
      * The flow of detailed processorInfo like the range of blocks that shall be downloaded and
      * scanned. This gives the wallet a lot of insight into the work of this processor.
      */
+    // TODO [#658] Replace ComputableFlow and asFlow() obsolete Coroutine usage
+    // TODO [#658] https://github.com/zcash/zcash-android-wallet-sdk/issues/658
+    @Suppress("DEPRECATION")
     val processorInfo = _processorInfo.asFlow()
 
     /**
