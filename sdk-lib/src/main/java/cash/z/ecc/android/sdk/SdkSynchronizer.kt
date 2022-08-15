@@ -62,7 +62,6 @@ import io.grpc.ManagedChannel
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
@@ -419,6 +418,7 @@ class SdkSynchronizer internal constructor(
         twig("Synchronizer onReady complete. Processor start has exited!")
     }
 
+    @Suppress("UNUSED_PARAMETER")
     private fun onCriticalError(unused: CoroutineContext?, error: Throwable) {
         twig("********")
         twig("********  ERROR: $error")
