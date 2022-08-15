@@ -692,8 +692,8 @@ class SdkSynchronizer internal constructor(
         txManager.monitorById(it.id)
     }.distinctUntilChanged()
 
-    override suspend fun refreshUtxos(address: String, startHeight: BlockHeight): Int? {
-        return processor.refreshUtxos(address, startHeight)
+    override suspend fun refreshUtxos(tAddr: String, since: BlockHeight): Int? {
+        return processor.refreshUtxos(tAddr, since)
     }
 
     override suspend fun getTransparentBalance(tAddr: String): WalletBalance {
