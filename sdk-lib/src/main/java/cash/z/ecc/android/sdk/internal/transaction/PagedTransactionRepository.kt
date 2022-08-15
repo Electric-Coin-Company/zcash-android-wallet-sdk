@@ -147,6 +147,7 @@ internal class PagedTransactionRepository private constructor(
                 .addMigrations(DerivedDataDb.MIGRATION_4_5)
                 .addMigrations(DerivedDataDb.MIGRATION_5_6)
                 .addMigrations(DerivedDataDb.MIGRATION_6_7)
+                .addMigrations(DerivedDataDb.MIGRATION_7_8)
                 .build().also {
                     // TODO: document why we do this. My guess is to catch database issues early or to trigger migrations--I forget why it was added but there was a good reason?
                     withContext(SdkDispatchers.DATABASE_IO) {

@@ -40,7 +40,7 @@ import cash.z.ecc.android.sdk.type.UnifiedAddressAccount
         Sent::class,
         Utxo::class
     ],
-    version = 7,
+    version = 8,
     exportSchema = true
 )
 abstract class DerivedDataDb : RoomDatabase() {
@@ -54,6 +54,7 @@ abstract class DerivedDataDb : RoomDatabase() {
     // Migrations
     //
 
+    @Suppress("MagicNumber")
     companion object {
 
         val MIGRATION_3_4 = object : Migration(3, 4) {
@@ -181,6 +182,23 @@ abstract class DerivedDataDb : RoomDatabase() {
                 database.execSQL("DROP TABLE accounts;")
                 database.execSQL("ALTER TABLE accounts_new RENAME TO accounts;")
                 database.execSQL("PRAGMA foreign_keys = ON;")
+            }
+        }
+
+        val MIGRATION_7_8 = object : Migration(7, 8) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_transactions_block ON transactions (block)")
+
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_received_notes_tx ON received_notes (tx)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_received_notes_account ON received_notes (account)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_received_notes_spent ON received_notes (spent)")
+
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_sent_notes_tx ON sent_notes (tx)")
+                database.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_sent_notes_from_account ON sent_notes (from_account)"
+                )
+
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_utxos_spent_in_tx ON utxos (spent_in_tx)")
             }
         }
     }
