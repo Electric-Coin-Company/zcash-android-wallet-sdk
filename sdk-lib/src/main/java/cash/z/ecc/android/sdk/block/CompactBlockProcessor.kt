@@ -405,12 +405,8 @@ class CompactBlockProcessor internal constructor(
                 }
             }
 
-            newTxs?.onEach { newTransaction ->
-                if (newTransaction == null) {
-                    twig("somehow, new transaction was null!!!")
-                } else {
-                    enhance(newTransaction)
-                }
+            newTxs.onEach { newTransaction ->
+                enhance(newTransaction)
             }
             twig("Done enhancing transaction details")
             BlockProcessingResult.Success
