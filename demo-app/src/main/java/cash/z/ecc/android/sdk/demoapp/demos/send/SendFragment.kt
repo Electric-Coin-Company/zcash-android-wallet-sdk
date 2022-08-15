@@ -163,6 +163,7 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
         }
     }
 
+    @Suppress("UNUSED_PARAMETER")
     private fun onSend(unused: View) {
         isSending = true
         val amount = amountInput.text.toString().toDouble().convertZecToZatoshi()
