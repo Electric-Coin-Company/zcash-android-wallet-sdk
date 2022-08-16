@@ -100,13 +100,13 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
                 twig("got processor status $it")
                 if (it == Synchronizer.Status.DISCONNECTED) {
                     twig("waiting a bit before giving up on connection...")
-                } else if (targetHeight != null && (synchronizer).processor.getLastScannedHeight() < targetHeight) {
+                } else if (targetHeight != null && synchronizer.processor.getLastScannedHeight() < targetHeight) {
                     twig("awaiting new blocks from server...")
                 }
             }.map {
                 // whenever we're waiting for a target height, for simplicity, if we're sleeping,
                 // and in between polls, then consider it that we're not synced
-                if (targetHeight != null && (synchronizer).processor.getLastScannedHeight() < targetHeight) {
+                if (targetHeight != null && synchronizer.processor.getLastScannedHeight() < targetHeight) {
                     twig("switching status to DOWNLOADING because we're still waiting for height $targetHeight")
                     Synchronizer.Status.DOWNLOADING
                 } else {
@@ -144,8 +144,8 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
 
         fun validateHasBlock(height: BlockHeight) {
             runBlocking {
-                assertTrue((synchronizer).findBlockHashAsHex(height) != null)
-                assertTrue((synchronizer).findBlockHash(height)?.size ?: 0 > 0)
+                assertTrue(synchronizer.findBlockHashAsHex(height) != null)
+                assertTrue(synchronizer.findBlockHash(height)?.size ?: 0 > 0)
             }
         }
 
@@ -192,7 +192,7 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
         }
 
         fun validateBlockHash(height: BlockHeight, expectedHash: String) {
-            val hash = runBlocking { (synchronizer).findBlockHashAsHex(height) }
+            val hash = runBlocking { synchronizer.findBlockHashAsHex(height) }
             assertEquals(expectedHash, hash)
         }
 
@@ -201,7 +201,7 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
         }
 
         fun validateTxCount(count: Int) {
-            val txCount = runBlocking { (synchronizer).getTransactionCount() }
+            val txCount = runBlocking { synchronizer.getTransactionCount() }
             assertEquals("Expected $count transactions but found $txCount instead!", count, txCount)
         }
 
@@ -215,7 +215,7 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
             }
         }
         suspend fun validateBalance(available: Long = -1, total: Long = -1, accountIndex: Int = 0) {
-            val balance = (synchronizer).processor.getBalanceInfo(accountIndex)
+            val balance = synchronizer.processor.getBalanceInfo(accountIndex)
             if (available > 0) {
                 assertEquals("invalid available balance", available, balance.available)
             }
