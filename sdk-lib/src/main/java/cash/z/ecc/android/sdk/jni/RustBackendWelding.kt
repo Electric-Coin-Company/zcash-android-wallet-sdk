@@ -17,6 +17,7 @@ internal interface RustBackendWelding {
 
     val network: ZcashNetwork
 
+    @Suppress("LongParameterList")
     suspend fun createToAddress(
         consensusBranchId: Long,
         account: Int,
@@ -73,6 +74,7 @@ internal interface RustBackendWelding {
      */
     suspend fun validateCombinedChain(): BlockHeight?
 
+    @Suppress("LongParameterList")
     suspend fun putUtxo(
         tAddress: String,
         txId: ByteArray,

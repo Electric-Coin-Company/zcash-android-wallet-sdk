@@ -393,6 +393,7 @@ internal class RustBackend private constructor(
         ): Boolean
 
         @JvmStatic
+        @Suppress("LongParameterList")
         private external fun initBlocksTable(
             dbDataPath: String,
             height: Long,
@@ -483,6 +484,7 @@ internal class RustBackend private constructor(
         )
 
         @JvmStatic
+        @Suppress("LongParameterList")
         private external fun createToAddress(
             dbDataPath: String,
             consensusBranchId: Long,
@@ -497,6 +499,7 @@ internal class RustBackend private constructor(
         ): Long
 
         @JvmStatic
+        @Suppress("LongParameterList")
         private external fun shieldToAddress(
             dbDataPath: String,
             account: Int,
@@ -515,6 +518,7 @@ internal class RustBackend private constructor(
         private external fun branchIdForHeight(height: Long, networkId: Int): Long
 
         @JvmStatic
+        @Suppress("LongParameterList")
         private external fun putUtxo(
             dbDataPath: String,
             tAddress: String,

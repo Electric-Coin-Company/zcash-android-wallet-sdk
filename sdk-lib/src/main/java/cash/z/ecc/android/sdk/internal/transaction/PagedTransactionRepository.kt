@@ -111,6 +111,7 @@ internal class PagedTransactionRepository private constructor(
 
     // TODO: convert this into a wallet repository rather than "transaction repository"
 
+    @Suppress("LongParameterList")
     companion object {
         internal suspend fun new(
             appContext: Context,
