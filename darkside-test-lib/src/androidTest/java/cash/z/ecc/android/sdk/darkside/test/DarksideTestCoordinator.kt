@@ -1,7 +1,6 @@
 package cash.z.ecc.android.sdk.darkside.test
 
 import androidx.test.platform.app.InstrumentationRegistry
-import cash.z.ecc.android.sdk.SdkSynchronizer
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.BlockHeight
