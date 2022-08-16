@@ -45,6 +45,7 @@ import kotlinx.coroutines.runBlocking
  * PendingTransaction objects which represent the active state of the transaction that was sent.
  * Any time the state of that transaction changes, a new instance will be emitted.
  */
+@Suppress("TooManyFunctions")
 class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
     private lateinit var synchronizer: Synchronizer
 

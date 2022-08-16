@@ -1,3 +1,5 @@
+@file:Suppress("TooManyFunctions")
+
 package cash.z.ecc.android.sdk.db.entity
 
 import android.text.format.DateUtils

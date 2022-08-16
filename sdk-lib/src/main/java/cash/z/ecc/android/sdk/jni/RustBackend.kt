@@ -20,6 +20,7 @@ import java.io.File
  * not be called directly by code outside of the SDK. Instead, one of the higher-level components
  * should be used such as Wallet.kt or CompactBlockProcessor.kt.
  */
+@Suppress("TooManyFunctions")
 internal class RustBackend private constructor(
     override val network: ZcashNetwork,
     val birthdayHeight: BlockHeight,

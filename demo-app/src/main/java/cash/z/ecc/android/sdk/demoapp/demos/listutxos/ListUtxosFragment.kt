@@ -44,6 +44,7 @@ import kotlin.math.max
  * By default, the SDK uses a PagedTransactionRepository to provide transaction contents from the
  * database in a paged format that works natively with RecyclerViews.
  */
+@Suppress("TooManyFunctions")
 class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
     private lateinit var seed: ByteArray
     private lateinit var initializer: Initializer

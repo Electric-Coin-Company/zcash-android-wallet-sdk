@@ -40,6 +40,7 @@ abstract class PendingTransactionDb : RoomDatabase() {
  * Data access object providing crud for pending transactions.
  */
 @Dao
+@Suppress("TooManyFunctions")
 interface PendingTransactionDao {
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun create(transaction: PendingTransactionEntity): Long

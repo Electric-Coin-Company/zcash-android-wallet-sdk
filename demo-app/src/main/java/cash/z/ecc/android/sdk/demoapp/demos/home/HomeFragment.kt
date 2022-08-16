@@ -18,6 +18,7 @@ import kotlinx.coroutines.launch
  * data just for sanity. The goal is for each demo to be self-contained so that the behavior is
  * repeatable and independent of pre-existing state.
  */
+@Suppress("TooManyFunctions")
 class HomeFragment : BaseDemoFragment<FragmentHomeBinding>() {
 
     private val homeViewModel: HomeViewModel by viewModels()

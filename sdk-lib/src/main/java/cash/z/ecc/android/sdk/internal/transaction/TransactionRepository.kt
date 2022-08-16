@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.Flow
 /**
  * Repository of wallet transactions, providing an agnostic interface to the underlying information.
  */
+@Suppress("TooManyFunctions")
 interface TransactionRepository {
 
     /**

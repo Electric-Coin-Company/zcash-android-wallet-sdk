@@ -13,6 +13,7 @@ import cash.z.ecc.android.sdk.type.UnifiedViewingKey
  * It is not documented because it is not intended to be used, directly.
  * Instead, use the synchronizer or one of its subcomponents.
  */
+@Suppress("TooManyFunctions")
 internal interface RustBackendWelding {
 
     val network: ZcashNetwork

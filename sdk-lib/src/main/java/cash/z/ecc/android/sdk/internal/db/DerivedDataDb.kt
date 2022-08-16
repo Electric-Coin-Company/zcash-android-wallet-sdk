@@ -248,6 +248,7 @@ interface AccountDao {
  * whether transactions are mined.
  */
 @Dao
+@Suppress("TooManyFunctions")
 interface TransactionDao {
     @Query("SELECT COUNT(id_tx) FROM transactions")
     suspend fun count(): Int

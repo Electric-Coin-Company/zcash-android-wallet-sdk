@@ -31,6 +31,7 @@ import kotlinx.coroutines.runBlocking
  * By default, the SDK uses a PagedTransactionRepository to provide transaction contents from the
  * database in a paged format that works natively with RecyclerViews.
  */
+@Suppress("TooManyFunctions")
 class ListTransactionsFragment : BaseDemoFragment<FragmentListTransactionsBinding>() {
     private lateinit var initializer: Initializer
     private lateinit var synchronizer: Synchronizer

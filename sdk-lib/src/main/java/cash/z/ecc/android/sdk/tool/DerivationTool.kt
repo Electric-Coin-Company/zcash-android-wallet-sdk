@@ -7,6 +7,7 @@ import cash.z.ecc.android.sdk.type.UnifiedViewingKey
 
 class DerivationTool {
 
+    @Suppress("TooManyFunctions")
     companion object : RustBackendWelding.Derivation {
 
         /**

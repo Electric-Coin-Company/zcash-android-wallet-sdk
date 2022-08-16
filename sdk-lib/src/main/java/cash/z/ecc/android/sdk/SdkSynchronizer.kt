@@ -97,6 +97,7 @@ import kotlin.coroutines.EmptyCoroutineContext
  */
 @OptIn(kotlinx.coroutines.ObsoleteCoroutinesApi::class)
 @FlowPreview
+@Suppress("TooManyFunctions")
 class SdkSynchronizer internal constructor(
     private val storage: TransactionRepository,
     private val txManager: OutboundTransactionManager,

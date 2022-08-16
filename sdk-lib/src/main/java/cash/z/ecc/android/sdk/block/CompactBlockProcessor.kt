@@ -78,6 +78,7 @@ import kotlin.math.roundToInt
  */
 @OptIn(kotlinx.coroutines.ObsoleteCoroutinesApi::class)
 @OpenForTesting
+@Suppress("TooManyFunctions")
 class CompactBlockProcessor internal constructor(
     val downloader: CompactBlockDownloader,
     private val repository: TransactionRepository,

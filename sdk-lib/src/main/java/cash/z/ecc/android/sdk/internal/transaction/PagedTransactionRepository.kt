@@ -30,6 +30,7 @@ import java.io.File
  *
  * @param pageSize transactions per page. This influences pre-fetch and memory configuration.
  */
+@Suppress("TooManyFunctions")
 internal class PagedTransactionRepository private constructor(
     private val zcashNetwork: ZcashNetwork,
     private val db: DerivedDataDb,

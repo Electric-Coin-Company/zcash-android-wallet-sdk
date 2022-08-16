@@ -26,6 +26,7 @@ import cash.z.ecc.android.sdk.model.defaultForNetwork
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.navigation.NavigationView
 
+@Suppress("TooManyFunctions")
 class MainActivity :
     AppCompatActivity(),
     ClipboardManager.OnPrimaryClipChangedListener,
