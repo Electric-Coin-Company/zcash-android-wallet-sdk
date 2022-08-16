@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.Flow
  * particularly after failed attempts or dropped connectivity. The intent is to help see outbound
  * transactions through to completion.
  */
+@Suppress("TooManyFunctions")
 interface OutboundTransactionManager {
     /**
      * Initialize a spend with the main purpose of creating an idea to use for tracking it until
