@@ -66,11 +66,9 @@ import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.channels.ConflatedBroadcastChannel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
@@ -95,7 +93,6 @@ import kotlin.coroutines.EmptyCoroutineContext
  * @property processor saves the downloaded compact blocks to the cache and then scans those blocks for
  * data related to this wallet.
  */
-@OptIn(kotlinx.coroutines.ObsoleteCoroutinesApi::class)
 @FlowPreview
 class SdkSynchronizer internal constructor(
     private val storage: TransactionRepository,
@@ -108,9 +105,7 @@ class SdkSynchronizer internal constructor(
     private val _saplingBalances = MutableStateFlow<WalletBalance?>(null)
     private val _transparentBalances = MutableStateFlow<WalletBalance?>(null)
 
-    // TODO [#288]: Remove Deprecated Usage of ConflatedBroadcastChannel
-    // TODO [#288]: https://github.com/zcash/zcash-android-wallet-sdk/issues/288
-    private val _status = ConflatedBroadcastChannel<Synchronizer.Status>(DISCONNECTED)
+    private val _status = MutableStateFlow<Synchronizer.Status>(DISCONNECTED)
 
     /**
      * The lifespan of this Synchronizer. This scope is initialized once the Synchronizer starts
@@ -172,10 +167,7 @@ class SdkSynchronizer internal constructor(
      * processor is finished scanning, the synchronizer updates transaction and balance info and
      * then emits a [SYNCED] status.
      */
-    // TODO [#658] Replace ComputableFlow and asFlow() obsolete Coroutine usage
-    // TODO [#658] https://github.com/zcash/zcash-android-wallet-sdk/issues/658
-    @Suppress("DEPRECATION")
-    override val status = _status.asFlow()
+    override val status = _status.asStateFlow()
 
     /**
      * Indicates the download progress of the Synchronizer. When progress reaches 100, that
@@ -301,7 +293,7 @@ class SdkSynchronizer internal constructor(
             twig("Synchronizer::stop: coroutineScope.cancel()")
             coroutineScope.cancel()
             twig("Synchronizer::stop: _status.cancel()")
-            _status.cancel()
+            _status.resetReplayCache()
             twig("Synchronizer::stop: COMPLETE")
         }
     }
@@ -411,7 +403,7 @@ class SdkSynchronizer internal constructor(
             }.let { synchronizerStatus ->
                 //  ignore enhancing status for now
                 // TODO: clean this up and handle enhancing gracefully
-                if (synchronizerStatus != ENHANCING) _status.send(synchronizerStatus)
+                if (synchronizerStatus != ENHANCING) _status.value = synchronizerStatus
             }
         }.launchIn(this)
         processor.start()
