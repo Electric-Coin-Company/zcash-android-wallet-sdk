@@ -30,7 +30,7 @@ tasks {
         exclude("**/jvmTest/**")
         exclude("**/androidTest/**")
         config.setFrom(files("${rootProject.projectDir}/tools/detekt.yml"))
-        baseline.set(file("$rootDir/tools/detekt-baseline.xml"))
+        // baseline.set(file("$rootDir/tools/detekt-baseline.xml"))
         buildUponDefaultConfig = true
     }
 

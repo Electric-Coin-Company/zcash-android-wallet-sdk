@@ -34,6 +34,7 @@ class Initializer private constructor(
 
     suspend fun erase() = erase(context, network, alias)
 
+    @Suppress("TooManyFunctions")
     class Config private constructor(
         val viewingKeys: MutableList<UnifiedViewingKey> = mutableListOf(),
         var alias: String = ZcashSdk.DEFAULT_ALIAS
