@@ -8,7 +8,7 @@ import cash.z.ecc.android.sdk.db.entity.valueInZatoshi
 import cash.z.ecc.android.sdk.demoapp.R
 import cash.z.ecc.android.sdk.ext.convertZatoshiToZecString
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Locale
 
 /**
  * Simple view holder for displaying confirmed transactions in the recyclerview.
