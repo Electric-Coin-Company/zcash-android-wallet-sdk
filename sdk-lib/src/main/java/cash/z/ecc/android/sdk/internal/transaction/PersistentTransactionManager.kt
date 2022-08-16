@@ -36,6 +36,7 @@ import kotlin.math.max
  * id.
  * @property service the lightwallet service used to submit transactions.
  */
+@Suppress("TooManyFunctions")
 class PersistentTransactionManager(
     db: PendingTransactionDb,
     internal val encoder: TransactionEncoder,
