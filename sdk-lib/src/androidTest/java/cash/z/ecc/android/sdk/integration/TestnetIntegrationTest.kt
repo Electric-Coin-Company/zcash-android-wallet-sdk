@@ -50,7 +50,7 @@ class TestnetIntegrationTest : ScopedTest() {
 
     @Test
     fun testLoadBirthday() {
-        val (height, hash, time, tree) = runBlocking {
+        val (height) = runBlocking {
             CheckpointTool.loadNearest(
                 context,
                 synchronizer.network,
