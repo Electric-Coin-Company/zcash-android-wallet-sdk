@@ -1,4 +1,4 @@
-@file:Suppress("NOTHING_TO_INLINE")
+@file:Suppress("NOTHING_TO_INLINE", "TooManyFunctions")
 
 package cash.z.ecc.android.sdk.ext
 
