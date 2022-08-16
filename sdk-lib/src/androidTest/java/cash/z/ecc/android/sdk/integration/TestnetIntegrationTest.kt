@@ -25,12 +25,12 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.runBlocking
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.BeforeClass
 import org.junit.Ignore
 import org.junit.Test
 import java.util.concurrent.CountDownLatch
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class TestnetIntegrationTest : ScopedTest() {
 
@@ -81,8 +81,8 @@ class TestnetIntegrationTest : ScopedTest() {
         }
 
         assertTrue(
-            "No funds available when we expected a balance greater than zero!",
-            availableBalance!!.value > 0
+            availableBalance!!.value > 0,
+            "No funds available when we expected a balance greater than zero!"
         )
     }
 
@@ -105,7 +105,7 @@ class TestnetIntegrationTest : ScopedTest() {
             ZcashSdk.MINERS_FEE,
             toAddress,
             "first mainnet tx from the SDK"
-        ).filter { it?.isSubmitSuccess() == true }.onFirst {
+        ).filter { it.isSubmitSuccess() }.onFirst {
             log("DONE SENDING!!!")
         }
         log("returning true from sendFunds")

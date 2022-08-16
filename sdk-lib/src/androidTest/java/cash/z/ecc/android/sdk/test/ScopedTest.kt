@@ -6,6 +6,7 @@ import cash.z.ecc.android.sdk.internal.TroubleshootingTwig
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.twig
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
@@ -19,6 +20,7 @@ import org.junit.Before
 import org.junit.BeforeClass
 import java.util.concurrent.TimeoutException
 
+@OptIn(DelicateCoroutinesApi::class)
 open class ScopedTest(val defaultTimeout: Long = 2000L) {
     protected lateinit var testScope: CoroutineScope
 
@@ -60,7 +62,7 @@ open class ScopedTest(val defaultTimeout: Long = 2000L) {
         fun createScope() {
             twig("======================= CLASS STARTED ===============================")
             classScope = CoroutineScope(
-                SupervisorJob() + newFixedThreadPoolContext(2, this.javaClass.simpleName)
+                SupervisorJob() + newFixedThreadPoolContext(2, this::class.java.simpleName)
             )
         }
 
