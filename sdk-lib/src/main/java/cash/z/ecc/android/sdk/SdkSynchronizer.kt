@@ -329,7 +329,8 @@ class SdkSynchronizer internal constructor(
     // Storage APIs
     //
 
-    // TODO: turn this section into the data access API. For now, just aggregate all the things that we want to do with the underlying data
+    // TODO: turn this section into the data access API. For now, just aggregate all the things that we want to do with
+    //  the underlying data
 
     suspend fun findBlockHash(height: BlockHeight): ByteArray? {
         return (storage as? PagedTransactionRepository)?.findBlockHash(height)
@@ -597,7 +598,9 @@ class SdkSynchronizer internal constructor(
         }
             .forEach {
                 val result = txManager.abort(it)
-                twig("[cleanup] FOUND EXPIRED pendingTX (lastScanHeight: $lastScannedHeight  expiryHeight: ${it.expiryHeight}): and ${it.id} ${if (result > 0) "successfully removed" else "failed to remove"} it")
+                twig("[cleanup] FOUND EXPIRED pendingTX (lastScanHeight: $lastScannedHeight " +
+                    " expiryHeight: ${it.expiryHeight}): and ${it.id} " +
+                    "${if (result > 0) "successfully removed" else "failed to remove"} it")
             }
 
         twig("[cleanup] deleting expired transactions from storage", -1)
@@ -779,7 +782,9 @@ object DefaultSynchronizerFactory {
         )
     }
 
-    // TODO [#242]: Don't hard code page size.  It is a workaround for Uncaught Exception: android.view.ViewRootImpl$CalledFromWrongThreadException: Only the original thread that created a view hierarchy can touch its views. and is probably related to FlowPagedList
+    // TODO [#242]: Don't hard code page size.  It is a workaround for Uncaught Exception:
+    //  android.view.ViewRootImpl$CalledFromWrongThreadException: Only the original thread that created a view hierarchy
+    //  can touch its views. and is probably related to FlowPagedList
     private const val DEFAULT_PAGE_SIZE = 1000
     suspend fun defaultTransactionRepository(initializer: Initializer): TransactionRepository =
         PagedTransactionRepository.new(

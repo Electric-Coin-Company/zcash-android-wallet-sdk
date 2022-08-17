@@ -356,14 +356,24 @@ fun PendingTransaction.isSubmitted(): Boolean {
 
 fun PendingTransaction.isExpired(latestHeight: BlockHeight?, saplingActivationHeight: BlockHeight): Boolean {
     // TODO: test for off-by-one error here. Should we use <= or <
-    if (latestHeight == null || latestHeight.value < saplingActivationHeight.value || expiryHeight < saplingActivationHeight.value) return false
+    if (latestHeight == null ||
+        latestHeight.value < saplingActivationHeight.value ||
+        expiryHeight < saplingActivationHeight.value
+    ) {
+        return false
+    }
     return expiryHeight < latestHeight.value
 }
 
 // if we don't have info on a pendingtx after 100 blocks then it's probably safe to stop polling!
 @Suppress("MagicNumber")
 fun PendingTransaction.isLongExpired(latestHeight: BlockHeight?, saplingActivationHeight: BlockHeight): Boolean {
-    if (latestHeight == null || latestHeight.value < saplingActivationHeight.value || expiryHeight < saplingActivationHeight.value) return false
+    if (latestHeight == null ||
+        latestHeight.value < saplingActivationHeight.value ||
+        expiryHeight < saplingActivationHeight.value
+    ) {
+        return false
+    }
     return (latestHeight.value - expiryHeight) > 100
 }
 

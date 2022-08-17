@@ -190,8 +190,11 @@ class PersistentTransactionManager(
         try {
             // do nothing if failed or cancelled
             when {
-                tx.isFailedEncoding() -> twig("Warning: this transaction will not be submitted because it failed to be encoded.")
-                tx.isCancelled() -> twig("Warning: ignoring cancelled transaction with id ${tx.id}. We will not submit it to the network because it has been cancelled.")
+                tx.isFailedEncoding() ->
+                    twig("Warning: this transaction will not be submitted because it failed to be encoded.")
+                tx.isCancelled() ->
+                    twig("Warning: ignoring cancelled transaction with id ${tx.id}. We will not submit it to" +
+                        " the network because it has been cancelled.")
                 else -> {
                     twig("submitting transaction with memo: ${tx.memo} amount: ${tx.value}", -1)
                     val response = service.submitTransaction(tx.raw)
@@ -287,9 +290,9 @@ class PersistentTransactionManager(
     //
 
     /**
-     * Updating the pending transaction is often done at the end of a function but still should
-     * happen within a try/catch block, surrounded by logging. So this helps with that while also
-     * ensuring that no other coroutines are concurrently interacting with the DAO.
+     * Updating the pending transaction is often done at the end of a function but still should happen within a
+     * try/catch block, surrounded by logging. So this helps with that while also ensuring that no other coroutines are
+     * concurrently interacting with the DAO.
      */
     private suspend fun <R> safeUpdate(logMessage: String = "", priority: Int = 0, block: suspend PendingTransactionDao.() -> R): R? {
         return try {

@@ -106,7 +106,8 @@ internal class PagedTransactionRepository private constructor(
         }
     }
 
-    // TODO: begin converting these into Data Access API. For now, just collect the desired operations and iterate/refactor, later
+    // TODO: begin converting these into Data Access API. For now, just collect the desired
+    //  operations and iterate/refactor, later
     suspend fun findBlockHash(height: BlockHeight): ByteArray? = blocks.findHashByHeight(height.value)
     suspend fun getTransactionCount(): Int = transactions.count()
 
@@ -150,7 +151,8 @@ internal class PagedTransactionRepository private constructor(
                 .addMigrations(DerivedDataDb.MIGRATION_5_6)
                 .addMigrations(DerivedDataDb.MIGRATION_6_7)
                 .build().also {
-                    // TODO: document why we do this. My guess is to catch database issues early or to trigger migrations--I forget why it was added but there was a good reason?
+                    // TODO: document why we do this. My guess is to catch database issues early or to trigger
+                    //  migrations--I forget why it was added but there was a good reason?
                     withContext(SdkDispatchers.DATABASE_IO) {
                         // TODO [#649]: https://github.com/zcash/zcash-android-wallet-sdk/issues/649
                         it.openHelper.writableDatabase.beginTransaction()

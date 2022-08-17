@@ -27,8 +27,8 @@ object ZcashSdk {
     const val MAX_MEMO_SIZE = 512
 
     /**
-     * The amount of blocks ahead of the current height where new transactions are set to expire. This value is controlled
-     * by the rust backend but it is helpful to know what it is set to and should be kept in sync.
+     * The amount of blocks ahead of the current height where new transactions are set to expire. This value is
+     * controlled by the rust backend but it is helpful to know what it is set to and should be kept in sync.
      */
     const val EXPIRY_OFFSET = 20
 
@@ -63,14 +63,14 @@ object ZcashSdk {
     const val RETRIES = 5
 
     /**
-     * The default maximum amount of time to wait during retry backoff intervals. Failed loops will never wait longer than
-     * this before retyring.
+     * The default maximum amount of time to wait during retry backoff intervals. Failed loops will never wait longer
+     * than this before retyring.
      */
     const val MAX_BACKOFF_INTERVAL = 600_000L
 
     /**
-     * Default number of blocks to rewind when a chain reorg is detected. This should be large enough to recover from the
-     * reorg but smaller than the theoretical max reorg size of 100.
+     * Default number of blocks to rewind when a chain reorg is detected. This should be large enough to recover from
+     * the reorg but smaller than the theoretical max reorg size of 100.
      */
     const val REWIND_DISTANCE = 10
 

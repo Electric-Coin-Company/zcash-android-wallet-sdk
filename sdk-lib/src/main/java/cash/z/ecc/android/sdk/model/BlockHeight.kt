@@ -44,7 +44,8 @@ data class BlockHeight internal constructor(val value: Long) : Comparable<BlockH
 
         /**
          * @param zcashNetwork Network to use for the block height.
-         * @param blockHeight The block height.  Must be in range of a UInt32 AND must be greater than the network's sapling activation height.
+         * @param blockHeight The block height.  Must be in range of a UInt32 AND must be greater than the network's
+         * sapling activation height.
          */
         fun new(zcashNetwork: ZcashNetwork, blockHeight: Long): BlockHeight {
             require(blockHeight >= zcashNetwork.saplingActivationHeight.value) {

@@ -95,12 +95,20 @@ inline fun twig(t: Throwable) = t.stackTraceToString().lines().forEach {
 /**
  * Times a tiny log.
  */
-inline fun <R> twig(logMessage: String, priority: Int = 0, block: () -> R): R = Bush.trunk.twig(logMessage, priority, block)
+inline fun <R> twig(
+    logMessage: String,
+    priority: Int = 0,
+    block: () -> R): R = Bush.trunk.twig(logMessage, priority, block
+)
 
 /**
  * Meticulously times a tiny task.
  */
-inline fun <R> twigTask(logMessage: String, priority: Int = 0, block: () -> R): R = Bush.trunk.twigTask(logMessage, priority, block)
+inline fun <R> twigTask(
+    logMessage: String,
+    priority: Int = 0,
+    block: () -> R): R = Bush.trunk.twigTask(logMessage, priority, block
+)
 
 /**
  * A tiny log that does nothing. No one hears this twig fall in the woods.

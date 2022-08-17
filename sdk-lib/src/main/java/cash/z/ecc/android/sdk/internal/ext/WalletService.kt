@@ -80,7 +80,8 @@ suspend inline fun retryWithBackoff(
     maxDelayMillis: Long = MAX_BACKOFF_INTERVAL,
     block: () -> Unit
 ) {
-    var sequence = 0 // count up to the max and then reset to half. So that we don't repeat the max but we also don't repeat too much.
+    // count up to the max and then reset to half. So that we don't repeat the max but we also don't repeat too much.
+    var sequence = 0
     while (true) {
         try {
             block()
@@ -93,7 +94,10 @@ suspend inline fun retryWithBackoff(
 
             sequence++
             // initialDelay^(sequence/4) + jitter
-            var duration = Math.pow(initialDelayMillis.toDouble(), (sequence.toDouble() / 4.0)).toLong() + Random.nextLong(1000L)
+            var duration = Math.pow(
+                initialDelayMillis.toDouble(),
+                (sequence.toDouble() / 4.0)
+            ).toLong() + Random.nextLong(1000L)
             if (duration > maxDelayMillis) {
                 duration = maxDelayMillis - Random.nextLong(1000L) // include jitter but don't exceed max delay
                 sequence /= 2

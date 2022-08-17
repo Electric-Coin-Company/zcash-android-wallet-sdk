@@ -367,7 +367,8 @@ interface TransactionDao {
                       ON transactions.id_tx = sent_notes.tx
                LEFT JOIN blocks
                       ON transactions.block = blocks.height
-        /* we want all received txs except those that are change and all sent transactions (even those that haven't been mined yet). Note: every entry in the 'send_notes' table has a non-null value for 'address' */
+        /* we want all received txs except those that are change and all sent transactions (even those that haven't been
+            mined yet). Note: every entry in the 'send_notes' table has a non-null value for 'address' */
         WHERE  ( sent_notes.address IS NULL 
                  AND received_notes.is_change != 1 ) 
                 OR sent_notes.address IS NOT NULL   
@@ -423,7 +424,11 @@ interface TransactionDao {
         LIMIT  :limit 
         """
     )
-    suspend fun findAllTransactionsByRange(blockRangeStart: Long, blockRangeEnd: Long = blockRangeStart, limit: Int = Int.MAX_VALUE): List<ConfirmedTransaction>
+    suspend fun findAllTransactionsByRange(
+        blockRangeStart: Long,
+        blockRangeEnd: Long = blockRangeStart,
+        limit: Int = Int.MAX_VALUE
+    ): List<ConfirmedTransaction>
 
     // Experimental: cleanup cancelled transactions
     //               This should probably be a rust call but there's not a lot of bandwidth for this
@@ -463,7 +468,8 @@ interface TransactionDao {
                 deleteSentNote(noteId)
             }
 
-            // delete the UTXOs because these are effectively cached and we don't have a good way of knowing whether they're spent
+            // delete the UTXOs because these are effectively cached and we don't have a good way of knowing whether
+            // they're spent
             deleteUtxos(transactionId).let { count ->
                 twig("[cleanup] removed $count UTXOs matching transactionId $transactionId")
             }

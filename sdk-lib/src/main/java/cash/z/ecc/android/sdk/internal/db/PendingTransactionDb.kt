@@ -73,7 +73,8 @@ interface PendingTransactionDao {
     @Query("UPDATE pending_transactions SET minedHeight = :minedHeight WHERE id = :id")
     suspend fun updateMinedHeight(id: Long, minedHeight: Long)
 
-    @Query("UPDATE pending_transactions SET raw = :raw, rawTransactionId = :rawTransactionId, expiryHeight = :expiryHeight WHERE id = :id")
+    @Query("UPDATE pending_transactions SET raw = :raw, rawTransactionId = :rawTransactionId," +
+        " expiryHeight = :expiryHeight WHERE id = :id")
     suspend fun updateEncoding(id: Long, raw: ByteArray, rawTransactionId: ByteArray, expiryHeight: Long?)
 
     @Query("UPDATE pending_transactions SET errorMessage = :errorMessage, errorCode = :errorCode WHERE id = :id")
