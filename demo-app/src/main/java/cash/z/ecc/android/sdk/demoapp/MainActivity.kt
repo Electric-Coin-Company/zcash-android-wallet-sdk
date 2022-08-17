@@ -20,6 +20,7 @@ import androidx.viewbinding.ViewBinding
 import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.internal.service.LightWalletGrpcService
 import cash.z.ecc.android.sdk.internal.service.LightWalletService
+import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.LightWalletEndpoint
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.model.defaultForNetwork
@@ -156,15 +157,19 @@ class MainActivity :
     /* DrawerListener implementation */
 
     override fun onDrawerStateChanged(newState: Int) {
+        twig("Drawer state changed to: $newState.")
     }
 
     override fun onDrawerSlide(drawerView: View, slideOffset: Float) {
+        twig("Drawer slides with offset: $slideOffset.")
     }
 
     override fun onDrawerClosed(drawerView: View) {
+        twig("Drawer closed.")
     }
 
     override fun onDrawerOpened(drawerView: View) {
+        twig("Drawer opened.")
         hideKeyboard()
     }
 }

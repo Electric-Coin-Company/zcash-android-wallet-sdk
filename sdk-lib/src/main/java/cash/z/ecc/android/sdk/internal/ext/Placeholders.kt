@@ -4,13 +4,16 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Build
 import android.provider.Settings
+import cash.z.ecc.android.sdk.internal.twig
 import kotlin.properties.ReadOnlyProperty
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 
 @Deprecated(message = InsecureWarning.message)
 class SampleSpendingKeyProvider(private val seedValue: String) : ReadWriteProperty<Any?, String> {
+
     override fun setValue(thisRef: Any?, property: KProperty<*>, value: String) {
+        twig("Set value called on property: $property, with value: $value.")
     }
 
     override fun getValue(thisRef: Any?, property: KProperty<*>): String {
