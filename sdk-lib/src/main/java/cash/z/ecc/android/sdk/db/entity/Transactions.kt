@@ -5,6 +5,7 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
+import androidx.room.RoomWarnings
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.Zatoshi
 
@@ -23,6 +24,7 @@ import cash.z.ecc.android.sdk.model.Zatoshi
         )
     ]
 )
+@SuppressWarnings(RoomWarnings.MISSING_INDEX_ON_FOREIGN_KEY_CHILD)
 data class TransactionEntity(
     @ColumnInfo(name = "id_tx")
     val id: Long?,
