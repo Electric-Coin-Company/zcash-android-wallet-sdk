@@ -8,6 +8,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONObject
 import ru.gildor.coroutines.okhttp.await
+import kotlin.test.assertNotNull
 
 fun Initializer.Config.seedPhrase(seedPhrase: String, network: ZcashNetwork) {
     runBlocking { setSeed(SimpleMnemonics().toSeed(seedPhrase.toCharArray()), network) }
@@ -21,6 +22,7 @@ object BlockExplorer {
             .build()
         val result = client.newCall(request).await()
         val body = result.body?.string()
+        assertNotNull(body, "Body can not be null.")
         return JSONObject(body).getJSONArray("data").getJSONObject(0).getLong("id")
     }
 }

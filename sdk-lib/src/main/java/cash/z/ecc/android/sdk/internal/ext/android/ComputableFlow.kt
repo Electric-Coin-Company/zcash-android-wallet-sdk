@@ -3,6 +3,7 @@ package cash.z.ecc.android.sdk.internal.ext.android
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.ConflatedBroadcastChannel
@@ -12,6 +13,9 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.launch
 
 /* Adapted from ComputableLiveData */
+// TODO [#658] https://github.com/zcash/zcash-android-wallet-sdk/issues/658
+@Suppress("DEPRECATION")
+@OptIn(ObsoleteCoroutinesApi::class)
 abstract class ComputableFlow<T>(dispatcher: CoroutineDispatcher = Dispatchers.IO) {
     private val computationScope: CoroutineScope = CoroutineScope(dispatcher + SupervisorJob())
     private val computationChannel: ConflatedBroadcastChannel<T> = ConflatedBroadcastChannel()

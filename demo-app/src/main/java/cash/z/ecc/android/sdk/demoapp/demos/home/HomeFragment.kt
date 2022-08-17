@@ -49,12 +49,14 @@ class HomeFragment : BaseDemoFragment<FragmentHomeBinding>() {
         mainActivity()?.removeClipboardListener()
     }
 
+    @Suppress("UNUSED_PARAMETER")
     private fun onEditSeedPhrase(unused: View) {
         setEditShown(true)
         binding.inputSeedPhrase.setText(sharedViewModel.seedPhrase.value)
         binding.textLayoutSeedPhrase.helperText = ""
     }
 
+    @Suppress("UNUSED_PARAMETER")
     private fun onAcceptSeedPhrase(unused: View) {
         if (applySeedPhrase()) {
             setEditShown(false)
@@ -62,10 +64,12 @@ class HomeFragment : BaseDemoFragment<FragmentHomeBinding>() {
         }
     }
 
+    @Suppress("UNUSED_PARAMETER")
     private fun onCancelSeedPhrase(unused: View) {
         setEditShown(false)
     }
 
+    @Suppress("UNUSED_PARAMETER")
     private fun onPasteSeedPhrase(unused: View) {
         mainActivity()?.getClipboardText().let { clipboardText ->
             binding.inputSeedPhrase.setText(clipboardText)

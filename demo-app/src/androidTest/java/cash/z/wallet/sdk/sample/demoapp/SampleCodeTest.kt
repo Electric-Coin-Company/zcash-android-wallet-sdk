@@ -70,14 +70,14 @@ class SampleCodeTest {
             )
         }
         assertEquals(1, spendingKeys.size)
-        log("Spending Key: ${spendingKeys?.get(0)}")
+        log("Spending Key: ${spendingKeys[0]}")
     }
 
     // ///////////////////////////////////////////////////
     // Get Address
     @Test fun getAddress() = runBlocking {
         val address = synchronizer.getAddress()
-        assertFalse(address.isNullOrBlank())
+        assertFalse(address.isBlank())
         log("Address: $address")
     }
 

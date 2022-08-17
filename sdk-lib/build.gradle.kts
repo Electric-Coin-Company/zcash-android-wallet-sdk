@@ -122,10 +122,8 @@ android {
     useLibrary("android.test.runner")
 
     defaultConfig {
-        javaCompileOptions {
-            annotationProcessorOptions {
-                argument("room.schemaLocation", "$projectDir/schemas")
-            }
+        ksp {
+            arg("room.schemaLocation", "$projectDir/schemas")
         }
 
         consumerProguardFiles("proguard-consumer.txt")
@@ -301,6 +299,7 @@ dependencies {
     androidTestImplementation(libs.androidx.test.junit)
     androidTestImplementation(libs.androidx.test.core)
     androidTestImplementation(libs.coroutines.okhttp)
+    androidTestImplementation(libs.kotlin.test)
     androidTestImplementation(libs.kotlinx.coroutines.test)
     // used by 'ru.gildor.corutines.okhttp.await' (to make simple suspended requests) and breaks on versions higher than 3.8.0
     androidTestImplementation(libs.okhttp)

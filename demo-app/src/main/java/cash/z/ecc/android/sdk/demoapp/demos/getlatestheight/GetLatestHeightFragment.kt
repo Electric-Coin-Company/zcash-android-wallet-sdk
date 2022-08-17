@@ -15,7 +15,7 @@ class GetLatestHeightFragment : BaseDemoFragment<FragmentGetLatestHeightBinding>
     private fun displayLatestHeight() {
         // note: this is a blocking call, a real app wouldn't do this on the main thread
         //       instead, a production app would leverage the synchronizer like in the other demos
-        binding.textInfo.text = lightwalletService?.getLatestBlockHeight().toString()
+        binding.textInfo.text = lightWalletService?.getLatestBlockHeight().toString()
     }
 
     //

@@ -3,6 +3,7 @@ package cash.z.ecc.android.sdk.demoapp.demos.listtransactions
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import cash.z.ecc.android.bip39.Mnemonics
@@ -33,7 +34,7 @@ import kotlinx.coroutines.runBlocking
 class ListTransactionsFragment : BaseDemoFragment<FragmentListTransactionsBinding>() {
     private lateinit var initializer: Initializer
     private lateinit var synchronizer: Synchronizer
-    private lateinit var adapter: TransactionAdapter<ConfirmedTransaction>
+    private lateinit var adapter: TransactionAdapter
     private lateinit var address: String
     private var status: Synchronizer.Status? = null
     private val isSynced get() = status == Synchronizer.Status.SYNCED
@@ -134,9 +135,14 @@ class ListTransactionsFragment : BaseDemoFragment<FragmentListTransactionsBindin
     // Android Lifecycle overrides
     //
 
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View? {
+        val view = super.onCreateView(inflater, container, savedInstanceState)
         setup()
+        return view
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {

@@ -18,6 +18,7 @@ import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.tool.DerivationTool
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.catch
@@ -34,6 +35,7 @@ import java.util.concurrent.TimeoutException
  * A simple wallet that connects to testnet for integration testing. The intention is that it is
  * easy to drive and nice to use.
  */
+@OptIn(DelicateCoroutinesApi::class)
 class TestWallet(
     val seedPhrase: String,
     val alias: String = "TestWallet",

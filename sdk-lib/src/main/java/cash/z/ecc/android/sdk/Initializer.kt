@@ -20,7 +20,7 @@ import java.io.File
 /**
  * Simplified Initializer focused on starting from a ViewingKey.
  */
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "unused")
 class Initializer private constructor(
     val context: Context,
     internal val rustBackend: RustBackend,
@@ -147,12 +147,10 @@ class Initializer private constructor(
         /**
          * Set the server and the network property at the same time to prevent them from getting out
          * of sync. Ultimately, this determines which host a synchronizer will use in order to
-         * connect to lightwalletd. In most cases, the default host is sufficient but an override
-         * can be provided. The host cannot be changed without explicitly setting the network.
+         * connect to lightwalletd.
          *
          * @param network the Zcash network to use. Either testnet or mainnet.
-         * @param host the lightwalletd host to use.
-         * @param port the lightwalletd port to use.
+         * @param lightWalletEndpoint the light wallet endpoint to use.
          */
         fun setNetwork(
             network: ZcashNetwork,
@@ -311,6 +309,7 @@ class Initializer private constructor(
             block: (Config) -> Unit
         ) = new(appContext, onCriticalErrorHandler, Config(block))
 
+        @Suppress("UNUSED_PARAMETER")
         suspend fun new(
             context: Context,
             onCriticalErrorHandler: ((Throwable?) -> Boolean)?,

@@ -109,9 +109,11 @@ interface OutboundTransactionManager {
     /**
      * Delete the given transaction but return 0 if it did not exist.
      *
+     * @param transaction the transaction to be processed.
+     *
      * @return the total number of transactions successfully removed from storage.
      */
-    suspend fun abort(it: PendingTransaction): Int
+    suspend fun abort(transaction: PendingTransaction): Int
 
     /**
      * Get all pending transactions known to this wallet as a flow that is updated anytime the list

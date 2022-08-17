@@ -3,6 +3,7 @@ package cash.z.ecc.android.sdk.db.entity
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
+import androidx.room.RoomWarnings
 
 @Entity(
     tableName = "received_notes",
@@ -25,6 +26,7 @@ import androidx.room.ForeignKey
         )
     ]
 )
+@SuppressWarnings(RoomWarnings.MISSING_INDEX_ON_FOREIGN_KEY_CHILD)
 data class Received(
     @ColumnInfo(name = "id_note")
     val id: Int? = 0,

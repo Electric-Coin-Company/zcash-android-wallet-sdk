@@ -24,7 +24,7 @@ enum class ConsensusBranchId(val displayName: String, val id: Long, val hexId: S
         fun fromId(id: Long): ConsensusBranchId? = values().firstOrNull { it.id == id }
 
         fun fromHex(hex: String): ConsensusBranchId? = values().firstOrNull { branch ->
-            hex.toLowerCase(Locale.US).replace("_", "").replaceFirst("0x", "").let { sanitized ->
+            hex.lowercase(Locale.US).replace("_", "").replaceFirst("0x", "").let { sanitized ->
                 branch.hexId.equals(sanitized, true)
             }
         }
