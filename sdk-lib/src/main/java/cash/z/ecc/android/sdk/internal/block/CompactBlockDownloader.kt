@@ -80,7 +80,7 @@ open class CompactBlockDownloader private constructor(val compactBlockStore: Com
         try {
             result = lightWalletService.getServerInfo()
         } catch (e: StatusRuntimeException) {
-            retryUpTo(6) {
+            retryUpTo(GET_SERVER_INFO_RETRIES) {
                 twig("WARNING: reconnecting to service in response to failure (retry #${it + 1}): $e")
                 lightWalletService.reconnect()
                 result = lightWalletService.getServerInfo()
@@ -139,6 +139,7 @@ open class CompactBlockDownloader private constructor(val compactBlockStore: Com
     //
 
     private suspend fun CoroutineScope.gracefullyShutdown(service: LightWalletService) = launch {
+        @Suppress("MagicNumber")
         delay(2_000L)
         tryWarn("Warning: error while shutting down service") {
             service.shutdown()
@@ -160,4 +161,8 @@ open class CompactBlockDownloader private constructor(val compactBlockStore: Com
                 it.add("chainName")
             }
         }
+
+    companion object {
+        private const val GET_SERVER_INFO_RETRIES = 6
+    }
 }

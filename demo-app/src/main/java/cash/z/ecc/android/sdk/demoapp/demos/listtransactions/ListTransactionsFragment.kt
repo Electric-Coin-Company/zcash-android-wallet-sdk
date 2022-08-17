@@ -98,6 +98,7 @@ class ListTransactionsFragment : BaseDemoFragment<FragmentListTransactionsBindin
         if (info.isScanning) binding.textInfo.text = "Scanning blocks...${info.scanProgress}%"
     }
 
+    @Suppress("MagicNumber")
     private fun onProgress(i: Int) {
         if (i < 100) binding.textInfo.text = "Downloading blocks...$i%"
     }

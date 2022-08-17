@@ -422,7 +422,7 @@ class Initializer private constructor(
  */
 internal fun validateAlias(alias: String) {
     require(
-        alias.length in 1..99 && alias[0].isLetter() &&
+        alias.length in ZcashSdk.ALIAS_MIN_LENGTH..ZcashSdk.ALIAS_MAX_LENGTH && alias[0].isLetter() &&
             alias.all { it.isLetterOrDigit() || it == '_' }
     ) {
         "ERROR: Invalid alias ($alias). For security, the alias must be shorter than 100 " +

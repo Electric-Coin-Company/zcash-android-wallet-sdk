@@ -496,6 +496,7 @@ class SdkSynchronizer internal constructor(
         // refresh anyway if:
         // - if it's the first time we finished scanning
         // - if we check for blocks 5 times and find nothing was mined
+        @Suppress("MagicNumber")
         val shouldRefresh = !scannedRange.isEmpty() || elapsedMillis > (ZcashSdk.POLL_INTERVAL * 5)
         val reason = if (scannedRange.isEmpty()) "it's been a while" else "new blocks were scanned"
 

@@ -8,6 +8,7 @@ import cash.z.ecc.android.sdk.model.Zatoshi
  * becomes easier to reduce privacy by segmenting the anonymity set of users, particularly as it
  * relates to network requests.
  */
+@Suppress("MagicNumber")
 object ZcashSdk {
 
     /**
@@ -95,5 +96,19 @@ object ZcashSdk {
      */
     const val DEFAULT_SHIELD_FUNDS_MEMO_PREFIX = "shielding:"
 
+    /**
+     * The default alias used as part of a file name for the preferences and databases. This
+     * enables multiple wallets to exist on one device, which is also helpful for sweeping funds.
+     */
     const val DEFAULT_ALIAS: String = "zcash_sdk"
+
+    /**
+     * The minimum alias length to be valid for our use.
+     */
+    const val ALIAS_MIN_LENGTH: Int = 1
+
+    /**
+     * The maximum alias length to be valid for our use.
+     */
+    const val ALIAS_MAX_LENGTH: Int = 99
 }

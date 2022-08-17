@@ -1,4 +1,4 @@
-@file:Suppress("NOTHING_TO_INLINE")
+@file:Suppress("NOTHING_TO_INLINE", "MagicNumber")
 
 package cash.z.ecc.android.sdk.internal
 import java.util.concurrent.CopyOnWriteArraySet

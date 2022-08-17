@@ -1,8 +1,8 @@
 package cash.z.ecc.android.sdk.demoapp
 
 object DemoConstants {
-    val utxoEndHeight: Int = 1075590
-    val sendAmount: Double = 0.00017
+    const val UTXO_END_HEIGHT: Int = 1075590
+    const val SEND_AMOUNT: Double = 0.00017
 
     // corresponds to address: ztestsapling1zhqvuq8zdwa8nsnde7074kcfsat0w25n08jzuvz5skzcs6h9raxu898l48xwr8fmkny3zqqrgd9
     val initialSeedWords: String =

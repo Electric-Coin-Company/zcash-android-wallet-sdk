@@ -73,6 +73,7 @@ inline fun retrySimple(retries: Int = 2, sleepTime: Long = 20L, block: (Int) -> 
  * @param maxDelayMillis the maximum delay between retries.
  * @param block the logic to run once and then run again if it fails.
  */
+@Suppress("MagicNumber")
 suspend inline fun retryWithBackoff(
     noinline onErrorListener: ((Throwable) -> Boolean)? = null,
     initialDelayMillis: Long = 1000L,

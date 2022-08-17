@@ -1,8 +1,7 @@
 package cash.z.ecc.android.sdk.demoapp
 
 object DemoConstants {
-
-    val sendAmount: Double = 0.000018
+    const val SEND_AMOUNT: Double = 0.000018
 
     // corresponds to address: zs15tzaulx5weua5c7l47l4pku2pw9fzwvvnsp4y80jdpul0y3nwn5zp7tmkcclqaca3mdjqjkl7hx
     val initialSeedWords: String =

@@ -22,6 +22,7 @@ class TransactionViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) 
     private val icon = itemView.findViewById<ImageView>(R.id.image_transaction_type)
     private val formatter = SimpleDateFormat("M/d h:mma", Locale.getDefault())
 
+    @Suppress("MagicNumber")
     fun bindTo(transaction: ConfirmedTransaction?) {
         val isInbound = transaction?.toAddress.isNullOrEmpty()
         amountText.text = transaction?.valueInZatoshi.convertZatoshiToZecString()

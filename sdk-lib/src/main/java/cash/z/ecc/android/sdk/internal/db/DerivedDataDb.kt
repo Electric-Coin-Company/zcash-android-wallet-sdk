@@ -54,6 +54,7 @@ abstract class DerivedDataDb : RoomDatabase() {
     // Migrations
     //
 
+    @Suppress("MagicNumber")
     companion object {
 
         val MIGRATION_3_4 = object : Migration(3, 4) {

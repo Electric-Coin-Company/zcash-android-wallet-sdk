@@ -497,6 +497,7 @@ class CompactBlockProcessor internal constructor(
     }
 
     var failedUtxoFetches = 0
+    @Suppress("MagicNumber")
     internal suspend fun refreshUtxos(tAddress: String, startHeight: BlockHeight): Int? =
         withContext(IO) {
             var count: Int? = null
@@ -556,6 +557,7 @@ class CompactBlockProcessor internal constructor(
      * @param range the range of blocks to download.
      */
     @VisibleForTesting // allow mocks to verify how this is called, rather than the downloader, which is more complex
+    @Suppress("MagicNumber")
     internal suspend fun downloadNewBlocks(range: ClosedRange<BlockHeight>?) =
         withContext<Unit>(IO) {
             if (null == range || range.isEmpty()) {
@@ -629,6 +631,7 @@ class CompactBlockProcessor internal constructor(
      *
      *  @param range the range of blocks to scan.
      */
+    @Suppress("MagicNumber")
     private suspend fun scanNewBlocks(range: ClosedRange<BlockHeight>?): Boolean = withContext(IO) {
         if (null == range || range.isEmpty()) {
             twig("no blocks to scan for range $range")
@@ -731,6 +734,7 @@ class CompactBlockProcessor internal constructor(
     /**
      * Rewind back at least two weeks worth of blocks.
      */
+    @Suppress("MagicNumber")
     suspend fun quickRewind() {
         val height = max(currentInfo.lastScannedHeight, repository.lastScannedHeight())
         val blocksPerDay = 60 * 60 * 24 * 1000 / ZcashSdk.BLOCK_INTERVAL_MILLIS.toInt()
@@ -1093,6 +1097,7 @@ class CompactBlockProcessor internal constructor(
         /**
          * The amount of scan progress from 0 to 100.
          */
+        @Suppress("MagicNumber")
         val scanProgress
             get() = when {
                 lastScannedHeight == null -> 0

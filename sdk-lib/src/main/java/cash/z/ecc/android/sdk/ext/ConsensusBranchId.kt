@@ -7,6 +7,7 @@ import java.util.Locale
  * omitted since this is not the source of truth for branch information but rather a tool for
  * printing that information to users.
  */
+@Suppress("MagicNumber")
 enum class ConsensusBranchId(val displayName: String, val id: Long, val hexId: String) {
     // TODO: see if we can find a way to not rely on this separate source of truth (either stop converting from hex to display name in the apps or use Rust to get this info)
     SPROUT("Sprout", 0, "0"),

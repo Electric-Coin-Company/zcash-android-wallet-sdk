@@ -258,7 +258,11 @@ class PersistentTransactionManager(
         withContext(IO) {
             twig("[cleanup] marking pendingTx $id for deletion")
             removeRawTransactionId(id)
-            updateError(id, "safe to delete", -9090)
+            updateError(
+                id,
+                SAFE_TO_DELETE_ERROR_MESSAGE,
+                SAFE_TO_DELETE_ERROR_CODE
+            )
         }
     }
 
@@ -316,5 +320,8 @@ class PersistentTransactionManager(
 
         /** Error code for an error while submitting a transaction */
         const val ERROR_SUBMITTING = 3000
+
+        private const val SAFE_TO_DELETE_ERROR_MESSAGE = "safe to delete"
+        const val SAFE_TO_DELETE_ERROR_CODE = -9090
     }
 }

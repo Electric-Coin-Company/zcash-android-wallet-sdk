@@ -8,6 +8,7 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
 import androidx.room.RoomWarnings
+import cash.z.ecc.android.sdk.internal.transaction.PersistentTransactionManager
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.Zatoshi
 
@@ -360,15 +361,18 @@ fun PendingTransaction.isExpired(latestHeight: BlockHeight?, saplingActivationHe
 }
 
 // if we don't have info on a pendingtx after 100 blocks then it's probably safe to stop polling!
+@Suppress("MagicNumber")
 fun PendingTransaction.isLongExpired(latestHeight: BlockHeight?, saplingActivationHeight: BlockHeight): Boolean {
     if (latestHeight == null || latestHeight.value < saplingActivationHeight.value || expiryHeight < saplingActivationHeight.value) return false
     return (latestHeight.value - expiryHeight) > 100
 }
 
 fun PendingTransaction.isMarkedForDeletion(): Boolean {
-    return rawTransactionId == null && (errorCode ?: 0) == -9090
+    return rawTransactionId == null &&
+        (errorCode ?: 0) == PersistentTransactionManager.SAFE_TO_DELETE_ERROR_CODE
 }
 
+@Suppress("MagicNumber")
 fun PendingTransaction.isSafeToDiscard(): Boolean {
     // invalid dates shouldn't happen or should be temporary
     if (createTime < 0) return false

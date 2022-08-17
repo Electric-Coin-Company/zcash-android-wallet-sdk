@@ -112,7 +112,7 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
 
     private fun initSendUi() {
         amountInput = binding.inputAmount.apply {
-            setText(DemoConstants.sendAmount.toZecString())
+            setText(DemoConstants.SEND_AMOUNT.toZecString())
         }
         addressInput = binding.inputAddress.apply {
             setText(DemoConstants.toAddress)
@@ -141,6 +141,7 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
         }
     }
 
+    @Suppress("MagicNumber")
     private fun onProgress(i: Int) {
         if (i < 100) {
             binding.textStatus.text = "Downloading blocks...$i%"
@@ -154,6 +155,7 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
         if (info.isScanning) binding.textStatus.text = "Scanning blocks...${info.scanProgress}%"
     }
 
+    @Suppress("MagicNumber")
     private fun onBalance(balance: WalletBalance?) {
         this.balance = balance
         if (!isSyncing) {

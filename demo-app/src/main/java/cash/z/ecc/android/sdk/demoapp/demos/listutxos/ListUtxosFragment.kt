@@ -149,6 +149,7 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
                 withContext(Dispatchers.IO) {
                     finalCount = (synchronizer as SdkSynchronizer).getTransactionCount()
                     withContext(Dispatchers.Main) {
+                        @Suppress("MagicNumber")
                         delay(100)
                         updateStatus("Also found ${finalCount - initialCount} shielded txs")
                     }
@@ -243,6 +244,7 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
         if (info.isScanning) binding.textStatus.text = "Scanning blocks...${info.scanProgress}%"
     }
 
+    @Suppress("MagicNumber")
     private fun onProgress(i: Int) {
         if (i < 100) binding.textStatus.text = "Downloading blocks...$i%"
     }

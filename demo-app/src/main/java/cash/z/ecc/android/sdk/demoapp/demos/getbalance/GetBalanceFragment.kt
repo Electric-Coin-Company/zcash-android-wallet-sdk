@@ -78,6 +78,7 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
         synchronizer.saplingBalances.filterNotNull().collectWith(lifecycleScope, ::onBalance)
     }
 
+    @Suppress("MagicNumber")
     private fun onBalance(balance: WalletBalance) {
         binding.textBalance.text = """
                 Available balance: ${balance.available.convertZatoshiToZecString(12)}
@@ -95,6 +96,7 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
         }
     }
 
+    @Suppress("MagicNumber")
     private fun onProgress(i: Int) {
         if (i < 100) {
             binding.textStatus.text = "Downloading blocks...$i%"
