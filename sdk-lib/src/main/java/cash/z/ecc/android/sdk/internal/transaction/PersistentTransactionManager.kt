@@ -303,10 +303,9 @@ class PersistentTransactionManager(
             twig(logMessage, priority)
             pendingTransactionDao { block() }
         } catch (t: Throwable) {
-            val stacktrace = StringWriter().also { t.printStackTrace(PrintWriter(it)) }.toString()
             twig(
                 "Unknown error while attempting to '$logMessage':" +
-                    " ${t.message} caused by: ${t.cause} stacktrace: $stacktrace",
+                    " ${t.message} caused by: ${t.cause} stacktrace: ${t.stackTrace}",
                 priority
             )
             null

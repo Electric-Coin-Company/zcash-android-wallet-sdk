@@ -420,8 +420,7 @@ class CompactBlockProcessor internal constructor(
             twig("Done enhancing transaction details")
             BlockProcessingResult.Success
         } catch (t: Throwable) {
-            twig("Failed to enhance due to $t")
-            t.printStackTrace()
+            twig("Failed to enhance due to: ${t.message} caused by: ${t.cause}")
             BlockProcessingResult.FailedEnhance
         } finally {
             Twig.clip("enhancing")
