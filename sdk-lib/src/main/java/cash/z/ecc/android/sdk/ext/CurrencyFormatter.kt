@@ -4,6 +4,7 @@ package cash.z.ecc.android.sdk.ext
 
 import cash.z.ecc.android.sdk.ext.Conversions.USD_FORMATTER
 import cash.z.ecc.android.sdk.ext.Conversions.ZEC_FORMATTER
+import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.Zatoshi
 import java.math.BigDecimal
 import java.math.MathContext
@@ -325,12 +326,15 @@ inline fun BigDecimal.convertCurrency(zecPrice: BigDecimal, isUsd: Boolean): Big
  * @return this string as a BigDecimal or null when parsing fails.
  */
 inline fun String?.safelyConvertToBigDecimal(): BigDecimal? {
-    if (this.isNullOrEmpty()) return BigDecimal.ZERO
+    if (this.isNullOrEmpty()) {
+        return BigDecimal.ZERO
+    }
     return try {
         // ignore commas and whitespace
-        var sanitizedInput = this.filter { it.isDigit() or (it == '.') }
+        val sanitizedInput = this.filter { it.isDigit() or (it == '.') }
         BigDecimal.ZERO.max(BigDecimal(sanitizedInput, MathContext.DECIMAL128))
-    } catch (t: Throwable) {
+    } catch (nfe: NumberFormatException) {
+        twig("Exception while converting String to BigDecimal: ${nfe.message} caused by: ${nfe.cause}")
         return null
     }
 }
