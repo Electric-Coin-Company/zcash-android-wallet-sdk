@@ -216,6 +216,7 @@ internal class PagedTransactionRepository private constructor(
                 "Warning: did not initialize the accounts table. It probably was already initialized.",
                 ifContains = "table is not empty"
             ) {
+                @Suppress("SpreadOperator")
                 rustBackend.initAccountsTable(*viewingKeys.toTypedArray())
                 twig("Initialized the accounts table with ${viewingKeys.size} viewingKey(s)")
             }

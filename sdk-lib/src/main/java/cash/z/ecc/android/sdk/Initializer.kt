@@ -235,6 +235,7 @@ class Initializer private constructor(
             numberOfAccounts: Int = 1
         ): Config =
             apply {
+                @Suppress("SpreadOperator")
                 setViewingKeys(
                     *DerivationTool.deriveUnifiedViewingKeys(
                         seed,

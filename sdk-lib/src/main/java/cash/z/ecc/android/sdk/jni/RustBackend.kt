@@ -73,6 +73,7 @@ internal class RustBackend private constructor(
         numberOfAccounts: Int
     ): Array<UnifiedViewingKey> {
         return DerivationTool.deriveUnifiedViewingKeys(seed, network, numberOfAccounts).apply {
+            @Suppress("SpreadOperator")
             initAccountsTable(*this)
         }
     }
