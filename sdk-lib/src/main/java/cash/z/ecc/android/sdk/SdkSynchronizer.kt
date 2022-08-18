@@ -379,11 +379,7 @@ class SdkSynchronizer internal constructor(
     }
 
     suspend fun isValidAddress(address: String): Boolean {
-        try {
-            return !validateAddress(address).isNotValid
-        } catch (t: Throwable) {
-        }
-        return false
+        return !validateAddress(address).isNotValid
     }
 
     private fun CoroutineScope.onReady() = launch(CoroutineExceptionHandler(::onCriticalError)) {
@@ -720,7 +716,7 @@ class SdkSynchronizer internal constructor(
         return try {
             if (isValidShieldedAddr(address)) Shielded else Transparent
         } catch (zError: Throwable) {
-            var message = zError.message
+            val message = zError.message
             try {
                 if (isValidTransparentAddr(address)) Transparent else Shielded
             } catch (tError: Throwable) {
