@@ -437,13 +437,6 @@ class SdkSynchronizer internal constructor(
         onCriticalErrorHandler?.invoke(error)
     }
 
-    private fun onFailedSend(error: Throwable): Boolean {
-        twig("ERROR while submitting transaction: $error")
-        return onSubmissionErrorHandler?.invoke(error)?.also {
-            if (it) twig("submission error handler signaled that we should try again!")
-        } == true
-    }
-
     private fun onProcessorError(error: Throwable): Boolean {
         twig("ERROR while processing data: $error")
         if (onProcessorErrorHandler == null) {

@@ -21,8 +21,6 @@ import kotlinx.coroutines.launch
 @Suppress("TooManyFunctions")
 class HomeFragment : BaseDemoFragment<FragmentHomeBinding>() {
 
-    private val homeViewModel: HomeViewModel by viewModels()
-
     override fun inflateBinding(layoutInflater: LayoutInflater) =
         FragmentHomeBinding.inflate(layoutInflater)
 
