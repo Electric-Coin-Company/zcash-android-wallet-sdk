@@ -1,6 +1,7 @@
 @file:Suppress("NOTHING_TO_INLINE", "MagicNumber")
 
 package cash.z.ecc.android.sdk.internal
+import java.util.Locale
 import java.util.concurrent.CopyOnWriteArraySet
 import kotlin.math.roundToLong
 
@@ -153,7 +154,7 @@ open class TroubleshootingTwig(
          */
         fun spiffy(stackFrame: Int = 4, tag: String = "@TWIG"): (String) -> String = { logMessage: String ->
             val stack = Thread.currentThread().stackTrace[stackFrame]
-            val time = String.format("$tag %1\$tD %1\$tI:%1\$tM:%1\$tS.%1\$tN", System.currentTimeMillis())
+            val time = String.format(Locale.ENGLISH, "$tag %1\$tD %1\$tI:%1\$tM:%1\$tS.%1\$tN", System.currentTimeMillis())
             val className = stack.className.split(".").lastOrNull()?.split("\$")?.firstOrNull()
             val tags = Bush.leaves.joinToString(" #", "#")
             "$time[$className:${stack.lineNumber}]($tags)    $logMessage"

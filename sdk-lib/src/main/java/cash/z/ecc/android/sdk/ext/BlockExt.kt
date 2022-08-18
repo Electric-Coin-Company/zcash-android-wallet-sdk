@@ -1,9 +1,12 @@
 package cash.z.ecc.android.sdk.ext
 
+import java.util.Locale
+
 fun ByteArray.toHex(): String {
     val sb = StringBuilder(size * 2)
-    for (b in this)
-        sb.append(String.format("%02x", b))
+    for (b in this) {
+        sb.append(String.format(Locale.ROOT, "%02x", b))
+    }
     return sb.toString()
 }
 
