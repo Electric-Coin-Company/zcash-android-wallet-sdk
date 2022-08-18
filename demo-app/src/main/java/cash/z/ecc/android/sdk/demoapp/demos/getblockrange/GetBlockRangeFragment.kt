@@ -77,8 +77,10 @@ class GetBlockRangeFragment : BaseDemoFragment<FragmentGetBlockRangeBinding>() {
     @Suppress("UNUSED_PARAMETER")
     private fun onApply(_unused: View) {
         val network = ZcashNetwork.fromResources(requireApplicationContext())
-        val start = max(binding.textStartHeight.text.toString().toLongOrNull() ?: network.saplingActivationHeight.value, network.saplingActivationHeight.value)
-        val end = max(binding.textEndHeight.text.toString().toLongOrNull() ?: network.saplingActivationHeight.value, network.saplingActivationHeight.value)
+        val start = max(binding.textStartHeight.text.toString().toLongOrNull()
+            ?: network.saplingActivationHeight.value, network.saplingActivationHeight.value)
+        val end = max(binding.textEndHeight.text.toString().toLongOrNull()
+            ?: network.saplingActivationHeight.value, network.saplingActivationHeight.value)
         if (start <= end) {
             try {
                 with(binding.buttonApply) {

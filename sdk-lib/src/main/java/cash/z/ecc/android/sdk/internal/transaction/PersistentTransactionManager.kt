@@ -294,7 +294,11 @@ class PersistentTransactionManager(
      * try/catch block, surrounded by logging. So this helps with that while also ensuring that no other coroutines are
      * concurrently interacting with the DAO.
      */
-    private suspend fun <R> safeUpdate(logMessage: String = "", priority: Int = 0, block: suspend PendingTransactionDao.() -> R): R? {
+    private suspend fun <R> safeUpdate(
+        logMessage: String = "",
+        priority: Int = 0,
+        block: suspend PendingTransactionDao.() -> R
+    ): R? {
         return try {
             twig(logMessage, priority)
             pendingTransactionDao { block() }

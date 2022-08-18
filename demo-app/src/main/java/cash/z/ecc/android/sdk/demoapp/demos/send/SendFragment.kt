@@ -82,7 +82,9 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
         }.let { initializer ->
             synchronizer = Synchronizer.newBlocking(initializer)
         }
-        spendingKey = runBlocking { DerivationTool.deriveSpendingKeys(seed, ZcashNetwork.fromResources(requireApplicationContext())).first() }
+        spendingKey = runBlocking {
+            DerivationTool.deriveSpendingKeys(seed, ZcashNetwork.fromResources(requireApplicationContext())).first()
+        }
     }
 
     //
@@ -186,8 +188,10 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
             pendingTransaction == null -> "Transaction not found"
             pendingTransaction.isMined() -> "Transaction Mined (id: $id)!\n\nSEND COMPLETE".also { isSending = false }
             pendingTransaction.isSubmitSuccess() -> "Successfully submitted transaction!\nAwaiting confirmation..."
-            pendingTransaction.isFailedEncoding() -> "ERROR: failed to encode transaction! (id: $id)".also { isSending = false }
-            pendingTransaction.isFailedSubmit() -> "ERROR: failed to submit transaction! (id: $id)".also { isSending = false }
+            pendingTransaction.isFailedEncoding() ->
+                "ERROR: failed to encode transaction! (id: $id)".also { isSending = false }
+            pendingTransaction.isFailedSubmit() ->
+                "ERROR: failed to submit transaction! (id: $id)".also { isSending = false }
             pendingTransaction.isCreated() -> "Transaction creation complete! (id: $id)"
             pendingTransaction.isCreating() -> "Creating transaction!".also { onResetInfo() }
             else -> "Transaction updated!".also { twig("Unhandled TX state: $pendingTransaction") }

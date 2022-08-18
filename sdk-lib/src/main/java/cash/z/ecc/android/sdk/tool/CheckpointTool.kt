@@ -125,7 +125,8 @@ internal object CheckpointTool {
     }
 
     /**
-     * @param treeFiles A list of files, sorted in descending order based on `int` value of the first part of the filename.
+     * @param treeFiles A list of files, sorted in descending order based on `int` value of the first part of
+     * the filename.
      */
     @VisibleForTesting
     internal suspend fun getFirstValidWalletBirthday(
