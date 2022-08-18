@@ -106,6 +106,7 @@ data class PendingTransactionEntity(
     val valueZatoshi: Zatoshi
         get() = Zatoshi(value)
 
+    @Suppress("ComplexMethod")
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is PendingTransactionEntity) return false
@@ -186,6 +187,7 @@ data class ConfirmedTransaction(
             BlockHeight(minedHeight)
         }
 
+    @Suppress("ComplexMethod")
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is ConfirmedTransaction) return false

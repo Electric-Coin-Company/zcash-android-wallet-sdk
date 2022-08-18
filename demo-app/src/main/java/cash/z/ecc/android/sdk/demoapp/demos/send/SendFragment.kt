@@ -182,6 +182,7 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
         mainActivity()?.hideKeyboard()
     }
 
+    @Suppress("ComplexMethod")
     private fun onPendingTxUpdated(pendingTransaction: PendingTransaction?) {
         val id = pendingTransaction?.id ?: -1
         val message = when {

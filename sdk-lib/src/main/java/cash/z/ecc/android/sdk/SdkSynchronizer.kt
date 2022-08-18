@@ -529,7 +529,7 @@ class SdkSynchronizer internal constructor(
         }
     }
 
-    @Suppress("LongMethod")
+    @Suppress("LongMethod", "ComplexMethod")
     private suspend fun refreshPendingTransactions() {
         twig("[cleanup] beginning to refresh and clean up pending transactions")
         // TODO: this would be the place to clear out any stale pending transactions. Remove filter
