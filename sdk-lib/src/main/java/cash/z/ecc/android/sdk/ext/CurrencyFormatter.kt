@@ -1,4 +1,4 @@
-@file:Suppress("NOTHING_TO_INLINE", "TooManyFunctions")
+@file:Suppress("NOTHING_TO_INLINE", "TooManyFunctions", "MatchingDeclarationName")
 
 package cash.z.ecc.android.sdk.ext
 
