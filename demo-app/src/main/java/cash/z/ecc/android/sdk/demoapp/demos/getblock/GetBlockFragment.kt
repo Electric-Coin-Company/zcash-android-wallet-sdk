@@ -43,7 +43,7 @@ class GetBlockFragment : BaseDemoFragment<FragmentGetBlockBinding>() {
     }
 
     @Suppress("UNUSED_PARAMETER")
-    private fun onApply(_unused: View? = null) {
+    private fun onApply(unused: View? = null) {
         val network = ZcashNetwork.fromResources(requireApplicationContext())
         val newHeight = min(binding.textBlockHeight.text.toString().toLongOrNull()
             ?: network.saplingActivationHeight.value, network.saplingActivationHeight.value)
