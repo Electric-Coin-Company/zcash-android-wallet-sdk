@@ -769,6 +769,7 @@ class CompactBlockProcessor internal constructor(
      * @param alsoClearBlockCache when true, also clear the block cache which forces a redownload of
      * blocks. Otherwise, the cached blocks will be used in the rescan, which in most cases, is fine.
      */
+    @Suppress("LongMethod")
     suspend fun rewindToNearestHeight(
         height: BlockHeight,
         alsoClearBlockCache: Boolean = false

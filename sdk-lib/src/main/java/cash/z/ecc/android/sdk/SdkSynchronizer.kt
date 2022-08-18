@@ -529,6 +529,7 @@ class SdkSynchronizer internal constructor(
         }
     }
 
+    @Suppress("LongMethod")
     private suspend fun refreshPendingTransactions() {
         twig("[cleanup] beginning to refresh and clean up pending transactions")
         // TODO: this would be the place to clear out any stale pending transactions. Remove filter
@@ -605,10 +606,14 @@ class SdkSynchronizer internal constructor(
 
         twig("[cleanup] deleting expired transactions from storage", -1)
         val expiredCount = storage.deleteExpired(lastScannedHeight)
-        if (expiredCount > 0) twig("[cleanup] deleted $expiredCount expired transaction(s)!")
+        if (expiredCount > 0) {
+            twig("[cleanup] deleted $expiredCount expired transaction(s)!")
+        }
         hasCleaned = hasCleaned || (expiredCount > 0)
 
-        if (hasCleaned) refreshAllBalances()
+        if (hasCleaned) {
+            refreshAllBalances()
+        }
         twig("[cleanup] done refreshing and cleaning up pending transactions", -1)
     }
 
