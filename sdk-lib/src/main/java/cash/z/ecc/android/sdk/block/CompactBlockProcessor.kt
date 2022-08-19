@@ -785,11 +785,15 @@ class CompactBlockProcessor internal constructor(
                 val lastScannedHeight = currentInfo.lastScannedHeight
                 val lastLocalBlock = repository.lastScannedHeight()
                 val targetHeight = getNearestRewindHeight(height)
+
                 twig("Rewinding from $lastScannedHeight to requested height: $height using target height: " +
                     "$targetHeight with last local block: $lastLocalBlock")
-                if ((null == lastScannedHeight && targetHeight < lastLocalBlock) ||
-                    (null != lastScannedHeight && targetHeight < lastScannedHeight)
-                ) {
+
+                if (null == lastScannedHeight && targetHeight < lastLocalBlock) {
+                    twig("Rewinding because targetHeight is less than lastLocalBlock.")
+                    rustBackend.rewindToHeight(targetHeight)
+                } else if (null != lastScannedHeight && targetHeight < lastScannedHeight) {
+                    twig("Rewinding because targetHeight is less than lastScannedHeight.")
                     rustBackend.rewindToHeight(targetHeight)
                 } else {
                     twig("not rewinding dataDb because the last scanned height is $lastScannedHeight and the" +
