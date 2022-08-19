@@ -13,6 +13,7 @@ import okio.buffer
 import okio.sink
 import java.io.File
 
+@Suppress("UtilityClassWithPublicConstructor")
 class SaplingParamTool {
 
     companion object {

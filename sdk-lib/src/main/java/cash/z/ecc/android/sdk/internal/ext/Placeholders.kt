@@ -82,7 +82,7 @@ class BlockingProvider<T>(var value: T, val delay: Long = 5000L) : ReadWriteProp
  * https://github.com/scottyab/AESCrypt-Android/blob/master/aescrypt/src/main/java/com/scottyab/aescrypt/AESCrypt.java
  * https://github.com/iamMehedi/Secured-Preference-Store
  */
-@SuppressLint("HardwareIds")
+@Suppress("HardwareIds", "UtilityClassWithPublicConstructor")
 @Deprecated(message = InsecureWarning.message)
 class SeedGenerator {
     companion object {

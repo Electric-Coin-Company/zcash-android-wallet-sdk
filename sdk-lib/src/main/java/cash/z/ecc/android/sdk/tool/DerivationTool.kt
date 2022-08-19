@@ -5,6 +5,7 @@ import cash.z.ecc.android.sdk.jni.RustBackendWelding
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.type.UnifiedViewingKey
 
+@Suppress("UtilityClassWithPublicConstructor")
 class DerivationTool {
 
     @Suppress("TooManyFunctions")
