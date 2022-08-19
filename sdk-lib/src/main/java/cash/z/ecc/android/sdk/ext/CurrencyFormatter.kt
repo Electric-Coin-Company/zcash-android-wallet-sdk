@@ -19,8 +19,9 @@ import java.util.Locale
  * accurately rounded values to the user.
  */
 
-// TODO: provide a dynamic way to configure this globally for the SDK
-// For now, just make these vars so at least they could be modified in one place
+// TODO [#678]: provide a dynamic way to configure this globally for the SDK
+//  For now, just make these vars so at least they could be modified in one place
+// TODO [#678]: https://github.com/zcash/zcash-android-wallet-sdk/issues/678
 @Suppress("MagicNumber")
 object Conversions {
     var ONE_ZEC_IN_ZATOSHI = BigDecimal(Zatoshi.ZATOSHI_PER_ZEC, MathContext.DECIMAL128)

@@ -34,7 +34,8 @@ internal object CheckpointTool {
         network: ZcashNetwork,
         birthdayHeight: BlockHeight?
     ): Checkpoint {
-        // TODO: potentially pull from shared preferences first
+        // TODO [#684]: potentially pull from shared preferences first
+        // TODO [#684]: https://github.com/zcash/zcash-android-wallet-sdk/issues/684
         return loadCheckpointFromAssets(context, network, birthdayHeight)
     }
 
@@ -158,7 +159,8 @@ internal object CheckpointTool {
                 lastException = exception
 
                 if (IS_FALLBACK_ON_FAILURE) {
-                    // TODO: If we ever add crash analytics hooks, this would be something to report
+                    // TODO [#684]: If we ever add crash analytics hooks, this would be something to report
+                    // TODO [#684]: https://github.com/zcash/zcash-android-wallet-sdk/issues/684
                     twig("Malformed birthday file $t")
                 } else {
                     throw exception

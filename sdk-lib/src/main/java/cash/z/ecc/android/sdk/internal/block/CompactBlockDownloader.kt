@@ -56,7 +56,8 @@ open class CompactBlockDownloader private constructor(val compactBlockStore: Com
      * @param height the height to which the data will rewind.
      */
     suspend fun rewindToHeight(height: BlockHeight) =
-        // TODO: cancel anything in flight
+        // TODO [#685]: cancel anything in flight
+        // TODO [#685]: https://github.com/zcash/zcash-android-wallet-sdk/issues/685
         compactBlockStore.rewindTo(height)
 
     /**

@@ -319,9 +319,10 @@ class CompactBlockProcessor internal constructor(
      */
     private suspend fun updateRanges(): Boolean = withContext(IO) {
         try {
-            // TODO: rethink this and make it easier to understand what's happening. Can we reduce this
-            // so that we only work with actual changing info rather than periodic snapshots? Do we need
-            // to calculate these derived values every time?
+            // TODO [#683]: rethink this and make it easier to understand what's happening. Can we reduce this
+            //  so that we only work with actual changing info rather than periodic snapshots? Do we need
+            //  to calculate these derived values every time?
+            // TODO [#683]: https://github.com/zcash/zcash-android-wallet-sdk/issues/683
             ProcessorInfo(
                 networkBlockHeight = downloader.getLatestBlockHeight(),
                 lastScannedHeight = getLastScannedHeight(),
@@ -427,7 +428,9 @@ class CompactBlockProcessor internal constructor(
         }
     }
 
-    // TODO: we still need a way to identify those transactions that failed to be enhanced
+    // TODO [#683]: we still need a way to identify those transactions that failed to be enhanced
+    // TODO [#683]: https://github.com/zcash/zcash-android-wallet-sdk/issues/683
+
     private suspend fun enhance(transaction: ConfirmedTransaction) = withContext(Dispatchers.IO) {
         var downloaded = false
         try {
@@ -509,9 +512,10 @@ class CompactBlockProcessor internal constructor(
     internal suspend fun refreshUtxos(tAddress: String, startHeight: BlockHeight): Int? =
         withContext(IO) {
             var count: Int? = null
-            // todo: cleanup the way that we prevent this from running excessively
+            // TODO [683]: cleanup the way that we prevent this from running excessively
             //       For now, try for about 3 blocks per app launch. If the service fails it is
             //       probably disabled on ligthtwalletd, so then stop trying until the next app launch.
+            // TODO [#683]: https://github.com/zcash/zcash-android-wallet-sdk/issues/683
             if (failedUtxoFetches < 9) { // there are 3 attempts per block
                 try {
                     retryUpTo(3) {
@@ -552,8 +556,9 @@ class CompactBlockProcessor internal constructor(
                     BlockHeight(utxo.height)
                 )
             } catch (t: Throwable) {
-                // TODO: more accurately track the utxos that were skipped (in theory, this could fail for other
+                // TODO [#683]: more accurately track the utxos that were skipped (in theory, this could fail for other
                 //  reasons)
+                // TODO [#683]: https://github.com/zcash/zcash-android-wallet-sdk/issues/683
                 skipped++
                 twig("Warning: Ignoring transaction at height ${utxo.height} @ index ${utxo.index} because " +
                     "it already exists")
@@ -727,7 +732,8 @@ class CompactBlockProcessor internal constructor(
     }
 
     private suspend fun handleChainError(errorHeight: BlockHeight) {
-        // TODO consider an error object containing hash information
+        // TODO [#683]: consider an error object containing hash information
+        // TODO [#683]: https://github.com/zcash/zcash-android-wallet-sdk/issues/683
         printValidationErrorInfo(errorHeight)
         determineLowerBound(errorHeight).let { lowerBound ->
             twig("handling chain error at $errorHeight by rewinding to block $lowerBound")
@@ -737,8 +743,9 @@ class CompactBlockProcessor internal constructor(
     }
 
     suspend fun getNearestRewindHeight(height: BlockHeight): BlockHeight {
-        // TODO: add a concept of original checkpoint height to the processor. For now, derive it
-        // add one because we already have the checkpoint. Add one again because we delete ABOVE the block
+        // TODO [#683]: add a concept of original checkpoint height to the processor. For now, derive it
+        //  add one because we already have the checkpoint. Add one again because we delete ABOVE the block
+        // TODO [#683]: https://github.com/zcash/zcash-android-wallet-sdk/issues/683
         val originalCheckpoint = lowerBoundHeight + MAX_REORG_SIZE + 2
         return if (height < originalCheckpoint) {
             originalCheckpoint

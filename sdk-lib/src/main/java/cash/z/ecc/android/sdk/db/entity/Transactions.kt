@@ -357,7 +357,8 @@ fun PendingTransaction.isSubmitted(): Boolean {
 }
 
 fun PendingTransaction.isExpired(latestHeight: BlockHeight?, saplingActivationHeight: BlockHeight): Boolean {
-    // TODO: test for off-by-one error here. Should we use <= or <
+    // TODO [#687]: test for off-by-one error here. Should we use <= or <
+    // TODO [#687]: https://github.com/zcash/zcash-android-wallet-sdk/issues/687
     if (latestHeight == null ||
         latestHeight.value < saplingActivationHeight.value ||
         expiryHeight < saplingActivationHeight.value

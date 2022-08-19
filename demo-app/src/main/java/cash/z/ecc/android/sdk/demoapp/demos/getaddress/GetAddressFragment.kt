@@ -60,7 +60,8 @@ class GetAddressFragment : BaseDemoFragment<FragmentGetAddressBinding>() {
         }
     }
 
-    // TODO: show an example with the synchronizer
+    // TODO [#677]: Show an example with the synchronizer
+    // TODO [#677]: https://github.com/zcash/zcash-android-wallet-sdk/issues/677
 
     //
     // Android Lifecycle overrides

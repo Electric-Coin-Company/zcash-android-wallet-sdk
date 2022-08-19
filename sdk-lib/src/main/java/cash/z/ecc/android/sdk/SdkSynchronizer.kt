@@ -329,8 +329,9 @@ class SdkSynchronizer internal constructor(
     // Storage APIs
     //
 
-    // TODO: turn this section into the data access API. For now, just aggregate all the things that we want to do with
-    //  the underlying data
+    // TODO [#682]: turn this section into the data access API. For now, just aggregate all the things that we want
+    //  to do with the underlying data
+    // TODO [#682]: https://github.com/zcash/zcash-android-wallet-sdk/issues/682
 
     suspend fun findBlockHash(height: BlockHeight): ByteArray? {
         return (storage as? PagedTransactionRepository)?.findBlockHash(height)
@@ -364,7 +365,8 @@ class SdkSynchronizer internal constructor(
     suspend fun refreshAllBalances() {
         refreshSaplingBalance()
         refreshTransparentBalance()
-        // TODO: refresh orchard balance
+        // TODO [#682]: refresh orchard balance
+        // TODO [#682]: https://github.com/zcash/zcash-android-wallet-sdk/issues/682
         twig("Warning: Orchard balance does not yet refresh. Only some of the plumbing is in place.")
     }
 
@@ -408,7 +410,8 @@ class SdkSynchronizer internal constructor(
                 is Enhancing -> ENHANCING
             }.let { synchronizerStatus ->
                 //  ignore enhancing status for now
-                // TODO: clean this up and handle enhancing gracefully
+                // TODO [#682]: clean this up and handle enhancing gracefully
+                // TODO [#682]: https://github.com/zcash/zcash-android-wallet-sdk/issues/682
                 if (synchronizerStatus != ENHANCING) _status.send(synchronizerStatus)
             }
         }.launchIn(this)
@@ -521,9 +524,9 @@ class SdkSynchronizer internal constructor(
     @Suppress("LongMethod", "ComplexMethod")
     private suspend fun refreshPendingTransactions() {
         twig("[cleanup] beginning to refresh and clean up pending transactions")
-        // TODO: this would be the place to clear out any stale pending transactions. Remove filter
-        //  logic and then delete any pending transaction with sufficient confirmations (all in one
-        //  db transaction).
+        // TODO [#682]: this would be the place to clear out any stale pending transactions. Remove filter logic and
+        //  then delete any pending transaction with sufficient confirmations (all in one db transaction).
+        // TODO [#682]: https://github.com/zcash/zcash-android-wallet-sdk/issues/682
         val allPendingTxs = txManager.getAll().first()
         val lastScannedHeight = storage.lastScannedHeight()
 
@@ -779,6 +782,7 @@ object DefaultSynchronizerFactory {
     // TODO [#242]: Don't hard code page size.  It is a workaround for Uncaught Exception:
     //  android.view.ViewRootImpl$CalledFromWrongThreadException: Only the original thread that created a view hierarchy
     //  can touch its views. and is probably related to FlowPagedList
+    // TODO [#242]: https://github.com/zcash/zcash-android-wallet-sdk/issues/242
     private const val DEFAULT_PAGE_SIZE = 1000
     suspend fun defaultTransactionRepository(initializer: Initializer): TransactionRepository =
         PagedTransactionRepository.new(

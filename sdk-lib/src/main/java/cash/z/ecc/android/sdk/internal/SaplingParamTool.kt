@@ -131,7 +131,8 @@ class SaplingParamTool {
          * @return an http client suitable for downloading params data.
          */
         private fun createHttpClient(): OkHttpClient {
-            // TODO: add logging and timeouts
+            // TODO [#686]: add logging and timeouts
+            // TODO [#686]: https://github.com/zcash/zcash-android-wallet-sdk/issues/686
             return OkHttpClient()
         }
     }
