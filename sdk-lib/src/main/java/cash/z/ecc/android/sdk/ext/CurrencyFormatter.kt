@@ -330,14 +330,15 @@ inline fun String?.safelyConvertToBigDecimal(): BigDecimal? {
     if (this.isNullOrEmpty()) {
         return BigDecimal.ZERO
     }
-    return try {
+    val result = try {
         // ignore commas and whitespace
         val sanitizedInput = this.filter { it.isDigit() or (it == '.') }
         BigDecimal.ZERO.max(BigDecimal(sanitizedInput, MathContext.DECIMAL128))
     } catch (nfe: NumberFormatException) {
         twig("Exception while converting String to BigDecimal: ${nfe.message} caused by: ${nfe.cause}")
-        return null
+        null
     }
+    return result
 }
 
 /**
