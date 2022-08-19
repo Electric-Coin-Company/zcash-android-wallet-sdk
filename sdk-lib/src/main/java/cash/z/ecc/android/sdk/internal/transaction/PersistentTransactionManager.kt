@@ -86,6 +86,7 @@ class PersistentTransactionManager(
             memo = memo.toByteArray(),
             accountIndex = fromAccountIndex
         )
+        @Suppress("TooGenericExceptionCaught")
         try {
             safeUpdate("creating tx in DB") {
                 tx = findById(create(tx))!!
@@ -114,6 +115,8 @@ class PersistentTransactionManager(
     ): PendingTransaction = withContext(Dispatchers.IO) {
         twig("managing the creation of a transaction")
         var tx = pendingTx as PendingTransactionEntity
+
+        @Suppress("TooGenericExceptionCaught")
         try {
             twig("beginning to encode transaction with : $encoder")
             val encodedTx = encoder.createTransaction(

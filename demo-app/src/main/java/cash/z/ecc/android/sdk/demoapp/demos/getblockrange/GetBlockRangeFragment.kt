@@ -82,6 +82,7 @@ class GetBlockRangeFragment : BaseDemoFragment<FragmentGetBlockRangeBinding>() {
         val end = max(binding.textEndHeight.text.toString().toLongOrNull()
             ?: network.saplingActivationHeight.value, network.saplingActivationHeight.value)
         if (start <= end) {
+            @Suppress("TooGenericExceptionCaught")
             try {
                 with(binding.buttonApply) {
                     isEnabled = false

@@ -2,6 +2,7 @@ package cash.z.ecc.android.sdk.demoapp
 
 import androidx.lifecycle.ViewModel
 import cash.z.ecc.android.bip39.Mnemonics
+import cash.z.ecc.android.sdk.internal.twig
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -31,7 +32,14 @@ class SharedViewModel : ViewModel() {
         return try {
             Mnemonics.MnemonicCode(phrase).validate()
             true
-        } catch (t: Throwable) {
+        } catch (e: Mnemonics.WordCountException) {
+            twig("Seed phrase validation failed with WordCountException: ${e.message}, cause: ${e.cause}")
+            false
+        } catch (e: Mnemonics.InvalidWordException) {
+            twig("Seed phrase validation failed with InvalidWordException: ${e.message}, cause: ${e.cause}")
+            false
+        } catch (e: Mnemonics.ChecksumException) {
+            twig("Seed phrase validation failed with ChecksumException: ${e.message}, cause: ${e.cause}")
             false
         }
     }

@@ -191,7 +191,9 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
 
     var initialCount: Int = 0
     var finalCount: Int = 0
-    fun resetInBackground() {
+
+    @Suppress("TooGenericExceptionCaught")
+    private fun resetInBackground() {
         try {
             lifecycleScope.launch {
                 withContext(Dispatchers.IO) {

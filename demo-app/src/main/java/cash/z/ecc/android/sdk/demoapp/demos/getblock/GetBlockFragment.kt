@@ -48,6 +48,7 @@ class GetBlockFragment : BaseDemoFragment<FragmentGetBlockBinding>() {
         val newHeight = min(binding.textBlockHeight.text.toString().toLongOrNull()
             ?: network.saplingActivationHeight.value, network.saplingActivationHeight.value)
 
+        @Suppress("TooGenericExceptionCaught")
         try {
             setBlockHeight(BlockHeight.new(network, newHeight))
         } catch (t: Throwable) {
