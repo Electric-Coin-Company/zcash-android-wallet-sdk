@@ -117,7 +117,7 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
             setText(DemoConstants.SEND_AMOUNT.toZecString())
         }
         addressInput = binding.inputAddress.apply {
-            setText(DemoConstants.toAddress)
+            setText(DemoConstants.TO_ADDRESS)
         }
         binding.buttonSend.setOnClickListener(::onSend)
     }

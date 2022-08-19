@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.StateFlow
  */
 class SharedViewModel : ViewModel() {
 
-    private val _seedPhrase = MutableStateFlow(DemoConstants.initialSeedWords)
+    private val _seedPhrase = MutableStateFlow(DemoConstants.INITIAL_SEED_WORDS)
 
     // publicly, this is read-only
     val seedPhrase: StateFlow<String> get() = _seedPhrase
@@ -25,10 +25,14 @@ class SharedViewModel : ViewModel() {
     }
 
     private fun isValidSeedPhrase(phrase: String?): Boolean {
-        if (phrase.isNullOrEmpty()) return false
+        if (phrase.isNullOrEmpty()) {
+            return false
+        }
         return try {
             Mnemonics.MnemonicCode(phrase).validate()
             true
-        } catch (t: Throwable) { false }
+        } catch (t: Throwable) {
+            false
+        }
     }
 }
