@@ -154,7 +154,11 @@ open class TroubleshootingTwig(
          */
         fun spiffy(stackFrame: Int = 4, tag: String = "@TWIG"): (String) -> String = { logMessage: String ->
             val stack = Thread.currentThread().stackTrace[stackFrame]
-            val time = String.format(Locale.ENGLISH, "$tag %1\$tD %1\$tI:%1\$tM:%1\$tS.%1\$tN", System.currentTimeMillis())
+            val time = String.format(
+                Locale.ENGLISH,
+                "$tag %1\$tD %1\$tI:%1\$tM:%1\$tS.%1\$tN",
+                System.currentTimeMillis()
+            )
             val className = stack.className.split(".").lastOrNull()?.split("\$")?.firstOrNull()
             val tags = Bush.leaves.joinToString(" #", "#")
             "$time[$className:${stack.lineNumber}]($tags)    $logMessage"
