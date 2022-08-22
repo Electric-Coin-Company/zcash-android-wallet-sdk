@@ -9,11 +9,11 @@ import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.util.TestWallet
 import kotlinx.coroutines.runBlocking
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
+import kotlin.test.DefaultAsserter.assertEquals
+import kotlin.test.DefaultAsserter.assertTrue
 
 // TODO [#650]: https://github.com/zcash/zcash-android-wallet-sdk/issues/650
 
@@ -104,7 +104,7 @@ class SanityTest(
             twig(it)
         }.getOrElse { return@runBlocking }
 
-        val downloaderHeight = runCatching {
+        runCatching {
             wallet.service.getLatestBlockHeight()
         }.getOrNull() ?: return@runBlocking
         assertTrue("$networkName failed to return a proper block. Height was ${block.height} but we expected $height", block.height == height.value)

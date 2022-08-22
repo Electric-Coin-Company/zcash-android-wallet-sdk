@@ -24,10 +24,6 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.BeforeClass
 import org.junit.Test
@@ -35,6 +31,10 @@ import org.junit.runner.RunWith
 import org.mockito.Mock
 import org.mockito.MockitoAnnotations
 import java.io.File
+import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 @MaintainedTest(TestPurpose.REGRESSION)
 @RunWith(AndroidJUnit4::class)
@@ -69,11 +69,11 @@ class PersistentTransactionManagerTest : ScopedTest() {
     }
 
     private fun initMocks() {
-        MockitoAnnotations.initMocks(this)
+        MockitoAnnotations.openMocks(this)
         mockEncoder.stub {
             onBlocking {
                 createTransaction(any(), any(), any(), any(), any())
-            }.thenAnswer { invocation ->
+            }.thenAnswer {
                 runBlocking {
                     delay(200)
                     EncodedTransaction(byteArrayOf(1, 2, 3), byteArrayOf(8, 9), 5_000_000)
@@ -100,7 +100,7 @@ class PersistentTransactionManagerTest : ScopedTest() {
 
         txFlow.drop(2).onEach {
             twig("found tx: $it")
-            assertTrue("Expected the encoded tx to be cancelled but it wasn't", it.isCancelled())
+            assertTrue(it.isCancelled(), "Expected the encoded tx to be cancelled but it wasn't")
             twig("found it to be successfully cancelled")
             testScope.cancel()
         }.launchIn(testScope).join()
@@ -112,16 +112,16 @@ class PersistentTransactionManagerTest : ScopedTest() {
         assertFalse(tx.isCancelled())
         manager.cancel(tx.id)
         tx = manager.findById(tx.id)!!
-        assertTrue("Transaction was not cancelled", tx.isCancelled())
+        assertTrue(tx.isCancelled(), "Transaction was not cancelled")
     }
 
     @Test
     fun testAbort() = runBlocking {
         var tx: PendingTransaction? = manager.initSpend(Zatoshi(1234), "a", "b", 0)
         assertNotNull(tx)
-        manager.abort(tx!!)
+        manager.abort(tx)
         tx = manager.findById(tx.id)
-        assertNull("Transaction was not removed from the DB", tx)
+        assertNull(tx, "Transaction was not removed from the DB")
     }
 
     companion object {

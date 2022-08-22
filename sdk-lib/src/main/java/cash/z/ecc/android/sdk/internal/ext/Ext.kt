@@ -28,11 +28,11 @@ internal inline fun <R> tryWarn(
     } catch (t: Throwable) {
         val shouldThrowAnyway = (
             unlessContains != null &&
-                (t.message?.toLowerCase()?.contains(unlessContains.toLowerCase()) == true)
+                (t.message?.lowercase()?.contains(unlessContains.lowercase()) == true)
             ) ||
             (
                 ifContains != null &&
-                    (t.message?.toLowerCase()?.contains(ifContains.toLowerCase()) == false)
+                    (t.message?.lowercase()?.contains(ifContains.lowercase()) == false)
                 )
         if (shouldThrowAnyway) {
             throw t

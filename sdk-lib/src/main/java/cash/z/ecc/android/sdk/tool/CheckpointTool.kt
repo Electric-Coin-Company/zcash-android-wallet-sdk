@@ -12,7 +12,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.BufferedReader
 import java.io.IOException
-import java.util.*
+import java.util.Locale
 
 /**
  * Tool for loading checkpoints for the wallet, based on the height at which the wallet was born.
@@ -65,11 +65,7 @@ internal object CheckpointTool {
      */
     @VisibleForTesting
     internal fun checkpointDirectory(network: ZcashNetwork) =
-        "co.electriccoin.zcash/checkpoint/${
-        (network.networkName as java.lang.String).toLowerCase(
-            Locale.ROOT
-        )
-        }"
+        "co.electriccoin.zcash/checkpoint/${network.networkName.lowercase(Locale.ROOT)}"
 
     internal fun checkpointHeightFromFilename(zcashNetwork: ZcashNetwork, fileName: String) =
         BlockHeight.new(zcashNetwork, fileName.split('.').first().toLong())

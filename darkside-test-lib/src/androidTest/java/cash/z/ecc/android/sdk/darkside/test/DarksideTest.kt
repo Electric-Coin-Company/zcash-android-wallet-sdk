@@ -1,6 +1,6 @@
 package cash.z.ecc.android.sdk.darkside.test
 
-open class DarksideTest(name: String = javaClass.simpleName) : ScopedTest() {
+open class DarksideTest : ScopedTest() {
     val sithLord = DarksideTestCoordinator()
     val validator = sithLord.validator
 

@@ -76,6 +76,7 @@ import kotlin.math.roundToInt
  * in when considering initial range to download. In most cases, this should be the birthday height
  * of the current wallet--the height before which we do not need to scan for transactions.
  */
+@OptIn(kotlinx.coroutines.ObsoleteCoroutinesApi::class)
 @OpenForTesting
 class CompactBlockProcessor internal constructor(
     val downloader: CompactBlockDownloader,
@@ -126,6 +127,8 @@ class CompactBlockProcessor internal constructor(
         )
     )
 
+    // TODO [#288]: Remove Deprecated Usage of ConflatedBroadcastChannel
+    // TODO [#288]: https://github.com/zcash/zcash-android-wallet-sdk/issues/288
     private val _state: ConflatedBroadcastChannel<State> = ConflatedBroadcastChannel(Initialized)
     private val _progress = ConflatedBroadcastChannel(0)
     private val _processorInfo =
@@ -161,18 +164,27 @@ class CompactBlockProcessor internal constructor(
      * The flow of state values so that a wallet can monitor the state of this class without needing
      * to poll.
      */
+    // TODO [#658] Replace ComputableFlow and asFlow() obsolete Coroutine usage
+    // TODO [#658] https://github.com/zcash/zcash-android-wallet-sdk/issues/658
+    @Suppress("DEPRECATION")
     val state = _state.asFlow()
 
     /**
      * The flow of progress values so that a wallet can monitor how much downloading remains
      * without needing to poll.
      */
+    // TODO [#658] Replace ComputableFlow and asFlow() obsolete Coroutine usage
+    // TODO [#658] https://github.com/zcash/zcash-android-wallet-sdk/issues/658
+    @Suppress("DEPRECATION")
     val progress = _progress.asFlow()
 
     /**
      * The flow of detailed processorInfo like the range of blocks that shall be downloaded and
      * scanned. This gives the wallet a lot of insight into the work of this processor.
      */
+    // TODO [#658] Replace ComputableFlow and asFlow() obsolete Coroutine usage
+    // TODO [#658] https://github.com/zcash/zcash-android-wallet-sdk/issues/658
+    @Suppress("DEPRECATION")
     val processorInfo = _processorInfo.asFlow()
 
     /**
@@ -393,12 +405,8 @@ class CompactBlockProcessor internal constructor(
                 }
             }
 
-            newTxs?.onEach { newTransaction ->
-                if (newTransaction == null) {
-                    twig("somehow, new transaction was null!!!")
-                } else {
-                    enhance(newTransaction)
-                }
+            newTxs.onEach { newTransaction ->
+                enhance(newTransaction)
             }
             twig("Done enhancing transaction details")
             BlockProcessingResult.Success
@@ -864,6 +872,7 @@ class CompactBlockProcessor internal constructor(
      * when we unexpectedly lose server connection or are waiting for an event to happen on the
      * chain. We can pass this desire along now and later figure out how to handle it, privately.
      ￼*/
+    @Suppress("UNUSED_PARAMETER")
     private fun calculatePollInterval(fastIntervalDesired: Boolean = false): Long {
         val interval = POLL_INTERVAL
         val now = System.currentTimeMillis()
@@ -1119,7 +1128,7 @@ class CompactBlockProcessor internal constructor(
     }
 
     private fun Service.LightdInfo.matchingNetwork(network: String): Boolean {
-        fun String.toId() = toLowerCase(Locale.US).run {
+        fun String.toId() = lowercase(Locale.US).run {
             when {
                 contains("main") -> "mainnet"
                 contains("test") -> "testnet"
@@ -1140,7 +1149,6 @@ class CompactBlockProcessor internal constructor(
                 twig("$name MUTEX: releasing lock", -1)
             }
         }
-        twig("$name MUTEX: withLock complete", -1)
     }
 }
 
