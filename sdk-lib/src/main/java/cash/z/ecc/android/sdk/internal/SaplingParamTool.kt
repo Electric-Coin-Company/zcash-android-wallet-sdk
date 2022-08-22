@@ -35,6 +35,7 @@ class SaplingParamTool {
                 }
             }
             if (hadError) {
+                @Suppress("TooGenericExceptionCaught")
                 try {
                     Bush.trunk.twigTask("attempting to download missing params") {
                         fetchParams(destinationDir)
