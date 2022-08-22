@@ -709,19 +709,28 @@ class SdkSynchronizer internal constructor(
         txManager.isValidTransparentAddress(address)
 
     override suspend fun validateAddress(address: String): AddressType {
+        @Suppress("TooGenericExceptionCaught")
         return try {
-            if (isValidShieldedAddr(address)) Shielded else Transparent
+            if (isValidShieldedAddr(address)) {
+                Shielded
+            } else {
+                Transparent
+            }
         } catch (zError: Throwable) {
             val message = zError.message
             try {
-                if (isValidTransparentAddr(address)) Transparent else Shielded
+                if (isValidTransparentAddr(address)) {
+                    Transparent
+                } else {
+                    Shielded
+                }
             } catch (tError: Throwable) {
-                AddressType.Invalid(
-                    if (message != tError.message) "$message and ${tError.message}" else (
-                        message
-                            ?: "Invalid"
-                        )
-                )
+                val reason  = if (message != tError.message)  {
+                    "$message and ${tError.message}"
+                } else {
+                    message ?: "Invalid"
+                }
+                AddressType.Invalid(reason)
             }
         }
     }
