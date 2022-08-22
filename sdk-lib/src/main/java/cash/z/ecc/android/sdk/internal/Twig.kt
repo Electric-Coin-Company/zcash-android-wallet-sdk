@@ -99,7 +99,11 @@ inline fun twig(t: Throwable) = t.stackTraceToString().lines().forEach {
 inline fun <R> twig(
     logMessage: String,
     priority: Int = 0,
-    block: () -> R): R = Bush.trunk.twig(logMessage, priority, block
+    block: () -> R
+): R = Bush.trunk.twig(
+    logMessage,
+    priority,
+    block
 )
 
 /**
@@ -108,7 +112,11 @@ inline fun <R> twig(
 inline fun <R> twigTask(
     logMessage: String,
     priority: Int = 0,
-    block: () -> R): R = Bush.trunk.twigTask(logMessage, priority, block
+    block: () -> R
+): R = Bush.trunk.twigTask(
+    logMessage,
+    priority,
+    block
 )
 
 /**

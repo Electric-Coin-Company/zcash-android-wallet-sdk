@@ -591,9 +591,11 @@ class SdkSynchronizer internal constructor(
         }
             .forEach {
                 val result = txManager.abort(it)
-                twig("[cleanup] FOUND EXPIRED pendingTX (lastScanHeight: $lastScannedHeight " +
-                    " expiryHeight: ${it.expiryHeight}): and ${it.id} " +
-                    "${if (result > 0) "successfully removed" else "failed to remove"} it")
+                twig(
+                    "[cleanup] FOUND EXPIRED pendingTX (lastScanHeight: $lastScannedHeight " +
+                        " expiryHeight: ${it.expiryHeight}): and ${it.id} " +
+                        "${if (result > 0) "successfully removed" else "failed to remove"} it"
+                )
             }
 
         twig("[cleanup] deleting expired transactions from storage", -1)
@@ -725,7 +727,7 @@ class SdkSynchronizer internal constructor(
                     Shielded
                 }
             } catch (tError: Throwable) {
-                val reason  = if (message != tError.message)  {
+                val reason = if (message != tError.message) {
                     "$message and ${tError.message}"
                 } else {
                     message ?: "Invalid"

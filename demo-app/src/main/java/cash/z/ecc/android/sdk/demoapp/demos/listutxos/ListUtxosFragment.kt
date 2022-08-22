@@ -90,7 +90,8 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
     private fun initUi() {
         binding.inputAddress.setText(address)
         binding.inputRangeStart.setText(
-            ZcashNetwork.fromResources(requireApplicationContext()).saplingActivationHeight.toString())
+            ZcashNetwork.fromResources(requireApplicationContext()).saplingActivationHeight.toString()
+        )
         binding.inputRangeEnd.setText(getUxtoEndHeight(requireApplicationContext()).value.toString())
 
         binding.buttonLoad.setOnClickListener {

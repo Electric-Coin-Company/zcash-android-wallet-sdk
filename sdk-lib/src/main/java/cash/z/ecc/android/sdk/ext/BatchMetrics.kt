@@ -15,6 +15,7 @@ class BatchMetrics(
     private var batchEndTime = 0L
     private var rangeSize = range.endInclusive.value - range.start.value + 1
     private fun now() = System.currentTimeMillis()
+
     @Suppress("MagicNumber")
     private fun ips(blocks: Long, time: Long) = 1000.0f * blocks / time
 

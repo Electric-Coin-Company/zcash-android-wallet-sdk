@@ -1,6 +1,5 @@
 package cash.z.ecc.android.sdk.internal.ext
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Build
 import android.provider.Settings

@@ -103,8 +103,10 @@ internal class RustBackend private constructor(
         }
 
     override suspend fun getTransparentAddress(account: Int, index: Int): String {
-        throw NotImplementedError("TODO: implement this at the zcash_client_sqlite level. But for now, use " +
-            "DerivationTool, instead to derive addresses from seeds")
+        throw NotImplementedError(
+            "TODO: implement this at the zcash_client_sqlite level. But for now, use " +
+                "DerivationTool, instead to derive addresses from seeds"
+        )
     }
 
     override suspend fun getBalance(account: Int): Zatoshi {

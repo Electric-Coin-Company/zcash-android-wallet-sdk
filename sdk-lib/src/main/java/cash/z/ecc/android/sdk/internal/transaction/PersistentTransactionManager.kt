@@ -21,8 +21,6 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
-import java.io.PrintWriter
-import java.io.StringWriter
 import kotlin.math.max
 
 /**
@@ -198,8 +196,10 @@ class PersistentTransactionManager(
                 tx.isFailedEncoding() ->
                     twig("Warning: this transaction will not be submitted because it failed to be encoded.")
                 tx.isCancelled() ->
-                    twig("Warning: ignoring cancelled transaction with id ${tx.id}. We will not submit it to" +
-                        " the network because it has been cancelled.")
+                    twig(
+                        "Warning: ignoring cancelled transaction with id ${tx.id}. We will not submit it to" +
+                            " the network because it has been cancelled."
+                    )
                 else -> {
                     twig("submitting transaction with memo: ${tx.memo} amount: ${tx.value}", -1)
                     val response = service.submitTransaction(tx.raw)
