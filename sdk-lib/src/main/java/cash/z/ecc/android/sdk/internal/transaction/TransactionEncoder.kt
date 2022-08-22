@@ -27,7 +27,7 @@ interface TransactionEncoder {
 
     suspend fun createShieldingTransaction(
         spendingKey: String,
-        transparentSecretKey: String,
+        transparentAccountPrivateKey: String,
         memo: ByteArray? = byteArrayOf()
     ): EncodedTransaction
 
