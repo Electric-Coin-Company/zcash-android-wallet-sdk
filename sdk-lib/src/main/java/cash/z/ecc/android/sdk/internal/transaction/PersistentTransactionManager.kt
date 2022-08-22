@@ -154,6 +154,7 @@ class PersistentTransactionManager(
     ): PendingTransaction {
         twig("managing the creation of a shielding transaction")
         var tx = pendingTx as PendingTransactionEntity
+        @Suppress("TooGenericExceptionCaught")
         try {
             twig("beginning to encode shielding transaction with : $encoder")
             val encodedTx = encoder.createShieldingTransaction(
@@ -190,6 +191,7 @@ class PersistentTransactionManager(
                     " transaction found that matches the one being submitted. Verify that the" +
                     " transaction still exists among the set of pending transactions."
             )
+        @Suppress("TooGenericExceptionCaught")
         try {
             // do nothing if failed or cancelled
             when {
@@ -302,6 +304,7 @@ class PersistentTransactionManager(
         priority: Int = 0,
         block: suspend PendingTransactionDao.() -> R
     ): R? {
+        @Suppress("TooGenericExceptionCaught")
         return try {
             twig(logMessage, priority)
             pendingTransactionDao { block() }
