@@ -438,6 +438,7 @@ interface TransactionDao {
     @Transaction
     suspend fun cleanupCancelledTx(rawTransactionId: ByteArray): Boolean {
         var success = false
+        @Suppress("TooGenericExceptionCaught")
         try {
             var hasInitialMatch = false
             twig("[cleanup] cleanupCancelledTx starting...")
@@ -459,6 +460,7 @@ interface TransactionDao {
     @Transaction
     suspend fun removeInvalidOutboundTransaction(transactionId: Long): Boolean {
         var success = false
+        @Suppress("TooGenericExceptionCaught")
         try {
             twig("[cleanup] removing invalid transactionId:$transactionId")
             val result = unspendTransactionNotes(transactionId)
