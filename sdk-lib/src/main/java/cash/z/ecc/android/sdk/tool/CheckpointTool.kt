@@ -138,6 +138,7 @@ internal object CheckpointTool {
     ): Checkpoint {
         var lastException: Exception? = null
         treeFiles.forEach { treefile ->
+            @Suppress("TooGenericExceptionCaught")
             try {
                 val jsonString = withContext(Dispatchers.IO) {
                     context.assets.open("$directory/$treefile").use { inputStream ->
