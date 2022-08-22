@@ -402,6 +402,7 @@ class CompactBlockProcessor internal constructor(
         Twig.sprout("enhancing")
         twig("Enhancing transaction details for blocks $lastScanRange")
         setState(Enhancing)
+        @Suppress("TooGenericExceptionCaught")
         return try {
             val newTxs = repository.findNewTransactions(lastScanRange)
             if (newTxs.isEmpty()) {
@@ -433,6 +434,7 @@ class CompactBlockProcessor internal constructor(
 
     private suspend fun enhance(transaction: ConfirmedTransaction) = withContext(Dispatchers.IO) {
         var downloaded = false
+        @Suppress("TooGenericExceptionCaught")
         try {
             twig("START: enhancing transaction (id:${transaction.id}  block:${transaction.minedHeight})")
             downloader.fetchTransaction(transaction.rawTransactionId)?.let { tx ->
@@ -496,6 +498,7 @@ class CompactBlockProcessor internal constructor(
     }
 
     private suspend fun updateBirthdayHeight() {
+        @Suppress("TooGenericExceptionCaught")
         try {
             val betterBirthday = calculateBirthdayHeight()
             if (betterBirthday > birthdayHeight) {
@@ -938,6 +941,7 @@ class CompactBlockProcessor internal constructor(
 
     suspend fun calculateBirthdayHeight(): BlockHeight {
         var oldestTransactionHeight: BlockHeight? = null
+        @Suppress("TooGenericExceptionCaught")
         try {
             val tempOldestTransactionHeight = repository.receivedTransactions
                 .first()
@@ -1000,6 +1004,7 @@ class CompactBlockProcessor internal constructor(
      */
     suspend fun getBalanceInfo(accountIndex: Int = 0): WalletBalance =
         twigTask("checking balance info", -1) {
+            @Suppress("TooGenericExceptionCaught")
             try {
                 val balanceTotal = rustBackend.getBalance(accountIndex)
                 twig("found total balance: $balanceTotal")
