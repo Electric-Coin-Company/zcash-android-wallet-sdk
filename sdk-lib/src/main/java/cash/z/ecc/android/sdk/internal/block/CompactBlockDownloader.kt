@@ -94,6 +94,7 @@ open class CompactBlockDownloader private constructor(val compactBlockStore: Com
         newService: LightWalletService,
         errorHandler: (Throwable) -> Unit = { throw it }
     ) = withContext(IO) {
+        @Suppress("TooGenericExceptionCaught")
         try {
             val existing = lightWalletService.getServerInfo()
             val new = newService.getServerInfo()
