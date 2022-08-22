@@ -26,6 +26,7 @@ suspend inline fun retryUpTo(
 ) {
     var failedAttempts = 0
     while (failedAttempts <= retries) {
+        @Suppress("TooGenericExceptionCaught")
         try {
             block(failedAttempts)
             return
@@ -54,6 +55,7 @@ suspend inline fun retryUpTo(
 inline fun retrySimple(retries: Int = 2, sleepTime: Long = 20L, block: (Int) -> Unit) {
     var failedAttempts = 0
     while (failedAttempts <= retries) {
+        @Suppress("TooGenericExceptionCaught")
         try {
             block(failedAttempts)
             return
@@ -85,6 +87,7 @@ suspend inline fun retryWithBackoff(
     // count up to the max and then reset to half. So that we don't repeat the max but we also don't repeat too much.
     var sequence = 0
     while (true) {
+        @Suppress("TooGenericExceptionCaught")
         try {
             block()
             return
