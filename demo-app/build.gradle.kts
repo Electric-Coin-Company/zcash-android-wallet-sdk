@@ -10,9 +10,11 @@ plugins {
 android {
     defaultConfig {
         applicationId = "cash.z.ecc.android.sdk.demoapp"
-        minSdk = 21 // Different from the SDK min
+        minSdk = 19
         versionCode = 1
         versionName = "1.0"
+        multiDexEnabled = true
+        vectorDrawables.useSupportLibrary = true
     }
     buildFeatures {
         viewBinding = true
@@ -63,6 +65,7 @@ dependencies {
     // Android
     implementation(libs.androidx.core)
     implementation(libs.androidx.constraintlayout)
+    implementation(libs.androidx.multidex)
     implementation(libs.androidx.navigation.fragment)
     implementation(libs.androidx.navigation.ui)
     implementation(libs.material)

@@ -46,10 +46,14 @@ Because Gradle caches dependencies and because multiple snapshots can be deploye
 ## Releases
 Production releases can be consumed using the instructions in the [README.MD](../README.md).  Note that production releases can include alpha or beta designations.
 
-Automated production releases still require a manual trigger.  To do a production release:
-1. Update the CHANGELOG and MIGRATIONS.md for any new changes since the last production release.
+Automated production releases require a manual trigger of the GitHub action and a manual step inside the Sonatype dashboard.  To do a production release:
+1. Update the [CHANGELOG](../CHANGELOG.md) and [MIGRATIONS](../MIGRATIONS.md) for any new changes since the last production release.
 1. Run the [release deployment](https://github.com/zcash/zcash-android-wallet-sdk/actions/workflows/deploy-release.yml).
-1. Due to #535, release deployments are not fully automated.  See the workaround steps in that issue and complete those steps.
+1. Log into Maven Central and release the deployment.
+    1. Check the contents of the staging repository, to verify it looks correct
+    1. Close the staging repository
+    1. Wait a few minutes and refresh the page
+    1. Release the staging repository
 1. Confirm deployment succeeded by modifying the [ECC Wallet](https://github.com/zcash/zcash-android-wallet) to consume the new SDK version.
 1. Create a new Git tag for the new release in this repository.
 1. Create a new pull request bumping the version to the next version (this ensures that the next merge to the main branch creates a snapshot under the next version number).
@@ -59,33 +63,25 @@ See [ci.md](ci.md), which describes the continuous integration workflow for depl
 
 ## One time only
 * Set up environment to [compile the SDK](https://github.com/zcash/zcash-android-wallet-sdk/#compiling-sources)
-* Copy the GPG key to a directory with proper permissions (chmod 600). Note: If you'd like to quickly publish locally without subsequently publishing to Maven Central, configure a Gradle property `RELEASE_SIGNING_ENABLED=false`
-* Create file `~/.gradle/gradle.properties` per the [instructions in this guide](https://proandroiddev.com/publishing-a-maven-artifact-3-3-step-by-step-instructions-to-mavencentral-publishing-bd661081645d)
+* Create file `~/.gradle/gradle.properties`
   * add your sonotype credentials with these properties
-      * `mavenCentralUsername`
-      * `mavenCentralPassword`
-  * point it to the GPG key with these properties
-     * `signing.keyId`
-     * `signing.password`
-     * `signing.secretKeyRingFile`
+      * `ZCASH_MAVEN_PUBLISH_USERNAME`
+      * `ZCASH_MAVEN_PUBLISH_PASSWORD`
+  * Point it to a passwordless GPG key that has been ASCII armored, then base64 encoded.  Note this is only required for release builds.  Snapshots do not require signing.
+     * `ZCASH_ASCII_GPG_KEY`
 
 ## Every time
-1. Update the [build number](https://github.com/zcash/zcash-android-wallet-sdk/blob/main/gradle.properties) and the [CHANGELOG](https://github.com/zcash/zcash-android-wallet-sdk/blob/main/CHANGELOG.md).  For release builds, suffix the Gradle invocations below with `-PIS_SNAPSHOT=false`.
+1. Update the [build number](https://github.com/zcash/zcash-android-wallet-sdk/blob/main/gradle.properties) and the [CHANGELOG](../CHANGELOG.md).  For release builds, suffix the Gradle invocations below with `-PIS_SNAPSHOT=false`.
 3. Build locally
     * This will install the files in your local maven repo at `~/.m2/repository/cash/z/ecc/android/`
 ```zsh
-./gradlew publishToMavenLocal
+./gradlew publishReleasePublicationToMavenLocalRepository
 ```
-4. Publish via the following command:
-```zsh
-# This uploads the file to sonotype’s staging area
-./gradlew publish --no-daemon --no-parallel
-```
-5. Deploy to maven central:
-```zsh
-# This closes the staging repository and releases it to the world
-./gradlew closeAndReleaseRepository
-```
+3. Publish via the following command:
+    1. Snapshot: `./gradlew publishReleasePublicationToMavenCentralRepository -PIS_SNAPSHOT=true`
+    2. Release
+        1. `./gradlew publishReleasePublicationToMavenCentralRepository -PIS_SNAPSHOT=false`
+        2. Log into the Sonatype portal to complete the process of closing and releasing the repository.
 
 Note:
 Our existing artifacts can be found here and here:

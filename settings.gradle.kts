@@ -23,7 +23,6 @@ pluginManagement {
         val gradleVersionsPluginVersion = extra["GRADLE_VERSIONS_PLUGIN_VERSION"].toString()
         val kotlinVersion = extra["KOTLIN_VERSION"].toString()
         val kspVersion = extra["KSP_VERSION"].toString()
-        val mavenPublishPluginVersion = extra["MAVEN_PUBLISH_GRADLE_PLUGIN"].toString()
         val protobufVersion = extra["PROTOBUF_GRADLE_PLUGIN_VERSION"].toString()
 
         id("com.android.application") version (androidGradlePluginVersion) apply (false)
@@ -32,7 +31,6 @@ pluginManagement {
         id("com.google.devtools.ksp") version(kspVersion) apply (false)
         id("com.google.protobuf") version (protobufVersion) apply (false)
         id("com.osacky.fulladle") version (fulladleVersion) apply (false)
-        id("com.vanniktech.maven.publish.base") version(mavenPublishPluginVersion) apply (false)
         id("io.gitlab.arturbosch.detekt") version (detektVersion) apply (false)
         id("org.jetbrains.dokka") version (dokkaVersion) apply (false)
         id("org.jetbrains.kotlin.android") version (kotlinVersion) apply (false)
@@ -42,8 +40,10 @@ pluginManagement {
 }
 
 dependencyResolutionManagement {
+    @Suppress("UnstableApiUsage")
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
 
+    @Suppress("UnstableApiUsage")
     repositories {
         val isRepoRestrictionEnabled = true
 
@@ -90,7 +90,6 @@ dependencyResolutionManagement {
             val junitVersion = extra["JUNIT_VERSION"].toString()
             val kotlinVersion = extra["KOTLIN_VERSION"].toString()
             val kotlinxCoroutinesVersion = extra["KOTLINX_COROUTINES_VERSION"].toString()
-            val mavenPublishGradlePluginVersion = extra["MAVEN_PUBLISH_GRADLE_PLUGIN"].toString()
             val mockitoKotlinVersion = extra["MOCKITO_KOTLIN_VERSION"].toString()
             val mockitoVersion = extra["MOCKITO_VERSION"].toString()
             val okhttpVersion = extra["OKHTTP_VERSION"].toString()
@@ -110,7 +109,6 @@ dependencyResolutionManagement {
             // Gradle plugins
             library("gradle-plugin-android", "com.android.tools.build:gradle:$androidGradlePluginVersion")
             library("gradle-plugin-navigation", "androidx.navigation:navigation-safe-args-gradle-plugin:$androidxNavigationVersion")
-            library("gradle-plugin-publish", "com.vanniktech:gradle-maven-publish-plugin:$mavenPublishGradlePluginVersion")
             library("gradle-plugin-rust", "org.mozilla.rust-android-gradle:plugin:$rustGradlePluginVersion")
 
             // Special cases used by the grpc gradle plugin

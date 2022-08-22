@@ -2,6 +2,9 @@ package cash.z.ecc.android.sdk.internal
 
 import cash.z.ecc.android.sdk.exception.TransactionEncoderException
 import cash.z.ecc.android.sdk.ext.ZcashSdk
+import cash.z.ecc.android.sdk.internal.ext.deleteRecursivelySuspend
+import cash.z.ecc.android.sdk.internal.ext.existsSuspend
+import cash.z.ecc.android.sdk.internal.ext.mkdirsSuspend
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
@@ -133,7 +136,3 @@ class SaplingParamTool {
         }
     }
 }
-
-suspend fun File.existsSuspend() = withContext(Dispatchers.IO) { exists() }
-suspend fun File.mkdirsSuspend() = withContext(Dispatchers.IO) { mkdirs() }
-suspend fun File.deleteRecursivelySuspend() = withContext(Dispatchers.IO) { deleteRecursively() }

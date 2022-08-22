@@ -47,12 +47,23 @@ Change Log
   - `DerivationTool.deriveUnifiedViewingKeys`
   - `DerivationTool.validateUnifiedViewingKey`
 
-1.9.0-beta01
+Version 1.9.0-beta03
+------------------------------------
+- No changes; this release is a test of a new deployment process
+
+Version 1.9.0-beta02
+------------------------------------
+- The SDK now stores database files in `no_backup/co.electricoin.zcash` folder instead of the `database` folder. **No action required from client app**.
+
+Version 1.9.0-beta01
 ------------------------------------
  - Split `ZcashNetwork` into `ZcashNetwork` and `LightWalletEndpoint` to decouple network and server configuration
+ - Gradle 7.5.1
+ - Updated checkpoints
 
 Version 1.8.0-beta01
 ------------------------------------
+- Enabled automated unit tests run on the CI server 
 - Added `BlockHeight` typesafe object to represent block heights
 - Significantly reduced memory usage, fixing potential OutOfMemoryError during block download
 - Kotlin 1.7.10

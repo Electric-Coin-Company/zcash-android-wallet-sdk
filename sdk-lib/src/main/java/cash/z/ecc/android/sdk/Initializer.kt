@@ -1,11 +1,10 @@
 package cash.z.ecc.android.sdk
 
 import android.content.Context
+import cash.z.ecc.android.sdk.db.DatabaseCoordinator
 import cash.z.ecc.android.sdk.exception.InitializerException
 import cash.z.ecc.android.sdk.ext.ZcashSdk
-import cash.z.ecc.android.sdk.internal.SdkDispatchers
 import cash.z.ecc.android.sdk.internal.ext.getCacheDirSuspend
-import cash.z.ecc.android.sdk.internal.ext.getDatabasePathSuspend
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.jni.RustBackend
@@ -16,7 +15,6 @@ import cash.z.ecc.android.sdk.tool.CheckpointTool
 import cash.z.ecc.android.sdk.tool.DerivationTool
 import cash.z.ecc.android.sdk.type.UnifiedFullViewingKey
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withContext
 import java.io.File
 
 /**
@@ -380,9 +378,11 @@ class Initializer private constructor(
             alias: String,
             blockHeight: BlockHeight
         ): RustBackend {
+            val coordinator = DatabaseCoordinator.getInstance(context)
+
             return RustBackend.init(
-                cacheDbPath(context, network, alias),
-                dataDbPath(context, network, alias),
+                coordinator.cacheDbFile(network, alias).absolutePath,
+                coordinator.dataDbFile(network, alias).absolutePath,
                 File(context.getCacheDirSuspend(), "params").absolutePath,
                 network,
                 blockHeight
@@ -407,88 +407,7 @@ class Initializer private constructor(
             appContext: Context,
             network: ZcashNetwork,
             alias: String
-        ): Boolean {
-            val cacheDeleted = deleteDb(cacheDbPath(appContext, network, alias))
-            val dataDeleted = deleteDb(dataDbPath(appContext, network, alias))
-            return dataDeleted || cacheDeleted
-        }
-
-        //
-        // Path Helpers
-        //
-
-        /**
-         * Returns the path to the cache database that would correspond to the given alias.
-         *
-         * @param appContext the application context
-         * @param network the network associated with the data in the cache database.
-         * @param alias the alias to convert into a database path
-         */
-        private suspend fun cacheDbPath(
-            appContext: Context,
-            network: ZcashNetwork,
-            alias: String
-        ): String =
-            aliasToPath(appContext, network, alias, ZcashSdk.DB_CACHE_NAME)
-
-        /**
-         * Returns the path to the data database that would correspond to the given alias.
-         * @param appContext the application context
-         * * @param network the network associated with the data in the database.
-         * @param alias the alias to convert into a database path
-         */
-        private suspend fun dataDbPath(
-            appContext: Context,
-            network: ZcashNetwork,
-            alias: String
-        ): String =
-            aliasToPath(appContext, network, alias, ZcashSdk.DB_DATA_NAME)
-
-        private suspend fun aliasToPath(
-            appContext: Context,
-            network: ZcashNetwork,
-            alias: String,
-            dbFileName: String
-        ): String {
-            val parentDir: String =
-                appContext.getDatabasePathSuspend("unused.db").parentFile?.absolutePath
-                    ?: throw InitializerException.DatabasePathException
-            val prefix = if (alias.endsWith('_')) alias else "${alias}_"
-            return File(parentDir, "$prefix${network.networkName}_$dbFileName").absolutePath
-        }
-
-        /**
-         * Delete a database and it's potential journal file at the given path.
-         *
-         * @param filePath the path of the db to erase.
-         * @return true when a file exists at the given path and was deleted.
-         */
-        private suspend fun deleteDb(filePath: String): Boolean {
-            // just try the journal file. Doesn't matter if it's not there.
-            delete("$filePath-journal")
-
-            return delete(filePath)
-        }
-
-        /**
-         * Delete the file at the given path.
-         *
-         * @param filePath the path of the file to erase.
-         * @return true when a file exists at the given path and was deleted.
-         */
-        private suspend fun delete(filePath: String): Boolean {
-            return File(filePath).let {
-                withContext(SdkDispatchers.DATABASE_IO) {
-                    if (it.exists()) {
-                        twig("Deleting ${it.name}!")
-                        it.delete()
-                        true
-                    } else {
-                        false
-                    }
-                }
-            }
-        }
+        ): Boolean = DatabaseCoordinator.getInstance(appContext).deleteDatabases(network, alias)
     }
 }
 

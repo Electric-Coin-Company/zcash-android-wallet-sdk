@@ -1,8 +1,8 @@
 package cash.z.ecc.android.sdk.internal.block
 
 import android.content.Context
-import androidx.room.Room
 import androidx.room.RoomDatabase
+import cash.z.ecc.android.sdk.db.commonDatabaseBuilder
 import cash.z.ecc.android.sdk.db.entity.CompactBlockEntity
 import cash.z.ecc.android.sdk.internal.SdkDispatchers
 import cash.z.ecc.android.sdk.internal.SdkExecutors
@@ -11,6 +11,7 @@ import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.wallet.sdk.rpc.CompactFormats
 import kotlinx.coroutines.withContext
+import java.io.File
 
 /**
  * An implementation of CompactBlockStore that persists information to a database in the given
@@ -45,23 +46,27 @@ class CompactBlockDbStore private constructor(
     companion object {
         /**
          * @param appContext the application context. This is used for creating the database.
-         * @property dbPath the absolute path to the database.
+         * @property databaseFile the database file.
          */
         fun new(
             appContext: Context,
             zcashNetwork: ZcashNetwork,
-            dbPath: String
+            databaseFile: File
         ): CompactBlockDbStore {
-            val cacheDb = createCompactBlockCacheDb(appContext.applicationContext, dbPath)
+            val cacheDb = createCompactBlockCacheDb(appContext.applicationContext, databaseFile)
 
             return CompactBlockDbStore(zcashNetwork, cacheDb)
         }
 
         private fun createCompactBlockCacheDb(
             appContext: Context,
-            dbPath: String
+            databaseFile: File
         ): CompactBlockDb {
-            return Room.databaseBuilder(appContext, CompactBlockDb::class.java, dbPath)
+            return commonDatabaseBuilder(
+                appContext,
+                CompactBlockDb::class.java,
+                databaseFile
+            )
                 .setJournalMode(RoomDatabase.JournalMode.TRUNCATE)
                 // this is a simple cache of blocks. destroying the db should be benign
                 .fallbackToDestructiveMigration()

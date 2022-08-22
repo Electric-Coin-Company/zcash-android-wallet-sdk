@@ -83,8 +83,8 @@ class AssetTest {
 
             assertEquals(
                 "File: ${it.filename}",
-                CheckpointTool.checkpointHeightFromFilename(network, it.filename),
-                jsonObject.getInt("height")
+                CheckpointTool.checkpointHeightFromFilename(network, it.filename).value,
+                jsonObject.getLong("height")
             )
 
             // In the future, additional validation of the JSON can be added
@@ -94,9 +94,9 @@ class AssetTest {
     private data class JsonFile(val jsonObject: JSONObject, val filename: String)
 
     companion object {
-        fun listAssets(network: ZcashNetwork) = runBlocking {
+        fun listAssets(network: ZcashNetwork): Array<String>? = runBlocking {
             CheckpointTool.listCheckpointDirectoryContents(
-                ApplicationProvider.getApplicationContext<Context>(),
+                ApplicationProvider.getApplicationContext(),
                 CheckpointTool.checkpointDirectory(network)
             )
         }
