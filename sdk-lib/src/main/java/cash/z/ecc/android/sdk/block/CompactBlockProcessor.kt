@@ -517,6 +517,7 @@ class CompactBlockProcessor internal constructor(
             //       probably disabled on ligthtwalletd, so then stop trying until the next app launch.
             // TODO [#683]: https://github.com/zcash/zcash-android-wallet-sdk/issues/683
             if (failedUtxoFetches < 9) { // there are 3 attempts per block
+                @Suppress("TooGenericExceptionCaught")
                 try {
                     retryUpTo(3) {
                         val result = downloader.lightWalletService.fetchUtxos(tAddress, startHeight)
@@ -525,7 +526,8 @@ class CompactBlockProcessor internal constructor(
                 } catch (e: Throwable) {
                     failedUtxoFetches++
                     twig("Warning: Fetching UTXOs is repeatedly failing! We will only try about " +
-                        "${(9 - failedUtxoFetches + 2) / 3} more times then give up for this session.")
+                        "${(9 - failedUtxoFetches + 2) / 3} more times then give up for this session. " +
+                        "Exception message: ${e.message}, caused by: ${e.cause}.")
                 }
             } else {
                 twig("Warning: gave up on fetching UTXOs for this session. It seems to unavailable on " +
@@ -546,6 +548,7 @@ class CompactBlockProcessor internal constructor(
         twig("Checking for UTXOs above height $aboveHeight")
         result.forEach { utxo: Service.GetAddressUtxosReply ->
             twig("Found UTXO at height ${utxo.height.toInt()} with ${utxo.valueZat} zatoshi")
+            @Suppress("TooGenericExceptionCaught")
             try {
                 rustBackend.putUtxo(
                     tAddress,
@@ -561,7 +564,7 @@ class CompactBlockProcessor internal constructor(
                 // TODO [#683]: https://github.com/zcash/zcash-android-wallet-sdk/issues/683
                 skipped++
                 twig("Warning: Ignoring transaction at height ${utxo.height} @ index ${utxo.index} because " +
-                    "it already exists")
+                    "it already exists. Exception message: ${t.message}, caused by: ${t.cause}.")
             }
         }
         // return the number of UTXOs that were downloaded

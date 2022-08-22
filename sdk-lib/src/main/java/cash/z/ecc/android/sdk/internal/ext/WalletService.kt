@@ -31,7 +31,9 @@ suspend inline fun retryUpTo(
             return
         } catch (t: Throwable) {
             failedAttempts++
-            if (failedAttempts > retries) throw exceptionWrapper(t)
+            if (failedAttempts > retries) {
+                throw exceptionWrapper(t)
+            }
             val duration = (initialDelayMillis.toDouble() * Math.pow(2.0, failedAttempts.toDouble() - 1)).toLong()
             twig("failed due to $t retrying ($failedAttempts/$retries) in ${duration}s...")
             delay(duration)
