@@ -115,8 +115,9 @@ internal class PagedTransactionRepository private constructor(
     // TODO [#681]: convert this into a wallet repository rather than "transaction repository"
     // TODO [#681]: https://github.com/zcash/zcash-android-wallet-sdk/issues/681
 
-    @Suppress("LongParameterList")
     companion object {
+
+        @Suppress("LongParameterList")
         internal suspend fun new(
             appContext: Context,
             zcashNetwork: ZcashNetwork,

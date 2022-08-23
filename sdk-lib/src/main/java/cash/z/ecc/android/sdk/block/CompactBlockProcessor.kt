@@ -61,6 +61,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
+import kotlin.time.Duration.Companion.days
 
 /**
  * Responsible for processing the compact blocks that are received from the lightwallet server. This class encapsulates
@@ -788,13 +789,12 @@ class CompactBlockProcessor internal constructor(
     /**
      * Rewind back at least two weeks worth of blocks.
      */
-    @Suppress("MagicNumber")
     suspend fun quickRewind() {
         val height = max(currentInfo.lastScannedHeight, repository.lastScannedHeight())
-        val blocksPerDay = 60 * 60 * 24 * 1000 / ZcashSdk.BLOCK_INTERVAL_MILLIS.toInt()
+        val blocksPer14Days = 14.days.inWholeMilliseconds / ZcashSdk.BLOCK_INTERVAL_MILLIS.toInt()
         val twoWeeksBack = BlockHeight.new(
             network,
-            (height.value - blocksPerDay * 14).coerceAtLeast(lowerBoundHeight.value)
+            (height.value - blocksPer14Days).coerceAtLeast(lowerBoundHeight.value)
         )
         rewindToNearestHeight(twoWeeksBack, false)
     }
