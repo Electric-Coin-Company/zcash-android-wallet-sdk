@@ -39,7 +39,7 @@ class AddressGeneratorUtil {
                 DerivationTool.deriveUnifiedAddress(seed, ZcashNetwork.Mainnet)
             }.collect { address ->
                 println("xrxrx2\t$address")
-                assertTrue(address.startsWith("zs1"))
+                assertTrue(address.startsWith("u1"))
             }
     }
 

@@ -126,13 +126,13 @@ class SanityTest(
             // Testnet wallet
             arrayOf(
                 TestWallet(TestWallet.Backups.SAMPLE_WALLET),
-                "zxviewtestsapling1qv0ue89kqqqqpqqyt4cl5wvssx4wqq30e5m948p07dnwl9x3u75vvnzvjwwpjkrf8yk2gva0kkxk9p8suj4xawlzw9pajuxgap83wykvsuyzfrm33a2p2m4jz2205kgzx0l2lj2kyegtnuph6crkyvyjqmfxut84nu00wxgrstu5fy3eu49nzl8jzr4chmql4ysgg2t8htn9dtvxy8c7wx9rvcerqsjqm6lqln9syk3g8rr3xpy3l4nj0kawenzpcdtnv9qmy98vdhqzaf063",
+                "uviewtest1m3cyp6tdy3rewtpqazdxlsqkmu7xjedtqmp4da8mvxm87h4as38v5kz4ulw7x7nmgv5d8uwk743a5zt7aurtz2z2g74fu740ecp5fhdgakm6hgzr5jzcl75cmddlufmjpykrpkzj84yz8j5qe9c5935qt2tvd9dpx3m0zw5dwn3t2dtsdyqvy5jstf88w799qre549yyxw7dvk3murm3568ah6wqg5tdjka2ujtgct4q62hw7mfcxcyaeu8l6882hxkt9x4025mx3w35whcrmpxy8fqsh62esatczj8awxtrgnj8h2vj65r8595qt9jl4gz84w4mja74tymt8xxaguckeam",
                 BlockHeight.new(ZcashNetwork.Testnet, 1330000)
             ),
             // Mainnet wallet
             arrayOf(
                 TestWallet(TestWallet.Backups.SAMPLE_WALLET, ZcashNetwork.Mainnet),
-                "zxviews1q0hxkupsqqqqpqzsffgrk2smjuccedua7zswf5e3rgtv3ga9nhvhjug670egshd6me53r5n083s2m9mf4va4z7t39ltd3wr7hawnjcw09eu85q0ammsg0tsgx24p4ma0uvr4p8ltx5laum2slh2whc23ctwlnxme9w4dw92kalwk5u4wyem8dynknvvqvs68ktvm8qh7nx9zg22xfc77acv8hk3qqll9k3x4v2fa26puu2939ea7hy4hh60ywma69xtqhcy4037ne8g2sg8sq",
+                "uview1n8j8hckdh4rpxsa8qswmcv8mgu6g3f4l4se6ympej3qr6k5k5xlw47u02s3h2sy5aplkzuwysvum2p6weakvyc72udsuvplaq8r5jkw5h6cjfp26j8rudam7suzu6lwalzakpps2jv2x5v08gf3la02dtdlq75ca7k4urg6t0yncyly5wu26t6mfdfvxvhckr2qxzcwllnh947gn6wzg92f0mlhfds239q50gm4398n02anm23qgk8st49u0wmmw7flathr49h2twxvfm6gauasuq6z2fvs3t8g9ut4duk7tp7ry88dwacsutxzpwnm674y06mf3mz3tnu8s2fx4vatmcs9",
                 BlockHeight.new(ZcashNetwork.Mainnet, 1000000)
             )
         )

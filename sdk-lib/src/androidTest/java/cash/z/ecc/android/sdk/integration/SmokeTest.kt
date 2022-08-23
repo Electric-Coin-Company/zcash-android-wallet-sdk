@@ -51,7 +51,7 @@ class SmokeTest {
 
     @Test
     fun testViewingKeys() {
-        assertEquals("Invalid encoding", "zxviewtestsapling1qv0ue89kqqqqpqqyt4cl5wvssx4wqq30e5m948p07dnwl9x3u75vvnzvjwwpjkrf8yk2gva0kkxk9p8suj4xawlzw9pajuxgap83wykvsuyzfrm33a2p2m4jz2205kgzx0l2lj2kyegtnuph6crkyvyjqmfxut84nu00wxgrstu5fy3eu49nzl8jzr4chmql4ysgg2t8htn9dtvxy8c7wx9rvcerqsjqm6lqln9syk3g8rr3xpy3l4nj0kawenzpcdtnv9qmy98vdhqzaf063", wallet.initializer.viewingKeys[0].encoding)
+        assertEquals("Invalid encoding", "uviewtest1m3cyp6tdy3rewtpqazdxlsqkmu7xjedtqmp4da8mvxm87h4as38v5kz4ulw7x7nmgv5d8uwk743a5zt7aurtz2z2g74fu740ecp5fhdgakm6hgzr5jzcl75cmddlufmjpykrpkzj84yz8j5qe9c5935qt2tvd9dpx3m0zw5dwn3t2dtsdyqvy5jstf88w799qre549yyxw7dvk3murm3568ah6wqg5tdjka2ujtgct4q62hw7mfcxcyaeu8l6882hxkt9x4025mx3w35whcrmpxy8fqsh62esatczj8awxtrgnj8h2vj65r8595qt9jl4gz84w4mja74tymt8xxaguckeam", wallet.initializer.viewingKeys[0].encoding)
     }
 
     // This test takes an extremely long time
