@@ -17,37 +17,39 @@ import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Scanned
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Scanning
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Stopped
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Validating
-import cash.z.ecc.android.sdk.db.DatabaseCoordinator
-import cash.z.ecc.android.sdk.db.entity.PendingTransaction
-import cash.z.ecc.android.sdk.db.entity.hasRawTransactionId
-import cash.z.ecc.android.sdk.db.entity.isCancelled
-import cash.z.ecc.android.sdk.db.entity.isExpired
-import cash.z.ecc.android.sdk.db.entity.isFailedSubmit
-import cash.z.ecc.android.sdk.db.entity.isLongExpired
-import cash.z.ecc.android.sdk.db.entity.isMarkedForDeletion
-import cash.z.ecc.android.sdk.db.entity.isMined
-import cash.z.ecc.android.sdk.db.entity.isSafeToDiscard
-import cash.z.ecc.android.sdk.db.entity.isSubmitSuccess
-import cash.z.ecc.android.sdk.db.entity.isSubmitted
 import cash.z.ecc.android.sdk.exception.SynchronizerException
 import cash.z.ecc.android.sdk.ext.ConsensusBranchId
 import cash.z.ecc.android.sdk.ext.ZcashSdk
-import cash.z.ecc.android.sdk.internal.block.CompactBlockDbStore
 import cash.z.ecc.android.sdk.internal.block.CompactBlockDownloader
-import cash.z.ecc.android.sdk.internal.block.CompactBlockStore
+import cash.z.ecc.android.sdk.internal.db.DatabaseCoordinator
+import cash.z.ecc.android.sdk.internal.db.block.DbCompactBlockRepository
+import cash.z.ecc.android.sdk.internal.db.derived.DbDerivedDataRepository
+import cash.z.ecc.android.sdk.internal.db.derived.DerivedDataDb
 import cash.z.ecc.android.sdk.internal.ext.toHexReversed
 import cash.z.ecc.android.sdk.internal.ext.tryNull
 import cash.z.ecc.android.sdk.internal.isEmpty
+import cash.z.ecc.android.sdk.internal.model.PendingTransaction
+import cash.z.ecc.android.sdk.internal.model.hasRawTransactionId
+import cash.z.ecc.android.sdk.internal.model.isCancelled
+import cash.z.ecc.android.sdk.internal.model.isExpired
+import cash.z.ecc.android.sdk.internal.model.isFailedSubmit
+import cash.z.ecc.android.sdk.internal.model.isLongExpired
+import cash.z.ecc.android.sdk.internal.model.isMarkedForDeletion
+import cash.z.ecc.android.sdk.internal.model.isMined
+import cash.z.ecc.android.sdk.internal.model.isSafeToDiscard
+import cash.z.ecc.android.sdk.internal.model.isSubmitSuccess
+import cash.z.ecc.android.sdk.internal.model.isSubmitted
+import cash.z.ecc.android.sdk.internal.repository.CompactBlockRepository
+import cash.z.ecc.android.sdk.internal.repository.DerivedDataRepository
 import cash.z.ecc.android.sdk.internal.service.LightWalletGrpcService
 import cash.z.ecc.android.sdk.internal.service.LightWalletService
 import cash.z.ecc.android.sdk.internal.transaction.OutboundTransactionManager
-import cash.z.ecc.android.sdk.internal.transaction.PagedTransactionRepository
 import cash.z.ecc.android.sdk.internal.transaction.PersistentTransactionManager
 import cash.z.ecc.android.sdk.internal.transaction.TransactionEncoder
-import cash.z.ecc.android.sdk.internal.transaction.TransactionRepository
 import cash.z.ecc.android.sdk.internal.transaction.WalletTransactionEncoder
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.internal.twigTask
+import cash.z.ecc.android.sdk.jni.RustBackend
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
@@ -95,11 +97,12 @@ import kotlin.coroutines.EmptyCoroutineContext
  * @property processor saves the downloaded compact blocks to the cache and then scans those blocks for
  * data related to this wallet.
  */
+// This class should be made internal, although currently ListUtxosFragment is accessing a non-public API
 @OptIn(kotlinx.coroutines.ObsoleteCoroutinesApi::class)
 @FlowPreview
 @Suppress("TooManyFunctions")
 class SdkSynchronizer internal constructor(
-    private val storage: TransactionRepository,
+    private val storage: DerivedDataRepository,
     private val txManager: OutboundTransactionManager,
     val processor: CompactBlockProcessor
 ) : Synchronizer {
@@ -304,6 +307,8 @@ class SdkSynchronizer internal constructor(
             twig("Synchronizer::stop: _status.cancel()")
             _status.cancel()
             twig("Synchronizer::stop: COMPLETE")
+
+            storage.close()
         }
     }
 
@@ -334,15 +339,15 @@ class SdkSynchronizer internal constructor(
     // TODO [#682]: https://github.com/zcash/zcash-android-wallet-sdk/issues/682
 
     suspend fun findBlockHash(height: BlockHeight): ByteArray? {
-        return (storage as? PagedTransactionRepository)?.findBlockHash(height)
+        return storage.findBlockHash(height)
     }
 
     suspend fun findBlockHashAsHex(height: BlockHeight): String? {
         return findBlockHash(height)?.toHexReversed()
     }
 
-    suspend fun getTransactionCount(): Int {
-        return (storage as? PagedTransactionRepository)?.getTransactionCount() ?: 0
+    suspend fun getTransactionCount(): Long {
+        return storage.getTransactionCount()
     }
 
     fun refreshTransactions() {
@@ -534,7 +539,7 @@ class SdkSynchronizer internal constructor(
             .forEach { pendingTx ->
                 twig("checking for updates on pendingTx id: ${pendingTx.id}")
                 pendingTx.rawTransactionId?.let { rawId ->
-                    storage.findMinedHeight(rawId)?.let { minedHeight ->
+                    storage.findMinedHeight(rawId.byteArray)?.let { minedHeight ->
                         twig(
                             "found matching transaction for pending transaction with id" +
                                 " ${pendingTx.id} mined at height $minedHeight!"
@@ -612,7 +617,7 @@ class SdkSynchronizer internal constructor(
     }
 
     private suspend fun cleanupCancelledTx(pendingTx: PendingTransaction): Boolean {
-        return if (storage.cleanupCancelledTx(pendingTx.rawTransactionId!!)) {
+        return if (storage.cleanupCancelledTx(pendingTx.rawTransactionId?.byteArray!!)) {
             txManager.markForDeletion(pendingTx.id)
             true
         } else {
@@ -773,16 +778,13 @@ class SdkSynchronizer internal constructor(
  *
  * See the helper methods for generating default values.
  */
-object DefaultSynchronizerFactory {
+internal object DefaultSynchronizerFactory {
 
     fun new(
-        repository: TransactionRepository,
+        repository: DerivedDataRepository,
         txManager: OutboundTransactionManager,
         processor: CompactBlockProcessor
     ): Synchronizer {
-        // call the actual constructor now that all dependencies have been injected
-        // alternatively, this entire object graph can be supplied by Dagger
-        // This builder just makes that easier.
         return SdkSynchronizer(
             repository,
             txManager,
@@ -790,24 +792,16 @@ object DefaultSynchronizerFactory {
         )
     }
 
-    // TODO [#242]: Don't hard code page size.  It is a workaround for Uncaught Exception:
-    //  android.view.ViewRootImpl$CalledFromWrongThreadException: Only the original thread that created a view hierarchy
-    //  can touch its views. and is probably related to FlowPagedList
-    // TODO [#242]: https://github.com/zcash/zcash-android-wallet-sdk/issues/242
-    private const val DEFAULT_PAGE_SIZE = 1000
-    suspend fun defaultTransactionRepository(initializer: Initializer): TransactionRepository =
-        PagedTransactionRepository.new(
-            initializer.context,
-            initializer.network,
-            DEFAULT_PAGE_SIZE,
-            initializer.rustBackend,
-            initializer.checkpoint,
-            initializer.viewingKeys,
-            initializer.overwriteVks
+    suspend fun defaultDerivedDataRepository(
+        rustBackend: RustBackend,
+        initializer: Initializer
+    ): DerivedDataRepository =
+        DbDerivedDataRepository(
+            DerivedDataDb.new(initializer.context, rustBackend, initializer.network)
         )
 
-    fun defaultBlockStore(initializer: Initializer): CompactBlockStore =
-        CompactBlockDbStore.new(
+    fun defaultCompactBlockRepository(initializer: Initializer): CompactBlockRepository =
+        DbCompactBlockRepository.new(
             initializer.context,
             initializer.network,
             initializer.rustBackend.cacheDbFile
@@ -818,12 +812,12 @@ object DefaultSynchronizerFactory {
 
     fun defaultEncoder(
         initializer: Initializer,
-        repository: TransactionRepository
+        repository: DerivedDataRepository
     ): TransactionEncoder = WalletTransactionEncoder(initializer.rustBackend, repository)
 
     fun defaultDownloader(
         service: LightWalletService,
-        blockStore: CompactBlockStore
+        blockStore: CompactBlockRepository
     ): CompactBlockDownloader = CompactBlockDownloader(service, blockStore)
 
     suspend fun defaultTxManager(
@@ -836,8 +830,9 @@ object DefaultSynchronizerFactory {
             initializer.alias
         )
 
-        return PersistentTransactionManager(
+        return PersistentTransactionManager.new(
             initializer.context,
+            initializer.network,
             encoder,
             service,
             databaseFile
@@ -847,7 +842,7 @@ object DefaultSynchronizerFactory {
     fun defaultProcessor(
         initializer: Initializer,
         downloader: CompactBlockDownloader,
-        repository: TransactionRepository
+        repository: DerivedDataRepository
     ): CompactBlockProcessor = CompactBlockProcessor(
         downloader,
         repository,

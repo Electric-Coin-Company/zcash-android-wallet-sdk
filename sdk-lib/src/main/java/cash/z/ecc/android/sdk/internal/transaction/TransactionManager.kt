@@ -1,6 +1,6 @@
 package cash.z.ecc.android.sdk.internal.transaction
 
-import cash.z.ecc.android.sdk.db.entity.PendingTransaction
+import cash.z.ecc.android.sdk.internal.model.PendingTransaction
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.Zatoshi
 import kotlinx.coroutines.flow.Flow

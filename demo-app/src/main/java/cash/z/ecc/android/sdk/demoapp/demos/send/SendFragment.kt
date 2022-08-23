@@ -11,13 +11,6 @@ import cash.z.ecc.android.bip39.toSeed
 import cash.z.ecc.android.sdk.Initializer
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor
-import cash.z.ecc.android.sdk.db.entity.PendingTransaction
-import cash.z.ecc.android.sdk.db.entity.isCreated
-import cash.z.ecc.android.sdk.db.entity.isCreating
-import cash.z.ecc.android.sdk.db.entity.isFailedEncoding
-import cash.z.ecc.android.sdk.db.entity.isFailedSubmit
-import cash.z.ecc.android.sdk.db.entity.isMined
-import cash.z.ecc.android.sdk.db.entity.isSubmitSuccess
 import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
 import cash.z.ecc.android.sdk.demoapp.DemoConstants
 import cash.z.ecc.android.sdk.demoapp.databinding.FragmentSendBinding
@@ -29,6 +22,13 @@ import cash.z.ecc.android.sdk.ext.convertZatoshiToZecString
 import cash.z.ecc.android.sdk.ext.convertZecToZatoshi
 import cash.z.ecc.android.sdk.ext.toZecString
 import cash.z.ecc.android.sdk.internal.Twig
+import cash.z.ecc.android.sdk.internal.model.PendingTransaction
+import cash.z.ecc.android.sdk.internal.model.isCreated
+import cash.z.ecc.android.sdk.internal.model.isCreating
+import cash.z.ecc.android.sdk.internal.model.isFailedEncoding
+import cash.z.ecc.android.sdk.internal.model.isFailedSubmit
+import cash.z.ecc.android.sdk.internal.model.isMined
+import cash.z.ecc.android.sdk.internal.model.isSubmitSuccess
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.LightWalletEndpoint
 import cash.z.ecc.android.sdk.model.WalletBalance

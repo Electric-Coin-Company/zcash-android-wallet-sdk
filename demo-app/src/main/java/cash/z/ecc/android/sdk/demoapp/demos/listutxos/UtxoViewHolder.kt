@@ -3,10 +3,9 @@ package cash.z.ecc.android.sdk.demoapp.demos.listutxos
 import android.view.View
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import cash.z.ecc.android.sdk.db.entity.ConfirmedTransaction
-import cash.z.ecc.android.sdk.db.entity.valueInZatoshi
 import cash.z.ecc.android.sdk.demoapp.R
 import cash.z.ecc.android.sdk.ext.convertZatoshiToZecString
+import cash.z.ecc.android.sdk.model.ConfirmedTransaction
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -21,7 +20,7 @@ class UtxoViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
 
     @Suppress("MagicNumber")
     fun bindTo(transaction: ConfirmedTransaction?) {
-        amountText.text = transaction?.valueInZatoshi.convertZatoshiToZecString()
+        amountText.text = transaction?.value.convertZatoshiToZecString()
         timeText.text =
             if (transaction == null || transaction.blockTimeInSeconds == 0L) "Pending"
             else formatter.format(transaction.blockTimeInSeconds * 1000L)
@@ -29,6 +28,6 @@ class UtxoViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
     }
 
     private fun getMemoString(transaction: ConfirmedTransaction?): String {
-        return transaction?.memo?.takeUnless { it[0] < 0 }?.let { String(it) } ?: "no memo"
+        return transaction?.memo?.byteArray?.takeUnless { it[0] < 0 }?.let { String(it) } ?: "no memo"
     }
 }

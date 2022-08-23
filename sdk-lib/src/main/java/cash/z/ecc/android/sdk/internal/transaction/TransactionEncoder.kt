@@ -1,6 +1,6 @@
 package cash.z.ecc.android.sdk.internal.transaction
 
-import cash.z.ecc.android.sdk.db.entity.EncodedTransaction
+import cash.z.ecc.android.sdk.model.EncodedTransaction
 import cash.z.ecc.android.sdk.model.Zatoshi
 
 interface TransactionEncoder {

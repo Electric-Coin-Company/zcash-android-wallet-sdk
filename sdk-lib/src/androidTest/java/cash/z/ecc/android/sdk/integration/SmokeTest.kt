@@ -4,7 +4,7 @@ import androidx.test.filters.LargeTest
 import androidx.test.filters.MediumTest
 import cash.z.ecc.android.sdk.annotation.MaintainedTest
 import cash.z.ecc.android.sdk.annotation.TestPurpose
-import cash.z.ecc.android.sdk.db.DatabaseCoordinator
+import cash.z.ecc.android.sdk.internal.db.DatabaseCoordinator
 import cash.z.ecc.android.sdk.util.TestWallet
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals

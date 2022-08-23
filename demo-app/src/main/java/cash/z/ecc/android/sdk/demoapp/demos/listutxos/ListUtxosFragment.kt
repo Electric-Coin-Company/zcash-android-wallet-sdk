@@ -12,7 +12,6 @@ import cash.z.ecc.android.sdk.Initializer
 import cash.z.ecc.android.sdk.SdkSynchronizer
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor
-import cash.z.ecc.android.sdk.db.entity.ConfirmedTransaction
 import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
 import cash.z.ecc.android.sdk.demoapp.databinding.FragmentListUtxosBinding
 import cash.z.ecc.android.sdk.demoapp.ext.requireApplicationContext
@@ -21,6 +20,7 @@ import cash.z.ecc.android.sdk.demoapp.util.mainActivity
 import cash.z.ecc.android.sdk.ext.collectWith
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.BlockHeight
+import cash.z.ecc.android.sdk.model.ConfirmedTransaction
 import cash.z.ecc.android.sdk.model.LightWalletEndpoint
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.model.defaultForNetwork
@@ -149,7 +149,7 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
 
             lifecycleScope.launch {
                 withContext(Dispatchers.IO) {
-                    finalCount = (synchronizer as SdkSynchronizer).getTransactionCount()
+                    finalCount = (synchronizer as SdkSynchronizer).getTransactionCount().toInt()
                     withContext(Dispatchers.Main) {
                         @Suppress("MagicNumber")
                         delay(100)
@@ -199,7 +199,7 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
             lifecycleScope.launch {
                 withContext(Dispatchers.IO) {
                     synchronizer.prepare()
-                    initialCount = (synchronizer as SdkSynchronizer).getTransactionCount()
+                    initialCount = (synchronizer as SdkSynchronizer).getTransactionCount().toInt()
                 }
             }
             synchronizer.clearedTransactions.collectWith(lifecycleScope, ::onTransactionsUpdated)

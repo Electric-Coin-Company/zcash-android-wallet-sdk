@@ -4,15 +4,21 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
 import cash.z.ecc.android.sdk.annotation.MaintainedTest
 import cash.z.ecc.android.sdk.annotation.TestPurpose
-import cash.z.ecc.android.sdk.db.entity.EncodedTransaction
-import cash.z.ecc.android.sdk.db.entity.PendingTransaction
-import cash.z.ecc.android.sdk.db.entity.isCancelled
 import cash.z.ecc.android.sdk.internal.TroubleshootingTwig
 import cash.z.ecc.android.sdk.internal.Twig
+import cash.z.ecc.android.sdk.internal.db.commonDatabaseBuilder
+import cash.z.ecc.android.sdk.internal.db.pending.PendingTransactionDb
+import cash.z.ecc.android.sdk.internal.model.PendingTransaction
+import cash.z.ecc.android.sdk.internal.model.isCancelled
 import cash.z.ecc.android.sdk.internal.service.LightWalletService
 import cash.z.ecc.android.sdk.internal.twig
+import cash.z.ecc.android.sdk.model.BlockHeight
+import cash.z.ecc.android.sdk.model.EncodedTransaction
+import cash.z.ecc.android.sdk.model.FirstClassByteArray
 import cash.z.ecc.android.sdk.model.Zatoshi
+import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.test.ScopedTest
+import cash.z.ecc.android.sdk.test.getAppContext
 import cash.z.ecc.fixture.DatabaseNameFixture
 import cash.z.ecc.fixture.DatabasePathFixture
 import com.nhaarman.mockitokotlin2.any
@@ -41,9 +47,11 @@ import kotlin.test.assertTrue
 @SmallTest
 class PersistentTransactionManagerTest : ScopedTest() {
 
-    @Mock lateinit var mockEncoder: TransactionEncoder
+    @Mock
+    lateinit var mockEncoder: TransactionEncoder
 
-    @Mock lateinit var mockService: LightWalletService
+    @Mock
+    lateinit var mockService: LightWalletService
 
     private val pendingDbFile = File(
         DatabasePathFixture.new(),
@@ -61,7 +69,12 @@ class PersistentTransactionManagerTest : ScopedTest() {
     fun setup() {
         initMocks()
         deleteDb()
-        manager = PersistentTransactionManager(context, mockEncoder, mockService, pendingDbFile)
+        val db = commonDatabaseBuilder(
+            getAppContext(),
+            PendingTransactionDb::class.java,
+            pendingDbFile
+        ).build()
+        manager = PersistentTransactionManager(db, ZcashNetwork.Mainnet, mockEncoder, mockService)
     }
 
     private fun deleteDb() {
@@ -76,7 +89,16 @@ class PersistentTransactionManagerTest : ScopedTest() {
             }.thenAnswer {
                 runBlocking {
                     delay(200)
-                    EncodedTransaction(byteArrayOf(1, 2, 3), byteArrayOf(8, 9), 5_000_000)
+                    EncodedTransaction(
+                        FirstClassByteArray(byteArrayOf(1, 2, 3)),
+                        FirstClassByteArray(
+                            byteArrayOf(
+                                8,
+                                9
+                            )
+                        ),
+                        BlockHeight.new(ZcashNetwork.Mainnet, 5_000_000)
+                    )
                 }
             }
         }

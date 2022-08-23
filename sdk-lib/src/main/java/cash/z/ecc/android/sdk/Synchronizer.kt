@@ -1,10 +1,10 @@
 package cash.z.ecc.android.sdk
 
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor
-import cash.z.ecc.android.sdk.db.entity.ConfirmedTransaction
-import cash.z.ecc.android.sdk.db.entity.PendingTransaction
 import cash.z.ecc.android.sdk.ext.ZcashSdk
+import cash.z.ecc.android.sdk.internal.model.PendingTransaction
 import cash.z.ecc.android.sdk.model.BlockHeight
+import cash.z.ecc.android.sdk.model.ConfirmedTransaction
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
@@ -422,29 +422,31 @@ interface Synchronizer {
         /**
          * Primary method that SDK clients will use to construct a synchronizer.
          *
-         * If customized initialization is required (e.g. for dependency injection or testing), see
-         * [DefaultSynchronizerFactory].
-         *
          * @param initializer the helper that is leveraged for creating all the components that the
          * Synchronizer requires. It contains all information necessary to build a synchronizer and it is
          * mainly responsible for initializing the databases associated with this synchronizer and loading
          * the rust backend.
          */
-        suspend fun new(
-            initializer: Initializer
-        ): Synchronizer {
-            val repository = DefaultSynchronizerFactory.defaultTransactionRepository(initializer)
-            val blockStore = DefaultSynchronizerFactory.defaultBlockStore(initializer)
+        /*
+         * If customized initialization is required (e.g. for dependency injection or testing), see
+         * [DefaultSynchronizerFactory].
+         */
+        suspend fun new(initializer: Initializer): Synchronizer {
+            val pendingTransactionRepository = DefaultSynchronizerFactory.defaultDerivedDataRepository(
+                initializer.rustBackend,
+                initializer
+            )
+            val blockRepository = DefaultSynchronizerFactory.defaultCompactBlockRepository(initializer)
             val service = DefaultSynchronizerFactory.defaultService(initializer)
-            val encoder = DefaultSynchronizerFactory.defaultEncoder(initializer, repository)
-            val downloader = DefaultSynchronizerFactory.defaultDownloader(service, blockStore)
+            val encoder = DefaultSynchronizerFactory.defaultEncoder(initializer, pendingTransactionRepository)
+            val downloader = DefaultSynchronizerFactory.defaultDownloader(service, blockRepository)
             val txManager =
                 DefaultSynchronizerFactory.defaultTxManager(initializer, encoder, service)
             val processor =
-                DefaultSynchronizerFactory.defaultProcessor(initializer, downloader, repository)
+                DefaultSynchronizerFactory.defaultProcessor(initializer, downloader, pendingTransactionRepository)
 
             return SdkSynchronizer(
-                repository,
+                pendingTransactionRepository,
                 txManager,
                 processor
             )

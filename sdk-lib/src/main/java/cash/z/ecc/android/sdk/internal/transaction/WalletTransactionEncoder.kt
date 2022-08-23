@@ -1,13 +1,14 @@
 package cash.z.ecc.android.sdk.internal.transaction
 
-import cash.z.ecc.android.sdk.db.entity.EncodedTransaction
 import cash.z.ecc.android.sdk.exception.TransactionEncoderException
 import cash.z.ecc.android.sdk.ext.masked
 import cash.z.ecc.android.sdk.internal.SaplingParamTool
+import cash.z.ecc.android.sdk.internal.repository.DerivedDataRepository
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.internal.twigTask
 import cash.z.ecc.android.sdk.jni.RustBackend
 import cash.z.ecc.android.sdk.jni.RustBackendWelding
+import cash.z.ecc.android.sdk.model.EncodedTransaction
 import cash.z.ecc.android.sdk.model.Zatoshi
 
 /**
@@ -21,7 +22,7 @@ import cash.z.ecc.android.sdk.model.Zatoshi
  */
 internal class WalletTransactionEncoder(
     private val rustBackend: RustBackendWelding,
-    private val repository: TransactionRepository
+    private val repository: DerivedDataRepository
 ) : TransactionEncoder {
 
     /**
