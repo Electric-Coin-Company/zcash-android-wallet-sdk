@@ -47,7 +47,12 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
         val seed = Mnemonics.MnemonicCode(seedPhrase).toSeed()
 
         // converting seed into viewingKey
-        val viewingKey = runBlocking { DerivationTool.deriveUnifiedViewingKeys(seed, ZcashNetwork.fromResources(requireApplicationContext())).first() }
+        val viewingKey = runBlocking {
+            DerivationTool.deriveUnifiedViewingKeys(
+                seed,
+                ZcashNetwork.fromResources(requireApplicationContext())
+            ).first()
+        }
 
         // using the ViewingKey to initialize
         runBlocking {
@@ -78,6 +83,7 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
         synchronizer.saplingBalances.filterNotNull().collectWith(lifecycleScope, ::onBalance)
     }
 
+    @Suppress("MagicNumber")
     private fun onBalance(balance: WalletBalance) {
         binding.textBalance.text = """
                 Available balance: ${balance.available.convertZatoshiToZecString(12)}
@@ -95,6 +101,7 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
         }
     }
 
+    @Suppress("MagicNumber")
     private fun onProgress(i: Int) {
         if (i < 100) {
             binding.textStatus.text = "Downloading blocks...$i%"

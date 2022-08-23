@@ -22,6 +22,7 @@ class TransactionViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) 
     private val icon = itemView.findViewById<ImageView>(R.id.image_transaction_type)
     private val formatter = SimpleDateFormat("M/d h:mma", Locale.getDefault())
 
+    @Suppress("MagicNumber")
     fun bindTo(transaction: ConfirmedTransaction?) {
         val isInbound = transaction?.toAddress.isNullOrEmpty()
         amountText.text = transaction?.valueInZatoshi.convertZatoshiToZecString()
@@ -32,7 +33,9 @@ class TransactionViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) 
 
         icon.rotation = if (isInbound) 0f else 180f
         icon.rotation = if (isInbound) 0f else 180f
-        icon.setColorFilter(ContextCompat.getColor(itemView.context, if (isInbound) R.color.tx_inbound else R.color.tx_outbound))
+        icon.setColorFilter(
+            ContextCompat.getColor(itemView.context, if (isInbound) R.color.tx_inbound else R.color.tx_outbound)
+        )
     }
 
     private fun getMemoString(transaction: ConfirmedTransaction?): String {

@@ -1,9 +1,10 @@
-@file:Suppress("NOTHING_TO_INLINE")
+@file:Suppress("TooManyFunctions", "MatchingDeclarationName")
 
 package cash.z.ecc.android.sdk.ext
 
 import cash.z.ecc.android.sdk.ext.Conversions.USD_FORMATTER
 import cash.z.ecc.android.sdk.ext.Conversions.ZEC_FORMATTER
+import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.Zatoshi
 import java.math.BigDecimal
 import java.math.MathContext
@@ -18,8 +19,10 @@ import java.util.Locale
  * accurately rounded values to the user.
  */
 
-// TODO: provide a dynamic way to configure this globally for the SDK
-// For now, just make these vars so at least they could be modified in one place
+// TODO [#678]: provide a dynamic way to configure this globally for the SDK
+//  For now, just make these vars so at least they could be modified in one place
+// TODO [#678]: https://github.com/zcash/zcash-android-wallet-sdk/issues/678
+@Suppress("MagicNumber")
 object Conversions {
     var ONE_ZEC_IN_ZATOSHI = BigDecimal(Zatoshi.ZATOSHI_PER_ZEC, MathContext.DECIMAL128)
     var ZEC_FORMATTER = NumberFormat.getInstance(Locale.getDefault()).apply {
@@ -47,7 +50,7 @@ object Conversions {
  * @return this Zatoshi value represented as ZEC, in a string with at least [minDecimals] and at
  * most [maxDecimals]
  */
-inline fun Zatoshi?.convertZatoshiToZecString(
+fun Zatoshi?.convertZatoshiToZecString(
     maxDecimals: Int = ZEC_FORMATTER.maximumFractionDigits,
     minDecimals: Int = ZEC_FORMATTER.minimumFractionDigits
 ): String {
@@ -65,7 +68,7 @@ inline fun Zatoshi?.convertZatoshiToZecString(
  * @return this Double ZEC value represented as a string with at least [minDecimals] and at most
  * [maxDecimals].
  */
-inline fun Double?.toZecString(
+fun Double?.toZecString(
     maxDecimals: Int = ZEC_FORMATTER.maximumFractionDigits,
     minDecimals: Int = ZEC_FORMATTER.minimumFractionDigits
 ): String {
@@ -83,7 +86,7 @@ inline fun Double?.toZecString(
  * @return this BigDecimal ZEC value represented as a string with at least [minDecimals] and at most
  * [maxDecimals].
  */
-inline fun BigDecimal?.toZecString(
+fun BigDecimal?.toZecString(
     maxDecimals: Int = ZEC_FORMATTER.maximumFractionDigits,
     minDecimals: Int = ZEC_FORMATTER.minimumFractionDigits
 ): String {
@@ -101,7 +104,7 @@ inline fun BigDecimal?.toZecString(
  * @return this Double ZEC value represented as a string with at least [minDecimals] and at most
  * [maxDecimals], which is 2 by default. Zero is always represented without any decimals.
  */
-inline fun Double?.toUsdString(
+fun Double?.toUsdString(
     maxDecimals: Int = USD_FORMATTER.maximumFractionDigits,
     minDecimals: Int = USD_FORMATTER.minimumFractionDigits
 ): String {
@@ -123,7 +126,7 @@ inline fun Double?.toUsdString(
  * @return this BigDecimal USD value represented as a string with at least [minDecimals] and at most
  * [maxDecimals], which is 2 by default.
  */
-inline fun BigDecimal?.toUsdString(
+fun BigDecimal?.toUsdString(
     maxDecimals: Int = USD_FORMATTER.maximumFractionDigits,
     minDecimals: Int = USD_FORMATTER.minimumFractionDigits
 ): String {
@@ -141,7 +144,7 @@ inline fun BigDecimal?.toUsdString(
  *
  * @return a currency formatter, appropriate for the default locale.
  */
-inline fun currencyFormatter(maxDecimals: Int, minDecimals: Int): NumberFormat {
+fun currencyFormatter(maxDecimals: Int, minDecimals: Int): NumberFormat {
     return NumberFormat.getInstance(Locale.getDefault()).apply {
         roundingMode = ZEC_FORMATTER.roundingMode
         maximumFractionDigits = maxDecimals
@@ -162,7 +165,7 @@ inline fun currencyFormatter(maxDecimals: Int, minDecimals: Int): NumberFormat {
  * @return this Long Zatoshi value represented as ZEC using a BigDecimal with the given scale,
  * rounded accurately out to 128 digits.
  */
-inline fun Zatoshi?.convertZatoshiToZec(scale: Int = ZEC_FORMATTER.maximumFractionDigits): BigDecimal {
+fun Zatoshi?.convertZatoshiToZec(scale: Int = ZEC_FORMATTER.maximumFractionDigits): BigDecimal {
     return BigDecimal(this?.value ?: 0L, MathContext.DECIMAL128).divide(
         Conversions.ONE_ZEC_IN_ZATOSHI,
         MathContext.DECIMAL128
@@ -176,7 +179,7 @@ inline fun Zatoshi?.convertZatoshiToZec(scale: Int = ZEC_FORMATTER.maximumFracti
  * @return this ZEC value represented as Zatoshi, rounded accurately out to 128 digits, in order to
  * minimize cumulative errors when applied repeatedly over a sequence of calculations.
  */
-inline fun BigDecimal?.convertZecToZatoshi(): Zatoshi {
+fun BigDecimal?.convertZecToZatoshi(): Zatoshi {
     if (this == null) return Zatoshi(0L)
     if (this < BigDecimal.ZERO) {
         throw IllegalArgumentException(
@@ -197,7 +200,7 @@ inline fun BigDecimal?.convertZecToZatoshi(): Zatoshi {
  * @return this Double ZEC value converted into a BigDecimal, with the proper rounding mode for use
  * with other formatting functions.
  */
-inline fun Double?.toZec(decimals: Int = ZEC_FORMATTER.maximumFractionDigits): BigDecimal {
+fun Double?.toZec(decimals: Int = ZEC_FORMATTER.maximumFractionDigits): BigDecimal {
     return BigDecimal(this?.toString() ?: "0.0", MathContext.DECIMAL128).setScale(
         decimals,
         ZEC_FORMATTER.roundingMode
@@ -214,7 +217,7 @@ inline fun Double?.toZec(decimals: Int = ZEC_FORMATTER.maximumFractionDigits): B
  * @return this Double ZEC value converted into Zatoshi, with proper rounding and precision by
  * leveraging an intermediate BigDecimal object.
  */
-inline fun Double?.convertZecToZatoshi(decimals: Int = ZEC_FORMATTER.maximumFractionDigits): Zatoshi {
+fun Double?.convertZecToZatoshi(decimals: Int = ZEC_FORMATTER.maximumFractionDigits): Zatoshi {
     return this.toZec(decimals).convertZecToZatoshi()
 }
 
@@ -227,7 +230,7 @@ inline fun Double?.convertZecToZatoshi(decimals: Int = ZEC_FORMATTER.maximumFrac
  *
  * @return this BigDecimal ZEC adjusted to the default scale and rounding mode.
  */
-inline fun BigDecimal?.toZec(decimals: Int = ZEC_FORMATTER.maximumFractionDigits): BigDecimal {
+fun BigDecimal?.toZec(decimals: Int = ZEC_FORMATTER.maximumFractionDigits): BigDecimal {
     return (this ?: BigDecimal.ZERO).setScale(decimals, ZEC_FORMATTER.roundingMode)
 }
 
@@ -240,7 +243,7 @@ inline fun BigDecimal?.toZec(decimals: Int = ZEC_FORMATTER.maximumFractionDigits
  *
  * @return this Double USD value converted into a BigDecimal, with proper rounding and precision.
  */
-inline fun Double?.toUsd(decimals: Int = USD_FORMATTER.maximumFractionDigits): BigDecimal {
+fun Double?.toUsd(decimals: Int = USD_FORMATTER.maximumFractionDigits): BigDecimal {
     return BigDecimal(this?.toString() ?: "0.0", MathContext.DECIMAL128).setScale(
         decimals,
         USD_FORMATTER.roundingMode
@@ -256,7 +259,7 @@ inline fun Double?.toUsd(decimals: Int = USD_FORMATTER.maximumFractionDigits): B
  *
  * @return this BigDecimal USD value converted into USD, with proper rounding and precision.
  */
-inline fun BigDecimal?.toUsd(decimals: Int = USD_FORMATTER.maximumFractionDigits): BigDecimal {
+fun BigDecimal?.toUsd(decimals: Int = USD_FORMATTER.maximumFractionDigits): BigDecimal {
     return (this ?: BigDecimal.ZERO).setScale(decimals, USD_FORMATTER.roundingMode)
 }
 
@@ -268,7 +271,7 @@ inline fun BigDecimal?.toUsd(decimals: Int = USD_FORMATTER.maximumFractionDigits
  *
  * @return this BigDecimal USD value converted into USD, with proper rounding and precision.
  */
-inline fun BigDecimal?.convertZecToUsd(zecPrice: BigDecimal): BigDecimal {
+fun BigDecimal?.convertZecToUsd(zecPrice: BigDecimal): BigDecimal {
     if (this == null) return BigDecimal.ZERO
     if (this < BigDecimal.ZERO) {
         throw IllegalArgumentException(
@@ -287,7 +290,7 @@ inline fun BigDecimal?.convertZecToUsd(zecPrice: BigDecimal): BigDecimal {
  *
  * @return this BigDecimal USD value converted into ZEC, with proper rounding and precision.
  */
-inline fun BigDecimal?.convertUsdToZec(zecPrice: BigDecimal): BigDecimal {
+fun BigDecimal?.convertUsdToZec(zecPrice: BigDecimal): BigDecimal {
     if (this == null) return BigDecimal.ZERO
     if (this < BigDecimal.ZERO) {
         throw IllegalArgumentException(
@@ -310,7 +313,7 @@ inline fun BigDecimal?.convertUsdToZec(zecPrice: BigDecimal): BigDecimal {
  * @return this BigDecimal value converted from one currency into the other, based on the given
  * price.
  */
-inline fun BigDecimal.convertCurrency(zecPrice: BigDecimal, isUsd: Boolean): BigDecimal {
+fun BigDecimal.convertCurrency(zecPrice: BigDecimal, isUsd: Boolean): BigDecimal {
     return if (isUsd) {
         this.convertUsdToZec(zecPrice)
     } else {
@@ -323,15 +326,19 @@ inline fun BigDecimal.convertCurrency(zecPrice: BigDecimal, isUsd: Boolean): Big
  *
  * @return this string as a BigDecimal or null when parsing fails.
  */
-inline fun String?.safelyConvertToBigDecimal(): BigDecimal? {
-    if (this.isNullOrEmpty()) return BigDecimal.ZERO
-    return try {
-        // ignore commas and whitespace
-        var sanitizedInput = this.filter { it.isDigit() or (it == '.') }
-        BigDecimal.ZERO.max(BigDecimal(sanitizedInput, MathContext.DECIMAL128))
-    } catch (t: Throwable) {
-        return null
+fun String?.safelyConvertToBigDecimal(): BigDecimal? {
+    if (this.isNullOrEmpty()) {
+        return BigDecimal.ZERO
     }
+    val result = try {
+        // ignore commas and whitespace
+        val sanitizedInput = this.filter { it.isDigit() or (it == '.') }
+        BigDecimal.ZERO.max(BigDecimal(sanitizedInput, MathContext.DECIMAL128))
+    } catch (nfe: NumberFormatException) {
+        twig("Exception while converting String to BigDecimal: ${nfe.message} caused by: ${nfe.cause}")
+        null
+    }
+    return result
 }
 
 /**
@@ -343,7 +350,7 @@ inline fun String?.safelyConvertToBigDecimal(): BigDecimal? {
  * @return the abbreviated string unless the string is too short, in which case the original string
  * is returned.
  */
-inline fun String.toAbbreviatedAddress(startLength: Int = 8, endLength: Int = 8) =
+fun String.toAbbreviatedAddress(startLength: Int = 8, endLength: Int = 8) =
     if (length > startLength + endLength) "${take(startLength)}…${takeLast(endLength)}" else this
 
 /**
@@ -355,7 +362,7 @@ inline fun String.toAbbreviatedAddress(startLength: Int = 8, endLength: Int = 8)
  *
  * @return the masked version of this string, typically for use in logs.
  */
-internal inline fun String.masked(addressCharsToShow: Int = 4): String =
+internal fun String.masked(addressCharsToShow: Int = 4): String =
     if (startsWith("ztest") || startsWith("zs")) "****${takeLast(addressCharsToShow)}"
     else "***masked***"
 
@@ -364,4 +371,4 @@ internal inline fun String.masked(addressCharsToShow: Int = 4): String =
  *
  * @return true when this function starts with 'z' rather than 't'.
  */
-inline fun String?.isShielded() = this != null && startsWith('z')
+fun String?.isShielded() = this != null && startsWith('z')

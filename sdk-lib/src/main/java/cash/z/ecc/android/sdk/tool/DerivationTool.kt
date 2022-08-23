@@ -5,8 +5,10 @@ import cash.z.ecc.android.sdk.jni.RustBackendWelding
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.type.UnifiedViewingKey
 
+@Suppress("UtilityClassWithPublicConstructor")
 class DerivationTool {
 
+    @Suppress("TooManyFunctions")
     companion object : RustBackendWelding.Derivation {
 
         /**
@@ -18,7 +20,11 @@ class DerivationTool {
          *
          * @return the viewing keys that correspond to the seed, formatted as Strings.
          */
-        override suspend fun deriveUnifiedViewingKeys(seed: ByteArray, network: ZcashNetwork, numberOfAccounts: Int): Array<UnifiedViewingKey> =
+        override suspend fun deriveUnifiedViewingKeys(
+            seed: ByteArray,
+            network: ZcashNetwork,
+            numberOfAccounts: Int
+        ): Array<UnifiedViewingKey> =
             withRustBackendLoaded {
                 deriveUnifiedViewingKeysFromSeed(seed, numberOfAccounts, networkId = network.id).map {
                     UnifiedViewingKey(it[0], it[1])
@@ -32,7 +38,10 @@ class DerivationTool {
          *
          * @return the viewing key that corresponds to the spending key.
          */
-        override suspend fun deriveViewingKey(spendingKey: String, network: ZcashNetwork): String = withRustBackendLoaded {
+        override suspend fun deriveViewingKey(
+            spendingKey: String,
+            network: ZcashNetwork
+        ): String = withRustBackendLoaded {
             deriveExtendedFullViewingKey(spendingKey, networkId = network.id)
         }
 
@@ -45,10 +54,13 @@ class DerivationTool {
          *
          * @return the spending keys that correspond to the seed, formatted as Strings.
          */
-        override suspend fun deriveSpendingKeys(seed: ByteArray, network: ZcashNetwork, numberOfAccounts: Int): Array<String> =
-            withRustBackendLoaded {
-                deriveExtendedSpendingKeys(seed, numberOfAccounts, networkId = network.id)
-            }
+        override suspend fun deriveSpendingKeys(
+            seed: ByteArray,
+            network: ZcashNetwork,
+            numberOfAccounts: Int
+        ): Array<String> = withRustBackendLoaded {
+            deriveExtendedSpendingKeys(seed, numberOfAccounts, networkId = network.id)
+        }
 
         /**
          * Given a seed and account index, return the associated address.
@@ -72,26 +84,45 @@ class DerivationTool {
          *
          * @return the address that corresponds to the viewing key.
          */
-        override suspend fun deriveShieldedAddress(viewingKey: String, network: ZcashNetwork): String = withRustBackendLoaded {
+        override suspend fun deriveShieldedAddress(
+            viewingKey: String,
+            network: ZcashNetwork
+        ): String = withRustBackendLoaded {
             deriveShieldedAddressFromViewingKey(viewingKey, networkId = network.id)
         }
 
         // WIP probably shouldn't be used just yet. Why?
         //  - because we need the private key associated with this seed and this function doesn't return it.
         //  - the underlying implementation needs to be split out into a few lower-level calls
-        override suspend fun deriveTransparentAddress(seed: ByteArray, network: ZcashNetwork, account: Int, index: Int): String = withRustBackendLoaded {
+        override suspend fun deriveTransparentAddress(
+            seed: ByteArray,
+            network: ZcashNetwork,
+            account: Int,
+            index: Int
+        ): String = withRustBackendLoaded {
             deriveTransparentAddressFromSeed(seed, account, index, networkId = network.id)
         }
 
-        override suspend fun deriveTransparentAddressFromPublicKey(publicKey: String, network: ZcashNetwork): String = withRustBackendLoaded {
+        override suspend fun deriveTransparentAddressFromPublicKey(
+            publicKey: String,
+            network: ZcashNetwork
+        ): String = withRustBackendLoaded {
             deriveTransparentAddressFromPubKey(pk = publicKey, networkId = network.id)
         }
 
-        override suspend fun deriveTransparentAddressFromPrivateKey(privateKey: String, network: ZcashNetwork): String = withRustBackendLoaded {
+        override suspend fun deriveTransparentAddressFromPrivateKey(
+            privateKey: String,
+            network: ZcashNetwork
+        ): String = withRustBackendLoaded {
             deriveTransparentAddressFromPrivKey(sk = privateKey, networkId = network.id)
         }
 
-        override suspend fun deriveTransparentSecretKey(seed: ByteArray, network: ZcashNetwork, account: Int, index: Int): String = withRustBackendLoaded {
+        override suspend fun deriveTransparentSecretKey(
+            seed: ByteArray,
+            network: ZcashNetwork,
+            account: Int,
+            index: Int
+        ): String = withRustBackendLoaded {
             deriveTransparentSecretKeyFromSeed(seed, account, index, networkId = network.id)
         }
 
@@ -142,7 +173,12 @@ class DerivationTool {
         private external fun deriveShieldedAddressFromViewingKey(key: String, networkId: Int): String
 
         @JvmStatic
-        private external fun deriveTransparentAddressFromSeed(seed: ByteArray, account: Int, index: Int, networkId: Int): String
+        private external fun deriveTransparentAddressFromSeed(
+            seed: ByteArray,
+            account: Int,
+            index: Int,
+            networkId: Int
+        ): String
 
         @JvmStatic
         private external fun deriveTransparentAddressFromPubKey(pk: String, networkId: Int): String
@@ -151,6 +187,11 @@ class DerivationTool {
         private external fun deriveTransparentAddressFromPrivKey(sk: String, networkId: Int): String
 
         @JvmStatic
-        private external fun deriveTransparentSecretKeyFromSeed(seed: ByteArray, account: Int, index: Int, networkId: Int): String
+        private external fun deriveTransparentSecretKeyFromSeed(
+            seed: ByteArray,
+            account: Int,
+            index: Int,
+            networkId: Int
+        ): String
     }
 }

@@ -13,6 +13,10 @@ import org.junit.runner.RunWith
 import java.io.File
 
 @RunWith(AndroidJUnit4::class)
+@Ignore(
+    "These tests need to be refactored to a separate test module. They cause SSLHandshakeException: Chain " +
+        "validation failed on CI"
+)
 class SaplingParamToolTest {
 
     val context: Context = InstrumentationRegistry.getInstrumentation().context

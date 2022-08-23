@@ -51,7 +51,7 @@ class GetBlockRangeFragment : BaseDemoFragment<FragmentGetBlockRangeBinding>() {
                 val inCount = sumOf { block -> block.vtxList.sumOf { it.spendsCount } }
 
                 val processTime = System.currentTimeMillis() - start - fetchDelta
-                @Suppress("MaxLineLength")
+                @Suppress("MaxLineLength", "MagicNumber")
                 """
                 <b>total blocks:</b> ${count.withCommas()}
                 <br/><b>fetch time:</b> ${if (fetchDelta > 1000) "%.2f sec".format(fetchDelta / 1000.0) else "%d ms".format(fetchDelta)}
@@ -75,11 +75,20 @@ class GetBlockRangeFragment : BaseDemoFragment<FragmentGetBlockRangeBinding>() {
     }
 
     @Suppress("UNUSED_PARAMETER")
-    private fun onApply(_unused: View) {
+    private fun onApply(unused: View) {
         val network = ZcashNetwork.fromResources(requireApplicationContext())
-        val start = max(binding.textStartHeight.text.toString().toLongOrNull() ?: network.saplingActivationHeight.value, network.saplingActivationHeight.value)
-        val end = max(binding.textEndHeight.text.toString().toLongOrNull() ?: network.saplingActivationHeight.value, network.saplingActivationHeight.value)
+        val start = max(
+            binding.textStartHeight.text.toString().toLongOrNull()
+                ?: network.saplingActivationHeight.value,
+            network.saplingActivationHeight.value
+        )
+        val end = max(
+            binding.textEndHeight.text.toString().toLongOrNull()
+                ?: network.saplingActivationHeight.value,
+            network.saplingActivationHeight.value
+        )
         if (start <= end) {
+            @Suppress("TooGenericExceptionCaught")
             try {
                 with(binding.buttonApply) {
                     isEnabled = false

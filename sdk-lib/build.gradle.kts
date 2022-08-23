@@ -153,7 +153,9 @@ android {
     }
 
     kotlinOptions {
-        // Tricky: fix: By default, the kotlin_module name will not include the version (in classes.jar/META-INF). Instead it has a colon, which breaks compilation on Windows. This is one way to set it explicitly to the proper value. See https://github.com/zcash/zcash-android-wallet-sdk/issues/222 for more info.
+        // Tricky: fix: By default, the kotlin_module name will not include the version (in classes.jar/META-INF).
+        // Instead it has a colon, which breaks compilation on Windows. This is one way to set it explicitly to the
+        // proper value. See https://github.com/zcash/zcash-android-wallet-sdk/issues/222 for more info.
         freeCompilerArgs += listOf("-module-name", "$myArtifactId-${myVersion}_release")
     }
 
@@ -271,8 +273,10 @@ dependencies {
     // Locked Versions
     //    these should be checked regularly and removed when possible
 
-    // solves error: Duplicate class com.google.common.util.concurrent.ListenableFuture found in modules jetified-guava-26.0-android.jar (com.google.guava:guava:26.0-android) and listenablefuture-1.0.jar (com.google.guava:listenablefuture:1.0)
-    // per this recommendation from Chris Povirk, given guava's decision to split ListenableFuture away from Guava: https://groups.google.com/d/msg/guava-discuss/GghaKwusjcY/bCIAKfzOEwAJ
+    // solves error: Duplicate class com.google.common.util.concurrent.ListenableFuture found in modules
+    // jetified-guava-26.0-android.jar (com.google.guava:guava:26.0-android) and listenablefuture-1.0.jar
+    // (com.google.guava:listenablefuture:1.0) per this recommendation from Chris Povirk, given guava's decision to
+    // split ListenableFuture away from Guava: https://groups.google.com/d/msg/guava-discuss/GghaKwusjcY/bCIAKfzOEwAJ
     implementation(libs.guava)
     // OKIO is a transitive dependency used when writing param files to disk. Like GSON, this can be
     // replaced if needed. For compatibility, we match the library version used in grpc-okhttp:
@@ -301,7 +305,8 @@ dependencies {
     androidTestImplementation(libs.coroutines.okhttp)
     androidTestImplementation(libs.kotlin.test)
     androidTestImplementation(libs.kotlinx.coroutines.test)
-    // used by 'ru.gildor.corutines.okhttp.await' (to make simple suspended requests) and breaks on versions higher than 3.8.0
+    // used by 'ru.gildor.corutines.okhttp.await' (to make simple suspended requests) and breaks on versions higher
+    // than 3.8.0
     androidTestImplementation(libs.okhttp)
 
     // sample mnemonic plugin

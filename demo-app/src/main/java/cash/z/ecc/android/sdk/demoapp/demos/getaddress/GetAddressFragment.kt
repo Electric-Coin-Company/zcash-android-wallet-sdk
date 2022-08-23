@@ -37,19 +37,31 @@ class GetAddressFragment : BaseDemoFragment<FragmentGetAddressBinding>() {
         seed = Mnemonics.MnemonicCode(seedPhrase).toSeed()
 
         // the derivation tool can be used for generating keys and addresses
-        viewingKey = runBlocking { DerivationTool.deriveUnifiedViewingKeys(seed, ZcashNetwork.fromResources(requireApplicationContext())).first() }
+        viewingKey = runBlocking {
+            DerivationTool.deriveUnifiedViewingKeys(
+                seed,
+                ZcashNetwork.fromResources(requireApplicationContext())
+            ).first()
+        }
     }
 
     private fun displayAddress() {
         // a full fledged app would just get the address from the synchronizer
         viewLifecycleOwner.lifecycleScope.launchWhenStarted {
-            val zaddress = DerivationTool.deriveShieldedAddress(seed, ZcashNetwork.fromResources(requireApplicationContext()))
-            val taddress = DerivationTool.deriveTransparentAddress(seed, ZcashNetwork.fromResources(requireApplicationContext()))
+            val zaddress = DerivationTool.deriveShieldedAddress(
+                seed,
+                ZcashNetwork.fromResources(requireApplicationContext())
+            )
+            val taddress = DerivationTool.deriveTransparentAddress(
+                seed,
+                ZcashNetwork.fromResources(requireApplicationContext())
+            )
             binding.textInfo.text = "z-addr:\n$zaddress\n\n\nt-addr:\n$taddress"
         }
     }
 
-    // TODO: show an example with the synchronizer
+    // TODO [#677]: Show an example with the synchronizer
+    // TODO [#677]: https://github.com/zcash/zcash-android-wallet-sdk/issues/677
 
     //
     // Android Lifecycle overrides

@@ -86,7 +86,7 @@ class FlowPagedListBuilder<Key, Value>(
         return when (this) {
             is ExecutorCoroutineDispatcher -> executor
             is MainCoroutineDispatcher -> MainThreadExecutor()
-            else -> throw IllegalStateException("Unable to create executor based on dispatcher: $this")
+            else -> error("Unable to create executor based on dispatcher: $this")
         }
     }
 

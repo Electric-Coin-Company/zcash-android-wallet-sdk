@@ -22,6 +22,7 @@ import kotlinx.coroutines.runBlocking
  * support for coroutines, we favor their use in the SDK and incorporate that choice into this
  * contract.
  */
+@Suppress("TooManyFunctions")
 interface Synchronizer {
 
     //

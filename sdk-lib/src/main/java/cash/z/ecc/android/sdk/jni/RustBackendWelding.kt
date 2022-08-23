@@ -13,10 +13,12 @@ import cash.z.ecc.android.sdk.type.UnifiedViewingKey
  * It is not documented because it is not intended to be used, directly.
  * Instead, use the synchronizer or one of its subcomponents.
  */
+@Suppress("TooManyFunctions")
 internal interface RustBackendWelding {
 
     val network: ZcashNetwork
 
+    @Suppress("LongParameterList")
     suspend fun createToAddress(
         consensusBranchId: Long,
         account: Int,
@@ -73,6 +75,7 @@ internal interface RustBackendWelding {
      */
     suspend fun validateCombinedChain(): BlockHeight?
 
+    @Suppress("LongParameterList")
     suspend fun putUtxo(
         tAddress: String,
         txId: ByteArray,
@@ -82,7 +85,10 @@ internal interface RustBackendWelding {
         height: BlockHeight
     ): Boolean
 
-    suspend fun clearUtxos(tAddress: String, aboveHeightInclusive: BlockHeight = BlockHeight(network.saplingActivationHeight.value)): Boolean
+    suspend fun clearUtxos(
+        tAddress: String,
+        aboveHeightInclusive: BlockHeight = BlockHeight(network.saplingActivationHeight.value)
+    ): Boolean
 
     suspend fun getDownloadedUtxoBalance(address: String): WalletBalance
 
