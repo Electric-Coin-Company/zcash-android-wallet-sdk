@@ -87,7 +87,7 @@ jobs:
       - name: Upload Artifacts
         if: ${{ always() }}
         uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8
-        timeout-minutes: 1
+        timeout-minutes: 2
         with:
           name: Release binaries
           path: ~/artifacts
