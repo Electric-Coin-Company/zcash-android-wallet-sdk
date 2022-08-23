@@ -42,6 +42,7 @@ class GetPrivateKeyFragment : BaseDemoFragment<FragmentGetPrivateKeyBinding>() {
         // derive the keys from the seed:
         // demonstrate deriving spending keys for five accounts but only take the first one
         lifecycleScope.launchWhenStarted {
+            @Suppress("MagicNumber")
             val spendingKey = DerivationTool.deriveSpendingKeys(
                 seed,
                 ZcashNetwork.fromResources(requireApplicationContext()),

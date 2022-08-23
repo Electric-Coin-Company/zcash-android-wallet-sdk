@@ -97,6 +97,7 @@ import kotlin.coroutines.EmptyCoroutineContext
  */
 @OptIn(kotlinx.coroutines.ObsoleteCoroutinesApi::class)
 @FlowPreview
+@Suppress("TooManyFunctions")
 class SdkSynchronizer internal constructor(
     private val storage: TransactionRepository,
     private val txManager: OutboundTransactionManager,
@@ -328,7 +329,9 @@ class SdkSynchronizer internal constructor(
     // Storage APIs
     //
 
-    // TODO: turn this section into the data access API. For now, just aggregate all the things that we want to do with the underlying data
+    // TODO [#682]: turn this section into the data access API. For now, just aggregate all the things that we want
+    //  to do with the underlying data
+    // TODO [#682]: https://github.com/zcash/zcash-android-wallet-sdk/issues/682
 
     suspend fun findBlockHash(height: BlockHeight): ByteArray? {
         return (storage as? PagedTransactionRepository)?.findBlockHash(height)
@@ -362,7 +365,8 @@ class SdkSynchronizer internal constructor(
     suspend fun refreshAllBalances() {
         refreshSaplingBalance()
         refreshTransparentBalance()
-        // TODO: refresh orchard balance
+        // TODO [#682]: refresh orchard balance
+        // TODO [#682]: https://github.com/zcash/zcash-android-wallet-sdk/issues/682
         twig("Warning: Orchard balance does not yet refresh. Only some of the plumbing is in place.")
     }
 
@@ -377,11 +381,7 @@ class SdkSynchronizer internal constructor(
     }
 
     suspend fun isValidAddress(address: String): Boolean {
-        try {
-            return !validateAddress(address).isNotValid
-        } catch (t: Throwable) {
-        }
-        return false
+        return !validateAddress(address).isNotValid
     }
 
     private fun CoroutineScope.onReady() = launch(CoroutineExceptionHandler(::onCriticalError)) {
@@ -410,7 +410,8 @@ class SdkSynchronizer internal constructor(
                 is Enhancing -> ENHANCING
             }.let { synchronizerStatus ->
                 //  ignore enhancing status for now
-                // TODO: clean this up and handle enhancing gracefully
+                // TODO [#682]: clean this up and handle enhancing gracefully
+                // TODO [#682]: https://github.com/zcash/zcash-android-wallet-sdk/issues/682
                 if (synchronizerStatus != ENHANCING) _status.send(synchronizerStatus)
             }
         }.launchIn(this)
@@ -437,13 +438,6 @@ class SdkSynchronizer internal constructor(
         }
 
         onCriticalErrorHandler?.invoke(error)
-    }
-
-    private fun onFailedSend(error: Throwable): Boolean {
-        twig("ERROR while submitting transaction: $error")
-        return onSubmissionErrorHandler?.invoke(error)?.also {
-            if (it) twig("submission error handler signaled that we should try again!")
-        } == true
     }
 
     private fun onProcessorError(error: Throwable): Boolean {
@@ -495,6 +489,7 @@ class SdkSynchronizer internal constructor(
         // refresh anyway if:
         // - if it's the first time we finished scanning
         // - if we check for blocks 5 times and find nothing was mined
+        @Suppress("MagicNumber")
         val shouldRefresh = !scannedRange.isEmpty() || elapsedMillis > (ZcashSdk.POLL_INTERVAL * 5)
         val reason = if (scannedRange.isEmpty()) "it's been a while" else "new blocks were scanned"
 
@@ -526,11 +521,12 @@ class SdkSynchronizer internal constructor(
         }
     }
 
+    @Suppress("LongMethod", "ComplexMethod")
     private suspend fun refreshPendingTransactions() {
         twig("[cleanup] beginning to refresh and clean up pending transactions")
-        // TODO: this would be the place to clear out any stale pending transactions. Remove filter
-        //  logic and then delete any pending transaction with sufficient confirmations (all in one
-        //  db transaction).
+        // TODO [#682]: this would be the place to clear out any stale pending transactions. Remove filter logic and
+        //  then delete any pending transaction with sufficient confirmations (all in one db transaction).
+        // TODO [#682]: https://github.com/zcash/zcash-android-wallet-sdk/issues/682
         val allPendingTxs = txManager.getAll().first()
         val lastScannedHeight = storage.lastScannedHeight()
 
@@ -595,15 +591,23 @@ class SdkSynchronizer internal constructor(
         }
             .forEach {
                 val result = txManager.abort(it)
-                twig("[cleanup] FOUND EXPIRED pendingTX (lastScanHeight: $lastScannedHeight  expiryHeight: ${it.expiryHeight}): and ${it.id} ${if (result > 0) "successfully removed" else "failed to remove"} it")
+                twig(
+                    "[cleanup] FOUND EXPIRED pendingTX (lastScanHeight: $lastScannedHeight " +
+                        " expiryHeight: ${it.expiryHeight}): and ${it.id} " +
+                        "${if (result > 0) "successfully removed" else "failed to remove"} it"
+                )
             }
 
         twig("[cleanup] deleting expired transactions from storage", -1)
         val expiredCount = storage.deleteExpired(lastScannedHeight)
-        if (expiredCount > 0) twig("[cleanup] deleted $expiredCount expired transaction(s)!")
+        if (expiredCount > 0) {
+            twig("[cleanup] deleted $expiredCount expired transaction(s)!")
+        }
         hasCleaned = hasCleaned || (expiredCount > 0)
 
-        if (hasCleaned) refreshAllBalances()
+        if (hasCleaned) {
+            refreshAllBalances()
+        }
         twig("[cleanup] done refreshing and cleaning up pending transactions", -1)
     }
 
@@ -707,19 +711,28 @@ class SdkSynchronizer internal constructor(
         txManager.isValidTransparentAddress(address)
 
     override suspend fun validateAddress(address: String): AddressType {
+        @Suppress("TooGenericExceptionCaught")
         return try {
-            if (isValidShieldedAddr(address)) Shielded else Transparent
+            if (isValidShieldedAddr(address)) {
+                Shielded
+            } else {
+                Transparent
+            }
         } catch (zError: Throwable) {
-            var message = zError.message
+            val message = zError.message
             try {
-                if (isValidTransparentAddr(address)) Transparent else Shielded
+                if (isValidTransparentAddr(address)) {
+                    Transparent
+                } else {
+                    Shielded
+                }
             } catch (tError: Throwable) {
-                AddressType.Invalid(
-                    if (message != tError.message) "$message and ${tError.message}" else (
-                        message
-                            ?: "Invalid"
-                        )
-                )
+                val reason = if (message != tError.message) {
+                    "$message and ${tError.message}"
+                } else {
+                    message ?: "Invalid"
+                }
+                AddressType.Invalid(reason)
             }
         }
     }
@@ -777,7 +790,10 @@ object DefaultSynchronizerFactory {
         )
     }
 
-    // TODO [#242]: Don't hard code page size.  It is a workaround for Uncaught Exception: android.view.ViewRootImpl$CalledFromWrongThreadException: Only the original thread that created a view hierarchy can touch its views. and is probably related to FlowPagedList
+    // TODO [#242]: Don't hard code page size.  It is a workaround for Uncaught Exception:
+    //  android.view.ViewRootImpl$CalledFromWrongThreadException: Only the original thread that created a view hierarchy
+    //  can touch its views. and is probably related to FlowPagedList
+    // TODO [#242]: https://github.com/zcash/zcash-android-wallet-sdk/issues/242
     private const val DEFAULT_PAGE_SIZE = 1000
     suspend fun defaultTransactionRepository(initializer: Initializer): TransactionRepository =
         PagedTransactionRepository.new(

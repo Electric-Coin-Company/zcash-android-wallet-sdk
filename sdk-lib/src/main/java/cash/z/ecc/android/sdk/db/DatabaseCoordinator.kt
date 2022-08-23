@@ -26,7 +26,7 @@ import java.io.File
  *
  * @param context the application context
  */
-@SuppressWarnings("TooManyFunctions")
+@Suppress("TooManyFunctions")
 internal class DatabaseCoordinator private constructor(context: Context) {
 
     /*

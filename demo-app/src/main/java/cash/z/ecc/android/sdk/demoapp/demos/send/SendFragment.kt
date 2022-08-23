@@ -45,6 +45,7 @@ import kotlinx.coroutines.runBlocking
  * PendingTransaction objects which represent the active state of the transaction that was sent.
  * Any time the state of that transaction changes, a new instance will be emitted.
  */
+@Suppress("TooManyFunctions")
 class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
     private lateinit var synchronizer: Synchronizer
 
@@ -81,7 +82,9 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
         }.let { initializer ->
             synchronizer = Synchronizer.newBlocking(initializer)
         }
-        spendingKey = runBlocking { DerivationTool.deriveSpendingKeys(seed, ZcashNetwork.fromResources(requireApplicationContext())).first() }
+        spendingKey = runBlocking {
+            DerivationTool.deriveSpendingKeys(seed, ZcashNetwork.fromResources(requireApplicationContext())).first()
+        }
     }
 
     //
@@ -111,10 +114,10 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
 
     private fun initSendUi() {
         amountInput = binding.inputAmount.apply {
-            setText(DemoConstants.sendAmount.toZecString())
+            setText(DemoConstants.SEND_AMOUNT.toZecString())
         }
         addressInput = binding.inputAddress.apply {
-            setText(DemoConstants.toAddress)
+            setText(DemoConstants.TO_ADDRESS)
         }
         binding.buttonSend.setOnClickListener(::onSend)
     }
@@ -140,6 +143,7 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
         }
     }
 
+    @Suppress("MagicNumber")
     private fun onProgress(i: Int) {
         if (i < 100) {
             binding.textStatus.text = "Downloading blocks...$i%"
@@ -153,6 +157,7 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
         if (info.isScanning) binding.textStatus.text = "Scanning blocks...${info.scanProgress}%"
     }
 
+    @Suppress("MagicNumber")
     private fun onBalance(balance: WalletBalance?) {
         this.balance = balance
         if (!isSyncing) {
@@ -177,14 +182,17 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
         mainActivity()?.hideKeyboard()
     }
 
+    @Suppress("ComplexMethod")
     private fun onPendingTxUpdated(pendingTransaction: PendingTransaction?) {
         val id = pendingTransaction?.id ?: -1
         val message = when {
             pendingTransaction == null -> "Transaction not found"
             pendingTransaction.isMined() -> "Transaction Mined (id: $id)!\n\nSEND COMPLETE".also { isSending = false }
             pendingTransaction.isSubmitSuccess() -> "Successfully submitted transaction!\nAwaiting confirmation..."
-            pendingTransaction.isFailedEncoding() -> "ERROR: failed to encode transaction! (id: $id)".also { isSending = false }
-            pendingTransaction.isFailedSubmit() -> "ERROR: failed to submit transaction! (id: $id)".also { isSending = false }
+            pendingTransaction.isFailedEncoding() ->
+                "ERROR: failed to encode transaction! (id: $id)".also { isSending = false }
+            pendingTransaction.isFailedSubmit() ->
+                "ERROR: failed to submit transaction! (id: $id)".also { isSending = false }
             pendingTransaction.isCreated() -> "Transaction creation complete! (id: $id)"
             pendingTransaction.isCreating() -> "Creating transaction!".also { onResetInfo() }
             else -> "Transaction updated!".also { twig("Unhandled TX state: $pendingTransaction") }

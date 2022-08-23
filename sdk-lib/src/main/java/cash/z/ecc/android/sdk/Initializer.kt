@@ -34,6 +34,7 @@ class Initializer private constructor(
 
     suspend fun erase() = erase(context, network, alias)
 
+    @Suppress("TooManyFunctions")
     class Config private constructor(
         val viewingKeys: MutableList<UnifiedViewingKey> = mutableListOf(),
         var alias: String = ZcashSdk.DEFAULT_ALIAS
@@ -234,6 +235,7 @@ class Initializer private constructor(
             numberOfAccounts: Int = 1
         ): Config =
             apply {
+                @Suppress("SpreadOperator")
                 setViewingKeys(
                     *DerivationTool.deriveUnifiedViewingKeys(
                         seed,
@@ -421,7 +423,7 @@ class Initializer private constructor(
  */
 internal fun validateAlias(alias: String) {
     require(
-        alias.length in 1..99 && alias[0].isLetter() &&
+        alias.length in ZcashSdk.ALIAS_MIN_LENGTH..ZcashSdk.ALIAS_MAX_LENGTH && alias[0].isLetter() &&
             alias.all { it.isLetterOrDigit() || it == '_' }
     ) {
         "ERROR: Invalid alias ($alias). For security, the alias must be shorter than 100 " +

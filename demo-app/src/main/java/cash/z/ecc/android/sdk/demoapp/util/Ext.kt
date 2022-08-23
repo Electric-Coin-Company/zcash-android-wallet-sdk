@@ -20,6 +20,7 @@ fun Number?.withCommas() = this?.let { "%,d".format(it) } ?: "Unknown"
 /**
  * Convert date time in seconds to relative time like (4 days ago).
  */
+@Suppress("MagicNumber")
 fun Int?.toRelativeTime(context: Context) =
     this?.let { timeInSeconds ->
         DateUtils.getRelativeDateTimeString(

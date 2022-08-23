@@ -68,7 +68,10 @@ sealed class CompactBlockProcessorException(message: String, cause: Throwable? =
         "No data db file found at path $path. Verify " +
             "that the data DB has been initialized via `rustBackend.initDataDb(path)`"
     )
-    open class ConfigurationException(message: String, cause: Throwable?) : CompactBlockProcessorException(message, cause)
+    open class ConfigurationException(
+        message: String,
+        cause: Throwable?
+    ) : CompactBlockProcessorException(message, cause)
     class FileInsteadOfPath(fileName: String) : ConfigurationException(
         "Invalid Path: the given path appears to be a" +
             " file name instead of a path: $fileName. The RustBackend expects the absolutePath to the database rather" +
@@ -87,7 +90,8 @@ sealed class CompactBlockProcessorException(message: String, cause: Throwable? =
             "likely means a block was missed or a reorg was mishandled. See logs for details.",
         cause
     )
-    class Disconnected(cause: Throwable? = null) : CompactBlockProcessorException("Disconnected Error. Unable to download blocks due to ${cause?.message}", cause)
+    class Disconnected(cause: Throwable? = null) :
+        CompactBlockProcessorException("Disconnected Error. Unable to download blocks due to ${cause?.message}", cause)
     object Uninitialized : CompactBlockProcessorException(
         "Cannot process blocks because the wallet has not been" +
             " initialized. Verify that the seed phrase was properly created or imported. If so, then this problem" +
@@ -97,17 +101,41 @@ sealed class CompactBlockProcessorException(message: String, cause: Throwable? =
         "Attempting to scan without an account. This is probably a setup error or a race condition."
     )
 
-    open class EnhanceTransactionError(message: String, val height: BlockHeight?, cause: Throwable) : CompactBlockProcessorException(message, cause) {
-        class EnhanceTxDownloadError(height: BlockHeight?, cause: Throwable) : EnhanceTransactionError("Error while attempting to download a transaction to enhance", height, cause)
-        class EnhanceTxDecryptError(height: BlockHeight?, cause: Throwable) : EnhanceTransactionError("Error while attempting to decrypt and store a transaction to enhance", height, cause)
+    open class EnhanceTransactionError(
+        message: String,
+        val height: BlockHeight?,
+        cause: Throwable
+    ) : CompactBlockProcessorException(message, cause) {
+        class EnhanceTxDownloadError(
+            height: BlockHeight?,
+            cause: Throwable
+        ) : EnhanceTransactionError(
+            "Error while attempting to download a transaction to enhance",
+            height,
+            cause
+        )
+        class EnhanceTxDecryptError(
+            height: BlockHeight?,
+            cause: Throwable
+        ) : EnhanceTransactionError(
+            "Error while attempting to decrypt and store a transaction to enhance",
+            height,
+            cause
+        )
     }
 
     class MismatchedNetwork(clientNetwork: String?, serverNetwork: String?) : CompactBlockProcessorException(
-        "Incompatible server: this client expects a server using $clientNetwork but it was $serverNetwork! Try updating the client or switching servers."
+        "Incompatible server: this client expects a server using $clientNetwork but it was $serverNetwork! Try " +
+            "updating the client or switching servers."
     )
 
-    class MismatchedBranch(clientBranch: String?, serverBranch: String?, networkName: String?) : CompactBlockProcessorException(
-        "Incompatible server: this client expects a server following consensus branch $clientBranch on $networkName but it was $serverBranch! Try updating the client or switching servers."
+    class MismatchedBranch(
+        clientBranch: String?,
+        serverBranch: String?,
+        networkName: String?
+    ) : CompactBlockProcessorException(
+        "Incompatible server: this client expects a server following consensus branch $clientBranch on $networkName " +
+            "but it was $serverBranch! Try updating the client or switching servers."
     )
 }
 
@@ -123,7 +151,10 @@ sealed class BirthdayException(message: String, cause: Throwable? = null) : SdkE
     class MissingBirthdayFilesException(directory: String) : BirthdayException(
         "Cannot initialize wallet because no birthday files were found in the $directory directory."
     )
-    class ExactBirthdayNotFoundException internal constructor(birthday: BlockHeight, nearestMatch: Checkpoint? = null) : BirthdayException(
+    class ExactBirthdayNotFoundException internal constructor(
+        birthday: BlockHeight,
+        nearestMatch: Checkpoint? = null
+    ) : BirthdayException(
         "Unable to find birthday that exactly matches $birthday.${
         if (nearestMatch != null) {
             " An exact match was request but the nearest match found was ${nearestMatch.height}."
@@ -207,7 +238,11 @@ sealed class LightWalletException(message: String, cause: Throwable? = null) : S
         )
 
     open class ChangeServerException(message: String, cause: Throwable? = null) : SdkException(message, cause) {
-        class ChainInfoNotMatching(val propertyNames: String, val expectedInfo: Service.LightdInfo, val actualInfo: Service.LightdInfo) : ChangeServerException(
+        class ChainInfoNotMatching(
+            val propertyNames: String,
+            val expectedInfo: Service.LightdInfo,
+            val actualInfo: Service.LightdInfo
+        ) : ChangeServerException(
             "Server change error: the $propertyNames values did not match."
         )
         class StatusException(val status: Status, cause: Throwable? = null) : SdkException(status.toMessage(), cause) {
@@ -215,7 +250,8 @@ sealed class LightWalletException(message: String, cause: Throwable? = null) : S
                 private fun Status.toMessage(): String {
                     return when (this.code) {
                         UNAVAILABLE -> {
-                            "Error: the new server is unavailable. Verify that the host and port are correct. Failed with $this"
+                            "Error: the new server is unavailable. Verify that the host and port are correct. Failed " +
+                                "with $this"
                         }
                         else -> "Changing servers failed with status $this"
                     }
@@ -234,15 +270,14 @@ sealed class TransactionEncoderException(message: String, cause: Throwable? = nu
         "Cannot send funds due to missing spend or output params and attempting to download them failed."
     )
     class TransactionNotFoundException(transactionId: Long) : TransactionEncoderException(
-        "Unable to find transactionId " +
-            "$transactionId in the repository. This means the wallet created a transaction and then returned a row ID " +
-            "that does not actually exist. This is a scenario where the wallet should have thrown an exception but failed " +
-            "to do so."
+        "Unable to find transactionId $transactionId in the repository. This means the wallet created a transaction " +
+            "and then returned a row ID that does not actually exist. This is a scenario where the wallet should " +
+            "have thrown an exception but failed to do so."
     )
     class TransactionNotEncodedException(transactionId: Long) : TransactionEncoderException(
         "The transaction returned by the wallet," +
-            " with id $transactionId, does not have any raw data. This is a scenario where the wallet should have thrown" +
-            " an exception but failed to do so."
+            " with id $transactionId, does not have any raw data. This is a scenario where the wallet should have " +
+            "thrown an exception but failed to do so."
     )
     class IncompleteScanException(lastScannedHeight: BlockHeight) : TransactionEncoderException(
         "Cannot" +

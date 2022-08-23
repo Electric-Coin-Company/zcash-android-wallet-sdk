@@ -26,12 +26,15 @@ suspend inline fun retryUpTo(
 ) {
     var failedAttempts = 0
     while (failedAttempts <= retries) {
+        @Suppress("TooGenericExceptionCaught")
         try {
             block(failedAttempts)
             return
         } catch (t: Throwable) {
             failedAttempts++
-            if (failedAttempts > retries) throw exceptionWrapper(t)
+            if (failedAttempts > retries) {
+                throw exceptionWrapper(t)
+            }
             val duration = (initialDelayMillis.toDouble() * Math.pow(2.0, failedAttempts.toDouble() - 1)).toLong()
             twig("failed due to $t retrying ($failedAttempts/$retries) in ${duration}s...")
             delay(duration)
@@ -52,6 +55,7 @@ suspend inline fun retryUpTo(
 inline fun retrySimple(retries: Int = 2, sleepTime: Long = 20L, block: (Int) -> Unit) {
     var failedAttempts = 0
     while (failedAttempts <= retries) {
+        @Suppress("TooGenericExceptionCaught")
         try {
             block(failedAttempts)
             return
@@ -73,14 +77,17 @@ inline fun retrySimple(retries: Int = 2, sleepTime: Long = 20L, block: (Int) -> 
  * @param maxDelayMillis the maximum delay between retries.
  * @param block the logic to run once and then run again if it fails.
  */
+@Suppress("MagicNumber")
 suspend inline fun retryWithBackoff(
     noinline onErrorListener: ((Throwable) -> Boolean)? = null,
     initialDelayMillis: Long = 1000L,
     maxDelayMillis: Long = MAX_BACKOFF_INTERVAL,
     block: () -> Unit
 ) {
-    var sequence = 0 // count up to the max and then reset to half. So that we don't repeat the max but we also don't repeat too much.
+    // count up to the max and then reset to half. So that we don't repeat the max but we also don't repeat too much.
+    var sequence = 0
     while (true) {
+        @Suppress("TooGenericExceptionCaught")
         try {
             block()
             return
@@ -92,7 +99,10 @@ suspend inline fun retryWithBackoff(
 
             sequence++
             // initialDelay^(sequence/4) + jitter
-            var duration = Math.pow(initialDelayMillis.toDouble(), (sequence.toDouble() / 4.0)).toLong() + Random.nextLong(1000L)
+            var duration = Math.pow(
+                initialDelayMillis.toDouble(),
+                (sequence.toDouble() / 4.0)
+            ).toLong() + Random.nextLong(1000L)
             if (duration > maxDelayMillis) {
                 duration = maxDelayMillis - Random.nextLong(1000L) // include jitter but don't exceed max delay
                 sequence /= 2

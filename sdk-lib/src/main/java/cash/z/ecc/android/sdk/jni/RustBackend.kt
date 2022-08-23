@@ -20,6 +20,7 @@ import java.io.File
  * not be called directly by code outside of the SDK. Instead, one of the higher-level components
  * should be used such as Wallet.kt or CompactBlockProcessor.kt.
  */
+@Suppress("TooManyFunctions")
 internal class RustBackend private constructor(
     override val network: ZcashNetwork,
     val birthdayHeight: BlockHeight,
@@ -72,6 +73,7 @@ internal class RustBackend private constructor(
         numberOfAccounts: Int
     ): Array<UnifiedViewingKey> {
         return DerivationTool.deriveUnifiedViewingKeys(seed, network, numberOfAccounts).apply {
+            @Suppress("SpreadOperator")
             initAccountsTable(*this)
         }
     }
@@ -101,7 +103,10 @@ internal class RustBackend private constructor(
         }
 
     override suspend fun getTransparentAddress(account: Int, index: Int): String {
-        throw NotImplementedError("TODO: implement this at the zcash_client_sqlite level. But for now, use DerivationTool, instead to derive addresses from seeds")
+        throw NotImplementedError(
+            "TODO: implement this at the zcash_client_sqlite level. But for now, use " +
+                "DerivationTool, instead to derive addresses from seeds"
+        )
     }
 
     override suspend fun getBalance(account: Int): Zatoshi {
@@ -327,15 +332,18 @@ internal class RustBackend private constructor(
 //     * We're able to keep the "unsafe" byteArray functions private and wrap them in typeSafe
 //     * equivalents and, eventually, surface any parse errors (for now, errors are only logged).
 //     */
-//    override fun parseTransactionDataList(tdl: LocalRpcTypes.TransactionDataList): LocalRpcTypes.TransparentTransactionList {
-//        return try {
-//            // serialize the list, send it over to rust and get back a serialized set of results that we parse out and return
-//            return LocalRpcTypes.TransparentTransactionList.parseFrom(parseTransactionDataList(tdl.toByteArray()))
-//        } catch (t: Throwable) {
-//            twig("ERROR: failed to parse transaction data list due to: $t caused by: ${t.cause}")
-//            LocalRpcTypes.TransparentTransactionList.newBuilder().build()
-//        }
-//    }
+//     override fun parseTransactionDataList(
+//         tdl: LocalRpcTypes.TransactionDataList
+//     ): LocalRpcTypes.TransparentTransactionList {
+//         return try {
+//             // serialize the list, send it over to rust and get back a serialized set of results that we parse out
+//             // and return
+//             return LocalRpcTypes.TransparentTransactionList.parseFrom(parseTransactionDataList(tdl.toByteArray()))
+//         } catch (t: Throwable) {
+//             twig("ERROR: failed to parse transaction data list due to: $t caused by: ${t.cause}")
+//             LocalRpcTypes.TransparentTransactionList.newBuilder().build()
+//         }
+//     }
 
     /**
      * Exposes all of the librustzcash functions along with helpers for loading the static library.
@@ -393,6 +401,7 @@ internal class RustBackend private constructor(
         ): Boolean
 
         @JvmStatic
+        @Suppress("LongParameterList")
         private external fun initBlocksTable(
             dbDataPath: String,
             height: Long,
@@ -483,6 +492,7 @@ internal class RustBackend private constructor(
         )
 
         @JvmStatic
+        @Suppress("LongParameterList")
         private external fun createToAddress(
             dbDataPath: String,
             consensusBranchId: Long,
@@ -497,6 +507,7 @@ internal class RustBackend private constructor(
         ): Long
 
         @JvmStatic
+        @Suppress("LongParameterList")
         private external fun shieldToAddress(
             dbDataPath: String,
             account: Int,
@@ -515,6 +526,7 @@ internal class RustBackend private constructor(
         private external fun branchIdForHeight(height: Long, networkId: Int): Long
 
         @JvmStatic
+        @Suppress("LongParameterList")
         private external fun putUtxo(
             dbDataPath: String,
             tAddress: String,

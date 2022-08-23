@@ -31,6 +31,7 @@ internal class NativeLibraryLoader(private val libraryName: String) {
         }
     }
 
+    @Suppress("TooGenericExceptionCaught")
     private suspend fun loadRustLibrary() {
         try {
             withContext(Dispatchers.IO) {

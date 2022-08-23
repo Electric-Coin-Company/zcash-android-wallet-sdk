@@ -56,7 +56,8 @@ open class CompactBlockDownloader private constructor(val compactBlockStore: Com
      * @param height the height to which the data will rewind.
      */
     suspend fun rewindToHeight(height: BlockHeight) =
-        // TODO: cancel anything in flight
+        // TODO [#685]: cancel anything in flight
+        // TODO [#685]: https://github.com/zcash/zcash-android-wallet-sdk/issues/685
         compactBlockStore.rewindTo(height)
 
     /**
@@ -80,7 +81,7 @@ open class CompactBlockDownloader private constructor(val compactBlockStore: Com
         try {
             result = lightWalletService.getServerInfo()
         } catch (e: StatusRuntimeException) {
-            retryUpTo(6) {
+            retryUpTo(GET_SERVER_INFO_RETRIES) {
                 twig("WARNING: reconnecting to service in response to failure (retry #${it + 1}): $e")
                 lightWalletService.reconnect()
                 result = lightWalletService.getServerInfo()
@@ -93,6 +94,7 @@ open class CompactBlockDownloader private constructor(val compactBlockStore: Com
         newService: LightWalletService,
         errorHandler: (Throwable) -> Unit = { throw it }
     ) = withContext(IO) {
+        @Suppress("TooGenericExceptionCaught")
         try {
             val existing = lightWalletService.getServerInfo()
             val new = newService.getServerInfo()
@@ -139,6 +141,7 @@ open class CompactBlockDownloader private constructor(val compactBlockStore: Com
     //
 
     private suspend fun CoroutineScope.gracefullyShutdown(service: LightWalletService) = launch {
+        @Suppress("MagicNumber")
         delay(2_000L)
         tryWarn("Warning: error while shutting down service") {
             service.shutdown()
@@ -160,4 +163,8 @@ open class CompactBlockDownloader private constructor(val compactBlockStore: Com
                 it.add("chainName")
             }
         }
+
+    companion object {
+        private const val GET_SERVER_INFO_RETRIES = 6
+    }
 }
