@@ -28,7 +28,7 @@ internal interface RustBackendWelding {
 
     suspend fun shieldToAddress(
         extsk: String,
-        tsk: String,
+        xprv: String,
         memo: ByteArray? = byteArrayOf()
     ): Long
 

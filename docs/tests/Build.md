@@ -1,5 +1,5 @@
 # Build
-There are a variety of aspects to building the SDK and demo app.  Although much of this ends up being tested automatically by the CI server, understanding these step can help when troubleshooting build issues.  These test cases provide sanity checks that the build is not broken.
+There are a variety of aspects to building the SDK and demo app. Although much of this ends up being tested automatically by the CI server, understanding these step can help when troubleshooting build issues. These test cases provide sanity checks that the build is not broken.
 
 # Build
 1. Run the assemble Gradle task, e.g. `./gradlew assemble`

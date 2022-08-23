@@ -4,9 +4,11 @@ import androidx.test.filters.LargeTest
 import androidx.test.filters.MediumTest
 import cash.z.ecc.android.sdk.annotation.MaintainedTest
 import cash.z.ecc.android.sdk.annotation.TestPurpose
+import cash.z.ecc.android.sdk.db.DatabaseCoordinator
 import cash.z.ecc.android.sdk.util.TestWallet
 import kotlinx.coroutines.runBlocking
-import org.junit.Assert
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Ignore
 import org.junit.Test
 
@@ -20,19 +22,36 @@ class SmokeTest {
 
     @Test
     fun testFilePaths() {
-        Assert.assertEquals("Invalid DataDB file", "/data/user/0/cash.z.ecc.android.sdk.test/databases/TestWallet_testnet_Data.db", wallet.initializer.rustBackend.pathDataDb)
-        Assert.assertEquals("Invalid CacheDB file", "/data/user/0/cash.z.ecc.android.sdk.test/databases/TestWallet_testnet_Cache.db", wallet.initializer.rustBackend.pathCacheDb)
-        Assert.assertEquals("Invalid CacheDB params dir", "/data/user/0/cash.z.ecc.android.sdk.test/cache/params", wallet.initializer.rustBackend.pathParamsDir)
+        assertTrue(
+            "Invalid DataDB file",
+            wallet.initializer.rustBackend.dataDbFile.absolutePath.endsWith(
+                "no_backup/co.electricoin.zcash/TestWallet_testnet_${DatabaseCoordinator.DB_DATA_NAME}"
+            )
+        )
+        assertTrue(
+            "Invalid CacheDB file",
+            wallet.initializer.rustBackend.cacheDbFile.absolutePath.endsWith(
+                "no_backup/co.electricoin.zcash/TestWallet_testnet_${DatabaseCoordinator.DB_CACHE_NAME}"
+            )
+        )
+        assertTrue(
+            "Invalid CacheDB params dir",
+            wallet.initializer.rustBackend.pathParamsDir.endsWith("cache/params")
+        )
     }
 
     @Test
     fun testBirthday() {
-        Assert.assertEquals("Invalid birthday height", 1_320_000, wallet.initializer.checkpoint.height)
+        assertEquals(
+            "Invalid birthday height",
+            1_330_000,
+            wallet.initializer.checkpoint.height.value
+        )
     }
 
     @Test
     fun testViewingKeys() {
-        Assert.assertEquals("Invalid encoding", "zxviewtestsapling1qv0ue89kqqqqpqqyt4cl5wvssx4wqq30e5m948p07dnwl9x3u75vvnzvjwwpjkrf8yk2gva0kkxk9p8suj4xawlzw9pajuxgap83wykvsuyzfrm33a2p2m4jz2205kgzx0l2lj2kyegtnuph6crkyvyjqmfxut84nu00wxgrstu5fy3eu49nzl8jzr4chmql4ysgg2t8htn9dtvxy8c7wx9rvcerqsjqm6lqln9syk3g8rr3xpy3l4nj0kawenzpcdtnv9qmy98vdhqzaf063", wallet.initializer.viewingKeys[0].encoding)
+        assertEquals("Invalid encoding", "zxviewtestsapling1qv0ue89kqqqqpqqyt4cl5wvssx4wqq30e5m948p07dnwl9x3u75vvnzvjwwpjkrf8yk2gva0kkxk9p8suj4xawlzw9pajuxgap83wykvsuyzfrm33a2p2m4jz2205kgzx0l2lj2kyegtnuph6crkyvyjqmfxut84nu00wxgrstu5fy3eu49nzl8jzr4chmql4ysgg2t8htn9dtvxy8c7wx9rvcerqsjqm6lqln9syk3g8rr3xpy3l4nj0kawenzpcdtnv9qmy98vdhqzaf063", wallet.initializer.viewingKeys[0].encoding)
     }
 
     // This test takes an extremely long time

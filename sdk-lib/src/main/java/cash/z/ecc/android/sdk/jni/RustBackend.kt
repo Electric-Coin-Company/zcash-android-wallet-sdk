@@ -23,19 +23,19 @@ import java.io.File
 internal class RustBackend private constructor(
     override val network: ZcashNetwork,
     val birthdayHeight: BlockHeight,
-    val pathDataDb: String,
-    val pathCacheDb: String,
+    val dataDbFile: File,
+    val cacheDbFile: File,
     val pathParamsDir: String
 ) : RustBackendWelding {
 
     suspend fun clear(clearCacheDb: Boolean = true, clearDataDb: Boolean = true) {
         if (clearCacheDb) {
             twig("Deleting the cache database!")
-            File(pathCacheDb).deleteSuspend()
+            cacheDbFile.deleteSuspend()
         }
         if (clearDataDb) {
             twig("Deleting the data database!")
-            File(pathDataDb).deleteSuspend()
+            dataDbFile.deleteSuspend()
         }
     }
 
@@ -45,7 +45,7 @@ internal class RustBackend private constructor(
 
     override suspend fun initDataDb() = withContext(SdkDispatchers.DATABASE_IO) {
         initDataDb(
-            pathDataDb,
+            dataDbFile.absolutePath,
             networkId = network.id
         )
     }
@@ -55,7 +55,7 @@ internal class RustBackend private constructor(
 
         return withContext(SdkDispatchers.DATABASE_IO) {
             initAccountsTableWithKeys(
-                pathDataDb,
+                dataDbFile.absolutePath,
                 ufvks,
                 networkId = network.id
             )
@@ -76,7 +76,7 @@ internal class RustBackend private constructor(
     ): Boolean {
         return withContext(SdkDispatchers.DATABASE_IO) {
             initBlocksTable(
-                pathDataDb,
+                dataDbFile.absolutePath,
                 checkpoint.height.value,
                 checkpoint.hash,
                 checkpoint.epochSeconds,
@@ -89,7 +89,7 @@ internal class RustBackend private constructor(
     override suspend fun getShieldedAddress(account: Int) =
         withContext(SdkDispatchers.DATABASE_IO) {
             getShieldedAddress(
-                pathDataDb,
+                dataDbFile.absolutePath,
                 account,
                 networkId = network.id
             )
@@ -102,7 +102,7 @@ internal class RustBackend private constructor(
     override suspend fun getBalance(account: Int): Zatoshi {
         val longValue = withContext(SdkDispatchers.DATABASE_IO) {
             getBalance(
-                pathDataDb,
+                dataDbFile.absolutePath,
                 account,
                 networkId = network.id
             )
@@ -114,7 +114,7 @@ internal class RustBackend private constructor(
     override suspend fun getVerifiedBalance(account: Int): Zatoshi {
         val longValue = withContext(SdkDispatchers.DATABASE_IO) {
             getVerifiedBalance(
-                pathDataDb,
+                dataDbFile.absolutePath,
                 account,
                 networkId = network.id
             )
@@ -126,7 +126,7 @@ internal class RustBackend private constructor(
     override suspend fun getReceivedMemoAsUtf8(idNote: Long) =
         withContext(SdkDispatchers.DATABASE_IO) {
             getReceivedMemoAsUtf8(
-                pathDataDb,
+                dataDbFile.absolutePath,
                 idNote,
                 networkId = network.id
             )
@@ -134,7 +134,7 @@ internal class RustBackend private constructor(
 
     override suspend fun getSentMemoAsUtf8(idNote: Long) = withContext(SdkDispatchers.DATABASE_IO) {
         getSentMemoAsUtf8(
-            pathDataDb,
+            dataDbFile.absolutePath,
             idNote,
             networkId = network.id
         )
@@ -142,8 +142,8 @@ internal class RustBackend private constructor(
 
     override suspend fun validateCombinedChain() = withContext(SdkDispatchers.DATABASE_IO) {
         val validationResult = validateCombinedChain(
-            pathCacheDb,
-            pathDataDb,
+            cacheDbFile.absolutePath,
+            dataDbFile.absolutePath,
             networkId = network.id
         )
 
@@ -159,7 +159,7 @@ internal class RustBackend private constructor(
             BlockHeight.new(
                 network,
                 getNearestRewindHeight(
-                    pathDataDb,
+                    dataDbFile.absolutePath,
                     height.value,
                     networkId = network.id
                 )
@@ -174,7 +174,7 @@ internal class RustBackend private constructor(
     override suspend fun rewindToHeight(height: BlockHeight) =
         withContext(SdkDispatchers.DATABASE_IO) {
             rewindToHeight(
-                pathDataDb,
+                dataDbFile.absolutePath,
                 height.value,
                 networkId = network.id
             )
@@ -184,8 +184,8 @@ internal class RustBackend private constructor(
         return if (limit > 0) {
             withContext(SdkDispatchers.DATABASE_IO) {
                 scanBlockBatch(
-                    pathCacheDb,
-                    pathDataDb,
+                    cacheDbFile.absolutePath,
+                    dataDbFile.absolutePath,
                     limit,
                     networkId = network.id
                 )
@@ -193,8 +193,8 @@ internal class RustBackend private constructor(
         } else {
             withContext(SdkDispatchers.DATABASE_IO) {
                 scanBlocks(
-                    pathCacheDb,
-                    pathDataDb,
+                    cacheDbFile.absolutePath,
+                    dataDbFile.absolutePath,
                     networkId = network.id
                 )
             }
@@ -204,7 +204,7 @@ internal class RustBackend private constructor(
     override suspend fun decryptAndStoreTransaction(tx: ByteArray) =
         withContext(SdkDispatchers.DATABASE_IO) {
             decryptAndStoreTransaction(
-                pathDataDb,
+                dataDbFile.absolutePath,
                 tx,
                 networkId = network.id
             )
@@ -219,7 +219,7 @@ internal class RustBackend private constructor(
         memo: ByteArray?
     ): Long = withContext(SdkDispatchers.DATABASE_IO) {
         createToAddress(
-            pathDataDb,
+            dataDbFile.absolutePath,
             consensusBranchId,
             account,
             extsk,
@@ -237,10 +237,10 @@ internal class RustBackend private constructor(
         xprv: String,
         memo: ByteArray?
     ): Long {
-        twig("TMP: shieldToAddress with db path: $pathDataDb, ${memo?.size}")
+        twig("TMP: shieldToAddress with db path: $dataDbFile, ${memo?.size}")
         return withContext(SdkDispatchers.DATABASE_IO) {
             shieldToAddress(
-                pathDataDb,
+                dataDbFile.absolutePath,
                 0,
                 extsk,
                 xprv,
@@ -261,7 +261,7 @@ internal class RustBackend private constructor(
         height: BlockHeight
     ): Boolean = withContext(SdkDispatchers.DATABASE_IO) {
         putUtxo(
-            pathDataDb,
+            dataDbFile.absolutePath,
             tAddress,
             txId,
             index,
@@ -277,7 +277,7 @@ internal class RustBackend private constructor(
         aboveHeightInclusive: BlockHeight
     ): Boolean = withContext(SdkDispatchers.DATABASE_IO) {
         clearUtxos(
-            pathDataDb,
+            dataDbFile.absolutePath,
             tAddress,
             // The Kotlin API is inclusive, but the Rust API is exclusive.
             // This can create invalid BlockHeights if the height is saplingActivationHeight.
@@ -289,14 +289,14 @@ internal class RustBackend private constructor(
     override suspend fun getDownloadedUtxoBalance(address: String): WalletBalance {
         val verified = withContext(SdkDispatchers.DATABASE_IO) {
             getVerifiedTransparentBalance(
-                pathDataDb,
+                dataDbFile.absolutePath,
                 address,
                 networkId = network.id
             )
         }
         val total = withContext(SdkDispatchers.DATABASE_IO) {
             getTotalTransparentBalance(
-                pathDataDb,
+                dataDbFile.absolutePath,
                 address,
                 networkId = network.id
             )
@@ -357,8 +357,8 @@ internal class RustBackend private constructor(
             return RustBackend(
                 zcashNetwork,
                 birthdayHeight,
-                pathDataDb = dataDbPath,
-                pathCacheDb = cacheDbPath,
+                dataDbFile = File(dataDbPath),
+                cacheDbFile = File(cacheDbPath),
                 pathParamsDir = paramsPath
             )
         }

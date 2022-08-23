@@ -17,6 +17,7 @@ import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Scanned
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Scanning
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Stopped
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Validating
+import cash.z.ecc.android.sdk.db.DatabaseCoordinator
 import cash.z.ecc.android.sdk.db.entity.PendingTransaction
 import cash.z.ecc.android.sdk.db.entity.hasRawTransactionId
 import cash.z.ecc.android.sdk.db.entity.isCancelled
@@ -62,7 +63,6 @@ import io.grpc.ManagedChannel
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
@@ -96,7 +96,7 @@ import kotlin.coroutines.EmptyCoroutineContext
  * @property processor saves the downloaded compact blocks to the cache and then scans those blocks for
  * data related to this wallet.
  */
-@ExperimentalCoroutinesApi
+@OptIn(kotlinx.coroutines.ObsoleteCoroutinesApi::class)
 @FlowPreview
 class SdkSynchronizer internal constructor(
     private val storage: TransactionRepository,
@@ -109,6 +109,8 @@ class SdkSynchronizer internal constructor(
     private val _saplingBalances = MutableStateFlow<WalletBalance?>(null)
     private val _transparentBalances = MutableStateFlow<WalletBalance?>(null)
 
+    // TODO [#288]: Remove Deprecated Usage of ConflatedBroadcastChannel
+    // TODO [#288]: https://github.com/zcash/zcash-android-wallet-sdk/issues/288
     private val _status = ConflatedBroadcastChannel<Synchronizer.Status>(DISCONNECTED)
 
     /**
@@ -171,6 +173,9 @@ class SdkSynchronizer internal constructor(
      * processor is finished scanning, the synchronizer updates transaction and balance info and
      * then emits a [SYNCED] status.
      */
+    // TODO [#658] Replace ComputableFlow and asFlow() obsolete Coroutine usage
+    // TODO [#658] https://github.com/zcash/zcash-android-wallet-sdk/issues/658
+    @Suppress("DEPRECATION")
     override val status = _status.asFlow()
 
     /**
@@ -414,6 +419,7 @@ class SdkSynchronizer internal constructor(
         twig("Synchronizer onReady complete. Processor start has exited!")
     }
 
+    @Suppress("UNUSED_PARAMETER")
     private fun onCriticalError(unused: CoroutineContext?, error: Throwable) {
         twig("********")
         twig("********  ERROR: $error")
@@ -641,8 +647,9 @@ class SdkSynchronizer internal constructor(
                 // only submit if it wasn't cancelled. Otherwise cleanup, immediately for best UX.
                 if (encodedTx.isCancelled()) {
                     twig("[cleanup] this tx has been cancelled so we will cleanup instead of submitting")
-                    if (cleanupCancelledTx(encodedTx)) refreshAllBalances()
-                    encodedTx
+                    if (cleanupCancelledTx(encodedTx)) {
+                        refreshAllBalances()
+                    }
                 } else {
                     txManager.submit(encodedTx)
                 }
@@ -673,8 +680,9 @@ class SdkSynchronizer internal constructor(
                 // only submit if it wasn't cancelled. Otherwise cleanup, immediately for best UX.
                 if (encodedTx.isCancelled()) {
                     twig("[cleanup] this shielding tx has been cancelled so we will cleanup instead of submitting")
-                    if (cleanupCancelledTx(encodedTx)) refreshAllBalances()
-                    encodedTx
+                    if (cleanupCancelledTx(encodedTx)) {
+                        refreshAllBalances()
+                    }
                 } else {
                     txManager.submit(encodedTx)
                 }
@@ -685,8 +693,8 @@ class SdkSynchronizer internal constructor(
         txManager.monitorById(it.id)
     }.distinctUntilChanged()
 
-    override suspend fun refreshUtxos(address: String, startHeight: BlockHeight): Int? {
-        return processor.refreshUtxos(address, startHeight)
+    override suspend fun refreshUtxos(tAddr: String, since: BlockHeight): Int? {
+        return processor.refreshUtxos(tAddr, since)
     }
 
     override suspend fun getTransparentBalance(tAddr: String): WalletBalance {
@@ -785,7 +793,11 @@ object DefaultSynchronizerFactory {
         )
 
     fun defaultBlockStore(initializer: Initializer): CompactBlockStore =
-        CompactBlockDbStore.new(initializer.context, initializer.network, initializer.rustBackend.pathCacheDb)
+        CompactBlockDbStore.new(
+            initializer.context,
+            initializer.network,
+            initializer.rustBackend.cacheDbFile
+        )
 
     fun defaultService(initializer: Initializer): LightWalletService =
         LightWalletGrpcService.new(initializer.context, initializer.lightWalletEndpoint)
@@ -800,12 +812,23 @@ object DefaultSynchronizerFactory {
         blockStore: CompactBlockStore
     ): CompactBlockDownloader = CompactBlockDownloader(service, blockStore)
 
-    fun defaultTxManager(
+    suspend fun defaultTxManager(
         initializer: Initializer,
         encoder: TransactionEncoder,
         service: LightWalletService
-    ): OutboundTransactionManager =
-        PersistentTransactionManager(initializer.context, encoder, service)
+    ): OutboundTransactionManager {
+        val databaseFile = DatabaseCoordinator.getInstance(initializer.context).pendingTransactionsDbFile(
+            initializer.network,
+            initializer.alias
+        )
+
+        return PersistentTransactionManager(
+            initializer.context,
+            encoder,
+            service,
+            databaseFile
+        )
+    }
 
     fun defaultProcessor(
         initializer: Initializer,

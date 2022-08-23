@@ -1,10 +1,10 @@
 package cash.z.ecc.android.sdk.demoapp
 
-import android.app.Application
+import androidx.multidex.MultiDexApplication
 import cash.z.ecc.android.sdk.internal.TroubleshootingTwig
 import cash.z.ecc.android.sdk.internal.Twig
 
-class App : Application() {
+class App : MultiDexApplication() {
 
     override fun onCreate() {
         super.onCreate()

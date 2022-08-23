@@ -83,21 +83,21 @@ class DerivationTool {
             deriveTransparentAddressFromSeed(seed, account, index, networkId = network.id)
         }
 
-        override suspend fun deriveTransparentAddressFromPublicKey(transparentPublicKey: String, network: ZcashNetwork): String = withRustBackendLoaded {
-            deriveTransparentAddressFromPubKey(transparentPublicKey, networkId = network.id)
+        override suspend fun deriveTransparentAddressFromPublicKey(publicKey: String, network: ZcashNetwork): String = withRustBackendLoaded {
+            deriveTransparentAddressFromPubKey(pk = publicKey, networkId = network.id)
         }
 
-        override suspend fun deriveTransparentAddressFromAccountPrivateKey(transparentPrivateKey: String, network: ZcashNetwork, index: Int): String = withRustBackendLoaded {
-            deriveTransparentAddressFromAccountPrivKey(transparentPrivateKey, index, networkId = network.id)
+        override suspend fun deriveTransparentAddressFromAccountPrivateKey(privateKey: String, network: ZcashNetwork, index: Int): String = withRustBackendLoaded {
+            deriveTransparentAddressFromAccountPrivKey(sk = privateKey, index = index, networkId = network.id)
         }
 
         override suspend fun deriveTransparentAccountPrivateKey(seed: ByteArray, network: ZcashNetwork, account: Int): String = withRustBackendLoaded {
             deriveTransparentAccountPrivKeyFromSeed(seed, account, networkId = network.id)
         }
 
-        @Suppress("UnusedPrivateMember")
+        @Suppress("UNUSED_PARAMETER")
         fun validateUnifiedFullViewingKey(viewingKey: UnifiedFullViewingKey, networkId: Int = ZcashNetwork.Mainnet.id) {
-            // TODO
+            // TODO [#654] https://github.com/zcash/zcash-android-wallet-sdk/issues/654
         }
 
         /**

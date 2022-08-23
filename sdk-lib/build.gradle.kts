@@ -4,6 +4,7 @@ import com.google.protobuf.gradle.plugins
 import com.google.protobuf.gradle.proto
 import com.google.protobuf.gradle.protobuf
 import com.google.protobuf.gradle.protoc
+import java.util.Base64
 
 plugins {
     id("com.android.library")
@@ -15,39 +16,114 @@ plugins {
     id("org.jetbrains.dokka")
     id("com.google.protobuf")
     id("org.mozilla.rust-android-gradle.rust-android")
-    id("com.vanniktech.maven.publish.base")
+
     id("wtf.emulator.gradle")
     id("zcash-sdk.emulator-wtf-conventions")
+
+    id("maven-publish")
+    id("signing")
 }
 
 // Publishing information
+val publicationVariant = "release"
+val myVersion = project.property("LIBRARY_VERSION").toString()
+val myArtifactId = "zcash-android-sdk"
 val isSnapshot = project.property("IS_SNAPSHOT").toString().toBoolean()
 val version = project.property("LIBRARY_VERSION").toString()
 project.group = "cash.z.ecc.android"
-project.version = if (isSnapshot) {
-    "$version-SNAPSHOT"
-} else {
-    version
-}
-
-val myArtifactId = "zcash-android-sdk"
 
 publishing {
     publications {
-        publications.withType<MavenPublication>().all {
+        register<MavenPublication>("release") {
             artifactId = myArtifactId
+            groupId = "cash.z.ecc.android"
+            version = if (isSnapshot) {
+                "$myVersion-SNAPSHOT"
+            } else {
+                myVersion
+            }
+
+            afterEvaluate {
+                from(components[publicationVariant])
+            }
+
+            pom {
+                name.set("Zcash Android Wallet SDK")
+                description.set("This lightweight SDK connects Android to Zcash, allowing third-party " +
+                    "Android apps to send and receive shielded transactions easily, securely and privately.")
+                url.set("https://github.com/zcash/zcash-android-wallet-sdk/")
+                inceptionYear.set("2018")
+                scm {
+                    url.set("https://github.com/zcash/zcash-android-wallet-sdk/")
+                    connection.set("scm:git:git://github.com/zcash/zcash-android-wallet-sdk.git")
+                    developerConnection.set("scm:git:ssh://git@github.com/zcash/zcash-android-wallet-sdk.git")
+                }
+                developers {
+                    developer {
+                        id.set("zcash")
+                        name.set("Zcash")
+                        url.set("https://github.com/zcash/")
+                    }
+                }
+                licenses {
+                    license {
+                        name.set("The MIT License")
+                        url.set("http://opensource.org/licenses/MIT")
+                        distribution.set("repo")
+                    }
+                }
+            }
         }
     }
+    repositories {
+        val mavenUrl = if (isSnapshot) {
+            project.property("ZCASH_MAVEN_PUBLISH_SNAPSHOT_URL").toString()
+        } else {
+            project.property("ZCASH_MAVEN_PUBLISH_RELEASE_URL").toString()
+        }
+        val mavenPublishUsername = project.property("ZCASH_MAVEN_PUBLISH_USERNAME").toString()
+        val mavenPublishPassword = project.property("ZCASH_MAVEN_PUBLISH_PASSWORD").toString()
+
+        mavenLocal {
+            name = "MavenLocal"
+        }
+        maven(mavenUrl) {
+            name = "MavenCentral"
+            credentials {
+                username = mavenPublishUsername
+                password = mavenPublishPassword
+            }
+        }
+    }
+}
+
+signing {
+    // Maven Central requires signing for non-snapshots
+    isRequired = !isSnapshot
+
+    val signingKey = run {
+        val base64EncodedKey = project.property("ZCASH_ASCII_GPG_KEY").toString()
+        if (base64EncodedKey.isNotEmpty()) {
+            val keyBytes = Base64.getDecoder().decode(base64EncodedKey)
+            String(keyBytes)
+        } else {
+            ""
+        }
+    }
+
+    if (signingKey.isNotEmpty()) {
+        useInMemoryPgpKeys(signingKey, "")
+    }
+
+    sign(publishing.publications)
 }
 
 android {
     useLibrary("android.test.runner")
 
     defaultConfig {
-        javaCompileOptions {
-            annotationProcessorOptions {
-                argument("room.schemaLocation", "$projectDir/schemas")
-            }
+        ksp {
+            arg("room.schemaLocation", "$projectDir/schemas")
         }
 
         consumerProguardFiles("proguard-consumer.txt")
@@ -78,7 +154,7 @@ android {
 
     kotlinOptions {
         // Tricky: fix: By default, the kotlin_module name will not include the version (in classes.jar/META-INF). Instead it has a colon, which breaks compilation on Windows. This is one way to set it explicitly to the proper value. See https://github.com/zcash/zcash-android-wallet-sdk/issues/222 for more info.
-        freeCompilerArgs += listOf("-module-name", "$myArtifactId-${project.version}_release")
+        freeCompilerArgs += listOf("-module-name", "$myArtifactId-${myVersion}_release")
     }
 
     packagingOptions {
@@ -102,53 +178,12 @@ android {
         baseline = File("lint-baseline.xml")
     }
 
-    // Handled by com.vanniktech.maven.publish.AndroidSingleVariantLibrary below
-    // publishing {
-    //     singleVariant("release") {
-    //         withSourcesJar()
-    //         withJavadocJar()
-    //     }
-    // }
-}
-
-mavenPublishing {
-    publishToMavenCentral(com.vanniktech.maven.publish.SonatypeHost.DEFAULT)
-    signAllPublications()
-
-    pom {
-        name.set("Zcash Android Wallet SDK")
-        description.set("This lightweight SDK connects Android to Zcash, allowing third-party Android " +
-            "apps to send and receive shielded transactions easily, securely and privately.")
-        url.set("https://github.com/zcash/zcash-android-wallet-sdk/")
-        inceptionYear.set("2018")
-        scm {
-            url.set("https://github.com/zcash/zcash-android-wallet-sdk/")
-            connection.set("scm:git:git://github.com/zcash/zcash-android-wallet-sdk.git")
-            developerConnection.set("scm:git:ssh://git@github.com/zcash/zcash-android-wallet-sdk.git")
-        }
-        developers {
-            developer {
-                id.set("zcash")
-                name.set("Zcash")
-                url.set("https://github.com/zcash/")
-            }
-        }
-        licenses {
-            license {
-                name.set("The MIT License")
-                url.set("http://opensource.org/licenses/MIT")
-                distribution.set("repo")
-            }
+    publishing {
+        singleVariant(publicationVariant) {
+            withSourcesJar()
+            withJavadocJar()
         }
     }
-
-    configure(
-        com.vanniktech.maven.publish.AndroidSingleVariantLibrary(
-            "release",
-            sourcesJar = true,
-            publishJavadocJar = true
-        )
-    )
 }
 
 allOpen {
@@ -264,6 +299,8 @@ dependencies {
     androidTestImplementation(libs.androidx.test.junit)
     androidTestImplementation(libs.androidx.test.core)
     androidTestImplementation(libs.coroutines.okhttp)
+    androidTestImplementation(libs.kotlin.test)
+    androidTestImplementation(libs.kotlinx.coroutines.test)
     // used by 'ru.gildor.corutines.okhttp.await' (to make simple suspended requests) and breaks on versions higher than 3.8.0
     androidTestImplementation(libs.okhttp)
 

@@ -1,9 +1,9 @@
 package cash.z.ecc.android.sdk.demoapp.demos.getblockrange
 
 import android.os.Bundle
-import android.text.Html
 import android.view.LayoutInflater
 import android.view.View
+import androidx.core.text.HtmlCompat
 import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
 import cash.z.ecc.android.sdk.demoapp.R
 import cash.z.ecc.android.sdk.demoapp.databinding.FragmentGetBlockRangeBinding
@@ -27,13 +27,13 @@ class GetBlockRangeFragment : BaseDemoFragment<FragmentGetBlockRangeBinding>() {
     private fun setBlockRange(blockRange: ClosedRange<BlockHeight>) {
         val start = System.currentTimeMillis()
         val blocks =
-            lightwalletService?.getBlockRange(blockRange)
+            lightWalletService?.getBlockRange(blockRange)
         val fetchDelta = System.currentTimeMillis() - start
 
         // Note: This is a demo so we won't worry about iterating efficiently over these blocks
         // Note: Converting the blocks sequence to a list can consume a lot of memory and may
         // cause OOM.
-        binding.textInfo.text = Html.fromHtml(
+        binding.textInfo.text = HtmlCompat.fromHtml(
             blocks?.toList()?.run {
                 val count = size
                 val emptyCount = count { it.vtxCount == 0 }
@@ -66,13 +66,15 @@ class GetBlockRangeFragment : BaseDemoFragment<FragmentGetBlockRangeBinding>() {
                 <br/><b>avg OUTs [per block / per TX]:</b> ${"%.1f / %.1f".format(outCount.toDouble() / (count - emptyCount), outCount.toDouble() / txCount)}
                 <br/><b>avg INs [per block / per TX]:</b> ${"%.1f / %.1f".format(inCount.toDouble() / (count - emptyCount), inCount.toDouble() / txCount)}
                 <br/><b>most shielded TXs:</b> ${if (maxTxs == null) "none" else "${maxTxs.vtxCount} in block ${maxTxs.height.withCommas()}"}
-                <br/><b>most shielded INs:</b> ${if (maxInTx == null) "none" else "${maxInTx.spendsCount} in block ${maxIns?.height.withCommas()} at tx index ${maxInTx.index}"}
-                <br/><b>most shielded OUTs:</b> ${if (maxOutTx == null) "none" else "${maxOutTx?.outputsCount} in block ${maxOuts?.height.withCommas()} at tx index ${maxOutTx?.index}"}
+                <br/><b>most shielded INs:</b> ${if (maxInTx == null) "none" else "${maxInTx.spendsCount} in block ${maxIns.height.withCommas()} at tx index ${maxInTx.index}"}
+                <br/><b>most shielded OUTs:</b> ${if (maxOutTx == null) "none" else "${maxOutTx.outputsCount} in block ${maxOuts.height.withCommas()} at tx index ${maxOutTx.index}"}
                 """.trimIndent()
-            } ?: "No blocks found in that range."
+            } ?: "No blocks found in that range.",
+            HtmlCompat.FROM_HTML_MODE_LEGACY
         )
     }
 
+    @Suppress("UNUSED_PARAMETER")
     private fun onApply(_unused: View) {
         val network = ZcashNetwork.fromResources(requireApplicationContext())
         val start = max(binding.textStartHeight.text.toString().toLongOrNull() ?: network.saplingActivationHeight.value, network.saplingActivationHeight.value)

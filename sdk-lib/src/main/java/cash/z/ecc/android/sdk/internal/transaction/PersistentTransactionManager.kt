@@ -1,8 +1,8 @@
 package cash.z.ecc.android.sdk.internal.transaction
 
 import android.content.Context
-import androidx.room.Room
 import androidx.room.RoomDatabase
+import cash.z.ecc.android.sdk.db.commonDatabaseBuilder
 import cash.z.ecc.android.sdk.db.entity.PendingTransaction
 import cash.z.ecc.android.sdk.db.entity.PendingTransactionEntity
 import cash.z.ecc.android.sdk.db.entity.isCancelled
@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import java.io.File
 import java.io.PrintWriter
 import java.io.StringWriter
 import kotlin.math.max
@@ -56,12 +57,12 @@ class PersistentTransactionManager(
         appContext: Context,
         encoder: TransactionEncoder,
         service: LightWalletService,
-        dataDbName: String = "PendingTransactions.db"
+        databaseFile: File
     ) : this(
-        Room.databaseBuilder(
+        commonDatabaseBuilder(
             appContext,
             PendingTransactionDb::class.java,
-            dataDbName
+            databaseFile
         ).setJournalMode(RoomDatabase.JournalMode.TRUNCATE).build(),
         encoder,
         service
@@ -72,14 +73,14 @@ class PersistentTransactionManager(
     //
 
     override suspend fun initSpend(
-        value: Zatoshi,
+        zatoshi: Zatoshi,
         toAddress: String,
         memo: String,
         fromAccountIndex: Int
     ): PendingTransaction = withContext(Dispatchers.IO) {
         twig("constructing a placeholder transaction")
         var tx = PendingTransactionEntity(
-            value = value.value,
+            value = zatoshi.value,
             toAddress = toAddress,
             memo = memo.toByteArray(),
             accountIndex = fromAccountIndex
@@ -266,12 +267,14 @@ class PersistentTransactionManager(
     /**
      * Remove a transaction and pretend it never existed.
      *
+     * @param transaction the transaction to be processed.
+     *
      * @return the final number of transactions that were removed from the database.
      */
-    override suspend fun abort(existingTransaction: PendingTransaction): Int {
+    override suspend fun abort(transaction: PendingTransaction): Int {
         return pendingTransactionDao {
-            twig("[cleanup] Deleting pendingTxId: ${existingTransaction.id}")
-            delete(existingTransaction as PendingTransactionEntity)
+            twig("[cleanup] Deleting pendingTxId: ${transaction.id}")
+            delete(transaction as PendingTransactionEntity)
         }
     }
 
@@ -288,13 +291,14 @@ class PersistentTransactionManager(
      */
     private suspend fun <R> safeUpdate(logMessage: String = "", priority: Int = 0, block: suspend PendingTransactionDao.() -> R): R? {
         return try {
-            twig(logMessage)
+            twig(logMessage, priority)
             pendingTransactionDao { block() }
         } catch (t: Throwable) {
             val stacktrace = StringWriter().also { t.printStackTrace(PrintWriter(it)) }.toString()
             twig(
                 "Unknown error while attempting to '$logMessage':" +
-                    " ${t.message} caused by: ${t.cause} stacktrace: $stacktrace"
+                    " ${t.message} caused by: ${t.cause} stacktrace: $stacktrace",
+                priority
             )
             null
         }

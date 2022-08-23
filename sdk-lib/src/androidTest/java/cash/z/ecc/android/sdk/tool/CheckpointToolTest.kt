@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
+import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.tool.CheckpointTool.IS_FALLBACK_ON_FAILURE
 import kotlinx.coroutines.runBlocking
@@ -16,7 +17,10 @@ class CheckpointToolTest {
     @Test
     @SmallTest
     fun birthday_height_from_filename() {
-        assertEquals(123, CheckpointTool.checkpointHeightFromFilename(ZcashNetwork.Mainnet, "123.json"))
+        assertEquals(
+            BlockHeight.new(ZcashNetwork.Mainnet, 1_230_000),
+            CheckpointTool.checkpointHeightFromFilename(ZcashNetwork.Mainnet, "1230000.json")
+        )
     }
 
     @Test

@@ -43,9 +43,9 @@ class InboundTxTests : ScopedTest() {
     }
 
     private fun addTransactions(targetHeight: BlockHeight, vararg txs: String) {
-        val overwriteBlockCount = 5
+        // val overwriteBlockCount = 5
         chainMaker
-//            .stageEmptyBlocks(targetHeight, overwriteBlockCount)
+            // .stageEmptyBlocks(targetHeight, overwriteBlockCount)
             .stageTransactions(targetHeight, *txs)
             .applyTipHeight(targetHeight)
     }

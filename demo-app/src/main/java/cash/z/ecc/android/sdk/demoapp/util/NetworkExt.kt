@@ -5,7 +5,7 @@ package cash.z.ecc.android.sdk.demoapp.util
 import android.content.Context
 import cash.z.ecc.android.sdk.demoapp.R
 import cash.z.ecc.android.sdk.model.ZcashNetwork
-import java.util.*
+import java.util.Locale
 
 fun ZcashNetwork.Companion.fromResources(context: Context): ZcashNetwork {
     val networkNameFromResources = context.getString(R.string.network_name).lowercase(Locale.ROOT)
