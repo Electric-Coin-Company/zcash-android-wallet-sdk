@@ -19,6 +19,7 @@ class UtxoViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
     private val timeText = itemView.findViewById<TextView>(R.id.text_transaction_timestamp)
     private val formatter = SimpleDateFormat("M/d h:mma", Locale.getDefault())
 
+    @Suppress("MagicNumber")
     fun bindTo(transaction: ConfirmedTransaction?) {
         amountText.text = transaction?.valueInZatoshi.convertZatoshiToZecString()
         timeText.text =

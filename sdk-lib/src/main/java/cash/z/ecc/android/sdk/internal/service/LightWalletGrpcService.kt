@@ -63,11 +63,9 @@ class LightWalletGrpcService private constructor(
 
     override fun submitTransaction(spendTransaction: ByteArray): Service.SendResponse {
         if (spendTransaction.isEmpty()) {
-            return Service.SendResponse.newBuilder().setErrorCode(3000)
-                .setErrorMessage(
-                    "ERROR: failed to submit transaction because it was empty" +
-                        " so this request was ignored on the client-side."
-                )
+            return Service.SendResponse.newBuilder()
+                .setErrorCode(EMPTY_TRANSACTION_ERROR_CODE)
+                .setErrorMessage(EMPTY_TRANSACTION_ERROR_MESSAGE)
                 .build()
         }
         val request =
@@ -138,6 +136,10 @@ class LightWalletGrpcService private constructor(
     }
 
     companion object {
+        private const val EMPTY_TRANSACTION_ERROR_CODE = 3000
+        private const val EMPTY_TRANSACTION_ERROR_MESSAGE = "ERROR: failed to submit transaction because it was" +
+            " empty so this request was ignored on the client-side."
+
         fun new(context: Context, lightWalletEndpoint: LightWalletEndpoint): LightWalletGrpcService {
             val channel = createDefaultChannel(context, lightWalletEndpoint)
 

@@ -5,7 +5,6 @@ import android.graphics.Color
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
-import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
 import cash.z.ecc.android.sdk.demoapp.databinding.FragmentHomeBinding
@@ -18,9 +17,8 @@ import kotlinx.coroutines.launch
  * data just for sanity. The goal is for each demo to be self-contained so that the behavior is
  * repeatable and independent of pre-existing state.
  */
+@Suppress("TooManyFunctions")
 class HomeFragment : BaseDemoFragment<FragmentHomeBinding>() {
-
-    private val homeViewModel: HomeViewModel by viewModels()
 
     override fun inflateBinding(layoutInflater: LayoutInflater) =
         FragmentHomeBinding.inflate(layoutInflater)

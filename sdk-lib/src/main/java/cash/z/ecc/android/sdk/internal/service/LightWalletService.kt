@@ -71,7 +71,10 @@ interface LightWalletService {
      *
      * @return a list of transactions that correspond to the given address for the given range.
      */
-    fun getTAddressTransactions(tAddress: String, blockHeightRange: ClosedRange<BlockHeight>): List<Service.RawTransaction>
+    fun getTAddressTransactions(
+        tAddress: String,
+        blockHeightRange: ClosedRange<BlockHeight>
+    ): List<Service.RawTransaction>
 
     /**
      * Reconnect to the same or a different server. This is useful when the connection is

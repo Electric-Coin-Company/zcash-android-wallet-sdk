@@ -30,6 +30,7 @@ import java.io.File
  *
  * @param pageSize transactions per page. This influences pre-fetch and memory configuration.
  */
+@Suppress("TooManyFunctions")
 internal class PagedTransactionRepository private constructor(
     private val zcashNetwork: ZcashNetwork,
     private val db: DerivedDataDb,
@@ -105,11 +106,14 @@ internal class PagedTransactionRepository private constructor(
         }
     }
 
-    // TODO: begin converting these into Data Access API. For now, just collect the desired operations and iterate/refactor, later
+    // TODO [#681]: begin converting these into Data Access API. For now, just collect the desired
+    //  operations and iterate/refactor, later
+    // TODO [#681]: https://github.com/zcash/zcash-android-wallet-sdk/issues/681
     suspend fun findBlockHash(height: BlockHeight): ByteArray? = blocks.findHashByHeight(height.value)
     suspend fun getTransactionCount(): Int = transactions.count()
 
-    // TODO: convert this into a wallet repository rather than "transaction repository"
+    // TODO [#681]: convert this into a wallet repository rather than "transaction repository"
+    // TODO [#681]: https://github.com/zcash/zcash-android-wallet-sdk/issues/681
 
     companion object {
         @Suppress("LongParameterList")
@@ -149,8 +153,11 @@ internal class PagedTransactionRepository private constructor(
                 .addMigrations(DerivedDataDb.MIGRATION_5_6)
                 .addMigrations(DerivedDataDb.MIGRATION_6_7)
                 .build().also {
-                    // TODO: document why we do this. My guess is to catch database issues early or to trigger migrations--I forget why it was added but there was a good reason?
+                    // TODO [#681]: document why we do this. My guess is to catch database issues early or to trigger
+                    //  migrations--I forget why it was added but there was a good reason?
+                    // TODO [#681]: https://github.com/zcash/zcash-android-wallet-sdk/issues/681
                     withContext(SdkDispatchers.DATABASE_IO) {
+                        // TODO [#649]: StrictMode policy violation: LeakedClosableViolation
                         // TODO [#649]: https://github.com/zcash/zcash-android-wallet-sdk/issues/649
                         it.openHelper.writableDatabase.beginTransaction()
                         it.openHelper.writableDatabase.endTransaction()
@@ -190,7 +197,8 @@ internal class PagedTransactionRepository private constructor(
             rustBackend: RustBackend,
             checkpoint: Checkpoint
         ) {
-            // TODO: consider converting these to typed exceptions in the welding layer
+            // TODO [#681]: consider converting these to typed exceptions in the welding layer
+            // TODO [#681]: https://github.com/zcash/zcash-android-wallet-sdk/issues/681
             tryWarn(
                 "Warning: did not initialize the blocks table. It probably was already initialized.",
                 ifContains = "table is not empty"
@@ -208,11 +216,13 @@ internal class PagedTransactionRepository private constructor(
             rustBackend: RustBackend,
             viewingKeys: List<UnifiedFullViewingKey>
         ) {
-            // TODO: consider converting these to typed exceptions in the welding layer
+            // TODO [#681]: consider converting these to typed exceptions in the welding layer
+            // TODO [#681]: https://github.com/zcash/zcash-android-wallet-sdk/issues/681
             tryWarn(
                 "Warning: did not initialize the accounts table. It probably was already initialized.",
                 ifContains = "table is not empty"
             ) {
+                @Suppress("SpreadOperator")
                 rustBackend.initAccountsTable(*viewingKeys.toTypedArray())
                 twig("Initialized the accounts table with ${viewingKeys.size} viewingKey(s)")
             }

@@ -34,7 +34,8 @@ internal object CheckpointTool {
         network: ZcashNetwork,
         birthdayHeight: BlockHeight?
     ): Checkpoint {
-        // TODO: potentially pull from shared preferences first
+        // TODO [#684]: potentially pull from shared preferences first
+        // TODO [#684]: https://github.com/zcash/zcash-android-wallet-sdk/issues/684
         return loadCheckpointFromAssets(context, network, birthdayHeight)
     }
 
@@ -125,7 +126,8 @@ internal object CheckpointTool {
     }
 
     /**
-     * @param treeFiles A list of files, sorted in descending order based on `int` value of the first part of the filename.
+     * @param treeFiles A list of files, sorted in descending order based on `int` value of the first part of
+     * the filename.
      */
     @VisibleForTesting
     internal suspend fun getFirstValidWalletBirthday(
@@ -136,6 +138,7 @@ internal object CheckpointTool {
     ): Checkpoint {
         var lastException: Exception? = null
         treeFiles.forEach { treefile ->
+            @Suppress("TooGenericExceptionCaught")
             try {
                 val jsonString = withContext(Dispatchers.IO) {
                     context.assets.open("$directory/$treefile").use { inputStream ->
@@ -157,7 +160,8 @@ internal object CheckpointTool {
                 lastException = exception
 
                 if (IS_FALLBACK_ON_FAILURE) {
-                    // TODO: If we ever add crash analytics hooks, this would be something to report
+                    // TODO [#684]: If we ever add crash analytics hooks, this would be something to report
+                    // TODO [#684]: https://github.com/zcash/zcash-android-wallet-sdk/issues/684
                     twig("Malformed birthday file $t")
                 } else {
                     throw exception

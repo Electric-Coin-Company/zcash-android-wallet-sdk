@@ -44,6 +44,7 @@ import kotlin.math.max
  * By default, the SDK uses a PagedTransactionRepository to provide transaction contents from the
  * database in a paged format that works natively with RecyclerViews.
  */
+@Suppress("TooManyFunctions")
 class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
     private lateinit var seed: ByteArray
     private lateinit var initializer: Initializer
@@ -88,7 +89,9 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
 
     private fun initUi() {
         binding.inputAddress.setText(address)
-        binding.inputRangeStart.setText(ZcashNetwork.fromResources(requireApplicationContext()).saplingActivationHeight.toString())
+        binding.inputRangeStart.setText(
+            ZcashNetwork.fromResources(requireApplicationContext()).saplingActivationHeight.toString()
+        )
         binding.inputRangeEnd.setText(getUxtoEndHeight(requireApplicationContext()).value.toString())
 
         binding.buttonLoad.setOnClickListener {
@@ -148,6 +151,7 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
                 withContext(Dispatchers.IO) {
                     finalCount = (synchronizer as SdkSynchronizer).getTransactionCount()
                     withContext(Dispatchers.Main) {
+                        @Suppress("MagicNumber")
                         delay(100)
                         updateStatus("Also found ${finalCount - initialCount} shielded txs")
                     }
@@ -188,7 +192,9 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
 
     var initialCount: Int = 0
     var finalCount: Int = 0
-    fun resetInBackground() {
+
+    @Suppress("TooGenericExceptionCaught")
+    private fun resetInBackground() {
         try {
             lifecycleScope.launch {
                 withContext(Dispatchers.IO) {
@@ -242,6 +248,7 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
         if (info.isScanning) binding.textStatus.text = "Scanning blocks...${info.scanProgress}%"
     }
 
+    @Suppress("MagicNumber")
     private fun onProgress(i: Int) {
         if (i < 100) binding.textStatus.text = "Downloading blocks...$i%"
     }
