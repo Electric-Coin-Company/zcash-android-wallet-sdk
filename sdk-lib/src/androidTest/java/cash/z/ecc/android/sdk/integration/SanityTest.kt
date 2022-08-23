@@ -9,6 +9,7 @@ import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.util.TestWallet
 import kotlinx.coroutines.runBlocking
+import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -80,6 +81,10 @@ class SanityTest(
     }
 
     @Test
+    @Ignore(
+        "This test needs to be refactored to a separate test module. It causes SSLHandshakeException: Chain " +
+            "validation failed on CI"
+    )
     fun testLatestHeight() = runBlocking {
         if (wallet.networkName == "mainnet") {
             val expectedHeight = BlockExplorer.fetchLatestHeight()
@@ -100,6 +105,10 @@ class SanityTest(
     }
 
     @Test
+    @Ignore(
+        "This test needs to be refactored to a separate test module. It causes SSLHandshakeException: Chain " +
+            "validation failed on CI"
+    )
     fun testSingleBlockDownload() = runBlocking {
         // Fetch height directly because the synchronizer hasn't started, yet. Then we test the
         // result, only if there is no server communication problem.
