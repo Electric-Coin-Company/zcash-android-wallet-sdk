@@ -293,8 +293,8 @@ class SdkSynchronizer internal constructor(
             processor.stop()
             twig("Synchronizer::stop: coroutineScope.cancel()")
             coroutineScope.cancel()
-            twig("Synchronizer::stop: _status.cancel()")
-            _status.resetReplayCache()
+            twig("Synchronizer::stop: _status.value = STOPPED")
+            _status.value = STOPPED
             twig("Synchronizer::stop: COMPLETE")
         }
     }
