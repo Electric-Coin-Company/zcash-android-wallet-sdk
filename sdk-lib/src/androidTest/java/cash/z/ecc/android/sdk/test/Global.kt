@@ -13,11 +13,11 @@ fun getStringResource(@StringRes resId: Int) = getAppContext().getString(resId)
 
 fun getStringResourceWithArgs(@StringRes resId: Int, vararg formatArgs: String) = getAppContext().getString(resId, *formatArgs)
 
-fun readLinesInFlow(filePathName: String) = callbackFlow {
-    val seedFile = javaClass.getResourceAsStream(filePathName)
-    assertNotNull(seedFile, "Test seed file read failure.")
+fun readFileLinesInFlow(filePathName: String) = callbackFlow {
+    val testFile = javaClass.getResourceAsStream(filePathName)
+    assertNotNull(testFile, "Test file read failure.")
 
-    val reader = seedFile.bufferedReader()
+    val reader = testFile.bufferedReader()
     reader.forEachLine { line ->
         trySend(line)
     }.also {

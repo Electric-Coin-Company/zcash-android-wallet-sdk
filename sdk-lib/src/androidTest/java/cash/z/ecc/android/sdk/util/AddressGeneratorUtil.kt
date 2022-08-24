@@ -1,7 +1,7 @@
 package cash.z.ecc.android.sdk.util
 
 import cash.z.ecc.android.sdk.model.ZcashNetwork
-import cash.z.ecc.android.sdk.test.readLinesInFlow
+import cash.z.ecc.android.sdk.test.readFileLinesInFlow
 import cash.z.ecc.android.sdk.tool.DerivationTool
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.map
@@ -26,7 +26,7 @@ class AddressGeneratorUtil {
 
     @Test
     fun generateAddresses() = runBlocking {
-        readLinesInFlow("/utils/seeds.txt")
+        readFileLinesInFlow("/utils/seeds.txt")
             .map { seedPhrase ->
                 mnemonics.toSeed(seedPhrase.toCharArray())
             }.map { seed ->

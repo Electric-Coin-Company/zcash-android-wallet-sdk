@@ -12,7 +12,7 @@ import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.LightWalletEndpoint
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.model.defaultForNetwork
-import cash.z.ecc.android.sdk.test.readLinesInFlow
+import cash.z.ecc.android.sdk.test.readFileLinesInFlow
 import cash.z.ecc.android.sdk.tool.CheckpointTool
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.map
@@ -74,7 +74,7 @@ class BalancePrinterUtil {
     @Test
     @Ignore("This test is broken")
     fun printBalances() = runBlocking {
-        readLinesInFlow("/utils/seeds.txt")
+        readFileLinesInFlow("/utils/seeds.txt")
             .map { seedPhrase ->
                 twig("checking balance for: $seedPhrase")
                 mnemonics.toSeed(seedPhrase.toCharArray())
