@@ -1,23 +1,17 @@
 package cash.z.ecc.android.sdk.util
 
-import androidx.test.platform.app.InstrumentationRegistry
 import cash.z.ecc.android.sdk.model.ZcashNetwork
+import cash.z.ecc.android.sdk.test.readLinesInFlow
 import cash.z.ecc.android.sdk.tool.DerivationTool
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.runBlocking
-import okio.buffer
-import okio.source
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.io.IOException
 
 @ExperimentalCoroutinesApi
 class AddressGeneratorUtil {
-
-    private val context = InstrumentationRegistry.getInstrumentation().context
 
     private val mnemonics = SimpleMnemonics()
 
@@ -32,7 +26,7 @@ class AddressGeneratorUtil {
 
     @Test
     fun generateAddresses() = runBlocking {
-        readLines()
+        readLinesInFlow("/utils/seeds.txt")
             .map { seedPhrase ->
                 mnemonics.toSeed(seedPhrase.toCharArray())
             }.map { seed ->
@@ -41,17 +35,5 @@ class AddressGeneratorUtil {
                 println("xrxrx2\t$address")
                 assertTrue(address.startsWith("zs1"))
             }
-    }
-
-    @Throws(IOException::class)
-    fun readLines() = flow<String> {
-        val seedFile = javaClass.getResourceAsStream("/utils/seeds.txt")!!
-        seedFile.source().buffer().use { source ->
-            var line: String? = source.readUtf8Line()
-            while (line != null) {
-                emit(line)
-                line = source.readUtf8Line()
-            }
-        }
     }
 }

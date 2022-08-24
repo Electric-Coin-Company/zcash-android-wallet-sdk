@@ -5,12 +5,12 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import cash.z.ecc.android.sdk.ext.ZcashSdk
 import kotlinx.coroutines.runBlocking
-import org.junit.Assert
 import org.junit.Before
 import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
+import kotlin.test.assertFalse
 
 @RunWith(AndroidJUnit4::class)
 @Ignore(
@@ -39,7 +39,7 @@ class SaplingParamToolTest {
         val result = SaplingParamTool.validate(cacheDir)
 
         // Then
-        Assert.assertFalse(result)
+        assertFalse(result)
     }
 
     @Test
@@ -52,7 +52,7 @@ class SaplingParamToolTest {
         val result = SaplingParamTool.validate(cacheDir)
 
         // Then
-        Assert.assertFalse("Validation should fail when the spend params are missing", result)
+        assertFalse(result, "Validation should fail when the spend params are missing")
     }
 
     @Test
@@ -65,7 +65,7 @@ class SaplingParamToolTest {
         val result = SaplingParamTool.validate(cacheDir)
 
         // Then
-        Assert.assertFalse("Validation should fail when the spend params are missing", result)
+        assertFalse(result, "Validation should fail when the spend params are missing")
     }
 
     @Test
@@ -73,13 +73,13 @@ class SaplingParamToolTest {
         // Given
         SaplingParamTool.fetchParams(cacheDir)
 
-        Assert.assertFalse("insufficient storage", false)
+        assertFalse(false, "insufficient storage")
     }
 
     @Test
     fun testSufficientDeviceStorageForOnlyOneFile() = runBlocking {
         SaplingParamTool.fetchParams(cacheDir)
 
-        Assert.assertFalse("insufficient storage", false)
+        assertFalse(false, "insufficient storage")
     }
 }

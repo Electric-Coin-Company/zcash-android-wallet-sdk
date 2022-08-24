@@ -5,13 +5,24 @@ import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.internal.ext.deleteRecursivelySuspend
 import cash.z.ecc.android.sdk.internal.ext.existsSuspend
 import cash.z.ecc.android.sdk.internal.ext.mkdirsSuspend
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okio.buffer
-import okio.sink
 import java.io.File
+import java.io.FileOutputStream
+import java.net.URL
+import java.nio.channels.Channels
+import java.nio.channels.FileChannel
+import java.nio.channels.ReadableByteChannel
+
+// TODO [#666]: https://github.com/zcash/zcash-android-wallet-sdk/issues/666
+// TODO [#666]: Download sapling-spend.params and sapling-output.params atomically
+
+// TODO [#665]: https://github.com/zcash/zcash-android-wallet-sdk/issues/665
+// TODO [#665]: Recover from corrupted sapling-spend.params and sapling-output.params
+
+// TODO [#664]: https://github.com/zcash/zcash-android-wallet-sdk/issues/664
+// TODO [#664]: Check size of download for sapling-spend.params and sapling-output.params
+
+// TODO [#611]: https://github.com/zcash/zcash-android-wallet-sdk/issues/611
+// TODO [#611]: Move Params Directory to No Backup Directory
 
 @Suppress("UtilityClassWithPublicConstructor")
 class SaplingParamTool {
@@ -56,40 +67,43 @@ class SaplingParamTool {
          * on-demand.
          */
         suspend fun fetchParams(destinationDir: String) {
-            val client = createHttpClient()
             var failureMessage = ""
             arrayOf(
                 ZcashSdk.SPEND_PARAM_FILE_NAME,
                 ZcashSdk.OUTPUT_PARAM_FILE_NAME
             ).forEach { paramFileName ->
-                val url = "${ZcashSdk.CLOUD_PARAM_DIR_URL}/$paramFileName"
-                val request = Request.Builder().url(url).build()
-                val response = withContext(Dispatchers.IO) { client.newCall(request).execute() }
-                if (response.isSuccessful) {
-                    twig("fetch succeeded", -1)
-                    val file = File(destinationDir, paramFileName)
-                    if (file.parentFile?.existsSuspend() == true) {
-                        twig("directory exists!", -1)
-                    } else {
-                        twig("directory did not exist attempting to make it")
-                        file.parentFile?.mkdirsSuspend()
-                    }
-                    withContext(Dispatchers.IO) {
-                        response.body?.let { body ->
-                            body.source().use { source ->
-                                file.sink().buffer().use { sink ->
-                                    twig("writing to $file")
-                                    sink.writeAll(source)
-                                }
-                            }
-                        }
-                    }
+                val url = URL("${ZcashSdk.CLOUD_PARAM_DIR_URL}/$paramFileName")
+
+                val file = File(destinationDir, paramFileName)
+                if (file.parentFile?.existsSuspend() == true) {
+                    twig("directory exists!", -1)
                 } else {
-                    failureMessage += "Error while fetching $paramFileName : $response\n"
-                    twig(failureMessage)
+                    twig("directory did not exist attempting to make it")
+                    file.parentFile?.mkdirsSuspend()
                 }
 
-                twig("fetch succeeded, done writing $paramFileName")
+                val readableByteChannel: ReadableByteChannel = Channels.newChannel(url.openStream())
+                val fileOutputStream = FileOutputStream(file)
+                val fileChannel: FileChannel = fileOutputStream.channel
+
+                runCatching {
+                    // transfers bytes from stream channel (position 0 to the end position) into file channel
+                    fileChannel.transferFrom(readableByteChannel, 0, Long.MAX_VALUE)
+                }.onFailure { exception ->
+                    // IllegalArgumentException - If the preconditions on the parameters do not hold
+                    // NonReadableChannelException - If the source channel was not opened for reading
+                    // NonWritableChannelException - If this channel was not opened for writing
+                    // ClosedChannelException - If either this channel or the source channel is closed
+                    // AsynchronousCloseException - If another thread closes either channel while the transfer is in
+                    // progress
+                    // ClosedByInterruptException - If another thread interrupts the current thread while the transfer
+                    // is in progress, thereby closing both channels and setting the current thread's interrupt status
+                    // IOException - If some other I/O error occurs
+                    failureMessage += "Error while fetching $paramFileName, caused by $exception\n"
+                    twig(failureMessage)
+                }.onSuccess {
+                    twig("Fetch and write of $paramFileName succeeded.", -1)
+                }
             }
             if (failureMessage.isNotEmpty()) throw TransactionEncoderException.FetchParamsException(
                 failureMessage
@@ -121,21 +135,6 @@ class SaplingParamTool {
             }.also {
                 println("Param files${if (!it) "did not" else ""} both exist!")
             }
-        }
-
-        //
-        // Helpers
-        //
-        /**
-         * Http client is only used for downloading sapling spend and output params data, which are
-         * necessary for the wallet to scan blocks.
-         *
-         * @return an http client suitable for downloading params data.
-         */
-        private fun createHttpClient(): OkHttpClient {
-            // TODO [#686]: add logging and timeouts
-            // TODO [#686]: https://github.com/zcash/zcash-android-wallet-sdk/issues/686
-            return OkHttpClient()
         }
     }
 }
