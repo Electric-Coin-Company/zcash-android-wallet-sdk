@@ -21,8 +21,6 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
-import java.io.PrintWriter
-import java.io.StringWriter
 import kotlin.math.max
 
 /**
@@ -36,6 +34,7 @@ import kotlin.math.max
  * id.
  * @property service the lightwallet service used to submit transactions.
  */
+@Suppress("TooManyFunctions")
 class PersistentTransactionManager(
     db: PendingTransactionDb,
     internal val encoder: TransactionEncoder,
@@ -85,6 +84,7 @@ class PersistentTransactionManager(
             memo = memo.toByteArray(),
             accountIndex = fromAccountIndex
         )
+        @Suppress("TooGenericExceptionCaught")
         try {
             safeUpdate("creating tx in DB") {
                 tx = findById(create(tx))!!
@@ -113,6 +113,8 @@ class PersistentTransactionManager(
     ): PendingTransaction = withContext(Dispatchers.IO) {
         twig("managing the creation of a transaction")
         var tx = pendingTx as PendingTransactionEntity
+
+        @Suppress("TooGenericExceptionCaught")
         try {
             twig("beginning to encode transaction with : $encoder")
             val encodedTx = encoder.createTransaction(
@@ -150,6 +152,7 @@ class PersistentTransactionManager(
     ): PendingTransaction {
         twig("managing the creation of a shielding transaction")
         var tx = pendingTx as PendingTransactionEntity
+        @Suppress("TooGenericExceptionCaught")
         try {
             twig("beginning to encode shielding transaction with : $encoder")
             val encodedTx = encoder.createShieldingTransaction(
@@ -186,11 +189,17 @@ class PersistentTransactionManager(
                     " transaction found that matches the one being submitted. Verify that the" +
                     " transaction still exists among the set of pending transactions."
             )
+        @Suppress("TooGenericExceptionCaught")
         try {
             // do nothing if failed or cancelled
             when {
-                tx.isFailedEncoding() -> twig("Warning: this transaction will not be submitted because it failed to be encoded.")
-                tx.isCancelled() -> twig("Warning: ignoring cancelled transaction with id ${tx.id}. We will not submit it to the network because it has been cancelled.")
+                tx.isFailedEncoding() ->
+                    twig("Warning: this transaction will not be submitted because it failed to be encoded.")
+                tx.isCancelled() ->
+                    twig(
+                        "Warning: ignoring cancelled transaction with id ${tx.id}. We will not submit it to" +
+                            " the network because it has been cancelled."
+                    )
                 else -> {
                     twig("submitting transaction with memo: ${tx.memo} amount: ${tx.value}", -1)
                     val response = service.submitTransaction(tx.raw)
@@ -260,7 +269,11 @@ class PersistentTransactionManager(
         withContext(IO) {
             twig("[cleanup] marking pendingTx $id for deletion")
             removeRawTransactionId(id)
-            updateError(id, "safe to delete", -9090)
+            updateError(
+                id,
+                SAFE_TO_DELETE_ERROR_MESSAGE,
+                SAFE_TO_DELETE_ERROR_CODE
+            )
         }
     }
 
@@ -285,19 +298,23 @@ class PersistentTransactionManager(
     //
 
     /**
-     * Updating the pending transaction is often done at the end of a function but still should
-     * happen within a try/catch block, surrounded by logging. So this helps with that while also
-     * ensuring that no other coroutines are concurrently interacting with the DAO.
+     * Updating the pending transaction is often done at the end of a function but still should happen within a
+     * try/catch block, surrounded by logging. So this helps with that while also ensuring that no other coroutines are
+     * concurrently interacting with the DAO.
      */
-    private suspend fun <R> safeUpdate(logMessage: String = "", priority: Int = 0, block: suspend PendingTransactionDao.() -> R): R? {
+    private suspend fun <R> safeUpdate(
+        logMessage: String = "",
+        priority: Int = 0,
+        block: suspend PendingTransactionDao.() -> R
+    ): R? {
+        @Suppress("TooGenericExceptionCaught")
         return try {
             twig(logMessage, priority)
             pendingTransactionDao { block() }
         } catch (t: Throwable) {
-            val stacktrace = StringWriter().also { t.printStackTrace(PrintWriter(it)) }.toString()
             twig(
                 "Unknown error while attempting to '$logMessage':" +
-                    " ${t.message} caused by: ${t.cause} stacktrace: $stacktrace",
+                    " ${t.message} caused by: ${t.cause} stacktrace: ${t.stackTrace}",
                 priority
             )
             null
@@ -318,5 +335,8 @@ class PersistentTransactionManager(
 
         /** Error code for an error while submitting a transaction */
         const val ERROR_SUBMITTING = 3000
+
+        private const val SAFE_TO_DELETE_ERROR_MESSAGE = "safe to delete"
+        const val SAFE_TO_DELETE_ERROR_CODE = -9090
     }
 }

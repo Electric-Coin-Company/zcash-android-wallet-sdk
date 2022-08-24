@@ -124,6 +124,7 @@ internal class WalletTransactionEncoder(
             "creating transaction to spend $amount zatoshi to" +
                 " ${toAddress.masked()} with memo $memo"
         ) {
+            @Suppress("TooGenericExceptionCaught")
             try {
                 val branchId = getConsensusBranchId()
                 SaplingParamTool.ensureParams((rustBackend as RustBackend).pathParamsDir)
@@ -137,7 +138,7 @@ internal class WalletTransactionEncoder(
                     memo
                 )
             } catch (t: Throwable) {
-                twig("${t.message}")
+                twig("Caught exception while creating transaction ${t.message}, caused by: ${t.cause}.")
                 throw t
             }
         }.also { result ->
@@ -151,6 +152,7 @@ internal class WalletTransactionEncoder(
         memo: ByteArray? = byteArrayOf()
     ): Long {
         return twigTask("creating transaction to shield all UTXOs") {
+            @Suppress("TooGenericExceptionCaught")
             try {
                 SaplingParamTool.ensureParams((rustBackend as RustBackend).pathParamsDir)
                 twig("params exist! attempting to shield...")
@@ -160,9 +162,10 @@ internal class WalletTransactionEncoder(
                     memo
                 )
             } catch (t: Throwable) {
-                // TODO: if this error matches: Insufficient balance (have 0, need 1000 including fee)
-                // then consider custom error that says no UTXOs existed to shield
-                twig("Shield failed due to: ${t.message}")
+                // TODO [#680]: if this error matches: Insufficient balance (have 0, need 1000 including fee)
+                //  then consider custom error that says no UTXOs existed to shield
+                // TODO [#680]: https://github.com/zcash/zcash-android-wallet-sdk/issues/680
+                twig("Shield failed due to: ${t.message}, caused by: ${t.cause}.")
                 throw t
             }
         }.also { result ->

@@ -1,10 +1,10 @@
 package cash.z.ecc.android.sdk.ext
 
 import cash.z.ecc.android.sdk.model.Zatoshi
-import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import java.math.BigDecimal
 import java.math.MathContext
+import kotlin.test.assertEquals
 
 internal class ConversionsTest {
 
