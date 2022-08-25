@@ -4,7 +4,6 @@ import cash.z.ecc.android.sdk.internal.repository.DerivedDataRepository
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.ConfirmedTransaction
 import cash.z.ecc.android.sdk.model.EncodedTransaction
-import cash.z.ecc.android.sdk.type.UnifiedAddressAccount
 import kotlinx.coroutines.flow.Flow
 
 @Suppress("TooManyFunctions")
@@ -59,13 +58,11 @@ internal class DbDerivedDataRepository(
         TODO("Not yet implemented")
     }
 
-    override suspend fun getAccount(accountId: Int): UnifiedAddressAccount? {
-        TODO("Not yet implemented")
-    }
+    override suspend fun getAccount(accountId: Int) = derivedDataDb.accountTable.getAccount(accountId)
 
-    override suspend fun getAccountCount(): Int {
-        TODO("Not yet implemented")
-    }
+    override suspend fun getAccountCount() = derivedDataDb.accountTable.count()
+        // toInt() should be safe because we expect very few accounts
+        .toInt()
 
     override val receivedTransactions: Flow<List<ConfirmedTransaction>>
         get() = TODO("Not yet implemented")

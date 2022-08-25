@@ -1,9 +1,9 @@
 package cash.z.ecc.android.sdk.internal.repository
 
+import cash.z.ecc.android.sdk.internal.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.ConfirmedTransaction
 import cash.z.ecc.android.sdk.model.EncodedTransaction
-import cash.z.ecc.android.sdk.type.UnifiedAddressAccount
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -90,7 +90,7 @@ interface DerivedDataRepository {
 
     suspend fun count(): Int
 
-    suspend fun getAccount(accountId: Int): UnifiedAddressAccount?
+    suspend fun getAccount(accountId: Int): Account?
 
     suspend fun getAccountCount(): Int
 

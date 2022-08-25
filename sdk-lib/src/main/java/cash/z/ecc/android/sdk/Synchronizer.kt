@@ -3,6 +3,7 @@ package cash.z.ecc.android.sdk
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor
 import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.internal.model.PendingTransaction
+import cash.z.ecc.android.sdk.model.Addresses
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.ConfirmedTransaction
 import cash.z.ecc.android.sdk.model.WalletBalance
@@ -160,35 +161,16 @@ interface Synchronizer {
     //
 
     /**
-     * Gets the shielded address for the given account. This is syntactic sugar for
-     * [getShieldedAddress] because we use z-addrs by default.
-     *
-     * @param accountId the optional accountId whose address is of interest. By default, the first
-     * account is used.
-     *
-     * @return the shielded address for the given account.
+     * @return The addresses for the given account.
      */
-    suspend fun getAddress(accountId: Int = 0) = getShieldedAddress(accountId)
+    suspend fun getAddresses() = getAddresses(0)
 
     /**
-     * Gets the shielded address for the given account.
+     * @param accountId the optional accountId whose address is of interest. Account IDs start with 0.
      *
-     * @param accountId the optional accountId whose address is of interest. By default, the first
-     * account is used.
-     *
-     * @return the shielded address for the given account.
+     * @return The addresses for the given account.
      */
-    suspend fun getShieldedAddress(accountId: Int = 0): String
-
-    /**
-     * Gets the transparent address for the given account.
-     *
-     * @param accountId the optional accountId whose address is of interest. By default, the first
-     * account is used.
-     *
-     * @return the address for the given account.
-     */
-    suspend fun getTransparentAddress(accountId: Int = 0): String
+    suspend fun getAddresses(accountId: Int): Addresses?
 
     /**
      * Sends zatoshi.

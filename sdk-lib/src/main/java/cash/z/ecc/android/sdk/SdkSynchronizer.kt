@@ -50,6 +50,7 @@ import cash.z.ecc.android.sdk.internal.transaction.WalletTransactionEncoder
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.internal.twigTask
 import cash.z.ecc.android.sdk.jni.RustBackend
+import cash.z.ecc.android.sdk.model.Addresses
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
@@ -632,13 +633,9 @@ class SdkSynchronizer internal constructor(
 
     override suspend fun cancelSpend(pendingId: Long) = txManager.cancel(pendingId)
 
-    override suspend fun getAddress(accountId: Int): String = getShieldedAddress(accountId)
-
-    override suspend fun getShieldedAddress(accountId: Int): String =
-        processor.getShieldedAddress(accountId)
-
-    override suspend fun getTransparentAddress(accountId: Int): String =
-        processor.getTransparentAddress(accountId)
+    override suspend fun getAddresses(accountId: Int): Addresses? = storage.getAccount(accountId)?.let {
+        Addresses(unifiedAddress = it.address, transparentAddress = it.transparentAddress)
+    }
 
     override fun sendToAddress(
         spendingKey: String,
@@ -679,7 +676,7 @@ class SdkSynchronizer internal constructor(
         val tAddr =
             DerivationTool.deriveTransparentAddressFromPrivateKey(transparentSecretKey, network)
         val tBalance = processor.getUtxoCacheBalance(tAddr)
-        val zAddr = getAddress(0)
+        val zAddr = getAddresses(0)!!.transparentAddress
 
         // Emit the placeholder transaction, then switch to monitoring the database
         txManager.initSpend(tBalance.available, zAddr, memo, 0).let { placeHolderTx ->

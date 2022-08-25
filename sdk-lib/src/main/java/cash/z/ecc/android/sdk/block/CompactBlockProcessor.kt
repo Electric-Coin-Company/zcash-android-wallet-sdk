@@ -16,7 +16,6 @@ import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException.EnhanceTr
 import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException.EnhanceTransactionError.EnhanceTxDownloadError
 import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException.MismatchedBranch
 import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException.MismatchedNetwork
-import cash.z.ecc.android.sdk.exception.InitializerException
 import cash.z.ecc.android.sdk.exception.RustLayerException
 import cash.z.ecc.android.sdk.ext.BatchMetrics
 import cash.z.ecc.android.sdk.ext.ZcashSdk
@@ -1014,19 +1013,6 @@ class CompactBlockProcessor internal constructor(
      */
     suspend fun getLastScannedHeight() =
         repository.lastScannedHeight()
-
-    /**
-     * Get address corresponding to the given account for this wallet.
-     *
-     * @return the address of this wallet.
-     */
-    suspend fun getShieldedAddress(accountId: Int = 0) =
-        repository.getAccount(accountId)?.rawShieldedAddress
-            ?: throw InitializerException.MissingAddressException("shielded")
-
-    suspend fun getTransparentAddress(accountId: Int = 0) =
-        repository.getAccount(accountId)?.rawTransparentAddress
-            ?: throw InitializerException.MissingAddressException("transparent")
 
     /**
      * Calculates the latest balance info. Defaults to the first account.

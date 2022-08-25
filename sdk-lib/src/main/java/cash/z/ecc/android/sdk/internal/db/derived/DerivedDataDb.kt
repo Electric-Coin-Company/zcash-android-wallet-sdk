@@ -11,9 +11,10 @@ import kotlinx.coroutines.withContext
 
 internal class DerivedDataDb private constructor(
     private val zcashNetwork: ZcashNetwork,
-    private val sqliteDatabase:
-        SQLiteDatabase
+    private val sqliteDatabase: SQLiteDatabase
 ) {
+    val accountTable = AccountTable(sqliteDatabase)
+
     val blockTable = BlockTable(zcashNetwork, sqliteDatabase)
 
     val transactionTable = TransactionTable(zcashNetwork, sqliteDatabase)
