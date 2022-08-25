@@ -163,6 +163,7 @@ jobs:
         run: |
           ./gradlew :sdk-lib:lintRelease :demo-app:lintZcashmainnetRelease
       - name: Collect Artifacts
+        if: ${{ always() }}
         timeout-minutes: 1
         env:
           ARTIFACTS_DIR_PATH: ${{ format('{0}/artifacts', env.home) }}
@@ -171,6 +172,7 @@ jobs:
           mkdir ${ARTIFACTS_DIR_PATH}
           zip -r ${LINT_ZIP_PATH} . -i \*build/reports/\*
       - name: Upload Artifacts
+        if: ${{ always() }}
         uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8
         timeout-minutes: 1
         with:
@@ -361,6 +363,7 @@ jobs:
     permissions:
       packages: read
       contents: read
+      id-token: write
     steps:
       - name: Checkout
         timeout-minutes: 1
@@ -381,7 +384,7 @@ jobs:
       - name: Download a single artifact
         uses: actions/download-artifact@fb598a63ae348fa914e94cd0ff38f362e927b741
         with:
-          name: Release binaries
+          name: Demo app release binaries
       - name: Robo test
         timeout-minutes: 15
         env:

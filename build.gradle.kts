@@ -60,10 +60,10 @@ fladle {
     // Firebase Test Lab has min and max values that might differ from our project's
     // These are determined by `gcloud firebase test android models list`
     @Suppress("MagicNumber", "PropertyName", "VariableNaming")
-    val FIREBASE_TEST_LAB_MIN_API = 23
+    val FIREBASE_TEST_LAB_MIN_API = 19
 
     @Suppress("MagicNumber", "PropertyName", "VariableNaming")
-    val FIREBASE_TEST_LAB_MAX_API = 30
+    val FIREBASE_TEST_LAB_MAX_API = 33
 
     val minSdkVersion = run {
         val buildMinSdk = project.properties["ANDROID_MIN_SDK_VERSION"].toString().toInt()
@@ -84,8 +84,8 @@ fladle {
     }
 
     devices.addAll(
-        mapOf("model" to "Pixel2", "version" to minSdkVersion),
-        mapOf("model" to "Pixel2", "version" to targetSdkVersion)
+        mapOf("model" to "Nexus5", "version" to minSdkVersion),
+        mapOf("model" to "Pixel2.arm", "version" to targetSdkVersion)
     )
 
     @Suppress("MagicNumber")
