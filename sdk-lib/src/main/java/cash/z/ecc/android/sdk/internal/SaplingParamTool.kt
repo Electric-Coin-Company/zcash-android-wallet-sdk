@@ -17,9 +17,6 @@ import java.nio.channels.Channels
 // TODO [#665]: https://github.com/zcash/zcash-android-wallet-sdk/issues/665
 // TODO [#665]: Recover from corrupted sapling-spend.params and sapling-output.params
 
-// TODO [#664]: https://github.com/zcash/zcash-android-wallet-sdk/issues/664
-// TODO [#664]: Check size of download for sapling-spend.params and sapling-output.params
-
 // TODO [#611]: https://github.com/zcash/zcash-android-wallet-sdk/issues/611
 // TODO [#611]: Move Params Directory to No Backup Directory
 
@@ -68,12 +65,12 @@ class SaplingParamTool {
         suspend fun fetchParams(destinationDir: String) {
             var failureMessage = ""
             arrayOf(
-                ZcashSdk.SPEND_PARAM_FILE_NAME,
-                ZcashSdk.OUTPUT_PARAM_FILE_NAME
-            ).forEach { paramFileName ->
-                val url = URL("${ZcashSdk.CLOUD_PARAM_DIR_URL}/$paramFileName")
+                SaplingFileParameters(ZcashSdk.SPEND_PARAM_FILE_NAME, ZcashSdk.SPEND_PARAM_FILE_MAX_SIZE),
+                SaplingFileParameters(ZcashSdk.OUTPUT_PARAM_FILE_NAME, ZcashSdk.OUTPUT_PARAM_FILE_MAX_SIZE)
+            ).forEach { parameters ->
+                val url = URL("${ZcashSdk.CLOUD_PARAM_DIR_URL}/${parameters.filePathName}")
 
-                val file = File(destinationDir, paramFileName)
+                val file = File(destinationDir, parameters.filePathName)
                 if (file.parentFile?.existsSuspend() == true) {
                     twig("Directory ${file.parentFile?.name} exists!")
                 } else {
@@ -86,8 +83,10 @@ class SaplingParamTool {
                         Channels.newChannel(url.openStream()).use { readableByteChannel ->
                             file.outputStream().use { fileOutputStream ->
                                 fileOutputStream.channel.use { fileChannel ->
-                                    // transfers bytes from stream to file (position 0 to the end position)
-                                    fileChannel.transferFrom(readableByteChannel, 0, Long.MAX_VALUE)
+                                    // Transfers bytes from stream to file from position 0 to end position or to max
+                                    // file size limit. This eliminates the risk of downloading potentially large files
+                                    // from a malicious server. We need to make a check of the file hash then.
+                                    fileChannel.transferFrom(readableByteChannel, 0, parameters.fileMaxSize)
                                 }
                             }
                         }
@@ -102,10 +101,10 @@ class SaplingParamTool {
                         // transfer is in progress, thereby closing both channels and setting the current thread's
                         // interrupt status
                         // IOException - If some other I/O error occurs
-                        failureMessage += "Error while fetching $paramFileName, caused by $exception\n"
+                        failureMessage += "Error while fetching ${parameters.filePathName}, caused by $exception\n"
                         twig(failureMessage)
                     }.onSuccess {
-                        twig("Fetch and write of $paramFileName succeeded.")
+                        twig("Fetch and write of ${parameters.filePathName} succeeded.")
                     }
                 }
             }
@@ -142,3 +141,11 @@ class SaplingParamTool {
         }
     }
 }
+
+/**
+ * Sapling file parameters class to hold each sapling file attributes.
+ */
+data class SaplingFileParameters(
+    val filePathName: String,
+    val fileMaxSize: Long
+)

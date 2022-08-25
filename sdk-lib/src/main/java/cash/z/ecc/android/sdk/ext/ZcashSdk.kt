@@ -80,9 +80,19 @@ object ZcashSdk {
     const val SPEND_PARAM_FILE_NAME = "sapling-spend.params"
 
     /**
+     * Maximum file size for the sapling spend params - 50MB
+     */
+    const val SPEND_PARAM_FILE_MAX_SIZE = 50L * 1024L * 1024L
+
+    /**
      * File name for the sapling output params
      */
     const val OUTPUT_PARAM_FILE_NAME = "sapling-output.params"
+
+    /**
+     * Maximum file size for the sapling spend params - 5MB
+     */
+    const val OUTPUT_PARAM_FILE_MAX_SIZE = 5L * 1024L * 1024L
 
     /**
      * The Url that is used by default in zcashd.
