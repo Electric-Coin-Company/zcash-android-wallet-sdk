@@ -11,6 +11,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
 import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 @RunWith(AndroidJUnit4::class)
 @Ignore(
@@ -81,5 +82,24 @@ class SaplingParamToolTest {
         SaplingParamTool.fetchParams(cacheDir)
 
         assertFalse(false, "insufficient storage")
+    }
+
+    @Test
+    fun check_correct_param_file_size() = runBlocking {
+        SaplingParamTool.fetchParams(cacheDir)
+
+        val spendParamFile = File(cacheDir, ZcashSdk.SPEND_PARAM_FILE_NAME)
+        assertTrue(spendParamFile.length() < ZcashSdk.SPEND_PARAM_FILE_MAX_SIZE)
+
+        val outputParamFile = File(cacheDir, ZcashSdk.OUTPUT_PARAM_FILE_NAME)
+        assertTrue(outputParamFile.length() < ZcashSdk.OUTPUT_PARAM_FILE_MAX_SIZE)
+    }
+
+    @Test
+    fun check_incorrect_param_file_size() = runBlocking {
+        SaplingParamTool.fetchParams(cacheDir)
+
+        val spendParamFile = File(cacheDir, ZcashSdk.SPEND_PARAM_FILE_NAME)
+        assertFalse(spendParamFile.length() < ZcashSdk.OUTPUT_PARAM_FILE_MAX_SIZE)
     }
 }
