@@ -75,7 +75,7 @@ object ZcashSdk {
     const val REWIND_DISTANCE = 10
 
     /**
-     * File name for the sappling spend params
+     * File name for the sapling spend params
      */
     const val SPEND_PARAM_FILE_NAME = "sapling-spend.params"
 
