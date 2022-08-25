@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import cash.z.ecc.android.sdk.ext.ZcashSdk
+import cash.z.ecc.android.sdk.internal.SaplingParamTool.OUTPUT_PARAM_FILE_MAX_BYTES_SIZE
+import cash.z.ecc.android.sdk.internal.SaplingParamTool.SPEND_PARAM_FILE_MAX_BYTES_SIZE
 import kotlinx.coroutines.runBlocking
 import org.junit.Before
 import org.junit.Ignore
@@ -89,10 +91,10 @@ class SaplingParamToolTest {
         SaplingParamTool.fetchParams(cacheDir)
 
         val spendParamFile = File(cacheDir, ZcashSdk.SPEND_PARAM_FILE_NAME)
-        assertTrue(spendParamFile.length() < ZcashSdk.SPEND_PARAM_FILE_MAX_SIZE)
+        assertTrue(spendParamFile.length() < SPEND_PARAM_FILE_MAX_BYTES_SIZE)
 
         val outputParamFile = File(cacheDir, ZcashSdk.OUTPUT_PARAM_FILE_NAME)
-        assertTrue(outputParamFile.length() < ZcashSdk.OUTPUT_PARAM_FILE_MAX_SIZE)
+        assertTrue(outputParamFile.length() < OUTPUT_PARAM_FILE_MAX_BYTES_SIZE)
     }
 
     @Test
@@ -100,6 +102,6 @@ class SaplingParamToolTest {
         SaplingParamTool.fetchParams(cacheDir)
 
         val spendParamFile = File(cacheDir, ZcashSdk.SPEND_PARAM_FILE_NAME)
-        assertFalse(spendParamFile.length() < ZcashSdk.OUTPUT_PARAM_FILE_MAX_SIZE)
+        assertFalse(spendParamFile.length() < OUTPUT_PARAM_FILE_MAX_BYTES_SIZE)
     }
 }
