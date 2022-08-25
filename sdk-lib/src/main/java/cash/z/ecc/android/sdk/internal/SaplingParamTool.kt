@@ -87,18 +87,18 @@ class SaplingParamTool {
                         FileOutputStream(file).use { fileOutputStream ->
                             fileOutputStream.channel.use { fileChannel ->
                                 runCatching {
-                                    // transfers bytes from stream channel (position 0 to the end position) into file channel
+                                    // transfers bytes from stream to file (position 0 to the end position)
                                     fileChannel.transferFrom(readableByteChannel, 0, Long.MAX_VALUE)
                                 }.onFailure { exception ->
                                     // IllegalArgumentException - If the preconditions on the parameters do not hold
                                     // NonReadableChannelException - If the source channel was not opened for reading
                                     // NonWritableChannelException - If this channel was not opened for writing
                                     // ClosedChannelException - If either this channel or the source channel is closed
-                                    // AsynchronousCloseException - If another thread closes either channel while the transfer
-                                    // is in progress
-                                    // ClosedByInterruptException - If another thread interrupts the current thread while the
-                                    // transfer is in progress, thereby closing both channels and setting the current thread's
-                                    // interrupt status
+                                    // AsynchronousCloseException - If another thread closes either channel while the
+                                    // transfer is in progress
+                                    // ClosedByInterruptException - If another thread interrupts the current thread
+                                    // while the  transfer is in progress, thereby closing both channels and setting
+                                    // the current thread's interrupt status
                                     // IOException - If some other I/O error occurs
                                     failureMessage += "Error while fetching $paramFileName, caused by $exception\n"
                                     twig(failureMessage)
