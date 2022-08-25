@@ -8,7 +8,6 @@ import cash.z.ecc.android.sdk.internal.ext.mkdirsSuspend
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
-import java.io.FileOutputStream
 import java.net.URL
 import java.nio.channels.Channels
 
@@ -84,7 +83,7 @@ class SaplingParamTool {
 
                 withContext(Dispatchers.IO) {
                     Channels.newChannel(url.openStream()).use { readableByteChannel ->
-                        FileOutputStream(file).use { fileOutputStream ->
+                        file.outputStream().use { fileOutputStream ->
                             fileOutputStream.channel.use { fileChannel ->
                                 runCatching {
                                     // transfers bytes from stream to file (position 0 to the end position)
