@@ -82,30 +82,30 @@ class SaplingParamTool {
                 }
 
                 withContext(Dispatchers.IO) {
-                    Channels.newChannel(url.openStream()).use { readableByteChannel ->
-                        file.outputStream().use { fileOutputStream ->
-                            fileOutputStream.channel.use { fileChannel ->
-                                runCatching {
+                    runCatching {
+                        Channels.newChannel(url.openStream()).use { readableByteChannel ->
+                            file.outputStream().use { fileOutputStream ->
+                                fileOutputStream.channel.use { fileChannel ->
                                     // transfers bytes from stream to file (position 0 to the end position)
                                     fileChannel.transferFrom(readableByteChannel, 0, Long.MAX_VALUE)
-                                }.onFailure { exception ->
-                                    // IllegalArgumentException - If the preconditions on the parameters do not hold
-                                    // NonReadableChannelException - If the source channel was not opened for reading
-                                    // NonWritableChannelException - If this channel was not opened for writing
-                                    // ClosedChannelException - If either this channel or the source channel is closed
-                                    // AsynchronousCloseException - If another thread closes either channel while the
-                                    // transfer is in progress
-                                    // ClosedByInterruptException - If another thread interrupts the current thread
-                                    // while the  transfer is in progress, thereby closing both channels and setting
-                                    // the current thread's interrupt status
-                                    // IOException - If some other I/O error occurs
-                                    failureMessage += "Error while fetching $paramFileName, caused by $exception\n"
-                                    twig(failureMessage)
-                                }.onSuccess {
-                                    twig("Fetch and write of $paramFileName succeeded.")
                                 }
                             }
                         }
+                    }.onFailure { exception ->
+                        // IllegalArgumentException - If the preconditions on the parameters do not hold
+                        // NonReadableChannelException - If the source channel was not opened for reading
+                        // NonWritableChannelException - If this channel was not opened for writing
+                        // ClosedChannelException - If either this channel or the source channel is closed
+                        // AsynchronousCloseException - If another thread closes either channel while the transfer is
+                        // in progress
+                        // ClosedByInterruptException - If another thread interrupts the current thread while the
+                        // transfer is in progress, thereby closing both channels and setting the current thread's
+                        // interrupt status
+                        // IOException - If some other I/O error occurs
+                        failureMessage += "Error while fetching $paramFileName, caused by $exception\n"
+                        twig(failureMessage)
+                    }.onSuccess {
+                        twig("Fetch and write of $paramFileName succeeded.")
                     }
                 }
             }
