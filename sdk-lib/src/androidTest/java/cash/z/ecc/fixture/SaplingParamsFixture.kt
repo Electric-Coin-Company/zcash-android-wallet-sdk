@@ -23,6 +23,6 @@ object SaplingParamsFixture {
     ) = SaplingFileParameters(
         destinationDirectoryPath = destinationDirectoryPath,
         fileName = fileName,
-        fileMaxSize = fileMaxSize
+        fileMaxSizeBytes = fileMaxSize
     )
 }

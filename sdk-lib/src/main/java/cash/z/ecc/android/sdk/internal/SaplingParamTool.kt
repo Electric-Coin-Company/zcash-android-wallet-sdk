@@ -99,7 +99,7 @@ object SaplingParamTool {
                             // Transfers bytes from stream to file from position 0 to end position or to max
                             // file size limit. This eliminates the risk of downloading potentially large files
                             // from a malicious server. We need to make a check of the file hash then.
-                            fileChannel.transferFrom(readableByteChannel, 0, paramsToFetch.fileMaxSize)
+                            fileChannel.transferFrom(readableByteChannel, 0, paramsToFetch.fileMaxSizeBytes)
                         }
                     }
                 }
@@ -158,5 +158,5 @@ object SaplingParamTool {
 internal data class SaplingFileParameters(
     val destinationDirectoryPath: String,
     val fileName: String,
-    val fileMaxSize: Long
+    val fileMaxSizeBytes: Long
 )
