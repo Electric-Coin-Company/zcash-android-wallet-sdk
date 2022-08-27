@@ -46,10 +46,8 @@ import cash.z.wallet.sdk.rpc.Service
 import io.grpc.StatusRuntimeException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Dispatchers.IO
-import kotlinx.coroutines.channels.ConflatedBroadcastChannel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
@@ -77,7 +75,6 @@ import kotlin.time.Duration.Companion.days
  * in when considering initial range to download. In most cases, this should be the birthday height
  * of the current wallet--the height before which we do not need to scan for transactions.
  */
-@OptIn(kotlinx.coroutines.ObsoleteCoroutinesApi::class)
 @OpenForTesting
 @Suppress("TooManyFunctions", "LargeClass")
 class CompactBlockProcessor internal constructor(
@@ -129,12 +126,9 @@ class CompactBlockProcessor internal constructor(
         )
     )
 
-    // TODO [#288]: Remove Deprecated Usage of ConflatedBroadcastChannel
-    // TODO [#288]: https://github.com/zcash/zcash-android-wallet-sdk/issues/288
-    private val _state: ConflatedBroadcastChannel<State> = ConflatedBroadcastChannel(Initialized)
-    private val _progress = ConflatedBroadcastChannel(0)
-    private val _processorInfo =
-        ConflatedBroadcastChannel(ProcessorInfo(null, null, null, null, null))
+    private val _state: MutableStateFlow<State> = MutableStateFlow(Initialized)
+    private val _progress = MutableStateFlow(0)
+    private val _processorInfo = MutableStateFlow(ProcessorInfo(null, null, null, null, null))
     private val _networkHeight = MutableStateFlow<BlockHeight?>(null)
     private val processingMutex = Mutex()
 
@@ -166,28 +160,19 @@ class CompactBlockProcessor internal constructor(
      * The flow of state values so that a wallet can monitor the state of this class without needing
      * to poll.
      */
-    // TODO [#658] Replace ComputableFlow and asFlow() obsolete Coroutine usage
-    // TODO [#658] https://github.com/zcash/zcash-android-wallet-sdk/issues/658
-    @Suppress("DEPRECATION")
-    val state = _state.asFlow()
+    val state = _state.asStateFlow()
 
     /**
      * The flow of progress values so that a wallet can monitor how much downloading remains
      * without needing to poll.
      */
-    // TODO [#658] Replace ComputableFlow and asFlow() obsolete Coroutine usage
-    // TODO [#658] https://github.com/zcash/zcash-android-wallet-sdk/issues/658
-    @Suppress("DEPRECATION")
-    val progress = _progress.asFlow()
+    val progress = _progress.asStateFlow()
 
     /**
      * The flow of detailed processorInfo like the range of blocks that shall be downloaded and
      * scanned. This gives the wallet a lot of insight into the work of this processor.
      */
-    // TODO [#658] Replace ComputableFlow and asFlow() obsolete Coroutine usage
-    // TODO [#658] https://github.com/zcash/zcash-android-wallet-sdk/issues/658
-    @Suppress("DEPRECATION")
-    val processorInfo = _processorInfo.asFlow()
+    val processorInfo = _processorInfo.asStateFlow()
 
     /**
      * The flow of network height. This value is updated at the same time that [currentInfo] is
@@ -260,7 +245,7 @@ class CompactBlockProcessor internal constructor(
                     }
                 }
             }
-        } while (isActive && !_state.isClosedForSend && _state.value !is Stopped)
+        } while (isActive && _state.value !is Stopped)
         twig("processor complete")
         stop()
     }
@@ -600,7 +585,7 @@ class CompactBlockProcessor internal constructor(
             if (null == range || range.isEmpty()) {
                 twig("no blocks to download")
             } else {
-                _state.send(Downloading)
+                _state.value = Downloading
                 Twig.sprout("downloading")
                 twig("downloading blocks in range $range", -1)
 
@@ -633,7 +618,7 @@ class CompactBlockProcessor internal constructor(
                         }
                         twig("downloaded $count blocks!")
                         progress = (i / batches.toFloat() * 100).roundToInt()
-                        _progress.send(progress)
+                        _progress.value = progress
                         val lastDownloadedHeight = downloader.getLastDownloadedHeight()
                         updateProgress(lastDownloadedHeight = lastDownloadedHeight)
                         downloadedBlockHeight = end + 1
@@ -641,7 +626,7 @@ class CompactBlockProcessor internal constructor(
                 }
                 Twig.clip("downloading")
             }
-            _progress.send(100)
+            _progress.value = 100
         }
 
     /**
@@ -756,7 +741,7 @@ class CompactBlockProcessor internal constructor(
 
         withContext(IO) {
             _networkHeight.value = networkBlockHeight
-            _processorInfo.send(currentInfo)
+            _processorInfo.value = currentInfo
         }
     }
 
@@ -859,7 +844,7 @@ class CompactBlockProcessor internal constructor(
                             lastDownloadRange = (targetHeight + 1)..currentNetworkBlockHeight
                         )
                     }
-                    _progress.send(0)
+                    _progress.value = 0
                 } else {
                     if (null == currentNetworkBlockHeight) {
                         updateProgress(
@@ -873,7 +858,7 @@ class CompactBlockProcessor internal constructor(
                         )
                     }
 
-                    _progress.send(0)
+                    _progress.value = 0
 
                     if (null != lastScannedHeight) {
                         val range = (targetHeight + 1)..lastScannedHeight
@@ -1058,7 +1043,7 @@ class CompactBlockProcessor internal constructor(
      * Transmits the given state for this processor.
      */
     private suspend fun setState(newState: State) {
-        _state.send(newState)
+        _state.value = newState
     }
 
     /**
