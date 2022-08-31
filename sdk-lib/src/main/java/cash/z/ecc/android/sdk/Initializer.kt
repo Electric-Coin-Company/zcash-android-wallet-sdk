@@ -4,7 +4,7 @@ import android.content.Context
 import cash.z.ecc.android.sdk.db.DatabaseCoordinator
 import cash.z.ecc.android.sdk.exception.InitializerException
 import cash.z.ecc.android.sdk.ext.ZcashSdk
-import cash.z.ecc.android.sdk.internal.ext.getCacheDirSuspend
+import cash.z.ecc.android.sdk.internal.SaplingParamTool
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.jni.RustBackend
@@ -15,7 +15,6 @@ import cash.z.ecc.android.sdk.tool.CheckpointTool
 import cash.z.ecc.android.sdk.tool.DerivationTool
 import cash.z.ecc.android.sdk.type.UnifiedViewingKey
 import kotlinx.coroutines.runBlocking
-import java.io.File
 
 /**
  * Simplified Initializer focused on starting from a ViewingKey.
@@ -380,9 +379,11 @@ class Initializer private constructor(
             val coordinator = DatabaseCoordinator.getInstance(context)
 
             return RustBackend.init(
-                coordinator.cacheDbFile(network, alias).absolutePath,
-                coordinator.dataDbFile(network, alias).absolutePath,
-                File(context.getCacheDirSuspend(), "params").absolutePath,
+                coordinator.cacheDbFile(network, alias),
+                coordinator.dataDbFile(network, alias),
+                SaplingParamTool.initAndGetParamsDestinationDir(
+                    SaplingParamTool.initSaplingParamTool(context.applicationContext)
+                ),
                 network,
                 blockHeight
             )

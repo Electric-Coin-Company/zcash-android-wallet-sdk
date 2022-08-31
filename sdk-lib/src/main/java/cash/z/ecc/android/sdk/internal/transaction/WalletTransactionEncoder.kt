@@ -116,7 +116,7 @@ internal class WalletTransactionEncoder(
             @Suppress("TooGenericExceptionCaught")
             try {
                 val branchId = getConsensusBranchId()
-                SaplingParamTool.ensureParams((rustBackend as RustBackend).pathParamsDir)
+                SaplingParamTool.ensureParams((rustBackend as RustBackend).saplingParamsDir)
                 twig("params exist! attempting to send with consensus branchId $branchId...")
                 rustBackend.createToAddress(
                     branchId,
@@ -143,7 +143,7 @@ internal class WalletTransactionEncoder(
         return twigTask("creating transaction to shield all UTXOs") {
             @Suppress("TooGenericExceptionCaught")
             try {
-                SaplingParamTool.ensureParams((rustBackend as RustBackend).pathParamsDir)
+                SaplingParamTool.ensureParams((rustBackend as RustBackend).saplingParamsDir)
                 twig("params exist! attempting to shield...")
                 rustBackend.shieldToAddress(
                     spendingKey,

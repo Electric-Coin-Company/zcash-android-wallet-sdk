@@ -1,7 +1,6 @@
 package cash.z.ecc.android.sdk.jni
 
-import cash.z.ecc.android.sdk.ext.ZcashSdk.OUTPUT_PARAM_FILE_NAME
-import cash.z.ecc.android.sdk.ext.ZcashSdk.SPEND_PARAM_FILE_NAME
+import cash.z.ecc.android.sdk.internal.SaplingParamTool
 import cash.z.ecc.android.sdk.internal.SdkDispatchers
 import cash.z.ecc.android.sdk.internal.ext.deleteSuspend
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
@@ -26,7 +25,7 @@ internal class RustBackend private constructor(
     val birthdayHeight: BlockHeight,
     val dataDbFile: File,
     val cacheDbFile: File,
-    val pathParamsDir: String
+    val saplingParamsDir: File
 ) : RustBackendWelding {
 
     suspend fun clear(clearCacheDb: Boolean = true, clearDataDb: Boolean = true) {
@@ -236,8 +235,8 @@ internal class RustBackend private constructor(
             to,
             value,
             memo ?: ByteArray(0),
-            "$pathParamsDir/$SPEND_PARAM_FILE_NAME",
-            "$pathParamsDir/$OUTPUT_PARAM_FILE_NAME",
+            File(saplingParamsDir, SaplingParamTool.SPEND_PARAM_FILE_NAME).absolutePath,
+            File(saplingParamsDir, SaplingParamTool.OUTPUT_PARAM_FILE_NAME).absolutePath,
             networkId = network.id
         )
     }
@@ -255,8 +254,8 @@ internal class RustBackend private constructor(
                 extsk,
                 tsk,
                 memo ?: ByteArray(0),
-                "$pathParamsDir/$SPEND_PARAM_FILE_NAME",
-                "$pathParamsDir/$OUTPUT_PARAM_FILE_NAME",
+                File(saplingParamsDir, SaplingParamTool.SPEND_PARAM_FILE_NAME).absolutePath,
+                File(saplingParamsDir, SaplingParamTool.OUTPUT_PARAM_FILE_NAME).absolutePath,
                 networkId = network.id
             )
         }
@@ -356,9 +355,9 @@ internal class RustBackend private constructor(
          * function once, it is idempotent.
          */
         suspend fun init(
-            cacheDbPath: String,
-            dataDbPath: String,
-            paramsPath: String,
+            cacheDbFile: File,
+            dataDbFile: File,
+            saplingParamsDir: File,
             zcashNetwork: ZcashNetwork,
             birthdayHeight: BlockHeight
         ): RustBackend {
@@ -367,9 +366,9 @@ internal class RustBackend private constructor(
             return RustBackend(
                 zcashNetwork,
                 birthdayHeight,
-                dataDbFile = File(dataDbPath),
-                cacheDbFile = File(cacheDbPath),
-                pathParamsDir = paramsPath
+                dataDbFile = dataDbFile,
+                cacheDbFile = cacheDbFile,
+                saplingParamsDir = saplingParamsDir
             )
         }
 
