@@ -36,7 +36,9 @@ class SmokeTest {
         )
         assertTrue(
             "Invalid CacheDB params dir",
-            wallet.initializer.rustBackend.pathParamsDir.endsWith("cache/params")
+            wallet.initializer.rustBackend.saplingParamsDir.endsWith(
+                "no_backup/co.electricoin.zcash"
+            )
         )
     }
 
