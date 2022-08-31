@@ -20,6 +20,30 @@ android {
         viewBinding = true
     }
 
+    val releaseKeystorePath = project.property("ZCASH_RELEASE_KEYSTORE_PATH").toString()
+    val releaseKeystorePassword = project.property("ZCASH_RELEASE_KEYSTORE_PASSWORD").toString()
+    val releaseKeyAlias = project.property("ZCASH_RELEASE_KEY_ALIAS").toString()
+    val releaseKeyAliasPassword =
+        project.property("ZCASH_RELEASE_KEY_ALIAS_PASSWORD").toString()
+    val isReleaseSigningConfigured = listOf(
+        releaseKeystorePath,
+        releaseKeystorePassword,
+        releaseKeyAlias,
+        releaseKeyAliasPassword
+    ).all { it.isNotBlank() }
+
+    signingConfigs {
+        if (isReleaseSigningConfigured) {
+            // If this block doesn't execute, the output will be unsigned
+            create("release").apply {
+                storeFile = File(releaseKeystorePath)
+                storePassword = releaseKeystorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyAliasPassword
+            }
+        }
+    }
+
     flavorDimensions.add("network")
 
     productFlavors {
@@ -46,6 +70,9 @@ android {
                     File("proguard-project.txt")
                 )
             )
+            if (isReleaseSigningConfigured) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
 
@@ -78,10 +105,10 @@ fladle {
 // Firebase Test Lab has min and max values that might differ from our project's
 // These are determined by `gcloud firebase test android models list`
     @Suppress("MagicNumber", "PropertyName", "VariableNaming")
-    val FIREBASE_TEST_LAB_MIN_API = 23
+    val FIREBASE_TEST_LAB_MIN_API = 19
 
     @Suppress("MagicNumber", "PropertyName", "VariableNaming")
-    val FIREBASE_TEST_LAB_MAX_API = 30
+    val FIREBASE_TEST_LAB_MAX_API = 33
 
     val minSdkVersion = run {
         val buildMinSdk =
@@ -116,8 +143,8 @@ fladle {
             testTimeout.set("5m")
 
             devices.addAll(
-                mapOf("model" to "Pixel2", "version" to minSdkVersion),
-                mapOf("model" to "Pixel2", "version" to targetSdkVersion)
+                mapOf("model" to "Nexus5", "version" to minSdkVersion),
+                mapOf("model" to "Pixel2.arm", "version" to targetSdkVersion)
             )
 
             flankVersion.set(libs.versions.flank.get())
