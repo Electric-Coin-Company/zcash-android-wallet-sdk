@@ -78,7 +78,7 @@ object SaplingParamTool {
         toolProperties = SaplingParamToolProperties(
             paramsDirectory = paramsDirectory,
             paramsLegacyDirectory = File(context.getCacheDirSuspend(), SAPLING_PARAMS_LEGACY_SUBDIRECTORY),
-            saplingParams = arrayOf(
+            saplingParams = listOf(
                 SaplingParameters(
                     paramsDirectory,
                     SPEND_PARAM_FILE_NAME,
@@ -310,23 +310,7 @@ internal data class SaplingParameters(
  * Sapling param tool helper properties. The goal of this implementation is to ease its testing.
  */
 internal data class SaplingParamToolProperties(
-    val saplingParams: Array<SaplingParameters>,
+    val saplingParams: List<SaplingParameters>,
     val paramsDirectory: File,
     val paramsLegacyDirectory: File
-) {
-    // fun isInitialized(): Boolean =
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-
-        other as SaplingParamToolProperties
-
-        if (!saplingParams.contentEquals(other.saplingParams)) return false
-
-        return true
-    }
-
-    override fun hashCode(): Int {
-        return saplingParams.contentHashCode()
-    }
-}
+)
