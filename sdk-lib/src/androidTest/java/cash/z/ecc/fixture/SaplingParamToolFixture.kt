@@ -9,7 +9,7 @@ object SaplingParamToolFixture {
 
     internal val PARAMS_DIRECTORY = SaplingParamsFixture.DESTINATION_DIRECTORY
     internal val PARAMS_LEGACY_DIRECTORY = SaplingParamsFixture.DESTINATION_DIRECTORY_LEGACY
-    internal val SAPLING_PARAMS_FILES = arrayOf(
+    internal val SAPLING_PARAMS_FILES = listOf(
         SaplingParameters(
             PARAMS_DIRECTORY,
             SaplingParamTool.SPEND_PARAM_FILE_NAME,
@@ -25,7 +25,7 @@ object SaplingParamToolFixture {
     )
 
     internal fun new(
-        saplingParamsFiles: Array<SaplingParameters> = SAPLING_PARAMS_FILES,
+        saplingParamsFiles: List<SaplingParameters> = SAPLING_PARAMS_FILES,
         paramsDirectory: File = PARAMS_DIRECTORY,
         paramsLegacyDirectory: File = PARAMS_LEGACY_DIRECTORY
     ) = SaplingParamToolProperties(

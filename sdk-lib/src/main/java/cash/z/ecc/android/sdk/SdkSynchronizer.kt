@@ -32,6 +32,7 @@ import cash.z.ecc.android.sdk.db.entity.isSubmitted
 import cash.z.ecc.android.sdk.exception.SynchronizerException
 import cash.z.ecc.android.sdk.ext.ConsensusBranchId
 import cash.z.ecc.android.sdk.ext.ZcashSdk
+import cash.z.ecc.android.sdk.internal.SaplingParamTool
 import cash.z.ecc.android.sdk.internal.block.CompactBlockDbStore
 import cash.z.ecc.android.sdk.internal.block.CompactBlockDownloader
 import cash.z.ecc.android.sdk.internal.block.CompactBlockStore
@@ -808,10 +809,11 @@ object DefaultSynchronizerFactory {
     fun defaultService(initializer: Initializer): LightWalletService =
         LightWalletGrpcService.new(initializer.context, initializer.lightWalletEndpoint)
 
-    fun defaultEncoder(
+    internal fun defaultEncoder(
         initializer: Initializer,
+        saplingParamTool: SaplingParamTool,
         repository: TransactionRepository
-    ): TransactionEncoder = WalletTransactionEncoder(initializer.rustBackend, repository)
+    ): TransactionEncoder = WalletTransactionEncoder(initializer.rustBackend, saplingParamTool, repository)
 
     fun defaultDownloader(
         service: LightWalletService,

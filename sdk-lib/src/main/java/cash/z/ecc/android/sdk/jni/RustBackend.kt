@@ -25,7 +25,7 @@ internal class RustBackend private constructor(
     val birthdayHeight: BlockHeight,
     val dataDbFile: File,
     val cacheDbFile: File,
-    val saplingParamsDir: File
+    override val saplingParamDir: File
 ) : RustBackendWelding {
 
     suspend fun clear(clearCacheDb: Boolean = true, clearDataDb: Boolean = true) {
@@ -235,8 +235,8 @@ internal class RustBackend private constructor(
             to,
             value,
             memo ?: ByteArray(0),
-            File(saplingParamsDir, SaplingParamTool.SPEND_PARAM_FILE_NAME).absolutePath,
-            File(saplingParamsDir, SaplingParamTool.OUTPUT_PARAM_FILE_NAME).absolutePath,
+            File(saplingParamDir, SaplingParamTool.SPEND_PARAM_FILE_NAME).absolutePath,
+            File(saplingParamDir, SaplingParamTool.OUTPUT_PARAM_FILE_NAME).absolutePath,
             networkId = network.id
         )
     }
@@ -254,8 +254,8 @@ internal class RustBackend private constructor(
                 extsk,
                 tsk,
                 memo ?: ByteArray(0),
-                File(saplingParamsDir, SaplingParamTool.SPEND_PARAM_FILE_NAME).absolutePath,
-                File(saplingParamsDir, SaplingParamTool.OUTPUT_PARAM_FILE_NAME).absolutePath,
+                File(saplingParamDir, SaplingParamTool.SPEND_PARAM_FILE_NAME).absolutePath,
+                File(saplingParamDir, SaplingParamTool.OUTPUT_PARAM_FILE_NAME).absolutePath,
                 networkId = network.id
             )
         }
@@ -368,7 +368,7 @@ internal class RustBackend private constructor(
                 birthdayHeight,
                 dataDbFile = dataDbFile,
                 cacheDbFile = cacheDbFile,
-                saplingParamsDir = saplingParamsDir
+                saplingParamDir = saplingParamsDir
             )
         }
 

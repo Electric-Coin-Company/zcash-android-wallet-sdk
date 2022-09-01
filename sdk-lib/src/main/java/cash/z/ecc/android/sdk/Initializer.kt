@@ -28,7 +28,8 @@ class Initializer private constructor(
     val lightWalletEndpoint: LightWalletEndpoint,
     val viewingKeys: List<UnifiedViewingKey>,
     val overwriteVks: Boolean,
-    internal val checkpoint: Checkpoint
+    internal val checkpoint: Checkpoint,
+    internal val saplingParamTool: SaplingParamTool
 ) {
 
     suspend fun erase() = erase(context, network, alias)
@@ -333,7 +334,10 @@ class Initializer private constructor(
                 )
             }
 
-            val rustBackend = initRustBackend(context, config.network, config.alias, loadedCheckpoint.height)
+            val saplingParamTool = SaplingParamTool.new(context.applicationContext)
+
+            val rustBackend =
+                initRustBackend(context, config.network, config.alias, loadedCheckpoint.height, saplingParamTool)
 
             return Initializer(
                 context.applicationContext,
@@ -343,7 +347,8 @@ class Initializer private constructor(
                 config.lightWalletEndpoint,
                 config.viewingKeys,
                 config.overwriteVks,
-                loadedCheckpoint
+                loadedCheckpoint,
+                saplingParamTool
             )
         }
 
@@ -374,16 +379,15 @@ class Initializer private constructor(
             context: Context,
             network: ZcashNetwork,
             alias: String,
-            blockHeight: BlockHeight
+            blockHeight: BlockHeight,
+            saplingParamTool: SaplingParamTool
         ): RustBackend {
             val coordinator = DatabaseCoordinator.getInstance(context)
 
             return RustBackend.init(
                 coordinator.cacheDbFile(network, alias),
                 coordinator.dataDbFile(network, alias),
-                SaplingParamTool.initAndGetParamsDestinationDir(
-                    SaplingParamTool.initSaplingParamTool(context.applicationContext)
-                ),
+                saplingParamTool.properties.paramsDirectory,
                 network,
                 blockHeight
             )

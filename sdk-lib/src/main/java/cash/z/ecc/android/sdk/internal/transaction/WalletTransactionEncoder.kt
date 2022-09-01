@@ -6,7 +6,6 @@ import cash.z.ecc.android.sdk.ext.masked
 import cash.z.ecc.android.sdk.internal.SaplingParamTool
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.internal.twigTask
-import cash.z.ecc.android.sdk.jni.RustBackend
 import cash.z.ecc.android.sdk.jni.RustBackendWelding
 import cash.z.ecc.android.sdk.model.Zatoshi
 
@@ -21,6 +20,7 @@ import cash.z.ecc.android.sdk.model.Zatoshi
  */
 internal class WalletTransactionEncoder(
     private val rustBackend: RustBackendWelding,
+    private val saplingParamTool: SaplingParamTool,
     private val repository: TransactionRepository
 ) : TransactionEncoder {
 
@@ -116,7 +116,7 @@ internal class WalletTransactionEncoder(
             @Suppress("TooGenericExceptionCaught")
             try {
                 val branchId = getConsensusBranchId()
-                SaplingParamTool.ensureParams((rustBackend as RustBackend).saplingParamsDir)
+                saplingParamTool.ensureParams(rustBackend.saplingParamDir)
                 twig("params exist! attempting to send with consensus branchId $branchId...")
                 rustBackend.createToAddress(
                     branchId,
@@ -141,9 +141,9 @@ internal class WalletTransactionEncoder(
         memo: ByteArray? = byteArrayOf()
     ): Long {
         return twigTask("creating transaction to shield all UTXOs") {
+            saplingParamTool.ensureParams(rustBackend.saplingParamDir)
             @Suppress("TooGenericExceptionCaught")
             try {
-                SaplingParamTool.ensureParams((rustBackend as RustBackend).saplingParamsDir)
                 twig("params exist! attempting to shield...")
                 rustBackend.shieldToAddress(
                     spendingKey,

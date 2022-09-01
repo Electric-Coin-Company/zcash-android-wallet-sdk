@@ -52,7 +52,7 @@ class SanityTest(
         )
         assertTrue(
             "$name has invalid CacheDB params dir",
-            wallet.initializer.rustBackend.saplingParamsDir.endsWith(
+            wallet.initializer.rustBackend.saplingParamDir.endsWith(
                 "no_backup/co.electricoin.zcash"
             )
         )

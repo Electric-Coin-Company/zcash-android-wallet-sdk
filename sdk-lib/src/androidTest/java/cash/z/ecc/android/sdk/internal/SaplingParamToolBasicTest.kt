@@ -28,8 +28,6 @@ class SaplingParamToolBasicTest {
             SaplingParamsFixture.clearAllFilesFromDirectory(SaplingParamsFixture.DESTINATION_DIRECTORY)
             SaplingParamsFixture.clearAllFilesFromDirectory(SaplingParamsFixture.DESTINATION_DIRECTORY_LEGACY)
         }
-        // reset the SaplingParamTool properties
-        SaplingParamTool.toolProperties = null
     }
 
     @Test
@@ -43,27 +41,27 @@ class SaplingParamToolBasicTest {
             SaplingParamsFixture.OUTPUT_FILE_HASH
         )
 
-        // the block fails, because of some of the class properties are not initialized yet
-        assertFailsWith<IllegalArgumentException> {
-            SaplingParamTool.ensureParams(spendSaplingParams.destinationDirectory)
-        }
-
-        SaplingParamTool.initSaplingParamTool(getAppContext())
+        val saplingParamTool = SaplingParamTool(
+            SaplingParamToolProperties(
+                emptyList(),
+                SaplingParamsFixture
+                    .DESTINATION_DIRECTORY,
+                SaplingParamsFixture.DESTINATION_DIRECTORY_LEGACY
+            )
+        )
 
         // we inject params files to let the ensureParams() finish successfully without executing its extended operation
         // like fetchParams, etc.
         SaplingParamsFixture.createFile(File(spendSaplingParams.destinationDirectory, spendSaplingParams.fileName))
         SaplingParamsFixture.createFile(File(outputSaplingParams.destinationDirectory, outputSaplingParams.fileName))
 
-        SaplingParamTool.ensureParams(spendSaplingParams.destinationDirectory)
+        saplingParamTool.ensureParams(spendSaplingParams.destinationDirectory)
     }
 
     @Test
     @SmallTest
     fun init_and_get_params_destination_dir_test() = runTest {
-        val destDir = SaplingParamTool.initAndGetParamsDestinationDir(
-            SaplingParamTool.initSaplingParamTool(getAppContext())
-        )
+        val destDir = SaplingParamTool.new(getAppContext()).properties.paramsDirectory
 
         assertNotNull(destDir)
         assertEquals(
@@ -118,7 +116,7 @@ class SaplingParamToolBasicTest {
     @Test
     @MediumTest
     fun ensure_params_exception_thrown_test() = runTest {
-        val destDir = SaplingParamTool.initAndGetParamsDestinationDir(
+        val saplingParamTool = SaplingParamTool(
             SaplingParamToolFixture.new(
                 saplingParamsFiles = SaplingParamToolFixture.SAPLING_PARAMS_FILES
                     .also {
@@ -144,7 +142,7 @@ class SaplingParamToolBasicTest {
 
         // the ensure params block should fail in validation phase, because we use a different params file names
         assertFailsWith<TransactionEncoderException.MissingParamsException> {
-            SaplingParamTool.ensureParams(destDir)
+            saplingParamTool.ensureParams(SaplingParamToolFixture.PARAMS_DIRECTORY)
         }
     }
 }

@@ -43,17 +43,18 @@ class SaplingParamToolIntegrationTest {
         runBlocking {
             SaplingParamsFixture.clearAllFilesFromDirectory(SaplingParamsFixture.DESTINATION_DIRECTORY)
             SaplingParamsFixture.clearAllFilesFromDirectory(SaplingParamsFixture.DESTINATION_DIRECTORY_LEGACY)
-            SaplingParamTool.initSaplingParamTool(getAppContext())
         }
     }
 
     @Test
     @LargeTest
     fun test_files_exists() = runBlocking {
-        SaplingParamTool.fetchParams(spendSaplingParams)
-        SaplingParamTool.fetchParams(outputSaplingParams)
+        val saplingParamTool = SaplingParamTool.new(getAppContext())
 
-        val result = SaplingParamTool.validate(
+        saplingParamTool.fetchParams(spendSaplingParams)
+        saplingParamTool.fetchParams(outputSaplingParams)
+
+        val result = saplingParamTool.validate(
             SaplingParamsFixture.DESTINATION_DIRECTORY
         )
 
@@ -63,10 +64,12 @@ class SaplingParamToolIntegrationTest {
     @Test
     @LargeTest
     fun output_file_exists() = runBlocking {
-        SaplingParamTool.fetchParams(spendSaplingParams)
+        val saplingParamTool = SaplingParamTool.new(getAppContext())
+
+        saplingParamTool.fetchParams(spendSaplingParams)
         File(spendSaplingParams.destinationDirectory, spendSaplingParams.fileName).delete()
 
-        val result = SaplingParamTool.validate(spendSaplingParams.destinationDirectory)
+        val result = saplingParamTool.validate(spendSaplingParams.destinationDirectory)
 
         assertFalse(result, "Validation should fail when the spend params are missing")
     }
@@ -74,10 +77,12 @@ class SaplingParamToolIntegrationTest {
     @Test
     @LargeTest
     fun spend_file_exists() = runBlocking {
-        SaplingParamTool.fetchParams(outputSaplingParams)
+        val saplingParamTool = SaplingParamTool.new(getAppContext())
+
+        saplingParamTool.fetchParams(outputSaplingParams)
         File(outputSaplingParams.destinationDirectory, outputSaplingParams.fileName).delete()
 
-        val result = SaplingParamTool.validate(outputSaplingParams.destinationDirectory)
+        val result = saplingParamTool.validate(outputSaplingParams.destinationDirectory)
 
         assertFalse(result, "Validation should fail when the output params are missing")
     }
@@ -94,7 +99,9 @@ class SaplingParamToolIntegrationTest {
             SaplingParamsFixture.OUTPUT_FILE_NAME
         )
 
-        SaplingParamTool.ensureParams(SaplingParamsFixture.DESTINATION_DIRECTORY)
+        val saplingParamTool = SaplingParamTool.new(getAppContext())
+
+        saplingParamTool.ensureParams(SaplingParamsFixture.DESTINATION_DIRECTORY)
 
         val actualFiles = SaplingParamsFixture.DESTINATION_DIRECTORY.listFilesSuspend()
         assertNotNull(actualFiles)
@@ -107,7 +114,9 @@ class SaplingParamToolIntegrationTest {
     @Test
     @LargeTest
     fun check_correct_spend_param_file_size() = runBlocking {
-        SaplingParamTool.fetchParams(spendSaplingParams)
+        val saplingParamTool = SaplingParamTool.new(getAppContext())
+
+        saplingParamTool.fetchParams(spendSaplingParams)
 
         val expectedSpendFile = File(
             SaplingParamsFixture.DESTINATION_DIRECTORY,
@@ -121,7 +130,9 @@ class SaplingParamToolIntegrationTest {
     @Test
     @LargeTest
     fun check_correct_output_param_file_size() = runBlocking {
-        SaplingParamTool.fetchParams(outputSaplingParams)
+        val saplingParamTool = SaplingParamTool.new(getAppContext())
+
+        saplingParamTool.fetchParams(outputSaplingParams)
 
         val expectedOutputFile = File(
             SaplingParamsFixture.DESTINATION_DIRECTORY,
@@ -137,18 +148,22 @@ class SaplingParamToolIntegrationTest {
     fun fetch_params_uninitialized_test() = runTest {
         SaplingParamsFixture.DESTINATION_DIRECTORY.delete()
 
+        val saplingParamTool = SaplingParamTool.new(getAppContext())
+
         assertFailsWith<TransactionEncoderException.FetchParamsException> {
-            SaplingParamTool.fetchParams(spendSaplingParams)
+            saplingParamTool.fetchParams(spendSaplingParams)
         }
 
-        assertFalse(SaplingParamTool.validate(SaplingParamsFixture.DESTINATION_DIRECTORY))
+        assertFalse(saplingParamTool.validate(SaplingParamsFixture.DESTINATION_DIRECTORY))
     }
 
     @Test
     @LargeTest
     fun fetch_params_incorrect_hash_test() = runTest {
+        val saplingParamTool = SaplingParamTool.new(getAppContext())
+
         assertFailsWith<TransactionEncoderException.FetchParamsException> {
-            SaplingParamTool.fetchParams(
+            saplingParamTool.fetchParams(
                 SaplingParamsFixture.new(
                     fileName = SaplingParamsFixture.OUTPUT_FILE_NAME,
                     fileMaxSize = SaplingParamsFixture.OUTPUT_FILE_MAX_SIZE,
@@ -157,14 +172,16 @@ class SaplingParamToolIntegrationTest {
             )
         }
 
-        assertFalse(SaplingParamTool.validate(SaplingParamsFixture.DESTINATION_DIRECTORY))
+        assertFalse(saplingParamTool.validate(SaplingParamsFixture.DESTINATION_DIRECTORY))
     }
 
     @Test
     @LargeTest
     fun fetch_params_incorrect_max_file_size_test() = runTest {
+        val saplingParamTool = SaplingParamTool.new(getAppContext())
+
         assertFailsWith<TransactionEncoderException.FetchParamsException> {
-            SaplingParamTool.fetchParams(
+            saplingParamTool.fetchParams(
                 SaplingParamsFixture.new(
                     fileName = SaplingParamsFixture.OUTPUT_FILE_NAME,
                     fileHash = SaplingParamsFixture.OUTPUT_FILE_HASH,
@@ -173,6 +190,6 @@ class SaplingParamToolIntegrationTest {
             )
         }
 
-        assertFalse(SaplingParamTool.validate(SaplingParamsFixture.DESTINATION_DIRECTORY))
+        assertFalse(saplingParamTool.validate(SaplingParamsFixture.DESTINATION_DIRECTORY))
     }
 }
