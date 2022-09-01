@@ -2,8 +2,8 @@
 This manual test case provides information on how to manually test an implemented action of moving both of our 
 sapling params files (`sapling-spend.params`, `sapling-output.params`) from legacy location `/cache/params/` to 
 the preferred location `/no_backup/co.electricoin.zcash/`. The benefit of this approach is that the content of 
-`no_backup` folder is not part of automatic user data backup to user's cloud storage. Our sapling files can contain 
-potentially big and sensitive data.
+`no_backup` folder is not part of automatic user data backup to user's cloud storage. Our sapling files are quite big 
+(up to 50MB).
 
 # Prerequisite
 - Installed [Android Studio](https://developer.android.com/studio)

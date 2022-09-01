@@ -3,6 +3,7 @@ package cash.z.ecc.android.sdk.internal
 import android.content.Context
 import cash.z.ecc.android.sdk.exception.TransactionEncoderException
 import cash.z.ecc.android.sdk.internal.ext.deleteRecursivelySuspend
+import cash.z.ecc.android.sdk.internal.ext.deleteSuspend
 import cash.z.ecc.android.sdk.internal.ext.existsSuspend
 import cash.z.ecc.android.sdk.internal.ext.getCacheDirSuspend
 import cash.z.ecc.android.sdk.internal.ext.getSha1Hash
@@ -15,9 +16,6 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.net.URL
 import java.nio.channels.Channels
-
-// TODO [#665]: https://github.com/zcash/zcash-android-wallet-sdk/issues/665
-// TODO [#665]: Recover from corrupted sapling-spend.params and sapling-output.params
 
 object SaplingParamTool {
     /**
@@ -67,7 +65,7 @@ object SaplingParamTool {
 
     private val checkFilesMutex = Mutex()
 
-    internal var toolsProperties: SaplingParamToolProperties? = null
+    internal var toolProperties: SaplingParamToolProperties? = null
 
     /**
      * Initialization of needed properties. This is necessary entry point for other operations from {@code
@@ -77,7 +75,7 @@ object SaplingParamTool {
      */
     internal suspend fun initSaplingParamTool(context: Context): SaplingParamToolProperties {
         val paramsDirectory = Files.getZcashNoBackupSubdirectory(context)
-        toolsProperties = SaplingParamToolProperties(
+        toolProperties = SaplingParamToolProperties(
             paramsDirectory = paramsDirectory,
             paramsLegacyDirectory = File(context.getCacheDirSuspend(), SAPLING_PARAMS_LEGACY_SUBDIRECTORY),
             saplingParams = arrayOf(
@@ -95,7 +93,7 @@ object SaplingParamTool {
                 )
             )
         )
-        return toolsProperties!!
+        return toolProperties!!
     }
 
     /**
@@ -108,21 +106,24 @@ object SaplingParamTool {
      * @return params destination directory file
      */
     internal suspend fun initAndGetParamsDestinationDir(toolProperties: SaplingParamToolProperties): File {
-        this.toolsProperties = toolProperties
+        this.toolProperties = toolProperties
 
         checkFilesMutex.withLock {
             toolProperties.saplingParams.forEach {
                 val legacyFile = File(toolProperties.paramsLegacyDirectory, it.fileName)
                 val currentFile = File(toolProperties.paramsDirectory, it.fileName)
 
-                if (legacyFile.existsSuspend()) {
+                if (legacyFile.existsSuspend() && isFileHashValid(legacyFile, it.fileHash)) {
                     twig("Moving params file: ${it.fileName} from legacy folder to the currently used folder.")
                     currentFile.parentFile?.mkdirsSuspend()
-                    if (!renameParametersFile(legacyFile, currentFile) ||
-                        !isFileHashValid(currentFile, it.fileHash)
-                    ) {
-                        twig("Failed while moving or validating params file: ${it.fileName} in the new location.")
+                    if (!renameParametersFile(legacyFile, currentFile)) {
+                        twig("Failed while moving the params file: ${it.fileName} to the preferred location.")
                     }
+                } else {
+                    twig(
+                        "Legacy file either does not exist or is not valid. Will be fetched to the preferred " +
+                            "location."
+                    )
                 }
             }
             // remove the params folder and its files - a new sapling files will be fetched to the preferred location
@@ -140,7 +141,7 @@ object SaplingParamTool {
      *
      * @return true in case of hashes are the same, false otherwise
      */
-    private fun isFileHashValid(parametersFile: File, fileHash: String): Boolean {
+    private suspend fun isFileHashValid(parametersFile: File, fileHash: String): Boolean {
         return try {
             fileHash == parametersFile.getSha1Hash()
         } catch (e: OutOfMemoryError) {
@@ -183,9 +184,9 @@ object SaplingParamTool {
      */
     @Throws(TransactionEncoderException.MissingParamsException::class)
     internal suspend fun ensureParams(destinationDir: File) {
-        require(toolsProperties != null) { "Sapling params properties must be initialized now." }
+        require(toolProperties != null) { "Sapling params properties must be initialized now." }
 
-        toolsProperties!!.saplingParams.filter {
+        toolProperties!!.saplingParams.filter {
             !File(it.destinationDirectory, it.fileName).existsSuspend()
         }.forEach {
             try {
@@ -248,22 +249,38 @@ object SaplingParamTool {
                 }
             }.onSuccess {
                 twig(
-                    "Fetch and write of the temporary ${temporaryFile.name} succeeded. Moving it to the final " +
-                        "destination"
+                    "Fetch and write of the temporary ${temporaryFile.name} succeeded. Validating and moving it to " +
+                        "the final destination"
                 )
-                val resultFile = File(paramsToFetch.destinationDirectory, paramsToFetch.fileName)
-                if (!renameParametersFile(temporaryFile, resultFile) ||
-                    !isFileHashValid(resultFile, paramsToFetch.fileHash)
-                ) {
-                    "Failed while renaming or validating result params file: ${paramsToFetch.fileName}".also {
-                        twig(it)
-                        throw TransactionEncoderException.FetchParamsException(it)
-                    }
-
-                    // TODO [#665]: https://github.com/zcash/zcash-android-wallet-sdk/issues/665
-                    // TODO [#665]: Recover from corrupted sapling-spend.params and sapling-output.params
+                if (!isFileHashValid(temporaryFile, paramsToFetch.fileHash)) {
+                    finalizeAndReportError(
+                        temporaryFile,
+                        message = "Failed while validating fetched params file: ${paramsToFetch.fileName}"
+                    )
                 }
+                val resultFile = File(paramsToFetch.destinationDirectory, paramsToFetch.fileName)
+                if (!renameParametersFile(temporaryFile, resultFile)) {
+                    finalizeAndReportError(
+                        temporaryFile,
+                        resultFile,
+                        message = "Failed while renaming result params file: ${paramsToFetch.fileName}"
+                    )
+                }
+
+                // TODO [#665]: https://github.com/zcash/zcash-android-wallet-sdk/issues/665
+                // TODO [#665]: Recover from corrupted sapling-spend.params and sapling-output.params
             }
+        }
+    }
+
+    @Throws(TransactionEncoderException.FetchParamsException::class)
+    private suspend fun finalizeAndReportError(vararg files: File, message: String) {
+        files.forEach {
+            it.deleteSuspend()
+        }
+        message.also {
+            twig(it)
+            throw TransactionEncoderException.FetchParamsException(it)
         }
     }
 

@@ -3,6 +3,7 @@ package cash.z.ecc.android.sdk.internal
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import cash.z.ecc.android.sdk.exception.TransactionEncoderException
+import cash.z.ecc.android.sdk.internal.ext.listFilesSuspend
 import cash.z.ecc.android.sdk.test.getAppContext
 import cash.z.ecc.fixture.SaplingParamsFixture
 import kotlinx.coroutines.runBlocking
@@ -95,7 +96,7 @@ class SaplingParamToolIntegrationTest {
 
         SaplingParamTool.ensureParams(SaplingParamsFixture.DESTINATION_DIRECTORY)
 
-        val actualFiles = SaplingParamsFixture.DESTINATION_DIRECTORY.listFiles()
+        val actualFiles = SaplingParamsFixture.DESTINATION_DIRECTORY.listFilesSuspend()
         assertNotNull(actualFiles)
 
         assertContains(actualFiles, expectedSpendFile)

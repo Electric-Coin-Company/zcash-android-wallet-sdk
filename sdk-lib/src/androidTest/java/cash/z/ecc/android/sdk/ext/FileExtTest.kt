@@ -1,8 +1,11 @@
 package cash.z.ecc.android.sdk.ext
 
 import androidx.test.filters.SmallTest
+import cash.z.ecc.android.sdk.internal.ext.createNewFileSuspend
+import cash.z.ecc.android.sdk.internal.ext.existsSuspend
 import cash.z.ecc.android.sdk.internal.ext.getSha1Hash
 import cash.z.ecc.android.sdk.test.getAppContext
+import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -22,10 +25,10 @@ class FileExtTest {
 
     @Test
     @SmallTest
-    fun check_empty_file_sha1_result() {
+    fun check_empty_file_sha1_result() = runTest {
         testFile.apply {
-            createNewFile()
-            assertTrue(exists())
+            createNewFileSuspend()
+            assertTrue(existsSuspend())
             assertEquals(
                 expected = "da39a3ee5e6b4b0d3255bfef95601890afd80709",
                 actual = getSha1Hash(),
@@ -36,10 +39,10 @@ class FileExtTest {
 
     @Test
     @SmallTest
-    fun check_not_empty_file_sha1_result() {
+    fun check_not_empty_file_sha1_result() = runTest {
         testFile.apply {
-            createNewFile()
-            assertTrue(exists())
+            createNewFileSuspend()
+            assertTrue(existsSuspend())
             writeText("Hey! It compiles! Ship it!")
             assertTrue(length() > 0)
             assertEquals(

@@ -3,7 +3,10 @@ package cash.z.ecc.fixture
 import cash.z.ecc.android.sdk.internal.Files
 import cash.z.ecc.android.sdk.internal.SaplingParamTool
 import cash.z.ecc.android.sdk.internal.SaplingParameters
+import cash.z.ecc.android.sdk.internal.ext.createNewFileSuspend
 import cash.z.ecc.android.sdk.internal.ext.deleteSuspend
+import cash.z.ecc.android.sdk.internal.ext.existsSuspend
+import cash.z.ecc.android.sdk.internal.ext.listFilesSuspend
 import cash.z.ecc.android.sdk.test.getAppContext
 import kotlinx.coroutines.runBlocking
 import java.io.File
@@ -40,15 +43,15 @@ object SaplingParamsFixture {
         fileHash = fileHash
     )
 
-    internal fun writeFile(paramsFile: File) {
-        paramsFile.createNewFile()
+    internal suspend fun createFile(paramsFile: File) {
+        paramsFile.createNewFileSuspend()
     }
 
     internal suspend fun clearAllFilesFromDirectory(destinationDir: File) {
-        if (!destinationDir.exists()) {
+        if (!destinationDir.existsSuspend()) {
             return
         }
-        for (file in destinationDir.listFiles()!!) {
+        for (file in destinationDir.listFilesSuspend()!!) {
             file.deleteSuspend()
         }
     }

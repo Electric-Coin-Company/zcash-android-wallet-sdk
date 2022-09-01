@@ -4,6 +4,7 @@ import androidx.test.filters.MediumTest
 import androidx.test.filters.SmallTest
 import cash.z.ecc.android.sdk.exception.TransactionEncoderException
 import cash.z.ecc.android.sdk.internal.ext.getSha1Hash
+import cash.z.ecc.android.sdk.internal.ext.listFilesSuspend
 import cash.z.ecc.android.sdk.test.getAppContext
 import cash.z.ecc.fixture.SaplingParamToolFixture
 import cash.z.ecc.fixture.SaplingParamsFixture
@@ -28,7 +29,7 @@ class SaplingParamToolBasicTest {
             SaplingParamsFixture.clearAllFilesFromDirectory(SaplingParamsFixture.DESTINATION_DIRECTORY_LEGACY)
         }
         // reset the SaplingParamTool properties
-        SaplingParamTool.toolsProperties = null
+        SaplingParamTool.toolProperties = null
     }
 
     @Test
@@ -51,8 +52,8 @@ class SaplingParamToolBasicTest {
 
         // we inject params files to let the ensureParams() finish successfully without executing its extended operation
         // like fetchParams, etc.
-        SaplingParamsFixture.writeFile(File(spendSaplingParams.destinationDirectory, spendSaplingParams.fileName))
-        SaplingParamsFixture.writeFile(File(outputSaplingParams.destinationDirectory, outputSaplingParams.fileName))
+        SaplingParamsFixture.createFile(File(spendSaplingParams.destinationDirectory, spendSaplingParams.fileName))
+        SaplingParamsFixture.createFile(File(outputSaplingParams.destinationDirectory, outputSaplingParams.fileName))
 
         SaplingParamTool.ensureParams(spendSaplingParams.destinationDirectory)
     }
@@ -80,8 +81,8 @@ class SaplingParamToolBasicTest {
         val outputFile = File(SaplingParamsFixture.DESTINATION_DIRECTORY_LEGACY, SaplingParamsFixture.OUTPUT_FILE_NAME)
 
         // now we inject params files to the legacy location to be "moved" to the preferred location
-        SaplingParamsFixture.writeFile(spendFile)
-        SaplingParamsFixture.writeFile(outputFile)
+        SaplingParamsFixture.createFile(spendFile)
+        SaplingParamsFixture.createFile(outputFile)
 
         assertTrue(isFileInPlace(SaplingParamsFixture.DESTINATION_DIRECTORY_LEGACY, spendFile))
         assertTrue(isFileInPlace(SaplingParamsFixture.DESTINATION_DIRECTORY_LEGACY, outputFile))
@@ -110,8 +111,8 @@ class SaplingParamToolBasicTest {
         assertTrue(isFileInPlace(SaplingParamsFixture.DESTINATION_DIRECTORY, outputFile))
     }
 
-    private fun isFileInPlace(directory: File, file: File): Boolean {
-        return directory.listFiles { _, filename -> filename == file.name }?.isNotEmpty() ?: false
+    private suspend fun isFileInPlace(directory: File, file: File): Boolean {
+        return directory.listFilesSuspend()?.any { it.name == file.name } ?: false
     }
 
     @Test
@@ -128,13 +129,13 @@ class SaplingParamToolBasicTest {
         )
 
         // now we inject params files to the preferred location to pass through the check missing files phase
-        SaplingParamsFixture.writeFile(
+        SaplingParamsFixture.createFile(
             File(
                 SaplingParamToolFixture.SAPLING_PARAMS_FILES[0].destinationDirectory,
                 SaplingParamToolFixture.SAPLING_PARAMS_FILES[0].fileName
             )
         )
-        SaplingParamsFixture.writeFile(
+        SaplingParamsFixture.createFile(
             File(
                 SaplingParamToolFixture.SAPLING_PARAMS_FILES[1].destinationDirectory,
                 SaplingParamToolFixture.SAPLING_PARAMS_FILES[1].fileName
