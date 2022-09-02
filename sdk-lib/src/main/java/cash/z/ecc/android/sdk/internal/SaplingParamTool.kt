@@ -14,6 +14,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.io.IOException
 import java.net.URL
 import java.nio.channels.Channels
 
@@ -140,7 +141,7 @@ internal class SaplingParamTool(val properties: SaplingParamToolProperties) {
         private suspend fun isFileHashValid(parametersFile: File, fileHash: String): Boolean {
             return try {
                 fileHash == parametersFile.getSha1Hash()
-            } catch (e: OutOfMemoryError) {
+            } catch (e: IOException) {
                 twig("Failed in comparing file's hashes with: ${e.message}, caused by: ${e.cause}.")
                 false
             }
