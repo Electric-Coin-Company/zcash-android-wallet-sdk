@@ -8,6 +8,7 @@ import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.internal.twigTask
 import cash.z.ecc.android.sdk.jni.RustBackendWelding
 import cash.z.ecc.android.sdk.model.Zatoshi
+import java.io.IOException
 
 /**
  * Class responsible for encoding a transaction in a consistent way. This bridges the gap by
@@ -109,15 +110,12 @@ internal class WalletTransactionEncoder(
         memo: ByteArray? = byteArrayOf(),
         fromAccountIndex: Int = 0
     ): Long {
-        return twigTask(
-            "creating transaction to spend $amount zatoshi to" +
-                " ${toAddress.masked()} with memo $memo"
-        ) {
-            @Suppress("TooGenericExceptionCaught")
+        return twigTask("Creating transaction to spend $amount zatoshi to ${toAddress.masked()} with memo $memo") {
+            saplingParamTool.ensureParams(rustBackend.saplingParamDir)
+            twig("Params exist! Attempting to send.")
             try {
                 val branchId = getConsensusBranchId()
-                saplingParamTool.ensureParams(rustBackend.saplingParamDir)
-                twig("params exist! attempting to send with consensus branchId $branchId...")
+                twig("Attempting to send with consensus branchId $branchId...")
                 rustBackend.createToAddress(
                     branchId,
                     fromAccountIndex,
@@ -126,9 +124,15 @@ internal class WalletTransactionEncoder(
                     amount.value,
                     memo
                 )
-            } catch (t: Throwable) {
-                twig("Caught exception while creating transaction ${t.message}, caused by: ${t.cause}.")
-                throw t
+            } catch (e: IOException) {
+                twig("Caught IO exception while creating transaction ${e.message}, caused by: ${e.cause}.")
+                throw e
+            } catch (e: TransactionEncoderException.IncompleteScanException) {
+                twig(
+                    "Caught TransactionEncoderException.IncompleteScanException while creating transaction" +
+                        " ${e.message}, caused by: ${e.cause}."
+                )
+                throw e
             }
         }.also { result ->
             twig("result of sendToAddress: $result")
@@ -140,22 +144,21 @@ internal class WalletTransactionEncoder(
         transparentSecretKey: String,
         memo: ByteArray? = byteArrayOf()
     ): Long {
-        return twigTask("creating transaction to shield all UTXOs") {
+        return twigTask("Creating transaction to shield all UTXOs.") {
             saplingParamTool.ensureParams(rustBackend.saplingParamDir)
-            @Suppress("TooGenericExceptionCaught")
+            twig("Params exist! attempting to shield...")
             try {
-                twig("params exist! attempting to shield...")
                 rustBackend.shieldToAddress(
                     spendingKey,
                     transparentSecretKey,
                     memo
                 )
-            } catch (t: Throwable) {
+            } catch (e: IOException) {
                 // TODO [#680]: if this error matches: Insufficient balance (have 0, need 1000 including fee)
                 //  then consider custom error that says no UTXOs existed to shield
                 // TODO [#680]: https://github.com/zcash/zcash-android-wallet-sdk/issues/680
-                twig("Shield failed due to: ${t.message}, caused by: ${t.cause}.")
-                throw t
+                twig("Caught IO exception - shield failed due to: ${e.message}, caused by: ${e.cause}.")
+                throw e
             }
         }.also { result ->
             twig("result of shieldToAddress: $result")
