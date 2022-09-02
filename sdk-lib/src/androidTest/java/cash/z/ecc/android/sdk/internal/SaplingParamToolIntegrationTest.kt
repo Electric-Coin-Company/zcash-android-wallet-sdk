@@ -71,7 +71,7 @@ class SaplingParamToolIntegrationTest {
 
         val result = saplingParamTool.validate(spendSaplingParams.destinationDirectory)
 
-        assertFalse(result, "Validation should fail when the spend params are missing")
+        assertFalse(result, "Validation should fail as the spend param file is missing.")
     }
 
     @Test
@@ -84,7 +84,7 @@ class SaplingParamToolIntegrationTest {
 
         val result = saplingParamTool.validate(outputSaplingParams.destinationDirectory)
 
-        assertFalse(result, "Validation should fail when the output params are missing")
+        assertFalse(result, "Validation should fail as the output param file is missing.")
     }
 
     @Test
@@ -146,9 +146,9 @@ class SaplingParamToolIntegrationTest {
     @Test
     @LargeTest
     fun fetch_params_uninitialized_test() = runTest {
-        SaplingParamsFixture.DESTINATION_DIRECTORY.delete()
-
         val saplingParamTool = SaplingParamTool.new(getAppContext())
+
+        SaplingParamsFixture.DESTINATION_DIRECTORY.delete()
 
         assertFailsWith<TransactionEncoderException.FetchParamsException> {
             saplingParamTool.fetchParams(spendSaplingParams)
