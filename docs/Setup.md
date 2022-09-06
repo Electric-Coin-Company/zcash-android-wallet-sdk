@@ -39,7 +39,7 @@ Start by making sure the command line with Gradle works first, because **all the
                 export PATH=${PATH}:${ANDROID_HOME}/platform-tools
                 ```
     1. Install the Android NDK
-        1. Go to the Android SDK Manager inside Android Studio
+        1. Go to the Android SDK Manager inside Android Studio. Select the "SDK Tools" tab.
         1. Click the checkbox for "Show Package Details"
         1. Install the exact NDK version listed in [gradle.properties](../gradle.properties) under `ANDROID_NDK_VERSION`
     1. Configure a device for development and testing
