@@ -4,6 +4,7 @@ import cash.z.ecc.android.sdk.block.CompactBlockProcessor
 import cash.z.ecc.android.sdk.db.entity.ConfirmedTransaction
 import cash.z.ecc.android.sdk.db.entity.PendingTransaction
 import cash.z.ecc.android.sdk.ext.ZcashSdk
+import cash.z.ecc.android.sdk.internal.SaplingParamTool
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
@@ -433,10 +434,11 @@ interface Synchronizer {
         suspend fun new(
             initializer: Initializer
         ): Synchronizer {
+            val saplingParamTool = SaplingParamTool.new(initializer.context)
             val repository = DefaultSynchronizerFactory.defaultTransactionRepository(initializer)
             val blockStore = DefaultSynchronizerFactory.defaultBlockStore(initializer)
             val service = DefaultSynchronizerFactory.defaultService(initializer)
-            val encoder = DefaultSynchronizerFactory.defaultEncoder(initializer, repository)
+            val encoder = DefaultSynchronizerFactory.defaultEncoder(initializer, saplingParamTool, repository)
             val downloader = DefaultSynchronizerFactory.defaultDownloader(service, blockStore)
             val txManager =
                 DefaultSynchronizerFactory.defaultTxManager(initializer, encoder, service)

@@ -17,6 +17,7 @@ import kotlin.test.DefaultAsserter.assertEquals
 import kotlin.test.DefaultAsserter.assertTrue
 
 // TODO [#650]: https://github.com/zcash/zcash-android-wallet-sdk/issues/650
+// TODO [#650]: Move integration tests to separate module
 
 /**
  * This test is intended to run to make sure that basic things are functional and pinpoint what is
@@ -51,8 +52,8 @@ class SanityTest(
         )
         assertTrue(
             "$name has invalid CacheDB params dir",
-            wallet.initializer.rustBackend.pathParamsDir.endsWith(
-                "cache/params"
+            wallet.initializer.rustBackend.saplingParamDir.endsWith(
+                "no_backup/co.electricoin.zcash"
             )
         )
     }
@@ -80,11 +81,11 @@ class SanityTest(
         )
     }
 
-    @Test
     @Ignore(
         "This test needs to be refactored to a separate test module. It causes SSLHandshakeException: Chain " +
             "validation failed on CI"
     )
+    @Test
     fun testLatestHeight() = runBlocking {
         if (wallet.networkName == "mainnet") {
             val expectedHeight = BlockExplorer.fetchLatestHeight()
@@ -104,11 +105,11 @@ class SanityTest(
         }
     }
 
-    @Test
     @Ignore(
         "This test needs to be refactored to a separate test module. It causes SSLHandshakeException: Chain " +
             "validation failed on CI"
     )
+    @Test
     fun testSingleBlockDownload() = runBlocking {
         // Fetch height directly because the synchronizer hasn't started, yet. Then we test the
         // result, only if there is no server communication problem.

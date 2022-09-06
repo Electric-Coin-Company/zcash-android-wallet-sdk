@@ -4,7 +4,7 @@ import android.content.Context
 import cash.z.ecc.android.sdk.db.DatabaseCoordinator
 import cash.z.ecc.android.sdk.exception.InitializerException
 import cash.z.ecc.android.sdk.ext.ZcashSdk
-import cash.z.ecc.android.sdk.internal.ext.getCacheDirSuspend
+import cash.z.ecc.android.sdk.internal.SaplingParamTool
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.jni.RustBackend
@@ -15,7 +15,6 @@ import cash.z.ecc.android.sdk.tool.CheckpointTool
 import cash.z.ecc.android.sdk.tool.DerivationTool
 import cash.z.ecc.android.sdk.type.UnifiedViewingKey
 import kotlinx.coroutines.runBlocking
-import java.io.File
 
 /**
  * Simplified Initializer focused on starting from a ViewingKey.
@@ -29,7 +28,8 @@ class Initializer private constructor(
     val lightWalletEndpoint: LightWalletEndpoint,
     val viewingKeys: List<UnifiedViewingKey>,
     val overwriteVks: Boolean,
-    internal val checkpoint: Checkpoint
+    internal val checkpoint: Checkpoint,
+    internal val saplingParamTool: SaplingParamTool
 ) {
 
     suspend fun erase() = erase(context, network, alias)
@@ -334,7 +334,10 @@ class Initializer private constructor(
                 )
             }
 
-            val rustBackend = initRustBackend(context, config.network, config.alias, loadedCheckpoint.height)
+            val saplingParamTool = SaplingParamTool.new(context.applicationContext)
+
+            val rustBackend =
+                initRustBackend(context, config.network, config.alias, loadedCheckpoint.height, saplingParamTool)
 
             return Initializer(
                 context.applicationContext,
@@ -344,7 +347,8 @@ class Initializer private constructor(
                 config.lightWalletEndpoint,
                 config.viewingKeys,
                 config.overwriteVks,
-                loadedCheckpoint
+                loadedCheckpoint,
+                saplingParamTool
             )
         }
 
@@ -375,14 +379,15 @@ class Initializer private constructor(
             context: Context,
             network: ZcashNetwork,
             alias: String,
-            blockHeight: BlockHeight
+            blockHeight: BlockHeight,
+            saplingParamTool: SaplingParamTool
         ): RustBackend {
             val coordinator = DatabaseCoordinator.getInstance(context)
 
             return RustBackend.init(
-                coordinator.cacheDbFile(network, alias).absolutePath,
-                coordinator.dataDbFile(network, alias).absolutePath,
-                File(context.getCacheDirSuspend(), "params").absolutePath,
+                coordinator.cacheDbFile(network, alias),
+                coordinator.dataDbFile(network, alias),
+                saplingParamTool.properties.paramsDirectory,
                 network,
                 blockHeight
             )
