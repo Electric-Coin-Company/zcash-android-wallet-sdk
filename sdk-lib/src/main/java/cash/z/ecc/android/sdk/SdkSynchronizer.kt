@@ -39,8 +39,6 @@ import cash.z.ecc.android.sdk.internal.block.CompactBlockStore
 import cash.z.ecc.android.sdk.internal.ext.toHexReversed
 import cash.z.ecc.android.sdk.internal.ext.tryNull
 import cash.z.ecc.android.sdk.internal.isEmpty
-import cash.z.ecc.android.sdk.internal.service.LightWalletGrpcService
-import cash.z.ecc.android.sdk.internal.service.LightWalletService
 import cash.z.ecc.android.sdk.internal.transaction.OutboundTransactionManager
 import cash.z.ecc.android.sdk.internal.transaction.PagedTransactionRepository
 import cash.z.ecc.android.sdk.internal.transaction.PersistentTransactionManager
@@ -58,8 +56,8 @@ import cash.z.ecc.android.sdk.type.AddressType
 import cash.z.ecc.android.sdk.type.AddressType.Shielded
 import cash.z.ecc.android.sdk.type.AddressType.Transparent
 import cash.z.ecc.android.sdk.type.ConsensusMatchType
-import cash.z.wallet.sdk.rpc.Service
-import io.grpc.ManagedChannel
+import co.electriccoin.lightwallet.client.BlockingLightWalletClient
+import co.electriccoin.lightwallet.client.new
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -128,15 +126,6 @@ class SdkSynchronizer internal constructor(
             field = value
             if (value.coroutineContext !is EmptyCoroutineContext) isStarted = true
         }
-
-    /**
-     * The channel that this Synchronizer uses to communicate with lightwalletd. In most cases, this
-     * should not be needed or used. Instead, APIs should be added to the synchronizer to
-     * enable the desired behavior. In the rare case, such as testing, it can be helpful to share
-     * the underlying channel to connect to the same service, and use other APIs
-     * (such as darksidewalletd) because channels are heavyweight.
-     */
-    val channel: ManagedChannel get() = (processor.downloader.lightWalletService as LightWalletGrpcService).channel
 
     override var isStarted = false
 
@@ -299,13 +288,6 @@ class SdkSynchronizer internal constructor(
             twig("Synchronizer::stop: COMPLETE")
         }
     }
-
-    /**
-     * Convenience function that exposes the underlying server information, like its name and
-     * consensus branch id. Most wallets should already have a different source of truth for the
-     * server(s) with which they operate.
-     */
-    override suspend fun getServerInfo(): Service.LightdInfo = processor.downloader.getServerInfo()
 
     override suspend fun getNearestRewindHeight(height: BlockHeight): BlockHeight =
         processor.getNearestRewindHeight(height)
@@ -731,7 +713,7 @@ class SdkSynchronizer internal constructor(
     }
 
     override suspend fun validateConsensusBranch(): ConsensusMatchType {
-        val serverBranchId = tryNull { processor.downloader.getServerInfo().consensusBranchId }
+        val serverBranchId = tryNull { processor.downloader.getServerInfo()?.consensusBranchId }
         val sdkBranchId = tryNull {
             (txManager as PersistentTransactionManager).encoder.getConsensusBranchId()
         }
@@ -806,8 +788,8 @@ object DefaultSynchronizerFactory {
             initializer.rustBackend.cacheDbFile
         )
 
-    fun defaultService(initializer: Initializer): LightWalletService =
-        LightWalletGrpcService.new(initializer.context, initializer.lightWalletEndpoint)
+    fun defaultLightWalletClient(initializer: Initializer): BlockingLightWalletClient =
+        BlockingLightWalletClient.new(initializer.context, initializer.lightWalletEndpoint)
 
     internal fun defaultEncoder(
         initializer: Initializer,
@@ -816,14 +798,14 @@ object DefaultSynchronizerFactory {
     ): TransactionEncoder = WalletTransactionEncoder(initializer.rustBackend, saplingParamTool, repository)
 
     fun defaultDownloader(
-        service: LightWalletService,
+        service: BlockingLightWalletClient,
         blockStore: CompactBlockStore
     ): CompactBlockDownloader = CompactBlockDownloader(service, blockStore)
 
     suspend fun defaultTxManager(
         initializer: Initializer,
         encoder: TransactionEncoder,
-        service: LightWalletService
+        service: BlockingLightWalletClient
     ): OutboundTransactionManager {
         val databaseFile = DatabaseCoordinator.getInstance(initializer.context).pendingTransactionsDbFile(
             initializer.network,

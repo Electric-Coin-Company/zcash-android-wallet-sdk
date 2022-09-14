@@ -21,10 +21,11 @@ import cash.z.ecc.android.sdk.demoapp.util.mainActivity
 import cash.z.ecc.android.sdk.ext.collectWith
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.BlockHeight
-import cash.z.ecc.android.sdk.model.LightWalletEndpoint
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.model.defaultForNetwork
 import cash.z.ecc.android.sdk.tool.DerivationTool
+import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
+import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -119,10 +120,10 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
             twig("loading transactions in range $startToUse..$endToUse")
             val txids = lightWalletService?.getTAddressTransactions(
                 addressToUse,
-                BlockHeight.new(network, startToUse)..BlockHeight.new(network, endToUse)
+                BlockHeightUnsafe(startToUse)..BlockHeightUnsafe(endToUse)
             )
             var delta = now - allStart
-            updateStatus("found ${txids?.size} transactions in ${delta}ms.", false)
+            updateStatus("found ${txids?.toList()?.size} transactions in ${delta}ms.", false)
 
             txids?.map {
                 // Disabled during migration to newer SDK version; this appears to have been

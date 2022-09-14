@@ -82,7 +82,8 @@ dependencyResolutionManagement {
             val coroutinesOkhttpVersion = extra["COROUTINES_OKHTTP"].toString()
             val flankVersion = extra["FLANK_VERSION"].toString()
             val googleMaterialVersion = extra["GOOGLE_MATERIAL_VERSION"].toString()
-            val grpcVersion = extra["GRPC_VERSION"].toString()
+            val grpcJavaVersion = extra["GRPC_VERSION"].toString()
+            val grpcKotlinVersion = extra["GRPC_KOTLIN_VERSION"].toString()
             val gsonVersion = extra["GSON_VERSION"].toString()
             val guavaVersion = extra["GUAVA_VERSION"].toString()
             val javaVersion = extra["ANDROID_JVM_TARGET"].toString()
@@ -98,7 +99,7 @@ dependencyResolutionManagement {
 
             // Standalone versions
             version("flank", flankVersion)
-            version("grpc", grpcVersion)
+            version("grpc", grpcJavaVersion)
             version("java", javaVersion)
             version("kotlin", kotlinVersion)
             version("protoc", protocVersion)
@@ -110,8 +111,9 @@ dependencyResolutionManagement {
             library("gradle-plugin-rust", "org.mozilla.rust-android-gradle:plugin:$rustGradlePluginVersion")
 
             // Special cases used by the grpc gradle plugin
-            library("grpc-protoc", "io.grpc:protoc-gen-grpc-java:$grpcVersion")
-            library("protoc", "com.google.protobuf:protoc:$protocVersion")
+            library("protoc-compiler", "com.google.protobuf:protoc:$protocVersion")
+            library("protoc-gen-java", "io.grpc:protoc-gen-grpc-java:$grpcJavaVersion")
+            library("protoc-gen-kotlin", "io.grpc:protoc-gen-grpc-kotlin:$grpcKotlinVersion")
 
             // Libraries
             library("androidx-annotation", "androidx.annotation:annotation:$androidxAnnotationVersion")
@@ -127,10 +129,12 @@ dependencyResolutionManagement {
             library("androidx-room-compiler", "androidx.room:room-compiler:$androidxRoomVersion")
             library("androidx-room-core", "androidx.room:room-ktx:$androidxRoomVersion")
             library("bip39", "cash.z.ecc.android:kotlin-bip39:$bip39Version")
-            library("grpc-android", "io.grpc:grpc-android:$grpcVersion")
-            library("grpc-okhttp", "io.grpc:grpc-okhttp:$grpcVersion")
-            library("grpc-protobuf", "io.grpc:grpc-protobuf-lite:$grpcVersion")
-            library("grpc-stub", "io.grpc:grpc-stub:$grpcVersion")
+            library("grpc-android", "io.grpc:grpc-android:$grpcJavaVersion")
+            library("grpc-kotlin", "com.google.protobuf:protobuf-kotlin-lite:$protocVersion")
+            library("grpc-kotlin-stub", "io.grpc:grpc-kotlin-stub:$grpcKotlinVersion")
+            library("grpc-okhttp", "io.grpc:grpc-okhttp:$grpcJavaVersion")
+            library("grpc-protobuf", "io.grpc:grpc-protobuf-lite:$grpcJavaVersion")
+            library("grpc-stub", "io.grpc:grpc-stub:$grpcJavaVersion")
             library("gson", "com.google.code.gson:gson:$gsonVersion")
             library("guava", "com.google.guava:guava:$guavaVersion")
             library("javax-annotation", "javax.annotation:javax.annotation-api:$javaxAnnotationVersion")
@@ -151,7 +155,7 @@ dependencyResolutionManagement {
             library("androidx-testOrchestrator", "androidx.test:orchestrator:$androidxTestOrchestratorVersion")
             library("androidx-uiAutomator", "androidx.test.uiautomator:uiautomator-v18:$androidxUiAutomatorVersion")
             library("coroutines-okhttp", "ru.gildor.coroutines:kotlin-coroutines-okhttp:$coroutinesOkhttpVersion")
-            library("grpc-testing", "io.grpc:grpc-testing:$grpcVersion")
+            library("grpc-testing", "io.grpc:grpc-testing:$grpcJavaVersion")
             library("junit-api", "org.junit.jupiter:junit-jupiter-api:$junitVersion")
             library("junit-engine", "org.junit.jupiter:junit-jupiter-engine:$junitVersion")
             library("junit-migration", "org.junit.jupiter:junit-jupiter-migrationsupport:$junitVersion")
@@ -175,8 +179,10 @@ dependencyResolutionManagement {
             bundle(
                 "grpc",
                 listOf(
-                    "grpc-okhttp",
                     "grpc-android",
+                    "grpc-kotlin",
+                    "grpc-kotlin-stub",
+                    "grpc-okhttp",
                     "grpc-protobuf",
                     "grpc-stub"
                 )
@@ -199,5 +205,6 @@ rootProject.name = "zcash-android-sdk"
 includeBuild("build-conventions")
 
 include("darkside-test-lib")
-include("sdk-lib")
 include("demo-app")
+include("lightwallet-client-lib")
+include("sdk-lib")

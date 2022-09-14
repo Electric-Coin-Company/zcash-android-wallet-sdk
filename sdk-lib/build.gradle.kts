@@ -1,9 +1,3 @@
-import com.google.protobuf.gradle.generateProtoTasks
-import com.google.protobuf.gradle.id
-import com.google.protobuf.gradle.plugins
-import com.google.protobuf.gradle.proto
-import com.google.protobuf.gradle.protobuf
-import com.google.protobuf.gradle.protoc
 import java.util.Base64
 
 plugins {
@@ -14,7 +8,6 @@ plugins {
     id("com.google.devtools.ksp")
     id("org.jetbrains.kotlin.plugin.allopen")
     id("org.jetbrains.dokka")
-    id("com.google.protobuf")
     id("org.mozilla.rust-android-gradle.rust-android")
 
     id("wtf.emulator.gradle")
@@ -147,11 +140,6 @@ android {
         }
     }
 
-    sourceSets.getByName("main") {
-        java.srcDir("build/generated/source/grpc")
-        proto { srcDir("src/main/proto") }
-    }
-
     kotlinOptions {
         // Tricky: fix: By default, the kotlin_module name will not include the version (in classes.jar/META-INF).
         // Instead it has a colon, which breaks compilation on Windows. This is one way to set it explicitly to the
@@ -203,30 +191,6 @@ tasks.dokkaHtml.configure {
     }
 }
 
-protobuf {
-    //generatedFilesBaseDir = "$projectDir/src/generated/source/grpc"
-    protoc { artifact = libs.protoc.get().asCoordinateString() }
-    plugins {
-        id("grpc") {
-            artifact = libs.grpc.protoc.get().asCoordinateString()
-        }
-    }
-    generateProtoTasks {
-        all().forEach { task ->
-            task.builtins {
-                id("java") {
-                    option("lite")
-                }
-            }
-            task.plugins {
-                id("grpc") {
-                    option("lite")
-                }
-            }
-        }
-    }
-}
-
 cargo {
     module = "."
     libname = "zcashwalletsdk"
@@ -248,6 +212,8 @@ cargo {
 }
 
 dependencies {
+    api(projects.lightwalletClientLib)
+
     implementation(libs.androidx.annotation)
     implementation(libs.androidx.appcompat)
 
@@ -264,10 +230,6 @@ dependencies {
     implementation(libs.kotlin.stdlib)
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.android)
-
-    // grpc-java
-    implementation(libs.bundles.grpc)
-    compileOnly(libs.javax.annotation)
 
     //
     // Locked Versions
@@ -307,12 +269,6 @@ dependencies {
 }
 
 tasks {
-    getByName("preBuild").dependsOn(create("bugfixTask") {
-        doFirst {
-            mkdir("build/extracted-include-protos/main")
-        }
-    })
-
     /*
      * The Mozilla Rust Gradle plugin caches the native build data under the "target" directory,
      * which does not normally get deleted during a clean. The following task and dependency solves

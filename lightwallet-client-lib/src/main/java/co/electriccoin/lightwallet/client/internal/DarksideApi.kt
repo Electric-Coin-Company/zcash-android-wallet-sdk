@@ -1,47 +1,46 @@
-package cash.z.ecc.android.sdk.darkside.test
+package co.electriccoin.lightwallet.client.internal
 
 import android.content.Context
-import cash.z.ecc.android.sdk.internal.service.LightWalletGrpcService
-import cash.z.ecc.android.sdk.internal.twig
-import cash.z.ecc.android.sdk.model.BlockHeight
-import cash.z.ecc.android.sdk.model.Darkside
-import cash.z.ecc.android.sdk.model.LightWalletEndpoint
-import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.wallet.sdk.rpc.Darkside
 import cash.z.wallet.sdk.rpc.Darkside.DarksideTransactionsURL
 import cash.z.wallet.sdk.rpc.DarksideStreamerGrpc
 import cash.z.wallet.sdk.rpc.Service
+import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
+import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
 import io.grpc.ManagedChannel
 import io.grpc.stub.StreamObserver
-import java.lang.RuntimeException
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
-class DarksideApi(
+/*
+ * This class is under the internal package, but is itself not restricted with internal visibility.
+ *
+ * This allows the class to be used for some automated tests in other modules.
+ */
+class DarksideApi private constructor(
     private val channel: ManagedChannel,
-    private val singleRequestTimeoutSec: Long = 10L
+    private val singleRequestTimeout: Duration = 10.seconds
 ) {
 
-    constructor(
-        appContext: Context,
-        lightWalletEndpoint: LightWalletEndpoint
-    ) : this(
-        LightWalletGrpcService.createDefaultChannel(
-            appContext,
-            lightWalletEndpoint
-        )
-    )
+    companion object {
+        internal fun new(
+            channelFactory: ChannelFactory,
+            lightWalletEndpoint: LightWalletEndpoint
+        ) = DarksideApi(channelFactory.newChannel(lightWalletEndpoint))
+    }
 
     //
     // Service APIs
     //
 
     fun reset(
-        saplingActivationHeight: BlockHeight = ZcashNetwork.Mainnet.saplingActivationHeight,
+        saplingActivationHeight: BlockHeightUnsafe,
         branchId: String = "e9ff75a6", // Canopy,
-        chainName: String = "darkside${ZcashNetwork.Mainnet.networkName}"
+        chainName: String = "darksidemainnet"
     ) = apply {
-        twig("resetting darksidewalletd with saplingActivation=$saplingActivationHeight branchId=$branchId chainName=$chainName")
         Darkside.DarksideMetaState.newBuilder()
             .setBranchID(branchId)
             .setChainName(chainName)
@@ -52,51 +51,49 @@ class DarksideApi(
     }
 
     fun stageBlocks(url: String) = apply {
-        twig("staging blocks url=$url")
         createStub().stageBlocks(url.toUrl())
     }
 
-    fun stageTransactions(url: String, targetHeight: BlockHeight) = apply {
-        twig("staging transaction at height=$targetHeight from url=$url")
+    fun stageTransactions(url: String, targetHeight: BlockHeightUnsafe) = apply {
         createStub().stageTransactions(
             DarksideTransactionsURL.newBuilder().setHeight(targetHeight.value).setUrl(url).build()
         )
     }
 
-    fun stageEmptyBlocks(startHeight: BlockHeight, count: Int = 10, nonce: Int = Random.nextInt()) = apply {
-        twig("staging $count empty blocks starting at $startHeight with nonce $nonce")
+    fun stageEmptyBlocks(
+        startHeight: BlockHeightUnsafe,
+        count: Int = 10,
+        nonce: Int = Random.nextInt()
+    ) = apply {
         createStub().stageBlocksCreate(
-            Darkside.DarksideEmptyBlocks.newBuilder().setHeight(startHeight.value).setCount(count).setNonce(nonce).build()
+            Darkside.DarksideEmptyBlocks.newBuilder().setHeight(startHeight.value).setCount(count)
+                .setNonce(nonce).build()
         )
     }
 
-    fun stageTransactions(txs: Iterator<Service.RawTransaction>?, tipHeight: BlockHeight) {
+    fun stageTransactions(txs: Iterator<Service.RawTransaction>?, tipHeight: BlockHeightUnsafe) {
         if (txs == null) {
-            twig("no transactions to stage")
             return
         }
-        twig("staging transaction at height=$tipHeight")
         val response = EmptyResponse()
         createStreamingStub().stageTransactionsStream(response).apply {
             txs.forEach {
-                twig("stageTransactions: onNext calling!!!")
-                onNext(it.newBuilderForType().setData(it.data).setHeight(tipHeight.value).build()) // apply the tipHeight because the passed in txs might not know their destination height (if they were created via SendTransaction)
-                twig("stageTransactions: onNext called")
+                // apply the tipHeight because the passed in txs might not know their destination
+                // height (if they were created via SendTransaction)
+                onNext(
+                    it.newBuilderForType().setData(it.data).setHeight(tipHeight.value).build()
+                )
             }
-            twig("stageTransactions: onCompleted calling!!!")
             onCompleted()
-            twig("stageTransactions: onCompleted called")
         }
         response.await()
     }
 
-    fun applyBlocks(tipHeight: BlockHeight) {
-        twig("applying blocks up to tipHeight=$tipHeight")
+    fun applyBlocks(tipHeight: BlockHeightUnsafe) {
         createStub().applyStaged(tipHeight.toHeight())
     }
 
     fun getSentTransactions(): MutableIterator<Service.RawTransaction>? {
-        twig("grabbing sent transactions...")
         return createStub().getIncomingTransactions(Service.Empty.newBuilder().build())
     }
 //    fun setMetaState(
@@ -121,7 +118,7 @@ class DarksideApi(
 //    fun setState(latestHeight: Int = -1, reorgHeight: Int = latestHeight): DarksideApi {
 //        this.latestHeight = latestHeight
 //        this.reorgHeight = reorgHeight
-//        // TODO: change this service to accept ints as heights, like everywhere else
+//        // change this service to accept ints as heights, like everywhere else
 //        createStub().darksideSetState(
 //            Darkside.DarksideState.newBuilder()
 //                .setLatestHeight(latestHeight.toLong())
@@ -134,40 +131,50 @@ class DarksideApi(
     private fun createStub(): DarksideStreamerGrpc.DarksideStreamerBlockingStub =
         DarksideStreamerGrpc
             .newBlockingStub(channel)
-            .withDeadlineAfter(singleRequestTimeoutSec, TimeUnit.SECONDS)
+            .withDeadlineAfter(singleRequestTimeout.inWholeSeconds, TimeUnit.SECONDS)
 
     private fun createStreamingStub(): DarksideStreamerGrpc.DarksideStreamerStub =
         DarksideStreamerGrpc
             .newStub(channel)
-            .withDeadlineAfter(singleRequestTimeoutSec, TimeUnit.SECONDS)
+            .withDeadlineAfter(singleRequestTimeout.inWholeSeconds, TimeUnit.SECONDS)
 
     private fun String.toUrl() = Darkside.DarksideBlocksURL.newBuilder().setUrl(this).build()
-    private fun BlockHeight.toHeight() = Darkside.DarksideHeight.newBuilder().setHeight(this.value).build()
 
     class EmptyResponse : StreamObserver<Service.Empty> {
+        companion object {
+            private val DEFAULT_DELAY = 20.milliseconds
+        }
+
         var completed = false
         var error: Throwable? = null
         override fun onNext(value: Service.Empty?) {
-            twig("<><><><><><><><> EMPTY RESPONSE: ONNEXT CALLED!!!!")
+            // No implementation
         }
 
         override fun onError(t: Throwable?) {
-            twig("<><><><><><><><> EMPTY RESPONSE: ONERROR CALLED!!!!")
             error = t
             completed = true
         }
 
         override fun onCompleted() {
-            twig("<><><><><><><><> EMPTY RESPONSE: ONCOMPLETED CALLED!!!")
             completed = true
         }
 
         fun await() {
             while (!completed) {
-                twig("awaiting server response...")
-                Thread.sleep(20L)
+                Thread.sleep(DEFAULT_DELAY.inWholeSeconds)
             }
-            if (error != null) throw RuntimeException("Server responded with an error: $error caused by ${error?.cause}")
+            if (error != null) {
+                error("Server responded with an error: $error caused by ${error?.cause}")
+            }
         }
     }
 }
+
+private fun BlockHeightUnsafe.toHeight() =
+    Darkside.DarksideHeight.newBuilder().setHeight(this.value).build()
+
+fun DarksideApi.Companion.new(
+    context: Context,
+    lightWalletEndpoint: LightWalletEndpoint
+) = DarksideApi.new(AndroidChannelFactory(context), lightWalletEndpoint)

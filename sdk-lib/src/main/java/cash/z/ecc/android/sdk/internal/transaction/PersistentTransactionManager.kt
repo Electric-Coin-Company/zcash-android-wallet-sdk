@@ -10,10 +10,10 @@ import cash.z.ecc.android.sdk.db.entity.isFailedEncoding
 import cash.z.ecc.android.sdk.db.entity.isSubmitted
 import cash.z.ecc.android.sdk.internal.db.PendingTransactionDao
 import cash.z.ecc.android.sdk.internal.db.PendingTransactionDb
-import cash.z.ecc.android.sdk.internal.service.LightWalletService
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.Zatoshi
+import co.electriccoin.lightwallet.client.BlockingLightWalletClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.flow.Flow
@@ -38,7 +38,7 @@ import kotlin.math.max
 class PersistentTransactionManager(
     db: PendingTransactionDb,
     internal val encoder: TransactionEncoder,
-    private val service: LightWalletService
+    private val service: BlockingLightWalletClient
 ) : OutboundTransactionManager {
 
     private val daoMutex = Mutex()
@@ -55,7 +55,7 @@ class PersistentTransactionManager(
     constructor(
         appContext: Context,
         encoder: TransactionEncoder,
-        service: LightWalletService,
+        service: BlockingLightWalletClient,
         databaseFile: File
     ) : this(
         commonDatabaseBuilder(

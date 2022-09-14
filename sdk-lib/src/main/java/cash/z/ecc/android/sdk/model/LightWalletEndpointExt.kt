@@ -2,6 +2,8 @@
 
 package cash.z.ecc.android.sdk.model
 
+import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
+
 /*
  * This is a set of extension functions currently, because we expect them to change in the future.
  */

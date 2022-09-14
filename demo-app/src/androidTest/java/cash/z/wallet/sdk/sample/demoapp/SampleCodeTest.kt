@@ -8,13 +8,15 @@ import cash.z.ecc.android.sdk.ext.convertZecToZatoshi
 import cash.z.ecc.android.sdk.ext.toHex
 import cash.z.ecc.android.sdk.internal.TroubleshootingTwig
 import cash.z.ecc.android.sdk.internal.Twig
-import cash.z.ecc.android.sdk.internal.service.LightWalletGrpcService
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.BlockHeight
-import cash.z.ecc.android.sdk.model.LightWalletEndpoint
 import cash.z.ecc.android.sdk.model.Mainnet
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.tool.DerivationTool
+import co.electriccoin.lightwallet.client.BlockingLightWalletClient
+import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
+import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
+import co.electriccoin.lightwallet.client.new
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -62,7 +64,8 @@ class SampleCodeTest {
 
     // ///////////////////////////////////////////////////
     // Derive Extended Spending Key
-    @Test fun deriveSpendingKey() {
+    @Test
+    fun deriveSpendingKey() {
         val spendingKeys = runBlocking {
             DerivationTool.deriveSpendingKeys(
                 seed,
@@ -75,7 +78,8 @@ class SampleCodeTest {
 
     // ///////////////////////////////////////////////////
     // Get Address
-    @Test fun getAddress() = runBlocking {
+    @Test
+    fun getAddress() = runBlocking {
         val address = synchronizer.getAddress()
         assertFalse(address.isBlank())
         log("Address: $address")
@@ -83,24 +87,36 @@ class SampleCodeTest {
 
     // ///////////////////////////////////////////////////
     // Derive address from Extended Full Viewing Key
-    @Test fun getAddressFromViewingKey() {
+    @Test
+    fun getAddressFromViewingKey() {
     }
 
     // ///////////////////////////////////////////////////
     // Query latest block height
-    @Test fun getLatestBlockHeightTest() {
-        val lightwalletService = LightWalletGrpcService.new(context, lightwalletdHost)
+    @Test
+    fun getLatestBlockHeightTest() {
+        val lightwalletService = BlockingLightWalletClient.new(context, lightwalletdHost)
         log("Latest Block: ${lightwalletService.getLatestBlockHeight()}")
     }
 
     // ///////////////////////////////////////////////////
     // Download compact block range
-    @Test fun getBlockRange() {
-        val blockRange = BlockHeight.new(ZcashNetwork.Mainnet, 500_000)..BlockHeight.new(
-            ZcashNetwork.Mainnet,
-            500_009
+    @Test
+    fun getBlockRange() {
+        val blockRange = BlockHeightUnsafe(
+            BlockHeight.new(
+                ZcashNetwork.Mainnet,
+                500_000
+            ).value
+        )..BlockHeightUnsafe(
+            (
+                BlockHeight.new(
+                    ZcashNetwork.Mainnet,
+                    500_009
+                ).value
+                )
         )
-        val lightwalletService = LightWalletGrpcService.new(context, lightwalletdHost)
+        val lightwalletService = BlockingLightWalletClient.new(context, lightwalletdHost)
         val blocks = lightwalletService.getBlockRange(blockRange)
         assertEquals(blockRange.endInclusive.value - blockRange.start.value, blocks.count())
 
@@ -111,12 +127,14 @@ class SampleCodeTest {
 
     // ///////////////////////////////////////////////////
     // Query account outgoing transactions
-    @Test fun queryOutgoingTransactions() {
+    @Test
+    fun queryOutgoingTransactions() {
     }
 
     // ///////////////////////////////////////////////////
     // Query account incoming transactions
-    @Test fun queryIncomingTransactions() {
+    @Test
+    fun queryIncomingTransactions() {
     }
 
 //    // ///////////////////////////////////////////////////
@@ -138,9 +156,11 @@ class SampleCodeTest {
 
     // ///////////////////////////////////////////////////
     // Create a signed transaction (with memo) and broadcast
-    @Test fun submitTransaction() = runBlocking {
+    @Test
+    fun submitTransaction() = runBlocking {
         val amount = 0.123.convertZecToZatoshi()
-        val address = "ztestsapling1tklsjr0wyw0d58f3p7wufvrj2cyfv6q6caumyueadq8qvqt8lda6v6tpx474rfru9y6u75u7qnw"
+        val address =
+            "ztestsapling1tklsjr0wyw0d58f3p7wufvrj2cyfv6q6caumyueadq8qvqt8lda6v6tpx474rfru9y6u75u7qnw"
         val memo = "Test Transaction"
         val spendingKey = DerivationTool.deriveSpendingKeys(seed, ZcashNetwork.Mainnet)[0]
         val transactionFlow = synchronizer.sendToAddress(spendingKey, amount, address, memo)

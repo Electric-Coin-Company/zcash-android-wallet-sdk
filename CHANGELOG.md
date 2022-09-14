@@ -1,6 +1,11 @@
 Change Log
 ==========
 
+Version 1.10.0-beta01
+------------------------------------
+- The SDK's internal networking has been refactored to a separate Gradle module (and therefore a separate artifact) which is a transitive dependency of the Zcash Android SDK.
+    - The `z.cash.ecc.android.sdk.model.LightWalletEndpoint` class has been moved to `co.electriccoin.lightwallet.client.model.LightWalletEndpoint`
+
 Version 1.9.0-beta04
 ------------------------------------
 - The SDK now stores sapling param files in `no_backup/co.electricoin.zcash` folder instead of the `cache/params` 

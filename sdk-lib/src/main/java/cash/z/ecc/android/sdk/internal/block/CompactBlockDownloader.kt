@@ -1,17 +1,15 @@
 package cash.z.ecc.android.sdk.internal.block
-import cash.z.ecc.android.sdk.exception.LightWalletException
+
 import cash.z.ecc.android.sdk.internal.ext.retryUpTo
-import cash.z.ecc.android.sdk.internal.ext.tryWarn
-import cash.z.ecc.android.sdk.internal.service.LightWalletService
+import cash.z.ecc.android.sdk.internal.model.from
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.BlockHeight
-import cash.z.wallet.sdk.rpc.Service
-import io.grpc.StatusRuntimeException
-import kotlinx.coroutines.CoroutineScope
+import co.electriccoin.lightwallet.client.BlockingLightWalletClient
+import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
+import co.electriccoin.lightwallet.client.model.LightWalletEndpointInfoUnsafe
+import co.electriccoin.lightwallet.client.model.Response
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Dispatchers.IO
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
@@ -20,19 +18,19 @@ import kotlinx.coroutines.withContext
  * these dependencies, the downloader remains agnostic to the particular implementation of how to retrieve and store
  * data; although, by default the SDK uses gRPC and SQL.
  *
- * @property lightWalletService the service used for requesting compact blocks
+ * @property lightWalletClient the service used for requesting compact blocks
  * @property compactBlockStore responsible for persisting the compact blocks that are received
  */
 open class CompactBlockDownloader private constructor(val compactBlockStore: CompactBlockStore) {
 
-    lateinit var lightWalletService: LightWalletService
+    lateinit var lightWalletClient: BlockingLightWalletClient
         private set
 
     constructor(
-        lightWalletService: LightWalletService,
+        lightWalletService: BlockingLightWalletClient,
         compactBlockStore: CompactBlockStore
     ) : this(compactBlockStore) {
-        this.lightWalletService = lightWalletService
+        this.lightWalletClient = lightWalletService
     }
 
     /**
@@ -45,7 +43,9 @@ open class CompactBlockDownloader private constructor(val compactBlockStore: Com
      * @return the number of blocks that were returned in the results from the lightwalletService.
      */
     suspend fun downloadBlockRange(heightRange: ClosedRange<BlockHeight>): Int = withContext(IO) {
-        val result = lightWalletService.getBlockRange(heightRange)
+        val result = lightWalletClient.getBlockRange(
+            BlockHeightUnsafe.from(heightRange.start)..BlockHeightUnsafe.from(heightRange.endInclusive)
+        )
         compactBlockStore.write(result)
     }
 
@@ -66,7 +66,7 @@ open class CompactBlockDownloader private constructor(val compactBlockStore: Com
      * @return the latest block height.
      */
     suspend fun getLatestBlockHeight() =
-        lightWalletService.getLatestBlockHeight()
+        lightWalletClient.getLatestBlockHeight()
 
     /**
      * Return the latest block height that has been persisted into the [CompactBlockStore].
@@ -76,47 +76,18 @@ open class CompactBlockDownloader private constructor(val compactBlockStore: Com
     suspend fun getLastDownloadedHeight() =
         compactBlockStore.getLatestHeight()
 
-    suspend fun getServerInfo(): Service.LightdInfo = withContext<Service.LightdInfo>(IO) {
-        lateinit var result: Service.LightdInfo
-        try {
-            result = lightWalletService.getServerInfo()
-        } catch (e: StatusRuntimeException) {
-            retryUpTo(GET_SERVER_INFO_RETRIES) {
-                twig("WARNING: reconnecting to service in response to failure (retry #${it + 1}): $e")
-                lightWalletService.reconnect()
-                result = lightWalletService.getServerInfo()
+    suspend fun getServerInfo(): LightWalletEndpointInfoUnsafe? = withContext(IO) {
+        retryUpTo(GET_SERVER_INFO_RETRIES) {
+            when (val result = lightWalletClient.getServerInfo()) {
+                is Response.Success -> return@withContext result.result
+                else -> {
+                    lightWalletClient.reconnect()
+                    twig("WARNING: reconnecting to service in response to failure (retry #${it + 1})")
+                }
             }
         }
-        result
-    }
 
-    suspend fun changeService(
-        newService: LightWalletService,
-        errorHandler: (Throwable) -> Unit = { throw it }
-    ) = withContext(IO) {
-        @Suppress("TooGenericExceptionCaught")
-        try {
-            val existing = lightWalletService.getServerInfo()
-            val new = newService.getServerInfo()
-            val nonMatching = existing.essentialPropertyDiff(new)
-
-            if (nonMatching.size > 0) {
-                errorHandler(
-                    LightWalletException.ChangeServerException.ChainInfoNotMatching(
-                        nonMatching.joinToString(),
-                        existing,
-                        new
-                    )
-                )
-            }
-
-            gracefullyShutdown(lightWalletService)
-            lightWalletService = newService
-        } catch (s: StatusRuntimeException) {
-            errorHandler(LightWalletException.ChangeServerException.StatusException(s.status))
-        } catch (t: Throwable) {
-            errorHandler(t)
-        }
+        null
     }
 
     /**
@@ -124,7 +95,7 @@ open class CompactBlockDownloader private constructor(val compactBlockStore: Com
      */
     suspend fun stop() {
         withContext(Dispatchers.IO) {
-            lightWalletService.shutdown()
+            lightWalletClient.shutdown()
         }
         compactBlockStore.close()
     }
@@ -134,35 +105,7 @@ open class CompactBlockDownloader private constructor(val compactBlockStore: Com
      *
      * @return the full transaction info.
      */
-    fun fetchTransaction(txId: ByteArray) = lightWalletService.fetchTransaction(txId)
-
-    //
-    // Convenience functions
-    //
-
-    private suspend fun CoroutineScope.gracefullyShutdown(service: LightWalletService) = launch {
-        @Suppress("MagicNumber")
-        delay(2_000L)
-        tryWarn("Warning: error while shutting down service") {
-            service.shutdown()
-        }
-    }
-
-    /**
-     * Return a list of critical properties that do not match.
-     */
-    private fun Service.LightdInfo.essentialPropertyDiff(other: Service.LightdInfo) =
-        mutableListOf<String>().also {
-            if (!consensusBranchId.equals(other.consensusBranchId, true)) {
-                it.add("consensusBranchId")
-            }
-            if (saplingActivationHeight != other.saplingActivationHeight) {
-                it.add("saplingActivationHeight")
-            }
-            if (!chainName.equals(other.chainName, true)) {
-                it.add("chainName")
-            }
-        }
+    fun fetchTransaction(txId: ByteArray) = lightWalletClient.fetchTransaction(txId)
 
     companion object {
         private const val GET_SERVER_INFO_RETRIES = 6

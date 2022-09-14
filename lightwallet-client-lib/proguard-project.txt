@@ -1,0 +1,18 @@
+# This improves obfuscation and moves non-public classes to their own namespace.
+-repackageclasses 'co.electriccoin.lightwallet.client.internal'
+
+# This makes it easier to autocomplete methods in an IDE using this obfuscated library.
+-keepparameternames
+
+# The ProGuard manual recommends keeping these attributes for libraries.
+-keepattributes EnclosingMethod,InnerClasses,Signature,Exceptions,*Annotation*
+
+# Ensure that stacktraces are reversible.
+-renamesourcefileattribute SourceFile
+-keepattributes SourceFile,LineNumberTable
+
+# Keep the public interface of the library.
+# Some of these will need to be tuned in the future, as they shouldn't ALL be considered part of the
+# public API.  Much of this will be improved by further repackaging of the classes.
+-keep public class co.electriccoin.lightwallet.client.model.* { public protected *; }
+-keep public class co.electriccoin.lightwallet.client.* { public protected *; }

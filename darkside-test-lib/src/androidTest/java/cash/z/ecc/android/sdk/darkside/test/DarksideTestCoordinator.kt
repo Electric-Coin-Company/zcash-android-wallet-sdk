@@ -1,12 +1,16 @@
 package cash.z.ecc.android.sdk.darkside.test
 
+import androidx.test.core.app.ApplicationProvider
 import androidx.test.platform.app.InstrumentationRegistry
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.Darkside
-import cash.z.ecc.android.sdk.model.LightWalletEndpoint
 import cash.z.ecc.android.sdk.model.ZcashNetwork
+import co.electriccoin.lightwallet.client.internal.DarksideApi
+import co.electriccoin.lightwallet.client.internal.new
+import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
+import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
 import io.grpc.StatusRuntimeException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.filter
@@ -53,13 +57,16 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
         try {
             twig("entering the darkside")
             initiate()
-            synchronizer.getServerInfo().apply {
-                assertTrue(
-                    "Error: not on the darkside",
-                    vendor.contains("dark", true)
-                        or chainName.contains("dark", true)
-                )
-            }
+
+            // In the future, we may want to have the SDK internally verify being on the darkside by matching the network type
+
+            // synchronizer.getServerInfo().apply {
+            //     assertTrue(
+            //         "Error: not on the darkside",
+            //         vendor.contains("dark", true)
+            //             or chainName.contains("dark", true)
+            //     )
+            // }
             twig("darkside initiation complete!")
         } catch (error: StatusRuntimeException) {
             Assert.fail(
@@ -75,9 +82,8 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
      */
     fun initiate() {
         twig("*************** INITIALIZING TEST COORDINATOR (ONLY ONCE) ***********************")
-        val channel = synchronizer.channel
-        darkside = DarksideApi(channel)
-        darkside.reset()
+        darkside = DarksideApi.new(ApplicationProvider.getApplicationContext(), LightWalletEndpoint.Darkside)
+        darkside.reset(BlockHeightUnsafe(wallet.network.saplingActivationHeight.value))
     }
 
 //    fun triggerSmallReorg() {
@@ -242,30 +248,30 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
             tipHeight: BlockHeight = startHeight + 100
         ): DarksideChainMaker = apply {
             darkside
-                .reset(startHeight)
+                .reset(BlockHeightUnsafe(startHeight.value))
                 .stageBlocks(blocksUrl)
             applyTipHeight(tipHeight)
         }
 
         fun stageTransaction(url: String, targetHeight: BlockHeight): DarksideChainMaker = apply {
-            darkside.stageTransactions(url, targetHeight)
+            darkside.stageTransactions(url, BlockHeightUnsafe(targetHeight.value))
         }
 
         fun stageTransactions(targetHeight: BlockHeight, vararg urls: String): DarksideChainMaker = apply {
             urls.forEach {
-                darkside.stageTransactions(it, targetHeight)
+                darkside.stageTransactions(it, BlockHeightUnsafe(targetHeight.value))
             }
         }
 
         fun stageEmptyBlocks(startHeight: BlockHeight, count: Int = 10): DarksideChainMaker = apply {
-            darkside.stageEmptyBlocks(startHeight, count)
+            darkside.stageEmptyBlocks(BlockHeightUnsafe(startHeight.value), count)
         }
 
         fun stageEmptyBlock() = stageEmptyBlocks(lastTipHeight!! + 1, 1)
 
         fun applyTipHeight(tipHeight: BlockHeight): DarksideChainMaker = apply {
             twig("applying tip height of $tipHeight")
-            darkside.applyBlocks(tipHeight)
+            darkside.applyBlocks(BlockHeightUnsafe(tipHeight.value))
             lastTipHeight = tipHeight
         }
 
@@ -276,7 +282,7 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
          */
         fun makeSimpleChain() {
             darkside
-                .reset(DEFAULT_START_HEIGHT)
+                .reset(BlockHeightUnsafe(DEFAULT_START_HEIGHT.value))
                 .stageBlocks("https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/tx-incoming/blocks.txt")
             applyTipHeight(DEFAULT_START_HEIGHT + 100)
         }
@@ -284,13 +290,13 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
         fun advanceBy(numEmptyBlocks: Int) {
             val nextBlock = lastTipHeight!! + 1
             twig("adding $numEmptyBlocks empty blocks to the chain starting at $nextBlock")
-            darkside.stageEmptyBlocks(nextBlock, numEmptyBlocks)
+            darkside.stageEmptyBlocks(BlockHeightUnsafe(nextBlock.value), numEmptyBlocks)
             applyTipHeight(nextBlock + numEmptyBlocks)
         }
 
         fun applyPendingTransactions(targetHeight: BlockHeight = lastTipHeight!! + 1) {
             stageEmptyBlocks(lastTipHeight!! + 1, (targetHeight.value - lastTipHeight!!.value).toInt())
-            darkside.stageTransactions(darkside.getSentTransactions()?.iterator(), targetHeight)
+            darkside.stageTransactions(darkside.getSentTransactions()?.iterator(), BlockHeightUnsafe(targetHeight.value))
             applyTipHeight(targetHeight)
         }
     }

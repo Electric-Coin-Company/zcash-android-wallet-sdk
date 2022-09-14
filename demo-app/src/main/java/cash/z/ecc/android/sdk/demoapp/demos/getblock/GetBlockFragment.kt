@@ -15,6 +15,7 @@ import cash.z.ecc.android.sdk.demoapp.util.withCommas
 import cash.z.ecc.android.sdk.ext.toHex
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.ZcashNetwork
+import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import kotlin.math.min
 
 /**
@@ -26,7 +27,11 @@ class GetBlockFragment : BaseDemoFragment<FragmentGetBlockBinding>() {
 
     private fun setBlockHeight(blockHeight: BlockHeight) {
         val blocks =
-            lightWalletService?.getBlockRange(blockHeight..blockHeight)
+            lightWalletService?.getBlockRange(
+                BlockHeightUnsafe(blockHeight.value)..BlockHeightUnsafe(
+                    blockHeight.value
+                )
+            )
         val block = blocks?.firstOrNull()
         binding.textInfo.visibility = View.VISIBLE
         binding.textInfo.text = HtmlCompat.fromHtml(

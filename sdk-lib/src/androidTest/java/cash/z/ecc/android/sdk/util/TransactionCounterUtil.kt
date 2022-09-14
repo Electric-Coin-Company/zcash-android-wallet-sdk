@@ -3,12 +3,15 @@ package cash.z.ecc.android.sdk.util
 import androidx.test.platform.app.InstrumentationRegistry
 import cash.z.ecc.android.sdk.internal.TroubleshootingTwig
 import cash.z.ecc.android.sdk.internal.Twig
-import cash.z.ecc.android.sdk.internal.service.LightWalletGrpcService
+import cash.z.ecc.android.sdk.internal.model.from
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.BlockHeight
-import cash.z.ecc.android.sdk.model.LightWalletEndpoint
 import cash.z.ecc.android.sdk.model.Mainnet
 import cash.z.ecc.android.sdk.model.ZcashNetwork
+import co.electriccoin.lightwallet.client.BlockingLightWalletClient
+import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
+import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
+import co.electriccoin.lightwallet.client.new
 import org.junit.Ignore
 import org.junit.Test
 
@@ -16,7 +19,7 @@ class TransactionCounterUtil {
 
     private val network = ZcashNetwork.Mainnet
     private val context = InstrumentationRegistry.getInstrumentation().context
-    private val service = LightWalletGrpcService.new(context, LightWalletEndpoint.Mainnet)
+    private val service = BlockingLightWalletClient.new(context, LightWalletEndpoint.Mainnet)
 
     init {
         Twig.plant(TroubleshootingTwig())
@@ -27,9 +30,16 @@ class TransactionCounterUtil {
     fun testBlockSize() {
         val sizes = mutableMapOf<Int, Int>()
         service.getBlockRange(
-            BlockHeight.new(ZcashNetwork.Mainnet, 900_000)..BlockHeight.new(
-                ZcashNetwork.Mainnet,
-                910_000
+            BlockHeightUnsafe.from(
+                BlockHeight.new(
+                    ZcashNetwork.Mainnet,
+                    900_000
+                )
+            )..BlockHeightUnsafe.from(
+                BlockHeight.new(
+                    ZcashNetwork.Mainnet,
+                    910_000
+                )
             )
         ).forEach { b ->
             twig("h: ${b.header.size()}")
@@ -47,9 +57,16 @@ class TransactionCounterUtil {
         var totalOutputs = 0
         var totalTxs = 0
         service.getBlockRange(
-            BlockHeight.new(ZcashNetwork.Mainnet, 900_000)..BlockHeight.new(
-                ZcashNetwork.Mainnet,
-                950_000
+            BlockHeightUnsafe.from(
+                BlockHeight.new(
+                    ZcashNetwork.Mainnet,
+                    900_000
+                )
+            )..BlockHeightUnsafe.from(
+                BlockHeight.new(
+                    ZcashNetwork.Mainnet,
+                    950_000
+                )
             )
         ).forEach { b ->
             b.header.size()

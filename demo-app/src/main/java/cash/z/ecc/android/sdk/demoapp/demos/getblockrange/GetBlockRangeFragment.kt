@@ -14,6 +14,7 @@ import cash.z.ecc.android.sdk.demoapp.util.toRelativeTime
 import cash.z.ecc.android.sdk.demoapp.util.withCommas
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.ZcashNetwork
+import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import kotlin.math.max
 
 /**
@@ -27,7 +28,11 @@ class GetBlockRangeFragment : BaseDemoFragment<FragmentGetBlockRangeBinding>() {
     private fun setBlockRange(blockRange: ClosedRange<BlockHeight>) {
         val start = System.currentTimeMillis()
         val blocks =
-            lightWalletService?.getBlockRange(blockRange)
+            lightWalletService?.getBlockRange(
+                BlockHeightUnsafe(blockRange.start.value)..BlockHeightUnsafe(
+                    blockRange.endInclusive.value
+                )
+            )
         val fetchDelta = System.currentTimeMillis() - start
 
         // Note: This is a demo so we won't worry about iterating efficiently over these blocks
@@ -95,7 +100,12 @@ class GetBlockRangeFragment : BaseDemoFragment<FragmentGetBlockRangeBinding>() {
                     setText(R.string.loading)
                     binding.textInfo.setText(R.string.loading)
                     post {
-                        setBlockRange(BlockHeight.new(network, start)..BlockHeight.new(network, end))
+                        setBlockRange(
+                            BlockHeight.new(network, start)..BlockHeight.new(
+                                network,
+                                end
+                            )
+                        )
                         isEnabled = true
                         setText(R.string.apply)
                     }

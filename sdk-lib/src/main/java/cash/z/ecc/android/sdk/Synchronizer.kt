@@ -11,7 +11,6 @@ import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.type.AddressType
 import cash.z.ecc.android.sdk.type.ConsensusMatchType
-import cash.z.wallet.sdk.rpc.Service
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
@@ -280,13 +279,6 @@ interface Synchronizer {
     suspend fun cancelSpend(pendingId: Long): Boolean
 
     /**
-     * Convenience function that exposes the underlying server information, like its name and
-     * consensus branch id. Most wallets should already have a different source of truth for the
-     * server(s) with which they operate and thereby not need this function.
-     */
-    suspend fun getServerInfo(): Service.LightdInfo
-
-    /**
      * Download all UTXOs for the given address and store any new ones in the database.
      *
      * @return the number of utxos that were downloaded and addded to the UTXO table.
@@ -437,7 +429,7 @@ interface Synchronizer {
             val saplingParamTool = SaplingParamTool.new(initializer.context)
             val repository = DefaultSynchronizerFactory.defaultTransactionRepository(initializer)
             val blockStore = DefaultSynchronizerFactory.defaultBlockStore(initializer)
-            val service = DefaultSynchronizerFactory.defaultService(initializer)
+            val service = DefaultSynchronizerFactory.defaultLightWalletClient(initializer)
             val encoder = DefaultSynchronizerFactory.defaultEncoder(initializer, saplingParamTool, repository)
             val downloader = DefaultSynchronizerFactory.defaultDownloader(service, blockStore)
             val txManager =

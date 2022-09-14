@@ -8,15 +8,14 @@ import cash.z.ecc.android.sdk.SdkSynchronizer
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.db.entity.isPending
 import cash.z.ecc.android.sdk.internal.Twig
-import cash.z.ecc.android.sdk.internal.service.LightWalletGrpcService
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.BlockHeight
-import cash.z.ecc.android.sdk.model.LightWalletEndpoint
 import cash.z.ecc.android.sdk.model.Testnet
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.tool.DerivationTool
+import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
@@ -73,7 +72,7 @@ class TestWallet(
         }
     }
     val synchronizer: SdkSynchronizer = Synchronizer.newBlocking(initializer) as SdkSynchronizer
-    val service = (synchronizer.processor.downloader.lightWalletService as LightWalletGrpcService)
+    val service = synchronizer.processor.downloader.lightWalletClient
 
     val available get() = synchronizer.saplingBalances.value?.available
     val shieldedAddress =

@@ -8,6 +8,8 @@ import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.util.TestWallet
+import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
+import co.electriccoin.lightwallet.client.model.Response
 import kotlinx.coroutines.runBlocking
 import org.junit.Ignore
 import org.junit.Test
@@ -98,9 +100,11 @@ class SanityTest(
                 twig(it)
             }.getOrElse { return@runBlocking }
 
+            assertTrue(downloaderHeight is Response.Success<BlockHeightUnsafe>)
+
             assertTrue(
                 "${wallet.endpoint} ${wallet.networkName} Lightwalletd is too far behind. Downloader height $downloaderHeight is more than 10 blocks behind block explorer height $expectedHeight",
-                expectedHeight - 10 < downloaderHeight.value
+                expectedHeight - 10 < (downloaderHeight as Response.Success<BlockHeightUnsafe>).result.value
             )
         }
     }
@@ -115,15 +119,19 @@ class SanityTest(
         // result, only if there is no server communication problem.
         val height = BlockHeight.new(wallet.network, 1_000_000)
         val block = runCatching {
-            return@runCatching wallet.service.getBlockRange(height..height).first()
+            return@runCatching wallet.service.getBlockRange(
+                BlockHeightUnsafe(height.value)..BlockHeightUnsafe(
+                    height.value
+                )
+            ).first()
         }.onFailure {
             twig(it)
         }.getOrElse { return@runBlocking }
 
-        runCatching {
-            wallet.service.getLatestBlockHeight()
-        }.getOrNull() ?: return@runBlocking
-        assertTrue("$networkName failed to return a proper block. Height was ${block.height} but we expected $height", block.height == height.value)
+        assertTrue(
+            "$networkName failed to return a proper block. Height was $block but we expected $height",
+            block.height == height.value
+        )
     }
 
     companion object {
