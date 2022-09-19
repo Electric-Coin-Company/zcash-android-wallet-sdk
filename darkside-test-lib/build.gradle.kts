@@ -6,6 +6,8 @@ plugins {
 }
 
 android {
+    namespace = "cash.z.ecc.android.sdk.darkside"
+
     defaultConfig {
         //targetSdk = 30 //Integer.parseInt(project.property("targetSdkVersion"))
         multiDexEnabled = true

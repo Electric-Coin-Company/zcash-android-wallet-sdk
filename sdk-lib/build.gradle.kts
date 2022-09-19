@@ -119,6 +119,8 @@ signing {
 }
 
 android {
+    namespace = "cash.z.ecc.android.sdk"
+
     useLibrary("android.test.runner")
 
     defaultConfig {

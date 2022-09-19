@@ -8,6 +8,8 @@ plugins {
 }
 
 android {
+    namespace = "cash.z.ecc.android.sdk.demoapp"
+
     defaultConfig {
         applicationId = "cash.z.ecc.android.sdk.demoapp"
         minSdk = 19

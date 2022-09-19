@@ -97,6 +97,8 @@ A variety of Gradle tasks are set up within the project, and these tasks are als
  * `lint` - Performs static analysis with Android lint
  * `dependencyUpdates` - Checks for available dependency updates.  It will only suggest final releases, unless a particular dependency is already using a non-final release (e.g. alpha, beta, RC).
 
+Gradle Managed Devices are also configured with our build scripts.  We have found best results running tests one module at a time, rather than trying to run them all at once.  For example: `./gradlew :sdk-lib:pixel2TargetDebugAndroidTest` will run the SDK tests on a Pixel 2 sized device using our target API version.
+
 ## Gradle Properties
 A variety of Gradle properties can be used to configure the build.  Most of these properties are optional and help with advanced configuration.  If you're just doing local development or making a small pull request contribution, you likely do not need to worry about these.
 
