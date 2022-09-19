@@ -373,7 +373,13 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_initBlocksT
             hex::decode(utils::java_string_to_rust(&env, sapling_tree_string)).unwrap();
 
         debug!("initializing blocks table with height {}", height);
-        match init_blocks_table(&db_data, (height as u32).try_into()?, hash, time, &sapling_tree) {
+        match init_blocks_table(
+            &db_data,
+            (height as u32).try_into()?,
+            hash,
+            time,
+            &sapling_tree,
+        ) {
             Ok(()) => Ok(JNI_TRUE),
             Err(e) => Err(format_err!("Error while initializing blocks table: {}", e)),
         }
@@ -1157,7 +1163,10 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_shieldToAdd
         let account = if account == 0 {
             account as u32
         } else {
-            return Err(format_err!("account argument {} must be nonnegative", account));
+            return Err(format_err!(
+                "account argument {} must be nonnegative",
+                account
+            ));
         };
         let extsk = utils::java_string_to_rust(&env, extsk);
         let xprv_str = utils::java_string_to_rust(&env, xprv);
