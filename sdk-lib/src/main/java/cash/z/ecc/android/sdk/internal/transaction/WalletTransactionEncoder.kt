@@ -50,11 +50,10 @@ internal class WalletTransactionEncoder(
     }
 
     override suspend fun createShieldingTransaction(
-        spendingKey: String,
         transparentAccountPrivateKey: String,
         memo: ByteArray?
     ): EncodedTransaction {
-        val transactionId = createShieldingSpend(spendingKey, transparentAccountPrivateKey, memo)
+        val transactionId = createShieldingSpend(transparentAccountPrivateKey, memo)
         return repository.findEncodedTransactionById(transactionId)
             ?: throw TransactionEncoderException.TransactionNotFoundException(transactionId)
     }
@@ -126,11 +125,9 @@ internal class WalletTransactionEncoder(
         ) {
             @Suppress("TooGenericExceptionCaught")
             try {
-                val branchId = getConsensusBranchId()
                 SaplingParamTool.ensureParams((rustBackend as RustBackend).pathParamsDir)
-                twig("params exist! attempting to send with consensus branchId $branchId...")
+                twig("params exist! attempting to send...")
                 rustBackend.createToAddress(
-                    branchId,
                     fromAccountIndex,
                     spendingKey,
                     toAddress,
@@ -147,7 +144,6 @@ internal class WalletTransactionEncoder(
     }
 
     private suspend fun createShieldingSpend(
-        spendingKey: String,
         transparentAccountPrivateKey: String,
         memo: ByteArray? = byteArrayOf()
     ): Long {
@@ -157,7 +153,6 @@ internal class WalletTransactionEncoder(
                 SaplingParamTool.ensureParams((rustBackend as RustBackend).pathParamsDir)
                 twig("params exist! attempting to shield...")
                 rustBackend.shieldToAddress(
-                    spendingKey,
                     transparentAccountPrivateKey,
                     memo
                 )

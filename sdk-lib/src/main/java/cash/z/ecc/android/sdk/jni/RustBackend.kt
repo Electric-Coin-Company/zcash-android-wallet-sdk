@@ -88,9 +88,9 @@ internal class RustBackend private constructor(
         }
     }
 
-    override suspend fun getShieldedAddress(account: Int) =
+    override suspend fun getCurrentAddress(account: Int) =
         withContext(SdkDispatchers.DATABASE_IO) {
-            getShieldedAddress(
+            getCurrentAddress(
                 dataDbFile.absolutePath,
                 account,
                 networkId = network.id
@@ -216,7 +216,6 @@ internal class RustBackend private constructor(
         }
 
     override suspend fun createToAddress(
-        consensusBranchId: Long,
         account: Int,
         extsk: String,
         to: String,
@@ -225,7 +224,6 @@ internal class RustBackend private constructor(
     ): Long = withContext(SdkDispatchers.DATABASE_IO) {
         createToAddress(
             dataDbFile.absolutePath,
-            consensusBranchId,
             account,
             extsk,
             to,
@@ -238,7 +236,6 @@ internal class RustBackend private constructor(
     }
 
     override suspend fun shieldToAddress(
-        extsk: String,
         xprv: String,
         memo: ByteArray?
     ): Long {
@@ -247,7 +244,6 @@ internal class RustBackend private constructor(
             shieldToAddress(
                 dataDbFile.absolutePath,
                 0,
-                extsk,
                 xprv,
                 memo ?: ByteArray(0),
                 "$pathParamsDir/$SPEND_PARAM_FILE_NAME",
@@ -409,7 +405,7 @@ internal class RustBackend private constructor(
         ): Boolean
 
         @JvmStatic
-        private external fun getShieldedAddress(
+        private external fun getCurrentAddress(
             dbDataPath: String,
             account: Int,
             networkId: Int
@@ -495,7 +491,6 @@ internal class RustBackend private constructor(
         @Suppress("LongParameterList")
         private external fun createToAddress(
             dbDataPath: String,
-            consensusBranchId: Long,
             account: Int,
             extsk: String,
             to: String,
@@ -511,7 +506,6 @@ internal class RustBackend private constructor(
         private external fun shieldToAddress(
             dbDataPath: String,
             account: Int,
-            extsk: String,
             xprv: String,
             memo: ByteArray,
             spendParamsPath: String,

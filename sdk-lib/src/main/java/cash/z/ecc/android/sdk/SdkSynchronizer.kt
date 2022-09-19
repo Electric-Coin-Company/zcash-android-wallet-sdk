@@ -628,11 +628,19 @@ class SdkSynchronizer internal constructor(
 
     override suspend fun cancelSpend(pendingId: Long) = txManager.cancel(pendingId)
 
+    // TODO(str4d): Rename this to getCurrentAddress (and remove/add in changelog).
+    /**
+     * Returns the current Unified Address for this account.
+     */
     override suspend fun getAddress(accountId: Int): String = getShieldedAddress(accountId)
 
     override suspend fun getShieldedAddress(accountId: Int): String =
         processor.getShieldedAddress(accountId)
 
+    // TODO(str4d): Change this to do the right thing.
+    /**
+     * Returns the legacy transparent address corresponding to the current Unified Address for this account.
+     */
     override suspend fun getTransparentAddress(accountId: Int): String =
         processor.getTransparentAddress(accountId)
 
