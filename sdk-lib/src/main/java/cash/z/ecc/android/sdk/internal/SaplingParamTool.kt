@@ -10,6 +10,7 @@ import cash.z.ecc.android.sdk.internal.ext.getSha1Hash
 import cash.z.ecc.android.sdk.internal.ext.mkdirsSuspend
 import cash.z.ecc.android.sdk.internal.ext.renameToSuspend
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -17,6 +18,7 @@ import java.io.File
 import java.io.IOException
 import java.net.URL
 import java.nio.channels.Channels
+import kotlin.time.Duration.Companion.milliseconds
 
 internal class SaplingParamTool(val properties: SaplingParamToolProperties) {
     companion object {
@@ -178,9 +180,15 @@ internal class SaplingParamTool(val properties: SaplingParamToolProperties) {
      * @param destinationDir the directory where the params should be stored.
      *
      * @throws TransactionEncoderException.MissingParamsException in case of failure while checking sapling params
+     * @throws TransactionEncoderException.FetchParamsException
+     * @throws TransactionEncoderException.ValidateParamsException
      * files
      */
-    @Throws(TransactionEncoderException.MissingParamsException::class)
+    @Throws(
+        TransactionEncoderException.ValidateParamsException::class,
+        TransactionEncoderException.FetchParamsException::class,
+        TransactionEncoderException.MissingParamsException::class
+    )
     internal suspend fun ensureParams(destinationDir: File) {
         properties.saplingParams.filter {
             !File(it.destinationDirectory, it.fileName).existsSuspend()
@@ -189,8 +197,22 @@ internal class SaplingParamTool(val properties: SaplingParamToolProperties) {
                 twig("Attempting to download missing params: ${it.fileName}.")
                 fetchParams(it)
             } catch (e: TransactionEncoderException.FetchParamsException) {
-                twig("Failed to fetch params ${it.fileName} due to: $e")
-                throw TransactionEncoderException.MissingParamsException
+                twig(
+                    "Failed to fetch param file ${it.fileName} due to: $e. The second attempt is starting with a " +
+                        "little delay."
+                )
+                // Re-run the fetch with a little delay, if it failed previously (as it can be caused by network
+                // conditions). We do it only once, the next failure is delivered to the caller of this method.
+                delay(200.milliseconds)
+                fetchParams(it)
+            } catch (e: TransactionEncoderException.ValidateParamsException) {
+                twig(
+                    "Failed to validate fetched param file ${it.fileName} due to: $e. The second attempt is starting" +
+                        " now."
+                )
+                // Re-run the fetch for invalid param file immediately, if it failed previously. We do it again only
+                // once, the next failure is delivered to the caller of this method.
+                fetchParams(it)
             }
         }
 
@@ -207,8 +229,12 @@ internal class SaplingParamTool(val properties: SaplingParamToolProperties) {
      * @param paramsToFetch parameters wrapper class, which holds information about it
      *
      * @throws TransactionEncoderException.FetchParamsException if any error while downloading the params file occurs
+     * @throws TransactionEncoderException.ValidateParamsException if a failure in validation of fetched file occurs
      */
-    @Throws(TransactionEncoderException.FetchParamsException::class)
+    @Throws(
+        TransactionEncoderException.ValidateParamsException::class,
+        TransactionEncoderException.FetchParamsException::class
+    )
     internal suspend fun fetchParams(paramsToFetch: SaplingParameters) {
         val url = URL("$CLOUD_PARAM_DIR_URL/${paramsToFetch.fileName}")
         val temporaryFile = File(
@@ -239,19 +265,25 @@ internal class SaplingParamTool(val properties: SaplingParamToolProperties) {
                 // transfer is in progress, thereby closing both channels and setting the current thread's
                 // interrupt status
                 // IOException - If some other I/O error occurs
-                "Error while fetching ${paramsToFetch.fileName}, caused by $exception".also {
-                    twig(it)
-                    throw TransactionEncoderException.FetchParamsException(it)
-                }
+                finalizeAndReportError(
+                    temporaryFile,
+                    exception = TransactionEncoderException.FetchParamsException(
+                        paramsToFetch,
+                        "Error while fetching ${paramsToFetch.fileName}, caused by $exception."
+                    )
+                )
             }.onSuccess {
                 twig(
                     "Fetch and write of the temporary ${temporaryFile.name} succeeded. Validating and moving it to " +
-                        "the final destination"
+                        "the final destination."
                 )
                 if (!isFileHashValid(temporaryFile, paramsToFetch.fileHash)) {
                     finalizeAndReportError(
                         temporaryFile,
-                        message = "Failed while validating fetched params file: ${paramsToFetch.fileName}"
+                        exception = TransactionEncoderException.ValidateParamsException(
+                            paramsToFetch,
+                            "Failed while validating fetched param file: ${paramsToFetch.fileName}."
+                        )
                     )
                 }
                 val resultFile = File(paramsToFetch.destinationDirectory, paramsToFetch.fileName)
@@ -259,24 +291,24 @@ internal class SaplingParamTool(val properties: SaplingParamToolProperties) {
                     finalizeAndReportError(
                         temporaryFile,
                         resultFile,
-                        message = "Failed while renaming result params file: ${paramsToFetch.fileName}"
+                        exception = TransactionEncoderException.ValidateParamsException(
+                            paramsToFetch,
+                            "Failed while renaming result param file: ${paramsToFetch.fileName}."
+                        )
                     )
                 }
-
-                // TODO [#665]: https://github.com/zcash/zcash-android-wallet-sdk/issues/665
-                // TODO [#665]: Recover from corrupted sapling-spend.params and sapling-output.params
             }
         }
     }
 
     @Throws(TransactionEncoderException.FetchParamsException::class)
-    private suspend fun finalizeAndReportError(vararg files: File, message: String) {
+    private suspend fun finalizeAndReportError(vararg files: File, exception: TransactionEncoderException) {
         files.forEach {
             it.deleteSuspend()
         }
-        message.also {
+        exception.also {
             twig(it)
-            throw TransactionEncoderException.FetchParamsException(it)
+            throw it
         }
     }
 
@@ -295,7 +327,7 @@ internal class SaplingParamTool(val properties: SaplingParamToolProperties) {
 /**
  * Sapling file parameter class to hold each sapling file attributes.
  */
-internal data class SaplingParameters(
+data class SaplingParameters(
     val destinationDirectory: File,
     var fileName: String,
     val fileMaxSizeBytes: Long,
