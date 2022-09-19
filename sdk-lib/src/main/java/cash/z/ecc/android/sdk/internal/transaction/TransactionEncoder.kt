@@ -4,6 +4,7 @@ import cash.z.ecc.android.sdk.db.entity.EncodedTransaction
 import cash.z.ecc.android.sdk.model.Zatoshi
 
 interface TransactionEncoder {
+    // TODO(str4d): Migrate to binary USK format.
     /**
      * Creates a transaction, throwing an exception whenever things are missing. When the provided
      * wallet implementation doesn't throw an exception, we wrap the issue into a descriptive
@@ -25,8 +26,15 @@ interface TransactionEncoder {
         fromAccountIndex: Int = 0
     ): EncodedTransaction
 
+    // TODO(str4d): Migrate to binary USK format.
+    // TODO(str4d): Enable this to shield funds for other accounts.
+    /**
+     * Creates a transaction that shields any transparent funds sent to account 0.
+     *
+     * @param transparentAccountPrivateKey the transparent account private key for account 0.
+     * @param memo the optional memo to include as part of the transaction.
+     */
     suspend fun createShieldingTransaction(
-        spendingKey: String,
         transparentAccountPrivateKey: String,
         memo: ByteArray? = byteArrayOf()
     ): EncodedTransaction

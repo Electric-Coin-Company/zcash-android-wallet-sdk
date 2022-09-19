@@ -21,18 +21,18 @@ log-panics = "2.0.0"
 secp256k1 = "0.21"
 zcash_client_backend = { version = "0.5", features = ["transparent-inputs"] }
 zcash_client_sqlite = { version = "0.3", features = ["transparent-inputs"] }
-zcash_primitives = "0.6"
-zcash_proofs = "0.6"
+zcash_primitives = "0.7"
+zcash_proofs = "0.7"
 
-# Revision corresponds to zcash_primitives 0.6.0 plus the NU5 mainnet activation height.
-# We also need zcash_client_backend and zcash_client_sqlite, which haven't been published
-# with NU5 updates yet.
+# Revision corresponds to the pending zcash_primitives 0.8.0.
 [patch.crates-io]
-zcash_client_backend = { git = 'https://github.com/zcash/librustzcash.git', rev='b52e949bd6ee1dbbc0324437440bed8b3c423f79' }
-zcash_client_sqlite = { git = 'https://github.com/zcash/librustzcash.git', rev='b52e949bd6ee1dbbc0324437440bed8b3c423f79' }
-zcash_note_encryption = { git = 'https://github.com/zcash/librustzcash.git', rev='b52e949bd6ee1dbbc0324437440bed8b3c423f79' }
-zcash_primitives = { git = 'https://github.com/zcash/librustzcash.git', rev='b52e949bd6ee1dbbc0324437440bed8b3c423f79' }
-zcash_proofs = { git = 'https://github.com/zcash/librustzcash.git', rev='b52e949bd6ee1dbbc0324437440bed8b3c423f79' }
+group = { git = "https://github.com/zkcrypto/group.git", rev = "a7f3ceb2373e9fe536996f7b4d55c797f3e667f0" }
+orchard = { git = 'https://github.com/zcash/orchard.git', rev='f206b3f5d4e31bba75d03d9d03d5fa25825a9384' }
+zcash_client_backend = { git = 'https://github.com/zcash/librustzcash.git', rev='6cb0d212195a32b7456c866bcd367fc98967b668' }
+zcash_client_sqlite = { git = 'https://github.com/zcash/librustzcash.git', rev='6cb0d212195a32b7456c866bcd367fc98967b668' }
+zcash_note_encryption = { git = 'https://github.com/zcash/librustzcash.git', rev='6cb0d212195a32b7456c866bcd367fc98967b668' }
+zcash_primitives = { git = 'https://github.com/zcash/librustzcash.git', rev='6cb0d212195a32b7456c866bcd367fc98967b668' }
+zcash_proofs = { git = 'https://github.com/zcash/librustzcash.git', rev='6cb0d212195a32b7456c866bcd367fc98967b668' }
 
 ## Uncomment this to test librustzcash changes locally
 #[patch.crates-io]

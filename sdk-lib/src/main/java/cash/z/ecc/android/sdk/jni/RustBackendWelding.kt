@@ -20,7 +20,6 @@ internal interface RustBackendWelding {
 
     @Suppress("LongParameterList")
     suspend fun createToAddress(
-        consensusBranchId: Long,
         account: Int,
         extsk: String,
         to: String,
@@ -29,7 +28,6 @@ internal interface RustBackendWelding {
     ): Long
 
     suspend fun shieldToAddress(
-        extsk: String,
         xprv: String,
         memo: ByteArray? = byteArrayOf()
     ): Long
@@ -50,7 +48,7 @@ internal interface RustBackendWelding {
 
     fun isValidUnifiedAddr(addr: String): Boolean
 
-    suspend fun getShieldedAddress(account: Int = 0): String
+    suspend fun getCurrentAddress(account: Int = 0): String
 
     suspend fun getTransparentAddress(account: Int = 0, index: Int = 0): String
 

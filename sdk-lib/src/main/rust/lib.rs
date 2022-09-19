@@ -1,6 +1,7 @@
 #[macro_use]
 extern crate log;
 
+use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
 use std::panic;
 use std::path::Path;
@@ -30,7 +31,7 @@ use zcash_client_backend::{
     },
     encoding::{
         decode_extended_spending_key, encode_extended_full_viewing_key,
-        encode_extended_spending_key, encode_payment_address, AddressCodec,
+        encode_extended_spending_key, AddressCodec,
     },
     keys::{sapling, UnifiedFullViewingKey},
     wallet::{OvkPolicy, WalletTransparentOutput},
@@ -115,10 +116,14 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_initDataDb(
     let res = panic::catch_unwind(|| {
         let network = parse_network(network_id as u32)?;
         let db_path = utils::java_string_to_rust(&env, db_data);
+        let seed = None; // TODO Update
         WalletDb::for_path(db_path, network)
-            .and_then(|db| init_wallet_db(&db))
+            .map_err(|e| format_err!("Error while opening data DB: {}", e))
+            .and_then(|mut db| {
+                init_wallet_db(&mut db, seed)
+                    .map_err(|e| format_err!("Error while initializing data DB: {}", e))
+            })
             .map(|()| JNI_TRUE)
-            .map_err(|e| format_err!("Error while initializing data DB: {}", e))
     });
     unwrap_exc_or(&env, res, JNI_FALSE)
 }
@@ -153,9 +158,11 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_initAccount
                     }
                 })
             })
-            .collect::<Result<Vec<_>, _>>()?;
+            .enumerate() // TODO: Pass account IDs across the FFI.
+            .map(|(i, res)| res.map(|ufvk| (AccountId::from(i as u32), ufvk)))
+            .collect::<Result<HashMap<_,_>, _>>()?;
 
-        match init_accounts_table(&db_data, &ufvks[..]) {
+        match init_accounts_table(&db_data, &ufvks) {
             Ok(()) => Ok(JNI_TRUE),
             Err(e) => Err(format_err!("Error while initializing accounts: {}", e)),
         }
@@ -321,10 +328,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveE
             network.hrp_sapling_extended_spending_key(),
             &extsk_string,
         ) {
-            Ok(Some(extsk)) => ExtendedFullViewingKey::from(&extsk),
-            Ok(None) => {
-                return Err(format_err!("Deriving viewing key from spending key returned no results. Encoding was valid but type was incorrect."));
-            }
+            Ok(extsk) => ExtendedFullViewingKey::from(&extsk),
             Err(e) => {
                 return Err(format_err!(
                     "Error while deriving viewing key from spending key: {}",
@@ -388,7 +392,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_initBlocksT
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_getShieldedAddress(
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_getCurrentAddress(
     env: JNIEnv<'_>,
     _: JClass<'_>,
     db_data: JString<'_>,
@@ -400,18 +404,15 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_getShielded
         let db_data = wallet_db(&env, network, db_data)?;
         let account = AccountId::from(u32::try_from(account)?);
 
-        match (&db_data).get_address(account) {
+        match (&db_data).get_current_address(account) {
             Ok(Some(addr)) => {
-                let addr_str = encode_payment_address(network.hrp_sapling_payment_address(), &addr);
+                let addr_str = addr.encode(&network);
                 let output = env
                     .new_string(addr_str)
                     .expect("Couldn't create Java string!");
                 Ok(output.into_inner())
             }
-            Ok(None) => Err(format_err!(
-                "No payment address was available for account {:?}",
-                account
-            )),
+            Ok(None) => Err(format_err!("{:?} is not known to the wallet", account)),
             Err(e) => Err(format_err!("Error while fetching address: {}", e)),
         }
     });
@@ -1064,7 +1065,6 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_createToAdd
     env: JNIEnv<'_>,
     _: JClass<'_>,
     db_data: JString<'_>,
-    _: jlong, // was: consensus_branch_id; this is now derived from target/anchor height
     account: jint,
     extsk: JString<'_>,
     to: JString<'_>,
@@ -1097,10 +1097,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_createToAdd
         let extsk =
             match decode_extended_spending_key(network.hrp_sapling_extended_spending_key(), &extsk)
             {
-                Ok(Some(extsk)) => extsk,
-                Ok(None) => {
-                    return Err(format_err!("ExtendedSpendingKey is for the wrong network"));
-                }
+                Ok(extsk) => extsk,
                 Err(e) => {
                     return Err(format_err!("Invalid ExtendedSpendingKey: {}", e));
                 }
@@ -1149,7 +1146,6 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_shieldToAdd
     _: JClass<'_>,
     db_data: JString<'_>,
     account: jint,
-    extsk: JString<'_>,
     xprv: JString<'_>,
     memo: jbyteArray,
     spend_params: JString<'_>,
@@ -1168,22 +1164,10 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_shieldToAdd
                 account
             ));
         };
-        let extsk = utils::java_string_to_rust(&env, extsk);
         let xprv_str = utils::java_string_to_rust(&env, xprv);
         let memo_bytes = env.convert_byte_array(memo).unwrap();
         let spend_params = utils::java_string_to_rust(&env, spend_params);
         let output_params = utils::java_string_to_rust(&env, output_params);
-        let extfvk =
-            match decode_extended_spending_key(network.hrp_sapling_extended_spending_key(), &extsk)
-            {
-                Ok(Some(extsk)) => ExtendedFullViewingKey::from(&extsk),
-                Ok(None) => {
-                    return Err(format_err!("ExtendedSpendingKey is for the wrong network"));
-                }
-                Err(e) => {
-                    return Err(format_err!("Invalid ExtendedSpendingKey: {}", e));
-                }
-            };
 
         let xprv = match hdwallet_bitcoin::PrivKey::deserialize(xprv_str) {
             Ok(xprv) => xprv,
@@ -1200,7 +1184,6 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_shieldToAdd
             &network,
             prover,
             &sk,
-            &extfvk,
             AccountId::from(account),
             &MemoBytes::from(&memo),
             0,

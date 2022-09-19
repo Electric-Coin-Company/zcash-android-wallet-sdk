@@ -145,8 +145,10 @@ class PersistentTransactionManager(
         tx
     }
 
+    // TODO(str4d): This uses operator overloading to distinguish between it and createToAddress, which breaks when
+    //  spendingKey is removed. Figure out where these methods need to be renamed, and do so.
     override suspend fun encode(
-        spendingKey: String,
+        spendingKey: String, // TODO(str4d): Remove this argument.
         transparentAccountPrivateKey: String,
         pendingTx: PendingTransaction
     ): PendingTransaction {
@@ -156,7 +158,6 @@ class PersistentTransactionManager(
         try {
             twig("beginning to encode shielding transaction with : $encoder")
             val encodedTx = encoder.createShieldingTransaction(
-                spendingKey,
                 transparentAccountPrivateKey,
                 tx.memo
             )
