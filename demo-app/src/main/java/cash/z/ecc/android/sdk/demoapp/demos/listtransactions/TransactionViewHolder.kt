@@ -27,8 +27,11 @@ class TransactionViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) 
         val isInbound = transaction?.toAddress.isNullOrEmpty()
         amountText.text = transaction?.valueInZatoshi.convertZatoshiToZecString()
         timeText.text =
-            if (transaction == null || transaction.blockTimeInSeconds == 0L) "Pending"
-            else formatter.format(transaction.blockTimeInSeconds * 1000L)
+            if (transaction == null || transaction.blockTimeInSeconds == 0L) {
+                "Pending"
+            } else {
+                formatter.format(transaction.blockTimeInSeconds * 1000L)
+            }
         infoText.text = getMemoString(transaction)
 
         icon.rotation = if (isInbound) 0f else 180f

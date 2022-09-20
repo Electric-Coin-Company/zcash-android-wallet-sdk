@@ -158,7 +158,9 @@ sealed class BirthdayException(message: String, cause: Throwable? = null) : SdkE
         "Unable to find birthday that exactly matches $birthday.${
         if (nearestMatch != null) {
             " An exact match was request but the nearest match found was ${nearestMatch.height}."
-        } else ""
+        } else {
+            ""
+        }
         }"
     )
     class BirthdayFileNotFoundException(directory: String, height: BlockHeight?) : BirthdayException(

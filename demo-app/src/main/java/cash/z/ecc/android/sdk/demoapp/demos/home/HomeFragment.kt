@@ -9,7 +9,6 @@ import androidx.lifecycle.lifecycleScope
 import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
 import cash.z.ecc.android.sdk.demoapp.databinding.FragmentHomeBinding
 import cash.z.ecc.android.sdk.demoapp.util.mainActivity
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
 /**
@@ -113,7 +112,9 @@ class HomeFragment : BaseDemoFragment<FragmentHomeBinding>() {
             val lastSpace = lastIndexOf(' ')
             return if (firstSpace != -1 && lastSpace >= firstSpace) {
                 "${take(firstSpace)}...${takeLast(length - 1 - lastSpace)}"
-            } else this
+            } else {
+                this
+            }
         }
     }
 }

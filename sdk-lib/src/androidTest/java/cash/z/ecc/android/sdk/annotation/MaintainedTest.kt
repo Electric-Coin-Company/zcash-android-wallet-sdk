@@ -18,7 +18,7 @@ enum class TestPurpose {
     /**
      * These tests require a running instance of [darksidewalletd](https://github.com/zcash/lightwalletd/blob/master/docs/darksidewalletd.md).
      */
-    DARKSIDE,
+    DARKSIDE
 }
 
 /**
