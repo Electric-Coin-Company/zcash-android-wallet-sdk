@@ -25,9 +25,9 @@ Start by making sure the command line with Gradle works first, because **all the
    1. macOs with Homebrew
       1. `brew install pyenv`
       1. `pyenv install 2.7.18`
-      1. `pyenv global 2.7.18`
-      1. `eval "$(pyenv init -)"`
-      1. `to make sure that the installation was successful run: python --version`
+      1. `to enable pyenv in your bash shell run: eval "$(pyenv init -)"`
+      1. `get the path to python 2: which python2`
+      1. `add rust.pythonCommand=PYTHON2 PATH in ${rootDir}/local.properties`
 1. Install Android Studio and the Android SDK
     1. Download [Android Studio](https://developer.android.com/studio/).  We typically use the stable version of Android Studio, unless specifically noted due to short-term known issues.
     1. During the Android Studio setup wizard, choose the "Standard" setup option
