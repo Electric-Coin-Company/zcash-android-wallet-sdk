@@ -61,15 +61,15 @@ Start by making sure the command line with Gradle works first, because **all the
                 1. Go back and navigate to the newly enabled Developer options.  This may be a top-level item or under System > Developer options
                 1. Enable USB debugging
                 1. Connect your device to your computer, granting permission to the USB MAC address
-5. Check out the code.  _Use the command line (instead of Android Studio) to check out the code. This will ensure that your command line environment is set up correctly and avoids a few pitfalls with trying to use Android Studio directly.  Android Studio's built-in git client is not as robust as standalone clients_
+1. Check out the code.  _Use the command line (instead of Android Studio) to check out the code. This will ensure that your command line environment is set up correctly and avoids a few pitfalls with trying to use Android Studio directly.  Android Studio's built-in git client is not as robust as standalone clients_
     1. To check out a git repo from GitHub, there are three authentication methods: SSH, HTTPS, and GitHub API.  We recommend SSH.
     1. Create a new SSH key, following [GitHub's instructions](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent)
     1. Add the SSH key under [GitHub account settings](https://github.com/settings/keys)
     1. Clone repo in a terminal on your computer `git clone git@github.com:zcash/zcash-android-wallet-sdk.git`
-6. Compile from the command line
+1. Compile from the command line
     1. Navigate to the repo checkout in a terminal
     1. Compile the SDK and Demo App with the gradle command `./gradlew assemble`
-7. Compile from Android Studio
+1. Compile from Android Studio
     1. Open Android Studio
     1. From within Android Studio, choose to open an existing project and navigate to the root of the checked out repo.  Point Android Studio to the root of the git repo as (do not point it to the `sdk-lib` or `demo-app` modules, as that those are just a subset of the project and cannot be opened by themselves)
         1. Note: When first opening the project, Android Studio will warn that Gradle checksums are not fully supported.  Choose the "Use checksum" option.  This is a security feature that we have explicitly enabled.
@@ -86,11 +86,11 @@ Start by making sure the command line with Gradle works first, because **all the
    1. Delete the invisible `.idea` in the root directory of the project.  This directory is partially ignored by Git, so deleting it will remove the files that are untracked
    1. Restore the missing files in `.idea` folder from Git
    1. Relaunch Android Studio
-2. Clean the individual Gradle project by running `./gradlew clean` which will purge local build outputs.
-3. Run Gradle with the argument `--rerun-tasks` which will effectively disable the build cache by re-running tasks and repopulating the cache.  E.g. `./gradlew assemble --rerun-tasks`
-4. Reboot your computer, which will ensure that Gradle and Kotlin daemons are completely killed and relaunched
-5. Delete the global Gradle cache under `~/.gradle/caches`
-6. If adding a new dependency or updating a dependency, a warning that a dependency cannot be found may indicate the Maven repository restrictions need adjusting
+1. Clean the individual Gradle project by running `./gradlew clean` which will purge local build outputs.
+1. Run Gradle with the argument `--rerun-tasks` which will effectively disable the build cache by re-running tasks and repopulating the cache.  E.g. `./gradlew assemble --rerun-tasks`
+1. Reboot your computer, which will ensure that Gradle and Kotlin daemons are completely killed and relaunched
+1. Delete the global Gradle cache under `~/.gradle/caches`
+1. If adding a new dependency or updating a dependency, a warning that a dependency cannot be found may indicate the Maven repository restrictions need adjusting
 
 ## Gradle Tasks
 A variety of Gradle tasks are set up within the project, and these tasks are also accessible in Android Studio as run configurations.
@@ -117,7 +117,7 @@ For Continuous Integration, see [CI.md](CI.md).  The rest of this section is reg
 
 1. Configure or request access to a Firebase Test Lab project
     1. If you are an Electric Coin Co team member: Make an IT request to add your Google account to the existing Firebase Test Lab project 
-    2. If you are an open source contributor: set up your own Firebase project for the purpose of running Firebase Test Lab
+    1. If you are an open source contributor: set up your own Firebase project for the purpose of running Firebase Test Lab
 1. Set the Firebase Google Cloud project name as a global Gradle property `ZCASH_FIREBASE_TEST_LAB_PROJECT` under `~/.gradle/gradle.properties`
 1. Run the Gradle task `flankAuth` to generate a Firebase authentication token on your machine
 
