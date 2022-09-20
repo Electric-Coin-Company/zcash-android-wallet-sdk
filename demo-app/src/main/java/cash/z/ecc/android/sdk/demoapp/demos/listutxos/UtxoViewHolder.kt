@@ -23,8 +23,11 @@ class UtxoViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
     fun bindTo(transaction: ConfirmedTransaction?) {
         amountText.text = transaction?.valueInZatoshi.convertZatoshiToZecString()
         timeText.text =
-            if (transaction == null || transaction.blockTimeInSeconds == 0L) "Pending"
-            else formatter.format(transaction.blockTimeInSeconds * 1000L)
+            if (transaction == null || transaction.blockTimeInSeconds == 0L) {
+                "Pending"
+            } else {
+                formatter.format(transaction.blockTimeInSeconds * 1000L)
+            }
         infoText.text = getMemoString(transaction)
     }
 

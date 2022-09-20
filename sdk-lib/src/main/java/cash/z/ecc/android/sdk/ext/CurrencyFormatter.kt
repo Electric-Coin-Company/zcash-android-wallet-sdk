@@ -363,8 +363,11 @@ fun String.toAbbreviatedAddress(startLength: Int = 8, endLength: Int = 8) =
  * @return the masked version of this string, typically for use in logs.
  */
 internal fun String.masked(addressCharsToShow: Int = 4): String =
-    if (startsWith("ztest") || startsWith("zs")) "****${takeLast(addressCharsToShow)}"
-    else "***masked***"
+    if (startsWith("ztest") || startsWith("zs")) {
+        "****${takeLast(addressCharsToShow)}"
+    } else {
+        "***masked***"
+    }
 
 /**
  * Convenience function that returns true when this string starts with 'z'.

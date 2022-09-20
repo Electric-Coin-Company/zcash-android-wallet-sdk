@@ -223,9 +223,13 @@ class CompactBlockProcessor internal constructor(
                         consecutiveChainErrors.set(0)
                         val napTime = calculatePollInterval()
                         twig(
-                            "$summary${if (result == BlockProcessingResult.FailedEnhance) " (but there were" +
-                                " enhancement errors! We ignore those, for now. Memos in this block range are" +
-                                " probably missing! This will be improved in a future release.)" else ""}! Sleeping" +
+                            "$summary${if (result == BlockProcessingResult.FailedEnhance) {
+                                " (but there were" +
+                                    " enhancement errors! We ignore those, for now. Memos in this block range are" +
+                                    " probably missing! This will be improved in a future release.)"
+                            } else {
+                                ""
+                            }}! Sleeping" +
                                 " for ${napTime}ms (latest height: ${currentInfo.networkBlockHeight})."
                         )
                         delay(napTime)
