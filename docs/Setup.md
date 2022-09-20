@@ -13,7 +13,7 @@ Start by making sure the command line with Gradle works first, because **all the
 1. Install Java
     1. Install JVM 11 or greater on your system.  Our setup has been tested with Java 11-17.  Although a variety of JVM distributions are available and should work, we have settled on recommending [Adoptium/Temurin](https://adoptium.net), because this is the default distribution used by Gradle toolchains.  For Windows or Linux, be sure that the `JAVA_HOME` environment variable points to the right Java version.  Note: If you switch from a newer to an older JVM version, you may see an error like the following `> com.android.ide.common.signing.KeytoolException: Failed to read key AndroidDebugKey from store "~/.android/debug.keystore": Integrity check failed: java.security.NoSuchAlgorithmException: Algorithm HmacPBESHA256 not available`.  A solution is to delete the debug keystore and allow it to be re-generated.
     1. Android Studio has an embedded JVM, although running Gradle tasks from the command line requires a separate JVM to be installed.  Our Gradle scripts are configured to use toolchains to automatically install the correct JVM version.
-1. Configure Rust
+2. Configure Rust
     1. [Install rust](https://www.rust-lang.org/learn/get-started)
         1. macOS with Homebrew
             1. `brew install rustup`
@@ -21,8 +21,14 @@ Start by making sure the command line with Gradle works first, because **all the
     1. Add Android targets
         ```bash
         rustup target add armv7-linux-androideabi aarch64-linux-android i686-linux-android x86_64-linux-android
-        ```
-1. Install Android Studio and the Android SDK
+3. Install python 2.7 
+   1. macOs with Homebrew
+      1. `brew install pyenv`
+      2. `pyenv install 2.7.18`
+      3. `pyenv global 2.7.18`
+      4. `eval "$(pyenv init -)"`
+      5. `to make sure that the installation was successful run: python --version`
+4. Install Android Studio and the Android SDK
     1. Download [Android Studio](https://developer.android.com/studio/).  We typically use the stable version of Android Studio, unless specifically noted due to short-term known issues.
     1. During the Android Studio setup wizard, choose the "Standard" setup option
     1. Note the file path where Android Studio will install the Android developer tools, as you will need this path later
@@ -54,15 +60,15 @@ Start by making sure the command line with Gradle works first, because **all the
                 1. Go back and navigate to the newly enabled Developer options.  This may be a top-level item or under System > Developer options
                 1. Enable USB debugging
                 1. Connect your device to your computer, granting permission to the USB MAC address
-1. Check out the code.  _Use the command line (instead of Android Studio) to check out the code. This will ensure that your command line environment is set up correctly and avoids a few pitfalls with trying to use Android Studio directly.  Android Studio's built-in git client is not as robust as standalone clients_
+5. Check out the code.  _Use the command line (instead of Android Studio) to check out the code. This will ensure that your command line environment is set up correctly and avoids a few pitfalls with trying to use Android Studio directly.  Android Studio's built-in git client is not as robust as standalone clients_
     1. To check out a git repo from GitHub, there are three authentication methods: SSH, HTTPS, and GitHub API.  We recommend SSH.
     1. Create a new SSH key, following [GitHub's instructions](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent)
     1. Add the SSH key under [GitHub account settings](https://github.com/settings/keys)
     1. Clone repo in a terminal on your computer `git clone git@github.com:zcash/zcash-android-wallet-sdk.git`
-1. Compile from the command line
+6. Compile from the command line
     1. Navigate to the repo checkout in a terminal
     1. Compile the SDK and Demo App with the gradle command `./gradlew assemble`
-1. Compile from Android Studio
+7. Compile from Android Studio
     1. Open Android Studio
     1. From within Android Studio, choose to open an existing project and navigate to the root of the checked out repo.  Point Android Studio to the root of the git repo as (do not point it to the `sdk-lib` or `demo-app` modules, as that those are just a subset of the project and cannot be opened by themselves)
         1. Note: When first opening the project, Android Studio will warn that Gradle checksums are not fully supported.  Choose the "Use checksum" option.  This is a security feature that we have explicitly enabled.
