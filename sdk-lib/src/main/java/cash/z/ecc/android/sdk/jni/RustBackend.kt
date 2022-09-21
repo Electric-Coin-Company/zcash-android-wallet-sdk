@@ -44,9 +44,10 @@ internal class RustBackend private constructor(
     // Wrapper Functions
     //
 
-    override suspend fun initDataDb() = withContext(SdkDispatchers.DATABASE_IO) {
+    override suspend fun initDataDb(seed: ByteArray?) = withContext(SdkDispatchers.DATABASE_IO) {
         initDataDb(
             dataDbFile.absolutePath,
+            seed,
             networkId = network.id
         )
     }
@@ -384,7 +385,7 @@ internal class RustBackend private constructor(
         //
 
         @JvmStatic
-        private external fun initDataDb(dbDataPath: String, networkId: Int): Boolean
+        private external fun initDataDb(dbDataPath: String, seed: ByteArray?, networkId: Int): Int
 
         @JvmStatic
         private external fun initAccountsTableWithKeys(

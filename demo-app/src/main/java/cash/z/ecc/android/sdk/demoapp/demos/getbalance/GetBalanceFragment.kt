@@ -65,7 +65,7 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
                 )
             }
         }.let { initializer ->
-            synchronizer = Synchronizer.newBlocking(initializer)
+            synchronizer = Synchronizer.newBlocking(initializer, seed)
         }
     }
 

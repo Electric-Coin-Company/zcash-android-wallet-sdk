@@ -18,7 +18,9 @@ hex = "0.4"
 jni = { version = "0.17", default-features = false }
 log = "0.4"
 log-panics = "2.0.0"
+schemer = "0.2"
 secp256k1 = "0.21"
+secrecy = "0.8"
 zcash_client_backend = { version = "0.5", features = ["transparent-inputs"] }
 zcash_client_sqlite = { version = "0.3", features = ["transparent-inputs"] }
 zcash_primitives = "0.7"

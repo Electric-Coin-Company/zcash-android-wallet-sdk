@@ -175,6 +175,10 @@ sealed class BirthdayException(message: String, cause: Throwable? = null) : SdkE
  * Exceptions thrown by the initializer.
  */
 sealed class InitializerException(message: String, cause: Throwable? = null) : SdkException(message, cause) {
+    object SeedRequired : InitializerException(
+        "A pending database migration requires the wallet's seed. Call this initialization " +
+            "method again with the seed."
+    )
     class FalseStart(cause: Throwable?) : InitializerException("Failed to initialize accounts due to: $cause", cause)
     class AlreadyInitializedException(cause: Throwable, dbPath: String) : InitializerException(
         "Failed to initialize the blocks table" +

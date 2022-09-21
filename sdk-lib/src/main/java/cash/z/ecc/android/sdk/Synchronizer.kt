@@ -444,11 +444,14 @@ interface Synchronizer {
          * Synchronizer requires. It contains all information necessary to build a synchronizer and it is
          * mainly responsible for initializing the databases associated with this synchronizer and loading
          * the rust backend.
+         * @param seed the wallet's seed phrase. This only needs to be provided if this method returns an
+         * error indicating that the seed phrase is required for a database migration.
          */
         suspend fun new(
-            initializer: Initializer
+            initializer: Initializer,
+            seed: ByteArray,
         ): Synchronizer {
-            val repository = DefaultSynchronizerFactory.defaultTransactionRepository(initializer)
+            val repository = DefaultSynchronizerFactory.defaultTransactionRepository(initializer, seed)
             val blockStore = DefaultSynchronizerFactory.defaultBlockStore(initializer)
             val service = DefaultSynchronizerFactory.defaultService(initializer)
             val encoder = DefaultSynchronizerFactory.defaultEncoder(initializer, repository)
@@ -472,6 +475,8 @@ interface Synchronizer {
          * This is a blocking call, so it should not be called from the main thread.
          */
         @JvmStatic
-        fun newBlocking(initializer: Initializer): Synchronizer = runBlocking { new(initializer) }
+        fun newBlocking(initializer: Initializer, seed: ByteArray): Synchronizer = runBlocking {
+            new (initializer, seed)
+        }
     }
 }

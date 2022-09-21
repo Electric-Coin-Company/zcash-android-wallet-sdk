@@ -27,6 +27,9 @@ Change Log
       - `Initializer.Config.newWallet`
       - `Initializer.Config.setViewingKeys`
 - `cash.z.ecc.android.sdk`:
+  - `Synchronizer.Companion.new` now takes a `seed` argument. A non-null value should be
+    provided if `Synchronizer.Companion.new` throws an error that a database migration
+    requires the wallet seed.
   - `Synchronizer.shieldFunds` now takes a transparent account private key (representing
     all transparent secret keys within an account) instead of a transparent secret key.
 
