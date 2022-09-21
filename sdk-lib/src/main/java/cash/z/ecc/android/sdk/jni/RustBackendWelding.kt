@@ -40,7 +40,7 @@ internal interface RustBackendWelding {
 
     suspend fun initBlocksTable(checkpoint: Checkpoint): Boolean
 
-    suspend fun initDataDb(): Boolean
+    suspend fun initDataDb(seed: ByteArray?): Int
 
     fun isValidShieldedAddr(addr: String): Boolean
 

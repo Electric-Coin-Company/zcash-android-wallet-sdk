@@ -797,12 +797,13 @@ object DefaultSynchronizerFactory {
     //  can touch its views. and is probably related to FlowPagedList
     // TODO [#242]: https://github.com/zcash/zcash-android-wallet-sdk/issues/242
     private const val DEFAULT_PAGE_SIZE = 1000
-    suspend fun defaultTransactionRepository(initializer: Initializer): TransactionRepository =
+    suspend fun defaultTransactionRepository(initializer: Initializer, seed: ByteArray?): TransactionRepository =
         PagedTransactionRepository.new(
             initializer.context,
             initializer.network,
             DEFAULT_PAGE_SIZE,
             initializer.rustBackend,
+            seed,
             initializer.checkpoint,
             initializer.viewingKeys,
             initializer.overwriteVks

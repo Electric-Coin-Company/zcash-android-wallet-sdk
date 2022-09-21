@@ -79,7 +79,7 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
                 it.alias = "Demo_Utxos"
             }
         }
-        synchronizer = runBlocking { Synchronizer.new(initializer) }
+        synchronizer = runBlocking { Synchronizer.new(initializer, seed) }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

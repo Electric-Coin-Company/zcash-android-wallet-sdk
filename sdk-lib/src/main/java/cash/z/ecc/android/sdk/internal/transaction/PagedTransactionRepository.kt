@@ -5,6 +5,7 @@ import androidx.paging.PagedList
 import androidx.room.RoomDatabase
 import cash.z.ecc.android.sdk.db.commonDatabaseBuilder
 import cash.z.ecc.android.sdk.db.entity.ConfirmedTransaction
+import cash.z.ecc.android.sdk.exception.InitializerException.SeedRequired
 import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.internal.SdkDispatchers
 import cash.z.ecc.android.sdk.internal.SdkExecutors
@@ -122,11 +123,12 @@ internal class PagedTransactionRepository private constructor(
             zcashNetwork: ZcashNetwork,
             pageSize: Int = 10,
             rustBackend: RustBackend,
+            seed: ByteArray?,
             birthday: Checkpoint,
             viewingKeys: List<UnifiedFullViewingKey>,
             overwriteVks: Boolean = false
         ): PagedTransactionRepository {
-            initMissingDatabases(rustBackend, birthday, viewingKeys)
+            initMissingDatabases(rustBackend, seed, birthday, viewingKeys)
 
             val db = buildDatabase(appContext.applicationContext, rustBackend.dataDbFile)
             applyKeyMigrations(rustBackend, overwriteVks, viewingKeys)
@@ -172,10 +174,11 @@ internal class PagedTransactionRepository private constructor(
          */
         private suspend fun initMissingDatabases(
             rustBackend: RustBackend,
+            seed: ByteArray?,
             birthday: Checkpoint,
             viewingKeys: List<UnifiedFullViewingKey>
         ) {
-            maybeCreateDataDb(rustBackend)
+            maybeCreateDataDb(rustBackend, seed)
             maybeInitBlocksTable(rustBackend, birthday)
             maybeInitAccountsTable(rustBackend, viewingKeys)
         }
@@ -183,9 +186,15 @@ internal class PagedTransactionRepository private constructor(
         /**
          * Create the dataDb and its table, if it doesn't exist.
          */
-        private suspend fun maybeCreateDataDb(rustBackend: RustBackend) {
-            tryWarn("Warning: did not create dataDb. It probably already exists.") {
-                rustBackend.initDataDb()
+        private suspend fun maybeCreateDataDb(rustBackend: RustBackend, seed: ByteArray?) {
+            tryWarn(
+                "Warning: did not create dataDb. It probably already exists.",
+                unlessContains = "requires the wallet's seed"
+            ) {
+                val res = rustBackend.initDataDb(seed)
+                if (res == 1) {
+                    throw SeedRequired
+                }
                 twig("Initialized wallet for first run file: ${rustBackend.dataDbFile}")
             }
         }

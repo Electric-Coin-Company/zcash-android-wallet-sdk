@@ -17,7 +17,9 @@ use jni::{
     JNIEnv,
 };
 use log::Level;
+use schemer::MigratorError;
 use secp256k1::PublicKey;
+use secrecy::SecretVec;
 use zcash_client_backend::keys::UnifiedSpendingKey;
 use zcash_client_backend::{
     address::RecipientAddress,
@@ -36,6 +38,7 @@ use zcash_client_backend::{
     keys::{sapling, UnifiedFullViewingKey},
     wallet::{OvkPolicy, WalletTransparentOutput},
 };
+use zcash_client_sqlite::wallet::init::WalletMigrationError;
 #[allow(deprecated)]
 use zcash_client_sqlite::wallet::{delete_utxos_above, get_rewind_height};
 use zcash_client_sqlite::{
@@ -106,26 +109,40 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_initLogs(
     print_debug_state()
 }
 
+/// Sets up the internal structure of the data database.
+///
+/// If `seed` is `null`, database migrations will be attempted without it.
+///
+/// Returns 0 if successful, 1 if the seed must be provided in order to execute the requested
+/// migrations, or -1 otherwise.
 #[no_mangle]
 pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_initDataDb(
     env: JNIEnv<'_>,
     _: JClass<'_>,
     db_data: JString<'_>,
+    seed: jbyteArray,
     network_id: jint,
-) -> jboolean {
+) -> jint {
     let res = panic::catch_unwind(|| {
         let network = parse_network(network_id as u32)?;
         let db_path = utils::java_string_to_rust(&env, db_data);
-        let seed = None; // TODO Update
-        WalletDb::for_path(db_path, network)
-            .map_err(|e| format_err!("Error while opening data DB: {}", e))
-            .and_then(|mut db| {
-                init_wallet_db(&mut db, seed)
-                    .map_err(|e| format_err!("Error while initializing data DB: {}", e))
-            })
-            .map(|()| JNI_TRUE)
+
+        let mut db_data = WalletDb::for_path(db_path, network)
+            .map_err(|e| format_err!("Error while opening data DB: {}", e))?;
+
+        let seed = (!seed.is_null()).then(|| SecretVec::new(env.convert_byte_array(seed).unwrap()));
+
+        match init_wallet_db(&mut db_data, seed) {
+            Ok(()) => Ok(0),
+            Err(MigratorError::Migration { error, .. })
+                if matches!(error, WalletMigrationError::SeedRequired) =>
+            {
+                Ok(1)
+            }
+            Err(e) => Err(format_err!("Error while initializing data DB: {}", e)),
+        }
     });
-    unwrap_exc_or(&env, res, JNI_FALSE)
+    unwrap_exc_or(&env, res, -1)
 }
 
 #[no_mangle]
