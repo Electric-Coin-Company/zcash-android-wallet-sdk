@@ -327,11 +327,11 @@ internal class SaplingParamTool(val properties: SaplingParamToolProperties) {
 /**
  * Sapling file parameter class to hold each sapling file attributes.
  */
-data class SaplingParameters(
+internal data class SaplingParameters(
     val destinationDirectory: File,
-    var fileName: String,
+    val fileName: String,
     val fileMaxSizeBytes: Long,
-    var fileHash: String
+    val fileHash: String
 )
 
 /**

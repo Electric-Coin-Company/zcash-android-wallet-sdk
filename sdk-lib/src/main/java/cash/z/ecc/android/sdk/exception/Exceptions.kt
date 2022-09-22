@@ -271,11 +271,11 @@ sealed class TransactionEncoderException(
     message: String,
     cause: Throwable? = null
 ) : SdkException(message, cause) {
-    class FetchParamsException(
+    class FetchParamsException internal constructor(
         internal val parameters: SaplingParameters,
         message: String
     ) : TransactionEncoderException("Failed to fetch params: $parameters, due to: $message")
-    class ValidateParamsException(
+    class ValidateParamsException internal constructor(
         internal val parameters: SaplingParameters,
         message: String
     ) : TransactionEncoderException("Failed to validate fetched params: $parameters, due to:$message")
