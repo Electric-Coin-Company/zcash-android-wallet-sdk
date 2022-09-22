@@ -246,10 +246,15 @@ class SaplingParamToolIntegrationTest {
 
         assertFalse(expectedOutputFile.exists())
 
-        exception.parameters.fileHash = SaplingParamsFixture.OUTPUT_FILE_HASH
+        val fixedOutputSaplingParams = SaplingParamsFixture.new(
+            destinationDirectoryPath = exception.parameters.destinationDirectory,
+            fileName = exception.parameters.fileName,
+            fileMaxSize = exception.parameters.fileMaxSizeBytes,
+            fileHash = SaplingParamsFixture.OUTPUT_FILE_HASH // fixed file hash
+        )
 
         // re-try with fixed parameters
-        saplingParamTool.fetchParams(exception.parameters)
+        saplingParamTool.fetchParams(fixedOutputSaplingParams)
 
         assertTrue(expectedOutputFile.exists())
     }
