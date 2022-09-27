@@ -6,6 +6,9 @@ Change Log
 ### Added
 - `cash.z.ecc.android.sdk`:
   - `Synchronizer.isValidUnifiedAddr`
+- `cash.z.ecc.android.sdk.model`:
+  - `FirstClassByteArray`
+  - `UnifiedSpendingKey`
 - `cash.z.ecc.android.sdk.tool`:
   - `DerivationTool.deriveTransparentAccountPrivateKey`
   - `DerivationTool.deriveTransparentAddressFromAccountPrivateKey`

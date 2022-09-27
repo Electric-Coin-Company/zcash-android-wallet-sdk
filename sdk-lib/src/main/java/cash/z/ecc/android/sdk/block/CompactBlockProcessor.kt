@@ -41,6 +41,7 @@ import cash.z.ecc.android.sdk.internal.twigTask
 import cash.z.ecc.android.sdk.jni.RustBackend
 import cash.z.ecc.android.sdk.jni.RustBackendWelding
 import cash.z.ecc.android.sdk.model.BlockHeight
+import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.wallet.sdk.rpc.Service
 import io.grpc.StatusRuntimeException
@@ -1015,6 +1016,11 @@ class CompactBlockProcessor internal constructor(
      */
     suspend fun getLastScannedHeight() =
         repository.lastScannedHeight()
+
+    // TODO(str4d): CompactBlockProcessor is the wrong place for this, but it's where all the other APIs that need
+    //  access to the RustBackend live. This should be refactored.
+    internal suspend fun createAccount(seed: ByteArray): UnifiedSpendingKey =
+        rustBackend.createAccount(seed)
 
     /**
      * Get address corresponding to the given account for this wallet.

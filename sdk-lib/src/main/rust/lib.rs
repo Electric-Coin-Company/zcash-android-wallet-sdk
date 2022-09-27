@@ -11,9 +11,10 @@ use std::str::FromStr;
 use android_logger::Config;
 use failure::format_err;
 use hdwallet::traits::{Deserialize, Serialize};
+use jni::objects::JValue;
 use jni::{
     objects::{JClass, JString},
-    sys::{jboolean, jbyteArray, jint, jlong, jobjectArray, jstring, JNI_FALSE, JNI_TRUE},
+    sys::{jboolean, jbyteArray, jint, jlong, jobject, jobjectArray, jstring, JNI_FALSE, JNI_TRUE},
     JNIEnv,
 };
 use log::Level;
@@ -35,7 +36,7 @@ use zcash_client_backend::{
         decode_extended_spending_key, encode_extended_full_viewing_key,
         encode_extended_spending_key, AddressCodec,
     },
-    keys::{sapling, UnifiedFullViewingKey},
+    keys::{sapling, Era, UnifiedFullViewingKey},
     wallet::{OvkPolicy, WalletTransparentOutput},
 };
 use zcash_client_sqlite::wallet::init::WalletMigrationError;
@@ -145,6 +146,58 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_initDataDb(
     unwrap_exc_or(&env, res, -1)
 }
 
+/// Adds the next available account-level spend authority, given the current set of
+/// [ZIP 316] account identifiers known, to the wallet database.
+///
+/// Returns the newly created [ZIP 316] account identifier, along with the binary encoding
+/// of the [`UnifiedSpendingKey`] for the newly created account. The caller should store
+/// the returned spending key in a secure fashion.
+///
+/// If `seed` was imported from a backup and this method is being used to restore a
+/// previous wallet state, you should use this method to add all of the desired
+/// accounts before scanning the chain from the seed's birthday height.
+///
+/// By convention, wallets should only allow a new account to be generated after funds
+/// have been received by the currently-available account (in order to enable
+/// automated account recovery).
+///
+/// [ZIP 316]: https://zips.z.cash/zip-0316
+#[no_mangle]
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_createAccount(
+    env: JNIEnv<'_>,
+    _: JClass<'_>,
+    db_data: JString<'_>,
+    seed: jbyteArray,
+    network_id: jint,
+) -> jobject {
+    let res = panic::catch_unwind(|| {
+        let network = parse_network(network_id as u32)?;
+        let db_data = wallet_db(&env, network, db_data)?;
+        let seed = SecretVec::new(env.convert_byte_array(seed).unwrap());
+
+        let mut db_ops = db_data.get_update_ops()?;
+        let (account, usk) = db_ops
+            .create_account(&seed)
+            .map_err(|e| format_err!("Error while initializing accounts: {}", e))?;
+
+        let encoded = usk.to_bytes(Era::Orchard);
+        let output = env.new_object(
+            "cash/z/ecc/android/sdk/model/UnifiedSpendingKey",
+            "(I[B)V",
+            &[
+                JValue::Int(u32::from(account) as i32),
+                JValue::Object(env.byte_array_from_slice(&encoded)?.into()),
+            ],
+        )?;
+        Ok(output.into_inner())
+    });
+    unwrap_exc_or(&env, res, ptr::null_mut())
+}
+
+/// Initialises the data database with the given set of unified full viewing keys.
+///
+/// This should only be used in special cases for implementing wallet recovery; prefer
+/// `RustBackend.createAccount` for normal account creation purposes.
 #[no_mangle]
 pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_initAccountsTableWithKeys(
     env: JNIEnv<'_>,

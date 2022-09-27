@@ -21,8 +21,8 @@ log-panics = "2.0.0"
 schemer = "0.2"
 secp256k1 = "0.21"
 secrecy = "0.8"
-zcash_client_backend = { version = "0.5", features = ["transparent-inputs"] }
-zcash_client_sqlite = { version = "0.3", features = ["transparent-inputs"] }
+zcash_client_backend = { version = "0.5", features = ["transparent-inputs", "unstable"] }
+zcash_client_sqlite = { version = "0.3", features = ["transparent-inputs", "unstable"] }
 zcash_primitives = "0.7"
 zcash_proofs = "0.7"
 
@@ -30,11 +30,11 @@ zcash_proofs = "0.7"
 [patch.crates-io]
 group = { git = "https://github.com/zkcrypto/group.git", rev = "a7f3ceb2373e9fe536996f7b4d55c797f3e667f0" }
 orchard = { git = 'https://github.com/zcash/orchard.git', rev='f206b3f5d4e31bba75d03d9d03d5fa25825a9384' }
-zcash_client_backend = { git = 'https://github.com/zcash/librustzcash.git', rev='6cb0d212195a32b7456c866bcd367fc98967b668' }
-zcash_client_sqlite = { git = 'https://github.com/zcash/librustzcash.git', rev='6cb0d212195a32b7456c866bcd367fc98967b668' }
-zcash_note_encryption = { git = 'https://github.com/zcash/librustzcash.git', rev='6cb0d212195a32b7456c866bcd367fc98967b668' }
-zcash_primitives = { git = 'https://github.com/zcash/librustzcash.git', rev='6cb0d212195a32b7456c866bcd367fc98967b668' }
-zcash_proofs = { git = 'https://github.com/zcash/librustzcash.git', rev='6cb0d212195a32b7456c866bcd367fc98967b668' }
+zcash_client_backend = { git = 'https://github.com/zcash/librustzcash.git', rev='774ffadf5a0120a74d70d281974d079ccd58c600' }
+zcash_client_sqlite = { git = 'https://github.com/zcash/librustzcash.git', rev='774ffadf5a0120a74d70d281974d079ccd58c600' }
+zcash_note_encryption = { git = 'https://github.com/zcash/librustzcash.git', rev='774ffadf5a0120a74d70d281974d079ccd58c600' }
+zcash_primitives = { git = 'https://github.com/zcash/librustzcash.git', rev='774ffadf5a0120a74d70d281974d079ccd58c600' }
+zcash_proofs = { git = 'https://github.com/zcash/librustzcash.git', rev='774ffadf5a0120a74d70d281974d079ccd58c600' }
 
 ## Uncomment this to test librustzcash changes locally
 #[patch.crates-io]

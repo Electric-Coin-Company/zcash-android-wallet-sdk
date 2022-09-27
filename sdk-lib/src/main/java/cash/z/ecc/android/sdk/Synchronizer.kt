@@ -5,6 +5,7 @@ import cash.z.ecc.android.sdk.db.entity.ConfirmedTransaction
 import cash.z.ecc.android.sdk.db.entity.PendingTransaction
 import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.model.BlockHeight
+import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
@@ -158,6 +159,33 @@ interface Synchronizer {
     //
     // Operations
     //
+
+    /**
+     * Adds the next available account-level spend authority, given the current set of
+     * [ZIP 316](https://zips.z.cash/zip-0316) account identifiers known, to the wallet
+     * database.
+     *
+     * The caller should store the byte encoding of the returned spending key in a secure
+     * fashion. This encoding **MUST NOT** be exposed to users. It is an internal encoding
+     * that is inherently unstable, and only intended to be passed between the SDK and the
+     * storage backend. The caller **MUST NOT** allow this encoding to be exported or
+     * imported.
+     *
+     * If `seed` was imported from a backup and this method is being used to restore a
+     * previous wallet state, you should use this method to add all of the desired
+     * accounts before scanning the chain from the seed's birthday height.
+     *
+     * By convention, wallets should only allow a new account to be generated after funds
+     * have been received by the currently-available account (in order to enable
+     * automated account recovery).
+     *
+     * @param seed the wallet's seed phrase.
+     *
+     * @return the newly created ZIP 316 account identifier, along with the binary
+     * encoding of the `UnifiedSpendingKey` for the newly created account.
+     */
+     // This is not yet ready to be a public API
+     // suspend fun createAccount(seed: ByteArray): UnifiedSpendingKey
 
     /**
      * Gets the shielded address for the given account. This is syntactic sugar for
