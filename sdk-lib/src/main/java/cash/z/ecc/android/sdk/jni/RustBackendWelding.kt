@@ -2,6 +2,7 @@ package cash.z.ecc.android.sdk.jni
 
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
 import cash.z.ecc.android.sdk.model.BlockHeight
+import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
@@ -41,6 +42,8 @@ internal interface RustBackendWelding {
     suspend fun initBlocksTable(checkpoint: Checkpoint): Boolean
 
     suspend fun initDataDb(seed: ByteArray?): Int
+
+    suspend fun createAccount(seed: ByteArray): UnifiedSpendingKey
 
     fun isValidShieldedAddr(addr: String): Boolean
 

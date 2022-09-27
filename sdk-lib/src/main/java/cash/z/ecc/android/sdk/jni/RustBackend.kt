@@ -7,6 +7,7 @@ import cash.z.ecc.android.sdk.internal.ext.deleteSuspend
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.BlockHeight
+import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
@@ -50,6 +51,16 @@ internal class RustBackend private constructor(
             seed,
             networkId = network.id
         )
+    }
+
+    override suspend fun createAccount(seed: ByteArray): UnifiedSpendingKey {
+        return withContext(SdkDispatchers.DATABASE_IO) {
+            createAccount(
+                dataDbFile.absolutePath,
+                seed,
+                networkId = network.id
+            )
+        }
     }
 
     override suspend fun initAccountsTable(vararg keys: UnifiedFullViewingKey): Boolean {
@@ -404,6 +415,9 @@ internal class RustBackend private constructor(
             saplingTree: String,
             networkId: Int
         ): Boolean
+
+        @JvmStatic
+        private external fun createAccount(dbDataPath: String, seed: ByteArray, networkId: Int): UnifiedSpendingKey
 
         @JvmStatic
         private external fun getCurrentAddress(

@@ -49,6 +49,7 @@ import cash.z.ecc.android.sdk.internal.transaction.WalletTransactionEncoder
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.internal.twigTask
 import cash.z.ecc.android.sdk.model.BlockHeight
+import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
@@ -621,6 +622,14 @@ class SdkSynchronizer internal constructor(
             false
         }
     }
+
+    //
+    // Account management
+    //
+
+    // Not ready to be a public API; internal for testing only
+    internal suspend fun createAccount(seed: ByteArray): UnifiedSpendingKey =
+        processor.createAccount(seed)
 
     //
     // Send / Receive
