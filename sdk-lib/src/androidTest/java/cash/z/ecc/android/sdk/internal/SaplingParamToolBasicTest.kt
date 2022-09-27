@@ -90,11 +90,20 @@ class SaplingParamToolBasicTest {
         // we need to use modified array of sapling parameters to pass through the SHA1 hashes validation
         val destDir = SaplingParamTool.initAndGetParamsDestinationDir(
             SaplingParamToolFixture.new(
-                saplingParamsFiles = SaplingParamToolFixture.SAPLING_PARAMS_FILES
-                    .also {
-                        it[0].fileHash = spendFile.getSha1Hash()
-                        it[1].fileHash = outputFile.getSha1Hash()
-                    }
+                saplingParamsFiles = listOf(
+                    SaplingParameters(
+                        SaplingParamToolFixture.PARAMS_DIRECTORY,
+                        SaplingParamTool.SPEND_PARAM_FILE_NAME,
+                        SaplingParamTool.SPEND_PARAM_FILE_MAX_BYTES_SIZE,
+                        spendFile.getSha1Hash()
+                    ),
+                    SaplingParameters(
+                        SaplingParamToolFixture.PARAMS_DIRECTORY,
+                        SaplingParamTool.OUTPUT_PARAM_FILE_NAME,
+                        SaplingParamTool.OUTPUT_PARAM_FILE_MAX_BYTES_SIZE,
+                        outputFile.getSha1Hash()
+                    )
+                )
             )
         )
 
@@ -118,25 +127,34 @@ class SaplingParamToolBasicTest {
     fun ensure_params_exception_thrown_test() = runTest {
         val saplingParamTool = SaplingParamTool(
             SaplingParamToolFixture.new(
-                saplingParamsFiles = SaplingParamToolFixture.SAPLING_PARAMS_FILES
-                    .also {
-                        it[0].fileName = "test_file_0"
-                        it[1].fileName = "test_file_1"
-                    }
+                saplingParamsFiles = listOf(
+                    SaplingParameters(
+                        SaplingParamToolFixture.PARAMS_DIRECTORY,
+                        "test_file_1",
+                        SaplingParamTool.SPEND_PARAM_FILE_MAX_BYTES_SIZE,
+                        SaplingParamTool.SPEND_PARAM_FILE_SHA1_HASH
+                    ),
+                    SaplingParameters(
+                        SaplingParamToolFixture.PARAMS_DIRECTORY,
+                        "test_file_0",
+                        SaplingParamTool.OUTPUT_PARAM_FILE_MAX_BYTES_SIZE,
+                        SaplingParamTool.OUTPUT_PARAM_FILE_SHA1_HASH
+                    )
+                )
             )
         )
 
         // now we inject params files to the preferred location to pass through the check missing files phase
         SaplingParamsFixture.createFile(
             File(
-                SaplingParamToolFixture.SAPLING_PARAMS_FILES[0].destinationDirectory,
-                SaplingParamToolFixture.SAPLING_PARAMS_FILES[0].fileName
+                saplingParamTool.properties.saplingParams[0].destinationDirectory,
+                saplingParamTool.properties.saplingParams[0].fileName
             )
         )
         SaplingParamsFixture.createFile(
             File(
-                SaplingParamToolFixture.SAPLING_PARAMS_FILES[1].destinationDirectory,
-                SaplingParamToolFixture.SAPLING_PARAMS_FILES[1].fileName
+                saplingParamTool.properties.saplingParams[1].destinationDirectory,
+                saplingParamTool.properties.saplingParams[1].fileName
             )
         )
 

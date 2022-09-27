@@ -1,5 +1,6 @@
 package cash.z.ecc.android.sdk.exception
 
+import cash.z.ecc.android.sdk.internal.SaplingParameters
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.ZcashNetwork
@@ -266,8 +267,18 @@ sealed class LightWalletException(message: String, cause: Throwable? = null) : S
 /**
  * Potentially user-facing exceptions thrown while encoding transactions.
  */
-sealed class TransactionEncoderException(message: String, cause: Throwable? = null) : SdkException(message, cause) {
-    class FetchParamsException(message: String) : TransactionEncoderException("Failed to fetch params due to: $message")
+sealed class TransactionEncoderException(
+    message: String,
+    cause: Throwable? = null
+) : SdkException(message, cause) {
+    class FetchParamsException internal constructor(
+        internal val parameters: SaplingParameters,
+        message: String
+    ) : TransactionEncoderException("Failed to fetch params: $parameters, due to: $message")
+    class ValidateParamsException internal constructor(
+        internal val parameters: SaplingParameters,
+        message: String
+    ) : TransactionEncoderException("Failed to validate fetched params: $parameters, due to:$message")
     object MissingParamsException : TransactionEncoderException(
         "Cannot send funds due to missing spend or output params and attempting to download them failed."
     )
