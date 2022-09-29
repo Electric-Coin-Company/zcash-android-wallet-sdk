@@ -8,6 +8,7 @@ import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.internal.twigTask
 import cash.z.ecc.android.sdk.jni.RustBackend
 import cash.z.ecc.android.sdk.jni.RustBackendWelding
+import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.Zatoshi
 
 /**
@@ -29,31 +30,29 @@ internal class WalletTransactionEncoder(
      * wallet implementation doesn't throw an exception, we wrap the issue into a descriptive
      * exception ourselves (rather than using double-bangs for things).
      *
-     * @param spendingKey the key associated with the notes that will be spent.
+     * @param usk the unified spending key associated with the notes that will be spent.
      * @param amount the amount of zatoshi to send.
      * @param toAddress the recipient's address.
      * @param memo the optional memo to include as part of the transaction.
-     * @param fromAccountIndex the optional account id to use. By default, the 1st account is used.
      *
      * @return the successfully encoded transaction or an exception
      */
     override suspend fun createTransaction(
-        spendingKey: String,
+        usk: UnifiedSpendingKey,
         amount: Zatoshi,
         toAddress: String,
         memo: ByteArray?,
-        fromAccountIndex: Int
     ): EncodedTransaction {
-        val transactionId = createSpend(spendingKey, amount, toAddress, memo)
+        val transactionId = createSpend(usk, amount, toAddress, memo)
         return repository.findEncodedTransactionById(transactionId)
             ?: throw TransactionEncoderException.TransactionNotFoundException(transactionId)
     }
 
     override suspend fun createShieldingTransaction(
-        transparentAccountPrivateKey: String,
+        usk: UnifiedSpendingKey,
         memo: ByteArray?
     ): EncodedTransaction {
-        val transactionId = createShieldingSpend(transparentAccountPrivateKey, memo)
+        val transactionId = createShieldingSpend(usk, memo)
         return repository.findEncodedTransactionById(transactionId)
             ?: throw TransactionEncoderException.TransactionNotFoundException(transactionId)
     }
@@ -103,21 +102,19 @@ internal class WalletTransactionEncoder(
      * Does the proofs and processing required to create a transaction to spend funds and inserts
      * the result in the database. On average, this call takes over 10 seconds.
      *
-     * @param spendingKey the key associated with the notes that will be spent.
+     * @param usk the unified spending key associated with the notes that will be spent.
      * @param amount the amount of zatoshi to send.
      * @param toAddress the recipient's address.
      * @param memo the optional memo to include as part of the transaction.
-     * @param fromAccountIndex the optional account id to use. By default, the 1st account is used.
      *
      * @return the row id in the transactions table that contains the spend transaction or -1 if it
      * failed.
      */
     private suspend fun createSpend(
-        spendingKey: String,
+        usk: UnifiedSpendingKey,
         amount: Zatoshi,
         toAddress: String,
         memo: ByteArray? = byteArrayOf(),
-        fromAccountIndex: Int = 0
     ): Long {
         return twigTask(
             "creating transaction to spend $amount zatoshi to" +
@@ -128,8 +125,7 @@ internal class WalletTransactionEncoder(
                 SaplingParamTool.ensureParams((rustBackend as RustBackend).pathParamsDir)
                 twig("params exist! attempting to send...")
                 rustBackend.createToAddress(
-                    fromAccountIndex,
-                    spendingKey,
+                    usk,
                     toAddress,
                     amount.value,
                     memo
@@ -144,7 +140,7 @@ internal class WalletTransactionEncoder(
     }
 
     private suspend fun createShieldingSpend(
-        transparentAccountPrivateKey: String,
+        usk: UnifiedSpendingKey,
         memo: ByteArray? = byteArrayOf()
     ): Long {
         return twigTask("creating transaction to shield all UTXOs") {
@@ -153,7 +149,7 @@ internal class WalletTransactionEncoder(
                 SaplingParamTool.ensureParams((rustBackend as RustBackend).pathParamsDir)
                 twig("params exist! attempting to shield...")
                 rustBackend.shieldToAddress(
-                    transparentAccountPrivateKey,
+                    usk,
                     memo
                 )
             } catch (t: Throwable) {

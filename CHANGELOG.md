@@ -13,6 +13,8 @@ Change Log
   - `FirstClassByteArray`
   - `UnifiedSpendingKey`
 - `cash.z.ecc.android.sdk.tool`:
+  - `DerivationTool.deriveUnifiedSpendingKey`
+  - `DerivationTool.deriveUnifiedFullViewingKey`
   - `DerivationTool.deriveTransparentAccountPrivateKey`
   - `DerivationTool.deriveTransparentAddressFromAccountPrivateKey`
   - `DerivationTool.deriveUnifiedAddress`
@@ -36,8 +38,11 @@ Change Log
   - `Synchronizer.Companion.new` now takes a `seed` argument. A non-null value should be
     provided if `Synchronizer.Companion.new` throws an error that a database migration
     requires the wallet seed.
-  - `Synchronizer.shieldFunds` now takes a transparent account private key (representing
-    all transparent secret keys within an account) instead of a transparent secret key.
+  - `Synchronizer.sendToAddress` now takes a `UnifiedSpendingKey` instead of an encoded
+    Sapling extended spending key, and the `fromAccountIndex` argument is now implicit in
+    the `UnifiedSpendingKey`.
+  - `Synchronizer.shieldFunds` now takes a `UnifiedSpendingKey` instead of separately
+    encoded Sapling and transparent keys.
 
 ### Removed
 - `cash.z.ecc.android.sdk`:
@@ -49,6 +54,10 @@ Change Log
     public key, and not the extended public key as intended. This made it incompatible
     with ZIP 316.
 - `cash.z.ecc.android.sdk.tool`:
+  - `DerivationTool.deriveSpendingKeys` (use
+    `DerivationTool.deriveUnifiedSpendingKey` instead).
+  - `DerivationTool.deriveViewingKey` (use
+  - `DerivationTool.deriveUnifiedFullViewingKey` instead).
   - `DerivationTool.deriveTransparentAddressFromPrivateKey` (use
     `DerivationTool.deriveTransparentAddressFromAccountPrivateKey` instead).
   - `DerivationTool.deriveTransparentSecretKey` (use

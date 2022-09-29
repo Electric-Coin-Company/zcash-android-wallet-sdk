@@ -30,6 +30,7 @@ import cash.z.ecc.android.sdk.ext.toZecString
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.LightWalletEndpoint
+import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.model.defaultForNetwork
@@ -53,7 +54,7 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
 
     // in a normal app, this would be stored securely with the trusted execution environment (TEE)
     // but since this is a demo, we'll derive it on the fly
-    private lateinit var spendingKey: String
+    private lateinit var spendingKey: UnifiedSpendingKey
 
     /**
      * Initialize the required values that would normally live outside the demo but are repeated
@@ -76,7 +77,7 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
             birthday = null
         )
         spendingKey = runBlocking {
-            DerivationTool.deriveSpendingKeys(seed, ZcashNetwork.fromResources(requireApplicationContext())).first()
+            DerivationTool.deriveUnifiedSpendingKey(seed, ZcashNetwork.fromResources(requireApplicationContext()))
         }
     }
 

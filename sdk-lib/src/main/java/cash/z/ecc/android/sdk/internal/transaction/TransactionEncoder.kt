@@ -1,41 +1,37 @@
 package cash.z.ecc.android.sdk.internal.transaction
 
 import cash.z.ecc.android.sdk.db.entity.EncodedTransaction
+import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.Zatoshi
 
 interface TransactionEncoder {
-    // TODO(str4d): Migrate to binary USK format.
     /**
      * Creates a transaction, throwing an exception whenever things are missing. When the provided
      * wallet implementation doesn't throw an exception, we wrap the issue into a descriptive
      * exception ourselves (rather than using double-bangs for things).
      *
-     * @param spendingKey the key associated with the notes that will be spent.
+     * @param usk the unified spending key associated with the notes that will be spent.
      * @param amount the amount of zatoshi to send.
      * @param toAddress the recipient's address.
      * @param memo the optional memo to include as part of the transaction.
-     * @param fromAccountIndex the optional account id to use. By default, the 1st account is used.
      *
      * @return the successfully encoded transaction or an exception
      */
     suspend fun createTransaction(
-        spendingKey: String,
+        usk: UnifiedSpendingKey,
         amount: Zatoshi,
         toAddress: String,
         memo: ByteArray? = byteArrayOf(),
-        fromAccountIndex: Int = 0
     ): EncodedTransaction
 
-    // TODO(str4d): Migrate to binary USK format.
-    // TODO(str4d): Enable this to shield funds for other accounts.
     /**
-     * Creates a transaction that shields any transparent funds sent to account 0.
+     * Creates a transaction that shields any transparent funds sent to the given usk's account.
      *
-     * @param transparentAccountPrivateKey the transparent account private key for account 0.
+     * @param usk the unified spending key associated with the transparent funds that will be shielded.
      * @param memo the optional memo to include as part of the transaction.
      */
     suspend fun createShieldingTransaction(
-        transparentAccountPrivateKey: String,
+        usk: UnifiedSpendingKey,
         memo: ByteArray? = byteArrayOf()
     ): EncodedTransaction
 

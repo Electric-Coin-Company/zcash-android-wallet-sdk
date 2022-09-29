@@ -21,15 +21,14 @@ internal interface RustBackendWelding {
 
     @Suppress("LongParameterList")
     suspend fun createToAddress(
-        account: Int,
-        extsk: String,
+        usk: UnifiedSpendingKey,
         to: String,
         value: Long,
         memo: ByteArray? = byteArrayOf()
     ): Long
 
     suspend fun shieldToAddress(
-        xprv: String,
+        usk: UnifiedSpendingKey,
         memo: ByteArray? = byteArrayOf()
     ): Long
 
@@ -110,11 +109,11 @@ internal interface RustBackendWelding {
             accountIndex: Int = 0
         ): String
 
-        suspend fun deriveSpendingKeys(
+        suspend fun deriveUnifiedSpendingKey(
             seed: ByteArray,
             network: ZcashNetwork,
-            numberOfAccounts: Int = 1
-        ): Array<String>
+            account: Int = 0
+        ): UnifiedSpendingKey
 
         suspend fun deriveTransparentAddress(
             seed: ByteArray,
@@ -140,10 +139,10 @@ internal interface RustBackendWelding {
             account: Int = 0
         ): String
 
-        suspend fun deriveViewingKey(
-            spendingKey: String,
+        suspend fun deriveUnifiedFullViewingKey(
+            usk: UnifiedSpendingKey,
             network: ZcashNetwork
-        ): String
+        ): UnifiedFullViewingKey
 
         suspend fun deriveUnifiedFullViewingKeys(
             seed: ByteArray,

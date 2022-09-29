@@ -2,6 +2,7 @@ package cash.z.ecc.android.sdk.tool
 
 import cash.z.ecc.android.sdk.jni.RustBackend
 import cash.z.ecc.android.sdk.jni.RustBackendWelding
+import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.type.UnifiedFullViewingKey
 
@@ -32,34 +33,39 @@ class DerivationTool {
             }
 
         /**
-         * Given a spending key, return the associated viewing key.
+         * Given a unified spending key, return the associated unified full viewing key.
          *
-         * @param spendingKey the key from which to derive the viewing key.
+         * @param usk the key from which to derive the viewing key.
          *
-         * @return the viewing key that corresponds to the spending key.
+         * @return a unified full viewing key.
          */
-        override suspend fun deriveViewingKey(
-            spendingKey: String,
+        override suspend fun deriveUnifiedFullViewingKey(
+            usk: UnifiedSpendingKey,
             network: ZcashNetwork
-        ): String = withRustBackendLoaded {
-            deriveExtendedFullViewingKey(spendingKey, networkId = network.id)
+        ): UnifiedFullViewingKey = withRustBackendLoaded {
+            UnifiedFullViewingKey(
+                deriveUnifiedFullViewingKey(usk.bytes.byteArray, networkId = network.id)
+            )
         }
 
         /**
-         * Given a seed and a number of accounts, return the associated spending keys.
+         * Derives and returns a unified spending key from the given seed for the given account ID.
+         *
+         * Returns the newly created [ZIP 316] account identifier, along with the binary encoding
+         * of the [`UnifiedSpendingKey`] for the newly created account. The caller should store
+         * the returned spending key in a secure fashion.
          *
          * @param seed the seed from which to derive spending keys.
-         * @param numberOfAccounts the number of accounts to use. Multiple accounts are not fully
-         * supported so the default value of 1 is recommended.
+         * @param account the account to derive.
          *
-         * @return the spending keys that correspond to the seed, formatted as Strings.
+         * @return the unified spending key for the account.
          */
-        override suspend fun deriveSpendingKeys(
+        override suspend fun deriveUnifiedSpendingKey(
             seed: ByteArray,
             network: ZcashNetwork,
-            numberOfAccounts: Int
-        ): Array<String> = withRustBackendLoaded {
-            deriveExtendedSpendingKeys(seed, numberOfAccounts, networkId = network.id)
+            account: Int
+        ): UnifiedSpendingKey = withRustBackendLoaded {
+            deriveSpendingKey(seed, account, networkId = network.id)
         }
 
         /**
@@ -146,11 +152,11 @@ class DerivationTool {
         //
 
         @JvmStatic
-        private external fun deriveExtendedSpendingKeys(
+        private external fun deriveSpendingKey(
             seed: ByteArray,
-            numberOfAccounts: Int,
+            account: Int,
             networkId: Int
-        ): Array<String>
+        ): UnifiedSpendingKey
 
         @JvmStatic
         private external fun deriveUnifiedFullViewingKeysFromSeed(
@@ -160,7 +166,7 @@ class DerivationTool {
         ): Array<String>
 
         @JvmStatic
-        private external fun deriveExtendedFullViewingKey(spendingKey: String, networkId: Int): String
+        private external fun deriveUnifiedFullViewingKey(usk: ByteArray, networkId: Int): String
 
         @JvmStatic
         private external fun deriveUnifiedAddressFromSeed(

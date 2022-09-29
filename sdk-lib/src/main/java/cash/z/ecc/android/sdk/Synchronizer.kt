@@ -225,11 +225,10 @@ interface Synchronizer {
     /**
      * Sends zatoshi.
      *
-     * @param spendingKey the key associated with the notes that will be spent.
+     * @param usk the unified spending key associated with the notes that will be spent.
      * @param zatoshi the amount of zatoshi to send.
      * @param toAddress the recipient's address.
      * @param memo the optional memo to include as part of the transaction.
-     * @param fromAccountIndex the optional account id to use. By default, the first account is used.
      *
      * @return a flow of PendingTransaction objects representing changes to the state of the
      * transaction. Any time the state changes a new instance will be emitted by this flow. This is
@@ -237,16 +236,14 @@ interface Synchronizer {
      * for any wallet that wants to ignore this return value.
      */
     fun sendToAddress(
-        spendingKey: String,
+        usk: UnifiedSpendingKey,
         amount: Zatoshi,
         toAddress: String,
         memo: String = "",
-        fromAccountIndex: Int = 0
     ): Flow<PendingTransaction>
 
     fun shieldFunds(
-        spendingKey: String,
-        transparentAccountPrivateKey: String,
+        usk: UnifiedSpendingKey,
         memo: String = ZcashSdk.DEFAULT_SHIELD_FUNDS_MEMO_PREFIX
     ): Flow<PendingTransaction>
 
