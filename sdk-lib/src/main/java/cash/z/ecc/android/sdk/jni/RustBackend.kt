@@ -225,16 +225,15 @@ internal class RustBackend private constructor(
         }
 
     override suspend fun createToAddress(
-        account: Int,
-        extsk: String,
+        usk: UnifiedSpendingKey,
         to: String,
         value: Long,
         memo: ByteArray?
     ): Long = withContext(SdkDispatchers.DATABASE_IO) {
         createToAddress(
             dataDbFile.absolutePath,
-            account,
-            extsk,
+            usk.account,
+            usk.bytes.byteArray,
             to,
             value,
             memo ?: ByteArray(0),
@@ -245,15 +244,15 @@ internal class RustBackend private constructor(
     }
 
     override suspend fun shieldToAddress(
-        xprv: String,
+        usk: UnifiedSpendingKey,
         memo: ByteArray?
     ): Long {
         twig("TMP: shieldToAddress with db path: $dataDbFile, ${memo?.size}")
         return withContext(SdkDispatchers.DATABASE_IO) {
             shieldToAddress(
                 dataDbFile.absolutePath,
-                0,
-                xprv,
+                usk.account,
+                usk.bytes.byteArray,
                 memo ?: ByteArray(0),
                 "$pathParamsDir/$SPEND_PARAM_FILE_NAME",
                 "$pathParamsDir/$OUTPUT_PARAM_FILE_NAME",
@@ -429,6 +428,12 @@ internal class RustBackend private constructor(
         @JvmStatic
         private external fun getSaplingReceiverForUnifiedAddress(ua: String): String?
 
+        internal fun validateUnifiedSpendingKey(bytes: ByteArray) =
+            isValidSpendingKey(bytes)
+
+        @JvmStatic
+        private external fun isValidSpendingKey(bytes: ByteArray): Boolean
+
         @JvmStatic
         private external fun isValidShieldedAddress(addr: String, networkId: Int): Boolean
 
@@ -510,7 +515,7 @@ internal class RustBackend private constructor(
         private external fun createToAddress(
             dbDataPath: String,
             account: Int,
-            extsk: String,
+            usk: ByteArray,
             to: String,
             value: Long,
             memo: ByteArray,
@@ -524,7 +529,7 @@ internal class RustBackend private constructor(
         private external fun shieldToAddress(
             dbDataPath: String,
             account: Int,
-            xprv: String,
+            usk: ByteArray,
             memo: ByteArray,
             spendParamsPath: String,
             outputParamsPath: String,

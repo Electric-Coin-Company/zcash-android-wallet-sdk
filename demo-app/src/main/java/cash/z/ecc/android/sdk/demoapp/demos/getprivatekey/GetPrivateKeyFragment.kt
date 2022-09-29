@@ -43,14 +43,14 @@ class GetPrivateKeyFragment : BaseDemoFragment<FragmentGetPrivateKeyBinding>() {
         // demonstrate deriving spending keys for five accounts but only take the first one
         lifecycleScope.launchWhenStarted {
             @Suppress("MagicNumber")
-            val spendingKey = DerivationTool.deriveSpendingKeys(
+            val spendingKey = DerivationTool.deriveUnifiedSpendingKey(
                 seed,
                 ZcashNetwork.fromResources(requireApplicationContext()),
                 5
-            ).first()
+            )
 
             // derive the key that allows you to view but not spend transactions
-            val viewingKey = DerivationTool.deriveViewingKey(
+            val viewingKey = DerivationTool.deriveUnifiedFullViewingKey(
                 spendingKey,
                 ZcashNetwork.fromResources(requireApplicationContext())
             )

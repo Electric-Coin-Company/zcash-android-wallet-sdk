@@ -13,6 +13,7 @@ import cash.z.ecc.android.sdk.internal.db.PendingTransactionDb
 import cash.z.ecc.android.sdk.internal.service.LightWalletService
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.BlockHeight
+import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.Zatoshi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Dispatchers.IO
@@ -108,21 +109,23 @@ class PersistentTransactionManager(
     }
 
     override suspend fun encode(
-        spendingKey: String,
+        usk: UnifiedSpendingKey,
         pendingTx: PendingTransaction
     ): PendingTransaction = withContext(Dispatchers.IO) {
         twig("managing the creation of a transaction")
         var tx = pendingTx as PendingTransactionEntity
+        if (tx.accountIndex != usk.account) {
+            throw java.lang.IllegalArgumentException("usk is not for the same account as pendingTx")
+        }
 
         @Suppress("TooGenericExceptionCaught")
         try {
             twig("beginning to encode transaction with : $encoder")
             val encodedTx = encoder.createTransaction(
-                spendingKey,
+                usk,
                 tx.valueZatoshi,
                 tx.toAddress,
                 tx.memo,
-                tx.accountIndex
             )
             twig("successfully encoded transaction!")
             safeUpdate("updating transaction encoding", -1) {
@@ -149,7 +152,7 @@ class PersistentTransactionManager(
     //  spendingKey is removed. Figure out where these methods need to be renamed, and do so.
     override suspend fun encode(
         spendingKey: String, // TODO(str4d): Remove this argument.
-        transparentAccountPrivateKey: String,
+        usk: UnifiedSpendingKey,
         pendingTx: PendingTransaction
     ): PendingTransaction {
         twig("managing the creation of a shielding transaction")
@@ -158,7 +161,7 @@ class PersistentTransactionManager(
         try {
             twig("beginning to encode shielding transaction with : $encoder")
             val encodedTx = encoder.createShieldingTransaction(
-                transparentAccountPrivateKey,
+                usk,
                 tx.memo
             )
             twig("successfully encoded shielding transaction!")

@@ -2,6 +2,7 @@ package cash.z.ecc.android.sdk.internal.transaction
 
 import cash.z.ecc.android.sdk.db.entity.PendingTransaction
 import cash.z.ecc.android.sdk.model.BlockHeight
+import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.Zatoshi
 import kotlinx.coroutines.flow.Flow
 
@@ -34,17 +35,17 @@ interface OutboundTransactionManager {
      * Encode the pending transaction using the given spending key. This is a local operation that
      * produces a raw transaction to submit to lightwalletd.
      *
-     * @param spendingKey the spendingKey to use for constructing the transaction.
+     * @param usk the unified spending key to use for constructing the transaction.
      * @param pendingTx the transaction information created by [initSpend] that will be used to
      * construct a transaction.
      *
      * @return the resulting pending transaction whose ID can be used to monitor for changes.
      */
-    suspend fun encode(spendingKey: String, pendingTx: PendingTransaction): PendingTransaction
+    suspend fun encode(usk: UnifiedSpendingKey, pendingTx: PendingTransaction): PendingTransaction
 
     suspend fun encode(
         spendingKey: String,
-        transparentAccountPrivateKey: String,
+        usk: UnifiedSpendingKey,
         pendingTx: PendingTransaction
     ): PendingTransaction
 

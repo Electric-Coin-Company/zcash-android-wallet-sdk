@@ -661,17 +661,16 @@ class SdkSynchronizer internal constructor(
         processor.getTransparentAddress(accountId)
 
     override fun sendToAddress(
-        spendingKey: String,
+        usk: UnifiedSpendingKey,
         amount: Zatoshi,
         toAddress: String,
         memo: String,
-        fromAccountIndex: Int
     ): Flow<PendingTransaction> = flow {
         twig("Initializing pending transaction")
         // Emit the placeholder transaction, then switch to monitoring the database
-        txManager.initSpend(amount, toAddress, memo, fromAccountIndex).let { placeHolderTx ->
+        txManager.initSpend(amount, toAddress, memo, usk.account).let { placeHolderTx ->
             emit(placeHolderTx)
-            txManager.encode(spendingKey, placeHolderTx).let { encodedTx ->
+            txManager.encode(usk, placeHolderTx).let { encodedTx ->
                 // only submit if it wasn't cancelled. Otherwise cleanup, immediately for best UX.
                 if (encodedTx.isCancelled()) {
                     twig("[cleanup] this tx has been cancelled so we will cleanup instead of submitting")
@@ -691,20 +690,20 @@ class SdkSynchronizer internal constructor(
     }.distinctUntilChanged()
 
     override fun shieldFunds(
-        spendingKey: String,
-        transparentAccountPrivateKey: String,
+        usk: UnifiedSpendingKey,
         memo: String
     ): Flow<PendingTransaction> = flow {
         twig("Initializing shielding transaction")
-        val tAddr =
-            DerivationTool.deriveTransparentAddressFromAccountPrivateKey(transparentAccountPrivateKey, network)
+        // TODO(str4d): This only shields funds from the current UA's transparent receiver. Fix this once we start
+        //  rolling UAs.
+        val tAddr = processor.getTransparentAddress(usk.account)
         val tBalance = processor.getUtxoCacheBalance(tAddr)
-        val zAddr = getCurrentAddress(0)
+        val zAddr = getCurrentAddress(usk.account)
 
         // Emit the placeholder transaction, then switch to monitoring the database
-        txManager.initSpend(tBalance.available, zAddr, memo, 0).let { placeHolderTx ->
+        txManager.initSpend(tBalance.available, zAddr, memo, usk.account).let { placeHolderTx ->
             emit(placeHolderTx)
-            txManager.encode(spendingKey, transparentAccountPrivateKey, placeHolderTx).let { encodedTx ->
+            txManager.encode("", usk, placeHolderTx).let { encodedTx ->
                 // only submit if it wasn't cancelled. Otherwise cleanup, immediately for best UX.
                 if (encodedTx.isCancelled()) {
                     twig("[cleanup] this shielding tx has been cancelled so we will cleanup instead of submitting")
