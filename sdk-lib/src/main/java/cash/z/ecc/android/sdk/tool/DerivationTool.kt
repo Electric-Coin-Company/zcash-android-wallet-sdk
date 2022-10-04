@@ -45,7 +45,7 @@ class DerivationTool {
             network: ZcashNetwork
         ): UnifiedFullViewingKey = withRustBackendLoaded {
             UnifiedFullViewingKey(
-                deriveUnifiedFullViewingKey(usk.bytes.byteArray, networkId = network.id)
+                deriveUnifiedFullViewingKey(usk.copyBytes(), networkId = network.id)
             )
         }
 
