@@ -104,8 +104,8 @@ dependencies {
 }
 
 fladle {
-// Firebase Test Lab has min and max values that might differ from our project's
-// These are determined by `gcloud firebase test android models list`
+    // Firebase Test Lab has min and max values that might differ from our project's
+    // These are determined by `gcloud firebase test android models list`
     @Suppress("MagicNumber", "PropertyName", "VariableNaming")
     val FIREBASE_TEST_LAB_MIN_API = 19
 
