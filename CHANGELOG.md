@@ -1,6 +1,11 @@
 Change Log
 ==========
 
+Version 1.9.0-beta05
+------------------------------------
+- The minimum version of Android supported is now API 21
+- Fixed R8/ProGuard consumer rule, which eliminates a runtime crash for minified apps
+
 Version 1.9.0-beta04
 ------------------------------------
 - The SDK now stores sapling param files in `no_backup/co.electricoin.zcash` folder instead of the `cache/params` 
