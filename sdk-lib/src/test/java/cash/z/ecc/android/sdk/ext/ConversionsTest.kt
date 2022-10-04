@@ -6,7 +6,7 @@ import java.math.BigDecimal
 import java.math.MathContext
 import kotlin.test.assertEquals
 
-internal class ConversionsTest {
+class ConversionsTest {
 
     @Test
     fun `default right padding is 6`() {

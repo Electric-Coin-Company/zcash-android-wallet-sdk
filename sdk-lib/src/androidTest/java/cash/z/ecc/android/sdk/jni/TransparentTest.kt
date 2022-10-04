@@ -28,8 +28,7 @@ class TransparentTest(val expected: Expected, val network: ZcashNetwork) {
             expected.tAccountPrivKey,
             DerivationTool.deriveTransparentAccountPrivateKey(
                 SEED,
-                network =
-                network,
+                network = network,
                 Account.DEFAULT
             )
         )

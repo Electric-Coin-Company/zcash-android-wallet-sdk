@@ -233,7 +233,7 @@ internal class RustBackend private constructor(
         createToAddress(
             dataDbFile.absolutePath,
             usk.account.value,
-            usk.bytes.byteArray,
+            usk.copyBytes(),
             to,
             value,
             memo ?: ByteArray(0),
@@ -252,7 +252,7 @@ internal class RustBackend private constructor(
             shieldToAddress(
                 dataDbFile.absolutePath,
                 usk.account.value,
-                usk.bytes.byteArray,
+                usk.copyBytes(),
                 memo ?: ByteArray(0),
                 "$pathParamsDir/$SPEND_PARAM_FILE_NAME",
                 "$pathParamsDir/$OUTPUT_PARAM_FILE_NAME",
