@@ -156,12 +156,12 @@ class MainActivity :
 
     /* DrawerListener implementation */
 
+    @Suppress("EmptyFunctionBlock")
     override fun onDrawerStateChanged(newState: Int) {
-        twig("Drawer state changed to: $newState.")
     }
 
+    @Suppress("EmptyFunctionBlock")
     override fun onDrawerSlide(drawerView: View, slideOffset: Float) {
-        twig("Drawer slides with offset: $slideOffset.")
     }
 
     override fun onDrawerClosed(drawerView: View) {
