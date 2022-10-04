@@ -4,6 +4,7 @@ Change Log
 Version 1.9.0-beta05
 ------------------------------------
 - The minimum version of Android supported is now API 21
+- Fixed R8/ProGuard consumer rule, which eliminates a runtime crash for minified apps
 
 Version 1.9.0-beta04
 ------------------------------------
