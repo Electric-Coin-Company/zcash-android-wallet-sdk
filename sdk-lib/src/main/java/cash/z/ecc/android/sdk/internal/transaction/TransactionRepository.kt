@@ -3,7 +3,6 @@ package cash.z.ecc.android.sdk.internal.transaction
 import cash.z.ecc.android.sdk.db.entity.ConfirmedTransaction
 import cash.z.ecc.android.sdk.db.entity.EncodedTransaction
 import cash.z.ecc.android.sdk.model.BlockHeight
-import cash.z.ecc.android.sdk.type.UnifiedAddressAccount
 import kotlinx.coroutines.flow.Flow
 
 /**

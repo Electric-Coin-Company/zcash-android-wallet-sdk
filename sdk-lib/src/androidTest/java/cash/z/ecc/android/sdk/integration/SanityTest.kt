@@ -1,5 +1,7 @@
 package cash.z.ecc.android.sdk.integration
 
+import androidx.test.core.app.ApplicationProvider
+import cash.z.ecc.android.sdk.DefaultSynchronizerFactory
 import cash.z.ecc.android.sdk.annotation.MaintainedTest
 import cash.z.ecc.android.sdk.annotation.TestPurpose
 import cash.z.ecc.android.sdk.db.DatabaseCoordinator
@@ -13,7 +15,6 @@ import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
-import kotlin.test.DefaultAsserter.assertEquals
 import kotlin.test.DefaultAsserter.assertTrue
 
 // TODO [#650]: https://github.com/zcash/zcash-android-wallet-sdk/issues/650
@@ -36,41 +37,32 @@ class SanityTest(
 
     @Test
     fun testFilePaths() {
+        val rustBackend = runBlocking {
+            DefaultSynchronizerFactory.defaultRustBackend(
+                ApplicationProvider.getApplicationContext(),
+                ZcashNetwork.Testnet,
+                "TestWallet",
+                TestWallet.Backups.SAMPLE_WALLET.testnetBirthday
+            )
+        }
+
         assertTrue(
             "$name has invalid DataDB file",
-            wallet.initializer.rustBackend.dataDbFile.absolutePath.endsWith(
+            rustBackend.dataDbFile.absolutePath.endsWith(
                 "no_backup/co.electricoin.zcash/TestWallet_${networkName}_${DatabaseCoordinator.DB_DATA_NAME}"
             )
         )
         assertTrue(
             "$name has invalid CacheDB file",
-            wallet.initializer.rustBackend.cacheDbFile.absolutePath.endsWith(
+            rustBackend.cacheDbFile.absolutePath.endsWith(
                 "no_backup/co.electricoin.zcash/TestWallet_${networkName}_${DatabaseCoordinator.DB_CACHE_NAME}"
             )
         )
         assertTrue(
             "$name has invalid CacheDB params dir",
-            wallet.initializer.rustBackend.pathParamsDir.endsWith(
+            rustBackend.pathParamsDir.endsWith(
                 "cache/params"
             )
-        )
-    }
-
-    @Test
-    fun testBirthday() {
-        assertEquals(
-            "$name has invalid birthday height",
-            birthday,
-            wallet.initializer.checkpoint.height
-        )
-    }
-
-    @Test
-    fun testViewingKeys() {
-        assertEquals(
-            "$name has invalid encoding",
-            encoding,
-            wallet.initializer.viewingKeys[0].encoding
         )
     }
 

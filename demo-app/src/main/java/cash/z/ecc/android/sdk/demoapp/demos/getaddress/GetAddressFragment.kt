@@ -5,7 +5,6 @@ import android.view.LayoutInflater
 import androidx.lifecycle.lifecycleScope
 import cash.z.ecc.android.bip39.Mnemonics
 import cash.z.ecc.android.bip39.toSeed
-import cash.z.ecc.android.sdk.Initializer
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
 import cash.z.ecc.android.sdk.demoapp.databinding.FragmentGetAddressBinding
@@ -49,19 +48,14 @@ class GetAddressFragment : BaseDemoFragment<FragmentGetAddressBinding>() {
             ).first()
         }
 
-        // using the ViewingKey to initialize
-        runBlocking {
-            Initializer.new(requireApplicationContext(), null) {
-                val network = ZcashNetwork.fromResources(requireApplicationContext())
-                it.newWallet(
-                    viewingKey,
-                    network = network,
-                    lightWalletEndpoint = LightWalletEndpoint.defaultForNetwork(network)
-                )
-            }
-        }.let { initializer ->
-            synchronizer = Synchronizer.newBlocking(initializer)
-        }
+        val network = ZcashNetwork.fromResources(requireApplicationContext())
+        synchronizer = Synchronizer.newBlocking(
+            requireApplicationContext(),
+            network,
+            lightWalletEndpoint = LightWalletEndpoint.defaultForNetwork(network),
+            seed = seed,
+            birthday = network.saplingActivationHeight
+        )
     }
 
     private fun displayAddress() {

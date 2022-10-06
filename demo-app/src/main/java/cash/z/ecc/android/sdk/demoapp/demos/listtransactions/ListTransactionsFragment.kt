@@ -8,7 +8,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import cash.z.ecc.android.bip39.Mnemonics
 import cash.z.ecc.android.bip39.toSeed
-import cash.z.ecc.android.sdk.Initializer
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor
 import cash.z.ecc.android.sdk.db.entity.ConfirmedTransaction
@@ -33,7 +32,6 @@ import kotlinx.coroutines.runBlocking
  */
 @Suppress("TooManyFunctions")
 class ListTransactionsFragment : BaseDemoFragment<FragmentListTransactionsBinding>() {
-    private lateinit var initializer: Initializer
     private lateinit var synchronizer: Synchronizer
     private lateinit var adapter: TransactionAdapter
     private lateinit var address: String
@@ -51,28 +49,20 @@ class ListTransactionsFragment : BaseDemoFragment<FragmentListTransactionsBindin
         // Use a BIP-39 library to convert a seed phrase into a byte array. Most wallets already
         // have the seed stored
         val seed = Mnemonics.MnemonicCode(seedPhrase).toSeed()
-
-        initializer = Initializer.newBlocking(
-            requireApplicationContext(),
-            Initializer.Config {
-                val network = ZcashNetwork.fromResources(requireApplicationContext())
-                runBlocking {
-                    it.importWallet(
-                        seed,
-                        birthday = null,
-                        network = network,
-                        lightWalletEndpoint = LightWalletEndpoint.defaultForNetwork(network)
-                    )
-                }
-            }
-        )
+        val network = ZcashNetwork.fromResources(requireApplicationContext())
         address = runBlocking {
             DerivationTool.deriveUnifiedAddress(
                 seed,
                 ZcashNetwork.fromResources(requireApplicationContext())
             )
         }
-        synchronizer = Synchronizer.newBlocking(initializer, seed)
+        synchronizer = Synchronizer.newBlocking(
+            requireApplicationContext(),
+            network,
+            lightWalletEndpoint = LightWalletEndpoint.defaultForNetwork(network),
+            seed = seed,
+            birthday = null
+        )
     }
 
     private fun initTransactionUI() {

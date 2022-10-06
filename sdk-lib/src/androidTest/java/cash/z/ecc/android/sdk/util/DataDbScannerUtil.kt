@@ -1,13 +1,14 @@
 package cash.z.ecc.android.sdk.util
 
 import androidx.test.platform.app.InstrumentationRegistry
-import cash.z.ecc.android.sdk.Initializer
 import cash.z.ecc.android.sdk.SdkSynchronizer
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.internal.TroubleshootingTwig
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.model.BlockHeight
+import cash.z.ecc.android.sdk.model.LightWalletEndpoint
 import cash.z.ecc.android.sdk.model.ZcashNetwork
+import cash.z.ecc.android.sdk.model.defaultForNetwork
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -65,27 +66,17 @@ class DataDbScannerUtil {
     @Test
     @Ignore("This test is broken")
     fun scanExistingDb() {
-        synchronizer = run {
-            val initializer = runBlocking {
-                Initializer.new(context) {
-                    it.setBirthdayHeight(
-                        BlockHeight.new(
-                            ZcashNetwork.Mainnet,
-                            birthdayHeight
-                        ),
-                        false
-                    )
-                }
-            }
-
-            val synchronizer = runBlocking {
-                Synchronizer.new(
-                    initializer
-                )
-            }
-
-            synchronizer
-        }
+        synchronizer = Synchronizer.newBlocking(
+            context,
+            ZcashNetwork.Mainnet,
+            lightWalletEndpoint = LightWalletEndpoint
+                .defaultForNetwork(ZcashNetwork.Mainnet),
+            seed = byteArrayOf(),
+            birthday = BlockHeight.new(
+                ZcashNetwork.Mainnet,
+                birthdayHeight
+            )
+        )
 
         println("sync!")
         synchronizer.start()
