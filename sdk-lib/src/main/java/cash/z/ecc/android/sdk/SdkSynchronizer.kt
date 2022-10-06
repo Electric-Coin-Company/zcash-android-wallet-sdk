@@ -51,6 +51,7 @@ import cash.z.ecc.android.sdk.internal.transaction.WalletTransactionEncoder
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.internal.twigTask
 import cash.z.ecc.android.sdk.jni.RustBackend
+import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.LightWalletEndpoint
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
@@ -379,7 +380,7 @@ class SdkSynchronizer internal constructor(
 
     suspend fun refreshSaplingBalance() {
         twig("refreshing sapling balance")
-        _saplingBalances.value = processor.getBalanceInfo()
+        _saplingBalances.value = processor.getBalanceInfo(Account.DEFAULT)
     }
 
     suspend fun refreshTransparentBalance() {
@@ -645,26 +646,26 @@ class SdkSynchronizer internal constructor(
     /**
      * Returns the current Unified Address for this account.
      */
-    override suspend fun getCurrentAddress(accountId: Int): String =
-        processor.getCurrentAddress(accountId)
+    override suspend fun getCurrentAddress(account: Account): String =
+        processor.getCurrentAddress(account)
 
     /**
      * Returns the legacy Sapling address corresponding to the current Unified Address for this account.
      */
-    override suspend fun getLegacySaplingAddress(accountId: Int): String =
-        processor.getLegacySaplingAddress(accountId)
+    override suspend fun getLegacySaplingAddress(account: Account): String =
+        processor.getLegacySaplingAddress(account)
 
     /**
      * Returns the legacy transparent address corresponding to the current Unified Address for this account.
      */
-    override suspend fun getLegacyTransparentAddress(accountId: Int): String =
-        processor.getTransparentAddress(accountId)
+    override suspend fun getLegacyTransparentAddress(account: Account): String =
+        processor.getTransparentAddress(account)
 
     override fun sendToAddress(
         usk: UnifiedSpendingKey,
         amount: Zatoshi,
         toAddress: String,
-        memo: String,
+        memo: String
     ): Flow<PendingTransaction> = flow {
         twig("Initializing pending transaction")
         // Emit the placeholder transaction, then switch to monitoring the database

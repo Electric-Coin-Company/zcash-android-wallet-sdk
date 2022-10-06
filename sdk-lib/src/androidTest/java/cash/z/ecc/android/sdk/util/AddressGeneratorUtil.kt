@@ -1,6 +1,7 @@
 package cash.z.ecc.android.sdk.util
 
 import androidx.test.platform.app.InstrumentationRegistry
+import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.tool.DerivationTool
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -36,7 +37,7 @@ class AddressGeneratorUtil {
             .map { seedPhrase ->
                 mnemonics.toSeed(seedPhrase.toCharArray())
             }.map { seed ->
-                DerivationTool.deriveUnifiedAddress(seed, ZcashNetwork.Mainnet)
+                DerivationTool.deriveUnifiedAddress(seed, ZcashNetwork.Mainnet, Account.DEFAULT)
             }.collect { address ->
                 println("xrxrx2\t$address")
                 assertTrue(address.startsWith("u1"))

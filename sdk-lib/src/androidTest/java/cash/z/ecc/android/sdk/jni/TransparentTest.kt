@@ -7,6 +7,7 @@ import cash.z.ecc.android.sdk.annotation.MaintainedTest
 import cash.z.ecc.android.sdk.annotation.TestPurpose
 import cash.z.ecc.android.sdk.internal.TroubleshootingTwig
 import cash.z.ecc.android.sdk.internal.Twig
+import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.tool.DerivationTool
 import kotlinx.coroutines.runBlocking
@@ -23,17 +24,25 @@ class TransparentTest(val expected: Expected, val network: ZcashNetwork) {
 
     @Test
     fun deriveTransparentAccountPrivateKeyTest() = runBlocking {
-        assertEquals(expected.tAccountPrivKey, DerivationTool.deriveTransparentAccountPrivateKey(SEED, network = network))
+        assertEquals(
+            expected.tAccountPrivKey,
+            DerivationTool.deriveTransparentAccountPrivateKey(
+                SEED,
+                network =
+                network,
+                Account.DEFAULT
+            )
+        )
     }
 
     @Test
     fun deriveTransparentAddressTest() = runBlocking {
-        assertEquals(expected.tAddr, DerivationTool.deriveTransparentAddress(SEED, network = network))
+        assertEquals(expected.tAddr, DerivationTool.deriveTransparentAddress(SEED, network = network, Account.DEFAULT))
     }
 
     @Test
     fun deriveTransparentAddressFromAccountPrivateKeyTest() = runBlocking {
-        val pk = DerivationTool.deriveTransparentAccountPrivateKey(SEED, network = network)
+        val pk = DerivationTool.deriveTransparentAccountPrivateKey(SEED, network = network, Account.DEFAULT)
         assertEquals(expected.tAddr, DerivationTool.deriveTransparentAddressFromAccountPrivateKey(pk, network = network))
     }
 

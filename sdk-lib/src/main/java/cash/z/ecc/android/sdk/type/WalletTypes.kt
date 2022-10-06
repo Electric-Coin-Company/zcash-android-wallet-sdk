@@ -1,7 +1,5 @@
 package cash.z.ecc.android.sdk.type
 
-import cash.z.ecc.android.sdk.model.FirstClassByteArray
-
 /**
  * A [ZIP 316] Unified Full Viewing Key, corresponding to a single wallet account.
  *

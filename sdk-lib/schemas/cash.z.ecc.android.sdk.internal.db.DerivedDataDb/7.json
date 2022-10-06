@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 7,
-    "identityHash": "8e6d7ff0e82352e1fa54e951a5006ba9",
+    "identityHash": "70ef5c6e545e393e2a67bc81143e82e6",
     "entities": [
       {
         "tableName": "transactions",
@@ -226,7 +226,7 @@
       },
       {
         "tableName": "accounts",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`account` INTEGER, `extfvk` TEXT NOT NULL, `address` TEXT NOT NULL, `transparent_address` TEXT NOT NULL, PRIMARY KEY(`account`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`account` INTEGER, `ufvk` TEXT, PRIMARY KEY(`account`))",
         "fields": [
           {
             "fieldPath": "account",
@@ -235,22 +235,10 @@
             "notNull": false
           },
           {
-            "fieldPath": "extendedFullViewingKey",
-            "columnName": "extfvk",
+            "fieldPath": "unifiedFullViewingKey",
+            "columnName": "ufvk",
             "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "address",
-            "columnName": "address",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "transparentAddress",
-            "columnName": "transparent_address",
-            "affinity": "TEXT",
-            "notNull": true
+            "notNull": false
           }
         ],
         "primaryKey": {
@@ -264,7 +252,7 @@
       },
       {
         "tableName": "sent_notes",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id_note` INTEGER, `tx` INTEGER NOT NULL, `output_index` INTEGER NOT NULL, `from_account` INTEGER NOT NULL, `address` TEXT NOT NULL, `value` INTEGER NOT NULL, `memo` BLOB, PRIMARY KEY(`id_note`), FOREIGN KEY(`tx`) REFERENCES `transactions`(`id_tx`) ON UPDATE NO ACTION ON DELETE NO ACTION , FOREIGN KEY(`from_account`) REFERENCES `accounts`(`account`) ON UPDATE NO ACTION ON DELETE NO ACTION )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id_note` INTEGER, `tx` INTEGER NOT NULL, `output_pool` INTEGER NOT NULL, `output_index` INTEGER NOT NULL, `from_account` INTEGER NOT NULL, `address` TEXT NOT NULL, `value` INTEGER NOT NULL, `memo` BLOB, PRIMARY KEY(`id_note`), FOREIGN KEY(`tx`) REFERENCES `transactions`(`id_tx`) ON UPDATE NO ACTION ON DELETE NO ACTION , FOREIGN KEY(`from_account`) REFERENCES `accounts`(`account`) ON UPDATE NO ACTION ON DELETE NO ACTION )",
         "fields": [
           {
             "fieldPath": "id",
@@ -275,6 +263,12 @@
           {
             "fieldPath": "transactionId",
             "columnName": "tx",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "outputPool",
+            "columnName": "output_pool",
             "affinity": "INTEGER",
             "notNull": true
           },
@@ -419,7 +413,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '8e6d7ff0e82352e1fa54e951a5006ba9')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '70ef5c6e545e393e2a67bc81143e82e6')"
     ]
   }
 }

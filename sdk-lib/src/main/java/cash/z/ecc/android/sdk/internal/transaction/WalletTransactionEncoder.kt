@@ -41,7 +41,7 @@ internal class WalletTransactionEncoder(
         usk: UnifiedSpendingKey,
         amount: Zatoshi,
         toAddress: String,
-        memo: ByteArray?,
+        memo: ByteArray?
     ): EncodedTransaction {
         val transactionId = createSpend(usk, amount, toAddress, memo)
         return repository.findEncodedTransactionById(transactionId)
@@ -114,7 +114,7 @@ internal class WalletTransactionEncoder(
         usk: UnifiedSpendingKey,
         amount: Zatoshi,
         toAddress: String,
-        memo: ByteArray? = byteArrayOf(),
+        memo: ByteArray? = byteArrayOf()
     ): Long {
         return twigTask(
             "creating transaction to spend $amount zatoshi to" +

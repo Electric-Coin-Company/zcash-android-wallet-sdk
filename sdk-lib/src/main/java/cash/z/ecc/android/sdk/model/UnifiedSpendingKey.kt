@@ -12,10 +12,7 @@ import cash.z.ecc.android.sdk.jni.RustBackend
  * export/import, or backup purposes.
  */
 data class UnifiedSpendingKey internal constructor(
-    /**
-     * A [ZIP 316](https://zips.z.cash/zip-0316) account identifier.
-     */
-    val account: Int,
+    val account: Account,
 
     /**
      * The binary encoding of the [ZIP 316](https://zips.z.cash/zip-0316) Unified Spending
@@ -33,14 +30,22 @@ data class UnifiedSpendingKey internal constructor(
     fun copyBytes() = bytes.byteArray.copyOf()
 
     companion object {
-        suspend fun new(account: Int, bytes: ByteArray): Result<UnifiedSpendingKey> {
+
+        /**
+         * This method may fail if the [bytes] no longer represent a valid key.  A key could become invalid due to
+         * network upgrades or other internal changes.  If a non-successful result is returned, clients are expected
+         * to use [DerivationTool.deriveUnifiedSpendingKey] to regenerate the key from the seed.
+         *
+         * @return A validated UnifiedSpendingKey.
+         */
+        suspend fun new(account: Account, bytes: ByteArray): Result<UnifiedSpendingKey> {
             val bytesCopy = bytes.copyOf()
             RustBackend.rustLibraryLoader.load()
-            return Result.runCatching {
+            return runCatching {
                 // We can ignore the Boolean returned from this, because if an error
                 // occurs the Rust side will throw.
                 RustBackend.validateUnifiedSpendingKey(bytesCopy)
-                return success(UnifiedSpendingKey(account, FirstClassByteArray(bytesCopy)))
+                UnifiedSpendingKey(account, FirstClassByteArray(bytesCopy))
             }
         }
     }

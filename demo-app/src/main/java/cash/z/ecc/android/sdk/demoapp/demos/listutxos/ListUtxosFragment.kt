@@ -19,6 +19,7 @@ import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.demoapp.util.mainActivity
 import cash.z.ecc.android.sdk.ext.collectWith
 import cash.z.ecc.android.sdk.internal.twig
+import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.LightWalletEndpoint
 import cash.z.ecc.android.sdk.model.ZcashNetwork
@@ -176,7 +177,8 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
             binding.inputAddress.setText(
                 DerivationTool.deriveTransparentAddress(
                     seed,
-                    ZcashNetwork.fromResources(requireApplicationContext())
+                    ZcashNetwork.fromResources(requireApplicationContext()),
+                    Account.DEFAULT
                 )
             )
         }

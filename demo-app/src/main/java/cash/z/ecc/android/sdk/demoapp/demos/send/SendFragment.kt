@@ -29,6 +29,7 @@ import cash.z.ecc.android.sdk.ext.convertZecToZatoshi
 import cash.z.ecc.android.sdk.ext.toZecString
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.twig
+import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.LightWalletEndpoint
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.WalletBalance
@@ -77,7 +78,11 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
             birthday = null
         )
         spendingKey = runBlocking {
-            DerivationTool.deriveUnifiedSpendingKey(seed, ZcashNetwork.fromResources(requireApplicationContext()))
+            DerivationTool.deriveUnifiedSpendingKey(
+                seed,
+                ZcashNetwork.fromResources(requireApplicationContext()),
+                Account.DEFAULT
+            )
         }
     }
 
