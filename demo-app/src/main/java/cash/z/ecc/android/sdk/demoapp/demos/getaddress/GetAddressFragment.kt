@@ -5,11 +5,15 @@ import android.view.LayoutInflater
 import androidx.lifecycle.lifecycleScope
 import cash.z.ecc.android.bip39.Mnemonics
 import cash.z.ecc.android.bip39.toSeed
+import cash.z.ecc.android.sdk.Initializer
+import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
 import cash.z.ecc.android.sdk.demoapp.databinding.FragmentGetAddressBinding
 import cash.z.ecc.android.sdk.demoapp.ext.requireApplicationContext
 import cash.z.ecc.android.sdk.demoapp.util.fromResources
+import cash.z.ecc.android.sdk.model.LightWalletEndpoint
 import cash.z.ecc.android.sdk.model.ZcashNetwork
+import cash.z.ecc.android.sdk.model.defaultForNetwork
 import cash.z.ecc.android.sdk.tool.DerivationTool
 import cash.z.ecc.android.sdk.type.UnifiedFullViewingKey
 import kotlinx.coroutines.launch
@@ -21,6 +25,7 @@ import kotlinx.coroutines.runBlocking
  */
 class GetAddressFragment : BaseDemoFragment<FragmentGetAddressBinding>() {
 
+    private lateinit var synchronizer: Synchronizer
     private lateinit var viewingKey: UnifiedFullViewingKey
     private lateinit var seed: ByteArray
 
@@ -36,28 +41,46 @@ class GetAddressFragment : BaseDemoFragment<FragmentGetAddressBinding>() {
         // have the seed stored
         seed = Mnemonics.MnemonicCode(seedPhrase).toSeed()
 
-        // the derivation tool can be used for generating keys and addresses
+        // converting seed into viewingKey
         viewingKey = runBlocking {
             DerivationTool.deriveUnifiedFullViewingKeys(
                 seed,
                 ZcashNetwork.fromResources(requireApplicationContext())
             ).first()
         }
-    }
 
-    private fun displayAddress() {
-        // a full fledged app would just get the address from the synchronizer
-        viewLifecycleOwner.lifecycleScope.launchWhenStarted {
-            val uaddress = DerivationTool.deriveUnifiedAddress(
-                seed,
-                ZcashNetwork.fromResources(requireApplicationContext())
-            )
-            binding.textInfo.text = "address:\n$uaddress"
+        // using the ViewingKey to initialize
+        runBlocking {
+            Initializer.new(requireApplicationContext(), null) {
+                val network = ZcashNetwork.fromResources(requireApplicationContext())
+                it.newWallet(
+                    viewingKey,
+                    network = network,
+                    lightWalletEndpoint = LightWalletEndpoint.defaultForNetwork(network)
+                )
+            }
+        }.let { initializer ->
+            synchronizer = Synchronizer.newBlocking(initializer)
         }
     }
 
-    // TODO [#677]: Show an example with the synchronizer
-    // TODO [#677]: https://github.com/zcash/zcash-android-wallet-sdk/issues/677
+    private fun displayAddress() {
+        viewLifecycleOwner.lifecycleScope.launchWhenStarted {
+            val uaddress = synchronizer.getCurrentAddress()
+            val sapling = synchronizer.getLegacySaplingAddress()
+            val transparent = synchronizer.getLegacyTransparentAddress()
+            binding.textInfo.text = """
+                Unified Address:
+                $uaddress
+
+                Legacy Sapling:
+                $sapling
+
+                Legacy transparent:
+                $transparent
+            """.trimIndent()
+        }
+    }
 
     //
     // Android Lifecycle overrides

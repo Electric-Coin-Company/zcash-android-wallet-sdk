@@ -231,17 +231,6 @@ interface SentDao {
 interface AccountDao {
     @Query("SELECT COUNT(account) FROM accounts")
     suspend fun count(): Int
-
-    @Query(
-        """
-        SELECT account AS accountId,
-               transparent_address AS rawTransparentAddress,
-               address AS rawShieldedAddress
-        FROM accounts
-        WHERE account = :id
-        """
-    )
-    suspend fun findAccountById(id: Int): UnifiedAddressAccount?
 }
 
 /**

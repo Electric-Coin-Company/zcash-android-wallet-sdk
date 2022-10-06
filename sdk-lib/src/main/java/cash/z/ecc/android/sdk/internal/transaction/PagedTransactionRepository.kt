@@ -94,8 +94,6 @@ internal class PagedTransactionRepository private constructor(
 
     override suspend fun count() = transactions.count()
 
-    override suspend fun getAccount(accountId: Int) = accounts.findAccountById(accountId)
-
     override suspend fun getAccountCount() = accounts.count()
 
     /**

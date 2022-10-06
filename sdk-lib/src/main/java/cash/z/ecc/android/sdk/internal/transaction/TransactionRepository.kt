@@ -85,8 +85,6 @@ interface TransactionRepository {
 
     suspend fun count(): Int
 
-    suspend fun getAccount(accountId: Int): UnifiedAddressAccount?
-
     suspend fun getAccountCount(): Int
 
     //
