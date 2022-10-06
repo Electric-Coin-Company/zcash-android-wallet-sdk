@@ -11,6 +11,7 @@ import cash.z.ecc.android.sdk.internal.TroubleshootingTwig
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.service.LightWalletGrpcService
 import cash.z.ecc.android.sdk.internal.twig
+import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.LightWalletEndpoint
 import cash.z.ecc.android.sdk.model.Zatoshi
@@ -97,7 +98,7 @@ class TestnetIntegrationTest : ScopedTest() {
     }
 
     private suspend fun sendFunds(): Boolean {
-        val spendingKey = DerivationTool.deriveSpendingKeys(seed, synchronizer.network)[0]
+        val spendingKey = DerivationTool.deriveUnifiedSpendingKey(seed, synchronizer.network, Account.DEFAULT)
         log("sending to address")
         synchronizer.sendToAddress(
             spendingKey,

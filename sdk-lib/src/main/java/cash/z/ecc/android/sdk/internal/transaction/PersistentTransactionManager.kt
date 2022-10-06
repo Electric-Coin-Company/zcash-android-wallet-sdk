@@ -12,6 +12,7 @@ import cash.z.ecc.android.sdk.internal.db.PendingTransactionDao
 import cash.z.ecc.android.sdk.internal.db.PendingTransactionDb
 import cash.z.ecc.android.sdk.internal.service.LightWalletService
 import cash.z.ecc.android.sdk.internal.twig
+import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.Zatoshi
@@ -76,14 +77,14 @@ class PersistentTransactionManager(
         zatoshi: Zatoshi,
         toAddress: String,
         memo: String,
-        fromAccountIndex: Int
+        account: Account
     ): PendingTransaction = withContext(Dispatchers.IO) {
         twig("constructing a placeholder transaction")
         var tx = PendingTransactionEntity(
             value = zatoshi.value,
             toAddress = toAddress,
             memo = memo.toByteArray(),
-            accountIndex = fromAccountIndex
+            accountIndex = account.value
         )
         @Suppress("TooGenericExceptionCaught")
         try {
@@ -114,7 +115,7 @@ class PersistentTransactionManager(
     ): PendingTransaction = withContext(Dispatchers.IO) {
         twig("managing the creation of a transaction")
         var tx = pendingTx as PendingTransactionEntity
-        if (tx.accountIndex != usk.account) {
+        if (tx.accountIndex != usk.account.value) {
             throw java.lang.IllegalArgumentException("usk is not for the same account as pendingTx")
         }
 
@@ -125,7 +126,7 @@ class PersistentTransactionManager(
                 usk,
                 tx.valueZatoshi,
                 tx.toAddress,
-                tx.memo,
+                tx.memo
             )
             twig("successfully encoded transaction!")
             safeUpdate("updating transaction encoding", -1) {

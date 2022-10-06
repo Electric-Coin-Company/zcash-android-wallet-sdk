@@ -9,6 +9,7 @@ import cash.z.ecc.android.sdk.db.entity.isPending
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.service.LightWalletGrpcService
 import cash.z.ecc.android.sdk.internal.twig
+import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.Darkside
 import cash.z.ecc.android.sdk.model.LightWalletEndpoint
@@ -63,9 +64,9 @@ class TestWallet(
     private val context = InstrumentationRegistry.getInstrumentation().context
     private val seed: ByteArray = Mnemonics.MnemonicCode(seedPhrase).toSeed()
     private val shieldedSpendingKey =
-        runBlocking { DerivationTool.deriveSpendingKeys(seed, network = network)[0] }
+        runBlocking { DerivationTool.deriveUnifiedSpendingKey(seed, network = network, Account.DEFAULT) }
     private val transparentAccountPrivateKey =
-        runBlocking { DerivationTool.deriveTransparentAccountPrivateKey(seed, network = network) }
+        runBlocking { DerivationTool.deriveTransparentAccountPrivateKey(seed, network = network, Account.DEFAULT) }
     val synchronizer: SdkSynchronizer = Synchronizer.newBlocking(
         context,
         network,
@@ -80,9 +81,9 @@ class TestWallet(
 
     val available get() = synchronizer.saplingBalances.value?.available
     val unifiedAddress =
-        runBlocking { DerivationTool.deriveUnifiedAddress(seed, network = network) }
+        runBlocking { DerivationTool.deriveUnifiedAddress(seed, network = network, Account.DEFAULT) }
     val transparentAddress =
-        runBlocking { DerivationTool.deriveTransparentAddress(seed, network = network) }
+        runBlocking { DerivationTool.deriveTransparentAddress(seed, network = network, Account.DEFAULT) }
     val birthdayHeight get() = synchronizer.latestBirthdayHeight
     val networkName get() = synchronizer.network.networkName
 
@@ -112,9 +113,9 @@ class TestWallet(
         return this
     }
 
-    suspend fun send(address: String = transparentAddress, memo: String = "", amount: Zatoshi = Zatoshi(500L), fromAccountIndex: Int = 0): TestWallet {
+    suspend fun send(address: String = transparentAddress, memo: String = "", amount: Zatoshi = Zatoshi(500L)): TestWallet {
         Twig.sprout("$alias sending")
-        synchronizer.sendToAddress(shieldedSpendingKey, amount, address, memo, fromAccountIndex)
+        synchronizer.sendToAddress(shieldedSpendingKey, amount, address, memo)
             .takeWhile { it.isPending(null) }
             .collect {
                 twig("Updated transaction: $it")

@@ -6,6 +6,7 @@ import cash.z.ecc.android.sdk.db.DatabaseCoordinator
 import cash.z.ecc.android.sdk.db.entity.ConfirmedTransaction
 import cash.z.ecc.android.sdk.db.entity.PendingTransaction
 import cash.z.ecc.android.sdk.ext.ZcashSdk
+import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.LightWalletEndpoint
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
@@ -189,8 +190,8 @@ interface Synchronizer {
      * @return the newly created ZIP 316 account identifier, along with the binary
      * encoding of the `UnifiedSpendingKey` for the newly created account.
      */
-     // This is not yet ready to be a public API
-     // suspend fun createAccount(seed: ByteArray): UnifiedSpendingKey
+    // This is not yet ready to be a public API
+    // suspend fun createAccount(seed: ByteArray): UnifiedSpendingKey
 
     /**
      * Gets the current unified address for the given account.
@@ -200,27 +201,27 @@ interface Synchronizer {
      *
      * @return the current unified address for the given account.
      */
-    suspend fun getCurrentAddress(accountId: Int = 0): String
+    suspend fun getCurrentAddress(account: Account = Account.DEFAULT): String
 
     /**
      * Gets the legacy Sapling address corresponding to the current unified address for the given account.
      *
-     * @param accountId the optional accountId whose address is of interest. By default, the first
+     * @param account the optional accountId whose address is of interest. By default, the first
      * account is used.
      *
      * @return a legacy Sapling address for the given account.
      */
-    suspend fun getLegacySaplingAddress(accountId: Int = 0): String
+    suspend fun getLegacySaplingAddress(account: Account = Account.DEFAULT): String
 
     /**
      * Gets the legacy transparent address corresponding to the current unified address for the given account.
      *
-     * @param accountId the optional accountId whose address is of interest. By default, the first
+     * @param account the optional accountId whose address is of interest. By default, the first
      * account is used.
      *
      * @return a legacy transparent address for the given account.
      */
-    suspend fun getLegacyTransparentAddress(accountId: Int = 0): String
+    suspend fun getLegacyTransparentAddress(account: Account = Account.DEFAULT): String
 
     /**
      * Sends zatoshi.
@@ -239,7 +240,7 @@ interface Synchronizer {
         usk: UnifiedSpendingKey,
         amount: Zatoshi,
         toAddress: String,
-        memo: String = "",
+        memo: String = ""
     ): Flow<PendingTransaction>
 
     fun shieldFunds(

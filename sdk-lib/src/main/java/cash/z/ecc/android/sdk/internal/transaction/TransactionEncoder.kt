@@ -21,7 +21,7 @@ interface TransactionEncoder {
         usk: UnifiedSpendingKey,
         amount: Zatoshi,
         toAddress: String,
-        memo: ByteArray? = byteArrayOf(),
+        memo: ByteArray? = byteArrayOf()
     ): EncodedTransaction
 
     /**

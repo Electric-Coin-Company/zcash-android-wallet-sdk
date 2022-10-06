@@ -11,6 +11,7 @@ import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
 import cash.z.ecc.android.sdk.demoapp.databinding.FragmentGetPrivateKeyBinding
 import cash.z.ecc.android.sdk.demoapp.ext.requireApplicationContext
 import cash.z.ecc.android.sdk.demoapp.util.fromResources
+import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.tool.DerivationTool
 import kotlinx.coroutines.launch
@@ -46,7 +47,7 @@ class GetPrivateKeyFragment : BaseDemoFragment<FragmentGetPrivateKeyBinding>() {
             val spendingKey = DerivationTool.deriveUnifiedSpendingKey(
                 seed,
                 ZcashNetwork.fromResources(requireApplicationContext()),
-                5
+                Account(5)
             )
 
             // derive the key that allows you to view but not spend transactions

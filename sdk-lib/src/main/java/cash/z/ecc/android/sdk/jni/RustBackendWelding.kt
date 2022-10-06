@@ -1,6 +1,7 @@
 package cash.z.ecc.android.sdk.jni
 
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
+import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.WalletBalance
@@ -106,19 +107,19 @@ internal interface RustBackendWelding {
         suspend fun deriveUnifiedAddress(
             seed: ByteArray,
             network: ZcashNetwork,
-            accountIndex: Int = 0
+            account: Account
         ): String
 
         suspend fun deriveUnifiedSpendingKey(
             seed: ByteArray,
             network: ZcashNetwork,
-            account: Int = 0
+            account: Account
         ): UnifiedSpendingKey
 
         suspend fun deriveTransparentAddress(
             seed: ByteArray,
             network: ZcashNetwork,
-            account: Int = 0,
+            account: Account,
             index: Int = 0
         ): String
 
@@ -136,7 +137,7 @@ internal interface RustBackendWelding {
         suspend fun deriveTransparentAccountPrivateKey(
             seed: ByteArray,
             network: ZcashNetwork,
-            account: Int = 0
+            account: Account
         ): String
 
         suspend fun deriveUnifiedFullViewingKey(

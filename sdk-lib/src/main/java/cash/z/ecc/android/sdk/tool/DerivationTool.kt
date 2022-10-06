@@ -2,6 +2,7 @@ package cash.z.ecc.android.sdk.tool
 
 import cash.z.ecc.android.sdk.jni.RustBackend
 import cash.z.ecc.android.sdk.jni.RustBackendWelding
+import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.type.UnifiedFullViewingKey
@@ -63,23 +64,22 @@ class DerivationTool {
         override suspend fun deriveUnifiedSpendingKey(
             seed: ByteArray,
             network: ZcashNetwork,
-            account: Int
+            account: Account
         ): UnifiedSpendingKey = withRustBackendLoaded {
-            deriveSpendingKey(seed, account, networkId = network.id)
+            deriveSpendingKey(seed, account.value, networkId = network.id)
         }
 
         /**
          * Given a seed and account index, return the associated Unified Address.
          *
          * @param seed the seed from which to derive the address.
-         * @param accountIndex the index of the account to use for deriving the address. Multiple
-         * accounts are not fully supported so the default value of 1 is recommended.
+         * @param accountIndex the index of the account to use for deriving the address.
          *
          * @return the address that corresponds to the seed and account index.
          */
-        override suspend fun deriveUnifiedAddress(seed: ByteArray, network: ZcashNetwork, accountIndex: Int): String =
+        override suspend fun deriveUnifiedAddress(seed: ByteArray, network: ZcashNetwork, account: Account): String =
             withRustBackendLoaded {
-                deriveUnifiedAddressFromSeed(seed, accountIndex, networkId = network.id)
+                deriveUnifiedAddressFromSeed(seed, account.value, networkId = network.id)
             }
 
         /**
@@ -103,10 +103,10 @@ class DerivationTool {
         override suspend fun deriveTransparentAddress(
             seed: ByteArray,
             network: ZcashNetwork,
-            account: Int,
+            account: Account,
             index: Int
         ): String = withRustBackendLoaded {
-            deriveTransparentAddressFromSeed(seed, account, index, networkId = network.id)
+            deriveTransparentAddressFromSeed(seed, account.value, index, networkId = network.id)
         }
 
         override suspend fun deriveTransparentAddressFromPublicKey(
@@ -127,9 +127,9 @@ class DerivationTool {
         override suspend fun deriveTransparentAccountPrivateKey(
             seed: ByteArray,
             network: ZcashNetwork,
-            account: Int
+            account: Account
         ): String = withRustBackendLoaded {
-            deriveTransparentAccountPrivKeyFromSeed(seed, account, networkId = network.id)
+            deriveTransparentAccountPrivKeyFromSeed(seed, account.value, networkId = network.id)
         }
 
         @Suppress("UNUSED_PARAMETER")

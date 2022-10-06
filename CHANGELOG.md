@@ -10,6 +10,7 @@ Change Log
   - `Synchronizer.getLegacyTransparentAddress`
   - `Synchronizer.isValidUnifiedAddr`
 - `cash.z.ecc.android.sdk.model`:
+  - `Account`
   - `FirstClassByteArray`
   - `UnifiedSpendingKey`
 - `cash.z.ecc.android.sdk.tool`:
@@ -43,6 +44,7 @@ Change Log
     the `UnifiedSpendingKey`.
   - `Synchronizer.shieldFunds` now takes a `UnifiedSpendingKey` instead of separately
     encoded Sapling and transparent keys.
+  - `Synchronizer` methods that previously took an `Int` for account index now take an `Account` object
 
 ### Removed
 - `cash.z.ecc.android.sdk`:

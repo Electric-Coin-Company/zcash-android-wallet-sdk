@@ -17,6 +17,7 @@ import cash.z.ecc.android.sdk.demoapp.ext.requireApplicationContext
 import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.ext.collectWith
 import cash.z.ecc.android.sdk.internal.twig
+import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.LightWalletEndpoint
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.model.defaultForNetwork
@@ -53,7 +54,8 @@ class ListTransactionsFragment : BaseDemoFragment<FragmentListTransactionsBindin
         address = runBlocking {
             DerivationTool.deriveUnifiedAddress(
                 seed,
-                ZcashNetwork.fromResources(requireApplicationContext())
+                ZcashNetwork.fromResources(requireApplicationContext()),
+                Account.DEFAULT
             )
         }
         synchronizer = Synchronizer.newBlocking(

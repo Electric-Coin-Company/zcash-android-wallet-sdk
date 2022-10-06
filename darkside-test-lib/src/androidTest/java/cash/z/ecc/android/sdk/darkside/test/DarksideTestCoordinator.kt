@@ -3,6 +3,7 @@ package cash.z.ecc.android.sdk.darkside.test
 import androidx.test.platform.app.InstrumentationRegistry
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.internal.twig
+import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.Darkside
 import cash.z.ecc.android.sdk.model.LightWalletEndpoint
@@ -214,8 +215,8 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
                 assertTrue("invalid total balance. Expected a minimum of $total but found ${balance?.total}", total <= balance?.total?.value!!)
             }
         }
-        suspend fun validateBalance(available: Long = -1, total: Long = -1, accountIndex: Int = 0) {
-            val balance = synchronizer.processor.getBalanceInfo(accountIndex)
+        suspend fun validateBalance(available: Long = -1, total: Long = -1, account: Account) {
+            val balance = synchronizer.processor.getBalanceInfo(account)
             if (available > 0) {
                 assertEquals("invalid available balance", available, balance.available)
             }

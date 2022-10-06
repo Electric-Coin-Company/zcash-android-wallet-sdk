@@ -1,6 +1,7 @@
 package cash.z.ecc.android.sdk.internal.transaction
 
 import cash.z.ecc.android.sdk.db.entity.PendingTransaction
+import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.Zatoshi
@@ -20,7 +21,7 @@ interface OutboundTransactionManager {
      * @param zatoshi the amount to spend.
      * @param toAddress the address to which funds will be sent.
      * @param memo the optionally blank memo associated with this transaction.
-     * @param fromAccountIndex the account from which to spend funds.
+     * @param account the account from which to spend funds.
      *
      * @return the associated pending transaction whose ID can be used to monitor for changes.
      */
@@ -28,7 +29,7 @@ interface OutboundTransactionManager {
         zatoshi: Zatoshi,
         toAddress: String,
         memo: String,
-        fromAccountIndex: Int
+        account: Account
     ): PendingTransaction
 
     /**

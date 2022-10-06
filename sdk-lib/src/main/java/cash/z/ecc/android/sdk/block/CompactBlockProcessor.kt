@@ -40,6 +40,7 @@ import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.internal.twigTask
 import cash.z.ecc.android.sdk.jni.RustBackend
 import cash.z.ecc.android.sdk.jni.RustBackendWelding
+import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.WalletBalance
@@ -1027,17 +1028,17 @@ class CompactBlockProcessor internal constructor(
      *
      * @return the current unified address of this account.
      */
-    suspend fun getCurrentAddress(accountId: Int = 0) =
-        rustBackend.getCurrentAddress(accountId)
+    suspend fun getCurrentAddress(account: Account) =
+        rustBackend.getCurrentAddress(account.value)
 
     /**
      * Get the legacy Sapling address corresponding to the current unified address for the given wallet account.
      *
      * @return a Sapling address.
      */
-    suspend fun getLegacySaplingAddress(accountId: Int = 0) =
+    suspend fun getLegacySaplingAddress(account: Account) =
         rustBackend.getSaplingReceiver(
-            rustBackend.getCurrentAddress(accountId)
+            rustBackend.getCurrentAddress(account.value)
         )
             ?: throw InitializerException.MissingAddressException("legacy Sapling")
 
@@ -1046,26 +1047,26 @@ class CompactBlockProcessor internal constructor(
      *
      * @return a transparent address.
      */
-    suspend fun getTransparentAddress(accountId: Int = 0) =
+    suspend fun getTransparentAddress(account: Account) =
         rustBackend.getTransparentReceiver(
-            rustBackend.getCurrentAddress(accountId)
+            rustBackend.getCurrentAddress(account.value)
         )
             ?: throw InitializerException.MissingAddressException("legacy transparent")
 
     /**
      * Calculates the latest balance info. Defaults to the first account.
      *
-     * @param accountIndex the account to check for balance info.
+     * @param account the account to check for balance info.
      *
      * @return an instance of WalletBalance containing information about available and total funds.
      */
-    suspend fun getBalanceInfo(accountIndex: Int = 0): WalletBalance =
+    suspend fun getBalanceInfo(account: Account): WalletBalance =
         twigTask("checking balance info", -1) {
             @Suppress("TooGenericExceptionCaught")
             try {
-                val balanceTotal = rustBackend.getBalance(accountIndex)
+                val balanceTotal = rustBackend.getBalance(account.value)
                 twig("found total balance: $balanceTotal")
-                val balanceAvailable = rustBackend.getVerifiedBalance(accountIndex)
+                val balanceAvailable = rustBackend.getVerifiedBalance(account.value)
                 twig("found available balance: $balanceAvailable")
                 WalletBalance(balanceTotal, balanceAvailable)
             } catch (t: Throwable) {

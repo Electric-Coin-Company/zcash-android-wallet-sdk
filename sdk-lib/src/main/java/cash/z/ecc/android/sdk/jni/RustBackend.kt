@@ -232,7 +232,7 @@ internal class RustBackend private constructor(
     ): Long = withContext(SdkDispatchers.DATABASE_IO) {
         createToAddress(
             dataDbFile.absolutePath,
-            usk.account,
+            usk.account.value,
             usk.bytes.byteArray,
             to,
             value,
@@ -251,7 +251,7 @@ internal class RustBackend private constructor(
         return withContext(SdkDispatchers.DATABASE_IO) {
             shieldToAddress(
                 dataDbFile.absolutePath,
-                usk.account,
+                usk.account.value,
                 usk.bytes.byteArray,
                 memo ?: ByteArray(0),
                 "$pathParamsDir/$SPEND_PARAM_FILE_NAME",
