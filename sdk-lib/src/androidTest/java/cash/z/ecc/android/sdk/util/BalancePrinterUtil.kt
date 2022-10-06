@@ -1,7 +1,6 @@
 package cash.z.ecc.android.sdk.util
 
 import androidx.test.platform.app.InstrumentationRegistry
-import cash.z.ecc.android.sdk.Initializer
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.internal.TroubleshootingTwig
 import cash.z.ecc.android.sdk.internal.Twig
@@ -14,11 +13,9 @@ import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.model.defaultForNetwork
 import cash.z.ecc.android.sdk.tool.CheckpointTool
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.runBlocking
-import okio.buffer
-import okio.source
 import org.junit.Before
 import org.junit.Ignore
 import org.junit.Test
@@ -83,11 +80,7 @@ class BalancePrinterUtil {
                 mnemonics.toSeed(seedPhrase.toCharArray())
             }.collect { seed ->
                 // TODO: clear the dataDb but leave the cacheDb
-                val initializer = Initializer.new(context) { config ->
-                    val endpoint = LightWalletEndpoint.defaultForNetwork(network)
-                    runBlocking { config.importWallet(seed, birthdayHeight, network, endpoint) }
-                    config.alias = alias
-                }
+
                 /*
             what I need to do right now
             - for each seed
@@ -103,7 +96,14 @@ class BalancePrinterUtil {
                     - can we be more stateless and thereby improve the flexibility of this code?!!!
                   */
                 synchronizer?.stop()
-                synchronizer = Synchronizer.new(initializer).apply {
+                synchronizer = Synchronizer.new(
+                    context,
+                    network,
+                    lightWalletEndpoint = LightWalletEndpoint
+                        .defaultForNetwork(network),
+                    seed = seed,
+                    birthday = birthdayHeight
+                ).apply {
                     start()
                 }
 
@@ -142,16 +142,7 @@ class BalancePrinterUtil {
 //    }
 
     @Throws(IOException::class)
-    fun readLines() = flow<String> {
-        val seedFile = javaClass.getResourceAsStream("/utils/seeds.txt")!!
-        seedFile.source().buffer().use { source ->
-            var line: String? = source.readUtf8Line()
-            while (line != null) {
-                emit(line)
-                line = source.readUtf8Line()
-            }
-        }
-    }
+    fun readLines() = javaClass.getResourceAsStream("/utils/seeds.txt")!!.bufferedReader().lineSequence().asFlow()
 
 //    private fun initWallet(seed: String): Wallet {
 //        val spendingKeyProvider = Delegates.notNull<String>()

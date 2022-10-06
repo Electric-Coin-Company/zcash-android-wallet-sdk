@@ -35,9 +35,11 @@ import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.internal.block.CompactBlockDbStore
 import cash.z.ecc.android.sdk.internal.block.CompactBlockDownloader
 import cash.z.ecc.android.sdk.internal.block.CompactBlockStore
+import cash.z.ecc.android.sdk.internal.ext.getCacheDirSuspend
 import cash.z.ecc.android.sdk.internal.ext.toHexReversed
 import cash.z.ecc.android.sdk.internal.ext.tryNull
 import cash.z.ecc.android.sdk.internal.isEmpty
+import cash.z.ecc.android.sdk.internal.model.Checkpoint
 import cash.z.ecc.android.sdk.internal.service.LightWalletGrpcService
 import cash.z.ecc.android.sdk.internal.service.LightWalletService
 import cash.z.ecc.android.sdk.internal.transaction.OutboundTransactionManager
@@ -48,17 +50,19 @@ import cash.z.ecc.android.sdk.internal.transaction.TransactionRepository
 import cash.z.ecc.android.sdk.internal.transaction.WalletTransactionEncoder
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.internal.twigTask
+import cash.z.ecc.android.sdk.jni.RustBackend
 import cash.z.ecc.android.sdk.model.BlockHeight
+import cash.z.ecc.android.sdk.model.LightWalletEndpoint
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
-import cash.z.ecc.android.sdk.tool.DerivationTool
 import cash.z.ecc.android.sdk.type.AddressType
 import cash.z.ecc.android.sdk.type.AddressType.Shielded
 import cash.z.ecc.android.sdk.type.AddressType.Transparent
 import cash.z.ecc.android.sdk.type.AddressType.Unified
 import cash.z.ecc.android.sdk.type.ConsensusMatchType
+import cash.z.ecc.android.sdk.type.UnifiedFullViewingKey
 import cash.z.wallet.sdk.rpc.Service
 import io.grpc.ManagedChannel
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -81,6 +85,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import java.io.File
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 
@@ -803,37 +808,64 @@ object DefaultSynchronizerFactory {
         )
     }
 
+    internal suspend fun defaultRustBackend(
+        context: Context,
+        network: ZcashNetwork,
+        alias: String,
+        blockHeight: BlockHeight
+    ): RustBackend {
+        val coordinator = DatabaseCoordinator.getInstance(context)
+
+        return RustBackend.init(
+            coordinator.cacheDbFile(network, alias).absolutePath,
+            coordinator.dataDbFile(network, alias).absolutePath,
+            File(context.getCacheDirSuspend(), "params").absolutePath,
+            network,
+            blockHeight
+        )
+    }
+
     // TODO [#242]: Don't hard code page size.  It is a workaround for Uncaught Exception:
     //  android.view.ViewRootImpl$CalledFromWrongThreadException: Only the original thread that created a view hierarchy
     //  can touch its views. and is probably related to FlowPagedList
     // TODO [#242]: https://github.com/zcash/zcash-android-wallet-sdk/issues/242
     private const val DEFAULT_PAGE_SIZE = 1000
-    suspend fun defaultTransactionRepository(initializer: Initializer, seed: ByteArray?): TransactionRepository =
+
+    @Suppress("LongParameterList")
+    internal suspend fun defaultTransactionRepository(
+        context: Context,
+        rustBackend: RustBackend,
+        zcashNetwork: ZcashNetwork,
+        checkpoint: Checkpoint,
+        viewingKeys: List<UnifiedFullViewingKey>,
+        seed: ByteArray?
+    ): TransactionRepository =
         PagedTransactionRepository.new(
-            initializer.context,
-            initializer.network,
+            context,
+            zcashNetwork,
             DEFAULT_PAGE_SIZE,
-            initializer.rustBackend,
+            rustBackend,
             seed,
-            initializer.checkpoint,
-            initializer.viewingKeys,
-            initializer.overwriteVks
+            checkpoint,
+            viewingKeys,
+            false
         )
 
-    fun defaultBlockStore(initializer: Initializer): CompactBlockStore =
+    internal fun defaultBlockStore(context: Context, rustBackend: RustBackend, zcashNetwork: ZcashNetwork):
+        CompactBlockStore =
         CompactBlockDbStore.new(
-            initializer.context,
-            initializer.network,
-            initializer.rustBackend.cacheDbFile
+            context,
+            zcashNetwork,
+            rustBackend.cacheDbFile
         )
 
-    fun defaultService(initializer: Initializer): LightWalletService =
-        LightWalletGrpcService.new(initializer.context, initializer.lightWalletEndpoint)
+    fun defaultService(context: Context, lightWalletEndpoint: LightWalletEndpoint): LightWalletService =
+        LightWalletGrpcService.new(context, lightWalletEndpoint)
 
-    fun defaultEncoder(
-        initializer: Initializer,
+    internal fun defaultEncoder(
+        rustBackend: RustBackend,
         repository: TransactionRepository
-    ): TransactionEncoder = WalletTransactionEncoder(initializer.rustBackend, repository)
+    ): TransactionEncoder = WalletTransactionEncoder(rustBackend, repository)
 
     fun defaultDownloader(
         service: LightWalletService,
@@ -841,31 +873,33 @@ object DefaultSynchronizerFactory {
     ): CompactBlockDownloader = CompactBlockDownloader(service, blockStore)
 
     suspend fun defaultTxManager(
-        initializer: Initializer,
+        context: Context,
+        zcashNetwork: ZcashNetwork,
+        alias: String,
         encoder: TransactionEncoder,
         service: LightWalletService
     ): OutboundTransactionManager {
-        val databaseFile = DatabaseCoordinator.getInstance(initializer.context).pendingTransactionsDbFile(
-            initializer.network,
-            initializer.alias
+        val databaseFile = DatabaseCoordinator.getInstance(context).pendingTransactionsDbFile(
+            zcashNetwork,
+            alias
         )
 
         return PersistentTransactionManager(
-            initializer.context,
+            context,
             encoder,
             service,
             databaseFile
         )
     }
 
-    fun defaultProcessor(
-        initializer: Initializer,
+    internal fun defaultProcessor(
+        rustBackend: RustBackend,
         downloader: CompactBlockDownloader,
         repository: TransactionRepository
     ): CompactBlockProcessor = CompactBlockProcessor(
         downloader,
         repository,
-        initializer.rustBackend,
-        initializer.rustBackend.birthdayHeight
+        rustBackend,
+        rustBackend.birthdayHeight
     )
 }

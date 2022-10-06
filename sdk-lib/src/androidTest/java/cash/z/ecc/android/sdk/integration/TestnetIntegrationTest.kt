@@ -2,7 +2,6 @@ package cash.z.ecc.android.sdk.integration
 
 import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
-import cash.z.ecc.android.sdk.Initializer
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.Synchronizer.Status.SYNCED
 import cash.z.ecc.android.sdk.db.entity.isSubmitSuccess
@@ -63,7 +62,7 @@ class TestnetIntegrationTest : ScopedTest() {
     @Test
     @Ignore("This test is broken")
     fun getAddress() = runBlocking {
-        assertEquals(address, synchronizer.getAddress())
+        assertEquals(address, synchronizer.getCurrentAddress())
     }
 
     // This is an extremely slow test; it is disabled so that we can get CI set up
@@ -117,29 +116,33 @@ class TestnetIntegrationTest : ScopedTest() {
     }
 
     companion object {
-        init { Twig.plant(TroubleshootingTwig()) }
+        init {
+            Twig.plant(TroubleshootingTwig())
+        }
 
         val lightWalletEndpoint = LightWalletEndpoint("lightwalletd.testnet.z.cash", 9087, true)
         private const val birthdayHeight = 963150L
         private const val targetHeight = 663250
-        private const val seedPhrase = "still champion voice habit trend flight survey between bitter process artefact blind carbon truly provide dizzy crush flush breeze blouse charge solid fish spread"
+        private const val seedPhrase =
+            "still champion voice habit trend flight survey between bitter process artefact blind carbon truly provide dizzy crush flush breeze blouse charge solid fish spread"
         val seed = "cash.z.ecc.android.sdk.integration.IntegrationTest.seed.value.64bytes".toByteArray()
         val address = "zs1m30y59wxut4zk9w24d6ujrdnfnl42hpy0ugvhgyhr8s0guszutqhdj05c7j472dndjstulph74m"
         val toAddress = "zs1vp7kvlqr4n9gpehztr76lcn6skkss9p8keqs3nv8avkdtjrcctrvmk9a7u494kluv756jeee5k0"
 
         private val context = InstrumentationRegistry.getInstrumentation().context
-        private val initializer = runBlocking {
-            Initializer.new(context) { config ->
-                config.setNetwork(ZcashNetwork.Testnet, lightWalletEndpoint)
-                runBlocking { config.importWallet(seed, BlockHeight.new(ZcashNetwork.Testnet, birthdayHeight), ZcashNetwork.Testnet, lightWalletEndpoint) }
-            }
-        }
         private lateinit var synchronizer: Synchronizer
 
         @JvmStatic
         @BeforeClass
         fun startUp() {
-            synchronizer = Synchronizer.newBlocking(initializer)
+            synchronizer = Synchronizer.newBlocking(
+                context,
+                ZcashNetwork.Testnet,
+                lightWalletEndpoint =
+                lightWalletEndpoint,
+                seed = seed,
+                birthday = BlockHeight.new(ZcashNetwork.Testnet, birthdayHeight)
+            )
             synchronizer.start(classScope)
         }
     }

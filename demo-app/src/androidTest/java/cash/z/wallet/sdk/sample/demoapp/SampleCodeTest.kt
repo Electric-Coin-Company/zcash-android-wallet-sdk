@@ -1,9 +1,9 @@
 package cash.z.wallet.sdk.sample.demoapp
 
 import androidx.test.platform.app.InstrumentationRegistry
-import cash.z.ecc.android.sdk.Initializer
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.db.entity.isFailure
+import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.ext.convertZecToZatoshi
 import cash.z.ecc.android.sdk.ext.toHex
 import cash.z.ecc.android.sdk.internal.TroubleshootingTwig
@@ -14,6 +14,7 @@ import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.LightWalletEndpoint
 import cash.z.ecc.android.sdk.model.Mainnet
 import cash.z.ecc.android.sdk.model.ZcashNetwork
+import cash.z.ecc.android.sdk.model.defaultForNetwork
 import cash.z.ecc.android.sdk.tool.DerivationTool
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.runBlocking
@@ -160,8 +161,14 @@ class SampleCodeTest {
 
         private val context = InstrumentationRegistry.getInstrumentation().targetContext
         private val synchronizer: Synchronizer = run {
-            val initializer = runBlocking { Initializer.new(context) {} }
-            Synchronizer.newBlocking(initializer)
+            val network = ZcashNetwork.fromResources(context)
+            Synchronizer.newBlocking(
+                context,
+                network,
+                lightWalletEndpoint = LightWalletEndpoint.defaultForNetwork(network),
+                seed = seed,
+                birthday = null
+            )
         }
 
         @BeforeClass

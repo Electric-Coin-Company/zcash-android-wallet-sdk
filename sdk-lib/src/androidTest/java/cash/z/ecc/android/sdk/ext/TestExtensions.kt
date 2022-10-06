@@ -1,18 +1,10 @@
 package cash.z.ecc.android.sdk.ext
 
-import cash.z.ecc.android.sdk.Initializer
-import cash.z.ecc.android.sdk.model.ZcashNetwork
-import cash.z.ecc.android.sdk.util.SimpleMnemonics
-import kotlinx.coroutines.runBlocking
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONObject
 import ru.gildor.coroutines.okhttp.await
 import kotlin.test.assertNotNull
-
-fun Initializer.Config.seedPhrase(seedPhrase: String, network: ZcashNetwork) {
-    runBlocking { setSeed(SimpleMnemonics().toSeed(seedPhrase.toCharArray()), network) }
-}
 
 object BlockExplorer {
     suspend fun fetchLatestHeight(): Long {

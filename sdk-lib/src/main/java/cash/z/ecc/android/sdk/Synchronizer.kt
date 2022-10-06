@@ -1,13 +1,19 @@
 package cash.z.ecc.android.sdk
 
+import android.content.Context
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor
+import cash.z.ecc.android.sdk.db.DatabaseCoordinator
 import cash.z.ecc.android.sdk.db.entity.ConfirmedTransaction
 import cash.z.ecc.android.sdk.db.entity.PendingTransaction
 import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.model.BlockHeight
+import cash.z.ecc.android.sdk.model.LightWalletEndpoint
+import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
+import cash.z.ecc.android.sdk.tool.CheckpointTool
+import cash.z.ecc.android.sdk.tool.DerivationTool
 import cash.z.ecc.android.sdk.type.AddressType
 import cash.z.ecc.android.sdk.type.ConsensusMatchType
 import cash.z.wallet.sdk.rpc.Service
@@ -463,29 +469,68 @@ interface Synchronizer {
         /**
          * Primary method that SDK clients will use to construct a synchronizer.
          *
-         * If customized initialization is required (e.g. for dependency injection or testing), see
-         * [DefaultSynchronizerFactory].
-         *
          * @param initializer the helper that is leveraged for creating all the components that the
          * Synchronizer requires. It contains all information necessary to build a synchronizer and it is
          * mainly responsible for initializing the databases associated with this synchronizer and loading
          * the rust backend.
-         * @param seed the wallet's seed phrase. This only needs to be provided if this method returns an
-         * error indicating that the seed phrase is required for a database migration.
+         * @param seed the wallet's seed phrase. This is required the first time a new wallet is set up. For
+         * subsequent calls, seed is only needed if [InitializerException.SeedRequired] is thrown.
+         * @throws InitializerException.SeedRequired
          */
+        /*
+         * If customized initialization is required (e.g. for dependency injection or testing), see
+         * [DefaultSynchronizerFactory].
+         */
+        @Suppress("LongParameterList")
         suspend fun new(
-            initializer: Initializer,
-            seed: ByteArray,
+            context: Context,
+            zcashNetwork: ZcashNetwork,
+            alias: String = "zcash",
+            lightWalletEndpoint: LightWalletEndpoint,
+            seed: ByteArray?,
+            birthday: BlockHeight?
         ): Synchronizer {
-            val repository = DefaultSynchronizerFactory.defaultTransactionRepository(initializer, seed)
-            val blockStore = DefaultSynchronizerFactory.defaultBlockStore(initializer)
-            val service = DefaultSynchronizerFactory.defaultService(initializer)
-            val encoder = DefaultSynchronizerFactory.defaultEncoder(initializer, repository)
+            val applicationContext = context.applicationContext
+
+            validateAlias(alias)
+
+            val loadedCheckpoint = CheckpointTool.loadNearest(
+                applicationContext,
+                zcashNetwork,
+                birthday ?: zcashNetwork.saplingActivationHeight
+            )
+
+            val rustBackend = DefaultSynchronizerFactory.defaultRustBackend(
+                applicationContext,
+                zcashNetwork,
+                alias,
+                loadedCheckpoint.height
+            )
+
+            val viewingKeys = seed?.let {
+                DerivationTool.deriveUnifiedFullViewingKeys(
+                    seed,
+                    zcashNetwork,
+                    1
+                ).toList()
+            } ?: emptyList()
+
+            val repository = DefaultSynchronizerFactory.defaultTransactionRepository(
+                applicationContext,
+                rustBackend,
+                zcashNetwork,
+                loadedCheckpoint,
+                viewingKeys,
+                seed
+            )
+            val blockStore = DefaultSynchronizerFactory.defaultBlockStore(applicationContext, rustBackend, zcashNetwork)
+            val service = DefaultSynchronizerFactory.defaultService(applicationContext, lightWalletEndpoint)
+            val encoder = DefaultSynchronizerFactory.defaultEncoder(rustBackend, repository)
             val downloader = DefaultSynchronizerFactory.defaultDownloader(service, blockStore)
             val txManager =
-                DefaultSynchronizerFactory.defaultTxManager(initializer, encoder, service)
+                DefaultSynchronizerFactory.defaultTxManager(applicationContext, zcashNetwork, alias, encoder, service)
             val processor =
-                DefaultSynchronizerFactory.defaultProcessor(initializer, downloader, repository)
+                DefaultSynchronizerFactory.defaultProcessor(rustBackend, downloader, repository)
 
             return SdkSynchronizer(
                 repository,
@@ -501,8 +546,57 @@ interface Synchronizer {
          * This is a blocking call, so it should not be called from the main thread.
          */
         @JvmStatic
-        fun newBlocking(initializer: Initializer, seed: ByteArray): Synchronizer = runBlocking {
-            new (initializer, seed)
+        @Suppress("LongParameterList")
+        fun newBlocking(
+            context: Context,
+            zcashNetwork: ZcashNetwork,
+            alias: String = "zcash",
+            lightWalletEndpoint: LightWalletEndpoint,
+            seed: ByteArray?,
+            birthday: BlockHeight?
+        ): Synchronizer = runBlocking {
+            new(context, zcashNetwork, alias, lightWalletEndpoint, seed, birthday)
         }
+
+        /**
+         * Delete the databases associated with this wallet. This removes all compact blocks and
+         * data derived from those blocks. Although most data can be regenerated by setting up a new
+         * Synchronizer instance with the seed, there are two special cases where data is not retained:
+         * 1. Outputs created with a `null` OVK
+         * 2. The UA to which a transaction was sent (recovery from seed will only reveal the receiver, not the full UA)
+         *
+         * @param appContext the application context.
+         * @param network the network associated with the data to be erased.
+         * @param alias the alias used to create the local data.
+         *
+         * @return true when one of the associated files was found. False most likely indicates
+         * that the wrong alias was provided.
+         */
+        suspend fun erase(
+            appContext: Context,
+            network: ZcashNetwork,
+            alias: String
+        ): Boolean = DatabaseCoordinator.getInstance(appContext).deleteDatabases(network, alias)
+    }
+}
+
+/**
+ * Validate that the alias doesn't contain malicious characters by enforcing simple rules which
+ * permit the alias to be used as part of a file name for the preferences and databases. This
+ * enables multiple wallets to exist on one device, which is also helpful for sweeping funds.
+ *
+ * @param alias the alias to validate.
+ *
+ * @throws IllegalArgumentException whenever the alias is not less than 100 characters or
+ * contains something other than alphanumeric characters. Underscores are allowed but aliases
+ * must start with a letter.
+ */
+private fun validateAlias(alias: String) {
+    require(
+        alias.length in ZcashSdk.ALIAS_MIN_LENGTH..ZcashSdk.ALIAS_MAX_LENGTH && alias[0].isLetter() &&
+            alias.all { it.isLetterOrDigit() || it == '_' }
+    ) {
+        "ERROR: Invalid alias ($alias). For security, the alias must be shorter than 100 " +
+            "characters and only contain letters, digits or underscores and start with a letter."
     }
 }

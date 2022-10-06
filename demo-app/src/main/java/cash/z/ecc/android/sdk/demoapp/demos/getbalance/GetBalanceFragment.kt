@@ -5,7 +5,6 @@ import android.view.LayoutInflater
 import androidx.lifecycle.lifecycleScope
 import cash.z.ecc.android.bip39.Mnemonics
 import cash.z.ecc.android.bip39.toSeed
-import cash.z.ecc.android.sdk.Initializer
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor
 import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
@@ -18,9 +17,7 @@ import cash.z.ecc.android.sdk.model.LightWalletEndpoint
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.model.defaultForNetwork
-import cash.z.ecc.android.sdk.tool.DerivationTool
 import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.runBlocking
 
 /**
  * Displays the available balance && total balance associated with the seed defined by the default config.
@@ -46,27 +43,14 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
         // have the seed stored
         val seed = Mnemonics.MnemonicCode(seedPhrase).toSeed()
 
-        // converting seed into viewingKey
-        val viewingKey = runBlocking {
-            DerivationTool.deriveUnifiedFullViewingKeys(
-                seed,
-                ZcashNetwork.fromResources(requireApplicationContext())
-            ).first()
-        }
-
-        // using the ViewingKey to initialize
-        runBlocking {
-            Initializer.new(requireApplicationContext(), null) {
-                val network = ZcashNetwork.fromResources(requireApplicationContext())
-                it.newWallet(
-                    viewingKey,
-                    network = network,
-                    lightWalletEndpoint = LightWalletEndpoint.defaultForNetwork(network)
-                )
-            }
-        }.let { initializer ->
-            synchronizer = Synchronizer.newBlocking(initializer, seed)
-        }
+        val network = ZcashNetwork.fromResources(requireApplicationContext())
+        synchronizer = Synchronizer.newBlocking(
+            requireApplicationContext(),
+            network,
+            lightWalletEndpoint = LightWalletEndpoint.defaultForNetwork(network),
+            seed = seed,
+            birthday = null
+        )
     }
 
     override fun onResume() {

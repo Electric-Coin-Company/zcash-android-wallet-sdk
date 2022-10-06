@@ -3,7 +3,6 @@ package cash.z.ecc.android.sdk.darkside.test
 import androidx.test.platform.app.InstrumentationRegistry
 import cash.z.ecc.android.bip39.Mnemonics
 import cash.z.ecc.android.bip39.toSeed
-import cash.z.ecc.android.sdk.Initializer
 import cash.z.ecc.android.sdk.SdkSynchronizer
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.db.entity.isPending
@@ -67,12 +66,16 @@ class TestWallet(
         runBlocking { DerivationTool.deriveSpendingKeys(seed, network = network)[0] }
     private val transparentAccountPrivateKey =
         runBlocking { DerivationTool.deriveTransparentAccountPrivateKey(seed, network = network) }
-    val initializer = runBlocking {
-        Initializer.new(context) { config ->
-            runBlocking { config.importWallet(seed, startHeight, network, endpoint, alias = alias) }
-        }
-    }
-    val synchronizer: SdkSynchronizer = runBlocking { Synchronizer.new(initializer) } as SdkSynchronizer
+    val synchronizer: SdkSynchronizer = Synchronizer.newBlocking(
+        context,
+        network,
+        alias,
+        endpoint,
+        seed,
+        startHeight
+    )
+        as
+            SdkSynchronizer
     val service = (synchronizer.processor.downloader.lightWalletService as LightWalletGrpcService)
 
     val available get() = synchronizer.saplingBalances.value?.available
