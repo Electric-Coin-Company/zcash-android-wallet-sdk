@@ -1023,17 +1023,34 @@ class CompactBlockProcessor internal constructor(
         rustBackend.createAccount(seed)
 
     /**
-     * Get address corresponding to the given account for this wallet.
+     * Get the current unified address for the given wallet account.
      *
-     * @return the address of this wallet.
+     * @return the current unified address of this account.
      */
-    suspend fun getShieldedAddress(accountId: Int = 0) =
-        repository.getAccount(accountId)?.rawShieldedAddress
-            ?: throw InitializerException.MissingAddressException("shielded")
+    suspend fun getCurrentAddress(accountId: Int = 0) =
+        rustBackend.getCurrentAddress(accountId)
 
+    /**
+     * Get the legacy Sapling address corresponding to the current unified address for the given wallet account.
+     *
+     * @return a Sapling address.
+     */
+    suspend fun getLegacySaplingAddress(accountId: Int = 0) =
+        rustBackend.getSaplingReceiver(
+            rustBackend.getCurrentAddress(accountId)
+        )
+            ?: throw InitializerException.MissingAddressException("legacy Sapling")
+
+    /**
+     * Get the legacy transparent address corresponding to the current unified address for the given wallet account.
+     *
+     * @return a transparent address.
+     */
     suspend fun getTransparentAddress(accountId: Int = 0) =
-        repository.getAccount(accountId)?.rawTransparentAddress
-            ?: throw InitializerException.MissingAddressException("transparent")
+        rustBackend.getTransparentReceiver(
+            rustBackend.getCurrentAddress(accountId)
+        )
+            ?: throw InitializerException.MissingAddressException("legacy transparent")
 
     /**
      * Calculates the latest balance info. Defaults to the first account.

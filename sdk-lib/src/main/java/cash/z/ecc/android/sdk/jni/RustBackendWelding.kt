@@ -53,7 +53,9 @@ internal interface RustBackendWelding {
 
     suspend fun getCurrentAddress(account: Int = 0): String
 
-    suspend fun getTransparentAddress(account: Int = 0, index: Int = 0): String
+    fun getTransparentReceiver(ua: String): String?
+
+    fun getSaplingReceiver(ua: String): String?
 
     suspend fun getBalance(account: Int = 0): Zatoshi
 

@@ -5,6 +5,9 @@ Change Log
 
 ### Added
 - `cash.z.ecc.android.sdk`:
+  - `Synchronizer.getCurrentAddress`
+  - `Synchronizer.getLegacySaplingAddress`
+  - `Synchronizer.getLegacyTransparentAddress`
   - `Synchronizer.isValidUnifiedAddr`
 - `cash.z.ecc.android.sdk.model`:
   - `FirstClassByteArray`
@@ -37,6 +40,10 @@ Change Log
     all transparent secret keys within an account) instead of a transparent secret key.
 
 ### Removed
+- `cash.z.ecc.android.sdk`:
+  - `Synchronizer.getAddress` (use `Synchronizer.getCurrentAddress` instead).
+  - `Synchronizer.getShieldedAddress` (use `Synchronizer.getLegacySaplingAddress` instead).
+  - `Synchronizer.getTransparentAddress` (use `Synchronizer.getLegacyTransparentAddress` instead).
 - `cash.z.ecc.android.sdk.type.UnifiedViewingKey`
   - This type had a bug where the `extpub` field actually was storing a plain transparent
     public key, and not the extended public key as intended. This made it incompatible

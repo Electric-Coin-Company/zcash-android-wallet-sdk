@@ -357,7 +357,7 @@ class SdkSynchronizer internal constructor(
 
     suspend fun refreshUtxos() {
         twig("refreshing utxos", -1)
-        refreshUtxos(getTransparentAddress())
+        refreshUtxos(getLegacyTransparentAddress())
     }
 
     /**
@@ -379,7 +379,7 @@ class SdkSynchronizer internal constructor(
 
     suspend fun refreshTransparentBalance() {
         twig("refreshing transparent balance")
-        _transparentBalances.value = processor.getUtxoCacheBalance(getTransparentAddress())
+        _transparentBalances.value = processor.getUtxoCacheBalance(getLegacyTransparentAddress())
     }
 
     suspend fun isValidAddress(address: String): Boolean {
@@ -637,20 +637,22 @@ class SdkSynchronizer internal constructor(
 
     override suspend fun cancelSpend(pendingId: Long) = txManager.cancel(pendingId)
 
-    // TODO(str4d): Rename this to getCurrentAddress (and remove/add in changelog).
     /**
      * Returns the current Unified Address for this account.
      */
-    override suspend fun getAddress(accountId: Int): String = getShieldedAddress(accountId)
+    override suspend fun getCurrentAddress(accountId: Int): String =
+        processor.getCurrentAddress(accountId)
 
-    override suspend fun getShieldedAddress(accountId: Int): String =
-        processor.getShieldedAddress(accountId)
+    /**
+     * Returns the legacy Sapling address corresponding to the current Unified Address for this account.
+     */
+    override suspend fun getLegacySaplingAddress(accountId: Int): String =
+        processor.getLegacySaplingAddress(accountId)
 
-    // TODO(str4d): Change this to do the right thing.
     /**
      * Returns the legacy transparent address corresponding to the current Unified Address for this account.
      */
-    override suspend fun getTransparentAddress(accountId: Int): String =
+    override suspend fun getLegacyTransparentAddress(accountId: Int): String =
         processor.getTransparentAddress(accountId)
 
     override fun sendToAddress(
@@ -692,7 +694,7 @@ class SdkSynchronizer internal constructor(
         val tAddr =
             DerivationTool.deriveTransparentAddressFromAccountPrivateKey(transparentAccountPrivateKey, network)
         val tBalance = processor.getUtxoCacheBalance(tAddr)
-        val zAddr = getAddress(0)
+        val zAddr = getCurrentAddress(0)
 
         // Emit the placeholder transaction, then switch to monitoring the database
         txManager.initSpend(tBalance.available, zAddr, memo, 0).let { placeHolderTx ->

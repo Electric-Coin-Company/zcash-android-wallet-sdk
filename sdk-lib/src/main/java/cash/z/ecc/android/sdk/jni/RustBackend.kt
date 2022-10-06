@@ -109,12 +109,9 @@ internal class RustBackend private constructor(
             )
         }
 
-    override suspend fun getTransparentAddress(account: Int, index: Int): String {
-        throw NotImplementedError(
-            "TODO: implement this at the zcash_client_sqlite level. But for now, use " +
-                "DerivationTool, instead to derive addresses from seeds"
-        )
-    }
+    override fun getTransparentReceiver(ua: String) = getTransparentReceiverForUnifiedAddress(ua)
+
+    override fun getSaplingReceiver(ua: String) = getSaplingReceiverForUnifiedAddress(ua)
 
     override suspend fun getBalance(account: Int): Zatoshi {
         val longValue = withContext(SdkDispatchers.DATABASE_IO) {
@@ -425,6 +422,12 @@ internal class RustBackend private constructor(
             account: Int,
             networkId: Int
         ): String
+
+        @JvmStatic
+        private external fun getTransparentReceiverForUnifiedAddress(ua: String): String?
+
+        @JvmStatic
+        private external fun getSaplingReceiverForUnifiedAddress(ua: String): String?
 
         @JvmStatic
         private external fun isValidShieldedAddress(addr: String, networkId: Int): Boolean

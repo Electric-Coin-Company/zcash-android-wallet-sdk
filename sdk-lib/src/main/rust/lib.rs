@@ -21,9 +21,10 @@ use log::Level;
 use schemer::MigratorError;
 use secp256k1::PublicKey;
 use secrecy::SecretVec;
+use zcash_address::{ToAddress, ZcashAddress};
 use zcash_client_backend::keys::UnifiedSpendingKey;
 use zcash_client_backend::{
-    address::RecipientAddress,
+    address::{RecipientAddress, UnifiedAddress},
     data_api::{
         chain::{scan_cached_blocks, validate_chain},
         error::Error,
@@ -487,6 +488,91 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_getCurrentA
         }
     });
 
+    unwrap_exc_or(&env, res, ptr::null_mut())
+}
+
+struct UnifiedAddressParser(UnifiedAddress);
+
+impl zcash_address::TryFromRawAddress for UnifiedAddressParser {
+    type Error = failure::Error;
+
+    fn try_from_raw_unified(
+        data: zcash_address::unified::Address,
+    ) -> Result<Self, zcash_address::ConversionError<Self::Error>> {
+        data.try_into()
+            .map(UnifiedAddressParser)
+            .map_err(|e| format_err!("Invalid Unified Address: {}", e).into())
+    }
+}
+
+/// Returns the transparent receiver within the given Unified Address, if any.
+#[no_mangle]
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_getTransparentReceiverForUnifiedAddress(
+    env: JNIEnv<'_>,
+    _: JClass<'_>,
+    ua: JString<'_>,
+) -> jstring {
+    let res = panic::catch_unwind(|| {
+        let ua_str = utils::java_string_to_rust(&env, ua);
+
+        let (network, ua) = match ZcashAddress::try_from_encoded(&ua_str) {
+            Ok(addr) => addr
+                .convert::<(_, UnifiedAddressParser)>()
+                .map_err(|e| format_err!("Not a Unified Address: {}", e)),
+            Err(e) => return Err(format_err!("Invalid Zcash address: {}", e)),
+        }?;
+
+        if let Some(taddr) = ua.0.transparent() {
+            let taddr = match taddr {
+                TransparentAddress::PublicKey(data) => {
+                    ZcashAddress::from_transparent_p2pkh(network, *data)
+                }
+                TransparentAddress::Script(data) => {
+                    ZcashAddress::from_transparent_p2sh(network, *data)
+                }
+            };
+
+            let output = env
+                .new_string(taddr.encode())
+                .expect("Couldn't create Java string!");
+            Ok(output.into_inner())
+        } else {
+            Err(format_err!(
+                "Unified Address doesn't contain a transparent receiver"
+            ))
+        }
+    });
+    unwrap_exc_or(&env, res, ptr::null_mut())
+}
+
+/// Returns the Sapling receiver within the given Unified Address, if any.
+#[no_mangle]
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_getSaplingReceiverForUnifiedAddress(
+    env: JNIEnv<'_>,
+    _: JClass<'_>,
+    ua: JString<'_>,
+) -> jstring {
+    let res = panic::catch_unwind(|| {
+        let ua_str = utils::java_string_to_rust(&env, ua);
+
+        let (network, ua) = match ZcashAddress::try_from_encoded(&ua_str) {
+            Ok(addr) => addr
+                .convert::<(_, UnifiedAddressParser)>()
+                .map_err(|e| format_err!("Not a Unified Address: {}", e)),
+            Err(e) => return Err(format_err!("Invalid Zcash address: {}", e)),
+        }?;
+
+        if let Some(addr) = ua.0.sapling() {
+            let output = env
+                .new_string(ZcashAddress::from_sapling(network, addr.to_bytes()).encode())
+                .expect("Couldn't create Java string!");
+            Ok(output.into_inner())
+        } else {
+            Err(format_err!(
+                "Unified Address doesn't contain a Sapling receiver"
+            ))
+        }
+    });
     unwrap_exc_or(&env, res, ptr::null_mut())
 }
 

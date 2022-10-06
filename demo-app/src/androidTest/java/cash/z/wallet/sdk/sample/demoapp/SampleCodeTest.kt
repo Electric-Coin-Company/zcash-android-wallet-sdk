@@ -76,7 +76,7 @@ class SampleCodeTest {
     // ///////////////////////////////////////////////////
     // Get Address
     @Test fun getAddress() = runBlocking {
-        val address = synchronizer.getAddress()
+        val address = synchronizer.getCurrentAddress()
         assertFalse(address.isBlank())
         log("Address: $address")
     }
