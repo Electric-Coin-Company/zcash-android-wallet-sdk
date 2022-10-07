@@ -10,13 +10,6 @@ import cash.z.ecc.android.bip39.Mnemonics
 import cash.z.ecc.android.bip39.toSeed
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor
-import cash.z.ecc.android.sdk.db.entity.PendingTransaction
-import cash.z.ecc.android.sdk.db.entity.isCreated
-import cash.z.ecc.android.sdk.db.entity.isCreating
-import cash.z.ecc.android.sdk.db.entity.isFailedEncoding
-import cash.z.ecc.android.sdk.db.entity.isFailedSubmit
-import cash.z.ecc.android.sdk.db.entity.isMined
-import cash.z.ecc.android.sdk.db.entity.isSubmitSuccess
 import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
 import cash.z.ecc.android.sdk.demoapp.DemoConstants
 import cash.z.ecc.android.sdk.demoapp.databinding.FragmentSendBinding
@@ -31,11 +24,19 @@ import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.LightWalletEndpoint
+import cash.z.ecc.android.sdk.model.PendingTransaction
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.model.defaultForNetwork
+import cash.z.ecc.android.sdk.model.isCreated
+import cash.z.ecc.android.sdk.model.isCreating
+import cash.z.ecc.android.sdk.model.isFailedEncoding
+import cash.z.ecc.android.sdk.model.isFailedSubmit
+import cash.z.ecc.android.sdk.model.isMined
+import cash.z.ecc.android.sdk.model.isSubmitSuccess
 import cash.z.ecc.android.sdk.tool.DerivationTool
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 
 /**
@@ -172,12 +173,15 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
         isSending = true
         val amount = amountInput.text.toString().toDouble().convertZecToZatoshi()
         val toAddress = addressInput.text.toString().trim()
-        synchronizer.sendToAddress(
-            spendingKey,
-            amount,
-            toAddress,
-            "Funds from Demo App"
-        ).collectWith(lifecycleScope, ::onPendingTxUpdated)
+        lifecycleScope.launch {
+            synchronizer.sendToAddress(
+                spendingKey,
+                amount,
+                toAddress,
+                "Funds from Demo App"
+            ).collectWith(lifecycleScope, ::onPendingTxUpdated)
+        }
+
         mainActivity()?.hideKeyboard()
     }
 

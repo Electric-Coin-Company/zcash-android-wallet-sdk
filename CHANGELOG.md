@@ -12,6 +12,8 @@ Change Log
 - `cash.z.ecc.android.sdk.model`:
   - `Account`
   - `FirstClassByteArray`
+  - `PendingTransaction`
+  - `Transaction`
   - `UnifiedSpendingKey`
 - `cash.z.ecc.android.sdk.tool`:
   - `DerivationTool.deriveUnifiedSpendingKey`
@@ -36,21 +38,21 @@ Change Log
       - `Initializer.Config.newWallet`
       - `Initializer.Config.setViewingKeys`
 - `cash.z.ecc.android.sdk`:
-  - `Synchronizer.Companion.new` now takes a `seed` argument. A non-null value should be
-    provided if `Synchronizer.Companion.new` throws an error that a database migration
-    requires the wallet seed.
+  - `Synchronizer.Companion.new` now takes many of the arguments previously passed to `Initializer`. In addition, an optional `seed` argument us required for first-time initialization or if `Synchronizer.new` throws an exception indicating that an internal migration requires the wallet seed.  (This second case will be true the first time existing clients upgrade to this new version of the SDK).
   - `Synchronizer.sendToAddress` now takes a `UnifiedSpendingKey` instead of an encoded
     Sapling extended spending key, and the `fromAccountIndex` argument is now implicit in
-    the `UnifiedSpendingKey`.
+    the `UnifiedSpendingKey`.  This method is also now a `suspend` function.
   - `Synchronizer.shieldFunds` now takes a `UnifiedSpendingKey` instead of separately
-    encoded Sapling and transparent keys.
+    encoded Sapling and transparent keys.  This method is also now a `suspend` function.
   - `Synchronizer` methods that previously took an `Int` for account index now take an `Account` object
 
 ### Removed
 - `cash.z.ecc.android.sdk`:
+  - `Initializer` (use `Synchronizer.new` instead)
   - `Synchronizer.getAddress` (use `Synchronizer.getCurrentAddress` instead).
   - `Synchronizer.getShieldedAddress` (use `Synchronizer.getLegacySaplingAddress` instead).
   - `Synchronizer.getTransparentAddress` (use `Synchronizer.getLegacyTransparentAddress` instead).
+  - `Synchronizer.cancel`
 - `cash.z.ecc.android.sdk.type.UnifiedViewingKey`
   - This type had a bug where the `extpub` field actually was storing a plain transparent
     public key, and not the extended public key as intended. This made it incompatible
@@ -70,6 +72,7 @@ Change Log
       Sapling FVK on the Kotlin side (unlike the previous `UnifiedViewingKey`).
   - `DerivationTool.deriveUnifiedViewingKeys`
   - `DerivationTool.validateUnifiedViewingKey`
+
 
 Version 1.9.0-beta03
 ------------------------------------

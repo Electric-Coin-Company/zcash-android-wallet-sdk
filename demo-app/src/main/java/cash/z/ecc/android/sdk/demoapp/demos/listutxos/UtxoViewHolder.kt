@@ -3,10 +3,10 @@ package cash.z.ecc.android.sdk.demoapp.demos.listutxos
 import android.view.View
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import cash.z.ecc.android.sdk.db.entity.ConfirmedTransaction
-import cash.z.ecc.android.sdk.db.entity.valueInZatoshi
 import cash.z.ecc.android.sdk.demoapp.R
 import cash.z.ecc.android.sdk.ext.convertZatoshiToZecString
+import cash.z.ecc.android.sdk.model.Transaction
+import cash.z.ecc.android.sdk.model.Zatoshi
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -15,20 +15,26 @@ import java.util.Locale
  */
 class UtxoViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
     private val amountText = itemView.findViewById<TextView>(R.id.text_transaction_amount)
-    private val infoText = itemView.findViewById<TextView>(R.id.text_transaction_info)
     private val timeText = itemView.findViewById<TextView>(R.id.text_transaction_timestamp)
     private val formatter = SimpleDateFormat("M/d h:mma", Locale.getDefault())
 
     @Suppress("MagicNumber")
-    fun bindTo(transaction: ConfirmedTransaction?) {
-        amountText.text = transaction?.valueInZatoshi.convertZatoshiToZecString()
-        timeText.text =
-            if (transaction == null || transaction.blockTimeInSeconds == 0L) "Pending"
-            else formatter.format(transaction.blockTimeInSeconds * 1000L)
-        infoText.text = getMemoString(transaction)
+    fun bindTo(transaction: Transaction) {
+        when (transaction) {
+            is Transaction.Received -> {
+                bindToHelper(transaction.receivedTotal, transaction.time)
+            }
+            is Transaction.Sent -> {
+                bindToHelper(transaction.sentTotal, transaction.time)
+            }
+        }
     }
 
-    private fun getMemoString(transaction: ConfirmedTransaction?): String {
-        return transaction?.memo?.takeUnless { it[0] < 0 }?.let { String(it) } ?: "no memo"
+    @Suppress("MagicNumber")
+    private fun bindToHelper(amount: Zatoshi, time: Long) {
+        amountText.text = amount.convertZatoshiToZecString()
+        timeText.text =
+            if (time == 0L) "Pending"
+            else formatter.format(time * 1000L)
     }
 }

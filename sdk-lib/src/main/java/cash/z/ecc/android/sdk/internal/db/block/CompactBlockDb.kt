@@ -1,4 +1,4 @@
-package cash.z.ecc.android.sdk.internal.db
+package cash.z.ecc.android.sdk.internal.db.block
 
 import androidx.room.Dao
 import androidx.room.Database
@@ -7,7 +7,6 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.RoomDatabase
 import androidx.room.Transaction
-import cash.z.ecc.android.sdk.db.entity.CompactBlockEntity
 
 //
 // Database

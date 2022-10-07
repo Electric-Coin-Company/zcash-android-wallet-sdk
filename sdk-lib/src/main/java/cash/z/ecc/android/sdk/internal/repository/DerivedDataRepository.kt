@@ -1,15 +1,16 @@
-package cash.z.ecc.android.sdk.internal.transaction
+package cash.z.ecc.android.sdk.internal.repository
 
-import cash.z.ecc.android.sdk.db.entity.ConfirmedTransaction
-import cash.z.ecc.android.sdk.db.entity.EncodedTransaction
+import cash.z.ecc.android.sdk.internal.model.AccountDetails
+import cash.z.ecc.android.sdk.internal.model.EncodedTransaction
 import cash.z.ecc.android.sdk.model.BlockHeight
+import cash.z.ecc.android.sdk.model.Transaction
 import kotlinx.coroutines.flow.Flow
 
 /**
  * Repository of wallet transactions, providing an agnostic interface to the underlying information.
  */
 @Suppress("TooManyFunctions")
-interface TransactionRepository {
+internal interface DerivedDataRepository {
 
     /**
      * The last height scanned by this repository.
@@ -26,8 +27,6 @@ interface TransactionRepository {
     suspend fun firstScannedHeight(): BlockHeight
 
     /**
-     * Returns true when this repository has been initialized and seeded with the initial checkpoint.
-     *
      * @return true when this repository has been initialized and seeded with the initial checkpoint.
      */
     suspend fun isInitialized(): Boolean
@@ -52,7 +51,7 @@ interface TransactionRepository {
      *
      * @return a list of transactions that were mined in the given range, inclusive.
      */
-    suspend fun findNewTransactions(blockHeightRange: ClosedRange<BlockHeight>): List<ConfirmedTransaction>
+    suspend fun findNewTransactions(blockHeightRange: ClosedRange<BlockHeight>): List<Transaction>
 
     /**
      * Find the mined height that matches the given raw tx_id in bytes. This is useful for matching
@@ -65,6 +64,13 @@ interface TransactionRepository {
     suspend fun findMinedHeight(rawTransactionId: ByteArray): BlockHeight?
 
     suspend fun findMatchingTransactionId(rawTransactionId: ByteArray): Long?
+
+    // TODO [#681]: begin converting these into Data Access API. For now, just collect the desired
+    //  operations and iterate/refactor, later
+    // TODO [#681]: https://github.com/zcash/zcash-android-wallet-sdk/issues/681
+    suspend fun findBlockHash(height: BlockHeight): ByteArray?
+
+    suspend fun getTransactionCount(): Long
 
     /**
      * Provides a way for other components to signal that the underlying data has been modified.
@@ -82,7 +88,7 @@ interface TransactionRepository {
 
     suspend fun deleteExpired(lastScannedHeight: BlockHeight): Int
 
-    suspend fun count(): Int
+    suspend fun getAccount(accountId: Int): AccountDetails?
 
     suspend fun getAccountCount(): Int
 
@@ -90,12 +96,24 @@ interface TransactionRepository {
     // Transactions
     //
 
+    /*
+     * Note there are two big limitations with this implementation:
+     *  1. Clients don't receive notification if the underlying data changes.  A flow of flows could help there.
+     *  2. Pagination isn't supported.  Although flow does a good job of allowing the data to be processed as a stream,
+     *     that doesn't work so well in UI when users might scroll forwards/backwards.
+     *
+     * We'll come back to this and improve it in the future.  This implementation is already an improvement over
+     * prior versions.
+     */
+
     /** A flow of all the inbound confirmed transactions */
-    val receivedTransactions: Flow<List<ConfirmedTransaction>>
+    val receivedTransactions: Flow<Transaction.Received>
 
     /** A flow of all the outbound confirmed transactions */
-    val sentTransactions: Flow<List<ConfirmedTransaction>>
+    val sentTransactions: Flow<Transaction.Sent>
 
     /** A flow of all the inbound and outbound confirmed transactions */
-    val allTransactions: Flow<List<ConfirmedTransaction>>
+    val allTransactions: Flow<Transaction>
+
+    suspend fun close()
 }

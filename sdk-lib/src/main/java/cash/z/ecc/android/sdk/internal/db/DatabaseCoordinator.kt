@@ -1,4 +1,4 @@
-package cash.z.ecc.android.sdk.db
+package cash.z.ecc.android.sdk.internal.db
 
 import android.content.Context
 import androidx.annotation.VisibleForTesting

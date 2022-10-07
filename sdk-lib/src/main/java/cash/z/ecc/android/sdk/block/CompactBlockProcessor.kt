@@ -11,7 +11,6 @@ import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Scanned
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Scanning
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Stopped
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Validating
-import cash.z.ecc.android.sdk.db.entity.ConfirmedTransaction
 import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException
 import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException.EnhanceTransactionError.EnhanceTxDecryptError
 import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException.EnhanceTransactionError.EnhanceTxDownloadError
@@ -34,14 +33,14 @@ import cash.z.ecc.android.sdk.internal.ext.retryUpTo
 import cash.z.ecc.android.sdk.internal.ext.retryWithBackoff
 import cash.z.ecc.android.sdk.internal.ext.toHexReversed
 import cash.z.ecc.android.sdk.internal.isEmpty
-import cash.z.ecc.android.sdk.internal.transaction.PagedTransactionRepository
-import cash.z.ecc.android.sdk.internal.transaction.TransactionRepository
+import cash.z.ecc.android.sdk.internal.repository.DerivedDataRepository
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.internal.twigTask
 import cash.z.ecc.android.sdk.jni.RustBackend
 import cash.z.ecc.android.sdk.jni.RustBackendWelding
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
+import cash.z.ecc.android.sdk.model.Transaction
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.wallet.sdk.rpc.Service
@@ -53,7 +52,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.lastOrNull
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -84,7 +83,7 @@ import kotlin.time.Duration.Companion.days
 @Suppress("TooManyFunctions", "LargeClass")
 class CompactBlockProcessor internal constructor(
     val downloader: CompactBlockDownloader,
-    private val repository: TransactionRepository,
+    private val repository: DerivedDataRepository,
     private val rustBackend: RustBackendWelding,
     minimumHeight: BlockHeight = rustBackend.network.saplingActivationHeight
 ) {
@@ -416,7 +415,7 @@ class CompactBlockProcessor internal constructor(
             } else {
                 twig("enhancing ${newTxs.size} transaction(s)!")
                 // if the first transaction has been added
-                if (newTxs.size == repository.count()) {
+                if (newTxs.size.toLong() == repository.getTransactionCount()) {
                     twig("Encountered the first transaction. This changes the birthday height!")
                     updateBirthdayHeight()
                 }
@@ -438,26 +437,35 @@ class CompactBlockProcessor internal constructor(
     // TODO [#683]: we still need a way to identify those transactions that failed to be enhanced
     // TODO [#683]: https://github.com/zcash/zcash-android-wallet-sdk/issues/683
 
-    private suspend fun enhance(transaction: ConfirmedTransaction) = withContext(Dispatchers.IO) {
-        var downloaded = false
-        @Suppress("TooGenericExceptionCaught")
-        try {
-            twig("START: enhancing transaction (id:${transaction.id}  block:${transaction.minedHeight})")
-            downloader.fetchTransaction(transaction.rawTransactionId)?.let { tx ->
-                downloaded = true
-                twig("decrypting and storing transaction (id:${transaction.id}  block:${transaction.minedHeight})")
-                rustBackend.decryptAndStoreTransaction(tx.data.toByteArray())
-            } ?: twig("no transaction found. Nothing to enhance. This probably shouldn't happen.")
-            twig("DONE: enhancing transaction (id:${transaction.id}  block:${transaction.minedHeight})")
-        } catch (t: Throwable) {
-            twig("Warning: failure on transaction: error: $t\ttransaction: $transaction")
-            onProcessorError(
-                if (downloaded) {
-                    EnhanceTxDecryptError(transaction.minedBlockHeight, t)
-                } else {
-                    EnhanceTxDownloadError(transaction.minedBlockHeight, t)
+    private suspend fun enhance(transaction: Transaction) = withContext(Dispatchers.IO) {
+        when (transaction) {
+            is Transaction.Received -> {
+                enhanceHelper(transaction.id, transaction.rawId.byteArray, transaction.minedHeight)
+            }
+            is Transaction.Sent -> {
+                enhanceHelper(transaction.id, transaction.rawId.byteArray, transaction.minedHeight)
+            }
+        }
+    }
+
+    private suspend fun enhanceHelper(id: Long, rawTransactionId: ByteArray, minedHeight: BlockHeight) {
+        twig("START: enhancing transaction (id:$id  block:$minedHeight)")
+
+        runCatching {
+            downloader.fetchTransaction(rawTransactionId)
+        }.onSuccess { tx ->
+            tx?.let {
+                runCatching {
+                    twig("decrypting and storing transaction (id:$id  block:$minedHeight)")
+                    rustBackend.decryptAndStoreTransaction(it.data.toByteArray())
+                }.onSuccess {
+                    twig("DONE: enhancing transaction (id:$id  block:$minedHeight)")
+                }.onFailure { error ->
+                    onProcessorError(EnhanceTxDecryptError(minedHeight, error))
                 }
-            )
+            } ?: twig("no transaction found. Nothing to enhance. This probably shouldn't happen.")
+        }.onFailure { error ->
+            onProcessorError(EnhanceTxDownloadError(minedHeight, error))
         }
     }
 
@@ -919,11 +927,11 @@ class CompactBlockProcessor internal constructor(
         twig("=================== BLOCKS [$errorHeight..${errorHeight.value + count - 1}]: START ========")
         repeat(count) { i ->
             val height = errorHeight + i
-            val block = downloader.compactBlockStore.findCompactBlock(height)
+            val block = downloader.compactBlockRepository.findCompactBlock(height)
             // sometimes the initial block was inserted via checkpoint and will not appear in the cache. We can get
             // the hash another way but prevHash is correctly null.
             val hash = block?.hash?.toByteArray()
-                ?: (repository as PagedTransactionRepository).findBlockHash(height)
+                ?: repository.findBlockHash(height)
             twig(
                 "block: $height\thash=${hash?.toHexReversed()} \tprevHash=${
                 block?.prevHash?.toByteArray()?.toHexReversed()
@@ -934,11 +942,11 @@ class CompactBlockProcessor internal constructor(
     }
 
     private suspend fun fetchValidationErrorInfo(errorHeight: BlockHeight): ValidationErrorInfo {
-        val hash = (repository as PagedTransactionRepository).findBlockHash(errorHeight + 1)
+        val hash = repository.findBlockHash(errorHeight + 1)
             ?.toHexReversed()
         val prevHash = repository.findBlockHash(errorHeight)?.toHexReversed()
 
-        val compactBlock = downloader.compactBlockStore.findCompactBlock(errorHeight + 1)
+        val compactBlock = downloader.compactBlockRepository.findCompactBlock(errorHeight + 1)
         val expectedPrevHash = compactBlock?.prevHash?.toByteArray()?.toHexReversed()
         return ValidationErrorInfo(errorHeight, hash, expectedPrevHash, prevHash)
     }
@@ -986,10 +994,11 @@ class CompactBlockProcessor internal constructor(
         var oldestTransactionHeight: BlockHeight? = null
         @Suppress("TooGenericExceptionCaught")
         try {
+            // TODO: This is not efficient as it might perform a large query; this should instead directly query for
+            //  a single transaction
             val tempOldestTransactionHeight = repository.receivedTransactions
-                .first()
                 .lastOrNull()
-                ?.minedBlockHeight
+                ?.minedHeight
                 ?: lowerBoundHeight
             // to be safe adjust for reorgs (and generally a little cushion is good for privacy)
             // so we round down to the nearest 100 and then subtract 100 to ensure that the result is always at least
