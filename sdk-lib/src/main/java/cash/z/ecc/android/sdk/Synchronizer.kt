@@ -127,23 +127,23 @@ interface Synchronizer {
     /* Transactions */
 
     /**
-     * A flow of all the outbound pending transaction that have been sent but are awaiting
+     * A flow of the outbound pending transaction that have been sent but are awaiting
      * confirmations.
      */
     val pendingTransactions: Flow<List<PendingTransaction>>
 
     /**
-     * A flow of all the transactions that are on the blockchain.
+     * A flow of cleared transactions that are on the blockchain.
      */
     val clearedTransactions: Flow<Transaction>
 
     /**
-     * A flow of all transactions related to sending funds.
+     * A flow of transactions related to sending funds.
      */
     val sentTransactions: Flow<Transaction.Sent>
 
     /**
-     * A flow of all transactions related to receiving funds.
+     * A flow of transactions related to receiving funds.
      */
     val receivedTransactions: Flow<Transaction.Received>
 
