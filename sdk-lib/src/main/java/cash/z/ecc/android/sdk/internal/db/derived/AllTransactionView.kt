@@ -19,7 +19,7 @@ internal class AllTransactionView(
 
         private val ORDER_BY = String.format(
             Locale.ROOT,
-            "%s DESC, %s DESC",
+            "%s DESC, %s DESC", // $NON-NLS
             AllTransactionViewDefinition.COLUMN_INTEGER_MINED_HEIGHT,
             AllTransactionViewDefinition.COLUMN_INTEGER_ID
         )
@@ -31,7 +31,7 @@ internal class AllTransactionView(
             AllTransactionViewDefinition.COLUMN_INTEGER_MINED_HEIGHT
         )
 
-        private val PROJECTION_COUNT = arrayOf("COUNT(*)")
+        private val PROJECTION_COUNT = arrayOf("COUNT(*)") // $NON-NLS
     }
 
     private val cursorParser: CursorParser<Transaction> = CursorParser {
@@ -104,27 +104,27 @@ internal class AllTransactionView(
 }
 
 internal object AllTransactionViewDefinition {
-    const val VIEW_NAME = "v_transactions"
+    const val VIEW_NAME = "v_transactions" // $NON-NLS
 
-    const val COLUMN_INTEGER_ID = "id_tx"
+    const val COLUMN_INTEGER_ID = "id_tx" // $NON-NLS
 
-    const val COLUMN_INTEGER_MINED_HEIGHT = "mined_height"
+    const val COLUMN_INTEGER_MINED_HEIGHT = "mined_height" // $NON-NLS
 
-    const val COLUMN_INTEGER_TRANSACTION_INDEX = "tx_index"
+    const val COLUMN_INTEGER_TRANSACTION_INDEX = "tx_index" // $NON-NLS
 
-    const val COLUMN_BLOB_RAW_TRANSACTION_ID = "txid"
+    const val COLUMN_BLOB_RAW_TRANSACTION_ID = "txid" // $NON-NLS
 
-    const val COLUMN_INTEGER_EXPIRY_HEIGHT = "expiry_height"
+    const val COLUMN_INTEGER_EXPIRY_HEIGHT = "expiry_height" // $NON-NLS
 
-    const val COLUMN_BLOB_RAW = "raw"
+    const val COLUMN_BLOB_RAW = "raw" // $NON-NLS
 
-    const val COLUMN_INTEGER_VALUE = "net_value"
+    const val COLUMN_INTEGER_VALUE = "net_value" // $NON-NLS
 
-    const val COLUMN_BOOLEAN_IS_CHANGE = "has_change"
+    const val COLUMN_BOOLEAN_IS_CHANGE = "has_change" // $NON-NLS
 
-    const val COLUMN_INT_NOTE_COUNT = "note_count"
+    const val COLUMN_INT_NOTE_COUNT = "note_count" // $NON-NLS
 
-    const val COLUMN_INTEGER_MEMO_COUNT = "memo_count"
+    const val COLUMN_INTEGER_MEMO_COUNT = "memo_count" // $NON-NLS
 
-    const val COLUMN_INTEGER_BLOCK_TIME = "block_time"
+    const val COLUMN_INTEGER_BLOCK_TIME = "block_time" // $NON-NLS
 }

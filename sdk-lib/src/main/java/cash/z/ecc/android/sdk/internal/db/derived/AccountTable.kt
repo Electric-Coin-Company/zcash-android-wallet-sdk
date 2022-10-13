@@ -16,7 +16,7 @@ internal class AccountTable(private val sqliteDatabase: SupportSQLiteDatabase) {
             AccountTableDefinition.COLUMN_INTEGER_ID
         )
 
-        private val PROJECTION_COUNT = arrayOf("COUNT(*)")
+        private val PROJECTION_COUNT = arrayOf("COUNT(*)") // $NON-NLS
     }
 
     suspend fun count() = sqliteDatabase.queryAndMap(
@@ -50,13 +50,13 @@ internal class AccountTable(private val sqliteDatabase: SupportSQLiteDatabase) {
 }
 
 object AccountTableDefinition {
-    const val TABLE_NAME = "accounts"
+    const val TABLE_NAME = "accounts" // $NON-NLS
 
-    const val COLUMN_INTEGER_ID = "account"
+    const val COLUMN_INTEGER_ID = "account" // $NON-NLS
 
-    const val COLUMN_TEXT_UFVK = "ufvk"
+    const val COLUMN_TEXT_UFVK = "ufvk" // $NON-NLS
 
-    const val COLUMN_TEXT_ADDRESS = "address"
+    const val COLUMN_TEXT_ADDRESS = "address" // $NON-NLS
 
-    const val COLUMN_TEXT_TRANSPARENT_ADDRESS = "transparent_address"
+    const val COLUMN_TEXT_TRANSPARENT_ADDRESS = "transparent_address" // $NON-NLS
 }

@@ -24,7 +24,7 @@ internal class TransactionTable(
             TransactionTableDefinition.COLUMN_INTEGER_BLOCK
         )
 
-        private val PROJECTION_COUNT = arrayOf("COUNT(*)")
+        private val PROJECTION_COUNT = arrayOf("COUNT(*)") // $NON-NLS
 
         private val PROJECTION_BLOCK = arrayOf(TransactionTableDefinition.COLUMN_INTEGER_BLOCK)
 
@@ -119,19 +119,19 @@ internal class TransactionTable(
 }
 
 object TransactionTableDefinition {
-    const val TABLE_NAME = "transactions"
+    const val TABLE_NAME = "transactions" // $NON-NLS
 
-    const val COLUMN_INTEGER_ID = "id_tx"
+    const val COLUMN_INTEGER_ID = "id_tx" // $NON-NLS
 
-    const val COLUMN_BLOB_TRANSACTION_ID = "txid"
+    const val COLUMN_BLOB_TRANSACTION_ID = "txid" // $NON-NLS
 
-    const val COLUMN_TEXT_CREATED = "created"
+    const val COLUMN_TEXT_CREATED = "created" // $NON-NLS
 
-    const val COLUMN_INTEGER_BLOCK = "block"
+    const val COLUMN_INTEGER_BLOCK = "block" // $NON-NLS
 
-    const val COLUMN_INTEGER_TX_INDEX = "tx_index"
+    const val COLUMN_INTEGER_TX_INDEX = "tx_index" // $NON-NLS
 
-    const val COLUMN_INTEGER_EXPIRY_HEIGHT = "expiry_height"
+    const val COLUMN_INTEGER_EXPIRY_HEIGHT = "expiry_height" // $NON-NLS
 
-    const val COLUMN_BLOB_RAW = "raw"
+    const val COLUMN_BLOB_RAW = "raw" // $NON-NLS
 }

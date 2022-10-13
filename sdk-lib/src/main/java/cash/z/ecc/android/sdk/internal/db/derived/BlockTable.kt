@@ -33,7 +33,7 @@ internal class BlockTable(private val zcashNetwork: ZcashNetwork, private val sq
             BlockTableDefinition.COLUMN_LONG_HEIGHT
         )
 
-        private val PROJECTION_COUNT = arrayOf("COUNT(*)")
+        private val PROJECTION_COUNT = arrayOf("COUNT(*)") // $NON-NLS
 
         private val PROJECTION_HASH = arrayOf(BlockTableDefinition.COLUMN_BLOB_HASH)
     }
@@ -80,9 +80,9 @@ internal class BlockTable(private val zcashNetwork: ZcashNetwork, private val sq
 }
 
 object BlockTableDefinition {
-    const val TABLE_NAME = "blocks"
+    const val TABLE_NAME = "blocks" // $NON-NLS
 
-    const val COLUMN_LONG_HEIGHT = "height"
+    const val COLUMN_LONG_HEIGHT = "height" // $NON-NLS
 
-    const val COLUMN_BLOB_HASH = "hash"
+    const val COLUMN_BLOB_HASH = "hash" // $NON-NLS
 }

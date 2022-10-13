@@ -18,12 +18,12 @@ internal class ReceivedTransactionView(
 
         private val ORDER_BY = String.format(
             Locale.ROOT,
-            "%s DESC, %s DESC",
+            "%s DESC, %s DESC", // $NON-NLS
             ReceivedTransactionViewDefinition.COLUMN_INTEGER_MINED_HEIGHT,
             ReceivedTransactionViewDefinition.COLUMN_INTEGER_ID
         )
 
-        private val PROJECTION_COUNT = arrayOf("COUNT(*)")
+        private val PROJECTION_COUNT = arrayOf("COUNT(*)") // $NON-NLS
     }
 
     suspend fun count() = sqliteDatabase.queryAndMap(
@@ -70,21 +70,21 @@ internal class ReceivedTransactionView(
 }
 
 internal object ReceivedTransactionViewDefinition {
-    const val VIEW_NAME = "v_tx_received"
+    const val VIEW_NAME = "v_tx_received" // $NON-NLS
 
-    const val COLUMN_INTEGER_ID = "id_tx"
+    const val COLUMN_INTEGER_ID = "id_tx" // $NON-NLS
 
-    const val COLUMN_INTEGER_MINED_HEIGHT = "mined_height"
+    const val COLUMN_INTEGER_MINED_HEIGHT = "mined_height" // $NON-NLS
 
-    const val COLUMN_INTEGER_TRANSACTION_INDEX = "tx_index"
+    const val COLUMN_INTEGER_TRANSACTION_INDEX = "tx_index" // $NON-NLS
 
-    const val COLUMN_BLOB_RAW_TRANSACTION_ID = "txid"
+    const val COLUMN_BLOB_RAW_TRANSACTION_ID = "txid" // $NON-NLS
 
-    const val COLUMN_INTEGER_RECEIVED_TOTAL = "received_total"
+    const val COLUMN_INTEGER_RECEIVED_TOTAL = "received_total" // $NON-NLS
 
-    const val COLUMN_INTEGER_RECEIVED_NOTE_COUNT = "received_note_count"
+    const val COLUMN_INTEGER_RECEIVED_NOTE_COUNT = "received_note_count" // $NON-NLS
 
-    const val COLUMN_INTEGER_MEMO_COUNT = "memo_count"
+    const val COLUMN_INTEGER_MEMO_COUNT = "memo_count" // $NON-NLS
 
-    const val COLUMN_INTEGER_BLOCK_TIME = "block_time"
+    const val COLUMN_INTEGER_BLOCK_TIME = "block_time" // $NON-NLS
 }
