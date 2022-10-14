@@ -31,18 +31,17 @@ use zcash_client_backend::{
         wallet::{
             create_spend_to_address, decrypt_and_store_transaction, shield_transparent_funds,
         },
-        WalletRead, WalletReadTransparent, WalletWrite, WalletWriteTransparent,
+        WalletRead, WalletWrite,
     },
     encoding::AddressCodec,
     keys::{Era, UnifiedFullViewingKey},
     wallet::{OvkPolicy, WalletTransparentOutput},
 };
-use zcash_client_sqlite::wallet::init::WalletMigrationError;
 #[allow(deprecated)]
-use zcash_client_sqlite::wallet::{delete_utxos_above, get_rewind_height};
+use zcash_client_sqlite::wallet::get_rewind_height;
 use zcash_client_sqlite::{
     error::SqliteClientError,
-    wallet::init::{init_accounts_table, init_blocks_table, init_wallet_db},
+    wallet::init::{init_accounts_table, init_blocks_table, init_wallet_db, WalletMigrationError},
     BlockDb, NoteId, WalletDb,
 };
 use zcash_primitives::consensus::Network::{MainNetwork, TestNetwork};
@@ -714,7 +713,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_getVerified
                     .map_err(|e| format_err!("Error while fetching verified balance: {}", e))
             })?
             .iter()
-            .map(|utxo| utxo.txout.value)
+            .map(|utxo| utxo.txout().value)
             .sum::<Option<Amount>>()
             .ok_or_else(|| format_err!("Balance overflowed MAX_MONEY."))?;
 
@@ -752,7 +751,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_getTotalTra
                     .map_err(|e| format_err!("Error while fetching verified balance: {}", e))
             })?
             .iter()
-            .map(|utxo| utxo.txout.value)
+            .map(|utxo| utxo.txout().value)
             .sum::<Option<Amount>>()
             .ok_or_else(|| format_err!("Balance overflowed MAX_MONEY"))?;
 
@@ -994,14 +993,15 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_putUtxo(
         let addr = utils::java_string_to_rust(&env, address);
         let _address = TransparentAddress::decode(&network, &addr).unwrap();
 
-        let output = WalletTransparentOutput {
-            outpoint: OutPoint::new(txid, index as u32),
-            txout: TxOut {
+        let output = WalletTransparentOutput::from_parts(
+            OutPoint::new(txid, index as u32),
+            TxOut {
                 value: Amount::from_i64(value).unwrap(),
                 script_pubkey,
             },
-            height: BlockHeight::from(height as u32),
-        };
+            BlockHeight::from(height as u32),
+        )
+        .ok_or_else(|| format_err!("UTXO is not P2PKH or P2SH"))?;
 
         debug!("Storing UTXO in db_data");
         match db_data.put_received_transparent_utxo(&output) {
@@ -1010,36 +1010,6 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_putUtxo(
         }
     });
     unwrap_exc_or(&env, res, JNI_FALSE)
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_clearUtxos(
-    env: JNIEnv<'_>,
-    _: JClass<'_>,
-    db_data: JString<'_>,
-    taddress: JString<'_>,
-    above_height: jlong,
-    network_id: jint,
-) -> jint {
-    #[allow(deprecated)]
-    let res = panic::catch_unwind(|| {
-        let network = parse_network(network_id as u32)?;
-        let db_data = wallet_db(&env, network, db_data)?;
-        let mut db_data = db_data.get_update_ops()?;
-        let addr = utils::java_string_to_rust(&env, taddress);
-        let taddress = TransparentAddress::decode(&network, &addr).unwrap();
-        let height = BlockHeight::from(above_height as u32);
-
-        debug!(
-            "clearing UTXOs that were found above height: {}",
-            above_height
-        );
-        match delete_utxos_above(&mut db_data, &taddress, height) {
-            Ok(rows) => Ok(rows as i32),
-            Err(e) => Err(format_err!("Error while clearing UTXOs: {}", e)),
-        }
-    });
-    unwrap_exc_or(&env, res, -1)
 }
 
 // ADDED BY ANDROID
@@ -1234,7 +1204,6 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_createToAdd
     env: JNIEnv<'_>,
     _: JClass<'_>,
     db_data: JString<'_>,
-    account: jint,
     usk: jbyteArray,
     to: JString<'_>,
     value: jlong,
@@ -1247,11 +1216,6 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_createToAdd
         let network = parse_network(network_id as u32)?;
         let db_data = wallet_db(&env, network, db_data)?;
         let mut db_data = db_data.get_update_ops()?;
-        let account = if account >= 0 {
-            account as u32
-        } else {
-            return Err(format_err!("account argument must be nonnegative"));
-        };
         let usk = decode_usk(&env, usk)?;
         let to = utils::java_string_to_rust(&env, to);
         let value =
@@ -1282,13 +1246,11 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_createToAdd
 
         let prover = LocalTxProver::new(Path::new(&spend_params), Path::new(&output_params));
 
-        // let branch = if
         create_spend_to_address(
             &mut db_data,
             &network,
             prover,
-            AccountId::from(account),
-            usk.sapling(),
+            &usk,
             &to,
             value,
             memo,
@@ -1305,7 +1267,6 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_shieldToAdd
     env: JNIEnv<'_>,
     _: JClass<'_>,
     db_data: JString<'_>,
-    account: jint,
     usk: jbyteArray,
     memo: jbyteArray,
     spend_params: JString<'_>,
@@ -1316,11 +1277,6 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_shieldToAdd
         let network = parse_network(network_id as u32)?;
         let db_data = wallet_db(&env, network, db_data)?;
         let mut db_data = db_data.get_update_ops()?;
-        let account = if account >= 0 {
-            account as u32
-        } else {
-            return Err(format_err!("account argument must be nonnegative"));
-        };
         let usk = decode_usk(&env, usk)?;
         let memo_bytes = env.convert_byte_array(memo).unwrap();
         let spend_params = utils::java_string_to_rust(&env, spend_params);
@@ -1334,8 +1290,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_shieldToAdd
             &mut db_data,
             &network,
             prover,
-            usk.transparent(),
-            AccountId::from(account),
+            &usk,
             &MemoBytes::from(&memo),
             0,
         )

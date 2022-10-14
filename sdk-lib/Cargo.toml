@@ -10,12 +10,12 @@ publish = false
 edition = "2018"
 
 [dependencies]
-android_logger = "0.9"
+android_logger = "0.11"
 failure = "0.1"
 hdwallet = "0.3.1"
 hdwallet-bitcoin = "0.3"
 hex = "0.4"
-jni = { version = "0.17", default-features = false }
+jni = { version = "0.19", default-features = false }
 log = "0.4"
 log-panics = "2.0.0"
 schemer = "0.2"
@@ -29,14 +29,14 @@ zcash_proofs = "0.7"
 
 # Revision corresponds to the pending zcash_primitives 0.8.0.
 [patch.crates-io]
-group = { git = "https://github.com/zkcrypto/group.git", rev = "a7f3ceb2373e9fe536996f7b4d55c797f3e667f0" }
-orchard = { git = 'https://github.com/zcash/orchard.git', rev='f206b3f5d4e31bba75d03d9d03d5fa25825a9384' }
-zcash_address = { git = 'https://github.com/zcash/librustzcash.git', rev='774ffadf5a0120a74d70d281974d079ccd58c600' }
-zcash_client_backend = { git = 'https://github.com/zcash/librustzcash.git', rev='774ffadf5a0120a74d70d281974d079ccd58c600' }
-zcash_client_sqlite = { git = 'https://github.com/zcash/librustzcash.git', rev='774ffadf5a0120a74d70d281974d079ccd58c600' }
-zcash_note_encryption = { git = 'https://github.com/zcash/librustzcash.git', rev='774ffadf5a0120a74d70d281974d079ccd58c600' }
-zcash_primitives = { git = 'https://github.com/zcash/librustzcash.git', rev='774ffadf5a0120a74d70d281974d079ccd58c600' }
-zcash_proofs = { git = 'https://github.com/zcash/librustzcash.git', rev='774ffadf5a0120a74d70d281974d079ccd58c600' }
+orchard = { git = "https://github.com/zcash/orchard.git", rev = "4035a97d178f99bb889f4d7ed26c59378fa88961" }
+schemer = { git = "https://github.com/aschampion/schemer.git", rev = "6726b60f43f72c6e24a18d31be0ec7d42829e5e1" }
+schemer-rusqlite = { git = "https://github.com/aschampion/schemer.git", rev = "6726b60f43f72c6e24a18d31be0ec7d42829e5e1" }
+zcash_address = { git = 'https://github.com/zcash/librustzcash.git', rev='b3dc323876e07d990392855c30a2958d37750e24' }
+zcash_client_backend = { git = 'https://github.com/zcash/librustzcash.git', rev='b3dc323876e07d990392855c30a2958d37750e24' }
+zcash_client_sqlite = { git = 'https://github.com/zcash/librustzcash.git', rev='b3dc323876e07d990392855c30a2958d37750e24' }
+zcash_primitives = { git = 'https://github.com/zcash/librustzcash.git', rev='b3dc323876e07d990392855c30a2958d37750e24' }
+zcash_proofs = { git = 'https://github.com/zcash/librustzcash.git', rev='b3dc323876e07d990392855c30a2958d37750e24' }
 
 ## Uncomment this to test librustzcash changes locally
 #[patch.crates-io]
