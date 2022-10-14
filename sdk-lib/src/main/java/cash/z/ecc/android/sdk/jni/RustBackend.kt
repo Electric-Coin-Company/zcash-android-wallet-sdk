@@ -232,7 +232,6 @@ internal class RustBackend private constructor(
     ): Long = withContext(SdkDispatchers.DATABASE_IO) {
         createToAddress(
             dataDbFile.absolutePath,
-            usk.account.value,
             usk.copyBytes(),
             to,
             value,
@@ -251,7 +250,6 @@ internal class RustBackend private constructor(
         return withContext(SdkDispatchers.DATABASE_IO) {
             shieldToAddress(
                 dataDbFile.absolutePath,
-                usk.account.value,
                 usk.copyBytes(),
                 memo ?: ByteArray(0),
                 "$pathParamsDir/$SPEND_PARAM_FILE_NAME",
@@ -277,20 +275,6 @@ internal class RustBackend private constructor(
             script,
             value,
             height.value,
-            networkId = network.id
-        )
-    }
-
-    override suspend fun clearUtxos(
-        tAddress: String,
-        aboveHeightInclusive: BlockHeight
-    ): Boolean = withContext(SdkDispatchers.DATABASE_IO) {
-        clearUtxos(
-            dataDbFile.absolutePath,
-            tAddress,
-            // The Kotlin API is inclusive, but the Rust API is exclusive.
-            // This can create invalid BlockHeights if the height is saplingActivationHeight.
-            aboveHeightInclusive.value - 1,
             networkId = network.id
         )
     }
@@ -514,7 +498,6 @@ internal class RustBackend private constructor(
         @Suppress("LongParameterList")
         private external fun createToAddress(
             dbDataPath: String,
-            account: Int,
             usk: ByteArray,
             to: String,
             value: Long,
@@ -528,7 +511,6 @@ internal class RustBackend private constructor(
         @Suppress("LongParameterList")
         private external fun shieldToAddress(
             dbDataPath: String,
-            account: Int,
             usk: ByteArray,
             memo: ByteArray,
             spendParamsPath: String,
@@ -552,14 +534,6 @@ internal class RustBackend private constructor(
             script: ByteArray,
             value: Long,
             height: Long,
-            networkId: Int
-        ): Boolean
-
-        @JvmStatic
-        private external fun clearUtxos(
-            dbDataPath: String,
-            tAddress: String,
-            aboveHeight: Long,
             networkId: Int
         ): Boolean
 

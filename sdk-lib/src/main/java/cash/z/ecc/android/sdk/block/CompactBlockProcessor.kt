@@ -559,8 +559,15 @@ class CompactBlockProcessor internal constructor(
     ): Int = withContext(IO) {
         var skipped = 0
         val aboveHeight = startHeight
-        twig("Clearing utxos above height $aboveHeight", -1)
-        rustBackend.clearUtxos(tAddress, aboveHeight)
+        // TODO(str4d): We no longer clear UTXOs here, as rustBackend.putUtxo now uses an upsert instead of an insert.
+        //  This means that now-spent UTXOs would previously have been deleted, but now are left in the database (like
+        //  shielded notes). Due to the fact that the lightwalletd query only returns _current_ UTXOs, we don't learn
+        //  about recently-spent UTXOs here, so the transparent balance does not get updated here. Instead, when a
+        //  received shielded note is "enhanced" by downloading the full transaction, we mark any UTXOs spent in that
+        //  transaction as spent in the database. This relies on two current properties: UTXOs are only ever spent in
+        //  shielding transactions, and at least one shielded note from each shielding transaction is always enhanced.
+        //  However, for greater reliability, we may want to alter the Data Access API to support "inferring spentness"
+        //  from what is _not_ returned as a UTXO, or alternatively fetch TXOs from lightwalletd instead of just UTXOs.
         twig("Checking for UTXOs above height $aboveHeight")
         result.forEach { utxo: Service.GetAddressUtxosReply ->
             twig("Found UTXO at height ${utxo.height.toInt()} with ${utxo.valueZat} zatoshi")

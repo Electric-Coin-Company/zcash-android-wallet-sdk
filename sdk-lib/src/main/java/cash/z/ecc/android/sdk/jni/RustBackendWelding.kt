@@ -90,11 +90,6 @@ internal interface RustBackendWelding {
         height: BlockHeight
     ): Boolean
 
-    suspend fun clearUtxos(
-        tAddress: String,
-        aboveHeightInclusive: BlockHeight = BlockHeight(network.saplingActivationHeight.value)
-    ): Boolean
-
     suspend fun getDownloadedUtxoBalance(address: String): WalletBalance
 
     // Implemented by `DerivationTool`
