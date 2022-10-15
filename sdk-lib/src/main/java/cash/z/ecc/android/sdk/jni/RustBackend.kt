@@ -194,23 +194,13 @@ internal class RustBackend private constructor(
         }
 
     override suspend fun scanBlocks(limit: Int): Boolean {
-        return if (limit > 0) {
-            withContext(SdkDispatchers.DATABASE_IO) {
-                scanBlockBatch(
-                    cacheDbFile.absolutePath,
-                    dataDbFile.absolutePath,
-                    limit,
-                    networkId = network.id
-                )
-            }
-        } else {
-            withContext(SdkDispatchers.DATABASE_IO) {
-                scanBlocks(
-                    cacheDbFile.absolutePath,
-                    dataDbFile.absolutePath,
-                    networkId = network.id
-                )
-            }
+        return withContext(SdkDispatchers.DATABASE_IO) {
+            scanBlocks(
+                cacheDbFile.absolutePath,
+                dataDbFile.absolutePath,
+                limit,
+                networkId = network.id
+            )
         }
     }
 
@@ -473,13 +463,6 @@ internal class RustBackend private constructor(
 
         @JvmStatic
         private external fun scanBlocks(
-            dbCachePath: String,
-            dbDataPath: String,
-            networkId: Int
-        ): Boolean
-
-        @JvmStatic
-        private external fun scanBlockBatch(
             dbCachePath: String,
             dbDataPath: String,
             limit: Int,
