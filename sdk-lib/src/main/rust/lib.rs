@@ -949,6 +949,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_scanBlocks(
     _: JClass<'_>,
     db_cache: JString<'_>,
     db_data: JString<'_>,
+    limit: jint,
     network_id: jint,
 ) -> jboolean {
     let res = panic::catch_unwind(|| {
@@ -956,10 +957,15 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_scanBlocks(
         let db_cache = block_db(&env, db_cache)?;
         let db_data = wallet_db(&env, network, db_data)?;
         let mut db_data = db_data.get_update_ops()?;
+        let limit = u32::try_from(limit).ok();
 
-        match scan_cached_blocks(&network, &db_cache, &mut db_data, None) {
+        match scan_cached_blocks(&network, &db_cache, &mut db_data, limit) {
             Ok(()) => Ok(JNI_TRUE),
-            Err(e) => Err(format_err!("Rust error while scanning blocks: {}", e)),
+            Err(e) => Err(format_err!(
+                "Rust error while scanning blocks (limit {:?}): {}",
+                limit,
+                e
+            )),
         }
     });
     unwrap_exc_or(&env, res, JNI_FALSE)
@@ -1007,30 +1013,6 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_putUtxo(
         match db_data.put_received_transparent_utxo(&output) {
             Ok(_) => Ok(JNI_TRUE),
             Err(e) => Err(format_err!("Error while inserting UTXO: {}", e)),
-        }
-    });
-    unwrap_exc_or(&env, res, JNI_FALSE)
-}
-
-// ADDED BY ANDROID
-#[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_scanBlockBatch(
-    env: JNIEnv<'_>,
-    _: JClass<'_>,
-    db_cache: JString<'_>,
-    db_data: JString<'_>,
-    limit: jint,
-    network_id: jint,
-) -> jboolean {
-    let res = panic::catch_unwind(|| {
-        let network = parse_network(network_id as u32)?;
-        let db_cache = block_db(&env, db_cache)?;
-        let db_data = wallet_db(&env, network, db_data)?;
-        let mut db_data = db_data.get_update_ops()?;
-
-        match scan_cached_blocks(&network, &db_cache, &mut db_data, Some(limit as u32)) {
-            Ok(()) => Ok(JNI_TRUE),
-            Err(e) => Err(format_err!("Rust error while scanning block batch: {}", e)),
         }
     });
     unwrap_exc_or(&env, res, JNI_FALSE)
