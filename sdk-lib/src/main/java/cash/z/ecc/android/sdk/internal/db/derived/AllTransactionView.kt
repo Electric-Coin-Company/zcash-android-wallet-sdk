@@ -9,6 +9,7 @@ import cash.z.ecc.android.sdk.model.TransactionOverview
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
 import java.util.Locale
 import kotlin.math.absoluteValue
 
@@ -98,6 +99,14 @@ internal class AllTransactionView(
             selectionArgs = arrayOf(blockHeightRange.start.value, blockHeightRange.endInclusive.value),
             cursorParser = cursorParser
         )
+
+    suspend fun getOldestTransaction() =
+        sqliteDatabase.queryAndMap(
+            table = AllTransactionViewDefinition.VIEW_NAME,
+            orderBy = ORDER_BY,
+            limit = "1",
+            cursorParser = cursorParser
+        ).firstOrNull()
 }
 
 internal object AllTransactionViewDefinition {

@@ -53,6 +53,8 @@ internal interface DerivedDataRepository {
      */
     suspend fun findNewTransactions(blockHeightRange: ClosedRange<BlockHeight>): List<TransactionOverview>
 
+    suspend fun getOldestTransaction(): TransactionOverview?
+
     /**
      * Find the mined height that matches the given raw tx_id in bytes. This is useful for matching
      * a pending transaction with one that we've decrypted from the blockchain.

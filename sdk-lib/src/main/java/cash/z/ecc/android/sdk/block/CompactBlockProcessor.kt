@@ -52,7 +52,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -989,11 +988,7 @@ class CompactBlockProcessor internal constructor(
         var oldestTransactionHeight: BlockHeight? = null
         @Suppress("TooGenericExceptionCaught")
         try {
-            // TODO: This is not efficient as it might perform a large query; this should instead directly query for
-            //  a single transaction
-            val tempOldestTransactionHeight = repository.receivedTransactions
-                .firstOrNull()
-                ?.lastOrNull()
+            val tempOldestTransactionHeight = repository.getOldestTransaction()
                 ?.minedHeight
                 ?: lowerBoundHeight
             // to be safe adjust for reorgs (and generally a little cushion is good for privacy)

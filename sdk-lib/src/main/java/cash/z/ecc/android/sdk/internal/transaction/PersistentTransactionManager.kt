@@ -38,8 +38,8 @@ import kotlin.math.max
  * id.
  * @property service the lightwallet service used to submit transactions.
  */
+@Suppress("TooManyFunctions")
 internal class PersistentTransactionManager(
-    @Suppress("TooManyFunctions")
     db: PendingTransactionDb,
     private val zcashNetwork: ZcashNetwork,
     internal val encoder: TransactionEncoder,

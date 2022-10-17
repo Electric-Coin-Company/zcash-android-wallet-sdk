@@ -47,7 +47,9 @@ internal class ReceivedTransactionView(
                 )
                 val rawTransactionIdIndex =
                     it.getColumnIndex(ReceivedTransactionViewDefinition.COLUMN_BLOB_RAW_TRANSACTION_ID)
-                val expiryHeightIndex = it.getColumnIndex(ReceivedTransactionViewDefinition.COLUMN_INTEGER_EXPIRY_HEIGHT)
+                val expiryHeightIndex = it.getColumnIndex(
+                    ReceivedTransactionViewDefinition.COLUMN_INTEGER_EXPIRY_HEIGHT
+                )
                 val rawIndex = it.getColumnIndex(ReceivedTransactionViewDefinition.COLUMN_BLOB_RAW)
                 val receivedAccountIndex = it.getColumnIndex(
                     ReceivedTransactionViewDefinition.COLUMN_INTEGER_RECEIVED_BY_ACCOUNT
