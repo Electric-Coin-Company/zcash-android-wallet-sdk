@@ -1,6 +1,5 @@
 package cash.z.ecc.android.sdk.internal.repository
 
-import cash.z.ecc.android.sdk.internal.model.AccountDetails
 import cash.z.ecc.android.sdk.internal.model.EncodedTransaction
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.Transaction
@@ -89,7 +88,7 @@ internal interface DerivedDataRepository {
 
     suspend fun deleteExpired(lastScannedHeight: BlockHeight): Int
 
-    suspend fun getAccount(accountId: Int): AccountDetails?
+//    suspend fun getAccount(accountId: Int): AccountDetails?
 
     suspend fun getAccountCount(): Int
 

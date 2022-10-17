@@ -58,7 +58,7 @@ internal class DbDerivedDataRepository(
         TODO("Not yet implemented")
     }
 
-    override suspend fun getAccount(accountId: Int) = derivedDataDb.accountTable.getAccount(accountId)
+    // override suspend fun getAccount(accountId: Int) = derivedDataDb.accountTable.getAccount(accountId)
 
     override suspend fun getAccountCount() = derivedDataDb.accountTable.count()
         // toInt() should be safe because we expect very few accounts
