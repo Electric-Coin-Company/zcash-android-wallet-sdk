@@ -21,13 +21,13 @@ import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.LightWalletEndpoint
-import cash.z.ecc.android.sdk.model.Transaction
+import cash.z.ecc.android.sdk.model.TransactionOverview
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.model.defaultForNetwork
 import cash.z.ecc.android.sdk.tool.DerivationTool
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlin.math.max
@@ -197,7 +197,7 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
                     initialCount = (synchronizer as SdkSynchronizer).getTransactionCount().toInt()
                 }
 
-                onTransactionsUpdated(synchronizer.clearedTransactions.toList())
+                onTransactionsUpdated(synchronizer.clearedTransactions.first())
             }
 
             // synchronizer.receivedTransactions.collectWith(lifecycleScope, ::onTransactionsUpdated)
@@ -260,7 +260,7 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
         binding.textStatus.visibility = View.INVISIBLE
     }
 
-    private fun onTransactionsUpdated(transactions: List<Transaction>) {
+    private fun onTransactionsUpdated(transactions: List<TransactionOverview>) {
         twig("got a new paged list of transactions of size ${transactions.size}")
         adapter.submitList(transactions)
     }

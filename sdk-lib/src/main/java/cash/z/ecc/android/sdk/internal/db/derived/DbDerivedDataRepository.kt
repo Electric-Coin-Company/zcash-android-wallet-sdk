@@ -4,13 +4,19 @@ import cash.z.ecc.android.sdk.internal.model.EncodedTransaction
 import cash.z.ecc.android.sdk.internal.repository.DerivedDataRepository
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.Transaction
+import cash.z.ecc.android.sdk.model.TransactionOverview
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
+import java.util.UUID
 
 @Suppress("TooManyFunctions")
 internal class DbDerivedDataRepository(
     private val derivedDataDb: DerivedDataDb
 ) : DerivedDataRepository {
+    private val invalidatingFlow = MutableStateFlow(UUID.randomUUID())
+
     override suspend fun lastScannedHeight(): BlockHeight {
         return derivedDataDb.blockTable.lastScannedHeight()
     }
@@ -27,7 +33,7 @@ internal class DbDerivedDataRepository(
         return derivedDataDb.transactionTable.findEncodedTransactionById(txId)
     }
 
-    override suspend fun findNewTransactions(blockHeightRange: ClosedRange<BlockHeight>): List<Transaction> =
+    override suspend fun findNewTransactions(blockHeightRange: ClosedRange<BlockHeight>): List<TransactionOverview> =
         derivedDataDb.allTransactionView.getTransactionRange(blockHeightRange).toList()
 
     override suspend fun findMinedHeight(rawTransactionId: ByteArray) = derivedDataDb.transactionTable
@@ -41,7 +47,7 @@ internal class DbDerivedDataRepository(
     override suspend fun getTransactionCount() = derivedDataDb.transactionTable.count()
 
     override fun invalidate() {
-        TODO("Not yet implemented")
+        invalidatingFlow.value = UUID.randomUUID()
     }
 
     override suspend fun cleanupCancelledTx(rawTransactionId: ByteArray): Boolean {
@@ -58,13 +64,12 @@ internal class DbDerivedDataRepository(
         // toInt() should be safe because we expect very few accounts
         .toInt()
 
-    override val receivedTransactions: Flow<Transaction.Received>
-        get() = derivedDataDb.receivedTransactionView.getReceivedTransactions()
-    override val sentTransactions: Flow<Transaction.Sent>
-        get() = derivedDataDb.sentTransactionView.getSentTransactions()
-
-    override val allTransactions: Flow<Transaction>
-        get() = derivedDataDb.allTransactionView.getAllTransactions()
+    override val receivedTransactions: Flow<List<Transaction.Received>>
+        get() = invalidatingFlow.map { derivedDataDb.receivedTransactionView.getReceivedTransactions().toList() }
+    override val sentTransactions: Flow<List<Transaction.Sent>>
+        get() = invalidatingFlow.map { derivedDataDb.sentTransactionView.getSentTransactions().toList() }
+    override val allTransactions: Flow<List<TransactionOverview>>
+        get() = invalidatingFlow.map { derivedDataDb.allTransactionView.getAllTransactions().toList() }
 
     override suspend fun close() {
         derivedDataDb.close()

@@ -2,6 +2,7 @@ package cash.z.ecc.android.sdk.internal.db.derived
 
 import androidx.sqlite.db.SupportSQLiteDatabase
 import cash.z.ecc.android.sdk.internal.db.queryAndMap
+import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.FirstClassByteArray
 import cash.z.ecc.android.sdk.model.Transaction
@@ -48,6 +49,7 @@ internal class SentTransactionView(
                     it.getColumnIndex(SentTransactionViewDefinition.COLUMN_BLOB_RAW_TRANSACTION_ID)
                 val expiryHeightIndex = it.getColumnIndex(SentTransactionViewDefinition.COLUMN_INTEGER_EXPIRY_HEIGHT)
                 val rawIndex = it.getColumnIndex(SentTransactionViewDefinition.COLUMN_BLOB_RAW)
+                val sentFromAccount = it.getColumnIndex(SentTransactionViewDefinition.COLUMN_INTEGER_SENT_FROM_ACCOUNT)
                 val sentTotalIndex = it.getColumnIndex(SentTransactionViewDefinition.COLUMN_INTEGER_SENT_TOTAL)
                 val sentNoteCountIndex = it.getColumnIndex(SentTransactionViewDefinition.COLUMN_INTEGER_SENT_NOTE_COUNT)
                 val memoCountIndex = it.getColumnIndex(SentTransactionViewDefinition.COLUMN_INTEGER_MEMO_COUNT)
@@ -60,10 +62,11 @@ internal class SentTransactionView(
                     expiryHeight = BlockHeight.new(zcashNetwork, it.getLong(expiryHeightIndex)),
                     index = it.getLong(transactionIndexColumnIndex),
                     raw = FirstClassByteArray(it.getBlob(rawIndex)),
+                    sentFromAccount = Account(it.getInt(sentFromAccount)),
                     sentTotal = Zatoshi(it.getLong(sentTotalIndex)),
                     sentNoteCount = it.getInt(sentNoteCountIndex),
                     memoCount = it.getInt(memoCountIndex),
-                    time = it.getLong(blockTimeIndex)
+                    blockTimeEpochSeconds = it.getLong(blockTimeIndex)
                 )
             }
         )
@@ -83,6 +86,8 @@ internal object SentTransactionViewDefinition {
     const val COLUMN_INTEGER_EXPIRY_HEIGHT = "expiry_height" // $NON-NLS
 
     const val COLUMN_BLOB_RAW = "raw" // $NON-NLS
+
+    const val COLUMN_INTEGER_SENT_FROM_ACCOUNT = "sent_from_account" // $NON-NLS
 
     const val COLUMN_INTEGER_SENT_TOTAL = "sent_total" // $NON-NLS
 

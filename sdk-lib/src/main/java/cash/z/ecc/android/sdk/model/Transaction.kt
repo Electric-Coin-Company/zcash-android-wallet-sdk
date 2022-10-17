@@ -5,12 +5,14 @@ sealed class Transaction {
         val id: Long,
         val rawId: FirstClassByteArray,
         val minedHeight: BlockHeight,
+        val expiryHeight: BlockHeight,
         val index: Long,
         val raw: FirstClassByteArray,
+        val receivedByAccount: Account,
         val receivedTotal: Zatoshi,
         val receivedNoteCount: Int,
         val memoCount: Int,
-        val time: Long
+        val blockTimeEpochSeconds: Long
     ) : Transaction() {
         override fun toString() = "ReceivedTransaction"
     }
@@ -22,10 +24,11 @@ sealed class Transaction {
         val expiryHeight: BlockHeight,
         val index: Long,
         val raw: FirstClassByteArray,
+        val sentFromAccount: Account,
         val sentTotal: Zatoshi,
         val sentNoteCount: Int,
         val memoCount: Int,
-        val time: Long
+        val blockTimeEpochSeconds: Long
     ) : Transaction() {
         override fun toString() = "SentTransaction"
     }

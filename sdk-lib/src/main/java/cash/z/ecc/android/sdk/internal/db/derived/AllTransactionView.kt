@@ -5,11 +5,12 @@ import cash.z.ecc.android.sdk.internal.db.CursorParser
 import cash.z.ecc.android.sdk.internal.db.queryAndMap
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.FirstClassByteArray
-import cash.z.ecc.android.sdk.model.Transaction
+import cash.z.ecc.android.sdk.model.TransactionOverview
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import kotlinx.coroutines.flow.first
 import java.util.Locale
+import kotlin.math.absoluteValue
 
 internal class AllTransactionView(
     private val zcashNetwork: ZcashNetwork,
@@ -34,50 +35,46 @@ internal class AllTransactionView(
         private val PROJECTION_COUNT = arrayOf("COUNT(*)") // $NON-NLS
     }
 
-    private val cursorParser: CursorParser<Transaction> = CursorParser {
+    private val cursorParser: CursorParser<TransactionOverview> = CursorParser {
         val idColumnIndex = it.getColumnIndex(AllTransactionViewDefinition.COLUMN_INTEGER_ID)
         val minedHeightColumnIndex =
             it.getColumnIndex(AllTransactionViewDefinition.COLUMN_INTEGER_MINED_HEIGHT)
         val transactionIndexColumnIndex = it.getColumnIndex(
-            AllTransactionViewDefinition
-                .COLUMN_INTEGER_TRANSACTION_INDEX
+            AllTransactionViewDefinition.COLUMN_INTEGER_TRANSACTION_INDEX
         )
         val rawTransactionIdIndex =
             it.getColumnIndex(AllTransactionViewDefinition.COLUMN_BLOB_RAW_TRANSACTION_ID)
         val expiryHeightIndex = it.getColumnIndex(AllTransactionViewDefinition.COLUMN_INTEGER_EXPIRY_HEIGHT)
         val rawIndex = it.getColumnIndex(AllTransactionViewDefinition.COLUMN_BLOB_RAW)
-        val valueIndex = it.getColumnIndex(AllTransactionViewDefinition.COLUMN_INTEGER_VALUE)
-        val noteCountIndex = it.getColumnIndex(AllTransactionViewDefinition.COLUMN_INT_NOTE_COUNT)
+        val netValueIndex = it.getColumnIndex(AllTransactionViewDefinition.COLUMN_LONG_VALUE)
+        val feePaidIndex = it.getColumnIndex(AllTransactionViewDefinition.COLUMN_LONG_FEE_PAID)
+        val isChangeIndex = it.getColumnIndex(AllTransactionViewDefinition.COLUMN_BOOLEAN_IS_CHANGE)
+        val isWalletInternalIndex = it.getColumnIndex(AllTransactionViewDefinition.COLUMN_BOOLEAN_IS_WALLET_INTERNAL)
+        val receivedNoteCountIndex = it.getColumnIndex(AllTransactionViewDefinition.COLUMN_INTEGER_RECEIVED_NOTE_COUNT)
+        val sentNoteCountIndex = it.getColumnIndex(AllTransactionViewDefinition.COLUMN_INTEGER_SENT_NOTE_COUNT)
         val memoCountIndex = it.getColumnIndex(AllTransactionViewDefinition.COLUMN_INTEGER_MEMO_COUNT)
-        // val blockTimeIndex = it.getColumnIndex(AllTransactionViewDefinition.COLUMN_INTEGER_BLOCK_TIME)
+        val blockTimeIndex = it.getColumnIndex(AllTransactionViewDefinition.COLUMN_INTEGER_BLOCK_TIME)
 
-        val value = it.getLong(valueIndex)
-        if (value < 0) {
-            Transaction.Sent(
-                id = it.getLong(idColumnIndex),
-                rawId = FirstClassByteArray(it.getBlob(rawTransactionIdIndex)),
-                minedHeight = BlockHeight.new(zcashNetwork, it.getLong(minedHeightColumnIndex)),
-                expiryHeight = BlockHeight.new(zcashNetwork, it.getLong(expiryHeightIndex)),
-                index = it.getLong(transactionIndexColumnIndex),
-                raw = FirstClassByteArray(it.getBlob(rawIndex)),
-                sentTotal = Zatoshi(-value),
-                sentNoteCount = it.getInt(noteCountIndex),
-                memoCount = it.getInt(memoCountIndex),
-                time = 0 // FIXME it.getLong(blockTimeIndex)
-            )
-        } else {
-            Transaction.Received(
-                id = it.getLong(idColumnIndex),
-                rawId = FirstClassByteArray(it.getBlob(rawTransactionIdIndex)),
-                minedHeight = BlockHeight.new(zcashNetwork, it.getLong(minedHeightColumnIndex)),
-                index = it.getLong(transactionIndexColumnIndex),
-                raw = FirstClassByteArray(it.getBlob(rawIndex)),
-                receivedTotal = Zatoshi(it.getLong(valueIndex)),
-                receivedNoteCount = it.getInt(noteCountIndex),
-                memoCount = it.getInt(memoCountIndex),
-                time = 0 // FIXME it.getLong(blockTimeIndex)
-            )
-        }
+        val netValueLong = it.getLong(netValueIndex)
+        val isSent = netValueLong < 0
+
+        TransactionOverview(
+            id = it.getLong(idColumnIndex),
+            rawId = FirstClassByteArray(it.getBlob(rawTransactionIdIndex)),
+            minedHeight = BlockHeight.new(zcashNetwork, it.getLong(minedHeightColumnIndex)),
+            expiryHeight = BlockHeight.new(zcashNetwork, it.getLong(expiryHeightIndex)),
+            index = it.getLong(transactionIndexColumnIndex),
+            raw = FirstClassByteArray(it.getBlob(rawIndex)),
+            isSentTransaction = isSent,
+            netValue = Zatoshi(netValueLong.absoluteValue),
+            feePaid = Zatoshi(it.getLong(feePaidIndex)),
+            isChange = it.getInt(isChangeIndex) != 0,
+            isWalletInternal = it.getInt(isWalletInternalIndex) != 0,
+            receivedNoteCount = it.getInt(receivedNoteCountIndex),
+            sentNoteCount = it.getInt(sentNoteCountIndex),
+            memoCount = it.getInt(memoCountIndex),
+            blockTimeEpochSeconds = it.getLong(blockTimeIndex)
+        )
     }
 
     suspend fun count() = sqliteDatabase.queryAndMap(
@@ -118,11 +115,17 @@ internal object AllTransactionViewDefinition {
 
     const val COLUMN_BLOB_RAW = "raw" // $NON-NLS
 
-    const val COLUMN_INTEGER_VALUE = "net_value" // $NON-NLS
+    const val COLUMN_LONG_VALUE = "net_value" // $NON-NLS
+
+    const val COLUMN_LONG_FEE_PAID = "fee_paid" // $NON-NLS
+
+    const val COLUMN_BOOLEAN_IS_WALLET_INTERNAL = "is_wallet_internal" // $NON-NLS
 
     const val COLUMN_BOOLEAN_IS_CHANGE = "has_change" // $NON-NLS
 
-    const val COLUMN_INT_NOTE_COUNT = "note_count" // $NON-NLS
+    const val COLUMN_INTEGER_SENT_NOTE_COUNT = "sent_note_count" // $NON-NLS
+
+    const val COLUMN_INTEGER_RECEIVED_NOTE_COUNT = "received_note_count" // $NON-NLS
 
     const val COLUMN_INTEGER_MEMO_COUNT = "memo_count" // $NON-NLS
 

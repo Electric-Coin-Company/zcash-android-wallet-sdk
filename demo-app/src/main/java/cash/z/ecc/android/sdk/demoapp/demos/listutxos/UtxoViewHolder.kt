@@ -5,7 +5,7 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import cash.z.ecc.android.sdk.demoapp.R
 import cash.z.ecc.android.sdk.ext.convertZatoshiToZecString
-import cash.z.ecc.android.sdk.model.Transaction
+import cash.z.ecc.android.sdk.model.TransactionOverview
 import cash.z.ecc.android.sdk.model.Zatoshi
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -19,15 +19,8 @@ class UtxoViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
     private val formatter = SimpleDateFormat("M/d h:mma", Locale.getDefault())
 
     @Suppress("MagicNumber")
-    fun bindTo(transaction: Transaction) {
-        when (transaction) {
-            is Transaction.Received -> {
-                bindToHelper(transaction.receivedTotal, transaction.time)
-            }
-            is Transaction.Sent -> {
-                bindToHelper(transaction.sentTotal, transaction.time)
-            }
-        }
+    fun bindTo(transaction: TransactionOverview) {
+        bindToHelper(transaction.netValue, transaction.blockTimeEpochSeconds)
     }
 
     @Suppress("MagicNumber")

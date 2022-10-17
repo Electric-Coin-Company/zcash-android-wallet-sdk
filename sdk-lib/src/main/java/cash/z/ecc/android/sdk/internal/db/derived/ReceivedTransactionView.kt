@@ -2,6 +2,7 @@ package cash.z.ecc.android.sdk.internal.db.derived
 
 import androidx.sqlite.db.SupportSQLiteDatabase
 import cash.z.ecc.android.sdk.internal.db.queryAndMap
+import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.FirstClassByteArray
 import cash.z.ecc.android.sdk.model.Transaction
@@ -46,7 +47,11 @@ internal class ReceivedTransactionView(
                 )
                 val rawTransactionIdIndex =
                     it.getColumnIndex(ReceivedTransactionViewDefinition.COLUMN_BLOB_RAW_TRANSACTION_ID)
-                val rawIndex = it.getColumnIndex(ReceivedTransactionViewDefinition.COLUMN_BLOB_RAW_TRANSACTION_ID)
+                val expiryHeightIndex = it.getColumnIndex(ReceivedTransactionViewDefinition.COLUMN_INTEGER_EXPIRY_HEIGHT)
+                val rawIndex = it.getColumnIndex(ReceivedTransactionViewDefinition.COLUMN_BLOB_RAW)
+                val receivedAccountIndex = it.getColumnIndex(
+                    ReceivedTransactionViewDefinition.COLUMN_INTEGER_RECEIVED_BY_ACCOUNT
+                )
                 val receivedTotalIndex =
                     it.getColumnIndex(ReceivedTransactionViewDefinition.COLUMN_INTEGER_RECEIVED_TOTAL)
                 val receivedNoteCountIndex =
@@ -58,12 +63,14 @@ internal class ReceivedTransactionView(
                     id = it.getLong(idColumnIndex),
                     rawId = FirstClassByteArray(it.getBlob(rawTransactionIdIndex)),
                     minedHeight = BlockHeight.new(zcashNetwork, it.getLong(minedHeightColumnIndex)),
+                    expiryHeight = BlockHeight.new(zcashNetwork, it.getLong(expiryHeightIndex)),
                     index = it.getLong(transactionIndexColumnIndex),
                     raw = FirstClassByteArray(it.getBlob(rawIndex)),
+                    receivedByAccount = Account(it.getInt(receivedAccountIndex)),
                     receivedTotal = Zatoshi(it.getLong(receivedTotalIndex)),
                     receivedNoteCount = it.getInt(receivedNoteCountIndex),
                     memoCount = it.getInt(memoCountIndex),
-                    time = it.getLong(blockTimeIndex)
+                    blockTimeEpochSeconds = it.getLong(blockTimeIndex)
                 )
             }
         )
@@ -79,6 +86,12 @@ internal object ReceivedTransactionViewDefinition {
     const val COLUMN_INTEGER_TRANSACTION_INDEX = "tx_index" // $NON-NLS
 
     const val COLUMN_BLOB_RAW_TRANSACTION_ID = "txid" // $NON-NLS
+
+    const val COLUMN_INTEGER_EXPIRY_HEIGHT = "expiry_height" // $NON-NLS
+
+    const val COLUMN_BLOB_RAW = "raw" // $NON-NLS
+
+    const val COLUMN_INTEGER_RECEIVED_BY_ACCOUNT = "received_by_account" // $NON-NLS
 
     const val COLUMN_INTEGER_RECEIVED_TOTAL = "received_total" // $NON-NLS
 

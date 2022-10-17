@@ -9,6 +9,7 @@ import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.LightWalletEndpoint
 import cash.z.ecc.android.sdk.model.PendingTransaction
 import cash.z.ecc.android.sdk.model.Transaction
+import cash.z.ecc.android.sdk.model.TransactionOverview
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
@@ -135,17 +136,17 @@ interface Synchronizer {
     /**
      * A flow of cleared transactions that are on the blockchain.
      */
-    val clearedTransactions: Flow<Transaction>
+    val clearedTransactions: Flow<List<TransactionOverview>>
 
     /**
      * A flow of transactions related to sending funds.
      */
-    val sentTransactions: Flow<Transaction.Sent>
+    val sentTransactions: Flow<List<Transaction.Sent>>
 
     /**
      * A flow of transactions related to receiving funds.
      */
-    val receivedTransactions: Flow<Transaction.Received>
+    val receivedTransactions: Flow<List<Transaction.Received>>
 
     //
     // Latest Properties

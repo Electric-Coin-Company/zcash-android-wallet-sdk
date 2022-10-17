@@ -15,8 +15,7 @@ Thankfully, the only thing an app developer has to be concerned with is the foll
 | **CompactBlockStore**                  | Stores compact blocks that have been downloaded from the `LightWalletService`                                                       |
 | **CompactBlockProcessor**              | Validates and scans the compact blocks in the `CompactBlockStore` for transaction details                                           |
 | **OutboundTransactionManager**         | Creates, Submits and manages transactions for spending funds                                                                        |
-| **Initializer**                        | Responsible for all setup that must happen before synchronization can begin. Loads the rust library and helps initialize databases. |
-| **DerivationTool**, **BirthdayTool**   | Utilities for deriving keys, addresses and loading wallet checkpoints, called "birthdays."                                          |
+| **DerivationTool**                     | Utilities for deriving keys and addresses                                                                                           |
 | **RustBackend**                        | Wraps and simplifies the rust library and exposes its functionality to the Kotlin SDK                                               |
 
 # Checkpoints

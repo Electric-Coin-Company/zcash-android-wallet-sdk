@@ -16,7 +16,7 @@ import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException.EnhanceTr
 import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException.EnhanceTransactionError.EnhanceTxDownloadError
 import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException.MismatchedBranch
 import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException.MismatchedNetwork
-import cash.z.ecc.android.sdk.exception.InitializerException
+import cash.z.ecc.android.sdk.exception.InitializeException
 import cash.z.ecc.android.sdk.exception.RustLayerException
 import cash.z.ecc.android.sdk.ext.BatchMetrics
 import cash.z.ecc.android.sdk.ext.ZcashSdk
@@ -40,7 +40,7 @@ import cash.z.ecc.android.sdk.jni.RustBackend
 import cash.z.ecc.android.sdk.jni.RustBackendWelding
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
-import cash.z.ecc.android.sdk.model.Transaction
+import cash.z.ecc.android.sdk.model.TransactionOverview
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.wallet.sdk.rpc.Service
@@ -52,7 +52,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.lastOrNull
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -239,9 +239,11 @@ class CompactBlockProcessor internal constructor(
                         consecutiveChainErrors.set(0)
                         val napTime = calculatePollInterval()
                         twig(
-                            "$summary${if (result == BlockProcessingResult.FailedEnhance) " (but there were" +
+                            "$summary${
+                            if (result == BlockProcessingResult.FailedEnhance) " (but there were" +
                                 " enhancement errors! We ignore those, for now. Memos in this block range are" +
-                                " probably missing! This will be improved in a future release.)" else ""}! Sleeping" +
+                                " probably missing! This will be improved in a future release.)" else ""
+                            }! Sleeping" +
                                 " for ${napTime}ms (latest height: ${currentInfo.networkBlockHeight})."
                         )
                         delay(napTime)
@@ -437,15 +439,8 @@ class CompactBlockProcessor internal constructor(
     // TODO [#683]: we still need a way to identify those transactions that failed to be enhanced
     // TODO [#683]: https://github.com/zcash/zcash-android-wallet-sdk/issues/683
 
-    private suspend fun enhance(transaction: Transaction) = withContext(Dispatchers.IO) {
-        when (transaction) {
-            is Transaction.Received -> {
-                enhanceHelper(transaction.id, transaction.rawId.byteArray, transaction.minedHeight)
-            }
-            is Transaction.Sent -> {
-                enhanceHelper(transaction.id, transaction.rawId.byteArray, transaction.minedHeight)
-            }
-        }
+    private suspend fun enhance(transaction: TransactionOverview) = withContext(Dispatchers.IO) {
+        enhanceHelper(transaction.id, transaction.rawId.byteArray, transaction.minedHeight)
     }
 
     private suspend fun enhanceHelper(id: Long, rawTransactionId: ByteArray, minedHeight: BlockHeight) {
@@ -997,7 +992,8 @@ class CompactBlockProcessor internal constructor(
             // TODO: This is not efficient as it might perform a large query; this should instead directly query for
             //  a single transaction
             val tempOldestTransactionHeight = repository.receivedTransactions
-                .lastOrNull()
+                .firstOrNull()
+                ?.lastOrNull()
                 ?.minedHeight
                 ?: lowerBoundHeight
             // to be safe adjust for reorgs (and generally a little cushion is good for privacy)
@@ -1056,7 +1052,7 @@ class CompactBlockProcessor internal constructor(
         rustBackend.getSaplingReceiver(
             rustBackend.getCurrentAddress(account.value)
         )
-            ?: throw InitializerException.MissingAddressException("legacy Sapling")
+            ?: throw InitializeException.MissingAddressException("legacy Sapling")
 
     /**
      * Get the legacy transparent address corresponding to the current unified address for the given wallet account.
@@ -1067,7 +1063,7 @@ class CompactBlockProcessor internal constructor(
         rustBackend.getTransparentReceiver(
             rustBackend.getCurrentAddress(account.value)
         )
-            ?: throw InitializerException.MissingAddressException("legacy transparent")
+            ?: throw InitializeException.MissingAddressException("legacy transparent")
 
     /**
      * Calculates the latest balance info. Defaults to the first account.

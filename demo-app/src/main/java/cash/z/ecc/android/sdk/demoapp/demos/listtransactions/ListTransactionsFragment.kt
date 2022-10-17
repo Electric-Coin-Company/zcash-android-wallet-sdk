@@ -18,11 +18,11 @@ import cash.z.ecc.android.sdk.ext.collectWith
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.LightWalletEndpoint
-import cash.z.ecc.android.sdk.model.Transaction
+import cash.z.ecc.android.sdk.model.TransactionOverview
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.model.defaultForNetwork
 import cash.z.ecc.android.sdk.tool.DerivationTool
-import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 
@@ -83,7 +83,7 @@ class ListTransactionsFragment : BaseDemoFragment<FragmentListTransactionsBindin
         synchronizer.progress.collectWith(lifecycleScope, ::onProgress)
 
         lifecycleScope.launch {
-            val transactions = synchronizer.clearedTransactions.toList()
+            val transactions = synchronizer.clearedTransactions.first()
             onTransactionsUpdated(transactions)
         }
     }
@@ -111,7 +111,7 @@ class ListTransactionsFragment : BaseDemoFragment<FragmentListTransactionsBindin
         binding.textInfo.visibility = View.INVISIBLE
     }
 
-    private fun onTransactionsUpdated(transactions: List<Transaction>) {
+    private fun onTransactionsUpdated(transactions: List<TransactionOverview>) {
         twig("got a new paged list of transactions")
         adapter.submitList(transactions)
 
