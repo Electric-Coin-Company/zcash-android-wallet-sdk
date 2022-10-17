@@ -75,23 +75,6 @@ object ZcashSdk {
     const val REWIND_DISTANCE = 10
 
     /**
-     * File name for the sappling spend params
-     */
-    const val SPEND_PARAM_FILE_NAME = "sapling-spend.params"
-
-    /**
-     * File name for the sapling output params
-     */
-    const val OUTPUT_PARAM_FILE_NAME = "sapling-output.params"
-
-    /**
-     * The Url that is used by default in zcashd.
-     * We'll want to make this externally configurable, rather than baking it into the SDK but
-     * this will do for now, since we're using a cloudfront URL that already redirects.
-     */
-    const val CLOUD_PARAM_DIR_URL = "https://z.cash/downloads/"
-
-    /**
      * The default memo to use when shielding transparent funds.
      */
     const val DEFAULT_SHIELD_FUNDS_MEMO_PREFIX = "shielding:"

@@ -4,14 +4,19 @@
       <option name="executionName" />
       <option name="externalProjectPath" value="$PROJECT_DIR$" />
       <option name="externalSystemIdString" value="GRADLE" />
-      <option name="scriptParameters" value="assembleAndroidTest assembleDebug assembleZcashmainnetDebug assembleZcashtestnetDebug" />
+      <option name="scriptParameters" value="" />
       <option name="taskDescriptions">
         <list />
       </option>
       <option name="taskNames">
-        <list />
+        <list>
+          <option value="assembleAndroidTest" />
+          <option value="assembleDebug" />
+          <option value="assembleZcashmainnetDebug" />
+          <option value="assembleZcashtestnetDebug" />
+        </list>
       </option>
-      <option name="vmOptions" />
+      <option name="vmOptions" value="" />
     </ExternalSystemSettings>
     <ExternalSystemDebugServerProcess>true</ExternalSystemDebugServerProcess>
     <ExternalSystemReattachDebugProcess>true</ExternalSystemReattachDebugProcess>

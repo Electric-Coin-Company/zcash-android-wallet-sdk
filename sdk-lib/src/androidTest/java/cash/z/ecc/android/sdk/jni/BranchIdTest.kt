@@ -9,6 +9,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
+import java.io.File
 
 /**
  * This test is intended to run to make sure that branch ID logic works across all target devices.
@@ -45,8 +46,24 @@ class BranchIdTest internal constructor(
             // is an abnormal use of the SDK because this really should run at the rust level
             // However, due to quirks on certain devices, we created this test at the Android level,
             // as a sanity check
-            val testnetBackend = runBlocking { RustBackend.init("", "", "", ZcashNetwork.Testnet, ZcashNetwork.Testnet.saplingActivationHeight) }
-            val mainnetBackend = runBlocking { RustBackend.init("", "", "", ZcashNetwork.Mainnet, ZcashNetwork.Mainnet.saplingActivationHeight) }
+            val testnetBackend = runBlocking {
+                RustBackend.init(
+                    File(""),
+                    File(""),
+                    File(""),
+                    ZcashNetwork.Testnet,
+                    ZcashNetwork.Testnet.saplingActivationHeight
+                )
+            }
+            val mainnetBackend = runBlocking {
+                RustBackend.init(
+                    File(""),
+                    File(""),
+                    File(""),
+                    ZcashNetwork.Mainnet,
+                    ZcashNetwork.Mainnet.saplingActivationHeight
+                )
+            }
             return listOf(
                 // Mainnet Cases
                 arrayOf("Sapling", BlockHeight.new(ZcashNetwork.Mainnet, 419_200), 1991772603L, "76b809bb", mainnetBackend),

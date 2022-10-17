@@ -6,6 +6,7 @@ import cash.z.ecc.android.sdk.db.DatabaseCoordinator
 import cash.z.ecc.android.sdk.db.entity.ConfirmedTransaction
 import cash.z.ecc.android.sdk.db.entity.PendingTransaction
 import cash.z.ecc.android.sdk.ext.ZcashSdk
+import cash.z.ecc.android.sdk.internal.SaplingParamTool
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.LightWalletEndpoint
@@ -521,9 +522,12 @@ interface Synchronizer {
                 viewingKeys,
                 seed
             )
+
+            val saplingParamTool = SaplingParamTool.new(applicationContext)
+
             val blockStore = DefaultSynchronizerFactory.defaultBlockStore(applicationContext, rustBackend, zcashNetwork)
             val service = DefaultSynchronizerFactory.defaultService(applicationContext, lightWalletEndpoint)
-            val encoder = DefaultSynchronizerFactory.defaultEncoder(rustBackend, repository)
+            val encoder = DefaultSynchronizerFactory.defaultEncoder(rustBackend, saplingParamTool, repository)
             val downloader = DefaultSynchronizerFactory.defaultDownloader(service, blockStore)
             val txManager =
                 DefaultSynchronizerFactory.defaultTxManager(applicationContext, zcashNetwork, alias, encoder, service)

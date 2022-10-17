@@ -1,4 +1,5 @@
 import com.android.build.api.dsl.CommonExtension
+import com.android.build.api.dsl.ManagedVirtualDevice
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmOptions
 
 pluginManager.withPlugin("com.android.application") {
@@ -51,6 +52,7 @@ pluginManager.withPlugin("com.android.library") {
     }
 }
 
+@Suppress("LongMethod")
 fun com.android.build.gradle.BaseExtension.configureBaseExtension() {
     compileSdkVersion(project.property("ANDROID_COMPILE_SDK_VERSION").toString().toInt())
     ndkVersion = project.property("ANDROID_NDK_VERSION").toString()
@@ -84,6 +86,29 @@ fun com.android.build.gradle.BaseExtension.configureBaseExtension() {
 
         if (project.property("IS_USE_TEST_ORCHESTRATOR").toString().toBoolean()) {
             execution = "ANDROIDX_TEST_ORCHESTRATOR"
+        }
+
+        @Suppress("UnstableApiUsage")
+        managedDevices {
+            @Suppress("MagicNumber", "PropertyName", "VariableNaming")
+            val MANAGED_DEVICES_MIN_SDK = 27
+
+            val testDeviceMinSdkVersion = project.properties["ANDROID_MIN_SDK_VERSION"]
+                .toString().toInt().coerceAtLeast(MANAGED_DEVICES_MIN_SDK)
+            val testDeviceMaxSdkVersion = project.properties["ANDROID_TARGET_SDK_VERSION"].toString().toInt()
+
+            devices {
+                create<ManagedVirtualDevice>("pixel2Min") {
+                    device = "Pixel 2"
+                    apiLevel = testDeviceMinSdkVersion
+                    systemImageSource = "aosp"
+                }
+                create<ManagedVirtualDevice>("pixel2Target") {
+                    device = "Pixel 2"
+                    apiLevel = testDeviceMaxSdkVersion
+                    systemImageSource = "aosp"
+                }
+            }
         }
     }
 

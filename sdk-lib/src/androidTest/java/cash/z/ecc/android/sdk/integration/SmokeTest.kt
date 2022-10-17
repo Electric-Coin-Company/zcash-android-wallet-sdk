@@ -46,7 +46,9 @@ class SmokeTest {
         )
         assertTrue(
             "Invalid CacheDB params dir",
-            rustBackend.pathParamsDir.endsWith("cache/params")
+            rustBackend.saplingParamDir.endsWith(
+                "no_backup/co.electricoin.zcash"
+            )
         )
     }
 

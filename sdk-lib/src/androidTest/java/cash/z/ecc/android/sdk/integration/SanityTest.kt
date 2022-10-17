@@ -59,9 +59,9 @@ class SanityTest(
             )
         )
         assertTrue(
-            "$name has invalid CacheDB params dir",
-            rustBackend.pathParamsDir.endsWith(
-                "cache/params"
+            "$name has invalid params dir",
+            rustBackend.saplingParamDir.path.endsWith(
+                "no_backup/co.electricoin.zcash"
             )
         )
     }

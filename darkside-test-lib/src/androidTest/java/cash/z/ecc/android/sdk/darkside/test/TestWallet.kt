@@ -211,7 +211,7 @@ class TestWallet(
                 1_330_190
             ),
             BlockHeight.new(ZcashNetwork.Mainnet, 1_000_000)
-        ),
+        )
         ;
     }
 }

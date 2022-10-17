@@ -8,6 +8,7 @@ import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.type.UnifiedFullViewingKey
+import java.io.File
 
 /**
  * Contract defining the exposed capabilities of the Rust backend.
@@ -19,6 +20,8 @@ import cash.z.ecc.android.sdk.type.UnifiedFullViewingKey
 internal interface RustBackendWelding {
 
     val network: ZcashNetwork
+
+    val saplingParamDir: File
 
     @Suppress("LongParameterList")
     suspend fun createToAddress(

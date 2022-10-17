@@ -92,8 +92,6 @@ dependencyResolutionManagement {
             val kotlinxCoroutinesVersion = extra["KOTLINX_COROUTINES_VERSION"].toString()
             val mockitoKotlinVersion = extra["MOCKITO_KOTLIN_VERSION"].toString()
             val mockitoVersion = extra["MOCKITO_VERSION"].toString()
-            val okhttpVersion = extra["OKHTTP_VERSION"].toString()
-            val okioVersion = extra["OKIO_VERSION"].toString()
             val protocVersion = extra["PROTOC_VERSION"].toString()
             val rustGradlePluginVersion = extra["RUST_GRADLE_PLUGIN_VERSION"].toString()
             val zcashWalletPluginVersion = extra["ZCASH_WALLET_PLUGINS_VERSION"].toString()
@@ -141,8 +139,6 @@ dependencyResolutionManagement {
             library("kotlinx-coroutines-android", "org.jetbrains.kotlinx:kotlinx-coroutines-android:$kotlinxCoroutinesVersion")
             library("kotlinx-coroutines-core", "org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinxCoroutinesVersion")
             library("material", "com.google.android.material:material:$googleMaterialVersion")
-            library("okhttp", "com.squareup.okhttp3:okhttp:$okhttpVersion")
-            library("okio", "com.squareup.okio:okio:$okioVersion")
             library("zcashwalletplgn", "com.github.zcash:zcash-android-wallet-plugins:$zcashWalletPluginVersion")
 
             // Test libraries
