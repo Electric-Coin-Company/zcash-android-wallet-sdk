@@ -1,12 +1,11 @@
-package cash.z.ecc.android.sdk.internal.block
+package cash.z.ecc.android.sdk.internal.db.block
 
 import android.content.Context
 import androidx.room.RoomDatabase
-import cash.z.ecc.android.sdk.db.commonDatabaseBuilder
-import cash.z.ecc.android.sdk.db.entity.CompactBlockEntity
 import cash.z.ecc.android.sdk.internal.SdkDispatchers
 import cash.z.ecc.android.sdk.internal.SdkExecutors
-import cash.z.ecc.android.sdk.internal.db.CompactBlockDb
+import cash.z.ecc.android.sdk.internal.db.commonDatabaseBuilder
+import cash.z.ecc.android.sdk.internal.repository.CompactBlockRepository
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.wallet.sdk.rpc.CompactFormats
@@ -17,10 +16,10 @@ import java.io.File
  * An implementation of CompactBlockStore that persists information to a database in the given
  * path. This represents the "cache db" or local cache of compact blocks waiting to be scanned.
  */
-class CompactBlockDbStore private constructor(
+class DbCompactBlockRepository private constructor(
     private val network: ZcashNetwork,
     private val cacheDb: CompactBlockDb
-) : CompactBlockStore {
+) : CompactBlockRepository {
 
     private val cacheDao = cacheDb.compactBlockDao()
 
@@ -52,10 +51,10 @@ class CompactBlockDbStore private constructor(
             appContext: Context,
             zcashNetwork: ZcashNetwork,
             databaseFile: File
-        ): CompactBlockDbStore {
+        ): DbCompactBlockRepository {
             val cacheDb = createCompactBlockCacheDb(appContext.applicationContext, databaseFile)
 
-            return CompactBlockDbStore(zcashNetwork, cacheDb)
+            return DbCompactBlockRepository(zcashNetwork, cacheDb)
         }
 
         private fun createCompactBlockCacheDb(

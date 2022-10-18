@@ -2,14 +2,15 @@ package cash.z.ecc.android.sdk
 
 import android.content.Context
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor
-import cash.z.ecc.android.sdk.db.DatabaseCoordinator
-import cash.z.ecc.android.sdk.db.entity.ConfirmedTransaction
-import cash.z.ecc.android.sdk.db.entity.PendingTransaction
 import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.internal.SaplingParamTool
+import cash.z.ecc.android.sdk.internal.db.DatabaseCoordinator
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.LightWalletEndpoint
+import cash.z.ecc.android.sdk.model.PendingTransaction
+import cash.z.ecc.android.sdk.model.Transaction
+import cash.z.ecc.android.sdk.model.TransactionOverview
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
@@ -136,17 +137,17 @@ interface Synchronizer {
     /**
      * A flow of all the transactions that are on the blockchain.
      */
-    val clearedTransactions: Flow<List<ConfirmedTransaction>>
+    val clearedTransactions: Flow<List<TransactionOverview>>
 
     /**
      * A flow of all transactions related to sending funds.
      */
-    val sentTransactions: Flow<List<ConfirmedTransaction>>
+    val sentTransactions: Flow<List<Transaction.Sent>>
 
     /**
      * A flow of all transactions related to receiving funds.
      */
-    val receivedTransactions: Flow<List<ConfirmedTransaction>>
+    val receivedTransactions: Flow<List<Transaction.Received>>
 
     //
     // Latest Properties
@@ -237,14 +238,14 @@ interface Synchronizer {
      * useful for updating the UI without needing to poll. Of course, polling is always an option
      * for any wallet that wants to ignore this return value.
      */
-    fun sendToAddress(
+    suspend fun sendToAddress(
         usk: UnifiedSpendingKey,
         amount: Zatoshi,
         toAddress: String,
         memo: String = ""
     ): Flow<PendingTransaction>
 
-    fun shieldFunds(
+    suspend fun shieldFunds(
         usk: UnifiedSpendingKey,
         memo: String = ZcashSdk.DEFAULT_SHIELD_FUNDS_MEMO_PREFIX
     ): Flow<PendingTransaction>
@@ -493,6 +494,8 @@ interface Synchronizer {
 
             validateAlias(alias)
 
+            val saplingParamTool = SaplingParamTool.new(applicationContext)
+
             val loadedCheckpoint = CheckpointTool.loadNearest(
                 applicationContext,
                 zcashNetwork,
@@ -503,7 +506,8 @@ interface Synchronizer {
                 applicationContext,
                 zcashNetwork,
                 alias,
-                loadedCheckpoint.height
+                loadedCheckpoint.height,
+                saplingParamTool
             )
 
             val viewingKeys = seed?.let {
@@ -514,25 +518,31 @@ interface Synchronizer {
                 ).toList()
             } ?: emptyList()
 
-            val repository = DefaultSynchronizerFactory.defaultTransactionRepository(
+            val repository = DefaultSynchronizerFactory.defaultDerivedDataRepository(
                 applicationContext,
                 rustBackend,
                 zcashNetwork,
                 loadedCheckpoint,
-                viewingKeys,
-                seed
+                seed,
+                viewingKeys
             )
 
-            val saplingParamTool = SaplingParamTool.new(applicationContext)
-
-            val blockStore = DefaultSynchronizerFactory.defaultBlockStore(applicationContext, rustBackend, zcashNetwork)
+            val blockStore = DefaultSynchronizerFactory.defaultCompactBlockRepository(
+                applicationContext,
+                rustBackend,
+                zcashNetwork
+            )
             val service = DefaultSynchronizerFactory.defaultService(applicationContext, lightWalletEndpoint)
             val encoder = DefaultSynchronizerFactory.defaultEncoder(rustBackend, saplingParamTool, repository)
             val downloader = DefaultSynchronizerFactory.defaultDownloader(service, blockStore)
-            val txManager =
-                DefaultSynchronizerFactory.defaultTxManager(applicationContext, zcashNetwork, alias, encoder, service)
-            val processor =
-                DefaultSynchronizerFactory.defaultProcessor(rustBackend, downloader, repository)
+            val txManager = DefaultSynchronizerFactory.defaultTxManager(
+                applicationContext,
+                zcashNetwork,
+                alias,
+                encoder,
+                service
+            )
+            val processor = DefaultSynchronizerFactory.defaultProcessor(rustBackend, downloader, repository)
 
             return SdkSynchronizer(
                 repository,

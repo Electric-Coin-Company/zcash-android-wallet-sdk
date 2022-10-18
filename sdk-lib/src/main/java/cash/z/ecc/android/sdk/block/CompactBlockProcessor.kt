@@ -11,13 +11,12 @@ import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Scanned
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Scanning
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Stopped
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Validating
-import cash.z.ecc.android.sdk.db.entity.ConfirmedTransaction
 import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException
 import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException.EnhanceTransactionError.EnhanceTxDecryptError
 import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException.EnhanceTransactionError.EnhanceTxDownloadError
 import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException.MismatchedBranch
 import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException.MismatchedNetwork
-import cash.z.ecc.android.sdk.exception.InitializerException
+import cash.z.ecc.android.sdk.exception.InitializeException
 import cash.z.ecc.android.sdk.exception.RustLayerException
 import cash.z.ecc.android.sdk.ext.BatchMetrics
 import cash.z.ecc.android.sdk.ext.ZcashSdk
@@ -34,14 +33,14 @@ import cash.z.ecc.android.sdk.internal.ext.retryUpTo
 import cash.z.ecc.android.sdk.internal.ext.retryWithBackoff
 import cash.z.ecc.android.sdk.internal.ext.toHexReversed
 import cash.z.ecc.android.sdk.internal.isEmpty
-import cash.z.ecc.android.sdk.internal.transaction.PagedTransactionRepository
-import cash.z.ecc.android.sdk.internal.transaction.TransactionRepository
+import cash.z.ecc.android.sdk.internal.repository.DerivedDataRepository
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.internal.twigTask
 import cash.z.ecc.android.sdk.jni.RustBackend
 import cash.z.ecc.android.sdk.jni.RustBackendWelding
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
+import cash.z.ecc.android.sdk.model.TransactionOverview
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.wallet.sdk.rpc.Service
@@ -51,7 +50,6 @@ import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -81,7 +79,7 @@ import kotlin.time.Duration.Companion.days
 @Suppress("TooManyFunctions", "LargeClass")
 class CompactBlockProcessor internal constructor(
     val downloader: CompactBlockDownloader,
-    private val repository: TransactionRepository,
+    private val repository: DerivedDataRepository,
     private val rustBackend: RustBackendWelding,
     minimumHeight: BlockHeight = rustBackend.network.saplingActivationHeight
 ) {
@@ -192,6 +190,7 @@ class CompactBlockProcessor internal constructor(
     /**
      * Download compact blocks, verify and scan them until [stop] is called.
      */
+    @Suppress("LongMethod")
     suspend fun start() = withContext(IO) {
         verifySetup()
         updateBirthdayHeight()
@@ -225,13 +224,15 @@ class CompactBlockProcessor internal constructor(
                         consecutiveChainErrors.set(0)
                         val napTime = calculatePollInterval()
                         twig(
-                            "$summary${if (result == BlockProcessingResult.FailedEnhance) {
+                            "$summary${
+                            if (result == BlockProcessingResult.FailedEnhance) {
                                 " (but there were" +
                                     " enhancement errors! We ignore those, for now. Memos in this block range are" +
                                     " probably missing! This will be improved in a future release.)"
                             } else {
                                 ""
-                            }}! Sleeping" +
+                            }
+                            }! Sleeping" +
                                 " for ${napTime}ms (latest height: ${currentInfo.networkBlockHeight})."
                         )
                         delay(napTime)
@@ -405,7 +406,7 @@ class CompactBlockProcessor internal constructor(
             } else {
                 twig("enhancing ${newTxs.size} transaction(s)!")
                 // if the first transaction has been added
-                if (newTxs.size == repository.count()) {
+                if (newTxs.size.toLong() == repository.getTransactionCount()) {
                     twig("Encountered the first transaction. This changes the birthday height!")
                     updateBirthdayHeight()
                 }
@@ -423,30 +424,31 @@ class CompactBlockProcessor internal constructor(
             Twig.clip("enhancing")
         }
     }
-
     // TODO [#683]: we still need a way to identify those transactions that failed to be enhanced
     // TODO [#683]: https://github.com/zcash/zcash-android-wallet-sdk/issues/683
 
-    private suspend fun enhance(transaction: ConfirmedTransaction) = withContext(Dispatchers.IO) {
-        var downloaded = false
-        @Suppress("TooGenericExceptionCaught")
-        try {
-            twig("START: enhancing transaction (id:${transaction.id}  block:${transaction.minedHeight})")
-            downloader.fetchTransaction(transaction.rawTransactionId)?.let { tx ->
-                downloaded = true
-                twig("decrypting and storing transaction (id:${transaction.id}  block:${transaction.minedHeight})")
-                rustBackend.decryptAndStoreTransaction(tx.data.toByteArray())
-            } ?: twig("no transaction found. Nothing to enhance. This probably shouldn't happen.")
-            twig("DONE: enhancing transaction (id:${transaction.id}  block:${transaction.minedHeight})")
-        } catch (t: Throwable) {
-            twig("Warning: failure on transaction: error: $t\ttransaction: $transaction")
-            onProcessorError(
-                if (downloaded) {
-                    EnhanceTxDecryptError(transaction.minedBlockHeight, t)
-                } else {
-                    EnhanceTxDownloadError(transaction.minedBlockHeight, t)
+    private suspend fun enhance(transaction: TransactionOverview) = withContext(Dispatchers.IO) {
+        enhanceHelper(transaction.id, transaction.rawId.byteArray, transaction.minedHeight)
+    }
+
+    private suspend fun enhanceHelper(id: Long, rawTransactionId: ByteArray, minedHeight: BlockHeight) {
+        twig("START: enhancing transaction (id:$id  block:$minedHeight)")
+
+        runCatching {
+            downloader.fetchTransaction(rawTransactionId)
+        }.onSuccess { tx ->
+            tx?.let {
+                runCatching {
+                    twig("decrypting and storing transaction (id:$id  block:$minedHeight)")
+                    rustBackend.decryptAndStoreTransaction(it.data.toByteArray())
+                }.onSuccess {
+                    twig("DONE: enhancing transaction (id:$id  block:$minedHeight)")
+                }.onFailure { error ->
+                    onProcessorError(EnhanceTxDecryptError(minedHeight, error))
                 }
-            )
+            } ?: twig("no transaction found. Nothing to enhance. This probably shouldn't happen.")
+        }.onFailure { error ->
+            onProcessorError(EnhanceTxDownloadError(minedHeight, error))
         }
     }
 
@@ -908,11 +910,11 @@ class CompactBlockProcessor internal constructor(
         twig("=================== BLOCKS [$errorHeight..${errorHeight.value + count - 1}]: START ========")
         repeat(count) { i ->
             val height = errorHeight + i
-            val block = downloader.compactBlockStore.findCompactBlock(height)
+            val block = downloader.compactBlockRepository.findCompactBlock(height)
             // sometimes the initial block was inserted via checkpoint and will not appear in the cache. We can get
             // the hash another way but prevHash is correctly null.
             val hash = block?.hash?.toByteArray()
-                ?: (repository as PagedTransactionRepository).findBlockHash(height)
+                ?: repository.findBlockHash(height)
             twig(
                 "block: $height\thash=${hash?.toHexReversed()} \tprevHash=${
                 block?.prevHash?.toByteArray()?.toHexReversed()
@@ -923,11 +925,11 @@ class CompactBlockProcessor internal constructor(
     }
 
     private suspend fun fetchValidationErrorInfo(errorHeight: BlockHeight): ValidationErrorInfo {
-        val hash = (repository as PagedTransactionRepository).findBlockHash(errorHeight + 1)
+        val hash = repository.findBlockHash(errorHeight + 1)
             ?.toHexReversed()
         val prevHash = repository.findBlockHash(errorHeight)?.toHexReversed()
 
-        val compactBlock = downloader.compactBlockStore.findCompactBlock(errorHeight + 1)
+        val compactBlock = downloader.compactBlockRepository.findCompactBlock(errorHeight + 1)
         val expectedPrevHash = compactBlock?.prevHash?.toByteArray()?.toHexReversed()
         return ValidationErrorInfo(errorHeight, hash, expectedPrevHash, prevHash)
     }
@@ -975,10 +977,7 @@ class CompactBlockProcessor internal constructor(
         var oldestTransactionHeight: BlockHeight? = null
         @Suppress("TooGenericExceptionCaught")
         try {
-            val tempOldestTransactionHeight = repository.receivedTransactions
-                .first()
-                .lastOrNull()
-                ?.minedBlockHeight
+            val tempOldestTransactionHeight = repository.getOldestTransaction()?.minedHeight
                 ?: lowerBoundHeight
             // to be safe adjust for reorgs (and generally a little cushion is good for privacy)
             // so we round down to the nearest 100 and then subtract 100 to ensure that the result is always at least
@@ -1036,7 +1035,7 @@ class CompactBlockProcessor internal constructor(
         rustBackend.getSaplingReceiver(
             rustBackend.getCurrentAddress(account.value)
         )
-            ?: throw InitializerException.MissingAddressException("legacy Sapling")
+            ?: throw InitializeException.MissingAddressException("legacy Sapling")
 
     /**
      * Get the legacy transparent address corresponding to the current unified address for the given wallet account.
@@ -1047,7 +1046,7 @@ class CompactBlockProcessor internal constructor(
         rustBackend.getTransparentReceiver(
             rustBackend.getCurrentAddress(account.value)
         )
-            ?: throw InitializerException.MissingAddressException("legacy transparent")
+            ?: throw InitializeException.MissingAddressException("legacy transparent")
 
     /**
      * Calculates the latest balance info. Defaults to the first account.

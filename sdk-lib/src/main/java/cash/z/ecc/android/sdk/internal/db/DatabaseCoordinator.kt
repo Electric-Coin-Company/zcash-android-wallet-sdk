@@ -1,10 +1,10 @@
-package cash.z.ecc.android.sdk.db
+package cash.z.ecc.android.sdk.internal.db
 
 import android.content.Context
 import androidx.annotation.VisibleForTesting
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import cash.z.ecc.android.sdk.exception.InitializerException
+import cash.z.ecc.android.sdk.exception.InitializeException
 import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.internal.AndroidApiVersion
 import cash.z.ecc.android.sdk.internal.Files
@@ -325,7 +325,7 @@ internal class DatabaseCoordinator private constructor(context: Context) {
      */
     private suspend fun getDatabaseParentDir(appContext: Context): File {
         return appContext.getDatabasePathSuspend("unused.db").parentFile
-            ?: throw InitializerException.DatabasePathException
+            ?: throw InitializeException.DatabasePathException
     }
 
     /**
@@ -401,7 +401,7 @@ internal fun <T : RoomDatabase?> commonDatabaseBuilder(
         Room.databaseBuilder(
             NoBackupContextWrapper(
                 context,
-                databaseFile.parentFile ?: throw InitializerException.DatabasePathException
+                databaseFile.parentFile ?: throw InitializeException.DatabasePathException
             ),
             klass,
             databaseFile.name

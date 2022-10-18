@@ -1,4 +1,4 @@
-package cash.z.ecc.android.sdk.internal.block
+package cash.z.ecc.android.sdk.internal.repository
 
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.wallet.sdk.rpc.CompactFormats
@@ -6,7 +6,7 @@ import cash.z.wallet.sdk.rpc.CompactFormats
 /**
  * Interface for storing compact blocks.
  */
-interface CompactBlockStore {
+interface CompactBlockRepository {
     /**
      * Gets the highest block that is currently stored.
      *

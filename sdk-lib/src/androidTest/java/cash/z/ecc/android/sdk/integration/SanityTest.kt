@@ -4,8 +4,9 @@ import androidx.test.core.app.ApplicationProvider
 import cash.z.ecc.android.sdk.DefaultSynchronizerFactory
 import cash.z.ecc.android.sdk.annotation.MaintainedTest
 import cash.z.ecc.android.sdk.annotation.TestPurpose
-import cash.z.ecc.android.sdk.db.DatabaseCoordinator
 import cash.z.ecc.android.sdk.ext.BlockExplorer
+import cash.z.ecc.android.sdk.internal.SaplingParamTool
+import cash.z.ecc.android.sdk.internal.db.DatabaseCoordinator
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.ZcashNetwork
@@ -40,27 +41,29 @@ class SanityTest(
         val rustBackend = runBlocking {
             DefaultSynchronizerFactory.defaultRustBackend(
                 ApplicationProvider.getApplicationContext(),
-                ZcashNetwork.Testnet,
+                wallet.network,
                 "TestWallet",
-                TestWallet.Backups.SAMPLE_WALLET.testnetBirthday
+                birthday,
+                SaplingParamTool.new(ApplicationProvider.getApplicationContext())
             )
         }
 
         assertTrue(
-            "$name has invalid DataDB file",
+            "$name has invalid DataDB file actual=${rustBackend.dataDbFile.absolutePath}" +
+                "expected suffix=no_backup/co.electricoin.zcash/TestWallet_${networkName}_${DatabaseCoordinator.DB_DATA_NAME}",
             rustBackend.dataDbFile.absolutePath.endsWith(
                 "no_backup/co.electricoin.zcash/TestWallet_${networkName}_${DatabaseCoordinator.DB_DATA_NAME}"
             )
         )
         assertTrue(
-            "$name has invalid CacheDB file",
+            "$name has invalid CacheDB file $rustBackend.cacheDbFile.absolutePath",
             rustBackend.cacheDbFile.absolutePath.endsWith(
                 "no_backup/co.electricoin.zcash/TestWallet_${networkName}_${DatabaseCoordinator.DB_CACHE_NAME}"
             )
         )
         assertTrue(
-            "$name has invalid params dir",
-            rustBackend.saplingParamDir.path.endsWith(
+            "$name has invalid params dir ${rustBackend.saplingParamDir.absolutePath}",
+            rustBackend.saplingParamDir.absolutePath.endsWith(
                 "no_backup/co.electricoin.zcash"
             )
         )
@@ -108,7 +111,10 @@ class SanityTest(
         runCatching {
             wallet.service.getLatestBlockHeight()
         }.getOrNull() ?: return@runBlocking
-        assertTrue("$networkName failed to return a proper block. Height was ${block.height} but we expected $height", block.height == height.value)
+        assertTrue(
+            "$networkName failed to return a proper block. Height was ${block.height} but we expected $height",
+            block.height == height.value
+        )
     }
 
     companion object {

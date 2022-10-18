@@ -2,7 +2,9 @@ package cash.z.ecc.android.sdk.db
 
 import androidx.test.filters.SmallTest
 import cash.z.ecc.android.sdk.internal.AndroidApiVersion
-import cash.z.ecc.android.sdk.internal.db.PendingTransactionDb
+import cash.z.ecc.android.sdk.internal.db.DatabaseCoordinator
+import cash.z.ecc.android.sdk.internal.db.commonDatabaseBuilder
+import cash.z.ecc.android.sdk.internal.db.pending.PendingTransactionDb
 import cash.z.ecc.android.sdk.test.getAppContext
 import cash.z.ecc.fixture.DatabaseNameFixture
 import cash.z.ecc.fixture.DatabasePathFixture
