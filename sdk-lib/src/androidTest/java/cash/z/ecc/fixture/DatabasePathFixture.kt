@@ -1,6 +1,7 @@
 package cash.z.ecc.fixture
 
 import cash.z.ecc.android.sdk.internal.Files
+import cash.z.ecc.android.sdk.internal.ext.existsSuspend
 import cash.z.ecc.android.sdk.internal.ext.getDatabasePathSuspend
 import cash.z.ecc.android.sdk.internal.ext.getNoBackupFilesDirCompat
 import cash.z.ecc.android.sdk.test.getAppContext
@@ -16,7 +17,7 @@ object DatabasePathFixture {
             assert(parentFile != null) { "Failed to create database folder." }
             parentFile!!.mkdirs()
 
-            assert(parentFile.exists()) { "Failed to check database folder." }
+            assert(parentFile.existsSuspend()) { "Failed to check database folder." }
             parentFile.absolutePath
         }
     }

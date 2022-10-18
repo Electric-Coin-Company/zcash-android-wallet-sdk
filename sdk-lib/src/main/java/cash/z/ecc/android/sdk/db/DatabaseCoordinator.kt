@@ -260,11 +260,11 @@ internal class DatabaseCoordinator private constructor(context: Context) {
     }
 
     /**
-     * The purpose of this function is to move database files between the old location (given by
-     * the legacyLocationDbFile parameter) and the new location (given by preferredLocationDbFile).
-     * The actual move operation is performed with the renameTo function, which simply renames
-     * a file path and persists the metadata information. The mechanism deals with the additional
-     * database files -journal and -wal too, if they exist.
+     * The purpose of this function is to move database files between the old location (given by the {@code
+     * legacyLocationDbFile} parameter) and the new location (given by {@code preferredLocationDbFile}). The actual
+     * move operation is performed with the renameTo function, which simply renames a file path and persists the
+     * metadata information. The mechanism deals with the additional database files -journal and -wal too, if they
+     * exist.
      *
      * @param legacyLocationDbFile the previously used file location (rename from)
      * @param preferredLocationDbFile the newly used file location (rename to)

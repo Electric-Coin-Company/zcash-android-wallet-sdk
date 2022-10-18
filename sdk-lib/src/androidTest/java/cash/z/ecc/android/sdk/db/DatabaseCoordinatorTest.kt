@@ -3,6 +3,8 @@ package cash.z.ecc.android.sdk.db
 import androidx.test.filters.FlakyTest
 import androidx.test.filters.MediumTest
 import androidx.test.filters.SmallTest
+import cash.z.ecc.android.sdk.internal.ext.createNewFileSuspend
+import cash.z.ecc.android.sdk.internal.ext.existsSuspend
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.test.getAppContext
 import cash.z.ecc.fixture.DatabaseNameFixture
@@ -165,39 +167,39 @@ class DatabaseCoordinatorTest {
             DatabaseNameFixture.newDbWal(name = DatabaseCoordinator.DB_CACHE_NAME)
         )
 
-        assertTrue(originalDbFile.exists())
-        assertTrue(originalDbJournalFile.exists())
-        assertTrue(originalDbWalFile.exists())
+        assertTrue(originalDbFile.existsSuspend())
+        assertTrue(originalDbJournalFile.existsSuspend())
+        assertTrue(originalDbWalFile.existsSuspend())
 
-        assertFalse(expectedDbFile.exists())
-        assertFalse(expectedDbJournalFile.exists())
-        assertFalse(expectedDbWalFile.exists())
+        assertFalse(expectedDbFile.existsSuspend())
+        assertFalse(expectedDbJournalFile.existsSuspend())
+        assertFalse(expectedDbWalFile.existsSuspend())
 
         dbCoordinator.cacheDbFile(
             DatabaseNameFixture.TEST_DB_NETWORK,
             DatabaseNameFixture.TEST_DB_ALIAS
         ).also { resultFile ->
-            assertTrue(resultFile.exists())
+            assertTrue(resultFile.existsSuspend())
             assertEquals(expectedDbFile.absolutePath, resultFile.absolutePath)
 
-            assertTrue(expectedDbFile.exists())
-            assertTrue(expectedDbJournalFile.exists())
-            assertTrue(expectedDbWalFile.exists())
+            assertTrue(expectedDbFile.existsSuspend())
+            assertTrue(expectedDbJournalFile.existsSuspend())
+            assertTrue(expectedDbWalFile.existsSuspend())
 
-            assertFalse(originalDbFile.exists())
-            assertFalse(originalDbJournalFile.exists())
-            assertFalse(originalDbWalFile.exists())
+            assertFalse(originalDbFile.existsSuspend())
+            assertFalse(originalDbJournalFile.existsSuspend())
+            assertFalse(originalDbWalFile.existsSuspend())
         }
     }
 
-    private fun getEmptyFile(parent: File, fileName: String): File {
+    private suspend fun getEmptyFile(parent: File, fileName: String): File {
         return File(parent, fileName).apply {
             assertTrue(parentFile != null)
             parentFile!!.mkdirs()
-            assertTrue(parentFile!!.exists())
+            assertTrue(parentFile!!.existsSuspend())
 
-            createNewFile()
-            assertTrue(exists())
+            createNewFileSuspend()
+            assertTrue(existsSuspend())
         }
     }
 
@@ -226,14 +228,14 @@ class DatabaseCoordinatorTest {
             fileName = DatabaseNameFixture.newDbWal(name = DatabaseCoordinator.DB_CACHE_NAME)
         )
 
-        assertTrue(dbFile.exists())
-        assertTrue(dbJournalFile.exists())
-        assertTrue(dbWalFile.exists())
+        assertTrue(dbFile.existsSuspend())
+        assertTrue(dbJournalFile.existsSuspend())
+        assertTrue(dbWalFile.existsSuspend())
 
         dbCoordinator.deleteDatabases(DatabaseNameFixture.TEST_DB_NETWORK, DatabaseNameFixture.TEST_DB_ALIAS).also {
-            assertFalse(dbFile.exists())
-            assertFalse(dbJournalFile.exists())
-            assertFalse(dbWalFile.exists())
+            assertFalse(dbFile.existsSuspend())
+            assertFalse(dbJournalFile.existsSuspend())
+            assertFalse(dbWalFile.existsSuspend())
         }
     }
 }

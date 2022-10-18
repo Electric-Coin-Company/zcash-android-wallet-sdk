@@ -22,6 +22,13 @@ Start by making sure the command line with Gradle works first, because **all the
         ```bash
         rustup target add armv7-linux-androideabi aarch64-linux-android i686-linux-android x86_64-linux-android
         ```
+1. Install python 2.7 
+   1. macOS with Homebrew
+      1. `brew install pyenv`
+      1. `pyenv install 2.7.18`
+      1. To enable pyenv in your bash shell run: `eval "$(pyenv init -)"`
+      1. Get the path to python 2: `which python2`
+      1. Add `rust.pythonCommand=PYTHON2 PATH` in `${sdkRootDir}/local.properties`
 1. Install Android Studio and the Android SDK
     1. Download [Android Studio](https://developer.android.com/studio/).  We typically use the stable version of Android Studio, unless specifically noted due to short-term known issues.
     1. During the Android Studio setup wizard, choose the "Standard" setup option
@@ -39,7 +46,7 @@ Start by making sure the command line with Gradle works first, because **all the
                 export PATH=${PATH}:${ANDROID_HOME}/platform-tools
                 ```
     1. Install the Android NDK
-        1. Go to the Android SDK Manager inside Android Studio
+        1. Go to the Android SDK Manager inside Android Studio. Select the "SDK Tools" tab.
         1. Click the checkbox for "Show Package Details"
         1. Install the exact NDK version listed in [gradle.properties](../gradle.properties) under `ANDROID_NDK_VERSION`
     1. Configure a device for development and testing
@@ -79,11 +86,11 @@ Start by making sure the command line with Gradle works first, because **all the
    1. Delete the invisible `.idea` in the root directory of the project.  This directory is partially ignored by Git, so deleting it will remove the files that are untracked
    1. Restore the missing files in `.idea` folder from Git
    1. Relaunch Android Studio
-2. Clean the individual Gradle project by running `./gradlew clean` which will purge local build outputs.
-3. Run Gradle with the argument `--rerun-tasks` which will effectively disable the build cache by re-running tasks and repopulating the cache.  E.g. `./gradlew assemble --rerun-tasks`
-4. Reboot your computer, which will ensure that Gradle and Kotlin daemons are completely killed and relaunched
-5. Delete the global Gradle cache under `~/.gradle/caches`
-6. If adding a new dependency or updating a dependency, a warning that a dependency cannot be found may indicate the Maven repository restrictions need adjusting
+1. Clean the individual Gradle project by running `./gradlew clean` which will purge local build outputs.
+1. Run Gradle with the argument `--rerun-tasks` which will effectively disable the build cache by re-running tasks and repopulating the cache.  E.g. `./gradlew assemble --rerun-tasks`
+1. Reboot your computer, which will ensure that Gradle and Kotlin daemons are completely killed and relaunched
+1. Delete the global Gradle cache under `~/.gradle/caches`
+1. If adding a new dependency or updating a dependency, a warning that a dependency cannot be found may indicate the Maven repository restrictions need adjusting
 
 ## Gradle Tasks
 A variety of Gradle tasks are set up within the project, and these tasks are also accessible in Android Studio as run configurations.
@@ -96,6 +103,8 @@ A variety of Gradle tasks are set up within the project, and these tasks are als
  * `ktlintFormat` - Performs code formatting checks with ktlint
  * `lint` - Performs static analysis with Android lint
  * `dependencyUpdates` - Checks for available dependency updates.  It will only suggest final releases, unless a particular dependency is already using a non-final release (e.g. alpha, beta, RC).
+
+Gradle Managed Devices are also configured with our build scripts.  We have found best results running tests one module at a time, rather than trying to run them all at once.  For example: `./gradlew :sdk-lib:pixel2TargetDebugAndroidTest` will run the SDK tests on a Pixel 2 sized device using our target API version.
 
 ## Gradle Properties
 A variety of Gradle properties can be used to configure the build.  Most of these properties are optional and help with advanced configuration.  If you're just doing local development or making a small pull request contribution, you likely do not need to worry about these.
@@ -110,7 +119,7 @@ For Continuous Integration, see [CI.md](CI.md).  The rest of this section is reg
 
 1. Configure or request access to a Firebase Test Lab project
     1. If you are an Electric Coin Co team member: Make an IT request to add your Google account to the existing Firebase Test Lab project 
-    2. If you are an open source contributor: set up your own Firebase project for the purpose of running Firebase Test Lab
+    1. If you are an open source contributor: set up your own Firebase project for the purpose of running Firebase Test Lab
 1. Set the Firebase Google Cloud project name as a global Gradle property `ZCASH_FIREBASE_TEST_LAB_PROJECT` under `~/.gradle/gradle.properties`
 1. Run the Gradle task `flankAuth` to generate a Firebase authentication token on your machine
 

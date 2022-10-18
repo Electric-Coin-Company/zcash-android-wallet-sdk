@@ -11,15 +11,14 @@ import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.LightWalletEndpoint
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.model.defaultForNetwork
+import cash.z.ecc.android.sdk.test.readFileLinesInFlow
 import cash.z.ecc.android.sdk.tool.CheckpointTool
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.runBlocking
 import org.junit.Before
 import org.junit.Ignore
 import org.junit.Test
-import java.io.IOException
 
 /**
  * A tool for checking transactions since the given birthday and printing balances. This was useful for the Zcon1 app to
@@ -74,7 +73,7 @@ class BalancePrinterUtil {
     @Test
     @Ignore("This test is broken")
     fun printBalances() = runBlocking {
-        readLines()
+        readFileLinesInFlow("/utils/seeds.txt")
             .map { seedPhrase ->
                 twig("checking balance for: $seedPhrase")
                 mnemonics.toSeed(seedPhrase.toCharArray())
@@ -140,9 +139,6 @@ class BalancePrinterUtil {
 //        Thread.sleep(5000)
 //        assertEquals("foo", "bar")
 //    }
-
-    @Throws(IOException::class)
-    fun readLines() = javaClass.getResourceAsStream("/utils/seeds.txt")!!.bufferedReader().lineSequence().asFlow()
 
 //    private fun initWallet(seed: String): Wallet {
 //        val spendingKeyProvider = Delegates.notNull<String>()

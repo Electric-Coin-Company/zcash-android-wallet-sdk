@@ -119,6 +119,8 @@ signing {
 }
 
 android {
+    namespace = "cash.z.ecc.android.sdk"
+
     useLibrary("android.test.runner")
 
     defaultConfig {
@@ -278,11 +280,6 @@ dependencies {
     // (com.google.guava:listenablefuture:1.0) per this recommendation from Chris Povirk, given guava's decision to
     // split ListenableFuture away from Guava: https://groups.google.com/d/msg/guava-discuss/GghaKwusjcY/bCIAKfzOEwAJ
     implementation(libs.guava)
-    // OKIO is a transitive dependency used when writing param files to disk. Like GSON, this can be
-    // replaced if needed. For compatibility, we match the library version used in grpc-okhttp:
-    // https://github.com/grpc/grpc-java/blob/v1.37.x/build.gradle#L159
-    implementation(libs.okio)
-    implementation(libs.okhttp)
 
     // Tests
     testImplementation(libs.kotlin.reflect)
@@ -303,9 +300,6 @@ dependencies {
     androidTestImplementation(libs.coroutines.okhttp)
     androidTestImplementation(libs.kotlin.test)
     androidTestImplementation(libs.kotlinx.coroutines.test)
-    // used by 'ru.gildor.corutines.okhttp.await' (to make simple suspended requests) and breaks on versions higher
-    // than 3.8.0
-    androidTestImplementation(libs.okhttp)
 
     // sample mnemonic plugin
     androidTestImplementation(libs.zcashwalletplgn)
