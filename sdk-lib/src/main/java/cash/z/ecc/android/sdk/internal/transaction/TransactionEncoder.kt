@@ -1,10 +1,10 @@
 package cash.z.ecc.android.sdk.internal.transaction
 
-import cash.z.ecc.android.sdk.db.entity.EncodedTransaction
+import cash.z.ecc.android.sdk.internal.model.EncodedTransaction
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.Zatoshi
 
-interface TransactionEncoder {
+internal interface TransactionEncoder {
     /**
      * Creates a transaction, throwing an exception whenever things are missing. When the provided
      * wallet implementation doesn't throw an exception, we wrap the issue into a descriptive

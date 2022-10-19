@@ -1,4 +1,4 @@
-package cash.z.ecc.android.sdk.internal.db
+package cash.z.ecc.android.sdk.internal.db.pending
 
 import androidx.room.Dao
 import androidx.room.Database
@@ -8,7 +8,6 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.RoomDatabase
 import androidx.room.Update
-import cash.z.ecc.android.sdk.db.entity.PendingTransactionEntity
 import kotlinx.coroutines.flow.Flow
 
 //

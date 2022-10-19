@@ -6,7 +6,8 @@ import androidx.test.filters.MediumTest
 import cash.z.ecc.android.sdk.DefaultSynchronizerFactory
 import cash.z.ecc.android.sdk.annotation.MaintainedTest
 import cash.z.ecc.android.sdk.annotation.TestPurpose
-import cash.z.ecc.android.sdk.db.DatabaseCoordinator
+import cash.z.ecc.android.sdk.internal.SaplingParamTool
+import cash.z.ecc.android.sdk.internal.db.DatabaseCoordinator
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.util.TestWallet
 import kotlinx.coroutines.runBlocking
@@ -29,7 +30,8 @@ class SmokeTest {
                 ApplicationProvider.getApplicationContext(),
                 ZcashNetwork.Testnet,
                 "TestWallet",
-                TestWallet.Backups.SAMPLE_WALLET.testnetBirthday
+                TestWallet.Backups.SAMPLE_WALLET.testnetBirthday,
+                SaplingParamTool.new(ApplicationProvider.getApplicationContext())
             )
         }
         assertTrue(

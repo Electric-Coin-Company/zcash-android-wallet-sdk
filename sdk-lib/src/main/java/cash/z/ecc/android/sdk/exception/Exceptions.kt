@@ -177,30 +177,30 @@ sealed class BirthdayException(message: String, cause: Throwable? = null) : SdkE
 /**
  * Exceptions thrown by the initializer.
  */
-sealed class InitializerException(message: String, cause: Throwable? = null) : SdkException(message, cause) {
-    object SeedRequired : InitializerException(
+sealed class InitializeException(message: String, cause: Throwable? = null) : SdkException(message, cause) {
+    object SeedRequired : InitializeException(
         "A pending database migration requires the wallet's seed. Call this initialization " +
             "method again with the seed."
     )
-    class FalseStart(cause: Throwable?) : InitializerException("Failed to initialize accounts due to: $cause", cause)
-    class AlreadyInitializedException(cause: Throwable, dbPath: String) : InitializerException(
+    class FalseStart(cause: Throwable?) : InitializeException("Failed to initialize accounts due to: $cause", cause)
+    class AlreadyInitializedException(cause: Throwable, dbPath: String) : InitializeException(
         "Failed to initialize the blocks table" +
             " because it already exists in $dbPath",
         cause
     )
-    object MissingBirthdayException : InitializerException(
+    object MissingBirthdayException : InitializeException(
         "Expected a birthday for this wallet but failed to find one. This usually means that " +
             "wallet setup did not happen correctly. A workaround might be to interpret the " +
             "birthday,  based on the contents of the wallet data but it is probably better " +
             "not to mask this error because the root issue should be addressed."
     )
-    object MissingViewingKeyException : InitializerException(
+    object MissingViewingKeyException : InitializeException(
         "Expected a unified viewingKey for this wallet but failed to find one. This usually means" +
             " that wallet setup happened incorrectly. A workaround might be to derive the" +
             " unified viewingKey from the seed or seedPhrase, if they exist, but it is probably" +
             " better not to mask this error because the root issue should be addressed."
     )
-    class MissingAddressException(description: String, cause: Throwable? = null) : InitializerException(
+    class MissingAddressException(description: String, cause: Throwable? = null) : InitializeException(
         "Expected a $description address for this wallet but failed to find one. This usually" +
             " means that wallet setup happened incorrectly. If this problem persists, a" +
             " workaround might be to go to settings and WIPE the wallet and rescan. Doing so" +
@@ -209,18 +209,18 @@ sealed class InitializerException(message: String, cause: Throwable? = null) : S
             if (cause != null) "\nCaused by: $cause" else ""
     )
     object DatabasePathException :
-        InitializerException(
+        InitializeException(
             "Critical failure to locate path for storing databases. Perhaps this device prevents" +
                 " apps from storing data? We cannot initialize the wallet unless we can store" +
                 " data."
         )
 
-    class InvalidBirthdayHeightException(birthday: BlockHeight?, network: ZcashNetwork) : InitializerException(
+    class InvalidBirthdayHeightException(birthday: BlockHeight?, network: ZcashNetwork) : InitializeException(
         "Invalid birthday height of ${birthday?.value}. The birthday height must be at least the height of" +
             " Sapling activation on ${network.networkName} (${network.saplingActivationHeight})."
     )
 
-    object MissingDefaultBirthdayException : InitializerException(
+    object MissingDefaultBirthdayException : InitializeException(
         "The birthday height is missing and it is unclear which value to use as a default."
     )
 }

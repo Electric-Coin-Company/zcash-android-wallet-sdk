@@ -2,8 +2,6 @@ package cash.z.ecc.android.sdk.internal
 
 import android.content.Context
 import android.content.ContextWrapper
-import android.os.Build
-import androidx.annotation.RequiresApi
 import java.io.File
 
 /**
@@ -18,7 +16,6 @@ import java.io.File
  * @param parentDir The directory in which is the database file placed.
  * @return Wrapped context class.
  */
-@RequiresApi(Build.VERSION_CODES.O_MR1)
 internal class NoBackupContextWrapper(
     context: Context,
     private val parentDir: File
