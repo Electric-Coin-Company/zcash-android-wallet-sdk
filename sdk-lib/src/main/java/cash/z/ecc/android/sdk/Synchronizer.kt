@@ -359,6 +359,11 @@ interface Synchronizer {
 
     suspend fun quickRewind()
 
+    /**
+     * Returns a list of memos for a transaction.
+     */
+    fun getMemos(transactionOverview: TransactionOverview): Flow<String>
+
     //
     // Error Handling
     //
@@ -547,7 +552,8 @@ interface Synchronizer {
             return SdkSynchronizer(
                 repository,
                 txManager,
-                processor
+                processor,
+                rustBackend
             )
         }
 

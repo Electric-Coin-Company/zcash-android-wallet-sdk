@@ -9,6 +9,7 @@ Change Log
   - `Synchronizer.getLegacySaplingAddress`
   - `Synchronizer.getLegacyTransparentAddress`
   - `Synchronizer.isValidUnifiedAddr`
+  - `Synchronizer.getMemos(TransactionOverview)`
 - `cash.z.ecc.android.sdk.model`:
   - `Account`
   - `FirstClassByteArray`

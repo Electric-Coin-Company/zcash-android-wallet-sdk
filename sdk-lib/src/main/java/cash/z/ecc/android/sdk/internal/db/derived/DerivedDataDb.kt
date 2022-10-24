@@ -13,7 +13,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 internal class DerivedDataDb private constructor(
-    private val zcashNetwork: ZcashNetwork,
+    zcashNetwork: ZcashNetwork,
     private val sqliteDatabase: SupportSQLiteDatabase
 ) {
     val accountTable = AccountTable(sqliteDatabase)
@@ -27,6 +27,10 @@ internal class DerivedDataDb private constructor(
     val sentTransactionView = SentTransactionView(zcashNetwork, sqliteDatabase)
 
     val receivedTransactionView = ReceivedTransactionView(zcashNetwork, sqliteDatabase)
+
+    val sentNotesTable = SentNoteTable(zcashNetwork, sqliteDatabase)
+
+    val receivedNotesTable = ReceivedNoteTable(zcashNetwork, sqliteDatabase)
 
     suspend fun close() {
         withContext(Dispatchers.IO) {
