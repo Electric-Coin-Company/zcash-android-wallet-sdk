@@ -441,14 +441,14 @@ internal class RustBackend private constructor(
             dbDataPath: String,
             idNote: Long,
             networkId: Int
-        ): String
+        ): String?
 
         @JvmStatic
         private external fun getSentMemoAsUtf8(
             dbDataPath: String,
             dNote: Long,
             networkId: Int
-        ): String
+        ): String?
 
         @JvmStatic
         private external fun validateCombinedChain(

@@ -104,5 +104,9 @@ internal interface DerivedDataRepository {
     /** A flow of all the inbound and outbound confirmed transactions */
     val allTransactions: Flow<List<TransactionOverview>>
 
+    fun getSentNoteIds(transactionId: Long): Flow<Long>
+
+    fun getReceivedNoteIds(transactionId: Long): Flow<Long>
+
     suspend fun close()
 }

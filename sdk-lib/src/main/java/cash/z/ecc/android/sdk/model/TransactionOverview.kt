@@ -5,8 +5,8 @@ package cash.z.ecc.android.sdk.model
  *
  * Note that both sent and received transactions will have a positive net value.  Consumers of this class must
  */
-data class TransactionOverview(
-    val id: Long,
+data class TransactionOverview internal constructor(
+    internal val id: Long,
     val rawId: FirstClassByteArray,
     val minedHeight: BlockHeight,
     val expiryHeight: BlockHeight,

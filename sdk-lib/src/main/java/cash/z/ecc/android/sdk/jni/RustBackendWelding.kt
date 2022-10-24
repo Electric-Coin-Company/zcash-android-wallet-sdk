@@ -64,9 +64,9 @@ internal interface RustBackendWelding {
 
     fun getBranchIdForHeight(height: BlockHeight): Long
 
-    suspend fun getReceivedMemoAsUtf8(idNote: Long): String
+    suspend fun getReceivedMemoAsUtf8(idNote: Long): String?
 
-    suspend fun getSentMemoAsUtf8(idNote: Long): String
+    suspend fun getSentMemoAsUtf8(idNote: Long): String?
 
     suspend fun getVerifiedBalance(account: Int = 0): Zatoshi
 

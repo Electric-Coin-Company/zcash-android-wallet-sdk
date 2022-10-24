@@ -28,7 +28,7 @@ internal class ReceivedTransactionView(
     }
 
     suspend fun count() = sqliteDatabase.queryAndMap(
-        AccountTableDefinition.TABLE_NAME,
+        ReceivedTransactionViewDefinition.VIEW_NAME,
         columns = PROJECTION_COUNT,
         cursorParser = { it.getLong(0) }
     ).first()

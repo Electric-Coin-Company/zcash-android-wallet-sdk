@@ -45,6 +45,7 @@ import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.LightWalletEndpoint
 import cash.z.ecc.android.sdk.model.PendingTransaction
+import cash.z.ecc.android.sdk.model.TransactionOverview
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
@@ -74,8 +75,10 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlin.coroutines.CoroutineContext
@@ -99,7 +102,8 @@ import kotlin.coroutines.EmptyCoroutineContext
 class SdkSynchronizer internal constructor(
     private val storage: DerivedDataRepository,
     private val txManager: OutboundTransactionManager,
-    val processor: CompactBlockProcessor
+    val processor: CompactBlockProcessor,
+    private val rustBackend: RustBackend
 ) : Synchronizer {
 
     // pools
@@ -316,6 +320,21 @@ class SdkSynchronizer internal constructor(
 
     override suspend fun quickRewind() {
         processor.quickRewind()
+    }
+
+    override fun getMemos(transactionOverview: TransactionOverview): Flow<String> {
+        return when (transactionOverview.isSentTransaction) {
+            true -> {
+                val sentNoteIds = storage.getSentNoteIds(transactionOverview.id)
+
+                sentNoteIds.map { rustBackend.getSentMemoAsUtf8(it) }.filterNotNull()
+            }
+            false -> {
+                val receivedNoteIds = storage.getReceivedNoteIds(transactionOverview.id)
+
+                receivedNoteIds.map { rustBackend.getReceivedMemoAsUtf8(it) }.filterNotNull()
+            }
+        }
     }
 
     //
@@ -708,12 +727,14 @@ internal object DefaultSynchronizerFactory {
     fun new(
         repository: DerivedDataRepository,
         txManager: OutboundTransactionManager,
-        processor: CompactBlockProcessor
+        processor: CompactBlockProcessor,
+        rustBackend: RustBackend
     ): Synchronizer {
         return SdkSynchronizer(
             repository,
             txManager,
-            processor
+            processor,
+            rustBackend
         )
     }
 

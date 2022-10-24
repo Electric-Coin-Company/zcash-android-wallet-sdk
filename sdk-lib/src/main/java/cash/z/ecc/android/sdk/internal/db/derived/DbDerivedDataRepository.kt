@@ -63,6 +63,11 @@ internal class DbDerivedDataRepository(
     override val allTransactions: Flow<List<TransactionOverview>>
         get() = invalidatingFlow.map { derivedDataDb.allTransactionView.getAllTransactions().toList() }
 
+    override fun getSentNoteIds(transactionId: Long) = derivedDataDb.sentNotesTable.getSentNoteIds(transactionId)
+
+    override fun getReceivedNoteIds(transactionId: Long) =
+        derivedDataDb.receivedNotesTable.getReceivedNoteIds(transactionId)
+
     override suspend fun close() {
         derivedDataDb.close()
     }
