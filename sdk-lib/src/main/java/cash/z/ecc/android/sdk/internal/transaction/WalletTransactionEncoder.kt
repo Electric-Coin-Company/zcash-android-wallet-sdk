@@ -8,6 +8,7 @@ import cash.z.ecc.android.sdk.internal.repository.DerivedDataRepository
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.internal.twigTask
 import cash.z.ecc.android.sdk.jni.RustBackendWelding
+import cash.z.ecc.android.sdk.model.TransactionRecipient
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.Zatoshi
 
@@ -41,18 +42,23 @@ internal class WalletTransactionEncoder(
     override suspend fun createTransaction(
         usk: UnifiedSpendingKey,
         amount: Zatoshi,
-        toAddress: String,
+        recipient: TransactionRecipient,
         memo: ByteArray?
     ): EncodedTransaction {
-        val transactionId = createSpend(usk, amount, toAddress, memo)
+        require(recipient is TransactionRecipient.Address)
+
+        val transactionId = createSpend(usk, amount, recipient.addressValue, memo)
         return repository.findEncodedTransactionById(transactionId)
             ?: throw TransactionEncoderException.TransactionNotFoundException(transactionId)
     }
 
     override suspend fun createShieldingTransaction(
         usk: UnifiedSpendingKey,
+        recipient: TransactionRecipient,
         memo: ByteArray?
     ): EncodedTransaction {
+        require(recipient is TransactionRecipient.Account)
+
         val transactionId = createShieldingSpend(usk, memo)
         return repository.findEncodedTransactionById(transactionId)
             ?: throw TransactionEncoderException.TransactionNotFoundException(transactionId)

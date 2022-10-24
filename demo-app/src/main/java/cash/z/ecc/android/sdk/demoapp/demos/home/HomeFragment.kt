@@ -32,7 +32,6 @@ class HomeFragment : BaseDemoFragment<FragmentHomeBinding>() {
 
     override fun onResume() {
         super.onResume()
-        mainActivity()?.setClipboardListener(::updatePasteButton)
 
         lifecycleScope.launch {
             sharedViewModel.seedPhrase.collect {
@@ -43,7 +42,6 @@ class HomeFragment : BaseDemoFragment<FragmentHomeBinding>() {
 
     override fun onPause() {
         super.onPause()
-        mainActivity()?.removeClipboardListener()
     }
 
     @Suppress("UNUSED_PARAMETER")

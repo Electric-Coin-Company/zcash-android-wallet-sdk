@@ -46,6 +46,7 @@ import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.LightWalletEndpoint
 import cash.z.ecc.android.sdk.model.PendingTransaction
 import cash.z.ecc.android.sdk.model.TransactionOverview
+import cash.z.ecc.android.sdk.model.TransactionRecipient
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
@@ -81,6 +82,7 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import java.io.File
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 
@@ -626,7 +628,7 @@ class SdkSynchronizer internal constructor(
         memo: String
     ): Flow<PendingTransaction> {
         // Emit the placeholder transaction, then switch to monitoring the database
-        val placeHolderTx = txManager.initSpend(amount, toAddress, memo, usk.account)
+        val placeHolderTx = txManager.initSpend(amount, TransactionRecipient.new(toAddress, null), memo, usk.account)
 
         txManager.encode(usk, placeHolderTx).let { encodedTx ->
             txManager.submit(encodedTx)
@@ -642,10 +644,12 @@ class SdkSynchronizer internal constructor(
         twig("Initializing shielding transaction")
         val tAddr = processor.getTransparentAddress(usk.account)
         val tBalance = processor.getUtxoCacheBalance(tAddr)
-        val zAddr = getCurrentAddress(usk.account)
 
         // Emit the placeholder transaction, then switch to monitoring the database
-        val placeHolderTx = txManager.initSpend(tBalance.available, zAddr, memo, usk.account)
+        val placeHolderTx = txManager.initSpend(
+            tBalance.available, TransactionRecipient.new(null, usk.account), memo,
+            usk.account
+        )
         val encodedTx = txManager.encode("", usk, placeHolderTx)
         txManager.submit(encodedTx)
 
@@ -767,12 +771,12 @@ internal object DefaultSynchronizerFactory {
     ): DerivedDataRepository =
         DbDerivedDataRepository(DerivedDataDb.new(context, rustBackend, zcashNetwork, checkpoint, seed, viewingKeys))
 
-    internal fun defaultCompactBlockRepository(context: Context, rustBackend: RustBackend, zcashNetwork: ZcashNetwork):
+    internal fun defaultCompactBlockRepository(context: Context, cacheDbFile: File, zcashNetwork: ZcashNetwork):
         CompactBlockRepository =
         DbCompactBlockRepository.new(
             context,
             zcashNetwork,
-            rustBackend.cacheDbFile
+            cacheDbFile
         )
 
     fun defaultService(context: Context, lightWalletEndpoint: LightWalletEndpoint): LightWalletService =

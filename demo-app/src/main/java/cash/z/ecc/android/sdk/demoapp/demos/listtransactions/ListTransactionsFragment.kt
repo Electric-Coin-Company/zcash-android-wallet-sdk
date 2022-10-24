@@ -65,7 +65,7 @@ class ListTransactionsFragment : BaseDemoFragment<FragmentListTransactionsBindin
             network,
             lightWalletEndpoint = LightWalletEndpoint.defaultForNetwork(network),
             seed = seed,
-            birthday = null
+            birthday = sharedViewModel.birthdayHeight.value
         )
     }
 

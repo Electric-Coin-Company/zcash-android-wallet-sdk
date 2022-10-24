@@ -14,6 +14,7 @@ import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.FirstClassByteArray
 import cash.z.ecc.android.sdk.model.PendingTransaction
+import cash.z.ecc.android.sdk.model.TransactionRecipient
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.test.ScopedTest
@@ -99,7 +100,12 @@ class PersistentTransactionManagerTest : ScopedTest() {
 
     @Test
     fun testAbort() = runBlocking {
-        var tx: PendingTransaction? = manager.initSpend(Zatoshi(1234), "a", "b", Account.DEFAULT)
+        var tx: PendingTransaction? = manager.initSpend(
+            Zatoshi(1234),
+            TransactionRecipient.new("a", null),
+            "b",
+            Account.DEFAULT
+        )
         assertNotNull(tx)
         manager.abort(tx)
         tx = manager.findById(tx.id)

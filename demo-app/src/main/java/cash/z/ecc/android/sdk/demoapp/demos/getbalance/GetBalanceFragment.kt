@@ -49,7 +49,7 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
             network,
             lightWalletEndpoint = LightWalletEndpoint.defaultForNetwork(network),
             seed = seed,
-            birthday = null
+            birthday = sharedViewModel.birthdayHeight.value
         )
     }
 

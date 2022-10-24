@@ -72,7 +72,7 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
             alias = "Demo_Utxos",
             lightWalletEndpoint = LightWalletEndpoint.defaultForNetwork(network),
             seed = seed,
-            birthday = null
+            birthday = sharedViewModel.birthdayHeight.value
         )
     }
 
