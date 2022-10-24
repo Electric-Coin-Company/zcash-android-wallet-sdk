@@ -1013,7 +1013,7 @@ class CompactBlockProcessor internal constructor(
     suspend fun getLastScannedHeight() =
         repository.lastScannedHeight()
 
-    // TODO(str4d): CompactBlockProcessor is the wrong place for this, but it's where all the other APIs that need
+    // CompactBlockProcessor is the wrong place for this, but it's where all the other APIs that need
     //  access to the RustBackend live. This should be refactored.
     internal suspend fun createAccount(seed: ByteArray): UnifiedSpendingKey =
         rustBackend.createAccount(seed)

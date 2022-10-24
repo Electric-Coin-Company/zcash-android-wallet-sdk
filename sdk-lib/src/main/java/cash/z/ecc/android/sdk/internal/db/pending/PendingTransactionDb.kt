@@ -8,6 +8,9 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.RoomDatabase
 import androidx.room.Update
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
+import cash.z.ecc.android.sdk.ext.ZcashSdk
 import kotlinx.coroutines.flow.Flow
 
 //
@@ -24,11 +27,67 @@ import kotlinx.coroutines.flow.Flow
     entities = [
         PendingTransactionEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = true
 )
 abstract class PendingTransactionDb : RoomDatabase() {
     abstract fun pendingTransactionDao(): PendingTransactionDao
+
+    companion object {
+
+        /*
+         * Non-automatic migration required because to_address became nullable.
+         */
+        internal val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL(
+                    """
+                 ALTER TABLE pending_transactions RENAME TO pending_transactions_old;
+                 CREATE TABLE pending_transactions(
+                     id              INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                     to_address      TEXT,
+                     to_internal     INTEGER,
+                     account_index   INTEGER NOT NULL,
+                     mined_height    INTEGER,
+                     expiry_height   INTEGER,
+                     cancelled       INTEGER,
+                     encode_attempts INTEGER DEFAULT (0),
+                     error_message   TEXT,
+                     error_code      INTEGER,
+                     submit_attempts INTEGER DEFAULT (0),
+                     create_time     REAL,
+                     txid            BLOB,
+                     value           INTEGER NOT NULL,
+                     raw             BLOB,
+                     memo            BLOB,
+                     fee             INTEGER NOT NULL
+                 );
+                 INSERT INTO pending_transactions
+                 SELECT
+                     id,
+                     to_address,
+                     NULL,
+                     account_index,
+                     mined_height,
+                     expiry_height,
+                     cancelled,
+                     encode_attempts,
+                     error_message,
+                     error_code,
+                     submit_attempts,
+                     create_time,
+                     txid,
+                     value,
+                     raw,
+                     memo,
+                     ${ZcashSdk.MINERS_FEE}
+                 FROM pending_transactions_old;
+                 DROP TABLE pending_transactions_old
+                 """
+                )
+            }
+        }
+    }
 }
 
 //

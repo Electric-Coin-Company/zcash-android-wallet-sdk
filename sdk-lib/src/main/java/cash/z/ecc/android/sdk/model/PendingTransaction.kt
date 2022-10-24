@@ -5,12 +5,13 @@ package cash.z.ecc.android.sdk.model
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
 
-data class PendingTransaction(
-    val id: Long,
+data class PendingTransaction internal constructor(
+    internal val id: Long,
     val value: Zatoshi,
+    val fee: Zatoshi,
     val memo: FirstClassByteArray?,
     val raw: FirstClassByteArray,
-    val toAddress: String,
+    val recipient: TransactionRecipient,
     val accountIndex: Int,
     val minedHeight: BlockHeight?,
     val expiryHeight: BlockHeight?,
@@ -23,6 +24,35 @@ data class PendingTransaction(
     val rawTransactionId: FirstClassByteArray?
 )
 
+sealed class TransactionRecipient {
+    data class Address(val addressValue: String) : TransactionRecipient() {
+        override fun toString() = "PendingTransactionDestination.Address"
+    }
+
+    data class Account(val accountValue: cash.z.ecc.android.sdk.model.Account) : TransactionRecipient() {
+        override fun toString() = "PendingTransactionDestination.Account"
+    }
+
+    companion object {
+        fun new(
+            toAddress: String?,
+            toInternal: cash.z.ecc.android.sdk.model.Account?
+        ): TransactionRecipient {
+            require(null != toAddress && null != toInternal) {
+                "Pending transaction cannot contain both a toAddress and internal account"
+            }
+
+            if (null != toAddress) {
+                return Address(toAddress)
+            } else if (null != toInternal) {
+                return Account(toInternal)
+            }
+
+            error("Pending transaction destinations requires a toAddress or an internal account")
+        }
+    }
+}
+
 // Note there are some commented out methods which aren't being removed yet, as they might be needed before the
 // Roomoval draft PR is completed
 
@@ -32,7 +62,8 @@ data class PendingTransaction(
 // fun PendingTransaction.isSameTxId(other: PendingTransaction) =
 //     rawTransactionId == other.rawTransactionId
 
-internal fun PendingTransaction.hasRawTransactionId() = rawTransactionId?.byteArray?.isEmpty() == false
+internal fun PendingTransaction.hasRawTransactionId() =
+    rawTransactionId?.byteArray?.isEmpty() == false
 
 fun PendingTransaction.isCreating() =
     raw.byteArray.isNotEmpty() && submitAttempts <= 0 && !isFailedSubmit() && !isFailedEncoding()

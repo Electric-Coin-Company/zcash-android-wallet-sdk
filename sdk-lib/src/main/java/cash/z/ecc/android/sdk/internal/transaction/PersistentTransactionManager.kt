@@ -2,6 +2,7 @@ package cash.z.ecc.android.sdk.internal.transaction
 
 import android.content.Context
 import androidx.room.RoomDatabase
+import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.internal.db.commonDatabaseBuilder
 import cash.z.ecc.android.sdk.internal.db.pending.PendingTransactionDao
 import cash.z.ecc.android.sdk.internal.db.pending.PendingTransactionDb
@@ -9,11 +10,13 @@ import cash.z.ecc.android.sdk.internal.db.pending.PendingTransactionEntity
 import cash.z.ecc.android.sdk.internal.db.pending.isCancelled
 import cash.z.ecc.android.sdk.internal.db.pending.isFailedEncoding
 import cash.z.ecc.android.sdk.internal.db.pending.isSubmitted
+import cash.z.ecc.android.sdk.internal.db.pending.recipient
 import cash.z.ecc.android.sdk.internal.service.LightWalletService
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.PendingTransaction
+import cash.z.ecc.android.sdk.model.TransactionRecipient
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
@@ -60,14 +63,28 @@ internal class PersistentTransactionManager(
 
     override suspend fun initSpend(
         zatoshi: Zatoshi,
-        toAddress: String,
+        recipient: TransactionRecipient,
         memo: String,
         account: Account
     ): PendingTransaction = withContext(Dispatchers.IO) {
         twig("constructing a placeholder transaction")
+
+        val toAddress = if (recipient is TransactionRecipient.Address) {
+            recipient.addressValue
+        } else {
+            null
+        }
+        val toInternal = if (recipient is TransactionRecipient.Account) {
+            recipient.accountValue
+        } else {
+            null
+        }
+
         var tx = PendingTransactionEntity(
             toAddress = toAddress,
+            toInternalAccountIndex = toInternal?.value,
             value = zatoshi.value,
+            fee = ZcashSdk.MINERS_FEE.value,
             memo = memo.toByteArray(),
             accountIndex = account.value
         )
@@ -108,7 +125,7 @@ internal class PersistentTransactionManager(
             val encodedTx = encoder.createTransaction(
                 usk,
                 pendingTx.value,
-                pendingTx.toAddress,
+                pendingTx.recipient,
                 pendingTx.memo?.byteArray
             )
             twig("successfully encoded transaction!")
@@ -152,6 +169,7 @@ internal class PersistentTransactionManager(
             twig("beginning to encode shielding transaction with : $encoder")
             val encodedTx = encoder.createShieldingTransaction(
                 usk,
+                tx.recipient,
                 tx.memo
             )
             twig("successfully encoded shielding transaction!")
@@ -344,7 +362,8 @@ internal class PersistentTransactionManager(
                 appContext,
                 PendingTransactionDb::class.java,
                 databaseFile
-            ).setJournalMode(RoomDatabase.JournalMode.TRUNCATE).build(),
+            ).setJournalMode(RoomDatabase.JournalMode.TRUNCATE)
+                .addMigrations(PendingTransactionDb.MIGRATION_1_2).build(),
             zcashNetwork,
             encoder,
             service
