@@ -15,24 +15,34 @@ import cash.z.ecc.android.sdk.model.ZcashNetwork
 internal data class PendingTransactionEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
+    @ColumnInfo(name = "to_address")
     val toAddress: String?,
+    @ColumnInfo(name = "to_internal_account_index")
     val toInternalAccountIndex: Int?,
     val value: Long,
     val fee: Long?,
     val memo: ByteArray?,
+    @ColumnInfo(name = "sent_from_account_index")
     val sentFromAccountIndex: Int,
+    @ColumnInfo(name = "mined_height")
     val minedHeight: Long = NO_BLOCK_HEIGHT,
+    @ColumnInfo(name = "expiry_height")
     val expiryHeight: Long = NO_BLOCK_HEIGHT,
 
     val cancelled: Int = 0,
+    @ColumnInfo(name = "encode_attempts")
     val encodeAttempts: Int = -1,
+    @ColumnInfo(name = "submit_attempts")
     val submitAttempts: Int = -1,
+    @ColumnInfo(name = "error_message")
     val errorMessage: String? = null,
+    @ColumnInfo(name = "error_code")
     val errorCode: Int? = null,
+    @ColumnInfo(name = "create_time")
     val createTime: Long = System.currentTimeMillis(),
     @ColumnInfo(typeAffinity = ColumnInfo.BLOB)
     val raw: ByteArray = byteArrayOf(),
-    @ColumnInfo(typeAffinity = ColumnInfo.BLOB)
+    @ColumnInfo(name = "raw_transaction_id", typeAffinity = ColumnInfo.BLOB)
     val rawTransactionId: ByteArray? = byteArrayOf()
 ) {
     fun toPendingTransaction(zcashNetwork: ZcashNetwork) = PendingTransaction(

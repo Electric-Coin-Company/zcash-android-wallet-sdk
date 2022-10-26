@@ -10,7 +10,6 @@ import androidx.room.RoomDatabase
 import androidx.room.Update
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
-import cash.z.ecc.android.sdk.ext.ZcashSdk
 import kotlinx.coroutines.flow.Flow
 
 //
@@ -45,17 +44,17 @@ internal abstract class PendingTransactionDb : RoomDatabase() {
                  ALTER TABLE pending_transactions RENAME TO pending_transactions_old;
                  CREATE TABLE pending_transactions(
                      id                         INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                     toAddress                  TEXT,
-                     toInternalAccountIndex     INTEGER,
-                     sentFromAccountIndex       INTEGER NOT NULL,
-                     minedHeight                INTEGER,
-                     expiryHeight               INTEGER,
+                     to_address                 TEXT,
+                     to_internal_account_index  INTEGER,
+                     sent_from_account_index    INTEGER NOT NULL,
+                     mined_height               INTEGER,
+                     expiry_height              INTEGER,
                      cancelled                  INTEGER,
-                     encodeAttempts             INTEGER DEFAULT (0),
-                     errorMessage               TEXT,
-                     errorCode                  INTEGER,
-                     submitAttempts             INTEGER DEFAULT (0),
-                     createTime                 INTEGER,
+                     encode_attempts            INTEGER DEFAULT (0),
+                     error_message              TEXT,
+                     error_code                 INTEGER,
+                     submit_attempts            INTEGER DEFAULT (0),
+                     create_time                INTEGER,
                      txid                       BLOB,
                      value                      INTEGER NOT NULL,
                      raw                        BLOB,
@@ -115,7 +114,7 @@ internal interface PendingTransactionDao {
     @Query("SELECT * FROM pending_transactions WHERE id = :id")
     suspend fun findById(id: Long): PendingTransactionEntity?
 
-    @Query("SELECT * FROM pending_transactions ORDER BY createTime")
+    @Query("SELECT * FROM pending_transactions ORDER BY create_time")
     fun getAll(): Flow<List<PendingTransactionEntity>>
 
     @Query("SELECT * FROM pending_transactions WHERE id = :id")
@@ -125,24 +124,24 @@ internal interface PendingTransactionDao {
     // Update helper functions
     //
 
-    @Query("UPDATE pending_transactions SET rawTransactionId = null WHERE id = :id")
+    @Query("UPDATE pending_transactions SET raw_transaction_id = null WHERE id = :id")
     suspend fun removeRawTransactionId(id: Long)
 
-    @Query("UPDATE pending_transactions SET minedHeight = :minedHeight WHERE id = :id")
+    @Query("UPDATE pending_transactions SET mined_height = :minedHeight WHERE id = :id")
     suspend fun updateMinedHeight(id: Long, minedHeight: Long)
 
     @Query(
-        "UPDATE pending_transactions SET raw = :raw, rawTransactionId = :rawTransactionId," +
-            " expiryHeight = :expiryHeight WHERE id = :id"
+        "UPDATE pending_transactions SET raw = :raw, raw_transaction_id = :rawTransactionId," +
+            " expiry_height = :expiryHeight WHERE id = :id"
     )
     suspend fun updateEncoding(id: Long, raw: ByteArray, rawTransactionId: ByteArray, expiryHeight: Long?)
 
-    @Query("UPDATE pending_transactions SET errorMessage = :errorMessage, errorCode = :errorCode WHERE id = :id")
+    @Query("UPDATE pending_transactions SET error_message = :errorMessage, error_code = :errorCode WHERE id = :id")
     suspend fun updateError(id: Long, errorMessage: String?, errorCode: Int?)
 
-    @Query("UPDATE pending_transactions SET encodeAttempts = :attempts WHERE id = :id")
+    @Query("UPDATE pending_transactions SET encode_attempts = :attempts WHERE id = :id")
     suspend fun updateEncodeAttempts(id: Long, attempts: Int)
 
-    @Query("UPDATE pending_transactions SET submitAttempts = :attempts WHERE id = :id")
+    @Query("UPDATE pending_transactions SET submit_attempts = :attempts WHERE id = :id")
     suspend fun updateSubmitAttempts(id: Long, attempts: Int)
 }
