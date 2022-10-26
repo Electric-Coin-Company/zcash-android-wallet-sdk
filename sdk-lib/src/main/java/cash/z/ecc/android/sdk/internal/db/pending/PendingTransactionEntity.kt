@@ -45,6 +45,15 @@ internal data class PendingTransactionEntity(
     @ColumnInfo(name = "raw_transaction_id", typeAffinity = ColumnInfo.BLOB)
     val rawTransactionId: ByteArray? = byteArrayOf()
 ) {
+    init {
+        require(
+            (null != toAddress && null == toInternalAccountIndex) ||
+                (null == toAddress && null != toInternalAccountIndex)
+        ) {
+            "PendingTransaction cannot contain both a toAddress and internal account"
+        }
+    }
+
     fun toPendingTransaction(zcashNetwork: ZcashNetwork) = PendingTransaction(
         id = id,
         value = Zatoshi(value),
@@ -185,16 +194,19 @@ internal fun PendingTransactionEntity.isCancelled(): Boolean {
 
 private fun TransactionRecipient.Companion.new(
     toAddress: String?,
-    toInternal: Account?
+    toInternalAccountIndex: Account?
 ): TransactionRecipient {
-    require(null != toAddress && null != toInternal) {
+    require(
+        (null != toAddress && null == toInternalAccountIndex) ||
+            (null == toAddress && null != toInternalAccountIndex)
+    ) {
         "Pending transaction cannot contain both a toAddress and internal account"
     }
 
     if (null != toAddress) {
         return TransactionRecipient.Address(toAddress)
-    } else if (null != toInternal) {
-        return TransactionRecipient.Account(toInternal)
+    } else if (null != toInternalAccountIndex) {
+        return TransactionRecipient.Account(toInternalAccountIndex)
     }
 
     error("Pending transaction recipient require a toAddress or an internal account")
