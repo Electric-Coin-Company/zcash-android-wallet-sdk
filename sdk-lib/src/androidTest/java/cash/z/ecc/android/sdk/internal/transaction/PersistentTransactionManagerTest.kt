@@ -102,7 +102,7 @@ class PersistentTransactionManagerTest : ScopedTest() {
     fun testAbort() = runBlocking {
         var tx: PendingTransaction? = manager.initSpend(
             Zatoshi(1234),
-            TransactionRecipient.new("a", null),
+            TransactionRecipient.Address("a"),
             "b",
             Account.DEFAULT
         )
