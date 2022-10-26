@@ -93,17 +93,6 @@ class HomeFragment : BaseDemoFragment<FragmentHomeBinding>() {
         }
     }
 
-    private fun updatePasteButton(clipboardText: String? = mainActivity()?.getClipboardText()) {
-        clipboardText.let {
-            val isEditing = binding.groupEdit.visibility == View.VISIBLE
-            if (isEditing && (it != null && it.split(' ').size > 2)) {
-                binding.buttonPaste.visibility = View.VISIBLE
-            } else {
-                binding.buttonPaste.visibility = View.GONE
-            }
-        }
-    }
-
     private fun String.toAbbreviatedPhrase(): String {
         this.trim().apply {
             val firstSpace = indexOf(' ')

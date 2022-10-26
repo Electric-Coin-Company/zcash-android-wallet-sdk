@@ -33,7 +33,6 @@ class MainActivity :
     DrawerLayout.DrawerListener {
     private lateinit var appBarConfiguration: AppBarConfiguration
     private lateinit var clipboard: ClipboardManager
-    private var clipboardListener: ((String?) -> Unit)? = null
     var fabListener: BaseDemoFragment<out ViewBinding>? = null
 
     /**

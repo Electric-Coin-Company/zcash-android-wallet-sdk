@@ -86,7 +86,7 @@ internal class PersistentTransactionManager(
             value = zatoshi.value,
             fee = ZcashSdk.MINERS_FEE.value,
             memo = memo.toByteArray(),
-            accountIndex = account.value
+            sentFromAccountIndex = account.value
         )
         @Suppress("TooGenericExceptionCaught")
         try {

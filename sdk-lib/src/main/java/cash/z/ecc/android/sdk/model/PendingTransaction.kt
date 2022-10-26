@@ -12,7 +12,7 @@ data class PendingTransaction internal constructor(
     val memo: FirstClassByteArray?,
     val raw: FirstClassByteArray,
     val recipient: TransactionRecipient,
-    val accountIndex: Int,
+    val sentFromAccount: Account,
     val minedHeight: BlockHeight?,
     val expiryHeight: BlockHeight?,
     val cancelled: Int,
@@ -26,31 +26,14 @@ data class PendingTransaction internal constructor(
 
 sealed class TransactionRecipient {
     data class Address(val addressValue: String) : TransactionRecipient() {
-        override fun toString() = "PendingTransactionDestination.Address"
+        override fun toString() = "TransactionRecipient.Address"
     }
 
     data class Account(val accountValue: cash.z.ecc.android.sdk.model.Account) : TransactionRecipient() {
-        override fun toString() = "PendingTransactionDestination.Account"
+        override fun toString() = "TransactionRecipient.Account"
     }
 
-    companion object {
-        fun new(
-            toAddress: String?,
-            toInternal: cash.z.ecc.android.sdk.model.Account?
-        ): TransactionRecipient {
-            require(null != toAddress && null != toInternal) {
-                "Pending transaction cannot contain both a toAddress and internal account"
-            }
-
-            if (null != toAddress) {
-                return Address(toAddress)
-            } else if (null != toInternal) {
-                return Account(toInternal)
-            }
-
-            error("Pending transaction destinations requires a toAddress or an internal account")
-        }
-    }
+    companion object
 }
 
 // Note there are some commented out methods which aren't being removed yet, as they might be needed before the

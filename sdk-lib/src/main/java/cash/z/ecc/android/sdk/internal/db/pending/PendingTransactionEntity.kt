@@ -12,7 +12,7 @@ import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 
 @Entity(tableName = "pending_transactions")
-data class PendingTransactionEntity(
+internal data class PendingTransactionEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
     val toAddress: String?,
@@ -20,7 +20,7 @@ data class PendingTransactionEntity(
     val value: Long,
     val fee: Long,
     val memo: ByteArray?,
-    val accountIndex: Int,
+    val sentFromAccountIndex: Int,
     val minedHeight: Long = NO_BLOCK_HEIGHT,
     val expiryHeight: Long = NO_BLOCK_HEIGHT,
 
@@ -45,7 +45,7 @@ data class PendingTransactionEntity(
             toAddress,
             toInternalAccountIndex?.let { Account(toInternalAccountIndex) }
         ),
-        accountIndex = accountIndex,
+        sentFromAccount = Account(sentFromAccountIndex),
         minedHeight = if (minedHeight == NO_BLOCK_HEIGHT) {
             null
         } else {
@@ -81,7 +81,7 @@ data class PendingTransactionEntity(
             if (other.memo == null) return false
             if (!memo.contentEquals(other.memo)) return false
         } else if (other.memo != null) return false
-        if (accountIndex != other.accountIndex) return false
+        if (sentFromAccountIndex != other.sentFromAccountIndex) return false
         if (minedHeight != other.minedHeight) return false
         if (expiryHeight != other.expiryHeight) return false
         if (cancelled != other.cancelled) return false
@@ -106,7 +106,7 @@ data class PendingTransactionEntity(
         result = 31 * result + value.hashCode()
         result = 31 * result + fee.hashCode()
         result = 31 * result + (memo?.contentHashCode() ?: 0)
-        result = 31 * result + accountIndex
+        result = 31 * result + sentFromAccountIndex
         result = 31 * result + minedHeight.hashCode()
         result = 31 * result + expiryHeight.hashCode()
         result = 31 * result + cancelled
@@ -143,7 +143,7 @@ data class PendingTransactionEntity(
                 raw = pendingTransaction.raw.byteArray,
                 toAddress = toAddress,
                 toInternalAccountIndex = toInternal?.value,
-                accountIndex = pendingTransaction.accountIndex,
+                sentFromAccountIndex = pendingTransaction.sentFromAccount.value,
                 minedHeight = pendingTransaction.minedHeight?.value ?: NO_BLOCK_HEIGHT,
                 expiryHeight = pendingTransaction.expiryHeight?.value ?: NO_BLOCK_HEIGHT,
                 cancelled = pendingTransaction.cancelled,
@@ -158,17 +158,34 @@ data class PendingTransactionEntity(
     }
 }
 
-val PendingTransactionEntity.recipient: TransactionRecipient
+internal val PendingTransactionEntity.recipient: TransactionRecipient
     get() {
         return TransactionRecipient.new(toAddress, toInternalAccountIndex?.let { Account(it) })
     }
 
-fun PendingTransactionEntity.isSubmitted(): Boolean {
+internal fun PendingTransactionEntity.isSubmitted(): Boolean {
     return submitAttempts > 0
 }
 
-fun PendingTransactionEntity.isFailedEncoding() = raw.isNotEmpty() && encodeAttempts > 0
+internal fun PendingTransactionEntity.isFailedEncoding() = raw.isNotEmpty() && encodeAttempts > 0
 
-fun PendingTransactionEntity.isCancelled(): Boolean {
+internal fun PendingTransactionEntity.isCancelled(): Boolean {
     return cancelled > 0
+}
+
+private fun TransactionRecipient.Companion.new(
+    toAddress: String?,
+    toInternal: Account?
+): TransactionRecipient {
+    require(null != toAddress && null != toInternal) {
+        "Pending transaction cannot contain both a toAddress and internal account"
+    }
+
+    if (null != toAddress) {
+        return TransactionRecipient.Address(toAddress)
+    } else if (null != toInternal) {
+        return TransactionRecipient.Account(toInternal)
+    }
+
+    error("Pending transaction recipient require a toAddress or an internal account")
 }

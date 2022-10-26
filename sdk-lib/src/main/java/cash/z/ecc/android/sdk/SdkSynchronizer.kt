@@ -628,7 +628,7 @@ class SdkSynchronizer internal constructor(
         memo: String
     ): Flow<PendingTransaction> {
         // Emit the placeholder transaction, then switch to monitoring the database
-        val placeHolderTx = txManager.initSpend(amount, TransactionRecipient.new(toAddress, null), memo, usk.account)
+        val placeHolderTx = txManager.initSpend(amount, TransactionRecipient.Address(toAddress), memo, usk.account)
 
         txManager.encode(usk, placeHolderTx).let { encodedTx ->
             txManager.submit(encodedTx)
@@ -647,7 +647,9 @@ class SdkSynchronizer internal constructor(
 
         // Emit the placeholder transaction, then switch to monitoring the database
         val placeHolderTx = txManager.initSpend(
-            tBalance.available, TransactionRecipient.new(null, usk.account), memo,
+            tBalance.available,
+            TransactionRecipient.Account(usk.account),
+            memo,
             usk.account
         )
         val encodedTx = txManager.encode("", usk, placeHolderTx)

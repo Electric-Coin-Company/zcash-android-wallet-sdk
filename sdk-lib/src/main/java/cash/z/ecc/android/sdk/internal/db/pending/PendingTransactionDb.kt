@@ -30,7 +30,7 @@ import kotlinx.coroutines.flow.Flow
     version = 2,
     exportSchema = true
 )
-abstract class PendingTransactionDb : RoomDatabase() {
+internal abstract class PendingTransactionDb : RoomDatabase() {
     abstract fun pendingTransactionDao(): PendingTransactionDao
 
     companion object {
@@ -47,12 +47,12 @@ abstract class PendingTransactionDb : RoomDatabase() {
                      id                         INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
                      toAddress                  TEXT,
                      toInternalAccountIndex     INTEGER,
-                     accountIndex               INTEGER NOT NULL,
-                     minedMeight                INTEGER,
+                     sentFromAccountIndex       INTEGER NOT NULL,
+                     minedHeight                INTEGER,
                      expiryHeight               INTEGER,
                      cancelled                  INTEGER,
                      encodeAttempts             INTEGER DEFAULT (0),
-                     error_message              TEXT,
+                     errorMessage               TEXT,
                      errorCode                  INTEGER,
                      submitAttempts             INTEGER DEFAULT (0),
                      createTime                 INTEGER,
@@ -99,7 +99,7 @@ abstract class PendingTransactionDb : RoomDatabase() {
  */
 @Dao
 @Suppress("TooManyFunctions")
-interface PendingTransactionDao {
+internal interface PendingTransactionDao {
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun create(transaction: PendingTransactionEntity): Long
 

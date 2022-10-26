@@ -2,11 +2,11 @@
   "formatVersion": 1,
   "database": {
     "version": 2,
-    "identityHash": "983861d34bf7ddbd8413b865c97ad0f0",
+    "identityHash": "afe877cfdb5b6fa90a60502f30405ffc",
     "entities": [
       {
         "tableName": "pending_transactions",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `toAddress` TEXT, `toInternalAccountIndex` INTEGER, `value` INTEGER NOT NULL, `fee` INTEGER NOT NULL, `memo` BLOB, `accountIndex` INTEGER NOT NULL, `minedHeight` INTEGER NOT NULL, `expiryHeight` INTEGER NOT NULL, `cancelled` INTEGER NOT NULL, `encodeAttempts` INTEGER NOT NULL, `submitAttempts` INTEGER NOT NULL, `errorMessage` TEXT, `errorCode` INTEGER, `createTime` INTEGER NOT NULL, `raw` BLOB NOT NULL, `rawTransactionId` BLOB)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `toAddress` TEXT, `toInternalAccountIndex` INTEGER, `value` INTEGER NOT NULL, `fee` INTEGER NOT NULL, `memo` BLOB, `sentFromAccountIndex` INTEGER NOT NULL, `minedHeight` INTEGER NOT NULL, `expiryHeight` INTEGER NOT NULL, `cancelled` INTEGER NOT NULL, `encodeAttempts` INTEGER NOT NULL, `submitAttempts` INTEGER NOT NULL, `errorMessage` TEXT, `errorCode` INTEGER, `createTime` INTEGER NOT NULL, `raw` BLOB NOT NULL, `rawTransactionId` BLOB)",
         "fields": [
           {
             "fieldPath": "id",
@@ -45,8 +45,8 @@
             "notNull": false
           },
           {
-            "fieldPath": "accountIndex",
-            "columnName": "accountIndex",
+            "fieldPath": "sentFromAccountIndex",
+            "columnName": "sentFromAccountIndex",
             "affinity": "INTEGER",
             "notNull": true
           },
@@ -124,7 +124,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '983861d34bf7ddbd8413b865c97ad0f0')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'afe877cfdb5b6fa90a60502f30405ffc')"
     ]
   }
 }
