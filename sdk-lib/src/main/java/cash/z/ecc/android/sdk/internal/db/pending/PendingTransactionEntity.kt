@@ -18,7 +18,7 @@ internal data class PendingTransactionEntity(
     val toAddress: String?,
     val toInternalAccountIndex: Int?,
     val value: Long,
-    val fee: Long,
+    val fee: Long?,
     val memo: ByteArray?,
     val sentFromAccountIndex: Int,
     val minedHeight: Long = NO_BLOCK_HEIGHT,
@@ -38,7 +38,7 @@ internal data class PendingTransactionEntity(
     fun toPendingTransaction(zcashNetwork: ZcashNetwork) = PendingTransaction(
         id = id,
         value = Zatoshi(value),
-        fee = Zatoshi(fee),
+        fee = fee?.let { Zatoshi(it) },
         memo = memo?.let { FirstClassByteArray(it) },
         raw = FirstClassByteArray(raw),
         recipient = TransactionRecipient.new(
@@ -138,7 +138,7 @@ internal data class PendingTransactionEntity(
             return PendingTransactionEntity(
                 id = pendingTransaction.id,
                 value = pendingTransaction.value.value,
-                fee = pendingTransaction.fee.value,
+                fee = pendingTransaction.fee?.value,
                 memo = pendingTransaction.memo?.byteArray,
                 raw = pendingTransaction.raw.byteArray,
                 toAddress = toAddress,

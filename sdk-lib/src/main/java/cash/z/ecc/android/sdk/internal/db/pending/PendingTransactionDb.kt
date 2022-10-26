@@ -60,7 +60,7 @@ internal abstract class PendingTransactionDb : RoomDatabase() {
                      value                      INTEGER NOT NULL,
                      raw                        BLOB,
                      memo                       BLOB,
-                     fee                        INTEGER NOT NULL
+                     fee                        INTEGER
                  );
                  INSERT INTO pending_transactions
                  SELECT
@@ -80,7 +80,7 @@ internal abstract class PendingTransactionDb : RoomDatabase() {
                      value,
                      raw,
                      memo,
-                     ${ZcashSdk.MINERS_FEE}
+                     NULL
                  FROM pending_transactions_old;
                  DROP TABLE pending_transactions_old
                  """

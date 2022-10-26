@@ -8,7 +8,7 @@ import kotlin.time.Duration.Companion.minutes
 data class PendingTransaction internal constructor(
     val id: Long,
     val value: Zatoshi,
-    val fee: Zatoshi,
+    val fee: Zatoshi?,
     val memo: FirstClassByteArray?,
     val raw: FirstClassByteArray,
     val recipient: TransactionRecipient,

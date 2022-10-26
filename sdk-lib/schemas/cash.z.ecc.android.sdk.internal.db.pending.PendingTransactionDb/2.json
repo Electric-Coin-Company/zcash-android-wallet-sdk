@@ -2,11 +2,11 @@
   "formatVersion": 1,
   "database": {
     "version": 2,
-    "identityHash": "afe877cfdb5b6fa90a60502f30405ffc",
+    "identityHash": "1cf8b0eaf8d2f8bf6b2d989bb9732cad",
     "entities": [
       {
         "tableName": "pending_transactions",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `toAddress` TEXT, `toInternalAccountIndex` INTEGER, `value` INTEGER NOT NULL, `fee` INTEGER NOT NULL, `memo` BLOB, `sentFromAccountIndex` INTEGER NOT NULL, `minedHeight` INTEGER NOT NULL, `expiryHeight` INTEGER NOT NULL, `cancelled` INTEGER NOT NULL, `encodeAttempts` INTEGER NOT NULL, `submitAttempts` INTEGER NOT NULL, `errorMessage` TEXT, `errorCode` INTEGER, `createTime` INTEGER NOT NULL, `raw` BLOB NOT NULL, `rawTransactionId` BLOB)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `toAddress` TEXT, `toInternalAccountIndex` INTEGER, `value` INTEGER NOT NULL, `fee` INTEGER, `memo` BLOB, `sentFromAccountIndex` INTEGER NOT NULL, `minedHeight` INTEGER NOT NULL, `expiryHeight` INTEGER NOT NULL, `cancelled` INTEGER NOT NULL, `encodeAttempts` INTEGER NOT NULL, `submitAttempts` INTEGER NOT NULL, `errorMessage` TEXT, `errorCode` INTEGER, `createTime` INTEGER NOT NULL, `raw` BLOB NOT NULL, `rawTransactionId` BLOB)",
         "fields": [
           {
             "fieldPath": "id",
@@ -36,7 +36,7 @@
             "fieldPath": "fee",
             "columnName": "fee",
             "affinity": "INTEGER",
-            "notNull": true
+            "notNull": false
           },
           {
             "fieldPath": "memo",
@@ -124,7 +124,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'afe877cfdb5b6fa90a60502f30405ffc')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '1cf8b0eaf8d2f8bf6b2d989bb9732cad')"
     ]
   }
 }
