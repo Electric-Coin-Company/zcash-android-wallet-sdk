@@ -507,12 +507,20 @@ interface Synchronizer {
                 birthday ?: zcashNetwork.saplingActivationHeight
             )
 
+            val coordinator = DatabaseCoordinator.getInstance(context)
+
             val rustBackend = DefaultSynchronizerFactory.defaultRustBackend(
                 applicationContext,
                 zcashNetwork,
                 alias,
                 loadedCheckpoint.height,
                 saplingParamTool
+            )
+
+            val blockStore = DefaultSynchronizerFactory.defaultCompactBlockRepository(
+                applicationContext,
+                coordinator.cacheDbFile(zcashNetwork, alias),
+                zcashNetwork
             )
 
             val viewingKeys = seed?.let {
@@ -532,11 +540,6 @@ interface Synchronizer {
                 viewingKeys
             )
 
-            val blockStore = DefaultSynchronizerFactory.defaultCompactBlockRepository(
-                applicationContext,
-                rustBackend,
-                zcashNetwork
-            )
             val service = DefaultSynchronizerFactory.defaultService(applicationContext, lightWalletEndpoint)
             val encoder = DefaultSynchronizerFactory.defaultEncoder(rustBackend, saplingParamTool, repository)
             val downloader = DefaultSynchronizerFactory.defaultDownloader(service, blockStore)

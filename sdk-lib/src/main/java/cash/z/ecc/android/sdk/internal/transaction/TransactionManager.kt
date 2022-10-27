@@ -3,6 +3,7 @@ package cash.z.ecc.android.sdk.internal.transaction
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.PendingTransaction
+import cash.z.ecc.android.sdk.model.TransactionRecipient
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.Zatoshi
 import kotlinx.coroutines.flow.Flow
@@ -19,7 +20,7 @@ interface OutboundTransactionManager {
      * completion.
      *
      * @param zatoshi the amount to spend.
-     * @param toAddress the address to which funds will be sent.
+     * @param recipient The destination for the transaction.
      * @param memo the optionally blank memo associated with this transaction.
      * @param account the account from which to spend funds.
      *
@@ -27,7 +28,7 @@ interface OutboundTransactionManager {
      */
     suspend fun initSpend(
         zatoshi: Zatoshi,
-        toAddress: String,
+        recipient: TransactionRecipient,
         memo: String,
         account: Account
     ): PendingTransaction

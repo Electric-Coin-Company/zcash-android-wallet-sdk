@@ -1,6 +1,7 @@
 package cash.z.ecc.android.sdk.internal.transaction
 
 import cash.z.ecc.android.sdk.internal.model.EncodedTransaction
+import cash.z.ecc.android.sdk.model.TransactionRecipient
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.Zatoshi
 
@@ -20,7 +21,7 @@ internal interface TransactionEncoder {
     suspend fun createTransaction(
         usk: UnifiedSpendingKey,
         amount: Zatoshi,
-        toAddress: String,
+        recipient: TransactionRecipient,
         memo: ByteArray? = byteArrayOf()
     ): EncodedTransaction
 
@@ -32,6 +33,7 @@ internal interface TransactionEncoder {
      */
     suspend fun createShieldingTransaction(
         usk: UnifiedSpendingKey,
+        recipient: TransactionRecipient,
         memo: ByteArray? = byteArrayOf()
     ): EncodedTransaction
 

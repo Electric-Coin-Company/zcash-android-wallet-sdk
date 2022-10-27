@@ -32,7 +32,6 @@ class HomeFragment : BaseDemoFragment<FragmentHomeBinding>() {
 
     override fun onResume() {
         super.onResume()
-        mainActivity()?.setClipboardListener(::updatePasteButton)
 
         lifecycleScope.launch {
             sharedViewModel.seedPhrase.collect {
@@ -43,7 +42,6 @@ class HomeFragment : BaseDemoFragment<FragmentHomeBinding>() {
 
     override fun onPause() {
         super.onPause()
-        mainActivity()?.removeClipboardListener()
     }
 
     @Suppress("UNUSED_PARAMETER")
@@ -92,17 +90,6 @@ class HomeFragment : BaseDemoFragment<FragmentHomeBinding>() {
             textSeedPhrase.visibility = if (isShown) View.GONE else View.VISIBLE
             textInstructions.visibility = if (isShown) View.GONE else View.VISIBLE
             groupEdit.visibility = if (isShown) View.VISIBLE else View.GONE
-        }
-    }
-
-    private fun updatePasteButton(clipboardText: String? = mainActivity()?.getClipboardText()) {
-        clipboardText.let {
-            val isEditing = binding.groupEdit.visibility == View.VISIBLE
-            if (isEditing && (it != null && it.split(' ').size > 2)) {
-                binding.buttonPaste.visibility = View.VISIBLE
-            } else {
-                binding.buttonPaste.visibility = View.GONE
-            }
         }
     }
 

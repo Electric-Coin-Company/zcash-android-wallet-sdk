@@ -30,11 +30,9 @@ import com.google.android.material.navigation.NavigationView
 @Suppress("TooManyFunctions")
 class MainActivity :
     AppCompatActivity(),
-    ClipboardManager.OnPrimaryClipChangedListener,
     DrawerLayout.DrawerListener {
     private lateinit var appBarConfiguration: AppBarConfiguration
     private lateinit var clipboard: ClipboardManager
-    private var clipboardListener: ((String?) -> Unit)? = null
     var fabListener: BaseDemoFragment<out ViewBinding>? = null
 
     /**
@@ -49,7 +47,6 @@ class MainActivity :
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-        clipboard.addPrimaryClipChangedListener(this)
         setContentView(R.layout.activity_main)
         val toolbar: Toolbar = findViewById(R.id.toolbar)
         setSupportActionBar(toolbar)
@@ -134,19 +131,6 @@ class MainActivity :
             }
             return primaryClip!!.getItemAt(0)?.coerceToText(this@MainActivity)?.toString()
         }
-    }
-
-    override fun onPrimaryClipChanged() {
-        clipboardListener?.invoke(getClipboardText())
-    }
-
-    fun setClipboardListener(block: (String?) -> Unit) {
-        clipboardListener = block
-        block(getClipboardText())
-    }
-
-    fun removeClipboardListener() {
-        clipboardListener = null
     }
 
     fun hideKeyboard() {
