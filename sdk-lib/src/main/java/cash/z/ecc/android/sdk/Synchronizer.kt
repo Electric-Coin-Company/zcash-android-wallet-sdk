@@ -11,6 +11,7 @@ import cash.z.ecc.android.sdk.model.LightWalletEndpoint
 import cash.z.ecc.android.sdk.model.PendingTransaction
 import cash.z.ecc.android.sdk.model.Transaction
 import cash.z.ecc.android.sdk.model.TransactionOverview
+import cash.z.ecc.android.sdk.model.TransactionRecipient
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
@@ -363,6 +364,11 @@ interface Synchronizer {
      * Returns a list of memos for a transaction.
      */
     fun getMemos(transactionOverview: TransactionOverview): Flow<String>
+
+    /**
+     * Returns a list of recipients for a transaction.
+     */
+    fun getRecipients(transactionOverview: TransactionOverview): Flow<TransactionRecipient>
 
     //
     // Error Handling

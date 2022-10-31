@@ -2,6 +2,8 @@ package cash.z.ecc.android.sdk.internal.db.derived
 
 import androidx.sqlite.db.SupportSQLiteDatabase
 import cash.z.ecc.android.sdk.internal.db.queryAndMap
+import cash.z.ecc.android.sdk.model.Account
+import cash.z.ecc.android.sdk.model.TransactionRecipient
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import java.util.Locale
 
@@ -19,6 +21,11 @@ internal class SentNoteTable(
         )
 
         private val PROJECTION_ID = arrayOf(SentNoteTableDefinition.COLUMN_INTEGER_ID)
+
+        private val PROJECTION_RECIPIENT = arrayOf(
+            SentNoteTableDefinition.COLUMN_STRING_TO_ADDRESS,
+            SentNoteTableDefinition.COLUMN_INTEGER_TO_ACCOUNT
+        )
 
         private val SELECT_BY_TRANSACTION_ID = String.format(
             Locale.ROOT,
@@ -38,6 +45,25 @@ internal class SentNoteTable(
                 val idColumnIndex = it.getColumnIndex(SentNoteTableDefinition.COLUMN_INTEGER_ID)
 
                 it.getLong(idColumnIndex)
+            }
+        )
+
+    fun getRecipients(transactionId: Long) =
+        sqliteDatabase.queryAndMap(
+            table = SentNoteTableDefinition.TABLE_NAME,
+            columns = PROJECTION_RECIPIENT,
+            selection = SELECT_BY_TRANSACTION_ID,
+            selectionArgs = arrayOf(transactionId),
+            orderBy = ORDER_BY,
+            cursorParser = {
+                val toAccountIndex = it.getColumnIndex(SentNoteTableDefinition.COLUMN_INTEGER_TO_ACCOUNT)
+                val toAddressIndex = it.getColumnIndex(SentNoteTableDefinition.COLUMN_STRING_TO_ADDRESS)
+
+                if (!it.isNull(toAccountIndex)) {
+                    TransactionRecipient.Account(Account(it.getInt(toAccountIndex)))
+                } else {
+                    TransactionRecipient.Address(it.getString(toAddressIndex))
+                }
             }
         )
 }

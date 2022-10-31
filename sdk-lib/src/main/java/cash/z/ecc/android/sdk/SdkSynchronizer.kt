@@ -339,6 +339,12 @@ class SdkSynchronizer internal constructor(
         }
     }
 
+    override fun getRecipients(transactionOverview: TransactionOverview): Flow<TransactionRecipient> {
+        require(transactionOverview.isSentTransaction) { "Recipients can only be queried for sent transactions" }
+
+        return storage.getRecipients(transactionOverview.id)
+    }
+
     //
     // Storage APIs
     //

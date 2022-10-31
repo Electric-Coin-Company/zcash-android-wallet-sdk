@@ -5,6 +5,7 @@ import cash.z.ecc.android.sdk.internal.repository.DerivedDataRepository
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.Transaction
 import cash.z.ecc.android.sdk.model.TransactionOverview
+import cash.z.ecc.android.sdk.model.TransactionRecipient
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
@@ -64,6 +65,9 @@ internal class DbDerivedDataRepository(
         get() = invalidatingFlow.map { derivedDataDb.allTransactionView.getAllTransactions().toList() }
 
     override fun getSentNoteIds(transactionId: Long) = derivedDataDb.sentNotesTable.getSentNoteIds(transactionId)
+    override fun getRecipients(transactionId: Long): Flow<TransactionRecipient> {
+        return derivedDataDb.sentNotesTable.getRecipients(transactionId)
+    }
 
     override fun getReceivedNoteIds(transactionId: Long) =
         derivedDataDb.receivedNotesTable.getReceivedNoteIds(transactionId)

@@ -10,6 +10,7 @@ Change Log
   - `Synchronizer.getLegacyTransparentAddress`
   - `Synchronizer.isValidUnifiedAddr`
   - `Synchronizer.getMemos(TransactionOverview)`
+  - `Synchronizer.getReceipients(TransactionOverview)`
 - `cash.z.ecc.android.sdk.model`:
   - `Account`
   - `FirstClassByteArray`
