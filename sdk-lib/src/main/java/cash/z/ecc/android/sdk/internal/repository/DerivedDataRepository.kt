@@ -4,6 +4,7 @@ import cash.z.ecc.android.sdk.internal.model.EncodedTransaction
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.Transaction
 import cash.z.ecc.android.sdk.model.TransactionOverview
+import cash.z.ecc.android.sdk.model.TransactionRecipient
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -105,6 +106,8 @@ internal interface DerivedDataRepository {
     val allTransactions: Flow<List<TransactionOverview>>
 
     fun getSentNoteIds(transactionId: Long): Flow<Long>
+
+    fun getRecipients(transactionId: Long): Flow<TransactionRecipient>
 
     fun getReceivedNoteIds(transactionId: Long): Flow<Long>
 
