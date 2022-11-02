@@ -5,6 +5,7 @@
     <string name="nav_header_subtitle">v1.1.0</string>
     <string name="nav_header_desc">Navigation header</string>
     <string name="action_settings">Change Seed Phrase</string>
+    <string name="action_faucet">Testnet Faucet</string>
 
     <!-- Drawer Menu -->
     <string name="menu_home">Home</string>
@@ -25,4 +26,7 @@
     <string name="load">Load</string>
     <string name="apply">Apply</string>
     <string name="loading">⌛ Loading</string>
+    <string name="unified_address">Unified address</string>
+    <string name="sapling_address">Sapling address</string>
+    <string name="transparent_address">Transparent address</string>
 </resources>

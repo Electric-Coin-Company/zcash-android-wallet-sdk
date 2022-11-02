@@ -2,6 +2,8 @@ package cash.z.ecc.android.sdk.demoapp
 
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
@@ -83,6 +85,10 @@ class MainActivity :
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         // Inflate the menu; this adds items to the action bar if it is present.
         menuInflater.inflate(R.menu.main, menu)
+
+        if (ZcashNetwork.Mainnet == ZcashNetwork.fromResources(applicationContext)) {
+            menu.findItem(R.id.action_faucet).isVisible = false
+        }
         return true
     }
 
@@ -90,6 +96,11 @@ class MainActivity :
         return if (item.itemId == R.id.action_settings) {
             val navController = findNavController(R.id.nav_host_fragment)
             navController.navigate(R.id.nav_home)
+            true
+        } else if (item.itemId == R.id.action_faucet) {
+            runCatching {
+                startActivity(newBrowserIntent("https://faucet.zecpages.com/"))
+            }
             true
         } else {
             super.onOptionsItemSelected(item)
@@ -156,4 +167,13 @@ class MainActivity :
         twig("Drawer opened.")
         hideKeyboard()
     }
+}
+
+private fun newBrowserIntent(url: String): Intent {
+    val uri = Uri.parse(url)
+    val intent = Intent(Intent.ACTION_VIEW, uri).apply {
+        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    }
+
+    return intent
 }
