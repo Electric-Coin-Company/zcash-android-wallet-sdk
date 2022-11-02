@@ -2,6 +2,7 @@ package cash.z.ecc.android.sdk.internal.db.derived
 
 import androidx.sqlite.db.SupportSQLiteDatabase
 import cash.z.ecc.android.sdk.internal.db.CursorParser
+import cash.z.ecc.android.sdk.internal.db.optBlobOrThrow
 import cash.z.ecc.android.sdk.internal.db.queryAndMap
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.FirstClassByteArray
@@ -36,45 +37,55 @@ internal class AllTransactionView(
         private val PROJECTION_COUNT = arrayOf("COUNT(*)") // $NON-NLS
     }
 
-    private val cursorParser: CursorParser<TransactionOverview> = CursorParser {
-        val idColumnIndex = it.getColumnIndex(AllTransactionViewDefinition.COLUMN_INTEGER_ID)
+    private val cursorParser: CursorParser<TransactionOverview> = CursorParser { cursor ->
+        val idColumnIndex = cursor.getColumnIndex(AllTransactionViewDefinition.COLUMN_INTEGER_ID)
         val minedHeightColumnIndex =
-            it.getColumnIndex(AllTransactionViewDefinition.COLUMN_INTEGER_MINED_HEIGHT)
-        val transactionIndexColumnIndex = it.getColumnIndex(
+            cursor.getColumnIndex(AllTransactionViewDefinition.COLUMN_INTEGER_MINED_HEIGHT)
+        val transactionIndexColumnIndex = cursor.getColumnIndex(
             AllTransactionViewDefinition.COLUMN_INTEGER_TRANSACTION_INDEX
         )
         val rawTransactionIdIndex =
-            it.getColumnIndex(AllTransactionViewDefinition.COLUMN_BLOB_RAW_TRANSACTION_ID)
-        val expiryHeightIndex = it.getColumnIndex(AllTransactionViewDefinition.COLUMN_INTEGER_EXPIRY_HEIGHT)
-        val rawIndex = it.getColumnIndex(AllTransactionViewDefinition.COLUMN_BLOB_RAW)
-        val netValueIndex = it.getColumnIndex(AllTransactionViewDefinition.COLUMN_LONG_VALUE)
-        val feePaidIndex = it.getColumnIndex(AllTransactionViewDefinition.COLUMN_LONG_FEE_PAID)
-        val isChangeIndex = it.getColumnIndex(AllTransactionViewDefinition.COLUMN_BOOLEAN_IS_CHANGE)
-        val isWalletInternalIndex = it.getColumnIndex(AllTransactionViewDefinition.COLUMN_BOOLEAN_IS_WALLET_INTERNAL)
-        val receivedNoteCountIndex = it.getColumnIndex(AllTransactionViewDefinition.COLUMN_INTEGER_RECEIVED_NOTE_COUNT)
-        val sentNoteCountIndex = it.getColumnIndex(AllTransactionViewDefinition.COLUMN_INTEGER_SENT_NOTE_COUNT)
-        val memoCountIndex = it.getColumnIndex(AllTransactionViewDefinition.COLUMN_INTEGER_MEMO_COUNT)
-        val blockTimeIndex = it.getColumnIndex(AllTransactionViewDefinition.COLUMN_INTEGER_BLOCK_TIME)
+            cursor.getColumnIndex(AllTransactionViewDefinition.COLUMN_BLOB_RAW_TRANSACTION_ID)
+        val expiryHeightIndex = cursor.getColumnIndex(AllTransactionViewDefinition.COLUMN_INTEGER_EXPIRY_HEIGHT)
+        val rawIndex = cursor.getColumnIndex(AllTransactionViewDefinition.COLUMN_BLOB_RAW)
+        val netValueIndex = cursor.getColumnIndex(AllTransactionViewDefinition.COLUMN_LONG_VALUE)
+        val feePaidIndex = cursor.getColumnIndex(AllTransactionViewDefinition.COLUMN_LONG_FEE_PAID)
+        val isChangeIndex = cursor.getColumnIndex(AllTransactionViewDefinition.COLUMN_BOOLEAN_IS_CHANGE)
+        val isWalletInternalIndex = cursor.getColumnIndex(
+            AllTransactionViewDefinition.COLUMN_BOOLEAN_IS_WALLET_INTERNAL
+        )
+        val receivedNoteCountIndex = cursor.getColumnIndex(
+            AllTransactionViewDefinition.COLUMN_INTEGER_RECEIVED_NOTE_COUNT
+        )
+        val sentNoteCountIndex = cursor.getColumnIndex(AllTransactionViewDefinition.COLUMN_INTEGER_SENT_NOTE_COUNT)
+        val memoCountIndex = cursor.getColumnIndex(AllTransactionViewDefinition.COLUMN_INTEGER_MEMO_COUNT)
+        val blockTimeIndex = cursor.getColumnIndex(AllTransactionViewDefinition.COLUMN_INTEGER_BLOCK_TIME)
 
-        val netValueLong = it.getLong(netValueIndex)
+        val netValueLong = cursor.getLong(netValueIndex)
         val isSent = netValueLong < 0
 
+        val expiryHeightLong = cursor.getLong(expiryHeightIndex)
+
         TransactionOverview(
-            id = it.getLong(idColumnIndex),
-            rawId = FirstClassByteArray(it.getBlob(rawTransactionIdIndex)),
-            minedHeight = BlockHeight.new(zcashNetwork, it.getLong(minedHeightColumnIndex)),
-            expiryHeight = BlockHeight.new(zcashNetwork, it.getLong(expiryHeightIndex)),
-            index = it.getLong(transactionIndexColumnIndex),
-            raw = FirstClassByteArray(it.getBlob(rawIndex)),
+            id = cursor.getLong(idColumnIndex),
+            rawId = FirstClassByteArray(cursor.getBlob(rawTransactionIdIndex)),
+            minedHeight = BlockHeight.new(zcashNetwork, cursor.getLong(minedHeightColumnIndex)),
+            expiryHeight = if (0L == expiryHeightLong) {
+                null
+            } else {
+                BlockHeight.new(zcashNetwork, expiryHeightLong)
+            },
+            index = cursor.getLong(transactionIndexColumnIndex),
+            raw = cursor.optBlobOrThrow(rawIndex)?.let { FirstClassByteArray(it) },
             isSentTransaction = isSent,
             netValue = Zatoshi(netValueLong.absoluteValue),
-            feePaid = Zatoshi(it.getLong(feePaidIndex)),
-            isChange = it.getInt(isChangeIndex) != 0,
-            isWalletInternal = it.getInt(isWalletInternalIndex) != 0,
-            receivedNoteCount = it.getInt(receivedNoteCountIndex),
-            sentNoteCount = it.getInt(sentNoteCountIndex),
-            memoCount = it.getInt(memoCountIndex),
-            blockTimeEpochSeconds = it.getLong(blockTimeIndex)
+            feePaid = Zatoshi(cursor.getLong(feePaidIndex)),
+            isChange = cursor.getInt(isChangeIndex) != 0,
+            isWalletInternal = cursor.getInt(isWalletInternalIndex) != 0,
+            receivedNoteCount = cursor.getInt(receivedNoteCountIndex),
+            sentNoteCount = cursor.getInt(sentNoteCountIndex),
+            memoCount = cursor.getInt(memoCountIndex),
+            blockTimeEpochSeconds = cursor.getLong(blockTimeIndex)
         )
     }
 

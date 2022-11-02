@@ -22,8 +22,6 @@ import cash.z.ecc.android.sdk.model.TransactionOverview
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.model.defaultForNetwork
 import cash.z.ecc.android.sdk.tool.DerivationTool
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 
 /**
@@ -82,9 +80,8 @@ class ListTransactionsFragment : BaseDemoFragment<FragmentListTransactionsBindin
         synchronizer.processorInfo.collectWith(lifecycleScope, ::onProcessorInfoUpdated)
         synchronizer.progress.collectWith(lifecycleScope, ::onProgress)
 
-        lifecycleScope.launch {
-            val transactions = synchronizer.clearedTransactions.first()
-            onTransactionsUpdated(transactions)
+        synchronizer.clearedTransactions.collectWith(lifecycleScope) {
+            onTransactionsUpdated(it)
         }
     }
 

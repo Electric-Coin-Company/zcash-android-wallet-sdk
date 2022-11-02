@@ -10,3 +10,11 @@ internal fun Cursor.optLong(columnIndex: Int): Long? =
     } else {
         getLong(columnIndex)
     }
+
+internal fun Cursor.optBlobOrThrow(index: Int): ByteArray? {
+    return if (isNull(index)) {
+        null
+    } else {
+        getBlob(index)
+    }
+}
