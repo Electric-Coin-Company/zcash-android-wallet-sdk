@@ -17,12 +17,12 @@ import cash.z.ecc.android.sdk.model.LightWalletEndpoint
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.model.defaultForNetwork
-import kotlinx.coroutines.flow.filterNotNull
 
 /**
  * Displays the available balance && total balance associated with the seed defined by the default config.
  * comments.
  */
+@Suppress("TooManyFunctions")
 class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
 
     private lateinit var synchronizer: Synchronizer
@@ -64,25 +64,40 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
         synchronizer.status.collectWith(lifecycleScope, ::onStatus)
         synchronizer.progress.collectWith(lifecycleScope, ::onProgress)
         synchronizer.processorInfo.collectWith(lifecycleScope, ::onProcessorInfoUpdated)
-        synchronizer.saplingBalances.filterNotNull().collectWith(lifecycleScope, ::onBalance)
+        synchronizer.orchardBalances.collectWith(lifecycleScope, ::onOrchardBalance)
+        synchronizer.saplingBalances.collectWith(lifecycleScope, ::onSaplingBalance)
+        synchronizer.transparentBalances.collectWith(lifecycleScope, ::onTransparentBalance)
     }
 
-    @Suppress("MagicNumber")
-    private fun onBalance(balance: WalletBalance) {
-        binding.textBalance.text = """
-                Available balance: ${balance.available.convertZatoshiToZecString(12)}
-                Total balance: ${balance.total.convertZatoshiToZecString(12)}
-        """.trimIndent()
+    private fun onOrchardBalance(
+        orchardBalance: WalletBalance?
+    ) {
+        binding.orchardBalance.apply {
+            text = orchardBalance.humanString()
+        }
+    }
+
+    private fun onSaplingBalance(
+        saplingBalance: WalletBalance?
+    ) {
+        binding.saplingBalance.apply {
+            text = saplingBalance.humanString()
+        }
+    }
+
+    private fun onTransparentBalance(
+        transparentBalance: WalletBalance?
+    ) {
+        binding.transparentBalance.apply {
+            text = transparentBalance.humanString()
+        }
     }
 
     private fun onStatus(status: Synchronizer.Status) {
         binding.textStatus.text = "Status: $status"
-        val balance: WalletBalance? = synchronizer.saplingBalances.value
-        if (null == balance) {
-            binding.textBalance.text = "Calculating balance..."
-        } else {
-            onBalance(balance)
-        }
+        onOrchardBalance(synchronizer.orchardBalances.value)
+        onSaplingBalance(synchronizer.saplingBalances.value)
+        onTransparentBalance(synchronizer.transparentBalances.value)
     }
 
     @Suppress("MagicNumber")
@@ -95,4 +110,14 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
     private fun onProcessorInfoUpdated(info: CompactBlockProcessor.ProcessorInfo) {
         if (info.isScanning) binding.textStatus.text = "Scanning blocks...${info.scanProgress}%"
     }
+}
+
+@Suppress("MagicNumber")
+private fun WalletBalance?.humanString() = if (null == this) {
+    "Calculating balance"
+} else {
+    """
+                Available balance: ${available.convertZatoshiToZecString(12)}
+                Total balance: ${total.convertZatoshiToZecString(12)}
+    """.trimIndent()
 }
