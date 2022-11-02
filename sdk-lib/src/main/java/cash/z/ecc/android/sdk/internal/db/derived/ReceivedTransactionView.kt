@@ -1,6 +1,7 @@
 package cash.z.ecc.android.sdk.internal.db.derived
 
 import androidx.sqlite.db.SupportSQLiteDatabase
+import cash.z.ecc.android.sdk.internal.db.optBlobOrThrow
 import cash.z.ecc.android.sdk.internal.db.queryAndMap
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
@@ -37,42 +38,48 @@ internal class ReceivedTransactionView(
         sqliteDatabase.queryAndMap(
             table = ReceivedTransactionViewDefinition.VIEW_NAME,
             orderBy = ORDER_BY,
-            cursorParser = {
-                val idColumnIndex = it.getColumnIndex(ReceivedTransactionViewDefinition.COLUMN_INTEGER_ID)
+            cursorParser = { cursor ->
+                val idColumnIndex = cursor.getColumnIndex(ReceivedTransactionViewDefinition.COLUMN_INTEGER_ID)
                 val minedHeightColumnIndex =
-                    it.getColumnIndex(ReceivedTransactionViewDefinition.COLUMN_INTEGER_MINED_HEIGHT)
-                val transactionIndexColumnIndex = it.getColumnIndex(
+                    cursor.getColumnIndex(ReceivedTransactionViewDefinition.COLUMN_INTEGER_MINED_HEIGHT)
+                val transactionIndexColumnIndex = cursor.getColumnIndex(
                     ReceivedTransactionViewDefinition
                         .COLUMN_INTEGER_TRANSACTION_INDEX
                 )
                 val rawTransactionIdIndex =
-                    it.getColumnIndex(ReceivedTransactionViewDefinition.COLUMN_BLOB_RAW_TRANSACTION_ID)
-                val expiryHeightIndex = it.getColumnIndex(
+                    cursor.getColumnIndex(ReceivedTransactionViewDefinition.COLUMN_BLOB_RAW_TRANSACTION_ID)
+                val expiryHeightIndex = cursor.getColumnIndex(
                     ReceivedTransactionViewDefinition.COLUMN_INTEGER_EXPIRY_HEIGHT
                 )
-                val rawIndex = it.getColumnIndex(ReceivedTransactionViewDefinition.COLUMN_BLOB_RAW)
-                val receivedAccountIndex = it.getColumnIndex(
+                val rawIndex = cursor.getColumnIndex(ReceivedTransactionViewDefinition.COLUMN_BLOB_RAW)
+                val receivedAccountIndex = cursor.getColumnIndex(
                     ReceivedTransactionViewDefinition.COLUMN_INTEGER_RECEIVED_BY_ACCOUNT
                 )
                 val receivedTotalIndex =
-                    it.getColumnIndex(ReceivedTransactionViewDefinition.COLUMN_INTEGER_RECEIVED_TOTAL)
+                    cursor.getColumnIndex(ReceivedTransactionViewDefinition.COLUMN_INTEGER_RECEIVED_TOTAL)
                 val receivedNoteCountIndex =
-                    it.getColumnIndex(ReceivedTransactionViewDefinition.COLUMN_INTEGER_RECEIVED_NOTE_COUNT)
-                val memoCountIndex = it.getColumnIndex(ReceivedTransactionViewDefinition.COLUMN_INTEGER_MEMO_COUNT)
-                val blockTimeIndex = it.getColumnIndex(ReceivedTransactionViewDefinition.COLUMN_INTEGER_BLOCK_TIME)
+                    cursor.getColumnIndex(ReceivedTransactionViewDefinition.COLUMN_INTEGER_RECEIVED_NOTE_COUNT)
+                val memoCountIndex = cursor.getColumnIndex(ReceivedTransactionViewDefinition.COLUMN_INTEGER_MEMO_COUNT)
+                val blockTimeIndex = cursor.getColumnIndex(ReceivedTransactionViewDefinition.COLUMN_INTEGER_BLOCK_TIME)
+
+                val expiryHeightLong = cursor.getLong(expiryHeightIndex)
 
                 Transaction.Received(
-                    id = it.getLong(idColumnIndex),
-                    rawId = FirstClassByteArray(it.getBlob(rawTransactionIdIndex)),
-                    minedHeight = BlockHeight.new(zcashNetwork, it.getLong(minedHeightColumnIndex)),
-                    expiryHeight = BlockHeight.new(zcashNetwork, it.getLong(expiryHeightIndex)),
-                    index = it.getLong(transactionIndexColumnIndex),
-                    raw = FirstClassByteArray(it.getBlob(rawIndex)),
-                    receivedByAccount = Account(it.getInt(receivedAccountIndex)),
-                    receivedTotal = Zatoshi(it.getLong(receivedTotalIndex)),
-                    receivedNoteCount = it.getInt(receivedNoteCountIndex),
-                    memoCount = it.getInt(memoCountIndex),
-                    blockTimeEpochSeconds = it.getLong(blockTimeIndex)
+                    id = cursor.getLong(idColumnIndex),
+                    rawId = FirstClassByteArray(cursor.getBlob(rawTransactionIdIndex)),
+                    minedHeight = BlockHeight.new(zcashNetwork, cursor.getLong(minedHeightColumnIndex)),
+                    expiryHeight = if (0L == expiryHeightLong) {
+                        null
+                    } else {
+                        BlockHeight.new(zcashNetwork, expiryHeightLong)
+                    },
+                    index = cursor.getLong(transactionIndexColumnIndex),
+                    raw = cursor.optBlobOrThrow(rawIndex)?.let { FirstClassByteArray(it) },
+                    receivedByAccount = Account(cursor.getInt(receivedAccountIndex)),
+                    receivedTotal = Zatoshi(cursor.getLong(receivedTotalIndex)),
+                    receivedNoteCount = cursor.getInt(receivedNoteCountIndex),
+                    memoCount = cursor.getInt(memoCountIndex),
+                    blockTimeEpochSeconds = cursor.getLong(blockTimeIndex)
                 )
             }
         )

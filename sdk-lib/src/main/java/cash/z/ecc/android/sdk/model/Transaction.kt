@@ -1,13 +1,13 @@
 package cash.z.ecc.android.sdk.model
 
 sealed class Transaction {
-    data class Received(
+    data class Received internal constructor(
         val id: Long,
         val rawId: FirstClassByteArray,
         val minedHeight: BlockHeight,
-        val expiryHeight: BlockHeight,
+        val expiryHeight: BlockHeight?,
         val index: Long,
-        val raw: FirstClassByteArray,
+        val raw: FirstClassByteArray?,
         val receivedByAccount: Account,
         val receivedTotal: Zatoshi,
         val receivedNoteCount: Int,
@@ -17,13 +17,13 @@ sealed class Transaction {
         override fun toString() = "ReceivedTransaction"
     }
 
-    data class Sent(
+    data class Sent internal constructor(
         val id: Long,
         val rawId: FirstClassByteArray,
         val minedHeight: BlockHeight,
-        val expiryHeight: BlockHeight,
+        val expiryHeight: BlockHeight?,
         val index: Long,
-        val raw: FirstClassByteArray,
+        val raw: FirstClassByteArray?,
         val sentFromAccount: Account,
         val sentTotal: Zatoshi,
         val sentNoteCount: Int,
