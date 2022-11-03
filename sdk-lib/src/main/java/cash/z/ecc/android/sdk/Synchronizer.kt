@@ -496,7 +496,7 @@ interface Synchronizer {
         suspend fun new(
             context: Context,
             zcashNetwork: ZcashNetwork,
-            alias: String = "zcash",
+            alias: String = ZcashSdk.DEFAULT_ALIAS,
             lightWalletEndpoint: LightWalletEndpoint,
             seed: ByteArray?,
             birthday: BlockHeight?
@@ -577,7 +577,7 @@ interface Synchronizer {
         fun newBlocking(
             context: Context,
             zcashNetwork: ZcashNetwork,
-            alias: String = "zcash",
+            alias: String = ZcashSdk.DEFAULT_ALIAS,
             lightWalletEndpoint: LightWalletEndpoint,
             seed: ByteArray?,
             birthday: BlockHeight?
@@ -602,7 +602,7 @@ interface Synchronizer {
         suspend fun erase(
             appContext: Context,
             network: ZcashNetwork,
-            alias: String
+            alias: String = ZcashSdk.DEFAULT_ALIAS
         ): Boolean = DatabaseCoordinator.getInstance(appContext).deleteDatabases(network, alias)
     }
 }
