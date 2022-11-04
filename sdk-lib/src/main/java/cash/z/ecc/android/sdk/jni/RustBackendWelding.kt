@@ -114,30 +114,6 @@ internal interface RustBackendWelding {
             account: Account
         ): UnifiedSpendingKey
 
-        suspend fun deriveTransparentAddress(
-            seed: ByteArray,
-            network: ZcashNetwork,
-            account: Account,
-            index: Int = 0
-        ): String
-
-        suspend fun deriveTransparentAddressFromPublicKey(
-            publicKey: String,
-            network: ZcashNetwork
-        ): String
-
-        suspend fun deriveTransparentAddressFromAccountPrivateKey(
-            privateKey: String,
-            network: ZcashNetwork,
-            index: Int = 0
-        ): String
-
-        suspend fun deriveTransparentAccountPrivateKey(
-            seed: ByteArray,
-            network: ZcashNetwork,
-            account: Account
-        ): String
-
         suspend fun deriveUnifiedFullViewingKey(
             usk: UnifiedSpendingKey,
             network: ZcashNetwork

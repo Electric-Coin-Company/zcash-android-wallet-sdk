@@ -20,8 +20,6 @@ Change Log
 - `cash.z.ecc.android.sdk.tool`:
   - `DerivationTool.deriveUnifiedSpendingKey`
   - `DerivationTool.deriveUnifiedFullViewingKey`
-  - `DerivationTool.deriveTransparentAccountPrivateKey`
-  - `DerivationTool.deriveTransparentAddressFromAccountPrivateKey`
   - `DerivationTool.deriveUnifiedAddress`
   - `DerivationTool.deriveUnifiedFullViewingKeys`
   - `DerivationTool.validateUnifiedFullViewingKey`
@@ -60,18 +58,13 @@ Change Log
     public key, and not the extended public key as intended. This made it incompatible
     with ZIP 316.
 - `cash.z.ecc.android.sdk.tool`:
-  - `DerivationTool.deriveSpendingKeys` (use
-    `DerivationTool.deriveUnifiedSpendingKey` instead).
-  - `DerivationTool.deriveViewingKey` (use
-  - `DerivationTool.deriveUnifiedFullViewingKey` instead).
-  - `DerivationTool.deriveTransparentAddressFromPrivateKey` (use
-    `DerivationTool.deriveTransparentAddressFromAccountPrivateKey` instead).
-  - `DerivationTool.deriveTransparentSecretKey` (use
-    `DerivationTool.deriveTransparentAccountPrivateKey` instead).
+  - `DerivationTool.deriveSpendingKeys` (use `DerivationTool.deriveUnifiedSpendingKey` instead).
+  - `DerivationTool.deriveViewingKey` (use `DerivationTool.deriveUnifiedFullViewingKey` instead).
+  - `DerivationTool.deriveTransparentAddress` (use `Synchronizer.getLegacyTransparentAddress` instead).
+  - `DerivationTool.deriveTransparentAddressFromPrivateKey` (use `Synchronizer.getLegacyTransparentAddress` instead).
+  - `DerivationTool.deriveTransparentAddressFromPublicKey` (use `Synchronizer.getLegacyTransparentAddress` instead).
+  - `DerivationTool.deriveTransparentSecretKey` (use `DerivationTool.deriveUnifiedSpendingKey` instead).
   - `DerivationTool.deriveShieldedAddress`
-    - TODO: Do we still need to be able to derive Sapling shielded addresses for legacy
-      support? Currently removed because `UnifiedFullViewingKey` doesn't expose the
-      Sapling FVK on the Kotlin side (unlike the previous `UnifiedViewingKey`).
   - `DerivationTool.deriveUnifiedViewingKeys`
   - `DerivationTool.validateUnifiedViewingKey`
 

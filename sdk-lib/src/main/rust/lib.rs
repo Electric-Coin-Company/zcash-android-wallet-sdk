@@ -6,11 +6,9 @@ use std::convert::{TryFrom, TryInto};
 use std::panic;
 use std::path::Path;
 use std::ptr;
-use std::str::FromStr;
 
 use android_logger::Config;
 use failure::format_err;
-use hdwallet::traits::{Deserialize, Serialize};
 use jni::objects::{JObject, JValue};
 use jni::{
     objects::{JClass, JString},
@@ -19,7 +17,6 @@ use jni::{
 };
 use log::Level;
 use schemer::MigratorError;
-use secp256k1::PublicKey;
 use secrecy::{ExposeSecret, SecretVec};
 use zcash_address::{ToAddress, ZcashAddress};
 use zcash_client_backend::keys::{DecodingError, UnifiedSpendingKey};
@@ -45,8 +42,6 @@ use zcash_client_sqlite::{
     BlockDb, NoteId, WalletDb,
 };
 use zcash_primitives::consensus::Network::{MainNetwork, TestNetwork};
-#[allow(deprecated)]
-use zcash_primitives::legacy::keys::{pubkey_to_address, AccountPrivKey};
 use zcash_primitives::{
     block::BlockHash,
     consensus::{BlockHeight, BranchId, Network, Parameters},
@@ -1017,139 +1012,6 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_putUtxo(
         }
     });
     unwrap_exc_or(&env, res, JNI_FALSE)
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveTransparentAccountPrivKeyFromSeed(
-    env: JNIEnv<'_>,
-    _: JClass<'_>,
-    seed: jbyteArray,
-    account: jint,
-    network_id: jint,
-) -> jstring {
-    let res = panic::catch_unwind(|| {
-        let network = parse_network(network_id as u32)?;
-        let seed = env.convert_byte_array(seed).unwrap();
-        let account = if account >= 0 {
-            AccountId::from(account as u32)
-        } else {
-            return Err(format_err!("account argument must be nonnegative"));
-        };
-        // Derive the USK to ensure it exists, and fetch its transparent component.
-        let usk = UnifiedSpendingKey::from_seed(&network, &seed, account)
-            .map_err(|e| format_err!("error generating unified spending key from seed: {:?}", e))?;
-        // Derive the corresponding BIP 32 extended privkey.
-        let xprv = utils::p2pkh_xprv(&network, &seed, account)
-            .expect("USK derivation should ensure this exists");
-        // Verify that we did derive the same privkey.
-        assert_eq!(
-            usk.transparent().to_account_pubkey().serialize(),
-            AccountPrivKey::from_extended_privkey(xprv.extended_key.clone())
-                .to_account_pubkey()
-                .serialize(),
-        );
-        // Encode using the BIP 32 xprv serialization format.
-        let xprv_str: String = xprv.serialize();
-        let output = env
-            .new_string(xprv_str)
-            .expect("Couldn't create Java string for private key!");
-        Ok(output.into_raw())
-    });
-    unwrap_exc_or(&env, res, ptr::null_mut())
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveTransparentAddressFromSeed(
-    env: JNIEnv<'_>,
-    _: JClass<'_>,
-    seed: jbyteArray,
-    account: jint,
-    index: jint,
-    network_id: jint,
-) -> jstring {
-    let res = panic::catch_unwind(|| {
-        let network = parse_network(network_id as u32)?;
-        let seed = env.convert_byte_array(seed).unwrap();
-        let account = if account >= 0 {
-            account as u32
-        } else {
-            return Err(format_err!("account argument must be nonnegative"));
-        };
-        let index = if index >= 0 {
-            index as u32
-        } else {
-            return Err(format_err!("index argument must be nonnegative"));
-        };
-        let tfvk = UnifiedSpendingKey::from_seed(&network, &seed, AccountId::from(account))
-            .map_err(|e| format_err!("error generating unified spending key from seed: {:?}", e))
-            .map(|usk| usk.transparent().to_account_pubkey())?;
-        let taddr = match utils::p2pkh_addr(tfvk, index) {
-            Ok(taddr) => taddr,
-            Err(e) => return Err(format_err!("Couldn't derive transparent address: {:?}", e)),
-        };
-        let taddr = taddr.encode(&network);
-
-        let output = env
-            .new_string(taddr)
-            .expect("Couldn't create Java string for taddr!");
-        Ok(output.into_raw())
-    });
-    unwrap_exc_or(&env, res, ptr::null_mut())
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveTransparentAddressFromAccountPrivKey(
-    env: JNIEnv<'_>,
-    _: JClass<'_>,
-    secret_key: JString<'_>,
-    index: jint,
-    network_id: jint,
-) -> jstring {
-    let res = panic::catch_unwind(|| {
-        let network = parse_network(network_id as u32)?;
-        let index = if index >= 0 {
-            index as u32
-        } else {
-            return Err(format_err!("index argument must be nonnegative"));
-        };
-        let xprv_str = utils::java_string_to_rust(&env, secret_key);
-        let xprv = match hdwallet_bitcoin::PrivKey::deserialize(xprv_str) {
-            Ok(xprv) => xprv,
-            Err(e) => return Err(format_err!("Invalid transparent extended privkey: {:?}", e)),
-        };
-        let tfvk = AccountPrivKey::from_extended_privkey(xprv.extended_key).to_account_pubkey();
-        let taddr = match utils::p2pkh_addr(tfvk, index) {
-            Ok(taddr) => taddr,
-            Err(e) => return Err(format_err!("Couldn't derive transparent address: {:?}", e)),
-        };
-        let taddr = taddr.encode(&network);
-
-        let output = env.new_string(taddr).expect("Couldn't create Java string!");
-
-        Ok(output.into_raw())
-    });
-    unwrap_exc_or(&env, res, ptr::null_mut())
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveTransparentAddressFromPubKey(
-    env: JNIEnv<'_>,
-    _: JClass<'_>,
-    public_key: JString<'_>,
-    network_id: jint,
-) -> jstring {
-    #[allow(deprecated)]
-    let res = panic::catch_unwind(|| {
-        let network = parse_network(network_id as u32)?;
-        let public_key_str = utils::java_string_to_rust(&env, public_key);
-        let pk = PublicKey::from_str(&public_key_str)?;
-        let taddr = pubkey_to_address(&pk).encode(&network);
-
-        let output = env.new_string(taddr).expect("Couldn't create Java string!");
-
-        Ok(output.into_raw())
-    });
-    unwrap_exc_or(&env, res, ptr::null_mut())
 }
 
 #[no_mangle]
