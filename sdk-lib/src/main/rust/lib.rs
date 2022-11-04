@@ -1264,6 +1264,34 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_shieldToAdd
         let spend_params = utils::java_string_to_rust(&env, spend_params);
         let output_params = utils::java_string_to_rust(&env, output_params);
 
+        let min_confirmations = 0;
+
+        let account = db_data
+            .get_account_for_ufvk(&usk.to_unified_full_viewing_key())?
+            .ok_or_else(|| format_err!("Spending key not recognized."))?;
+
+        let from_addrs: Vec<TransparentAddress> = db_data
+            .get_target_and_anchor_heights(min_confirmations)
+            .map_err(|e| format_err!("Error while fetching anchor height: {}", e))
+            .and_then(|opt_anchor| {
+                opt_anchor
+                    .map(|(_, h)| h)
+                    .ok_or_else(|| format_err!("height not available; scan required."))
+            })
+            .and_then(|anchor| {
+                db_data
+                    .get_transparent_balances(account, anchor)
+                    .map_err(|e| {
+                        format_err!(
+                            "Error while fetching transparent balances for {:?}: {}",
+                            account,
+                            e
+                        )
+                    })
+            })?
+            .into_keys()
+            .collect();
+
         let memo = Memo::from_bytes(&memo_bytes).unwrap();
 
         let prover = LocalTxProver::new(Path::new(&spend_params), Path::new(&output_params));
@@ -1273,8 +1301,9 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_shieldToAdd
             &network,
             prover,
             &usk,
+            &from_addrs,
             &MemoBytes::from(&memo),
-            0,
+            min_confirmations,
         )
         .map_err(|e| format_err!("Error while shielding transaction: {}", e))
     });
