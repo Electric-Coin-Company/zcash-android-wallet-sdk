@@ -11,7 +11,7 @@ use std::str::FromStr;
 use android_logger::Config;
 use failure::format_err;
 use hdwallet::traits::{Deserialize, Serialize};
-use jni::objects::JValue;
+use jni::objects::{JObject, JValue};
 use jni::{
     objects::{JClass, JString},
     sys::{jboolean, jbyteArray, jint, jlong, jobject, jobjectArray, jstring, JNI_FALSE, JNI_TRUE},
@@ -149,15 +149,16 @@ fn encode_usk(
     usk: UnifiedSpendingKey,
 ) -> Result<jobject, failure::Error> {
     let encoded = SecretVec::new(usk.to_bytes(Era::Orchard));
+    let bytes = env.byte_array_from_slice(encoded.expose_secret())?;
     let output = env.new_object(
         "cash/z/ecc/android/sdk/model/UnifiedSpendingKey",
         "(I[B)V",
         &[
             JValue::Int(u32::from(account) as i32),
-            JValue::Object(env.byte_array_from_slice(encoded.expose_secret())?.into()),
+            JValue::Object(unsafe { JObject::from_raw(bytes) }),
         ],
     )?;
-    Ok(output.into_inner())
+    Ok(output.into_raw())
 }
 
 fn decode_usk(env: &JNIEnv<'_>, usk: jbyteArray) -> Result<UnifiedSpendingKey, failure::Error> {
@@ -360,7 +361,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveU
         let output = env
             .new_string(address_str)
             .expect("Couldn't create Java string!");
-        Ok(output.into_inner())
+        Ok(output.into_raw())
     });
     unwrap_exc_or(&env, res, ptr::null_mut())
 }
@@ -392,7 +393,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveU
         let output = env
             .new_string(address_str)
             .expect("Couldn't create Java string!");
-        Ok(output.into_inner())
+        Ok(output.into_raw())
     });
     unwrap_exc_or(&env, res, ptr::null_mut())
 }
@@ -414,7 +415,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveU
             .new_string(ufvk.encode(&network))
             .expect("Couldn't create Java string!");
 
-        Ok(output.into_inner())
+        Ok(output.into_raw())
     });
     unwrap_exc_or(&env, res, ptr::null_mut())
 }
@@ -480,7 +481,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_getCurrentA
                 let output = env
                     .new_string(addr_str)
                     .expect("Couldn't create Java string!");
-                Ok(output.into_inner())
+                Ok(output.into_raw())
             }
             Ok(None) => Err(format_err!("{:?} is not known to the wallet", account)),
             Err(e) => Err(format_err!("Error while fetching address: {}", e)),
@@ -534,7 +535,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_getTranspar
             let output = env
                 .new_string(taddr.encode())
                 .expect("Couldn't create Java string!");
-            Ok(output.into_inner())
+            Ok(output.into_raw())
         } else {
             Err(format_err!(
                 "Unified Address doesn't contain a transparent receiver"
@@ -565,7 +566,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_getSaplingR
             let output = env
                 .new_string(ZcashAddress::from_sapling(network, addr.to_bytes()).encode())
                 .expect("Couldn't create Java string!");
-            Ok(output.into_inner())
+            Ok(output.into_raw())
         } else {
             Err(format_err!(
                 "Unified Address doesn't contain a Sapling receiver"
@@ -815,7 +816,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_getReceived
             })?;
 
         let output = env.new_string(memo).expect("Couldn't create Java string!");
-        Ok(output.into_inner())
+        Ok(output.into_raw())
     });
     unwrap_exc_or(&env, res, ptr::null_mut())
 }
@@ -842,7 +843,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_getSentMemo
             })?;
 
         let output = env.new_string(memo).expect("Couldn't create Java string!");
-        Ok(output.into_inner())
+        Ok(output.into_raw())
     });
 
     unwrap_exc_or(&env, res, ptr::null_mut())
@@ -1052,7 +1053,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveT
         let output = env
             .new_string(xprv_str)
             .expect("Couldn't create Java string for private key!");
-        Ok(output.into_inner())
+        Ok(output.into_raw())
     });
     unwrap_exc_or(&env, res, ptr::null_mut())
 }
@@ -1091,7 +1092,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveT
         let output = env
             .new_string(taddr)
             .expect("Couldn't create Java string for taddr!");
-        Ok(output.into_inner())
+        Ok(output.into_raw())
     });
     unwrap_exc_or(&env, res, ptr::null_mut())
 }
@@ -1125,7 +1126,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveT
 
         let output = env.new_string(taddr).expect("Couldn't create Java string!");
 
-        Ok(output.into_inner())
+        Ok(output.into_raw())
     });
     unwrap_exc_or(&env, res, ptr::null_mut())
 }
@@ -1146,7 +1147,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveT
 
         let output = env.new_string(taddr).expect("Couldn't create Java string!");
 
-        Ok(output.into_inner())
+        Ok(output.into_raw())
     });
     unwrap_exc_or(&env, res, ptr::null_mut())
 }
