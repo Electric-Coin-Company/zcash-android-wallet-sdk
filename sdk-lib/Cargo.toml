@@ -21,22 +21,21 @@ log-panics = "2.0.0"
 schemer = "0.2"
 secp256k1 = "0.21"
 secrecy = "0.8"
-zcash_address = "0.1"
+zcash_address = "0.2"
 zcash_client_backend = { version = "0.5", features = ["transparent-inputs", "unstable"] }
 zcash_client_sqlite = { version = "0.3", features = ["transparent-inputs", "unstable"] }
-zcash_primitives = "0.7"
-zcash_proofs = "0.7"
+zcash_primitives = "0.8"
+zcash_proofs = "0.8"
 
 # Revision corresponds to the pending zcash_primitives 0.8.0.
 [patch.crates-io]
-orchard = { git = "https://github.com/zcash/orchard.git", rev = "4035a97d178f99bb889f4d7ed26c59378fa88961" }
 schemer = { git = "https://github.com/aschampion/schemer.git", rev = "6726b60f43f72c6e24a18d31be0ec7d42829e5e1" }
 schemer-rusqlite = { git = "https://github.com/aschampion/schemer.git", rev = "6726b60f43f72c6e24a18d31be0ec7d42829e5e1" }
-zcash_address = { git = 'https://github.com/zcash/librustzcash.git', rev='b3dc323876e07d990392855c30a2958d37750e24' }
-zcash_client_backend = { git = 'https://github.com/zcash/librustzcash.git', rev='b3dc323876e07d990392855c30a2958d37750e24' }
-zcash_client_sqlite = { git = 'https://github.com/zcash/librustzcash.git', rev='b3dc323876e07d990392855c30a2958d37750e24' }
-zcash_primitives = { git = 'https://github.com/zcash/librustzcash.git', rev='b3dc323876e07d990392855c30a2958d37750e24' }
-zcash_proofs = { git = 'https://github.com/zcash/librustzcash.git', rev='b3dc323876e07d990392855c30a2958d37750e24' }
+zcash_address = { git = 'https://github.com/zcash/librustzcash.git', rev='c5d8484f1926a2cc53cd260808eb15be548212ab' }
+zcash_client_backend = { git = 'https://github.com/zcash/librustzcash.git', rev='c5d8484f1926a2cc53cd260808eb15be548212ab' }
+zcash_client_sqlite = { git = 'https://github.com/zcash/librustzcash.git', rev='c5d8484f1926a2cc53cd260808eb15be548212ab' }
+zcash_primitives = { git = 'https://github.com/zcash/librustzcash.git', rev='c5d8484f1926a2cc53cd260808eb15be548212ab' }
+zcash_proofs = { git = 'https://github.com/zcash/librustzcash.git', rev='c5d8484f1926a2cc53cd260808eb15be548212ab' }
 
 ## Uncomment this to test librustzcash changes locally
 #[patch.crates-io]
