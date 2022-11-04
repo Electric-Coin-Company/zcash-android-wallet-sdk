@@ -1,18 +1,9 @@
-use hdwallet::{ExtendedPrivKey, KeyChain};
 use jni::{
     descriptors::Desc,
     errors::Result as JNIResult,
     objects::{JClass, JObject, JString},
     sys::{jobjectArray, jsize},
     JNIEnv,
-};
-use zcash_primitives::{
-    consensus,
-    legacy::{
-        keys::{AccountPubKey, IncomingViewingKey},
-        TransparentAddress,
-    },
-    zip32::AccountId,
 };
 
 use std::ops::Deref;
@@ -87,27 +78,3 @@ where
 //    }
 //    outer
 //}
-
-pub(crate) fn p2pkh_xprv<P: consensus::Parameters>(
-    params: &P,
-    seed: &[u8],
-    account: AccountId,
-) -> Result<hdwallet_bitcoin::PrivKey, hdwallet::error::Error> {
-    let master_key = ExtendedPrivKey::with_seed(&seed)?;
-    let key_chain = hdwallet::DefaultKeyChain::new(master_key);
-    let chain_path = format!("m/44H/{}H/{}H", params.coin_type(), u32::from(account)).into();
-    let (extended_key, derivation) = key_chain.derive_private_key(chain_path)?;
-    Ok(hdwallet_bitcoin::PrivKey {
-        network: hdwallet_bitcoin::Network::MainNet,
-        derivation,
-        extended_key,
-    })
-}
-
-pub(crate) fn p2pkh_addr(
-    tfvk: AccountPubKey,
-    index: u32,
-) -> Result<TransparentAddress, hdwallet::error::Error> {
-    tfvk.derive_external_ivk()
-        .and_then(|tivk| tivk.derive_address(index))
-}

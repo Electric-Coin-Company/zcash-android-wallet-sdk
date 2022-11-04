@@ -65,8 +65,6 @@ class TestWallet(
     private val seed: ByteArray = Mnemonics.MnemonicCode(seedPhrase).toSeed()
     private val shieldedSpendingKey =
         runBlocking { DerivationTool.deriveUnifiedSpendingKey(seed, network = network, Account.DEFAULT) }
-    private val transparentAccountPrivateKey =
-        runBlocking { DerivationTool.deriveTransparentAccountPrivateKey(seed, network = network, Account.DEFAULT) }
     val synchronizer: SdkSynchronizer = Synchronizer.newBlocking(
         context,
         network,
@@ -81,9 +79,9 @@ class TestWallet(
 
     val available get() = synchronizer.saplingBalances.value?.available
     val unifiedAddress =
-        runBlocking { DerivationTool.deriveUnifiedAddress(seed, network = network, Account.DEFAULT) }
+        runBlocking { synchronizer.getCurrentAddress(Account.DEFAULT) }
     val transparentAddress =
-        runBlocking { DerivationTool.deriveTransparentAddress(seed, network = network, Account.DEFAULT) }
+        runBlocking { synchronizer.getLegacyTransparentAddress(Account.DEFAULT) }
     val birthdayHeight get() = synchronizer.latestBirthdayHeight
     val networkName get() = synchronizer.network.networkName
 
@@ -139,7 +137,7 @@ class TestWallet(
             twig("FOUND utxo balance of total: ${walletBalance.total}  available: ${walletBalance.available}")
 
             if (walletBalance.available.value > 0L) {
-                synchronizer.shieldFunds(shieldedSpendingKey, transparentAccountPrivateKey)
+                synchronizer.shieldFunds(shieldedSpendingKey)
                     .onCompletion { twig("done shielding funds") }
                     .catch { twig("Failed with $it") }
                     .collect()

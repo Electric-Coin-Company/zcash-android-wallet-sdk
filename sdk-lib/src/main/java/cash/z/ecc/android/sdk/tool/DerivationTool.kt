@@ -97,41 +97,6 @@ class DerivationTool {
             deriveUnifiedAddressFromViewingKey(viewingKey, networkId = network.id)
         }
 
-        // WIP probably shouldn't be used just yet. Why?
-        //  - because we need the private key associated with this seed and this function doesn't return it.
-        //  - the underlying implementation needs to be split out into a few lower-level calls
-        override suspend fun deriveTransparentAddress(
-            seed: ByteArray,
-            network: ZcashNetwork,
-            account: Account,
-            index: Int
-        ): String = withRustBackendLoaded {
-            deriveTransparentAddressFromSeed(seed, account.value, index, networkId = network.id)
-        }
-
-        override suspend fun deriveTransparentAddressFromPublicKey(
-            publicKey: String,
-            network: ZcashNetwork
-        ): String = withRustBackendLoaded {
-            deriveTransparentAddressFromPubKey(pk = publicKey, networkId = network.id)
-        }
-
-        override suspend fun deriveTransparentAddressFromAccountPrivateKey(
-            privateKey: String,
-            network: ZcashNetwork,
-            index: Int
-        ): String = withRustBackendLoaded {
-            deriveTransparentAddressFromAccountPrivKey(sk = privateKey, index = index, networkId = network.id)
-        }
-
-        override suspend fun deriveTransparentAccountPrivateKey(
-            seed: ByteArray,
-            network: ZcashNetwork,
-            account: Account
-        ): String = withRustBackendLoaded {
-            deriveTransparentAccountPrivKeyFromSeed(seed, account.value, networkId = network.id)
-        }
-
         @Suppress("UNUSED_PARAMETER")
         fun validateUnifiedFullViewingKey(viewingKey: UnifiedFullViewingKey, networkId: Int = ZcashNetwork.Mainnet.id) {
             // TODO [#654] https://github.com/zcash/zcash-android-wallet-sdk/issues/654
@@ -177,26 +142,5 @@ class DerivationTool {
 
         @JvmStatic
         private external fun deriveUnifiedAddressFromViewingKey(key: String, networkId: Int): String
-
-        @JvmStatic
-        private external fun deriveTransparentAddressFromSeed(
-            seed: ByteArray,
-            account: Int,
-            index: Int,
-            networkId: Int
-        ): String
-
-        @JvmStatic
-        private external fun deriveTransparentAddressFromPubKey(pk: String, networkId: Int): String
-
-        @JvmStatic
-        private external fun deriveTransparentAddressFromAccountPrivKey(sk: String, index: Int, networkId: Int): String
-
-        @JvmStatic
-        private external fun deriveTransparentAccountPrivKeyFromSeed(
-            seed: ByteArray,
-            account: Int,
-            networkId: Int
-        ): String
     }
 }

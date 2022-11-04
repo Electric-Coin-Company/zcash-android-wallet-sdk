@@ -24,7 +24,6 @@ import cash.z.ecc.android.sdk.model.LightWalletEndpoint
 import cash.z.ecc.android.sdk.model.TransactionOverview
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.model.defaultForNetwork
-import cash.z.ecc.android.sdk.tool.DerivationTool
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
@@ -173,14 +172,9 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
     override fun onResume() {
         super.onResume()
         resetInBackground()
-        val seed = Mnemonics.MnemonicCode(sharedViewModel.seedPhrase.value).toSeed()
         viewLifecycleOwner.lifecycleScope.launchWhenStarted {
             binding.inputAddress.setText(
-                DerivationTool.deriveTransparentAddress(
-                    seed,
-                    ZcashNetwork.fromResources(requireApplicationContext()),
-                    Account.DEFAULT
-                )
+                synchronizer.getLegacyTransparentAddress(Account.DEFAULT)
             )
         }
     }
