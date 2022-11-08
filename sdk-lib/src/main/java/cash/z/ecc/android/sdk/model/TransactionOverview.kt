@@ -3,7 +3,8 @@ package cash.z.ecc.android.sdk.model
 /**
  * High level transaction information, suitable for mapping to a display of transaction history.
  *
- * Note that both sent and received transactions will have a positive net value.  Consumers of this class must
+ * Note that both sent and received transactions will have a positive net value.  Consumers of this class must check
+ * [isSentTransaction] if displaying negative values is desired.
  */
 data class TransactionOverview internal constructor(
     val id: Long,
