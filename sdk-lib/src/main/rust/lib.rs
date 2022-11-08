@@ -1,67 +1,65 @@
 #[macro_use]
 extern crate log;
 
+use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
 use std::panic;
 use std::path::Path;
 use std::ptr;
-use std::str::FromStr;
 
 use android_logger::Config;
 use failure::format_err;
+use jni::objects::{JObject, JValue};
 use jni::{
     objects::{JClass, JString},
-    sys::{jboolean, jbyteArray, jint, jlong, jobjectArray, jstring, JNI_FALSE, JNI_TRUE},
+    sys::{jboolean, jbyteArray, jint, jlong, jobject, jobjectArray, jstring, JNI_FALSE, JNI_TRUE},
     JNIEnv,
 };
 use log::Level;
-use secp256k1::key::{PublicKey, SecretKey};
-use zcash_client_backend::data_api::wallet::{shield_funds, ANCHOR_OFFSET};
+use schemer::MigratorError;
+use secrecy::{ExposeSecret, SecretVec};
+use zcash_address::{ToAddress, ZcashAddress};
+use zcash_client_backend::keys::{DecodingError, UnifiedSpendingKey};
 use zcash_client_backend::{
-    address::RecipientAddress,
+    address::{RecipientAddress, UnifiedAddress},
     data_api::{
         chain::{scan_cached_blocks, validate_chain},
         error::Error,
-        wallet::{create_spend_to_address, decrypt_and_store_transaction},
-        WalletRead,
+        wallet::{
+            create_spend_to_address, decrypt_and_store_transaction, shield_transparent_funds,
+        },
+        WalletRead, WalletWrite,
     },
-    encoding::{
-        decode_extended_full_viewing_key, decode_extended_spending_key,
-        encode_extended_full_viewing_key, encode_extended_spending_key, encode_payment_address,
-        AddressCodec,
-    },
-    keys::{
-        derive_public_key_from_seed, derive_secret_key_from_seed,
-        derive_transparent_address_from_public_key, derive_transparent_address_from_secret_key,
-        spending_key, Wif,
-    },
-    wallet::{AccountId, OvkPolicy, WalletTransparentOutput},
+    encoding::AddressCodec,
+    keys::{Era, UnifiedFullViewingKey},
+    wallet::{OvkPolicy, WalletTransparentOutput},
 };
+#[allow(deprecated)]
+use zcash_client_sqlite::wallet::get_rewind_height;
 use zcash_client_sqlite::{
     error::SqliteClientError,
-    wallet::init::{init_accounts_table, init_blocks_table, init_wallet_db},
-    wallet::{
-        delete_utxos_above, get_rewind_height, put_received_transparent_utxo, rewind_to_height,
-    },
+    wallet::init::{init_accounts_table, init_blocks_table, init_wallet_db, WalletMigrationError},
     BlockDb, NoteId, WalletDb,
 };
 use zcash_primitives::consensus::Network::{MainNetwork, TestNetwork};
 use zcash_primitives::{
     block::BlockHash,
     consensus::{BlockHeight, BranchId, Network, Parameters},
-    legacy::TransparentAddress,
+    legacy::{Script, TransparentAddress},
     memo::{Memo, MemoBytes},
     transaction::{
-        components::{Amount, OutPoint},
+        components::{Amount, OutPoint, TxOut},
         Transaction,
     },
-    zip32::ExtendedFullViewingKey,
+    zip32::{AccountId, DiversifierIndex},
 };
 use zcash_proofs::prover::LocalTxProver;
 
 use crate::utils::exception::unwrap_exc_or;
 
 mod utils;
+
+const ANCHOR_OFFSET: u32 = 10;
 
 #[cfg(debug_assertions)]
 fn print_debug_state() {
@@ -104,67 +102,155 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_initLogs(
     print_debug_state()
 }
 
+/// Sets up the internal structure of the data database.
+///
+/// If `seed` is `null`, database migrations will be attempted without it.
+///
+/// Returns 0 if successful, 1 if the seed must be provided in order to execute the requested
+/// migrations, or -1 otherwise.
 #[no_mangle]
 pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_initDataDb(
     env: JNIEnv<'_>,
     _: JClass<'_>,
     db_data: JString<'_>,
+    seed: jbyteArray,
     network_id: jint,
-) -> jboolean {
+) -> jint {
     let res = panic::catch_unwind(|| {
         let network = parse_network(network_id as u32)?;
         let db_path = utils::java_string_to_rust(&env, db_data);
-        WalletDb::for_path(db_path, network)
-            .and_then(|db| init_wallet_db(&db))
-            .map(|()| JNI_TRUE)
-            .map_err(|e| format_err!("Error while initializing data DB: {}", e))
+
+        let mut db_data = WalletDb::for_path(db_path, network)
+            .map_err(|e| format_err!("Error while opening data DB: {}", e))?;
+
+        let seed = (!seed.is_null()).then(|| SecretVec::new(env.convert_byte_array(seed).unwrap()));
+
+        match init_wallet_db(&mut db_data, seed) {
+            Ok(()) => Ok(0),
+            Err(MigratorError::Migration { error, .. })
+                if matches!(error, WalletMigrationError::SeedRequired) =>
+            {
+                Ok(1)
+            }
+            Err(e) => Err(format_err!("Error while initializing data DB: {}", e)),
+        }
     });
-    unwrap_exc_or(&env, res, JNI_FALSE)
+    unwrap_exc_or(&env, res, -1)
 }
 
+fn encode_usk(
+    env: &JNIEnv<'_>,
+    account: AccountId,
+    usk: UnifiedSpendingKey,
+) -> Result<jobject, failure::Error> {
+    let encoded = SecretVec::new(usk.to_bytes(Era::Orchard));
+    let bytes = env.byte_array_from_slice(encoded.expose_secret())?;
+    let output = env.new_object(
+        "cash/z/ecc/android/sdk/model/UnifiedSpendingKey",
+        "(I[B)V",
+        &[
+            JValue::Int(u32::from(account) as i32),
+            JValue::Object(unsafe { JObject::from_raw(bytes) }),
+        ],
+    )?;
+    Ok(output.into_raw())
+}
+
+fn decode_usk(env: &JNIEnv<'_>, usk: jbyteArray) -> Result<UnifiedSpendingKey, failure::Error> {
+    let usk_bytes = SecretVec::new(env.convert_byte_array(usk).unwrap());
+
+    // The remainder of the function is safe.
+    UnifiedSpendingKey::from_bytes(Era::Orchard, usk_bytes.expose_secret()).map_err(|e| match e {
+        DecodingError::EraMismatch(era) => format_err!(
+            "Spending key was from era {:?}, but {:?} was expected.",
+            era,
+            Era::Orchard
+        ),
+        e => format_err!(
+            "An error occurred decoding the provided unified spending key: {:?}",
+            e
+        ),
+    })
+}
+
+/// Adds the next available account-level spend authority, given the current set of
+/// [ZIP 316] account identifiers known, to the wallet database.
+///
+/// Returns the newly created [ZIP 316] account identifier, along with the binary encoding
+/// of the [`UnifiedSpendingKey`] for the newly created account. The caller should store
+/// the returned spending key in a secure fashion.
+///
+/// If `seed` was imported from a backup and this method is being used to restore a
+/// previous wallet state, you should use this method to add all of the desired
+/// accounts before scanning the chain from the seed's birthday height.
+///
+/// By convention, wallets should only allow a new account to be generated after funds
+/// have been received by the currently-available account (in order to enable
+/// automated account recovery).
+///
+/// [ZIP 316]: https://zips.z.cash/zip-0316
+#[no_mangle]
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_createAccount(
+    env: JNIEnv<'_>,
+    _: JClass<'_>,
+    db_data: JString<'_>,
+    seed: jbyteArray,
+    network_id: jint,
+) -> jobject {
+    let res = panic::catch_unwind(|| {
+        let network = parse_network(network_id as u32)?;
+        let db_data = wallet_db(&env, network, db_data)?;
+        let seed = SecretVec::new(env.convert_byte_array(seed).unwrap());
+
+        let mut db_ops = db_data.get_update_ops()?;
+        let (account, usk) = db_ops
+            .create_account(&seed)
+            .map_err(|e| format_err!("Error while initializing accounts: {}", e))?;
+
+        encode_usk(&env, account, usk)
+    });
+    unwrap_exc_or(&env, res, ptr::null_mut())
+}
+
+/// Initialises the data database with the given set of unified full viewing keys.
+///
+/// This should only be used in special cases for implementing wallet recovery; prefer
+/// `RustBackend.createAccount` for normal account creation purposes.
 #[no_mangle]
 pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_initAccountsTableWithKeys(
     env: JNIEnv<'_>,
     _: JClass<'_>,
     db_data: JString<'_>,
-    extfvks_arr: jobjectArray,
-    extpubs_arr: jobjectArray,
+    ufvks_arr: jobjectArray,
     network_id: jint,
 ) -> jboolean {
     let res = panic::catch_unwind(|| {
         let network = parse_network(network_id as u32)?;
         let db_data = wallet_db(&env, network, db_data)?;
         // TODO: avoid all this unwrapping and also surface errors, better
-        let count = env.get_array_length(extfvks_arr).unwrap();
-        let extfvks = (0..count)
-            .map(|i| env.get_object_array_element(extfvks_arr, i))
+        let count = env.get_array_length(ufvks_arr).unwrap();
+        let ufvks = (0..count)
+            .map(|i| env.get_object_array_element(ufvks_arr, i))
             .map(|jstr| utils::java_string_to_rust(&env, jstr.unwrap().into()))
-            .map(|vkstr| {
-                decode_extended_full_viewing_key(
-                    network.hrp_sapling_extended_full_viewing_key(),
-                    &vkstr,
-                )
-                    .map_err(|err| format_err!("Invalid bech32: {}", err))
-                    .and_then(|extfvk|
-                        extfvk.ok_or_else(|| {
+            .map(|ufvkstr| {
+                UnifiedFullViewingKey::decode(&network, &ufvkstr).map_err(|e| {
+                    if e.starts_with("UFVK is for network") {
                             let (network_name, other) = if network == TestNetwork {
                                 ("testnet", "mainnet")
                             } else {
                                 ("mainnet", "testnet")
                             };
                             format_err!("Error: Wrong network! Unable to decode viewing key for {}. Check whether this is a key for {}.", network_name, other)
-                        }))
+                    } else {
+                        format_err!("Invalid Unified Full Viewing Key: {}", e)
+                    }
+                })
             })
-            .collect::<Result<Vec<_>, _>>()?;
+            .enumerate() // TODO: Pass account IDs across the FFI.
+            .map(|(i, res)| res.map(|ufvk| (AccountId::from(i as u32), ufvk)))
+            .collect::<Result<HashMap<_,_>, _>>()?;
 
-        let taddrs: Vec<_> = (0..count)
-            .map(|i| env.get_object_array_element(extpubs_arr, i))
-            .map(|jstr| utils::java_string_to_rust(&env, jstr.unwrap().into()))
-            .map(|extpub_str| PublicKey::from_str(&extpub_str).unwrap())
-            .map(|pk| derive_transparent_address_from_public_key(&pk))
-            .collect::<Vec<_>>();
-
-        match init_accounts_table(&db_data, &extfvks[..], &taddrs[..]) {
+        match init_accounts_table(&db_data, &ufvks) {
             Ok(()) => Ok(JNI_TRUE),
             Err(e) => Err(format_err!("Error while initializing accounts: {}", e)),
         }
@@ -172,8 +258,38 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_initAccount
     unwrap_exc_or(&env, res, JNI_FALSE)
 }
 
+/// Derives and returns a unified spending key from the given seed for the given account ID.
+///
+/// Returns the newly created [ZIP 316] account identifier, along with the binary encoding
+/// of the [`UnifiedSpendingKey`] for the newly created account. The caller should store
+/// the returned spending key in a secure fashion.
 #[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveExtendedSpendingKeys(
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveSpendingKey(
+    env: JNIEnv<'_>,
+    _: JClass<'_>,
+    seed: jbyteArray,
+    account: jint,
+    network_id: jint,
+) -> jobject {
+    let res = panic::catch_unwind(|| {
+        let network = parse_network(network_id as u32)?;
+        let seed = SecretVec::new(env.convert_byte_array(seed).unwrap());
+        let account = if account >= 0 {
+            AccountId::from(account as u32)
+        } else {
+            return Err(format_err!("accounts argument must be greater than zero"));
+        };
+
+        let usk = UnifiedSpendingKey::from_seed(&network, seed.expose_secret(), account)
+            .map_err(|e| format_err!("error generating unified spending key from seed: {:?}", e))?;
+
+        encode_usk(&env, account, usk)
+    });
+    unwrap_exc_or(&env, res, ptr::null_mut())
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveUnifiedFullViewingKeysFromSeed(
     env: JNIEnv<'_>,
     _: JClass<'_>,
     seed: jbyteArray,
@@ -189,20 +305,22 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveE
             return Err(format_err!("accounts argument must be greater than zero"));
         };
 
-        let extsks: Vec<_> = (0..accounts)
-            .map(|account| spending_key(&seed, network.coin_type(), AccountId(account)))
-            .collect();
+        let ufvks: Vec<_> = (0..accounts)
+            .map(|account| {
+                let account_id = AccountId::from(account);
+                UnifiedSpendingKey::from_seed(&network, &seed, account_id)
+                    .map_err(|e| {
+                        format_err!("error generating unified spending key from seed: {:?}", e)
+                    })
+                    .map(|usk| usk.to_unified_full_viewing_key().encode(&network))
+            })
+            .collect::<Result<_, _>>()?;
 
         Ok(utils::rust_vec_to_java(
             &env,
-            extsks,
+            ufvks,
             "java/lang/String",
-            |env, extsk| {
-                env.new_string(encode_extended_spending_key(
-                    network.hrp_sapling_extended_spending_key(),
-                    &extsk,
-                ))
-            },
+            |env, ufvk| env.new_string(ufvk),
             |env| env.new_string(""),
         ))
     });
@@ -210,56 +328,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveE
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveUnifiedViewingKeysFromSeed(
-    env: JNIEnv<'_>,
-    _: JClass<'_>,
-    seed: jbyteArray,
-    accounts: jint,
-    network_id: jint,
-) -> jobjectArray {
-    let res = panic::catch_unwind(|| {
-        let network = parse_network(network_id as u32)?;
-        let seed = env.convert_byte_array(seed).unwrap();
-        let accounts = if accounts > 0 {
-            accounts as u32
-        } else {
-            return Err(format_err!("accounts argument must be greater than zero"));
-        };
-
-        let extfvks: Vec<_> = (0..accounts)
-            .map(|account| {
-                encode_extended_full_viewing_key(
-                    network.hrp_sapling_extended_full_viewing_key(),
-                    &ExtendedFullViewingKey::from(&spending_key(
-                        &seed,
-                        network.coin_type(),
-                        AccountId(account),
-                    )),
-                )
-            })
-            .collect();
-
-        let extpubs: Vec<_> = (0..accounts)
-            .map(|account| {
-                let pk =
-                    derive_public_key_from_seed(&network, &seed, AccountId(account), 0).unwrap();
-                hex::encode(&pk.serialize())
-            })
-            .collect();
-
-        Ok(utils::rust_vec_to_java_2d(
-            &env,
-            extfvks,
-            extpubs,
-            |env, extfvkstr| env.new_string(extfvkstr),
-            |env| env.new_string(""),
-        ))
-    });
-    unwrap_exc_or(&env, res, ptr::null_mut())
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveShieldedAddressFromSeed(
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveUnifiedAddressFromSeed(
     env: JNIEnv<'_>,
     _: JClass<'_>,
     seed: jbyteArray,
@@ -272,92 +341,76 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveS
         let account_index = if account_index >= 0 {
             account_index as u32
         } else {
-            return Err(format_err!("accountIndex argument must be positive"));
+            return Err(format_err!("accountIndex argument must be nonnegative"));
         };
 
-        let address = spending_key(&seed, network.coin_type(), AccountId(account_index))
-            .default_address()
-            .unwrap()
-            .1;
-        let address_str = encode_payment_address(network.hrp_sapling_payment_address(), &address);
+        let account_id = AccountId::from(account_index);
+        let ufvk = UnifiedSpendingKey::from_seed(&network, &seed, account_id)
+            .map_err(|e| format_err!("error generating unified spending key from seed: {:?}", e))
+            .map(|usk| usk.to_unified_full_viewing_key())?;
+
+        let (ua, _) = ufvk
+            .find_address(DiversifierIndex::new())
+            .expect("At least one Unified Address should be derivable");
+        let address_str = ua.encode(&network);
         let output = env
             .new_string(address_str)
             .expect("Couldn't create Java string!");
-        Ok(output.into_inner())
+        Ok(output.into_raw())
     });
     unwrap_exc_or(&env, res, ptr::null_mut())
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveShieldedAddressFromViewingKey(
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveUnifiedAddressFromViewingKey(
     env: JNIEnv<'_>,
     _: JClass<'_>,
-    extfvk_string: JString<'_>,
+    ufvk_string: JString<'_>,
     network_id: jint,
 ) -> jstring {
     let res = panic::catch_unwind(|| {
         let network = parse_network(network_id as u32)?;
-        let extfvk_string = utils::java_string_to_rust(&env, extfvk_string);
-        let extfvk = match decode_extended_full_viewing_key(
-            network.hrp_sapling_extended_full_viewing_key(),
-            &extfvk_string,
-        ) {
-            Ok(Some(extfvk)) => extfvk,
-            Ok(None) => {
-                return Err(format_err!("Failed to parse viewing key string in order to derive the address. Deriving a viewing key from the string returned no results. Encoding was valid but type was incorrect."));
-            }
+        let ufvk_string = utils::java_string_to_rust(&env, ufvk_string);
+        let ufvk = match UnifiedFullViewingKey::decode(&network, &ufvk_string) {
+            Ok(ufvk) => ufvk,
             Err(e) => {
                 return Err(format_err!(
                     "Error while deriving viewing key from string input: {}",
-                    e
+                    e,
                 ));
             }
         };
 
-        let address = extfvk.default_address().unwrap().1;
-        let address_str = encode_payment_address(network.hrp_sapling_payment_address(), &address);
+        // Derive the default Unified Address (containing the default Sapling payment
+        // address that older SDKs used).
+        let (ua, _) = ufvk.default_address();
+        let address_str = ua.encode(&network);
         let output = env
             .new_string(address_str)
             .expect("Couldn't create Java string!");
-        Ok(output.into_inner())
+        Ok(output.into_raw())
     });
     unwrap_exc_or(&env, res, ptr::null_mut())
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveExtendedFullViewingKey(
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveUnifiedFullViewingKey(
     env: JNIEnv<'_>,
     _: JClass<'_>,
-    extsk_string: JString<'_>,
+    usk: jbyteArray,
     network_id: jint,
-) -> jobjectArray {
+) -> jstring {
     let res = panic::catch_unwind(|| {
+        let usk = decode_usk(&env, usk)?;
         let network = parse_network(network_id as u32)?;
-        let extsk_string = utils::java_string_to_rust(&env, extsk_string);
-        let extfvk = match decode_extended_spending_key(
-            network.hrp_sapling_extended_spending_key(),
-            &extsk_string,
-        ) {
-            Ok(Some(extsk)) => ExtendedFullViewingKey::from(&extsk),
-            Ok(None) => {
-                return Err(format_err!("Deriving viewing key from spending key returned no results. Encoding was valid but type was incorrect."));
-            }
-            Err(e) => {
-                return Err(format_err!(
-                    "Error while deriving viewing key from spending key: {}",
-                    e
-                ));
-            }
-        };
+
+        let ufvk = usk.to_unified_full_viewing_key();
 
         let output = env
-            .new_string(encode_extended_full_viewing_key(
-                network.hrp_sapling_extended_full_viewing_key(),
-                &extfvk,
-            ))
+            .new_string(ufvk.encode(&network))
             .expect("Couldn't create Java string!");
 
-        Ok(output.into_inner())
+        Ok(output.into_raw())
     });
     unwrap_exc_or(&env, res, ptr::null_mut())
 }
@@ -390,7 +443,13 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_initBlocksT
             hex::decode(utils::java_string_to_rust(&env, sapling_tree_string)).unwrap();
 
         debug!("initializing blocks table with height {}", height);
-        match init_blocks_table(&db_data, (height as u32).try_into()?, hash, time, &sapling_tree) {
+        match init_blocks_table(
+            &db_data,
+            (height as u32).try_into()?,
+            hash,
+            time,
+            &sapling_tree,
+        ) {
             Ok(()) => Ok(JNI_TRUE),
             Err(e) => Err(format_err!("Error while initializing blocks table: {}", e)),
         }
@@ -399,7 +458,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_initBlocksT
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_getShieldedAddress(
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_getCurrentAddress(
     env: JNIEnv<'_>,
     _: JClass<'_>,
     db_data: JString<'_>,
@@ -409,25 +468,120 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_getShielded
     let res = panic::catch_unwind(|| {
         let network = parse_network(network_id as u32)?;
         let db_data = wallet_db(&env, network, db_data)?;
-        let account = AccountId(account.try_into()?);
+        let account = AccountId::from(u32::try_from(account)?);
 
-        match (&db_data).get_address(account) {
+        match (&db_data).get_current_address(account) {
             Ok(Some(addr)) => {
-                let addr_str = encode_payment_address(network.hrp_sapling_payment_address(), &addr);
+                let addr_str = addr.encode(&network);
                 let output = env
                     .new_string(addr_str)
                     .expect("Couldn't create Java string!");
-                Ok(output.into_inner())
+                Ok(output.into_raw())
             }
-            Ok(None) => Err(format_err!(
-                "No payment address was available for account {:?}",
-                account
-            )),
+            Ok(None) => Err(format_err!("{:?} is not known to the wallet", account)),
             Err(e) => Err(format_err!("Error while fetching address: {}", e)),
         }
     });
 
     unwrap_exc_or(&env, res, ptr::null_mut())
+}
+
+struct UnifiedAddressParser(UnifiedAddress);
+
+impl zcash_address::TryFromRawAddress for UnifiedAddressParser {
+    type Error = failure::Error;
+
+    fn try_from_raw_unified(
+        data: zcash_address::unified::Address,
+    ) -> Result<Self, zcash_address::ConversionError<Self::Error>> {
+        data.try_into()
+            .map(UnifiedAddressParser)
+            .map_err(|e| format_err!("Invalid Unified Address: {}", e).into())
+    }
+}
+
+/// Returns the transparent receiver within the given Unified Address, if any.
+#[no_mangle]
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_getTransparentReceiverForUnifiedAddress(
+    env: JNIEnv<'_>,
+    _: JClass<'_>,
+    ua: JString<'_>,
+) -> jstring {
+    let res = panic::catch_unwind(|| {
+        let ua_str = utils::java_string_to_rust(&env, ua);
+
+        let (network, ua) = match ZcashAddress::try_from_encoded(&ua_str) {
+            Ok(addr) => addr
+                .convert::<(_, UnifiedAddressParser)>()
+                .map_err(|e| format_err!("Not a Unified Address: {}", e)),
+            Err(e) => return Err(format_err!("Invalid Zcash address: {}", e)),
+        }?;
+
+        if let Some(taddr) = ua.0.transparent() {
+            let taddr = match taddr {
+                TransparentAddress::PublicKey(data) => {
+                    ZcashAddress::from_transparent_p2pkh(network, *data)
+                }
+                TransparentAddress::Script(data) => {
+                    ZcashAddress::from_transparent_p2sh(network, *data)
+                }
+            };
+
+            let output = env
+                .new_string(taddr.encode())
+                .expect("Couldn't create Java string!");
+            Ok(output.into_raw())
+        } else {
+            Err(format_err!(
+                "Unified Address doesn't contain a transparent receiver"
+            ))
+        }
+    });
+    unwrap_exc_or(&env, res, ptr::null_mut())
+}
+
+/// Returns the Sapling receiver within the given Unified Address, if any.
+#[no_mangle]
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_getSaplingReceiverForUnifiedAddress(
+    env: JNIEnv<'_>,
+    _: JClass<'_>,
+    ua: JString<'_>,
+) -> jstring {
+    let res = panic::catch_unwind(|| {
+        let ua_str = utils::java_string_to_rust(&env, ua);
+
+        let (network, ua) = match ZcashAddress::try_from_encoded(&ua_str) {
+            Ok(addr) => addr
+                .convert::<(_, UnifiedAddressParser)>()
+                .map_err(|e| format_err!("Not a Unified Address: {}", e)),
+            Err(e) => return Err(format_err!("Invalid Zcash address: {}", e)),
+        }?;
+
+        if let Some(addr) = ua.0.sapling() {
+            let output = env
+                .new_string(ZcashAddress::from_sapling(network, addr.to_bytes()).encode())
+                .expect("Couldn't create Java string!");
+            Ok(output.into_raw())
+        } else {
+            Err(format_err!(
+                "Unified Address doesn't contain a Sapling receiver"
+            ))
+        }
+    });
+    unwrap_exc_or(&env, res, ptr::null_mut())
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_isValidSpendingKey(
+    env: JNIEnv<'_>,
+    _: JClass<'_>,
+    usk: jbyteArray,
+) -> jboolean {
+    let res = panic::catch_unwind(|| {
+        let _usk = decode_usk(&env, usk)?;
+        Ok(JNI_TRUE)
+    });
+    unwrap_exc_or(&env, res, JNI_FALSE)
 }
 
 #[no_mangle]
@@ -444,7 +598,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_isValidShie
         match RecipientAddress::decode(&network, &addr) {
             Some(addr) => match addr {
                 RecipientAddress::Shielded(_) => Ok(JNI_TRUE),
-                RecipientAddress::Transparent(_) => Ok(JNI_FALSE),
+                RecipientAddress::Transparent(_) | RecipientAddress::Unified(_) => Ok(JNI_FALSE),
             },
             None => Err(format_err!("Address is for the wrong network")),
         }
@@ -465,8 +619,30 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_isValidTran
 
         match RecipientAddress::decode(&network, &addr) {
             Some(addr) => match addr {
-                RecipientAddress::Shielded(_) => Ok(JNI_FALSE),
+                RecipientAddress::Shielded(_) | RecipientAddress::Unified(_) => Ok(JNI_FALSE),
                 RecipientAddress::Transparent(_) => Ok(JNI_TRUE),
+            },
+            None => Err(format_err!("Address is for the wrong network")),
+        }
+    });
+    unwrap_exc_or(&env, res, JNI_FALSE)
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_isValidUnifiedAddress(
+    env: JNIEnv<'_>,
+    _: JClass<'_>,
+    addr: JString<'_>,
+    network_id: jint,
+) -> jboolean {
+    let res = panic::catch_unwind(|| {
+        let network = parse_network(network_id as u32)?;
+        let addr = utils::java_string_to_rust(&env, addr);
+
+        match RecipientAddress::decode(&network, &addr) {
+            Some(addr) => match addr {
+                RecipientAddress::Unified(_) => Ok(JNI_TRUE),
+                RecipientAddress::Shielded(_) | RecipientAddress::Transparent(_) => Ok(JNI_FALSE),
             },
             None => Err(format_err!("Address is for the wrong network")),
         }
@@ -485,10 +661,10 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_getBalance(
     let res = panic::catch_unwind(|| {
         let network = parse_network(network_id as u32)?;
         let db_data = wallet_db(&env, network, db_data)?;
-        let account = AccountId(accountj.try_into()?);
+        let account = AccountId::from(u32::try_from(accountj)?);
 
         (&db_data)
-            .get_target_and_anchor_heights()
+            .get_target_and_anchor_heights(ANCHOR_OFFSET)
             .map_err(|e| format_err!("Error while fetching anchor height: {}", e))
             .and_then(|opt_anchor| {
                 opt_anchor
@@ -520,7 +696,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_getVerified
         let taddr = TransparentAddress::decode(&network, &addr).unwrap();
 
         let amount = (&db_data)
-            .get_target_and_anchor_heights()
+            .get_target_and_anchor_heights(ANCHOR_OFFSET)
             .map_err(|e| format_err!("Error while fetching anchor height: {}", e))
             .and_then(|opt_anchor| {
                 opt_anchor
@@ -529,12 +705,13 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_getVerified
             })
             .and_then(|anchor| {
                 (&db_data)
-                    .get_unspent_transparent_utxos(&taddr, anchor - ANCHOR_OFFSET)
+                    .get_unspent_transparent_outputs(&taddr, anchor - ANCHOR_OFFSET)
                     .map_err(|e| format_err!("Error while fetching verified balance: {}", e))
             })?
             .iter()
-            .map(|utxo| utxo.value)
-            .sum::<Amount>();
+            .map(|utxo| utxo.txout().value)
+            .sum::<Option<Amount>>()
+            .ok_or_else(|| format_err!("Balance overflowed MAX_MONEY."))?;
 
         Ok(amount.into())
     });
@@ -557,7 +734,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_getTotalTra
         let taddr = TransparentAddress::decode(&network, &addr).unwrap();
 
         let amount = (&db_data)
-            .get_target_and_anchor_heights()
+            .get_target_and_anchor_heights(ANCHOR_OFFSET)
             .map_err(|e| format_err!("Error while fetching anchor height: {}", e))
             .and_then(|opt_anchor| {
                 opt_anchor
@@ -566,12 +743,13 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_getTotalTra
             })
             .and_then(|anchor| {
                 (&db_data)
-                    .get_unspent_transparent_utxos(&taddr, anchor)
+                    .get_unspent_transparent_outputs(&taddr, anchor)
                     .map_err(|e| format_err!("Error while fetching verified balance: {}", e))
             })?
             .iter()
-            .map(|utxo| utxo.value)
-            .sum::<Amount>();
+            .map(|utxo| utxo.txout().value)
+            .sum::<Option<Amount>>()
+            .ok_or_else(|| format_err!("Balance overflowed MAX_MONEY"))?;
 
         Ok(amount.into())
     });
@@ -590,10 +768,10 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_getVerified
     let res = panic::catch_unwind(|| {
         let network = parse_network(network_id as u32)?;
         let db_data = wallet_db(&env, network, db_data)?;
-        let account = AccountId(account.try_into()?);
+        let account = AccountId::from(u32::try_from(account)?);
 
         (&db_data)
-            .get_target_and_anchor_heights()
+            .get_target_and_anchor_heights(ANCHOR_OFFSET)
             .map_err(|e| format_err!("Error while fetching anchor height: {}", e))
             .and_then(|opt_anchor| {
                 opt_anchor
@@ -633,7 +811,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_getReceived
             })?;
 
         let output = env.new_string(memo).expect("Couldn't create Java string!");
-        Ok(output.into_inner())
+        Ok(output.into_raw())
     });
     unwrap_exc_or(&env, res, ptr::null_mut())
 }
@@ -660,7 +838,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_getSentMemo
             })?;
 
         let output = env.new_string(memo).expect("Couldn't create Java string!");
-        Ok(output.into_inner())
+        Ok(output.into_raw())
     });
 
     unwrap_exc_or(&env, res, ptr::null_mut())
@@ -710,6 +888,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_getNearestR
     height: jlong,
     network_id: jint,
 ) -> jlong {
+    #[allow(deprecated)]
     let res = panic::catch_unwind(|| {
         if height < 100 {
             Ok(height)
@@ -748,9 +927,11 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_rewindToHei
     let res = panic::catch_unwind(|| {
         let network = parse_network(network_id as u32)?;
         let db_data = wallet_db(&env, network, db_data)?;
+        let mut db_data = db_data.get_update_ops()?;
 
         let height = BlockHeight::try_from(height)?;
-        rewind_to_height(&db_data, height)
+        db_data
+            .rewind_to_height(height)
             .map(|_| 1)
             .map_err(|e| format_err!("Error while rewinding data DB to height {}: {}", height, e))
     });
@@ -764,6 +945,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_scanBlocks(
     _: JClass<'_>,
     db_cache: JString<'_>,
     db_data: JString<'_>,
+    limit: jint,
     network_id: jint,
 ) -> jboolean {
     let res = panic::catch_unwind(|| {
@@ -771,10 +953,15 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_scanBlocks(
         let db_cache = block_db(&env, db_cache)?;
         let db_data = wallet_db(&env, network, db_data)?;
         let mut db_data = db_data.get_update_ops()?;
+        let limit = u32::try_from(limit).ok();
 
-        match scan_cached_blocks(&network, &db_cache, &mut db_data, None) {
+        match scan_cached_blocks(&network, &db_cache, &mut db_data, limit) {
             Ok(()) => Ok(JNI_TRUE),
-            Err(e) => Err(format_err!("Rust error while scanning blocks: {}", e)),
+            Err(e) => Err(format_err!(
+                "Rust error while scanning blocks (limit {:?}): {}",
+                limit,
+                e
+            )),
         }
     });
     unwrap_exc_or(&env, res, JNI_FALSE)
@@ -795,191 +982,36 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_putUtxo(
 ) -> jboolean {
     // debug!("For height {} found consensus branch {:?}", height, branch);
     debug!("preparing to store UTXO in db_data");
+    #[allow(deprecated)]
     let res = panic::catch_unwind(|| {
         let network = parse_network(network_id as u32)?;
         let txid_bytes = env.convert_byte_array(txid_bytes).unwrap();
         let mut txid = [0u8; 32];
         txid.copy_from_slice(&txid_bytes);
 
-        let script = env.convert_byte_array(script).unwrap();
+        let script_pubkey = Script(env.convert_byte_array(script).unwrap());
         let db_data = wallet_db(&env, network, db_data)?;
         let mut db_data = db_data.get_update_ops()?;
         let addr = utils::java_string_to_rust(&env, address);
-        let address = TransparentAddress::decode(&network, &addr).unwrap();
+        let _address = TransparentAddress::decode(&network, &addr).unwrap();
 
-        let output = WalletTransparentOutput {
-            address: address,
-            outpoint: OutPoint::new(txid, index as u32),
-            script: script,
-            value: Amount::from_i64(value).unwrap(),
-            height: BlockHeight::from(height as u32),
-        };
+        let output = WalletTransparentOutput::from_parts(
+            OutPoint::new(txid, index as u32),
+            TxOut {
+                value: Amount::from_i64(value).unwrap(),
+                script_pubkey,
+            },
+            BlockHeight::from(height as u32),
+        )
+        .ok_or_else(|| format_err!("UTXO is not P2PKH or P2SH"))?;
 
         debug!("Storing UTXO in db_data");
-        match put_received_transparent_utxo(&mut db_data, &output) {
+        match db_data.put_received_transparent_utxo(&output) {
             Ok(_) => Ok(JNI_TRUE),
             Err(e) => Err(format_err!("Error while inserting UTXO: {}", e)),
         }
     });
     unwrap_exc_or(&env, res, JNI_FALSE)
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_clearUtxos(
-    env: JNIEnv<'_>,
-    _: JClass<'_>,
-    db_data: JString<'_>,
-    taddress: JString<'_>,
-    above_height: jlong,
-    network_id: jint,
-) -> jint {
-    let res = panic::catch_unwind(|| {
-        let network = parse_network(network_id as u32)?;
-        let db_data = wallet_db(&env, network, db_data)?;
-        let mut db_data = db_data.get_update_ops()?;
-        let addr = utils::java_string_to_rust(&env, taddress);
-        let taddress = TransparentAddress::decode(&network, &addr).unwrap();
-        let height = BlockHeight::from(above_height as u32);
-
-        debug!(
-            "clearing UTXOs that were found above height: {}",
-            above_height
-        );
-        match delete_utxos_above(&mut db_data, &taddress, height) {
-            Ok(rows) => Ok(rows as i32),
-            Err(e) => Err(format_err!("Error while clearing UTXOs: {}", e)),
-        }
-    });
-    unwrap_exc_or(&env, res, -1)
-}
-
-// ADDED BY ANDROID
-#[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_scanBlockBatch(
-    env: JNIEnv<'_>,
-    _: JClass<'_>,
-    db_cache: JString<'_>,
-    db_data: JString<'_>,
-    limit: jint,
-    network_id: jint,
-) -> jboolean {
-    let res = panic::catch_unwind(|| {
-        let network = parse_network(network_id as u32)?;
-        let db_cache = block_db(&env, db_cache)?;
-        let db_data = wallet_db(&env, network, db_data)?;
-        let mut db_data = db_data.get_update_ops()?;
-
-        match scan_cached_blocks(&network, &db_cache, &mut db_data, Some(limit as u32)) {
-            Ok(()) => Ok(JNI_TRUE),
-            Err(e) => Err(format_err!("Rust error while scanning block batch: {}", e)),
-        }
-    });
-    unwrap_exc_or(&env, res, JNI_FALSE)
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveTransparentSecretKeyFromSeed(
-    env: JNIEnv<'_>,
-    _: JClass<'_>,
-    seed: jbyteArray,
-    account: jint,
-    index: jint,
-    network_id: jint,
-) -> jstring {
-    let res = panic::catch_unwind(|| {
-        let network = parse_network(network_id as u32)?;
-        let seed = env.convert_byte_array(seed).unwrap();
-        let account = if account >= 0 {
-            account as u32
-        } else {
-            return Err(format_err!("account argument must be positive"));
-        };
-        let index = if index >= 0 {
-            index as u32
-        } else {
-            return Err(format_err!("index argument must be positive"));
-        };
-        let sk = derive_secret_key_from_seed(&network, &seed, AccountId(account), index).unwrap();
-        let sk_wif = Wif::from_secret_key(&sk, true);
-        let output = env
-            .new_string(sk_wif.0)
-            .expect("Couldn't create Java string for private key!");
-        Ok(output.into_inner())
-    });
-    unwrap_exc_or(&env, res, ptr::null_mut())
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveTransparentAddressFromSeed(
-    env: JNIEnv<'_>,
-    _: JClass<'_>,
-    seed: jbyteArray,
-    account: jint,
-    index: jint,
-    network_id: jint,
-) -> jstring {
-    let res = panic::catch_unwind(|| {
-        let network = parse_network(network_id as u32)?;
-        let seed = env.convert_byte_array(seed).unwrap();
-        let account = if account >= 0 {
-            account as u32
-        } else {
-            return Err(format_err!("account argument must be positive"));
-        };
-        let index = if index >= 0 {
-            index as u32
-        } else {
-            return Err(format_err!("index argument must be positive"));
-        };
-        let sk = derive_secret_key_from_seed(&network, &seed, AccountId(account), index);
-        let taddr = derive_transparent_address_from_secret_key(&sk.unwrap()).encode(&network);
-
-        let output = env
-            .new_string(taddr)
-            .expect("Couldn't create Java string for taddr!");
-        Ok(output.into_inner())
-    });
-    unwrap_exc_or(&env, res, ptr::null_mut())
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveTransparentAddressFromPrivKey(
-    env: JNIEnv<'_>,
-    _: JClass<'_>,
-    secret_key: JString<'_>,
-    network_id: jint,
-) -> jstring {
-    let res = panic::catch_unwind(|| {
-        let network = parse_network(network_id as u32)?;
-        let tsk_wif = utils::java_string_to_rust(&env, secret_key);
-        let sk: SecretKey = (&Wif(tsk_wif)).try_into().expect("invalid private key WIF");
-        let taddr = derive_transparent_address_from_secret_key(&sk).encode(&network);
-
-        let output = env.new_string(taddr).expect("Couldn't create Java string!");
-
-        Ok(output.into_inner())
-    });
-    unwrap_exc_or(&env, res, ptr::null_mut())
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveTransparentAddressFromPubKey(
-    env: JNIEnv<'_>,
-    _: JClass<'_>,
-    public_key: JString<'_>,
-    network_id: jint,
-) -> jstring {
-    let res = panic::catch_unwind(|| {
-        let network = parse_network(network_id as u32)?;
-        let public_key_str = utils::java_string_to_rust(&env, public_key);
-        let pk = PublicKey::from_str(&public_key_str)?;
-        let taddr = derive_transparent_address_from_public_key(&pk).encode(&network);
-
-        let output = env.new_string(taddr).expect("Couldn't create Java string!");
-
-        Ok(output.into_inner())
-    });
-    unwrap_exc_or(&env, res, ptr::null_mut())
 }
 
 #[no_mangle]
@@ -995,9 +1027,15 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_decryptAndS
         let db_data = wallet_db(&env, network, db_data)?;
         let mut db_data = db_data.get_update_ops()?;
         let tx_bytes = env.convert_byte_array(tx).unwrap();
-        let tx = Transaction::read(&tx_bytes[..])?;
+        // The consensus branch ID passed in here does not matter:
+        // - v4 and below cache it internally, but all we do with this transaction while
+        //   it is in memory is decryption and serialization, neither of which use the
+        //   consensus branch ID.
+        // - v5 and above transactions ignore the argument, and parse the correct value
+        //   from their encoding.
+        let tx = Transaction::read(&tx_bytes[..], BranchId::Sapling)?;
 
-        match decrypt_and_store_transaction(&network, &mut db_data, &tx_bytes, &tx) {
+        match decrypt_and_store_transaction(&network, &mut db_data, &tx) {
             Ok(()) => Ok(JNI_TRUE),
             Err(e) => Err(format_err!("Error while decrypting transaction: {}", e)),
         }
@@ -1011,9 +1049,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_createToAdd
     env: JNIEnv<'_>,
     _: JClass<'_>,
     db_data: JString<'_>,
-    _: jlong, // was: consensus_branch_id; this is now derived from target/anchor height
-    account: jint,
-    extsk: JString<'_>,
+    usk: jbyteArray,
     to: JString<'_>,
     value: jlong,
     memo: jbyteArray,
@@ -1025,12 +1061,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_createToAdd
         let network = parse_network(network_id as u32)?;
         let db_data = wallet_db(&env, network, db_data)?;
         let mut db_data = db_data.get_update_ops()?;
-        let account = if account >= 0 {
-            account as u32
-        } else {
-            return Err(format_err!("account argument must be positive"));
-        };
-        let extsk = utils::java_string_to_rust(&env, extsk);
+        let usk = decode_usk(&env, usk)?;
         let to = utils::java_string_to_rust(&env, to);
         let value =
             Amount::from_i64(value).map_err(|()| format_err!("Invalid amount, out of range"))?;
@@ -1041,18 +1072,6 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_createToAdd
         let spend_params = utils::java_string_to_rust(&env, spend_params);
         let output_params = utils::java_string_to_rust(&env, output_params);
 
-        let extsk =
-            match decode_extended_spending_key(network.hrp_sapling_extended_spending_key(), &extsk)
-            {
-                Ok(Some(extsk)) => extsk,
-                Ok(None) => {
-                    return Err(format_err!("ExtendedSpendingKey is for the wrong network"));
-                }
-                Err(e) => {
-                    return Err(format_err!("Invalid ExtendedSpendingKey: {}", e));
-                }
-            };
-
         let to = match RecipientAddress::decode(&network, &to) {
             Some(to) => to,
             None => {
@@ -1062,7 +1081,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_createToAdd
 
         // TODO: consider warning in this case somehow, rather than swallowing this error
         let memo = match to {
-            RecipientAddress::Shielded(_) => {
+            RecipientAddress::Shielded(_) | RecipientAddress::Unified(_) => {
                 let memo_value =
                     Memo::from_bytes(&memo_bytes).map_err(|_| format_err!("Invalid memo"))?;
                 Some(MemoBytes::from(&memo_value))
@@ -1072,17 +1091,16 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_createToAdd
 
         let prover = LocalTxProver::new(Path::new(&spend_params), Path::new(&output_params));
 
-        // let branch = if
         create_spend_to_address(
             &mut db_data,
             &network,
             prover,
-            AccountId(account),
-            &extsk,
+            &usk,
             &to,
             value,
             memo,
             OvkPolicy::Sender,
+            ANCHOR_OFFSET,
         )
         .map_err(|e| format_err!("Error while creating transaction: {}", e))
     });
@@ -1094,9 +1112,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_shieldToAdd
     env: JNIEnv<'_>,
     _: JClass<'_>,
     db_data: JString<'_>,
-    account: jint,
-    extsk: JString<'_>,
-    tsk: JString<'_>,
+    usk: jbyteArray,
     memo: jbyteArray,
     spend_params: JString<'_>,
     output_params: JString<'_>,
@@ -1106,43 +1122,51 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_shieldToAdd
         let network = parse_network(network_id as u32)?;
         let db_data = wallet_db(&env, network, db_data)?;
         let mut db_data = db_data.get_update_ops()?;
-        let account = if account == 0 {
-            account as u32
-        } else {
-            return Err(format_err!("account argument {} must be positive", account));
-        };
-        let extsk = utils::java_string_to_rust(&env, extsk);
-        let tsk_wif = utils::java_string_to_rust(&env, tsk);
+        let usk = decode_usk(&env, usk)?;
         let memo_bytes = env.convert_byte_array(memo).unwrap();
         let spend_params = utils::java_string_to_rust(&env, spend_params);
         let output_params = utils::java_string_to_rust(&env, output_params);
-        let extsk =
-            match decode_extended_spending_key(network.hrp_sapling_extended_spending_key(), &extsk)
-            {
-                Ok(Some(extsk)) => extsk,
-                Ok(None) => {
-                    return Err(format_err!("ExtendedSpendingKey is for the wrong network"));
-                }
-                Err(e) => {
-                    return Err(format_err!("Invalid ExtendedSpendingKey: {}", e));
-                }
-            };
 
-        let sk: SecretKey = (&Wif(tsk_wif)).try_into().expect("invalid private key WIF");
+        let min_confirmations = 0;
+
+        let account = db_data
+            .get_account_for_ufvk(&usk.to_unified_full_viewing_key())?
+            .ok_or_else(|| format_err!("Spending key not recognized."))?;
+
+        let from_addrs: Vec<TransparentAddress> = db_data
+            .get_target_and_anchor_heights(min_confirmations)
+            .map_err(|e| format_err!("Error while fetching anchor height: {}", e))
+            .and_then(|opt_anchor| {
+                opt_anchor
+                    .map(|(_, h)| h)
+                    .ok_or_else(|| format_err!("height not available; scan required."))
+            })
+            .and_then(|anchor| {
+                db_data
+                    .get_transparent_balances(account, anchor)
+                    .map_err(|e| {
+                        format_err!(
+                            "Error while fetching transparent balances for {:?}: {}",
+                            account,
+                            e
+                        )
+                    })
+            })?
+            .into_keys()
+            .collect();
 
         let memo = Memo::from_bytes(&memo_bytes).unwrap();
 
         let prover = LocalTxProver::new(Path::new(&spend_params), Path::new(&output_params));
 
-        shield_funds(
+        shield_transparent_funds(
             &mut db_data,
             &network,
             prover,
-            AccountId(account),
-            &sk,
-            &extsk,
+            &usk,
+            &from_addrs,
             &MemoBytes::from(&memo),
-            0,
+            min_confirmations,
         )
         .map_err(|e| format_err!("Error while shielding transaction: {}", e))
     });

@@ -5,13 +5,16 @@ import android.view.LayoutInflater
 import androidx.lifecycle.lifecycleScope
 import cash.z.ecc.android.bip39.Mnemonics
 import cash.z.ecc.android.bip39.toSeed
+import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
 import cash.z.ecc.android.sdk.demoapp.databinding.FragmentGetAddressBinding
 import cash.z.ecc.android.sdk.demoapp.ext.requireApplicationContext
 import cash.z.ecc.android.sdk.demoapp.util.fromResources
+import cash.z.ecc.android.sdk.model.LightWalletEndpoint
 import cash.z.ecc.android.sdk.model.ZcashNetwork
+import cash.z.ecc.android.sdk.model.defaultForNetwork
 import cash.z.ecc.android.sdk.tool.DerivationTool
-import cash.z.ecc.android.sdk.type.UnifiedViewingKey
+import cash.z.ecc.android.sdk.type.UnifiedFullViewingKey
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 
@@ -21,7 +24,8 @@ import kotlinx.coroutines.runBlocking
  */
 class GetAddressFragment : BaseDemoFragment<FragmentGetAddressBinding>() {
 
-    private lateinit var viewingKey: UnifiedViewingKey
+    private lateinit var synchronizer: Synchronizer
+    private lateinit var viewingKey: UnifiedFullViewingKey
     private lateinit var seed: ByteArray
 
     /**
@@ -36,32 +40,43 @@ class GetAddressFragment : BaseDemoFragment<FragmentGetAddressBinding>() {
         // have the seed stored
         seed = Mnemonics.MnemonicCode(seedPhrase).toSeed()
 
-        // the derivation tool can be used for generating keys and addresses
+        // converting seed into viewingKey
         viewingKey = runBlocking {
-            DerivationTool.deriveUnifiedViewingKeys(
+            DerivationTool.deriveUnifiedFullViewingKeys(
                 seed,
                 ZcashNetwork.fromResources(requireApplicationContext())
             ).first()
         }
+
+        val network = ZcashNetwork.fromResources(requireApplicationContext())
+        synchronizer = Synchronizer.newBlocking(
+            requireApplicationContext(),
+            network,
+            lightWalletEndpoint = LightWalletEndpoint.defaultForNetwork(network),
+            seed = seed,
+            birthday = network.saplingActivationHeight
+        )
     }
 
     private fun displayAddress() {
-        // a full fledged app would just get the address from the synchronizer
         viewLifecycleOwner.lifecycleScope.launchWhenStarted {
-            val zaddress = DerivationTool.deriveShieldedAddress(
-                seed,
-                ZcashNetwork.fromResources(requireApplicationContext())
-            )
-            val taddress = DerivationTool.deriveTransparentAddress(
-                seed,
-                ZcashNetwork.fromResources(requireApplicationContext())
-            )
-            binding.textInfo.text = "z-addr:\n$zaddress\n\n\nt-addr:\n$taddress"
+            binding.unifiedAddress.apply {
+                val uaddress = synchronizer.getUnifiedAddress()
+                text = uaddress
+                setOnClickListener { copyToClipboard(uaddress) }
+            }
+            binding.saplingAddress.apply {
+                val sapling = synchronizer.getSaplingAddress()
+                text = sapling
+                setOnClickListener { copyToClipboard(sapling) }
+            }
+            binding.transparentAddress.apply {
+                val transparent = synchronizer.getTransparentAddress()
+                text = transparent
+                setOnClickListener { copyToClipboard(transparent) }
+            }
         }
     }
-
-    // TODO [#677]: Show an example with the synchronizer
-    // TODO [#677]: https://github.com/zcash/zcash-android-wallet-sdk/issues/677
 
     //
     // Android Lifecycle overrides
@@ -84,11 +99,11 @@ class GetAddressFragment : BaseDemoFragment<FragmentGetAddressBinding>() {
     override fun onActionButtonClicked() {
         viewLifecycleOwner.lifecycleScope.launch {
             copyToClipboard(
-                DerivationTool.deriveShieldedAddress(
-                    viewingKey.extfvk,
+                DerivationTool.deriveUnifiedAddress(
+                    viewingKey.encoding,
                     ZcashNetwork.fromResources(requireApplicationContext())
                 ),
-                "Shielded address copied to clipboard!"
+                "Unified address copied to clipboard!"
             )
         }
     }

@@ -1,5 +1,6 @@
 package cash.z.ecc.android.sdk.util
 
+import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.test.readFileLinesInFlow
 import cash.z.ecc.android.sdk.tool.DerivationTool
@@ -30,10 +31,10 @@ class AddressGeneratorUtil {
             .map { seedPhrase ->
                 mnemonics.toSeed(seedPhrase.toCharArray())
             }.map { seed ->
-                DerivationTool.deriveShieldedAddress(seed, ZcashNetwork.Mainnet)
+                DerivationTool.deriveUnifiedAddress(seed, ZcashNetwork.Mainnet, Account.DEFAULT)
             }.collect { address ->
                 println("xrxrx2\t$address")
-                assertTrue(address.startsWith("zs1"))
+                assertTrue(address.startsWith("u1"))
             }
     }
 }

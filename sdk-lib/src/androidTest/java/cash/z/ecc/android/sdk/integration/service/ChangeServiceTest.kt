@@ -9,7 +9,7 @@ import cash.z.ecc.android.sdk.annotation.TestPurpose
 import cash.z.ecc.android.sdk.exception.LightWalletException.ChangeServerException.ChainInfoNotMatching
 import cash.z.ecc.android.sdk.exception.LightWalletException.ChangeServerException.StatusException
 import cash.z.ecc.android.sdk.internal.block.CompactBlockDownloader
-import cash.z.ecc.android.sdk.internal.block.CompactBlockStore
+import cash.z.ecc.android.sdk.internal.repository.CompactBlockRepository
 import cash.z.ecc.android.sdk.internal.service.LightWalletGrpcService
 import cash.z.ecc.android.sdk.internal.service.LightWalletService
 import cash.z.ecc.android.sdk.internal.twig
@@ -45,7 +45,7 @@ class ChangeServiceTest : ScopedTest() {
     private val eccEndpoint = LightWalletEndpoint("lightwalletd.electriccoin.co", 9087, true)
 
     @Mock
-    lateinit var mockBlockStore: CompactBlockStore
+    lateinit var mockBlockStore: CompactBlockRepository
     var mockCloseable: AutoCloseable? = null
 
     @Spy

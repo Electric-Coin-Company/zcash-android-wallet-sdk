@@ -11,6 +11,7 @@ import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
 import cash.z.ecc.android.sdk.demoapp.databinding.FragmentGetPrivateKeyBinding
 import cash.z.ecc.android.sdk.demoapp.ext.requireApplicationContext
 import cash.z.ecc.android.sdk.demoapp.util.fromResources
+import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.tool.DerivationTool
 import kotlinx.coroutines.launch
@@ -43,14 +44,14 @@ class GetPrivateKeyFragment : BaseDemoFragment<FragmentGetPrivateKeyBinding>() {
         // demonstrate deriving spending keys for five accounts but only take the first one
         lifecycleScope.launchWhenStarted {
             @Suppress("MagicNumber")
-            val spendingKey = DerivationTool.deriveSpendingKeys(
+            val spendingKey = DerivationTool.deriveUnifiedSpendingKey(
                 seed,
                 ZcashNetwork.fromResources(requireApplicationContext()),
-                5
-            ).first()
+                Account(5)
+            )
 
             // derive the key that allows you to view but not spend transactions
-            val viewingKey = DerivationTool.deriveViewingKey(
+            val viewingKey = DerivationTool.deriveUnifiedFullViewingKey(
                 spendingKey,
                 ZcashNetwork.fromResources(requireApplicationContext())
             )
@@ -86,11 +87,11 @@ class GetPrivateKeyFragment : BaseDemoFragment<FragmentGetPrivateKeyBinding>() {
     override fun onActionButtonClicked() {
         lifecycleScope.launch {
             copyToClipboard(
-                DerivationTool.deriveUnifiedViewingKeys(
+                DerivationTool.deriveUnifiedFullViewingKeys(
                     seed,
                     ZcashNetwork.fromResources(requireApplicationContext())
-                ).first().extpub,
-                "ViewingKey copied to clipboard!"
+                ).first().encoding,
+                "UnifiedFullViewingKey copied to clipboard!"
             )
         }
     }

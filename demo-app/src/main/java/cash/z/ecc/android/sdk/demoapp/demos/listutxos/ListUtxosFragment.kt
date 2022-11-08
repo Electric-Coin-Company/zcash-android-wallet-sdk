@@ -8,11 +8,9 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import cash.z.ecc.android.bip39.Mnemonics
 import cash.z.ecc.android.bip39.toSeed
-import cash.z.ecc.android.sdk.Initializer
 import cash.z.ecc.android.sdk.SdkSynchronizer
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor
-import cash.z.ecc.android.sdk.db.entity.ConfirmedTransaction
 import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
 import cash.z.ecc.android.sdk.demoapp.databinding.FragmentListUtxosBinding
 import cash.z.ecc.android.sdk.demoapp.ext.requireApplicationContext
@@ -20,15 +18,16 @@ import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.demoapp.util.mainActivity
 import cash.z.ecc.android.sdk.ext.collectWith
 import cash.z.ecc.android.sdk.internal.twig
+import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.LightWalletEndpoint
+import cash.z.ecc.android.sdk.model.TransactionOverview
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.model.defaultForNetwork
-import cash.z.ecc.android.sdk.tool.DerivationTool
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlin.math.max
 
@@ -47,7 +46,6 @@ import kotlin.math.max
 @Suppress("TooManyFunctions")
 class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
     private lateinit var seed: ByteArray
-    private lateinit var initializer: Initializer
     private lateinit var synchronizer: Synchronizer
     private lateinit var adapter: UtxoAdapter
     private val address: String = "t1RwbKka1CnktvAJ1cSqdn7c6PXWG4tZqgd"
@@ -66,20 +64,15 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
         // Use a BIP-39 library to convert a seed phrase into a byte array. Most wallets already
         // have the seed stored
         seed = Mnemonics.MnemonicCode(sharedViewModel.seedPhrase.value).toSeed()
-        initializer = runBlocking {
-            val network = ZcashNetwork.fromResources(requireApplicationContext())
-            Initializer.new(requireApplicationContext()) {
-                runBlocking {
-                    it.newWallet(
-                        seed,
-                        network = network,
-                        lightWalletEndpoint = LightWalletEndpoint.defaultForNetwork(network)
-                    )
-                }
-                it.alias = "Demo_Utxos"
-            }
-        }
-        synchronizer = runBlocking { Synchronizer.new(initializer) }
+        val network = ZcashNetwork.fromResources(requireApplicationContext())
+        synchronizer = Synchronizer.newBlocking(
+            requireApplicationContext(),
+            network,
+            alias = "Demo_Utxos",
+            lightWalletEndpoint = LightWalletEndpoint.defaultForNetwork(network),
+            seed = seed,
+            birthday = sharedViewModel.birthdayHeight.value
+        )
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -149,7 +142,7 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
 
             lifecycleScope.launch {
                 withContext(Dispatchers.IO) {
-                    finalCount = (synchronizer as SdkSynchronizer).getTransactionCount()
+                    finalCount = (synchronizer as SdkSynchronizer).getTransactionCount().toInt()
                     withContext(Dispatchers.Main) {
                         @Suppress("MagicNumber")
                         delay(100)
@@ -179,13 +172,9 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
     override fun onResume() {
         super.onResume()
         resetInBackground()
-        val seed = Mnemonics.MnemonicCode(sharedViewModel.seedPhrase.value).toSeed()
         viewLifecycleOwner.lifecycleScope.launchWhenStarted {
             binding.inputAddress.setText(
-                DerivationTool.deriveTransparentAddress(
-                    seed,
-                    ZcashNetwork.fromResources(requireApplicationContext())
-                )
+                synchronizer.getTransparentAddress(Account.DEFAULT)
             )
         }
     }
@@ -199,10 +188,12 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
             lifecycleScope.launch {
                 withContext(Dispatchers.IO) {
                     synchronizer.prepare()
-                    initialCount = (synchronizer as SdkSynchronizer).getTransactionCount()
+                    initialCount = (synchronizer as SdkSynchronizer).getTransactionCount().toInt()
                 }
+
+                onTransactionsUpdated(synchronizer.clearedTransactions.first())
             }
-            synchronizer.clearedTransactions.collectWith(lifecycleScope, ::onTransactionsUpdated)
+
             // synchronizer.receivedTransactions.collectWith(lifecycleScope, ::onTransactionsUpdated)
         } catch (t: Throwable) {
             twig("failed to start the synchronizer!!! due to : $t")
@@ -263,7 +254,7 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
         binding.textStatus.visibility = View.INVISIBLE
     }
 
-    private fun onTransactionsUpdated(transactions: List<ConfirmedTransaction>) {
+    private fun onTransactionsUpdated(transactions: List<TransactionOverview>) {
         twig("got a new paged list of transactions of size ${transactions.size}")
         adapter.submitList(transactions)
     }

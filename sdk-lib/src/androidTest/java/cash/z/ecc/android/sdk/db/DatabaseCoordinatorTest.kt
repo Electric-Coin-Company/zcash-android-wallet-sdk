@@ -3,7 +3,7 @@ package cash.z.ecc.android.sdk.db
 import androidx.test.filters.FlakyTest
 import androidx.test.filters.MediumTest
 import androidx.test.filters.SmallTest
-import cash.z.ecc.android.sdk.internal.ext.createNewFileSuspend
+import cash.z.ecc.android.sdk.internal.db.DatabaseCoordinator
 import cash.z.ecc.android.sdk.internal.ext.existsSuspend
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.test.getAppContext
@@ -192,14 +192,14 @@ class DatabaseCoordinatorTest {
         }
     }
 
-    private suspend fun getEmptyFile(parent: File, fileName: String): File {
+    private fun getEmptyFile(parent: File, fileName: String): File {
         return File(parent, fileName).apply {
             assertTrue(parentFile != null)
             parentFile!!.mkdirs()
-            assertTrue(parentFile!!.existsSuspend())
+            assertTrue(parentFile!!.exists())
 
-            createNewFileSuspend()
-            assertTrue(existsSuspend())
+            createNewFile()
+            assertTrue(exists())
         }
     }
 

@@ -31,7 +31,7 @@ val LightWalletEndpoint.Companion.Mainnet
 
 val LightWalletEndpoint.Companion.Testnet
     get() = LightWalletEndpoint(
-        "testnet.lightwalletd.com",
+        "lightwalletd.testnet.electriccoin.co",
         DEFAULT_PORT,
         isSecure = true
     )

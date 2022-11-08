@@ -3,19 +3,19 @@ package cash.z.ecc.android.sdk.util
 import androidx.test.platform.app.InstrumentationRegistry
 import cash.z.ecc.android.bip39.Mnemonics
 import cash.z.ecc.android.bip39.toSeed
-import cash.z.ecc.android.sdk.Initializer
 import cash.z.ecc.android.sdk.SdkSynchronizer
 import cash.z.ecc.android.sdk.Synchronizer
-import cash.z.ecc.android.sdk.db.entity.isPending
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.service.LightWalletGrpcService
 import cash.z.ecc.android.sdk.internal.twig
+import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.LightWalletEndpoint
 import cash.z.ecc.android.sdk.model.Testnet
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
+import cash.z.ecc.android.sdk.model.isPending
 import cash.z.ecc.android.sdk.tool.DerivationTool
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
@@ -63,23 +63,23 @@ class TestWallet(
 
     private val context = InstrumentationRegistry.getInstrumentation().context
     private val seed: ByteArray = Mnemonics.MnemonicCode(seedPhrase).toSeed()
-    private val shieldedSpendingKey =
-        runBlocking { DerivationTool.deriveSpendingKeys(seed, network = network)[0] }
-    private val transparentSecretKey =
-        runBlocking { DerivationTool.deriveTransparentSecretKey(seed, network = network) }
-    val initializer = runBlocking {
-        Initializer.new(context) { config ->
-            runBlocking { config.importWallet(seed, startHeight, network, endpoint, alias = alias) }
-        }
-    }
-    val synchronizer: SdkSynchronizer = Synchronizer.newBlocking(initializer) as SdkSynchronizer
+    private val spendingKey =
+        runBlocking { DerivationTool.deriveUnifiedSpendingKey(seed, network = network, Account.DEFAULT) }
+    val synchronizer: SdkSynchronizer = Synchronizer.newBlocking(
+        context,
+        network,
+        alias,
+        lightWalletEndpoint = endpoint,
+        seed = seed,
+        startHeight
+    ) as SdkSynchronizer
     val service = (synchronizer.processor.downloader.lightWalletService as LightWalletGrpcService)
 
     val available get() = synchronizer.saplingBalances.value?.available
-    val shieldedAddress =
-        runBlocking { DerivationTool.deriveShieldedAddress(seed, network = network) }
+    val unifiedAddress =
+        runBlocking { synchronizer.getUnifiedAddress(Account.DEFAULT) }
     val transparentAddress =
-        runBlocking { DerivationTool.deriveTransparentAddress(seed, network = network) }
+        runBlocking { synchronizer.getTransparentAddress(Account.DEFAULT) }
     val birthdayHeight get() = synchronizer.latestBirthdayHeight
     val networkName get() = synchronizer.network.networkName
 
@@ -109,9 +109,13 @@ class TestWallet(
         return this
     }
 
-    suspend fun send(address: String = transparentAddress, memo: String = "", amount: Zatoshi = Zatoshi(500L), fromAccountIndex: Int = 0): TestWallet {
+    suspend fun send(
+        address: String = transparentAddress,
+        memo: String = "",
+        amount: Zatoshi = Zatoshi(500L)
+    ): TestWallet {
         Twig.sprout("$alias sending")
-        synchronizer.sendToAddress(shieldedSpendingKey, amount, address, memo, fromAccountIndex)
+        synchronizer.sendToAddress(spendingKey, amount, address, memo)
             .takeWhile { it.isPending(null) }
             .collect {
                 twig("Updated transaction: $it")
@@ -135,7 +139,7 @@ class TestWallet(
             twig("FOUND utxo balance of total: ${walletBalance.total}  available: ${walletBalance.available}")
 
             if (walletBalance.available.value > 0L) {
-                synchronizer.shieldFunds(shieldedSpendingKey, transparentSecretKey)
+                synchronizer.shieldFunds(spendingKey)
                     .onCompletion { twig("done shielding funds") }
                     .catch { twig("Failed with $it") }
                     .collect()

@@ -1,14 +1,23 @@
 package cash.z.ecc.android.sdk
 
+import android.content.Context
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor
-import cash.z.ecc.android.sdk.db.entity.ConfirmedTransaction
-import cash.z.ecc.android.sdk.db.entity.PendingTransaction
 import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.internal.SaplingParamTool
+import cash.z.ecc.android.sdk.internal.db.DatabaseCoordinator
+import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
+import cash.z.ecc.android.sdk.model.LightWalletEndpoint
+import cash.z.ecc.android.sdk.model.PendingTransaction
+import cash.z.ecc.android.sdk.model.Transaction
+import cash.z.ecc.android.sdk.model.TransactionOverview
+import cash.z.ecc.android.sdk.model.TransactionRecipient
+import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
+import cash.z.ecc.android.sdk.tool.CheckpointTool
+import cash.z.ecc.android.sdk.tool.DerivationTool
 import cash.z.ecc.android.sdk.type.AddressType
 import cash.z.ecc.android.sdk.type.ConsensusMatchType
 import cash.z.wallet.sdk.rpc.Service
@@ -129,17 +138,17 @@ interface Synchronizer {
     /**
      * A flow of all the transactions that are on the blockchain.
      */
-    val clearedTransactions: Flow<List<ConfirmedTransaction>>
+    val clearedTransactions: Flow<List<TransactionOverview>>
 
     /**
      * A flow of all transactions related to sending funds.
      */
-    val sentTransactions: Flow<List<ConfirmedTransaction>>
+    val sentTransactions: Flow<List<Transaction.Sent>>
 
     /**
      * A flow of all transactions related to receiving funds.
      */
-    val receivedTransactions: Flow<List<ConfirmedTransaction>>
+    val receivedTransactions: Flow<List<Transaction.Received>>
 
     //
     // Latest Properties
@@ -161,61 +170,84 @@ interface Synchronizer {
     //
 
     /**
-     * Gets the shielded address for the given account. This is syntactic sugar for
-     * [getShieldedAddress] because we use z-addrs by default.
+     * Adds the next available account-level spend authority, given the current set of
+     * [ZIP 316](https://zips.z.cash/zip-0316) account identifiers known, to the wallet
+     * database.
      *
-     * @param accountId the optional accountId whose address is of interest. By default, the first
-     * account is used.
+     * The caller should store the byte encoding of the returned spending key in a secure
+     * fashion. This encoding **MUST NOT** be exposed to users. It is an internal encoding
+     * that is inherently unstable, and only intended to be passed between the SDK and the
+     * storage backend. The caller **MUST NOT** allow this encoding to be exported or
+     * imported.
      *
-     * @return the shielded address for the given account.
+     * If `seed` was imported from a backup and this method is being used to restore a
+     * previous wallet state, you should use this method to add all of the desired
+     * accounts before scanning the chain from the seed's birthday height.
+     *
+     * By convention, wallets should only allow a new account to be generated after funds
+     * have been received by the currently-available account (in order to enable
+     * automated account recovery).
+     *
+     * @param seed the wallet's seed phrase.
+     *
+     * @return the newly created ZIP 316 account identifier, along with the binary
+     * encoding of the `UnifiedSpendingKey` for the newly created account.
      */
-    suspend fun getAddress(accountId: Int = 0) = getShieldedAddress(accountId)
+    // This is not yet ready to be a public API
+    // suspend fun createAccount(seed: ByteArray): UnifiedSpendingKey
 
     /**
-     * Gets the shielded address for the given account.
+     * Gets the current unified address for the given account.
      *
      * @param accountId the optional accountId whose address is of interest. By default, the first
      * account is used.
      *
-     * @return the shielded address for the given account.
+     * @return the current unified address for the given account.
      */
-    suspend fun getShieldedAddress(accountId: Int = 0): String
+    suspend fun getUnifiedAddress(account: Account = Account.DEFAULT): String
 
     /**
-     * Gets the transparent address for the given account.
+     * Gets the legacy Sapling address corresponding to the current unified address for the given account.
      *
-     * @param accountId the optional accountId whose address is of interest. By default, the first
+     * @param account the optional accountId whose address is of interest. By default, the first
      * account is used.
      *
-     * @return the address for the given account.
+     * @return a legacy Sapling address for the given account.
      */
-    suspend fun getTransparentAddress(accountId: Int = 0): String
+    suspend fun getSaplingAddress(account: Account = Account.DEFAULT): String
+
+    /**
+     * Gets the legacy transparent address corresponding to the current unified address for the given account.
+     *
+     * @param account the optional accountId whose address is of interest. By default, the first
+     * account is used.
+     *
+     * @return a legacy transparent address for the given account.
+     */
+    suspend fun getTransparentAddress(account: Account = Account.DEFAULT): String
 
     /**
      * Sends zatoshi.
      *
-     * @param spendingKey the key associated with the notes that will be spent.
+     * @param usk the unified spending key associated with the notes that will be spent.
      * @param zatoshi the amount of zatoshi to send.
      * @param toAddress the recipient's address.
      * @param memo the optional memo to include as part of the transaction.
-     * @param fromAccountIndex the optional account id to use. By default, the first account is used.
      *
      * @return a flow of PendingTransaction objects representing changes to the state of the
      * transaction. Any time the state changes a new instance will be emitted by this flow. This is
      * useful for updating the UI without needing to poll. Of course, polling is always an option
      * for any wallet that wants to ignore this return value.
      */
-    fun sendToAddress(
-        spendingKey: String,
+    suspend fun sendToAddress(
+        usk: UnifiedSpendingKey,
         amount: Zatoshi,
         toAddress: String,
-        memo: String = "",
-        fromAccountIndex: Int = 0
+        memo: String = ""
     ): Flow<PendingTransaction>
 
-    fun shieldFunds(
-        spendingKey: String,
-        transparentSecretKey: String,
+    suspend fun shieldFunds(
+        usk: UnifiedSpendingKey,
         memo: String = ZcashSdk.DEFAULT_SHIELD_FUNDS_MEMO_PREFIX
     ): Flow<PendingTransaction>
 
@@ -244,6 +276,20 @@ interface Synchronizer {
     suspend fun isValidTransparentAddr(address: String): Boolean
 
     /**
+     * Returns true when the given address is a valid ZIP 316 unified address.
+     *
+     * This method is intended for type checking (e.g. form validation). Invalid
+     * addresses will throw an exception.
+     *
+     * @param address the address to validate.
+     *
+     * @return true when the given address is a valid unified address.
+     *
+     * @throws RuntimeException when the address is invalid.
+     */
+    suspend fun isValidUnifiedAddr(address: String): Boolean
+
+    /**
      * Validate whether the server and this SDK share the same consensus branch. This is
      * particularly important to check around network updates so that any wallet that's connected to
      * an incompatible server can surface that information effectively. For the SDK, the consensus
@@ -258,10 +304,11 @@ interface Synchronizer {
 
     /**
      * Validates the given address, returning information about why it is invalid. This is a
-     * convenience method that combines the behavior of [isValidShieldedAddr] and
-     * [isValidTransparentAddr] into one call so that the developer doesn't have to worry about
-     * handling the exceptions that they throw. Rather, exceptions are converted to
-     * [AddressType.Invalid] which has a `reason` property describing why it is invalid.
+     * convenience method that combines the behavior of [isValidShieldedAddr],
+     * [isValidTransparentAddr], and [isValidUnifiedAddr] into one call so that the developer
+     * doesn't have to worry about handling the exceptions that they throw. Rather, exceptions
+     * are converted to [AddressType.Invalid] which has a `reason` property describing why it is
+     * invalid.
      *
      * @param address the address to validate.
      *
@@ -312,6 +359,16 @@ interface Synchronizer {
     suspend fun rewindToNearestHeight(height: BlockHeight, alsoClearBlockCache: Boolean = false)
 
     suspend fun quickRewind()
+
+    /**
+     * Returns a list of memos for a transaction.
+     */
+    fun getMemos(transactionOverview: TransactionOverview): Flow<String>
+
+    /**
+     * Returns a list of recipients for a transaction.
+     */
+    fun getRecipients(transactionOverview: TransactionOverview): Flow<TransactionRecipient>
 
     //
     // Error Handling
@@ -423,32 +480,97 @@ interface Synchronizer {
         /**
          * Primary method that SDK clients will use to construct a synchronizer.
          *
+         * @param zcashNetwork the network to use.
+         * @param alias A string used to segregate multiple wallets in the filesystem.  This implies the string
+         * should not contain characters unsuitable for the platform's filesystem.  The default value is
+         * generally used unless an SDK client needs to support multiple wallets.
+         * @param lightWalletEndpoint Server endpoint.  See [cash.z.ecc.android.sdk.model.defaultForNetwork]. If a
+         * client wishes to change the server endpoint, the active synchronizer will need to be stopped and a new
+         * instance created with a new value.
+         * @param seed the wallet's seed phrase. This is required the first time a new wallet is set up. For
+         * subsequent calls, seed is only needed if [InitializerException.SeedRequired] is thrown.
+         * @param birthday Block height representing the "birthday" of the wallet.  When creating a new wallet, see
+         * [BlockHeight.ofLatestCheckpoint].  When restoring an existing wallet, use block height that was first used
+         * to create the wallet.  If that value is unknown, null is acceptable but will result in longer
+         * sync times.  After sync completes, the birthday can be determined from [Synchronizer.latestBirthdayHeight].
+         * @throws InitializerException.SeedRequired Indicates clients need to call this method again, providing the
+         * seed bytes.
+         */
+        /*
          * If customized initialization is required (e.g. for dependency injection or testing), see
          * [DefaultSynchronizerFactory].
-         *
-         * @param initializer the helper that is leveraged for creating all the components that the
-         * Synchronizer requires. It contains all information necessary to build a synchronizer and it is
-         * mainly responsible for initializing the databases associated with this synchronizer and loading
-         * the rust backend.
          */
+        @Suppress("LongParameterList")
         suspend fun new(
-            initializer: Initializer
+            context: Context,
+            zcashNetwork: ZcashNetwork,
+            alias: String = ZcashSdk.DEFAULT_ALIAS,
+            lightWalletEndpoint: LightWalletEndpoint,
+            seed: ByteArray?,
+            birthday: BlockHeight?
         ): Synchronizer {
-            val saplingParamTool = SaplingParamTool.new(initializer.context)
-            val repository = DefaultSynchronizerFactory.defaultTransactionRepository(initializer)
-            val blockStore = DefaultSynchronizerFactory.defaultBlockStore(initializer)
-            val service = DefaultSynchronizerFactory.defaultService(initializer)
-            val encoder = DefaultSynchronizerFactory.defaultEncoder(initializer, saplingParamTool, repository)
+            val applicationContext = context.applicationContext
+
+            validateAlias(alias)
+
+            val saplingParamTool = SaplingParamTool.new(applicationContext)
+
+            val loadedCheckpoint = CheckpointTool.loadNearest(
+                applicationContext,
+                zcashNetwork,
+                birthday ?: zcashNetwork.saplingActivationHeight
+            )
+
+            val coordinator = DatabaseCoordinator.getInstance(context)
+
+            val rustBackend = DefaultSynchronizerFactory.defaultRustBackend(
+                applicationContext,
+                zcashNetwork,
+                alias,
+                loadedCheckpoint.height,
+                saplingParamTool
+            )
+
+            val blockStore = DefaultSynchronizerFactory.defaultCompactBlockRepository(
+                applicationContext,
+                coordinator.cacheDbFile(zcashNetwork, alias),
+                zcashNetwork
+            )
+
+            val viewingKeys = seed?.let {
+                DerivationTool.deriveUnifiedFullViewingKeys(
+                    seed,
+                    zcashNetwork,
+                    1
+                ).toList()
+            } ?: emptyList()
+
+            val repository = DefaultSynchronizerFactory.defaultDerivedDataRepository(
+                applicationContext,
+                rustBackend,
+                zcashNetwork,
+                loadedCheckpoint,
+                seed,
+                viewingKeys
+            )
+
+            val service = DefaultSynchronizerFactory.defaultService(applicationContext, lightWalletEndpoint)
+            val encoder = DefaultSynchronizerFactory.defaultEncoder(rustBackend, saplingParamTool, repository)
             val downloader = DefaultSynchronizerFactory.defaultDownloader(service, blockStore)
-            val txManager =
-                DefaultSynchronizerFactory.defaultTxManager(initializer, encoder, service)
-            val processor =
-                DefaultSynchronizerFactory.defaultProcessor(initializer, downloader, repository)
+            val txManager = DefaultSynchronizerFactory.defaultTxManager(
+                applicationContext,
+                zcashNetwork,
+                alias,
+                encoder,
+                service
+            )
+            val processor = DefaultSynchronizerFactory.defaultProcessor(rustBackend, downloader, repository)
 
             return SdkSynchronizer(
                 repository,
                 txManager,
-                processor
+                processor,
+                rustBackend
             )
         }
 
@@ -459,6 +581,57 @@ interface Synchronizer {
          * This is a blocking call, so it should not be called from the main thread.
          */
         @JvmStatic
-        fun newBlocking(initializer: Initializer): Synchronizer = runBlocking { new(initializer) }
+        @Suppress("LongParameterList")
+        fun newBlocking(
+            context: Context,
+            zcashNetwork: ZcashNetwork,
+            alias: String = ZcashSdk.DEFAULT_ALIAS,
+            lightWalletEndpoint: LightWalletEndpoint,
+            seed: ByteArray?,
+            birthday: BlockHeight?
+        ): Synchronizer = runBlocking {
+            new(context, zcashNetwork, alias, lightWalletEndpoint, seed, birthday)
+        }
+
+        /**
+         * Delete the databases associated with this wallet. This removes all compact blocks and
+         * data derived from those blocks. Although most data can be regenerated by setting up a new
+         * Synchronizer instance with the seed, there are two special cases where data is not retained:
+         * 1. Outputs created with a `null` OVK
+         * 2. The UA to which a transaction was sent (recovery from seed will only reveal the receiver, not the full UA)
+         *
+         * @param appContext the application context.
+         * @param network the network associated with the data to be erased.
+         * @param alias the alias used to create the local data.
+         *
+         * @return true when one of the associated files was found. False most likely indicates
+         * that the wrong alias was provided.
+         */
+        suspend fun erase(
+            appContext: Context,
+            network: ZcashNetwork,
+            alias: String = ZcashSdk.DEFAULT_ALIAS
+        ): Boolean = DatabaseCoordinator.getInstance(appContext).deleteDatabases(network, alias)
+    }
+}
+
+/**
+ * Validate that the alias doesn't contain malicious characters by enforcing simple rules which
+ * permit the alias to be used as part of a file name for the preferences and databases. This
+ * enables multiple wallets to exist on one device, which is also helpful for sweeping funds.
+ *
+ * @param alias the alias to validate.
+ *
+ * @throws IllegalArgumentException whenever the alias is not less than 100 characters or
+ * contains something other than alphanumeric characters. Underscores are allowed but aliases
+ * must start with a letter.
+ */
+private fun validateAlias(alias: String) {
+    require(
+        alias.length in ZcashSdk.ALIAS_MIN_LENGTH..ZcashSdk.ALIAS_MAX_LENGTH && alias[0].isLetter() &&
+            alias.all { it.isLetterOrDigit() || it == '_' }
+    ) {
+        "ERROR: Invalid alias ($alias). For security, the alias must be shorter than 100 " +
+            "characters and only contain letters, digits or underscores and start with a letter."
     }
 }

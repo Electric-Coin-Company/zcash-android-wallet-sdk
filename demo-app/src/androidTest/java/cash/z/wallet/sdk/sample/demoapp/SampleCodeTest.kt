@@ -1,19 +1,21 @@
 package cash.z.wallet.sdk.sample.demoapp
 
 import androidx.test.platform.app.InstrumentationRegistry
-import cash.z.ecc.android.sdk.Initializer
 import cash.z.ecc.android.sdk.Synchronizer
-import cash.z.ecc.android.sdk.db.entity.isFailure
+import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.ext.convertZecToZatoshi
 import cash.z.ecc.android.sdk.ext.toHex
 import cash.z.ecc.android.sdk.internal.TroubleshootingTwig
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.service.LightWalletGrpcService
 import cash.z.ecc.android.sdk.internal.twig
+import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.LightWalletEndpoint
 import cash.z.ecc.android.sdk.model.Mainnet
 import cash.z.ecc.android.sdk.model.ZcashNetwork
+import cash.z.ecc.android.sdk.model.defaultForNetwork
+import cash.z.ecc.android.sdk.model.isFailure
 import cash.z.ecc.android.sdk.tool.DerivationTool
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.runBlocking
@@ -61,22 +63,9 @@ class SampleCodeTest {
     }
 
     // ///////////////////////////////////////////////////
-    // Derive Extended Spending Key
-    @Test fun deriveSpendingKey() {
-        val spendingKeys = runBlocking {
-            DerivationTool.deriveSpendingKeys(
-                seed,
-                ZcashNetwork.Mainnet
-            )
-        }
-        assertEquals(1, spendingKeys.size)
-        log("Spending Key: ${spendingKeys[0]}")
-    }
-
-    // ///////////////////////////////////////////////////
     // Get Address
     @Test fun getAddress() = runBlocking {
-        val address = synchronizer.getAddress()
+        val address = synchronizer.getUnifiedAddress()
         assertFalse(address.isBlank())
         log("Address: $address")
     }
@@ -142,7 +131,7 @@ class SampleCodeTest {
         val amount = 0.123.convertZecToZatoshi()
         val address = "ztestsapling1tklsjr0wyw0d58f3p7wufvrj2cyfv6q6caumyueadq8qvqt8lda6v6tpx474rfru9y6u75u7qnw"
         val memo = "Test Transaction"
-        val spendingKey = DerivationTool.deriveSpendingKeys(seed, ZcashNetwork.Mainnet)[0]
+        val spendingKey = DerivationTool.deriveUnifiedSpendingKey(seed, ZcashNetwork.Mainnet, Account.DEFAULT)
         val transactionFlow = synchronizer.sendToAddress(spendingKey, amount, address, memo)
         transactionFlow.collect {
             log("pending transaction updated $it")
@@ -160,8 +149,14 @@ class SampleCodeTest {
 
         private val context = InstrumentationRegistry.getInstrumentation().targetContext
         private val synchronizer: Synchronizer = run {
-            val initializer = runBlocking { Initializer.new(context) {} }
-            Synchronizer.newBlocking(initializer)
+            val network = ZcashNetwork.fromResources(context)
+            Synchronizer.newBlocking(
+                context,
+                network,
+                lightWalletEndpoint = LightWalletEndpoint.defaultForNetwork(network),
+                seed = seed,
+                birthday = null
+            )
         }
 
         @BeforeClass

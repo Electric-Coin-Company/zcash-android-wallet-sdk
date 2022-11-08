@@ -1,6 +1,6 @@
 package cash.z.ecc.fixture
 
-import cash.z.ecc.android.sdk.db.DatabaseCoordinator
+import cash.z.ecc.android.sdk.internal.db.DatabaseCoordinator
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 
 object DatabaseNameFixture {

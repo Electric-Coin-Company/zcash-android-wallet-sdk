@@ -8,16 +8,8 @@ import android.widget.TextView
 import androidx.lifecycle.lifecycleScope
 import cash.z.ecc.android.bip39.Mnemonics
 import cash.z.ecc.android.bip39.toSeed
-import cash.z.ecc.android.sdk.Initializer
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor
-import cash.z.ecc.android.sdk.db.entity.PendingTransaction
-import cash.z.ecc.android.sdk.db.entity.isCreated
-import cash.z.ecc.android.sdk.db.entity.isCreating
-import cash.z.ecc.android.sdk.db.entity.isFailedEncoding
-import cash.z.ecc.android.sdk.db.entity.isFailedSubmit
-import cash.z.ecc.android.sdk.db.entity.isMined
-import cash.z.ecc.android.sdk.db.entity.isSubmitSuccess
 import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
 import cash.z.ecc.android.sdk.demoapp.DemoConstants
 import cash.z.ecc.android.sdk.demoapp.databinding.FragmentSendBinding
@@ -30,11 +22,21 @@ import cash.z.ecc.android.sdk.ext.convertZecToZatoshi
 import cash.z.ecc.android.sdk.ext.toZecString
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.twig
+import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.LightWalletEndpoint
+import cash.z.ecc.android.sdk.model.PendingTransaction
+import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.model.defaultForNetwork
+import cash.z.ecc.android.sdk.model.isCreated
+import cash.z.ecc.android.sdk.model.isCreating
+import cash.z.ecc.android.sdk.model.isFailedEncoding
+import cash.z.ecc.android.sdk.model.isFailedSubmit
+import cash.z.ecc.android.sdk.model.isMined
+import cash.z.ecc.android.sdk.model.isSubmitSuccess
 import cash.z.ecc.android.sdk.tool.DerivationTool
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 
 /**
@@ -54,7 +56,7 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
 
     // in a normal app, this would be stored securely with the trusted execution environment (TEE)
     // but since this is a demo, we'll derive it on the fly
-    private lateinit var spendingKey: String
+    private lateinit var spendingKey: UnifiedSpendingKey
 
     /**
      * Initialize the required values that would normally live outside the demo but are repeated
@@ -68,22 +70,20 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
         // have the seed stored
         val seed = Mnemonics.MnemonicCode(seedPhrase).toSeed()
 
-        runBlocking {
-            Initializer.new(requireApplicationContext()) {
-                val network = ZcashNetwork.fromResources(requireApplicationContext())
-                runBlocking {
-                    it.newWallet(
-                        seed,
-                        network = network,
-                        lightWalletEndpoint = LightWalletEndpoint.defaultForNetwork(network)
-                    )
-                }
-            }
-        }.let { initializer ->
-            synchronizer = Synchronizer.newBlocking(initializer)
-        }
+        val network = ZcashNetwork.fromResources(requireApplicationContext())
+        synchronizer = Synchronizer.newBlocking(
+            requireApplicationContext(),
+            network,
+            lightWalletEndpoint = LightWalletEndpoint.defaultForNetwork(network),
+            seed = seed,
+            birthday = sharedViewModel.birthdayHeight.value
+        )
         spendingKey = runBlocking {
-            DerivationTool.deriveSpendingKeys(seed, ZcashNetwork.fromResources(requireApplicationContext())).first()
+            DerivationTool.deriveUnifiedSpendingKey(
+                seed,
+                ZcashNetwork.fromResources(requireApplicationContext()),
+                Account.DEFAULT
+            )
         }
     }
 
@@ -173,26 +173,28 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
         isSending = true
         val amount = amountInput.text.toString().toDouble().convertZecToZatoshi()
         val toAddress = addressInput.text.toString().trim()
-        synchronizer.sendToAddress(
-            spendingKey,
-            amount,
-            toAddress,
-            "Funds from Demo App"
-        ).collectWith(lifecycleScope, ::onPendingTxUpdated)
+        lifecycleScope.launch {
+            synchronizer.sendToAddress(
+                spendingKey,
+                amount,
+                toAddress,
+                "Funds from Demo App"
+            ).collectWith(lifecycleScope, ::onPendingTxUpdated)
+        }
+
         mainActivity()?.hideKeyboard()
     }
 
     @Suppress("ComplexMethod")
     private fun onPendingTxUpdated(pendingTransaction: PendingTransaction?) {
-        val id = pendingTransaction?.id ?: -1
         val message = when {
             pendingTransaction == null -> "Transaction not found"
-            pendingTransaction.isMined() -> "Transaction Mined (id: $id)!\n\nSEND COMPLETE".also { isSending = false }
+            pendingTransaction.isMined() -> "Transaction Mined!\n\nSEND COMPLETE".also { isSending = false }
             pendingTransaction.isSubmitSuccess() -> "Successfully submitted transaction!\nAwaiting confirmation..."
             pendingTransaction.isFailedEncoding() ->
-                "ERROR: failed to encode transaction! (id: $id)".also { isSending = false }
+                "ERROR: failed to encode transaction!".also { isSending = false }
             pendingTransaction.isFailedSubmit() ->
-                "ERROR: failed to submit transaction! (id: $id)".also { isSending = false }
+                "ERROR: failed to submit transaction!".also { isSending = false }
             pendingTransaction.isCreated() -> "Transaction creation complete! (id: $id)"
             pendingTransaction.isCreating() -> "Creating transaction!".also { onResetInfo() }
             else -> "Transaction updated!".also { twig("Unhandled TX state: $pendingTransaction") }

@@ -262,6 +262,12 @@ dependencies {
     implementation(libs.androidx.paging)
     ksp(libs.androidx.room.compiler)
 
+    // For direct database access
+    // TODO [#703]: Eliminate this dependency
+    // https://github.com/zcash/zcash-android-wallet-sdk/issues/703
+    implementation(libs.androidx.sqlite)
+    implementation(libs.androidx.sqlite.framework)
+
     // Kotlin
     implementation(libs.kotlin.stdlib)
     implementation(libs.kotlinx.coroutines.core)
@@ -284,8 +290,6 @@ dependencies {
     // Tests
     testImplementation(libs.kotlin.reflect)
     testImplementation(libs.kotlin.test)
-    testImplementation(libs.mockito.junit)
-    testImplementation(libs.mockito.kotlin)
     testImplementation(libs.bundles.junit)
     testImplementation(libs.grpc.testing)
 

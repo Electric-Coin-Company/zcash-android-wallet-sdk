@@ -8,17 +8,17 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import cash.z.ecc.android.bip39.Mnemonics
 import cash.z.ecc.android.bip39.toSeed
-import cash.z.ecc.android.sdk.Initializer
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor
-import cash.z.ecc.android.sdk.db.entity.ConfirmedTransaction
 import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
 import cash.z.ecc.android.sdk.demoapp.databinding.FragmentListTransactionsBinding
 import cash.z.ecc.android.sdk.demoapp.ext.requireApplicationContext
 import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.ext.collectWith
 import cash.z.ecc.android.sdk.internal.twig
+import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.LightWalletEndpoint
+import cash.z.ecc.android.sdk.model.TransactionOverview
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.model.defaultForNetwork
 import cash.z.ecc.android.sdk.tool.DerivationTool
@@ -33,7 +33,6 @@ import kotlinx.coroutines.runBlocking
  */
 @Suppress("TooManyFunctions")
 class ListTransactionsFragment : BaseDemoFragment<FragmentListTransactionsBinding>() {
-    private lateinit var initializer: Initializer
     private lateinit var synchronizer: Synchronizer
     private lateinit var adapter: TransactionAdapter
     private lateinit var address: String
@@ -51,28 +50,21 @@ class ListTransactionsFragment : BaseDemoFragment<FragmentListTransactionsBindin
         // Use a BIP-39 library to convert a seed phrase into a byte array. Most wallets already
         // have the seed stored
         val seed = Mnemonics.MnemonicCode(seedPhrase).toSeed()
-
-        initializer = Initializer.newBlocking(
-            requireApplicationContext(),
-            Initializer.Config {
-                val network = ZcashNetwork.fromResources(requireApplicationContext())
-                runBlocking {
-                    it.importWallet(
-                        seed,
-                        birthday = null,
-                        network = network,
-                        lightWalletEndpoint = LightWalletEndpoint.defaultForNetwork(network)
-                    )
-                }
-            }
-        )
+        val network = ZcashNetwork.fromResources(requireApplicationContext())
         address = runBlocking {
-            DerivationTool.deriveShieldedAddress(
+            DerivationTool.deriveUnifiedAddress(
                 seed,
-                ZcashNetwork.fromResources(requireApplicationContext())
+                ZcashNetwork.fromResources(requireApplicationContext()),
+                Account.DEFAULT
             )
         }
-        synchronizer = Synchronizer.newBlocking(initializer)
+        synchronizer = Synchronizer.newBlocking(
+            requireApplicationContext(),
+            network,
+            lightWalletEndpoint = LightWalletEndpoint.defaultForNetwork(network),
+            seed = seed,
+            birthday = sharedViewModel.birthdayHeight.value
+        )
     }
 
     private fun initTransactionUI() {
@@ -87,7 +79,10 @@ class ListTransactionsFragment : BaseDemoFragment<FragmentListTransactionsBindin
         synchronizer.status.collectWith(lifecycleScope, ::onStatus)
         synchronizer.processorInfo.collectWith(lifecycleScope, ::onProcessorInfoUpdated)
         synchronizer.progress.collectWith(lifecycleScope, ::onProgress)
-        synchronizer.clearedTransactions.collectWith(lifecycleScope, ::onTransactionsUpdated)
+
+        synchronizer.clearedTransactions.collectWith(lifecycleScope) {
+            onTransactionsUpdated(it)
+        }
     }
 
     //
@@ -113,7 +108,7 @@ class ListTransactionsFragment : BaseDemoFragment<FragmentListTransactionsBindin
         binding.textInfo.visibility = View.INVISIBLE
     }
 
-    private fun onTransactionsUpdated(transactions: List<ConfirmedTransaction>) {
+    private fun onTransactionsUpdated(transactions: List<TransactionOverview>) {
         twig("got a new paged list of transactions")
         adapter.submitList(transactions)
 

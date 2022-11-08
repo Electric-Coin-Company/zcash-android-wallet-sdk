@@ -81,3 +81,4 @@ DecompileChecker.kt
 backup-dbs/
 *.db
 .DS_Store
+/.idea/androidTestResultsUserPreferences.xml
