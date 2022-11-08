@@ -23,7 +23,7 @@ jobs:
       # https://github.com/gradle/wrapper-validation-action/issues/40
       - name: Gradle Wrapper Validation
         timeout-minutes: 1
-        uses: gradle/wrapper-validation-action@e6e38bacfdf1a337459f332974bb2327a31aaf4b
+        uses: gradle/wrapper-validation-action@55e685c48d84285a5b0418cd094606e199cca3b6
 
   check_secrets:
     environment: deployment
@@ -86,7 +86,7 @@ jobs:
           zip -r ${BINARIES_ZIP_PATH} . -i *build/outputs/*
       - name: Upload Artifacts
         if: ${{ always() }}
-        uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8
+        uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb
         timeout-minutes: 2
         with:
           name: Release binaries
