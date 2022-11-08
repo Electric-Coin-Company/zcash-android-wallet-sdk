@@ -20,6 +20,8 @@ Change Log
 - `cash.z.ecc.android.sdk.tool`:
   - `DerivationTool.deriveUnifiedSpendingKey`
   - `DerivationTool.deriveUnifiedFullViewingKey`
+  - `DerivationTool.deriveTransparentAccountPrivateKey`
+  - `DerivationTool.deriveTransparentAddressFromAccountPrivateKey`
   - `DerivationTool.deriveUnifiedAddress`
   - `DerivationTool.deriveUnifiedFullViewingKeys`
   - `DerivationTool.validateUnifiedFullViewingKey`
@@ -58,15 +60,15 @@ Change Log
     public key, and not the extended public key as intended. This made it incompatible
     with ZIP 316.
 - `cash.z.ecc.android.sdk.tool`:
-  - `DerivationTool.deriveSpendingKeys` (use `DerivationTool.deriveUnifiedSpendingKey` instead).
-  - `DerivationTool.deriveViewingKey` (use `DerivationTool.deriveUnifiedFullViewingKey` instead).
+  - `DerivationTool.deriveSpendingKeys` (use `DerivationTool.deriveUnifiedSpendingKey` instead)
+  - `DerivationTool.deriveViewingKey` (use `DerivationTool.deriveUnifiedFullViewingKey` instead)
   - `DerivationTool.deriveTransparentAddress` (use `Synchronizer.getLegacyTransparentAddress` instead).
   - `DerivationTool.deriveTransparentAddressFromPrivateKey` (use `Synchronizer.getLegacyTransparentAddress` instead).
   - `DerivationTool.deriveTransparentAddressFromPublicKey` (use `Synchronizer.getLegacyTransparentAddress` instead).
   - `DerivationTool.deriveTransparentSecretKey` (use `DerivationTool.deriveUnifiedSpendingKey` instead).
   - `DerivationTool.deriveShieldedAddress`
-  - `DerivationTool.deriveUnifiedViewingKeys`
-  - `DerivationTool.validateUnifiedViewingKey`
+  - `DerivationTool.deriveUnifiedViewingKeys` (use `DerivationTool.deriveUnifiedFullViewingKey` instead)
+  - `DerivationTool.validateUnifiedViewingKey` 
 
 Version 1.9.0-beta05
 ------------------------------------

@@ -480,13 +480,21 @@ interface Synchronizer {
         /**
          * Primary method that SDK clients will use to construct a synchronizer.
          *
-         * @param initializer the helper that is leveraged for creating all the components that the
-         * Synchronizer requires. It contains all information necessary to build a synchronizer and it is
-         * mainly responsible for initializing the databases associated with this synchronizer and loading
-         * the rust backend.
+         * @param zcashNetwork the network to use.
+         * @param alias A string used to segregate multiple wallets in the filesystem.  This implies the string
+         * should not contain characters unsuitable for the platform's filesystem.  The default value is
+         * generally used unless an SDK client needs to support multiple wallets.
+         * @param lightWalletEndpoint Server endpoint.  See [cash.z.ecc.android.sdk.model.defaultForNetwork]. If a
+         * client wishes to change the server endpoint, the active synchronizer will need to be stopped and a new
+         * instance created with a new value.
          * @param seed the wallet's seed phrase. This is required the first time a new wallet is set up. For
          * subsequent calls, seed is only needed if [InitializerException.SeedRequired] is thrown.
-         * @throws InitializerException.SeedRequired
+         * @param birthday Block height representing the "birthday" of the wallet.  When creating a new wallet, see
+         * [BlockHeight.ofLatestCheckpoint].  When restoring an existing wallet, use block height that was first used
+         * to create the wallet.  If that value is unknown, null is acceptable but will result in longer
+         * sync times.  After sync completes, the birthday can be determined from [Synchronizer.latestBirthdayHeight].
+         * @throws InitializerException.SeedRequired Indicates clients need to call this method again, providing the
+         * seed bytes.
          */
         /*
          * If customized initialization is required (e.g. for dependency injection or testing), see
