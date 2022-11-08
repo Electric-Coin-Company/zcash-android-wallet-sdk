@@ -204,7 +204,7 @@ interface Synchronizer {
      *
      * @return the current unified address for the given account.
      */
-    suspend fun getCurrentAddress(account: Account = Account.DEFAULT): String
+    suspend fun getUnifiedAddress(account: Account = Account.DEFAULT): String
 
     /**
      * Gets the legacy Sapling address corresponding to the current unified address for the given account.
@@ -214,7 +214,7 @@ interface Synchronizer {
      *
      * @return a legacy Sapling address for the given account.
      */
-    suspend fun getLegacySaplingAddress(account: Account = Account.DEFAULT): String
+    suspend fun getSaplingAddress(account: Account = Account.DEFAULT): String
 
     /**
      * Gets the legacy transparent address corresponding to the current unified address for the given account.
@@ -224,7 +224,7 @@ interface Synchronizer {
      *
      * @return a legacy transparent address for the given account.
      */
-    suspend fun getLegacyTransparentAddress(account: Account = Account.DEFAULT): String
+    suspend fun getTransparentAddress(account: Account = Account.DEFAULT): String
 
     /**
      * Sends zatoshi.

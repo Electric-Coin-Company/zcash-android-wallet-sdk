@@ -61,17 +61,17 @@ class GetAddressFragment : BaseDemoFragment<FragmentGetAddressBinding>() {
     private fun displayAddress() {
         viewLifecycleOwner.lifecycleScope.launchWhenStarted {
             binding.unifiedAddress.apply {
-                val uaddress = synchronizer.getCurrentAddress()
+                val uaddress = synchronizer.getUnifiedAddress()
                 text = uaddress
                 setOnClickListener { copyToClipboard(uaddress) }
             }
             binding.saplingAddress.apply {
-                val sapling = synchronizer.getLegacySaplingAddress()
+                val sapling = synchronizer.getSaplingAddress()
                 text = sapling
                 setOnClickListener { copyToClipboard(sapling) }
             }
             binding.transparentAddress.apply {
-                val transparent = synchronizer.getLegacyTransparentAddress()
+                val transparent = synchronizer.getTransparentAddress()
                 text = transparent
                 setOnClickListener { copyToClipboard(transparent) }
             }

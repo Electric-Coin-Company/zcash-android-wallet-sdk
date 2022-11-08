@@ -375,7 +375,7 @@ class SdkSynchronizer internal constructor(
 
     suspend fun refreshUtxos() {
         twig("refreshing utxos", -1)
-        refreshUtxos(getLegacyTransparentAddress())
+        refreshUtxos(getTransparentAddress())
     }
 
     /**
@@ -397,7 +397,7 @@ class SdkSynchronizer internal constructor(
 
     suspend fun refreshTransparentBalance() {
         twig("refreshing transparent balance")
-        _transparentBalances.value = processor.getUtxoCacheBalance(getLegacyTransparentAddress())
+        _transparentBalances.value = processor.getUtxoCacheBalance(getTransparentAddress())
     }
 
     suspend fun isValidAddress(address: String): Boolean {
@@ -612,19 +612,19 @@ class SdkSynchronizer internal constructor(
     /**
      * Returns the current Unified Address for this account.
      */
-    override suspend fun getCurrentAddress(account: Account): String =
+    override suspend fun getUnifiedAddress(account: Account): String =
         processor.getCurrentAddress(account)
 
     /**
      * Returns the legacy Sapling address corresponding to the current Unified Address for this account.
      */
-    override suspend fun getLegacySaplingAddress(account: Account): String =
+    override suspend fun getSaplingAddress(account: Account): String =
         processor.getLegacySaplingAddress(account)
 
     /**
      * Returns the legacy transparent address corresponding to the current Unified Address for this account.
      */
-    override suspend fun getLegacyTransparentAddress(account: Account): String =
+    override suspend fun getTransparentAddress(account: Account): String =
         processor.getTransparentAddress(account)
 
     override suspend fun sendToAddress(

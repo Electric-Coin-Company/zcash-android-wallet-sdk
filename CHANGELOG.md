@@ -5,9 +5,8 @@ Change Log
 
 ### Added
 - `cash.z.ecc.android.sdk`:
-  - `Synchronizer.getCurrentAddress`
-  - `Synchronizer.getLegacySaplingAddress`
-  - `Synchronizer.getLegacyTransparentAddress`
+  - `Synchronizer.getUnifiedAddress`
+  - `Synchronizer.getSaplingAddress`
   - `Synchronizer.isValidUnifiedAddr`
   - `Synchronizer.getMemos(TransactionOverview)`
   - `Synchronizer.getReceipients(TransactionOverview)`
@@ -51,9 +50,8 @@ Change Log
 ### Removed
 - `cash.z.ecc.android.sdk`:
   - `Initializer` (use `Synchronizer.new` instead)
-  - `Synchronizer.getAddress` (use `Synchronizer.getCurrentAddress` instead).
-  - `Synchronizer.getShieldedAddress` (use `Synchronizer.getLegacySaplingAddress` instead).
-  - `Synchronizer.getTransparentAddress` (use `Synchronizer.getLegacyTransparentAddress` instead).
+  - `Synchronizer.getAddress` (use `Synchronizer.getUnifiedAddress` instead).
+  - `Synchronizer.getShieldedAddress` (use `Synchronizer.getSaplingAddress` instead)
   - `Synchronizer.cancel`
 - `cash.z.ecc.android.sdk.type.UnifiedViewingKey`
   - This type had a bug where the `extpub` field actually was storing a plain transparent

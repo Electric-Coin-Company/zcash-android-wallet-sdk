@@ -174,7 +174,7 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
         resetInBackground()
         viewLifecycleOwner.lifecycleScope.launchWhenStarted {
             binding.inputAddress.setText(
-                synchronizer.getLegacyTransparentAddress(Account.DEFAULT)
+                synchronizer.getTransparentAddress(Account.DEFAULT)
             )
         }
     }

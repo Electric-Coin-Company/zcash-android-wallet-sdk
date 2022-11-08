@@ -79,9 +79,9 @@ class TestWallet(
 
     val available get() = synchronizer.saplingBalances.value?.available
     val unifiedAddress =
-        runBlocking { synchronizer.getCurrentAddress(Account.DEFAULT) }
+        runBlocking { synchronizer.getUnifiedAddress(Account.DEFAULT) }
     val transparentAddress =
-        runBlocking { synchronizer.getLegacyTransparentAddress(Account.DEFAULT) }
+        runBlocking { synchronizer.getTransparentAddress(Account.DEFAULT) }
     val birthdayHeight get() = synchronizer.latestBirthdayHeight
     val networkName get() = synchronizer.network.networkName
 
