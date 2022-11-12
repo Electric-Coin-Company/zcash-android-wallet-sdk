@@ -227,7 +227,8 @@ internal class RustBackend private constructor(
             memo ?: ByteArray(0),
             File(saplingParamDir, SaplingParamTool.SPEND_PARAM_FILE_NAME).absolutePath,
             File(saplingParamDir, SaplingParamTool.OUTPUT_PARAM_FILE_NAME).absolutePath,
-            networkId = network.id
+            networkId = network.id,
+            useZip317Fees = false
         )
     }
 
@@ -243,7 +244,8 @@ internal class RustBackend private constructor(
                 memo ?: ByteArray(0),
                 File(saplingParamDir, SaplingParamTool.SPEND_PARAM_FILE_NAME).absolutePath,
                 File(saplingParamDir, SaplingParamTool.OUTPUT_PARAM_FILE_NAME).absolutePath,
-                networkId = network.id
+                networkId = network.id,
+                useZip317Fees = false
             )
         }
     }
@@ -486,7 +488,8 @@ internal class RustBackend private constructor(
             memo: ByteArray,
             spendParamsPath: String,
             outputParamsPath: String,
-            networkId: Int
+            networkId: Int,
+            useZip317Fees: Boolean
         ): Long
 
         @JvmStatic
@@ -497,7 +500,8 @@ internal class RustBackend private constructor(
             memo: ByteArray,
             spendParamsPath: String,
             outputParamsPath: String,
-            networkId: Int
+            networkId: Int,
+            useZip317Fees: Boolean
         ): Long
 
         @JvmStatic
