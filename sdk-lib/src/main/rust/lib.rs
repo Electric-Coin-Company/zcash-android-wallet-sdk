@@ -23,21 +23,22 @@ use zcash_client_backend::keys::{DecodingError, UnifiedSpendingKey};
 use zcash_client_backend::{
     address::{RecipientAddress, UnifiedAddress},
     data_api::{
-        chain::{scan_cached_blocks, validate_chain},
-        error::Error,
+        chain::{self, scan_cached_blocks, validate_chain},
         wallet::{
-            create_spend_to_address, decrypt_and_store_transaction, shield_transparent_funds,
+            decrypt_and_store_transaction, input_selection::GreedyInputSelector,
+            shield_transparent_funds, spend,
         },
         WalletRead, WalletWrite,
     },
     encoding::AddressCodec,
+    fees::DustOutputPolicy,
     keys::{Era, UnifiedFullViewingKey},
     wallet::{OvkPolicy, WalletTransparentOutput},
+    zip321::{Payment, TransactionRequest},
 };
 #[allow(deprecated)]
 use zcash_client_sqlite::wallet::get_rewind_height;
 use zcash_client_sqlite::{
-    error::SqliteClientError,
     wallet::init::{init_accounts_table, init_blocks_table, init_wallet_db, WalletMigrationError},
     BlockDb, NoteId, WalletDb,
 };
@@ -58,6 +59,16 @@ use zcash_proofs::prover::LocalTxProver;
 use crate::utils::exception::unwrap_exc_or;
 
 mod utils;
+
+// Combine imports into common namespaces.
+mod fixed {
+    pub(super) use zcash_client_backend::fees::fixed::*;
+    pub(super) use zcash_primitives::transaction::fees::fixed::*;
+}
+mod zip317 {
+    pub(super) use zcash_client_backend::fees::zip317::*;
+    pub(super) use zcash_primitives::transaction::fees::zip317::*;
+}
 
 const ANCHOR_OFFSET: u32 = 10;
 
@@ -705,7 +716,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_getVerified
             })
             .and_then(|anchor| {
                 (&db_data)
-                    .get_unspent_transparent_outputs(&taddr, anchor - ANCHOR_OFFSET)
+                    .get_unspent_transparent_outputs(&taddr, anchor - ANCHOR_OFFSET, &[])
                     .map_err(|e| format_err!("Error while fetching verified balance: {}", e))
             })?
             .iter()
@@ -743,7 +754,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_getTotalTra
             })
             .and_then(|anchor| {
                 (&db_data)
-                    .get_unspent_transparent_outputs(&taddr, anchor)
+                    .get_unspent_transparent_outputs(&taddr, anchor, &[])
                     .map_err(|e| format_err!("Error while fetching verified balance: {}", e))
             })?
             .iter()
@@ -865,8 +876,8 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_validateCom
 
         if let Err(e) = val_res {
             match e {
-                SqliteClientError::BackendError(Error::InvalidChain(upper_bound, _)) => {
-                    let upper_bound_u32 = u32::from(upper_bound);
+                chain::error::Error::Chain(e) => {
+                    let upper_bound_u32 = u32::from(e.at_height());
                     Ok(upper_bound_u32 as i64)
                 }
                 _ => Err(format_err!("Error while validating chain: {}", e)),
@@ -1044,6 +1055,29 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_decryptAndS
     unwrap_exc_or(&env, res, JNI_FALSE)
 }
 
+fn zip317_helper<Ctx, DbT, R>(
+    context: Ctx,
+    use_zip317_fees: jboolean,
+    enabled: impl FnOnce(Ctx, GreedyInputSelector<DbT, zip317::SingleOutputChangeStrategy>) -> R,
+    disabled: impl FnOnce(Ctx, GreedyInputSelector<DbT, fixed::SingleOutputChangeStrategy>) -> R,
+) -> R {
+    if use_zip317_fees == JNI_TRUE {
+        let input_selector = GreedyInputSelector::new(
+            zip317::SingleOutputChangeStrategy::new(zip317::FeeRule::standard()),
+            DustOutputPolicy::default(),
+        );
+
+        enabled(context, input_selector)
+    } else {
+        let input_selector = GreedyInputSelector::new(
+            fixed::SingleOutputChangeStrategy::new(fixed::FeeRule::standard()),
+            DustOutputPolicy::default(),
+        );
+
+        disabled(context, input_selector)
+    }
+}
+
 #[no_mangle]
 pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_createToAddress(
     env: JNIEnv<'_>,
@@ -1056,6 +1090,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_createToAdd
     spend_params: JString<'_>,
     output_params: JString<'_>,
     network_id: jint,
+    use_zip317_fees: jboolean,
 ) -> jlong {
     let res = panic::catch_unwind(|| {
         let network = parse_network(network_id as u32)?;
@@ -1091,18 +1126,46 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_createToAdd
 
         let prover = LocalTxProver::new(Path::new(&spend_params), Path::new(&output_params));
 
-        create_spend_to_address(
-            &mut db_data,
-            &network,
-            prover,
-            &usk,
-            &to,
-            value,
+        let request = TransactionRequest::new(vec![Payment {
+            recipient_address: to,
+            amount: value,
             memo,
-            OvkPolicy::Sender,
-            ANCHOR_OFFSET,
+            label: None,
+            message: None,
+            other_params: vec![],
+        }])
+        .map_err(|e| format_err!("Error creating transaction request: {:?}", e))?;
+
+        zip317_helper(
+            (&mut db_data, prover, request),
+            use_zip317_fees,
+            |(wallet_db, prover, request), input_selector| {
+                spend(
+                    wallet_db,
+                    &network,
+                    prover,
+                    &input_selector,
+                    &usk,
+                    request,
+                    OvkPolicy::Sender,
+                    ANCHOR_OFFSET,
+                )
+                .map_err(|e| format_err!("Error while creating transaction: {}", e))
+            },
+            |(wallet_db, prover, request), input_selector| {
+                spend(
+                    wallet_db,
+                    &network,
+                    prover,
+                    &input_selector,
+                    &usk,
+                    request,
+                    OvkPolicy::Sender,
+                    ANCHOR_OFFSET,
+                )
+                .map_err(|e| format_err!("Error while creating transaction: {}", e))
+            },
         )
-        .map_err(|e| format_err!("Error while creating transaction: {}", e))
     });
     unwrap_exc_or(&env, res, -1)
 }
@@ -1117,6 +1180,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_shieldToAdd
     spend_params: JString<'_>,
     output_params: JString<'_>,
     network_id: jint,
+    use_zip317_fees: jboolean,
 ) -> jlong {
     let res = panic::catch_unwind(|| {
         let network = parse_network(network_id as u32)?;
@@ -1159,16 +1223,36 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_shieldToAdd
 
         let prover = LocalTxProver::new(Path::new(&spend_params), Path::new(&output_params));
 
-        shield_transparent_funds(
-            &mut db_data,
-            &network,
-            prover,
-            &usk,
-            &from_addrs,
-            &MemoBytes::from(&memo),
-            min_confirmations,
+        zip317_helper(
+            (&mut db_data, prover),
+            use_zip317_fees,
+            |(wallet_db, prover), input_selector| {
+                shield_transparent_funds(
+                    wallet_db,
+                    &network,
+                    prover,
+                    &input_selector,
+                    &usk,
+                    &from_addrs,
+                    &MemoBytes::from(&memo),
+                    min_confirmations,
+                )
+                .map_err(|e| format_err!("Error while shielding transaction: {}", e))
+            },
+            |(wallet_db, prover), input_selector| {
+                shield_transparent_funds(
+                    wallet_db,
+                    &network,
+                    prover,
+                    &input_selector,
+                    &usk,
+                    &from_addrs,
+                    &MemoBytes::from(&memo),
+                    min_confirmations,
+                )
+                .map_err(|e| format_err!("Error while shielding transaction: {}", e))
+            },
         )
-        .map_err(|e| format_err!("Error while shielding transaction: {}", e))
     });
     unwrap_exc_or(&env, res, -1)
 }

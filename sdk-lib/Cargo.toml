@@ -23,20 +23,10 @@ schemer = "0.2"
 secp256k1 = "0.21"
 secrecy = "0.8"
 zcash_address = "0.2"
-zcash_client_backend = { version = "0.5", features = ["transparent-inputs", "unstable"] }
-zcash_client_sqlite = { version = "0.3", features = ["transparent-inputs", "unstable"] }
-zcash_primitives = "0.8"
-zcash_proofs = "0.8"
-
-# Revision corresponds to the pending zcash_primitives 0.8.0.
-[patch.crates-io]
-schemer = { git = "https://github.com/aschampion/schemer.git", rev = "6726b60f43f72c6e24a18d31be0ec7d42829e5e1" }
-schemer-rusqlite = { git = "https://github.com/aschampion/schemer.git", rev = "6726b60f43f72c6e24a18d31be0ec7d42829e5e1" }
-zcash_address = { git = 'https://github.com/zcash/librustzcash.git', rev='6f4a6aa00cc2db7864d01c7403cbcd75dd45bda4' }
-zcash_client_backend = { git = 'https://github.com/zcash/librustzcash.git', rev='6f4a6aa00cc2db7864d01c7403cbcd75dd45bda4' }
-zcash_client_sqlite = { git = 'https://github.com/zcash/librustzcash.git', rev='6f4a6aa00cc2db7864d01c7403cbcd75dd45bda4' }
-zcash_primitives = { git = 'https://github.com/zcash/librustzcash.git', rev='6f4a6aa00cc2db7864d01c7403cbcd75dd45bda4' }
-zcash_proofs = { git = 'https://github.com/zcash/librustzcash.git', rev='6f4a6aa00cc2db7864d01c7403cbcd75dd45bda4' }
+zcash_client_backend = { version = "0.6", features = ["transparent-inputs", "unstable"] }
+zcash_client_sqlite = { version = "0.4", features = ["transparent-inputs", "unstable"] }
+zcash_primitives = "0.9"
+zcash_proofs = "0.9"
 
 ## Uncomment this to test librustzcash changes locally
 #[patch.crates-io]
