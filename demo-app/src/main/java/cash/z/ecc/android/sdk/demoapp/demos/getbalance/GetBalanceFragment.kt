@@ -2,6 +2,7 @@ package cash.z.ecc.android.sdk.demoapp.demos.getbalance
 
 import android.os.Bundle
 import android.view.LayoutInflater
+import android.view.View
 import androidx.lifecycle.lifecycleScope
 import cash.z.ecc.android.bip39.Mnemonics
 import cash.z.ecc.android.bip39.toSeed
@@ -11,12 +12,17 @@ import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
 import cash.z.ecc.android.sdk.demoapp.databinding.FragmentGetBalanceBinding
 import cash.z.ecc.android.sdk.demoapp.ext.requireApplicationContext
 import cash.z.ecc.android.sdk.demoapp.util.fromResources
+import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.ext.collectWith
 import cash.z.ecc.android.sdk.ext.convertZatoshiToZecString
+import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.LightWalletEndpoint
 import cash.z.ecc.android.sdk.model.WalletBalance
+import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.model.defaultForNetwork
+import cash.z.ecc.android.sdk.tool.DerivationTool
+import kotlinx.coroutines.launch
 
 /**
  * Displays the available balance && total balance associated with the seed defined by the default config.
@@ -51,6 +57,22 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
             seed = seed,
             birthday = sharedViewModel.birthdayHeight.value
         )
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        val seedPhrase = sharedViewModel.seedPhrase.value
+        val seed = Mnemonics.MnemonicCode(seedPhrase).toSeed()
+        val network = ZcashNetwork.fromResources(requireApplicationContext())
+
+        binding.shield.apply {
+            setOnClickListener {
+                lifecycleScope.launch {
+                    synchronizer.shieldFunds(DerivationTool.deriveUnifiedSpendingKey(seed, network, Account.DEFAULT))
+                }
+            }
+        }
     }
 
     override fun onResume() {
@@ -91,6 +113,16 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
         binding.transparentBalance.apply {
             text = transparentBalance.humanString()
         }
+
+        binding.shield.apply {
+            // TODO [#776]: Support variable fees
+            // https://github.com/zcash/zcash-android-wallet-sdk/issues/776
+            visibility = if ((transparentBalance?.available ?: Zatoshi(0)) > ZcashSdk.MINERS_FEE) {
+                View.VISIBLE
+            } else {
+                View.GONE
+            }
+        }
     }
 
     private fun onStatus(status: Synchronizer.Status) {
@@ -117,6 +149,7 @@ private fun WalletBalance?.humanString() = if (null == this) {
     "Calculating balance"
 } else {
     """
+                Pending balance: ${pending.convertZatoshiToZecString(12)}
                 Available balance: ${available.convertZatoshiToZecString(12)}
                 Total balance: ${total.convertZatoshiToZecString(12)}
     """.trimIndent()

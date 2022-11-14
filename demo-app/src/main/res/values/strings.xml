@@ -29,4 +29,5 @@
     <string name="unified_address">Unified address</string>
     <string name="sapling_address">Sapling address</string>
     <string name="transparent_address">Transparent address</string>
+    <string name="action_shield">Shield Funds</string>
 </resources>
