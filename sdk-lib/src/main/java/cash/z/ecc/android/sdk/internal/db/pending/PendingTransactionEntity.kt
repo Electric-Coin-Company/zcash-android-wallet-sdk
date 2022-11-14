@@ -11,8 +11,9 @@ import cash.z.ecc.android.sdk.model.TransactionRecipient
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 
+@Suppress("LongParameterList")
 @Entity(tableName = "pending_transactions")
-internal data class PendingTransactionEntity(
+internal class PendingTransactionEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
     @ColumnInfo(name = "to_address")
