@@ -39,28 +39,31 @@ internal abstract class PendingTransactionDb : RoomDatabase() {
          */
         internal val MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE pending_transactions RENAME TO pending_transactions_old")
                 database.execSQL(
                     """
-                 ALTER TABLE pending_transactions RENAME TO pending_transactions_old;
                  CREATE TABLE pending_transactions(
                      id                         INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
                      to_address                 TEXT,
                      to_internal_account_index  INTEGER,
                      sent_from_account_index    INTEGER NOT NULL,
-                     mined_height               INTEGER,
-                     expiry_height              INTEGER,
-                     cancelled                  INTEGER,
-                     encode_attempts            INTEGER DEFAULT (0),
+                     mined_height               INTEGER NOT NULL,
+                     expiry_height              INTEGER NOT NULL,
+                     cancelled                  INTEGER NOT NULL,
+                     encode_attempts            INTEGER NOT NULL,
                      error_message              TEXT,
                      error_code                 INTEGER,
-                     submit_attempts            INTEGER DEFAULT (0),
-                     create_time                INTEGER,
-                     txid                       BLOB,
+                     submit_attempts            INTEGER NOT NULL,
+                     create_time                INTEGER NOT NULL,
+                     raw_transaction_id         BLOB,
                      value                      INTEGER NOT NULL,
-                     raw                        BLOB,
+                     raw                        BLOB NOT NULL,
                      memo                       BLOB,
-                     fee                        INTEGER
-                 );
+                     fee                        INTEGER)
+                    """.trimIndent()
+                )
+                database.execSQL(
+                    """
                  INSERT INTO pending_transactions
                  SELECT
                      id,
@@ -75,15 +78,15 @@ internal abstract class PendingTransactionDb : RoomDatabase() {
                      errorCode,
                      submitAttempts,
                      createTime,
-                     txid,
+                     rawTransactionId,
                      value,
                      raw,
                      memo,
                      NULL
-                 FROM pending_transactions_old;
-                 DROP TABLE pending_transactions_old
-                 """
+                 FROM pending_transactions_old
+                    """.trimIndent()
                 )
+                database.execSQL("DROP TABLE pending_transactions_old")
             }
         }
     }
