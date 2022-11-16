@@ -187,7 +187,7 @@ internal fun PendingTransactionEntity.isSubmitted(): Boolean {
     return submitAttempts > 0
 }
 
-internal fun PendingTransactionEntity.isFailedEncoding() = raw.isNotEmpty() && encodeAttempts > 0
+internal fun PendingTransactionEntity.isFailedEncoding() = raw.isEmpty() && encodeAttempts > 0
 
 internal fun PendingTransactionEntity.isCancelled(): Boolean {
     return cancelled > 0

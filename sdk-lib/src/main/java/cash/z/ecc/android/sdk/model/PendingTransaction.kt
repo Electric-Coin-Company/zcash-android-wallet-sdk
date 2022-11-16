@@ -22,7 +22,9 @@ data class PendingTransaction internal constructor(
     val errorCode: Int?,
     val createTime: Long,
     val rawTransactionId: FirstClassByteArray?
-)
+) {
+    override fun toString() = "PendingTransaction"
+}
 
 sealed class TransactionRecipient {
     data class Address(val addressValue: String) : TransactionRecipient() {
@@ -54,7 +56,7 @@ fun PendingTransaction.isCreating() =
 fun PendingTransaction.isCreated() =
     raw.byteArray.isNotEmpty() && submitAttempts <= 0 && !isFailedSubmit() && !isFailedEncoding()
 
-fun PendingTransaction.isFailedEncoding() = raw.byteArray.isNotEmpty() && encodeAttempts > 0
+fun PendingTransaction.isFailedEncoding() = raw.byteArray.isEmpty() && encodeAttempts > 0
 
 fun PendingTransaction.isFailedSubmit(): Boolean {
     return errorMessage != null || (errorCode != null && errorCode < 0)
