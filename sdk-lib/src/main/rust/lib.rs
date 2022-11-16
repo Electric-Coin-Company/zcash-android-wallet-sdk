@@ -674,13 +674,20 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_getBalance(
         let db_data = wallet_db(&env, network, db_data)?;
         let account = AccountId::from(u32::try_from(accountj)?);
 
+        // We query the unverified balance including unmined transactions. Shielded notes
+        // in unmined transactions are never spendable, but this ensures that the balance
+        // reported to users does not drop temporarily in a way that they don't expect.
+        // `getVerifiedBalance` requires `ANCHOR_OFFSET` confirmations, which means it
+        // always shows a spendable balance.
+        let min_confirmations = 0;
+
         (&db_data)
-            .get_target_and_anchor_heights(ANCHOR_OFFSET)
+            .get_target_and_anchor_heights(min_confirmations)
             .map_err(|e| format_err!("Error while fetching anchor height: {}", e))
             .and_then(|opt_anchor| {
                 opt_anchor
-                    .map(|(h, _)| h)
-                    .ok_or(format_err!("height not available; scan required."))
+                    .map(|(_, a)| a)
+                    .ok_or(format_err!("Anchor height not available; scan required."))
             })
             .and_then(|anchor| {
                 (&db_data)
@@ -711,12 +718,12 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_getVerified
             .map_err(|e| format_err!("Error while fetching anchor height: {}", e))
             .and_then(|opt_anchor| {
                 opt_anchor
-                    .map(|(h, _)| h)
-                    .ok_or(format_err!("height not available; scan required."))
+                    .map(|(_, a)| a)
+                    .ok_or(format_err!("Anchor height not available; scan required."))
             })
             .and_then(|anchor| {
                 (&db_data)
-                    .get_unspent_transparent_outputs(&taddr, anchor - ANCHOR_OFFSET, &[])
+                    .get_unspent_transparent_outputs(&taddr, anchor, &[])
                     .map_err(|e| format_err!("Error while fetching verified balance: {}", e))
             })?
             .iter()
@@ -744,13 +751,17 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_getTotalTra
         let addr = utils::java_string_to_rust(&env, address);
         let taddr = TransparentAddress::decode(&network, &addr).unwrap();
 
+        // We select all transparent funds including unmined coins, as that is the same
+        // set of UTXOs we shield from.
+        let min_confirmations = 0;
+
         let amount = (&db_data)
-            .get_target_and_anchor_heights(ANCHOR_OFFSET)
+            .get_target_and_anchor_heights(min_confirmations)
             .map_err(|e| format_err!("Error while fetching anchor height: {}", e))
             .and_then(|opt_anchor| {
                 opt_anchor
-                    .map(|(h, _)| h)
-                    .ok_or(format_err!("height not available; scan required."))
+                    .map(|(_, a)| a)
+                    .ok_or(format_err!("Anchor height not available; scan required."))
             })
             .and_then(|anchor| {
                 (&db_data)
@@ -1202,8 +1213,8 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_shieldToAdd
             .map_err(|e| format_err!("Error while fetching anchor height: {}", e))
             .and_then(|opt_anchor| {
                 opt_anchor
-                    .map(|(_, h)| h)
-                    .ok_or_else(|| format_err!("height not available; scan required."))
+                    .map(|(_, a)| a)
+                    .ok_or(format_err!("Anchor height not available; scan required."))
             })
             .and_then(|anchor| {
                 db_data
