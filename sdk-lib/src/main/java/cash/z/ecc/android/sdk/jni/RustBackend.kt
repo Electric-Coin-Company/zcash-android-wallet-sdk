@@ -228,7 +228,7 @@ internal class RustBackend private constructor(
             File(saplingParamDir, SaplingParamTool.SPEND_PARAM_FILE_NAME).absolutePath,
             File(saplingParamDir, SaplingParamTool.OUTPUT_PARAM_FILE_NAME).absolutePath,
             networkId = network.id,
-            useZip317Fees = false
+            useZip317Fees = IS_USE_ZIP_317_FEES
         )
     }
 
@@ -245,7 +245,7 @@ internal class RustBackend private constructor(
                 File(saplingParamDir, SaplingParamTool.SPEND_PARAM_FILE_NAME).absolutePath,
                 File(saplingParamDir, SaplingParamTool.OUTPUT_PARAM_FILE_NAME).absolutePath,
                 networkId = network.id,
-                useZip317Fees = false
+                useZip317Fees = IS_USE_ZIP_317_FEES
             )
         }
     }
@@ -327,6 +327,7 @@ internal class RustBackend private constructor(
      */
     companion object {
         internal val rustLibraryLoader = NativeLibraryLoader("zcashwalletsdk")
+        private const val IS_USE_ZIP_317_FEES = false
 
         /**
          * Loads the library and initializes path variables. Although it is best to only call this
