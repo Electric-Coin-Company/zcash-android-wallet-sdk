@@ -16,6 +16,7 @@ use failure::Error;
 use jni::JNIEnv;
 use std::any::Any;
 use std::thread;
+use tracing::error;
 
 type ExceptionResult<T> = thread::Result<Result<T, Error>>;
 

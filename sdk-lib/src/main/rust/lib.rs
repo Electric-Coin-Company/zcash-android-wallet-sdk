@@ -1,13 +1,9 @@
-#[macro_use]
-extern crate log;
-
 use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
 use std::panic;
 use std::path::Path;
 use std::ptr;
 
-use android_logger::Config;
 use failure::format_err;
 use jni::objects::{JObject, JValue};
 use jni::{
@@ -15,9 +11,10 @@ use jni::{
     sys::{jboolean, jbyteArray, jint, jlong, jobject, jobjectArray, jstring, JNI_FALSE, JNI_TRUE},
     JNIEnv,
 };
-use log::Level;
 use schemer::MigratorError;
 use secrecy::{ExposeSecret, SecretVec};
+use tracing::{debug, error};
+use tracing_subscriber::prelude::*;
 use zcash_address::{ToAddress, ZcashAddress};
 use zcash_client_backend::keys::{DecodingError, UnifiedSpendingKey};
 use zcash_client_backend::{
@@ -101,16 +98,23 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_initLogs(
     _env: JNIEnv<'_>,
     _: JClass<'_>,
 ) {
-    android_logger::init_once(
-        Config::default()
-            .with_min_level(Level::Debug)
-            .with_tag("cash.z.rust.logs"),
-    );
+    // Set up the Android tracing layer.
+    #[cfg(target_os = "android")]
+    let android_layer = paranoid_android::layer("cash.z.rust.logs")
+        .with_ansi(false)
+        .with_filter(tracing_subscriber::filter::LevelFilter::DEBUG);
 
+    // Install the `tracing` subscriber.
+    let registry = tracing_subscriber::registry();
+    #[cfg(target_os = "android")]
+    let registry = registry.with(android_layer);
+    registry.init();
+
+    // Log panics instead of writing them to stderr.
     log_panics::init();
 
     debug!("logs have been initialized successfully");
-    print_debug_state()
+    print_debug_state();
 }
 
 /// Sets up the internal structure of the data database.
