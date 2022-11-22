@@ -736,7 +736,7 @@ internal object DefaultSynchronizerFactory {
         val coordinator = DatabaseCoordinator.getInstance(context)
 
         return RustBackend.init(
-            coordinator.cacheDbFile(network, alias),
+            coordinator.cacheDbRoot(network, alias),
             coordinator.dataDbFile(network, alias),
             saplingParamTool.properties.paramsDirectory,
             network,
@@ -764,12 +764,12 @@ internal object DefaultSynchronizerFactory {
             )
         )
 
-    internal fun defaultCompactBlockRepository(context: Context, cacheDbFile: File, zcashNetwork: ZcashNetwork):
+    internal fun defaultCompactBlockRepository(context: Context, rustBackend: RustBackend, zcashNetwork: ZcashNetwork):
         CompactBlockRepository =
         DbCompactBlockRepository.new(
             context,
             zcashNetwork,
-            cacheDbFile
+            rustBackend.fsBlockDbRoot
         )
 
     fun defaultService(context: Context, lightWalletEndpoint: LightWalletEndpoint): BlockingLightWalletClient =

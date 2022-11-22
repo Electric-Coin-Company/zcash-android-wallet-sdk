@@ -35,7 +35,7 @@ class DatabaseCoordinatorTest {
         val fileName = DatabaseNameFixture.newDb(name = DatabaseCoordinator.DB_CACHE_NAME)
         val expectedFilePath = File(directory, fileName).path
 
-        dbCoordinator.cacheDbFile(
+        dbCoordinator.cacheDbRoot(
             DatabaseNameFixture.TEST_DB_NETWORK,
             DatabaseNameFixture.TEST_DB_ALIAS
         ).also { resultFile ->
@@ -131,7 +131,7 @@ class DatabaseCoordinatorTest {
         assertFalse(expectedDbJournalFile.existsSuspend())
         assertFalse(expectedDbWalFile.existsSuspend())
 
-        dbCoordinator.cacheDbFile(
+        dbCoordinator.cacheDbRoot(
             DatabaseNameFixture.TEST_DB_NETWORK,
             DatabaseNameFixture.TEST_DB_ALIAS
         ).also { resultFile ->

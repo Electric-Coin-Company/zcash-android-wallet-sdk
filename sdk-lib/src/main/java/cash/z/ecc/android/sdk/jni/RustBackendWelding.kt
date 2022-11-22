@@ -1,5 +1,6 @@
 package cash.z.ecc.android.sdk.jni
 
+import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
@@ -22,6 +23,8 @@ internal interface RustBackendWelding {
     val network: ZcashNetwork
 
     val saplingParamDir: File
+
+    suspend fun initBlockMetaDb(): Int
 
     @Suppress("LongParameterList")
     suspend fun createToAddress(
@@ -77,6 +80,8 @@ internal interface RustBackendWelding {
     suspend fun rewindToHeight(height: BlockHeight): Boolean
 
     suspend fun scanBlocks(limit: Int = -1): Boolean
+
+    suspend fun writeBlockMetadata(blockMetadata: Array<JniBlockMeta>): Boolean
 
     /**
      * @return Null if successful. If an error occurs, the height will be the height where the error was detected.

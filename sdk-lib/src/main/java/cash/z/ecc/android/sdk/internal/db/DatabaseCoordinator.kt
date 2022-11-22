@@ -50,6 +50,7 @@ internal class DatabaseCoordinator private constructor(context: Context) {
         @VisibleForTesting
         internal const val DB_CACHE_NAME_LEGACY = "Cache.db" // $NON-NLS
         const val DB_CACHE_NAME = "cache.sqlite3" // $NON-NLS
+        const val DB_FS_CACHE_NAME = "fs_cache" // $NON-NLS
 
         @VisibleForTesting
         internal const val DB_PENDING_TRANSACTIONS_NAME_LEGACY = "PendingTransactions.db" // $NON-NLS
@@ -68,15 +69,36 @@ internal class DatabaseCoordinator private constructor(context: Context) {
     }
 
     /**
-     * Returns the file of the Cache database that would correspond to the given alias
-     * and network attributes.
+     * Returns the root folder of the Cache database that would correspond to the given
+     * alias and network attributes.
+     *
+     * @param network the network associated with the data in the cache database.
+     * @param alias the alias to convert into a database path
+     *
+     * @return the Cache database folder
+     */
+    internal suspend fun cacheDbRoot(
+        network: ZcashNetwork,
+        alias: String
+    ): File {
+        return newDatabaseFilePointer(
+            network,
+            alias,
+            DB_FS_CACHE_NAME,
+            Files.getZcashNoBackupSubdirectory(applicationContext)
+        )
+    }
+
+    /**
+     * Returns the file of the legacy Cache database that would correspond to the given
+     * alias and network attributes.
      *
      * @param network the network associated with the data in the cache database.
      * @param alias the alias to convert into a database path
      *
      * @return the Cache database file
      */
-    internal suspend fun cacheDbFile(
+    internal suspend fun legacyCacheDbFile(
         network: ZcashNetwork,
         alias: String
     ): File {
@@ -177,7 +199,7 @@ internal class DatabaseCoordinator private constructor(context: Context) {
                 dataDbFile(network, alias)
             )
             val cacheDeleted = deleteDatabase(
-                cacheDbFile(network, alias)
+                cacheDbRoot(network, alias)
             )
 
             return dataDeleted || cacheDeleted
