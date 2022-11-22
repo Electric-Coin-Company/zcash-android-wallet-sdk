@@ -72,8 +72,14 @@ android {
                     File("proguard-project.txt")
                 )
             )
+            val isSignReleaseBuildWithDebugKey = project.property("IS_SIGN_RELEASE_BUILD_WITH_DEBUG_KEY")
+                .toString().toBoolean()
+
             if (isReleaseSigningConfigured) {
                 signingConfig = signingConfigs.getByName("release")
+            } else if (isSignReleaseBuildWithDebugKey) {
+                // Warning: in this case the release build signed with the debug key
+                signingConfig = signingConfigs.getByName("debug")
             }
         }
     }
