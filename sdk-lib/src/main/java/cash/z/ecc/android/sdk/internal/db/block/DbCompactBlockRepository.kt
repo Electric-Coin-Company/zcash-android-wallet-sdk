@@ -50,9 +50,11 @@ class DbCompactBlockRepository private constructor(
         fun new(
             appContext: Context,
             zcashNetwork: ZcashNetwork,
-            databaseFile: File
+            fsBlockDbRoot: File
         ): DbCompactBlockRepository {
-            val cacheDb = createCompactBlockCacheDb(appContext.applicationContext, databaseFile)
+            // TODO(str4d): This is now incorrect, and should instead use RustBackend.initBlockMetaDb(),
+            //  but DbCompactBlockRepository would need to be internal so RustBackend can be passed in.
+            val cacheDb = createCompactBlockCacheDb(appContext.applicationContext, fsBlockDbRoot)
 
             return DbCompactBlockRepository(zcashNetwork, cacheDb)
         }

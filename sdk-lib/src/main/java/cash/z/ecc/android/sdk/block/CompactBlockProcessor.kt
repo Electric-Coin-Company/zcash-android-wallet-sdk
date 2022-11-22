@@ -705,7 +705,7 @@ class CompactBlockProcessor internal constructor(
         }
         Twig.debug {
             "validating blocks in range $range in db: ${
-                (rustBackend as RustBackend).cacheDbFile
+                (rustBackend as RustBackend).fsBlockDbRoot
                     .absolutePath
             }"
         }

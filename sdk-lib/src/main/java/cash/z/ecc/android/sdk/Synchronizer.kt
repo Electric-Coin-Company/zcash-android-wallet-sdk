@@ -467,8 +467,6 @@ interface Synchronizer {
                 birthday ?: zcashNetwork.saplingActivationHeight
             )
 
-            val coordinator = DatabaseCoordinator.getInstance(context)
-
             val rustBackend = DefaultSynchronizerFactory.defaultRustBackend(
                 applicationContext,
                 zcashNetwork,
@@ -479,7 +477,7 @@ interface Synchronizer {
 
             val blockStore = DefaultSynchronizerFactory.defaultCompactBlockRepository(
                 applicationContext,
-                coordinator.cacheDbFile(zcashNetwork, alias),
+                rustBackend,
                 zcashNetwork
             )
 
