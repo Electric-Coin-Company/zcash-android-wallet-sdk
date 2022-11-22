@@ -704,10 +704,7 @@ class CompactBlockProcessor internal constructor(
             return BlockProcessingResult.NoBlocksToProcess
         }
         Twig.debug {
-            "validating blocks in range $range in db: ${
-                (rustBackend as RustBackend).fsBlockDbRoot
-                    .absolutePath
-            }"
+            "validating blocks in range $range in db: ${(rustBackend as RustBackend).fsBlockDbRoot.absolutePath}"
         }
         val result = rustBackend.validateCombinedChain()
 
