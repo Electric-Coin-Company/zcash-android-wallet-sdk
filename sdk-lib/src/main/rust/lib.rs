@@ -15,6 +15,7 @@ use schemer::MigratorError;
 use secrecy::{ExposeSecret, SecretVec};
 use tracing::{debug, error};
 use tracing_subscriber::prelude::*;
+use tracing_subscriber::reload;
 use zcash_address::{ToAddress, ZcashAddress};
 use zcash_client_backend::keys::{DecodingError, UnifiedSpendingKey};
 use zcash_client_backend::{
@@ -104,14 +105,26 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_initLogs(
         .with_ansi(false)
         .with_filter(tracing_subscriber::filter::LevelFilter::DEBUG);
 
+    // Generate Android trace events from `tracing` spans.
+    let (trace_event_layer, reload_handle) = reload::Layer::new(utils::trace::Layer::new(None));
+
     // Install the `tracing` subscriber.
     let registry = tracing_subscriber::registry();
     #[cfg(target_os = "android")]
     let registry = registry.with(android_layer);
-    registry.init();
+    registry.with(trace_event_layer).init();
 
     // Log panics instead of writing them to stderr.
     log_panics::init();
+
+    // Load optional NDK APIs. We do this via a reload so that we can capture any errors
+    // that occur while trying to dynamically load the NDK.
+    if let Err(e) = reload_handle.modify(|layer| match utils::target_ndk::load() {
+        Ok(api) => *layer = utils::trace::Layer::new(Some(api)),
+        Err(e) => error!("Could not open NDK library or load symbols: {}", e),
+    }) {
+        error!("Failed to reload tracing subscriber with NDK APIs: {}", e);
+    }
 
     debug!("logs have been initialized successfully");
     print_debug_state();
