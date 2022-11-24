@@ -121,7 +121,9 @@ For Continuous Integration, see [CI.md](CI.md).  The rest of this section is reg
     1. If you are an Electric Coin Co team member: Make an IT request to add your Google account to the existing Firebase Test Lab project 
     1. If you are an open source contributor: set up your own Firebase project for the purpose of running Firebase Test Lab
 1. Set the Firebase Google Cloud project name as a global Gradle property `ZCASH_FIREBASE_TEST_LAB_PROJECT` under `~/.gradle/gradle.properties`
-1. Run the Gradle task `flankAuth` to generate a Firebase authentication token on your machine
+1. Run the Gradle task `flankAuth` to generate a Firebase authentication token on your machine. Make sure you have Editor role, at
+   least in the Firebase project, to be able to authenticate successfully. Note that Gradle 
+   may report the task failed yet still successfully store the token.
 
 Tests can now be run on Firebase Test Lab from your local machine.
 
