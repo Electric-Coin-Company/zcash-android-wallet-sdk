@@ -1,5 +1,6 @@
 package cash.z.ecc.android.sdk.model
 
+import androidx.annotation.Keep
 import cash.z.ecc.android.sdk.jni.RustBackend
 
 /**
@@ -26,6 +27,7 @@ class UnifiedSpendingKey private constructor(
 ) {
 
     // This constructor exists solely for the JNI
+    @Keep
     internal constructor(account: Int, bytes: ByteArray) : this(Account(account), FirstClassByteArray(bytes.copyOf()))
 
     /**
