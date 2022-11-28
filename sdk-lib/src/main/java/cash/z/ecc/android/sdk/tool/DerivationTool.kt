@@ -63,7 +63,7 @@ object DerivationTool : RustBackendWelding.Derivation {
         network: ZcashNetwork,
         account: Account
     ): UnifiedSpendingKey = withRustBackendLoaded {
-        deriveSpendingKey(seed, account.value, networkId = network.id)
+        UnifiedSpendingKey(account.value, deriveSpendingKey(seed, account.value, networkId = network.id))
     }
 
     /**
@@ -118,7 +118,7 @@ object DerivationTool : RustBackendWelding.Derivation {
         seed: ByteArray,
         account: Int,
         networkId: Int
-    ): UnifiedSpendingKey
+    ): ByteArray
 
     @JvmStatic
     private external fun deriveUnifiedFullViewingKeysFromSeed(

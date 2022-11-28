@@ -271,9 +271,8 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_initAccount
 
 /// Derives and returns a unified spending key from the given seed for the given account ID.
 ///
-/// Returns the newly created [ZIP 316] account identifier, along with the binary encoding
-/// of the [`UnifiedSpendingKey`] for the newly created account. The caller should store
-/// the returned spending key in a secure fashion.
+/// Returns the binary encoding of the [`UnifiedSpendingKey`] for the newly created
+/// account. The caller should store this in a secure fashion.
 #[no_mangle]
 pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveSpendingKey(
     env: JNIEnv<'_>,
@@ -281,7 +280,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveS
     seed: jbyteArray,
     account: jint,
     network_id: jint,
-) -> jobject {
+) -> jbyteArray {
     let res = panic::catch_unwind(|| {
         let network = parse_network(network_id as u32)?;
         let seed = SecretVec::new(env.convert_byte_array(seed).unwrap());
@@ -294,7 +293,8 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_tool_DerivationTool_deriveS
         let usk = UnifiedSpendingKey::from_seed(&network, seed.expose_secret(), account)
             .map_err(|e| format_err!("error generating unified spending key from seed: {:?}", e))?;
 
-        encode_usk(&env, account, usk)
+        let encoded = SecretVec::new(usk.to_bytes(Era::Orchard));
+        Ok(env.byte_array_from_slice(encoded.expose_secret())?)
     });
     unwrap_exc_or(&env, res, ptr::null_mut())
 }
