@@ -159,3 +159,11 @@ fladle {
         }
     }
 }
+
+// This is a workaround for issue #723.
+// Native libraries are missing after this: `./gradlew clean; ./gradlew :demo-app:assemble`
+// But are present after this: `./gradlew clean; ./gradlew assemble`
+// The second one probably doesn't solve the problem, as there's probably a race condition in the Rust Gradle Plugin.
+// This hack ensures that the SDK is completely built before the demo app starts being built.  There may be more
+// efficient or better solutions we can find later.
+tasks.getByName("assemble").dependsOn(":sdk-lib:assemble")

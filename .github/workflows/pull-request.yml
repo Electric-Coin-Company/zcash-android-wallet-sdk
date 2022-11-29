@@ -337,7 +337,7 @@ jobs:
           ORG_GRADLE_PROJECT_ZCASH_RELEASE_KEY_ALIAS: androiddebugkey
           ORG_GRADLE_PROJECT_ZCASH_RELEASE_KEY_ALIAS_PASSWORD: android
         run: |
-          ./gradlew :demo-app:assembleRelease
+          ./gradlew assembleRelease
       - name: Collect Artifacts
         timeout-minutes: 1
         env:
