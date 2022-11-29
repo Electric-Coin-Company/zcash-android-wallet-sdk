@@ -6,6 +6,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.system.measureTimeMillis
 
 /**
  * Loads a native library once.  This class is thread-safe.
@@ -31,15 +32,24 @@ internal class NativeLibraryLoader(private val libraryName: String) {
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     private suspend fun loadRustLibrary() {
-        try {
-            withContext(Dispatchers.IO) {
-                twig("Loading native library $libraryName") { System.loadLibrary(libraryName) }
+        runCatching {
+            twig("Loading native library $libraryName")
+
+            val loadTimeMillis = measureTimeMillis {
+                loadLibrarySuspend(libraryName)
             }
+
+            twig("Loading native library took $loadTimeMillis milliseconds")
+
             isLoaded.set(true)
-        } catch (e: Throwable) {
-            twig("Error while loading native library: ${e.message}")
+        }.onFailure {
+            // Fail fast, because this is not a recoverable error
+            throw AssertionError("Failed loading native library $libraryName", it)
         }
     }
+}
+
+private suspend fun loadLibrarySuspend(libraryName: String) = withContext(Dispatchers.IO) {
+    System.loadLibrary(libraryName)
 }
