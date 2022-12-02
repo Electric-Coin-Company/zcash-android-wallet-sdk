@@ -6,6 +6,7 @@
     <string name="nav_header_desc">Navigation header</string>
     <string name="action_settings">Change Seed Phrase</string>
     <string name="action_faucet">Testnet Faucet</string>
+    <string name="action_reset_sdk">Reset SDK</string>
 
     <!-- Drawer Menu -->
     <string name="menu_home">Home</string>

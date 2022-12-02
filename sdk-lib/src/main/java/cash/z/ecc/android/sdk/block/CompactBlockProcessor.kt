@@ -19,6 +19,7 @@ import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException.Mismatche
 import cash.z.ecc.android.sdk.exception.InitializeException
 import cash.z.ecc.android.sdk.exception.RustLayerException
 import cash.z.ecc.android.sdk.ext.BatchMetrics
+import cash.z.ecc.android.sdk.ext.BenchmarkingExt
 import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.ext.ZcashSdk.DOWNLOAD_BATCH_SIZE
 import cash.z.ecc.android.sdk.ext.ZcashSdk.MAX_BACKOFF_INTERVAL
@@ -27,6 +28,7 @@ import cash.z.ecc.android.sdk.ext.ZcashSdk.POLL_INTERVAL
 import cash.z.ecc.android.sdk.ext.ZcashSdk.RETRIES
 import cash.z.ecc.android.sdk.ext.ZcashSdk.REWIND_DISTANCE
 import cash.z.ecc.android.sdk.ext.ZcashSdk.SCAN_BATCH_SIZE
+import cash.z.ecc.android.sdk.fixture.BlockRangeFixture
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.block.CompactBlockDownloader
 import cash.z.ecc.android.sdk.internal.ext.retryUpTo
@@ -288,13 +290,26 @@ class CompactBlockProcessor internal constructor(
             setState(Scanned(currentInfo.lastScanRange))
             BlockProcessingResult.NoBlocksToProcess
         } else {
-            downloadNewBlocks(currentInfo.lastDownloadRange)
-            val error = validateAndScanNewBlocks(currentInfo.lastScanRange)
-            if (error != BlockProcessingResult.Success) {
-                error
+            if (BenchmarkingExt.isBenchmarking()) {
+                // We inject a benchmark test blocks range at this point to process only a restricted range of blocks
+                // for a more reliable benchmark results.
+                val benchmarkBlockRange = BlockRangeFixture.new()
+                downloadNewBlocks(benchmarkBlockRange)
+                val error = validateAndScanNewBlocks(benchmarkBlockRange)
+                if (error != BlockProcessingResult.Success) {
+                    error
+                } else {
+                    enhanceTransactionDetails(benchmarkBlockRange)
+                }
             } else {
-                currentInfo.lastScanRange?.let { enhanceTransactionDetails(it) }
-                    ?: BlockProcessingResult.NoBlocksToProcess
+                downloadNewBlocks(currentInfo.lastDownloadRange)
+                val error = validateAndScanNewBlocks(currentInfo.lastScanRange)
+                if (error != BlockProcessingResult.Success) {
+                    error
+                } else {
+                    currentInfo.lastScanRange?.let { enhanceTransactionDetails(it) }
+                        ?: BlockProcessingResult.NoBlocksToProcess
+                }
             }
         }
     }

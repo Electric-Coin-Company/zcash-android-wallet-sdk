@@ -2,6 +2,7 @@ package cash.z.ecc.android.sdk.demoapp.demos.getbalance
 
 import android.os.Bundle
 import android.view.LayoutInflater
+import android.view.Menu
 import android.view.View
 import androidx.lifecycle.lifecycleScope
 import cash.z.ecc.android.bip39.Mnemonics
@@ -9,12 +10,15 @@ import cash.z.ecc.android.bip39.toSeed
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor
 import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
+import cash.z.ecc.android.sdk.demoapp.R
 import cash.z.ecc.android.sdk.demoapp.databinding.FragmentGetBalanceBinding
 import cash.z.ecc.android.sdk.demoapp.ext.requireApplicationContext
+import cash.z.ecc.android.sdk.demoapp.util.SyncBlockchainBenchmarkTrace
 import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.ext.collectWith
 import cash.z.ecc.android.sdk.ext.convertZatoshiToZecString
+import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.LightWalletEndpoint
 import cash.z.ecc.android.sdk.model.WalletBalance
@@ -38,7 +42,20 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        reportTraceEvent(SyncBlockchainBenchmarkTrace.Event.BALANCE_SCREEN_START)
+        setHasOptionsMenu(true)
         setup()
+    }
+
+    override fun onPrepareOptionsMenu(menu: Menu) {
+        super.onPrepareOptionsMenu(menu)
+        // We rather hide options menu actions while actively using the Synchronizer
+        menu.setGroupVisible(R.id.main_menu_group, false)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        reportTraceEvent(SyncBlockchainBenchmarkTrace.Event.BALANCE_SCREEN_END)
     }
 
     private fun setup() {
@@ -116,7 +133,7 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
 
         binding.shield.apply {
             // TODO [#776]: Support variable fees
-            // https://github.com/zcash/zcash-android-wallet-sdk/issues/776
+            // TODO [#776]: https://github.com/zcash/zcash-android-wallet-sdk/issues/776
             visibility = if ((transparentBalance?.available ?: Zatoshi(0)) > ZcashSdk.MINERS_FEE) {
                 View.VISIBLE
             } else {
@@ -126,6 +143,37 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
     }
 
     private fun onStatus(status: Synchronizer.Status) {
+        twig("Synchronizer status: $status")
+        // report benchmark event
+        val traceEvents = when (status) {
+            Synchronizer.Status.DOWNLOADING -> {
+                listOf(
+                    SyncBlockchainBenchmarkTrace.Event.BLOCKCHAIN_SYNC_START,
+                    SyncBlockchainBenchmarkTrace.Event.DOWNLOAD_START
+                )
+            }
+            Synchronizer.Status.VALIDATING -> {
+                listOf(
+                    SyncBlockchainBenchmarkTrace.Event.DOWNLOAD_END,
+                    SyncBlockchainBenchmarkTrace.Event.VALIDATION_START
+                )
+            }
+            Synchronizer.Status.SCANNING -> {
+                listOf(
+                    SyncBlockchainBenchmarkTrace.Event.VALIDATION_END,
+                    SyncBlockchainBenchmarkTrace.Event.SCAN_START
+                )
+            }
+            Synchronizer.Status.SYNCED -> {
+                listOf(
+                    SyncBlockchainBenchmarkTrace.Event.SCAN_END,
+                    SyncBlockchainBenchmarkTrace.Event.BLOCKCHAIN_SYNC_END
+                )
+            }
+            else -> null
+        }
+        traceEvents?.forEach { reportTraceEvent(it) }
+
         binding.textStatus.text = "Status: $status"
         onOrchardBalance(synchronizer.orchardBalances.value)
         onSaplingBalance(synchronizer.saplingBalances.value)

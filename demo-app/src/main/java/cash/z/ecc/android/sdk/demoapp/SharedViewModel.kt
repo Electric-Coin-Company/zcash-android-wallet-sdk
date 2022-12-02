@@ -2,13 +2,16 @@ package cash.z.ecc.android.sdk.demoapp
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
 import cash.z.ecc.android.bip39.Mnemonics
+import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 
 /**
@@ -39,6 +42,17 @@ class SharedViewModel(application: Application) : AndroidViewModel(application) 
             true
         } else {
             false
+        }
+    }
+
+    fun resetSDK() {
+        viewModelScope.launch {
+            with(getApplication<Application>()) {
+                Synchronizer.erase(
+                    appContext = applicationContext,
+                    network = ZcashNetwork.fromResources(applicationContext)
+                )
+            }
         }
     }
 

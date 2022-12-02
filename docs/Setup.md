@@ -112,6 +112,18 @@ A variety of Gradle properties can be used to configure the build.  Most of thes
 ### Debug Signing
 By default, the application is signed by the developers automatically generated debug signing key.  In a team of developers, it may be advantageous to share a debug key so that debug builds can access key-restricted services such as Firebase or Google Maps.  For such a setup, the path to a shared debug signing key can be set with the property `ZCASH_DEBUG_KEYSTORE_PATH`.
 
+### Benchmarking
+This section provides information about available benchmark tests integrated in this project as well as how to use them. Currently, we support macrobenchmark tests run locally as described in the Android [documentation](https://developer.android.com/topic/performance/benchmarking/benchmarking-overview).
+
+We provide dedicated benchmark test module `demo-app-benchmark-test` for this. If you want to run these benchmark 
+tests against our demo application, make sure you have a physical device connected with Android SDK level 29, at least. 
+Select `benchmark` build variant for this module. Make sure that other modules are set to benchmark 
+type too. The benchmark tests can be run with Android Studio run configuration 
+`ui-benchmark-test:connectedZcashmainnetBenchmarkAndroidTest`. Running the benchmark test this way automatically 
+provides benchmarking results in Run panel. Or you can run the tests manually from the terminal with `./gradlew connectedZcashmainnetBenchmarkAndroidTest` and analyze results with Android Studio's Profiler or [Perfetto](https://ui.perfetto.dev/) tool, as described in this Android [documentation](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview#access-trace).
+
+**Note**: We've enabled benchmarking also for emulators, although it's always better to run the tests on a real physical device. Emulator benchmark improvements might not carry over to a real user's experience (or even regress real device performance).
+
 ### Firebase Test Lab
 This section is optional.
 

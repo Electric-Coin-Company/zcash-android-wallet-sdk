@@ -82,6 +82,12 @@ android {
                 signingConfig = signingConfigs.getByName("debug")
             }
         }
+        create("benchmark") {
+            // We provide the extra benchmark build type just for benchmarking purposes
+            initWith(buildTypes.getByName("release"))
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += listOf("release")
+        }
     }
 
     lint {
@@ -103,6 +109,10 @@ dependencies {
     implementation(libs.androidx.multidex)
     implementation(libs.androidx.navigation.fragment)
     implementation(libs.androidx.navigation.ui)
+    // Just to support profile installation and tracing events needed by benchmark tests
+    implementation(libs.androidx.profileinstaller)
+    implementation(libs.androidx.tracing)
+
     implementation(libs.material)
     androidTestImplementation(libs.bundles.androidx.test)
 
