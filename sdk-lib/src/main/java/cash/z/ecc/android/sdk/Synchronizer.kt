@@ -475,11 +475,9 @@ interface Synchronizer {
                 saplingParamTool
             )
 
-            val blockStore = DefaultSynchronizerFactory.defaultCompactBlockRepository(
-                applicationContext,
-                rustBackend,
-                zcashNetwork
-            )
+            val blockStore =
+                DefaultSynchronizerFactory
+                    .defaultFileCompactBlockRepository(rustBackend, zcashNetwork)
 
             val viewingKeys = seed?.let {
                 DerivationTool.deriveUnifiedFullViewingKeys(

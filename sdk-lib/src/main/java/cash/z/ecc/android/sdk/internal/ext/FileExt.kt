@@ -27,6 +27,10 @@ suspend fun File.inputStreamSuspend(): FileInputStream = withContext(Dispatchers
 
 suspend fun File.createNewFileSuspend() = withContext(Dispatchers.IO) { createNewFile() }
 
+suspend fun File.writeBytesSuspend(byteArray: ByteArray) = withContext(Dispatchers.IO) { writeBytes(byteArray) }
+
+suspend fun File.readBytesSuspend() = withContext(Dispatchers.IO) { readBytes() }
+
 /**
  * Preferred buffer size. We use the same buffer size as BufferedInputStream does.
  */

@@ -23,7 +23,6 @@ import cash.z.ecc.android.sdk.internal.SaplingParamTool
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.block.CompactBlockDownloader
 import cash.z.ecc.android.sdk.internal.db.DatabaseCoordinator
-import cash.z.ecc.android.sdk.internal.db.block.DbCompactBlockRepository
 import cash.z.ecc.android.sdk.internal.db.derived.DbDerivedDataRepository
 import cash.z.ecc.android.sdk.internal.db.derived.DerivedDataDb
 import cash.z.ecc.android.sdk.internal.ext.toHexReversed
@@ -32,6 +31,7 @@ import cash.z.ecc.android.sdk.internal.isEmpty
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
 import cash.z.ecc.android.sdk.internal.repository.CompactBlockRepository
 import cash.z.ecc.android.sdk.internal.repository.DerivedDataRepository
+import cash.z.ecc.android.sdk.internal.storage.block.FileCompactBlockRepository
 import cash.z.ecc.android.sdk.internal.transaction.OutboundTransactionManager
 import cash.z.ecc.android.sdk.internal.transaction.PersistentTransactionManager
 import cash.z.ecc.android.sdk.internal.transaction.TransactionEncoder
@@ -764,10 +764,9 @@ internal object DefaultSynchronizerFactory {
             )
         )
 
-    internal fun defaultCompactBlockRepository(context: Context, rustBackend: RustBackend, zcashNetwork: ZcashNetwork):
+    internal suspend fun defaultFileCompactBlockRepository(rustBackend: RustBackend, zcashNetwork: ZcashNetwork):
         CompactBlockRepository =
-        DbCompactBlockRepository.new(
-            context,
+        FileCompactBlockRepository.new(
             zcashNetwork,
             rustBackend.fsBlockDbRoot
         )
