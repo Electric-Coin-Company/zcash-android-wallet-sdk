@@ -8,7 +8,7 @@ import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
 import cash.z.ecc.android.sdk.demoapp.R
 import cash.z.ecc.android.sdk.demoapp.databinding.FragmentGetBlockRangeBinding
 import cash.z.ecc.android.sdk.demoapp.ext.requireApplicationContext
-import cash.z.ecc.android.sdk.demoapp.util.fromResources
+import cash.z.ecc.android.sdk.demoapp.type.fromResources
 import cash.z.ecc.android.sdk.demoapp.util.mainActivity
 import cash.z.ecc.android.sdk.demoapp.util.toRelativeTime
 import cash.z.ecc.android.sdk.demoapp.util.withCommas

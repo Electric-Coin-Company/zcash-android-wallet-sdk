@@ -7,7 +7,7 @@ import androidx.core.text.HtmlCompat
 import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
 import cash.z.ecc.android.sdk.demoapp.databinding.FragmentGetBlockBinding
 import cash.z.ecc.android.sdk.demoapp.ext.requireApplicationContext
-import cash.z.ecc.android.sdk.demoapp.util.fromResources
+import cash.z.ecc.android.sdk.demoapp.type.fromResources
 import cash.z.ecc.android.sdk.demoapp.util.mainActivity
 import cash.z.ecc.android.sdk.demoapp.util.toHtml
 import cash.z.ecc.android.sdk.demoapp.util.toRelativeTime

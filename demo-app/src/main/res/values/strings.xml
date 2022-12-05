@@ -8,6 +8,8 @@
     <string name="action_faucet">Testnet Faucet</string>
     <string name="action_reset_sdk">Reset SDK</string>
 
+    <string name="action_new_ui">New UI</string>
+
     <!-- Drawer Menu -->
     <string name="menu_home">Home</string>
     <string name="menu_private_key">Get Private Key</string>
@@ -31,4 +33,29 @@
     <string name="sapling_address">Sapling address</string>
     <string name="transparent_address">Transparent address</string>
     <string name="action_shield">Shield Funds</string>
+
+    <string name="unified_address_tag">Zcash unified address</string>
+    <string name="sapling_address_tag">Zcash sapling address</string>
+    <string name="transparent_address_tag">Zcash transparent address</string>
+
+    <string name="configure_seed">Please select your wallet secret phrase</string>
+    <string name="person_alyssa">Alyssa P. Hacker</string>
+    <string name="person_ben">Ben Bitdiddle</string>
+    <string name="seed_custom">Type in a secret phrase</string>
+    <string name="seed_random">Generate a new random secret phrase</string>
+
+    <string name="send_amount">Amount</string>
+
+    <string name="send_alyssa_unified">Alyssa’s unified address</string>
+    <string name="send_alyssa_sapling">Alyssa’s sapling address</string>
+    <string name="send_alyssa_transparent">Alyssa’s transparent address</string>
+
+    <string name="send_ben_unified">Ben’s unified address</string>
+    <string name="send_ben_sapling">Ben’s sapling address</string>
+    <string name="send_ben_transparent">Ben’s transparent address</string>
+
+    <string name="send_available_balance">Available Sapling balance: </string>
+    <string name="send_to_address">Destination address</string>
+    <string name="send_memo">Memo</string>
+    <string name="send_button">Send</string>
 </resources>
