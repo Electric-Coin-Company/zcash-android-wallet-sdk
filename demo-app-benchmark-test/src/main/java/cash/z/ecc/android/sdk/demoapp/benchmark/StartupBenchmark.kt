@@ -87,9 +87,10 @@ class StartupBenchmark {
         val timeoutSeconds = 5.seconds
         check(
             device.run {
-                val ua = Until.hasObject(By.text("^[a-z0-9]{141}$".toPattern())) // Unified address condition
-                val sa = Until.hasObject(By.text("^[a-z0-9]{78}$".toPattern())) // Sapling address condition
-                val ta = Until.hasObject(By.text("^[a-zA-Z0-9]{35}$".toPattern())) // Transparent address condition
+                val ua = Until.hasObject(By.text("^[a-z0-9]{141}$".toPattern())) // NON-NLS (Unified address condition)
+                val sa = Until.hasObject(By.text("^[a-z0-9]{78}$".toPattern())) // NON-NLS (Sapling address condition)
+                val ta = Until.hasObject(By.text("^[a-zA-Z0-9]{35}$".toPattern())) // NON-NLS (Transparent address)
+                // condition
 
                 wait(ua, timeoutSeconds.inWholeMilliseconds) != null &&
                     wait(sa, timeoutSeconds.inWholeMilliseconds) &&
