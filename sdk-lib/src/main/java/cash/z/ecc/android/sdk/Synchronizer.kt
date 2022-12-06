@@ -21,10 +21,10 @@ import cash.z.ecc.android.sdk.tool.DerivationTool
 import cash.z.ecc.android.sdk.type.AddressType
 import cash.z.ecc.android.sdk.type.ConsensusMatchType
 import cash.z.wallet.sdk.rpc.Service
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.runBlocking
+import java.io.Closeable
 
 /**
  * Primary interface for interacting with the SDK. Defines the contract that specific
@@ -34,45 +34,6 @@ import kotlinx.coroutines.runBlocking
  */
 @Suppress("TooManyFunctions")
 interface Synchronizer {
-
-    //
-    // Lifecycle
-    //
-
-    /**
-     * Return true when this synchronizer has been started.
-     */
-    var isStarted: Boolean
-
-    /**
-     * Prepare the synchronizer to start. Must be called before start. This gives a clear point
-     * where setup and maintenance can occur for various Synchronizers. One that uses a database
-     * would take this opportunity to do data migrations or key migrations.
-     */
-    suspend fun prepare(): Synchronizer
-
-    /**
-     * Starts this synchronizer within the given scope.
-     *
-     * @param parentScope the scope to use for this synchronizer, typically something with a
-     * lifecycle such as an Activity. Implementations should leverage structured concurrency and
-     * cancel all jobs when this scope completes.
-     *
-     * @return an instance of the class so that this function can be used fluidly.
-     */
-    fun start(parentScope: CoroutineScope? = null): Synchronizer
-
-    /**
-     * Stop this synchronizer. Implementations should ensure that calling this method cancels all
-     * jobs that were created by this instance.
-     *
-     * Note that in most cases, there is no need to call [stop] because the Synchronizer will
-     * automatically stop whenever the parentScope is cancelled. For instance, if that scope is
-     * bound to the lifecycle of the activity, the Synchronizer will stop when the activity stops.
-     * However, if no scope is provided to the start method, then the Synchronizer must be stopped
-     * with this function.
-     */
-    fun stop()
 
     //
     // Flows
@@ -495,6 +456,9 @@ interface Synchronizer {
          * sync times.  After sync completes, the birthday can be determined from [Synchronizer.latestBirthdayHeight].
          * @throws InitializerException.SeedRequired Indicates clients need to call this method again, providing the
          * seed bytes.
+         * @throws IllegalStateException If multiple instances of synchronizer with the same network+alias are
+         * active at the same time.  Call `close` to finish one synchronizer before starting another one with the same
+         * network+alias.
          */
         /*
          * If customized initialization is required (e.g. for dependency injection or testing), see
@@ -508,7 +472,7 @@ interface Synchronizer {
             lightWalletEndpoint: LightWalletEndpoint,
             seed: ByteArray?,
             birthday: BlockHeight?
-        ): Synchronizer {
+        ): CloseableSynchronizer {
             val applicationContext = context.applicationContext
 
             validateAlias(alias)
@@ -566,7 +530,9 @@ interface Synchronizer {
             )
             val processor = DefaultSynchronizerFactory.defaultProcessor(rustBackend, downloader, repository)
 
-            return SdkSynchronizer(
+            return SdkSynchronizer.new(
+                zcashNetwork,
+                alias,
                 repository,
                 txManager,
                 processor,
@@ -589,7 +555,7 @@ interface Synchronizer {
             lightWalletEndpoint: LightWalletEndpoint,
             seed: ByteArray?,
             birthday: BlockHeight?
-        ): Synchronizer = runBlocking {
+        ): CloseableSynchronizer = runBlocking {
             new(context, zcashNetwork, alias, lightWalletEndpoint, seed, birthday)
         }
 
@@ -611,9 +577,11 @@ interface Synchronizer {
             appContext: Context,
             network: ZcashNetwork,
             alias: String = ZcashSdk.DEFAULT_ALIAS
-        ): Boolean = DatabaseCoordinator.getInstance(appContext).deleteDatabases(network, alias)
+        ): Boolean = SdkSynchronizer.erase(appContext, network, alias)
     }
 }
+
+interface CloseableSynchronizer : Synchronizer, Closeable
 
 /**
  * Validate that the alias doesn't contain malicious characters by enforcing simple rules which
@@ -623,15 +591,14 @@ interface Synchronizer {
  * @param alias the alias to validate.
  *
  * @throws IllegalArgumentException whenever the alias is not less than 100 characters or
- * contains something other than alphanumeric characters. Underscores are allowed but aliases
- * must start with a letter.
+ * contains something other than alphanumeric characters. Underscores and hyphens are allowed.
  */
 private fun validateAlias(alias: String) {
     require(
-        alias.length in ZcashSdk.ALIAS_MIN_LENGTH..ZcashSdk.ALIAS_MAX_LENGTH && alias[0].isLetter() &&
-            alias.all { it.isLetterOrDigit() || it == '_' }
+        alias.length in ZcashSdk.ALIAS_MIN_LENGTH..ZcashSdk.ALIAS_MAX_LENGTH &&
+            alias.all { it.isLetterOrDigit() || it == '_' || it == '-' }
     ) {
         "ERROR: Invalid alias ($alias). For security, the alias must be shorter than 100 " +
-            "characters and only contain letters, digits or underscores and start with a letter."
+            "characters and only contain letters, digits, hyphens, and underscores."
     }
 }

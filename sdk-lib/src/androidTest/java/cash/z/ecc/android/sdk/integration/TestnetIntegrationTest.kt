@@ -144,7 +144,6 @@ class TestnetIntegrationTest : ScopedTest() {
                 seed = seed,
                 birthday = BlockHeight.new(ZcashNetwork.Testnet, birthdayHeight)
             )
-            synchronizer.start(classScope)
         }
     }
 }

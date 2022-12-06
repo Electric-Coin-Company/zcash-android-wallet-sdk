@@ -1,6 +1,7 @@
 package cash.z.ecc.android.sdk.util
 
 import androidx.test.platform.app.InstrumentationRegistry
+import cash.z.ecc.android.sdk.CloseableSynchronizer
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.internal.TroubleshootingTwig
 import cash.z.ecc.android.sdk.internal.Twig
@@ -46,7 +47,7 @@ class BalancePrinterUtil {
 //    private val rustBackend = RustBackend.init(context, cacheDbName, dataDbName)
 
     private lateinit var birthday: Checkpoint
-    private var synchronizer: Synchronizer? = null
+    private var synchronizer: CloseableSynchronizer? = null
 
     @Before
     fun setup() {
@@ -94,7 +95,7 @@ class BalancePrinterUtil {
                 - I might need to consider how state is impacting this design
                     - can we be more stateless and thereby improve the flexibility of this code?!!!
                   */
-                synchronizer?.stop()
+                synchronizer?.close()
                 synchronizer = Synchronizer.new(
                     context,
                     network,
@@ -102,9 +103,7 @@ class BalancePrinterUtil {
                         .defaultForNetwork(network),
                     seed = seed,
                     birthday = birthdayHeight
-                ).apply {
-                    start()
-                }
+                )
 
 //            deleteDb(dataDbPath)
 //            initWallet(seed)

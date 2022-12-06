@@ -1,6 +1,7 @@
 package cash.z.ecc.android.sdk.util
 
 import androidx.test.platform.app.InstrumentationRegistry
+import cash.z.ecc.android.sdk.CloseableSynchronizer
 import cash.z.ecc.android.sdk.SdkSynchronizer
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.internal.TroubleshootingTwig
@@ -40,7 +41,7 @@ class DataDbScannerUtil {
 //    private val rustBackend = RustBackend.init(context, cacheDbName, dataDbName)
 
     private val birthdayHeight = 600_000L
-    private lateinit var synchronizer: Synchronizer
+    private lateinit var synchronizer: CloseableSynchronizer
 
     @Before
     fun setup() {
@@ -79,7 +80,6 @@ class DataDbScannerUtil {
         )
 
         println("sync!")
-        synchronizer.start()
         val scope = (synchronizer as SdkSynchronizer).coroutineScope
 
         scope.launch {
@@ -92,7 +92,7 @@ class DataDbScannerUtil {
         println("going to sleep!")
         Thread.sleep(125000)
         println("I'm back and I'm out!")
-        synchronizer.stop()
+        runBlocking { synchronizer.close() }
     }
 //
 //    @Test

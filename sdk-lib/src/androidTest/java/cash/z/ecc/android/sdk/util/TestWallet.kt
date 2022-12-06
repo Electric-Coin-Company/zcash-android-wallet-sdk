@@ -95,12 +95,8 @@ class TestWallet(
                 throw TimeoutException("Failed to sync wallet within ${timeout}ms")
             }
         }
-        if (!synchronizer.isStarted) {
-            twig("Starting sync")
-            synchronizer.start(walletScope)
-        } else {
-            twig("Awaiting next SYNCED status")
-        }
+
+        twig("Awaiting next SYNCED status")
 
         // block until synced
         synchronizer.status.first { it == Synchronizer.Status.SYNCED }
@@ -156,7 +152,7 @@ class TestWallet(
             twig("Scheduling a stop in ${timeout}ms")
             walletScope.launch {
                 delay(timeout)
-                synchronizer.stop()
+                synchronizer.close()
             }
         }
         synchronizer.status.first { it == Synchronizer.Status.STOPPED }

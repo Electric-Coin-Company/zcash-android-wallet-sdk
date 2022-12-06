@@ -60,7 +60,6 @@ class ReorgSmallTest : ScopedTest() {
             validator.onReorg { _, _ ->
                 hadReorg = true
             }
-            sithLord.synchronizer.start(classScope)
         }
     }
 }
