@@ -8,6 +8,7 @@ import androidx.benchmark.macro.TraceSectionMetric
 import androidx.benchmark.macro.junit4.MacrobenchmarkRule
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.Until
+import cash.z.ecc.android.sdk.demoapp.test.UiTestPrerequisites
 import org.junit.Rule
 import org.junit.Test
 import kotlin.time.Duration.Companion.minutes
@@ -24,7 +25,7 @@ import kotlin.time.Duration.Companion.seconds
  * We ideally run this on a physical device with Android SDK level 29, at least, as profiling is provided by this
  * version and later on.
  */
-class SyncBlockchainBenchmark {
+class SyncBlockchainBenchmark : UiTestPrerequisites() {
 
     companion object {
         private const val APP_TARGET_PACKAGE_NAME = "cash.z.ecc.android.sdk.demoapp.mainnet" // NON-NLS
