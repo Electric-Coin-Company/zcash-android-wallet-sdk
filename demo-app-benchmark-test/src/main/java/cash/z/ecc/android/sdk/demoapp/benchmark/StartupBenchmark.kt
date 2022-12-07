@@ -25,12 +25,12 @@ import kotlin.time.Duration.Companion.seconds
 class StartupBenchmark {
 
     companion object {
-        private const val APP_TARGET_PACKAGE_NAME = "cash.z.ecc.android.sdk.demoapp.mainnet"    // NON-NLS
+        private const val APP_TARGET_PACKAGE_NAME = "cash.z.ecc.android.sdk.demoapp.mainnet" // NON-NLS
 
         private const val ADDRESS_SCREEN_SECTION = "ADDRESS_SCREEN" // NON-NLS
-        private const val UNIFIED_ADDRESS_SECTION = "UNIFIED_ADDRESS"   // NON-NLS
-        private const val SAPLING_ADDRESS_SECTION = "SAPLING_ADDRESS"   // NON-NLS
-        private const val TRANSPARENT_ADDRESS_SECTION = "TRANSPARENT_ADDRESS"   // NON-NLS
+        private const val UNIFIED_ADDRESS_SECTION = "UNIFIED_ADDRESS" // NON-NLS
+        private const val SAPLING_ADDRESS_SECTION = "SAPLING_ADDRESS" // NON-NLS
+        private const val TRANSPARENT_ADDRESS_SECTION = "TRANSPARENT_ADDRESS" // NON-NLS
     }
 
     @get:Rule
@@ -101,11 +101,14 @@ class StartupBenchmark {
         }
     }
 
+    // TODO [#808]: Add demo-ui-lib module (and reference the hardcoded texts here)
+    // TODO [#808]: https://github.com/zcash/zcash-android-wallet-sdk/issues/808
+
     private fun MacrobenchmarkScope.gotoAddressScreen() {
         // Open drawer menu
-        device.findObject(By.desc("Open navigation drawer"))    // NON-NLS
+        device.findObject(By.desc("Open navigation drawer")) // NON-NLS
             .clickAndWait(Until.newWindow(), 2.seconds.inWholeMilliseconds)
         // Navigate to Addresses screen
-        device.findObject(By.text("Get Address")).click()   // NON-NLS
+        device.findObject(By.text("Get Address")).click() // NON-NLS
     }
 }

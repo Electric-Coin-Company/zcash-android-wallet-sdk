@@ -27,10 +27,10 @@ import kotlin.time.Duration.Companion.seconds
 class SyncBlockchainBenchmark {
 
     companion object {
-        private const val APP_TARGET_PACKAGE_NAME = "cash.z.ecc.android.sdk.demoapp.mainnet"    // NON-NLS
+        private const val APP_TARGET_PACKAGE_NAME = "cash.z.ecc.android.sdk.demoapp.mainnet" // NON-NLS
 
         private const val BALANCE_SCREEN_SECTION = "BALANCE_SCREEN" // NON-NLS
-        private const val BLOCKCHAIN_SYNC_SECTION = "BLOCKCHAIN_SYNC"   // NON-NLS
+        private const val BLOCKCHAIN_SYNC_SECTION = "BLOCKCHAIN_SYNC" // NON-NLS
         private const val DOWNLOAD_SECTION = "DOWNLOAD" // NON-NLS
         private const val VALIDATION_SECTION = "VALIDATION" // NON-NLS
         private const val SCAN_SECTION = "SCAN" // NON-NLS
@@ -66,9 +66,12 @@ class SyncBlockchainBenchmark {
         }
     )
 
+    // TODO [#808]: Add demo-ui-lib module (and reference the hardcoded texts here)
+    // TODO [#808]: https://github.com/zcash/zcash-android-wallet-sdk/issues/808
+
     private fun MacrobenchmarkScope.resetSDK() {
         // Open toolbar overflow menu
-        device.findObject(By.desc("More options"))  // NON-NLS
+        device.findObject(By.desc("More options")) // NON-NLS
             .clickAndWait(Until.newWindow(), 2.seconds.inWholeMilliseconds)
         // Click on the reset sdk menu item
         device.findObject(By.text("Reset SDK")).click() // NON-NLS
@@ -76,7 +79,7 @@ class SyncBlockchainBenchmark {
     }
 
     private fun MacrobenchmarkScope.waitForBalanceScreen() {
-        device.wait(Until.hasObject(By.text("Status: SYNCED")), 1.minutes.inWholeMilliseconds)  // NON-NLS
+        device.wait(Until.hasObject(By.text("Status: SYNCED")), 1.minutes.inWholeMilliseconds) // NON-NLS
     }
 
     private fun MacrobenchmarkScope.closeBalanceScreen() {
@@ -86,9 +89,9 @@ class SyncBlockchainBenchmark {
 
     private fun MacrobenchmarkScope.gotoBalanceScreen() {
         // Open drawer menu
-        device.findObject(By.desc("Open navigation drawer"))    // NON-NLS
+        device.findObject(By.desc("Open navigation drawer")) // NON-NLS
             .clickAndWait(Until.newWindow(), 2.seconds.inWholeMilliseconds)
         // Navigate to Balances screen
-        device.findObject(By.text("Get Balance")).click()   // NON-NLS
+        device.findObject(By.text("Get Balance")).click() // NON-NLS
     }
 }

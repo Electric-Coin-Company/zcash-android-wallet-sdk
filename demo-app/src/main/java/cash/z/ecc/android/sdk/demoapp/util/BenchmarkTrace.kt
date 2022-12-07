@@ -22,7 +22,7 @@ interface BenchmarkTrace {
 
 object SyncBlockchainBenchmarkTrace : BenchmarkTrace {
     private const val SECTION_BALANCE_SCREEN = "BALANCE_SCREEN" // NON-NLS
-    private const val SECTION_BLOCKCHAIN_SYNC = "BLOCKCHAIN_SYNC"   // NON-NLS
+    private const val SECTION_BLOCKCHAIN_SYNC = "BLOCKCHAIN_SYNC" // NON-NLS
     private const val SECTION_DOWNLOAD = "DOWNLOAD" // NON-NLS
     private const val SECTION_VALIDATION = "VALIDATION" // NON-NLS
     private const val SECTION_SCAN = "SCAN" // NON-NLS
@@ -67,9 +67,9 @@ object SyncBlockchainBenchmarkTrace : BenchmarkTrace {
 
 object ProvideAddressBenchmarkTrace : BenchmarkTrace {
     private const val ADDRESS_SCREEN_SECTION = "ADDRESS_SCREEN" // NON-NLS
-    private const val UNIFIED_ADDRESS_SECTION = "UNIFIED_ADDRESS"   // NON-NLS
-    private const val SAPLING_ADDRESS_SECTION = "SAPLING_ADDRESS"   // NON-NLS
-    private const val TRANSPARENT_ADDRESS_SECTION = "TRANSPARENT_ADDRESS"   // NON-NLS
+    private const val UNIFIED_ADDRESS_SECTION = "UNIFIED_ADDRESS" // NON-NLS
+    private const val SAPLING_ADDRESS_SECTION = "SAPLING_ADDRESS" // NON-NLS
+    private const val TRANSPARENT_ADDRESS_SECTION = "TRANSPARENT_ADDRESS" // NON-NLS
 
     @Suppress("MagicNumber")
     suspend fun writeEvent(event: BenchmarkTrace.Event?) {
