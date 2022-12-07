@@ -56,50 +56,50 @@ commits of that date. Generate tests results with the Android Studio run configu
     Starting 3 tests on Pixel 6 - 13
     
     StartupBenchmark_appStartup
-    timeToInitialDisplayMs   min 257.6,   median 278.9,   max 293.9
+    timeToInitialDisplayMs   min 388.8,   median 410.9,   max 423.0
     Traces: Iteration 0 1 2 3 4
     
     StartupBenchmark_tracesSdkStartup
-    ADDRESS_SCREENMs   min 690.0,   median 844.8,   max 941.3
-    SAPLING_ADDRESSMs   min   4.4,   median   5.3,   max   6.0
-    TRANSPARENT_ADDRESSMs   min   2.4,   median   4.7,   max   5.7
-    UNIFIED_ADDRESSMs   min   1.4,   median   1.7,   max   4.7
+    ADDRESS_SCREENMs   min 784.1,   median 900.4,   max 926.9
+    SAPLING_ADDRESSMs   min   2.4,   median   4.3,   max   5.9
+    TRANSPARENT_ADDRESSMs   min   1.7,   median   2.6,   max   6.0
+    UNIFIED_ADDRESSMs   min   1.5,   median   2.2,   max   2.8
     Traces: Iteration 0 1 2 3 4
     
     SyncBlockchainBenchmark_tracesSyncBlockchain
-    BALANCE_SCREENMs   min 15,909.1,   median 16,225.6,   max 16,388.2
-    BLOCKCHAIN_SYNCMs   min 15,255.1,   median 15,623.1,   max 15,757.6
-    DOWNLOADMs   min 14,345.5,   median 14,371.9,   max 14,704.2
-    SCANMs   min    788.2,   median    981.1,   max  1,183.1
-    VALIDATIONMs   min     67.1,   median     71.2,   max    115.4
+    BALANCE_SCREENMs   min 46,042.2,   median 46,233.0,   max 46,462.2
+    BLOCKCHAIN_SYNCMs   min 45,393.5,   median 45,578.3,   max 45,830.3
+    DOWNLOADMs   min 34,951.3,   median 35,763.0,   max 35,870.6
+    SCANMs   min  9,536.7,   median  9,846.5,   max 10,501.8
+    VALIDATIONMs   min     93.1,   median    112.5,   max    124.3
     Traces: Iteration 0 1 2
     
-    BUILD SUCCESSFUL in 2m 17s
+    BUILD SUCCESSFUL in 4m 18s
     ```
   - Pixel 3a - Android 12:
     ```
     Starting 3 tests on Pixel 3a - 12
     
     StartupBenchmark_appStartup
-    timeToInitialDisplayMs   min 514.0,   median 515.6,   max 530.8
+    timeToInitialDisplayMs   min 545.3,   median 565.3,   max 607.2
     Traces: Iteration 0 1 2 3 4
     
     StartupBenchmark_tracesSdkStartup
-    ADDRESS_SCREENMs   min   810.9,   median   897.5,   max 1,409.6
-    SAPLING_ADDRESSMs   min     3.1,   median     5.9,   max     7.7
-    TRANSPARENT_ADDRESSMs   min     4.9,   median     7.6,   max    11.5
-    UNIFIED_ADDRESSMs   min     2.6,   median     4.5,   max     5.4
+    ADDRESS_SCREENMs   min   897.1,   median   955.3,   max 1,352.8
+    SAPLING_ADDRESSMs   min     3.9,   median     6.1,   max     8.3
+    TRANSPARENT_ADDRESSMs   min     2.0,   median     4.2,   max     5.9
+    UNIFIED_ADDRESSMs   min     2.4,   median     2.4,   max     5.2    
     Traces: Iteration 0 1 2 3 4
     
     SyncBlockchainBenchmark_tracesSyncBlockchain
-    BALANCE_SCREENMs   min 15,442.0,   median 15,471.3,   max 15,681.0
-    BLOCKCHAIN_SYNCMs   min 14,808.8,   median 14,837.3,   max 15,019.5
-    DOWNLOADMs   min 13,843.8,   median 13,899.8,   max 14,016.8
-    SCANMs   min    867.6,   median    883.3,   max    921.1
-    VALIDATIONMs   min     67.9,   median     79.7,   max     80.0
+    BALANCE_SCREENMs   min 63,403.1,   median 63,716.7,   max 63,993.6
+    BLOCKCHAIN_SYNCMs   min 62,739.0,   median 63,060.5,   max 63,345.0
+    DOWNLOADMs   min 34,317.3,   median 34,462.8,   max 34,551.3
+    SCANMs   min 28,279.3,   median 28,463.3,   max 28,655.8
+    VALIDATIONMs   min    133.0,   median    136.4,   max    141.2
     Traces: Iteration 0 1 2
     
-    BUILD SUCCESSFUL in 2m 50s
+    BUILD SUCCESSFUL in 6m 12s
     ```
 
 

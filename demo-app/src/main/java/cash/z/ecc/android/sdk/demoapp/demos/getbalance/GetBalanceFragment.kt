@@ -15,9 +15,11 @@ import cash.z.ecc.android.sdk.demoapp.databinding.FragmentGetBalanceBinding
 import cash.z.ecc.android.sdk.demoapp.ext.requireApplicationContext
 import cash.z.ecc.android.sdk.demoapp.util.SyncBlockchainBenchmarkTrace
 import cash.z.ecc.android.sdk.demoapp.util.fromResources
+import cash.z.ecc.android.sdk.ext.BenchmarkingExt
 import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.ext.collectWith
 import cash.z.ecc.android.sdk.ext.convertZatoshiToZecString
+import cash.z.ecc.android.sdk.fixture.BlockRangeFixture
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.LightWalletEndpoint
@@ -72,7 +74,11 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
             network,
             lightWalletEndpoint = LightWalletEndpoint.defaultForNetwork(network),
             seed = seed,
-            birthday = sharedViewModel.birthdayHeight.value
+            birthday = if (BenchmarkingExt.isBenchmarking()) {
+                BlockRangeFixture.new().start
+            } else {
+                sharedViewModel.birthdayHeight.value
+            }
         )
     }
 

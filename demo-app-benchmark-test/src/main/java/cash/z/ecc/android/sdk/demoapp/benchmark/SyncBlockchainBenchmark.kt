@@ -81,7 +81,7 @@ class SyncBlockchainBenchmark : UiTestPrerequisites() {
     }
 
     private fun MacrobenchmarkScope.waitForBalanceScreen() {
-        device.waitFor(Until.hasObject(By.text("Status: SYNCED")), 1.minutes) // NON-NLS
+        device.waitFor(Until.hasObject(By.text("Status: SYNCED")), 3.minutes) // NON-NLS
     }
 
     private fun MacrobenchmarkScope.closeBalanceScreen() {
