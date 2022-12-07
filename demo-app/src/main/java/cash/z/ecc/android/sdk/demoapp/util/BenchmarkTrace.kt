@@ -17,17 +17,13 @@ interface BenchmarkTrace {
     val writeEventMutex: Mutex
         get() = Mutex()
 
-    interface Event
+    interface Event {
+        val section: String
+        val cookie: Int
+    }
 }
 
 object SyncBlockchainBenchmarkTrace : BenchmarkTrace {
-    private const val SECTION_BALANCE_SCREEN = "BALANCE_SCREEN" // NON-NLS
-    private const val SECTION_BLOCKCHAIN_SYNC = "BLOCKCHAIN_SYNC" // NON-NLS
-    private const val SECTION_DOWNLOAD = "DOWNLOAD" // NON-NLS
-    private const val SECTION_VALIDATION = "VALIDATION" // NON-NLS
-    private const val SECTION_SCAN = "SCAN" // NON-NLS
-
-    @Suppress("MagicNumber")
     suspend fun writeEvent(event: BenchmarkTrace.Event?) {
         twig("New SyncBlockchain event: $event arrived.")
         if (!BenchmarkingExt.isBenchmarking()) {
@@ -36,42 +32,87 @@ object SyncBlockchainBenchmarkTrace : BenchmarkTrace {
         writeEventMutex.withLock {
             checkMainThread()
             when (event) {
-                Event.BALANCE_SCREEN_START -> Trace.beginAsyncSection(SECTION_BALANCE_SCREEN, 100)
-                Event.BALANCE_SCREEN_END -> Trace.endAsyncSection(SECTION_BALANCE_SCREEN, 100)
-                Event.BLOCKCHAIN_SYNC_START -> Trace.beginAsyncSection(SECTION_BLOCKCHAIN_SYNC, 200)
-                Event.BLOCKCHAIN_SYNC_END -> Trace.endAsyncSection(SECTION_BLOCKCHAIN_SYNC, 200)
-                Event.DOWNLOAD_START -> Trace.beginAsyncSection(SECTION_DOWNLOAD, 300)
-                Event.DOWNLOAD_END -> Trace.endAsyncSection(SECTION_DOWNLOAD, 300)
-                Event.VALIDATION_START -> Trace.beginAsyncSection(SECTION_VALIDATION, 400)
-                Event.VALIDATION_END -> Trace.endAsyncSection(SECTION_VALIDATION, 400)
-                Event.SCAN_START -> Trace.beginAsyncSection(SECTION_SCAN, 500)
-                Event.SCAN_END -> Trace.endAsyncSection(SECTION_SCAN, 500)
+                Event.BALANCE_SCREEN_START -> {
+                    Trace.beginAsyncSection(Event.BALANCE_SCREEN_START.section, Event.BALANCE_SCREEN_START.cookie)
+                }
+                Event.BALANCE_SCREEN_END -> {
+                    Trace.endAsyncSection(Event.BALANCE_SCREEN_END.section, Event.BALANCE_SCREEN_END.cookie)
+                }
+                Event.BLOCKCHAIN_SYNC_START -> {
+                    Trace.beginAsyncSection(Event.BLOCKCHAIN_SYNC_START.section, Event.BLOCKCHAIN_SYNC_START.cookie)
+                }
+                Event.BLOCKCHAIN_SYNC_END -> {
+                    Trace.endAsyncSection(Event.BLOCKCHAIN_SYNC_END.section, Event.BLOCKCHAIN_SYNC_END.cookie)
+                }
+                Event.DOWNLOAD_START -> {
+                    Trace.beginAsyncSection(Event.DOWNLOAD_START.section, Event.DOWNLOAD_START.cookie)
+                }
+                Event.DOWNLOAD_END -> {
+                    Trace.endAsyncSection(Event.DOWNLOAD_END.section, Event.DOWNLOAD_END.cookie)
+                }
+                Event.VALIDATION_START -> {
+                    Trace.beginAsyncSection(Event.VALIDATION_START.section, Event.VALIDATION_START.cookie)
+                }
+                Event.VALIDATION_END -> {
+                    Trace.endAsyncSection(Event.VALIDATION_END.section, Event.DOWNLOAD_END.cookie)
+                }
+                Event.SCAN_START -> {
+                    Trace.beginAsyncSection(Event.SCAN_START.section, Event.SCAN_START.cookie)
+                }
+                Event.SCAN_END -> {
+                    Trace.endAsyncSection(Event.SCAN_END.section, Event.SCAN_END.cookie)
+                }
                 else -> { /* nothing to write */ }
             }
         }
     }
 
+    @Suppress("MagicNumber")
     enum class Event : BenchmarkTrace.Event {
-        BALANCE_SCREEN_START,
-        BALANCE_SCREEN_END,
-        BLOCKCHAIN_SYNC_START,
-        BLOCKCHAIN_SYNC_END,
-        DOWNLOAD_START,
-        DOWNLOAD_END,
-        VALIDATION_START,
-        VALIDATION_END,
-        SCAN_START,
-        SCAN_END
+        BALANCE_SCREEN_START {
+            override val section: String = "BALANCE_SCREEN" // NON-NLS
+            override val cookie: Int = 100
+        },
+        BALANCE_SCREEN_END {
+            override val section: String = "BALANCE_SCREEN" // NON-NLS
+            override val cookie: Int = 100
+        },
+        BLOCKCHAIN_SYNC_START {
+            override val section: String = "BLOCKCHAIN_SYNC" // NON-NLS
+            override val cookie: Int = 200
+        },
+        BLOCKCHAIN_SYNC_END {
+            override val section: String = "BLOCKCHAIN_SYNC" // NON-NLS
+            override val cookie: Int = 200
+        },
+        DOWNLOAD_START {
+            override val section: String = "DOWNLOAD" // NON-NLS
+            override val cookie: Int = 300
+        },
+        DOWNLOAD_END {
+            override val section: String = "DOWNLOAD" // NON-NLS
+            override val cookie: Int = 300
+        },
+        VALIDATION_START {
+            override val section: String = "VALIDATION" // NON-NLS
+            override val cookie: Int = 400
+        },
+        VALIDATION_END {
+            override val section: String = "VALIDATION" // NON-NLS
+            override val cookie: Int = 400
+        },
+        SCAN_START {
+            override val section: String = "SCAN" // NON-NLS
+            override val cookie: Int = 500
+        },
+        SCAN_END {
+            override val section: String = "SCAN" // NON-NLS
+            override val cookie: Int = 500
+        }
     }
 }
 
 object ProvideAddressBenchmarkTrace : BenchmarkTrace {
-    private const val ADDRESS_SCREEN_SECTION = "ADDRESS_SCREEN" // NON-NLS
-    private const val UNIFIED_ADDRESS_SECTION = "UNIFIED_ADDRESS" // NON-NLS
-    private const val SAPLING_ADDRESS_SECTION = "SAPLING_ADDRESS" // NON-NLS
-    private const val TRANSPARENT_ADDRESS_SECTION = "TRANSPARENT_ADDRESS" // NON-NLS
-
-    @Suppress("MagicNumber")
     suspend fun writeEvent(event: BenchmarkTrace.Event?) {
         twig("New ProvideAddress event: $event arrived.")
         if (!BenchmarkingExt.isBenchmarking()) {
@@ -80,27 +121,71 @@ object ProvideAddressBenchmarkTrace : BenchmarkTrace {
         writeEventMutex.withLock {
             checkMainThread()
             when (event) {
-                Event.ADDRESS_SCREEN_START -> Trace.beginAsyncSection(ADDRESS_SCREEN_SECTION, 100)
-                Event.ADDRESS_SCREEN_END -> Trace.endAsyncSection(ADDRESS_SCREEN_SECTION, 100)
-                Event.UNIFIED_ADDRESS_START -> Trace.beginAsyncSection(UNIFIED_ADDRESS_SECTION, 200)
-                Event.UNIFIED_ADDRESS_END -> Trace.endAsyncSection(UNIFIED_ADDRESS_SECTION, 200)
-                Event.SAPLING_ADDRESS_START -> Trace.beginAsyncSection(SAPLING_ADDRESS_SECTION, 300)
-                Event.SAPLING_ADDRESS_END -> Trace.endAsyncSection(SAPLING_ADDRESS_SECTION, 300)
-                Event.TRANSPARENT_ADDRESS_START -> Trace.beginAsyncSection(TRANSPARENT_ADDRESS_SECTION, 400)
-                Event.TRANSPARENT_ADDRESS_END -> Trace.endAsyncSection(TRANSPARENT_ADDRESS_SECTION, 400)
+                Event.ADDRESS_SCREEN_START -> {
+                    Trace.beginAsyncSection(Event.ADDRESS_SCREEN_START.section, Event.ADDRESS_SCREEN_START.cookie)
+                }
+                Event.ADDRESS_SCREEN_END -> {
+                    Trace.endAsyncSection(Event.ADDRESS_SCREEN_END.section, Event.ADDRESS_SCREEN_END.cookie)
+                }
+                Event.UNIFIED_ADDRESS_START -> {
+                    Trace.beginAsyncSection(Event.UNIFIED_ADDRESS_START.section, Event.UNIFIED_ADDRESS_START.cookie)
+                }
+                Event.UNIFIED_ADDRESS_END -> {
+                    Trace.endAsyncSection(Event.UNIFIED_ADDRESS_END.section, Event.UNIFIED_ADDRESS_END.cookie)
+                }
+                Event.SAPLING_ADDRESS_START -> {
+                    Trace.beginAsyncSection(Event.SAPLING_ADDRESS_START.section, Event.SAPLING_ADDRESS_START.cookie)
+                }
+                Event.SAPLING_ADDRESS_END -> {
+                    Trace.endAsyncSection(Event.SAPLING_ADDRESS_END.section, Event.SAPLING_ADDRESS_END.cookie)
+                }
+                Event.TRANSPARENT_ADDRESS_START -> {
+                    Trace.beginAsyncSection(
+                        Event.TRANSPARENT_ADDRESS_START.section,
+                        Event.TRANSPARENT_ADDRESS_START.cookie
+                    )
+                }
+                Event.TRANSPARENT_ADDRESS_END -> {
+                    Trace.endAsyncSection(Event.TRANSPARENT_ADDRESS_END.section, Event.TRANSPARENT_ADDRESS_END.cookie)
+                }
                 else -> { /* nothing to write */ }
             }
         }
     }
 
+    @Suppress("MagicNumber")
     enum class Event : BenchmarkTrace.Event {
-        ADDRESS_SCREEN_START,
-        ADDRESS_SCREEN_END,
-        UNIFIED_ADDRESS_START,
-        UNIFIED_ADDRESS_END,
-        SAPLING_ADDRESS_START,
-        SAPLING_ADDRESS_END,
-        TRANSPARENT_ADDRESS_START,
-        TRANSPARENT_ADDRESS_END
+        ADDRESS_SCREEN_START {
+            override val section: String = "ADDRESS_SCREEN" // NON-NLS
+            override val cookie: Int = 100
+        },
+        ADDRESS_SCREEN_END {
+            override val section: String = "ADDRESS_SCREEN" // NON-NLS
+            override val cookie: Int = 100
+        },
+        UNIFIED_ADDRESS_START {
+            override val section: String = "UNIFIED_ADDRESS" // NON-NLS
+            override val cookie: Int = 200
+        },
+        UNIFIED_ADDRESS_END {
+            override val section: String = "UNIFIED_ADDRESS" // NON-NLS
+            override val cookie: Int = 200
+        },
+        SAPLING_ADDRESS_START {
+            override val section: String = "SAPLING_ADDRESS" // NON-NLS
+            override val cookie: Int = 300
+        },
+        SAPLING_ADDRESS_END {
+            override val section: String = "SAPLING_ADDRESS" // NON-NLS
+            override val cookie: Int = 300
+        },
+        TRANSPARENT_ADDRESS_START {
+            override val section: String = "TRANSPARENT_ADDRESS" // NON-NLS
+            override val cookie: Int = 400
+        },
+        TRANSPARENT_ADDRESS_END {
+            override val section: String = "TRANSPARENT_ADDRESS" // NON-NLS
+            override val cookie: Int = 400
+        }
     }
 }
