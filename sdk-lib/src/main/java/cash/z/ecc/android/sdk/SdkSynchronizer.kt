@@ -71,13 +71,16 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
@@ -627,41 +630,57 @@ class SdkSynchronizer internal constructor(
     override suspend fun getTransparentAddress(account: Account): String =
         processor.getTransparentAddress(account)
 
-    override suspend fun sendToAddress(
+    override fun sendToAddress(
         usk: UnifiedSpendingKey,
         amount: Zatoshi,
         toAddress: String,
         memo: String
     ): Flow<PendingTransaction> {
-        // Emit the placeholder transaction, then switch to monitoring the database
-        val placeHolderTx = txManager.initSpend(amount, TransactionRecipient.Address(toAddress), memo, usk.account)
+        // Using a job to ensure that even if the flow is collected multiple times, the transaction is only submitted
+        // once
+        val deferred = coroutineScope.async {
+            // Emit the placeholder transaction, then switch to monitoring the database
+            val placeHolderTx = txManager.initSpend(amount, TransactionRecipient.Address(toAddress), memo, usk.account)
 
-        txManager.encode(usk, placeHolderTx).let { encodedTx ->
-            txManager.submit(encodedTx)
+            txManager.encode(usk, placeHolderTx).let { encodedTx ->
+                txManager.submit(encodedTx)
+            }
+
+            placeHolderTx.id
         }
 
-        return txManager.monitorById(placeHolderTx.id)
+        return flow<PendingTransaction> {
+            val placeHolderTxId = deferred.await()
+            emitAll(txManager.monitorById(placeHolderTxId))
+        }
     }
 
-    override suspend fun shieldFunds(
+    override fun shieldFunds(
         usk: UnifiedSpendingKey,
         memo: String
     ): Flow<PendingTransaction> {
         twig("Initializing shielding transaction")
-        val tAddr = processor.getTransparentAddress(usk.account)
-        val tBalance = processor.getUtxoCacheBalance(tAddr)
+        val deferred = coroutineScope.async {
+            val tAddr = processor.getTransparentAddress(usk.account)
+            val tBalance = processor.getUtxoCacheBalance(tAddr)
 
-        // Emit the placeholder transaction, then switch to monitoring the database
-        val placeHolderTx = txManager.initSpend(
-            tBalance.available,
-            TransactionRecipient.Account(usk.account),
-            memo,
-            usk.account
-        )
-        val encodedTx = txManager.encode("", usk, placeHolderTx)
-        txManager.submit(encodedTx)
+            // Emit the placeholder transaction, then switch to monitoring the database
+            val placeHolderTx = txManager.initSpend(
+                tBalance.available,
+                TransactionRecipient.Account(usk.account),
+                memo,
+                usk.account
+            )
+            val encodedTx = txManager.encode("", usk, placeHolderTx)
+            txManager.submit(encodedTx)
 
-        return txManager.monitorById(placeHolderTx.id)
+            placeHolderTx.id
+        }
+
+        return flow<PendingTransaction> {
+            val placeHolderTxId = deferred.await()
+            emitAll(txManager.monitorById(placeHolderTxId))
+        }
     }
 
     override suspend fun refreshUtxos(tAddr: String, since: BlockHeight): Int? {

@@ -239,14 +239,14 @@ interface Synchronizer {
      * useful for updating the UI without needing to poll. Of course, polling is always an option
      * for any wallet that wants to ignore this return value.
      */
-    suspend fun sendToAddress(
+    fun sendToAddress(
         usk: UnifiedSpendingKey,
         amount: Zatoshi,
         toAddress: String,
         memo: String = ""
     ): Flow<PendingTransaction>
 
-    suspend fun shieldFunds(
+    fun shieldFunds(
         usk: UnifiedSpendingKey,
         memo: String = ZcashSdk.DEFAULT_SHIELD_FUNDS_MEMO_PREFIX
     ): Flow<PendingTransaction>
