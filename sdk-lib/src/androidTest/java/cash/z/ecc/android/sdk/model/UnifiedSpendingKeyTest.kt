@@ -2,6 +2,7 @@ package cash.z.ecc.android.sdk.model
 
 import androidx.test.filters.SmallTest
 import cash.z.ecc.android.sdk.fixture.WalletFixture
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import kotlin.test.assertContentEquals
@@ -10,6 +11,7 @@ import kotlin.test.assertEquals
 class UnifiedSpendingKeyTest {
     @Test
     @SmallTest
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun factory_copies_bytes() = runTest {
         val spendingKey = WalletFixture.getUnifiedSpendingKey()
         val expected = spendingKey.copyBytes().copyOf()
@@ -23,6 +25,7 @@ class UnifiedSpendingKeyTest {
 
     @Test
     @SmallTest
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun get_copies_bytes() = runTest {
         val spendingKey = WalletFixture.getUnifiedSpendingKey()
 
@@ -36,6 +39,7 @@ class UnifiedSpendingKeyTest {
 
     @Test
     @SmallTest
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun toString_does_not_leak() = runTest {
         assertEquals(
             "UnifiedSpendingKey(account=Account(value=0))",

@@ -9,6 +9,7 @@ import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.test.getAppContext
 import cash.z.ecc.fixture.DatabaseNameFixture
 import cash.z.ecc.fixture.DatabasePathFixture
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceTimeBy
@@ -37,6 +38,7 @@ class DatabaseCoordinatorTest {
     // to test mutex implementation and correct DatabaseCoordinator function call result.
     @Test
     @SmallTest
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun mutex_test() = runTest {
         var testResult: File? = null
 
@@ -77,6 +79,7 @@ class DatabaseCoordinatorTest {
 
     @Test
     @SmallTest
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun database_cache_file_creation_test() = runTest {
         val directory = File(DatabasePathFixture.new())
         val fileName = DatabaseNameFixture.newDb(name = DatabaseCoordinator.DB_CACHE_NAME)
@@ -92,6 +95,7 @@ class DatabaseCoordinatorTest {
 
     @Test
     @SmallTest
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun database_data_file_creation_test() = runTest {
         val directory = File(DatabasePathFixture.new())
         val fileName = DatabaseNameFixture.newDb(name = DatabaseCoordinator.DB_DATA_NAME)
@@ -107,6 +111,7 @@ class DatabaseCoordinatorTest {
 
     @Test
     @SmallTest
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun database_transactions_file_creation_test() = runTest {
         val directory = File(DatabasePathFixture.new())
         val fileName = DatabaseNameFixture.newDb(name = DatabaseCoordinator.DB_PENDING_TRANSACTIONS_NAME)
@@ -122,6 +127,7 @@ class DatabaseCoordinatorTest {
 
     @Test
     @SmallTest
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun database_files_move_test() = runTest {
         val parentFile = File(
             DatabasePathFixture.new(
@@ -205,6 +211,7 @@ class DatabaseCoordinatorTest {
 
     @Test
     @SmallTest
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun delete_database_files_test() = runTest {
         val parentFile = File(
             DatabasePathFixture.new(
