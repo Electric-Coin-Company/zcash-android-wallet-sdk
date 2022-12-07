@@ -10,8 +10,12 @@ import androidx.benchmark.macro.junit4.MacrobenchmarkRule
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.Until
 import cash.z.ecc.android.sdk.demoapp.test.UiTestPrerequisites
+import cash.z.ecc.android.sdk.demoapp.test.clickAndWaitFor
+import cash.z.ecc.android.sdk.demoapp.test.waitFor
 import org.junit.Rule
 import org.junit.Test
+import java.util.regex.Pattern
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 /**
@@ -33,6 +37,10 @@ class StartupBenchmark : UiTestPrerequisites() {
         private const val SAPLING_ADDRESS_SECTION = "SAPLING_ADDRESS" // NON-NLS
         private const val TRANSPARENT_ADDRESS_SECTION = "TRANSPARENT_ADDRESS" // NON-NLS
     }
+
+    private val unifiedAddressPattern = "^[a-z0-9]{141}$".toPattern() // NON-NLS
+    private val saplingAddressPattern = "^[a-z0-9]{78}$".toPattern() // NON-NLS
+    private val transparentAddressPattern = "^[a-zA-Z0-9]{35}$".toPattern() // NON-NLS
 
     @get:Rule
     val benchmarkRule = MacrobenchmarkRule()
@@ -87,19 +95,16 @@ class StartupBenchmark : UiTestPrerequisites() {
     private fun MacrobenchmarkScope.waitForAddressScreen() {
         val timeoutSeconds = 5.seconds
         check(
-            device.run {
-                val ua = Until.hasObject(By.text("^[a-z0-9]{141}$".toPattern())) // NON-NLS (Unified address condition)
-                val sa = Until.hasObject(By.text("^[a-z0-9]{78}$".toPattern())) // NON-NLS (Sapling address condition)
-                val ta = Until.hasObject(By.text("^[a-zA-Z0-9]{35}$".toPattern())) // NON-NLS (Transparent address)
-                // condition
-
-                wait(ua, timeoutSeconds.inWholeMilliseconds) != null &&
-                    wait(sa, timeoutSeconds.inWholeMilliseconds) &&
-                    wait(ta, timeoutSeconds.inWholeMilliseconds)
-            }
+            waitForAddressAppear(unifiedAddressPattern, timeoutSeconds) &&
+                waitForAddressAppear(saplingAddressPattern, timeoutSeconds) &&
+                waitForAddressAppear(transparentAddressPattern, timeoutSeconds)
         ) {
-            "Some of the addresses didn't show before $timeoutSeconds seconds timeout."
+            "Some of the addresses didn't appear before $timeoutSeconds seconds timeout."
         }
+    }
+
+    private fun MacrobenchmarkScope.waitForAddressAppear(addressPattern: Pattern, timeout: Duration): Boolean {
+        return device.waitFor(Until.hasObject(By.text(addressPattern)), timeout)
     }
 
     // TODO [#808]: Add demo-ui-lib module (and reference the hardcoded texts here)
@@ -108,7 +113,7 @@ class StartupBenchmark : UiTestPrerequisites() {
     private fun MacrobenchmarkScope.gotoAddressScreen() {
         // Open drawer menu
         device.findObject(By.desc("Open navigation drawer")) // NON-NLS
-            .clickAndWait(Until.newWindow(), 2.seconds.inWholeMilliseconds)
+            .clickAndWaitFor(Until.newWindow(), 2.seconds)
         // Navigate to Addresses screen
         device.findObject(By.text("Get Address")).click() // NON-NLS
     }
