@@ -4,8 +4,6 @@ import android.os.Looper
 import androidx.tracing.Trace
 import cash.z.ecc.android.sdk.ext.BenchmarkingExt
 import cash.z.ecc.android.sdk.internal.twig
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 
 interface BenchmarkTrace {
     fun checkMainThread() {
@@ -13,9 +11,6 @@ interface BenchmarkTrace {
             "Should be called from the main thread, not ${Thread.currentThread()}."
         }
     }
-
-    val writeEventMutex: Mutex
-        get() = Mutex()
 
     interface Event {
         val section: String
@@ -29,41 +24,39 @@ object SyncBlockchainBenchmarkTrace : BenchmarkTrace {
         if (!BenchmarkingExt.isBenchmarking()) {
             return
         }
-        writeEventMutex.withLock {
-            checkMainThread()
-            when (event) {
-                Event.BALANCE_SCREEN_START -> {
-                    Trace.beginAsyncSection(Event.BALANCE_SCREEN_START.section, Event.BALANCE_SCREEN_START.cookie)
-                }
-                Event.BALANCE_SCREEN_END -> {
-                    Trace.endAsyncSection(Event.BALANCE_SCREEN_END.section, Event.BALANCE_SCREEN_END.cookie)
-                }
-                Event.BLOCKCHAIN_SYNC_START -> {
-                    Trace.beginAsyncSection(Event.BLOCKCHAIN_SYNC_START.section, Event.BLOCKCHAIN_SYNC_START.cookie)
-                }
-                Event.BLOCKCHAIN_SYNC_END -> {
-                    Trace.endAsyncSection(Event.BLOCKCHAIN_SYNC_END.section, Event.BLOCKCHAIN_SYNC_END.cookie)
-                }
-                Event.DOWNLOAD_START -> {
-                    Trace.beginAsyncSection(Event.DOWNLOAD_START.section, Event.DOWNLOAD_START.cookie)
-                }
-                Event.DOWNLOAD_END -> {
-                    Trace.endAsyncSection(Event.DOWNLOAD_END.section, Event.DOWNLOAD_END.cookie)
-                }
-                Event.VALIDATION_START -> {
-                    Trace.beginAsyncSection(Event.VALIDATION_START.section, Event.VALIDATION_START.cookie)
-                }
-                Event.VALIDATION_END -> {
-                    Trace.endAsyncSection(Event.VALIDATION_END.section, Event.DOWNLOAD_END.cookie)
-                }
-                Event.SCAN_START -> {
-                    Trace.beginAsyncSection(Event.SCAN_START.section, Event.SCAN_START.cookie)
-                }
-                Event.SCAN_END -> {
-                    Trace.endAsyncSection(Event.SCAN_END.section, Event.SCAN_END.cookie)
-                }
-                else -> { /* nothing to write */ }
+        checkMainThread()
+        when (event) {
+            Event.BALANCE_SCREEN_START -> {
+                Trace.beginAsyncSection(Event.BALANCE_SCREEN_START.section, Event.BALANCE_SCREEN_START.cookie)
             }
+            Event.BALANCE_SCREEN_END -> {
+                Trace.endAsyncSection(Event.BALANCE_SCREEN_END.section, Event.BALANCE_SCREEN_END.cookie)
+            }
+            Event.BLOCKCHAIN_SYNC_START -> {
+                Trace.beginAsyncSection(Event.BLOCKCHAIN_SYNC_START.section, Event.BLOCKCHAIN_SYNC_START.cookie)
+            }
+            Event.BLOCKCHAIN_SYNC_END -> {
+                Trace.endAsyncSection(Event.BLOCKCHAIN_SYNC_END.section, Event.BLOCKCHAIN_SYNC_END.cookie)
+            }
+            Event.DOWNLOAD_START -> {
+                Trace.beginAsyncSection(Event.DOWNLOAD_START.section, Event.DOWNLOAD_START.cookie)
+            }
+            Event.DOWNLOAD_END -> {
+                Trace.endAsyncSection(Event.DOWNLOAD_END.section, Event.DOWNLOAD_END.cookie)
+            }
+            Event.VALIDATION_START -> {
+                Trace.beginAsyncSection(Event.VALIDATION_START.section, Event.VALIDATION_START.cookie)
+            }
+            Event.VALIDATION_END -> {
+                Trace.endAsyncSection(Event.VALIDATION_END.section, Event.VALIDATION_END.cookie)
+            }
+            Event.SCAN_START -> {
+                Trace.beginAsyncSection(Event.SCAN_START.section, Event.SCAN_START.cookie)
+            }
+            Event.SCAN_END -> {
+                Trace.endAsyncSection(Event.SCAN_END.section, Event.SCAN_END.cookie)
+            }
+            else -> { /* nothing to write */ }
         }
     }
 
@@ -118,38 +111,36 @@ object ProvideAddressBenchmarkTrace : BenchmarkTrace {
         if (!BenchmarkingExt.isBenchmarking()) {
             return
         }
-        writeEventMutex.withLock {
-            checkMainThread()
-            when (event) {
-                Event.ADDRESS_SCREEN_START -> {
-                    Trace.beginAsyncSection(Event.ADDRESS_SCREEN_START.section, Event.ADDRESS_SCREEN_START.cookie)
-                }
-                Event.ADDRESS_SCREEN_END -> {
-                    Trace.endAsyncSection(Event.ADDRESS_SCREEN_END.section, Event.ADDRESS_SCREEN_END.cookie)
-                }
-                Event.UNIFIED_ADDRESS_START -> {
-                    Trace.beginAsyncSection(Event.UNIFIED_ADDRESS_START.section, Event.UNIFIED_ADDRESS_START.cookie)
-                }
-                Event.UNIFIED_ADDRESS_END -> {
-                    Trace.endAsyncSection(Event.UNIFIED_ADDRESS_END.section, Event.UNIFIED_ADDRESS_END.cookie)
-                }
-                Event.SAPLING_ADDRESS_START -> {
-                    Trace.beginAsyncSection(Event.SAPLING_ADDRESS_START.section, Event.SAPLING_ADDRESS_START.cookie)
-                }
-                Event.SAPLING_ADDRESS_END -> {
-                    Trace.endAsyncSection(Event.SAPLING_ADDRESS_END.section, Event.SAPLING_ADDRESS_END.cookie)
-                }
-                Event.TRANSPARENT_ADDRESS_START -> {
-                    Trace.beginAsyncSection(
-                        Event.TRANSPARENT_ADDRESS_START.section,
-                        Event.TRANSPARENT_ADDRESS_START.cookie
-                    )
-                }
-                Event.TRANSPARENT_ADDRESS_END -> {
-                    Trace.endAsyncSection(Event.TRANSPARENT_ADDRESS_END.section, Event.TRANSPARENT_ADDRESS_END.cookie)
-                }
-                else -> { /* nothing to write */ }
+        checkMainThread()
+        when (event) {
+            Event.ADDRESS_SCREEN_START -> {
+                Trace.beginAsyncSection(Event.ADDRESS_SCREEN_START.section, Event.ADDRESS_SCREEN_START.cookie)
             }
+            Event.ADDRESS_SCREEN_END -> {
+                Trace.endAsyncSection(Event.ADDRESS_SCREEN_END.section, Event.ADDRESS_SCREEN_END.cookie)
+            }
+            Event.UNIFIED_ADDRESS_START -> {
+                Trace.beginAsyncSection(Event.UNIFIED_ADDRESS_START.section, Event.UNIFIED_ADDRESS_START.cookie)
+            }
+            Event.UNIFIED_ADDRESS_END -> {
+                Trace.endAsyncSection(Event.UNIFIED_ADDRESS_END.section, Event.UNIFIED_ADDRESS_END.cookie)
+            }
+            Event.SAPLING_ADDRESS_START -> {
+                Trace.beginAsyncSection(Event.SAPLING_ADDRESS_START.section, Event.SAPLING_ADDRESS_START.cookie)
+            }
+            Event.SAPLING_ADDRESS_END -> {
+                Trace.endAsyncSection(Event.SAPLING_ADDRESS_END.section, Event.SAPLING_ADDRESS_END.cookie)
+            }
+            Event.TRANSPARENT_ADDRESS_START -> {
+                Trace.beginAsyncSection(
+                    Event.TRANSPARENT_ADDRESS_START.section,
+                    Event.TRANSPARENT_ADDRESS_START.cookie
+                )
+            }
+            Event.TRANSPARENT_ADDRESS_END -> {
+                Trace.endAsyncSection(Event.TRANSPARENT_ADDRESS_END.section, Event.TRANSPARENT_ADDRESS_END.cookie)
+            }
+            else -> { /* nothing to write */ }
         }
     }
 
