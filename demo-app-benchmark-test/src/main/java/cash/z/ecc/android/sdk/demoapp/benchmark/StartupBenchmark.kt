@@ -27,6 +27,9 @@ import kotlin.time.Duration.Companion.seconds
  * We ideally run this against a physical device with Android SDK level 29, at least, as profiling is provided by this
  * version and later on.
  */
+
+// TODO [#809]: Enable macrobenchmark on CI
+// TODO [#809]: https://github.com/zcash/zcash-android-wallet-sdk/issues/809
 class StartupBenchmark : UiTestPrerequisites() {
 
     companion object {
