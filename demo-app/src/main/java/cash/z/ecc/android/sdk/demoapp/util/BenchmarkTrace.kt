@@ -19,7 +19,7 @@ interface BenchmarkTrace {
 }
 
 object SyncBlockchainBenchmarkTrace : BenchmarkTrace {
-    suspend fun writeEvent(event: BenchmarkTrace.Event?) {
+    fun writeEvent(event: BenchmarkTrace.Event?) {
         twig("New SyncBlockchain event: $event arrived.")
         if (!BenchmarkingExt.isBenchmarking()) {
             return
@@ -106,7 +106,7 @@ object SyncBlockchainBenchmarkTrace : BenchmarkTrace {
 }
 
 object ProvideAddressBenchmarkTrace : BenchmarkTrace {
-    suspend fun writeEvent(event: BenchmarkTrace.Event?) {
+    fun writeEvent(event: BenchmarkTrace.Event?) {
         twig("New ProvideAddress event: $event arrived.")
         if (!BenchmarkingExt.isBenchmarking()) {
             return
