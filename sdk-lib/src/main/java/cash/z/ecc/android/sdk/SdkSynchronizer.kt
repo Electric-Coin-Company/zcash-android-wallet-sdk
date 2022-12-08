@@ -768,7 +768,8 @@ internal object DefaultSynchronizerFactory {
         CompactBlockRepository =
         FileCompactBlockRepository.new(
             zcashNetwork,
-            rustBackend.fsBlockDbRoot
+            rustBackend.fsBlockDbRoot,
+            rustBackend
         )
 
     fun defaultService(context: Context, lightWalletEndpoint: LightWalletEndpoint): BlockingLightWalletClient =
