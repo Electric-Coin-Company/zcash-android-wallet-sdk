@@ -8,56 +8,63 @@ import cash.z.ecc.android.sdk.internal.ext.mkdirsSuspend
 import cash.z.ecc.android.sdk.internal.ext.readBytesSuspend
 import cash.z.ecc.android.sdk.internal.ext.renameToSuspend
 import cash.z.ecc.android.sdk.internal.ext.writeBytesSuspend
+import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.internal.repository.CompactBlockRepository
 import cash.z.ecc.android.sdk.internal.twig
+import cash.z.ecc.android.sdk.jni.RustBackend
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.ZcashNetwork
-import cash.z.wallet.sdk.rpc.CompactFormats
+import cash.z.wallet.sdk.rpc.CompactFormats.CompactBlock
 import java.io.File
 
 internal class FileCompactBlockRepository(
     private val network: ZcashNetwork,
     private val cacheDirectory: File,
+    private val rustBackend: RustBackend
 ) : CompactBlockRepository {
 
     override suspend fun getLatestHeight(): BlockHeight? {
-        val files = cacheDirectory.listFilesSuspend().let {
+        val blocksDirectory = File(cacheDirectory, "blocks")
+        val files = blocksDirectory.listFilesSuspend().let {
             if (it.isNullOrEmpty()) return null
             else it
         }
-
+        //it would be "probably" better to query metadata sql
         return files
-            .filterNot { it.isDirectory }
-            .filter { it.name.endsWith(".block") }
             .maxOf {
-                twig(it.absolutePath)
                 it.getBlockHeight()
             }
             .let { BlockHeight.new(network, it) }
     }
 
-    override suspend fun findCompactBlock(height: BlockHeight): CompactFormats.CompactBlock? =
+    override suspend fun findCompactBlock(height: BlockHeight): CompactBlock? =
         cacheDirectory.listFilesSuspend()
             ?.find { it.getBlockHeight() == height.value }
-            ?.let { CompactFormats.CompactBlock.parseFrom(it.readBytesSuspend()) }
+            ?.let { CompactBlock.parseFrom(it.readBytesSuspend()) }
 
     //naming conventions HEIGHT-BLOCKHASHHEX-block
-    override suspend fun write(result: Sequence<CompactFormats.CompactBlock>): Int {
+    override suspend fun write(result: Sequence<CompactBlock>): Int {
         var count = 0
+        val blocksDirectory = File(cacheDirectory, "blocks")
+        val metaDataBuffer = mutableListOf<JniBlockMeta>()
 
         result.forEach { block ->
+            //create temporary file
             val tempFileName = "${block.createFilename()}.tmp"
-            val tempFile = File(cacheDirectory, tempFileName)
+            val tempFile = File(blocksDirectory, tempFileName)
             tempFile.createNewFileSuspend()
+            //write compact block bytes
             tempFile.writeBytesSuspend(block.toByteArray())
-
-            //write block metadata
-
-            val newFile = File(tempFile.absolutePath.replace(".tmp", ".block"))
+            //buffer metadata
+            metaDataBuffer.add(block.toJniMetaData())
+            //rename the file
+            val newFile = File(tempFile.absolutePath.dropLast(4))
             tempFile.renameToSuspend(newFile)
-
             count++
         }
+
+        //write blocks metadata
+        rustBackend.writeBlockMetadata(metaDataBuffer.toTypedArray())
 
         return count
     }
@@ -74,7 +81,16 @@ internal class FileCompactBlockRepository(
 
     private fun File.getBlockHeight() = name.split("-")[0].toLong()
 
-    private fun CompactFormats.CompactBlock.createFilename() = "${height}-${hash.toByteArray().toHex()}"
+    private fun CompactBlock.createFilename() = "${height}-${hash.toByteArray().toHex()}-compactblock"
+
+    private fun CompactBlock.toJniMetaData() =
+        JniBlockMeta(
+            height = height,
+            hash = hash.toByteArray(),
+            time = time.toLong(),
+            saplingOutputsCount = network.saplingActivationHeight.value,
+            orchardOutputsCount = network.orchardActivationHeight.value
+        )
 
     companion object {
 
@@ -83,13 +99,15 @@ internal class FileCompactBlockRepository(
          */
         suspend fun new(
             zcashNetwork: ZcashNetwork,
-            cacheDirectory: File
+            cacheDirectory: File,
+            rustBackend: RustBackend
         ): FileCompactBlockRepository {
-            twig("Network: ${zcashNetwork.networkName} / file directory: ${cacheDirectory.absolutePath}")
+            twig("${rustBackend.fsBlockDbRoot.absolutePath} \n  ${rustBackend.dataDbFile.absolutePath}")
 
-            cacheDirectory.mkdirsSuspend()
+            // create cache directories
+            File(cacheDirectory, "blocks").mkdirsSuspend()
 
-            return FileCompactBlockRepository(zcashNetwork, cacheDirectory)
+            return FileCompactBlockRepository(zcashNetwork, cacheDirectory, rustBackend)
         }
     }
 }
