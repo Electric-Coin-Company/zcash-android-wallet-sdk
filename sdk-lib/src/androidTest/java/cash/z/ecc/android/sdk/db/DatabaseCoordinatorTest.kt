@@ -10,9 +10,11 @@ import cash.z.ecc.android.sdk.test.getAppContext
 import cash.z.ecc.fixture.DatabaseNameFixture
 import cash.z.ecc.fixture.DatabasePathFixture
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -33,48 +35,110 @@ class DatabaseCoordinatorTest {
         File(noBackupDir).deleteRecursively()
     }
 
-    // Sanity check of the database coordinator instance and its thread-safe implementation. Our aim
-    // here is to run two jobs in parallel (the second one runs immediately after the first was started)
-    // to test mutex implementation and correct DatabaseCoordinator function call result.
-    @Test
-    @SmallTest
-    @OptIn(ExperimentalCoroutinesApi::class)
-    fun mutex_test() = runTest {
-        var testResult: File? = null
+    private data class Triple(
+        var firstJobValidity: Boolean,
+        var secondJobValidity: Boolean,
+        var resultFile: File?
+    )
 
-        launch {
-            delay(1000)
-            testResult = dbCoordinator.cacheDbFile(
+    /**
+     * Sanity check of the database coordinator instance and its thread-safe implementation. Our aim here is to run
+     * two jobs in parallel (the second one runs immediately after the first was started) to test mutex
+     * implementation and correct DatabaseCoordinator function call result.
+     *
+     * We use CoroutineStart.UNDISPATCHED to immediately run created jobs. We use runBlocking instead of runTest to be
+     * able to provide a tiny delay between the two jobs, to support the need for running them in parallel, and also to
+     * have the first one access the shared resource (DatabaseCoordinator) first. We add checks to ensure that these
+     * two jobs really run together and to avoid theirs serialization. If any of these conditions do not succeed we
+     * claim the test iteration as invalid and the test returns false.
+     *
+     * If the conditions succeed we approach to check if the second job changed the shared resource correctly.
+     *
+     * @return true in case of job conditions succeed and false otherwise
+     */
+    private fun mutex_test_iteration(): Boolean = runBlocking {
+        val testResult = Triple(
+            firstJobValidity = true,
+            secondJobValidity = true,
+            resultFile = null
+        )
+
+        val firstJob = launch(start = CoroutineStart.UNDISPATCHED) {
+            val firstResultFile = dbCoordinator.cacheDbFile(
                 DatabaseNameFixture.TEST_DB_NETWORK,
                 DatabaseNameFixture.TEST_DB_ALIAS
             )
+            // Check if the second job hasn't finished first, and thus makes this test invalid
+            if (testResult.resultFile != null) {
+                testResult.firstJobValidity = false
+                return@launch
+            }
+            testResult.resultFile = firstResultFile
         }
-        val job2 = launch {
-            delay(1001)
-            testResult = dbCoordinator.cacheDbFile(
+
+        // Small delay to support the need for running the second job right after the first one starts
+        delay(1)
+
+        val secondJob = launch(start = CoroutineStart.UNDISPATCHED) {
+            // We check here if the first job is still running and its result is not already proceeded
+            if (!firstJob.isActive || testResult.resultFile != null) {
+                testResult.secondJobValidity = false
+                return@launch
+            }
+            testResult.secondJobValidity = true
+            testResult.resultFile = dbCoordinator.cacheDbFile(
                 ZcashNetwork.Mainnet,
                 "TestZcashSdk"
             )
         }
 
-        advanceTimeBy(1002)
+        // Wait until both jobs are done
+        joinAll(firstJob, secondJob)
 
-        job2.join().also {
-            assertTrue(testResult != null)
-            assertTrue(testResult!!.absolutePath.isNotEmpty())
-            assertTrue(testResult!!.absolutePath.contains(ZcashNetwork.Mainnet.networkName))
-            assertTrue(testResult!!.absolutePath.contains("TestZcashSdk"))
+        // Check validity of this test iteration
+        if (!testResult.firstJobValidity ||
+            !testResult.secondJobValidity
+        ) {
+            return@runBlocking false
         }
+
+        // And here we assert that the second job was the one which waited, and thus accessed as second and changed
+        // the shared result correctly
+        assertTrue(testResult.resultFile != null)
+        assertTrue(testResult.resultFile!!.absolutePath.isNotEmpty())
+        assertTrue(testResult.resultFile!!.absolutePath.contains(ZcashNetwork.Mainnet.networkName))
+        assertTrue(testResult.resultFile!!.absolutePath.contains("TestZcashSdk"))
+
+        return@runBlocking true
     }
 
+    /**
+     * This stress test runs its subtest repeatedly and counts its failed iterations. If it exceeds the allowed fail
+     * threshold, then we claim this test as unsuccessful.
+     *
+     * According to manual testing, the successful ration is around 90-99%.
+     */
     @FlakyTest
     @Test
     @MediumTest
     fun mutex_stress_test() {
-        // We run the mutex test multiple times sequentially to catch a possible problem.
-        for (x in 0..9) {
-            mutex_test()
+        val allAttempts = 100
+        var failedAttempts = 0
+        val validAttemptsRation = 0.5f
+
+        // We run the mutex test multiple times sequentially to catch a possible problem
+        for (x in 1..allAttempts) {
+            if (!mutex_test_iteration()) {
+                failedAttempts++
+            }
         }
+
+        val printResult = "${allAttempts - failedAttempts}/$allAttempts"
+        println("Mutex stress test result: $printResult")
+        assertTrue(
+            "Failed on insufficient valid attempts: $printResult",
+            failedAttempts < (allAttempts - (allAttempts * validAttemptsRation))
+        )
     }
 
     @Test
