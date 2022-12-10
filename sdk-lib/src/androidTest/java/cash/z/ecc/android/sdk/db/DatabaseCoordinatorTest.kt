@@ -11,7 +11,6 @@ import cash.z.ecc.fixture.DatabaseNameFixture
 import cash.z.ecc.fixture.DatabasePathFixture
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.CoroutineStart
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -46,11 +45,12 @@ class DatabaseCoordinatorTest {
      * two jobs in parallel (the second one runs immediately after the first was started) to test mutex
      * implementation and correct DatabaseCoordinator function call result.
      *
-     * We use CoroutineStart.UNDISPATCHED to immediately run created jobs. We use runBlocking instead of runTest to be
-     * able to provide a tiny delay between the two jobs, to support the need for running them in parallel, and also to
-     * have the first one access the shared resource (DatabaseCoordinator) first. We add checks to ensure that these
-     * two jobs really run together and to avoid theirs serialization. If any of these conditions do not succeed we
-     * claim the test iteration as invalid and the test returns false.
+     * We use CoroutineStart.UNDISPATCHED to immediately run the first created job. We use runBlocking instead of
+     * runTest to be able to provide a tiny delay between the two jobs or to return the block result to stress test.
+     * Our goal here is to run these two jobs in parallel, and also to have the first one access the shared resource
+     * (DatabaseCoordinator) first. We add checks to ensure that these two jobs really run together and to avoid
+     * theirs serialization. If any of these conditions do not succeed we claim the test iteration as invalid and the
+     * test returns false.
      *
      * If the conditions succeed we approach to check if the second job changed the shared resource correctly.
      *
@@ -76,8 +76,9 @@ class DatabaseCoordinatorTest {
             testResult.resultFile = firstResultFile
         }
 
-        // Small delay to support the need for running the second job right after the first one starts
-        delay(1)
+        // Small delay to support the need for running the second job right after the first one starts. Note this
+        // works well on local emulators, but not on CI emulators.
+        // delay(1)
 
         val secondJob = launch(start = CoroutineStart.UNDISPATCHED) {
             // We check here if the first job is still running and its result is not already proceeded
@@ -116,7 +117,8 @@ class DatabaseCoordinatorTest {
      * This stress test runs its subtest repeatedly and counts its failed iterations. If it exceeds the allowed fail
      * threshold, then we claim this test as unsuccessful.
      *
-     * According to manual testing, the successful ration is around 90-99%.
+     * According to manual testing, the valid tests ratio is around 90-99% when running on local emulators or
+     * physical devices. But on CI we get about 60-70% valid tests ratio.
      */
     @FlakyTest
     @Test
@@ -124,7 +126,7 @@ class DatabaseCoordinatorTest {
     fun mutex_stress_test() {
         val allAttempts = 100
         var failedAttempts = 0
-        val validAttemptsRation = 0.5f
+        val validAttemptsRation = 0.25f
 
         // We run the mutex test multiple times sequentially to catch a possible problem
         for (x in 1..allAttempts) {
