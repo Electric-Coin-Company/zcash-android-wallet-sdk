@@ -136,7 +136,7 @@ class DatabaseCoordinatorTest {
         }
 
         val printResult = "${allAttempts - failedAttempts}/$allAttempts"
-        println("Mutex stress test result: $printResult")
+
         assertTrue(
             "Failed on insufficient valid attempts: $printResult",
             failedAttempts < (allAttempts - (allAttempts * validAttemptsRation))
