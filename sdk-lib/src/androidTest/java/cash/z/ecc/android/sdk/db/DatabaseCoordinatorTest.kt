@@ -126,7 +126,7 @@ class DatabaseCoordinatorTest {
     fun mutex_stress_test() {
         val allAttempts = 100
         var failedAttempts = 0
-        val validAttemptsRation = 0.25f
+        val validAttemptsRatio = 0.25f
 
         // We run the mutex test multiple times sequentially to catch a possible problem
         for (x in 1..allAttempts) {
@@ -139,7 +139,7 @@ class DatabaseCoordinatorTest {
 
         assertTrue(
             "Failed on insufficient valid attempts: $printResult",
-            failedAttempts < (allAttempts - (allAttempts * validAttemptsRation))
+            failedAttempts < (allAttempts - (allAttempts * validAttemptsRatio))
         )
     }
 
