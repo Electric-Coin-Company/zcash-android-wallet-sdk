@@ -32,8 +32,8 @@ We provide dedicated benchmark test module `demo-app-benchmark-test` for this. I
 tests against our demo application, make sure you have a physical device connected with Android SDK level 29, at least.
 Select `benchmark` build variant for this module. Make sure that other modules are set to benchmark
 type too. The benchmark tests can be run with Android Studio run configuration
-`ui-benchmark-test:connectedZcashmainnetBenchmarkAndroidTest`. Running the benchmark test this way automatically
-provides benchmarking results in Run panel. Or you can run the tests manually from the terminal with `./gradlew connectedZcashmainnetBenchmarkAndroidTest` and analyze results with Android Studio's Profiler or [Perfetto](https://ui.perfetto.dev/) tool, as described in this Android [documentation](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview#access-trace).
+`demo-app-benchmark-test:connectedBenchmarkAndroidTest`. Running the benchmark test this way automatically
+provides benchmarking results in Run panel. Or you can run the tests manually from the terminal with `./gradlew connectedBenchmarkAndroidTest` and analyze results with Android Studio's Profiler or [Perfetto](https://ui.perfetto.dev/) tool, as described in this Android [documentation](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview#access-trace).
 
 **Note**: We've enabled benchmarking also for emulators, although it's always better to run the tests on a real physical device. Emulator benchmark improvements might not carry over to a real user's experience (or even regress real device performance).
 
@@ -44,7 +44,7 @@ Every few months, or before a major SDK release, we run and compare benchmark te
 internet and charged or plugged-in to a charger. It's always better to restart the device before approaching to 
 running the benchmark tests. Also, please, ensure you're running it on the latest main branch
 commits of that date. Generate tests results with the Android Studio run configuration
-`ui-benchmark-test:connectedZcashmainnetBenchmarkAndroidTest` and gather results from the Run panel.
+`demo-app-benchmark-test:connectedBenchmarkAndroidTest` and gather results from the Run panel.
 
 #### Dec 7, 2022:
 
