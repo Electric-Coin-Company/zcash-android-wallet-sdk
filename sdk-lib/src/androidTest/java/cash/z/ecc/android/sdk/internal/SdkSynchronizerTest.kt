@@ -17,6 +17,7 @@ class SdkSynchronizerTest {
 
     @Test
     @SmallTest
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     fun cannot_instantiate_in_parallel() = runTest {
         // Random alias so that repeated invocations of this test will have a clean starting state
         val alias = UUID.randomUUID().toString()
@@ -45,6 +46,7 @@ class SdkSynchronizerTest {
 
     @Test
     @SmallTest
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     fun can_instantiate_in_serial() = runTest {
         // Random alias so that repeated invocations of this test will have a clean starting state
         val alias = UUID.randomUUID().toString()
