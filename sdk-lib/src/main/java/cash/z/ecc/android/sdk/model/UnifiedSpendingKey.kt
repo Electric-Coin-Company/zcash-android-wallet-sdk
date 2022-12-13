@@ -72,7 +72,7 @@ class UnifiedSpendingKey private constructor(
          */
         suspend fun new(account: Account, bytes: ByteArray): Result<UnifiedSpendingKey> {
             val bytesCopy = bytes.copyOf()
-            RustBackend.rustLibraryLoader.load()
+            RustBackend.loadLibrary()
             return runCatching {
                 // We can ignore the Boolean returned from this, because if an error
                 // occurs the Rust side will throw.

@@ -329,6 +329,12 @@ internal class RustBackend private constructor(
         internal val rustLibraryLoader = NativeLibraryLoader("zcashwalletsdk")
         private const val IS_USE_ZIP_317_FEES = false
 
+        suspend fun loadLibrary() {
+            rustLibraryLoader.load {
+                initOnLoad()
+            }
+        }
+
         /**
          * Loads the library and initializes path variables. Although it is best to only call this
          * function once, it is idempotent.
@@ -340,7 +346,7 @@ internal class RustBackend private constructor(
             zcashNetwork: ZcashNetwork,
             birthdayHeight: BlockHeight
         ): RustBackend {
-            rustLibraryLoader.load()
+            loadLibrary()
 
             return RustBackend(
                 zcashNetwork,
@@ -351,21 +357,12 @@ internal class RustBackend private constructor(
             )
         }
 
-        /**
-         * Forwards Rust logs to logcat. This is a function that is intended for debug purposes. All
-         * logs will be tagged with `cash.z.rust.logs`. Typically, a developer would clone
-         * librustzcash locally and then modify Cargo.toml in this project to point to their local
-         * build (see Cargo.toml for details). From there, they can add any log messages they want
-         * and have them surfaced into the Android logging system. By default, this behavior is
-         * disabled and this is the function that enables it. Initially only the logs in
-         * [src/main/rust/lib.rs] will appear and any additional logs would need to be added by the
-         * developer.
-         */
-        fun enableRustLogs() = initLogs()
-
         //
         // External Functions
         //
+
+        @JvmStatic
+        private external fun initOnLoad()
 
         @JvmStatic
         private external fun initDataDb(dbDataPath: String, seed: ByteArray?, networkId: Int): Int
@@ -504,9 +501,6 @@ internal class RustBackend private constructor(
             networkId: Int,
             useZip317Fees: Boolean
         ): Long
-
-        @JvmStatic
-        private external fun initLogs()
 
         @JvmStatic
         private external fun branchIdForHeight(height: Long, networkId: Int): Long

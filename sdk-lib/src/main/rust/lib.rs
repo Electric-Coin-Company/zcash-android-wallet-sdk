@@ -95,7 +95,7 @@ fn block_db(env: &JNIEnv<'_>, db_data: JString<'_>) -> Result<BlockDb, failure::
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_initLogs(
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_initOnLoad(
     _env: JNIEnv<'_>,
     _: JClass<'_>,
 ) {
