@@ -95,13 +95,14 @@ import kotlin.coroutines.CoroutineContext
  * pieces can be tied together. Its goal is to allow a developer to focus on their app rather than
  * the nuances of how Zcash works.
  *
+ * @property synchronizerKey Identifies the synchronizer's on-disk state
  * @property storage exposes flows of wallet transaction information.
  * @property txManager manages and tracks outbound transactions.
  * @property processor saves the downloaded compact blocks to the cache and then scans those blocks for
  * data related to this wallet.
  */
 @Suppress("TooManyFunctions")
-class SdkSynchronizer internal constructor(
+class SdkSynchronizer private constructor(
     private val synchronizerKey: SynchronizerKey,
     private val storage: DerivedDataRepository,
     private val txManager: OutboundTransactionManager,
