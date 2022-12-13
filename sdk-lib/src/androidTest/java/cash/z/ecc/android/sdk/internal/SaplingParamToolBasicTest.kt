@@ -8,6 +8,7 @@ import cash.z.ecc.android.sdk.internal.ext.listFilesSuspend
 import cash.z.ecc.android.sdk.test.getAppContext
 import cash.z.ecc.fixture.SaplingParamToolFixture
 import cash.z.ecc.fixture.SaplingParamsFixture
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
@@ -32,6 +33,7 @@ class SaplingParamToolBasicTest {
 
     @Test
     @SmallTest
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun init_sapling_param_tool_test() = runTest {
         val spendSaplingParams = SaplingParamsFixture.new()
         val outputSaplingParams = SaplingParamsFixture.new(
@@ -60,6 +62,7 @@ class SaplingParamToolBasicTest {
 
     @Test
     @SmallTest
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun init_and_get_params_destination_dir_test() = runTest {
         val destDir = SaplingParamTool.new(getAppContext()).properties.paramsDirectory
 
@@ -73,6 +76,7 @@ class SaplingParamToolBasicTest {
 
     @Test
     @MediumTest
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun move_files_from_legacy_destination_test() = runTest {
         SaplingParamsFixture.DESTINATION_DIRECTORY_LEGACY.mkdirs()
         val spendFile = File(SaplingParamsFixture.DESTINATION_DIRECTORY_LEGACY, SaplingParamsFixture.SPEND_FILE_NAME)
@@ -124,6 +128,7 @@ class SaplingParamToolBasicTest {
 
     @Test
     @MediumTest
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun ensure_params_exception_thrown_test() = runTest {
         val saplingParamTool = SaplingParamTool(
             SaplingParamToolFixture.new(

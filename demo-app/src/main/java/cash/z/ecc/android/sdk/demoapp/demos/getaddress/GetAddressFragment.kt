@@ -9,6 +9,7 @@ import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
 import cash.z.ecc.android.sdk.demoapp.databinding.FragmentGetAddressBinding
 import cash.z.ecc.android.sdk.demoapp.ext.requireApplicationContext
+import cash.z.ecc.android.sdk.demoapp.util.ProvideAddressBenchmarkTrace
 import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.model.LightWalletEndpoint
 import cash.z.ecc.android.sdk.model.ZcashNetwork
@@ -61,17 +62,23 @@ class GetAddressFragment : BaseDemoFragment<FragmentGetAddressBinding>() {
     private fun displayAddress() {
         viewLifecycleOwner.lifecycleScope.launchWhenStarted {
             binding.unifiedAddress.apply {
+                reportTraceEvent(ProvideAddressBenchmarkTrace.Event.UNIFIED_ADDRESS_START)
                 val uaddress = synchronizer.getUnifiedAddress()
+                reportTraceEvent(ProvideAddressBenchmarkTrace.Event.UNIFIED_ADDRESS_END)
                 text = uaddress
                 setOnClickListener { copyToClipboard(uaddress) }
             }
             binding.saplingAddress.apply {
+                reportTraceEvent(ProvideAddressBenchmarkTrace.Event.SAPLING_ADDRESS_START)
                 val sapling = synchronizer.getSaplingAddress()
+                reportTraceEvent(ProvideAddressBenchmarkTrace.Event.SAPLING_ADDRESS_END)
                 text = sapling
                 setOnClickListener { copyToClipboard(sapling) }
             }
             binding.transparentAddress.apply {
+                reportTraceEvent(ProvideAddressBenchmarkTrace.Event.TRANSPARENT_ADDRESS_START)
                 val transparent = synchronizer.getTransparentAddress()
+                reportTraceEvent(ProvideAddressBenchmarkTrace.Event.TRANSPARENT_ADDRESS_END)
                 text = transparent
                 setOnClickListener { copyToClipboard(transparent) }
             }
@@ -84,12 +91,18 @@ class GetAddressFragment : BaseDemoFragment<FragmentGetAddressBinding>() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        reportTraceEvent(ProvideAddressBenchmarkTrace.Event.ADDRESS_SCREEN_START)
         setup()
     }
 
     override fun onResume() {
         super.onResume()
         displayAddress()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        reportTraceEvent(ProvideAddressBenchmarkTrace.Event.ADDRESS_SCREEN_END)
     }
 
     //

@@ -6,6 +6,7 @@ import cash.z.ecc.android.sdk.exception.TransactionEncoderException
 import cash.z.ecc.android.sdk.internal.ext.listFilesSuspend
 import cash.z.ecc.android.sdk.test.getAppContext
 import cash.z.ecc.fixture.SaplingParamsFixture
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
@@ -146,6 +147,7 @@ class SaplingParamToolIntegrationTest {
 
     @Test
     @LargeTest
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun fetch_params_uninitialized_test() = runTest {
         val saplingParamTool = SaplingParamTool.new(getAppContext())
 
@@ -160,6 +162,7 @@ class SaplingParamToolIntegrationTest {
 
     @Test
     @LargeTest
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun fetch_params_incorrect_hash_test() = runTest {
         val saplingParamTool = SaplingParamTool.new(getAppContext())
 
@@ -178,6 +181,7 @@ class SaplingParamToolIntegrationTest {
 
     @Test
     @LargeTest
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun fetch_params_incorrect_max_file_size_test() = runTest {
         val saplingParamTool = SaplingParamTool.new(getAppContext())
 
@@ -196,6 +200,7 @@ class SaplingParamToolIntegrationTest {
 
     @Test
     @LargeTest
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun fetch_param_manual_recover_test_from_fetch_params_exception() = runTest {
         val saplingParamTool = SaplingParamTool.new(getAppContext())
 
@@ -225,6 +230,7 @@ class SaplingParamToolIntegrationTest {
 
     @Test
     @LargeTest
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun fetch_param_manual_recover_test_from_validate_params_exception() = runTest {
         val saplingParamTool = SaplingParamTool.new(getAppContext())
 

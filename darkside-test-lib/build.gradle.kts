@@ -12,6 +12,14 @@ android {
         //targetSdk = 30 //Integer.parseInt(project.property("targetSdkVersion"))
         multiDexEnabled = true
     }
+
+    buildTypes {
+        create("benchmark") {
+            // We provide the extra benchmark build type just for benchmarking purposes
+            initWith(buildTypes.getByName("release"))
+            matchingFallbacks += listOf("release")
+        }
+    }
 }
 
 dependencies {

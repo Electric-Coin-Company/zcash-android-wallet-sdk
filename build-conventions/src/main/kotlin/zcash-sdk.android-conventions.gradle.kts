@@ -52,6 +52,32 @@ pluginManager.withPlugin("com.android.library") {
     }
 }
 
+pluginManager.withPlugin("com.android.test") {
+    project.the<com.android.build.gradle.TestExtension>().apply {
+        configureBaseExtension()
+
+        defaultConfig {
+            minSdk = project.property("ANDROID_MIN_BENCHMARK_VERSION").toString().toInt()
+            targetSdk = project.property("ANDROID_TARGET_SDK_VERSION").toString().toInt()
+
+            // The last two are for support of pseudolocales in debug builds.
+            // If we add other localizations, they should be included in this list.
+            // By explicitly setting supported locales, we strip out unused localizations from third party
+            // libraries (e.g. play services)
+            resourceConfigurations.addAll(listOf("en", "en-rUS", "en-rGB", "en-rAU", "en_XA", "ar_XB"))
+
+            testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+            if (project.property("IS_USE_TEST_ORCHESTRATOR").toString().toBoolean()) {
+                testInstrumentationRunnerArguments["clearPackageData"] = "true"
+            }
+        }
+        testCoverage {
+            jacocoVersion = project.property("JACOCO_VERSION").toString()
+        }
+    }
+}
+
 @Suppress("LongMethod")
 fun com.android.build.gradle.BaseExtension.configureBaseExtension() {
     compileSdkVersion(project.property("ANDROID_COMPILE_SDK_VERSION").toString().toInt())
@@ -116,8 +142,7 @@ fun com.android.build.gradle.BaseExtension.configureBaseExtension() {
         kotlinOptions {
             jvmTarget = project.property("ANDROID_JVM_TARGET").toString()
             allWarningsAsErrors = project.property("ZCASH_IS_TREAT_WARNINGS_AS_ERRORS").toString().toBoolean()
-            freeCompilerArgs = freeCompilerArgs + "-opt-in=kotlin.RequiresOptIn" +
-                "-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi" + "-opt-in=kotlinx.coroutines.FlowPreview"
+            freeCompilerArgs = freeCompilerArgs + "-opt-in=kotlin.RequiresOptIn"
         }
     }
 }

@@ -3,7 +3,7 @@ The SDK has a variety of public APIs that should be kept stable for SDK consumer
 
 # Compile Compatibility
 1. Publish the SDK to mavenLocal
-    1. Bump the SDK version in [gradle.properties](../../gradle.properties)
+    1. Bump the SDK version in [gradle.properties](../gradle.properties)
     1. Navigate to the root of the SDK checkout
     1. Run the Gradle task `./gradlew publishToMavenLocal`
 1. Modify the wallet app to build against the new SDK
@@ -20,7 +20,7 @@ The SDK has a variety of public APIs that should be kept stable for SDK consumer
     1. Build the unmodified version of the wallet app
     1. Run the wallet app and create a new wallet
 1. Publish the SDK to mavenLocal
-    1. Bump the SDK version in [gradle.properties](../../gradle.properties)
+    1. Bump the SDK version in [gradle.properties](../gradle.properties)
     1. Navigate to the root of the SDK checkout
     1. Run the Gradle task `./gradlew publishToMavenLocal`
 1. Modify the wallet app to build against the new SDK

@@ -2,6 +2,7 @@ package cash.z.ecc.android.sdk.demoapp.demos.listtransactions
 
 import android.os.Bundle
 import android.view.LayoutInflater
+import android.view.Menu
 import android.view.View
 import android.view.ViewGroup
 import androidx.lifecycle.lifecycleScope
@@ -11,6 +12,7 @@ import cash.z.ecc.android.bip39.toSeed
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor
 import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
+import cash.z.ecc.android.sdk.demoapp.R
 import cash.z.ecc.android.sdk.demoapp.databinding.FragmentListTransactionsBinding
 import cash.z.ecc.android.sdk.demoapp.ext.requireApplicationContext
 import cash.z.ecc.android.sdk.demoapp.util.fromResources
@@ -132,6 +134,11 @@ class ListTransactionsFragment : BaseDemoFragment<FragmentListTransactionsBindin
     // Android Lifecycle overrides
     //
 
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setHasOptionsMenu(true)
+    }
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -145,6 +152,12 @@ class ListTransactionsFragment : BaseDemoFragment<FragmentListTransactionsBindin
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         initTransactionUI()
+    }
+
+    override fun onPrepareOptionsMenu(menu: Menu) {
+        super.onPrepareOptionsMenu(menu)
+        // We rather hide options menu actions while actively using the Synchronizer
+        menu.setGroupVisible(R.id.main_menu_group, false)
     }
 
     override fun onResume() {

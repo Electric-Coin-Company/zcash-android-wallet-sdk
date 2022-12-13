@@ -14,7 +14,8 @@ open class DarksideTestPrerequisites {
     @Before
     fun verifyEmulator() {
         require(isProbablyEmulator(ApplicationProvider.getApplicationContext())) {
-            "Darkside tests are configured to only run on the Android Emulator.  Please see https://github.com/zcash/zcash-android-wallet-sdk/blob/master/docs/tests/Darkside.md"
+            "Darkside tests are configured to only run on the Android Emulator.  Please see https://github" +
+                ".com/zcash/zcash-android-wallet-sdk/blob/master/docs/testing/Darkside.md"
         }
     }
 

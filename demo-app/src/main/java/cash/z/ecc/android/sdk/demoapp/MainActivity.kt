@@ -9,6 +9,7 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.view.inputmethod.InputMethodManager
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.core.content.getSystemService
@@ -36,6 +37,7 @@ class MainActivity :
     private lateinit var appBarConfiguration: AppBarConfiguration
     private lateinit var clipboard: ClipboardManager
     var fabListener: BaseDemoFragment<out ViewBinding>? = null
+    private val sharedViewModel: SharedViewModel by viewModels()
 
     /**
      * The service to use for all demos that interact directly with the service. Since gRPC channels
@@ -101,6 +103,11 @@ class MainActivity :
             runCatching {
                 startActivity(newBrowserIntent("https://faucet.zecpages.com/"))
             }
+            true
+        } else if (item.itemId == R.id.action_reset_sdk) {
+            val navController = findNavController(R.id.nav_host_fragment)
+            navController.navigate(R.id.nav_home)
+            sharedViewModel.resetSDK()
             true
         } else {
             super.onOptionsItemSelected(item)
