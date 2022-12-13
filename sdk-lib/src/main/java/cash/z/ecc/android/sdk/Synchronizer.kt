@@ -441,6 +441,9 @@ interface Synchronizer {
         /**
          * Primary method that SDK clients will use to construct a synchronizer.
          *
+         * If customized initialization is required (e.g. for dependency injection or testing), see
+         * [DefaultSynchronizerFactory].
+         *
          * @param zcashNetwork the network to use.
          * @param alias A string used to segregate multiple wallets in the filesystem.  This implies the string
          * should not contain characters unsuitable for the platform's filesystem.  The default value is
@@ -459,10 +462,6 @@ interface Synchronizer {
          * @throws IllegalStateException If multiple instances of synchronizer with the same network+alias are
          * active at the same time.  Call `close` to finish one synchronizer before starting another one with the same
          * network+alias.
-         */
-        /*
-         * If customized initialization is required (e.g. for dependency injection or testing), see
-         * [DefaultSynchronizerFactory].
          */
         @Suppress("LongParameterList")
         suspend fun new(

@@ -44,7 +44,7 @@ class SharedViewModel(application: Application) : AndroidViewModel(application) 
     // publicly, this is read-only
     val birthdayHeight: StateFlow<BlockHeight?> get() = _blockHeight
 
-    // Note that seed and birthday shouldn't be chanced once a synchronizer is first collected
+    // Note that seed and birthday shouldn't be changed once a synchronizer is first collected
     val synchronizerFlow: StateFlow<Synchronizer?> = callbackFlow<Synchronizer?> {
         // Use a BIP-39 library to convert a seed phrase into a byte array. Most wallets already
         // have the seed stored

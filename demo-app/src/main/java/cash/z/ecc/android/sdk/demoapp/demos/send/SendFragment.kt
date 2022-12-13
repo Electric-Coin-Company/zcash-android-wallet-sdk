@@ -46,7 +46,6 @@ import kotlinx.coroutines.launch
  */
 @Suppress("TooManyFunctions")
 class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
-    private lateinit var synchronizer: Synchronizer
 
     private lateinit var amountInput: TextView
     private lateinit var addressInput: TextView
@@ -243,6 +242,7 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         initSendUi()
+        monitorChanges()
     }
 
     override fun onPrepareOptionsMenu(menu: Menu) {
