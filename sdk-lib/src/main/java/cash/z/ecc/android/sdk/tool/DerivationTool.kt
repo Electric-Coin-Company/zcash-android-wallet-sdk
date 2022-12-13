@@ -105,7 +105,7 @@ object DerivationTool : RustBackendWelding.Derivation {
      * nice to have an annotation like @UsesSystemLibrary for this
      */
     private suspend fun <T> withRustBackendLoaded(block: () -> T): T {
-        RustBackend.rustLibraryLoader.load()
+        RustBackend.loadLibrary()
         return block()
     }
 
