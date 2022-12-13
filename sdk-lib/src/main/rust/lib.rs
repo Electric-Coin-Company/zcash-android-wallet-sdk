@@ -103,7 +103,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_initOnLoad(
     #[cfg(target_os = "android")]
     let android_layer = paranoid_android::layer("cash.z.rust.logs")
         .with_ansi(false)
-        .with_filter(tracing_subscriber::filter::LevelFilter::DEBUG);
+        .with_filter(tracing_subscriber::filter::LevelFilter::INFO);
 
     // Generate Android trace events from `tracing` spans.
     let (trace_event_layer, reload_handle) = reload::Layer::new(utils::trace::Layer::new(None));
