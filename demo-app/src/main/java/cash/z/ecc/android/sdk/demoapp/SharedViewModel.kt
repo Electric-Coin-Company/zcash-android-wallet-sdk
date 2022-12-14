@@ -7,7 +7,9 @@ import cash.z.ecc.android.bip39.Mnemonics
 import cash.z.ecc.android.bip39.toSeed
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.demoapp.util.fromResources
+import cash.z.ecc.android.sdk.ext.BenchmarkingExt
 import cash.z.ecc.android.sdk.ext.onFirst
+import cash.z.ecc.android.sdk.fixture.BlockRangeFixture
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.LightWalletEndpoint
@@ -75,7 +77,11 @@ class SharedViewModel(application: Application) : AndroidViewModel(application) 
                     network,
                     lightWalletEndpoint = LightWalletEndpoint.defaultForNetwork(network),
                     seed = seedBytes,
-                    birthday = birthdayHeight.value
+                    birthday = if (BenchmarkingExt.isBenchmarking()) {
+                        BlockRangeFixture.new().start
+                    } else {
+                        birthdayHeight.value
+                    }
                 )
 
                 send(InternalSynchronizerStatus.Available(synchronizer))
