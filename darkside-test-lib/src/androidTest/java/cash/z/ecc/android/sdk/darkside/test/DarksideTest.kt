@@ -7,7 +7,6 @@ open class DarksideTest : ScopedTest() {
     fun runOnce(block: () -> Unit) {
         if (!ranOnce) {
             sithLord.enterTheDarkside()
-            sithLord.synchronizer.start(classScope)
             block()
             ranOnce = true
         }

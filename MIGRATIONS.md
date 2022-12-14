@@ -1,11 +1,23 @@
 Troubleshooting Migrations
 ==========
 
-Migration to Version 1.10
+Migration to Version 1.11
 ---------------------------------
 The way the SDK is initialized has changed.  The `Initializer` object has been removed and `Synchronizer.new` now takes a longer parameter list which includes the parameters previously passed to `Initializer`.
 
 SDK initialization also now requires access to the seed bytes at two times: 1. during new wallet creation and 2. during upgrade of an existing wallet to SDK 1.10 due to internal data migrations.  To handle case #2, client should wrap `Synchronizer.new()` with a try-catch for `InitializerException.SeedRequired`.  Clients can pass `null` to try to initialize the SDK without the seed, then try again if the exception is thrown to indicate the seed is needed.  This pattern future-proofs initialization, as the seed may be required by future SDK updates.
+
+`Synchronizer.stop()` has been removed.  `Synchronizer.new()` now returns an instance that implements the `Closeable` interface.  This effectively means that calls to `stop()` are replaced with `close()`.  This change also enables greater safety within client applications, as the Closeable interface can be hidden from global synchronizer instances.  For exmaple:
+```
+val synchronizerFlow: Flow<Synchronizer> = callbackFlow<Synchronizer> {
+   val closeableSynchronizer: CloseableSynchronizer = Synchronizer.new(...)
+
+    send(closeableSynchronizer)
+    awaitClose {
+        closeableSynchronizer.close()
+    }
+}
+```
 
 To improve type safety of the public API, Zcash account indexes are now represented by an `Account` object.  The SDK currently only supports the default account, `Account.DEFAULT`.  Migration will effectively require replacing APIs with an account `0` with `Account.DEFAULT`.
 

@@ -40,6 +40,8 @@ Change Log
       - `Initializer.Config.setViewingKeys`
 - `cash.z.ecc.android.sdk`:
   - `Synchronizer.Companion.new` now takes many of the arguments previously passed to `Initializer`. In addition, an optional `seed` argument is required for first-time initialization or if `Synchronizer.new` throws an exception indicating that an internal migration requires the wallet seed.  (This second case will be true the first time existing clients upgrade to this new version of the SDK).
+  - `Synchronizer.new()` now returns an instance that implements the `Closeable` interface.  `Synchronizer.stop()` is effectively renamed to `Synchronizer.close()`
+  - `Synchronizer` ensures that multiple instances cannot be running concurrently with the same network and alias
   - `Synchronizer.sendToAddress` now takes a `UnifiedSpendingKey` instead of an encoded
     Sapling extended spending key, and the `fromAccountIndex` argument is now implicit in
     the `UnifiedSpendingKey`.
@@ -51,6 +53,7 @@ Change Log
 ### Removed
 - `cash.z.ecc.android.sdk`:
   - `Initializer` (use `Synchronizer.new` instead)
+  - `Synchronizer.start()` - Synchronizer is now started automatically when constructing a new instance.
   - `Synchronizer.getAddress` (use `Synchronizer.getUnifiedAddress` instead).
   - `Synchronizer.getShieldedAddress` (use `Synchronizer.getSaplingAddress` instead)
   - `Synchronizer.cancel`

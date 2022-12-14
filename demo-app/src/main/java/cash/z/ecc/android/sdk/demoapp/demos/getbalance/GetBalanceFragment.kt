@@ -4,7 +4,9 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.View
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import cash.z.ecc.android.bip39.Mnemonics
 import cash.z.ecc.android.bip39.toSeed
 import cash.z.ecc.android.sdk.Synchronizer
@@ -15,19 +17,17 @@ import cash.z.ecc.android.sdk.demoapp.databinding.FragmentGetBalanceBinding
 import cash.z.ecc.android.sdk.demoapp.ext.requireApplicationContext
 import cash.z.ecc.android.sdk.demoapp.util.SyncBlockchainBenchmarkTrace
 import cash.z.ecc.android.sdk.demoapp.util.fromResources
-import cash.z.ecc.android.sdk.ext.BenchmarkingExt
 import cash.z.ecc.android.sdk.ext.ZcashSdk
-import cash.z.ecc.android.sdk.ext.collectWith
 import cash.z.ecc.android.sdk.ext.convertZatoshiToZecString
-import cash.z.ecc.android.sdk.fixture.BlockRangeFixture
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.Account
-import cash.z.ecc.android.sdk.model.LightWalletEndpoint
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
-import cash.z.ecc.android.sdk.model.defaultForNetwork
 import cash.z.ecc.android.sdk.tool.DerivationTool
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.launch
 
 /**
@@ -37,8 +37,6 @@ import kotlinx.coroutines.launch
 @Suppress("TooManyFunctions")
 class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
 
-    private lateinit var synchronizer: Synchronizer
-
     override fun inflateBinding(layoutInflater: LayoutInflater): FragmentGetBalanceBinding =
         FragmentGetBalanceBinding.inflate(layoutInflater)
 
@@ -46,7 +44,6 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
         super.onCreate(savedInstanceState)
         reportTraceEvent(SyncBlockchainBenchmarkTrace.Event.BALANCE_SCREEN_START)
         setHasOptionsMenu(true)
-        setup()
     }
 
     override fun onPrepareOptionsMenu(menu: Menu) {
@@ -60,28 +57,6 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
         reportTraceEvent(SyncBlockchainBenchmarkTrace.Event.BALANCE_SCREEN_END)
     }
 
-    private fun setup() {
-        // defaults to the value of `DemoConfig.seedWords` but can also be set by the user
-        val seedPhrase = sharedViewModel.seedPhrase.value
-
-        // Use a BIP-39 library to convert a seed phrase into a byte array. Most wallets already
-        // have the seed stored
-        val seed = Mnemonics.MnemonicCode(seedPhrase).toSeed()
-
-        val network = ZcashNetwork.fromResources(requireApplicationContext())
-        synchronizer = Synchronizer.newBlocking(
-            requireApplicationContext(),
-            network,
-            lightWalletEndpoint = LightWalletEndpoint.defaultForNetwork(network),
-            seed = seed,
-            birthday = if (BenchmarkingExt.isBenchmarking()) {
-                BlockRangeFixture.new().start
-            } else {
-                sharedViewModel.birthdayHeight.value
-            }
-        )
-    }
-
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
@@ -92,26 +67,62 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
         binding.shield.apply {
             setOnClickListener {
                 lifecycleScope.launch {
-                    synchronizer.shieldFunds(DerivationTool.deriveUnifiedSpendingKey(seed, network, Account.DEFAULT))
+                    sharedViewModel.synchronizerFlow.value?.shieldFunds(
+                        DerivationTool.deriveUnifiedSpendingKey(
+                            seed,
+                            network,
+                            Account.DEFAULT
+                        )
+                    )
                 }
             }
         }
-    }
 
-    override fun onResume() {
-        super.onResume()
-        // the lifecycleScope is used to dispose of the synchronize when the fragment dies
-        synchronizer.start(lifecycleScope)
         monitorChanges()
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     private fun monitorChanges() {
-        synchronizer.status.collectWith(lifecycleScope, ::onStatus)
-        synchronizer.progress.collectWith(lifecycleScope, ::onProgress)
-        synchronizer.processorInfo.collectWith(lifecycleScope, ::onProcessorInfoUpdated)
-        synchronizer.orchardBalances.collectWith(lifecycleScope, ::onOrchardBalance)
-        synchronizer.saplingBalances.collectWith(lifecycleScope, ::onSaplingBalance)
-        synchronizer.transparentBalances.collectWith(lifecycleScope, ::onTransparentBalance)
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    sharedViewModel.synchronizerFlow
+                        .filterNotNull()
+                        .flatMapLatest { it.status }
+                        .collect { onStatus(it) }
+                }
+                launch {
+                    sharedViewModel.synchronizerFlow
+                        .filterNotNull()
+                        .flatMapLatest { it.progress }
+                        .collect { onProgress(it) }
+                }
+                launch {
+                    sharedViewModel.synchronizerFlow
+                        .filterNotNull()
+                        .flatMapLatest { it.processorInfo }
+                        .collect { onProcessorInfoUpdated(it) }
+                }
+                launch {
+                    sharedViewModel.synchronizerFlow
+                        .filterNotNull()
+                        .flatMapLatest { it.saplingBalances }
+                        .collect { onSaplingBalance(it) }
+                }
+                launch {
+                    sharedViewModel.synchronizerFlow
+                        .filterNotNull()
+                        .flatMapLatest { it.orchardBalances }
+                        .collect { onOrchardBalance(it) }
+                }
+                launch {
+                    sharedViewModel.synchronizerFlow
+                        .filterNotNull()
+                        .flatMapLatest { it.transparentBalances }
+                        .collect { onTransparentBalance(it) }
+                }
+            }
+        }
     }
 
     private fun onOrchardBalance(
@@ -181,9 +192,11 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
         traceEvents?.forEach { reportTraceEvent(it) }
 
         binding.textStatus.text = "Status: $status"
-        onOrchardBalance(synchronizer.orchardBalances.value)
-        onSaplingBalance(synchronizer.saplingBalances.value)
-        onTransparentBalance(synchronizer.transparentBalances.value)
+        sharedViewModel.synchronizerFlow.value?.let { synchronizer ->
+            onOrchardBalance(synchronizer.orchardBalances.value)
+            onSaplingBalance(synchronizer.saplingBalances.value)
+            onTransparentBalance(synchronizer.transparentBalances.value)
+        }
     }
 
     @Suppress("MagicNumber")

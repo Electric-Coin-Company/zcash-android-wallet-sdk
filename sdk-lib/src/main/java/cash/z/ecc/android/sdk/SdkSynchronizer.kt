@@ -17,7 +17,6 @@ import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Scanned
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Scanning
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Stopped
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Validating
-import cash.z.ecc.android.sdk.exception.SynchronizerException
 import cash.z.ecc.android.sdk.ext.ConsensusBranchId
 import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.internal.SaplingParamTool
@@ -85,8 +84,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import java.io.File
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.CoroutineContext
-import kotlin.coroutines.EmptyCoroutineContext
 
 /**
  * A Synchronizer that attempts to remain operational, despite any number of errors that can occur.
@@ -96,18 +95,90 @@ import kotlin.coroutines.EmptyCoroutineContext
  * pieces can be tied together. Its goal is to allow a developer to focus on their app rather than
  * the nuances of how Zcash works.
  *
+ * @property synchronizerKey Identifies the synchronizer's on-disk state
  * @property storage exposes flows of wallet transaction information.
  * @property txManager manages and tracks outbound transactions.
  * @property processor saves the downloaded compact blocks to the cache and then scans those blocks for
  * data related to this wallet.
  */
 @Suppress("TooManyFunctions")
-class SdkSynchronizer internal constructor(
+class SdkSynchronizer private constructor(
+    private val synchronizerKey: SynchronizerKey,
     private val storage: DerivedDataRepository,
     private val txManager: OutboundTransactionManager,
     val processor: CompactBlockProcessor,
     private val rustBackend: RustBackend
-) : Synchronizer {
+) : CloseableSynchronizer {
+
+    companion object {
+        private sealed class InstanceState {
+            object Active : InstanceState()
+            data class ShuttingDown(val job: Job) : InstanceState()
+        }
+
+        private val instances: MutableMap<SynchronizerKey, InstanceState> =
+            ConcurrentHashMap<SynchronizerKey, InstanceState>()
+
+        /**
+         * @throws IllegalStateException If multiple instances of synchronizer with the same network+alias are
+         * active at the same time.  Call `close` to finish one synchronizer before starting another one with the same
+         * network+alias.
+         */
+        @Suppress("LongParameterList")
+        internal suspend fun new(
+            zcashNetwork: ZcashNetwork,
+            alias: String,
+            repository: DerivedDataRepository,
+            txManager: OutboundTransactionManager,
+            processor: CompactBlockProcessor,
+            rustBackend: RustBackend
+        ): CloseableSynchronizer {
+            val synchronizerKey = SynchronizerKey(zcashNetwork, alias)
+
+            waitForShutdown(synchronizerKey)
+            checkForExistingSynchronizers(synchronizerKey)
+
+            return SdkSynchronizer(
+                synchronizerKey,
+                repository,
+                txManager,
+                processor,
+                rustBackend
+            ).apply {
+                instances[synchronizerKey] = InstanceState.Active
+
+                start()
+            }
+        }
+
+        private suspend fun waitForShutdown(synchronizerKey: SynchronizerKey) {
+            instances[synchronizerKey]?.let {
+                if (it is InstanceState.ShuttingDown) {
+                    twig("Waiting for prior synchronizer instance to shut down") // $NON-NLS-1$
+                    it.job.join()
+                }
+            }
+        }
+
+        private fun checkForExistingSynchronizers(synchronizerKey: SynchronizerKey) {
+            check(!instances.containsKey(synchronizerKey)) {
+                "Another synchronizer with $synchronizerKey is currently active" // $NON-NLS-1$
+            }
+        }
+
+        internal suspend fun erase(
+            appContext: Context,
+            network: ZcashNetwork,
+            alias: String
+        ): Boolean {
+            val key = SynchronizerKey(network, alias)
+
+            waitForShutdown(key)
+            checkForExistingSynchronizers(key)
+
+            return DatabaseCoordinator.getInstance(appContext).deleteDatabases(network, alias)
+        }
+    }
 
     // pools
     private val _orchardBalances = MutableStateFlow<WalletBalance?>(null)
@@ -116,25 +187,7 @@ class SdkSynchronizer internal constructor(
 
     private val _status = MutableStateFlow<Synchronizer.Status>(DISCONNECTED)
 
-    /**
-     * The lifespan of this Synchronizer. This scope is initialized once the Synchronizer starts
-     * because it will be a child of the parentScope that gets passed into the [start] function.
-     * Everything launched by this Synchronizer will be cancelled once the Synchronizer or its
-     * parentScope stops. This coordinates with [isStarted] so that it fails early
-     * rather than silently, whenever the scope is used before the Synchronizer has been started.
-     */
-    var coroutineScope: CoroutineScope = CoroutineScope(EmptyCoroutineContext)
-        get() {
-            if (!isStarted) {
-                throw SynchronizerException.NotYetStarted
-            } else {
-                return field
-            }
-        }
-        set(value) {
-            field = value
-            if (value.coroutineContext !is EmptyCoroutineContext) isStarted = true
-        }
+    var coroutineScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     /**
      * The channel that this Synchronizer uses to communicate with lightwalletd. In most cases, this
@@ -144,8 +197,6 @@ class SdkSynchronizer internal constructor(
      * (such as darksidewalletd) because channels are heavyweight.
      */
     val channel: ManagedChannel get() = (processor.downloader.lightWalletService as LightWalletGrpcService).channel
-
-    override var isStarted = false
 
     //
     // Balances
@@ -256,54 +307,31 @@ class SdkSynchronizer internal constructor(
     override val latestBirthdayHeight
         get() = processor.birthdayHeight
 
-    override suspend fun prepare(): Synchronizer = apply {
-        // Do nothing; this could likely be removed
+    internal fun start() {
+        coroutineScope.onReady()
     }
 
-    /**
-     * Starts this synchronizer within the given scope. For simplicity, attempting to start an
-     * instance that has already been started will throw a [SynchronizerException.FalseStart]
-     * exception. This reduces the complexity of managing resources that must be recycled. Instead,
-     * each synchronizer is designed to have a long lifespan and should be started from an activity,
-     * application or session.
-     *
-     * @param parentScope the scope to use for this synchronizer, typically something with a
-     * lifecycle such as an Activity for single-activity apps or a logged in user session. This
-     * scope is only used for launching this synchronizer's job as a child. If no scope is provided,
-     * then this synchronizer and all of its coroutines will run until stop is called, which is not
-     * recommended since it can leak resources. That type of behavior is more useful for tests.
-     *
-     * @return an instance of this class so that this function can be used fluidly.
-     */
-    override fun start(parentScope: CoroutineScope?): Synchronizer {
-        if (isStarted) throw SynchronizerException.FalseStart
-        // base this scope on the parent so that when the parent's job cancels, everything here
-        // cancels as well also use a supervisor job so that one failure doesn't bring down the
-        // whole synchronizer
-        val supervisorJob = SupervisorJob(parentScope?.coroutineContext?.get(Job))
-        CoroutineScope(supervisorJob + Dispatchers.Main).let { scope ->
-            coroutineScope = scope
-            scope.onReady()
-        }
-        return this
-    }
+    override fun close() {
+        // Note that stopping will continue asynchronously.  Race conditions with starting a new synchronizer are
+        // avoided with a delay during startup.
 
-    /**
-     * Stop this synchronizer and all of its child jobs. Once a synchronizer has been stopped it
-     * should not be restarted and attempting to do so will result in an error. Also, this function
-     * will throw an exception if the synchronizer was never previously started.
-     */
-    override fun stop() {
-        coroutineScope.launch {
+        val shutdownJob = coroutineScope.launch {
             // log everything to help troubleshoot shutdowns that aren't graceful
             twig("Synchronizer::stop: STARTING")
             twig("Synchronizer::stop: processor.stop()")
             processor.stop()
+        }
+
+        instances[synchronizerKey] = InstanceState.ShuttingDown(shutdownJob)
+
+        shutdownJob.invokeOnCompletion {
             twig("Synchronizer::stop: coroutineScope.cancel()")
             coroutineScope.cancel()
             twig("Synchronizer::stop: _status.cancel()")
             _status.value = STOPPED
             twig("Synchronizer::stop: COMPLETE")
+
+            instances.remove(synchronizerKey)
         }
     }
 
@@ -407,7 +435,6 @@ class SdkSynchronizer internal constructor(
 
     private fun CoroutineScope.onReady() = launch(CoroutineExceptionHandler(::onCriticalError)) {
         twig("Preparing to start...")
-        prepare()
 
         twig("Synchronizer (${this@SdkSynchronizer}) Ready. Starting processor!")
         var lastScanTime = 0L
@@ -725,25 +752,6 @@ class SdkSynchronizer internal constructor(
             serverBranchId?.let { ConsensusBranchId.fromHex(it) }
         )
     }
-
-    interface Erasable {
-        /**
-         * Erase content related to this SDK.
-         *
-         * @param appContext the application context.
-         * @param network the network corresponding to the data being erased. Data is segmented by
-         * network in order to prevent contamination.
-         * @param alias identifier for SDK content. It is possible for multiple synchronizers to
-         * exist with different aliases.
-         *
-         * @return true when content was found for the given alias. False otherwise.
-         */
-        suspend fun erase(
-            appContext: Context,
-            network: ZcashNetwork,
-            alias: String = ZcashSdk.DEFAULT_ALIAS
-        ): Boolean
-    }
 }
 
 /**
@@ -752,20 +760,6 @@ class SdkSynchronizer internal constructor(
  * See the helper methods for generating default values.
  */
 internal object DefaultSynchronizerFactory {
-
-    fun new(
-        repository: DerivedDataRepository,
-        txManager: OutboundTransactionManager,
-        processor: CompactBlockProcessor,
-        rustBackend: RustBackend
-    ): Synchronizer {
-        return SdkSynchronizer(
-            repository,
-            txManager,
-            processor,
-            rustBackend
-        )
-    }
 
     internal suspend fun defaultRustBackend(
         context: Context,
@@ -850,3 +844,5 @@ internal object DefaultSynchronizerFactory {
         rustBackend.birthdayHeight
     )
 }
+
+internal data class SynchronizerKey(val zcashNetwork: ZcashNetwork, val alias: String)

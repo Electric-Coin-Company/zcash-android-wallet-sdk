@@ -1,29 +1,20 @@
 package cash.z.ecc.android.sdk.integration
 
 import androidx.test.core.app.ApplicationProvider
-import androidx.test.filters.LargeTest
-import androidx.test.filters.MediumTest
+import androidx.test.filters.SmallTest
 import cash.z.ecc.android.sdk.DefaultSynchronizerFactory
-import cash.z.ecc.android.sdk.annotation.MaintainedTest
-import cash.z.ecc.android.sdk.annotation.TestPurpose
 import cash.z.ecc.android.sdk.internal.SaplingParamTool
 import cash.z.ecc.android.sdk.internal.db.DatabaseCoordinator
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.util.TestWallet
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertTrue
-import org.junit.Ignore
 import org.junit.Test
 
-/**
- * This test is intended to run to make sure that basic things are functional and pinpoint what is
- * not working. It was originally developed after a major refactor to find what broke.
- */
-@MaintainedTest(TestPurpose.COMMIT)
-@MediumTest
-class SmokeTest {
+class SynchronizerFactoryTest {
 
     @Test
+    @SmallTest
     fun testFilePaths() {
         val rustBackend = runBlocking {
             DefaultSynchronizerFactory.defaultRustBackend(
@@ -52,18 +43,5 @@ class SmokeTest {
                 "no_backup/co.electricoin.zcash"
             )
         )
-    }
-
-    // This test takes an extremely long time
-    // Does its runtime grow over time based on growth of the blockchain?
-    @Test
-    @LargeTest
-    @Ignore("This test is extremely slow and times out before the timeout given")
-    fun testSync() = runBlocking<Unit> {
-        wallet.sync(300_000L)
-    }
-
-    companion object {
-        val wallet = TestWallet(TestWallet.Backups.SAMPLE_WALLET)
     }
 }
