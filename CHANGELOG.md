@@ -49,6 +49,11 @@ Change Log
     encoded Sapling and transparent keys.
   - `Synchronizer` methods that previously took an `Int` for account index now take an `Account` object
   - `Synchronizer.sendToAddress()` and `Synchronizer.shieldFunds()` return flows that can now be collected multiple times.  Prior versions of the SDK had a bug that could submit transactions multiple times if the flow was collected more than once.
+- Updated dependencies:
+  - Kotlin 1.7.21
+  - AndroidX  
+  - etc.
+- Updated checkpoints
 
 ### Removed
 - `cash.z.ecc.android.sdk`:
