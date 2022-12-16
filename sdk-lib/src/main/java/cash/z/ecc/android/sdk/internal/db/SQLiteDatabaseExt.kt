@@ -34,7 +34,7 @@ internal fun <T> SQLiteDatabase.queryAndMap(
     // TODO [#703]: Support blobs for argument binding
     // TODO [#703]: https://github.com/zcash/zcash-android-wallet-sdk/issues/703
     val mappedSelectionArgs = selectionArgs?.onEach {
-        require(it is ByteArray) {
+        require(it !is ByteArray) {
             "ByteArray is not supported"
         }
     }?.map { it.toString() }?.toTypedArray()
