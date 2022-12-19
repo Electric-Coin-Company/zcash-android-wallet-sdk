@@ -145,45 +145,54 @@ private fun SendMainContent(
             label = { Text(stringResource(id = R.string.send_to_address)) }
         )
 
-        Row(
+        val zcashNetwork = ZcashNetwork.fromResources(context)
+        Column(
             Modifier
                 .fillMaxWidth()
-                .horizontalScroll(rememberScrollState())
         ) {
-            val zcashNetwork = ZcashNetwork.fromResources(context)
+            // Alice's addresses
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+            ) {
+                Button({ recipientAddressString = WalletFixture.Alice.getAddresses(zcashNetwork).unified }) {
+                    Text(text = stringResource(id = R.string.send_alyssa_unified))
+                }
 
-            Button({ recipientAddressString = WalletFixture.Alice.getAddresses(zcashNetwork).unified }) {
-                Text(text = stringResource(id = R.string.send_alyssa_unified))
+                Spacer(Modifier.size(8.dp))
+
+                Button({ recipientAddressString = WalletFixture.Alice.getAddresses(zcashNetwork).sapling }) {
+                    Text(text = stringResource(id = R.string.send_alyssa_sapling))
+                }
+
+                Spacer(Modifier.size(8.dp))
+
+                Button({ recipientAddressString = WalletFixture.Alice.getAddresses(zcashNetwork).transparent }) {
+                    Text(text = stringResource(id = R.string.send_alyssa_transparent))
+                }
             }
+            // Bob's addresses
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+            ) {
+                Button({ recipientAddressString = WalletFixture.Bob.getAddresses(zcashNetwork).unified }) {
+                    Text(text = stringResource(id = R.string.send_ben_unified))
+                }
 
-            Spacer(Modifier.size(8.dp))
+                Spacer(Modifier.size(8.dp))
 
-            Button({ recipientAddressString = WalletFixture.Alice.getAddresses(zcashNetwork).sapling }) {
-                Text(text = stringResource(id = R.string.send_alyssa_sapling))
-            }
+                Button({ recipientAddressString = WalletFixture.Bob.getAddresses(zcashNetwork).sapling }) {
+                    Text(text = stringResource(id = R.string.send_ben_sapling))
+                }
 
-            Spacer(Modifier.size(8.dp))
+                Spacer(Modifier.size(8.dp))
 
-            Button({ recipientAddressString = WalletFixture.Alice.getAddresses(zcashNetwork).transparent }) {
-                Text(text = stringResource(id = R.string.send_alyssa_transparent))
-            }
-
-            Spacer(Modifier.size(8.dp))
-
-            Button({ recipientAddressString = WalletFixture.Bob.getAddresses(zcashNetwork).unified }) {
-                Text(text = stringResource(id = R.string.send_ben_unified))
-            }
-
-            Spacer(Modifier.size(8.dp))
-
-            Button({ recipientAddressString = WalletFixture.Bob.getAddresses(zcashNetwork).sapling }) {
-                Text(text = stringResource(id = R.string.send_ben_sapling))
-            }
-
-            Spacer(Modifier.size(8.dp))
-
-            Button({ recipientAddressString = WalletFixture.Bob.getAddresses(zcashNetwork).transparent }) {
-                Text(text = stringResource(id = R.string.send_ben_transparent))
+                Button({ recipientAddressString = WalletFixture.Bob.getAddresses(zcashNetwork).transparent }) {
+                    Text(text = stringResource(id = R.string.send_ben_transparent))
+                }
             }
         }
 
