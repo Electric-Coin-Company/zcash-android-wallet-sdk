@@ -1,10 +1,18 @@
 package cash.z.ecc.android.sdk.demoapp.ui.screen.seed.view
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import cash.z.ecc.android.sdk.demoapp.R
@@ -26,13 +34,44 @@ fun ComposablePreview() {
 }
 
 @Composable
+@OptIn(ExperimentalMaterial3Api::class)
 fun Seed(
     zcashNetwork: ZcashNetwork,
     onExistingWallet: (PersistableWallet) -> Unit,
     onNewWallet: () -> Unit
 ) {
-    Column {
-        Text(text = stringResource(R.string.configure_seed))
+    Scaffold(topBar = {
+        ConfigureSeedTopAppBar()
+    }) { paddingValues ->
+        ConfigureSeedMainContent(
+            paddingValues = paddingValues,
+            zcashNetwork = zcashNetwork,
+            onExistingWallet = onExistingWallet,
+            onNewWallet = onNewWallet
+        )
+    }
+}
+
+@Composable
+@OptIn(ExperimentalMaterial3Api::class)
+private fun ConfigureSeedTopAppBar() {
+    TopAppBar(
+        title = { Text(text = stringResource(id = R.string.configure_seed)) }
+    )
+}
+
+@Composable
+private fun ConfigureSeedMainContent(
+    paddingValues: PaddingValues,
+    zcashNetwork: ZcashNetwork,
+    onExistingWallet: (PersistableWallet) -> Unit,
+    onNewWallet: () -> Unit
+) {
+    Column(
+        Modifier
+            .verticalScroll(rememberScrollState())
+            .padding(top = paddingValues.calculateTopPadding())
+    ) {
         Button(
             onClick = {
                 val newWallet = PersistableWallet(zcashNetwork, null, SeedPhrase.new(WalletFixture.Alice.seedPhrase))
