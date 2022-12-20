@@ -1,6 +1,6 @@
 package cash.z.ecc.android.sdk.internal.storage.block
 
-import cash.z.ecc.android.sdk.ext.toHex
+import androidx.annotation.VisibleForTesting
 import cash.z.ecc.android.sdk.internal.ext.createNewFileSuspend
 import cash.z.ecc.android.sdk.internal.ext.deleteSuspend
 import cash.z.ecc.android.sdk.internal.ext.listFilesSuspend
@@ -12,15 +12,18 @@ import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.internal.repository.CompactBlockRepository
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.jni.RustBackend
+import cash.z.ecc.android.sdk.jni.RustBackendWelding
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.wallet.sdk.rpc.CompactFormats.CompactBlock
 import java.io.File
+import java.io.IOException
+import java.util.Locale
 
 internal class FileCompactBlockRepository(
     private val network: ZcashNetwork,
     private val cacheDirectory: File,
-    private val rustBackend: RustBackend
+    private val rustBackend: RustBackendWelding
 ) : CompactBlockRepository {
 
     override suspend fun getLatestHeight(): BlockHeight? {
@@ -37,29 +40,23 @@ internal class FileCompactBlockRepository(
             .let { BlockHeight.new(network, it) }
     }
 
-    override suspend fun findCompactBlock(height: BlockHeight): CompactBlock? =
-        cacheDirectory.listFilesSuspend()
+    override suspend fun findCompactBlock(height: BlockHeight): CompactBlock? = //probably dont need
+        File(cacheDirectory, "blocks").listFilesSuspend()
             ?.find { it.getBlockHeight() == height.value }
             ?.let { CompactBlock.parseFrom(it.readBytesSuspend()) }
-
-    //naming conventions HEIGHT-BLOCKHASHHEX-block
+    
     override suspend fun write(result: Sequence<CompactBlock>): Int {
         var count = 0
         val blocksDirectory = File(cacheDirectory, "blocks")
         val metaDataBuffer = mutableListOf<JniBlockMeta>()
 
         result.forEach { block ->
-            //create temporary file
-            val tempFileName = "${block.createFilename()}.tmp"
-            val tempFile = File(blocksDirectory, tempFileName)
-            tempFile.createNewFileSuspend()
+            val tmpFile = createTemporaryFile(block, blocksDirectory)
             //write compact block bytes
-            tempFile.writeBytesSuspend(block.toByteArray())
+            tmpFile.writeBytesSuspend(block.toByteArray())
             //buffer metadata
             metaDataBuffer.add(block.toJniMetaData())
-            //rename the file
-            val newFile = File(tempFile.absolutePath.dropLast(4))
-            tempFile.renameToSuspend(newFile)
+            tmpFile.finalizeFile()
             count++
         }
 
@@ -69,8 +66,27 @@ internal class FileCompactBlockRepository(
         return count
     }
 
+    @VisibleForTesting
+    private suspend fun createTemporaryFile(block: CompactBlock, blocksDirectory: File): File {
+        val tempFileName = "${block.createFilename()}.tmp"
+        val tmpFile = File(blocksDirectory, tempFileName)
+        if (tmpFile.createNewFileSuspend()) {
+            return tmpFile
+        } else {
+            // TODO what to do here ???
+            throw IOException("File already exists")
+        }
+    }
+
+    @VisibleForTesting
+    private suspend fun File.finalizeFile(){
+        //rename the file
+        val newFile = File(absolutePath.dropLast(4))
+        renameToSuspend(newFile)
+    }
+
     override suspend fun rewindTo(height: BlockHeight) {
-        cacheDirectory.listFilesSuspend()
+        File(cacheDirectory, "blocks").listFilesSuspend()
             ?.filter { it.getBlockHeight() > height.value }
             ?.forEach { it.deleteSuspend() }
     }
@@ -92,6 +108,14 @@ internal class FileCompactBlockRepository(
             orchardOutputsCount = network.orchardActivationHeight.value
         )
 
+    private fun ByteArray.toHex(): String {
+        val sb = StringBuilder(size * 2)
+        for (b in this) {
+            sb.append(String.format(Locale.ROOT, "%02x", b).reversed())
+        }
+        return sb.reverse().toString()
+    }
+
     companion object {
 
         /**
@@ -103,9 +127,9 @@ internal class FileCompactBlockRepository(
             rustBackend: RustBackend
         ): FileCompactBlockRepository {
             twig("${rustBackend.fsBlockDbRoot.absolutePath} \n  ${rustBackend.dataDbFile.absolutePath}")
-
             // create cache directories
             File(cacheDirectory, "blocks").mkdirsSuspend()
+            rustBackend.initBlockMetaDb()
 
             return FileCompactBlockRepository(zcashNetwork, cacheDirectory, rustBackend)
         }
