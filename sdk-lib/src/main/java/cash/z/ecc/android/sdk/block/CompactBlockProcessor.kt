@@ -227,13 +227,13 @@ class CompactBlockProcessor internal constructor(
                         val napTime = calculatePollInterval()
                         twig(
                             "$summary${
-                            if (result == BlockProcessingResult.FailedEnhance) {
-                                " (but there were" +
-                                    " enhancement errors! We ignore those, for now. Memos in this block range are" +
-                                    " probably missing! This will be improved in a future release.)"
-                            } else {
-                                ""
-                            }
+                                if (result == BlockProcessingResult.FailedEnhance) {
+                                    " (but there were" +
+                                        " enhancement errors! We ignore those, for now. Memos in this block range are" +
+                                        " probably missing! This will be improved in a future release.)"
+                                } else {
+                                    ""
+                                }
                             }! Sleeping" +
                                 " for ${napTime}ms (latest height: ${currentInfo.networkBlockHeight})."
                         )
@@ -932,7 +932,7 @@ class CompactBlockProcessor internal constructor(
                 ?: repository.findBlockHash(height)
             twig(
                 "block: $height\thash=${hash?.toHexReversed()} \tprevHash=${
-                block?.prevHash?.toByteArray()?.toHexReversed()
+                    block?.prevHash?.toByteArray()?.toHexReversed()
                 }"
             )
         }

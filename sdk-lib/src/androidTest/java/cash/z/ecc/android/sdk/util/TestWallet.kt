@@ -166,6 +166,9 @@ class TestWallet(
         }
     }
 
+    // TODO [843]: Ktlint 0.48.1 (remove this suppress)
+    // TODO [843]: https://github.com/zcash/zcash-android-wallet-sdk/issues/843
+    @Suppress("ktlint:no-semi")
     enum class Backups(val seedPhrase: String, val testnetBirthday: BlockHeight, val mainnetBirthday: BlockHeight) {
         // TODO: get the proper birthday values for these wallets
         DEFAULT(
@@ -207,7 +210,6 @@ class TestWallet(
                 1_330_190
             ),
             BlockHeight.new(ZcashNetwork.Mainnet, 1_000_000)
-        )
-        ;
+        );
     }
 }
