@@ -9,8 +9,10 @@ import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.test.getAppContext
 import cash.z.ecc.fixture.DatabaseNameFixture
 import cash.z.ecc.fixture.DatabasePathFixture
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -21,6 +23,9 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import java.io.File
+import java.util.concurrent.CountDownLatch
+import kotlin.test.Ignore
+import kotlin.time.Duration.Companion.milliseconds
 
 class DatabaseCoordinatorTest {
 
@@ -42,17 +47,16 @@ class DatabaseCoordinatorTest {
 
     /**
      * Sanity check of the database coordinator instance and its thread-safe implementation. Our aim here is to run
-     * two jobs in parallel (the second one runs immediately after the first was started) to test mutex
+     * two jobs in parallel (the second one runs immediately right after the first was started) to test mutex
      * implementation and correct DatabaseCoordinator function call result.
      *
-     * We use CoroutineStart.UNDISPATCHED to immediately run the first created job. We use runBlocking instead of
-     * runTest to be able to provide a tiny delay between the two jobs or to return the block result to stress test.
-     * Our goal here is to run these two jobs in parallel, and also to have the first one access the shared resource
-     * (DatabaseCoordinator) first. We add checks to ensure that these two jobs really run together and to avoid
-     * theirs serialization. If any of these conditions do not succeed we claim the test iteration as invalid and the
-     * test returns false.
+     * We use runBlocking instead of runTest to be able to provide a tiny delays. We also add CountDownLatch to have
+     * the parallel jobs prepared and started at the same time. Our goal here is to run these two jobs in parallel
+     * and also to have the first one access the shared resource (DatabaseCoordinator) first. We add checks to ensure
+     * that these two jobs really run together and to avoid theirs serialization. If any of these conditions do not
+     * succeed we claim the test iteration as invalid and the test returns false.
      *
-     * If the conditions succeed we approach to check if the second job changed the shared resource correctly.
+     * Then if the conditions succeed we approach to check if the second job changed the shared resource correctly.
      *
      * @return true in case of job conditions succeed and false otherwise
      */
@@ -62,8 +66,13 @@ class DatabaseCoordinatorTest {
             secondJobValidity = true,
             resultFile = null
         )
+        val coroutineScope = CoroutineScope(Dispatchers.IO)
+        val jobsLatch = CountDownLatch(3)
 
-        val firstJob = launch(start = CoroutineStart.UNDISPATCHED) {
+        val firstJob = coroutineScope.launch {
+            jobsLatch.countDown()
+            jobsLatch.await()
+
             val firstResultFile = dbCoordinator.cacheDbFile(
                 DatabaseNameFixture.TEST_DB_NETWORK,
                 DatabaseNameFixture.TEST_DB_ALIAS
@@ -76,11 +85,10 @@ class DatabaseCoordinatorTest {
             testResult.resultFile = firstResultFile
         }
 
-        // Small delay to support the need for running the second job right after the first one starts. Note this
-        // works well on local emulators, but not on CI emulators.
-        // delay(1)
+        val secondJob = coroutineScope.launch {
+            jobsLatch.countDown()
+            jobsLatch.await()
 
-        val secondJob = launch(start = CoroutineStart.UNDISPATCHED) {
             // We check here if the first job is still running and its result is not already proceeded
             if (!firstJob.isActive || testResult.resultFile != null) {
                 testResult.secondJobValidity = false
@@ -92,6 +100,10 @@ class DatabaseCoordinatorTest {
                 "TestZcashSdk"
             )
         }
+
+        // Small delay to ensure both jobs are prepared and we can start them at the same time
+        delay(20.milliseconds)
+        jobsLatch.countDown()
 
         // Wait until both jobs are done
         joinAll(firstJob, secondJob)
@@ -114,13 +126,14 @@ class DatabaseCoordinatorTest {
     }
 
     /**
-     * This stress test runs its subtest repeatedly and counts its failed iterations. If it exceeds the allowed fail
-     * threshold, then we claim this test as unsuccessful.
+     * This stress test runs its subtest repeatedly and counts its failed iterations. If it exceeds the allowed
+     * valid iterations threshold, then we claim this test as unsuccessful.
      *
      * According to manual testing, the valid tests ratio is around 90-99% when running on local emulators or
      * physical devices. But on CI we get about 60-70% valid tests ratio.
      */
     @FlakyTest
+    @Ignore("Run this test only against a local device, as it behaves nondeterministic while running in CI.")
     @Test
     @MediumTest
     fun mutex_stress_test() {
