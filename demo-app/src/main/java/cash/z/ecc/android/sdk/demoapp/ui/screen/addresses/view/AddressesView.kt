@@ -46,6 +46,8 @@ fun Addresses(
     Scaffold(topBar = {
         AddressesTopAppBar(onBack)
     }) { paddingValues ->
+        // TODO [#846]: Slow addresses providing
+        // TODO [#846]: https://github.com/zcash/zcash-android-wallet-sdk/issues/846
         val walletAddresses = flow {
             emit(WalletAddresses.new(synchronizer))
         }.collectAsState(
