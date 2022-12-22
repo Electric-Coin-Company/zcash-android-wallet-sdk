@@ -1,10 +1,10 @@
 package cash.z.wallet.sdk.sample.demoapp.model
 
 import androidx.test.filters.SmallTest
-import cash.z.ecc.sdk.ext.ui.R
-import cash.z.ecc.sdk.ext.ui.ZecStringExt
-import cash.z.ecc.sdk.ext.ui.test.getStringResourceWithArgs
+import cash.z.ecc.android.sdk.demoapp.R
+import cash.z.ecc.android.sdk.demoapp.model.ZecStringExt
 import cash.z.wallet.sdk.sample.demoapp.fixture.MonetarySeparatorsFixture
+import cash.z.wallet.sdk.sample.demoapp.ui.common.getStringResourceWithArgs
 import org.junit.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull

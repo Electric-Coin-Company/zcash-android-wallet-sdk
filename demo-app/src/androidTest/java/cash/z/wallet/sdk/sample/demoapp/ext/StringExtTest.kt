@@ -1,5 +1,6 @@
 package cash.z.wallet.sdk.sample.demoapp.ext
 
+import cash.z.ecc.android.sdk.demoapp.ext.sizeInUtf8Bytes
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

@@ -1,8 +1,10 @@
 package cash.z.ecc.android.sdk.demoapp
 
+import android.annotation.TargetApi
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.os.Build
 import androidx.activity.viewModels
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.compose.ExperimentalLifecycleComposeApi
@@ -105,6 +107,9 @@ private fun NavHostController.popBackStackJustOnce(currentRouteToBePopped: Strin
     popBackStack()
 }
 
+// Note: this requires API level 23 (current min is 21 for the Demo-app). We should address this requirement, or set
+// our Demo-app min to 23
+@TargetApi(Build.VERSION_CODES.M)
 fun copyToClipboard(context: Context, tag: String, textToCopy: String) {
     val clipboardManager = context.getSystemService(ClipboardManager::class.java)
     val data = ClipData.newPlainText(

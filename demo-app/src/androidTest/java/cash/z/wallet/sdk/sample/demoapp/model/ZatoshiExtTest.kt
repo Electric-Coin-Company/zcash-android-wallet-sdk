@@ -1,6 +1,9 @@
 package cash.z.wallet.sdk.sample.demoapp.model
 
 import androidx.test.filters.SmallTest
+import cash.z.ecc.android.sdk.demoapp.ext.ui.toFiatString
+import cash.z.ecc.android.sdk.demoapp.model.MonetarySeparators
+import cash.z.wallet.sdk.sample.demoapp.fixture.CurrencyConversionFixture
 import cash.z.wallet.sdk.sample.demoapp.fixture.LocaleFixture
 import cash.z.wallet.sdk.sample.demoapp.fixture.MonetarySeparatorsFixture
 import cash.z.wallet.sdk.sample.demoapp.fixture.ZatoshiFixture

@@ -1,11 +1,12 @@
 package cash.z.wallet.sdk.sample.demoapp.model
 
 import androidx.test.filters.SmallTest
-import cash.z.ecc.sdk.ext.ui.fixture.LocaleFixture
-import cash.z.ecc.sdk.ext.ui.fixture.MonetarySeparatorsFixture
-import cash.z.ecc.sdk.ext.ui.toFiatCurrencyState
-import cash.z.ecc.sdk.fixture.CurrencyConversionFixture
-import cash.z.ecc.sdk.fixture.ZatoshiFixture
+import cash.z.ecc.android.sdk.demoapp.ext.ui.toFiatCurrencyState
+import cash.z.ecc.android.sdk.demoapp.model.FiatCurrencyConversionRateState
+import cash.z.wallet.sdk.sample.demoapp.fixture.CurrencyConversionFixture
+import cash.z.wallet.sdk.sample.demoapp.fixture.LocaleFixture
+import cash.z.wallet.sdk.sample.demoapp.fixture.MonetarySeparatorsFixture
+import cash.z.wallet.sdk.sample.demoapp.fixture.ZatoshiFixture
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import org.junit.Test

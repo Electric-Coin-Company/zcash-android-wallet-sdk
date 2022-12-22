@@ -1,9 +1,11 @@
-package cash.z.ecc.sdk.ext.ui.model
+package cash.z.wallet.sdk.sample.demoapp.model
 
 import android.content.Context
 import android.content.res.Configuration
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.filters.SmallTest
+import cash.z.ecc.android.sdk.demoapp.model.fromZecString
+import cash.z.ecc.android.sdk.demoapp.model.toZecString
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.wallet.sdk.sample.demoapp.fixture.MonetarySeparatorsFixture
 import org.junit.Assert.assertEquals

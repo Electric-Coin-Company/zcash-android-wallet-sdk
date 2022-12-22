@@ -130,6 +130,7 @@ dependencies {
     androidTestImplementation(libs.kotlin.test)
 
     implementation(libs.bundles.grpc)
+    implementation(libs.kotlinx.datetime)
 }
 
 fladle {

@@ -2,7 +2,6 @@ package cash.z.wallet.sdk.sample.demoapp.model
 
 import androidx.test.filters.SmallTest
 import cash.z.ecc.android.sdk.demoapp.model.SeedPhrase
-import cash.z.ecc.sdk.fixture.SeedPhraseFixture
 import cash.z.wallet.sdk.sample.demoapp.fixture.SeedPhraseFixture
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
