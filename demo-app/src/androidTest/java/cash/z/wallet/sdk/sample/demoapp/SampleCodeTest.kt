@@ -2,7 +2,7 @@ package cash.z.wallet.sdk.sample.demoapp
 
 import androidx.test.platform.app.InstrumentationRegistry
 import cash.z.ecc.android.sdk.Synchronizer
-import cash.z.ecc.android.sdk.demoapp.util.fromResources
+import cash.z.ecc.android.sdk.demoapp.type.fromResources
 import cash.z.ecc.android.sdk.ext.convertZecToZatoshi
 import cash.z.ecc.android.sdk.ext.toHex
 import cash.z.ecc.android.sdk.internal.TroubleshootingTwig
@@ -17,7 +17,6 @@ import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.model.defaultForNetwork
 import cash.z.ecc.android.sdk.model.isFailure
 import cash.z.ecc.android.sdk.tool.DerivationTool
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

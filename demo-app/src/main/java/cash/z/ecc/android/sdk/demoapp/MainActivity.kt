@@ -20,7 +20,7 @@ import androidx.navigation.ui.navigateUp
 import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
 import androidx.viewbinding.ViewBinding
-import cash.z.ecc.android.sdk.demoapp.util.fromResources
+import cash.z.ecc.android.sdk.demoapp.type.fromResources
 import cash.z.ecc.android.sdk.internal.service.LightWalletGrpcService
 import cash.z.ecc.android.sdk.internal.service.LightWalletService
 import cash.z.ecc.android.sdk.internal.twig
@@ -108,6 +108,9 @@ class MainActivity :
             val navController = findNavController(R.id.nav_host_fragment)
             navController.navigate(R.id.nav_home)
             sharedViewModel.resetSDK()
+            true
+        } else if (item.itemId == R.id.action_new_ui) {
+            startActivity(Intent(this, ComposeActivity::class.java))
             true
         } else {
             super.onOptionsItemSelected(item)

@@ -18,8 +18,14 @@ android {
         multiDexEnabled = true
         vectorDrawables.useSupportLibrary = true
     }
+
     buildFeatures {
+        compose = true
         viewBinding = true
+    }
+
+    composeOptions {
+        kotlinCompilerExtensionVersion = libs.androidx.compose.compiler.get().versionConstraint.displayName
     }
 
     val releaseKeystorePath = project.property("ZCASH_RELEASE_KEYSTORE_PATH").toString()
@@ -104,19 +110,27 @@ dependencies {
     implementation(libs.bip39)
 
     // Android
-    implementation(libs.androidx.core)
     implementation(libs.androidx.constraintlayout)
+    implementation(libs.androidx.core)
     implementation(libs.androidx.multidex)
     implementation(libs.androidx.navigation.fragment)
     implementation(libs.androidx.navigation.ui)
+    implementation(libs.androidx.security.crypto)
+    implementation(libs.bundles.androidx.compose.core)
+    implementation(libs.bundles.androidx.compose.extended)
+    implementation(libs.material)
+
     // Just to support profile installation and tracing events needed by benchmark tests
     implementation(libs.androidx.profileinstaller)
     implementation(libs.androidx.tracing)
 
-    implementation(libs.material)
     androidTestImplementation(libs.bundles.androidx.test)
+    androidTestImplementation(libs.kotlin.reflect)
+    androidTestImplementation(libs.kotlinx.coroutines.test)
+    androidTestImplementation(libs.kotlin.test)
 
     implementation(libs.bundles.grpc)
+    implementation(libs.kotlinx.datetime)
 }
 
 fladle {

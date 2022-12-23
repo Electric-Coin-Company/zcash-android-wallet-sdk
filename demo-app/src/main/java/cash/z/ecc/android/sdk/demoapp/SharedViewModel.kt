@@ -6,7 +6,7 @@ import androidx.lifecycle.viewModelScope
 import cash.z.ecc.android.bip39.Mnemonics
 import cash.z.ecc.android.bip39.toSeed
 import cash.z.ecc.android.sdk.Synchronizer
-import cash.z.ecc.android.sdk.demoapp.util.fromResources
+import cash.z.ecc.android.sdk.demoapp.type.fromResources
 import cash.z.ecc.android.sdk.ext.BenchmarkingExt
 import cash.z.ecc.android.sdk.ext.onFirst
 import cash.z.ecc.android.sdk.fixture.BlockRangeFixture

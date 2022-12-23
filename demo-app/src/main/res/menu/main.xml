@@ -1,10 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<menu
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <!-- Note: We hide entire group on SDK sync related screens -->
-    <group
-        android:id="@+id/main_menu_group">
+    <group android:id="@+id/main_menu_group">
         <item
             android:id="@+id/action_settings"
             android:orderInCategory="100"
@@ -21,4 +19,9 @@
             android:title="@string/action_reset_sdk"
             app:showAsAction="never" />
     </group>
+    <item
+        android:id="@+id/action_new_ui"
+        android:orderInCategory="100"
+        android:title="@string/action_new_ui"
+        app:showAsAction="never" />
 </menu>

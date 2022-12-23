@@ -10,7 +10,7 @@ import cash.z.ecc.android.bip39.toSeed
 import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
 import cash.z.ecc.android.sdk.demoapp.databinding.FragmentGetPrivateKeyBinding
 import cash.z.ecc.android.sdk.demoapp.ext.requireApplicationContext
-import cash.z.ecc.android.sdk.demoapp.util.fromResources
+import cash.z.ecc.android.sdk.demoapp.type.fromResources
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.tool.DerivationTool
