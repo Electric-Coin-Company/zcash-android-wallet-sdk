@@ -3,6 +3,8 @@ package cash.z.ecc.android.sdk.demoapp
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import androidx.activity.viewModels
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
@@ -19,11 +21,13 @@ import androidx.navigation.compose.rememberNavController
 import cash.z.ecc.android.sdk.demoapp.NavigationTargets.HOME
 import cash.z.ecc.android.sdk.demoapp.NavigationTargets.SEND
 import cash.z.ecc.android.sdk.demoapp.NavigationTargets.WALLET_ADDRESS_DETAILS
+import cash.z.ecc.android.sdk.demoapp.type.fromResources
 import cash.z.ecc.android.sdk.demoapp.ui.screen.addresses.view.Addresses
 import cash.z.ecc.android.sdk.demoapp.ui.screen.home.view.Home
 import cash.z.ecc.android.sdk.demoapp.ui.screen.home.viewmodel.WalletViewModel
 import cash.z.ecc.android.sdk.demoapp.ui.screen.send.view.Send
 import cash.z.ecc.android.sdk.demoapp.util.AndroidApiVersion
+import cash.z.ecc.android.sdk.model.ZcashNetwork
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
@@ -43,6 +47,15 @@ internal fun ComposeActivity.Navigation() {
                 Home(
                     goSend = { navController.navigateJustOnce(SEND) },
                     goAddressDetails = { navController.navigateJustOnce(WALLET_ADDRESS_DETAILS) },
+                    isTestnet = ZcashNetwork.fromResources(applicationContext) == ZcashNetwork.Testnet,
+                    goTestnetFaucet = {
+                        runCatching {
+                            startActivity(newBrowserIntent("https://faucet.zecpages.com/")) // NON-NLS
+                        }.onFailure {
+                            // This could fail on devices without a browser.
+                            // An improvement here in the future would be showing a snackbar or error dialog.
+                        }
+                    },
                     resetSdk = { walletViewModel.resetSdk() }
                 )
             }
@@ -121,7 +134,7 @@ private fun NavHostController.popBackStackJustOnce(currentRouteToBePopped: Strin
     popBackStack()
 }
 
-fun copyToClipboard(
+private fun copyToClipboard(
     context: Context,
     tag: String,
     textToCopy: String,
@@ -152,10 +165,19 @@ fun copyToClipboard(
     }
 }
 
+private fun newBrowserIntent(url: String): Intent {
+    val uri = Uri.parse(url)
+    val intent = Intent(Intent.ACTION_VIEW, uri).apply {
+        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    }
+
+    return intent
+}
+
 object NavigationTargets {
-    const val HOME = "home"
+    const val HOME = "home" // NON-NLS
 
-    const val WALLET_ADDRESS_DETAILS = "wallet_address_details"
+    const val WALLET_ADDRESS_DETAILS = "wallet_address_details" // NON-NLS
 
-    const val SEND = "send"
+    const val SEND = "send" // NON-NLS
 }

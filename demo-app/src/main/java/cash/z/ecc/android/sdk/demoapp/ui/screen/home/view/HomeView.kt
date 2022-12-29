@@ -35,6 +35,8 @@ fun ComposablePreviewHome() {
             // WalletSnapshotFixture.new(),
             goSend = {},
             goAddressDetails = {},
+            isTestnet = true,
+            goTestnetFaucet = {},
             resetSdk = {}
         )
     }
@@ -46,10 +48,12 @@ fun ComposablePreviewHome() {
 fun Home(
     goSend: () -> Unit,
     goAddressDetails: () -> Unit,
+    isTestnet: Boolean,
+    goTestnetFaucet: () -> Unit,
     resetSdk: () -> Unit
 ) {
     Scaffold(topBar = {
-        HomeTopAppBar(resetSdk)
+        HomeTopAppBar(isTestnet, goTestnetFaucet, resetSdk)
     }) { paddingValues ->
         HomeMainContent(
             paddingValues = paddingValues,
@@ -62,18 +66,28 @@ fun Home(
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
 private fun HomeTopAppBar(
+    isTestnet: Boolean,
+    goTestnetFaucet: () -> Unit,
     resetSdk: () -> Unit
 ) {
     TopAppBar(
         title = { Text(text = stringResource(id = R.string.app_name)) },
         actions = {
-            DebugMenu(resetSdk = resetSdk)
+            DebugMenu(
+                isTestnet,
+                goTestnetFaucet = goTestnetFaucet,
+                resetSdk = resetSdk
+            )
         }
     )
 }
 
 @Composable
-private fun DebugMenu(resetSdk: () -> Unit) {
+private fun DebugMenu(
+    isTestnet: Boolean,
+    goTestnetFaucet: () -> Unit,
+    resetSdk: () -> Unit
+) {
     var expanded by rememberSaveable { mutableStateOf(false) }
     IconButton(onClick = { expanded = true }) {
         Icon(Icons.Default.MoreVert, contentDescription = null)
@@ -83,6 +97,15 @@ private fun DebugMenu(resetSdk: () -> Unit) {
         expanded = expanded,
         onDismissRequest = { expanded = false }
     ) {
+        if (isTestnet) {
+            DropdownMenuItem(
+                text = { Text("Open Testnet Faucet") },
+                onClick = {
+                    goTestnetFaucet()
+                    expanded = false
+                }
+            )
+        }
         DropdownMenuItem(
             text = { Text("Reset SDK") },
             onClick = {
