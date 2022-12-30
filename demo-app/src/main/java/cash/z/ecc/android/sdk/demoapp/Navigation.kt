@@ -21,12 +21,12 @@ import androidx.navigation.compose.rememberNavController
 import cash.z.ecc.android.sdk.demoapp.NavigationTargets.HOME
 import cash.z.ecc.android.sdk.demoapp.NavigationTargets.SEND
 import cash.z.ecc.android.sdk.demoapp.NavigationTargets.WALLET_ADDRESS_DETAILS
-import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.demoapp.ui.screen.addresses.view.Addresses
 import cash.z.ecc.android.sdk.demoapp.ui.screen.home.view.Home
 import cash.z.ecc.android.sdk.demoapp.ui.screen.home.viewmodel.WalletViewModel
 import cash.z.ecc.android.sdk.demoapp.ui.screen.send.view.Send
 import cash.z.ecc.android.sdk.demoapp.util.AndroidApiVersion
+import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -45,6 +45,7 @@ internal fun ComposeActivity.Navigation() {
                 // Display loading indicator
             } else {
                 Home(
+                    walletSnapshot,
                     goSend = { navController.navigateJustOnce(SEND) },
                     goAddressDetails = { navController.navigateJustOnce(WALLET_ADDRESS_DETAILS) },
                     isTestnet = ZcashNetwork.fromResources(applicationContext) == ZcashNetwork.Testnet,

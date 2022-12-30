@@ -25,14 +25,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.demoapp.R
+import cash.z.ecc.android.sdk.demoapp.fixture.WalletSnapshotFixture
+import cash.z.ecc.android.sdk.demoapp.ui.screen.home.viewmodel.WalletSnapshot
 
 @Preview
 @Composable
 fun ComposablePreviewHome() {
     MaterialTheme {
         Home(
-            // WalletSnapshotFixture.new(),
+            WalletSnapshotFixture.new(),
             goSend = {},
             goAddressDetails = {},
             isTestnet = true,
@@ -46,17 +49,19 @@ fun ComposablePreviewHome() {
 @Suppress("LongParameterList")
 @Composable
 fun Home(
+    walletSnapshot: WalletSnapshot,
+    isTestnet: Boolean,
     goSend: () -> Unit,
     goAddressDetails: () -> Unit,
-    isTestnet: Boolean,
     goTestnetFaucet: () -> Unit,
-    resetSdk: () -> Unit
+    resetSdk: () -> Unit,
 ) {
     Scaffold(topBar = {
         HomeTopAppBar(isTestnet, goTestnetFaucet, resetSdk)
     }) { paddingValues ->
         HomeMainContent(
             paddingValues = paddingValues,
+            walletSnapshot,
             goSend = goSend,
             goAddressDetails = goAddressDetails
         )
@@ -119,6 +124,7 @@ private fun DebugMenu(
 @Composable
 private fun HomeMainContent(
     paddingValues: PaddingValues,
+    walletSnapshot: WalletSnapshot,
     goSend: () -> Unit,
     goAddressDetails: () -> Unit
 ) {
@@ -133,6 +139,12 @@ private fun HomeMainContent(
 
         Button(goAddressDetails) {
             Text(text = stringResource(id = R.string.menu_address))
+        }
+
+        Text(text = stringResource(id = R.string.home_status, walletSnapshot.status.toString()))
+        if (walletSnapshot.status != Synchronizer.Status.SYNCED) {
+            @Suppress("MagicNumber")
+            Text(text = stringResource(id = R.string.home_progress, walletSnapshot.progress.decimal * 100))
         }
     }
 }
