@@ -21,7 +21,7 @@ import androidx.navigation.compose.rememberNavController
 import cash.z.ecc.android.sdk.demoapp.NavigationTargets.HOME
 import cash.z.ecc.android.sdk.demoapp.NavigationTargets.SEND
 import cash.z.ecc.android.sdk.demoapp.NavigationTargets.WALLET_ADDRESS_DETAILS
-import cash.z.ecc.android.sdk.demoapp.type.fromResources
+import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.demoapp.ui.screen.addresses.view.Addresses
 import cash.z.ecc.android.sdk.demoapp.ui.screen.home.view.Home
 import cash.z.ecc.android.sdk.demoapp.ui.screen.home.viewmodel.WalletViewModel

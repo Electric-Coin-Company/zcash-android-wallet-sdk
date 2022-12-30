@@ -41,9 +41,9 @@ import cash.z.ecc.android.sdk.demoapp.model.ZecSendExt
 import cash.z.ecc.android.sdk.demoapp.model.ZecString
 import cash.z.ecc.android.sdk.demoapp.model.ZecStringExt
 import cash.z.ecc.android.sdk.demoapp.model.toZecString
-import cash.z.ecc.android.sdk.demoapp.type.fromResources
 import cash.z.ecc.android.sdk.demoapp.ui.common.MINIMAL_WEIGHT
 import cash.z.ecc.android.sdk.demoapp.ui.screen.home.viewmodel.WalletSnapshot
+import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 
 // @Preview
