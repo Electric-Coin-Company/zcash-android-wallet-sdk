@@ -28,6 +28,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.demoapp.R
 import cash.z.ecc.android.sdk.demoapp.fixture.WalletSnapshotFixture
+import cash.z.ecc.android.sdk.demoapp.ui.common.DisableScreenTimeout
 import cash.z.ecc.android.sdk.demoapp.ui.screen.home.viewmodel.WalletSnapshot
 
 @Preview
@@ -153,6 +154,12 @@ private fun HomeMainContent(
         if (walletSnapshot.status != Synchronizer.Status.SYNCED) {
             @Suppress("MagicNumber")
             Text(text = stringResource(id = R.string.home_progress, walletSnapshot.progress.decimal * 100))
+
+            // Makes sync for debug builds more reliable and less annoying.
+            // This is not perfect because the synchronizer switches to downloading/scanning periodically when doing
+            // a single block catchup.  We can improve this once the synchronizer has a state for "refreshing" which
+            // is different from a longer sync.
+            DisableScreenTimeout()
         }
     }
 }

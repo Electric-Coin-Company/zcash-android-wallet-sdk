@@ -9,6 +9,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.compose.ExperimentalLifecycleComposeApi
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import cash.z.ecc.android.sdk.demoapp.ui.common.BindCompLocalProvider
 import cash.z.ecc.android.sdk.demoapp.ui.screen.home.viewmodel.SecretState
 import cash.z.ecc.android.sdk.demoapp.ui.screen.home.viewmodel.WalletViewModel
 import cash.z.ecc.android.sdk.demoapp.ui.screen.seed.view.Seed
@@ -22,9 +23,11 @@ class ComposeActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         setContent {
-            MaterialTheme {
-                Surface {
-                    MainContent()
+            BindCompLocalProvider {
+                MaterialTheme {
+                    Surface {
+                        MainContent()
+                    }
                 }
             }
         }
