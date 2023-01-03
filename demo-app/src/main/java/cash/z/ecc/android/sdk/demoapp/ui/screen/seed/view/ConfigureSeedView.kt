@@ -74,7 +74,11 @@ private fun ConfigureSeedMainContent(
     ) {
         Button(
             onClick = {
-                val newWallet = PersistableWallet(zcashNetwork, null, SeedPhrase.new(WalletFixture.Alice.seedPhrase))
+                val newWallet = PersistableWallet(
+                    zcashNetwork,
+                    WalletFixture.Alice.getBirthday(zcashNetwork),
+                    SeedPhrase.new(WalletFixture.Alice.seedPhrase)
+                )
                 onExistingWallet(newWallet)
             }
         ) {
@@ -82,7 +86,11 @@ private fun ConfigureSeedMainContent(
         }
         Button(
             onClick = {
-                val newWallet = PersistableWallet(zcashNetwork, null, SeedPhrase.new(WalletFixture.Alice.seedPhrase))
+                val newWallet = PersistableWallet(
+                    zcashNetwork,
+                    WalletFixture.Ben.getBirthday(zcashNetwork),
+                    SeedPhrase.new(WalletFixture.Ben.seedPhrase)
+                )
                 onExistingWallet(newWallet)
             }
         ) {

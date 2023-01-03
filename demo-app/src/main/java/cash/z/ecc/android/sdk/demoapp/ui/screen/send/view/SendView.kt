@@ -178,19 +178,19 @@ private fun SendMainContent(
                     .fillMaxWidth()
                     .horizontalScroll(rememberScrollState())
             ) {
-                Button({ recipientAddressString = WalletFixture.Bob.getAddresses(zcashNetwork).unified }) {
+                Button({ recipientAddressString = WalletFixture.Ben.getAddresses(zcashNetwork).unified }) {
                     Text(text = stringResource(id = R.string.send_ben_unified))
                 }
 
                 Spacer(Modifier.size(8.dp))
 
-                Button({ recipientAddressString = WalletFixture.Bob.getAddresses(zcashNetwork).sapling }) {
+                Button({ recipientAddressString = WalletFixture.Ben.getAddresses(zcashNetwork).sapling }) {
                     Text(text = stringResource(id = R.string.send_ben_sapling))
                 }
 
                 Spacer(Modifier.size(8.dp))
 
-                Button({ recipientAddressString = WalletFixture.Bob.getAddresses(zcashNetwork).transparent }) {
+                Button({ recipientAddressString = WalletFixture.Ben.getAddresses(zcashNetwork).transparent }) {
                     Text(text = stringResource(id = R.string.send_ben_transparent))
                 }
             }
