@@ -30,7 +30,6 @@ import kotlinx.coroutines.launch
 @Suppress("TooManyFunctions")
 class ListTransactionsFragment : BaseDemoFragment<FragmentListTransactionsBinding>() {
     private lateinit var adapter: TransactionAdapter
-    private lateinit var address: String
     private var status: Synchronizer.Status? = null
     private val isSynced get() = status == Synchronizer.Status.SYNCED
 
@@ -106,8 +105,8 @@ class ListTransactionsFragment : BaseDemoFragment<FragmentListTransactionsBindin
                 if (transactions.isEmpty()) {
                     visibility = View.VISIBLE
                     text =
-                        "No transactions found. Try to either change the seed words " +
-                        "or send funds to this address (tap the FAB to copy it):\n\n $address"
+                        "No transactions found. Try to either change the seed words or send funds to this wallet. " +
+                        "The wallet addresses can be found on the Get Address screen."
                 } else {
                     visibility = View.INVISIBLE
                     text = ""
@@ -142,7 +141,7 @@ class ListTransactionsFragment : BaseDemoFragment<FragmentListTransactionsBindin
     //
 
     override fun onActionButtonClicked() {
-        if (::address.isInitialized) copyToClipboard(address)
+        // no action connected
     }
 
     override fun inflateBinding(layoutInflater: LayoutInflater): FragmentListTransactionsBinding =
