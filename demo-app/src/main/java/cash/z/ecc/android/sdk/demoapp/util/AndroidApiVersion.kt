@@ -15,11 +15,20 @@ object AndroidApiVersion {
         return Build.VERSION.SDK_INT >= sdk
     }
 
+    @ChecksSdkIntAtLeast(api = Build.VERSION_CODES.LOLLIPOP)
+    val isAtLeastL = isAtLeast(Build.VERSION_CODES.LOLLIPOP)
+
+    @ChecksSdkIntAtLeast(api = Build.VERSION_CODES.M)
+    val isAtLeastM = isAtLeast(Build.VERSION_CODES.M)
+
     @ChecksSdkIntAtLeast(api = Build.VERSION_CODES.N)
     val isAtLeastN = isAtLeast(Build.VERSION_CODES.N)
 
     @ChecksSdkIntAtLeast(api = Build.VERSION_CODES.O)
     val isAtLeastO = isAtLeast(Build.VERSION_CODES.O)
+
+    @ChecksSdkIntAtLeast(api = Build.VERSION_CODES.O_MR1)
+    val isAtLeastO_MR1 = isAtLeast(Build.VERSION_CODES.O_MR1)
 
     @ChecksSdkIntAtLeast(api = Build.VERSION_CODES.P)
     val isAtLeastP = isAtLeast(Build.VERSION_CODES.P)
@@ -36,5 +45,13 @@ object AndroidApiVersion {
     @ChecksSdkIntAtLeast(api = Build.VERSION_CODES.TIRAMISU)
     val isAtLeastT = isAtLeast(Build.VERSION_CODES.TIRAMISU)
 
-    val isPreview = 0 != Build.VERSION.PREVIEW_SDK_INT
+    /**
+     * This property indicates a preview version of the current device Android SDK. It works only on
+     * Android SDK 23 and later, on the previous SDK versions its value is always false.
+     */
+    val isPreview = if (isAtLeastM) {
+        0 != Build.VERSION.PREVIEW_SDK_INT
+    } else {
+        false
+    }
 }
