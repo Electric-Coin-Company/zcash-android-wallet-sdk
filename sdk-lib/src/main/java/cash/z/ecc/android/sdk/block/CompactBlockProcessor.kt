@@ -1064,7 +1064,7 @@ class CompactBlockProcessor internal constructor(
             ?: throw InitializeException.MissingAddressException("legacy transparent")
 
     /**
-     * Calculates the latest balance info. Defaults to the first account.
+     * Calculates the latest balance info.
      *
      * @param account the account to check for balance info.
      *
