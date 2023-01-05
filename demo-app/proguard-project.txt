@@ -1,3 +1,13 @@
 # Allow for debuggable stacktraces
 -keepattributes SourceFile,LineNumberTable
 -renamesourcefileattribute SourceFile
+
+# Strip out log messages
+-assumenosideeffects public class cash.z.ecc.android.sdk.demoapp.util.Twig {
+    public static *** verbose(...);
+    public static *** debug(...);
+    public static *** info(...);
+    public static *** warn(...);
+    public static *** error(...);
+    public static *** assertLoggingStripped();
+}

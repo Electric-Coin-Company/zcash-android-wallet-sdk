@@ -72,11 +72,10 @@ android {
     buildTypes {
         getByName("release").apply {
             isMinifyEnabled = project.property("IS_MINIFY_APP_ENABLED").toString().toBoolean()
-            proguardFiles.addAll(
-                listOf(
-                    getDefaultProguardFile("proguard-android-optimize.txt"),
-                    File("proguard-project.txt")
-                )
+            isShrinkResources = project.property("IS_MINIFY_APP_ENABLED").toString().toBoolean()
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-project.txt"
             )
             val isSignReleaseBuildWithDebugKey = project.property("IS_SIGN_RELEASE_BUILD_WITH_DEBUG_KEY")
                 .toString().toBoolean()
