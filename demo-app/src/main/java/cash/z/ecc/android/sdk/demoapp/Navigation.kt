@@ -1,10 +1,9 @@
 package cash.z.ecc.android.sdk.demoapp
 
-import android.annotation.TargetApi
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
-import android.os.Build
+import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.compose.ExperimentalLifecycleComposeApi
@@ -21,6 +20,7 @@ import cash.z.ecc.android.sdk.demoapp.ui.screen.addresses.view.Addresses
 import cash.z.ecc.android.sdk.demoapp.ui.screen.home.view.Home
 import cash.z.ecc.android.sdk.demoapp.ui.screen.home.viewmodel.WalletViewModel
 import cash.z.ecc.android.sdk.demoapp.ui.screen.send.view.Send
+import cash.z.ecc.android.sdk.demoapp.util.AndroidApiVersion
 
 @OptIn(ExperimentalLifecycleComposeApi::class)
 @Composable
@@ -107,16 +107,27 @@ private fun NavHostController.popBackStackJustOnce(currentRouteToBePopped: Strin
     popBackStack()
 }
 
-// Note: this requires API level 23 (current min is 21 for the Demo-app). We should address this requirement, or set
-// our Demo-app min to 23
-@TargetApi(Build.VERSION_CODES.M)
 fun copyToClipboard(context: Context, tag: String, textToCopy: String) {
-    val clipboardManager = context.getSystemService(ClipboardManager::class.java)
+    val clipboardManager = if (AndroidApiVersion.isAtLeastM) {
+        context.getSystemService(ClipboardManager::class.java)
+    } else {
+        context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+    }
+
     val data = ClipData.newPlainText(
         tag,
         textToCopy
     )
     clipboardManager.setPrimaryClip(data)
+
+    // Notify users with Toast only on Android level 32 and lower, as 33 notifies users by its own system way
+    if (!AndroidApiVersion.isAtLeastT) {
+        Toast.makeText(
+            context,
+            context.getString(R.string.address_copied),
+            Toast.LENGTH_SHORT
+        ).show()
+    }
 }
 
 object NavigationTargets {

@@ -37,6 +37,7 @@
     <string name="unified_address_tag">Zcash unified address</string>
     <string name="sapling_address_tag">Zcash sapling address</string>
     <string name="transparent_address_tag">Zcash transparent address</string>
+    <string name="address_copied">Copied to clipboard</string>
 
     <string name="configure_seed">Please select your wallet secret phrase</string>
     <string name="person_alyssa">Alyssa P. Hacker</string>
