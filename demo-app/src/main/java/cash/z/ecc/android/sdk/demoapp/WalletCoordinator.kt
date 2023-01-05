@@ -71,7 +71,8 @@ class WalletCoordinator(context: Context, val persistableWallet: Flow<Persistabl
                         zcashNetwork = persistableWallet.network,
                         lightWalletEndpoint = LightWalletEndpoint.defaultForNetwork(persistableWallet.network),
                         birthday = persistableWallet.birthday,
-                        seed = persistableWallet.seedPhrase.toByteArray()
+                        seed = persistableWallet.seedPhrase.toByteArray(),
+                        alias = NEW_UI_SYNCHRONIZER_ALIAS
                     )
 
                     trySend(InternalSynchronizerStatus.Available(closeableSynchronizer))
@@ -159,5 +160,7 @@ class WalletCoordinator(context: Context, val persistableWallet: Flow<Persistabl
     }
 
     // Allows for extension functions
-    companion object
+    companion object {
+        internal val NEW_UI_SYNCHRONIZER_ALIAS = "new_ui"
+    }
 }
