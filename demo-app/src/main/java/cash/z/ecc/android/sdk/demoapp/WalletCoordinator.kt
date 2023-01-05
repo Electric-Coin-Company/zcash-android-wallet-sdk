@@ -161,6 +161,6 @@ class WalletCoordinator(context: Context, val persistableWallet: Flow<Persistabl
 
     // Allows for extension functions
     companion object {
-        internal val NEW_UI_SYNCHRONIZER_ALIAS = "new_ui"
+        internal const val NEW_UI_SYNCHRONIZER_ALIAS = "new_ui"
     }
 }
