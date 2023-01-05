@@ -49,6 +49,14 @@
     <string name="home_status">Status: <xliff:g id="status" example="Syncing">%1$s</xliff:g></string>
     <string name="home_progress">Progress: <xliff:g id="percentage" example="15%">%1$.2f</xliff:g>%%</string>
 
+    <string name="balance_transparent">Transparent</string>
+    <string name="balance_sapling">Sapling</string>
+    <string name="balance_orchard">Orchard</string>
+    <string name="balance_available_amount_format">Available:
+        <xliff:g id="ZEC balance" example="0.3">%1$s</xliff:g></string>
+    <string name="balance_pending_amount_format">Pending:
+        <xliff:g id="ZEC balance" example="0.3">%1$s</xliff:g></string>
+
     <string name="send_amount">Amount</string>
 
     <string name="send_alyssa_unified">Alyssa’s unified address</string>

@@ -18,10 +18,12 @@ import androidx.navigation.NavOptionsBuilder
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import cash.z.ecc.android.sdk.demoapp.NavigationTargets.BALANCE
 import cash.z.ecc.android.sdk.demoapp.NavigationTargets.HOME
 import cash.z.ecc.android.sdk.demoapp.NavigationTargets.SEND
 import cash.z.ecc.android.sdk.demoapp.NavigationTargets.WALLET_ADDRESS_DETAILS
 import cash.z.ecc.android.sdk.demoapp.ui.screen.addresses.view.Addresses
+import cash.z.ecc.android.sdk.demoapp.ui.screen.balance.view.Balance
 import cash.z.ecc.android.sdk.demoapp.ui.screen.home.view.Home
 import cash.z.ecc.android.sdk.demoapp.ui.screen.home.viewmodel.WalletViewModel
 import cash.z.ecc.android.sdk.demoapp.ui.screen.send.view.Send
@@ -33,6 +35,7 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalLifecycleComposeApi::class)
 @Composable
+@Suppress("LongMethod")
 internal fun ComposeActivity.Navigation() {
     val navController = rememberNavController()
 
@@ -46,6 +49,7 @@ internal fun ComposeActivity.Navigation() {
             } else {
                 Home(
                     walletSnapshot,
+                    goBalance = { navController.navigateJustOnce(BALANCE) },
                     goSend = { navController.navigateJustOnce(SEND) },
                     goAddressDetails = { navController.navigateJustOnce(WALLET_ADDRESS_DETAILS) },
                     isTestnet = ZcashNetwork.fromResources(applicationContext) == ZcashNetwork.Testnet,
@@ -58,6 +62,18 @@ internal fun ComposeActivity.Navigation() {
                         }
                     },
                     resetSdk = { walletViewModel.resetSdk() }
+                )
+            }
+        }
+        composable(BALANCE) {
+            val walletSnapshot = walletViewModel.walletSnapshot.collectAsStateWithLifecycle().value
+            if (null == walletSnapshot) {
+                // Display loading indicator
+            } else {
+                Balance(
+                    walletSnapshot,
+                    onShieldFunds = { walletViewModel.shieldFunds() },
+                    onBack = { navController.popBackStackJustOnce(BALANCE) },
                 )
             }
         }
@@ -177,6 +193,8 @@ private fun newBrowserIntent(url: String): Intent {
 
 object NavigationTargets {
     const val HOME = "home" // NON-NLS
+
+    const val BALANCE = "balance" // NON-NLS
 
     const val WALLET_ADDRESS_DETAILS = "wallet_address_details" // NON-NLS
 

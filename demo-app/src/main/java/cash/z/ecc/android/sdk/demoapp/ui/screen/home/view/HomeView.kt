@@ -36,6 +36,7 @@ fun ComposablePreviewHome() {
     MaterialTheme {
         Home(
             WalletSnapshotFixture.new(),
+            goBalance = {},
             goSend = {},
             goAddressDetails = {},
             isTestnet = true,
@@ -51,6 +52,7 @@ fun ComposablePreviewHome() {
 fun Home(
     walletSnapshot: WalletSnapshot,
     isTestnet: Boolean,
+    goBalance: () -> Unit,
     goSend: () -> Unit,
     goAddressDetails: () -> Unit,
     goTestnetFaucet: () -> Unit,
@@ -62,6 +64,7 @@ fun Home(
         HomeMainContent(
             paddingValues = paddingValues,
             walletSnapshot,
+            goBalance = goBalance,
             goSend = goSend,
             goAddressDetails = goAddressDetails
         )
@@ -125,6 +128,7 @@ private fun DebugMenu(
 private fun HomeMainContent(
     paddingValues: PaddingValues,
     walletSnapshot: WalletSnapshot,
+    goBalance: () -> Unit,
     goSend: () -> Unit,
     goAddressDetails: () -> Unit
 ) {
@@ -133,6 +137,10 @@ private fun HomeMainContent(
             .verticalScroll(rememberScrollState())
             .padding(top = paddingValues.calculateTopPadding())
     ) {
+        Button(goBalance) {
+            Text(text = stringResource(id = R.string.menu_balance))
+        }
+
         Button(goSend) {
             Text(text = stringResource(id = R.string.menu_send))
         }
