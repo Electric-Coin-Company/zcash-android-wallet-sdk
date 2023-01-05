@@ -72,7 +72,6 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
 
     val secretState: StateFlow<SecretState> = walletCoordinator.persistableWallet
         .map { persistableWallet ->
-            Twig.info { "Here" }
             if (null == persistableWallet) {
                 SecretState.None
             } else {
