@@ -3,9 +3,12 @@ package cash.z.ecc.android.sdk.demoapp
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
-import android.widget.Toast
 import androidx.activity.viewModels
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.lifecycle.compose.ExperimentalLifecycleComposeApi
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
@@ -21,6 +24,8 @@ import cash.z.ecc.android.sdk.demoapp.ui.screen.home.view.Home
 import cash.z.ecc.android.sdk.demoapp.ui.screen.home.viewmodel.WalletViewModel
 import cash.z.ecc.android.sdk.demoapp.ui.screen.send.view.Send
 import cash.z.ecc.android.sdk.demoapp.util.AndroidApiVersion
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalLifecycleComposeApi::class)
 @Composable
@@ -47,14 +52,23 @@ internal fun ComposeActivity.Navigation() {
             if (null == synchronizer) {
                 // Display loading indicator
             } else {
+                val scope = rememberCoroutineScope()
+                val snackbarHostState = remember { SnackbarHostState() }
                 // I don't like giving synchronizer directly over to the view, but for now it isolates each of the
                 // demo app views
                 Addresses(
                     synchronizer = synchronizer,
                     copyToClipboard = { tag, textToCopy ->
-                        copyToClipboard(applicationContext, tag, textToCopy)
+                        copyToClipboard(
+                            applicationContext,
+                            tag,
+                            textToCopy,
+                            scope,
+                            snackbarHostState
+                        )
                     },
-                    onBack = { navController.popBackStackJustOnce(WALLET_ADDRESS_DETAILS) }
+                    onBack = { navController.popBackStackJustOnce(WALLET_ADDRESS_DETAILS) },
+                    snackbarHostState = snackbarHostState
                 )
             }
         }
@@ -107,7 +121,13 @@ private fun NavHostController.popBackStackJustOnce(currentRouteToBePopped: Strin
     popBackStack()
 }
 
-fun copyToClipboard(context: Context, tag: String, textToCopy: String) {
+fun copyToClipboard(
+    context: Context,
+    tag: String,
+    textToCopy: String,
+    scope: CoroutineScope,
+    snackbarHostState: SnackbarHostState
+) {
     val clipboardManager = if (AndroidApiVersion.isAtLeastM) {
         context.getSystemService(ClipboardManager::class.java)
     } else {
@@ -120,13 +140,15 @@ fun copyToClipboard(context: Context, tag: String, textToCopy: String) {
     )
     clipboardManager.setPrimaryClip(data)
 
-    // Notify users with Toast only on Android level 32 and lower, as 33 notifies users by its own system way
+    // Notify users with Snackbar only on Android level 32 and lower, as 33 and higher notifies users by its own system
+    // way
     if (!AndroidApiVersion.isAtLeastT) {
-        Toast.makeText(
-            context,
-            context.getString(R.string.address_copied),
-            Toast.LENGTH_SHORT
-        ).show()
+        scope.launch {
+            snackbarHostState.showSnackbar(
+                message = context.getString(R.string.address_copied, textToCopy),
+                duration = SnackbarDuration.Short
+            )
+        }
     }
 }
 

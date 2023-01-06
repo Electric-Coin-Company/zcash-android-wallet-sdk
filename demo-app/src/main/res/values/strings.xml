@@ -1,4 +1,4 @@
-<resources>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <string name="app_name">Demo App</string>
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
@@ -37,7 +37,8 @@
     <string name="unified_address_tag">Zcash unified address</string>
     <string name="sapling_address_tag">Zcash sapling address</string>
     <string name="transparent_address_tag">Zcash transparent address</string>
-    <string name="address_copied">Copied to clipboard</string>
+    <string name="address_copied" formatted="true"><xliff:g id="address" example="t1TdMMj5zzMtt...">Copied to
+        clipboard: %1$s</xliff:g></string>
 
     <string name="configure_seed">Please select your wallet secret phrase</string>
     <string name="person_alyssa">Alyssa P. Hacker</string>
