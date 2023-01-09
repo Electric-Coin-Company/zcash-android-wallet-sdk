@@ -84,6 +84,11 @@ internal interface RustBackendWelding {
     suspend fun writeBlockMetadata(blockMetadata: Array<JniBlockMeta>): Boolean
 
     /**
+     * @return The latest height in the CompactBlock cache metadata DB, or Null if no blocks have been cached.
+     */
+    suspend fun getLatestHeight(): BlockHeight?
+
+    /**
      * @return Null if successful. If an error occurs, the height will be the height where the error was detected.
      */
     suspend fun validateCombinedChain(): BlockHeight?

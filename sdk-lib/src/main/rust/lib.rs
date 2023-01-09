@@ -964,6 +964,28 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_writeBlockM
 }
 
 #[no_mangle]
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_getLatestHeight(
+    env: JNIEnv<'_>,
+    _: JClass<'_>,
+    fsblockdb_root: JString<'_>,
+) -> jlong {
+    let res = panic::catch_unwind(|| {
+        let block_db = block_db(&env, fsblockdb_root)?;
+
+        match block_db.get_max_cached_height() {
+            Ok(Some(block_height)) => Ok(i64::from(u32::from(block_height))),
+            // Use -1 to return null across the FFI.
+            Ok(None) => Ok(-1),
+            Err(e) => Err(format_err!(
+                "Failed to read block metadata from FsBlockDb: {:?}",
+                e
+            )),
+        }
+    });
+    unwrap_exc_or(&env, res, -1)
+}
+
+#[no_mangle]
 pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_validateCombinedChain(
     env: JNIEnv<'_>,
     _: JClass<'_>,
