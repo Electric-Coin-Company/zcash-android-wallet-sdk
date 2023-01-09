@@ -3,7 +3,7 @@ package cash.z.ecc.android.sdk.demoapp.model
 import android.app.Application
 import cash.z.ecc.android.bip39.Mnemonics
 import cash.z.ecc.android.bip39.toEntropy
-import cash.z.ecc.android.sdk.demoapp.type.fromResources
+import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import kotlinx.coroutines.Dispatchers

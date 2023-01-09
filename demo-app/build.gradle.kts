@@ -124,6 +124,8 @@ dependencies {
     implementation(libs.androidx.tracing)
 
     androidTestImplementation(libs.bundles.androidx.test)
+    androidTestImplementation(libs.androidx.compose.test.junit)
+    androidTestImplementation(libs.androidx.compose.test.manifest)
     androidTestImplementation(libs.kotlin.reflect)
     androidTestImplementation(libs.kotlinx.coroutines.test)
     androidTestImplementation(libs.kotlin.test)

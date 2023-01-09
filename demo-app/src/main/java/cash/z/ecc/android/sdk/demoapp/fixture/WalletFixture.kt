@@ -2,6 +2,7 @@ package cash.z.ecc.android.sdk.demoapp.fixture
 
 import cash.z.ecc.android.bip39.Mnemonics
 import cash.z.ecc.android.sdk.model.Account
+import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.tool.DerivationTool
 
@@ -10,6 +11,8 @@ import cash.z.ecc.android.sdk.tool.DerivationTool
  */
 sealed class WalletFixture {
     abstract val seedPhrase: String
+
+    abstract fun getBirthday(zcashNetwork: ZcashNetwork): BlockHeight
 
     abstract fun getAddresses(zcashNetwork: ZcashNetwork): Addresses
 
@@ -20,9 +23,22 @@ sealed class WalletFixture {
     ) = DerivationTool.deriveUnifiedSpendingKey(Mnemonics.MnemonicCode(seed).toEntropy(), network, account)
 
     @Suppress("MaxLineLength")
-    object Bob : WalletFixture() {
+    object Ben : WalletFixture() {
         override val seedPhrase: String
             get() = "kitchen renew wide common vague fold vacuum tilt amazing pear square gossip jewel month tree shock scan alpha just spot fluid toilet view dinner"
+
+        // These birthdays were the latest checkpoint at the time this was implemented
+        // Moving these forward will improve testing time, while leaving old transactions behind
+        @Suppress("MagicNumber")
+        override fun getBirthday(zcashNetwork: ZcashNetwork) = when (zcashNetwork.id) {
+            ZcashNetwork.ID_TESTNET -> {
+                BlockHeight.new(zcashNetwork, 2170000L)
+            }
+            ZcashNetwork.ID_MAINNET -> {
+                BlockHeight.new(zcashNetwork, 1935000L)
+            }
+            else -> error("Unknown network $zcashNetwork")
+        }
 
         override fun getAddresses(zcashNetwork: ZcashNetwork) = when (zcashNetwork.id) {
             ZcashNetwork.ID_TESTNET -> {
@@ -49,8 +65,22 @@ sealed class WalletFixture {
 
     @Suppress("MaxLineLength")
     object Alice : WalletFixture() {
+
         override val seedPhrase: String
             get() = "wish puppy smile loan doll curve hole maze file ginger hair nose key relax knife witness cannon grab despair throw review deal slush frame"
+
+        // These birthdays were the latest checkpoint at the time this was implemented
+        // Moving these forward will improve testing time, while leaving old transactions behind
+        @Suppress("MagicNumber")
+        override fun getBirthday(zcashNetwork: ZcashNetwork) = when (zcashNetwork.id) {
+            ZcashNetwork.ID_TESTNET -> {
+                BlockHeight.new(zcashNetwork, 2170000L)
+            }
+            ZcashNetwork.ID_MAINNET -> {
+                BlockHeight.new(zcashNetwork, 1935000L)
+            }
+            else -> error("Unknown network $zcashNetwork")
+        }
 
         override fun getAddresses(zcashNetwork: ZcashNetwork) = when (zcashNetwork.id) {
             ZcashNetwork.ID_TESTNET -> {

@@ -41,9 +41,9 @@ import cash.z.ecc.android.sdk.demoapp.model.ZecSendExt
 import cash.z.ecc.android.sdk.demoapp.model.ZecString
 import cash.z.ecc.android.sdk.demoapp.model.ZecStringExt
 import cash.z.ecc.android.sdk.demoapp.model.toZecString
-import cash.z.ecc.android.sdk.demoapp.type.fromResources
 import cash.z.ecc.android.sdk.demoapp.ui.common.MINIMAL_WEIGHT
 import cash.z.ecc.android.sdk.demoapp.ui.screen.home.viewmodel.WalletSnapshot
+import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 
 // @Preview
@@ -178,19 +178,19 @@ private fun SendMainContent(
                     .fillMaxWidth()
                     .horizontalScroll(rememberScrollState())
             ) {
-                Button({ recipientAddressString = WalletFixture.Bob.getAddresses(zcashNetwork).unified }) {
+                Button({ recipientAddressString = WalletFixture.Ben.getAddresses(zcashNetwork).unified }) {
                     Text(text = stringResource(id = R.string.send_ben_unified))
                 }
 
                 Spacer(Modifier.size(8.dp))
 
-                Button({ recipientAddressString = WalletFixture.Bob.getAddresses(zcashNetwork).sapling }) {
+                Button({ recipientAddressString = WalletFixture.Ben.getAddresses(zcashNetwork).sapling }) {
                     Text(text = stringResource(id = R.string.send_ben_sapling))
                 }
 
                 Spacer(Modifier.size(8.dp))
 
-                Button({ recipientAddressString = WalletFixture.Bob.getAddresses(zcashNetwork).transparent }) {
+                Button({ recipientAddressString = WalletFixture.Ben.getAddresses(zcashNetwork).transparent }) {
                     Text(text = stringResource(id = R.string.send_ben_transparent))
                 }
             }
