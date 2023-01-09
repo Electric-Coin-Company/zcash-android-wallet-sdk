@@ -1,10 +1,92 @@
 Change Log
 ==========
 
-Version 1.10.0-beta01
+Unreleased
 ------------------------------------
 - The SDK's internal networking has been refactored to a separate Gradle module (and therefore a separate artifact) which is a transitive dependency of the Zcash Android SDK.
     - The `z.cash.ecc.android.sdk.model.LightWalletEndpoint` class has been moved to `co.electriccoin.lightwallet.client.model.LightWalletEndpoint`
+
+Unreleased
+------------------------------------
+
+### Added
+- `cash.z.ecc.android.sdk`:
+  - `Synchronizer.getUnifiedAddress`
+  - `Synchronizer.getSaplingAddress`
+  - `Synchronizer.isValidUnifiedAddr`
+  - `Synchronizer.getMemos(TransactionOverview)`
+  - `Synchronizer.getReceipients(TransactionOverview)`
+- `cash.z.ecc.android.sdk.model`:
+  - `Account`
+  - `FirstClassByteArray`
+  - `PendingTransaction`
+  - `Transaction`
+  - `UnifiedSpendingKey`
+- `cash.z.ecc.android.sdk.tool`:
+  - `DerivationTool.deriveUnifiedSpendingKey`
+  - `DerivationTool.deriveUnifiedFullViewingKey`
+  - `DerivationTool.deriveTransparentAccountPrivateKey`
+  - `DerivationTool.deriveTransparentAddressFromAccountPrivateKey`
+  - `DerivationTool.deriveUnifiedAddress`
+  - `DerivationTool.deriveUnifiedFullViewingKeys`
+  - `DerivationTool.validateUnifiedFullViewingKey`
+    - Still unimplemented.
+- `cash.z.ecc.android.sdk.type`:
+  - `AddressType.Unified`
+  - `UnifiedFullViewingKey`, representing a Unified Full Viewing Key as specified in
+    [ZIP 316](https://zips.z.cash/zip-0316#encoding-of-unified-full-incoming-viewing-keys).
+
+### Changed
+- The following methods now take or return `UnifiedFullViewingKey` instead of
+  `UnifiedViewingKey`:
+    - `cash.z.ecc.android.sdk`:
+      - `Initializer.Config.addViewingKey`
+      - `Initializer.Config.importWallet`
+      - `Initializer.Config.newWallet`
+      - `Initializer.Config.setViewingKeys`
+- `cash.z.ecc.android.sdk`:
+  - `Synchronizer.Companion.new` now takes many of the arguments previously passed to `Initializer`. In addition, an optional `seed` argument is required for first-time initialization or if `Synchronizer.new` throws an exception indicating that an internal migration requires the wallet seed.  (This second case will be true the first time existing clients upgrade to this new version of the SDK).
+  - `Synchronizer.new()` now returns an instance that implements the `Closeable` interface.  `Synchronizer.stop()` is effectively renamed to `Synchronizer.close()`
+  - `Synchronizer` ensures that multiple instances cannot be running concurrently with the same network and alias
+  - `Synchronizer.sendToAddress` now takes a `UnifiedSpendingKey` instead of an encoded
+    Sapling extended spending key, and the `fromAccountIndex` argument is now implicit in
+    the `UnifiedSpendingKey`.
+  - `Synchronizer.shieldFunds` now takes a `UnifiedSpendingKey` instead of separately
+    encoded Sapling and transparent keys.
+  - `Synchronizer` methods that previously took an `Int` for account index now take an `Account` object
+  - `Synchronizer.sendToAddress()` and `Synchronizer.shieldFunds()` return flows that can now be collected multiple times.  Prior versions of the SDK had a bug that could submit transactions multiple times if the flow was collected more than once.
+- Updated dependencies:
+  - Kotlin 1.7.21
+  - AndroidX  
+  - etc.
+- Updated checkpoints
+
+### Removed
+- `cash.z.ecc.android.sdk`:
+  - `Initializer` (use `Synchronizer.new` instead)
+  - `Synchronizer.start()` - Synchronizer is now started automatically when constructing a new instance.
+  - `Synchronizer.getAddress` (use `Synchronizer.getUnifiedAddress` instead).
+  - `Synchronizer.getShieldedAddress` (use `Synchronizer.getSaplingAddress` instead)
+  - `Synchronizer.cancel`
+- `cash.z.ecc.android.sdk.type.UnifiedViewingKey`
+  - This type had a bug where the `extpub` field actually was storing a plain transparent
+    public key, and not the extended public key as intended. This made it incompatible
+    with ZIP 316.
+- `cash.z.ecc.android.sdk.tool`:
+  - `DerivationTool.deriveSpendingKeys` (use `DerivationTool.deriveUnifiedSpendingKey` instead)
+  - `DerivationTool.deriveViewingKey` (use `DerivationTool.deriveUnifiedFullViewingKey` instead)
+  - `DerivationTool.deriveTransparentAddress` (use `Synchronizer.getLegacyTransparentAddress` instead).
+  - `DerivationTool.deriveTransparentAddressFromPrivateKey` (use `Synchronizer.getLegacyTransparentAddress` instead).
+  - `DerivationTool.deriveTransparentAddressFromPublicKey` (use `Synchronizer.getLegacyTransparentAddress` instead).
+  - `DerivationTool.deriveTransparentSecretKey` (use `DerivationTool.deriveUnifiedSpendingKey` instead).
+  - `DerivationTool.deriveShieldedAddress`
+  - `DerivationTool.deriveUnifiedViewingKeys` (use `DerivationTool.deriveUnifiedFullViewingKey` instead)
+  - `DerivationTool.validateUnifiedViewingKey` 
+
+Version 1.9.0-beta05
+------------------------------------
+- The minimum version of Android supported is now API 21
+- Fixed R8/ProGuard consumer rule, which eliminates a runtime crash for minified apps
 
 Version 1.9.0-beta04
 ------------------------------------

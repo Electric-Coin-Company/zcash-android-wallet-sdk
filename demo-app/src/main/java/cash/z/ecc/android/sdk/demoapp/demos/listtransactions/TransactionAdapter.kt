@@ -4,22 +4,22 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
-import cash.z.ecc.android.sdk.db.entity.ConfirmedTransaction
 import cash.z.ecc.android.sdk.demoapp.R
+import cash.z.ecc.android.sdk.model.TransactionOverview
 
 /**
  * Simple adapter implementation that knows how to bind a recyclerview to ClearedTransactions.
  */
-class TransactionAdapter : ListAdapter<ConfirmedTransaction, TransactionViewHolder>(
-    object : DiffUtil.ItemCallback<ConfirmedTransaction>() {
+class TransactionAdapter : ListAdapter<TransactionOverview, TransactionViewHolder>(
+    object : DiffUtil.ItemCallback<TransactionOverview>() {
         override fun areItemsTheSame(
-            oldItem: ConfirmedTransaction,
-            newItem: ConfirmedTransaction
+            oldItem: TransactionOverview,
+            newItem: TransactionOverview
         ) = oldItem.minedHeight == newItem.minedHeight
 
         override fun areContentsTheSame(
-            oldItem: ConfirmedTransaction,
-            newItem: ConfirmedTransaction
+            oldItem: TransactionOverview,
+            newItem: TransactionOverview
         ) = oldItem == newItem
     }
 ) {

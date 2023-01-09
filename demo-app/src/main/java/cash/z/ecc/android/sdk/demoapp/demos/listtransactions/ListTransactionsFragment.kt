@@ -2,27 +2,23 @@ package cash.z.ecc.android.sdk.demoapp.demos.listtransactions
 
 import android.os.Bundle
 import android.view.LayoutInflater
+import android.view.Menu
 import android.view.View
-import android.view.ViewGroup
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
-import cash.z.ecc.android.bip39.Mnemonics
-import cash.z.ecc.android.bip39.toSeed
-import cash.z.ecc.android.sdk.Initializer
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor
-import cash.z.ecc.android.sdk.db.entity.ConfirmedTransaction
 import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
+import cash.z.ecc.android.sdk.demoapp.R
 import cash.z.ecc.android.sdk.demoapp.databinding.FragmentListTransactionsBinding
-import cash.z.ecc.android.sdk.demoapp.ext.requireApplicationContext
-import cash.z.ecc.android.sdk.demoapp.util.fromResources
-import cash.z.ecc.android.sdk.ext.collectWith
 import cash.z.ecc.android.sdk.internal.twig
-import cash.z.ecc.android.sdk.model.ZcashNetwork
-import cash.z.ecc.android.sdk.model.defaultForNetwork
-import cash.z.ecc.android.sdk.tool.DerivationTool
-import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
-import kotlinx.coroutines.runBlocking
+import cash.z.ecc.android.sdk.model.TransactionOverview
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.launch
 
 /**
  * List all transactions related to the given seed, since the given birthday. This begins by
@@ -33,47 +29,9 @@ import kotlinx.coroutines.runBlocking
  */
 @Suppress("TooManyFunctions")
 class ListTransactionsFragment : BaseDemoFragment<FragmentListTransactionsBinding>() {
-    private lateinit var initializer: Initializer
-    private lateinit var synchronizer: Synchronizer
     private lateinit var adapter: TransactionAdapter
-    private lateinit var address: String
     private var status: Synchronizer.Status? = null
     private val isSynced get() = status == Synchronizer.Status.SYNCED
-
-    /**
-     * Initialize the required values that would normally live outside the demo but are repeated
-     * here for completeness so that each demo file can serve as a standalone example.
-     */
-    private fun setup() {
-        // defaults to the value of `DemoConfig.seedWords` but can also be set by the user
-        var seedPhrase = sharedViewModel.seedPhrase.value
-
-        // Use a BIP-39 library to convert a seed phrase into a byte array. Most wallets already
-        // have the seed stored
-        val seed = Mnemonics.MnemonicCode(seedPhrase).toSeed()
-
-        initializer = Initializer.newBlocking(
-            requireApplicationContext(),
-            Initializer.Config {
-                val network = ZcashNetwork.fromResources(requireApplicationContext())
-                runBlocking {
-                    it.importWallet(
-                        seed,
-                        birthday = null,
-                        network = network,
-                        lightWalletEndpoint = LightWalletEndpoint.defaultForNetwork(network)
-                    )
-                }
-            }
-        )
-        address = runBlocking {
-            DerivationTool.deriveShieldedAddress(
-                seed,
-                ZcashNetwork.fromResources(requireApplicationContext())
-            )
-        }
-        synchronizer = Synchronizer.newBlocking(initializer)
-    }
 
     private fun initTransactionUI() {
         binding.recyclerTransactions.layoutManager =
@@ -82,12 +40,36 @@ class ListTransactionsFragment : BaseDemoFragment<FragmentListTransactionsBindin
         binding.recyclerTransactions.adapter = adapter
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     private fun monitorChanges() {
-        // the lifecycleScope is used to stop everything when the fragment dies
-        synchronizer.status.collectWith(lifecycleScope, ::onStatus)
-        synchronizer.processorInfo.collectWith(lifecycleScope, ::onProcessorInfoUpdated)
-        synchronizer.progress.collectWith(lifecycleScope, ::onProgress)
-        synchronizer.clearedTransactions.collectWith(lifecycleScope, ::onTransactionsUpdated)
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    sharedViewModel.synchronizerFlow
+                        .filterNotNull()
+                        .flatMapLatest { it.status }
+                        .collect { onStatus(it) }
+                }
+                launch {
+                    sharedViewModel.synchronizerFlow
+                        .filterNotNull()
+                        .flatMapLatest { it.progress }
+                        .collect { onProgress(it) }
+                }
+                launch {
+                    sharedViewModel.synchronizerFlow
+                        .filterNotNull()
+                        .flatMapLatest { it.processorInfo }
+                        .collect { onProcessorInfoUpdated(it) }
+                }
+                launch {
+                    sharedViewModel.synchronizerFlow
+                        .filterNotNull()
+                        .flatMapLatest { it.clearedTransactions }
+                        .collect { onTransactionsUpdated(it) }
+                }
+            }
+        }
     }
 
     //
@@ -113,7 +95,7 @@ class ListTransactionsFragment : BaseDemoFragment<FragmentListTransactionsBindin
         binding.textInfo.visibility = View.INVISIBLE
     }
 
-    private fun onTransactionsUpdated(transactions: List<ConfirmedTransaction>) {
+    private fun onTransactionsUpdated(transactions: List<TransactionOverview>) {
         twig("got a new paged list of transactions")
         adapter.submitList(transactions)
 
@@ -123,8 +105,8 @@ class ListTransactionsFragment : BaseDemoFragment<FragmentListTransactionsBindin
                 if (transactions.isEmpty()) {
                     visibility = View.VISIBLE
                     text =
-                        "No transactions found. Try to either change the seed words " +
-                        "or send funds to this address (tap the FAB to copy it):\n\n $address"
+                        "No transactions found. Try to either change the seed words or send funds to this wallet. " +
+                        "The wallet addresses can be found on the Get Address screen."
                 } else {
                     visibility = View.INVISIBLE
                     text = ""
@@ -137,26 +119,21 @@ class ListTransactionsFragment : BaseDemoFragment<FragmentListTransactionsBindin
     // Android Lifecycle overrides
     //
 
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View? {
-        val view = super.onCreateView(inflater, container, savedInstanceState)
-        setup()
-        return view
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setHasOptionsMenu(true)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         initTransactionUI()
+        monitorChanges()
     }
 
-    override fun onResume() {
-        super.onResume()
-        // the lifecycleScope is used to dispose of the synchronizer when the fragment dies
-        synchronizer.start(lifecycleScope)
-        monitorChanges()
+    override fun onPrepareOptionsMenu(menu: Menu) {
+        super.onPrepareOptionsMenu(menu)
+        // We rather hide options menu actions while actively using the Synchronizer
+        menu.setGroupVisible(R.id.main_menu_group, false)
     }
 
     //
@@ -164,7 +141,7 @@ class ListTransactionsFragment : BaseDemoFragment<FragmentListTransactionsBindin
     //
 
     override fun onActionButtonClicked() {
-        if (::address.isInitialized) copyToClipboard(address)
+        // no action connected
     }
 
     override fun inflateBinding(layoutInflater: LayoutInflater): FragmentListTransactionsBinding =

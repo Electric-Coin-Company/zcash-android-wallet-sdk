@@ -7,7 +7,7 @@ import androidx.test.filters.SmallTest
 import cash.z.ecc.android.sdk.annotation.MaintainedTest
 import cash.z.ecc.android.sdk.annotation.TestPurpose
 import cash.z.ecc.android.sdk.internal.block.CompactBlockDownloader
-import cash.z.ecc.android.sdk.internal.block.CompactBlockStore
+import cash.z.ecc.android.sdk.internal.repository.CompactBlockRepository
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.Mainnet
 import cash.z.ecc.android.sdk.model.ZcashNetwork
@@ -24,7 +24,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.mockito.Mock
 import org.mockito.MockitoAnnotations
-import org.mockito.Spy
 
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.N)
 @MaintainedTest(TestPurpose.REGRESSION)
@@ -37,10 +36,9 @@ class ChangeServiceTest : ScopedTest() {
     private val eccEndpoint = LightWalletEndpoint("lightwalletd.electriccoin.co", 9087, true)
 
     @Mock
-    lateinit var mockBlockStore: CompactBlockStore
+    lateinit var mockBlockStore: CompactBlockRepository
     var mockCloseable: AutoCloseable? = null
 
-    @Spy
     val service = BlockingLightWalletClient.new(context, lightWalletEndpoint)
 
     lateinit var downloader: CompactBlockDownloader

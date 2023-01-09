@@ -9,6 +9,7 @@ import java.util.Locale
 
 fun ZcashNetwork.Companion.fromResources(context: Context): ZcashNetwork {
     val networkNameFromResources = context.getString(R.string.network_name).lowercase(Locale.ROOT)
+    @Suppress("UseRequire")
     return if (networkNameFromResources == Testnet.networkName) {
         Testnet
     } else if (networkNameFromResources.lowercase(Locale.ROOT) == Mainnet.networkName) {

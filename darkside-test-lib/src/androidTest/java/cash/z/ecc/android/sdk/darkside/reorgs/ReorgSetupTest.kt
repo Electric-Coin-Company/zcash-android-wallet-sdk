@@ -42,7 +42,6 @@ class ReorgSetupTest : ScopedTest() {
         @JvmStatic
         fun startOnce() {
             sithLord.enterTheDarkside()
-            sithLord.synchronizer.start(classScope)
         }
     }
 }

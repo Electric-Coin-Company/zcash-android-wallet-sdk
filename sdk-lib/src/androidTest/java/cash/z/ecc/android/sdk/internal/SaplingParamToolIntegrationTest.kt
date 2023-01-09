@@ -6,6 +6,7 @@ import cash.z.ecc.android.sdk.exception.TransactionEncoderException
 import cash.z.ecc.android.sdk.internal.ext.listFilesSuspend
 import cash.z.ecc.android.sdk.test.getAppContext
 import cash.z.ecc.fixture.SaplingParamsFixture
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
@@ -14,6 +15,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
 import kotlin.test.assertContains
+import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
@@ -145,6 +147,7 @@ class SaplingParamToolIntegrationTest {
 
     @Test
     @LargeTest
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun fetch_params_uninitialized_test() = runTest {
         val saplingParamTool = SaplingParamTool.new(getAppContext())
 
@@ -159,10 +162,11 @@ class SaplingParamToolIntegrationTest {
 
     @Test
     @LargeTest
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun fetch_params_incorrect_hash_test() = runTest {
         val saplingParamTool = SaplingParamTool.new(getAppContext())
 
-        assertFailsWith<TransactionEncoderException.FetchParamsException> {
+        assertFailsWith<TransactionEncoderException.ValidateParamsException> {
             saplingParamTool.fetchParams(
                 SaplingParamsFixture.new(
                     fileName = SaplingParamsFixture.OUTPUT_FILE_NAME,
@@ -177,10 +181,11 @@ class SaplingParamToolIntegrationTest {
 
     @Test
     @LargeTest
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun fetch_params_incorrect_max_file_size_test() = runTest {
         val saplingParamTool = SaplingParamTool.new(getAppContext())
 
-        assertFailsWith<TransactionEncoderException.FetchParamsException> {
+        assertFailsWith<TransactionEncoderException.ValidateParamsException> {
             saplingParamTool.fetchParams(
                 SaplingParamsFixture.new(
                     fileName = SaplingParamsFixture.OUTPUT_FILE_NAME,
@@ -191,5 +196,72 @@ class SaplingParamToolIntegrationTest {
         }
 
         assertFalse(saplingParamTool.validate(SaplingParamsFixture.DESTINATION_DIRECTORY))
+    }
+
+    @Test
+    @LargeTest
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun fetch_param_manual_recover_test_from_fetch_params_exception() = runTest {
+        val saplingParamTool = SaplingParamTool.new(getAppContext())
+
+        SaplingParamsFixture.DESTINATION_DIRECTORY.delete() // will cause the FetchParamsException
+
+        val exception = assertFailsWith<TransactionEncoderException.FetchParamsException> {
+            saplingParamTool.fetchParams(outputSaplingParams)
+        }
+
+        assertEquals(outputSaplingParams.fileName, exception.parameters.fileName)
+
+        val expectedOutputFile = File(
+            SaplingParamsFixture.DESTINATION_DIRECTORY,
+            SaplingParamsFixture.OUTPUT_FILE_NAME
+        )
+
+        assertFalse(expectedOutputFile.exists())
+
+        // to set up the missing deleted folder
+        SaplingParamTool.initAndGetParamsDestinationDir(saplingParamTool.properties)
+
+        // re-try with parameters returned by the exception
+        saplingParamTool.fetchParams(exception.parameters)
+
+        assertTrue(expectedOutputFile.exists())
+    }
+
+    @Test
+    @LargeTest
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun fetch_param_manual_recover_test_from_validate_params_exception() = runTest {
+        val saplingParamTool = SaplingParamTool.new(getAppContext())
+
+        val expectedOutputFile = File(
+            SaplingParamsFixture.DESTINATION_DIRECTORY,
+            SaplingParamsFixture.OUTPUT_FILE_NAME
+        )
+
+        val outputSaplingParams = SaplingParamsFixture.new(
+            SaplingParamsFixture.DESTINATION_DIRECTORY,
+            SaplingParamsFixture.OUTPUT_FILE_NAME,
+            SaplingParamsFixture.OUTPUT_FILE_MAX_SIZE,
+            SaplingParamsFixture.SPEND_FILE_HASH // will cause the ValidateParamsException
+        )
+
+        val exception = assertFailsWith<TransactionEncoderException.ValidateParamsException> {
+            saplingParamTool.fetchParams(outputSaplingParams)
+        }
+
+        assertFalse(expectedOutputFile.exists())
+
+        val fixedOutputSaplingParams = SaplingParamsFixture.new(
+            destinationDirectoryPath = exception.parameters.destinationDirectory,
+            fileName = exception.parameters.fileName,
+            fileMaxSize = exception.parameters.fileMaxSizeBytes,
+            fileHash = SaplingParamsFixture.OUTPUT_FILE_HASH // fixed file hash
+        )
+
+        // re-try with fixed parameters
+        saplingParamTool.fetchParams(fixedOutputSaplingParams)
+
+        assertTrue(expectedOutputFile.exists())
     }
 }

@@ -6,11 +6,12 @@ import cash.z.ecc.android.sdk.internal.ext.deleteSuspend
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.BlockHeight
+import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.tool.DerivationTool
-import cash.z.ecc.android.sdk.type.UnifiedViewingKey
+import cash.z.ecc.android.sdk.type.UnifiedFullViewingKey
 import kotlinx.coroutines.withContext
 import java.io.File
 
@@ -43,25 +44,31 @@ internal class RustBackend private constructor(
     // Wrapper Functions
     //
 
-    override suspend fun initDataDb() = withContext(SdkDispatchers.DATABASE_IO) {
+    override suspend fun initDataDb(seed: ByteArray?) = withContext(SdkDispatchers.DATABASE_IO) {
         initDataDb(
             dataDbFile.absolutePath,
+            seed,
             networkId = network.id
         )
     }
 
-    override suspend fun initAccountsTable(vararg keys: UnifiedViewingKey): Boolean {
-        val extfvks = Array(keys.size) { "" }
-        val extpubs = Array(keys.size) { "" }
-        keys.forEachIndexed { i, key ->
-            extfvks[i] = key.extfvk
-            extpubs[i] = key.extpub
+    override suspend fun createAccount(seed: ByteArray): UnifiedSpendingKey {
+        return withContext(SdkDispatchers.DATABASE_IO) {
+            createAccount(
+                dataDbFile.absolutePath,
+                seed,
+                networkId = network.id
+            )
         }
+    }
+
+    override suspend fun initAccountsTable(vararg keys: UnifiedFullViewingKey): Boolean {
+        val ufvks = Array(keys.size) { keys[it].encoding }
+
         return withContext(SdkDispatchers.DATABASE_IO) {
             initAccountsTableWithKeys(
                 dataDbFile.absolutePath,
-                extfvks,
-                extpubs,
+                ufvks,
                 networkId = network.id
             )
         }
@@ -70,8 +77,8 @@ internal class RustBackend private constructor(
     override suspend fun initAccountsTable(
         seed: ByteArray,
         numberOfAccounts: Int
-    ): Array<UnifiedViewingKey> {
-        return DerivationTool.deriveUnifiedViewingKeys(seed, network, numberOfAccounts).apply {
+    ): Array<UnifiedFullViewingKey> {
+        return DerivationTool.deriveUnifiedFullViewingKeys(seed, network, numberOfAccounts).apply {
             @Suppress("SpreadOperator")
             initAccountsTable(*this)
         }
@@ -92,21 +99,18 @@ internal class RustBackend private constructor(
         }
     }
 
-    override suspend fun getShieldedAddress(account: Int) =
+    override suspend fun getCurrentAddress(account: Int) =
         withContext(SdkDispatchers.DATABASE_IO) {
-            getShieldedAddress(
+            getCurrentAddress(
                 dataDbFile.absolutePath,
                 account,
                 networkId = network.id
             )
         }
 
-    override suspend fun getTransparentAddress(account: Int, index: Int): String {
-        throw NotImplementedError(
-            "TODO: implement this at the zcash_client_sqlite level. But for now, use " +
-                "DerivationTool, instead to derive addresses from seeds"
-        )
-    }
+    override fun getTransparentReceiver(ua: String) = getTransparentReceiverForUnifiedAddress(ua)
+
+    override fun getSaplingReceiver(ua: String) = getSaplingReceiverForUnifiedAddress(ua)
 
     override suspend fun getBalance(account: Int): Zatoshi {
         val longValue = withContext(SdkDispatchers.DATABASE_IO) {
@@ -190,23 +194,13 @@ internal class RustBackend private constructor(
         }
 
     override suspend fun scanBlocks(limit: Int): Boolean {
-        return if (limit > 0) {
-            withContext(SdkDispatchers.DATABASE_IO) {
-                scanBlockBatch(
-                    cacheDbFile.absolutePath,
-                    dataDbFile.absolutePath,
-                    limit,
-                    networkId = network.id
-                )
-            }
-        } else {
-            withContext(SdkDispatchers.DATABASE_IO) {
-                scanBlocks(
-                    cacheDbFile.absolutePath,
-                    dataDbFile.absolutePath,
-                    networkId = network.id
-                )
-            }
+        return withContext(SdkDispatchers.DATABASE_IO) {
+            scanBlocks(
+                cacheDbFile.absolutePath,
+                dataDbFile.absolutePath,
+                limit,
+                networkId = network.id
+            )
         }
     }
 
@@ -220,43 +214,38 @@ internal class RustBackend private constructor(
         }
 
     override suspend fun createToAddress(
-        consensusBranchId: Long,
-        account: Int,
-        extsk: String,
+        usk: UnifiedSpendingKey,
         to: String,
         value: Long,
         memo: ByteArray?
     ): Long = withContext(SdkDispatchers.DATABASE_IO) {
         createToAddress(
             dataDbFile.absolutePath,
-            consensusBranchId,
-            account,
-            extsk,
+            usk.copyBytes(),
             to,
             value,
             memo ?: ByteArray(0),
             File(saplingParamDir, SaplingParamTool.SPEND_PARAM_FILE_NAME).absolutePath,
             File(saplingParamDir, SaplingParamTool.OUTPUT_PARAM_FILE_NAME).absolutePath,
-            networkId = network.id
+            networkId = network.id,
+            useZip317Fees = IS_USE_ZIP_317_FEES
         )
     }
 
     override suspend fun shieldToAddress(
-        extsk: String,
-        tsk: String,
+        usk: UnifiedSpendingKey,
         memo: ByteArray?
     ): Long {
         twig("TMP: shieldToAddress with db path: $dataDbFile, ${memo?.size}")
         return withContext(SdkDispatchers.DATABASE_IO) {
             shieldToAddress(
                 dataDbFile.absolutePath,
-                0,
-                extsk,
-                tsk,
+                usk.copyBytes(),
                 memo ?: ByteArray(0),
                 File(saplingParamDir, SaplingParamTool.SPEND_PARAM_FILE_NAME).absolutePath,
                 File(saplingParamDir, SaplingParamTool.OUTPUT_PARAM_FILE_NAME).absolutePath,
-                networkId = network.id
+                networkId = network.id,
+                useZip317Fees = IS_USE_ZIP_317_FEES
             )
         }
     }
@@ -277,20 +266,6 @@ internal class RustBackend private constructor(
             script,
             value,
             height.value,
-            networkId = network.id
-        )
-    }
-
-    override suspend fun clearUtxos(
-        tAddress: String,
-        aboveHeightInclusive: BlockHeight
-    ): Boolean = withContext(SdkDispatchers.DATABASE_IO) {
-        clearUtxos(
-            dataDbFile.absolutePath,
-            tAddress,
-            // The Kotlin API is inclusive, but the Rust API is exclusive.
-            // This can create invalid BlockHeights if the height is saplingActivationHeight.
-            aboveHeightInclusive.value - 1,
             networkId = network.id
         )
     }
@@ -318,6 +293,9 @@ internal class RustBackend private constructor(
 
     override fun isValidTransparentAddr(addr: String) =
         isValidTransparentAddress(addr, networkId = network.id)
+
+    override fun isValidUnifiedAddr(addr: String) =
+        isValidUnifiedAddress(addr, networkId = network.id)
 
     override fun getBranchIdForHeight(height: BlockHeight): Long =
         branchIdForHeight(height.value, networkId = network.id)
@@ -349,6 +327,13 @@ internal class RustBackend private constructor(
      */
     companion object {
         internal val rustLibraryLoader = NativeLibraryLoader("zcashwalletsdk")
+        private const val IS_USE_ZIP_317_FEES = false
+
+        suspend fun loadLibrary() {
+            rustLibraryLoader.load {
+                initOnLoad()
+            }
+        }
 
         /**
          * Loads the library and initializes path variables. Although it is best to only call this
@@ -361,7 +346,7 @@ internal class RustBackend private constructor(
             zcashNetwork: ZcashNetwork,
             birthdayHeight: BlockHeight
         ): RustBackend {
-            rustLibraryLoader.load()
+            loadLibrary()
 
             return RustBackend(
                 zcashNetwork,
@@ -372,30 +357,20 @@ internal class RustBackend private constructor(
             )
         }
 
-        /**
-         * Forwards Rust logs to logcat. This is a function that is intended for debug purposes. All
-         * logs will be tagged with `cash.z.rust.logs`. Typically, a developer would clone
-         * librustzcash locally and then modify Cargo.toml in this project to point to their local
-         * build (see Cargo.toml for details). From there, they can add any log messages they want
-         * and have them surfaced into the Android logging system. By default, this behavior is
-         * disabled and this is the function that enables it. Initially only the logs in
-         * [src/main/rust/lib.rs] will appear and any additional logs would need to be added by the
-         * developer.
-         */
-        fun enableRustLogs() = initLogs()
-
         //
         // External Functions
         //
 
         @JvmStatic
-        private external fun initDataDb(dbDataPath: String, networkId: Int): Boolean
+        private external fun initOnLoad()
+
+        @JvmStatic
+        private external fun initDataDb(dbDataPath: String, seed: ByteArray?, networkId: Int): Int
 
         @JvmStatic
         private external fun initAccountsTableWithKeys(
             dbDataPath: String,
-            extfvk: Array<out String>,
-            extpub: Array<out String>,
+            ufvks: Array<out String>,
             networkId: Int
         ): Boolean
 
@@ -411,17 +386,35 @@ internal class RustBackend private constructor(
         ): Boolean
 
         @JvmStatic
-        private external fun getShieldedAddress(
+        private external fun createAccount(dbDataPath: String, seed: ByteArray, networkId: Int): UnifiedSpendingKey
+
+        @JvmStatic
+        private external fun getCurrentAddress(
             dbDataPath: String,
             account: Int,
             networkId: Int
         ): String
 
         @JvmStatic
+        private external fun getTransparentReceiverForUnifiedAddress(ua: String): String?
+
+        @JvmStatic
+        private external fun getSaplingReceiverForUnifiedAddress(ua: String): String?
+
+        internal fun validateUnifiedSpendingKey(bytes: ByteArray) =
+            isValidSpendingKey(bytes)
+
+        @JvmStatic
+        private external fun isValidSpendingKey(bytes: ByteArray): Boolean
+
+        @JvmStatic
         private external fun isValidShieldedAddress(addr: String, networkId: Int): Boolean
 
         @JvmStatic
         private external fun isValidTransparentAddress(addr: String, networkId: Int): Boolean
+
+        @JvmStatic
+        private external fun isValidUnifiedAddress(addr: String, networkId: Int): Boolean
 
         @JvmStatic
         private external fun getBalance(dbDataPath: String, account: Int, networkId: Int): Long
@@ -438,14 +431,14 @@ internal class RustBackend private constructor(
             dbDataPath: String,
             idNote: Long,
             networkId: Int
-        ): String
+        ): String?
 
         @JvmStatic
         private external fun getSentMemoAsUtf8(
             dbDataPath: String,
             dNote: Long,
             networkId: Int
-        ): String
+        ): String?
 
         @JvmStatic
         private external fun validateCombinedChain(
@@ -472,13 +465,6 @@ internal class RustBackend private constructor(
         private external fun scanBlocks(
             dbCachePath: String,
             dbDataPath: String,
-            networkId: Int
-        ): Boolean
-
-        @JvmStatic
-        private external fun scanBlockBatch(
-            dbCachePath: String,
-            dbDataPath: String,
             limit: Int,
             networkId: Int
         ): Boolean
@@ -494,32 +480,27 @@ internal class RustBackend private constructor(
         @Suppress("LongParameterList")
         private external fun createToAddress(
             dbDataPath: String,
-            consensusBranchId: Long,
-            account: Int,
-            extsk: String,
+            usk: ByteArray,
             to: String,
             value: Long,
             memo: ByteArray,
             spendParamsPath: String,
             outputParamsPath: String,
-            networkId: Int
+            networkId: Int,
+            useZip317Fees: Boolean
         ): Long
 
         @JvmStatic
         @Suppress("LongParameterList")
         private external fun shieldToAddress(
             dbDataPath: String,
-            account: Int,
-            extsk: String,
-            tsk: String,
+            usk: ByteArray,
             memo: ByteArray,
             spendParamsPath: String,
             outputParamsPath: String,
-            networkId: Int
+            networkId: Int,
+            useZip317Fees: Boolean
         ): Long
-
-        @JvmStatic
-        private external fun initLogs()
 
         @JvmStatic
         private external fun branchIdForHeight(height: Long, networkId: Int): Long
@@ -534,14 +515,6 @@ internal class RustBackend private constructor(
             script: ByteArray,
             value: Long,
             height: Long,
-            networkId: Int
-        ): Boolean
-
-        @JvmStatic
-        private external fun clearUtxos(
-            dbDataPath: String,
-            tAddress: String,
-            aboveHeight: Long,
             networkId: Int
         ): Boolean
 

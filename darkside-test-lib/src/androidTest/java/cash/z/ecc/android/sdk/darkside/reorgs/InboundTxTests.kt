@@ -97,7 +97,6 @@ class InboundTxTests : ScopedTest() {
                 .stageEmptyBlocks(firstBlock + 1, 100)
                 .applyTipHeight(BlockHeight.new(ZcashNetwork.Mainnet, targetTxBlock.value - 1))
 
-            sithLord.synchronizer.start(classScope)
             sithLord.await()
         }
     }

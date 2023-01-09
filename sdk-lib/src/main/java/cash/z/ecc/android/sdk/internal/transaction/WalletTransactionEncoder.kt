@@ -1,14 +1,16 @@
 package cash.z.ecc.android.sdk.internal.transaction
 
-import cash.z.ecc.android.sdk.db.entity.EncodedTransaction
 import cash.z.ecc.android.sdk.exception.TransactionEncoderException
 import cash.z.ecc.android.sdk.ext.masked
 import cash.z.ecc.android.sdk.internal.SaplingParamTool
+import cash.z.ecc.android.sdk.internal.model.EncodedTransaction
+import cash.z.ecc.android.sdk.internal.repository.DerivedDataRepository
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.internal.twigTask
 import cash.z.ecc.android.sdk.jni.RustBackendWelding
+import cash.z.ecc.android.sdk.model.TransactionRecipient
+import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.Zatoshi
-import java.io.IOException
 
 /**
  * Class responsible for encoding a transaction in a consistent way. This bridges the gap by
@@ -22,7 +24,7 @@ import java.io.IOException
 internal class WalletTransactionEncoder(
     private val rustBackend: RustBackendWelding,
     private val saplingParamTool: SaplingParamTool,
-    private val repository: TransactionRepository
+    private val repository: DerivedDataRepository
 ) : TransactionEncoder {
 
     /**
@@ -30,32 +32,34 @@ internal class WalletTransactionEncoder(
      * wallet implementation doesn't throw an exception, we wrap the issue into a descriptive
      * exception ourselves (rather than using double-bangs for things).
      *
-     * @param spendingKey the key associated with the notes that will be spent.
+     * @param usk the unified spending key associated with the notes that will be spent.
      * @param amount the amount of zatoshi to send.
      * @param toAddress the recipient's address.
      * @param memo the optional memo to include as part of the transaction.
-     * @param fromAccountIndex the optional account id to use. By default, the 1st account is used.
      *
      * @return the successfully encoded transaction or an exception
      */
     override suspend fun createTransaction(
-        spendingKey: String,
+        usk: UnifiedSpendingKey,
         amount: Zatoshi,
-        toAddress: String,
-        memo: ByteArray?,
-        fromAccountIndex: Int
+        recipient: TransactionRecipient,
+        memo: ByteArray?
     ): EncodedTransaction {
-        val transactionId = createSpend(spendingKey, amount, toAddress, memo)
+        require(recipient is TransactionRecipient.Address)
+
+        val transactionId = createSpend(usk, amount, recipient.addressValue, memo)
         return repository.findEncodedTransactionById(transactionId)
             ?: throw TransactionEncoderException.TransactionNotFoundException(transactionId)
     }
 
     override suspend fun createShieldingTransaction(
-        spendingKey: String,
-        transparentSecretKey: String,
+        usk: UnifiedSpendingKey,
+        recipient: TransactionRecipient,
         memo: ByteArray?
     ): EncodedTransaction {
-        val transactionId = createShieldingSpend(spendingKey, transparentSecretKey, memo)
+        require(recipient is TransactionRecipient.Account)
+
+        val transactionId = createShieldingSpend(usk, memo)
         return repository.findEncodedTransactionById(transactionId)
             ?: throw TransactionEncoderException.TransactionNotFoundException(transactionId)
     }
@@ -82,6 +86,17 @@ internal class WalletTransactionEncoder(
     override suspend fun isValidTransparentAddress(address: String): Boolean =
         rustBackend.isValidTransparentAddr(address)
 
+    /**
+     * Utility function to help with validation. This is not called during [createTransaction]
+     * because this class asserts that all validation is done externally by the UI, for now.
+     *
+     * @param address the address to validate
+     *
+     * @return true when the given address is a valid ZIP 316 Unified Address
+     */
+    override suspend fun isValidUnifiedAddress(address: String): Boolean =
+        rustBackend.isValidUnifiedAddr(address)
+
     override suspend fun getConsensusBranchId(): Long {
         val height = repository.lastScannedHeight()
         if (height < rustBackend.network.saplingActivationHeight) {
@@ -94,45 +109,37 @@ internal class WalletTransactionEncoder(
      * Does the proofs and processing required to create a transaction to spend funds and inserts
      * the result in the database. On average, this call takes over 10 seconds.
      *
-     * @param spendingKey the key associated with the notes that will be spent.
+     * @param usk the unified spending key associated with the notes that will be spent.
      * @param amount the amount of zatoshi to send.
      * @param toAddress the recipient's address.
      * @param memo the optional memo to include as part of the transaction.
-     * @param fromAccountIndex the optional account id to use. By default, the 1st account is used.
      *
      * @return the row id in the transactions table that contains the spend transaction or -1 if it
      * failed.
      */
     private suspend fun createSpend(
-        spendingKey: String,
+        usk: UnifiedSpendingKey,
         amount: Zatoshi,
         toAddress: String,
-        memo: ByteArray? = byteArrayOf(),
-        fromAccountIndex: Int = 0
+        memo: ByteArray? = byteArrayOf()
     ): Long {
-        return twigTask("Creating transaction to spend $amount zatoshi to ${toAddress.masked()} with memo $memo") {
-            saplingParamTool.ensureParams(rustBackend.saplingParamDir)
-            twig("Params exist! Attempting to send.")
+        return twigTask(
+            "creating transaction to spend $amount zatoshi to" +
+                " ${toAddress.masked()} with memo $memo"
+        ) {
+            @Suppress("TooGenericExceptionCaught")
             try {
-                val branchId = getConsensusBranchId()
-                twig("Attempting to send with consensus branchId $branchId...")
+                saplingParamTool.ensureParams(rustBackend.saplingParamDir)
+                twig("params exist! attempting to send...")
                 rustBackend.createToAddress(
-                    branchId,
-                    fromAccountIndex,
-                    spendingKey,
+                    usk,
                     toAddress,
                     amount.value,
                     memo
                 )
-            } catch (e: IOException) {
-                twig("Caught IO exception while creating transaction ${e.message}, caused by: ${e.cause}.")
-                throw e
-            } catch (e: TransactionEncoderException.IncompleteScanException) {
-                twig(
-                    "Caught TransactionEncoderException.IncompleteScanException while creating transaction" +
-                        " ${e.message}, caused by: ${e.cause}."
-                )
-                throw e
+            } catch (t: Throwable) {
+                twig("Caught exception while creating transaction ${t.message}, caused by: ${t.cause}.")
+                throw t
             }
         }.also { result ->
             twig("result of sendToAddress: $result")
@@ -140,25 +147,24 @@ internal class WalletTransactionEncoder(
     }
 
     private suspend fun createShieldingSpend(
-        spendingKey: String,
-        transparentSecretKey: String,
+        usk: UnifiedSpendingKey,
         memo: ByteArray? = byteArrayOf()
     ): Long {
-        return twigTask("Creating transaction to shield all UTXOs.") {
-            saplingParamTool.ensureParams(rustBackend.saplingParamDir)
-            twig("Params exist! attempting to shield...")
+        return twigTask("creating transaction to shield all UTXOs") {
+            @Suppress("TooGenericExceptionCaught")
             try {
+                saplingParamTool.ensureParams(rustBackend.saplingParamDir)
+                twig("params exist! attempting to shield...")
                 rustBackend.shieldToAddress(
-                    spendingKey,
-                    transparentSecretKey,
+                    usk,
                     memo
                 )
-            } catch (e: IOException) {
+            } catch (t: Throwable) {
                 // TODO [#680]: if this error matches: Insufficient balance (have 0, need 1000 including fee)
                 //  then consider custom error that says no UTXOs existed to shield
                 // TODO [#680]: https://github.com/zcash/zcash-android-wallet-sdk/issues/680
-                twig("Caught IO exception - shield failed due to: ${e.message}, caused by: ${e.cause}.")
-                throw e
+                twig("Shield failed due to: ${t.message}, caused by: ${t.cause}.")
+                throw t
             }
         }.also { result ->
             twig("result of shieldToAddress: $result")

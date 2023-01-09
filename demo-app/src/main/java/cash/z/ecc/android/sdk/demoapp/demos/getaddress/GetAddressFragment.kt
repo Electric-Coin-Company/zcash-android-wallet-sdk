@@ -2,18 +2,20 @@ package cash.z.ecc.android.sdk.demoapp.demos.getaddress
 
 import android.os.Bundle
 import android.view.LayoutInflater
+import android.view.View
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import cash.z.ecc.android.bip39.Mnemonics
-import cash.z.ecc.android.bip39.toSeed
+import androidx.lifecycle.repeatOnLifecycle
 import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
 import cash.z.ecc.android.sdk.demoapp.databinding.FragmentGetAddressBinding
 import cash.z.ecc.android.sdk.demoapp.ext.requireApplicationContext
-import cash.z.ecc.android.sdk.demoapp.util.fromResources
+import cash.z.ecc.android.sdk.demoapp.type.fromResources
+import cash.z.ecc.android.sdk.demoapp.util.ProvideAddressBenchmarkTrace
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.tool.DerivationTool
-import cash.z.ecc.android.sdk.type.UnifiedViewingKey
+import cash.z.ecc.android.sdk.type.UnifiedFullViewingKey
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 
 /**
  * Displays the address associated with the seed defined by the default config. To modify the seed
@@ -21,47 +23,39 @@ import kotlinx.coroutines.runBlocking
  */
 class GetAddressFragment : BaseDemoFragment<FragmentGetAddressBinding>() {
 
-    private lateinit var viewingKey: UnifiedViewingKey
-    private lateinit var seed: ByteArray
-
-    /**
-     * Initialize the required values that would normally live outside the demo but are repeated
-     * here for completeness so that each demo file can serve as a standalone example.
-     */
-    private fun setup() {
-        // defaults to the value of `DemoConfig.seedWords` but can also be set by the user
-        val seedPhrase = sharedViewModel.seedPhrase.value
-
-        // Use a BIP-39 library to convert a seed phrase into a byte array. Most wallets already
-        // have the seed stored
-        seed = Mnemonics.MnemonicCode(seedPhrase).toSeed()
-
-        // the derivation tool can be used for generating keys and addresses
-        viewingKey = runBlocking {
-            DerivationTool.deriveUnifiedViewingKeys(
-                seed,
-                ZcashNetwork.fromResources(requireApplicationContext())
-            ).first()
-        }
-    }
+    private lateinit var viewingKey: UnifiedFullViewingKey
 
     private fun displayAddress() {
-        // a full fledged app would just get the address from the synchronizer
-        viewLifecycleOwner.lifecycleScope.launchWhenStarted {
-            val zaddress = DerivationTool.deriveShieldedAddress(
-                seed,
-                ZcashNetwork.fromResources(requireApplicationContext())
-            )
-            val taddress = DerivationTool.deriveTransparentAddress(
-                seed,
-                ZcashNetwork.fromResources(requireApplicationContext())
-            )
-            binding.textInfo.text = "z-addr:\n$zaddress\n\n\nt-addr:\n$taddress"
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    sharedViewModel.synchronizerFlow.filterNotNull().collect { synchronizer ->
+                        binding.unifiedAddress.apply {
+                            reportTraceEvent(ProvideAddressBenchmarkTrace.Event.UNIFIED_ADDRESS_START)
+                            val uaddress = synchronizer.getUnifiedAddress()
+                            reportTraceEvent(ProvideAddressBenchmarkTrace.Event.UNIFIED_ADDRESS_END)
+                            text = uaddress
+                            setOnClickListener { copyToClipboard(uaddress) }
+                        }
+                        binding.saplingAddress.apply {
+                            reportTraceEvent(ProvideAddressBenchmarkTrace.Event.SAPLING_ADDRESS_START)
+                            val sapling = synchronizer.getSaplingAddress()
+                            reportTraceEvent(ProvideAddressBenchmarkTrace.Event.SAPLING_ADDRESS_END)
+                            text = sapling
+                            setOnClickListener { copyToClipboard(sapling) }
+                        }
+                        binding.transparentAddress.apply {
+                            reportTraceEvent(ProvideAddressBenchmarkTrace.Event.TRANSPARENT_ADDRESS_START)
+                            val transparent = synchronizer.getTransparentAddress()
+                            reportTraceEvent(ProvideAddressBenchmarkTrace.Event.TRANSPARENT_ADDRESS_END)
+                            text = transparent
+                            setOnClickListener { copyToClipboard(transparent) }
+                        }
+                    }
+                }
+            }
         }
     }
-
-    // TODO [#677]: Show an example with the synchronizer
-    // TODO [#677]: https://github.com/zcash/zcash-android-wallet-sdk/issues/677
 
     //
     // Android Lifecycle overrides
@@ -69,12 +63,18 @@ class GetAddressFragment : BaseDemoFragment<FragmentGetAddressBinding>() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setup()
+        reportTraceEvent(ProvideAddressBenchmarkTrace.Event.ADDRESS_SCREEN_START)
     }
 
-    override fun onResume() {
-        super.onResume()
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
         displayAddress()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        reportTraceEvent(ProvideAddressBenchmarkTrace.Event.ADDRESS_SCREEN_END)
     }
 
     //
@@ -84,11 +84,11 @@ class GetAddressFragment : BaseDemoFragment<FragmentGetAddressBinding>() {
     override fun onActionButtonClicked() {
         viewLifecycleOwner.lifecycleScope.launch {
             copyToClipboard(
-                DerivationTool.deriveShieldedAddress(
-                    viewingKey.extfvk,
+                DerivationTool.deriveUnifiedAddress(
+                    viewingKey.encoding,
                     ZcashNetwork.fromResources(requireApplicationContext())
                 ),
-                "Shielded address copied to clipboard!"
+                "Unified address copied to clipboard!"
             )
         }
     }

@@ -16,6 +16,7 @@ use failure::Error;
 use jni::JNIEnv;
 use std::any::Any;
 use std::thread;
+use tracing::error;
 
 type ExceptionResult<T> = thread::Result<Result<T, Error>>;
 
@@ -56,18 +57,12 @@ fn throw(env: &JNIEnv, description: &str) {
     let exception = match env.find_class("java/lang/RuntimeException") {
         Ok(val) => val,
         Err(e) => {
-            error!(
-                "Unable to find 'RuntimeException' class: {}",
-                e.description()
-            );
+            error!("Unable to find 'RuntimeException' class: {}", e.to_string());
             return;
         }
     };
     if let Err(e) = env.throw_new(exception, description) {
-        error!(
-            "Unable to find 'RuntimeException' class: {}",
-            e.description()
-        );
+        error!("Unable to find 'RuntimeException' class: {}", e.to_string());
     }
 }
 
@@ -88,6 +83,7 @@ pub fn any_to_string(any: &Box<dyn Any + Send>) -> String {
 mod tests {
     use super::*;
     use std::error::Error;
+    use std::fmt;
     use std::panic;
 
     #[test]
@@ -118,7 +114,7 @@ mod tests {
         assert_eq!("Unknown error occurred", any_to_string(&error));
     }
 
-    fn panic_error<T: Send + 'static>(val: T) -> Box<dyn Any + Send> {
-        panic::catch_unwind(panic::AssertUnwindSafe(|| panic!(val))).unwrap_err()
+    fn panic_error<T: fmt::Display + Send + 'static>(val: T) -> Box<dyn Any + Send> {
+        panic::catch_unwind(panic::AssertUnwindSafe(|| panic!("{}", val))).unwrap_err()
     }
 }

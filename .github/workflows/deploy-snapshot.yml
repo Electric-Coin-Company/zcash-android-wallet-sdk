@@ -28,12 +28,12 @@ jobs:
     steps:
       - name: Checkout
         timeout-minutes: 1
-        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
+        uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b
       # Gradle Wrapper validation can be flaky
       # https://github.com/gradle/wrapper-validation-action/issues/40
       - name: Gradle Wrapper Validation
         timeout-minutes: 1
-        uses: gradle/wrapper-validation-action@e6e38bacfdf1a337459f332974bb2327a31aaf4b
+        uses: gradle/wrapper-validation-action@55e685c48d84285a5b0418cd094606e199cca3b6
 
   check_secrets:
     environment: deployment
@@ -48,7 +48,7 @@ jobs:
           MAVEN_CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
           MAVEN_CENTRAL_PASSWORD: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
         if: "${{ env.MAVEN_CENTRAL_USERNAME != '' && env.MAVEN_CENTRAL_PASSWORD != '' }}"
-        run: echo "::set-output name=defined::true"
+        run: echo "defined=true" >> $GITHUB_OUTPUT
 
   deploy_snapshot:
     environment: deployment
@@ -59,7 +59,7 @@ jobs:
     steps:
       - name: Checkout
         timeout-minutes: 1
-        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
+        uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b
       - name: Setup
         id: setup
         timeout-minutes: 30
@@ -93,7 +93,7 @@ jobs:
           zip -r ${BINARIES_ZIP_PATH} . -i *build/outputs/*
       - name: Upload Artifacts
         if: ${{ always() }}
-        uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8
+        uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb
         timeout-minutes: 2
         with:
           name: Snapshot binaries

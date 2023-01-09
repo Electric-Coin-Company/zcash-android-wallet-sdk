@@ -1,7 +1,44 @@
 Troubleshooting Migrations
 ==========
 
-Upcoming
+Migration to Version 1.11
+---------------------------------
+The way the SDK is initialized has changed.  The `Initializer` object has been removed and `Synchronizer.new` now takes a longer parameter list which includes the parameters previously passed to `Initializer`.
+
+SDK initialization also now requires access to the seed bytes at two times: 1. during new wallet creation and 2. during upgrade of an existing wallet to SDK 1.10 due to internal data migrations.  To handle case #2, client should wrap `Synchronizer.new()` with a try-catch for `InitializerException.SeedRequired`.  Clients can pass `null` to try to initialize the SDK without the seed, then try again if the exception is thrown to indicate the seed is needed.  This pattern future-proofs initialization, as the seed may be required by future SDK updates.
+
+`Synchronizer.stop()` has been removed.  `Synchronizer.new()` now returns an instance that implements the `Closeable` interface.  This effectively means that calls to `stop()` are replaced with `close()`.  This change also enables greater safety within client applications, as the Closeable interface can be hidden from global synchronizer instances.  For exmaple:
+```
+val synchronizerFlow: Flow<Synchronizer> = callbackFlow<Synchronizer> {
+   val closeableSynchronizer: CloseableSynchronizer = Synchronizer.new(...)
+
+    send(closeableSynchronizer)
+    awaitClose {
+        closeableSynchronizer.close()
+    }
+}
+```
+
+To improve type safety of the public API, Zcash account indexes are now represented by an `Account` object.  The SDK currently only supports the default account, `Account.DEFAULT`.  Migration will effectively require replacing APIs with an account `0` with `Account.DEFAULT`.
+
+To support Network Upgrade 5, the way keys are generated has changed.
+
+For SDK clients that regenerate the keys from a mnemonic, migration might look like:
+ * Replace usage of `UnifiedViewingKey` with `UnifiedFullViewingKey`
+ * Replace `DerivationTool.deriveUnifiedViewingKeys` with `DerivationTool.deriveUnifiedFullViewingKeys`
+
+For SDK clients that store the key separately from the mnemonic, the migration might look like:
+ * Replace usage of `UnifiedViewingKey(extfvk: String, extpub: String)` with `UnifiedFullViewingKey(encoding: String)`
+ * Replace `DerivationTool.deriveUnifiedViewingKeys` with `DerivationTool.deriveUnifiedFullViewingKeys`
+ * Delete any previously persisted values for `UnifiedViewingKey(extfvk: String, extpub: String)`,
+   provided that they can be rederived from the mnemonic.
+ * Re-generate the key from the mnemonic using `DerivationTool.deriveUnifiedFullViewingKeys`
+
+To support Unified Addresses (UAs), some APIs have been modified.  In particular, `Synchronizer.getUnifiedAddress()` returns the unified address while `Synchronizer.getSaplingAddress()` and `Synchronizer.getTransparentAddress()` return the sapling or transparent components of the unified address.  Due to this change and the derivation of different addresses from UAs, clients may notice that the transparent address returned by this API is different from the transparent address returned by older versions of the SDK.  Note that UA support does not yet encompass orchard addresses.
+
+Due to internal changes in the SDK, the way transactions are queried and represented works differently.  The previous ConfirmedTransaction object has been replaced with `TransactionOverview` which contains less information.  Missing fields, such as memos and recipients, can be queried with `Synchronizer.getMemos(TransactionOverview)` and `Synchronizer.getReceipients(TransactionOverview)`.
+
+Migration to Version 1.9
 --------------------------------------
 `ZcashNetwork` is no longer an enum. The prior enum values are now declared as object properties `ZcashNetwork.Mainnet` and `ZcashNetwork.Testnet`.  For the most part, this change should have minimal impact.  ZcashNetwork was also moved from the package `cash.z.ecc.android.sdk.type` to `cash.z.ecc.android.sdk.model`, which will require a change to your import statements.  The server fields have been removed from `ZcashNetwork`, allowing server and network configuration to be done independently.
 

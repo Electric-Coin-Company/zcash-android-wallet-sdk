@@ -11,8 +11,14 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.viewbinding.ViewBinding
+import cash.z.ecc.android.sdk.demoapp.util.BenchmarkTrace
+import cash.z.ecc.android.sdk.demoapp.util.ProvideAddressBenchmarkTrace
+import cash.z.ecc.android.sdk.demoapp.util.SyncBlockchainBenchmarkTrace
 import cash.z.ecc.android.sdk.demoapp.util.mainActivity
 import com.google.android.material.snackbar.Snackbar
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 abstract class BaseDemoFragment<T : ViewBinding> : Fragment() {
 
@@ -26,6 +32,8 @@ abstract class BaseDemoFragment<T : ViewBinding> : Fragment() {
     // contains view information provided by the user
     val sharedViewModel: SharedViewModel by activityViewModels()
     lateinit var binding: T
+
+    internal val traceScope = CoroutineScope(Dispatchers.Main)
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -93,4 +101,13 @@ abstract class BaseDemoFragment<T : ViewBinding> : Fragment() {
      * interface so the base class cannot take care of this behavior without some help.
      */
     abstract fun inflateBinding(layoutInflater: LayoutInflater): T
+
+    internal fun reportTraceEvent(event: BenchmarkTrace.Event?) {
+        traceScope.launch {
+            when (event) {
+                is ProvideAddressBenchmarkTrace.Event -> ProvideAddressBenchmarkTrace.writeEvent(event)
+                is SyncBlockchainBenchmarkTrace.Event -> SyncBlockchainBenchmarkTrace.writeEvent(event)
+            }
+        }
+    }
 }

@@ -2,11 +2,14 @@ package cash.z.ecc.android.sdk.demoapp
 
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.view.inputmethod.InputMethodManager
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.core.content.getSystemService
@@ -17,7 +20,7 @@ import androidx.navigation.ui.navigateUp
 import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
 import androidx.viewbinding.ViewBinding
-import cash.z.ecc.android.sdk.demoapp.util.fromResources
+import cash.z.ecc.android.sdk.demoapp.type.fromResources
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.model.defaultForNetwork
@@ -30,12 +33,11 @@ import com.google.android.material.navigation.NavigationView
 @Suppress("TooManyFunctions")
 class MainActivity :
     AppCompatActivity(),
-    ClipboardManager.OnPrimaryClipChangedListener,
     DrawerLayout.DrawerListener {
     private lateinit var appBarConfiguration: AppBarConfiguration
     private lateinit var clipboard: ClipboardManager
-    private var clipboardListener: ((String?) -> Unit)? = null
     var fabListener: BaseDemoFragment<out ViewBinding>? = null
+    private val sharedViewModel: SharedViewModel by viewModels()
 
     /**
      * The service to use for all demos that interact directly with the service. Since gRPC channels
@@ -49,7 +51,6 @@ class MainActivity :
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-        clipboard.addPrimaryClipChangedListener(this)
         setContentView(R.layout.activity_main)
         val toolbar: Toolbar = findViewById(R.id.toolbar)
         setSupportActionBar(toolbar)
@@ -86,6 +87,10 @@ class MainActivity :
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         // Inflate the menu; this adds items to the action bar if it is present.
         menuInflater.inflate(R.menu.main, menu)
+
+        if (ZcashNetwork.Mainnet == ZcashNetwork.fromResources(applicationContext)) {
+            menu.findItem(R.id.action_faucet).isVisible = false
+        }
         return true
     }
 
@@ -93,6 +98,19 @@ class MainActivity :
         return if (item.itemId == R.id.action_settings) {
             val navController = findNavController(R.id.nav_host_fragment)
             navController.navigate(R.id.nav_home)
+            true
+        } else if (item.itemId == R.id.action_faucet) {
+            runCatching {
+                startActivity(newBrowserIntent("https://faucet.zecpages.com/"))
+            }
+            true
+        } else if (item.itemId == R.id.action_reset_sdk) {
+            val navController = findNavController(R.id.nav_host_fragment)
+            navController.navigate(R.id.nav_home)
+            sharedViewModel.resetSDK()
+            true
+        } else if (item.itemId == R.id.action_new_ui) {
+            startActivity(Intent(this, ComposeActivity::class.java))
             true
         } else {
             super.onOptionsItemSelected(item)
@@ -136,19 +154,6 @@ class MainActivity :
         }
     }
 
-    override fun onPrimaryClipChanged() {
-        clipboardListener?.invoke(getClipboardText())
-    }
-
-    fun setClipboardListener(block: (String?) -> Unit) {
-        clipboardListener = block
-        block(getClipboardText())
-    }
-
-    fun removeClipboardListener() {
-        clipboardListener = null
-    }
-
     fun hideKeyboard() {
         val windowToken = window.decorView.rootView.windowToken
         getSystemService<InputMethodManager>()?.hideSoftInputFromWindow(windowToken, 0)
@@ -156,12 +161,12 @@ class MainActivity :
 
     /* DrawerListener implementation */
 
+    @Suppress("EmptyFunctionBlock")
     override fun onDrawerStateChanged(newState: Int) {
-        twig("Drawer state changed to: $newState.")
     }
 
+    @Suppress("EmptyFunctionBlock")
     override fun onDrawerSlide(drawerView: View, slideOffset: Float) {
-        twig("Drawer slides with offset: $slideOffset.")
     }
 
     override fun onDrawerClosed(drawerView: View) {
@@ -171,4 +176,13 @@ class MainActivity :
     override fun onDrawerOpened(drawerView: View) {
         hideKeyboard()
     }
+}
+
+private fun newBrowserIntent(url: String): Intent {
+    val uri = Uri.parse(url)
+    val intent = Intent(Intent.ACTION_VIEW, uri).apply {
+        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    }
+
+    return intent
 }

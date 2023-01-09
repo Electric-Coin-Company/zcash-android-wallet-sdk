@@ -9,6 +9,8 @@
   io.grpc.okhttp.OkHttpChannelBuilder sslSocketFactory(javax.net.ssl.SSLSocketFactory);
   io.grpc.okhttp.OkHttpChannelBuilder transportExecutor(java.util.concurrent.Executor);
 }
+# gRPC related - https://github.com/grpc/grpc-java/issues/6612
+-keep class * extends com.google.protobuf.GeneratedMessageLite { *; }
 
 # Prevent OKHttp from causing warnings for consumers of the SDK
 -dontwarn org.bouncycastle.jsse.BCSSLParameters

@@ -2,6 +2,7 @@ package cash.z.ecc.android.sdk.internal.block
 
 import cash.z.ecc.android.sdk.internal.ext.retryUpTo
 import cash.z.ecc.android.sdk.internal.model.from
+import cash.z.ecc.android.sdk.internal.repository.CompactBlockRepository
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.BlockHeight
 import co.electriccoin.lightwallet.client.BlockingLightWalletClient
@@ -21,15 +22,15 @@ import kotlinx.coroutines.withContext
  * @property lightWalletClient the service used for requesting compact blocks
  * @property compactBlockStore responsible for persisting the compact blocks that are received
  */
-open class CompactBlockDownloader private constructor(val compactBlockStore: CompactBlockStore) {
+open class CompactBlockDownloader private constructor(val compactBlockRepository: CompactBlockRepository) {
 
     lateinit var lightWalletClient: BlockingLightWalletClient
         private set
 
     constructor(
         lightWalletService: BlockingLightWalletClient,
-        compactBlockStore: CompactBlockStore
-    ) : this(compactBlockStore) {
+        compactBlockRepository: CompactBlockRepository
+    ) : this(compactBlockRepository) {
         this.lightWalletClient = lightWalletService
     }
 
@@ -46,7 +47,7 @@ open class CompactBlockDownloader private constructor(val compactBlockStore: Com
         val result = lightWalletClient.getBlockRange(
             BlockHeightUnsafe.from(heightRange.start)..BlockHeightUnsafe.from(heightRange.endInclusive)
         )
-        compactBlockStore.write(result)
+        compactBlockRepository.write(result)
     }
 
     /**
@@ -58,7 +59,7 @@ open class CompactBlockDownloader private constructor(val compactBlockStore: Com
     suspend fun rewindToHeight(height: BlockHeight) =
         // TODO [#685]: cancel anything in flight
         // TODO [#685]: https://github.com/zcash/zcash-android-wallet-sdk/issues/685
-        compactBlockStore.rewindTo(height)
+        compactBlockRepository.rewindTo(height)
 
     /**
      * Return the latest block height known by the lightwalletService.
@@ -69,12 +70,12 @@ open class CompactBlockDownloader private constructor(val compactBlockStore: Com
         lightWalletClient.getLatestBlockHeight()
 
     /**
-     * Return the latest block height that has been persisted into the [CompactBlockStore].
+     * Return the latest block height that has been persisted into the [CompactBlockRepository].
      *
      * @return the latest block height that has been persisted.
      */
     suspend fun getLastDownloadedHeight() =
-        compactBlockStore.getLatestHeight()
+        compactBlockRepository.getLatestHeight()
 
     suspend fun getServerInfo(): LightWalletEndpointInfoUnsafe? = withContext(IO) {
         retryUpTo(GET_SERVER_INFO_RETRIES) {
@@ -97,7 +98,7 @@ open class CompactBlockDownloader private constructor(val compactBlockStore: Com
         withContext(Dispatchers.IO) {
             lightWalletClient.shutdown()
         }
-        compactBlockStore.close()
+        compactBlockRepository.close()
     }
 
     /**

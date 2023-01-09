@@ -1,7 +1,10 @@
 package cash.z.ecc.android.sdk.internal.transaction
 
-import cash.z.ecc.android.sdk.db.entity.PendingTransaction
+import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
+import cash.z.ecc.android.sdk.model.PendingTransaction
+import cash.z.ecc.android.sdk.model.TransactionRecipient
+import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.Zatoshi
 import kotlinx.coroutines.flow.Flow
 
@@ -17,34 +20,34 @@ interface OutboundTransactionManager {
      * completion.
      *
      * @param zatoshi the amount to spend.
-     * @param toAddress the address to which funds will be sent.
+     * @param recipient The destination for the transaction.
      * @param memo the optionally blank memo associated with this transaction.
-     * @param fromAccountIndex the account from which to spend funds.
+     * @param account the account from which to spend funds.
      *
      * @return the associated pending transaction whose ID can be used to monitor for changes.
      */
     suspend fun initSpend(
         zatoshi: Zatoshi,
-        toAddress: String,
+        recipient: TransactionRecipient,
         memo: String,
-        fromAccountIndex: Int
+        account: Account
     ): PendingTransaction
 
     /**
      * Encode the pending transaction using the given spending key. This is a local operation that
      * produces a raw transaction to submit to lightwalletd.
      *
-     * @param spendingKey the spendingKey to use for constructing the transaction.
+     * @param usk the unified spending key to use for constructing the transaction.
      * @param pendingTx the transaction information created by [initSpend] that will be used to
      * construct a transaction.
      *
      * @return the resulting pending transaction whose ID can be used to monitor for changes.
      */
-    suspend fun encode(spendingKey: String, pendingTx: PendingTransaction): PendingTransaction
+    suspend fun encode(usk: UnifiedSpendingKey, pendingTx: PendingTransaction): PendingTransaction
 
     suspend fun encode(
         spendingKey: String,
-        transparentSecretKey: String,
+        usk: UnifiedSpendingKey,
         pendingTx: PendingTransaction
     ): PendingTransaction
 
@@ -97,6 +100,15 @@ interface OutboundTransactionManager {
      * @return true when the given address is a valid z-addr.
      */
     suspend fun isValidTransparentAddress(address: String): Boolean
+
+    /**
+     * Return true when the given address is a valid ZIP 316 Unified Address.
+     *
+     * @param address the address to validate.
+     *
+     * @return true when the given address is a valid ZIP 316 Unified Address.
+     */
+    suspend fun isValidUnifiedAddress(address: String): Boolean
 
     /**
      * Attempt to cancel a transaction.

@@ -2,27 +2,19 @@ package cash.z.ecc.android.sdk.demoapp.demos.send
 
 import android.os.Bundle
 import android.view.LayoutInflater
+import android.view.Menu
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import cash.z.ecc.android.bip39.Mnemonics
-import cash.z.ecc.android.bip39.toSeed
-import cash.z.ecc.android.sdk.Initializer
+import androidx.lifecycle.repeatOnLifecycle
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor
-import cash.z.ecc.android.sdk.db.entity.PendingTransaction
-import cash.z.ecc.android.sdk.db.entity.isCreated
-import cash.z.ecc.android.sdk.db.entity.isCreating
-import cash.z.ecc.android.sdk.db.entity.isFailedEncoding
-import cash.z.ecc.android.sdk.db.entity.isFailedSubmit
-import cash.z.ecc.android.sdk.db.entity.isMined
-import cash.z.ecc.android.sdk.db.entity.isSubmitSuccess
 import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
 import cash.z.ecc.android.sdk.demoapp.DemoConstants
+import cash.z.ecc.android.sdk.demoapp.R
 import cash.z.ecc.android.sdk.demoapp.databinding.FragmentSendBinding
-import cash.z.ecc.android.sdk.demoapp.ext.requireApplicationContext
-import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.demoapp.util.mainActivity
 import cash.z.ecc.android.sdk.ext.collectWith
 import cash.z.ecc.android.sdk.ext.convertZatoshiToZecString
@@ -30,12 +22,19 @@ import cash.z.ecc.android.sdk.ext.convertZecToZatoshi
 import cash.z.ecc.android.sdk.ext.toZecString
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.twig
+import cash.z.ecc.android.sdk.model.PendingTransaction
+import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.WalletBalance
-import cash.z.ecc.android.sdk.model.ZcashNetwork
-import cash.z.ecc.android.sdk.model.defaultForNetwork
-import cash.z.ecc.android.sdk.tool.DerivationTool
-import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
-import kotlinx.coroutines.runBlocking
+import cash.z.ecc.android.sdk.model.isCreated
+import cash.z.ecc.android.sdk.model.isCreating
+import cash.z.ecc.android.sdk.model.isFailedEncoding
+import cash.z.ecc.android.sdk.model.isFailedSubmit
+import cash.z.ecc.android.sdk.model.isMined
+import cash.z.ecc.android.sdk.model.isSubmitSuccess
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.launch
 
 /**
  * Demonstrates sending funds to an address. This is the most complex example that puts all of the
@@ -47,45 +46,13 @@ import kotlinx.coroutines.runBlocking
  */
 @Suppress("TooManyFunctions")
 class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
-    private lateinit var synchronizer: Synchronizer
 
     private lateinit var amountInput: TextView
     private lateinit var addressInput: TextView
 
     // in a normal app, this would be stored securely with the trusted execution environment (TEE)
     // but since this is a demo, we'll derive it on the fly
-    private lateinit var spendingKey: String
-
-    /**
-     * Initialize the required values that would normally live outside the demo but are repeated
-     * here for completeness so that each demo file can serve as a standalone example.
-     */
-    private fun setup() {
-        // defaults to the value of `DemoConfig.seedWords` but can also be set by the user
-        var seedPhrase = sharedViewModel.seedPhrase.value
-
-        // Use a BIP-39 library to convert a seed phrase into a byte array. Most wallets already
-        // have the seed stored
-        val seed = Mnemonics.MnemonicCode(seedPhrase).toSeed()
-
-        runBlocking {
-            Initializer.new(requireApplicationContext()) {
-                val network = ZcashNetwork.fromResources(requireApplicationContext())
-                runBlocking {
-                    it.newWallet(
-                        seed,
-                        network = network,
-                        lightWalletEndpoint = LightWalletEndpoint.defaultForNetwork(network)
-                    )
-                }
-            }
-        }.let { initializer ->
-            synchronizer = Synchronizer.newBlocking(initializer)
-        }
-        spendingKey = runBlocking {
-            DerivationTool.deriveSpendingKeys(seed, ZcashNetwork.fromResources(requireApplicationContext())).first()
-        }
-    }
+    private lateinit var spendingKey: UnifiedSpendingKey
 
     //
     // Observable properties (done without livedata or flows for simplicity)
@@ -122,11 +89,36 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
         binding.buttonSend.setOnClickListener(::onSend)
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     private fun monitorChanges() {
-        synchronizer.status.collectWith(lifecycleScope, ::onStatus)
-        synchronizer.progress.collectWith(lifecycleScope, ::onProgress)
-        synchronizer.processorInfo.collectWith(lifecycleScope, ::onProcessorInfoUpdated)
-        synchronizer.saplingBalances.collectWith(lifecycleScope, ::onBalance)
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    sharedViewModel.synchronizerFlow
+                        .filterNotNull()
+                        .flatMapLatest { it.status }
+                        .collect { onStatus(it) }
+                }
+                launch {
+                    sharedViewModel.synchronizerFlow
+                        .filterNotNull()
+                        .flatMapLatest { it.progress }
+                        .collect { onProgress(it) }
+                }
+                launch {
+                    sharedViewModel.synchronizerFlow
+                        .filterNotNull()
+                        .flatMapLatest { it.processorInfo }
+                        .collect { onProcessorInfoUpdated(it) }
+                }
+                launch {
+                    sharedViewModel.synchronizerFlow
+                        .filterNotNull()
+                        .flatMapLatest { it.saplingBalances }
+                        .collect { onBalance(it) }
+                }
+            }
+        }
     }
 
     //
@@ -173,26 +165,28 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
         isSending = true
         val amount = amountInput.text.toString().toDouble().convertZecToZatoshi()
         val toAddress = addressInput.text.toString().trim()
-        synchronizer.sendToAddress(
-            spendingKey,
-            amount,
-            toAddress,
-            "Funds from Demo App"
-        ).collectWith(lifecycleScope, ::onPendingTxUpdated)
+        lifecycleScope.launch {
+            sharedViewModel.synchronizerFlow.value?.sendToAddress(
+                spendingKey,
+                amount,
+                toAddress,
+                "Funds from Demo App"
+            )?.collectWith(lifecycleScope, ::onPendingTxUpdated)
+        }
+
         mainActivity()?.hideKeyboard()
     }
 
     @Suppress("ComplexMethod")
     private fun onPendingTxUpdated(pendingTransaction: PendingTransaction?) {
-        val id = pendingTransaction?.id ?: -1
         val message = when {
             pendingTransaction == null -> "Transaction not found"
-            pendingTransaction.isMined() -> "Transaction Mined (id: $id)!\n\nSEND COMPLETE".also { isSending = false }
+            pendingTransaction.isMined() -> "Transaction Mined!\n\nSEND COMPLETE".also { isSending = false }
             pendingTransaction.isSubmitSuccess() -> "Successfully submitted transaction!\nAwaiting confirmation..."
             pendingTransaction.isFailedEncoding() ->
-                "ERROR: failed to encode transaction! (id: $id)".also { isSending = false }
+                "ERROR: failed to encode transaction!".also { isSending = false }
             pendingTransaction.isFailedSubmit() ->
-                "ERROR: failed to submit transaction! (id: $id)".also { isSending = false }
+                "ERROR: failed to submit transaction!".also { isSending = false }
             pendingTransaction.isCreated() -> "Transaction creation complete! (id: $id)"
             pendingTransaction.isCreating() -> "Creating transaction!".also { onResetInfo() }
             else -> "Transaction updated!".also { twig("Unhandled TX state: $pendingTransaction") }
@@ -231,26 +225,30 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
     // Android Lifecycle overrides
     //
 
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setHasOptionsMenu(true)
+    }
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
         val view = super.onCreateView(inflater, container, savedInstanceState)
-        setup()
         return view
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         initSendUi()
+        monitorChanges()
     }
 
-    override fun onResume() {
-        super.onResume()
-        // the lifecycleScope is used to dispose of the synchronizer when the fragment dies
-        synchronizer.start(lifecycleScope)
-        monitorChanges()
+    override fun onPrepareOptionsMenu(menu: Menu) {
+        super.onPrepareOptionsMenu(menu)
+        // We rather hide options menu actions while actively using the Synchronizer
+        menu.setGroupVisible(R.id.main_menu_group, false)
     }
 
     //

@@ -9,7 +9,6 @@ import androidx.lifecycle.lifecycleScope
 import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
 import cash.z.ecc.android.sdk.demoapp.databinding.FragmentHomeBinding
 import cash.z.ecc.android.sdk.demoapp.util.mainActivity
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
 /**
@@ -33,7 +32,6 @@ class HomeFragment : BaseDemoFragment<FragmentHomeBinding>() {
 
     override fun onResume() {
         super.onResume()
-        mainActivity()?.setClipboardListener(::updatePasteButton)
 
         lifecycleScope.launch {
             sharedViewModel.seedPhrase.collect {
@@ -44,7 +42,6 @@ class HomeFragment : BaseDemoFragment<FragmentHomeBinding>() {
 
     override fun onPause() {
         super.onPause()
-        mainActivity()?.removeClipboardListener()
     }
 
     @Suppress("UNUSED_PARAMETER")
@@ -96,24 +93,15 @@ class HomeFragment : BaseDemoFragment<FragmentHomeBinding>() {
         }
     }
 
-    private fun updatePasteButton(clipboardText: String? = mainActivity()?.getClipboardText()) {
-        clipboardText.let {
-            val isEditing = binding.groupEdit.visibility == View.VISIBLE
-            if (isEditing && (it != null && it.split(' ').size > 2)) {
-                binding.buttonPaste.visibility = View.VISIBLE
-            } else {
-                binding.buttonPaste.visibility = View.GONE
-            }
-        }
-    }
-
     private fun String.toAbbreviatedPhrase(): String {
         this.trim().apply {
             val firstSpace = indexOf(' ')
             val lastSpace = lastIndexOf(' ')
             return if (firstSpace != -1 && lastSpace >= firstSpace) {
                 "${take(firstSpace)}...${takeLast(length - 1 - lastSpace)}"
-            } else this
+            } else {
+                this
+            }
         }
     }
 }
