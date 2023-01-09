@@ -631,12 +631,6 @@ class SdkSynchronizer private constructor(
     internal suspend fun createAccount(seed: ByteArray): UnifiedSpendingKey =
         processor.createAccount(seed)
 
-    //
-    // Send / Receive
-    //
-
-    override suspend fun cancelSpend(pendingId: Long) = txManager.cancel(pendingId)
-
     /**
      * Returns the current Unified Address for this account.
      */
