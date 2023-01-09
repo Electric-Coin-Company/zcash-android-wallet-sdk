@@ -13,6 +13,8 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -41,11 +43,13 @@ import kotlinx.coroutines.flow.flow
 fun Addresses(
     synchronizer: Synchronizer,
     copyToClipboard: (String, String) -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    snackbarHostState: SnackbarHostState
 ) {
-    Scaffold(topBar = {
-        AddressesTopAppBar(onBack)
-    }) { paddingValues ->
+    Scaffold(
+        topBar = { AddressesTopAppBar(onBack) },
+        snackbarHost = { SnackbarHost(snackbarHostState) }
+    ) { paddingValues ->
         // TODO [#846]: Slow addresses providing
         // TODO [#846]: https://github.com/zcash/zcash-android-wallet-sdk/issues/846
         val walletAddresses = flow {
