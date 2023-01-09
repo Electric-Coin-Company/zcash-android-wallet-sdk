@@ -62,6 +62,7 @@ Change Log
   - `Synchronizer.getAddress` (use `Synchronizer.getUnifiedAddress` instead).
   - `Synchronizer.getShieldedAddress` (use `Synchronizer.getSaplingAddress` instead)
   - `Synchronizer.cancel`
+  - `Synchronizer.cancelSpend`
 - `cash.z.ecc.android.sdk.type.UnifiedViewingKey`
   - This type had a bug where the `extpub` field actually was storing a plain transparent
     public key, and not the extended public key as intended. This made it incompatible
