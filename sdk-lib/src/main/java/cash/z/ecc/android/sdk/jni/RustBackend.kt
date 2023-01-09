@@ -170,6 +170,16 @@ internal class RustBackend private constructor(
         )
     }
 
+    override suspend fun getLatestHeight() = withContext(SdkDispatchers.DATABASE_IO) {
+        val height = getLatestHeight(fsBlockDbRoot.absolutePath)
+
+        if (-1L == height) {
+            null
+        } else {
+            BlockHeight.new(network, height)
+        }
+    }
+
     override suspend fun validateCombinedChain() = withContext(SdkDispatchers.DATABASE_IO) {
         val validationResult = validateCombinedChain(
             fsBlockDbRoot.absolutePath,
@@ -465,6 +475,9 @@ internal class RustBackend private constructor(
             dbCachePath: String,
             blockMeta: Array<JniBlockMeta>
         ): Boolean
+
+        @JvmStatic
+        private external fun getLatestHeight(dbCachePath: String): Long
 
         @JvmStatic
         private external fun validateCombinedChain(
