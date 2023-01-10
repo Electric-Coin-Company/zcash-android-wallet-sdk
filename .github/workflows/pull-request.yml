@@ -36,20 +36,6 @@ jobs:
         timeout-minutes: 1
         uses: gradle/wrapper-validation-action@8d49e559aae34d3e0eb16cde532684bc9702762b
 
-  prime_cache:
-    runs-on: ubuntu-latest
-    needs: validate_gradle_wrapper
-    permissions:
-      contents: read
-    steps:
-      - name: Checkout
-        timeout-minutes: 1
-        uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab
-      - name: Setup
-        id: setup
-        timeout-minutes: 40
-        uses: ./.github/actions/setup
-
   check_firebase_secrets:
     runs-on: ubuntu-latest
     outputs:
@@ -93,7 +79,7 @@ jobs:
           ./gradlew checkProperties
 
   static_analysis_detekt:
-    needs: prime_cache
+    needs: validate_gradle_wrapper
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -103,7 +89,7 @@ jobs:
         uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab
       - name: Setup
         id: setup
-        timeout-minutes: 5
+        timeout-minutes: 30
         uses: ./.github/actions/setup
       - name: Detekt
         timeout-minutes: 4
@@ -128,7 +114,7 @@ jobs:
           path: ~/artifacts
 
   static_analysis_ktlint:
-    needs: prime_cache
+    needs: validate_gradle_wrapper
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -138,7 +124,7 @@ jobs:
         uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab
       - name: Setup
         id: setup
-        timeout-minutes: 5
+        timeout-minutes: 30
         uses: ./.github/actions/setup
       - name: Ktlint
         timeout-minutes: 4
@@ -163,7 +149,7 @@ jobs:
           path: ~/artifacts
 
   static_analysis_android_lint:
-    needs: prime_cache
+    needs: validate_gradle_wrapper
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -173,7 +159,7 @@ jobs:
         uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab
       - name: Setup
         id: setup
-        timeout-minutes: 5
+        timeout-minutes: 30
         uses: ./.github/actions/setup
       - name: Android Lint
         timeout-minutes: 25
@@ -200,7 +186,7 @@ jobs:
           path: ~/artifacts
 
   test_android_modules_unit:
-    needs: [ prime_cache ]
+    needs: [ validate_gradle_wrapper ]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -210,7 +196,7 @@ jobs:
         uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab
       - name: Setup
         id: setup
-        timeout-minutes: 5
+        timeout-minutes: 30
         uses: ./.github/actions/setup
       - name: Build and test
         timeout-minutes: 25
@@ -237,7 +223,7 @@ jobs:
   # Emulator.wtf is preferred if it has an API key.
   test_android_modules_ftl:
     if: needs.check_firebase_secrets.outputs.has-secrets == 'true' && needs.check_emulator_wtf_secrets.outputs.has-secrets == 'false'
-    needs: [prime_cache, check_firebase_secrets, check_emulator_wtf_secrets]
+    needs: [validate_gradle_wrapper, check_firebase_secrets, check_emulator_wtf_secrets]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -248,7 +234,7 @@ jobs:
         uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab
       - name: Setup
         id: setup
-        timeout-minutes: 5
+        timeout-minutes: 30
         uses: ./.github/actions/setup
       - name: Build
         timeout-minutes: 20
@@ -293,7 +279,7 @@ jobs:
 
   test_android_modules_wtf:
     if: needs.check_emulator_wtf_secrets.outputs.has-secrets == 'true'
-    needs: [ prime_cache, check_emulator_wtf_secrets ]
+    needs: [ validate_gradle_wrapper, check_emulator_wtf_secrets ]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -303,7 +289,7 @@ jobs:
         uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab
       - name: Setup
         id: setup
-        timeout-minutes: 5
+        timeout-minutes: 30
         uses: ./.github/actions/setup
       - name: Build and test
         timeout-minutes: 25
@@ -330,7 +316,7 @@ jobs:
           path: ~/artifacts
 
   demo_app_release_build:
-    needs: prime_cache
+    needs: validate_gradle_wrapper
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -340,7 +326,7 @@ jobs:
         uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab
       - name: Setup
         id: setup
-        timeout-minutes: 5
+        timeout-minutes: 30
         uses: ./.github/actions/setup
       # A fake signing key to satisfy creating a "release" build
       - name: Export Signing Key
@@ -393,7 +379,7 @@ jobs:
         uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab
       - name: Setup
         id: setup
-        timeout-minutes: 5
+        timeout-minutes: 30
         uses: ./.github/actions/setup
       - name: Authenticate to Google Cloud for Firebase Test Lab
         id: auth_test_lab

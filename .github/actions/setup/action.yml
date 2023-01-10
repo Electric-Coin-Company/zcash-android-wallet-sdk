@@ -26,32 +26,38 @@ runs:
         rustup install 1.67.1
         rustup default 1.67.1
         rustup target add armv7-linux-androideabi aarch64-linux-android i686-linux-android x86_64-linux-android
-    - name: Disable Gradle Daemon
+    - name: Configure Gradle
       shell: bash
       run: |
         mkdir ~/.gradle
-
-        echo "org.gradle.daemon=false" >> ~/.gradle/gradle.properties
-    - name: Gradle Wrapper Cache
-      id: gradle-wrapper-cache
-      uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8
+        
+        echo "GRADLE_BUILD_CACHE_DAYS=7" >> ~/.gradle/gradle.properties
+    - name: Gradle Binary Cache Restore
+      id: gradle-binary-cache-restore
+      uses: actions/cache/restore@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8
+      env:
+        SEGMENT_DOWNLOAD_TIMEOUT_MINS: "3"
       with:
-        path: ~/.gradle/wrapper
-        key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles(format('{0}{1}', github.workspace, '/gradle/wrapper/gradle-wrapper.properties')) }}
-    - name: Gradle Dependency Cache
-      id: gradle-dependency-cache
-      uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8
+        path: |
+          ~/.gradle/notifications
+          ~/.gradle/wrapper
+        key: ${{ runner.os }}-gradle-binary-${{ hashFiles(format('{0}{1}', github.workspace, '/gradle/wrapper/gradle-wrapper.properties')) }}
+    - name: Gradle Dependency Cache Restore
+      id: gradle-dependency-cache-restore
+      uses: actions/cache/restore@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8
+      env:
+        SEGMENT_DOWNLOAD_TIMEOUT_MINS: "3"
       with:
-        path: ~/.gradle/caches/modules-2
+        path: |
+          ~/.gradle/caches/modules-2
         key: ${{ runner.os }}-gradle-deps-${{ hashFiles(format('{0}{1}', github.workspace, '/gradle.properties')) }}
         restore-keys: |
           ${{ runner.os }}-gradle-deps-
-# The build cache is doing two things:
-# 1. Relying on the most recent main branch build to provide a partial cache for both main branch and PR builds.
-# 2. Relying on the sha for an exact match so that the prime_cache job is re-used by all dependent jobs in a single workflow run
-    - name: Gradle Build Cache
-      id: gradle-build-cache
-      uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8
+    - name: Gradle Build Cache Restore
+      id: gradle-build-cache-restore
+      uses: actions/cache/restore@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8
+      env:
+        SEGMENT_DOWNLOAD_TIMEOUT_MINS: "3"
       with:
         path: |
           ~/.gradle/caches/build-cache-1
@@ -60,28 +66,61 @@ runs:
         key: ${{ runner.os }}-gradle-build-${{ github.sha }}
         restore-keys: |
           ${{ runner.os }}-gradle-build-
-    - name: Rust Cache
-      id: rust-cache
-      uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8
+    - name: Rust Cache Restore
+      id: rust-cache-restore
+      uses: actions/cache/restore@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8
+      env:
+        SEGMENT_DOWNLOAD_TIMEOUT_MINS: "3"
       with:
         path: |
           sdk-lib/target
           ~/.cargo
         key: ${{ runner.os }}-rust-${{ hashFiles(format('{0}{1}', github.workspace, '/sdk-lib/Cargo.lock'), format('{0}{1}', github.workspace, '/sdk-lib/Cargo.toml'), format('{0}{1}', github.workspace, '/sdk-lib/build.gradle.kts'), format('{0}{1}', github.workspace, '/gradle.properties')) }}
-    - name: Download Gradle
-      if: steps.gradle-wrapper-cache.outputs.cache-hit != 'true'
+
+    - name: Gradle Binary Download
+      if: steps.gradle-binary-cache-restore.outputs.cache-hit != 'true'
       shell: bash
       run: |
         ./gradlew --version
-    - name: Download Gradle Dependencies
-      if: steps.gradle-dependency-cache.outputs.cache-hit != 'true'
+    - name: Gradle Dependency Download
+      if: steps.gradle-dependency-cache-restore.outputs.cache-hit != 'true'
       shell: bash
       run: |
         ./gradlew dependencies :sdk-lib:dependencies :demo-app:dependencies
-    - name: Compile
-      if: steps.gradle-build-cache.outputs.cache-hit != 'true'
-      shell: bash
+    - name: Gradle Build
+      if: github.event.pull_request.head.sha == '' && (steps.gradle-binary-cache-restore.outputs.cache-hit != 'true' || steps.gradle-dependency-cache-restore.outputs.cache-hit != 'true' || steps.rust-cache-restore.outputs.cache-hit != 'true' || steps.gradle-build-cache-restore.outputs.cache-hit != 'true')
       env:
         ORG_GRADLE_PROJECT_IS_MINIFY_APP_ENABLED: "false"
+      shell: bash
       run: |
         ./gradlew assemble assembleAndroidTest
+
+    - name: Gradle Binary Cache Save
+      id: gradle-binary-cache-save
+      if: github.event.pull_request.head.sha == '' && steps.gradle-binary-cache-restore.outputs.cache-hit != 'true'
+      uses: actions/cache/save@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8
+      env:
+        SEGMENT_DOWNLOAD_TIMEOUT_MINS: "3"
+      with:
+        path: |
+          ~/.gradle/notifications
+          ~/.gradle/wrapper
+        key: steps.gradle-binary-cache-restore.key
+    - name: Gradle Dependency Cache Save
+      id: gradle-dependency-cache-save
+      if: github.event.pull_request.head.sha == '' && steps.gradle-dependency-cache-restore.outputs.cache-hit != 'true'
+      uses: actions/cache/save@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8
+      with:
+        path: |
+          ~/.gradle/caches/modules-2
+        key: ${{ steps.gradle-dependency-cache-restore.key }}
+    - name: Rust Cache Save
+      id: rust-cache-save
+      uses: actions/cache/save@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8
+      env:
+        SEGMENT_DOWNLOAD_TIMEOUT_MINS: "3"
+      with:
+        path: |
+          sdk-lib/target
+          ~/.cargo
+        key: ${{ steps.rust-cache-restore.key }}
