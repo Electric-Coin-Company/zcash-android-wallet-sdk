@@ -18,7 +18,6 @@ import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException.Mismatche
 import cash.z.ecc.android.sdk.exception.InitializeException
 import cash.z.ecc.android.sdk.exception.RustLayerException
 import cash.z.ecc.android.sdk.ext.BatchMetrics
-import cash.z.ecc.android.sdk.ext.BenchmarkingExt
 import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.ext.ZcashSdk.DOWNLOAD_BATCH_SIZE
 import cash.z.ecc.android.sdk.ext.ZcashSdk.MAX_BACKOFF_INTERVAL
@@ -27,7 +26,6 @@ import cash.z.ecc.android.sdk.ext.ZcashSdk.POLL_INTERVAL
 import cash.z.ecc.android.sdk.ext.ZcashSdk.RETRIES
 import cash.z.ecc.android.sdk.ext.ZcashSdk.REWIND_DISTANCE
 import cash.z.ecc.android.sdk.ext.ZcashSdk.SCAN_BATCH_SIZE
-import cash.z.ecc.android.sdk.fixture.BlockRangeFixture
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.block.CompactBlockDownloader
 import cash.z.ecc.android.sdk.internal.ext.retryUpTo
@@ -46,7 +44,10 @@ import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.TransactionOverview
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.WalletBalance
+import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.wallet.sdk.rpc.Service
+import co.electriccoin.lightwallet.client.ext.BenchmarkingExt
+import co.electriccoin.lightwallet.client.fixture.BlockRangeFixture
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.LightWalletEndpointInfoUnsafe
 import co.electriccoin.lightwallet.client.model.Response
@@ -297,7 +298,12 @@ class CompactBlockProcessor internal constructor(
             if (BenchmarkingExt.isBenchmarking()) {
                 // We inject a benchmark test blocks range at this point to process only a restricted range of blocks
                 // for a more reliable benchmark results.
-                val benchmarkBlockRange = BlockRangeFixture.new()
+                val benchmarkBlockRange = BlockRangeFixture.new().let {
+                    // Convert range of Longs to range of BlockHeights
+                    BlockHeight.new(ZcashNetwork.Mainnet, it.start)..(
+                        BlockHeight.new(ZcashNetwork.Mainnet, it.endInclusive)
+                        )
+                }
                 downloadNewBlocks(benchmarkBlockRange)
                 val error = validateAndScanNewBlocks(benchmarkBlockRange)
                 if (error != BlockProcessingResult.Success) {

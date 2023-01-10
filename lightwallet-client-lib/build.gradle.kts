@@ -113,6 +113,11 @@ android {
                 )
             )
         }
+        create("benchmark") {
+            // We provide the extra benchmark build type just for benchmarking purposes
+            initWith(buildTypes.getByName("release"))
+            matchingFallbacks += listOf("release")
+        }
     }
 
     sourceSets.getByName("main") {

@@ -1,6 +1,6 @@
-package cash.z.ecc.android.sdk.ext
+package co.electriccoin.lightwallet.client.ext
 
-import cash.z.ecc.android.sdk.BuildConfig
+import co.electriccoin.lightwallet.client.BuildConfig
 
 object BenchmarkingExt {
     private const val TARGET_BUILD_TYPE = "benchmark" // NON-NLS

@@ -2,8 +2,8 @@ package cash.z.ecc.android.sdk.demoapp.util
 
 import android.os.Looper
 import androidx.tracing.Trace
-import cash.z.ecc.android.sdk.ext.BenchmarkingExt
 import cash.z.ecc.android.sdk.internal.twig
+import co.electriccoin.lightwallet.client.ext.BenchmarkingExt
 
 interface BenchmarkTrace {
     fun checkMainThread() {
