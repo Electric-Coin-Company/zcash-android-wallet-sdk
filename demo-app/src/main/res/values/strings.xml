@@ -1,4 +1,4 @@
-<resources>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <string name="app_name">Demo App</string>
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
@@ -37,12 +37,25 @@
     <string name="unified_address_tag">Zcash unified address</string>
     <string name="sapling_address_tag">Zcash sapling address</string>
     <string name="transparent_address_tag">Zcash transparent address</string>
+    <string name="address_copied" formatted="true"><xliff:g id="address" example="t1TdMMj5zzMtt...">Copied to
+        clipboard: %1$s</xliff:g></string>
 
     <string name="configure_seed">Please select your wallet secret phrase</string>
     <string name="person_alyssa">Alyssa P. Hacker</string>
     <string name="person_ben">Ben Bitdiddle</string>
     <string name="seed_custom">Type in a secret phrase</string>
     <string name="seed_random">Generate a new random secret phrase</string>
+
+    <string name="home_status">Status: <xliff:g id="status" example="Syncing">%1$s</xliff:g></string>
+    <string name="home_progress">Progress: <xliff:g id="percentage" example="15%">%1$.2f</xliff:g>%%</string>
+
+    <string name="balance_transparent">Transparent</string>
+    <string name="balance_sapling">Sapling</string>
+    <string name="balance_orchard">Orchard</string>
+    <string name="balance_available_amount_format">Available:
+        <xliff:g id="ZEC balance" example="0.3">%1$s</xliff:g></string>
+    <string name="balance_pending_amount_format">Pending:
+        <xliff:g id="ZEC balance" example="0.3">%1$s</xliff:g></string>
 
     <string name="send_amount">Amount</string>
 

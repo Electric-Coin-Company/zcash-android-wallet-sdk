@@ -178,6 +178,8 @@ dependencyResolutionManagement {
             library("androidx-security-crypto", "androidx.security:security-crypto-ktx:$androidxSecurityCryptoVersion")
 
             // Test libraries
+            library("androidx-compose-test-junit", "androidx.compose.ui:ui-test-junit4:$androidxComposeVersion")
+            library("androidx-compose-test-manifest", "androidx.compose.ui:ui-test-manifest:$androidxComposeVersion")
             library("androidx-espresso-contrib", "androidx.test.espresso:espresso-contrib:$androidxEspressoVersion")
             library("androidx-espresso-core", "androidx.test.espresso:espresso-core:$androidxEspressoVersion")
             library("androidx-espresso-intents", "androidx.test.espresso:espresso-intents:$androidxEspressoVersion")

@@ -25,16 +25,23 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.demoapp.R
+import cash.z.ecc.android.sdk.demoapp.fixture.WalletSnapshotFixture
+import cash.z.ecc.android.sdk.demoapp.ui.common.DisableScreenTimeout
+import cash.z.ecc.android.sdk.demoapp.ui.screen.home.viewmodel.WalletSnapshot
 
 @Preview
 @Composable
 fun ComposablePreviewHome() {
     MaterialTheme {
         Home(
-            // WalletSnapshotFixture.new(),
+            WalletSnapshotFixture.new(),
+            goBalance = {},
             goSend = {},
             goAddressDetails = {},
+            isTestnet = true,
+            goTestnetFaucet = {},
             resetSdk = {}
         )
     }
@@ -44,15 +51,21 @@ fun ComposablePreviewHome() {
 @Suppress("LongParameterList")
 @Composable
 fun Home(
+    walletSnapshot: WalletSnapshot,
+    isTestnet: Boolean,
+    goBalance: () -> Unit,
     goSend: () -> Unit,
     goAddressDetails: () -> Unit,
-    resetSdk: () -> Unit
+    goTestnetFaucet: () -> Unit,
+    resetSdk: () -> Unit,
 ) {
     Scaffold(topBar = {
-        HomeTopAppBar(resetSdk)
+        HomeTopAppBar(isTestnet, goTestnetFaucet, resetSdk)
     }) { paddingValues ->
         HomeMainContent(
             paddingValues = paddingValues,
+            walletSnapshot,
+            goBalance = goBalance,
             goSend = goSend,
             goAddressDetails = goAddressDetails
         )
@@ -62,18 +75,28 @@ fun Home(
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
 private fun HomeTopAppBar(
+    isTestnet: Boolean,
+    goTestnetFaucet: () -> Unit,
     resetSdk: () -> Unit
 ) {
     TopAppBar(
         title = { Text(text = stringResource(id = R.string.app_name)) },
         actions = {
-            DebugMenu(resetSdk = resetSdk)
+            DebugMenu(
+                isTestnet,
+                goTestnetFaucet = goTestnetFaucet,
+                resetSdk = resetSdk
+            )
         }
     )
 }
 
 @Composable
-private fun DebugMenu(resetSdk: () -> Unit) {
+private fun DebugMenu(
+    isTestnet: Boolean,
+    goTestnetFaucet: () -> Unit,
+    resetSdk: () -> Unit
+) {
     var expanded by rememberSaveable { mutableStateOf(false) }
     IconButton(onClick = { expanded = true }) {
         Icon(Icons.Default.MoreVert, contentDescription = null)
@@ -83,6 +106,15 @@ private fun DebugMenu(resetSdk: () -> Unit) {
         expanded = expanded,
         onDismissRequest = { expanded = false }
     ) {
+        if (isTestnet) {
+            DropdownMenuItem(
+                text = { Text("Open Testnet Faucet") },
+                onClick = {
+                    goTestnetFaucet()
+                    expanded = false
+                }
+            )
+        }
         DropdownMenuItem(
             text = { Text("Reset SDK") },
             onClick = {
@@ -96,6 +128,8 @@ private fun DebugMenu(resetSdk: () -> Unit) {
 @Composable
 private fun HomeMainContent(
     paddingValues: PaddingValues,
+    walletSnapshot: WalletSnapshot,
+    goBalance: () -> Unit,
     goSend: () -> Unit,
     goAddressDetails: () -> Unit
 ) {
@@ -104,12 +138,28 @@ private fun HomeMainContent(
             .verticalScroll(rememberScrollState())
             .padding(top = paddingValues.calculateTopPadding())
     ) {
+        Button(goBalance) {
+            Text(text = stringResource(id = R.string.menu_balance))
+        }
+
         Button(goSend) {
             Text(text = stringResource(id = R.string.menu_send))
         }
 
         Button(goAddressDetails) {
             Text(text = stringResource(id = R.string.menu_address))
+        }
+
+        Text(text = stringResource(id = R.string.home_status, walletSnapshot.status.toString()))
+        if (walletSnapshot.status != Synchronizer.Status.SYNCED) {
+            @Suppress("MagicNumber")
+            Text(text = stringResource(id = R.string.home_progress, walletSnapshot.progress.decimal * 100))
+
+            // Makes sync for debug builds more reliable and less annoying.
+            // This is not perfect because the synchronizer switches to downloading/scanning periodically when doing
+            // a single block catchup.  We can improve this once the synchronizer has a state for "refreshing" which
+            // is different from a longer sync.
+            DisableScreenTimeout()
         }
     }
 }

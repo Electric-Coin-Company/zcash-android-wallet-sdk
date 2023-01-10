@@ -3,8 +3,8 @@ package cash.z.ecc.android.sdk.demoapp
 import android.content.Context
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.demoapp.model.PersistableWallet
-import cash.z.ecc.android.sdk.demoapp.type.fromResources
 import cash.z.ecc.android.sdk.demoapp.util.Twig
+import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.ext.onFirst
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.model.defaultForNetwork
@@ -71,7 +71,8 @@ class WalletCoordinator(context: Context, val persistableWallet: Flow<Persistabl
                         zcashNetwork = persistableWallet.network,
                         lightWalletEndpoint = LightWalletEndpoint.defaultForNetwork(persistableWallet.network),
                         birthday = persistableWallet.birthday,
-                        seed = persistableWallet.seedPhrase.toByteArray()
+                        seed = persistableWallet.seedPhrase.toByteArray(),
+                        alias = NEW_UI_SYNCHRONIZER_ALIAS
                     )
 
                     trySend(InternalSynchronizerStatus.Available(closeableSynchronizer))
@@ -159,5 +160,7 @@ class WalletCoordinator(context: Context, val persistableWallet: Flow<Persistabl
     }
 
     // Allows for extension functions
-    companion object
+    companion object {
+        internal const val NEW_UI_SYNCHRONIZER_ALIAS = "new_ui"
+    }
 }

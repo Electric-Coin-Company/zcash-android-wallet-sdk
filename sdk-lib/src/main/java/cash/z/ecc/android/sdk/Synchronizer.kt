@@ -277,14 +277,11 @@ interface Synchronizer {
     suspend fun validateAddress(address: String): AddressType
 
     /**
-     * Attempts to cancel a transaction that is about to be sent. Typically, cancellation is only
-     * an option if the transaction has not yet been submitted to the server.
-     *
-     * @param pendingId the id of the PendingTransaction to cancel.
-     *
-     * @return true when the cancellation request was successful. False when it is too late.
+     * Convenience function that exposes the underlying server information, like its name and
+     * consensus branch id. Most wallets should already have a different source of truth for the
+     * server(s) with which they operate and thereby not need this function.
      */
-    suspend fun cancelSpend(pendingId: Long): Boolean
+    suspend fun getServerInfo(): Service.LightdInfo
 
     /**
      * Download all UTXOs for the given address and store any new ones in the database.
