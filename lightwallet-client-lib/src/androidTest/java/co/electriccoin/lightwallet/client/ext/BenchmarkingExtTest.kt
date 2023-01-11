@@ -1,7 +1,7 @@
 package co.electriccoin.lightwallet.client.ext
 
 import androidx.test.filters.SmallTest
-import co.electriccoin.lightwallet.client.test.BuildConfig
+import co.electriccoin.lightwallet.client.BuildConfig
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
