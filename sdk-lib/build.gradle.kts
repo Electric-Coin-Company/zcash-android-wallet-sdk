@@ -258,7 +258,6 @@ dependencies {
     testImplementation(libs.kotlin.reflect)
     testImplementation(libs.kotlin.test)
     testImplementation(libs.bundles.junit)
-    testImplementation(libs.grpc.testing)
 
     // NOTE: androidTests will use JUnit4, while src/test/java tests will leverage Junit5
     // Attempting to use JUnit5 via https://github.com/mannodermaus/android-junit5 was painful. The plugin configuration
