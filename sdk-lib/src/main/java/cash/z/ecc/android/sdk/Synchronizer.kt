@@ -277,13 +277,6 @@ interface Synchronizer {
     suspend fun validateAddress(address: String): AddressType
 
     /**
-     * Convenience function that exposes the underlying server information, like its name and
-     * consensus branch id. Most wallets should already have a different source of truth for the
-     * server(s) with which they operate and thereby not need this function.
-     */
-    suspend fun getServerInfo(): Service.LightdInfo
-
-    /**
      * Download all UTXOs for the given address and store any new ones in the database.
      *
      * @return the number of utxos that were downloaded and addded to the UTXO table.
