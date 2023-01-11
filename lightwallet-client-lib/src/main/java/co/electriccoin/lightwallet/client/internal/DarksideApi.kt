@@ -1,10 +1,10 @@
 package co.electriccoin.lightwallet.client.internal
 
 import android.content.Context
-import cash.z.wallet.sdk.rpc.Darkside
-import cash.z.wallet.sdk.rpc.Darkside.DarksideTransactionsURL
-import cash.z.wallet.sdk.rpc.DarksideStreamerGrpc
-import cash.z.wallet.sdk.rpc.Service
+import cash.z.wallet.sdk.internal.rpc.Darkside
+import cash.z.wallet.sdk.internal.rpc.Darkside.DarksideTransactionsURL
+import cash.z.wallet.sdk.internal.rpc.DarksideStreamerGrpc
+import cash.z.wallet.sdk.internal.rpc.Service
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
 import io.grpc.ManagedChannel

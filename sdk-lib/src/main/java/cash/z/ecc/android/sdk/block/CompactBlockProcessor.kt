@@ -45,7 +45,7 @@ import cash.z.ecc.android.sdk.model.TransactionOverview
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.ZcashNetwork
-import cash.z.wallet.sdk.rpc.Service
+import cash.z.wallet.sdk.internal.rpc.Service
 import co.electriccoin.lightwallet.client.ext.BenchmarkingExt
 import co.electriccoin.lightwallet.client.fixture.BlockRangeFixture
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe

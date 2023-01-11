@@ -1,8 +1,8 @@
 package co.electriccoin.lightwallet.client.internal
 
-import cash.z.wallet.sdk.rpc.CompactFormats
-import cash.z.wallet.sdk.rpc.CompactTxStreamerGrpcKt
-import cash.z.wallet.sdk.rpc.Service
+import cash.z.wallet.sdk.internal.rpc.CompactFormats
+import cash.z.wallet.sdk.internal.rpc.CompactTxStreamerGrpcKt
+import cash.z.wallet.sdk.internal.rpc.Service
 import co.electriccoin.lightwallet.client.BlockingLightWalletClient
 import co.electriccoin.lightwallet.client.CoroutineLightWalletClient
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe

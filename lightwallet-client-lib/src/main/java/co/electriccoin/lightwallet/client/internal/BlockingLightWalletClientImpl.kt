@@ -1,9 +1,9 @@
 package co.electriccoin.lightwallet.client.internal
 
 import android.util.Log
-import cash.z.wallet.sdk.rpc.CompactFormats
-import cash.z.wallet.sdk.rpc.CompactTxStreamerGrpc
-import cash.z.wallet.sdk.rpc.Service
+import cash.z.wallet.sdk.internal.rpc.CompactFormats
+import cash.z.wallet.sdk.internal.rpc.CompactTxStreamerGrpc
+import cash.z.wallet.sdk.internal.rpc.Service
 import co.electriccoin.lightwallet.client.BlockingLightWalletClient
 import co.electriccoin.lightwallet.client.ext.BenchmarkingExt
 import co.electriccoin.lightwallet.client.fixture.BlockRangeFixture

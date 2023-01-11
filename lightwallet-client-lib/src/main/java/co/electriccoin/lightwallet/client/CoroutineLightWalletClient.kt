@@ -1,8 +1,8 @@
 package co.electriccoin.lightwallet.client
 
 import android.content.Context
-import cash.z.wallet.sdk.rpc.CompactFormats
-import cash.z.wallet.sdk.rpc.Service
+import cash.z.wallet.sdk.internal.rpc.CompactFormats
+import cash.z.wallet.sdk.internal.rpc.Service
 import co.electriccoin.lightwallet.client.internal.AndroidChannelFactory
 import co.electriccoin.lightwallet.client.internal.CoroutineLightWalletClientImpl
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe

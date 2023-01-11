@@ -1,7 +1,7 @@
 package cash.z.ecc.android.sdk.internal.repository
 
 import cash.z.ecc.android.sdk.model.BlockHeight
-import cash.z.wallet.sdk.rpc.CompactFormats
+import cash.z.wallet.sdk.internal.rpc.CompactFormats
 
 /**
  * Interface for storing compact blocks.

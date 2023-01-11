@@ -1,6 +1,6 @@
 package co.electriccoin.lightwallet.client.model
 
-import cash.z.wallet.sdk.rpc.Service
+import cash.z.wallet.sdk.internal.rpc.Service
 
 data class LightWalletEndpointInfoUnsafe(
     val chainName: String,

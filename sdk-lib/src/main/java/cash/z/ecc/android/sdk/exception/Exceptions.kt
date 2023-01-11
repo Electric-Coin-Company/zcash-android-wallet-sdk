@@ -4,7 +4,7 @@ import cash.z.ecc.android.sdk.internal.SaplingParameters
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.ZcashNetwork
-import cash.z.wallet.sdk.rpc.Service
+import cash.z.wallet.sdk.internal.rpc.Service
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import io.grpc.Status
 import io.grpc.Status.Code.UNAVAILABLE
