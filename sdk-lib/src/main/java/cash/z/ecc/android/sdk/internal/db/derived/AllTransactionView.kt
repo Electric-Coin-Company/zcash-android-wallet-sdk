@@ -20,10 +20,18 @@ internal class AllTransactionView(
 ) {
     companion object {
 
+        private const val COLUMN_SORT_HEIGHT = "sort_height"
+
+        private val COLUMNS = arrayOf(
+            "*", // $NON-NLS
+            @Suppress("MaxLineLength")
+            "IFNULL(${AllTransactionViewDefinition.COLUMN_INTEGER_MINED_HEIGHT}, ${UInt.MAX_VALUE}) AS $COLUMN_SORT_HEIGHT" // $NON-NLS
+        )
+
         private val ORDER_BY = String.format(
             Locale.ROOT,
             "%s DESC, %s DESC", // $NON-NLS
-            AllTransactionViewDefinition.COLUMN_INTEGER_MINED_HEIGHT,
+            COLUMN_SORT_HEIGHT,
             AllTransactionViewDefinition.COLUMN_INTEGER_ID
         )
 
@@ -98,6 +106,7 @@ internal class AllTransactionView(
     fun getAllTransactions() =
         sqliteDatabase.queryAndMap(
             table = AllTransactionViewDefinition.VIEW_NAME,
+            columns = COLUMNS,
             orderBy = ORDER_BY,
             cursorParser = cursorParser
         )
@@ -105,6 +114,7 @@ internal class AllTransactionView(
     fun getTransactionRange(blockHeightRange: ClosedRange<BlockHeight>) =
         sqliteDatabase.queryAndMap(
             table = AllTransactionViewDefinition.VIEW_NAME,
+            columns = COLUMNS,
             orderBy = ORDER_BY,
             selection = SELECTION_BLOCK_RANGE,
             selectionArgs = arrayOf(blockHeightRange.start.value, blockHeightRange.endInclusive.value),
@@ -114,6 +124,7 @@ internal class AllTransactionView(
     suspend fun getOldestTransaction() =
         sqliteDatabase.queryAndMap(
             table = AllTransactionViewDefinition.VIEW_NAME,
+            columns = COLUMNS,
             orderBy = ORDER_BY,
             limit = "1",
             cursorParser = cursorParser

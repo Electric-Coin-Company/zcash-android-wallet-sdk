@@ -9,7 +9,7 @@ package cash.z.ecc.android.sdk.model
 data class TransactionOverview internal constructor(
     val id: Long,
     val rawId: FirstClassByteArray,
-    val minedHeight: BlockHeight,
+    val minedHeight: BlockHeight?,
     val expiryHeight: BlockHeight?,
     val index: Long,
     val raw: FirstClassByteArray?,

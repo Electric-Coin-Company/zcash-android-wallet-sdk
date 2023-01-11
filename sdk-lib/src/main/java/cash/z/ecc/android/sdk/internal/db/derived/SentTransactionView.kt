@@ -18,10 +18,18 @@ internal class SentTransactionView(
 ) {
     companion object {
 
+        private const val COLUMN_SORT_HEIGHT = "sort_height"
+
+        private val COLUMNS = arrayOf(
+            "*", // $NON-NLS
+            @Suppress("MaxLineLength")
+            "IFNULL(${SentTransactionViewDefinition.COLUMN_INTEGER_MINED_HEIGHT}, ${UInt.MAX_VALUE}) AS $COLUMN_SORT_HEIGHT" // $NON-NLS
+        )
+
         private val ORDER_BY = String.format(
             Locale.ROOT,
             "%s DESC, %s DESC", // $NON-NLS
-            SentTransactionViewDefinition.COLUMN_INTEGER_MINED_HEIGHT,
+            COLUMN_SORT_HEIGHT,
             SentTransactionViewDefinition.COLUMN_INTEGER_ID
         )
 
@@ -37,6 +45,7 @@ internal class SentTransactionView(
     fun getSentTransactions() =
         sqliteDatabase.queryAndMap(
             table = SentTransactionViewDefinition.VIEW_NAME,
+            columns = COLUMNS,
             orderBy = ORDER_BY,
             cursorParser = { cursor ->
                 val idColumnIndex = cursor.getColumnIndex(SentTransactionViewDefinition.COLUMN_INTEGER_ID)
