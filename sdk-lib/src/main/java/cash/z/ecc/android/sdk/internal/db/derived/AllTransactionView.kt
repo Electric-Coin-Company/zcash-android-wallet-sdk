@@ -20,7 +20,7 @@ internal class AllTransactionView(
 ) {
     companion object {
 
-        private const val COLUMN_SORT_HEIGHT = "sort_height"
+        private const val COLUMN_SORT_HEIGHT = "sort_height" // $NON-NLS
 
         private val COLUMNS = arrayOf(
             "*", // $NON-NLS
