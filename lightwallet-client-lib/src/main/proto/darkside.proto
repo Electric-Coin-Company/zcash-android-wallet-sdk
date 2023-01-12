@@ -3,7 +3,8 @@
 // file COPYING or https://www.opensource.org/licenses/mit-license.php .
 
 syntax = "proto3";
-package cash.z.wallet.sdk.internal.rpc;
+package cash.z.wallet.sdk.rpc;
+option java_package = "cash.z.wallet.sdk.internal.rpc";
 option go_package = ".;walletrpc";
 option swift_prefix = "";
 import "service.proto";
