@@ -18,10 +18,18 @@ internal class ReceivedTransactionView(
 ) {
     companion object {
 
+        private const val COLUMN_SORT_HEIGHT = "sort_height" // $NON-NLS
+
+        private val COLUMNS = arrayOf(
+            "*", // $NON-NLS
+            @Suppress("MaxLineLength")
+            "IFNULL(${ReceivedTransactionViewDefinition.COLUMN_INTEGER_MINED_HEIGHT}, ${UInt.MAX_VALUE}) AS $COLUMN_SORT_HEIGHT" // $NON-NLS
+        )
+
         private val ORDER_BY = String.format(
             Locale.ROOT,
             "%s DESC, %s DESC", // $NON-NLS
-            ReceivedTransactionViewDefinition.COLUMN_INTEGER_MINED_HEIGHT,
+            COLUMN_SORT_HEIGHT,
             ReceivedTransactionViewDefinition.COLUMN_INTEGER_ID
         )
 
@@ -37,6 +45,7 @@ internal class ReceivedTransactionView(
     fun getReceivedTransactions() =
         sqliteDatabase.queryAndMap(
             table = ReceivedTransactionViewDefinition.VIEW_NAME,
+            columns = COLUMNS,
             orderBy = ORDER_BY,
             cursorParser = { cursor ->
                 val idColumnIndex = cursor.getColumnIndex(ReceivedTransactionViewDefinition.COLUMN_INTEGER_ID)

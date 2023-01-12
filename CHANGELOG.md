@@ -1,8 +1,11 @@
 Change Log
 ==========
 
-## Unreleased
+## 1.12.0-beta01
+### Changed
+ - `TransactionOverview`, `Transaction.Sent`, and `Transaction.Received` have `minedHeight` as a nullable field now.  This fixes a potential crash when fetching transactions when a transaction is in the mempool
 
+## 1.11.0-beta01
 ### Added
 - `cash.z.ecc.android.sdk`:
   - `Synchronizer.getUnifiedAddress`
