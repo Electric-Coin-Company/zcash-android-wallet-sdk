@@ -80,9 +80,6 @@ internal class FileCompactBlockRepository(
 
     override suspend fun rewindTo(height: BlockHeight) {
         rustBackend.rewindToHeight(height)
-        File(cacheDirectory, "blocks").listFilesSuspend()
-            ?.filter { it.getBlockHeight() > height.value }
-            ?.forEach { it.deleteSuspend() }
     }
 
     override suspend fun close() {
