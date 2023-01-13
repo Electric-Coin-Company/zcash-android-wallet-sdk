@@ -1,21 +1,12 @@
 package cash.z.ecc.android.sdk.db
 
-import androidx.test.filters.FlakyTest
-import androidx.test.filters.MediumTest
 import androidx.test.filters.SmallTest
 import cash.z.ecc.android.sdk.internal.db.DatabaseCoordinator
 import cash.z.ecc.android.sdk.internal.ext.existsSuspend
-import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.test.getAppContext
 import cash.z.ecc.fixture.DatabaseNameFixture
 import cash.z.ecc.fixture.DatabasePathFixture
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.joinAll
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -23,9 +14,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import java.io.File
-import java.util.concurrent.CountDownLatch
-import kotlin.test.Ignore
-import kotlin.time.Duration.Companion.milliseconds
 
 class DatabaseCoordinatorTest {
 
@@ -37,123 +25,6 @@ class DatabaseCoordinatorTest {
         val noBackupDir = DatabasePathFixture.new(baseFolderPath = DatabasePathFixture.NO_BACKUP_DIR_PATH)
         File(databaseDir).deleteRecursively()
         File(noBackupDir).deleteRecursively()
-    }
-
-    private data class Triple(
-        var firstJobValidity: Boolean,
-        var secondJobValidity: Boolean,
-        var resultFile: File?
-    )
-
-    /**
-     * Sanity check of the database coordinator instance and its thread-safe implementation. Our aim here is to run
-     * two jobs in parallel (the second one runs immediately right after the first was started) to test mutex
-     * implementation and correct DatabaseCoordinator function call result.
-     *
-     * We use runBlocking instead of runTest to be able to provide a tiny delays. We also add CountDownLatch to have
-     * the parallel jobs prepared and started at the same time. Our goal here is to run these two jobs in parallel
-     * and also to have the first one access the shared resource (DatabaseCoordinator) first. We add checks to ensure
-     * that these two jobs really run together and to avoid theirs serialization. If any of these conditions do not
-     * succeed we claim the test iteration as invalid and the test returns false.
-     *
-     * Then if the conditions succeed we approach to check if the second job changed the shared resource correctly.
-     *
-     * @return true in case of job conditions succeed and false otherwise
-     */
-    private fun mutex_test_iteration(): Boolean = runBlocking {
-        val testResult = Triple(
-            firstJobValidity = true,
-            secondJobValidity = true,
-            resultFile = null
-        )
-        val coroutineScope = CoroutineScope(Dispatchers.IO)
-        val jobsLatch = CountDownLatch(3)
-
-        val firstJob = coroutineScope.launch {
-            jobsLatch.countDown()
-            jobsLatch.await()
-
-            val firstResultFile = dbCoordinator.cacheDbFile(
-                DatabaseNameFixture.TEST_DB_NETWORK,
-                DatabaseNameFixture.TEST_DB_ALIAS
-            )
-            // Check if the second job hasn't finished first, and thus makes this test invalid
-            if (testResult.resultFile != null) {
-                testResult.firstJobValidity = false
-                return@launch
-            }
-            testResult.resultFile = firstResultFile
-        }
-
-        val secondJob = coroutineScope.launch {
-            jobsLatch.countDown()
-            jobsLatch.await()
-
-            // We check here if the first job is still running and its result is not already proceeded
-            if (!firstJob.isActive || testResult.resultFile != null) {
-                testResult.secondJobValidity = false
-                return@launch
-            }
-            testResult.secondJobValidity = true
-            testResult.resultFile = dbCoordinator.cacheDbFile(
-                ZcashNetwork.Mainnet,
-                "TestZcashSdk"
-            )
-        }
-
-        // Small delay to ensure both jobs are prepared and we can start them at the same time
-        delay(20.milliseconds)
-        jobsLatch.countDown()
-
-        // Wait until both jobs are done
-        joinAll(firstJob, secondJob)
-
-        // Check validity of this test iteration
-        if (!testResult.firstJobValidity ||
-            !testResult.secondJobValidity
-        ) {
-            return@runBlocking false
-        }
-
-        // And here we assert that the second job was the one which waited, and thus accessed as second and changed
-        // the shared result correctly
-        assertTrue(testResult.resultFile != null)
-        assertTrue(testResult.resultFile!!.absolutePath.isNotEmpty())
-        assertTrue(testResult.resultFile!!.absolutePath.contains(ZcashNetwork.Mainnet.networkName))
-        assertTrue(testResult.resultFile!!.absolutePath.contains("TestZcashSdk"))
-
-        return@runBlocking true
-    }
-
-    /**
-     * This stress test runs its subtest repeatedly and counts its failed iterations. If it exceeds the allowed
-     * valid iterations threshold, then we claim this test as unsuccessful.
-     *
-     * According to manual testing, the valid tests ratio is around 90-99% when running on local emulators or
-     * physical devices. But on CI we get about 60-70% valid tests ratio.
-     */
-    @FlakyTest
-    @Ignore("Run this test only against a local device, as it behaves nondeterministic while running in CI.")
-    @Test
-    @MediumTest
-    fun mutex_stress_test() {
-        val allAttempts = 100
-        var failedAttempts = 0
-        val validAttemptsRatio = 0.25f
-
-        // We run the mutex test multiple times sequentially to catch a possible problem
-        for (x in 1..allAttempts) {
-            if (!mutex_test_iteration()) {
-                failedAttempts++
-            }
-        }
-
-        val printResult = "${allAttempts - failedAttempts}/$allAttempts"
-
-        assertTrue(
-            "Failed on insufficient valid attempts: $printResult",
-            failedAttempts < (allAttempts - (allAttempts * validAttemptsRatio))
-        )
     }
 
     @Test
