@@ -9,6 +9,7 @@ import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
 import co.electriccoin.lightwallet.client.model.LightWalletEndpointInfoUnsafe
 import co.electriccoin.lightwallet.client.model.Response
+import co.electriccoin.lightwallet.client.model.SendResponseUnsafe
 
 /**
  * Client for interacting with lightwalletd.
@@ -78,11 +79,9 @@ interface BlockingLightWalletClient {
      *
      * @return the response from the server.
      */
-    suspend fun submitTransaction(spendTransaction: ByteArray): Service.SendResponse
+    fun submitTransaction(spendTransaction: ByteArray): Response<SendResponseUnsafe>
 
-    companion object {
-        internal const val DEFAULT_ERROR_CODE = 3000
-    }
+    companion object
 }
 
 /**

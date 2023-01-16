@@ -12,7 +12,8 @@ sealed class Response<T> {
 
         /**
          * The client was not able to communicate with the server.
-         * Fixme: enhance this type similarly as the types below
+         *
+         * Fix me: enhance this type similarly as the types below
          */
         class Connection<T> : Failure<T>(-1, "")
 
@@ -86,8 +87,8 @@ sealed class Response<T> {
             /**
              * The operation of submitting a transaction failed due to an empty transaction used.
              */
-            class EmptyTransaction<T>(code: Int = EMPTY_TRANSACTION_ERROR_CODE, description: String?)
-                : Client<T>(code, description)
+            class EmptyTransaction<T>(code: Int = EMPTY_TRANSACTION_ERROR_CODE, description: String?) :
+                Client<T>(code, description)
 
             override fun toString(): String {
                 return "Client Error(code='$code', description='$description')"

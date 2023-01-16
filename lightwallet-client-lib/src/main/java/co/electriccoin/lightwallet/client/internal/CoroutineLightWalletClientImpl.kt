@@ -3,12 +3,14 @@ package co.electriccoin.lightwallet.client.internal
 import cash.z.wallet.sdk.internal.rpc.CompactFormats
 import cash.z.wallet.sdk.internal.rpc.CompactTxStreamerGrpcKt
 import cash.z.wallet.sdk.internal.rpc.Service
-import co.electriccoin.lightwallet.client.BlockingLightWalletClient
 import co.electriccoin.lightwallet.client.CoroutineLightWalletClient
+import co.electriccoin.lightwallet.client.ext.BenchmarkingExt
+import co.electriccoin.lightwallet.client.fixture.BlockRangeFixture
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
 import co.electriccoin.lightwallet.client.model.LightWalletEndpointInfoUnsafe
 import co.electriccoin.lightwallet.client.model.Response
+import co.electriccoin.lightwallet.client.model.SendResponseUnsafe
 import com.google.protobuf.ByteString
 import io.grpc.CallOptions
 import io.grpc.Channel
@@ -51,11 +53,23 @@ internal class CoroutineLightWalletClientImpl private constructor(
             .getBlockRange(heightRange.toBlockRange())
     }
 
-    override suspend fun getLatestBlockHeight(): BlockHeightUnsafe {
-        return BlockHeightUnsafe(
-            requireChannel().createStub(singleRequestTimeout)
-                .getLatestBlock(Service.ChainSpec.newBuilder().build()).height
-        )
+    override suspend fun getLatestBlockHeight(): Response<BlockHeightUnsafe> {
+        return try {
+            if (BenchmarkingExt.isBenchmarking()) {
+                // We inject a benchmark test blocks range at this point to process only a restricted range of blocks
+                // for a more reliable benchmark results.
+                Response.Success(BlockHeightUnsafe(BlockRangeFixture.new().endInclusive))
+            } else {
+                val response = requireChannel().createStub(singleRequestTimeout)
+                    .getLatestBlock(Service.ChainSpec.newBuilder().build())
+
+                val blockHeight = BlockHeightUnsafe(response.height)
+
+                Response.Success(blockHeight)
+            }
+        } catch (e: StatusRuntimeException) {
+            return GrpcStatusResolver.resolveFailureFromStatus(e)
+        }
     }
 
     @Suppress("SwallowedException")
@@ -68,23 +82,29 @@ internal class CoroutineLightWalletClientImpl private constructor(
 
             Response.Success(lightwalletEndpointInfo)
         } catch (e: StatusRuntimeException) {
-            Response.Failure.Server()
+            return GrpcStatusResolver.resolveFailureFromStatus(e)
         }
     }
 
-    override suspend fun submitTransaction(spendTransaction: ByteArray): Service.SendResponse {
-        if (spendTransaction.isEmpty()) {
-            return Service.SendResponse.newBuilder().setErrorCode(BlockingLightWalletClient.DEFAULT_ERROR_CODE)
-                .setErrorMessage(
-                    "ERROR: failed to submit transaction because it was empty" +
-                        " so this request was ignored on the client-side."
+    override suspend fun submitTransaction(spendTransaction: ByteArray): Response<SendResponseUnsafe> {
+        return try {
+            if (spendTransaction.isEmpty()) {
+                return Response.Failure.Client.EmptyTransaction(
+                    description = "ERROR: failed to submit transaction because it was empty so this request was " +
+                        "ignored on the client-side."
                 )
-                .build()
+            }
+            val request =
+                Service.RawTransaction.newBuilder().setData(ByteString.copyFrom(spendTransaction))
+                    .build()
+            val response = requireChannel().createStub().sendTransaction(request)
+
+            val sendResponse = SendResponseUnsafe.new(response)
+
+            Response.Success(sendResponse)
+        } catch (e: StatusRuntimeException) {
+            GrpcStatusResolver.resolveFailureFromStatus(e)
         }
-        val request =
-            Service.RawTransaction.newBuilder().setData(ByteString.copyFrom(spendTransaction))
-                .build()
-        return requireChannel().createStub().sendTransaction(request)
     }
 
     override fun shutdown() {

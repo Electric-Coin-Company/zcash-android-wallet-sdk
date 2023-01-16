@@ -9,6 +9,7 @@ import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
 import co.electriccoin.lightwallet.client.model.LightWalletEndpointInfoUnsafe
 import co.electriccoin.lightwallet.client.model.Response
+import co.electriccoin.lightwallet.client.model.SendResponseUnsafe
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -44,7 +45,7 @@ interface CoroutineLightWalletClient {
     /**
      * @return the latest block height known to the service.
      */
-    suspend fun getLatestBlockHeight(): BlockHeightUnsafe
+    suspend fun getLatestBlockHeight(): Response<BlockHeightUnsafe>
 
     /**
      * @return useful server details.
@@ -79,7 +80,7 @@ interface CoroutineLightWalletClient {
      *
      * @return the response from the server.
      */
-    suspend fun submitTransaction(spendTransaction: ByteArray): Service.SendResponse
+    suspend fun submitTransaction(spendTransaction: ByteArray): Response<SendResponseUnsafe>
 
     companion object
 }

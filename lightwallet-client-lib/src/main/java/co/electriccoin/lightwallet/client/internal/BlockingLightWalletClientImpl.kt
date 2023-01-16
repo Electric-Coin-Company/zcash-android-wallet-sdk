@@ -1,6 +1,5 @@
 package co.electriccoin.lightwallet.client.internal
 
-import android.util.Log
 import cash.z.wallet.sdk.internal.rpc.CompactFormats
 import cash.z.wallet.sdk.internal.rpc.CompactTxStreamerGrpc
 import cash.z.wallet.sdk.internal.rpc.Service
@@ -11,6 +10,7 @@ import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
 import co.electriccoin.lightwallet.client.model.LightWalletEndpointInfoUnsafe
 import co.electriccoin.lightwallet.client.model.Response
+import co.electriccoin.lightwallet.client.model.SendResponseUnsafe
 import com.google.protobuf.ByteString
 import io.grpc.Channel
 import io.grpc.ConnectivityState
@@ -48,7 +48,6 @@ internal class BlockingLightWalletClientImpl private constructor(
             .getBlockRange(heightRange.toBlockRange()).iterator().asSequence()
     }
 
-    @Suppress("SwallowedException")
     override fun getLatestBlockHeight(): Response<BlockHeightUnsafe> {
         return try {
             if (BenchmarkingExt.isBenchmarking()) {
@@ -56,15 +55,15 @@ internal class BlockingLightWalletClientImpl private constructor(
                 // for a more reliable benchmark results.
                 Response.Success(BlockHeightUnsafe(BlockRangeFixture.new().endInclusive))
             } else {
-                val height = requireChannel().createStub(singleRequestTimeout)
-                    .getLatestBlock(Service.ChainSpec.newBuilder().build()).height
+                val response = requireChannel().createStub(singleRequestTimeout)
+                    .getLatestBlock(Service.ChainSpec.newBuilder().build())
 
-                val blockHeight = BlockHeightUnsafe(height)
+                val blockHeight = BlockHeightUnsafe(response.height)
 
                 Response.Success(blockHeight)
             }
         } catch (e: StatusRuntimeException) {
-            Response.Failure.Server()
+            return GrpcStatusResolver.resolveFailureFromStatus(e)
         }
     }
 
@@ -78,25 +77,29 @@ internal class BlockingLightWalletClientImpl private constructor(
 
             Response.Success(lightwalletEndpointInfo)
         } catch (e: StatusRuntimeException) {
-            Log.w(Constants.LOG_TAG, "failed")
-            Response.Failure.Server()
+            return GrpcStatusResolver.resolveFailureFromStatus(e)
         }
     }
 
-    override suspend fun submitTransaction(spendTransaction: ByteArray): Service.SendResponse {
-        if (spendTransaction.isEmpty()) {
-            return Service.SendResponse.newBuilder()
-                .setErrorCode(BlockingLightWalletClient.DEFAULT_ERROR_CODE)
-                .setErrorMessage(
-                    "ERROR: failed to submit transaction because it was empty" +
-                        " so this request was ignored on the client-side."
+    override fun submitTransaction(spendTransaction: ByteArray): Response<SendResponseUnsafe> {
+        return try {
+            if (spendTransaction.isEmpty()) {
+                return Response.Failure.Client.EmptyTransaction(
+                    description = "ERROR: failed to submit transaction because it was empty so this request was " +
+                        "ignored on the client-side."
                 )
-                .build()
+            }
+            val request =
+                Service.RawTransaction.newBuilder().setData(ByteString.copyFrom(spendTransaction))
+                    .build()
+            val response = requireChannel().createStub().sendTransaction(request)
+
+            val sendResponse = SendResponseUnsafe.new(response)
+
+            Response.Success(sendResponse)
+        } catch (e: StatusRuntimeException) {
+            GrpcStatusResolver.resolveFailureFromStatus(e)
         }
-        val request =
-            Service.RawTransaction.newBuilder().setData(ByteString.copyFrom(spendTransaction))
-                .build()
-        return requireChannel().createStub().sendTransaction(request)
     }
 
     override fun shutdown() {
