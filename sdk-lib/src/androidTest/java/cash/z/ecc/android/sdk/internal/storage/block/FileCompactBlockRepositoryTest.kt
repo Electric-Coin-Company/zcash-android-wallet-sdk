@@ -3,7 +3,6 @@ package cash.z.ecc.android.sdk.internal.storage.block
 import androidx.test.platform.app.InstrumentationRegistry
 import cash.z.ecc.android.sdk.internal.ext.deleteRecursivelySuspend
 import cash.z.ecc.android.sdk.internal.ext.existsSuspend
-import cash.z.ecc.android.sdk.internal.ext.listFilesSuspend
 import cash.z.ecc.android.sdk.internal.ext.mkdirsSuspend
 import cash.z.ecc.android.sdk.internal.service.LightWalletGrpcService
 import cash.z.ecc.android.sdk.model.BlockHeight
@@ -102,12 +101,8 @@ class FileCompactBlockRepositoryTest {
 
         compactBlockRepository.rewindTo(BlockHeight(rewindHeight))
 
-        with(compactBlockRepository) {
-            val files = File(File(DatabasePathFixture.new()), "blocks").listFilesSuspend()
-                ?.filter { it.getBlockHeight() > rewindHeight }
-
-            assertTrue { files.isNullOrEmpty() }
-        }
+        val metaData = rustBackend.metadata.filter { it.height > rewindHeight }
+        assertTrue { metaData.isEmpty() }
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
