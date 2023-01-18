@@ -392,7 +392,7 @@ internal class DatabaseCoordinator private constructor(context: Context) {
  * @param databaseFile  The database file.
  * @return A {@code RoomDatabaseBuilder<T>} which you can use to create the database.
  */
-internal fun <T : RoomDatabase?> commonDatabaseBuilder(
+internal fun <T : RoomDatabase> commonDatabaseBuilder(
     context: Context,
     klass: Class<T>,
     databaseFile: File

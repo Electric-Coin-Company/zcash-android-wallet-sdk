@@ -11,7 +11,6 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.lifecycle.compose.ExperimentalLifecycleComposeApi
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.NavOptionsBuilder
@@ -33,7 +32,6 @@ import cash.z.ecc.android.sdk.model.ZcashNetwork
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalLifecycleComposeApi::class)
 @Composable
 @Suppress("LongMethod")
 internal fun ComposeActivity.Navigation() {

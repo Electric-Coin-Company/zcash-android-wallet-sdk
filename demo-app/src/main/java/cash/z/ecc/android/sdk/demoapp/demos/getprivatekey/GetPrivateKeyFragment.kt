@@ -4,7 +4,9 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import cash.z.ecc.android.bip39.Mnemonics
 import cash.z.ecc.android.bip39.toSeed
 import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
@@ -42,22 +44,24 @@ class GetPrivateKeyFragment : BaseDemoFragment<FragmentGetPrivateKeyBinding>() {
     private fun displayKeys() {
         // derive the keys from the seed:
         // demonstrate deriving spending keys for five accounts but only take the first one
-        lifecycleScope.launchWhenStarted {
-            @Suppress("MagicNumber")
-            val spendingKey = DerivationTool.deriveUnifiedSpendingKey(
-                seed,
-                ZcashNetwork.fromResources(requireApplicationContext()),
-                Account(5)
-            )
+        lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                @Suppress("MagicNumber")
+                val spendingKey = DerivationTool.deriveUnifiedSpendingKey(
+                    seed,
+                    ZcashNetwork.fromResources(requireApplicationContext()),
+                    Account(5)
+                )
 
-            // derive the key that allows you to view but not spend transactions
-            val viewingKey = DerivationTool.deriveUnifiedFullViewingKey(
-                spendingKey,
-                ZcashNetwork.fromResources(requireApplicationContext())
-            )
+                // derive the key that allows you to view but not spend transactions
+                val viewingKey = DerivationTool.deriveUnifiedFullViewingKey(
+                    spendingKey,
+                    ZcashNetwork.fromResources(requireApplicationContext())
+                )
 
-            // display the keys in the UI
-            binding.textInfo.setText("Spending Key:\n$spendingKey\n\nViewing Key:\n$viewingKey")
+                // display the keys in the UI
+                binding.textInfo.setText("Spending Key:\n$spendingKey\n\nViewing Key:\n$viewingKey")
+            }
         }
     }
 
@@ -75,8 +79,8 @@ class GetPrivateKeyFragment : BaseDemoFragment<FragmentGetPrivateKeyBinding>() {
         return view
     }
 
-    override fun onResume() {
-        super.onResume()
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
         displayKeys()
     }
 
