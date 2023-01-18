@@ -767,7 +767,6 @@ internal object DefaultSynchronizerFactory {
         CompactBlockRepository =
         FileCompactBlockRepository.new(
             zcashNetwork,
-            rustBackend.fsBlockDbRoot,
             rustBackend
         )
 

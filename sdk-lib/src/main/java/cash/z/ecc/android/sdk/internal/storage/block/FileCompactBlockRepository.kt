@@ -110,20 +110,16 @@ internal class FileCompactBlockRepository(
 
     companion object {
 
-        /**
-         * @property cacheDirectory the directory for storing blocks.
-         */
         suspend fun new(
             zcashNetwork: ZcashNetwork,
-            cacheDirectory: File,
             rustBackend: RustBackend
         ): FileCompactBlockRepository {
             twig("${rustBackend.fsBlockDbRoot.absolutePath} \n  ${rustBackend.dataDbFile.absolutePath}")
             // create cache directories
-            File(cacheDirectory, "blocks").mkdirsSuspend()
+            File(rustBackend.fsBlockDbRoot, "blocks").mkdirsSuspend()
             rustBackend.initBlockMetaDb()
 
-            return FileCompactBlockRepository(zcashNetwork, cacheDirectory, rustBackend)
+            return FileCompactBlockRepository(zcashNetwork, rustBackend.fsBlockDbRoot, rustBackend)
         }
     }
 }
