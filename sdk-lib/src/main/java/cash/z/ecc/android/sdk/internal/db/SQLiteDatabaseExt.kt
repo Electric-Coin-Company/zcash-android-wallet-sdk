@@ -91,12 +91,14 @@ internal fun <T> SupportSQLiteDatabase.queryAndMap(
         groupBy(groupBy)
         orderBy(orderBy)
 
-        // Counterintuitive but correct. When using the comma syntax, offset comes first.
-        // When using the keyword syntax, "LIMIT 1 OFFSET 2" then the offset comes second.
-        if (null == offset) {
-            limit(limit)
-        } else {
-            limit(String.format(Locale.ROOT, "%s,%s", offset, limit)) // NON-NLS
+        if (null != limit) {
+            // Counterintuitive but correct. When using the comma syntax, offset comes first.
+            // When using the keyword syntax, "LIMIT 1 OFFSET 2" then the offset comes second.
+            if (null == offset) {
+                limit(limit)
+            } else {
+                limit(String.format(Locale.ROOT, "%s,%s", offset, limit)) // NON-NLS
+            }
         }
     }
 
