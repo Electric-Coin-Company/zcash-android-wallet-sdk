@@ -1,6 +1,5 @@
 package cash.z.ecc.android.sdk.internal.storage.block
 
-import androidx.test.platform.app.InstrumentationRegistry
 import cash.z.ecc.android.sdk.internal.ext.deleteRecursivelySuspend
 import cash.z.ecc.android.sdk.internal.ext.existsSuspend
 import cash.z.ecc.android.sdk.internal.ext.mkdirsSuspend
@@ -8,10 +7,13 @@ import cash.z.ecc.android.sdk.internal.service.LightWalletGrpcService
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.LightWalletEndpoint
 import cash.z.ecc.android.sdk.model.Mainnet
-import cash.z.ecc.android.sdk.model.Testnet
 import cash.z.ecc.android.sdk.model.ZcashNetwork
+import cash.z.ecc.android.sdk.test.getAppContext
 import cash.z.ecc.fixture.DatabasePathFixture
 import cash.z.ecc.fixture.FakeRustBackend
+import cash.z.ecc.fixture.FakeRustBackendFixture
+import cash.z.ecc.fixture.FileBlockRangeFixture
+import cash.z.ecc.fixture.FilePathFixture
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -23,20 +25,22 @@ import kotlin.test.assertTrue
 
 class FileCompactBlockRepositoryTest {
 
-    private val rustBackend = FakeRustBackend()
+    private val rustBackend: FakeRustBackend
+        get() = FakeRustBackendFixture.fakeRustBackend
+
     private lateinit var compactBlockRepository: FileCompactBlockRepository
 
-    private val lightwalletdHost = LightWalletEndpoint.Testnet
-    private val context = InstrumentationRegistry.getInstrumentation().targetContext
+    private val lightwalletdHost = LightWalletEndpoint.Mainnet
+    private val context = getAppContext()
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @Before
     fun setup() = runTest {
-        val file = File(DatabasePathFixture.new())
-        val blocksDir = File(file, "blocks")
+        val rootDir = FilePathFixture.rootDir
+        val blocksDir = FilePathFixture.blocksDir
 
-        if (file.existsSuspend()) {
-            file.deleteRecursivelySuspend()
+        if (rootDir.existsSuspend()) {
+            rootDir.deleteRecursivelySuspend()
         }
         if (blocksDir.existsSuspend()) {
             blocksDir.deleteRecursivelySuspend()
@@ -44,7 +48,7 @@ class FileCompactBlockRepositoryTest {
         blocksDir.mkdirsSuspend()
 
         compactBlockRepository =
-            FileCompactBlockRepository(ZcashNetwork.Testnet, file, rustBackend)
+            FileCompactBlockRepository(ZcashNetwork.Testnet, rootDir, rustBackend)
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -56,10 +60,7 @@ class FileCompactBlockRepositoryTest {
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun getLatestHeightTest() = runTest {
-        val blockRange = BlockHeight.new(ZcashNetwork.Mainnet, 500_000)..BlockHeight.new(
-            ZcashNetwork.Mainnet,
-            500_009
-        )
+        val blockRange = FileBlockRangeFixture.new()
 
         val lightwalletService = LightWalletGrpcService.new(context, lightwalletdHost)
         val blocks = lightwalletService.getBlockRange(blockRange).toList()
@@ -72,13 +73,12 @@ class FileCompactBlockRepositoryTest {
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun writeBlockTest() = runTest {
-        val blockRange = BlockHeight.new(ZcashNetwork.Mainnet, 500_000)..BlockHeight.new(
-            ZcashNetwork.Mainnet,
-            500_009
-        )
+        val blockRange = FileBlockRangeFixture.new()
 
         val lightwalletService = LightWalletGrpcService.new(context, lightwalletdHost)
         val blocks = lightwalletService.getBlockRange(blockRange)
+
+        assertTrue { rustBackend.metadata.size == 0 }
 
         compactBlockRepository.write(blocks)
 
@@ -88,10 +88,7 @@ class FileCompactBlockRepositoryTest {
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun rewindToTest() = runTest {
-        val blockRange = BlockHeight.new(ZcashNetwork.Mainnet, 500_000)..BlockHeight.new(
-            ZcashNetwork.Mainnet,
-            500_009
-        )
+        val blockRange = FileBlockRangeFixture.new()
 
         val lightwalletService = LightWalletGrpcService.new(context, lightwalletdHost)
         val blocks = lightwalletService.getBlockRange(blockRange)
@@ -108,10 +105,7 @@ class FileCompactBlockRepositoryTest {
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun createTemporaryFileTest() = runTest {
-        val blockRange = BlockHeight.new(ZcashNetwork.Mainnet, 500_000)..BlockHeight.new(
-            ZcashNetwork.Mainnet,
-            500_009
-        )
+        val blockRange = FileBlockRangeFixture.new()
 
         val lightwalletService = LightWalletGrpcService.new(context, lightwalletdHost)
         val blocks = lightwalletService.getBlockRange(blockRange)
@@ -125,10 +119,7 @@ class FileCompactBlockRepositoryTest {
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun finalizeFileTest() = runTest {
-        val blockRange = BlockHeight.new(ZcashNetwork.Mainnet, 500_000)..BlockHeight.new(
-            ZcashNetwork.Mainnet,
-            500_009
-        )
+        val blockRange = FileBlockRangeFixture.new()
 
         val lightwalletService = LightWalletGrpcService.new(context, lightwalletdHost)
         val blocks = lightwalletService.getBlockRange(blockRange)
