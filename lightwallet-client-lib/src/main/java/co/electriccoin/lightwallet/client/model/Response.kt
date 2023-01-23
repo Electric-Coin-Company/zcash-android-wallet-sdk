@@ -1,6 +1,11 @@
 package co.electriccoin.lightwallet.client.model
 
 internal const val EMPTY_TRANSACTION_ERROR_CODE = 3000
+internal const val EMPTY_TRANSACTION_ERROR_DESCRIPTION = "Failed to submit transaction because it was empty, so this" +
+    " request was ignored on the client-side." // NON-NLS
+
+internal const val CONNECTION_ERROR_CODE = 3100
+internal const val CONNECTION_ERROR_DESCRIPTION = "Missing internet connection." // NON-NLS
 
 sealed class Response<T> {
     data class Success<T>(val result: T) : Response<T>()
@@ -12,10 +17,15 @@ sealed class Response<T> {
 
         /**
          * The client was not able to communicate with the server.
-         *
-         * Fix me: enhance this type similarly as the types below
          */
-        class Connection<T> : Failure<T>(-1, "")
+        class Connection<T>(
+            override val code: Int = CONNECTION_ERROR_CODE,
+            override val description: String? = CONNECTION_ERROR_DESCRIPTION
+        ) : Failure<T>(code, description) {
+            override fun toString(): String {
+                return "Connection Error(code='$code', description='$description')"
+            }
+        }
 
         /**
          * The server did respond and returned an error.
@@ -87,8 +97,10 @@ sealed class Response<T> {
             /**
              * The operation of submitting a transaction failed due to an empty transaction used.
              */
-            class EmptyTransaction<T>(code: Int = EMPTY_TRANSACTION_ERROR_CODE, description: String?) :
-                Client<T>(code, description)
+            class EmptyTransaction<T>(
+                code: Int = EMPTY_TRANSACTION_ERROR_CODE,
+                description: String? = EMPTY_TRANSACTION_ERROR_DESCRIPTION
+            ) : Client<T>(code, description)
 
             override fun toString(): String {
                 return "Client Error(code='$code', description='$description')"

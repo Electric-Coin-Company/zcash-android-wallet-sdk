@@ -84,10 +84,7 @@ internal class BlockingLightWalletClientImpl private constructor(
     override fun submitTransaction(spendTransaction: ByteArray): Response<SendResponseUnsafe> {
         return try {
             if (spendTransaction.isEmpty()) {
-                return Response.Failure.Client.EmptyTransaction(
-                    description = "ERROR: failed to submit transaction because it was empty so this request was " +
-                        "ignored on the client-side."
-                )
+                return Response.Failure.Client.EmptyTransaction()
             }
             val request =
                 Service.RawTransaction.newBuilder().setData(ByteString.copyFrom(spendTransaction))
