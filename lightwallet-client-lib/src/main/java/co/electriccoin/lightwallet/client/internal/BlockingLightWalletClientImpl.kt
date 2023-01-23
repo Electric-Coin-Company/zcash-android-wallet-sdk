@@ -9,6 +9,7 @@ import co.electriccoin.lightwallet.client.fixture.BlockRangeFixture
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
 import co.electriccoin.lightwallet.client.model.LightWalletEndpointInfoUnsafe
+import co.electriccoin.lightwallet.client.model.RawTransactionUnsafe
 import co.electriccoin.lightwallet.client.model.Response
 import co.electriccoin.lightwallet.client.model.SendResponseUnsafe
 import com.google.protobuf.ByteString
@@ -63,7 +64,7 @@ internal class BlockingLightWalletClientImpl private constructor(
                 Response.Success(blockHeight)
             }
         } catch (e: StatusRuntimeException) {
-            return GrpcStatusResolver.resolveFailureFromStatus(e)
+            GrpcStatusResolver.resolveFailureFromStatus(e)
         }
     }
 
@@ -77,15 +78,15 @@ internal class BlockingLightWalletClientImpl private constructor(
 
             Response.Success(lightwalletEndpointInfo)
         } catch (e: StatusRuntimeException) {
-            return GrpcStatusResolver.resolveFailureFromStatus(e)
+            GrpcStatusResolver.resolveFailureFromStatus(e)
         }
     }
 
     override fun submitTransaction(spendTransaction: ByteArray): Response<SendResponseUnsafe> {
+        if (spendTransaction.isEmpty()) {
+            return Response.Failure.Client.SubmitEmptyTransaction()
+        }
         return try {
-            if (spendTransaction.isEmpty()) {
-                return Response.Failure.Client.EmptyTransaction()
-            }
             val request =
                 Service.RawTransaction.newBuilder().setData(ByteString.copyFrom(spendTransaction))
                     .build()
@@ -99,16 +100,21 @@ internal class BlockingLightWalletClientImpl private constructor(
         }
     }
 
-    override fun shutdown() {
-        channel.shutdown()
-    }
+    override fun fetchTransaction(txId: ByteArray): Response<RawTransactionUnsafe> {
+        if (txId.isEmpty()) {
+            return Response.Failure.Client.NullIdTransaction()
+        }
+        return try {
+            val request = Service.TxFilter.newBuilder().setHash(ByteString.copyFrom(txId)).build()
 
-    override fun fetchTransaction(txId: ByteArray): Service.RawTransaction? {
-        if (txId.isEmpty()) return null
+            val response = requireChannel().createStub().getTransaction(request)
 
-        return requireChannel().createStub().getTransaction(
-            Service.TxFilter.newBuilder().setHash(ByteString.copyFrom(txId)).build()
-        )
+            val transactionResponse = RawTransactionUnsafe.new(response)
+
+            Response.Success(transactionResponse)
+        } catch (e: StatusRuntimeException) {
+            GrpcStatusResolver.resolveFailureFromStatus(e)
+        }
     }
 
     override fun fetchUtxos(
@@ -132,6 +138,10 @@ internal class BlockingLightWalletClientImpl private constructor(
             Service.TransparentAddressBlockFilter.newBuilder().setAddress(tAddress)
                 .setRange(blockHeightRange.toBlockRange()).build()
         ).iterator().asSequence()
+    }
+
+    override fun shutdown() {
+        channel.shutdown()
     }
 
     override fun reconnect() {

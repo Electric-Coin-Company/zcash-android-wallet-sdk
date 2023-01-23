@@ -467,21 +467,20 @@ class CompactBlockProcessor internal constructor(
     private suspend fun enhanceHelper(id: Long, rawTransactionId: ByteArray, minedHeight: BlockHeight) {
         twig("START: enhancing transaction (id:$id  block:$minedHeight)")
 
-        runCatching {
-            downloader.fetchTransaction(rawTransactionId)
-        }.onSuccess { tx ->
-            tx?.let {
+        when (val response = downloader.fetchTransaction(rawTransactionId)) {
+            is Response.Success -> {
                 runCatching {
                     twig("decrypting and storing transaction (id:$id  block:$minedHeight)")
-                    rustBackend.decryptAndStoreTransaction(it.data.toByteArray())
+                    rustBackend.decryptAndStoreTransaction(response.result.data)
                 }.onSuccess {
                     twig("DONE: enhancing transaction (id:$id  block:$minedHeight)")
                 }.onFailure { error ->
                     onProcessorError(EnhanceTxDecryptError(minedHeight, error))
                 }
-            } ?: twig("no transaction found. Nothing to enhance. This probably shouldn't happen.")
-        }.onFailure { error ->
-            onProcessorError(EnhanceTxDownloadError(minedHeight, error))
+            }
+            is Response.Failure -> {
+                onProcessorError(EnhanceTxDownloadError(minedHeight, response.toThrowable()))
+            }
         }
     }
 

@@ -9,6 +9,7 @@ import co.electriccoin.lightwallet.client.fixture.BlockRangeFixture
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
 import co.electriccoin.lightwallet.client.model.LightWalletEndpointInfoUnsafe
+import co.electriccoin.lightwallet.client.model.RawTransactionUnsafe
 import co.electriccoin.lightwallet.client.model.Response
 import co.electriccoin.lightwallet.client.model.SendResponseUnsafe
 import com.google.protobuf.ByteString
@@ -68,7 +69,7 @@ internal class CoroutineLightWalletClientImpl private constructor(
                 Response.Success(blockHeight)
             }
         } catch (e: StatusRuntimeException) {
-            return GrpcStatusResolver.resolveFailureFromStatus(e)
+            GrpcStatusResolver.resolveFailureFromStatus(e)
         }
     }
 
@@ -82,18 +83,15 @@ internal class CoroutineLightWalletClientImpl private constructor(
 
             Response.Success(lightwalletEndpointInfo)
         } catch (e: StatusRuntimeException) {
-            return GrpcStatusResolver.resolveFailureFromStatus(e)
+            GrpcStatusResolver.resolveFailureFromStatus(e)
         }
     }
 
     override suspend fun submitTransaction(spendTransaction: ByteArray): Response<SendResponseUnsafe> {
+        if (spendTransaction.isEmpty()) {
+            return Response.Failure.Client.SubmitEmptyTransaction()
+        }
         return try {
-            if (spendTransaction.isEmpty()) {
-                return Response.Failure.Client.EmptyTransaction(
-                    description = "ERROR: failed to submit transaction because it was empty so this request was " +
-                        "ignored on the client-side."
-                )
-            }
             val request =
                 Service.RawTransaction.newBuilder().setData(ByteString.copyFrom(spendTransaction))
                     .build()
@@ -107,16 +105,22 @@ internal class CoroutineLightWalletClientImpl private constructor(
         }
     }
 
-    override fun shutdown() {
-        channel.shutdown()
-    }
+    override suspend fun fetchTransaction(txId: ByteArray): Response<RawTransactionUnsafe> {
+        if (txId.isEmpty()) {
+            return Response.Failure.Client.NullIdTransaction()
+        }
 
-    override suspend fun fetchTransaction(txId: ByteArray): Service.RawTransaction? {
-        if (txId.isEmpty()) return null
+        return try {
+            val request = Service.TxFilter.newBuilder().setHash(ByteString.copyFrom(txId)).build()
 
-        return requireChannel().createStub().getTransaction(
-            Service.TxFilter.newBuilder().setHash(ByteString.copyFrom(txId)).build()
-        )
+            val response = requireChannel().createStub().getTransaction(request)
+
+            val transactionResponse = RawTransactionUnsafe.new(response)
+
+            Response.Success(transactionResponse)
+        } catch (e: StatusRuntimeException) {
+            GrpcStatusResolver.resolveFailureFromStatus(e)
+        }
     }
 
     override suspend fun fetchUtxos(
@@ -140,6 +144,10 @@ internal class CoroutineLightWalletClientImpl private constructor(
             Service.TransparentAddressBlockFilter.newBuilder().setAddress(tAddress)
                 .setRange(blockHeightRange.toBlockRange()).build()
         )
+    }
+
+    override fun shutdown() {
+        channel.shutdown()
     }
 
     override fun reconnect() {

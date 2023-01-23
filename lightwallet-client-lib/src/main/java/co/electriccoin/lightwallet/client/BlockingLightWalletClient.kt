@@ -8,6 +8,7 @@ import co.electriccoin.lightwallet.client.internal.BlockingLightWalletClientImpl
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
 import co.electriccoin.lightwallet.client.model.LightWalletEndpointInfoUnsafe
+import co.electriccoin.lightwallet.client.model.RawTransactionUnsafe
 import co.electriccoin.lightwallet.client.model.Response
 import co.electriccoin.lightwallet.client.model.SendResponseUnsafe
 
@@ -19,7 +20,7 @@ interface BlockingLightWalletClient {
     /**
      * @return the full transaction info.
      */
-    fun fetchTransaction(txId: ByteArray): Service.RawTransaction?
+    fun fetchTransaction(txId: ByteArray): Response<RawTransactionUnsafe>
 
     /**
      * @param tAddress the transparent address to use.

@@ -1,8 +1,12 @@
 package co.electriccoin.lightwallet.client.model
 
-internal const val EMPTY_TRANSACTION_ERROR_CODE = 3000
-internal const val EMPTY_TRANSACTION_ERROR_DESCRIPTION = "Failed to submit transaction because it was empty, so this" +
-    " request was ignored on the client-side." // NON-NLS
+internal const val SUBMIT_EMPTY_TRANSACTION_ERROR_CODE = 3000
+internal const val SUBMIT_EMPTY_TRANSACTION_ERROR_DESCRIPTION = "Failed to submit transaction because it was empty, " +
+    "so this request was ignored on the client-side." // NON-NLS
+
+internal const val NULL_TRANSACTION_ID_ERROR_CODE = 3001
+internal const val NULL_TRANSACTION_ID_ERROR_DESCRIPTION = "Failed to start fetching the transaction with null " +
+    "transaction ID, so this request was ignored on the client-side." // NON-NLS
 
 internal const val CONNECTION_ERROR_CODE = 3100
 internal const val CONNECTION_ERROR_DESCRIPTION = "Missing internet connection." // NON-NLS
@@ -14,6 +18,11 @@ sealed class Response<T> {
         open val code: Int,
         open val description: String?
     ) : Response<T>() {
+
+        /**
+         * Use this function to convert Failure into Throwable object.
+         */
+        fun toThrowable() = Throwable("Communication failure with details: $code${description?.let{": $it"} ?: "."}")
 
         /**
          * The client was not able to communicate with the server.
@@ -97,9 +106,17 @@ sealed class Response<T> {
             /**
              * The operation of submitting a transaction failed due to an empty transaction used.
              */
-            class EmptyTransaction<T>(
-                code: Int = EMPTY_TRANSACTION_ERROR_CODE,
-                description: String? = EMPTY_TRANSACTION_ERROR_DESCRIPTION
+            class SubmitEmptyTransaction<T>(
+                code: Int = SUBMIT_EMPTY_TRANSACTION_ERROR_CODE,
+                description: String? = SUBMIT_EMPTY_TRANSACTION_ERROR_DESCRIPTION
+            ) : Client<T>(code, description)
+
+            /**
+             * The operation of fetching a transaction failed due to a null ID used.
+             */
+            class NullIdTransaction<T>(
+                code: Int = NULL_TRANSACTION_ID_ERROR_CODE,
+                description: String? = NULL_TRANSACTION_ID_ERROR_DESCRIPTION
             ) : Client<T>(code, description)
 
             override fun toString(): String {

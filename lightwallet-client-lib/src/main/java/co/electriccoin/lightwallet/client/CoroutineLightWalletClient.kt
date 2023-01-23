@@ -8,6 +8,7 @@ import co.electriccoin.lightwallet.client.internal.CoroutineLightWalletClientImp
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
 import co.electriccoin.lightwallet.client.model.LightWalletEndpointInfoUnsafe
+import co.electriccoin.lightwallet.client.model.RawTransactionUnsafe
 import co.electriccoin.lightwallet.client.model.Response
 import co.electriccoin.lightwallet.client.model.SendResponseUnsafe
 import kotlinx.coroutines.flow.Flow
@@ -20,7 +21,7 @@ interface CoroutineLightWalletClient {
     /**
      * @return the full transaction info.
      */
-    suspend fun fetchTransaction(txId: ByteArray): Service.RawTransaction?
+    suspend fun fetchTransaction(txId: ByteArray): Response<RawTransactionUnsafe>
 
     /**
      * @param tAddress the transparent address to use.

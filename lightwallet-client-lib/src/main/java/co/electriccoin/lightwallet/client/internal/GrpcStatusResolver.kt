@@ -10,8 +10,8 @@ import io.grpc.Status
  */
 object GrpcStatusResolver : ApiStatusResolver {
 
-    override fun <T> resolveFailureFromStatus(e: Exception): Response.Failure<T> {
-        val status = Status.fromThrowable(e)
+    override fun <T> resolveFailureFromStatus(throwable: Throwable): Response.Failure<T> {
+        val status = Status.fromThrowable(throwable)
         Log.w(Constants.LOG_TAG, "Networking error: ${status.code}: ${status.description}")
 
         return when (status.code) {

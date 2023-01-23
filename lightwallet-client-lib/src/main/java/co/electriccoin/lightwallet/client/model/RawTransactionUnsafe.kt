@@ -1,7 +1,6 @@
-package co.electriccoin.lightwallet.client.internal
+package co.electriccoin.lightwallet.client.model
 
 import cash.z.wallet.sdk.internal.rpc.Service.RawTransaction
-import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 
 class RawTransactionUnsafe(val height: BlockHeightUnsafe, val data: ByteArray) {
     companion object {
