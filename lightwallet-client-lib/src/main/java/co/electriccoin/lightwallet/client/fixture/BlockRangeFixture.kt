@@ -1,16 +1,20 @@
 package co.electriccoin.lightwallet.client.fixture
 
+import androidx.annotation.VisibleForTesting
+
 object BlockRangeFixture {
 
     // Be aware that changing these bounds values in a broader range may result in a timeout reached in
     // SyncBlockchainBenchmark. So if changing these, don't forget to align also the test timeout in
     // waitForBalanceScreen() appropriately.
 
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     @Suppress("MagicNumber")
-    private val BLOCK_HEIGHT_LOWER_BOUND = 1730001L
+    internal val BLOCK_HEIGHT_LOWER_BOUND = 1730001L
 
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     @Suppress("MagicNumber")
-    private val BLOCK_HEIGHT_UPPER_BOUND = 1730100L
+    internal val BLOCK_HEIGHT_UPPER_BOUND = 1730100L
 
     fun new(
         lowerBound: Long = BLOCK_HEIGHT_LOWER_BOUND,

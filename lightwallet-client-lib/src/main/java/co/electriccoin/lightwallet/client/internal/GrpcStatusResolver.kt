@@ -12,7 +12,7 @@ object GrpcStatusResolver : ApiStatusResolver {
 
     override fun <T> resolveFailureFromStatus(e: Exception): Response.Failure<T> {
         val status = Status.fromThrowable(e)
-        Log.w(Constants.LOG_TAG, "Server error: ${status.code}: ${status.description}")
+        Log.w(Constants.LOG_TAG, "Networking error: ${status.code}: ${status.description}")
 
         return when (status.code) {
             Status.Code.ABORTED -> {
