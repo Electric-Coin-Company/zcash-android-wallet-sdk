@@ -3,6 +3,7 @@ package cash.z.ecc.android.sdk.jni
 import cash.z.ecc.android.sdk.internal.SaplingParamTool
 import cash.z.ecc.android.sdk.internal.SdkDispatchers
 import cash.z.ecc.android.sdk.internal.Twig
+import cash.z.ecc.android.sdk.internal.ext.deleteRecursivelySuspend
 import cash.z.ecc.android.sdk.internal.ext.deleteSuspend
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
@@ -32,8 +33,8 @@ internal class RustBackend private constructor(
 
     suspend fun clear(clearCacheDb: Boolean = true, clearDataDb: Boolean = true) {
         if (clearCacheDb) {
-            Twig.debug { "Deleting the cache database!" }
-            fsBlockDbRoot.deleteSuspend()
+            Twig.debug { "Deleting the cache database and CompactBlock files!" }
+            fsBlockDbRoot.deleteRecursivelySuspend()
         }
         if (clearDataDb) {
             Twig.debug { "Deleting the data database!" }

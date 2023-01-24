@@ -1,6 +1,6 @@
 package cash.z.ecc.android.sdk.internal.model
 
-internal data class JniBlockMeta(
+class JniBlockMeta(
     val height: Long,
     val hash: ByteArray,
     val time: Long,

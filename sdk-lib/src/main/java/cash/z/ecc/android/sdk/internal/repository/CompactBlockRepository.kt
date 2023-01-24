@@ -1,5 +1,6 @@
 package cash.z.ecc.android.sdk.internal.repository
 
+import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.wallet.sdk.internal.rpc.CompactFormats
 
@@ -19,7 +20,7 @@ interface CompactBlockRepository {
      *
      * @return the compact block or null when it did not exist.
      */
-    suspend fun findCompactBlock(height: BlockHeight): CompactFormats.CompactBlock?
+    suspend fun findCompactBlock(height: BlockHeight): JniBlockMeta?
 
     /**
      * Write the given blocks to this store, which may be anything from an in-memory cache to a DB.
@@ -35,9 +36,4 @@ interface CompactBlockRepository {
      * @param height the target height to which to rewind.
      */
     suspend fun rewindTo(height: BlockHeight)
-
-    /**
-     * Close any connections to the block store.
-     */
-    suspend fun close()
 }

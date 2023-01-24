@@ -7,7 +7,6 @@ import cash.z.ecc.android.sdk.internal.service.LightWalletGrpcService
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.LightWalletEndpoint
 import cash.z.ecc.android.sdk.model.Mainnet
-import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.test.getAppContext
 import cash.z.ecc.fixture.DatabasePathFixture
 import cash.z.ecc.fixture.FakeRustBackend
@@ -25,8 +24,7 @@ import kotlin.test.assertTrue
 
 class FileCompactBlockRepositoryTest {
 
-    private val rustBackend: FakeRustBackend
-        get() = FakeRustBackendFixture.fakeRustBackend
+    private val rustBackend: FakeRustBackend = FakeRustBackendFixture.new
 
     private lateinit var compactBlockRepository: FileCompactBlockRepository
 
@@ -36,8 +34,8 @@ class FileCompactBlockRepositoryTest {
     @OptIn(ExperimentalCoroutinesApi::class)
     @Before
     fun setup() = runTest {
-        val rootDir = FilePathFixture.rootDir
-        val blocksDir = FilePathFixture.blocksDir
+        val rootDir = FilePathFixture.newRootDir()
+        val blocksDir = FilePathFixture.newBlocksDir()
 
         if (rootDir.existsSuspend()) {
             rootDir.deleteRecursivelySuspend()
@@ -48,7 +46,7 @@ class FileCompactBlockRepositoryTest {
         blocksDir.mkdirsSuspend()
 
         compactBlockRepository =
-            FileCompactBlockRepository(ZcashNetwork.Testnet, rootDir, rustBackend)
+            FileCompactBlockRepository(rootDir, rustBackend)
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -67,7 +65,7 @@ class FileCompactBlockRepositoryTest {
 
         compactBlockRepository.write(blocks.asSequence())
 
-        assertTrue { blocks.last().height == compactBlockRepository.getLatestHeight().value }
+        assertTrue { blocks.last().height == compactBlockRepository.getLatestHeight()?.value }
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -81,7 +79,6 @@ class FileCompactBlockRepositoryTest {
         assertTrue { rustBackend.metadata.size == 0 }
 
         compactBlockRepository.write(blocks)
-
         assertTrue { rustBackend.metadata.size == 10 }
     }
 
@@ -111,7 +108,7 @@ class FileCompactBlockRepositoryTest {
         val blocks = lightwalletService.getBlockRange(blockRange)
         val block = blocks.first()
 
-        val file = compactBlockRepository.createTemporaryFile(block, File(DatabasePathFixture.new(), "blocks"))
+        val file = block.createTemporaryFile(FilePathFixture.newBlocksDir())
 
         assertTrue { file.existsSuspend() }
     }
@@ -125,12 +122,10 @@ class FileCompactBlockRepositoryTest {
         val blocks = lightwalletService.getBlockRange(blockRange)
         val block = blocks.first()
 
-        val file = compactBlockRepository.createTemporaryFile(block, File(DatabasePathFixture.new(), "blocks"))
-        with(compactBlockRepository) {
-            val finalizedFile = File(file.absolutePath.dropLast(4))
-            assertFalse { finalizedFile.existsSuspend() }
-            file.finalizeFile()
-            assertTrue { finalizedFile.existsSuspend() }
-        }
+        val file = block.createTemporaryFile(FilePathFixture.newBlocksDir())
+        val finalizedFile = File(file.absolutePath.dropLast(4))
+        assertFalse { finalizedFile.existsSuspend() }
+        file.finalizeFile()
+        assertTrue { finalizedFile.existsSuspend() }
     }
 }

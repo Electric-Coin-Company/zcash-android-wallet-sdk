@@ -476,7 +476,7 @@ interface Synchronizer {
 
             val blockStore =
                 DefaultSynchronizerFactory
-                    .defaultFileCompactBlockRepository(rustBackend, zcashNetwork)
+                    .defaultFileCompactBlockRepository(rustBackend)
 
             val viewingKeys = seed?.let {
                 DerivationTool.deriveUnifiedFullViewingKeys(
