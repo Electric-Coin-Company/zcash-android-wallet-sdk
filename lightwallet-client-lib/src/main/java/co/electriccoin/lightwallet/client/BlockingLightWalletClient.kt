@@ -12,6 +12,9 @@ import co.electriccoin.lightwallet.client.model.RawTransactionUnsafe
 import co.electriccoin.lightwallet.client.model.Response
 import co.electriccoin.lightwallet.client.model.SendResponseUnsafe
 
+// TODO [895]: Let remaining server calls adopt new response result
+// TODO [895]: https://github.com/zcash/zcash-android-wallet-sdk/issues/895
+
 /**
  * Client for interacting with lightwalletd.
  */

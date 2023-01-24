@@ -1,7 +1,6 @@
 package co.electriccoin.lightwallet.client.internal
 
 import android.util.Log
-import co.electriccoin.lightwallet.client.ApiStatusResolver
 import co.electriccoin.lightwallet.client.model.Response
 import io.grpc.Status
 

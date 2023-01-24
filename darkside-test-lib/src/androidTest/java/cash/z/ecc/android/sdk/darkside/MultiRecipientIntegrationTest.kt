@@ -7,7 +7,7 @@ package cash.z.ecc.android.sdk.darkside // package cash.z.ecc.android.sdk.integr
 // import cash.z.ecc.android.sdk.darkside.test.DarksideTestCoordinator
 // import cash.z.ecc.android.sdk.util.SimpleMnemonics
 // import cash.z.wallet.sdk.internal.rpc.CompactFormats
-// import cash.z.wallet.sdk.intenral.rpc.Service
+// import cash.z.wallet.sdk.internal.rpc.Service
 // import io.grpc.*
 // import kotlinx.coroutines.delay
 // import kotlinx.coroutines.runBlocking

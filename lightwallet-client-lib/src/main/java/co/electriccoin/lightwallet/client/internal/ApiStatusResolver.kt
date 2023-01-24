@@ -1,4 +1,4 @@
-package co.electriccoin.lightwallet.client
+package co.electriccoin.lightwallet.client.internal
 
 import co.electriccoin.lightwallet.client.model.Response
 
