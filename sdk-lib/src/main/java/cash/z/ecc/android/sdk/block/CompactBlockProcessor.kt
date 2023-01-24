@@ -960,11 +960,11 @@ class CompactBlockProcessor internal constructor(
             val block = downloader.compactBlockRepository.findCompactBlock(height)
             // sometimes the initial block was inserted via checkpoint and will not appear in the cache. We can get
             // the hash another way but prevHash is correctly null.
-            val hash = block?.hash?.toByteArray()
+            val hash = block?.hash
                 ?: repository.findBlockHash(height)
             Twig.debug {
                 "block: $height\thash=${hash?.toHexReversed()} \tprevHash=${
-                    block?.prevHash?.toByteArray()?.toHexReversed()
+                    "" // block?.prevHash?.toByteArray()?.toHexReversed()
                 }"
             }
         }
@@ -976,8 +976,8 @@ class CompactBlockProcessor internal constructor(
             ?.toHexReversed()
         val prevHash = repository.findBlockHash(errorHeight)?.toHexReversed()
 
-        val compactBlock = downloader.compactBlockRepository.findCompactBlock(errorHeight + 1)
-        val expectedPrevHash = compactBlock?.prevHash?.toByteArray()?.toHexReversed()
+        // val compactBlock = downloader.compactBlockRepository.findCompactBlock(errorHeight + 1)
+        val expectedPrevHash = "" // compactBlock?.prevHash?.toByteArray()?.toHexReversed()
         return ValidationErrorInfo(errorHeight, hash, expectedPrevHash, prevHash)
     }
 

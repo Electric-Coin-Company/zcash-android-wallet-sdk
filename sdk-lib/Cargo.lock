@@ -552,7 +552,7 @@ checksum = "90e5c1c8368803113bf0c9584fc495a58b86dc8a29edbf8fe877d21d9507e797"
 [[package]]
 name = "equihash"
 version = "0.2.0"
-source = "git+https://github.com/zcash/librustzcash?branch=fsblockdb-find-block#f00257faad115bd89347de8bd965757d336d3d3f"
+source = "git+https://github.com/zcash/librustzcash?branch=main#a6f2a6c41b972ba7bbc697cb6a1ebc5e85657b7e"
 dependencies = [
  "blake2b_simd",
  "byteorder",
@@ -561,7 +561,7 @@ dependencies = [
 [[package]]
 name = "f4jumble"
 version = "0.1.0"
-source = "git+https://github.com/zcash/librustzcash?branch=fsblockdb-find-block#f00257faad115bd89347de8bd965757d336d3d3f"
+source = "git+https://github.com/zcash/librustzcash?branch=main#a6f2a6c41b972ba7bbc697cb6a1ebc5e85657b7e"
 dependencies = [
  "blake2b_simd",
 ]
@@ -2195,7 +2195,7 @@ dependencies = [
 [[package]]
 name = "zcash_address"
 version = "0.2.0"
-source = "git+https://github.com/zcash/librustzcash?branch=fsblockdb-find-block#f00257faad115bd89347de8bd965757d336d3d3f"
+source = "git+https://github.com/zcash/librustzcash?branch=main#a6f2a6c41b972ba7bbc697cb6a1ebc5e85657b7e"
 dependencies = [
  "bech32",
  "bs58",
@@ -2206,7 +2206,7 @@ dependencies = [
 [[package]]
 name = "zcash_client_backend"
 version = "0.6.1"
-source = "git+https://github.com/zcash/librustzcash?branch=fsblockdb-find-block#f00257faad115bd89347de8bd965757d336d3d3f"
+source = "git+https://github.com/zcash/librustzcash?branch=main#a6f2a6c41b972ba7bbc697cb6a1ebc5e85657b7e"
 dependencies = [
  "base64",
  "bech32",
@@ -2230,14 +2230,14 @@ dependencies = [
  "which",
  "zcash_address",
  "zcash_encoding",
- "zcash_note_encryption 0.2.0 (git+https://github.com/zcash/librustzcash?branch=fsblockdb-find-block)",
+ "zcash_note_encryption 0.2.0 (git+https://github.com/zcash/librustzcash?branch=main)",
  "zcash_primitives",
 ]
 
 [[package]]
 name = "zcash_client_sqlite"
 version = "0.4.2"
-source = "git+https://github.com/zcash/librustzcash?branch=fsblockdb-find-block#f00257faad115bd89347de8bd965757d336d3d3f"
+source = "git+https://github.com/zcash/librustzcash?branch=main#a6f2a6c41b972ba7bbc697cb6a1ebc5e85657b7e"
 dependencies = [
  "bs58",
  "group",
@@ -2258,7 +2258,7 @@ dependencies = [
 [[package]]
 name = "zcash_encoding"
 version = "0.2.0"
-source = "git+https://github.com/zcash/librustzcash?branch=fsblockdb-find-block#f00257faad115bd89347de8bd965757d336d3d3f"
+source = "git+https://github.com/zcash/librustzcash?branch=main#a6f2a6c41b972ba7bbc697cb6a1ebc5e85657b7e"
 dependencies = [
  "byteorder",
  "nonempty",
@@ -2280,7 +2280,7 @@ dependencies = [
 [[package]]
 name = "zcash_note_encryption"
 version = "0.2.0"
-source = "git+https://github.com/zcash/librustzcash?branch=fsblockdb-find-block#f00257faad115bd89347de8bd965757d336d3d3f"
+source = "git+https://github.com/zcash/librustzcash?branch=main#a6f2a6c41b972ba7bbc697cb6a1ebc5e85657b7e"
 dependencies = [
  "chacha20",
  "chacha20poly1305",
@@ -2292,7 +2292,7 @@ dependencies = [
 [[package]]
 name = "zcash_primitives"
 version = "0.9.1"
-source = "git+https://github.com/zcash/librustzcash?branch=fsblockdb-find-block#f00257faad115bd89347de8bd965757d336d3d3f"
+source = "git+https://github.com/zcash/librustzcash?branch=main#a6f2a6c41b972ba7bbc697cb6a1ebc5e85657b7e"
 dependencies = [
  "aes",
  "bip0039",
@@ -2321,13 +2321,13 @@ dependencies = [
  "subtle",
  "zcash_address",
  "zcash_encoding",
- "zcash_note_encryption 0.2.0 (git+https://github.com/zcash/librustzcash?branch=fsblockdb-find-block)",
+ "zcash_note_encryption 0.2.0 (git+https://github.com/zcash/librustzcash?branch=main)",
 ]
 
 [[package]]
 name = "zcash_proofs"
 version = "0.9.0"
-source = "git+https://github.com/zcash/librustzcash?branch=fsblockdb-find-block#f00257faad115bd89347de8bd965757d336d3d3f"
+source = "git+https://github.com/zcash/librustzcash?branch=main#a6f2a6c41b972ba7bbc697cb6a1ebc5e85657b7e"
 dependencies = [
  "bellman",
  "blake2b_simd",

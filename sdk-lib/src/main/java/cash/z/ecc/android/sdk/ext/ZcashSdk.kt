@@ -94,4 +94,24 @@ object ZcashSdk {
      * The maximum alias length to be valid for our use.
      */
     const val ALIAS_MAX_LENGTH: Int = 99
+
+    /**
+     * The name of the directory for downloading blocks
+     */
+    const val BLOCKS_DOWNLOAD_DIRECTORY = "blocks"
+
+    /**
+     * The suffix for temporary files
+     */
+    const val TEMPORARY_FILENAME_SUFFIX = ".tmp"
+
+    /**
+     * The suffix for block file name
+     */
+    const val BLOCK_FILENAME_SUFFIX = "-compactblock"
+
+    /**
+     * The size of block meta data buffer
+     */
+    const val BLOCKS_METADATA_BUFFER_SIZE = 10
 }

@@ -14,7 +14,7 @@ import java.io.File
 internal class FakeRustBackend : RustBackendWelding {
 
     override val saplingParamDir: File
-        get() = File("") // TODO
+        get() = FilePathFixture.newRootDir()
 
     val metadata = mutableListOf<JniBlockMeta>()
 
@@ -30,6 +30,13 @@ internal class FakeRustBackend : RustBackendWelding {
     }
 
     override suspend fun getLatestHeight(): BlockHeight = BlockHeight(metadata.maxOf { it.height })
+    override suspend fun findBlockMetadata(height: BlockHeight): JniBlockMeta? {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun rewindBlockMetadataToHeight(height: BlockHeight) {
+        metadata.removeAll { it.height > height.value }
+    }
 
     override suspend fun initBlockMetaDb(): Int = error("Not implemented")
 

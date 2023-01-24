@@ -763,10 +763,9 @@ internal object DefaultSynchronizerFactory {
             )
         )
 
-    internal suspend fun defaultFileCompactBlockRepository(rustBackend: RustBackend, zcashNetwork: ZcashNetwork):
+    internal suspend fun defaultFileCompactBlockRepository(rustBackend: RustBackend):
         CompactBlockRepository =
         FileCompactBlockRepository.new(
-            zcashNetwork,
             rustBackend
         )
 
