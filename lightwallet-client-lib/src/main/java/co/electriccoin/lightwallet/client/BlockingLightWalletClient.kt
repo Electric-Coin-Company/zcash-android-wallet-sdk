@@ -31,13 +31,13 @@ interface BlockingLightWalletClient {
     fun fetchUtxos(
         tAddress: String,
         startHeight: BlockHeightUnsafe
-    ): List<Service.GetAddressUtxosReply>
+    ): Sequence<Service.GetAddressUtxosReply>
 
     /**
      * @param heightRange the inclusive range to fetch. For instance if 1..5 is given, then every
      * block in that range will be fetched, including 1 and 5.
      *
-     * @return a list of compact blocks for the given range
+     * @return a sequence of compact blocks for the given range
      *
      */
     fun getBlockRange(heightRange: ClosedRange<BlockHeightUnsafe>): Sequence<CompactFormats.CompactBlock>
@@ -57,7 +57,7 @@ interface BlockingLightWalletClient {
      * effectively the same as an RPC call to a node that's running an insight server. The data is
      * indexed and responses are fairly quick.
      *
-     * @return a list of transactions that correspond to the given address for the given range.
+     * @return a sequence of transactions that correspond to the given address for the given range.
      */
     fun getTAddressTransactions(
         tAddress: String,

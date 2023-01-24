@@ -596,7 +596,7 @@ class CompactBlockProcessor internal constructor(
         }
 
     internal suspend fun processUtxoResult(
-        result: List<Service.GetAddressUtxosReply>,
+        result: Sequence<Service.GetAddressUtxosReply>,
         tAddress: String,
         startHeight: BlockHeight
     ): Int = withContext(IO) {
@@ -636,7 +636,7 @@ class CompactBlockProcessor internal constructor(
             }
         }
         // return the number of UTXOs that were downloaded
-        result.size - skipped
+        result.count() - skipped
     }
 
     /**

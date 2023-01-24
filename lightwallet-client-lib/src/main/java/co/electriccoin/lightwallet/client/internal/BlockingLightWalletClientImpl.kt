@@ -120,19 +120,25 @@ internal class BlockingLightWalletClientImpl private constructor(
     override fun fetchUtxos(
         tAddress: String,
         startHeight: BlockHeightUnsafe
-    ): List<Service.GetAddressUtxosReply> {
+    ): Sequence<Service.GetAddressUtxosReply> {
+        if (tAddress.isBlank()) {
+            return emptySequence()
+        }
+
         val result = requireChannel().createStub().getAddressUtxos(
             Service.GetAddressUtxosArg.newBuilder().setAddress(tAddress)
                 .setStartHeight(startHeight.value).build()
         )
-        return result.addressUtxosList
+        return result.addressUtxosList.asSequence()
     }
 
     override fun getTAddressTransactions(
         tAddress: String,
         blockHeightRange: ClosedRange<BlockHeightUnsafe>
     ): Sequence<Service.RawTransaction> {
-        if (blockHeightRange.isEmpty() || tAddress.isBlank()) return emptySequence()
+        if (blockHeightRange.isEmpty() || tAddress.isBlank()) {
+            return emptySequence()
+        }
 
         return requireChannel().createStub().getTaddressTxids(
             Service.TransparentAddressBlockFilter.newBuilder().setAddress(tAddress)
