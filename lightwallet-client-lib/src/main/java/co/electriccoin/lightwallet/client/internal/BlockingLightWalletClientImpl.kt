@@ -158,12 +158,6 @@ internal class BlockingLightWalletClientImpl private constructor(
             new
         }
         channel.resetConnectBackoff()
-        // twig(
-        //     "getting channel isShutdown: ${channel.isShutdown}  " +
-        //         "isTerminated: ${channel.isTerminated} " +
-        //         "getState: $state stateCount: $stateCount",
-        //     -1
-        // )
         return channel
     }
 
