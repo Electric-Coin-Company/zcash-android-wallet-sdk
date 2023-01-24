@@ -8,7 +8,7 @@ authors = [
 description = "JNI backend for the Android wallet SDK"
 publish = false
 edition = "2018"
-rust-version = "1.59"
+rust-version = "1.60"
 
 [dependencies]
 failure = "0.1"
