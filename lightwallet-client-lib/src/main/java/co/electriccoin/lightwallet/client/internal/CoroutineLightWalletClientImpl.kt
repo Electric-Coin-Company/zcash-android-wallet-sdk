@@ -126,20 +126,23 @@ internal class CoroutineLightWalletClientImpl private constructor(
     override suspend fun fetchUtxos(
         tAddress: String,
         startHeight: BlockHeightUnsafe
-    ): List<Service.GetAddressUtxosReply> {
-        val result = requireChannel().createStub().getAddressUtxos(
+    ): Flow<Service.GetAddressUtxosReply> {
+        if (tAddress.isBlank()) {
+            return emptyFlow()
+        }
+        return requireChannel().createStub().getAddressUtxosStream(
             Service.GetAddressUtxosArg.newBuilder().setAddress(tAddress)
                 .setStartHeight(startHeight.value).build()
         )
-        return result.addressUtxosList
     }
 
     override fun getTAddressTransactions(
         tAddress: String,
         blockHeightRange: ClosedRange<BlockHeightUnsafe>
     ): Flow<Service.RawTransaction> {
-        if (blockHeightRange.isEmpty() || tAddress.isBlank()) return emptyFlow()
-
+        if (blockHeightRange.isEmpty() || tAddress.isBlank()) {
+            return emptyFlow()
+        }
         return requireChannel().createStub().getTaddressTxids(
             Service.TransparentAddressBlockFilter.newBuilder().setAddress(tAddress)
                 .setRange(blockHeightRange.toBlockRange()).build()
