@@ -908,6 +908,22 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_getSentMemo
     unwrap_exc_or(&env, res, ptr::null_mut())
 }
 
+fn encode_blockmeta(env: &JNIEnv<'_>, meta: BlockMeta) -> Result<jobject, failure::Error> {
+    let block_hash = env.byte_array_from_slice(&meta.block_hash.0)?;
+    let output = env.new_object(
+        "cash/z/ecc/android/sdk/internal/model/JniBlockMeta",
+        "(J[BJJJ)V",
+        &[
+            JValue::Long(i64::from(u32::from(meta.height))),
+            JValue::Object(unsafe { JObject::from_raw(block_hash) }),
+            JValue::Long(i64::from(meta.block_time)),
+            JValue::Long(i64::from(meta.sapling_outputs_count)),
+            JValue::Long(i64::from(meta.orchard_actions_count)),
+        ],
+    )?;
+    Ok(output.into_raw())
+}
+
 fn decode_blockmeta(env: &JNIEnv<'_>, obj: JObject<'_>) -> Result<BlockMeta, failure::Error> {
     let long_as_u32 = |name| -> Result<u32, failure::Error> {
         Ok(u32::try_from(env.get_field(obj, name, "J")?.j()?)?)
@@ -983,6 +999,29 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_getLatestHe
         }
     });
     unwrap_exc_or(&env, res, -1)
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_findBlockMetadata(
+    env: JNIEnv<'_>,
+    _: JClass<'_>,
+    fsblockdb_root: JString<'_>,
+    height: jlong,
+) -> jobject {
+    let res = panic::catch_unwind(|| {
+        let block_db = block_db(&env, fsblockdb_root)?;
+        let height = BlockHeight::try_from(height)?;
+
+        match block_db.find_block(height) {
+            Ok(Some(meta)) => encode_blockmeta(&env, meta),
+            Ok(None) => Ok(ptr::null_mut()),
+            Err(e) => Err(format_err!(
+                "Failed to read block metadata from FsBlockDb: {:?}",
+                e
+            )),
+        }
+    });
+    unwrap_exc_or(&env, res, ptr::null_mut())
 }
 
 #[no_mangle]

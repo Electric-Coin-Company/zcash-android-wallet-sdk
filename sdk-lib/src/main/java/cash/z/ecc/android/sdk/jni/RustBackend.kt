@@ -180,6 +180,16 @@ internal class RustBackend private constructor(
         }
     }
 
+    override suspend fun findBlockMetadata(height: BlockHeight) = withContext(
+        SdkDispatchers
+            .DATABASE_IO
+    ) {
+        findBlockMetadata(
+            fsBlockDbRoot.absolutePath,
+            height.value
+        )
+    }
+
     override suspend fun validateCombinedChain() = withContext(SdkDispatchers.DATABASE_IO) {
         val validationResult = validateCombinedChain(
             fsBlockDbRoot.absolutePath,
@@ -478,6 +488,12 @@ internal class RustBackend private constructor(
 
         @JvmStatic
         private external fun getLatestHeight(dbCachePath: String): Long
+
+        @JvmStatic
+        private external fun findBlockMetadata(
+            dbCachePath: String,
+            height: Long
+        ): JniBlockMeta?
 
         @JvmStatic
         private external fun validateCombinedChain(
