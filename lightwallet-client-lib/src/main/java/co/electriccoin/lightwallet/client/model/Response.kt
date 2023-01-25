@@ -28,9 +28,8 @@ sealed class Response<T> {
          * The client was not able to communicate with the server.
          */
         class Connection<T>(
-            override val code: Int = CONNECTION_ERROR_CODE,
             override val description: String? = CONNECTION_ERROR_DESCRIPTION
-        ) : Failure<T>(code, description) {
+        ) : Failure<T>(CONNECTION_ERROR_CODE, description) {
             override fun toString(): String {
                 return "Connection Error(code='$code', description='$description')"
             }
@@ -107,17 +106,15 @@ sealed class Response<T> {
              * The operation of submitting a transaction failed due to an empty transaction used.
              */
             class SubmitEmptyTransaction<T>(
-                code: Int = SUBMIT_EMPTY_TRANSACTION_ERROR_CODE,
                 description: String? = SUBMIT_EMPTY_TRANSACTION_ERROR_DESCRIPTION
-            ) : Client<T>(code, description)
+            ) : Client<T>(SUBMIT_EMPTY_TRANSACTION_ERROR_CODE, description)
 
             /**
              * The operation of fetching a transaction failed due to a null ID used.
              */
             class NullIdTransaction<T>(
-                code: Int = NULL_TRANSACTION_ID_ERROR_CODE,
                 description: String? = NULL_TRANSACTION_ID_ERROR_DESCRIPTION
-            ) : Client<T>(code, description)
+            ) : Client<T>(NULL_TRANSACTION_ID_ERROR_CODE, description)
 
             override fun toString(): String {
                 return "Client Error(code='$code', description='$description')"
