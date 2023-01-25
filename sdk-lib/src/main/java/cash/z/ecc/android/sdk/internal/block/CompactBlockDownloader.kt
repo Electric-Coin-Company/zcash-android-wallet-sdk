@@ -79,8 +79,8 @@ open class CompactBlockDownloader private constructor(val compactBlockRepository
 
     suspend fun getServerInfo(): LightWalletEndpointInfoUnsafe? = withContext(IO) {
         retryUpTo(GET_SERVER_INFO_RETRIES) {
-            when (val result = lightWalletClient.getServerInfo()) {
-                is Response.Success -> return@withContext result.result
+            when (val response = lightWalletClient.getServerInfo()) {
+                is Response.Success -> return@withContext response.result
                 else -> {
                     lightWalletClient.reconnect()
                     twig("WARNING: reconnecting to service in response to failure (retry #${it + 1})")
