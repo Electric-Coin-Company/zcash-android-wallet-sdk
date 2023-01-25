@@ -49,7 +49,7 @@ use zcash_primitives::{
     legacy::{Script, TransparentAddress},
     memo::{Memo, MemoBytes},
     transaction::{
-        components::{Amount, OutPoint, TxOut},
+        components::{amount::NonNegativeAmount, Amount, OutPoint, TxOut},
         Transaction,
     },
     zip32::{AccountId, DiversifierIndex},
@@ -1353,6 +1353,8 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_shieldToAdd
 
         let prover = LocalTxProver::new(Path::new(&spend_params), Path::new(&output_params));
 
+        let shielding_threshold = NonNegativeAmount::from_u64(100000).unwrap();
+
         zip317_helper(
             (&mut db_data, prover),
             use_zip317_fees,
@@ -1362,6 +1364,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_shieldToAdd
                     &network,
                     prover,
                     &input_selector,
+                    shielding_threshold,
                     &usk,
                     &from_addrs,
                     &MemoBytes::from(&memo),
@@ -1375,6 +1378,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_shieldToAdd
                     &network,
                     prover,
                     &input_selector,
+                    shielding_threshold,
                     &usk,
                     &from_addrs,
                     &MemoBytes::from(&memo),
