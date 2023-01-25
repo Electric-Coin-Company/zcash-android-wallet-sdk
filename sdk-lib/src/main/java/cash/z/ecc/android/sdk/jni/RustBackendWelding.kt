@@ -88,6 +88,8 @@ internal interface RustBackendWelding {
      */
     suspend fun getLatestHeight(): BlockHeight?
 
+    suspend fun findBlockMetadata(height: BlockHeight): JniBlockMeta?
+
     /**
      * @return Null if successful. If an error occurs, the height will be the height where the error was detected.
      */
