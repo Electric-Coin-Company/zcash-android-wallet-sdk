@@ -190,6 +190,14 @@ internal class RustBackend private constructor(
         )
     }
 
+    override suspend fun rewindBlockMetadataToHeight(height: BlockHeight) =
+        withContext(SdkDispatchers.DATABASE_IO) {
+            rewindBlockMetadataToHeight(
+                fsBlockDbRoot.absolutePath,
+                height.value
+            )
+        }
+
     override suspend fun validateCombinedChain() = withContext(SdkDispatchers.DATABASE_IO) {
         val validationResult = validateCombinedChain(
             fsBlockDbRoot.absolutePath,
@@ -494,6 +502,12 @@ internal class RustBackend private constructor(
             dbCachePath: String,
             height: Long
         ): JniBlockMeta?
+
+        @JvmStatic
+        private external fun rewindBlockMetadataToHeight(
+            dbCachePath: String,
+            height: Long
+        )
 
         @JvmStatic
         private external fun validateCombinedChain(
