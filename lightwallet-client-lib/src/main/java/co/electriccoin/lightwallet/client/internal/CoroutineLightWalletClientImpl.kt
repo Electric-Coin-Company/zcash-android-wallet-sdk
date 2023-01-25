@@ -19,7 +19,6 @@ import io.grpc.ConnectivityState
 import io.grpc.ManagedChannel
 import io.grpc.StatusRuntimeException
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.emptyFlow
 import java.util.concurrent.TimeUnit
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
@@ -46,8 +45,8 @@ internal class CoroutineLightWalletClientImpl private constructor(
     /* LightWalletService implementation */
 
     override fun getBlockRange(heightRange: ClosedRange<BlockHeightUnsafe>): Flow<CompactFormats.CompactBlock> {
-        if (heightRange.isEmpty()) {
-            return emptyFlow()
+        require(!heightRange.isEmpty()) {
+            "${Constants.ILLEGAL_ARGUMENT_EXCEPTION_MESSAGE} range: $heightRange." // NON-NLS
         }
 
         return requireChannel().createStub(streamingRequestTimeout)
@@ -127,8 +126,8 @@ internal class CoroutineLightWalletClientImpl private constructor(
         tAddress: String,
         startHeight: BlockHeightUnsafe
     ): Flow<Service.GetAddressUtxosReply> {
-        if (tAddress.isBlank()) {
-            return emptyFlow()
+        require(tAddress.isNotBlank()) {
+            "${Constants.ILLEGAL_ARGUMENT_EXCEPTION_MESSAGE} address: $tAddress." // NON-NLS
         }
         return requireChannel().createStub().getAddressUtxosStream(
             Service.GetAddressUtxosArg.newBuilder().setAddress(tAddress)
@@ -140,8 +139,8 @@ internal class CoroutineLightWalletClientImpl private constructor(
         tAddress: String,
         blockHeightRange: ClosedRange<BlockHeightUnsafe>
     ): Flow<Service.RawTransaction> {
-        if (blockHeightRange.isEmpty() || tAddress.isBlank()) {
-            return emptyFlow()
+        require(!blockHeightRange.isEmpty() && tAddress.isNotBlank()) {
+            "${Constants.ILLEGAL_ARGUMENT_EXCEPTION_MESSAGE} range: $blockHeightRange, address: $tAddress." // NON-NLS
         }
         return requireChannel().createStub().getTaddressTxids(
             Service.TransparentAddressBlockFilter.newBuilder().setAddress(tAddress)
@@ -167,12 +166,6 @@ internal class CoroutineLightWalletClientImpl private constructor(
             new
         }
         channel.resetConnectBackoff()
-        // twig(
-        //     "getting channel isShutdown: ${channel.isShutdown}  " +
-        //         "isTerminated: ${channel.isTerminated} " +
-        //         "getState: $state stateCount: $stateCount",
-        //     -1
-        // )
         return channel
     }
 

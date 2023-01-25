@@ -22,7 +22,8 @@ sealed class Response<T> {
         /**
          * Use this function to convert Failure into Throwable object.
          */
-        fun toThrowable() = Throwable("Communication failure with details: $code${description?.let{": $it"} ?: "."}")
+        fun toThrowable() =
+            Throwable("Communication failure with details: $code${description?.let{": $it"} ?: "."}") // NON-NLS
 
         /**
          * The client was not able to communicate with the server.
@@ -31,7 +32,7 @@ sealed class Response<T> {
             override val description: String? = CONNECTION_ERROR_DESCRIPTION
         ) : Failure<T>(CONNECTION_ERROR_CODE, description) {
             override fun toString(): String {
-                return "Connection Error(code='$code', description='$description')"
+                return "Connection Error(code='$code', description='$description')" // NON-NLS
             }
         }
 
@@ -86,7 +87,7 @@ sealed class Response<T> {
             class Unknown<T>(code: Int, description: String?) : Server<T>(code, description)
 
             override fun toString(): String {
-                return "Server Error(code='$code', description='$description')"
+                return "Server Error(code='$code', description='$description')" // NON-NLS
             }
         }
 
@@ -117,7 +118,7 @@ sealed class Response<T> {
             ) : Client<T>(NULL_TRANSACTION_ID_ERROR_CODE, description)
 
             override fun toString(): String {
-                return "Client Error(code='$code', description='$description')"
+                return "Client Error(code='$code', description='$description')" // NON-NLS
             }
         }
     }

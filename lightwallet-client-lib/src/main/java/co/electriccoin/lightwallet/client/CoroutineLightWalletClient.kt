@@ -31,6 +31,8 @@ interface CoroutineLightWalletClient {
      * @param startHeight the starting height to use.
      *
      * @return a flow of UTXOs for the given address from the [startHeight].
+     *
+     * @throws IllegalArgumentException when empty argument provided
      */
     suspend fun fetchUtxos(
         tAddress: String,
@@ -43,6 +45,7 @@ interface CoroutineLightWalletClient {
      *
      * @return a flow of compact blocks for the given range
      *
+     * @throws IllegalArgumentException when empty argument provided
      */
     fun getBlockRange(heightRange: ClosedRange<BlockHeightUnsafe>): Flow<CompactFormats.CompactBlock>
 
@@ -62,6 +65,8 @@ interface CoroutineLightWalletClient {
      * indexed and responses are fairly quick.
      *
      * @return a flow of transactions that correspond to the given address for the given range.
+     *
+     * @throws IllegalArgumentException when empty argument provided
      */
     fun getTAddressTransactions(
         tAddress: String,

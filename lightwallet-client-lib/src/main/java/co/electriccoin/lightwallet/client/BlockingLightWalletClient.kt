@@ -30,6 +30,8 @@ interface BlockingLightWalletClient {
      * @param startHeight the starting height to use.
      *
      * @return the UTXOs for the given address from the [startHeight].
+     *
+     * @throws IllegalArgumentException when empty argument provided
      */
     fun fetchUtxos(
         tAddress: String,
@@ -42,6 +44,7 @@ interface BlockingLightWalletClient {
      *
      * @return a sequence of compact blocks for the given range
      *
+     * @throws IllegalArgumentException when empty argument provided
      */
     fun getBlockRange(heightRange: ClosedRange<BlockHeightUnsafe>): Sequence<CompactFormats.CompactBlock>
 
@@ -61,6 +64,8 @@ interface BlockingLightWalletClient {
      * indexed and responses are fairly quick.
      *
      * @return a sequence of transactions that correspond to the given address for the given range.
+     *
+     * @throws IllegalArgumentException when empty argument provided
      */
     fun getTAddressTransactions(
         tAddress: String,

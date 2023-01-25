@@ -41,8 +41,8 @@ internal class BlockingLightWalletClientImpl private constructor(
     private var channel = channelFactory.newChannel(lightWalletEndpoint)
 
     override fun getBlockRange(heightRange: ClosedRange<BlockHeightUnsafe>): Sequence<CompactFormats.CompactBlock> {
-        if (heightRange.isEmpty()) {
-            return emptySequence()
+        require(!heightRange.isEmpty()) {
+            "${Constants.ILLEGAL_ARGUMENT_EXCEPTION_MESSAGE} range: $heightRange." // NON-NLS
         }
 
         return requireChannel().createStub(streamingRequestTimeout)
@@ -121,8 +121,8 @@ internal class BlockingLightWalletClientImpl private constructor(
         tAddress: String,
         startHeight: BlockHeightUnsafe
     ): Sequence<Service.GetAddressUtxosReply> {
-        if (tAddress.isBlank()) {
-            return emptySequence()
+        require(tAddress.isNotBlank()) {
+            "${Constants.ILLEGAL_ARGUMENT_EXCEPTION_MESSAGE} address: $tAddress." // NON-NLS
         }
 
         val result = requireChannel().createStub().getAddressUtxos(
@@ -136,8 +136,8 @@ internal class BlockingLightWalletClientImpl private constructor(
         tAddress: String,
         blockHeightRange: ClosedRange<BlockHeightUnsafe>
     ): Sequence<Service.RawTransaction> {
-        if (blockHeightRange.isEmpty() || tAddress.isBlank()) {
-            return emptySequence()
+        require(!blockHeightRange.isEmpty() && tAddress.isNotBlank()) {
+            "${Constants.ILLEGAL_ARGUMENT_EXCEPTION_MESSAGE} range: $blockHeightRange, address: $tAddress." // NON-NLS
         }
 
         return requireChannel().createStub().getTaddressTxids(
