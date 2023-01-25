@@ -1025,6 +1025,29 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_findBlockMe
 }
 
 #[no_mangle]
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_rewindBlockMetadataToHeight(
+    env: JNIEnv<'_>,
+    _: JClass<'_>,
+    fsblockdb_root: JString<'_>,
+    height: jlong,
+) {
+    let res = panic::catch_unwind(|| {
+        let block_db = block_db(&env, fsblockdb_root)?;
+        let height = BlockHeight::try_from(height)?;
+
+        block_db.rewind_to_height(height).map_err(|e| {
+            format_err!(
+                "Error while rewinding block metadata DB to height {}: {}",
+                height,
+                e
+            )
+        })
+    });
+
+    unwrap_exc_or(&env, res, ())
+}
+
+#[no_mangle]
 pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_validateCombinedChain(
     env: JNIEnv<'_>,
     _: JClass<'_>,
