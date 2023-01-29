@@ -56,7 +56,7 @@ class DarksideApi private constructor(
 
     fun stageTransactions(url: String, targetHeight: BlockHeightUnsafe) = apply {
         createStub().stageTransactions(
-            DarksideTransactionsURL.newBuilder().setHeight(targetHeight.value).setUrl(url).build()
+            DarksideTransactionsURL.newBuilder().setHeight(targetHeight.value.toInt()).setUrl(url).build()
         )
     }
 
@@ -66,7 +66,7 @@ class DarksideApi private constructor(
         nonce: Int = Random.nextInt()
     ) = apply {
         createStub().stageBlocksCreate(
-            Darkside.DarksideEmptyBlocks.newBuilder().setHeight(startHeight.value).setCount(count)
+            Darkside.DarksideEmptyBlocks.newBuilder().setHeight(startHeight.value.toInt()).setCount(count)
                 .setNonce(nonce).build()
         )
     }
@@ -172,7 +172,7 @@ class DarksideApi private constructor(
 }
 
 private fun BlockHeightUnsafe.toHeight() =
-    Darkside.DarksideHeight.newBuilder().setHeight(this.value).build()
+    Darkside.DarksideHeight.newBuilder().setHeight(this.value.toInt()).build()
 
 fun DarksideApi.Companion.new(
     context: Context,

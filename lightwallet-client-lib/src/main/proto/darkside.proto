@@ -5,7 +5,7 @@
 syntax = "proto3";
 package cash.z.wallet.sdk.rpc;
 option java_package = "cash.z.wallet.sdk.internal.rpc";
-option go_package = ".;walletrpc";
+option go_package = "lightwalletd/walletrpc";
 option swift_prefix = "";
 import "service.proto";
 
@@ -30,16 +30,16 @@ message DarksideBlocksURL {
 // of hex-encoded transactions, one per line, that are to be associated
 // with the given height (fake-mined into the block at that height)
 message DarksideTransactionsURL {
-    int64 height = 1;
+    int32 height = 1;
     string url = 2;
 }
 
 message DarksideHeight {
-    int64 height = 1;
+    int32 height = 1;
 }
 
 message DarksideEmptyBlocks {
-    int64 height = 1;
+    int32 height = 1;
     int32 nonce = 2;
     int32 count = 3;
 }
@@ -115,4 +115,20 @@ service DarksideStreamer {
 
     // Clear the incoming transaction pool.
     rpc ClearIncomingTransactions(Empty) returns (Empty) {}
+
+    // Add a GetAddressUtxosReply entry to be returned by GetAddressUtxos().
+    // There is no staging or applying for these, very simple.
+    rpc AddAddressUtxo(GetAddressUtxosReply) returns (Empty) {}
+
+    // Clear the list of GetAddressUtxos entries (can't fail)
+    rpc ClearAddressUtxo(Empty) returns (Empty) {}
+
+    // Adds a GetTreeState to the tree state cache
+    rpc AddTreeState(TreeState) returns (Empty) {}
+
+    // Removes a GetTreeState for the given height from cache if present (can't fail)
+    rpc RemoveTreeState(BlockID) returns (Empty) {}
+
+    // Clear the list of GetTreeStates entries (can't fail)
+    rpc ClearAllTreeStates(Empty) returns (Empty) {}
 }
