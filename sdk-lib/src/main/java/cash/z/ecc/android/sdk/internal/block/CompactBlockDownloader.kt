@@ -15,11 +15,11 @@ import kotlinx.coroutines.withContext
 
 /**
  * Serves as a source of compact blocks received from the light wallet server. Once started, it will use the given
- * lightwallet service to request all the appropriate blocks and compact block store to persist them. By delegating to
+ * lightWallet client to request all the appropriate blocks and compact block store to persist them. By delegating to
  * these dependencies, the downloader remains agnostic to the particular implementation of how to retrieve and store
  * data; although, by default the SDK uses gRPC and SQL.
  *
- * @property lightWalletClient the service used for requesting compact blocks
+ * @property lightWalletClient the client used for requesting compact blocks
  * @property compactBlockStore responsible for persisting the compact blocks that are received
  */
 open class CompactBlockDownloader private constructor(val compactBlockRepository: CompactBlockRepository) {
@@ -28,20 +28,20 @@ open class CompactBlockDownloader private constructor(val compactBlockRepository
         private set
 
     constructor(
-        lightWalletService: BlockingLightWalletClient,
+        lightWalletClient: BlockingLightWalletClient,
         compactBlockRepository: CompactBlockRepository
     ) : this(compactBlockRepository) {
-        this.lightWalletClient = lightWalletService
+        this.lightWalletClient = lightWalletClient
     }
 
     /**
-     * Requests the given range of blocks from the lightwalletService and then persists them to the
+     * Requests the given range of blocks from the lightWalletClient and then persists them to the
      * compactBlockStore.
      *
      * @param heightRange the inclusive range of heights to request. For example 10..20 would
      * request 11 blocks (including block 10 and block 20).
      *
-     * @return the number of blocks that were returned in the results from the lightwalletService.
+     * @return the number of blocks that were returned in the results from the lightWalletClient.
      */
     suspend fun downloadBlockRange(heightRange: ClosedRange<BlockHeight>): Int = withContext(IO) {
         val result = lightWalletClient.getBlockRange(
@@ -62,7 +62,7 @@ open class CompactBlockDownloader private constructor(val compactBlockRepository
         compactBlockRepository.rewindTo(height)
 
     /**
-     * Return the latest block height known by the lightwalletService.
+     * Return the latest block height known by the lightWalletClient.
      *
      * @return the latest block height.
      */
@@ -83,7 +83,7 @@ open class CompactBlockDownloader private constructor(val compactBlockRepository
                 is Response.Success -> return@withContext response.result
                 else -> {
                     lightWalletClient.reconnect()
-                    twig("WARNING: reconnecting to service in response to failure (retry #${it + 1})")
+                    twig("WARNING: reconnecting to server in response to failure (retry #${it + 1})")
                 }
             }
         }

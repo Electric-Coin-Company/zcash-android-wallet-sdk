@@ -82,8 +82,8 @@ class SampleCodeTest {
     // Query latest block height
     @Test
     fun getLatestBlockHeightTest() {
-        val lightwalletService = BlockingLightWalletClient.new(context, lightwalletdHost)
-        log("Latest Block: ${lightwalletService.getLatestBlockHeight()}")
+        val lightwalletClient = BlockingLightWalletClient.new(context, lightwalletdHost)
+        log("Latest Block: ${lightwalletClient.getLatestBlockHeight()}")
     }
 
     // ///////////////////////////////////////////////////
@@ -103,8 +103,8 @@ class SampleCodeTest {
                 ).value
                 )
         )
-        val lightwalletService = BlockingLightWalletClient.new(context, lightwalletdHost)
-        val blocks = lightwalletService.getBlockRange(blockRange)
+        val lightwalletClient = BlockingLightWalletClient.new(context, lightwalletdHost)
+        val blocks = lightwalletClient.getBlockRange(blockRange)
         assertEquals(blockRange.endInclusive.value - blockRange.start.value, blocks.count())
 
         blocks.forEachIndexed { i, block ->

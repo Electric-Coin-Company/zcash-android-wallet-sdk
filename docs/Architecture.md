@@ -38,14 +38,14 @@ This is generally not considered part of the public API, and much of the interna
 
 ## Components
 
-| Component                              | Summary                                                                                                                             |
-| -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| **LightWalletService**                 | Service used for requesting compact blocks                                                                                          |
-| **CompactBlockStore**                  | Stores compact blocks that have been downloaded from the `LightWalletService`                                                       |
-| **CompactBlockProcessor**              | Validates and scans the compact blocks in the `CompactBlockStore` for transaction details                                           |
-| **OutboundTransactionManager**         | Creates, Submits and manages transactions for spending funds                                                                        |
-| **DerivationTool**                     | Utilities for deriving keys and addresses                                                                                           |
-| **RustBackend**                        | Wraps and simplifies the rust library and exposes its functionality to the Kotlin SDK                                               |
+| Component                      | Summary                                                                                   |
+|--------------------------------|-------------------------------------------------------------------------------------------|
+| **LightWalletClient**          | Component used for requesting compact blocks                                              |
+| **CompactBlockStore**          | Stores compact blocks that have been downloaded from the `LightWalletClient`              |
+| **CompactBlockProcessor**      | Validates and scans the compact blocks in the `CompactBlockStore` for transaction details |
+| **OutboundTransactionManager** | Creates, Submits and manages transactions for spending funds                              |
+| **DerivationTool**             | Utilities for deriving keys and addresses                                                 |
+| **RustBackend**                | Wraps and simplifies the rust library and exposes its functionality to the Kotlin SDK     |
 
 ## Checkpoints
 To improve the speed of syncing with the Zcash network, the SDK contains a series of embedded checkpoints.  These should be updated periodically, as new transactions are added to the network.  Checkpoints are stored under the [sdk-lib's assets](../sdk-lib/src/main/assets/co.electriccoin.zcash/checkpoint) directory as JSON files.  Checkpoints for both mainnet and testnet are bundled into the SDK.

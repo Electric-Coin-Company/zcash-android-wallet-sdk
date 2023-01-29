@@ -22,7 +22,7 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 /**
- * Implementation of LightwalletService using gRPC for requests to lightwalletd.
+ * Implementation of BlockingLightWalletClient using gRPC for requests to lightwalletd.
  *
  * @property channel the channel to use for communicating with the lightwalletd server.
  * @property singleRequestTimeout the timeout to use for non-streaming requests. When a new stub

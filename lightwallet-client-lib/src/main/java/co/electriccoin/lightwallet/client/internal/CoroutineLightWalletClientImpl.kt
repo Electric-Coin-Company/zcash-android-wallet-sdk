@@ -24,7 +24,7 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 /**
- * Implementation of LightwalletService using gRPC for requests to lightwalletd.
+ * Implementation of CoroutineLightWalletClient using gRPC for requests to lightwalletd.
  *
  * @property channel the channel to use for communicating with the lightwalletd server.
  * @property singleRequestTimeout the timeout to use for non-streaming requests. When a new stub
@@ -41,8 +41,6 @@ internal class CoroutineLightWalletClientImpl private constructor(
 ) : CoroutineLightWalletClient {
 
     private var channel = channelFactory.newChannel(lightWalletEndpoint)
-
-    /* LightWalletService implementation */
 
     override fun getBlockRange(heightRange: ClosedRange<BlockHeightUnsafe>): Flow<CompactFormats.CompactBlock> {
         require(!heightRange.isEmpty()) {

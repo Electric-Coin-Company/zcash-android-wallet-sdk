@@ -106,7 +106,7 @@ package cash.z.ecc.android.sdk.darkside.reorgs // package cash.z.ecc.android.sdk
 //        lightwalletd.getBlockRange(height..height).first()
 //
 //    private val lightwalletd
-//        get() = (synchronizer as SdkSynchronizer).processor.downloader.lightwalletService
+//        get() = (synchronizer as SdkSynchronizer).processor.downloader.lightWalletClient
 //
 //    companion object {
 //        private const val port = 9067
