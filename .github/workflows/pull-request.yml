@@ -122,7 +122,7 @@ jobs:
       - name: Upload Artifacts
         if: ${{ always() }}
         uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce
-        timeout-minutes: 2
+        timeout-minutes: 1
         with:
           name: Detekt static analysis results
           path: ~/artifacts
@@ -370,7 +370,7 @@ jobs:
           zip -r ${MAPPINGS_ZIP_PATH} . -i demo-app/build/outputs/mapping/\*/mapping.txt
       - name: Upload Artifacts
         uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce
-        timeout-minutes: 1
+        timeout-minutes: 2
         with:
           name: Demo app release binaries
           path: ~/artifacts
