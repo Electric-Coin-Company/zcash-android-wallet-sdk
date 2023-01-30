@@ -7,7 +7,6 @@ import androidx.activity.viewModels
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
-import androidx.lifecycle.compose.ExperimentalLifecycleComposeApi
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cash.z.ecc.android.sdk.demoapp.ui.common.BindCompLocalProvider
 import cash.z.ecc.android.sdk.demoapp.ui.screen.home.viewmodel.SecretState
@@ -33,7 +32,6 @@ class ComposeActivity : ComponentActivity() {
         }
     }
 
-    @OptIn(ExperimentalLifecycleComposeApi::class)
     @Composable
     private fun MainContent() {
         when (walletViewModel.secretState.collectAsStateWithLifecycle().value) {

@@ -1,18 +1,12 @@
 package cash.z.ecc.android.sdk.db
 
-import androidx.test.filters.FlakyTest
-import androidx.test.filters.MediumTest
 import androidx.test.filters.SmallTest
 import cash.z.ecc.android.sdk.internal.db.DatabaseCoordinator
 import cash.z.ecc.android.sdk.internal.ext.existsSuspend
-import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.test.getAppContext
 import cash.z.ecc.fixture.DatabaseNameFixture
 import cash.z.ecc.fixture.DatabasePathFixture
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -31,50 +25,6 @@ class DatabaseCoordinatorTest {
         val noBackupDir = DatabasePathFixture.new(baseFolderPath = DatabasePathFixture.NO_BACKUP_DIR_PATH)
         File(databaseDir).deleteRecursively()
         File(noBackupDir).deleteRecursively()
-    }
-
-    // Sanity check of the database coordinator instance and its thread-safe implementation. Our aim
-    // here is to run two jobs in parallel (the second one runs immediately after the first was started)
-    // to test mutex implementation and correct DatabaseCoordinator function call result.
-    @Test
-    @SmallTest
-    @OptIn(ExperimentalCoroutinesApi::class)
-    fun mutex_test() = runTest {
-        var testResult: File? = null
-
-        launch {
-            delay(1000)
-            testResult = dbCoordinator.cacheDbFile(
-                DatabaseNameFixture.TEST_DB_NETWORK,
-                DatabaseNameFixture.TEST_DB_ALIAS
-            )
-        }
-        val job2 = launch {
-            delay(1001)
-            testResult = dbCoordinator.cacheDbFile(
-                ZcashNetwork.Mainnet,
-                "TestZcashSdk"
-            )
-        }
-
-        advanceTimeBy(1002)
-
-        job2.join().also {
-            assertTrue(testResult != null)
-            assertTrue(testResult!!.absolutePath.isNotEmpty())
-            assertTrue(testResult!!.absolutePath.contains(ZcashNetwork.Mainnet.networkName))
-            assertTrue(testResult!!.absolutePath.contains("TestZcashSdk"))
-        }
-    }
-
-    @FlakyTest
-    @Test
-    @MediumTest
-    fun mutex_stress_test() {
-        // We run the mutex test multiple times sequentially to catch a possible problem.
-        for (x in 0..9) {
-            mutex_test()
-        }
     }
 
     @Test

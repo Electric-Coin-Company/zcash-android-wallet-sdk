@@ -4,7 +4,7 @@ sealed class Transaction {
     data class Received internal constructor(
         val id: Long,
         val rawId: FirstClassByteArray,
-        val minedHeight: BlockHeight,
+        val minedHeight: BlockHeight?,
         val expiryHeight: BlockHeight?,
         val index: Long,
         val raw: FirstClassByteArray?,
@@ -20,7 +20,7 @@ sealed class Transaction {
     data class Sent internal constructor(
         val id: Long,
         val rawId: FirstClassByteArray,
-        val minedHeight: BlockHeight,
+        val minedHeight: BlockHeight?,
         val expiryHeight: BlockHeight?,
         val index: Long,
         val raw: FirstClassByteArray?,

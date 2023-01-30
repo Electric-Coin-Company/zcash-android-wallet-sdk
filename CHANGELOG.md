@@ -3,12 +3,19 @@ Change Log
 
 Unreleased
 ------------------------------------
-- The SDK's internal networking has been refactored to a separate Gradle module (and therefore a separate artifact) which is a transitive dependency of the Zcash Android SDK.
+- The SDK's internal networking has been refactored to a separate Gradle module `lightwallet-client-lib` (and 
+  therefore a separate artifact) which is a transitive dependency of the Zcash Android SDK.
     - The `z.cash.ecc.android.sdk.model.LightWalletEndpoint` class has been moved to `co.electriccoin.lightwallet.client.model.LightWalletEndpoint`
+    - The new networking module now provides a `BlockingLightWalletClient` for blocking calls and a 
+      `CoroutineLightWalletClient` for asynchronous calls.
+    - Most unary calls respond with the new `Response` class and its subclasses. Streaming calls will be updated 
+      with the Response class later.
 
-Unreleased
-------------------------------------
+## 1.12.0-beta01
+### Changed
+ - `TransactionOverview`, `Transaction.Sent`, and `Transaction.Received` have `minedHeight` as a nullable field now.  This fixes a potential crash when fetching transactions when a transaction is in the mempool
 
+## 1.11.0-beta01
 ### Added
 - `cash.z.ecc.android.sdk`:
   - `Synchronizer.getUnifiedAddress`

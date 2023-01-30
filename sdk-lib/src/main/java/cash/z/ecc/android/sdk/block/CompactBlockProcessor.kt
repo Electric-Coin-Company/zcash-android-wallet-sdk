@@ -445,7 +445,7 @@ class CompactBlockProcessor internal constructor(
                 }
             }
 
-            newTxs.onEach { newTransaction ->
+            newTxs.filter { it.minedHeight != null }.onEach { newTransaction ->
                 enhance(newTransaction)
             }
             twig("Done enhancing transaction details")
@@ -461,7 +461,9 @@ class CompactBlockProcessor internal constructor(
     // TODO [#683]: https://github.com/zcash/zcash-android-wallet-sdk/issues/683
 
     private suspend fun enhance(transaction: TransactionOverview) = withContext(Dispatchers.IO) {
-        enhanceHelper(transaction.id, transaction.rawId.byteArray, transaction.minedHeight)
+        transaction.minedHeight?.let { minedHeight ->
+            enhanceHelper(transaction.id, transaction.rawId.byteArray, minedHeight)
+        }
     }
 
     private suspend fun enhanceHelper(id: Long, rawTransactionId: ByteArray, minedHeight: BlockHeight) {
