@@ -1,4 +1,5 @@
 import java.util.Base64
+import java.util.Locale
 
 plugins {
     id("com.android.library")
@@ -154,23 +155,6 @@ android {
         freeCompilerArgs += listOf("-module-name", "$myArtifactId-${myVersion}_release")
     }
 
-    packagingOptions {
-        resources.excludes.addAll(
-            listOf(
-                "META-INF/DEPENDENCIES",
-                "META-INF/LICENSE",
-                "META-INF/LICENSE.txt",
-                "META-INF/license.txt",
-                "META-INF/NOTICE",
-                "META-INF/NOTICE.txt",
-                "META-INF/notice.txt",
-                "META-INF/ASL2.0",
-                "META-INF/LICENSE.md",
-                "META-INF/LICENSE-notice.md"
-            )
-        )
-    }
-
     lint {
         baseline = File("lint-baseline.xml")
     }
@@ -179,6 +163,27 @@ android {
         singleVariant(publicationVariant) {
             withSourcesJar()
             withJavadocJar()
+        }
+    }
+}
+
+androidComponents {
+    onVariants { variant ->
+        if (variant.name.toLowerCase(Locale.US).contains("release")) {
+            variant.packaging.resources.excludes.addAll(
+                listOf(
+                    "META-INF/DEPENDENCIES",
+                    "META-INF/LICENSE",
+                    "META-INF/LICENSE.txt",
+                    "META-INF/license.txt",
+                    "META-INF/NOTICE",
+                    "META-INF/NOTICE.txt",
+                    "META-INF/notice.txt",
+                    "META-INF/ASL2.0",
+                    "META-INF/LICENSE.md",
+                    "META-INF/LICENSE-notice.md"
+                )
+            )
         }
     }
 }

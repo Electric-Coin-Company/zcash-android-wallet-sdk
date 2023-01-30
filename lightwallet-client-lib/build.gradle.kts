@@ -4,6 +4,7 @@ import com.google.protobuf.gradle.plugins
 import com.google.protobuf.gradle.proto
 import com.google.protobuf.gradle.protobuf
 import com.google.protobuf.gradle.protoc
+import java.util.Locale
 
 plugins {
     id("com.android.library")
@@ -124,23 +125,6 @@ android {
         proto { srcDir("src/main/proto") }
     }
 
-    packagingOptions {
-        resources.excludes.addAll(
-            listOf(
-                "META-INF/DEPENDENCIES",
-                "META-INF/LICENSE",
-                "META-INF/LICENSE.txt",
-                "META-INF/license.txt",
-                "META-INF/NOTICE",
-                "META-INF/NOTICE.txt",
-                "META-INF/notice.txt",
-                "META-INF/ASL2.0",
-                "META-INF/LICENSE.md",
-                "META-INF/LICENSE-notice.md"
-            )
-        )
-    }
-
     lint {
         baseline = File("lint-baseline.xml")
     }
@@ -149,6 +133,27 @@ android {
         singleVariant(publicationVariant) {
             withSourcesJar()
             withJavadocJar()
+        }
+    }
+}
+
+androidComponents {
+    onVariants { variant ->
+        if (variant.name.toLowerCase(Locale.US).contains("release")) {
+            variant.packaging.resources.excludes.addAll(
+                listOf(
+                    "META-INF/DEPENDENCIES",
+                    "META-INF/LICENSE",
+                    "META-INF/LICENSE.txt",
+                    "META-INF/license.txt",
+                    "META-INF/NOTICE",
+                    "META-INF/NOTICE.txt",
+                    "META-INF/notice.txt",
+                    "META-INF/ASL2.0",
+                    "META-INF/LICENSE.md",
+                    "META-INF/LICENSE-notice.md"
+                )
+            )
         }
     }
 }
