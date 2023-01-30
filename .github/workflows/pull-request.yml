@@ -122,7 +122,7 @@ jobs:
       - name: Upload Artifacts
         if: ${{ always() }}
         uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce
-        timeout-minutes: 1
+        timeout-minutes: 2
         with:
           name: Detekt static analysis results
           path: ~/artifacts
