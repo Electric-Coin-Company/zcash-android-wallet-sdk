@@ -92,6 +92,7 @@ publishing {
 }
 
 android {
+    namespace = "co.electriccoin.lightwallet.client"
     useLibrary("android.test.runner")
 
     defaultConfig {

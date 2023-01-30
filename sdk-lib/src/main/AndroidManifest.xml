@@ -1,5 +1,4 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-          package="cash.z.ecc.android.sdk">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- Required for downloading sapling params. -->
     <uses-permission android:name="android.permission.INTERNET"/>
 </manifest>
