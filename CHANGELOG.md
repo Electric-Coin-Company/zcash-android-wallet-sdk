@@ -1,8 +1,8 @@
 Change Log
 ==========
 
-Unreleased
-------------------------------------
+## 1.13.0-beta01
+### Changed
 - The SDK's internal networking has been refactored to a separate Gradle module `lightwallet-client-lib` (and 
   therefore a separate artifact) which is a transitive dependency of the Zcash Android SDK.
     - The `z.cash.ecc.android.sdk.model.LightWalletEndpoint` class has been moved to `co.electriccoin.lightwallet.client.model.LightWalletEndpoint`
