@@ -154,9 +154,9 @@ internal class BlockingLightWalletClientImpl private constructor(
         channel = channelFactory.newChannel(lightWalletEndpoint)
     }
 
-    // test code
-    internal var stateCount = 0
-    internal var state: ConnectivityState? = null
+    // These make the implementation of BlockingLightWalletClientImpl not thread-safe.
+    private var stateCount = 0
+    private var state: ConnectivityState? = null
     private fun requireChannel(): ManagedChannel {
         state = channel.getState(false).let { new ->
             if (state == new) stateCount++ else stateCount = 0
