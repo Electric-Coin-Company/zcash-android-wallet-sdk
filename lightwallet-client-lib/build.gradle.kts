@@ -142,16 +142,16 @@ androidComponents {
         if (variant.name.toLowerCase(Locale.US).contains("release")) {
             variant.packaging.resources.excludes.addAll(
                 listOf(
+                    "META-INF/ASL2.0",
                     "META-INF/DEPENDENCIES",
                     "META-INF/LICENSE",
+                    "META-INF/LICENSE-notice.md",
+                    "META-INF/LICENSE.md",
                     "META-INF/LICENSE.txt",
-                    "META-INF/license.txt",
                     "META-INF/NOTICE",
                     "META-INF/NOTICE.txt",
-                    "META-INF/notice.txt",
-                    "META-INF/ASL2.0",
-                    "META-INF/LICENSE.md",
-                    "META-INF/LICENSE-notice.md"
+                    "META-INF/license.txt",
+                    "META-INF/notice.txt"
                 )
             )
         }
