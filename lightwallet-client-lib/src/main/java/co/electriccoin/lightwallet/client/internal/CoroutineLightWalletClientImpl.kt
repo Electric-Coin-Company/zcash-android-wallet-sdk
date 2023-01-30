@@ -26,7 +26,6 @@ import kotlin.time.Duration.Companion.seconds
 /**
  * Implementation of CoroutineLightWalletClient using gRPC for requests to lightwalletd.
  *
- * @property channel the channel to use for communicating with the lightwalletd server.
  * @property singleRequestTimeout the timeout to use for non-streaming requests. When a new stub
  * is created, it will use a deadline that is after the given duration from now.
  * @property streamingRequestTimeout the timeout to use for streaming requests. When a new stub
