@@ -1,6 +1,16 @@
 Troubleshooting Migrations
 ==========
 
+Migration to Version 1.13
+---------------------------------
+Update usages of `z.cash.ecc.android.sdk.model.LightWalletEndpoint` to `co.electriccoin.lightwallet.client.model.LightWalletEndpoint`.
+
+SDK clients should avoid using generated GRPC objects, as these are an internal implementation detail and are in process of being removed from the public API.  Any clients using GRPC objects will find these have been repackaged from `cash.z.wallet.sdk.rpc` to `cash.z.wallet.sdk.internal.rpc` to signal they are not a public API.
+
+Migration to Version 1.12
+---------------------------------
+`TransactionOverview`, `Transaction.Sent`, and `Transaction.Received` have been updated to reflect that `minedHeight` is nullable.
+
 Migration to Version 1.11
 ---------------------------------
 The way the SDK is initialized has changed.  The `Initializer` object has been removed and `Synchronizer.new` now takes a longer parameter list which includes the parameters previously passed to `Initializer`.
