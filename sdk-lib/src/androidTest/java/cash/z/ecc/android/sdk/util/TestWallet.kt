@@ -166,11 +166,9 @@ class TestWallet(
         }
     }
 
-    // TODO [843]: Ktlint 0.48.1 (remove this suppress)
-    // TODO [843]: https://github.com/zcash/zcash-android-wallet-sdk/issues/843
-    @Suppress("ktlint:no-semi")
     enum class Backups(val seedPhrase: String, val testnetBirthday: BlockHeight, val mainnetBirthday: BlockHeight) {
-        // TODO: get the proper birthday values for these wallets
+        // TODO: [#902] Get the proper birthday values for test wallets
+        // TODO: [#902] https://github.com/zcash/zcash-android-wallet-sdk/issues/902
         DEFAULT(
             "column rhythm acoustic gym cost fit keen maze fence seed mail medal shrimp tell relief clip cannon foster soldier shallow refuse lunar parrot banana",
             BlockHeight.new(
@@ -210,6 +208,6 @@ class TestWallet(
                 1_330_190
             ),
             BlockHeight.new(ZcashNetwork.Mainnet, 1_000_000)
-        );
+        )
     }
 }

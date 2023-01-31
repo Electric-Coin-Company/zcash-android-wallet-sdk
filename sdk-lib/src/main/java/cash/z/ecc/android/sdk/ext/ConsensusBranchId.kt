@@ -7,9 +7,7 @@ import java.util.Locale
  * omitted since this is not the source of truth for branch information but rather a tool for
  * printing that information to users.
  */
-// TODO [843]: Ktlint 0.48.1 (remove this suppress)
-// TODO [843]: https://github.com/zcash/zcash-android-wallet-sdk/issues/843
-@Suppress("MagicNumber", "ktlint:no-semi")
+@Suppress("MagicNumber")
 enum class ConsensusBranchId(val displayName: String, val id: Long, val hexId: String) {
     // TODO [#679]: see if we can find a way to not rely on this separate source of truth (either stop converting from
     //  hex to display name in the apps or use Rust to get this info)
