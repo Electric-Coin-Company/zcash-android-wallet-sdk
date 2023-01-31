@@ -82,8 +82,9 @@ internal class BlockingLightWalletClientImpl private constructor(
     }
 
     override fun submitTransaction(spendTransaction: ByteArray): Response<SendResponseUnsafe> {
-        if (spendTransaction.isEmpty()) {
-            return Response.Failure.Client.SubmitEmptyTransaction()
+        require(spendTransaction.isNotEmpty()) {
+            "${Constants.ILLEGAL_ARGUMENT_EXCEPTION_MESSAGE} Failed to submit transaction because it was empty, so " +
+                "this request was ignored on the client-side." // NON-NLS
         }
         return try {
             val request =
@@ -100,8 +101,9 @@ internal class BlockingLightWalletClientImpl private constructor(
     }
 
     override fun fetchTransaction(txId: ByteArray): Response<RawTransactionUnsafe> {
-        if (txId.isEmpty()) {
-            return Response.Failure.Client.NullIdTransaction()
+        require(txId.isNotEmpty()) {
+            "${Constants.ILLEGAL_ARGUMENT_EXCEPTION_MESSAGE} Failed to start fetching the transaction with null " +
+                "transaction ID, so this request was ignored on the client-side." // NON-NLS
         }
         return try {
             val request = Service.TxFilter.newBuilder().setHash(ByteString.copyFrom(txId)).build()

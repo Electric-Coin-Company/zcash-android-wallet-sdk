@@ -215,8 +215,7 @@ internal class PersistentTransactionManager(
                     )
                 else -> {
                     twig("submitting transaction with memo: ${tx.memo} amount: ${tx.value}", -1)
-                    val response = service.submitTransaction(tx.raw)
-                    when (response) {
+                    when (val response = service.submitTransaction(tx.raw)) {
                         is Response.Success -> {
                             twig("SUCCESS: submit transaction completed with response: ${response.result}")
                             safeUpdate("updating submitted transaction (hadError: false)", -1) {
