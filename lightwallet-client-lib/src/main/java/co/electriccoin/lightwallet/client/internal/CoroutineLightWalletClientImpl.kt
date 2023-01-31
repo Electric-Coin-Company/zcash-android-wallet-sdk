@@ -128,7 +128,7 @@ internal class CoroutineLightWalletClientImpl private constructor(
             "${Constants.ILLEGAL_ARGUMENT_EXCEPTION_MESSAGE} address: $tAddress." // NON-NLS
         }
         return requireChannel().createStub().getAddressUtxosStream(
-            Service.GetAddressUtxosArg.newBuilder().setAddresses(Constants.TRANSPARENT_ADDRESS_INDEX, tAddress)
+            Service.GetAddressUtxosArg.newBuilder().setAddresses(0, tAddress)
                 .setStartHeight(startHeight.value).build()
         )
     }

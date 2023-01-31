@@ -127,7 +127,7 @@ internal class BlockingLightWalletClientImpl private constructor(
         }
 
         val result = requireChannel().createStub().getAddressUtxos(
-            Service.GetAddressUtxosArg.newBuilder().setAddresses(Constants.TRANSPARENT_ADDRESS_INDEX, tAddress)
+            Service.GetAddressUtxosArg.newBuilder().setAddresses(0, tAddress)
                 .setStartHeight(startHeight.value).build()
         )
         return result.addressUtxosList.asSequence()
