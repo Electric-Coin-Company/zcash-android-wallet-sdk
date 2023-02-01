@@ -16,7 +16,7 @@ use secrecy::{ExposeSecret, SecretVec};
 use tracing::{debug, error};
 use tracing_subscriber::prelude::*;
 use tracing_subscriber::reload;
-use zcash_address::{ToAddress, ZcashAddress};
+use zcash_address::{ToAddress, ZcashAddress, Network::Main, Network::Test};
 use zcash_client_backend::keys::{DecodingError, UnifiedSpendingKey};
 use zcash_client_backend::{
     address::{RecipientAddress, UnifiedAddress},
@@ -1482,5 +1482,76 @@ fn parse_network(value: u32) -> Result<Network, failure::Error> {
         0 => Ok(TestNetwork),
         1 => Ok(MainNetwork),
         _ => Err(format_err!("Invalid network type: {}. Expected either 0 or 1 for Testnet or Mainnet, respectively.", value))
+    }
+}
+
+
+/// Returns a list of the transparent receivers for the diversified unified addresses that have
+/// been allocated for the provided account.
+///
+/// # Safety
+///
+/// - `db_data` must be non-null and valid for reads for `db_data_len` bytes, and it must have an
+///   alignment of `1`. Its contents must be a string representing a valid system path in the
+///   operating system's preferred representation.
+/// - The memory referenced by `db_data` must not be mutated for the duration of the function call.
+/// - The total size `db_data_len` must be no larger than `isize::MAX`. See the safety
+///   documentation of pointer::offset.
+/// - Call [`zcashlc_free_keys`] to free the memory associated with the returned pointer
+///   when done using it.
+#[no_mangle]
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_listTransparentReceivers(
+    env: JNIEnv<'_>,
+    _: JClass<'_>,
+    db_data: JString<'_>,
+    account_id: jint,
+    network_id: jint,
+) -> jobjectArray {
+    let res = panic::catch_unwind(|| {
+        let network = parse_network(network_id as u32)?;
+        let zcash_network = convert_network_into_zcash_address_network(network);
+        let db_data = wallet_db(&env, network, db_data)?;
+        let account_id = if account_id >= 0 {
+            account_id as u32
+        } else {
+            return Err(format_err!("Account id must be nonnegative."));
+        };
+
+        let account = AccountId::from(account_id);
+        match db_data.get_transparent_receivers(account) {
+            Ok(receivers) => {
+                let trasparent_receivers = receivers
+                    .iter()
+                    .map(|(taddr, _)| {
+                        let taddr = match taddr {
+                            TransparentAddress::PublicKey(data) => {
+                                ZcashAddress::from_transparent_p2pkh(zcash_network, *data)
+                            }
+                            TransparentAddress::Script(data) => {
+                                ZcashAddress::from_transparent_p2sh(zcash_network, *data)
+                            }
+                        };
+                        taddr.encode()
+                    })
+                    .collect::<Vec<_>>();
+
+                    Ok(utils::rust_vec_to_java(
+                        &env,
+                        trasparent_receivers,
+                        "java/lang/String",
+                        |env, taddr| env.new_string(taddr),
+                        |env| env.new_string(""),
+                    ))
+                },
+            Err(e) => Err(format_err!("Error while fetching address: {}", e)),
+        }
+    });
+    unwrap_exc_or(&env, res, ptr::null_mut())
+}
+
+fn convert_network_into_zcash_address_network(zcash_network: zcash_primitives::consensus::Network) -> zcash_address::Network {
+    match zcash_network {
+        MainNetwork => Main,
+        TestNetwork => Test
     }
 }

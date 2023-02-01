@@ -26,15 +26,15 @@ interface BlockingLightWalletClient {
     fun fetchTransaction(txId: ByteArray): Response<RawTransactionUnsafe>
 
     /**
-     * @param tAddress the transparent address to use.
+     * @param tAddresses the array containing the transparent addresses to use.
      * @param startHeight the starting height to use.
      *
-     * @return the UTXOs for the given address from the [startHeight].
+     * @return the UTXOs for the given addresses from the [startHeight].
      *
      * @throws IllegalArgumentException when empty argument provided
      */
     fun fetchUtxos(
-        tAddress: String,
+        tAddresses: List<String>,
         startHeight: BlockHeightUnsafe
     ): Sequence<Service.GetAddressUtxosReply>
 

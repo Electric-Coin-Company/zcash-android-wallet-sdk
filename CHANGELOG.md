@@ -1,6 +1,11 @@
 Change Log
 ==========
 
+## 1.16.0-beta01
+### Changed
+- `Synchronizer.refreshUtxos` now takes `Account` type as first parameter instead of transparent address of type 
+    `String`, and thus it downloads all UTXOs for the given account addresses.
+
 ## 1.15.0-beta01
 ### Changed
 - A new package `sdk-incubator-lib` is now available as a public API.  This package contains experimental APIs that may be promoted to the SDK in the future.  The APIs in this package are not guaranteed to be stable, and may change at any time.

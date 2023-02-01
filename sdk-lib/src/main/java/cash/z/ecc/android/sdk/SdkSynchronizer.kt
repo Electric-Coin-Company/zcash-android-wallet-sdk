@@ -380,7 +380,7 @@ class SdkSynchronizer private constructor(
 
     suspend fun refreshUtxos() {
         Twig.debug { "refreshing utxos" }
-        refreshUtxos(getTransparentAddress())
+        refreshUtxos(Account.DEFAULT)
     }
 
     /**
@@ -672,8 +672,8 @@ class SdkSynchronizer private constructor(
         }
     }
 
-    override suspend fun refreshUtxos(tAddr: String, since: BlockHeight): Int? {
-        return processor.refreshUtxos(tAddr, since)
+    override suspend fun refreshUtxos(account: Account, since: BlockHeight): Int? {
+        return processor.refreshUtxos(account, since)
     }
 
     override suspend fun getTransparentBalance(tAddr: String): WalletBalance {

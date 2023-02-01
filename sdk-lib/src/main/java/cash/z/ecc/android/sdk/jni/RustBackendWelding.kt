@@ -57,13 +57,15 @@ internal interface RustBackendWelding {
 
     fun isValidUnifiedAddr(addr: String): Boolean
 
-    suspend fun getCurrentAddress(account: Int = 0): String
+    suspend fun getCurrentAddress(account: Account = Account.DEFAULT): String
 
     fun getTransparentReceiver(ua: String): String?
 
     fun getSaplingReceiver(ua: String): String?
 
-    suspend fun getBalance(account: Int = 0): Zatoshi
+    suspend fun listTransparentReceivers(account: Account = Account.DEFAULT): List<String>
+
+    suspend fun getBalance(account: Account = Account.DEFAULT): Zatoshi
 
     fun getBranchIdForHeight(height: BlockHeight): Long
 
@@ -71,7 +73,7 @@ internal interface RustBackendWelding {
 
     suspend fun getSentMemoAsUtf8(idNote: Long): String?
 
-    suspend fun getVerifiedBalance(account: Int = 0): Zatoshi
+    suspend fun getVerifiedBalance(account: Account = Account.DEFAULT): Zatoshi
 
 //    fun parseTransactionDataList(tdl: LocalRpcTypes.TransactionDataList): LocalRpcTypes.TransparentTransactionList
 
