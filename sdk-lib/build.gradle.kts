@@ -249,16 +249,6 @@ dependencies {
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.android)
 
-    //
-    // Locked Versions
-    //    these should be checked regularly and removed when possible
-
-    // solves error: Duplicate class com.google.common.util.concurrent.ListenableFuture found in modules
-    // jetified-guava-26.0-android.jar (com.google.guava:guava:26.0-android) and listenablefuture-1.0.jar
-    // (com.google.guava:listenablefuture:1.0) per this recommendation from Chris Povirk, given guava's decision to
-    // split ListenableFuture away from Guava: https://groups.google.com/d/msg/guava-discuss/GghaKwusjcY/bCIAKfzOEwAJ
-    implementation(libs.guava)
-
     // Tests
     testImplementation(libs.kotlin.reflect)
     testImplementation(libs.kotlin.test)
