@@ -43,32 +43,6 @@ suspend inline fun retryUpTo(
 }
 
 /**
- * Execute the given block and if it fails, retry up to [retries] more times, using thread sleep
- * instead of suspending. If none of the retries succeed then throw the final error. This function
- * is intended to be called with no parameters, i.e., it is designed to use its defaults.
- *
- * @param retries the number of times to retry. Typically, this should be low.
- * @param sleepTime the amount of time to sleep in between retries. Typically, this should be an
- * amount of time that is hard to perceive.
- * @param block the block of logic to try.
- */
-inline fun retrySimple(retries: Int = 2, sleepTime: Long = 20L, block: (Int) -> Unit) {
-    var failedAttempts = 0
-    while (failedAttempts <= retries) {
-        @Suppress("TooGenericExceptionCaught")
-        try {
-            block(failedAttempts)
-            return
-        } catch (t: Throwable) {
-            failedAttempts++
-            if (failedAttempts > retries) throw t
-            twig("failed due to $t simply retrying ($failedAttempts/$retries) in ${sleepTime}ms...")
-            Thread.sleep(sleepTime)
-        }
-    }
-}
-
-/**
  * Execute the given block and if it fails, retry with an exponential backoff.
  *
  * @param onErrorListener a callback that gets the first shot at processing any error and can veto

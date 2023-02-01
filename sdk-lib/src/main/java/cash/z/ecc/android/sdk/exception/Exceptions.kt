@@ -4,7 +4,8 @@ import cash.z.ecc.android.sdk.internal.SaplingParameters
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.ZcashNetwork
-import cash.z.wallet.sdk.rpc.Service
+import cash.z.wallet.sdk.internal.rpc.Service
+import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import io.grpc.Status
 import io.grpc.Status.Code.UNAVAILABLE
 
@@ -137,6 +138,9 @@ sealed class CompactBlockProcessorException(message: String, cause: Throwable? =
     ) : CompactBlockProcessorException(
         "Incompatible server: this client expects a server following consensus branch $clientBranch on $networkName " +
             "but it was $serverBranch! Try updating the client or switching servers."
+    )
+    class BadBlockHeight(serverBlockHeight: BlockHeightUnsafe) : CompactBlockProcessorException(
+        "The server returned a block height of $serverBlockHeight which is not valid."
     )
 }
 

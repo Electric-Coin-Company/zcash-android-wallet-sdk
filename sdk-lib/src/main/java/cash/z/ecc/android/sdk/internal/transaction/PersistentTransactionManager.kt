@@ -11,7 +11,6 @@ import cash.z.ecc.android.sdk.internal.db.pending.isCancelled
 import cash.z.ecc.android.sdk.internal.db.pending.isFailedEncoding
 import cash.z.ecc.android.sdk.internal.db.pending.isSubmitted
 import cash.z.ecc.android.sdk.internal.db.pending.recipient
-import cash.z.ecc.android.sdk.internal.service.LightWalletService
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
@@ -20,6 +19,8 @@ import cash.z.ecc.android.sdk.model.TransactionRecipient
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
+import co.electriccoin.lightwallet.client.BlockingLightWalletClient
+import co.electriccoin.lightwallet.client.model.Response
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.flow.Flow
@@ -46,7 +47,7 @@ internal class PersistentTransactionManager(
     db: PendingTransactionDb,
     private val zcashNetwork: ZcashNetwork,
     internal val encoder: TransactionEncoder,
-    private val service: LightWalletService
+    private val service: BlockingLightWalletClient
 ) : OutboundTransactionManager {
 
     private val daoMutex = Mutex()
@@ -214,16 +215,24 @@ internal class PersistentTransactionManager(
                     )
                 else -> {
                     twig("submitting transaction with memo: ${tx.memo} amount: ${tx.value}", -1)
-                    val response = service.submitTransaction(tx.raw)
-                    val error = response.errorCode < 0
-                    twig(
-                        "${if (error) "FAILURE! " else "SUCCESS!"} submit transaction completed with" +
-                            " response: ${response.errorCode}: ${response.errorMessage}"
-                    )
-
-                    safeUpdate("updating submitted transaction (hadError: $error)", -1) {
-                        updateError(tx.id, if (error) response.errorMessage else null, response.errorCode)
-                        updateSubmitAttempts(tx.id, max(1, tx.submitAttempts + 1))
+                    when (val response = service.submitTransaction(tx.raw)) {
+                        is Response.Success -> {
+                            twig("SUCCESS: submit transaction completed with response: ${response.result}")
+                            safeUpdate("updating submitted transaction (hadError: false)", -1) {
+                                updateError(tx.id, null, response.result.code)
+                                updateSubmitAttempts(tx.id, max(1, tx.submitAttempts + 1))
+                            }
+                        }
+                        is Response.Failure -> {
+                            twig(
+                                "FAILURE! submit transaction completed with response: ${response.code}: ${response
+                                    .description}"
+                            )
+                            safeUpdate("updating submitted transaction (hadError: true)", -1) {
+                                updateError(tx.id, response.description, response.code)
+                                updateSubmitAttempts(tx.id, max(1, tx.submitAttempts + 1))
+                            }
+                        }
                     }
                 }
             }
@@ -355,7 +364,7 @@ internal class PersistentTransactionManager(
             appContext: Context,
             zcashNetwork: ZcashNetwork,
             encoder: TransactionEncoder,
-            service: LightWalletService,
+            service: BlockingLightWalletClient,
             databaseFile: File
         ) = PersistentTransactionManager(
             commonDatabaseBuilder(

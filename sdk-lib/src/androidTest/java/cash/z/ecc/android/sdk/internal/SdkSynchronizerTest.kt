@@ -5,9 +5,9 @@ import androidx.test.platform.app.InstrumentationRegistry
 import cash.z.ecc.android.bip39.Mnemonics
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.fixture.WalletFixture
-import cash.z.ecc.android.sdk.model.LightWalletEndpoint
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.model.defaultForNetwork
+import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
 import kotlinx.coroutines.test.runTest
 import java.util.UUID
 import kotlin.test.Test

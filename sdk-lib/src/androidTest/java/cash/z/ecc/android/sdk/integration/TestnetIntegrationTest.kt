@@ -8,29 +8,32 @@ import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.ext.onFirst
 import cash.z.ecc.android.sdk.internal.TroubleshootingTwig
 import cash.z.ecc.android.sdk.internal.Twig
-import cash.z.ecc.android.sdk.internal.service.LightWalletGrpcService
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
-import cash.z.ecc.android.sdk.model.LightWalletEndpoint
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.model.isSubmitSuccess
 import cash.z.ecc.android.sdk.test.ScopedTest
 import cash.z.ecc.android.sdk.tool.CheckpointTool
 import cash.z.ecc.android.sdk.tool.DerivationTool
+import co.electriccoin.lightwallet.client.BlockingLightWalletClient
+import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
+import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
+import co.electriccoin.lightwallet.client.model.Response
+import co.electriccoin.lightwallet.client.new
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.runBlocking
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.BeforeClass
 import org.junit.Ignore
 import org.junit.Test
 import java.util.concurrent.CountDownLatch
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 class TestnetIntegrationTest : ScopedTest() {
 
@@ -40,12 +43,13 @@ class TestnetIntegrationTest : ScopedTest() {
     @Test
     @Ignore("This test is broken")
     fun testLatestBlockTest() {
-        val service = LightWalletGrpcService.new(
+        val service = BlockingLightWalletClient.new(
             context,
             lightWalletEndpoint
         )
         val height = service.getLatestBlockHeight()
-        assertTrue(height > saplingActivation)
+        assertTrue(height is Response.Success<BlockHeightUnsafe>)
+        assertTrue((height as Response.Success<BlockHeightUnsafe>).result.value > saplingActivation.value)
     }
 
     @Test
@@ -81,8 +85,7 @@ class TestnetIntegrationTest : ScopedTest() {
         }
 
         assertTrue(
-            availableBalance!!.value > 0,
-            "No funds available when we expected a balance greater than zero!"
+            availableBalance!!.value > 0
         )
     }
 

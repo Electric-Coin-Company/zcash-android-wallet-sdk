@@ -7,7 +7,6 @@ import cash.z.ecc.android.sdk.internal.SaplingParamTool
 import cash.z.ecc.android.sdk.internal.db.DatabaseCoordinator
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
-import cash.z.ecc.android.sdk.model.LightWalletEndpoint
 import cash.z.ecc.android.sdk.model.PendingTransaction
 import cash.z.ecc.android.sdk.model.Transaction
 import cash.z.ecc.android.sdk.model.TransactionOverview
@@ -20,7 +19,7 @@ import cash.z.ecc.android.sdk.tool.CheckpointTool
 import cash.z.ecc.android.sdk.tool.DerivationTool
 import cash.z.ecc.android.sdk.type.AddressType
 import cash.z.ecc.android.sdk.type.ConsensusMatchType
-import cash.z.wallet.sdk.rpc.Service
+import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.runBlocking
@@ -276,13 +275,6 @@ interface Synchronizer {
      * @return an instance of [AddressType] providing validation info regarding the given address.
      */
     suspend fun validateAddress(address: String): AddressType
-
-    /**
-     * Convenience function that exposes the underlying server information, like its name and
-     * consensus branch id. Most wallets should already have a different source of truth for the
-     * server(s) with which they operate and thereby not need this function.
-     */
-    suspend fun getServerInfo(): Service.LightdInfo
 
     /**
      * Download all UTXOs for the given address and store any new ones in the database.

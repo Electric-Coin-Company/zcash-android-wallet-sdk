@@ -14,12 +14,10 @@ import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Validating
 import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException
 import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException.EnhanceTransactionError.EnhanceTxDecryptError
 import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException.EnhanceTransactionError.EnhanceTxDownloadError
-import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException.MismatchedBranch
 import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException.MismatchedNetwork
 import cash.z.ecc.android.sdk.exception.InitializeException
 import cash.z.ecc.android.sdk.exception.RustLayerException
 import cash.z.ecc.android.sdk.ext.BatchMetrics
-import cash.z.ecc.android.sdk.ext.BenchmarkingExt
 import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.ext.ZcashSdk.DOWNLOAD_BATCH_SIZE
 import cash.z.ecc.android.sdk.ext.ZcashSdk.MAX_BACKOFF_INTERVAL
@@ -28,13 +26,14 @@ import cash.z.ecc.android.sdk.ext.ZcashSdk.POLL_INTERVAL
 import cash.z.ecc.android.sdk.ext.ZcashSdk.RETRIES
 import cash.z.ecc.android.sdk.ext.ZcashSdk.REWIND_DISTANCE
 import cash.z.ecc.android.sdk.ext.ZcashSdk.SCAN_BATCH_SIZE
-import cash.z.ecc.android.sdk.fixture.BlockRangeFixture
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.block.CompactBlockDownloader
 import cash.z.ecc.android.sdk.internal.ext.retryUpTo
 import cash.z.ecc.android.sdk.internal.ext.retryWithBackoff
 import cash.z.ecc.android.sdk.internal.ext.toHexReversed
 import cash.z.ecc.android.sdk.internal.isEmpty
+import cash.z.ecc.android.sdk.internal.model.from
+import cash.z.ecc.android.sdk.internal.model.toBlockHeight
 import cash.z.ecc.android.sdk.internal.repository.DerivedDataRepository
 import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.internal.twigTask
@@ -45,8 +44,13 @@ import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.TransactionOverview
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.WalletBalance
-import cash.z.wallet.sdk.rpc.Service
-import io.grpc.StatusRuntimeException
+import cash.z.ecc.android.sdk.model.ZcashNetwork
+import cash.z.wallet.sdk.internal.rpc.Service
+import co.electriccoin.lightwallet.client.ext.BenchmarkingExt
+import co.electriccoin.lightwallet.client.fixture.BlockRangeFixture
+import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
+import co.electriccoin.lightwallet.client.model.LightWalletEndpointInfoUnsafe
+import co.electriccoin.lightwallet.client.model.Response
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.delay
@@ -216,8 +220,9 @@ class CompactBlockProcessor internal constructor(
                         delay(napTime)
                     }
                     BlockProcessingResult.NoBlocksToProcess, BlockProcessingResult.FailedEnhance -> {
-                        val noWorkDone = currentInfo.lastDownloadRange?.isEmpty()
-                            ?: true && currentInfo.lastScanRange?.isEmpty() ?: true
+                        val noWorkDone =
+                            currentInfo.lastDownloadRange?.isEmpty() ?: true &&
+                                currentInfo.lastScanRange?.isEmpty() ?: true
                         val summary = if (noWorkDone) {
                             "Nothing to process: no new blocks to download or scan"
                         } else {
@@ -284,7 +289,7 @@ class CompactBlockProcessor internal constructor(
         if (!updateRanges()) {
             twig("Disconnection detected! Attempting to reconnect!")
             setState(Disconnected)
-            downloader.lightWalletService.reconnect()
+            downloader.lightWalletClient.reconnect()
             BlockProcessingResult.Reconnecting
         } else if (currentInfo.lastDownloadRange.isEmpty() && currentInfo.lastScanRange.isEmpty()) {
             setState(Scanned(currentInfo.lastScanRange))
@@ -293,7 +298,12 @@ class CompactBlockProcessor internal constructor(
             if (BenchmarkingExt.isBenchmarking()) {
                 // We inject a benchmark test blocks range at this point to process only a restricted range of blocks
                 // for a more reliable benchmark results.
-                val benchmarkBlockRange = BlockRangeFixture.new()
+                val benchmarkBlockRange = BlockRangeFixture.new().let {
+                    // Convert range of Longs to range of BlockHeights
+                    BlockHeight.new(ZcashNetwork.Mainnet, it.start)..(
+                        BlockHeight.new(ZcashNetwork.Mainnet, it.endInclusive)
+                        )
+                }
                 downloadNewBlocks(benchmarkBlockRange)
                 val error = validateAndScanNewBlocks(benchmarkBlockRange)
                 if (error != BlockProcessingResult.Success) {
@@ -329,57 +339,65 @@ class CompactBlockProcessor internal constructor(
      * @return true when the update succeeds.
      */
     private suspend fun updateRanges(): Boolean = withContext(IO) {
-        try {
-            // TODO [#683]: rethink this and make it easier to understand what's happening. Can we reduce this
-            //  so that we only work with actual changing info rather than periodic snapshots? Do we need
-            //  to calculate these derived values every time?
-            // TODO [#683]: https://github.com/zcash/zcash-android-wallet-sdk/issues/683
-            ProcessorInfo(
-                networkBlockHeight = downloader.getLatestBlockHeight(),
-                lastScannedHeight = getLastScannedHeight(),
-                lastDownloadedHeight = getLastDownloadedHeight()?.let {
+        // This fetches the latest height each time this method is called, which can be very inefficient
+        // when downloading all of the blocks from the server
+        val networkBlockHeight = run {
+            val networkBlockHeightUnsafe =
+                when (val response = downloader.getLatestBlockHeight()) {
+                    is Response.Success -> response.result
+                    else -> null
+                }
+
+            runCatching { networkBlockHeightUnsafe?.toBlockHeight(network) }.getOrNull()
+        } ?: return@withContext false
+
+        // TODO [#683]: rethink this and make it easier to understand what's happening. Can we reduce this
+        //  so that we only work with actual changing info rather than periodic snapshots? Do we need
+        //  to calculate these derived values every time?
+        // TODO [#683]: https://github.com/zcash/zcash-android-wallet-sdk/issues/683
+        ProcessorInfo(
+            networkBlockHeight = networkBlockHeight,
+            lastScannedHeight = getLastScannedHeight(),
+            lastDownloadedHeight = getLastDownloadedHeight()?.let {
+                BlockHeight.new(
+                    network,
+                    max(
+                        it.value,
+                        lowerBoundHeight.value - 1
+                    )
+                )
+            },
+            lastDownloadRange = null,
+            lastScanRange = null
+        ).let { initialInfo ->
+            updateProgress(
+                networkBlockHeight = initialInfo.networkBlockHeight,
+                lastScannedHeight = initialInfo.lastScannedHeight,
+                lastDownloadedHeight = initialInfo.lastDownloadedHeight,
+                lastScanRange = if (
+                    initialInfo.lastScannedHeight != null &&
+                    initialInfo.networkBlockHeight != null
+                ) {
+                    initialInfo.lastScannedHeight + 1..initialInfo.networkBlockHeight
+                } else {
+                    null
+                },
+                lastDownloadRange = if (initialInfo.networkBlockHeight != null) {
                     BlockHeight.new(
                         network,
-                        max(
-                            it.value,
-                            lowerBoundHeight.value - 1
-                        )
-                    )
-                },
-                lastDownloadRange = null,
-                lastScanRange = null
-            ).let { initialInfo ->
-                updateProgress(
-                    networkBlockHeight = initialInfo.networkBlockHeight,
-                    lastScannedHeight = initialInfo.lastScannedHeight,
-                    lastDownloadedHeight = initialInfo.lastDownloadedHeight,
-                    lastScanRange = if (
-                        initialInfo.lastScannedHeight != null &&
-                        initialInfo.networkBlockHeight != null
-                    ) {
-                        initialInfo.lastScannedHeight + 1..initialInfo.networkBlockHeight
-                    } else {
-                        null
-                    },
-                    lastDownloadRange = if (initialInfo.networkBlockHeight != null) {
-                        BlockHeight.new(
-                            network,
-                            buildList {
-                                add(network.saplingActivationHeight.value)
-                                initialInfo.lastDownloadedHeight?.let { add(it.value + 1) }
-                                initialInfo.lastScannedHeight?.let { add(it.value + 1) }
-                            }.max()
-                        )..initialInfo.networkBlockHeight
-                    } else {
-                        null
-                    }
-                )
-            }
-            true
-        } catch (t: StatusRuntimeException) {
-            twig("Warning: failed to update ranges due to $t caused by ${t.cause}")
-            false
+                        buildList {
+                            add(network.saplingActivationHeight.value)
+                            initialInfo.lastDownloadedHeight?.let { add(it.value + 1) }
+                            initialInfo.lastScannedHeight?.let { add(it.value + 1) }
+                        }.max()
+                    )..initialInfo.networkBlockHeight
+                } else {
+                    null
+                }
+            )
         }
+
+        true
     }
 
     /**
@@ -451,49 +469,65 @@ class CompactBlockProcessor internal constructor(
     private suspend fun enhanceHelper(id: Long, rawTransactionId: ByteArray, minedHeight: BlockHeight) {
         twig("START: enhancing transaction (id:$id  block:$minedHeight)")
 
-        runCatching {
-            downloader.fetchTransaction(rawTransactionId)
-        }.onSuccess { tx ->
-            tx?.let {
+        when (val response = downloader.fetchTransaction(rawTransactionId)) {
+            is Response.Success -> {
                 runCatching {
                     twig("decrypting and storing transaction (id:$id  block:$minedHeight)")
-                    rustBackend.decryptAndStoreTransaction(it.data.toByteArray())
+                    rustBackend.decryptAndStoreTransaction(response.result.data)
                 }.onSuccess {
                     twig("DONE: enhancing transaction (id:$id  block:$minedHeight)")
                 }.onFailure { error ->
                     onProcessorError(EnhanceTxDecryptError(minedHeight, error))
                 }
-            } ?: twig("no transaction found. Nothing to enhance. This probably shouldn't happen.")
-        }.onFailure { error ->
-            onProcessorError(EnhanceTxDownloadError(minedHeight, error))
+            }
+            is Response.Failure -> {
+                onProcessorError(EnhanceTxDownloadError(minedHeight, response.toThrowable()))
+            }
         }
     }
 
     /**
      * Confirm that the wallet data is properly setup for use.
      */
+    // Need to refactor this to be less ugly and more testable
+    @Suppress("NestedBlockDepth")
     private suspend fun verifySetup() {
         // verify that the data is initialized
-        var error = when {
-            !repository.isInitialized() -> CompactBlockProcessorException.Uninitialized
-            repository.getAccountCount() == 0 -> CompactBlockProcessorException.NoAccount
-            else -> {
-                // verify that the server is correct
-                downloader.getServerInfo().let { info ->
-                    val clientBranch =
-                        "%x".format(rustBackend.getBranchIdForHeight(BlockHeight(info.blockHeight)))
+        val error = if (!repository.isInitialized()) {
+            CompactBlockProcessorException.Uninitialized
+        } else if (repository.getAccountCount() == 0) {
+            CompactBlockProcessorException.NoAccount
+        } else {
+            // verify that the server is correct
+
+            // How do we handle network connection issues?
+
+            downloader.getServerInfo()?.let { info ->
+                val serverBlockHeight =
+                    runCatching { info.blockHeightUnsafe.toBlockHeight(network) }.getOrNull()
+
+                if (null == serverBlockHeight) {
+                    // TODO Better signal network connection issue
+                    CompactBlockProcessorException.BadBlockHeight(info.blockHeightUnsafe)
+                } else {
+                    val clientBranch = "%x".format(
+                        Locale.ROOT,
+                        rustBackend.getBranchIdForHeight(serverBlockHeight)
+                    )
                     val network = rustBackend.network.networkName
-                    when {
-                        !info.matchingNetwork(network) -> MismatchedNetwork(
+
+                    if (!clientBranch.equals(info.consensusBranchId, true)) {
+                        MismatchedNetwork(
                             clientNetwork = network,
                             serverNetwork = info.chainName
                         )
-                        !info.matchingConsensusBranchId(clientBranch) -> MismatchedBranch(
-                            clientBranch = clientBranch,
-                            serverBranch = info.consensusBranchId,
-                            networkName = network
+                    } else if (!info.matchingNetwork(network)) {
+                        MismatchedNetwork(
+                            clientNetwork = network,
+                            serverNetwork = info.chainName
                         )
-                        else -> null
+                    } else {
+                        null
                     }
                 }
             }
@@ -540,7 +574,10 @@ class CompactBlockProcessor internal constructor(
                 @Suppress("TooGenericExceptionCaught")
                 try {
                     retryUpTo(3) {
-                        val result = downloader.lightWalletService.fetchUtxos(tAddress, startHeight)
+                        val result = downloader.lightWalletClient.fetchUtxos(
+                            tAddress,
+                            BlockHeightUnsafe.from(startHeight)
+                        )
                         count = processUtxoResult(result, tAddress, startHeight)
                     }
                 } catch (e: Throwable) {
@@ -561,7 +598,7 @@ class CompactBlockProcessor internal constructor(
         }
 
     internal suspend fun processUtxoResult(
-        result: List<Service.GetAddressUtxosReply>,
+        result: Sequence<Service.GetAddressUtxosReply>,
         tAddress: String,
         startHeight: BlockHeight
     ): Int = withContext(IO) {
@@ -601,7 +638,7 @@ class CompactBlockProcessor internal constructor(
             }
         }
         // return the number of UTXOs that were downloaded
-        result.size - skipped
+        result.count() - skipped
     }
 
     /**
@@ -854,12 +891,12 @@ class CompactBlockProcessor internal constructor(
 
                 if (alsoClearBlockCache) {
                     twig(
-                        "Also clearing block cache back to $targetHeight. These rewound blocks will " +
-                            "download in the next scheduled scan"
+                        "Also clearing block cache back to $targetHeight. These rewound blocks will download " +
+                            "in the next scheduled scan"
                     )
                     downloader.rewindToHeight(targetHeight)
-                    // communicate that the wallet is no longer synced because it might remain this way for 20+
-                    // seconds because we only download on 20s time boundaries so we can't trigger any immediate action
+                    // communicate that the wallet is no longer synced because it might remain this way for 20+ second
+                    // because we only download on 20s time boundaries so we can't trigger any immediate action
                     setState(Downloading)
                     if (null == currentNetworkBlockHeight) {
                         updateProgress(
@@ -1256,21 +1293,6 @@ class CompactBlockProcessor internal constructor(
     // Helper Extensions
     //
 
-    private fun Service.LightdInfo.matchingConsensusBranchId(clientBranch: String): Boolean {
-        return consensusBranchId.equals(clientBranch, true)
-    }
-
-    private fun Service.LightdInfo.matchingNetwork(network: String): Boolean {
-        fun String.toId() = lowercase(Locale.US).run {
-            when {
-                contains("main") -> "mainnet"
-                contains("test") -> "testnet"
-                else -> this
-            }
-        }
-        return chainName.toId() == network.toId()
-    }
-
     /**
      * Log the mutex in great detail just in case we need it for troubleshooting deadlock.
      */
@@ -1283,6 +1305,17 @@ class CompactBlockProcessor internal constructor(
             }
         }
     }
+}
+
+private fun LightWalletEndpointInfoUnsafe.matchingNetwork(network: String): Boolean {
+    fun String.toId() = lowercase(Locale.ROOT).run {
+        when {
+            contains("main") -> "mainnet"
+            contains("test") -> "testnet"
+            else -> this
+        }
+    }
+    return chainName.toId() == network.toId()
 }
 
 private fun max(a: BlockHeight?, b: BlockHeight) = if (null == a) {

@@ -4,7 +4,8 @@
 
 syntax = "proto3";
 package cash.z.wallet.sdk.rpc;
-option go_package = ".;walletrpc";
+option java_package = "cash.z.wallet.sdk.internal.rpc";
+option go_package = "lightwalletd/walletrpc";
 option swift_prefix = "";
 import "compact_formats.proto";
 
@@ -32,7 +33,8 @@ message TxFilter {
 }
 
 // RawTransaction contains the complete transaction data. It also optionally includes
-// the block height in which the transaction was included.
+// the block height in which the transaction was included, or, when returned
+// by GetMempoolStream(), the latest block height.
 message RawTransaction {
     bytes data = 1;     // exact data returned by Zcash 'getrawtransaction'
     uint64 height = 2;  // height that the transaction was mined (or -1)
@@ -109,19 +111,23 @@ message Exclude {
 
 // The TreeState is derived from the Zcash z_gettreestate rpc.
 message TreeState {
-    string network = 1; // "main" or "test"
-    uint64 height = 2;
-    string hash = 3;    // block id
-    uint32 time = 4;    // Unix epoch time when the block was mined
-    string tree = 5;    // sapling commitment tree state
+    string network = 1;     // "main" or "test"
+    uint64 height = 2;      // block height
+    string hash = 3;        // block id
+    uint32 time = 4;        // Unix epoch time when the block was mined
+    string saplingTree = 5; // sapling commitment tree state
+    string orchardTree = 6; // orchard commitment tree state
 }
 
+// Results are sorted by height, which makes it easy to issue another
+// request that picks up from where the previous left off.
 message GetAddressUtxosArg {
-    string address = 1;
+    repeated string addresses = 1;
     uint64 startHeight = 2;
     uint32 maxEntries = 3; // zero means unlimited
 }
 message GetAddressUtxosReply {
+    string address = 6;
     bytes txid = 1;
     int32 index = 2;
     bytes script = 3;
@@ -161,17 +167,22 @@ service CompactTxStreamer {
     // in the exclude list that don't exist in the mempool are ignored.
     rpc GetMempoolTx(Exclude) returns (stream CompactTx) {}
 
+    // Return a stream of current Mempool transactions. This will keep the output stream open while
+    // there are mempool transactions. It will close the returned stream when a new block is mined.
+    rpc GetMempoolStream(Empty) returns (stream RawTransaction) {}
+
     // GetTreeState returns the note commitment tree state corresponding to the given block.
     // See section 3.7 of the Zcash protocol specification. It returns several other useful
     // values also (even though they can be obtained using GetBlock).
     // The block can be specified by either height or hash.
     rpc GetTreeState(BlockID) returns (TreeState) {}
+    rpc GetLatestTreeState(Empty) returns (TreeState) {}
 
     rpc GetAddressUtxos(GetAddressUtxosArg) returns (GetAddressUtxosReplyList) {}
     rpc GetAddressUtxosStream(GetAddressUtxosArg) returns (stream GetAddressUtxosReply) {}
 
     // Return information about this lightwalletd instance and the blockchain
     rpc GetLightdInfo(Empty) returns (LightdInfo) {}
-    // Testing-only
+    // Testing-only, requires lightwalletd --ping-very-insecure (do not enable in production)
     rpc Ping(Duration) returns (PingResponse) {}
 }

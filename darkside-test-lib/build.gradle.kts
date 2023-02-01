@@ -23,6 +23,7 @@ android {
 }
 
 dependencies {
+    implementation(projects.lightwalletClientLib)
     implementation(projects.sdkLib)
     implementation(libs.kotlin.stdlib)
     implementation(libs.kotlinx.coroutines.core)

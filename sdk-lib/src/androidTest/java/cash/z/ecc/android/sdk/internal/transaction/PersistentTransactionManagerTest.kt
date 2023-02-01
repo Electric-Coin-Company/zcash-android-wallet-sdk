@@ -9,7 +9,6 @@ import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.db.commonDatabaseBuilder
 import cash.z.ecc.android.sdk.internal.db.pending.PendingTransactionDb
 import cash.z.ecc.android.sdk.internal.model.EncodedTransaction
-import cash.z.ecc.android.sdk.internal.service.LightWalletService
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.FirstClassByteArray
@@ -21,6 +20,7 @@ import cash.z.ecc.android.sdk.test.ScopedTest
 import cash.z.ecc.android.sdk.test.getAppContext
 import cash.z.ecc.fixture.DatabaseNameFixture
 import cash.z.ecc.fixture.DatabasePathFixture
+import co.electriccoin.lightwallet.client.BlockingLightWalletClient
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.stub
 import kotlinx.coroutines.delay
@@ -45,7 +45,7 @@ class PersistentTransactionManagerTest : ScopedTest() {
     internal lateinit var mockEncoder: TransactionEncoder
 
     @Mock
-    lateinit var mockService: LightWalletService
+    lateinit var mockService: BlockingLightWalletClient
 
     private val pendingDbFile = File(
         DatabasePathFixture.new(),

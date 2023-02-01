@@ -23,11 +23,11 @@ import kotlinx.coroutines.launch
 abstract class BaseDemoFragment<T : ViewBinding> : Fragment() {
 
     /**
-     * Since the lightWalletService is not a component that apps typically use, directly, we provide
+     * Since the lightwalletClient is not a component that apps typically use, directly, we provide
      * this from one place. Everything that can be done with the service can/should be done with the
      * synchronizer because it wraps the service.
      */
-    val lightWalletService get() = mainActivity()?.lightWalletService
+    val lightWalletClient get() = mainActivity()?.lightwalletClient
 
     // contains view information provided by the user
     val sharedViewModel: SharedViewModel by activityViewModels()

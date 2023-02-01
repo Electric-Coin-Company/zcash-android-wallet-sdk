@@ -8,7 +8,7 @@ import cash.z.ecc.android.sdk.internal.db.commonDatabaseBuilder
 import cash.z.ecc.android.sdk.internal.repository.CompactBlockRepository
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.ZcashNetwork
-import cash.z.wallet.sdk.rpc.CompactFormats
+import cash.z.wallet.sdk.internal.rpc.CompactFormats
 import kotlinx.coroutines.withContext
 import java.io.File
 

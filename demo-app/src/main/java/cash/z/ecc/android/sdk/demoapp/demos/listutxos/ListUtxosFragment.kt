@@ -21,6 +21,7 @@ import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.TransactionOverview
 import cash.z.ecc.android.sdk.model.ZcashNetwork
+import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
@@ -84,12 +85,12 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
                     ?: getUxtoEndHeight(requireApplicationContext()).value
                 var allStart = now
                 twig("loading transactions in range $startToUse..$endToUse")
-                val txids = lightWalletService?.getTAddressTransactions(
+                val txids = lightWalletClient?.getTAddressTransactions(
                     addressToUse,
-                    BlockHeight.new(network, startToUse)..BlockHeight.new(network, endToUse)
+                    BlockHeightUnsafe(startToUse)..BlockHeightUnsafe(endToUse)
                 )
                 var delta = now - allStart
-                updateStatus("found ${txids?.size} transactions in ${delta}ms.", false)
+                updateStatus("found ${txids?.toList()?.size} transactions in ${delta}ms.", false)
 
                 txids?.map {
                     // Disabled during migration to newer SDK version; this appears to have been

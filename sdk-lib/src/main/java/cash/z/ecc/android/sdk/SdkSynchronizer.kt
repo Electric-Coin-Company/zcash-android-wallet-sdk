@@ -31,8 +31,6 @@ import cash.z.ecc.android.sdk.internal.isEmpty
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
 import cash.z.ecc.android.sdk.internal.repository.CompactBlockRepository
 import cash.z.ecc.android.sdk.internal.repository.DerivedDataRepository
-import cash.z.ecc.android.sdk.internal.service.LightWalletGrpcService
-import cash.z.ecc.android.sdk.internal.service.LightWalletService
 import cash.z.ecc.android.sdk.internal.transaction.OutboundTransactionManager
 import cash.z.ecc.android.sdk.internal.transaction.PersistentTransactionManager
 import cash.z.ecc.android.sdk.internal.transaction.TransactionEncoder
@@ -42,7 +40,6 @@ import cash.z.ecc.android.sdk.internal.twigTask
 import cash.z.ecc.android.sdk.jni.RustBackend
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
-import cash.z.ecc.android.sdk.model.LightWalletEndpoint
 import cash.z.ecc.android.sdk.model.PendingTransaction
 import cash.z.ecc.android.sdk.model.TransactionOverview
 import cash.z.ecc.android.sdk.model.TransactionRecipient
@@ -62,8 +59,9 @@ import cash.z.ecc.android.sdk.type.AddressType.Transparent
 import cash.z.ecc.android.sdk.type.AddressType.Unified
 import cash.z.ecc.android.sdk.type.ConsensusMatchType
 import cash.z.ecc.android.sdk.type.UnifiedFullViewingKey
-import cash.z.wallet.sdk.rpc.Service
-import io.grpc.ManagedChannel
+import co.electriccoin.lightwallet.client.BlockingLightWalletClient
+import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
+import co.electriccoin.lightwallet.client.new
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -188,15 +186,6 @@ class SdkSynchronizer private constructor(
     private val _status = MutableStateFlow<Synchronizer.Status>(DISCONNECTED)
 
     var coroutineScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
-
-    /**
-     * The channel that this Synchronizer uses to communicate with lightwalletd. In most cases, this
-     * should not be needed or used. Instead, APIs should be added to the synchronizer to
-     * enable the desired behavior. In the rare case, such as testing, it can be helpful to share
-     * the underlying channel to connect to the same service, and use other APIs
-     * (such as darksidewalletd) because channels are heavyweight.
-     */
-    val channel: ManagedChannel get() = (processor.downloader.lightWalletService as LightWalletGrpcService).channel
 
     //
     // Balances
@@ -334,13 +323,6 @@ class SdkSynchronizer private constructor(
             instances.remove(synchronizerKey)
         }
     }
-
-    /**
-     * Convenience function that exposes the underlying server information, like its name and
-     * consensus branch id. Most wallets should already have a different source of truth for the
-     * server(s) with which they operate.
-     */
-    override suspend fun getServerInfo(): Service.LightdInfo = processor.downloader.getServerInfo()
 
     override suspend fun getNearestRewindHeight(height: BlockHeight): BlockHeight =
         processor.getNearestRewindHeight(height)
@@ -737,7 +719,7 @@ class SdkSynchronizer private constructor(
     }
 
     override suspend fun validateConsensusBranch(): ConsensusMatchType {
-        val serverBranchId = tryNull { processor.downloader.getServerInfo().consensusBranchId }
+        val serverBranchId = tryNull { processor.downloader.getServerInfo()?.consensusBranchId }
         val sdkBranchId = tryNull {
             (txManager as PersistentTransactionManager).encoder.getConsensusBranchId()
         }
@@ -792,8 +774,8 @@ internal object DefaultSynchronizerFactory {
             cacheDbFile
         )
 
-    fun defaultService(context: Context, lightWalletEndpoint: LightWalletEndpoint): LightWalletService =
-        LightWalletGrpcService.new(context, lightWalletEndpoint)
+    fun defaultService(context: Context, lightWalletEndpoint: LightWalletEndpoint): BlockingLightWalletClient =
+        BlockingLightWalletClient.new(context, lightWalletEndpoint)
 
     internal fun defaultEncoder(
         rustBackend: RustBackend,
@@ -802,7 +784,7 @@ internal object DefaultSynchronizerFactory {
     ): TransactionEncoder = WalletTransactionEncoder(rustBackend, saplingParamTool, repository)
 
     fun defaultDownloader(
-        service: LightWalletService,
+        service: BlockingLightWalletClient,
         blockStore: CompactBlockRepository
     ): CompactBlockDownloader = CompactBlockDownloader(service, blockStore)
 
@@ -811,7 +793,7 @@ internal object DefaultSynchronizerFactory {
         zcashNetwork: ZcashNetwork,
         alias: String,
         encoder: TransactionEncoder,
-        service: LightWalletService
+        service: BlockingLightWalletClient
     ): OutboundTransactionManager {
         val databaseFile = DatabaseCoordinator.getInstance(context).pendingTransactionsDbFile(
             zcashNetwork,

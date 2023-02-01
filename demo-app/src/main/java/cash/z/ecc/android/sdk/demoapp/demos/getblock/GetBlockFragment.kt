@@ -15,10 +15,11 @@ import cash.z.ecc.android.sdk.demoapp.util.withCommas
 import cash.z.ecc.android.sdk.ext.toHex
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.ZcashNetwork
+import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import kotlin.math.min
 
 /**
- * Retrieves a compact block from the lightwalletd service and displays basic information about it.
+ * Retrieves a compact block from the lightwalletd server and displays basic information about it.
  * This demonstrates the basic ability to connect to the server, request a compact block and parse
  * the response.
  */
@@ -26,7 +27,11 @@ class GetBlockFragment : BaseDemoFragment<FragmentGetBlockBinding>() {
 
     private fun setBlockHeight(blockHeight: BlockHeight) {
         val blocks =
-            lightWalletService?.getBlockRange(blockHeight..blockHeight)
+            lightWalletClient?.getBlockRange(
+                BlockHeightUnsafe(blockHeight.value)..BlockHeightUnsafe(
+                    blockHeight.value
+                )
+            )
         val block = blocks?.firstOrNull()
         binding.textInfo.visibility = View.VISIBLE
         binding.textInfo.text = HtmlCompat.fromHtml(

@@ -21,12 +21,12 @@ import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
 import androidx.viewbinding.ViewBinding
 import cash.z.ecc.android.sdk.demoapp.util.fromResources
-import cash.z.ecc.android.sdk.internal.service.LightWalletGrpcService
-import cash.z.ecc.android.sdk.internal.service.LightWalletService
 import cash.z.ecc.android.sdk.internal.twig
-import cash.z.ecc.android.sdk.model.LightWalletEndpoint
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.model.defaultForNetwork
+import co.electriccoin.lightwallet.client.BlockingLightWalletClient
+import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
+import co.electriccoin.lightwallet.client.new
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.navigation.NavigationView
 
@@ -45,7 +45,7 @@ class MainActivity :
      * this object because it would utilize the synchronizer, instead, which exposes APIs that
      * automatically sync with the server.
      */
-    var lightWalletService: LightWalletService? = null
+    var lightwalletClient: BlockingLightWalletClient? = null
         private set
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -81,7 +81,7 @@ class MainActivity :
 
     override fun onDestroy() {
         super.onDestroy()
-        lightWalletService?.shutdown()
+        lightwalletClient?.shutdown()
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -127,11 +127,11 @@ class MainActivity :
     //
 
     private fun initService() {
-        if (lightWalletService != null) {
-            lightWalletService?.shutdown()
+        if (lightwalletClient != null) {
+            lightwalletClient?.shutdown()
         }
         val network = ZcashNetwork.fromResources(applicationContext)
-        lightWalletService = LightWalletGrpcService.new(
+        lightwalletClient = BlockingLightWalletClient.new(
             applicationContext,
             LightWalletEndpoint.defaultForNetwork(network)
         )
@@ -174,7 +174,6 @@ class MainActivity :
     }
 
     override fun onDrawerOpened(drawerView: View) {
-        twig("Drawer opened.")
         hideKeyboard()
     }
 }

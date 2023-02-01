@@ -1,10 +1,5 @@
-import com.google.protobuf.gradle.generateProtoTasks
-import com.google.protobuf.gradle.id
-import com.google.protobuf.gradle.plugins
-import com.google.protobuf.gradle.proto
-import com.google.protobuf.gradle.protobuf
-import com.google.protobuf.gradle.protoc
 import java.util.Base64
+import java.util.Locale
 
 plugins {
     id("com.android.library")
@@ -14,7 +9,6 @@ plugins {
     id("com.google.devtools.ksp")
     id("org.jetbrains.kotlin.plugin.allopen")
     id("org.jetbrains.dokka")
-    id("com.google.protobuf")
     id("org.mozilla.rust-android-gradle.rust-android")
 
     id("wtf.emulator.gradle")
@@ -154,33 +148,11 @@ android {
         }
     }
 
-    sourceSets.getByName("main") {
-        java.srcDir("build/generated/source/grpc")
-        proto { srcDir("src/main/proto") }
-    }
-
     kotlinOptions {
         // Tricky: fix: By default, the kotlin_module name will not include the version (in classes.jar/META-INF).
         // Instead it has a colon, which breaks compilation on Windows. This is one way to set it explicitly to the
         // proper value. See https://github.com/zcash/zcash-android-wallet-sdk/issues/222 for more info.
         freeCompilerArgs += listOf("-module-name", "$myArtifactId-${myVersion}_release")
-    }
-
-    packagingOptions {
-        resources.excludes.addAll(
-            listOf(
-                "META-INF/DEPENDENCIES",
-                "META-INF/LICENSE",
-                "META-INF/LICENSE.txt",
-                "META-INF/license.txt",
-                "META-INF/NOTICE",
-                "META-INF/NOTICE.txt",
-                "META-INF/notice.txt",
-                "META-INF/ASL2.0",
-                "META-INF/LICENSE.md",
-                "META-INF/LICENSE-notice.md"
-            )
-        )
     }
 
     lint {
@@ -191,6 +163,27 @@ android {
         singleVariant(publicationVariant) {
             withSourcesJar()
             withJavadocJar()
+        }
+    }
+}
+
+androidComponents {
+    onVariants { variant ->
+        if (variant.name.toLowerCase(Locale.US).contains("release")) {
+            variant.packaging.resources.excludes.addAll(
+                listOf(
+                    "META-INF/ASL2.0",
+                    "META-INF/DEPENDENCIES",
+                    "META-INF/LICENSE",
+                    "META-INF/LICENSE-notice.md",
+                    "META-INF/LICENSE.md",
+                    "META-INF/LICENSE.txt",
+                    "META-INF/NOTICE",
+                    "META-INF/NOTICE.txt",
+                    "META-INF/license.txt",
+                    "META-INF/notice.txt"
+                )
+            )
         }
     }
 }
@@ -206,30 +199,6 @@ tasks.dokkaHtml.configure {
             outputDirectory.set(file("build/docs/rtd"))
             displayName.set("Zcash Android SDK")
             includes.from("packages.md")
-        }
-    }
-}
-
-protobuf {
-    //generatedFilesBaseDir = "$projectDir/src/generated/source/grpc"
-    protoc { artifact = libs.protoc.get().asCoordinateString() }
-    plugins {
-        id("grpc") {
-            artifact = libs.grpc.protoc.get().asCoordinateString()
-        }
-    }
-    generateProtoTasks {
-        all().forEach { task ->
-            task.builtins {
-                id("java") {
-                    option("lite")
-                }
-            }
-            task.plugins {
-                id("grpc") {
-                    option("lite")
-                }
-            }
         }
     }
 }
@@ -255,6 +224,8 @@ cargo {
 }
 
 dependencies {
+    api(projects.lightwalletClientLib)
+
     implementation(libs.androidx.annotation)
     implementation(libs.androidx.appcompat)
 
@@ -278,10 +249,6 @@ dependencies {
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.android)
 
-    // grpc-java
-    implementation(libs.bundles.grpc)
-    compileOnly(libs.javax.annotation)
-
     //
     // Locked Versions
     //    these should be checked regularly and removed when possible
@@ -296,7 +263,6 @@ dependencies {
     testImplementation(libs.kotlin.reflect)
     testImplementation(libs.kotlin.test)
     testImplementation(libs.bundles.junit)
-    testImplementation(libs.grpc.testing)
 
     // NOTE: androidTests will use JUnit4, while src/test/java tests will leverage Junit5
     // Attempting to use JUnit5 via https://github.com/mannodermaus/android-junit5 was painful. The plugin configuration
@@ -318,12 +284,6 @@ dependencies {
 }
 
 tasks {
-    getByName("preBuild").dependsOn(create("bugfixTask") {
-        doFirst {
-            mkdir("build/extracted-include-protos/main")
-        }
-    })
-
     /*
      * The Mozilla Rust Gradle plugin caches the native build data under the "target" directory,
      * which does not normally get deleted during a clean. The following task and dependency solves
