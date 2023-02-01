@@ -19,75 +19,13 @@ plugins {
 
     id("maven-publish")
     id("signing")
+    id("zcash-sdk.publishing-conventions")
 }
-
-// Publishing information
-val publicationVariant = "release"
-val myVersion = project.property("LIBRARY_VERSION").toString()
-val myArtifactId = "lightwallet-client"
-val isSnapshot = project.property("IS_SNAPSHOT").toString().toBoolean()
-project.group = "cash.z.ecc.android"
 
 publishing {
     publications {
-        register<MavenPublication>("release") {
-            groupId = "cash.z.ecc.android"
-            artifactId = myArtifactId
-            version = if (isSnapshot) {
-                "$myVersion-SNAPSHOT"
-            } else {
-                myVersion
-            }
-
-            afterEvaluate {
-                from(components[publicationVariant])
-            }
-
-            pom {
-                name.set("Zcash Light Wallet Client")
-                description.set("Client API for connecting to the Light Wallet server.")
-                url.set("https://github.com/zcash/zcash-android-wallet-sdk/")
-                inceptionYear.set("2022")
-                scm {
-                    url.set("https://github.com/zcash/zcash-android-wallet-sdk/")
-                    connection.set("scm:git:git://github.com/zcash/zcash-android-wallet-sdk.git")
-                    developerConnection.set("scm:git:ssh://git@github.com/zcash/zcash-android-wallet-sdk.git")
-                }
-                developers {
-                    developer {
-                        id.set("zcash")
-                        name.set("Zcash")
-                        url.set("https://github.com/zcash/")
-                    }
-                }
-                licenses {
-                    license {
-                        name.set("The MIT License")
-                        url.set("http://opensource.org/licenses/MIT")
-                        distribution.set("repo")
-                    }
-                }
-            }
-        }
-    }
-    repositories {
-        val mavenUrl = if (isSnapshot) {
-            project.property("ZCASH_MAVEN_PUBLISH_SNAPSHOT_URL").toString()
-        } else {
-            project.property("ZCASH_MAVEN_PUBLISH_RELEASE_URL").toString()
-        }
-        val mavenPublishUsername = project.property("ZCASH_MAVEN_PUBLISH_USERNAME").toString()
-        val mavenPublishPassword = project.property("ZCASH_MAVEN_PUBLISH_PASSWORD").toString()
-
-        mavenLocal {
-            name = "MavenLocal"
-        }
-        maven(mavenUrl) {
-            name = "MavenCentral"
-            credentials {
-                username = mavenPublishUsername
-                password = mavenPublishPassword
-            }
+        publications.withType<MavenPublication>().all {
+            artifactId = "lightwallet-client"
         }
     }
 }
@@ -126,34 +64,6 @@ android {
 
     lint {
         baseline = File("lint-baseline.xml")
-    }
-
-    publishing {
-        singleVariant(publicationVariant) {
-            withSourcesJar()
-            withJavadocJar()
-        }
-    }
-}
-
-androidComponents {
-    onVariants { variant ->
-        if (variant.name.toLowerCase(Locale.US).contains("release")) {
-            variant.packaging.resources.excludes.addAll(
-                listOf(
-                    "META-INF/ASL2.0",
-                    "META-INF/DEPENDENCIES",
-                    "META-INF/LICENSE",
-                    "META-INF/LICENSE-notice.md",
-                    "META-INF/LICENSE.md",
-                    "META-INF/LICENSE.txt",
-                    "META-INF/NOTICE",
-                    "META-INF/NOTICE.txt",
-                    "META-INF/license.txt",
-                    "META-INF/notice.txt"
-                )
-            )
-        }
     }
 }
 

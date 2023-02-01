@@ -1,6 +1,7 @@
 import com.android.build.api.dsl.CommonExtension
 import com.android.build.api.dsl.ManagedVirtualDevice
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmOptions
+import java.util.Locale
 
 pluginManager.withPlugin("com.android.application") {
     project.the<com.android.build.gradle.AppExtension>().apply {
@@ -53,6 +54,27 @@ pluginManager.withPlugin("com.android.library") {
         }
         testCoverage {
             jacocoVersion = project.property("JACOCO_VERSION").toString()
+        }
+    }
+
+    project.the<com.android.build.api.variant.LibraryAndroidComponentsExtension>().apply {
+        onVariants { variant ->
+            if (variant.name.toLowerCase(Locale.US).contains("release")) {
+                variant.packaging.resources.excludes.addAll(
+                    listOf(
+                        "META-INF/ASL2.0",
+                        "META-INF/DEPENDENCIES",
+                        "META-INF/LICENSE",
+                        "META-INF/LICENSE-notice.md",
+                        "META-INF/LICENSE.md",
+                        "META-INF/LICENSE.txt",
+                        "META-INF/NOTICE",
+                        "META-INF/NOTICE.txt",
+                        "META-INF/license.txt",
+                        "META-INF/notice.txt"
+                    )
+                )
+            }
         }
     }
 }
