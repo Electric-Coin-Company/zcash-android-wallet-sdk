@@ -24,13 +24,14 @@ plugins {
 // Publishing information
 val publicationVariant = "release"
 val myVersion = project.property("LIBRARY_VERSION").toString()
-val myArtifactId = "client"
+val myArtifactId = "lightwallet-client"
 val isSnapshot = project.property("IS_SNAPSHOT").toString().toBoolean()
-project.group = "co.electriccoin.lightwallet"
+project.group = "cash.z.ecc.android"
 
 publishing {
     publications {
         register<MavenPublication>("release") {
+            groupId = "cash.z.ecc.android"
             artifactId = myArtifactId
             version = if (isSnapshot) {
                 "$myVersion-SNAPSHOT"
