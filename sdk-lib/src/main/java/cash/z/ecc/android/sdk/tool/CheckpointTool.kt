@@ -3,9 +3,9 @@ package cash.z.ecc.android.sdk.tool
 import android.content.Context
 import androidx.annotation.VisibleForTesting
 import cash.z.ecc.android.sdk.exception.BirthdayException
+import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.from
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
-import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import kotlinx.coroutines.Dispatchers
@@ -89,11 +89,11 @@ internal object CheckpointTool {
         network: ZcashNetwork,
         birthday: BlockHeight?
     ): Checkpoint {
-        twig("loading checkpoint from assets: $birthday")
+        Twig.debug { "loading checkpoint from assets: $birthday" }
         val directory = checkpointDirectory(network)
         val treeFiles = getFilteredFileNames(context, network, directory, birthday)
 
-        twig("found ${treeFiles.size} sapling tree checkpoints: $treeFiles")
+        Twig.debug { "found ${treeFiles.size} sapling tree checkpoints: $treeFiles" }
 
         return getFirstValidWalletBirthday(context, network, directory, treeFiles)
     }
@@ -162,7 +162,7 @@ internal object CheckpointTool {
                 if (IS_FALLBACK_ON_FAILURE) {
                     // TODO [#684]: If we ever add crash analytics hooks, this would be something to report
                     // TODO [#684]: https://github.com/zcash/zcash-android-wallet-sdk/issues/684
-                    twig("Malformed birthday file $t")
+                    Twig.debug(t) { "Malformed birthday file $t" }
                 } else {
                     throw exception
                 }

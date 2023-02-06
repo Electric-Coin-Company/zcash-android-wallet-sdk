@@ -1,6 +1,5 @@
 package cash.z.ecc.android.sdk.sample
 
-import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.util.TestWallet
@@ -26,14 +25,11 @@ class ShieldFundsSample {
     @Test
     @Ignore("This test is broken")
     fun constructT2Z() = runBlocking {
-        Twig.sprout("ShieldFundsSample")
-
         val wallet = TestWallet(TestWallet.Backups.DEV_WALLET, ZcashNetwork.Mainnet)
 
         Assert.assertEquals("foo", "${wallet.unifiedAddress} ${wallet.transparentAddress}")
 //        wallet.shieldFunds()
 
-        Twig.clip("ShieldFundsSample")
         Assert.assertEquals(Zatoshi(5), wallet.synchronizer.saplingBalances.value?.available)
     }
 }

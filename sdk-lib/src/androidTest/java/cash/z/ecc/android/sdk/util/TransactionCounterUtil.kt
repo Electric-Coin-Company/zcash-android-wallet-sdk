@@ -1,10 +1,8 @@
 package cash.z.ecc.android.sdk.util
 
 import androidx.test.platform.app.InstrumentationRegistry
-import cash.z.ecc.android.sdk.internal.TroubleshootingTwig
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.model.from
-import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.Mainnet
 import cash.z.ecc.android.sdk.model.ZcashNetwork
@@ -20,10 +18,6 @@ class TransactionCounterUtil {
     private val network = ZcashNetwork.Mainnet
     private val context = InstrumentationRegistry.getInstrumentation().context
     private val service = BlockingLightWalletClient.new(context, LightWalletEndpoint.Mainnet)
-
-    init {
-        Twig.plant(TroubleshootingTwig())
-    }
 
     @Test
     @Ignore("This test is broken")
@@ -42,11 +36,11 @@ class TransactionCounterUtil {
                 )
             )
         ).forEach { b ->
-            twig("h: ${b.header.size()}")
+            Twig.debug { "h: ${b.header.size()}" }
             val s = b.serializedSize
             sizes[s] = (sizes[s] ?: 0) + 1
         }
-        twig("sizes: ${sizes.toSortedMap()}")
+        Twig.debug { "sizes: ${sizes.toSortedMap()}" }
     }
 
     @Test
@@ -79,12 +73,8 @@ class TransactionCounterUtil {
                 totalTxs += count
             }
         }
-        twig("txs: $txCounts")
-        twig("outputs: $outputCounts")
-        twig("total: $totalTxs  $totalOutputs")
+        Twig.debug { "txs: $txCounts" }
+        Twig.debug { "outputs: $outputCounts" }
+        Twig.debug { "total: $totalTxs  $totalOutputs" }
     }
 }
-/*
-
-
- */

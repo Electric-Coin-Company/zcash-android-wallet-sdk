@@ -35,8 +35,6 @@ import cash.z.ecc.android.sdk.internal.isEmpty
 import cash.z.ecc.android.sdk.internal.model.from
 import cash.z.ecc.android.sdk.internal.model.toBlockHeight
 import cash.z.ecc.android.sdk.internal.repository.DerivedDataRepository
-import cash.z.ecc.android.sdk.internal.twig
-import cash.z.ecc.android.sdk.internal.twigTask
 import cash.z.ecc.android.sdk.jni.RustBackend
 import cash.z.ecc.android.sdk.jni.RustBackendWelding
 import cash.z.ecc.android.sdk.model.Account
@@ -200,7 +198,7 @@ class CompactBlockProcessor internal constructor(
     suspend fun start() = withContext(IO) {
         verifySetup()
         updateBirthdayHeight()
-        twig("setup verified. processor starting")
+        Twig.debug { "setup verified. processor starting" }
 
         // using do/while makes it easier to execute exactly one loop which helps with testing this processor quickly
         // (because you can start and then immediately set isStopped=true to always get precisely one loop)
@@ -213,10 +211,10 @@ class CompactBlockProcessor internal constructor(
                 when (result) {
                     BlockProcessingResult.Reconnecting -> {
                         val napTime = calculatePollInterval(true)
-                        twig(
+                        Twig.debug {
                             "Unable to process new blocks because we are disconnected! Attempting to " +
                                 "reconnect in ${napTime}ms"
-                        )
+                        }
                         delay(napTime)
                     }
                     BlockProcessingResult.NoBlocksToProcess, BlockProcessingResult.FailedEnhance -> {
@@ -230,7 +228,7 @@ class CompactBlockProcessor internal constructor(
                         }
                         consecutiveChainErrors.set(0)
                         val napTime = calculatePollInterval()
-                        twig(
+                        Twig.debug {
                             "$summary${
                                 if (result == BlockProcessingResult.FailedEnhance) {
                                     " (but there were" +
@@ -241,7 +239,7 @@ class CompactBlockProcessor internal constructor(
                                 }
                             }! Sleeping" +
                                 " for ${napTime}ms (latest height: ${currentInfo.networkBlockHeight})."
-                        )
+                        }
                         delay(napTime)
                     }
                     is BlockProcessingResult.Error -> {
@@ -259,8 +257,8 @@ class CompactBlockProcessor internal constructor(
                     }
                 }
             }
-        } while (isActive && _state.value !is Stopped)
-        twig("processor complete")
+        } while (isActive && _state.value !is State.Stopped)
+        Twig.debug { "processor complete" }
         stop()
     }
 
@@ -269,7 +267,7 @@ class CompactBlockProcessor internal constructor(
      */
     suspend fun stop() {
         runCatching {
-            setState(Stopped)
+            setState(State.Stopped)
             downloader.stop()
         }
     }
@@ -279,15 +277,15 @@ class CompactBlockProcessor internal constructor(
      */
     private suspend fun fail(error: Throwable) {
         stop()
-        twig("${error.message}")
+        Twig.debug { "${error.message}" }
         throw error
     }
 
     private suspend fun processNewBlocks(): BlockProcessingResult = withContext(IO) {
-        twig("beginning to process new blocks (with lower bound: $lowerBoundHeight)...", -1)
+        Twig.debug { "beginning to process new blocks (with lower bound: $lowerBoundHeight)..." }
 
         if (!updateRanges()) {
-            twig("Disconnection detected! Attempting to reconnect!")
+            Twig.debug { "Disconnection detected! Attempting to reconnect!" }
             setState(Disconnected)
             downloader.lightWalletClient.reconnect()
             BlockProcessingResult.Reconnecting
@@ -428,19 +426,18 @@ class CompactBlockProcessor internal constructor(
         }
 
     private suspend fun enhanceTransactionDetails(lastScanRange: ClosedRange<BlockHeight>): BlockProcessingResult {
-        Twig.sprout("enhancing")
-        twig("Enhancing transaction details for blocks $lastScanRange")
+        Twig.debug { "Enhancing transaction details for blocks $lastScanRange" }
         setState(Enhancing)
         @Suppress("TooGenericExceptionCaught")
         return try {
             val newTxs = repository.findNewTransactions(lastScanRange)
             if (newTxs.isEmpty()) {
-                twig("no new transactions found in $lastScanRange")
+                Twig.debug { "no new transactions found in $lastScanRange" }
             } else {
-                twig("enhancing ${newTxs.size} transaction(s)!")
+                Twig.debug { "enhancing ${newTxs.size} transaction(s)!" }
                 // if the first transaction has been added
                 if (newTxs.size.toLong() == repository.getTransactionCount()) {
-                    twig("Encountered the first transaction. This changes the birthday height!")
+                    Twig.debug { "Encountered the first transaction. This changes the birthday height!" }
                     updateBirthdayHeight()
                 }
             }
@@ -448,13 +445,11 @@ class CompactBlockProcessor internal constructor(
             newTxs.filter { it.minedHeight != null }.onEach { newTransaction ->
                 enhance(newTransaction)
             }
-            twig("Done enhancing transaction details")
+            Twig.debug { "Done enhancing transaction details" }
             BlockProcessingResult.Success
         } catch (t: Throwable) {
-            twig("Failed to enhance due to: ${t.message} caused by: ${t.cause}")
+            Twig.debug { "Failed to enhance due to: ${t.message} caused by: ${t.cause}" }
             BlockProcessingResult.FailedEnhance
-        } finally {
-            Twig.clip("enhancing")
         }
     }
     // TODO [#683]: we still need a way to identify those transactions that failed to be enhanced
@@ -467,15 +462,15 @@ class CompactBlockProcessor internal constructor(
     }
 
     private suspend fun enhanceHelper(id: Long, rawTransactionId: ByteArray, minedHeight: BlockHeight) {
-        twig("START: enhancing transaction (id:$id  block:$minedHeight)")
+        Twig.debug { "START: enhancing transaction (id:$id  block:$minedHeight)" }
 
         when (val response = downloader.fetchTransaction(rawTransactionId)) {
             is Response.Success -> {
                 runCatching {
-                    twig("decrypting and storing transaction (id:$id  block:$minedHeight)")
+                    Twig.debug { "decrypting and storing transaction (id:$id  block:$minedHeight)" }
                     rustBackend.decryptAndStoreTransaction(response.result.data)
                 }.onSuccess {
-                    twig("DONE: enhancing transaction (id:$id  block:$minedHeight)")
+                    Twig.debug { "DONE: enhancing transaction (id:$id  block:$minedHeight)" }
                 }.onFailure { error ->
                     onProcessorError(EnhanceTxDecryptError(minedHeight, error))
                 }
@@ -534,15 +529,15 @@ class CompactBlockProcessor internal constructor(
         }
 
         if (error != null) {
-            twig("Validating setup prior to scanning . . . ISSUE FOUND! - ${error.javaClass.simpleName}")
+            Twig.debug { "Validating setup prior to scanning . . . ISSUE FOUND! - ${error.javaClass.simpleName}" }
             // give listener a chance to override
             if (onSetupErrorListener?.invoke(error) != true) {
                 throw error
             } else {
-                twig(
+                Twig.debug {
                     "Warning: An ${error::class.java.simpleName} was encountered while verifying setup but " +
                         "it was ignored by the onSetupErrorHandler. Ignoring message: ${error.message}"
-                )
+                }
             }
         }
     }
@@ -552,11 +547,11 @@ class CompactBlockProcessor internal constructor(
         try {
             val betterBirthday = calculateBirthdayHeight()
             if (betterBirthday > birthdayHeight) {
-                twig("Better birthday found! Birthday height updated from $birthdayHeight to $betterBirthday")
+                Twig.debug { "Better birthday found! Birthday height updated from $birthdayHeight to $betterBirthday" }
                 _birthdayHeight.value = betterBirthday
             }
         } catch (e: Throwable) {
-            twig("Warning: updating the birthday height failed due to $e")
+            Twig.debug(e) { "Warning: updating the birthday height failed" }
         }
     }
 
@@ -582,17 +577,17 @@ class CompactBlockProcessor internal constructor(
                     }
                 } catch (e: Throwable) {
                     failedUtxoFetches++
-                    twig(
+                    Twig.debug {
                         "Warning: Fetching UTXOs is repeatedly failing! We will only try about " +
                             "${(9 - failedUtxoFetches + 2) / 3} more times then give up for this session. " +
                             "Exception message: ${e.message}, caused by: ${e.cause}."
-                    )
+                    }
                 }
             } else {
-                twig(
+                Twig.debug {
                     "Warning: gave up on fetching UTXOs for this session. It seems to unavailable on " +
                         "lightwalletd."
-                )
+                }
             }
             count
         }
@@ -613,9 +608,9 @@ class CompactBlockProcessor internal constructor(
         //  shielding transactions, and at least one shielded note from each shielding transaction is always enhanced.
         //  However, for greater reliability, we may want to alter the Data Access API to support "inferring spentness"
         //  from what is _not_ returned as a UTXO, or alternatively fetch TXOs from lightwalletd instead of just UTXOs.
-        twig("Checking for UTXOs above height $aboveHeight")
+        Twig.debug { "Checking for UTXOs above height $aboveHeight" }
         result.forEach { utxo: Service.GetAddressUtxosReply ->
-            twig("Found UTXO at height ${utxo.height.toInt()} with ${utxo.valueZat} zatoshi")
+            Twig.debug { "Found UTXO at height ${utxo.height.toInt()} with ${utxo.valueZat} zatoshi" }
             @Suppress("TooGenericExceptionCaught")
             try {
                 rustBackend.putUtxo(
@@ -631,10 +626,10 @@ class CompactBlockProcessor internal constructor(
                 //  reasons)
                 // TODO [#683]: https://github.com/zcash/zcash-android-wallet-sdk/issues/683
                 skipped++
-                twig(
+                Twig.debug {
                     "Warning: Ignoring transaction at height ${utxo.height} @ index ${utxo.index} because " +
                         "it already exists. Exception message: ${t.message}, caused by: ${t.cause}."
-                )
+                }
             }
         }
         // return the number of UTXOs that were downloaded
@@ -652,11 +647,10 @@ class CompactBlockProcessor internal constructor(
     internal suspend fun downloadNewBlocks(range: ClosedRange<BlockHeight>?) =
         withContext<Unit>(IO) {
             if (null == range || range.isEmpty()) {
-                twig("no blocks to download")
+                Twig.debug { "no blocks to download" }
             } else {
                 _state.value = Downloading
-                Twig.sprout("downloading")
-                twig("downloading blocks in range $range", -1)
+                Twig.debug { "downloading blocks in range $range" }
 
                 var downloadedBlockHeight = range.start
                 val missingBlockCount = range.endInclusive.value - range.start.value + 1
@@ -665,10 +659,10 @@ class CompactBlockProcessor internal constructor(
                         (if (missingBlockCount.rem(DOWNLOAD_BATCH_SIZE) == 0L) 0 else 1)
                     )
                 var progress: Int
-                twig(
+                Twig.debug {
                     "found $missingBlockCount missing blocks, downloading in $batches batches of " +
                         "$DOWNLOAD_BATCH_SIZE..."
-                )
+                }
                 for (i in 1..batches) {
                     retryUpTo(RETRIES, { CompactBlockProcessorException.FailedDownload(it) }) {
                         val end = BlockHeight.new(
@@ -678,14 +672,14 @@ class CompactBlockProcessor internal constructor(
                                 range.endInclusive.value
                             )
                         ) // subtract 1 on the first value because the range is inclusive
-                        var count = 0
-                        twig(
+                        Twig.debug {
                             "downloaded $downloadedBlockHeight..$end (batch $i of $batches) " +
                                 "[${downloadedBlockHeight..end}]"
-                        ) {
-                            count = downloader.downloadBlockRange(downloadedBlockHeight..end)
                         }
-                        twig("downloaded $count blocks!")
+
+                        var count = downloader.downloadBlockRange(downloadedBlockHeight..end)
+
+                        Twig.debug { "downloaded $count blocks!" }
                         progress = (i / batches.toFloat() * 100).roundToInt()
                         _progress.value = progress
                         val lastDownloadedHeight = downloader.getLastDownloadedHeight()
@@ -693,7 +687,6 @@ class CompactBlockProcessor internal constructor(
                         downloadedBlockHeight = end + 1
                     }
                 }
-                Twig.clip("downloading")
             }
             _progress.value = 100
         }
@@ -707,13 +700,16 @@ class CompactBlockProcessor internal constructor(
      */
     private suspend fun validateNewBlocks(range: ClosedRange<BlockHeight>?): BlockProcessingResult {
         if (null == range || range.isEmpty()) {
-            twig("no blocks to validate: $range")
+            Twig.debug { "no blocks to validate: $range" }
             return BlockProcessingResult.NoBlocksToProcess
         }
-        Twig.sprout("validating")
-        twig("validating blocks in range $range in db: ${(rustBackend as RustBackend).cacheDbFile.absolutePath}")
+        Twig.debug {
+            "validating blocks in range $range in db: ${
+                (rustBackend as RustBackend).cacheDbFile
+                    .absolutePath
+            }"
+        }
         val result = rustBackend.validateCombinedChain()
-        Twig.clip("validating")
 
         return if (null == result) {
             BlockProcessingResult.Success
@@ -731,17 +727,18 @@ class CompactBlockProcessor internal constructor(
     @Suppress("MagicNumber")
     private suspend fun scanNewBlocks(range: ClosedRange<BlockHeight>?): Boolean = withContext(IO) {
         if (null == range || range.isEmpty()) {
-            twig("no blocks to scan for range $range")
+            Twig.debug { "no blocks to scan for range $range" }
             true
         } else {
-            Twig.sprout("scanning")
-            twig("scanning blocks for range $range in batches")
+            Twig.debug { "scanning blocks for range $range in batches" }
             var result = false
             var metrics = BatchMetrics(range, SCAN_BATCH_SIZE, onScanMetricCompleteListener)
             // Attempt to scan a few times to work around any concurrent modification errors, then
             // rethrow as an official processorError which is handled by [start.retryWithBackoff]
             retryUpTo(3, { CompactBlockProcessorException.FailedScan(it) }) { failedAttempts ->
-                if (failedAttempts > 0) twig("retrying the scan after $failedAttempts failure(s)...")
+                if (failedAttempts > 0) {
+                    Twig.debug { "retrying the scan after $failedAttempts failure(s)..." }
+                }
                 do {
                     var scannedNewBlocks = false
                     metrics.beginBatch()
@@ -756,22 +753,21 @@ class CompactBlockProcessor internal constructor(
                         percentValue.coerceAtMost(100f)
                             .coerceAtLeast(0f)
                     )
-                    twig(
+                    Twig.debug {
                         "batch scanned ($percent%): $lastScannedHeight/${range.endInclusive} | " +
                             "${metrics.batchTime}ms, ${metrics.batchItems}blks, ${metrics.batchIps.format()}bps"
-                    )
+                    }
                     if (currentInfo.lastScannedHeight != lastScannedHeight) {
                         scannedNewBlocks = true
                         updateProgress(lastScannedHeight = lastScannedHeight)
                     }
                     // if we made progress toward our scan, then keep trying
                 } while (result && scannedNewBlocks && lastScannedHeight < range.endInclusive)
-                twig(
+                Twig.debug {
                     "batch scan complete! Total time: ${metrics.cumulativeTime}  Total blocks measured: " +
                         "${metrics.cumulativeItems}  Cumulative bps: ${metrics.cumulativeIps.format()}"
-                )
+                }
             }
-            Twig.clip("scanning")
             result
         }
     }
@@ -819,7 +815,7 @@ class CompactBlockProcessor internal constructor(
         // TODO [#683]: https://github.com/zcash/zcash-android-wallet-sdk/issues/683
         printValidationErrorInfo(errorHeight)
         determineLowerBound(errorHeight).let { lowerBound ->
-            twig("handling chain error at $errorHeight by rewinding to block $lowerBound")
+            Twig.debug { "handling chain error at $errorHeight by rewinding to block $lowerBound" }
             onChainErrorListener?.invoke(errorHeight, lowerBound)
             rewindToNearestHeight(lowerBound, true)
         }
@@ -868,32 +864,32 @@ class CompactBlockProcessor internal constructor(
                 val lastLocalBlock = repository.lastScannedHeight()
                 val targetHeight = getNearestRewindHeight(height)
 
-                twig(
+                Twig.debug {
                     "Rewinding from $lastScannedHeight to requested height: $height using target height: " +
                         "$targetHeight with last local block: $lastLocalBlock"
-                )
+                }
 
                 if (null == lastScannedHeight && targetHeight < lastLocalBlock) {
-                    twig("Rewinding because targetHeight is less than lastLocalBlock.")
+                    Twig.debug { "Rewinding because targetHeight is less than lastLocalBlock." }
                     rustBackend.rewindToHeight(targetHeight)
                 } else if (null != lastScannedHeight && targetHeight < lastScannedHeight) {
-                    twig("Rewinding because targetHeight is less than lastScannedHeight.")
+                    Twig.debug { "Rewinding because targetHeight is less than lastScannedHeight." }
                     rustBackend.rewindToHeight(targetHeight)
                 } else {
-                    twig(
+                    Twig.debug {
                         "not rewinding dataDb because the last scanned height is $lastScannedHeight and the" +
                             " last local block is $lastLocalBlock both of which are less than the target height of " +
                             "$targetHeight"
-                    )
+                    }
                 }
 
                 val currentNetworkBlockHeight = currentInfo.networkBlockHeight
 
                 if (alsoClearBlockCache) {
-                    twig(
+                    Twig.debug {
                         "Also clearing block cache back to $targetHeight. These rewound blocks will download " +
                             "in the next scheduled scan"
-                    )
+                    }
                     downloader.rewindToHeight(targetHeight)
                     // communicate that the wallet is no longer synced because it might remain this way for 20+ second
                     // because we only download on 20s time boundaries so we can't trigger any immediate action
@@ -931,11 +927,11 @@ class CompactBlockProcessor internal constructor(
 
                     if (null != lastScannedHeight) {
                         val range = (targetHeight + 1)..lastScannedHeight
-                        twig(
+                        Twig.debug {
                             "We kept the cache blocks in place so we don't need to wait for the next " +
                                 "scheduled download to rescan. Instead we will rescan and validate blocks " +
                                 "${range.start}..${range.endInclusive}"
-                        )
+                        }
                         if (validateAndScanNewBlocks(range) == BlockProcessingResult.Success) {
                             enhanceTransactionDetails(range)
                         }
@@ -951,17 +947,17 @@ class CompactBlockProcessor internal constructor(
         if (!BuildConfig.DEBUG) return
 
         var errorInfo = fetchValidationErrorInfo(errorHeight)
-        twig(
+        Twig.debug {
             "validation failed at block ${errorInfo.errorHeight} which had hash " +
                 "${errorInfo.actualPrevHash} but the expected hash was ${errorInfo.expectedPrevHash}"
-        )
+        }
         errorInfo = fetchValidationErrorInfo(errorHeight + 1)
-        twig(
+        Twig.debug {
             "The next block block: ${errorInfo.errorHeight} which had hash ${errorInfo.actualPrevHash} but " +
                 "the expected hash was ${errorInfo.expectedPrevHash}"
-        )
+        }
 
-        twig("=================== BLOCKS [$errorHeight..${errorHeight.value + count - 1}]: START ========")
+        Twig.debug { "=================== BLOCKS [$errorHeight..${errorHeight.value + count - 1}]: START ========" }
         repeat(count) { i ->
             val height = errorHeight + i
             val block = downloader.compactBlockRepository.findCompactBlock(height)
@@ -969,13 +965,13 @@ class CompactBlockProcessor internal constructor(
             // the hash another way but prevHash is correctly null.
             val hash = block?.hash?.toByteArray()
                 ?: repository.findBlockHash(height)
-            twig(
+            Twig.debug {
                 "block: $height\thash=${hash?.toHexReversed()} \tprevHash=${
                     block?.prevHash?.toByteArray()?.toHexReversed()
                 }"
-            )
+            }
         }
-        twig("=================== BLOCKS [$errorHeight..${errorHeight.value + count - 1}]: END ========")
+        Twig.debug { "=================== BLOCKS [$errorHeight..${errorHeight.value + count - 1}]: END ========" }
     }
 
     private suspend fun fetchValidationErrorInfo(errorHeight: BlockHeight): ValidationErrorInfo {
@@ -1001,11 +997,11 @@ class CompactBlockProcessor internal constructor(
     private fun determineLowerBound(errorHeight: BlockHeight): BlockHeight {
         val offset = min(MAX_REORG_SIZE, REWIND_DISTANCE * (consecutiveChainErrors.get() + 1))
         return BlockHeight(max(errorHeight.value - offset, lowerBoundHeight.value)).also {
-            twig(
+            Twig.debug {
                 "offset = min($MAX_REORG_SIZE, $REWIND_DISTANCE * (${consecutiveChainErrors.get() + 1})) = " +
                     "$offset"
-            )
-            twig("lowerBound = max($errorHeight - $offset, $lowerBoundHeight) = $it")
+            }
+            Twig.debug { "lowerBound = max($errorHeight - $offset, $lowerBoundHeight) = $it" }
         }
     }
 
@@ -1042,7 +1038,7 @@ class CompactBlockProcessor internal constructor(
                     tempOldestTransactionHeight.value.rem(MAX_REORG_SIZE) - MAX_REORG_SIZE.toLong()
             )
         } catch (t: Throwable) {
-            twig("failed to calculate birthday due to: $t")
+            Twig.debug(t) { "failed to calculate birthday" }
         }
         return buildList<BlockHeight> {
             add(lowerBoundHeight)
@@ -1109,20 +1105,19 @@ class CompactBlockProcessor internal constructor(
      *
      * @return an instance of WalletBalance containing information about available and total funds.
      */
-    suspend fun getBalanceInfo(account: Account): WalletBalance =
-        twigTask("checking balance info", -1) {
-            @Suppress("TooGenericExceptionCaught")
-            try {
-                val balanceTotal = rustBackend.getBalance(account.value)
-                twig("found total balance: $balanceTotal")
-                val balanceAvailable = rustBackend.getVerifiedBalance(account.value)
-                twig("found available balance: $balanceAvailable")
-                WalletBalance(balanceTotal, balanceAvailable)
-            } catch (t: Throwable) {
-                twig("failed to get balance due to $t")
-                throw RustLayerException.BalanceException(t)
-            }
+    suspend fun getBalanceInfo(account: Account): WalletBalance {
+        @Suppress("TooGenericExceptionCaught")
+        return try {
+            val balanceTotal = rustBackend.getBalance(account.value)
+            Twig.debug { "found total balance: $balanceTotal" }
+            val balanceAvailable = rustBackend.getVerifiedBalance(account.value)
+            Twig.debug { "found available balance: $balanceAvailable" }
+            WalletBalance(balanceTotal, balanceAvailable)
+        } catch (t: Throwable) {
+            Twig.debug { "failed to get balance due to $t" }
+            throw RustLayerException.BalanceException(t)
         }
+    }
 
     suspend fun getUtxoCacheBalance(address: String): WalletBalance =
         rustBackend.getDownloadedUtxoBalance(address)
@@ -1297,11 +1292,11 @@ class CompactBlockProcessor internal constructor(
      * Log the mutex in great detail just in case we need it for troubleshooting deadlock.
      */
     private suspend inline fun <T> Mutex.withLockLogged(name: String, block: () -> T): T {
-        twig("$name MUTEX: acquiring lock...", -1)
+        Twig.debug { "$name MUTEX: acquiring lock..." }
         this.withLock {
-            twig("$name MUTEX: ...lock acquired!", -1)
+            Twig.debug { "$name MUTEX: ...lock acquired!" }
             return block().also {
-                twig("$name MUTEX: releasing lock", -1)
+                Twig.debug { "$name MUTEX: releasing lock" }
             }
         }
     }

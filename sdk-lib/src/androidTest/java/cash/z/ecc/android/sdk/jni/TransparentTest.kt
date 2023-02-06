@@ -5,8 +5,6 @@ import cash.z.ecc.android.bip39.Mnemonics.MnemonicCode
 import cash.z.ecc.android.bip39.toSeed
 import cash.z.ecc.android.sdk.annotation.MaintainedTest
 import cash.z.ecc.android.sdk.annotation.TestPurpose
-import cash.z.ecc.android.sdk.internal.TroubleshootingTwig
-import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.tool.DerivationTool
 import kotlinx.coroutines.runBlocking
@@ -58,7 +56,6 @@ class TransparentTest(val expected: Expected, val network: ZcashNetwork) {
         @BeforeClass
         @JvmStatic
         fun startup() {
-            Twig.plant(TroubleshootingTwig(formatter = { "@TWIG $it" }))
         }
 
         @JvmStatic

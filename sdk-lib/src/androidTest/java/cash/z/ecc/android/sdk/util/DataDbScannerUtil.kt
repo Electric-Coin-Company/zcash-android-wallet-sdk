@@ -4,8 +4,6 @@ import androidx.test.platform.app.InstrumentationRegistry
 import cash.z.ecc.android.sdk.CloseableSynchronizer
 import cash.z.ecc.android.sdk.SdkSynchronizer
 import cash.z.ecc.android.sdk.Synchronizer
-import cash.z.ecc.android.sdk.internal.TroubleshootingTwig
-import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.model.defaultForNetwork
@@ -45,12 +43,10 @@ class DataDbScannerUtil {
 
     @Before
     fun setup() {
-        Twig.plant(TroubleshootingTwig())
 //        cacheBlocks()
     }
 
     private fun cacheBlocks() = runBlocking {
-//        twig("downloading compact blocks...")
 //        val latestBlockHeight = downloader.getLatestBlockHeight()
 //        val lastDownloaded = downloader.getLastDownloadedHeight()
 //        val blockRange = (Math.max(birthday, lastDownloaded))..latestBlockHeight

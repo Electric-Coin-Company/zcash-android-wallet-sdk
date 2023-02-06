@@ -21,7 +21,6 @@ import cash.z.ecc.android.sdk.ext.convertZatoshiToZecString
 import cash.z.ecc.android.sdk.ext.convertZecToZatoshi
 import cash.z.ecc.android.sdk.ext.toZecString
 import cash.z.ecc.android.sdk.internal.Twig
-import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.PendingTransaction
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.WalletBalance
@@ -66,7 +65,6 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
     private var isSending = false
         set(value) {
             field = value
-            if (value) Twig.sprout("Sending") else Twig.clip("Sending")
             onUpdateSendButton()
         }
     private var isSyncing = true
@@ -189,9 +187,9 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
                 "ERROR: failed to submit transaction!".also { isSending = false }
             pendingTransaction.isCreated() -> "Transaction creation complete! (id: $id)"
             pendingTransaction.isCreating() -> "Creating transaction!".also { onResetInfo() }
-            else -> "Transaction updated!".also { twig("Unhandled TX state: $pendingTransaction") }
+            else -> "Transaction updated!".also { Twig.debug { "Unhandled TX state: $pendingTransaction" } }
         }
-        twig("Pending TX Updated: $message")
+        Twig.debug { "Pending TX Updated: $message" }
         binding.textInfo.apply {
             text = "$text\n$message"
         }

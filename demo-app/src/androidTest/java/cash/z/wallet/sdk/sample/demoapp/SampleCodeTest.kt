@@ -5,9 +5,7 @@ import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.ext.convertZecToZatoshi
 import cash.z.ecc.android.sdk.ext.toHex
-import cash.z.ecc.android.sdk.internal.TroubleshootingTwig
 import cash.z.ecc.android.sdk.internal.Twig
-import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.Mainnet
@@ -23,7 +21,6 @@ import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
-import org.junit.BeforeClass
 import org.junit.Ignore
 import org.junit.Test
 
@@ -176,12 +173,6 @@ class SampleCodeTest {
             )
         }
 
-        @BeforeClass
-        @JvmStatic
-        fun init() {
-            Twig.plant(TroubleshootingTwig())
-        }
-
-        fun log(message: String?) = twig(message ?: "null")
+        fun log(message: String?) = Twig.debug { message ?: "null" }
     }
 }

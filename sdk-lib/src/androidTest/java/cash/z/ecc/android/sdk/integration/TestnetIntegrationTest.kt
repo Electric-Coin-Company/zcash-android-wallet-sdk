@@ -6,9 +6,7 @@ import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.Synchronizer.Status.SYNCED
 import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.ext.onFirst
-import cash.z.ecc.android.sdk.internal.TroubleshootingTwig
 import cash.z.ecc.android.sdk.internal.Twig
-import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.Zatoshi
@@ -116,13 +114,10 @@ class TestnetIntegrationTest : ScopedTest() {
     }
 
     fun log(message: String) {
-        twig("\n---\n[TESTLOG]: $message\n---\n")
+        Twig.debug { "\n---\n[TESTLOG]: $message\n---\n" }
     }
 
     companion object {
-        init {
-            Twig.plant(TroubleshootingTwig())
-        }
 
         val lightWalletEndpoint = LightWalletEndpoint("lightwalletd.testnet.z.cash", 9087, true)
         private const val birthdayHeight = 963150L

@@ -4,8 +4,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
 import cash.z.ecc.android.sdk.annotation.MaintainedTest
 import cash.z.ecc.android.sdk.annotation.TestPurpose
-import cash.z.ecc.android.sdk.internal.TroubleshootingTwig
-import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.db.commonDatabaseBuilder
 import cash.z.ecc.android.sdk.internal.db.pending.PendingTransactionDb
 import cash.z.ecc.android.sdk.internal.model.EncodedTransaction
@@ -26,7 +24,6 @@ import com.nhaarman.mockitokotlin2.stub
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import org.junit.Before
-import org.junit.BeforeClass
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.mockito.Mock
@@ -113,9 +110,5 @@ class PersistentTransactionManagerTest : ScopedTest() {
     }
 
     companion object {
-        @BeforeClass
-        fun init() {
-            Twig.plant(TroubleshootingTwig())
-        }
     }
 }

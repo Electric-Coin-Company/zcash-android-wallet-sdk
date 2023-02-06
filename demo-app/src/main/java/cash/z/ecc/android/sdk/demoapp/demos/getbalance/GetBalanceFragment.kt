@@ -19,7 +19,7 @@ import cash.z.ecc.android.sdk.demoapp.util.SyncBlockchainBenchmarkTrace
 import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.ext.convertZatoshiToZecString
-import cash.z.ecc.android.sdk.internal.twig
+import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
@@ -160,7 +160,7 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
     }
 
     private fun onStatus(status: Synchronizer.Status) {
-        twig("Synchronizer status: $status")
+        Twig.debug { "Synchronizer status: $status" }
         // report benchmark event
         val traceEvents = when (status) {
             Synchronizer.Status.DOWNLOADING -> {

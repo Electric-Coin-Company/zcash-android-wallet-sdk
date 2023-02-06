@@ -6,7 +6,6 @@ import cash.z.ecc.android.bip39.toSeed
 import cash.z.ecc.android.sdk.SdkSynchronizer
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.internal.Twig
-import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.Darkside
@@ -94,23 +93,20 @@ class TestWallet(
             }
         }
 
-        twig("Awaiting next SYNCED status")
-
         // block until synced
         synchronizer.status.first { it == Synchronizer.Status.SYNCED }
         killSwitch.cancel()
-        twig("Synced!")
         return this
     }
 
-    suspend fun send(address: String = transparentAddress, memo: String = "", amount: Zatoshi = Zatoshi(500L)): TestWallet {
-        Twig.sprout("$alias sending")
+    suspend fun send(
+        address: String = transparentAddress,
+        memo: String = "",
+        amount: Zatoshi = Zatoshi(500L)
+    ): TestWallet {
         synchronizer.sendToAddress(shieldedSpendingKey, amount, address, memo)
             .takeWhile { it.isPending(null) }
-            .collect {
-                twig("Updated transaction: $it")
-            }
-        Twig.clip("$alias sending")
+            .collect { _ -> }
         return this
     }
 
@@ -120,18 +116,16 @@ class TestWallet(
     }
 
     suspend fun shieldFunds(): TestWallet {
-        twig("checking $transparentAddress for transactions!")
+        Twig.debug { "checking $transparentAddress for transactions!" }
         synchronizer.refreshUtxos(transparentAddress, BlockHeight.new(ZcashNetwork.Mainnet, 935000)).let { count ->
-            twig("FOUND $count new UTXOs")
+            Twig.debug { "FOUND $count new UTXOs" }
         }
 
         synchronizer.getTransparentBalance(transparentAddress).let { walletBalance ->
-            twig("FOUND utxo balance of total: ${walletBalance.total}  available: ${walletBalance.available}")
-
             if (walletBalance.available.value > 0L) {
                 synchronizer.shieldFunds(shieldedSpendingKey)
-                    .onCompletion { twig("done shielding funds") }
-                    .catch { twig("Failed with $it") }
+                    .onCompletion { Twig.debug { "done shielding funds" } }
+                    .catch { Twig.debug { "Failed with $it" } }
                     .collect()
             }
         }
@@ -141,23 +135,17 @@ class TestWallet(
 
     suspend fun join(timeout: Long? = null): TestWallet {
         // block until stopped
-        twig("Staying alive until synchronizer is stopped!")
         if (timeout != null) {
-            twig("Scheduling a stop in ${timeout}ms")
             walletScope.launch {
                 delay(timeout)
                 synchronizer.close()
             }
         }
         synchronizer.status.first { it == Synchronizer.Status.STOPPED }
-        twig("Stopped!")
         return this
     }
 
     companion object {
-        init {
-            Twig.enabled(true)
-        }
     }
 
     enum class Backups(val seedPhrase: String, val testnetBirthday: BlockHeight, val mainnetBirthday: BlockHeight) {

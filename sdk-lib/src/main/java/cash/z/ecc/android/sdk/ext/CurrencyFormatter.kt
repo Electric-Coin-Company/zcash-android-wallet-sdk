@@ -4,7 +4,7 @@ package cash.z.ecc.android.sdk.ext
 
 import cash.z.ecc.android.sdk.ext.Conversions.USD_FORMATTER
 import cash.z.ecc.android.sdk.ext.Conversions.ZEC_FORMATTER
-import cash.z.ecc.android.sdk.internal.twig
+import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.model.Zatoshi
 import java.math.BigDecimal
 import java.math.MathContext
@@ -335,7 +335,7 @@ fun String?.safelyConvertToBigDecimal(): BigDecimal? {
         val sanitizedInput = this.filter { it.isDigit() or (it == '.') }
         BigDecimal.ZERO.max(BigDecimal(sanitizedInput, MathContext.DECIMAL128))
     } catch (nfe: NumberFormatException) {
-        twig("Exception while converting String to BigDecimal: ${nfe.message} caused by: ${nfe.cause}")
+        Twig.debug(nfe) { "Exception while converting String to BigDecimal" }
         null
     }
     return result

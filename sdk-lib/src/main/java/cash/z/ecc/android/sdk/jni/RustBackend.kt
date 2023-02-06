@@ -2,9 +2,9 @@ package cash.z.ecc.android.sdk.jni
 
 import cash.z.ecc.android.sdk.internal.SaplingParamTool
 import cash.z.ecc.android.sdk.internal.SdkDispatchers
+import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.ext.deleteSuspend
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
-import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.WalletBalance
@@ -31,11 +31,11 @@ internal class RustBackend private constructor(
 
     suspend fun clear(clearCacheDb: Boolean = true, clearDataDb: Boolean = true) {
         if (clearCacheDb) {
-            twig("Deleting the cache database!")
+            Twig.debug { "Deleting the cache database!" }
             cacheDbFile.deleteSuspend()
         }
         if (clearDataDb) {
-            twig("Deleting the data database!")
+            Twig.debug { "Deleting the data database!" }
             dataDbFile.deleteSuspend()
         }
     }
@@ -236,7 +236,7 @@ internal class RustBackend private constructor(
         usk: UnifiedSpendingKey,
         memo: ByteArray?
     ): Long {
-        twig("TMP: shieldToAddress with db path: $dataDbFile, ${memo?.size}")
+        Twig.debug { "TMP: shieldToAddress with db path: $dataDbFile, ${memo?.size}" }
         return withContext(SdkDispatchers.DATABASE_IO) {
             shieldToAddress(
                 dataDbFile.absolutePath,

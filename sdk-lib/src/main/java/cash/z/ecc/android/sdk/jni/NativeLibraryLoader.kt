@@ -1,6 +1,6 @@
 package cash.z.ecc.android.sdk.jni
 
-import cash.z.ecc.android.sdk.internal.twig
+import cash.z.ecc.android.sdk.internal.Twig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -39,13 +39,13 @@ internal class NativeLibraryLoader(private val libraryName: String) {
 
     private suspend fun loadNativeLibrary() {
         runCatching {
-            twig("Loading native library $libraryName")
+            Twig.debug { "Loading native library $libraryName" }
 
             val loadTimeMillis = measureTimeMillis {
                 loadLibrarySuspend(libraryName)
             }
 
-            twig("Loading native library took $loadTimeMillis milliseconds")
+            Twig.debug { "Loading native library took $loadTimeMillis milliseconds" }
 
             isLoaded.set(true)
         }.onFailure {

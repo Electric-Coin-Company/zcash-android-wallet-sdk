@@ -16,7 +16,7 @@ import cash.z.ecc.android.sdk.demoapp.databinding.FragmentListUtxosBinding
 import cash.z.ecc.android.sdk.demoapp.ext.requireApplicationContext
 import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.demoapp.util.mainActivity
-import cash.z.ecc.android.sdk.internal.twig
+import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.TransactionOverview
@@ -84,7 +84,7 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
                 val endToUse = binding.inputRangeEnd.text.toString().toLongOrNull()
                     ?: getUxtoEndHeight(requireApplicationContext()).value
                 var allStart = now
-                twig("loading transactions in range $startToUse..$endToUse")
+                Twig.debug { "loading transactions in range $startToUse..$endToUse" }
                 val txids = lightWalletClient?.getTAddressTransactions(
                     addressToUse,
                     BlockHeightUnsafe(startToUse)..BlockHeightUnsafe(endToUse)
@@ -137,7 +137,7 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
         } else {
             binding.textStatus.text = message
         }
-        twig(message)
+        Twig.debug { message }
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -217,7 +217,7 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
     }
 
     private fun onTransactionsUpdated(transactions: List<TransactionOverview>) {
-        twig("got a new paged list of transactions of size ${transactions.size}")
+        Twig.debug { "got a new paged list of transactions of size ${transactions.size}" }
         adapter.submitList(transactions)
     }
 
@@ -225,10 +225,16 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
         lifecycleScope.launch {
             withContext(Dispatchers.IO) {
                 sharedViewModel.synchronizerFlow.value?.let { synchronizer ->
-                    twig("current count: ${(synchronizer as SdkSynchronizer).getTransactionCount()}")
-                    twig("refreshing transactions")
-                    synchronizer.refreshTransactions()
-                    twig("current count: ${synchronizer.getTransactionCount()}")
+                    val sdkSynchronizer = synchronizer as SdkSynchronizer
+                    sdkSynchronizer.getTransactionCount().also {
+                        Twig.debug { "current count: $it" }
+                    }
+
+                    Twig.debug { "refreshing transactions" }
+                    sdkSynchronizer.refreshTransactions()
+                    sdkSynchronizer.getTransactionCount().also {
+                        Twig.debug { "current count: $it" }
+                    }
                 }
             }
         }

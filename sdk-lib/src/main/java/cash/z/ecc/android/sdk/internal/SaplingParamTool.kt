@@ -112,16 +112,22 @@ internal class SaplingParamTool(val properties: SaplingParamToolProperties) {
                     val currentFile = File(toolProperties.paramsDirectory, it.fileName)
 
                     if (legacyFile.existsSuspend() && isFileHashValid(legacyFile, it.fileHash)) {
-                        twig("Moving params file: ${it.fileName} from legacy folder to the currently used folder.")
+                        Twig.debug {
+                            "Moving params file: ${it.fileName} from legacy folder to the currently used " +
+                                "folder."
+                        }
                         currentFile.parentFile?.mkdirsSuspend()
                         if (!renameParametersFile(legacyFile, currentFile)) {
-                            twig("Failed while moving the params file: ${it.fileName} to the preferred location.")
+                            Twig.debug {
+                                "Failed while moving the params file: ${it.fileName} to the preferred " +
+                                    "location."
+                            }
                         }
                     } else {
-                        twig(
+                        Twig.debug {
                             "Legacy file either does not exist or is not valid. Will be fetched to the preferred " +
                                 "location."
-                        )
+                        }
                     }
                 }
                 // remove the params folder and its files - a new sapling files will be fetched to the preferred
@@ -144,7 +150,7 @@ internal class SaplingParamTool(val properties: SaplingParamToolProperties) {
             return try {
                 fileHash == parametersFile.getSha1Hash()
             } catch (e: IOException) {
-                twig("Failed in comparing file's hashes with: ${e.message}, caused by: ${e.cause}.")
+                Twig.debug { "Failed in comparing file's hashes with: ${e.message}, caused by: ${e.cause}." }
                 false
             }
         }
@@ -164,7 +170,7 @@ internal class SaplingParamTool(val properties: SaplingParamToolProperties) {
             return runCatching {
                 return@runCatching fromParamFile.renameToSuspend(toParamFile)
             }.onFailure {
-                twig("Failed while renaming parameters file with: $it")
+                Twig.debug(it) { "Failed while renaming parameters file" }
             }.getOrDefault(false)
         }
     }
@@ -194,22 +200,22 @@ internal class SaplingParamTool(val properties: SaplingParamToolProperties) {
             !File(it.destinationDirectory, it.fileName).existsSuspend()
         }.forEach {
             try {
-                twig("Attempting to download missing params: ${it.fileName}.")
+                Twig.debug { "Attempting to download missing params: ${it.fileName}." }
                 fetchParams(it)
             } catch (e: TransactionEncoderException.FetchParamsException) {
-                twig(
+                Twig.debug {
                     "Failed to fetch param file ${it.fileName} due to: $e. The second attempt is starting with a " +
                         "little delay."
-                )
+                }
                 // Re-run the fetch with a little delay, if it failed previously (as it can be caused by network
                 // conditions). We do it only once, the next failure is delivered to the caller of this method.
                 delay(200.milliseconds)
                 fetchParams(it)
             } catch (e: TransactionEncoderException.ValidateParamsException) {
-                twig(
+                Twig.debug {
                     "Failed to validate fetched param file ${it.fileName} due to: $e. The second attempt is starting" +
                         " now."
-                )
+                }
                 // Re-run the fetch for invalid param file immediately, if it failed previously. We do it again only
                 // once, the next failure is delivered to the caller of this method.
                 fetchParams(it)
@@ -217,7 +223,7 @@ internal class SaplingParamTool(val properties: SaplingParamToolProperties) {
         }
 
         if (!validate(destinationDir)) {
-            twig("Fetching sapling params files failed.")
+            Twig.debug { "Fetching sapling params files failed." }
             throw TransactionEncoderException.MissingParamsException
         }
     }
@@ -273,10 +279,10 @@ internal class SaplingParamTool(val properties: SaplingParamToolProperties) {
                     )
                 )
             }.onSuccess {
-                twig(
+                Twig.debug {
                     "Fetch and write of the temporary ${temporaryFile.name} succeeded. Validating and moving it to " +
                         "the final destination."
-                )
+                }
                 if (!isFileHashValid(temporaryFile, paramsToFetch.fileHash)) {
                     finalizeAndReportError(
                         temporaryFile,
@@ -307,7 +313,7 @@ internal class SaplingParamTool(val properties: SaplingParamToolProperties) {
             it.deleteSuspend()
         }
         exception.also {
-            twig(it)
+            Twig.debug(it) { "Error while fetching sapling params files." }
             throw it
         }
     }
@@ -319,7 +325,7 @@ internal class SaplingParamTool(val properties: SaplingParamToolProperties) {
         ).all { paramFileName ->
             File(destinationDir, paramFileName).existsSuspend()
         }.also {
-            twig("Param files ${if (!it) "did not" else ""} both exist!")
+            Twig.debug { "Param files ${if (!it) "did not" else ""} both exist!" }
         }
     }
 }

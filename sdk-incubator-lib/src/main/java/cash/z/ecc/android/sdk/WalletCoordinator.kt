@@ -2,7 +2,7 @@ package cash.z.ecc.android.sdk
 
 import android.content.Context
 import cash.z.ecc.android.sdk.ext.onFirst
-import cash.z.ecc.android.sdk.internal.Twig2
+import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.model.PersistableWallet
 import cash.z.ecc.android.sdk.model.defaultForNetwork
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
@@ -85,7 +85,7 @@ class WalletCoordinator(
 
                     trySend(InternalSynchronizerStatus.Available(closeableSynchronizer))
                     awaitClose {
-                        Twig2.info { "Closing flow and stopping synchronizer" }
+                        Twig.info { "Closing flow and stopping synchronizer" }
                         closeableSynchronizer.close()
                     }
                 }
@@ -160,7 +160,7 @@ class WalletCoordinator(
                                     appContext = applicationContext,
                                     network = zcashNetwork
                                 )
-                                Twig2.info { "SDK erase result: $didDelete" }
+                                Twig.info { "SDK erase result: $didDelete" }
                             }
                         }
 
