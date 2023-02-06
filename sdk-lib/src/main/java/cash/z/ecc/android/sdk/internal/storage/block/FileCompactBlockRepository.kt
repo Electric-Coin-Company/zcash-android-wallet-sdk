@@ -18,7 +18,7 @@ import cash.z.ecc.android.sdk.jni.findBlockMetadata
 import cash.z.ecc.android.sdk.jni.getLatestBlockHeight
 import cash.z.ecc.android.sdk.jni.rewindBlockMetadataToHeight
 import cash.z.ecc.android.sdk.model.BlockHeight
-import cash.z.wallet.sdk.internal.rpc.CompactFormats.CompactBlock
+import co.electriccoin.lightwallet.client.model.CompactBlockUnsafe
 import java.io.File
 
 internal class FileCompactBlockRepository(
@@ -30,7 +30,7 @@ internal class FileCompactBlockRepository(
 
     override suspend fun findCompactBlock(height: BlockHeight) = rustBackend.findBlockMetadata(height)
 
-    override suspend fun write(result: Sequence<CompactBlock>): Int {
+    override suspend fun write(result: Sequence<CompactBlockUnsafe>): Int {
         var count = 0
 
         val metaDataBuffer = mutableListOf<JniBlockMeta>()
@@ -131,31 +131,31 @@ internal data class CompactBlockOutputsCounts(
     val orchardActionsCount: UInt
 )
 
-private fun CompactBlock.getOutputsCounts(): CompactBlockOutputsCounts {
+private fun CompactBlockUnsafe.getOutputsCounts(): CompactBlockOutputsCounts {
     var outputsCount: UInt = 0u
     var actionsCount: UInt = 0u
 
-    vtxList.forEach { compactTx ->
-        outputsCount += compactTx.outputsCount.toUInt()
-        actionsCount += compactTx.actionsCount.toUInt()
+    vtx.forEach { compactTx ->
+        outputsCount += compactTx.outputs.count().toUInt()
+        actionsCount += compactTx.actions.count().toUInt()
     }
 
     return CompactBlockOutputsCounts(outputsCount, actionsCount)
 }
 
-private fun CompactBlock.toJniMetaData(): JniBlockMeta {
+private fun CompactBlockUnsafe.toJniMetaData(): JniBlockMeta {
     val outputs = getOutputsCounts()
 
     return JniBlockMeta.new(this, outputs)
 }
 
-private fun CompactBlock.createFilename(): String {
-    val hashHex = hash.toByteArray().toHexReversed()
+private fun CompactBlockUnsafe.createFilename(): String {
+    val hashHex = hash.toHexReversed()
     return "$height-$hashHex${FileCompactBlockRepository.BLOCK_FILENAME_SUFFIX}"
 }
 
 @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-internal suspend fun CompactBlock.createTemporaryFile(blocksDirectory: File): File {
+internal suspend fun CompactBlockUnsafe.createTemporaryFile(blocksDirectory: File): File {
     val tempFileName = "${createFilename()}${FileCompactBlockRepository.TEMPORARY_FILENAME_SUFFIX}"
     val tmpFile = File(blocksDirectory, tempFileName)
 

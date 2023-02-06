@@ -41,13 +41,26 @@ open class CompactBlockDownloader private constructor(val compactBlockRepository
      * @param heightRange the inclusive range of heights to request. For example 10..20 would
      * request 11 blocks (including block 10 and block 20).
      *
-     * @return the number of blocks that were returned in the results from the lightWalletClient.
+     * @return the number of blocks that were returned in the results from the lightWalletClient, or -1 in case of
+     * any communication error.
      */
     suspend fun downloadBlockRange(heightRange: ClosedRange<BlockHeight>): Int = withContext(IO) {
-        val result = lightWalletClient.getBlockRange(
+        val response = lightWalletClient.getBlockRange(
             BlockHeightUnsafe.from(heightRange.start)..BlockHeightUnsafe.from(heightRange.endInclusive)
         )
-        compactBlockRepository.write(result)
+        when (response) {
+            is Response.Success -> {
+                twig(
+                    "Downloading blocks in range: $heightRange succeeded with ${response.result.count()} blocks " +
+                        "downloaded."
+                )
+                compactBlockRepository.write(response.result)
+            }
+            else -> {
+                twig("Downloading blocks in range: $heightRange failed with: $response.")
+                -1
+            }
+        }
     }
 
     /**

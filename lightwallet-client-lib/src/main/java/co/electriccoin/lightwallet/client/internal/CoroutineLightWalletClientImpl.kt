@@ -1,12 +1,12 @@
 package co.electriccoin.lightwallet.client.internal
 
-import cash.z.wallet.sdk.internal.rpc.CompactFormats
 import cash.z.wallet.sdk.internal.rpc.CompactTxStreamerGrpcKt
 import cash.z.wallet.sdk.internal.rpc.Service
 import co.electriccoin.lightwallet.client.CoroutineLightWalletClient
 import co.electriccoin.lightwallet.client.ext.BenchmarkingExt
 import co.electriccoin.lightwallet.client.fixture.BenchmarkingBlockRangeFixture
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
+import co.electriccoin.lightwallet.client.model.CompactBlockUnsafe
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
 import co.electriccoin.lightwallet.client.model.LightWalletEndpointInfoUnsafe
 import co.electriccoin.lightwallet.client.model.RawTransactionUnsafe
@@ -19,6 +19,9 @@ import io.grpc.ConnectivityState
 import io.grpc.ManagedChannel
 import io.grpc.StatusRuntimeException
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import java.util.concurrent.TimeUnit
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
@@ -42,13 +45,23 @@ internal class CoroutineLightWalletClientImpl private constructor(
 
     private var channel = channelFactory.newChannel(lightWalletEndpoint)
 
-    override fun getBlockRange(heightRange: ClosedRange<BlockHeightUnsafe>): Flow<CompactFormats.CompactBlock> {
+    override fun getBlockRange(heightRange: ClosedRange<BlockHeightUnsafe>): Flow<Response<CompactBlockUnsafe>> {
         require(!heightRange.isEmpty()) {
             "${Constants.ILLEGAL_ARGUMENT_EXCEPTION_MESSAGE} range: $heightRange." // NON-NLS
         }
 
-        return requireChannel().createStub(streamingRequestTimeout)
-            .getBlockRange(heightRange.toBlockRange())
+        return try {
+            requireChannel().createStub(streamingRequestTimeout)
+                .getBlockRange(heightRange.toBlockRange())
+                .catch {
+                    GrpcStatusResolver.resolveFailureFromStatus(it)
+                }
+                .map {
+                    Response.Success(CompactBlockUnsafe.new(it))
+                }
+        } catch (e: StatusRuntimeException) {
+            flowOf(GrpcStatusResolver.resolveFailureFromStatus(e))
+        }
     }
 
     override suspend fun getLatestBlockHeight(): Response<BlockHeightUnsafe> {

@@ -1,11 +1,11 @@
 package co.electriccoin.lightwallet.client
 
 import android.content.Context
-import cash.z.wallet.sdk.internal.rpc.CompactFormats
 import cash.z.wallet.sdk.internal.rpc.Service
 import co.electriccoin.lightwallet.client.internal.AndroidChannelFactory
 import co.electriccoin.lightwallet.client.internal.CoroutineLightWalletClientImpl
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
+import co.electriccoin.lightwallet.client.model.CompactBlockUnsafe
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
 import co.electriccoin.lightwallet.client.model.LightWalletEndpointInfoUnsafe
 import co.electriccoin.lightwallet.client.model.RawTransactionUnsafe
@@ -47,7 +47,7 @@ interface CoroutineLightWalletClient {
      *
      * @throws IllegalArgumentException when empty argument provided
      */
-    fun getBlockRange(heightRange: ClosedRange<BlockHeightUnsafe>): Flow<CompactFormats.CompactBlock>
+    fun getBlockRange(heightRange: ClosedRange<BlockHeightUnsafe>): Flow<Response<CompactBlockUnsafe>>
 
     /**
      * @return the latest block height known to the service.

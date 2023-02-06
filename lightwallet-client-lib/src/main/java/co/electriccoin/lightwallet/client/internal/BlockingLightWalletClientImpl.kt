@@ -1,12 +1,12 @@
 package co.electriccoin.lightwallet.client.internal
 
-import cash.z.wallet.sdk.internal.rpc.CompactFormats
 import cash.z.wallet.sdk.internal.rpc.CompactTxStreamerGrpc
 import cash.z.wallet.sdk.internal.rpc.Service
 import co.electriccoin.lightwallet.client.BlockingLightWalletClient
 import co.electriccoin.lightwallet.client.ext.BenchmarkingExt
 import co.electriccoin.lightwallet.client.fixture.BenchmarkingBlockRangeFixture
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
+import co.electriccoin.lightwallet.client.model.CompactBlockUnsafe
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
 import co.electriccoin.lightwallet.client.model.LightWalletEndpointInfoUnsafe
 import co.electriccoin.lightwallet.client.model.RawTransactionUnsafe
@@ -40,13 +40,22 @@ internal class BlockingLightWalletClientImpl private constructor(
 
     private var channel = channelFactory.newChannel(lightWalletEndpoint)
 
-    override fun getBlockRange(heightRange: ClosedRange<BlockHeightUnsafe>): Sequence<CompactFormats.CompactBlock> {
+    override fun getBlockRange(heightRange: ClosedRange<BlockHeightUnsafe>): Response<Sequence<CompactBlockUnsafe>> {
         require(!heightRange.isEmpty()) {
             "${Constants.ILLEGAL_ARGUMENT_EXCEPTION_MESSAGE} range: $heightRange." // NON-NLS
         }
 
-        return requireChannel().createStub(streamingRequestTimeout)
-            .getBlockRange(heightRange.toBlockRange()).iterator().asSequence()
+        return try {
+            val response = requireChannel()
+                .createStub(streamingRequestTimeout)
+                .getBlockRange(heightRange.toBlockRange()).asSequence().map {
+                    CompactBlockUnsafe.new(it)
+                }
+
+            Response.Success(response)
+        } catch (e: StatusRuntimeException) {
+            GrpcStatusResolver.resolveFailureFromStatus(e)
+        }
     }
 
     override fun getLatestBlockHeight(): Response<BlockHeightUnsafe> {

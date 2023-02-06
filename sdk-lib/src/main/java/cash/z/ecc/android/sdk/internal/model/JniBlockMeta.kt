@@ -2,7 +2,7 @@ package cash.z.ecc.android.sdk.internal.model
 
 import androidx.annotation.Keep
 import cash.z.ecc.android.sdk.internal.storage.block.CompactBlockOutputsCounts
-import cash.z.wallet.sdk.internal.rpc.CompactFormats.CompactBlock
+import co.electriccoin.lightwallet.client.model.CompactBlockUnsafe
 
 /**
  * Serves as cross layer (Kotlin, Rust) communication class.
@@ -38,10 +38,10 @@ class JniBlockMeta(
     companion object {
         private val UINT_RANGE = 0.toLong()..UInt.MAX_VALUE.toLong()
 
-        internal fun new(block: CompactBlock, outputs: CompactBlockOutputsCounts): JniBlockMeta {
+        internal fun new(block: CompactBlockUnsafe, outputs: CompactBlockOutputsCounts): JniBlockMeta {
             return JniBlockMeta(
                 height = block.height,
-                hash = block.hash.toByteArray(),
+                hash = block.hash,
                 time = block.time.toLong(),
                 saplingOutputsCount = outputs.saplingOutputsCount.toLong(),
                 orchardOutputsCount = outputs.orchardActionsCount.toLong()

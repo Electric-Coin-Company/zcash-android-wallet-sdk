@@ -16,6 +16,7 @@ import cash.z.ecc.android.sdk.tool.DerivationTool
 import co.electriccoin.lightwallet.client.BlockingLightWalletClient
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
+import co.electriccoin.lightwallet.client.model.Response
 import co.electriccoin.lightwallet.client.new
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -100,12 +101,19 @@ class SampleCodeTest {
                 ).value
                 )
         )
+
         val lightwalletClient = BlockingLightWalletClient.new(context, lightwalletdHost)
-        val blocks = lightwalletClient.getBlockRange(blockRange)
+
+        val response = lightwalletClient.getBlockRange(blockRange)
+
+        assert(response is Response.Success) { "Server communication failed." }
+
+        val blocks = (response as Response.Success).result
+
         assertEquals(blockRange.endInclusive.value - blockRange.start.value, blocks.count())
 
         blocks.forEachIndexed { i, block ->
-            log("Block #$i:    height:${block.height}   hash:${block.hash.toByteArray().toHex()}")
+            log("Block #$i:    height:${block.height}   hash:${block.hash.toHex()}")
         }
     }
 

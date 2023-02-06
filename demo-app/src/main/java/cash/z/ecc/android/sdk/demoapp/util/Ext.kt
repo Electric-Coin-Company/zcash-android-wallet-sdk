@@ -4,7 +4,7 @@ import android.content.Context
 import android.text.format.DateUtils
 import androidx.fragment.app.Fragment
 import cash.z.ecc.android.sdk.demoapp.MainActivity
-import cash.z.wallet.sdk.internal.rpc.CompactFormats
+import co.electriccoin.lightwallet.client.model.CompactTxUnsafe
 
 /**
  * Lazy extensions to make demo life easier.
@@ -32,10 +32,10 @@ fun Int?.toRelativeTime(context: Context) =
         ).toString()
     } ?: "Unknown"
 
-fun List<CompactFormats.CompactTx>?.toHtml() =
+fun List<CompactTxUnsafe>?.toHtml() =
     this.takeUnless { it.isNullOrEmpty() }?.let { txs ->
         buildString {
             append("<br/><b>transactions (shielded INs / OUTs):</b>")
-            txs.forEach { append("<br/><b>&nbsp;&nbsp;tx${it.index}:</b> ${it.spendsCount} / ${it.outputsCount}") }
+            txs.forEach { append("<br/><b>&nbsp;&nbsp;tx${it.index}:</b> ${it.spends.size} / ${it.outputs.size}") }
         }
     } ?: ""

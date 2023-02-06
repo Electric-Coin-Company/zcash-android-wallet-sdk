@@ -2,7 +2,7 @@ package cash.z.ecc.android.sdk.internal.repository
 
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.model.BlockHeight
-import cash.z.wallet.sdk.internal.rpc.CompactFormats
+import co.electriccoin.lightwallet.client.model.CompactBlockUnsafe
 
 /**
  * Interface for storing compact blocks.
@@ -36,7 +36,7 @@ interface CompactBlockRepository {
      * @param result the list of compact blocks to persist.
      * @return Number of blocks that were written.
      */
-    suspend fun write(result: Sequence<CompactFormats.CompactBlock>): Int
+    suspend fun write(result: Sequence<CompactBlockUnsafe>): Int
 
     /**
      * Remove every block above the given height.

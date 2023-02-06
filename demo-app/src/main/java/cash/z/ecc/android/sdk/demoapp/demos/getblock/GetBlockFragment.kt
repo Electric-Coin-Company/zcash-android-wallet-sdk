@@ -13,9 +13,11 @@ import cash.z.ecc.android.sdk.demoapp.util.toHtml
 import cash.z.ecc.android.sdk.demoapp.util.toRelativeTime
 import cash.z.ecc.android.sdk.demoapp.util.withCommas
 import cash.z.ecc.android.sdk.ext.toHex
+import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
+import co.electriccoin.lightwallet.client.model.Response
 import kotlin.math.min
 
 /**
@@ -26,22 +28,31 @@ import kotlin.math.min
 class GetBlockFragment : BaseDemoFragment<FragmentGetBlockBinding>() {
 
     private fun setBlockHeight(blockHeight: BlockHeight) {
-        val blocks =
-            lightWalletClient?.getBlockRange(
-                BlockHeightUnsafe(blockHeight.value)..BlockHeightUnsafe(
-                    blockHeight.value
-                )
-            )
+        val response = lightWalletClient?.getBlockRange(
+            BlockHeightUnsafe(blockHeight.value)..BlockHeightUnsafe(blockHeight.value)
+        )
+
+        val blocks = when (response) {
+            is Response.Success -> {
+                twig("Get block: ${response.result} for height: $blockHeight succeeded.")
+                response.result
+            }
+            else -> {
+                twig("Get block for height: $blockHeight failed with: $response.")
+                null
+            }
+        }
+
         val block = blocks?.firstOrNull()
         binding.textInfo.visibility = View.VISIBLE
         binding.textInfo.text = HtmlCompat.fromHtml(
             """
                 <b>block height:</b> ${block?.height.withCommas()}
                 <br/><b>block time:</b> ${block?.time.toRelativeTime(requireApplicationContext())}
-                <br/><b>number of shielded TXs:</b> ${block?.vtxCount}
-                <br/><b>hash:</b> ${block?.hash?.toByteArray()?.toHex()}
-                <br/><b>prevHash:</b> ${block?.prevHash?.toByteArray()?.toHex()}
-                ${block?.vtxList.toHtml()}
+                <br/><b>number of shielded TXs:</b> ${block?.vtx?.size}
+                <br/><b>hash:</b> ${block?.hash?.toHex()}
+                <br/><b>prevHash:</b> ${block?.prevHash?.toHex()}
+                ${block?.vtx.toHtml()}
             """.trimIndent(),
             HtmlCompat.FROM_HTML_MODE_LEGACY
         )

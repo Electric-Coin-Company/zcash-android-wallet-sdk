@@ -12,9 +12,11 @@ import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.demoapp.util.mainActivity
 import cash.z.ecc.android.sdk.demoapp.util.toRelativeTime
 import cash.z.ecc.android.sdk.demoapp.util.withCommas
+import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
+import co.electriccoin.lightwallet.client.model.Response
 import kotlin.math.max
 
 /**
@@ -27,12 +29,22 @@ class GetBlockRangeFragment : BaseDemoFragment<FragmentGetBlockRangeBinding>() {
 
     private fun setBlockRange(blockRange: ClosedRange<BlockHeight>) {
         val start = System.currentTimeMillis()
-        val blocks =
-            lightWalletClient?.getBlockRange(
-                BlockHeightUnsafe(blockRange.start.value)..BlockHeightUnsafe(
-                    blockRange.endInclusive.value
-                )
-            )
+
+        val range = BlockHeightUnsafe(blockRange.start.value)..BlockHeightUnsafe(blockRange.endInclusive.value)
+
+        val response = lightWalletClient?.getBlockRange(range)
+
+        val blocks = when (response) {
+            is Response.Success -> {
+                twig("Get blocks: ${response.result} for range: $range succeeded.")
+                response.result
+            }
+            else -> {
+                twig("Get blocks for range: $range failed with: $response.")
+                null
+            }
+        }
+
         val fetchDelta = System.currentTimeMillis() - start
 
         // Note: This is a demo so we won't worry about iterating efficiently over these blocks
@@ -41,19 +53,19 @@ class GetBlockRangeFragment : BaseDemoFragment<FragmentGetBlockRangeBinding>() {
         binding.textInfo.text = HtmlCompat.fromHtml(
             blocks?.toList()?.run {
                 val count = size
-                val emptyCount = count { it.vtxCount == 0 }
-                val maxTxs = maxByOrNull { it.vtxCount }
+                val emptyCount = count { it.vtx.isEmpty() }
+                val maxTxs = maxByOrNull { it.vtx.size }
                 val maxIns = maxByOrNull { block ->
-                    block.vtxList.maxOfOrNull { it.spendsCount } ?: -1
+                    block.vtx.maxOfOrNull { it.spends.size } ?: -1
                 }
-                val maxInTx = maxIns?.vtxList?.maxByOrNull { it.spendsCount }
+                val maxInTx = maxIns?.vtx?.maxByOrNull { it.spends.size }
                 val maxOuts = maxByOrNull { block ->
-                    block.vtxList.maxOfOrNull { it.outputsCount } ?: -1
+                    block.vtx.maxOfOrNull { it.outputs.size } ?: -1
                 }
-                val maxOutTx = maxOuts?.vtxList?.maxByOrNull { it.outputsCount }
-                val txCount = sumOf { it.vtxCount }
-                val outCount = sumOf { block -> block.vtxList.sumOf { it.outputsCount } }
-                val inCount = sumOf { block -> block.vtxList.sumOf { it.spendsCount } }
+                val maxOutTx = maxOuts?.vtx?.maxByOrNull { it.outputs.size }
+                val txCount = sumOf { it.vtx.size }
+                val outCount = sumOf { block -> block.vtx.sumOf { it.outputs.size } }
+                val inCount = sumOf { block -> block.vtx.sumOf { it.spends.size } }
 
                 val processTime = System.currentTimeMillis() - start - fetchDelta
                 @Suppress("MaxLineLength", "MagicNumber")
@@ -70,9 +82,9 @@ class GetBlockRangeFragment : BaseDemoFragment<FragmentGetBlockRangeBinding>() {
                 <br/><b>avg TXs (excluding empty blocks):</b> ${"%.1f".format(txCount.toDouble() / (count - emptyCount))}
                 <br/><b>avg OUTs [per block / per TX]:</b> ${"%.1f / %.1f".format(outCount.toDouble() / (count - emptyCount), outCount.toDouble() / txCount)}
                 <br/><b>avg INs [per block / per TX]:</b> ${"%.1f / %.1f".format(inCount.toDouble() / (count - emptyCount), inCount.toDouble() / txCount)}
-                <br/><b>most shielded TXs:</b> ${if (maxTxs == null) "none" else "${maxTxs.vtxCount} in block ${maxTxs.height.withCommas()}"}
-                <br/><b>most shielded INs:</b> ${if (maxInTx == null) "none" else "${maxInTx.spendsCount} in block ${maxIns.height.withCommas()} at tx index ${maxInTx.index}"}
-                <br/><b>most shielded OUTs:</b> ${if (maxOutTx == null) "none" else "${maxOutTx.outputsCount} in block ${maxOuts.height.withCommas()} at tx index ${maxOutTx.index}"}
+                <br/><b>most shielded TXs:</b> ${if (maxTxs == null) "none" else "${maxTxs.vtx.size} in block ${maxTxs.height.withCommas()}"}
+                <br/><b>most shielded INs:</b> ${if (maxInTx == null) "none" else "${maxInTx.spends.size} in block ${maxIns.height.withCommas()} at tx index ${maxInTx.index}"}
+                <br/><b>most shielded OUTs:</b> ${if (maxOutTx == null) "none" else "${maxOutTx.outputs.size} in block ${maxOuts.height.withCommas()} at tx index ${maxOutTx.index}"}
                 """.trimIndent()
             } ?: "No blocks found in that range.",
             HtmlCompat.FROM_HTML_MODE_LEGACY
