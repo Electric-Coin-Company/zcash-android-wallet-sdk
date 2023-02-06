@@ -2,9 +2,6 @@ package cash.z.ecc.android.sdk.darkside.test
 
 import android.content.Context
 import androidx.test.platform.app.InstrumentationRegistry
-import cash.z.ecc.android.sdk.internal.TroubleshootingTwig
-import cash.z.ecc.android.sdk.internal.Twig
-import cash.z.ecc.android.sdk.internal.twig
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Job
@@ -29,7 +26,6 @@ open class ScopedTest(val defaultTimeout: Long = 2000L) : DarksideTestPrerequisi
 
     @Before
     fun start() {
-        twig("===================== TEST STARTED ==================================")
         testScope = CoroutineScope(
             Job(classScope.coroutineContext[Job]!!) + newFixedThreadPoolContext(
                 5,
@@ -40,10 +36,8 @@ open class ScopedTest(val defaultTimeout: Long = 2000L) : DarksideTestPrerequisi
 
     @After
     fun end() = runBlocking<Unit> {
-        twig("======================= TEST CANCELLING =============================")
         testScope.cancel()
         testScope.coroutineContext[Job]?.join()
-        twig("======================= TEST ENDED ==================================")
     }
 
     fun timeout(duration: Long, block: suspend () -> Unit) = timeoutWith(testScope, duration, block)
@@ -52,15 +46,9 @@ open class ScopedTest(val defaultTimeout: Long = 2000L) : DarksideTestPrerequisi
         @JvmStatic
         lateinit var classScope: CoroutineScope
 
-        init {
-            Twig.plant(TroubleshootingTwig())
-            twig("================================================================ INIT")
-        }
-
         @BeforeClass
         @JvmStatic
         fun createScope() {
-            twig("======================= CLASS STARTED ===============================")
             classScope = CoroutineScope(
                 SupervisorJob() + newFixedThreadPoolContext(2, this::class.java.simpleName)
             )
@@ -69,10 +57,8 @@ open class ScopedTest(val defaultTimeout: Long = 2000L) : DarksideTestPrerequisi
         @AfterClass
         @JvmStatic
         fun destroyScope() = runBlocking<Unit> {
-            twig("======================= CLASS CANCELLING ============================")
             classScope.cancel()
             classScope.coroutineContext[Job]?.join()
-            twig("======================= CLASS ENDED =================================")
         }
 
         @JvmStatic
@@ -80,7 +66,6 @@ open class ScopedTest(val defaultTimeout: Long = 2000L) : DarksideTestPrerequisi
             scope.launch {
                 delay(duration)
                 val message = "ERROR: Test timed out after ${duration}ms"
-                twig(message)
                 throw TimeoutException(message)
             }.let { selfDestruction ->
                 scope.launch {

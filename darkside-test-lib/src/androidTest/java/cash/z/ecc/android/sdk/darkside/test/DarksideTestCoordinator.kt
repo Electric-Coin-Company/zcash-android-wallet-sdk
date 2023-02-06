@@ -3,7 +3,6 @@ package cash.z.ecc.android.sdk.darkside.test
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.platform.app.InstrumentationRegistry
 import cash.z.ecc.android.sdk.Synchronizer
-import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.Darkside
@@ -17,7 +16,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert
 import org.junit.Assert.assertEquals
@@ -56,7 +54,6 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
     fun enterTheDarkside(): DarksideTestCoordinator = runBlocking {
         // verify that we are on the darkside
         try {
-            twig("entering the darkside")
             initiate()
 
             // In the future, we may want to have the SDK internally verify being on the darkside by matching the network type
@@ -68,7 +65,6 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
             //             or chainName.contains("dark", true)
             //     )
             // }
-            twig("darkside initiation complete!")
         } catch (error: StatusRuntimeException) {
             Assert.fail(
                 "Error while fetching server status. Testing cannot begin due to:" +
@@ -82,7 +78,6 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
      * Setup the synchronizer and darksidewalletd with their initial state
      */
     fun initiate() {
-        twig("*************** INITIALIZING TEST COORDINATOR (ONLY ONCE) ***********************")
         darkside = DarksideApi.new(ApplicationProvider.getApplicationContext(), LightWalletEndpoint.Darkside)
         darkside.reset(BlockHeightUnsafe(wallet.network.saplingActivationHeight.value))
     }
@@ -102,25 +97,15 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
      */
     fun await(timeout: Long = 60_000L, targetHeight: BlockHeight? = null) = runBlocking {
         ScopedTest.timeoutWith(this, timeout) {
-            twig("***  Waiting up to ${timeout / 1_000}s for sync ***")
-            synchronizer.status.onEach {
-                twig("got processor status $it")
-                if (it == Synchronizer.Status.DISCONNECTED) {
-                    twig("waiting a bit before giving up on connection...")
-                } else if (targetHeight != null && synchronizer.processor.getLastScannedHeight() < targetHeight) {
-                    twig("awaiting new blocks from server...")
-                }
-            }.map {
+            synchronizer.status.map {
                 // whenever we're waiting for a target height, for simplicity, if we're sleeping,
                 // and in between polls, then consider it that we're not synced
                 if (targetHeight != null && synchronizer.processor.getLastScannedHeight() < targetHeight) {
-                    twig("switching status to DOWNLOADING because we're still waiting for height $targetHeight")
                     Synchronizer.Status.DOWNLOADING
                 } else {
                     it
                 }
             }.filter { it == Synchronizer.Status.SYNCED }.first()
-            twig("***  Done waiting for sync! ***")
         }
     }
 
@@ -139,13 +124,12 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
 //    }
 
     fun stall(delay: Long = 5000L) = runBlocking {
-        twig("***  Stalling for ${delay}ms ***")
         delay(delay)
     }
 
-    //
-    // Validation
-    //
+//
+// Validation
+//
 
     inner class DarksideTestValidator {
 
@@ -215,12 +199,19 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
         fun validateMinBalance(available: Long = -1, total: Long = -1) {
             val balance = synchronizer.saplingBalances.value
             if (available > 0) {
-                assertTrue("invalid available balance. Expected a minimum of $available but found ${balance?.available}", available <= balance?.available?.value!!)
+                assertTrue(
+                    "invalid available balance. Expected a minimum of $available but found ${balance?.available}",
+                    available <= balance?.available?.value!!
+                )
             }
             if (total > 0) {
-                assertTrue("invalid total balance. Expected a minimum of $total but found ${balance?.total}", total <= balance?.total?.value!!)
+                assertTrue(
+                    "invalid total balance. Expected a minimum of $total but found ${balance?.total}",
+                    total <= balance?.total?.value!!
+                )
             }
         }
+
         suspend fun validateBalance(available: Long = -1, total: Long = -1, account: Account) {
             val balance = synchronizer.processor.getBalanceInfo(account)
             if (available > 0) {
@@ -232,9 +223,9 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
         }
     }
 
-    //
-    // Chain Creations
-    //
+//
+// Chain Creations
+//
 
     inner class DarksideChainMaker {
         var lastTipHeight: BlockHeight? = null
@@ -271,7 +262,6 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
         fun stageEmptyBlock() = stageEmptyBlocks(lastTipHeight!! + 1, 1)
 
         fun applyTipHeight(tipHeight: BlockHeight): DarksideChainMaker = apply {
-            twig("applying tip height of $tipHeight")
             darkside.applyBlocks(BlockHeightUnsafe(tipHeight.value))
             lastTipHeight = tipHeight
         }
@@ -290,14 +280,16 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
 
         fun advanceBy(numEmptyBlocks: Int) {
             val nextBlock = lastTipHeight!! + 1
-            twig("adding $numEmptyBlocks empty blocks to the chain starting at $nextBlock")
             darkside.stageEmptyBlocks(BlockHeightUnsafe(nextBlock.value), numEmptyBlocks)
             applyTipHeight(nextBlock + numEmptyBlocks)
         }
 
         fun applyPendingTransactions(targetHeight: BlockHeight = lastTipHeight!! + 1) {
             stageEmptyBlocks(lastTipHeight!! + 1, (targetHeight.value - lastTipHeight!!.value).toInt())
-            darkside.stageTransactions(darkside.getSentTransactions()?.iterator(), BlockHeightUnsafe(targetHeight.value))
+            darkside.stageTransactions(
+                darkside.getSentTransactions()?.iterator(),
+                BlockHeightUnsafe(targetHeight.value)
+            )
             applyTipHeight(targetHeight)
         }
     }

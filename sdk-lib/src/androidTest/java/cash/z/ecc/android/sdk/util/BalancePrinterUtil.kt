@@ -3,11 +3,9 @@ package cash.z.ecc.android.sdk.util
 import androidx.test.platform.app.InstrumentationRegistry
 import cash.z.ecc.android.sdk.CloseableSynchronizer
 import cash.z.ecc.android.sdk.Synchronizer
-import cash.z.ecc.android.sdk.internal.TroubleshootingTwig
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.ext.deleteSuspend
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
-import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.model.defaultForNetwork
@@ -51,7 +49,6 @@ class BalancePrinterUtil {
 
     @Before
     fun setup() {
-        Twig.plant(TroubleshootingTwig())
         cacheBlocks()
         birthday = runBlocking { CheckpointTool.loadNearest(context, network, birthdayHeight) }
     }
@@ -76,7 +73,7 @@ class BalancePrinterUtil {
     fun printBalances() = runBlocking {
         readFileLinesInFlow("/utils/seeds.txt")
             .map { seedPhrase ->
-                twig("checking balance for: $seedPhrase")
+                Twig.debug { "checking balance for: $seedPhrase" }
                 mnemonics.toSeed(seedPhrase.toCharArray())
             }.collect { seed ->
                 // TODO: clear the dataDb but leave the cacheDb
@@ -153,26 +150,6 @@ class BalancePrinterUtil {
 //            }
 //        }
 //    }
-
-    private fun downloadNewBlocks(range: IntRange) = runBlocking {
-        Twig.sprout("downloading")
-        twig("downloading blocks in range $range")
-
-        var downloadedBlockHeight = range.start
-        val count = range.last - range.first + 1
-        val batches =
-            (count / downloadBatchSize + (if (count.rem(downloadBatchSize) == 0) 0 else 1))
-        twig("found $count missing blocks, downloading in $batches batches of $downloadBatchSize...")
-        for (i in 1..batches) {
-            val end = Math.min(range.first + (i * downloadBatchSize), range.last + 1)
-            val batchRange = downloadedBlockHeight until end
-            twig("downloaded $batchRange (batch $i of $batches)") {
-//                downloader.downloadBlockRange(batchRange)
-            }
-            downloadedBlockHeight = end
-        }
-        Twig.clip("downloading")
-    }
 
 //    private fun validateNewBlocks(range: IntRange?): Int {
 // //        val dummyWallet = initWallet("dummySeed")

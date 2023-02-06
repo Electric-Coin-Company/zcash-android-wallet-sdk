@@ -4,9 +4,9 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
 import cash.z.ecc.android.sdk.annotation.MaintainedTest
 import cash.z.ecc.android.sdk.annotation.TestPurpose
+import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.block.CompactBlockDownloader
 import cash.z.ecc.android.sdk.internal.repository.CompactBlockRepository
-import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.Mainnet
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.test.ScopedTest
@@ -63,7 +63,7 @@ class ChangeServiceTest : ScopedTest() {
         val result = runCatching {
             return@runCatching service.getLatestBlockHeight()
         }.onFailure {
-            twig(it)
+            Twig.debug(it) { "" }
         }.getOrElse { return }
 
         assertTrue(result is Response.Success<BlockHeightUnsafe>)

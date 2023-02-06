@@ -14,7 +14,7 @@ import cash.z.ecc.android.sdk.demoapp.preference.EncryptedPreferenceSingleton
 import cash.z.ecc.android.sdk.demoapp.ui.common.ANDROID_STATE_FLOW_TIMEOUT
 import cash.z.ecc.android.sdk.demoapp.ui.common.throttle
 import cash.z.ecc.android.sdk.demoapp.util.fromResources
-import cash.z.ecc.android.sdk.internal.Twig2
+import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.PendingTransaction
@@ -174,7 +174,7 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
                 synchronizer.send(spendingKey, zecSend)
             }
         } else {
-            Twig2.info { "Unable to send funds" }
+            Twig.info { "Unable to send funds" }
         }
     }
 
@@ -191,7 +191,7 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
                 synchronizer.shieldFunds(spendingKey)
             }
         } else {
-            Twig2.info { "Unable to shield funds" }
+            Twig.info { "Unable to shield funds" }
         }
     }
 
@@ -256,27 +256,27 @@ private fun Synchronizer.toCommonError(): Flow<SynchronizerError?> = callbackFlo
     trySend(null)
 
     onCriticalErrorHandler = {
-        Twig2.error { "WALLET - Error Critical: $it" }
+        Twig.error { "WALLET - Error Critical: $it" }
         trySend(SynchronizerError.Critical(it))
         false
     }
     onProcessorErrorHandler = {
-        Twig2.error { "WALLET - Error Processor: $it" }
+        Twig.error { "WALLET - Error Processor: $it" }
         trySend(SynchronizerError.Processor(it))
         false
     }
     onSubmissionErrorHandler = {
-        Twig2.error { "WALLET - Error Submission: $it" }
+        Twig.error { "WALLET - Error Submission: $it" }
         trySend(SynchronizerError.Submission(it))
         false
     }
     onSetupErrorHandler = {
-        Twig2.error { "WALLET - Error Setup: $it" }
+        Twig.error { "WALLET - Error Setup: $it" }
         trySend(SynchronizerError.Setup(it))
         false
     }
     onChainErrorHandler = { x, y ->
-        Twig2.error { "WALLET - Error Chain: $x, $y" }
+        Twig.error { "WALLET - Error Chain: $x, $y" }
         trySend(SynchronizerError.Chain(x, y))
     }
 

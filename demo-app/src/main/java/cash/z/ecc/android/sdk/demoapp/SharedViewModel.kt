@@ -8,7 +8,7 @@ import cash.z.ecc.android.bip39.toSeed
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.ext.onFirst
-import cash.z.ecc.android.sdk.internal.twig
+import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.model.defaultForNetwork
@@ -128,7 +128,7 @@ class SharedViewModel(application: Application) : AndroidViewModel(application) 
                             appContext = getApplication(),
                             network = ZcashNetwork.fromResources(getApplication())
                         )
-                        twig("SDK erase result: $didDelete")
+                        Twig.debug { "SDK erase result: $didDelete" }
                     }
 
                 lockoutIdFlow.value = null
@@ -144,13 +144,13 @@ class SharedViewModel(application: Application) : AndroidViewModel(application) 
             Mnemonics.MnemonicCode(phrase).validate()
             true
         } catch (e: Mnemonics.WordCountException) {
-            twig("Seed phrase validation failed with WordCountException: ${e.message}, cause: ${e.cause}")
+            Twig.debug { "Seed phrase validation failed with WordCountException: ${e.message}, cause: ${e.cause}" }
             false
         } catch (e: Mnemonics.InvalidWordException) {
-            twig("Seed phrase validation failed with InvalidWordException: ${e.message}, cause: ${e.cause}")
+            Twig.debug { "Seed phrase validation failed with InvalidWordException: ${e.message}, cause: ${e.cause}" }
             false
         } catch (e: Mnemonics.ChecksumException) {
-            twig("Seed phrase validation failed with ChecksumException: ${e.message}, cause: ${e.cause}")
+            Twig.debug { "Seed phrase validation failed with ChecksumException: ${e.message}, cause: ${e.cause}" }
             false
         }
     }

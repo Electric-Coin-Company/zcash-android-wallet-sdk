@@ -3,10 +3,9 @@ package cash.z.ecc.android.sdk.internal.transaction
 import cash.z.ecc.android.sdk.exception.TransactionEncoderException
 import cash.z.ecc.android.sdk.ext.masked
 import cash.z.ecc.android.sdk.internal.SaplingParamTool
+import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.model.EncodedTransaction
 import cash.z.ecc.android.sdk.internal.repository.DerivedDataRepository
-import cash.z.ecc.android.sdk.internal.twig
-import cash.z.ecc.android.sdk.internal.twigTask
 import cash.z.ecc.android.sdk.jni.RustBackendWelding
 import cash.z.ecc.android.sdk.model.TransactionRecipient
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
@@ -123,26 +122,26 @@ internal class WalletTransactionEncoder(
         toAddress: String,
         memo: ByteArray? = byteArrayOf()
     ): Long {
-        return twigTask(
+        Twig.debug {
             "creating transaction to spend $amount zatoshi to" +
                 " ${toAddress.masked()} with memo $memo"
-        ) {
-            @Suppress("TooGenericExceptionCaught")
-            try {
-                saplingParamTool.ensureParams(rustBackend.saplingParamDir)
-                twig("params exist! attempting to send...")
-                rustBackend.createToAddress(
-                    usk,
-                    toAddress,
-                    amount.value,
-                    memo
-                )
-            } catch (t: Throwable) {
-                twig("Caught exception while creating transaction ${t.message}, caused by: ${t.cause}.")
-                throw t
-            }
+        }
+
+        @Suppress("TooGenericExceptionCaught")
+        return try {
+            saplingParamTool.ensureParams(rustBackend.saplingParamDir)
+            Twig.debug { "params exist! attempting to send..." }
+            rustBackend.createToAddress(
+                usk,
+                toAddress,
+                amount.value,
+                memo
+            )
+        } catch (t: Throwable) {
+            Twig.debug(t) { "Caught exception while creating transaction." }
+            throw t
         }.also { result ->
-            twig("result of sendToAddress: $result")
+            Twig.debug { "result of sendToAddress: $result" }
         }
     }
 
@@ -150,24 +149,22 @@ internal class WalletTransactionEncoder(
         usk: UnifiedSpendingKey,
         memo: ByteArray? = byteArrayOf()
     ): Long {
-        return twigTask("creating transaction to shield all UTXOs") {
-            @Suppress("TooGenericExceptionCaught")
-            try {
-                saplingParamTool.ensureParams(rustBackend.saplingParamDir)
-                twig("params exist! attempting to shield...")
-                rustBackend.shieldToAddress(
-                    usk,
-                    memo
-                )
-            } catch (t: Throwable) {
-                // TODO [#680]: if this error matches: Insufficient balance (have 0, need 1000 including fee)
-                //  then consider custom error that says no UTXOs existed to shield
-                // TODO [#680]: https://github.com/zcash/zcash-android-wallet-sdk/issues/680
-                twig("Shield failed due to: ${t.message}, caused by: ${t.cause}.")
-                throw t
-            }
+        @Suppress("TooGenericExceptionCaught")
+        return try {
+            saplingParamTool.ensureParams(rustBackend.saplingParamDir)
+            Twig.debug { "params exist! attempting to shield..." }
+            rustBackend.shieldToAddress(
+                usk,
+                memo
+            )
+        } catch (t: Throwable) {
+            // TODO [#680]: if this error matches: Insufficient balance (have 0, need 1000 including fee)
+            //  then consider custom error that says no UTXOs existed to shield
+            // TODO [#680]: https://github.com/zcash/zcash-android-wallet-sdk/issues/680
+            Twig.debug(t) { "Shield failed" }
+            throw t
         }.also { result ->
-            twig("result of shieldToAddress: $result")
+            Twig.debug { "result of shieldToAddress: $result" }
         }
     }
 }

@@ -2,7 +2,7 @@ package cash.z.ecc.android.sdk.internal.ext
 
 import android.content.Context
 import cash.z.ecc.android.sdk.ext.ZcashSdk.MAX_BACKOFF_INTERVAL
-import cash.z.ecc.android.sdk.internal.twig
+import cash.z.ecc.android.sdk.internal.Twig
 import kotlinx.coroutines.delay
 import java.io.File
 import kotlin.random.Random
@@ -36,7 +36,7 @@ suspend inline fun retryUpTo(
                 throw exceptionWrapper(t)
             }
             val duration = (initialDelayMillis.toDouble() * Math.pow(2.0, failedAttempts.toDouble() - 1)).toLong()
-            twig("failed due to $t retrying ($failedAttempts/$retries) in ${duration}s...")
+            Twig.warn(t) { "Retrying ($failedAttempts/$retries) in ${duration}s..." }
             delay(duration)
         }
     }
@@ -81,8 +81,7 @@ suspend inline fun retryWithBackoff(
                 duration = maxDelayMillis - Random.nextLong(1000L) // include jitter but don't exceed max delay
                 sequence /= 2
             }
-            twig("Failed due to $t caused by ${t.cause} backing off and retrying in ${duration}ms...")
-            twig(t)
+            Twig.warn(t) { "backing off and retrying in ${duration}ms..." }
             delay(duration)
         }
     }

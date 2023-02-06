@@ -13,7 +13,7 @@ import cash.z.ecc.android.sdk.block.CompactBlockProcessor
 import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
 import cash.z.ecc.android.sdk.demoapp.R
 import cash.z.ecc.android.sdk.demoapp.databinding.FragmentListTransactionsBinding
-import cash.z.ecc.android.sdk.internal.twig
+import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.model.TransactionOverview
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.filterNotNull
@@ -96,7 +96,7 @@ class ListTransactionsFragment : BaseDemoFragment<FragmentListTransactionsBindin
     }
 
     private fun onTransactionsUpdated(transactions: List<TransactionOverview>) {
-        twig("got a new paged list of transactions")
+        Twig.debug { "got a new paged list of transactions" }
         adapter.submitList(transactions)
 
         // show message when there are no transactions

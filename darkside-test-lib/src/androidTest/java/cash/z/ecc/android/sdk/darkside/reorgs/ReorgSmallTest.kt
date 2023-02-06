@@ -3,7 +3,6 @@ package cash.z.ecc.android.sdk.darkside.reorgs
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import cash.z.ecc.android.sdk.darkside.test.DarksideTestCoordinator
 import cash.z.ecc.android.sdk.darkside.test.ScopedTest
-import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import org.junit.Assert.assertTrue
@@ -37,8 +36,6 @@ class ReorgSmallTest : ScopedTest() {
         hadReorg = false
 //        sithLord.triggerSmallReorg()
         sithLord.await()
-
-        twig("checking whether a reorg happened (spoiler: ${if (hadReorg) "yep" else "nope"})")
         assertTrue(hadReorg)
     }
 

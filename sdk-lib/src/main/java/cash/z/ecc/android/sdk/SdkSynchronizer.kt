@@ -20,6 +20,7 @@ import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Validating
 import cash.z.ecc.android.sdk.ext.ConsensusBranchId
 import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.internal.SaplingParamTool
+import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.block.CompactBlockDownloader
 import cash.z.ecc.android.sdk.internal.db.DatabaseCoordinator
 import cash.z.ecc.android.sdk.internal.db.block.DbCompactBlockRepository
@@ -35,8 +36,6 @@ import cash.z.ecc.android.sdk.internal.transaction.OutboundTransactionManager
 import cash.z.ecc.android.sdk.internal.transaction.PersistentTransactionManager
 import cash.z.ecc.android.sdk.internal.transaction.TransactionEncoder
 import cash.z.ecc.android.sdk.internal.transaction.WalletTransactionEncoder
-import cash.z.ecc.android.sdk.internal.twig
-import cash.z.ecc.android.sdk.internal.twigTask
 import cash.z.ecc.android.sdk.jni.RustBackend
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
@@ -152,7 +151,7 @@ class SdkSynchronizer private constructor(
         private suspend fun waitForShutdown(synchronizerKey: SynchronizerKey) {
             instances[synchronizerKey]?.let {
                 if (it is InstanceState.ShuttingDown) {
-                    twig("Waiting for prior synchronizer instance to shut down") // $NON-NLS-1$
+                    Twig.debug { "Waiting for prior synchronizer instance to shut down" } // $NON-NLS-1$
                     it.job.join()
                 }
             }
@@ -305,20 +304,16 @@ class SdkSynchronizer private constructor(
         // avoided with a delay during startup.
 
         val shutdownJob = coroutineScope.launch {
-            // log everything to help troubleshoot shutdowns that aren't graceful
-            twig("Synchronizer::stop: STARTING")
-            twig("Synchronizer::stop: processor.stop()")
+            Twig.debug { "Stopping synchronizer $synchronizerKey…" }
             processor.stop()
         }
 
         instances[synchronizerKey] = InstanceState.ShuttingDown(shutdownJob)
 
         shutdownJob.invokeOnCompletion {
-            twig("Synchronizer::stop: coroutineScope.cancel()")
             coroutineScope.cancel()
-            twig("Synchronizer::stop: _status.cancel()")
             _status.value = STOPPED
-            twig("Synchronizer::stop: COMPLETE")
+            Twig.debug { "Synchronizer $synchronizerKey stopped" }
 
             instances.remove(synchronizerKey)
         }
@@ -385,7 +380,7 @@ class SdkSynchronizer private constructor(
     //
 
     suspend fun refreshUtxos() {
-        twig("refreshing utxos", -1)
+        Twig.debug { "refreshing utxos" }
         refreshUtxos(getTransparentAddress())
     }
 
@@ -398,16 +393,16 @@ class SdkSynchronizer private constructor(
         refreshTransparentBalance()
         // TODO [#682]: refresh orchard balance
         // TODO [#682]: https://github.com/zcash/zcash-android-wallet-sdk/issues/682
-        twig("Warning: Orchard balance does not yet refresh. Only some of the plumbing is in place.")
+        Twig.warn { "Warning: Orchard balance does not yet refresh. Only some of the plumbing is in place." }
     }
 
     suspend fun refreshSaplingBalance() {
-        twig("refreshing sapling balance")
+        Twig.debug { "refreshing sapling balance" }
         _saplingBalances.value = processor.getBalanceInfo(Account.DEFAULT)
     }
 
     suspend fun refreshTransparentBalance() {
-        twig("refreshing transparent balance")
+        Twig.debug { "refreshing transparent balance" }
         _transparentBalances.value = processor.getUtxoCacheBalance(getTransparentAddress())
     }
 
@@ -416,9 +411,8 @@ class SdkSynchronizer private constructor(
     }
 
     private fun CoroutineScope.onReady() = launch(CoroutineExceptionHandler(::onCriticalError)) {
-        twig("Preparing to start...")
+        Twig.debug { "Starting synchronizer…" }
 
-        twig("Synchronizer (${this@SdkSynchronizer}) Ready. Starting processor!")
         var lastScanTime = 0L
         processor.onProcessorErrorListener = ::onProcessorError
         processor.onSetupErrorListener = ::onSetupError
@@ -446,67 +440,62 @@ class SdkSynchronizer private constructor(
             }
         }.launchIn(this)
         processor.start()
-        twig("Synchronizer onReady complete. Processor start has exited!")
+        Twig.debug { "Completed starting synchronizer" }
     }
 
     @Suppress("UNUSED_PARAMETER")
     private fun onCriticalError(unused: CoroutineContext?, error: Throwable) {
-        twig("********")
-        twig("********  ERROR: $error")
-        twig(error)
-        if (error.cause != null) twig("******** caused by ${error.cause}")
-        if (error.cause?.cause != null) twig("******** caused by ${error.cause?.cause}")
-        twig("********")
+        Twig.error(error) { "Critical error occurred" }
 
         if (onCriticalErrorHandler == null) {
-            twig(
+            Twig.debug {
                 "WARNING: a critical error occurred but no callback is registered to be notified " +
                     "of critical errors! THIS IS PROBABLY A MISTAKE. To respond to these " +
                     "errors (perhaps to update the UI or alert the user) set " +
                     "synchronizer.onCriticalErrorHandler to a non-null value."
-            )
-        }
+            }
 
-        onCriticalErrorHandler?.invoke(error)
+            onCriticalErrorHandler?.invoke(error)
+        }
     }
 
     private fun onProcessorError(error: Throwable): Boolean {
-        twig("ERROR while processing data: $error")
+        Twig.debug { "ERROR while processing data: $error" }
         if (onProcessorErrorHandler == null) {
-            twig(
+            Twig.debug {
                 "WARNING: falling back to the default behavior for processor errors. To add" +
                     " custom behavior, set synchronizer.onProcessorErrorHandler to" +
                     " a non-null value"
-            )
+            }
             return true
         }
         return onProcessorErrorHandler?.invoke(error)?.also {
-            twig(
+            Twig.debug {
                 "processor error handler signaled that we should " +
                     "${if (it) "try again" else "abort"}!"
-            )
+            }
         } == true
     }
 
     private fun onSetupError(error: Throwable): Boolean {
         if (onSetupErrorHandler == null) {
-            twig(
+            Twig.debug {
                 "WARNING: falling back to the default behavior for setup errors. To add custom" +
                     " behavior, set synchronizer.onSetupErrorHandler to a non-null value"
-            )
+            }
             return false
         }
         return onSetupErrorHandler?.invoke(error) == true
     }
 
     private fun onChainError(errorHeight: BlockHeight, rewindHeight: BlockHeight) {
-        twig("Chain error detected at height: $errorHeight. Rewinding to: $rewindHeight")
+        Twig.debug { "Chain error detected at height: $errorHeight. Rewinding to: $rewindHeight" }
         if (onChainErrorHandler == null) {
-            twig(
+            Twig.debug {
                 "WARNING: a chain error occurred but no callback is registered to be notified of " +
                     "chain errors. To respond to these errors (perhaps to update the UI or alert the" +
                     " user) set synchronizer.onChainErrorHandler to a non-null value"
-            )
+            }
         }
         onChainErrorHandler?.invoke(errorHeight, rewindHeight)
     }
@@ -536,24 +525,23 @@ class SdkSynchronizer private constructor(
         // already exists and it completes on another thread so it should come after the
         // balance refresh is complete.
         if (shouldRefresh) {
-            twigTask("Triggering utxo refresh since $reason!", -1) {
-                refreshUtxos()
-            }
-            twigTask("Triggering balance refresh since $reason!", -1) {
-                refreshAllBalances()
-            }
-            twigTask("Triggering pending transaction refresh since $reason!", -1) {
-                refreshPendingTransactions()
-            }
-            twigTask("Triggering transaction refresh since $reason!") {
-                refreshTransactions()
-            }
+            Twig.debug { "Triggering utxo refresh since $reason!" }
+            refreshUtxos()
+
+            Twig.debug { "Triggering balance refresh since $reason!" }
+            refreshAllBalances()
+
+            Twig.debug { "Triggering pending transaction refresh since $reason!" }
+            refreshPendingTransactions()
+
+            Twig.debug { "Triggering transaction refresh since $reason!" }
+            refreshTransactions()
         }
     }
 
     @Suppress("LongMethod", "ComplexMethod")
     private suspend fun refreshPendingTransactions() {
-        twig("[cleanup] beginning to refresh and clean up pending transactions")
+        Twig.debug { "[cleanup] beginning to refresh and clean up pending transactions" }
         // TODO [#682]: this would be the place to clear out any stale pending transactions. Remove filter logic and
         //  then delete any pending transaction with sufficient confirmations (all in one db transaction).
         // TODO [#682]: https://github.com/zcash/zcash-android-wallet-sdk/issues/682
@@ -562,19 +550,19 @@ class SdkSynchronizer private constructor(
 
         allPendingTxs.filter { it.isSubmitSuccess() && !it.isMined() }
             .forEach { pendingTx ->
-                twig("checking for updates on pendingTx id: ${pendingTx.id}")
+                Twig.debug { "checking for updates on pendingTx id: ${pendingTx.id}" }
                 pendingTx.rawTransactionId?.let { rawId ->
                     storage.findMinedHeight(rawId.byteArray)?.let { minedHeight ->
-                        twig(
+                        Twig.debug {
                             "found matching transaction for pending transaction with id" +
                                 " ${pendingTx.id} mined at height $minedHeight!"
-                        )
+                        }
                         txManager.applyMinedHeight(pendingTx, minedHeight)
                     }
                 }
             }
 
-        twig("[cleanup] beginning to cleanup expired transactions", -1)
+        Twig.debug { "[cleanup] beginning to cleanup expired transactions" }
         // Experimental: cleanup expired transactions
         // note: don't delete the pendingTx until the related data has been scrubbed, or else you
         // lose the thing that identifies the other data as invalid
@@ -595,14 +583,14 @@ class SdkSynchronizer private constructor(
                 ) || it.isSafeToDiscard()
         }.forEach {
             val result = txManager.abort(it)
-            twig(
+            Twig.debug {
                 "[cleanup] FOUND EXPIRED pendingTX (lastScanHeight: $lastScannedHeight " +
                     " expiryHeight: ${it.expiryHeight}): and ${it.id} " +
                     "${if (result > 0) "successfully removed" else "failed to remove"} it"
-            )
+            }
         }
 
-        twig("[cleanup] done refreshing and cleaning up pending transactions", -1)
+        Twig.debug { "[cleanup] done refreshing and cleaning up pending transactions" }
     }
 
     //
@@ -641,7 +629,8 @@ class SdkSynchronizer private constructor(
         // once
         val deferred = coroutineScope.async {
             // Emit the placeholder transaction, then switch to monitoring the database
-            val placeHolderTx = txManager.initSpend(amount, TransactionRecipient.Address(toAddress), memo, usk.account)
+            val placeHolderTx =
+                txManager.initSpend(amount, TransactionRecipient.Address(toAddress), memo, usk.account)
 
             txManager.encode(usk, placeHolderTx).let { encodedTx ->
                 txManager.submit(encodedTx)
@@ -660,7 +649,7 @@ class SdkSynchronizer private constructor(
         usk: UnifiedSpendingKey,
         memo: String
     ): Flow<PendingTransaction> {
-        twig("Initializing shielding transaction")
+        Twig.debug { "Initializing shielding transaction" }
         val deferred = coroutineScope.async {
             val tAddr = processor.getTransparentAddress(usk.account)
             val tBalance = processor.getUtxoCacheBalance(tAddr)
@@ -764,7 +753,16 @@ internal object DefaultSynchronizerFactory {
         seed: ByteArray?,
         viewingKeys: List<UnifiedFullViewingKey>
     ): DerivedDataRepository =
-        DbDerivedDataRepository(DerivedDataDb.new(context, rustBackend, zcashNetwork, checkpoint, seed, viewingKeys))
+        DbDerivedDataRepository(
+            DerivedDataDb.new(
+                context,
+                rustBackend,
+                zcashNetwork,
+                checkpoint,
+                seed,
+                viewingKeys
+            )
+        )
 
     internal fun defaultCompactBlockRepository(context: Context, cacheDbFile: File, zcashNetwork: ZcashNetwork):
         CompactBlockRepository =

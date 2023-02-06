@@ -3,7 +3,7 @@ package cash.z.ecc.android.sdk.internal.ext
 import android.content.Context
 import android.os.Build
 import android.provider.Settings
-import cash.z.ecc.android.sdk.internal.twig
+import cash.z.ecc.android.sdk.internal.Twig
 import kotlin.properties.ReadOnlyProperty
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
@@ -12,7 +12,7 @@ import kotlin.reflect.KProperty
 class SampleSpendingKeyProvider(private val seedValue: String) : ReadWriteProperty<Any?, String> {
 
     override fun setValue(thisRef: Any?, property: KProperty<*>, value: String) {
-        twig("Set value called on property: $property, with value: $value.")
+        Twig.debug { "Set value called on property: $property, with value: $value." }
     }
 
     override fun getValue(thisRef: Any?, property: KProperty<*>): String {

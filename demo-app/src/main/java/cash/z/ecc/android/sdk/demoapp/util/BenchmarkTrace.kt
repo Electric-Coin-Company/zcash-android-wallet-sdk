@@ -2,7 +2,7 @@ package cash.z.ecc.android.sdk.demoapp.util
 
 import android.os.Looper
 import androidx.tracing.Trace
-import cash.z.ecc.android.sdk.internal.twig
+import cash.z.ecc.android.sdk.internal.Twig
 import co.electriccoin.lightwallet.client.ext.BenchmarkingExt
 
 interface BenchmarkTrace {
@@ -20,7 +20,7 @@ interface BenchmarkTrace {
 
 object SyncBlockchainBenchmarkTrace : BenchmarkTrace {
     fun writeEvent(event: BenchmarkTrace.Event?) {
-        twig("New SyncBlockchain event: $event arrived.")
+        Twig.debug { "New SyncBlockchain event: $event arrived." }
         if (!BenchmarkingExt.isBenchmarking()) {
             return
         }
@@ -56,7 +56,8 @@ object SyncBlockchainBenchmarkTrace : BenchmarkTrace {
             Event.SCAN_END -> {
                 Trace.endAsyncSection(Event.SCAN_END.section, Event.SCAN_END.cookie)
             }
-            else -> { /* nothing to write */ }
+            else -> { /* nothing to write */
+            }
         }
     }
 
@@ -107,7 +108,7 @@ object SyncBlockchainBenchmarkTrace : BenchmarkTrace {
 
 object ProvideAddressBenchmarkTrace : BenchmarkTrace {
     fun writeEvent(event: BenchmarkTrace.Event?) {
-        twig("New ProvideAddress event: $event arrived.")
+        Twig.debug { "New ProvideAddress event: $event arrived." }
         if (!BenchmarkingExt.isBenchmarking()) {
             return
         }
@@ -140,7 +141,8 @@ object ProvideAddressBenchmarkTrace : BenchmarkTrace {
             Event.TRANSPARENT_ADDRESS_END -> {
                 Trace.endAsyncSection(Event.TRANSPARENT_ADDRESS_END.section, Event.TRANSPARENT_ADDRESS_END.cookie)
             }
-            else -> { /* nothing to write */ }
+            else -> { /* nothing to write */
+            }
         }
     }
 

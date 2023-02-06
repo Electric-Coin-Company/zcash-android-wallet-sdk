@@ -28,7 +28,7 @@ internal class NoBackupContextWrapper(
      * @return File located under no_backup/co.electricoin.zcash directory.
      */
     override fun getDatabasePath(name: String): File {
-        twig("Database: $name in directory: ${parentDir.absolutePath}")
+        Twig.debug { "Database: $name in directory: ${parentDir.absolutePath}" }
         return File(parentDir, name)
     }
 

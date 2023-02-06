@@ -21,7 +21,6 @@ import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
 import androidx.viewbinding.ViewBinding
 import cash.z.ecc.android.sdk.demoapp.util.fromResources
-import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.model.defaultForNetwork
 import co.electriccoin.lightwallet.client.BlockingLightWalletClient
@@ -169,12 +168,12 @@ class MainActivity :
     override fun onDrawerSlide(drawerView: View, slideOffset: Float) {
     }
 
-    override fun onDrawerClosed(drawerView: View) {
-        twig("Drawer closed.")
-    }
-
     override fun onDrawerOpened(drawerView: View) {
         hideKeyboard()
+    }
+
+    override fun onDrawerClosed(drawerView: View) {
+        // Do nothing
     }
 }
 

@@ -1,221 +1,183 @@
-@file:Suppress("NOTHING_TO_INLINE", "MagicNumber")
-
 package cash.z.ecc.android.sdk.internal
+
+import android.app.ActivityManager
+import android.app.Application
+import android.content.Context
+import android.os.Build
+import android.os.Process
+import android.util.Log
+import androidx.annotation.RequiresApi
 import java.util.Locale
-import java.util.concurrent.CopyOnWriteArraySet
-import kotlin.math.roundToLong
-
-internal typealias Leaf = String
 
 /**
- * A tiny log.
+ * A twig is a tiny log. These logs are intended for development rather than for high performance
+ * or usage in production.
  */
-interface Twig {
-
+@Suppress("TooManyFunctions")
+object Twig {
     /**
-     * Log the message. Simple.
+     * Format string for log messages.
+     *
+     * The format is: <Process> <Thread> <Class>.<method>(): <message>
      */
-    fun twig(logMessage: String = "", priority: Int = 0)
+    private const val FORMAT = "%-27s %-30s %s.%s(): %s" // $NON-NLS-1$
 
-    /**
-     * Bundles twigs together.
-     */
-    operator fun plus(twig: Twig): Twig {
-        // if the other twig is a composite twig, let it handle the addition
-        return if (twig is CompositeTwig) twig.plus(this) else CompositeTwig(mutableListOf(this, twig))
-    }
-    companion object {
-
-        /**
-         * Access the trunk corresponding to this twig.
-         */
-        val trunk get() = Bush.trunk
-
-        /**
-         * Convenience function to just turn this thing on. Twigs are silent by default so this is
-         * most useful to enable developer logging at the right time.
-         */
-        fun enabled(isEnabled: Boolean) {
-            if (isEnabled) plant(TroubleshootingTwig()) else plant(SilentTwig())
-        }
-
-        /**
-         * Plants the twig, making it the one and only bush. Twigs can be bundled together to create
-         * the appearance of multiple bushes (i.e `Twig.plant(twigA + twigB + twigC)`) even though
-         * there's only ever one bush.
-         */
-        fun plant(rootTwig: Twig) {
-            Bush.trunk = rootTwig
-        }
-
-        /**
-         * Generate a leaf on the bush. Leaves show up in every log message as tags until they are
-         * clipped.
-         */
-        fun sprout(leaf: Leaf) = Bush.leaves.add(leaf)
-
-        /**
-         * Clip a leaf from the bush. Clipped leaves no longer appear in logs.
-         */
-        fun clip(leaf: Leaf) = Bush.leaves.remove(leaf)
-
-        /**
-         * Clip all leaves from the bush.
-         */
-        fun prune() = Bush.leaves.clear()
-    }
-}
-
-/**
- * A collection of tiny logs (twigs) consisting of one trunk and maybe some leaves. There can only
- * ever be one trunk. Trunks are created by planting a twig. Whenever a leaf sprouts, it will appear
- * as a tag on every log message until clipped.
- *
- * @see [Twig.plant]
- * @see [Twig.sprout]
- * @see [Twig.clip]
- */
-object Bush {
     @Volatile
-    var trunk: Twig = SilentTwig()
-    val leaves: MutableSet<Leaf> = CopyOnWriteArraySet<Leaf>()
-}
+    private var tag: String = "Twig"
 
-/**
- * Makes a tiny log.
- */
-inline fun twig(message: String, priority: Int = 0) = Bush.trunk.twig(message, priority)
-
-/**
- * Makes an exception.
- */
-inline fun twig(t: Throwable) = t.stackTraceToString().lines().forEach {
-    twig(it)
-}
-
-/**
- * Times a tiny log.
- */
-inline fun <R> twig(
-    logMessage: String,
-    priority: Int = 0,
-    block: () -> R
-): R = Bush.trunk.twig(
-    logMessage,
-    priority,
-    block
-)
-
-/**
- * Meticulously times a tiny task.
- */
-inline fun <R> twigTask(
-    logMessage: String,
-    priority: Int = 0,
-    block: () -> R
-): R = Bush.trunk.twigTask(
-    logMessage,
-    priority,
-    block
-)
-
-/**
- * A tiny log that does nothing. No one hears this twig fall in the woods.
- */
-class SilentTwig : Twig {
+    @Volatile
+    private var processName: String = ""
 
     /**
-     * Shh.
+     *  For best results, call this method before trying to log messages.
      */
-    override fun twig(logMessage: String, priority: Int) {
-        // shh
+    fun initialize(context: Context) {
+        tag = getApplicationName(context)
+        processName = searchForProcessName(context) ?: "Unknown"
     }
-}
 
-/**
- * A tiny log for detecting troubles. Aim at your troubles and pull the twigger.
- *
- * @param formatter a formatter for the twigs. The default one is pretty spiffy.
- * @param printer a printer for the twigs. The default is System.err.println.
- */
-open class TroubleshootingTwig(
-    val formatter: (String) -> String = spiffy(6),
-    val printer: (String) -> Any = System.err::println,
-    val minPriority: Int = 0
-) : Twig {
+    // JVMStatic is to simplify ProGuard/R8 rules for stripping this
+    @JvmStatic
+    fun verbose(message: () -> String) {
+        Log.v(tag, formatMessage(message))
+    }
+
+    // JVMStatic is to simplify ProGuard/R8 rules for stripping this
+    @JvmStatic
+    fun verbose(throwable: Throwable, message: () -> String) {
+        Log.v(tag, formatMessage(message), throwable)
+    }
+
+    // JVMStatic is to simplify ProGuard/R8 rules for stripping this
+    @JvmStatic
+    fun debug(message: () -> String) {
+        Log.d(tag, formatMessage(message))
+    }
+
+    // JVMStatic is to simplify ProGuard/R8 rules for stripping this
+    @JvmStatic
+    fun debug(throwable: Throwable, message: () -> String) {
+        Log.d(tag, formatMessage(message), throwable)
+    }
+
+    // JVMStatic is to simplify ProGuard/R8 rules for stripping this
+    @JvmStatic
+    fun info(message: () -> String) {
+        Log.i(tag, formatMessage(message))
+    }
+
+    // JVMStatic is to simplify ProGuard/R8 rules for stripping this
+    @JvmStatic
+    fun info(throwable: Throwable, message: () -> String) {
+        Log.i(tag, formatMessage(message), throwable)
+    }
+
+    // JVMStatic is to simplify ProGuard/R8 rules for stripping this
+    @JvmStatic
+    fun warn(message: () -> String) {
+        Log.w(tag, formatMessage(message))
+    }
+
+    // JVMStatic is to simplify ProGuard/R8 rules for stripping this
+    @JvmStatic
+    fun warn(throwable: Throwable, message: () -> String) {
+        Log.w(tag, formatMessage(message), throwable)
+    }
+
+    // JVMStatic is to simplify ProGuard/R8 rules for stripping this
+    @JvmStatic
+    fun error(message: () -> String) {
+        Log.e(tag, formatMessage(message))
+    }
+
+    // JVMStatic is to simplify ProGuard/R8 rules for stripping this
+    @JvmStatic
+    fun error(throwable: Throwable, message: () -> String) {
+        Log.e(tag, formatMessage(message), throwable)
+    }
 
     /**
-     * Actually print and format the log message, unlike the SilentTwig, which does nothing.
+     * Can be called in a release build to test that `assumenosideeffects` ProGuard rules have been
+     * properly processed to strip out logging messages.
      */
-    override fun twig(logMessage: String, priority: Int) {
-        if (priority >= minPriority) printer(formatter(logMessage))
+    // JVMStatic is to simplify ProGuard/R8 rules for stripping this
+    @JvmStatic
+    fun assertLoggingStripped() {
+        @Suppress("MaxLineLength")
+        throw AssertionError("Logging was not disabled by ProGuard or R8.  Logging should be disabled in release builds to reduce risk of sensitive information being leaked.") // $NON-NLS-1$
     }
 
-    companion object {
+    private const val CALL_DEPTH = 4
 
-        /**
-         * A tiny log formatter that makes twigs pretty spiffy.
-         *
-         * @param stackFrame the stack frame from which we try to derive the class. This can vary depending
-         * on how the code is called so we expose it for flexibility. Jiggle the handle on this whenever the
-         * line numbers appear incorrect.
-         */
-        fun spiffy(stackFrame: Int = 4, tag: String = "@TWIG"): (String) -> String = { logMessage: String ->
-            val stack = Thread.currentThread().stackTrace[stackFrame]
-            val time = String.format(
-                Locale.ENGLISH,
-                "$tag %1\$tD %1\$tI:%1\$tM:%1\$tS.%1\$tN",
-                System.currentTimeMillis()
-            )
-            val className = stack.className.split(".").lastOrNull()?.split("\$")?.firstOrNull()
-            val tags = Bush.leaves.joinToString(" #", "#")
-            "$time[$className:${stack.lineNumber}]($tags)    $logMessage"
-        }
-    }
-}
+    private fun formatMessage(message: () -> String): String {
+        val currentThread = Thread.currentThread()
+        val trace = currentThread.stackTrace
+        val sourceClass = trace[CALL_DEPTH].className
+        val sourceMethod = trace[CALL_DEPTH].methodName
 
-/**
- * Since there can only ever be one trunk on the bush of twigs, this class lets
- * you cheat and make that trunk be a bundle of twigs.
- */
-open class CompositeTwig(open val twigBundle: MutableList<Twig>) :
-    Twig {
-    override operator fun plus(twig: Twig): Twig {
-        if (twig is CompositeTwig) twigBundle.addAll(twig.twigBundle) else twigBundle.add(twig)
-        return this
-    }
-
-    override fun twig(logMessage: String, priority: Int) {
-        for (twig in twigBundle) {
-            twig.twig(logMessage, priority)
-        }
+        return String.format(
+            Locale.ROOT,
+            FORMAT,
+            processName,
+            currentThread.name,
+            cleanupClassName(sourceClass),
+            sourceMethod,
+            message()
+        )
     }
 }
 
 /**
- * Times a tiny log. Execute the block of code on the clock.
- */
-inline fun <R> Twig.twig(logMessage: String, priority: Int = 0, block: () -> R): R {
-    val start = System.currentTimeMillis()
-    val result = block()
-    val elapsed = (System.currentTimeMillis() - start)
-    twig("$logMessage | ${elapsed}ms", priority)
-    return result
-}
-
-/**
- * A tiny log task. Execute the block of code with some twigging around the outside. For silent
- * twigs, this adds a small amount of overhead at the call site but still avoids logging.
+ * Gets the name of the application or the package name if the application has no name.
  *
- * note: being an extension function (i.e. static rather than a member of the Twig interface) allows
- *       this function to be inlined and simplifies its use with suspend functions
- *       (otherwise the function and its "block" param would have to suspend)
+ * @param context Application context.
+ * @return Label of the application from the Android Manifest or the package name if no label
+ * was set.
  */
-inline fun <R> Twig.twigTask(logMessage: String, priority: Int = 0, block: () -> R): R {
-    twig("$logMessage - started   | on thread ${Thread.currentThread().name}", priority)
-    val start = System.nanoTime()
-    val result = block()
-    val elapsed = ((System.nanoTime() - start) / 1e5).roundToLong() / 10L
-    twig("$logMessage - completed | in $elapsed ms" + " on thread ${Thread.currentThread().name}", priority)
-    return result
+private fun getApplicationName(context: Context): String {
+    val applicationLabel = context.packageManager.getApplicationLabel(context.applicationInfo)
+
+    return applicationLabel.toString().lowercase(Locale.ROOT).replace(" ", "-")
+}
+
+private fun cleanupClassName(classNameString: String): String {
+    val outerClassName = classNameString.substringBefore('$')
+    val simplerOuterClassName = outerClassName.substringAfterLast('.')
+    return if (simplerOuterClassName.isEmpty()) {
+        classNameString
+    } else {
+        simplerOuterClassName.removeSuffix("Kt")
+    }
+}
+
+/**
+ * @param context Application context.
+ * @return Name of the current process.  May return null if a failure occurs, which is possible
+ * due to some race conditions in Android.
+ */
+private fun searchForProcessName(context: Context): String? {
+    return if (AndroidApiVersion.isAtLeastT) {
+        getProcessNameTPlus()
+    } else if (AndroidApiVersion.isAtLeastP) {
+        getProcessNamePPlus()
+    } else {
+        searchForProcessNameLegacy(context)
+    }
+}
+
+@RequiresApi(api = Build.VERSION_CODES.TIRAMISU)
+private fun getProcessNameTPlus() = Process.myProcessName()
+
+@RequiresApi(api = Build.VERSION_CODES.P)
+private fun getProcessNamePPlus() = Application.getProcessName()
+
+/**
+ * @param context Application context.
+ * @return Name of the current process.  May return null if a failure occurs, which is possible
+ * due to some race conditions in older versions of Android.
+ */
+private fun searchForProcessNameLegacy(context: Context): String? {
+    val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+
+    return activityManager.runningAppProcesses?.find { Process.myPid() == it.pid }?.processName
 }

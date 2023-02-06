@@ -6,7 +6,6 @@ import androidx.paging.Config
 import androidx.paging.DataSource
 import androidx.paging.PagedList
 import cash.z.ecc.android.sdk.internal.Twig
-import cash.z.ecc.android.sdk.internal.twig
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExecutorCoroutineDispatcher
@@ -50,10 +49,9 @@ class FlowPagedListBuilder<Key, Value>(
             private val callback = DataSource.InvalidatedCallback { invalidate() }
 
             override fun compute(): PagedList<Value> {
-                Twig.sprout("computing")
                 var initializeKey = initialLoadKey
                 if (::list.isInitialized) {
-                    twig("list is initialized")
+                    Twig.debug { "list is initialized" }
                     @Suppress("UNCHECKED_CAST")
                     initializeKey = list.lastKey as Key
                 }
@@ -64,7 +62,7 @@ class FlowPagedListBuilder<Key, Value>(
                     }
 
                     dataSource = dataSourceFactory.create().apply {
-                        twig("adding an invalidated callback")
+                        Twig.debug { "adding an invalidated callback" }
                         addInvalidatedCallback(callback)
                     }
 
@@ -75,9 +73,7 @@ class FlowPagedListBuilder<Key, Value>(
                         .setInitialKey(initializeKey)
                         .build()
                 } while (list.isDetached)
-                return list.also {
-                    Twig.clip("computing")
-                }
+                return list
             }
         }.flow
     }

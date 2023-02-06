@@ -1,9 +1,9 @@
 package cash.z.ecc.android.sdk.internal.block
 
+import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.ext.retryUpTo
 import cash.z.ecc.android.sdk.internal.model.from
 import cash.z.ecc.android.sdk.internal.repository.CompactBlockRepository
-import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.BlockHeight
 import co.electriccoin.lightwallet.client.BlockingLightWalletClient
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
@@ -83,7 +83,7 @@ open class CompactBlockDownloader private constructor(val compactBlockRepository
                 is Response.Success -> return@withContext response.result
                 else -> {
                     lightWalletClient.reconnect()
-                    twig("WARNING: reconnecting to server in response to failure (retry #${it + 1})")
+                    Twig.warn { "WARNING: reconnecting to server in response to failure (retry #${it + 1})" }
                 }
             }
         }

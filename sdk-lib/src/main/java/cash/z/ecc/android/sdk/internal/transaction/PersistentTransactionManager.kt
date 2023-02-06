@@ -3,6 +3,7 @@ package cash.z.ecc.android.sdk.internal.transaction
 import android.content.Context
 import androidx.room.RoomDatabase
 import cash.z.ecc.android.sdk.ext.ZcashSdk
+import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.db.commonDatabaseBuilder
 import cash.z.ecc.android.sdk.internal.db.pending.PendingTransactionDao
 import cash.z.ecc.android.sdk.internal.db.pending.PendingTransactionDb
@@ -11,7 +12,6 @@ import cash.z.ecc.android.sdk.internal.db.pending.isCancelled
 import cash.z.ecc.android.sdk.internal.db.pending.isFailedEncoding
 import cash.z.ecc.android.sdk.internal.db.pending.isSubmitted
 import cash.z.ecc.android.sdk.internal.db.pending.recipient
-import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.PendingTransaction
@@ -68,7 +68,7 @@ internal class PersistentTransactionManager(
         memo: String,
         account: Account
     ): PendingTransaction = withContext(Dispatchers.IO) {
-        twig("constructing a placeholder transaction")
+        Twig.debug { "constructing a placeholder transaction" }
 
         val toAddress = if (recipient is TransactionRecipient.Address) {
             recipient.addressValue
@@ -93,20 +93,19 @@ internal class PersistentTransactionManager(
         try {
             safeUpdate("creating tx in DB") {
                 tx = findById(create(tx))!!
-                twig("successfully created TX in DB with id: ${tx.id}")
+                Twig.debug { "successfully created TX in DB with id: ${tx.id}" }
             }
         } catch (t: Throwable) {
-            twig(
-                "Unknown error while attempting to create and fetch pending transaction:" +
-                    " ${t.message} caused by: ${t.cause}"
-            )
+            Twig.debug(t) {
+                "Unknown error while attempting to create and fetch pending transaction"
+            }
         }
 
         tx.toPendingTransaction(zcashNetwork)
     }
 
     override suspend fun applyMinedHeight(pendingTx: PendingTransaction, minedHeight: BlockHeight) {
-        twig("a pending transaction has been mined!")
+        Twig.debug { "a pending transaction has been mined!" }
         safeUpdate("updating mined height for pending tx id: ${pendingTx.id} to $minedHeight") {
             updateMinedHeight(pendingTx.id, minedHeight.value)
         }
@@ -116,20 +115,20 @@ internal class PersistentTransactionManager(
         usk: UnifiedSpendingKey,
         pendingTx: PendingTransaction
     ): PendingTransaction = withContext(Dispatchers.IO) {
-        twig("managing the creation of a transaction")
+        Twig.debug { "managing the creation of a transaction" }
 
         var tx = PendingTransactionEntity.from(pendingTx)
 
         @Suppress("TooGenericExceptionCaught")
         try {
-            twig("beginning to encode transaction with : $encoder")
+            Twig.debug { "beginning to encode transaction with : $encoder" }
             val encodedTx = encoder.createTransaction(
                 usk,
                 pendingTx.value,
                 pendingTx.recipient,
                 pendingTx.memo?.byteArray
             )
-            twig("successfully encoded transaction!")
+            Twig.debug { "successfully encoded transaction!" }
             safeUpdate("updating transaction encoding", -1) {
                 updateEncoding(
                     pendingTx.id,
@@ -142,7 +141,7 @@ internal class PersistentTransactionManager(
         } catch (t: Throwable) {
             var message = "failed to encode transaction due to : ${t.message}"
             t.cause?.let { message += " caused by: $it" }
-            twig(message)
+            Twig.debug { message }
             safeUpdate("updating transaction error info") {
                 updateError(pendingTx.id, message, ERROR_ENCODING)
             }
@@ -163,24 +162,24 @@ internal class PersistentTransactionManager(
         usk: UnifiedSpendingKey,
         pendingTx: PendingTransaction
     ): PendingTransaction {
-        twig("managing the creation of a shielding transaction")
+        Twig.debug { "managing the creation of a shielding transaction" }
         var tx = PendingTransactionEntity.from(pendingTx)
         @Suppress("TooGenericExceptionCaught")
         try {
-            twig("beginning to encode shielding transaction with : $encoder")
+            Twig.debug { "beginning to encode shielding transaction with : $encoder" }
             val encodedTx = encoder.createShieldingTransaction(
                 usk,
                 tx.recipient,
                 tx.memo
             )
-            twig("successfully encoded shielding transaction!")
+            Twig.debug { "successfully encoded shielding transaction!" }
             safeUpdate("updating shielding transaction encoding") {
                 updateEncoding(tx.id, encodedTx.raw.byteArray, encodedTx.txId.byteArray, encodedTx.expiryHeight?.value)
             }
         } catch (t: Throwable) {
             var message = "failed to encode auto-shielding transaction due to : ${t.message}"
             t.cause?.let { message += " caused by: $it" }
-            twig(message)
+            Twig.debug { message }
             safeUpdate("updating shielding transaction error info") {
                 updateError(tx.id, message, ERROR_ENCODING)
             }
@@ -207,27 +206,28 @@ internal class PersistentTransactionManager(
             // do nothing if failed or cancelled
             when {
                 tx.isFailedEncoding() ->
-                    twig("Warning: this transaction will not be submitted because it failed to be encoded.")
+                    Twig.warn { "This transaction will not be submitted because it failed to be encoded." }
                 tx.isCancelled() ->
-                    twig(
-                        "Warning: ignoring cancelled transaction with id ${tx.id}. We will not submit it to" +
+                    Twig.warn {
+                        "Ignoring cancelled transaction with id ${tx.id}. We will not submit it to" +
                             " the network because it has been cancelled."
-                    )
+                    }
                 else -> {
-                    twig("submitting transaction with memo: ${tx.memo} amount: ${tx.value}", -1)
+                    Twig.debug { "submitting transaction with memo: ${tx.memo} amount: ${tx.value}" }
                     when (val response = service.submitTransaction(tx.raw)) {
                         is Response.Success -> {
-                            twig("SUCCESS: submit transaction completed with response: ${response.result}")
+                            Twig.debug { "SUCCESS: submit transaction completed with response: ${response.result}" }
                             safeUpdate("updating submitted transaction (hadError: false)", -1) {
                                 updateError(tx.id, null, response.result.code)
                                 updateSubmitAttempts(tx.id, max(1, tx.submitAttempts + 1))
                             }
                         }
                         is Response.Failure -> {
-                            twig(
-                                "FAILURE! submit transaction completed with response: ${response.code}: ${response
-                                    .description}"
-                            )
+                            Twig.debug {
+                                "FAILURE! submit transaction completed with response: ${response.code}: ${
+                                    response.description
+                                }"
+                            }
                             safeUpdate("updating submitted transaction (hadError: true)", -1) {
                                 updateError(tx.id, response.description, response.code)
                                 updateSubmitAttempts(tx.id, max(1, tx.submitAttempts + 1))
@@ -241,7 +241,7 @@ internal class PersistentTransactionManager(
             var message =
                 "Unknown error while submitting transaction: ${t.message}"
             t.cause?.let { message += " caused by: $it" }
-            twig(message)
+            Twig.debug { message }
             safeUpdate("updating submission failure") {
                 updateError(tx.id, t.message, ERROR_SUBMITTING)
                 updateSubmitAttempts(tx.id, max(1, tx.submitAttempts + 1))
@@ -272,10 +272,10 @@ internal class PersistentTransactionManager(
         return pendingTransactionDao {
             val tx = findById(pendingId)
             if (tx?.isSubmitted() == true) {
-                twig("Attempt to cancel transaction failed because it has already been submitted!")
+                Twig.debug { "Attempt to cancel transaction failed because it has already been submitted!" }
                 false
             } else {
-                twig("Cancelling unsubmitted transaction id: $pendingId")
+                Twig.debug { "Cancelling unsubmitted transaction id: $pendingId" }
                 cancel(pendingId)
                 true
             }
@@ -288,7 +288,7 @@ internal class PersistentTransactionManager(
 
     override suspend fun markForDeletion(id: Long) = pendingTransactionDao {
         withContext(IO) {
-            twig("[cleanup] marking pendingTx $id for deletion")
+            Twig.debug { "[cleanup] marking pendingTx $id for deletion" }
             removeRawTransactionId(id)
             updateError(
                 id,
@@ -307,7 +307,7 @@ internal class PersistentTransactionManager(
      */
     override suspend fun abort(transaction: PendingTransaction): Int {
         return pendingTransactionDao {
-            twig("[cleanup] Deleting pendingTxId: ${transaction.id}")
+            Twig.debug { "[cleanup] Deleting pendingTxId: ${transaction.id}" }
             delete(PendingTransactionEntity.from(transaction))
         }
     }
@@ -323,6 +323,7 @@ internal class PersistentTransactionManager(
      * try/catch block, surrounded by logging. So this helps with that while also ensuring that no other coroutines are
      * concurrently interacting with the DAO.
      */
+    @Suppress("UNUSED_PARAMETER")
     private suspend fun <R> safeUpdate(
         logMessage: String = "",
         priority: Int = 0,
@@ -330,14 +331,12 @@ internal class PersistentTransactionManager(
     ): R? {
         @Suppress("TooGenericExceptionCaught")
         return try {
-            twig(logMessage, priority)
+            Twig.debug { logMessage }
             pendingTransactionDao { block() }
         } catch (t: Throwable) {
-            twig(
-                "Unknown error while attempting to '$logMessage':" +
-                    " ${t.message} caused by: ${t.cause} stacktrace: ${t.stackTrace}",
-                priority
-            )
+            Twig.debug(t) {
+                "Unknown error while attempting to '$logMessage'"
+            }
             null
         }
     }

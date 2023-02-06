@@ -1,6 +1,6 @@
 package cash.z.ecc.android.sdk.internal.ext
 
-import cash.z.ecc.android.sdk.internal.twig
+import cash.z.ecc.android.sdk.internal.Twig
 
 @Suppress("SwallowedException", "TooGenericExceptionCaught")
 internal inline fun <R> tryNull(block: () -> R): R? {
@@ -20,7 +20,7 @@ internal inline fun <R> tryNull(block: () -> R): R? {
  */
 @Suppress("TooGenericExceptionCaught")
 internal inline fun <R> tryWarn(
-    message: String,
+    @Suppress("UNUSED_PARAMETER") message: String,
     ifContains: String? = null,
     unlessContains: String? = null,
     block: () -> R
@@ -39,7 +39,7 @@ internal inline fun <R> tryWarn(
         if (shouldThrowAnyway) {
             throw t
         } else {
-            twig("$message due to: $t")
+            Twig.debug(t) { "" }
             null
         }
     }

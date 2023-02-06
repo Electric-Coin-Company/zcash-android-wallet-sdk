@@ -3,7 +3,6 @@ package cash.z.ecc.android.sdk.darkside.reorgs
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import cash.z.ecc.android.sdk.darkside.test.DarksideTestCoordinator
 import cash.z.ecc.android.sdk.darkside.test.ScopedTest
-import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import org.junit.BeforeClass
@@ -35,7 +34,6 @@ class InboundTxTests : ScopedTest() {
 
     @Test
     fun testTxCountAfter() {
-        twig("ADDING TRANSACTIONS!!!")
         // add 2 transactions to block 663188 and 'mine' that block
         addTransactions(targetTxBlock, tx663174, tx663188)
         sithLord.await(timeout = 30_000L, targetHeight = targetTxBlock)

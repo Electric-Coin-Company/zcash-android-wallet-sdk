@@ -2,7 +2,6 @@ package cash.z.ecc.android.sdk.sample
 
 import androidx.test.filters.LargeTest
 import cash.z.ecc.android.sdk.ext.ZcashSdk
-import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
@@ -36,12 +35,10 @@ class TransparentRestoreSample {
 
     //    @Test
     fun sendZ2Texternal() = runBlocking {
-        twig("Syncing WalletExt")
         val extWallet = TestWallet(TestWallet.Backups.ALICE, alias = "WalletE")
         extWallet.sync()
 //        extWallet.send(542, walletSandbox.transparentAddress, "External funds memo is lost, though")
         delay(1000)
-        twig("Done sending funds to external address (Z->T COMPLETE!)")
     }
 
     //    @Test
@@ -49,21 +46,17 @@ class TransparentRestoreSample {
 //        walletSandbox.sync()
 //        walletZ2T.send(543, externalTransparentAddress, "External funds memo is lost, though")
         delay(1000)
-        twig("Done sending funds to external address (Z->T COMPLETE!)")
     }
 
 //    @Test
     fun autoShield() = runBlocking<Unit> {
         val wallet = TestWallet(TestWallet.Backups.SAMPLE_WALLET, alias = "WalletC")
         wallet.sync()
-        twig("Done syncing wallet!")
         val tbalance = wallet.transparentBalance()
         val address = wallet.transparentAddress
 
-        twig("t-avail: ${tbalance.available}  t-total: ${tbalance.total}")
         Assert.assertTrue("Not enough funds to run sample. Expected some Zatoshi but found ${tbalance.available}. Try adding funds to $address", tbalance.available.value > 0)
 
-        twig("Shielding available transparent funds!")
 //        wallet.shieldFunds()
     }
 
@@ -126,15 +119,12 @@ class TransparentRestoreSample {
             )
         )
         //        val job = walletA.walletScope.launch {
-        //            twig("Syncing WalletA")
         //            walletA.sync()
         //        }
-        twig("Syncing WalletSandbox")
         walletSandbox.sync()
         //        job.join()
         delay(500)
 
-        twig("Done syncing both wallets!")
         //        val value = walletA.available
         //        val address = walletA.shieldedAddress
         //        Assert.assertTrue("Not enough funds to run sample. Expected at least $TX_VALUE Zatoshi but found $value. Try adding funds to $address", value >= TX_VALUE)
@@ -143,8 +133,6 @@ class TransparentRestoreSample {
         //        walletA.send(TX_VALUE, walletA.transparentAddress, "${TransparentRestoreSample::class.java.simpleName} z->t")
 
         walletSandbox.rewindToHeight(BlockHeight.new(ZcashNetwork.Testnet, 1339178))
-        twig("Done REWINDING!")
-        twig("T-ADDR (for the win!): ${walletSandbox.transparentAddress}")
         delay(500)
         //        walletB.sync()
         // rewind database B to height then rescan
