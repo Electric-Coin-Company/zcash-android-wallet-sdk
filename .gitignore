@@ -83,3 +83,4 @@ backup-dbs/
 *.db
 .DS_Store
 /.idea/androidTestResultsUserPreferences.xml
+/.idea/inspectionProfiles/Project_Default.xml

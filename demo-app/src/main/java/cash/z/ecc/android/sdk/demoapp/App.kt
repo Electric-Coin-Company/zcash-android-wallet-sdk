@@ -1,15 +1,15 @@
 package cash.z.ecc.android.sdk.demoapp
 
 import androidx.multidex.MultiDexApplication
-import cash.z.ecc.android.sdk.demoapp.util.Twig
+import cash.z.ecc.android.sdk.internal.Twig2
 
 class App : MultiDexApplication() {
 
     override fun onCreate() {
         super.onCreate()
 
-        Twig.initialize(applicationContext)
-        Twig.info { "Starting application…" }
+        Twig2.initialize(applicationContext)
+        Twig2.info { "Starting application…" }
 
         if (BuildConfig.DEBUG) {
             StrictModeHelper.enableStrictMode()
@@ -18,7 +18,7 @@ class App : MultiDexApplication() {
             cash.z.ecc.android.sdk.internal.Twig.enabled(true)
         } else {
             // In release builds, logs should be stripped by R8 rules
-            Twig.assertLoggingStripped()
+            Twig2.assertLoggingStripped()
         }
     }
 }

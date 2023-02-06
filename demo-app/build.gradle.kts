@@ -101,6 +101,7 @@ android {
 dependencies {
     // SDK
     implementation(projects.sdkLib)
+    implementation(projects.sdkIncubatorLib)
 
     // sample mnemonic plugin
     implementation(libs.zcashwalletplgn)

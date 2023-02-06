@@ -3,7 +3,7 @@
 -renamesourcefileattribute SourceFile
 
 # Strip out log messages
--assumenosideeffects public class cash.z.ecc.android.sdk.demoapp.util.Twig {
+-assumenosideeffects public class cash.z.ecc.android.sdk.util.Twig {
     public static *** verbose(...);
     public static *** debug(...);
     public static *** info(...);

@@ -1,9 +1,9 @@
 package cash.z.ecc.android.sdk.demoapp.preference
 
-import cash.z.ecc.android.sdk.demoapp.model.PersistableWallet
 import cash.z.ecc.android.sdk.demoapp.preference.api.PreferenceProvider
 import cash.z.ecc.android.sdk.demoapp.preference.model.entry.Key
 import cash.z.ecc.android.sdk.demoapp.preference.model.entry.PreferenceDefault
+import cash.z.ecc.android.sdk.model.PersistableWallet
 import org.json.JSONObject
 
 data class PersistableWalletPreferenceDefault(

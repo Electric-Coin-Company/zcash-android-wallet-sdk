@@ -10,6 +10,8 @@ pluginManager.withPlugin("com.android.application") {
             minSdk = project.property("ANDROID_MIN_SDK_VERSION").toString().toInt()
             targetSdk = project.property("ANDROID_TARGET_SDK_VERSION").toString().toInt()
 
+            multiDexEnabled = true
+
             // en_XA and ar_XB are pseudolocales for debugging.
             // The rest of the locales provides an explicit list of the languages to keep in the
             // final app.  Doing this will strip out additional locales from libraries like
@@ -33,6 +35,8 @@ pluginManager.withPlugin("com.android.library") {
             minSdk = project.property("ANDROID_MIN_SDK_VERSION").toString().toInt()
             // This is deprecated but there isn't a replacement for it yet with instrumentation tests.
             targetSdk = project.property("ANDROID_TARGET_SDK_VERSION").toString().toInt()
+
+            multiDexEnabled = true
 
             // The last two are for support of pseudolocales in debug builds.
             // If we add other localizations, they should be included in this list.
@@ -61,6 +65,8 @@ pluginManager.withPlugin("com.android.test") {
             minSdk = project.property("ANDROID_MIN_SDK_VERSION").toString().toInt()
             targetSdk = project.property("ANDROID_TARGET_SDK_VERSION").toString().toInt()
 
+            multiDexEnabled = true
+
             // The last two are for support of pseudolocales in debug builds.
             // If we add other localizations, they should be included in this list.
             // By explicitly setting supported locales, we strip out unused localizations from third party
@@ -85,6 +91,8 @@ fun com.android.build.gradle.BaseExtension.configureBaseExtension() {
     ndkVersion = project.property("ANDROID_NDK_VERSION").toString()
 
     compileOptions {
+        isCoreLibraryDesugaringEnabled = true
+
         val javaVersion = JavaVersion.toVersion(project.property("ANDROID_JVM_TARGET").toString())
         sourceCompatibility = javaVersion
         targetCompatibility = javaVersion
@@ -137,6 +145,13 @@ fun com.android.build.gradle.BaseExtension.configureBaseExtension() {
                 }
             }
         }
+    }
+
+    dependencies {
+        add(
+            "coreLibraryDesugaring",
+            "com.android.tools:desugar_jdk_libs:${project.property("CORE_LIBRARY_DESUGARING_VERSION")}"
+        )
     }
 
     if (this is CommonExtension<*, *, *, *>) {

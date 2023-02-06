@@ -20,9 +20,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import cash.z.ecc.android.sdk.demoapp.R
-import cash.z.ecc.android.sdk.demoapp.model.toZecString
 import cash.z.ecc.android.sdk.demoapp.ui.screen.home.viewmodel.WalletSnapshot
 import cash.z.ecc.android.sdk.ext.ZcashSdk
+import cash.z.ecc.android.sdk.model.toZecString
 
 // @Preview
 // @Composable
