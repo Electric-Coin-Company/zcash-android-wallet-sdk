@@ -11,6 +11,7 @@ Thankfully, the only thing an app developer has to be concerned with is the foll
 The SDK is broken down into several logical components, implemented as Gradle modules.  At a high level, the modularization is:
 
  * sdk-lib — Compiles all of the modules together for the SDK.
+ * sdk-incubator-lib — Incubator for new APIs that may eventually be promoted to the SDK.  Classes are packaged to match the SDK, so that moving them will not necessarily change the API.  While SDK clients can use classes in sdk-incubator-lib, they should anticipate a greater amount of public API churn.
  * lightwallet-client-lib — Provides a set of Kotlin APIs for interacting with lightwalletd over the network.
  * darkside-test-lib — Contains integration tests for the SDK, running against a localhost lightwalletd instance running in darkside mode.  This is not run as part of the SDK test suite, because it requires some manual setup to enable.
  * demo-app — Contains a primitive demo application to exercise the SDK.
@@ -19,6 +20,8 @@ The SDK is broken down into several logical components, implemented as Gradle mo
   flowchart TB;
       lightwalletClientLib[[lightwallet-client-lib]] --> sdkLib[[sdk-lib]];
       sdkLib[[sdk-lib]] --> demoApp[[demo-app]];
+      sdkLib[[sdk-lib]] --> sdkIncubatorLib[[sdk-incubator-lib]];
+      sdkIncubatorLib[[sdk-incubator-lib]] --> demoApp[[demo-app]];
       sdkLib[[sdk-lib]] --> darksideTestLib[[darkside-test-lib]];
 ```
 

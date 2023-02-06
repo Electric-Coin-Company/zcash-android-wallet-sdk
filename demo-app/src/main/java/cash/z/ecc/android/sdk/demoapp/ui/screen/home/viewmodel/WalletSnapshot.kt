@@ -2,8 +2,8 @@ package cash.z.ecc.android.sdk.demoapp.ui.screen.home.viewmodel
 
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor
-import cash.z.ecc.android.sdk.demoapp.model.PercentDecimal
 import cash.z.ecc.android.sdk.ext.ZcashSdk
+import cash.z.ecc.android.sdk.model.PercentDecimal
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
 

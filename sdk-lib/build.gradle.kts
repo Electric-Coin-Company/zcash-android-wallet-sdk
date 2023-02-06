@@ -128,11 +128,9 @@ android {
     buildTypes {
         getByName("debug").apply {
             // test builds exceed the dex limit because they pull in large test libraries
-            multiDexEnabled = true
             isMinifyEnabled = false
         }
         getByName("release").apply {
-            multiDexEnabled = false
             isMinifyEnabled = project.property("IS_MINIFY_SDK_ENABLED").toString().toBoolean()
             proguardFiles.addAll(
                 listOf(

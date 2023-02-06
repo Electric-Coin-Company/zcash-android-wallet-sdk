@@ -1,6 +1,7 @@
 package cash.z.ecc.android.sdk.demoapp
 
 import android.content.Context
+import cash.z.ecc.android.sdk.WalletCoordinator
 import cash.z.ecc.android.sdk.demoapp.preference.EncryptedPreferenceKeys
 import cash.z.ecc.android.sdk.demoapp.preference.EncryptedPreferenceSingleton
 import cash.z.ecc.android.sdk.demoapp.util.LazyWithArgument

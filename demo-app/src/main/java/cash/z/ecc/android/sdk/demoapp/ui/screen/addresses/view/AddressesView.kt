@@ -24,7 +24,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.demoapp.R
-import cash.z.ecc.android.sdk.demoapp.model.WalletAddresses
+import cash.z.ecc.android.sdk.model.WalletAddresses
 import kotlinx.coroutines.flow.flow
 
 // @Preview

@@ -2,9 +2,9 @@ package cash.z.ecc.android.sdk.demoapp.fixture
 
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor
-import cash.z.ecc.android.sdk.demoapp.model.PercentDecimal
 import cash.z.ecc.android.sdk.demoapp.ui.screen.home.viewmodel.SynchronizerError
 import cash.z.ecc.android.sdk.demoapp.ui.screen.home.viewmodel.WalletSnapshot
+import cash.z.ecc.android.sdk.model.PercentDecimal
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
 

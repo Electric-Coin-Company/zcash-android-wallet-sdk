@@ -6,26 +6,28 @@ import androidx.lifecycle.viewModelScope
 import cash.z.ecc.android.bip39.Mnemonics
 import cash.z.ecc.android.bip39.toSeed
 import cash.z.ecc.android.sdk.Synchronizer
+import cash.z.ecc.android.sdk.WalletCoordinator
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor
-import cash.z.ecc.android.sdk.demoapp.WalletCoordinator
 import cash.z.ecc.android.sdk.demoapp.getInstance
-import cash.z.ecc.android.sdk.demoapp.model.PercentDecimal
-import cash.z.ecc.android.sdk.demoapp.model.PersistableWallet
-import cash.z.ecc.android.sdk.demoapp.model.WalletAddresses
-import cash.z.ecc.android.sdk.demoapp.model.ZecSend
-import cash.z.ecc.android.sdk.demoapp.model.send
 import cash.z.ecc.android.sdk.demoapp.preference.EncryptedPreferenceKeys
 import cash.z.ecc.android.sdk.demoapp.preference.EncryptedPreferenceSingleton
 import cash.z.ecc.android.sdk.demoapp.ui.common.ANDROID_STATE_FLOW_TIMEOUT
 import cash.z.ecc.android.sdk.demoapp.ui.common.throttle
-import cash.z.ecc.android.sdk.demoapp.util.Twig
+import cash.z.ecc.android.sdk.demoapp.util.fromResources
+import cash.z.ecc.android.sdk.internal.Twig2
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.PendingTransaction
+import cash.z.ecc.android.sdk.model.PercentDecimal
+import cash.z.ecc.android.sdk.model.PersistableWallet
+import cash.z.ecc.android.sdk.model.WalletAddresses
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
+import cash.z.ecc.android.sdk.model.ZcashNetwork
+import cash.z.ecc.android.sdk.model.ZecSend
 import cash.z.ecc.android.sdk.model.isMined
 import cash.z.ecc.android.sdk.model.isSubmitSuccess
+import cash.z.ecc.android.sdk.model.send
 import cash.z.ecc.android.sdk.tool.DerivationTool
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -140,7 +142,7 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
         val application = getApplication<Application>()
 
         viewModelScope.launch {
-            val newWallet = PersistableWallet.new(application)
+            val newWallet = PersistableWallet.new(application, ZcashNetwork.fromResources(application))
             persistExistingWallet(newWallet)
         }
     }
@@ -172,7 +174,7 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
                 synchronizer.send(spendingKey, zecSend)
             }
         } else {
-            Twig.info { "Unable to send funds" }
+            Twig2.info { "Unable to send funds" }
         }
     }
 
@@ -189,7 +191,7 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
                 synchronizer.shieldFunds(spendingKey)
             }
         } else {
-            Twig.info { "Unable to shield funds" }
+            Twig2.info { "Unable to shield funds" }
         }
     }
 
@@ -254,27 +256,27 @@ private fun Synchronizer.toCommonError(): Flow<SynchronizerError?> = callbackFlo
     trySend(null)
 
     onCriticalErrorHandler = {
-        Twig.error { "WALLET - Error Critical: $it" }
+        Twig2.error { "WALLET - Error Critical: $it" }
         trySend(SynchronizerError.Critical(it))
         false
     }
     onProcessorErrorHandler = {
-        Twig.error { "WALLET - Error Processor: $it" }
+        Twig2.error { "WALLET - Error Processor: $it" }
         trySend(SynchronizerError.Processor(it))
         false
     }
     onSubmissionErrorHandler = {
-        Twig.error { "WALLET - Error Submission: $it" }
+        Twig2.error { "WALLET - Error Submission: $it" }
         trySend(SynchronizerError.Submission(it))
         false
     }
     onSetupErrorHandler = {
-        Twig.error { "WALLET - Error Setup: $it" }
+        Twig2.error { "WALLET - Error Setup: $it" }
         trySend(SynchronizerError.Setup(it))
         false
     }
     onChainErrorHandler = { x, y ->
-        Twig.error { "WALLET - Error Chain: $x, $y" }
+        Twig2.error { "WALLET - Error Chain: $x, $y" }
         trySend(SynchronizerError.Chain(x, y))
     }
 

@@ -33,18 +33,18 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import cash.z.ecc.android.sdk.demoapp.R
-import cash.z.ecc.android.sdk.demoapp.fixture.WalletFixture
-import cash.z.ecc.android.sdk.demoapp.model.Memo
-import cash.z.ecc.android.sdk.demoapp.model.MonetarySeparators
-import cash.z.ecc.android.sdk.demoapp.model.ZecSend
-import cash.z.ecc.android.sdk.demoapp.model.ZecSendExt
-import cash.z.ecc.android.sdk.demoapp.model.ZecString
-import cash.z.ecc.android.sdk.demoapp.model.ZecStringExt
-import cash.z.ecc.android.sdk.demoapp.model.toZecString
 import cash.z.ecc.android.sdk.demoapp.ui.common.MINIMAL_WEIGHT
 import cash.z.ecc.android.sdk.demoapp.ui.screen.home.viewmodel.WalletSnapshot
 import cash.z.ecc.android.sdk.demoapp.util.fromResources
+import cash.z.ecc.android.sdk.fixture.WalletFixture
+import cash.z.ecc.android.sdk.model.Memo
+import cash.z.ecc.android.sdk.model.MonetarySeparators
 import cash.z.ecc.android.sdk.model.ZcashNetwork
+import cash.z.ecc.android.sdk.model.ZecSend
+import cash.z.ecc.android.sdk.model.ZecSendExt
+import cash.z.ecc.android.sdk.model.ZecString
+import cash.z.ecc.android.sdk.model.ZecStringExt
+import cash.z.ecc.android.sdk.model.toZecString
 
 // @Preview
 // @Composable

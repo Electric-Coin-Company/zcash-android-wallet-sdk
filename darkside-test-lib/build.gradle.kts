@@ -8,11 +8,6 @@ plugins {
 android {
     namespace = "cash.z.ecc.android.sdk.darkside"
 
-    defaultConfig {
-        //targetSdk = 30 //Integer.parseInt(project.property("targetSdkVersion"))
-        multiDexEnabled = true
-    }
-
     buildTypes {
         create("benchmark") {
             // We provide the extra benchmark build type just for benchmarking purposes
