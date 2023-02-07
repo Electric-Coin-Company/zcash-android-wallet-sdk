@@ -54,11 +54,11 @@ internal class CoroutineLightWalletClientImpl private constructor(
             requireChannel().createStub(streamingRequestTimeout)
                 .getBlockRange(heightRange.toBlockRange())
                 .map {
-                    Response.Success(CompactBlockUnsafe.new(it))
-                }
-                .catch {
+                    val response: Response<CompactBlockUnsafe> = Response.Success(CompactBlockUnsafe.new(it))
+                    response
+                }.catch {
                     val failure: Response.Failure<CompactBlockUnsafe> = GrpcStatusResolver.resolveFailureFromStatus(it)
-                    flowOf(failure)
+                    emit(failure)
                 }
         } catch (e: StatusRuntimeException) {
             flowOf(GrpcStatusResolver.resolveFailureFromStatus(e))
