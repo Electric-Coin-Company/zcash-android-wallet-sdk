@@ -1,34 +1,27 @@
 package cash.z.wallet.sdk.sample.demoapp.test
 
-import android.annotation.TargetApi
 import android.app.KeyguardManager
 import android.content.Context
-import android.os.Build
 import android.os.PowerManager
 import androidx.test.core.app.ApplicationProvider
-import org.junit.Before
 
 /**
  * Subclass this in view unit and integration tests.  This verifies that
  * prerequisites necessary for reliable UI tests are met, and it provides more useful error messages.
  */
 open class UiTestPrerequisites {
-    @Before
-    @TargetApi(Build.VERSION_CODES.KITKAT_WATCH)
     fun verifyPrerequisites() {
         assertScreenIsOn()
         assertKeyguardIsUnlocked()
     }
 
     companion object {
-        @TargetApi(Build.VERSION_CODES.KITKAT_WATCH)
         fun assertScreenIsOn() {
             if (!isScreenOn()) {
                 throw AssertionError("Screen must be on for Android UI tests to run") // $NON-NLS
             }
         }
 
-        @TargetApi(Build.VERSION_CODES.KITKAT_WATCH)
         private fun isScreenOn(): Boolean {
             val powerService = ApplicationProvider.getApplicationContext<Context>()
                 .getSystemService(Context.POWER_SERVICE) as PowerManager

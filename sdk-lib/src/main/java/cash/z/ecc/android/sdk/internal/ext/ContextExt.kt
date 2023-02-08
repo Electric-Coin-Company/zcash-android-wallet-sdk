@@ -1,8 +1,6 @@
 package cash.z.ecc.android.sdk.internal.ext
 
 import android.content.Context
-import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
 import cash.z.ecc.android.sdk.internal.AndroidApiVersion
 import kotlinx.coroutines.Dispatchers
@@ -12,7 +10,6 @@ import java.io.File
 internal suspend fun Context.getDatabasePathSuspend(fileName: String) =
     withContext(Dispatchers.IO) { getDatabasePath(fileName) }
 
-@RequiresApi(Build.VERSION_CODES.LOLLIPOP)
 internal suspend fun Context.getNoBackupFilesDirSuspend() =
     withContext(Dispatchers.IO) { noBackupFilesDir }
 

@@ -1,6 +1,10 @@
 Change Log
 ==========
 
+## 1.14.0-beta01
+### Changed
+ - The minimum supported version of Android is now API level 24.
+
 ## 1.13.0-beta01
 ### Changed
 - The SDK's internal networking has been refactored to a separate Gradle module `lightwallet-client-lib` (and 

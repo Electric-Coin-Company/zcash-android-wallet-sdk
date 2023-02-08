@@ -1,10 +1,10 @@
 package cash.z.ecc.android.sdk.demoapp
 
 import android.annotation.SuppressLint
-import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.StrictMode
+import cash.z.ecc.android.sdk.demoapp.util.AndroidApiVersion
 
 object StrictModeHelper {
 
@@ -15,7 +15,7 @@ object StrictModeHelper {
         // https://issuetracker.google.com/issues/36951662
         // Not needed if target O_MR1 and running on O_MR1
         // Don't really need to check target, because of Google Play enforcement on targetSdkVersion for app updates
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O_MR1) {
+        if (!AndroidApiVersion.isAtLeastO_MR1) {
             Handler(Looper.getMainLooper()).postAtFrontOfQueue { configureStrictMode() }
         }
     }
@@ -32,7 +32,7 @@ object StrictModeHelper {
         )
 
         // Don't enable missing network tags, because those are noisy.
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        if (AndroidApiVersion.isAtLeastO) {
             StrictMode.setVmPolicy(
                 StrictMode.VmPolicy.Builder().apply {
                     detectActivityLeaks()
@@ -42,7 +42,7 @@ object StrictModeHelper {
                     detectLeakedClosableObjects()
                     detectLeakedRegistrationObjects()
                     detectLeakedSqlLiteObjects()
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                    if (AndroidApiVersion.isAtLeastP) {
                         // Disable because this is mostly flagging Android X and Play Services
                         // builder.detectNonSdkApiUsage();
                     }

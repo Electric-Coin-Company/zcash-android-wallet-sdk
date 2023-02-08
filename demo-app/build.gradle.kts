@@ -12,10 +12,8 @@ android {
 
     defaultConfig {
         applicationId = "cash.z.ecc.android.sdk.demoapp"
-        minSdk = 21
         versionCode = 1
         versionName = "1.0"
-        multiDexEnabled = true
         vectorDrawables.useSupportLibrary = true
     }
 
