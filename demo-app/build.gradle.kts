@@ -12,10 +12,8 @@ android {
 
     defaultConfig {
         applicationId = "cash.z.ecc.android.sdk.demoapp"
-        minSdk = 21
         versionCode = 1
         versionName = "1.0"
-        multiDexEnabled = true
         vectorDrawables.useSupportLibrary = true
     }
 
@@ -176,7 +174,7 @@ fladle {
             testTimeout.set("5m")
 
             devices.addAll(
-                mapOf("model" to "Nexus5", "version" to minSdkVersion),
+                mapOf("model" to "Nexus5X", "version" to minSdkVersion),
                 mapOf("model" to "Pixel2.arm", "version" to targetSdkVersion)
             )
 

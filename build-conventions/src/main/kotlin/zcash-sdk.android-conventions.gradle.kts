@@ -58,7 +58,7 @@ pluginManager.withPlugin("com.android.test") {
         configureBaseExtension()
 
         defaultConfig {
-            minSdk = project.property("ANDROID_MIN_BENCHMARK_VERSION").toString().toInt()
+            minSdk = project.property("ANDROID_MIN_SDK_VERSION").toString().toInt()
             targetSdk = project.property("ANDROID_TARGET_SDK_VERSION").toString().toInt()
 
             // The last two are for support of pseudolocales in debug builds.

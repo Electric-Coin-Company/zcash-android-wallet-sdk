@@ -156,11 +156,7 @@ private fun copyToClipboard(
     scope: CoroutineScope,
     snackbarHostState: SnackbarHostState
 ) {
-    val clipboardManager = if (AndroidApiVersion.isAtLeastM) {
-        context.getSystemService(ClipboardManager::class.java)
-    } else {
-        context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-    }
+    val clipboardManager = context.getSystemService(ClipboardManager::class.java)
 
     val data = ClipData.newPlainText(
         tag,
