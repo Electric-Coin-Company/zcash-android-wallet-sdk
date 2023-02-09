@@ -36,15 +36,13 @@ dependencyLocking {
     }
 }
 
-java {
-    sourceCompatibility = JavaVersion.VERSION_11
-    targetCompatibility = JavaVersion.VERSION_11
-}
-
 dependencies {
     val rootProperties = getRootProperties()
 
-    implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:${rootProperties.getProperty("KOTLIN_VERSION")}")
+    implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:${rootProperties.getProperty("KOTLIN_VERSION")}") {
+        // https://youtrack.jetbrains.com/issue/KT-56414/Dependency-locking-and-failed-builds-with-Kotlin-1.8.10
+        exclude(group = "org.jetbrains.kotlin", module = "kotlin-build-common")
+    }
     implementation("com.android.tools.build:gradle:${rootProperties.getProperty("ANDROID_GRADLE_PLUGIN_VERSION")}")
     implementation("wtf.emulator:gradle-plugin:${rootProperties.getProperty("EMULATOR_WTF_GRADLE_PLUGIN_VERSION")}")
 }
