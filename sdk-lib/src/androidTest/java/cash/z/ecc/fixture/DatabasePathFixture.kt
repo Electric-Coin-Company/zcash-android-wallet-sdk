@@ -3,14 +3,14 @@ package cash.z.ecc.fixture
 import cash.z.ecc.android.sdk.internal.Files
 import cash.z.ecc.android.sdk.internal.ext.existsSuspend
 import cash.z.ecc.android.sdk.internal.ext.getDatabasePathSuspend
-import cash.z.ecc.android.sdk.internal.ext.getNoBackupFilesDirCompat
+import cash.z.ecc.android.sdk.internal.ext.getNoBackupFilesDirSuspend
 import cash.z.ecc.android.sdk.test.getAppContext
 import kotlinx.coroutines.runBlocking
 import java.io.File
 
 object DatabasePathFixture {
     val NO_BACKUP_DIR_PATH: String = runBlocking {
-        getAppContext().getNoBackupFilesDirCompat().absolutePath
+        getAppContext().getNoBackupFilesDirSuspend().absolutePath
     }
     val DATABASE_DIR_PATH: String = runBlocking {
         getAppContext().getDatabasePathSuspend("temporary.db").parentFile.let { parentFile ->
