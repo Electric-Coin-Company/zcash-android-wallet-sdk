@@ -1,5 +1,6 @@
 package cash.z.ecc.android.sdk.internal.storage.block
 
+import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.internal.ext.deleteRecursivelySuspend
 import cash.z.ecc.android.sdk.internal.ext.existsSuspend
 import cash.z.ecc.android.sdk.internal.ext.mkdirsSuspend
@@ -123,7 +124,7 @@ class FileCompactBlockRepositoryTest {
         val block = blocks.first()
 
         val file = block.createTemporaryFile(FilePathFixture.newBlocksDir())
-        val finalizedFile = File(file.absolutePath.dropLast(4))
+        val finalizedFile = File(file.absolutePath.dropLast(ZcashSdk.TEMPORARY_FILENAME_SUFFIX.length))
         assertFalse { finalizedFile.existsSuspend() }
         file.finalizeFile()
         assertTrue { finalizedFile.existsSuspend() }
