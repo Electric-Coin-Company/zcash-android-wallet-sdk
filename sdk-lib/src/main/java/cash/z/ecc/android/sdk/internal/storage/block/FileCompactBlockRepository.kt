@@ -99,10 +99,10 @@ private fun CompactBlock.toJniMetaData() =
     )
 
 @VisibleForTesting
-private fun CompactBlock.createFilename() = "$height-${hash.toByteArray().toHexReversed()}${
-    ZcashSdk
-        .BLOCK_FILENAME_SUFFIX
-}"
+private fun CompactBlock.createFilename(): String {
+    val hashHex = hash.toByteArray().toHexReversed()
+    return "$height-$hashHex-$ZcashSdk.BLOCK_FILENAME_SUFFIX"
+}
 
 @VisibleForTesting
 internal suspend fun CompactBlock.createTemporaryFile(blocksDirectory: File): File {
