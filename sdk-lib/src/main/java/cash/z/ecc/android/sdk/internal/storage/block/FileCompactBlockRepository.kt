@@ -5,7 +5,7 @@ package cash.z.ecc.android.sdk.internal.storage.block
 import androidx.annotation.VisibleForTesting
 import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.internal.ext.createNewFileSuspend
-import cash.z.ecc.android.sdk.internal.ext.deleteRecursivelySuspend
+import cash.z.ecc.android.sdk.internal.ext.deleteSuspend
 import cash.z.ecc.android.sdk.internal.ext.existsSuspend
 import cash.z.ecc.android.sdk.internal.ext.mkdirsSuspend
 import cash.z.ecc.android.sdk.internal.ext.renameToSuspend
@@ -110,7 +110,7 @@ internal suspend fun CompactBlock.createTemporaryFile(blocksDirectory: File): Fi
     val tmpFile = File(blocksDirectory, tempFileName)
 
     if (tmpFile.existsSuspend()) {
-        tmpFile.deleteRecursivelySuspend()
+        tmpFile.deleteSuspend()
     }
     tmpFile.createNewFileSuspend()
 
