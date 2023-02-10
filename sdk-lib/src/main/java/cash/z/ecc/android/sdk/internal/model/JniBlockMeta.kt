@@ -5,5 +5,5 @@ class JniBlockMeta(
     val hash: ByteArray,
     val time: Long,
     val saplingOutputsCount: Long,
-    val orchardOutputsCount: Long
+    val orchardActionsCount: Long
 )
