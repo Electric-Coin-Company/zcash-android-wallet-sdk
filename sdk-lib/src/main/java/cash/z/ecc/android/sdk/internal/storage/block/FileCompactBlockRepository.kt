@@ -78,25 +78,34 @@ internal class FileCompactBlockRepository(
     }
 }
 
-internal val CompactBlock.outputs: Pair<Int, Int>
-    get() = if (vtxList.isEmpty()) {
-        0 to 0
-    } else {
-        vtxList.map { compactTx ->
-            compactTx.outputsCount to compactTx.actionsCount
-        }.reduce { partialResult, txOutputActionPair ->
-            (partialResult.first + txOutputActionPair.first) to (partialResult.second + txOutputActionPair.second)
-        }
+private data class CompactBlockOutputsCounts(
+    val saplingOutputsCount: Long,
+    val orchardActionsCount: Long
+)
+
+private fun CompactBlock.getOutputsCounts(): CompactBlockOutputsCounts {
+    var outputsCount = 0L
+    var actionsCount = 0L
+
+    vtxList.forEach { compactTx ->
+        outputsCount += compactTx.outputsCount
+        actionsCount += compactTx.actionsCount
     }
 
-private fun CompactBlock.toJniMetaData() =
-    JniBlockMeta(
+    return CompactBlockOutputsCounts(outputsCount, actionsCount)
+}
+
+private fun CompactBlock.toJniMetaData(): JniBlockMeta {
+    val outputs = getOutputsCounts()
+
+    return JniBlockMeta(
         height = height,
         hash = hash.toByteArray(),
         time = time.toLong(),
-        saplingOutputsCount = outputs.first.toLong(),
-        orchardOutputsCount = outputs.second.toLong()
+        saplingOutputsCount = outputs.saplingOutputsCount,
+        orchardActionsCount = outputs.orchardActionsCount
     )
+}
 
 @VisibleForTesting
 private fun CompactBlock.createFilename(): String {
