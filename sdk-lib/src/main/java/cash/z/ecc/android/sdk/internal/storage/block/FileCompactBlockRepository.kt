@@ -67,9 +67,12 @@ internal class FileCompactBlockRepository(
             rustBackend: RustBackend
         ): FileCompactBlockRepository {
             twig("${rustBackend.fsBlockDbRoot.absolutePath} \n  ${rustBackend.dataDbFile.absolutePath}")
+
             // create cache directories
-            val blocksDirectory =
-                File(rustBackend.fsBlockDbRoot, ZcashSdk.BLOCKS_DOWNLOAD_DIRECTORY).apply { mkdirsSuspend() }
+            val blocksDirectory = File(rustBackend.fsBlockDbRoot, ZcashSdk.BLOCKS_DOWNLOAD_DIRECTORY)
+            if (!blocksDirectory.mkdirsSuspend()) {
+                error("${blocksDirectory.path} directory does not exist and could not be created.")
+            }
 
             rustBackend.initBlockMetaDb()
 
