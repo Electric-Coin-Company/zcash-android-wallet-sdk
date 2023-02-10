@@ -31,15 +31,33 @@ internal class RustBackend private constructor(
     override val saplingParamDir: File
 ) : RustBackendWelding {
 
-    suspend fun clear(clearCacheDb: Boolean = true, clearDataDb: Boolean = true) {
-        if (clearCacheDb) {
-            Twig.debug { "Deleting the cache database and CompactBlock files!" }
-            fsBlockDbRoot.deleteRecursivelySuspend()
+    /**
+     * This function deletes the data database file and the cache directory (compact blocks files) if set by input
+     * parameters.
+     *
+     * @param clearCache to request the cache directory and its content deletion
+     * @param clearDataDb to request the data database file deletion
+     *
+     * @return false in case of any required and failed deletion, true otherwise.
+     */
+    suspend fun clear(clearCache: Boolean = true, clearDataDb: Boolean = true): Boolean {
+        var cacheClearResult = true
+        var dataClearResult = true
+        if (clearCache) {
+            Twig.debug { "Deleting the cache files..." }
+            fsBlockDbRoot.deleteRecursivelySuspend().also { result ->
+                Twig.debug { "Deletion of the cache files ${if (result) "succeeded" else "failed"}!" }
+                cacheClearResult = result
+            }
         }
         if (clearDataDb) {
-            Twig.debug { "Deleting the data database!" }
-            dataDbFile.deleteSuspend()
+            Twig.debug { "Deleting the data database..." }
+            dataDbFile.deleteSuspend().also { result ->
+                Twig.debug { "Deletion of the data database ${if (result) "succeeded" else "failed"}!" }
+                dataClearResult = result
+            }
         }
+        return cacheClearResult && dataClearResult
     }
 
     //
