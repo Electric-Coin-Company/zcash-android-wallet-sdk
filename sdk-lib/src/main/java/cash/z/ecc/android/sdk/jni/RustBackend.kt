@@ -153,43 +153,41 @@ internal class RustBackend private constructor(
             )
         }
 
-    override suspend fun getSentMemoAsUtf8(idNote: Long) = withContext(SdkDispatchers.DATABASE_IO) {
-        getSentMemoAsUtf8(
-            dataDbFile.absolutePath,
-            idNote,
-            networkId = network.id
-        )
-    }
-
-    override suspend fun writeBlockMetadata(blockMetadata: Array<JniBlockMeta>) = withContext(
-        SdkDispatchers
-            .DATABASE_IO
-    ) {
-        writeBlockMetadata(
-            fsBlockDbRoot.absolutePath,
-            blockMetadata
-        )
-    }
-
-    override suspend fun getLatestHeight() = withContext(SdkDispatchers.DATABASE_IO) {
-        val height = getLatestHeight(fsBlockDbRoot.absolutePath)
-
-        if (-1L == height) {
-            null
-        } else {
-            BlockHeight.new(network, height)
+    override suspend fun getSentMemoAsUtf8(idNote: Long) =
+        withContext(SdkDispatchers.DATABASE_IO) {
+            getSentMemoAsUtf8(
+                dataDbFile.absolutePath,
+                idNote,
+                networkId = network.id
+            )
         }
-    }
 
-    override suspend fun findBlockMetadata(height: BlockHeight) = withContext(
-        SdkDispatchers
-            .DATABASE_IO
-    ) {
-        findBlockMetadata(
-            fsBlockDbRoot.absolutePath,
-            height.value
-        )
-    }
+    override suspend fun writeBlockMetadata(blockMetadata: Array<JniBlockMeta>) =
+        withContext(SdkDispatchers.DATABASE_IO) {
+            writeBlockMetadata(
+                fsBlockDbRoot.absolutePath,
+                blockMetadata
+            )
+        }
+
+    override suspend fun getLatestHeight() =
+        withContext(SdkDispatchers.DATABASE_IO) {
+            val height = getLatestHeight(fsBlockDbRoot.absolutePath)
+
+            if (-1L == height) {
+                null
+            } else {
+                BlockHeight.new(network, height)
+            }
+        }
+
+    override suspend fun findBlockMetadata(height: BlockHeight) =
+        withContext(SdkDispatchers.DATABASE_IO) {
+            findBlockMetadata(
+                fsBlockDbRoot.absolutePath,
+                height.value
+            )
+        }
 
     override suspend fun rewindBlockMetadataToHeight(height: BlockHeight) =
         withContext(SdkDispatchers.DATABASE_IO) {
@@ -199,19 +197,20 @@ internal class RustBackend private constructor(
             )
         }
 
-    override suspend fun validateCombinedChain() = withContext(SdkDispatchers.DATABASE_IO) {
-        val validationResult = validateCombinedChain(
-            fsBlockDbRoot.absolutePath,
-            dataDbFile.absolutePath,
-            networkId = network.id
-        )
+    override suspend fun validateCombinedChain() =
+        withContext(SdkDispatchers.DATABASE_IO) {
+            val validationResult = validateCombinedChain(
+                fsBlockDbRoot.absolutePath,
+                dataDbFile.absolutePath,
+                networkId = network.id
+            )
 
-        if (-1L == validationResult) {
-            null
-        } else {
-            BlockHeight.new(network, validationResult)
+            if (-1L == validationResult) {
+                null
+            } else {
+                BlockHeight.new(network, validationResult)
+            }
         }
-    }
 
     override suspend fun getNearestRewindHeight(height: BlockHeight): BlockHeight =
         withContext(SdkDispatchers.DATABASE_IO) {
