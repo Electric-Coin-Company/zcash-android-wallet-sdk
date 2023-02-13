@@ -32,7 +32,7 @@ internal class FileCompactBlockRepository(
 
         val metaDataBuffer = mutableListOf<JniBlockMeta>()
 
-        result.forEachIndexed { index, block ->
+        result.forEach { block ->
             val tmpFile = block.createTemporaryFile(blocksDirectory)
             // write compact block bytes
             tmpFile.writeBytesSuspend(block.toByteArray())
@@ -43,7 +43,7 @@ internal class FileCompactBlockRepository(
             }
             count++
 
-            if (index % ZcashSdk.BLOCKS_METADATA_BUFFER_SIZE == 0) {
+            if (metaDataBuffer.isBufferFull()) {
                 // write blocks metadata
                 rustBackend.writeBlockMetadata(metaDataBuffer.toTypedArray())
                 metaDataBuffer.clear()
@@ -52,6 +52,7 @@ internal class FileCompactBlockRepository(
 
         if (metaDataBuffer.isNotEmpty()) {
             rustBackend.writeBlockMetadata(metaDataBuffer.toTypedArray())
+            metaDataBuffer.clear()
         }
 
         return count
@@ -77,6 +78,14 @@ internal class FileCompactBlockRepository(
             return FileCompactBlockRepository(blocksDirectory, rustBackend)
         }
     }
+}
+
+//
+// Private helper functions
+//
+
+private fun List<JniBlockMeta>.isBufferFull(): Boolean {
+    return size % ZcashSdk.BLOCKS_METADATA_BUFFER_SIZE == 0
 }
 
 private data class CompactBlockOutputsCounts(
