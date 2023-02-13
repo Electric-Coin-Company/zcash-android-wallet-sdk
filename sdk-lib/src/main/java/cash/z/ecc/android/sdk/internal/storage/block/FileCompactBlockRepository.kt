@@ -38,9 +38,12 @@ internal class FileCompactBlockRepository(
             tmpFile.writeBytesSuspend(block.toByteArray())
             // buffer metadata
             metaDataBuffer.add(block.toJniMetaData())
-            check(tmpFile.finalizeFile()) {
+
+            val isFinalizeSuccessful = tmpFile.finalizeFile()
+            check(isFinalizeSuccessful) {
                 "Failed to finalize file: ${tmpFile.absolutePath}"
             }
+
             count++
 
             if (metaDataBuffer.isBufferFull()) {
