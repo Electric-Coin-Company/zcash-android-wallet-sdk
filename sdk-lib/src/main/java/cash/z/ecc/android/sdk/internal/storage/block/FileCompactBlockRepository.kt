@@ -2,6 +2,7 @@ package cash.z.ecc.android.sdk.internal.storage.block
 
 import androidx.annotation.VisibleForTesting
 import cash.z.ecc.android.sdk.ext.ZcashSdk
+import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.ext.createNewFileSuspend
 import cash.z.ecc.android.sdk.internal.ext.deleteSuspend
 import cash.z.ecc.android.sdk.internal.ext.existsSuspend
@@ -11,11 +12,10 @@ import cash.z.ecc.android.sdk.internal.ext.toHexReversed
 import cash.z.ecc.android.sdk.internal.ext.writeBytesSuspend
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.internal.repository.CompactBlockRepository
-import cash.z.ecc.android.sdk.internal.twig
 import cash.z.ecc.android.sdk.jni.RustBackend
 import cash.z.ecc.android.sdk.jni.RustBackendWelding
 import cash.z.ecc.android.sdk.model.BlockHeight
-import cash.z.wallet.sdk.rpc.CompactFormats.CompactBlock
+import cash.z.wallet.sdk.internal.rpc.CompactFormats.CompactBlock
 import java.io.File
 
 internal class FileCompactBlockRepository(
@@ -68,7 +68,7 @@ internal class FileCompactBlockRepository(
         suspend fun new(
             rustBackend: RustBackend
         ): FileCompactBlockRepository {
-            twig("${rustBackend.fsBlockDbRoot.absolutePath} \n  ${rustBackend.dataDbFile.absolutePath}")
+            Twig.debug { "${rustBackend.fsBlockDbRoot.absolutePath} \n  ${rustBackend.dataDbFile.absolutePath}" }
 
             // create cache directories
             val blocksDirectory = File(rustBackend.fsBlockDbRoot, ZcashSdk.BLOCKS_DOWNLOAD_DIRECTORY)
@@ -116,7 +116,7 @@ private fun CompactBlock.toJniMetaData(): JniBlockMeta {
 
 private fun CompactBlock.createFilename(): String {
     val hashHex = hash.toByteArray().toHexReversed()
-    return "$height-$hashHex-$ZcashSdk.BLOCK_FILENAME_SUFFIX"
+    return "$height-$hashHex${ZcashSdk.BLOCK_FILENAME_SUFFIX}"
 }
 
 @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
