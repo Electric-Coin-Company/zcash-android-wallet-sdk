@@ -80,7 +80,6 @@ class WalletCoordinator(
                         lightWalletEndpoint = LightWalletEndpoint.defaultForNetwork(persistableWallet.network),
                         birthday = persistableWallet.birthday,
                         seed = persistableWallet.seedPhrase.toByteArray(),
-                        alias = NEW_UI_SYNCHRONIZER_ALIAS
                     )
 
                     trySend(InternalSynchronizerStatus.Available(closeableSynchronizer))
@@ -171,7 +170,5 @@ class WalletCoordinator(
     }
 
     // Allows for extension functions
-    companion object {
-        internal const val NEW_UI_SYNCHRONIZER_ALIAS = "new_ui"
-    }
+    companion object
 }
