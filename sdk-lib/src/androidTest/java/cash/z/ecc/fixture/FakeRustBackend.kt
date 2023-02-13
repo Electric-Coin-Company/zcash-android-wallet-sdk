@@ -15,7 +15,7 @@ internal class FakeRustBackend(
     override val network: ZcashNetwork,
     override val saplingParamDir: File,
     val metadata: MutableList<JniBlockMeta>
-): RustBackendWelding {
+) : RustBackendWelding {
 
     override suspend fun writeBlockMetadata(blockMetadata: Array<JniBlockMeta>): Boolean =
         metadata.addAll(blockMetadata)
