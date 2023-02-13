@@ -2,7 +2,10 @@ package co.electriccoin.lightwallet.client.fixture
 
 import androidx.annotation.VisibleForTesting
 
-object BlockRangeFixture {
+/**
+ * Used for getting mocked blocks range for benchmarking purposes.
+ */
+object BenchmarkingBlockRangeFixture {
 
     // Be aware that changing these bounds values in a broader range may result in a timeout reached in
     // SyncBlockchainBenchmark. So if changing these, don't forget to align also the test timeout in

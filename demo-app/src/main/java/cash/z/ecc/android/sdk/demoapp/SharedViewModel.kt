@@ -13,7 +13,7 @@ import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.model.defaultForNetwork
 import co.electriccoin.lightwallet.client.ext.BenchmarkingExt
-import co.electriccoin.lightwallet.client.fixture.BlockRangeFixture
+import co.electriccoin.lightwallet.client.fixture.BenchmarkingBlockRangeFixture
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.awaitClose
@@ -78,7 +78,7 @@ class SharedViewModel(application: Application) : AndroidViewModel(application) 
                     lightWalletEndpoint = LightWalletEndpoint.defaultForNetwork(network),
                     seed = seedBytes,
                     birthday = if (BenchmarkingExt.isBenchmarking()) {
-                        BlockHeight.new(ZcashNetwork.Mainnet, BlockRangeFixture.new().start)
+                        BlockHeight.new(ZcashNetwork.Mainnet, BenchmarkingBlockRangeFixture.new().start)
                     } else {
                         birthdayHeight.value
                     }
