@@ -27,60 +27,81 @@ internal class FakeRustBackend(
 
     override suspend fun getLatestHeight(): BlockHeight = BlockHeight(metadata.maxOf { it.height })
     override suspend fun findBlockMetadata(height: BlockHeight): JniBlockMeta? {
-        TODO("Not yet implemented")
+        error("Intentionally not implemented in mocked FakeRustBackend implementation.")
     }
 
     override suspend fun rewindBlockMetadataToHeight(height: BlockHeight) {
         metadata.removeAll { it.height > height.value }
     }
 
-    override suspend fun initBlockMetaDb(): Int = error("Not implemented")
+    override suspend fun initBlockMetaDb(): Int =
+        error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 
     override suspend fun createToAddress(usk: UnifiedSpendingKey, to: String, value: Long, memo: ByteArray?): Long =
-        error("Not implemented")
+        error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 
-    override suspend fun shieldToAddress(usk: UnifiedSpendingKey, memo: ByteArray?): Long = error("Not implemented")
+    override suspend fun shieldToAddress(usk: UnifiedSpendingKey, memo: ByteArray?): Long =
+        error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 
-    override suspend fun decryptAndStoreTransaction(tx: ByteArray) = error("Not implemented")
+    override suspend fun decryptAndStoreTransaction(tx: ByteArray) =
+        error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 
     override suspend fun initAccountsTable(seed: ByteArray, numberOfAccounts: Int): Array<UnifiedFullViewingKey> =
-        error("Not implemented")
+        error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 
-    override suspend fun initAccountsTable(vararg keys: UnifiedFullViewingKey): Boolean = error("Not implemented")
+    override suspend fun initAccountsTable(vararg keys: UnifiedFullViewingKey): Boolean =
+        error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 
-    override suspend fun initBlocksTable(checkpoint: Checkpoint): Boolean = error("Not implemented")
+    override suspend fun initBlocksTable(checkpoint: Checkpoint): Boolean =
+        error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 
-    override suspend fun initDataDb(seed: ByteArray?): Int = error("Not implemented")
+    override suspend fun initDataDb(seed: ByteArray?): Int =
+        error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 
-    override suspend fun createAccount(seed: ByteArray): UnifiedSpendingKey = error("Not implemented")
+    override suspend fun createAccount(seed: ByteArray): UnifiedSpendingKey =
+        error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 
-    override fun isValidShieldedAddr(addr: String): Boolean = error("Not implemented")
+    override fun isValidShieldedAddr(addr: String): Boolean =
+        error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 
-    override fun isValidTransparentAddr(addr: String): Boolean = error("Not implemented")
+    override fun isValidTransparentAddr(addr: String): Boolean =
+        error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 
-    override fun isValidUnifiedAddr(addr: String): Boolean = error("Not implemented")
+    override fun isValidUnifiedAddr(addr: String): Boolean =
+        error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 
-    override suspend fun getCurrentAddress(account: Int): String = error("Not implemented")
+    override suspend fun getCurrentAddress(account: Int): String =
+        error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 
-    override fun getTransparentReceiver(ua: String): String? = error("Not implemented")
+    override fun getTransparentReceiver(ua: String): String? =
+        error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 
-    override fun getSaplingReceiver(ua: String): String? = error("Not implemented")
+    override fun getSaplingReceiver(ua: String): String? =
+        error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 
-    override suspend fun getBalance(account: Int): Zatoshi = error("Not implemented")
+    override suspend fun getBalance(account: Int): Zatoshi =
+        error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 
-    override fun getBranchIdForHeight(height: BlockHeight): Long = error("Not implemented")
+    override fun getBranchIdForHeight(height: BlockHeight): Long =
+        error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 
-    override suspend fun getReceivedMemoAsUtf8(idNote: Long): String? = error("Not implemented")
+    override suspend fun getReceivedMemoAsUtf8(idNote: Long): String? =
+        error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 
-    override suspend fun getSentMemoAsUtf8(idNote: Long): String? = error("Not implemented")
+    override suspend fun getSentMemoAsUtf8(idNote: Long): String? =
+        error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 
-    override suspend fun getVerifiedBalance(account: Int): Zatoshi = error("Not implemented")
+    override suspend fun getVerifiedBalance(account: Int): Zatoshi =
+        error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 
-    override suspend fun getNearestRewindHeight(height: BlockHeight): BlockHeight = error("Not implemented")
+    override suspend fun getNearestRewindHeight(height: BlockHeight): BlockHeight =
+        error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 
-    override suspend fun scanBlocks(limit: Int): Boolean = error("Not implemented")
+    override suspend fun scanBlocks(limit: Int): Boolean =
+        error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 
-    override suspend fun validateCombinedChain(): BlockHeight? = error("Not implemented")
+    override suspend fun validateCombinedChain(): BlockHeight? =
+        error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 
     override suspend fun putUtxo(
         tAddress: String,
@@ -89,7 +110,8 @@ internal class FakeRustBackend(
         script: ByteArray,
         value: Long,
         height: BlockHeight
-    ): Boolean = error("Not implemented")
+    ): Boolean = error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 
-    override suspend fun getDownloadedUtxoBalance(address: String): WalletBalance = error("Not implemented")
+    override suspend fun getDownloadedUtxoBalance(address: String): WalletBalance =
+        error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 }
