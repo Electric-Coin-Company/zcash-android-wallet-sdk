@@ -11,15 +11,11 @@ import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.type.UnifiedFullViewingKey
 import java.io.File
 
-internal class FakeRustBackend : RustBackendWelding {
-
-    override val saplingParamDir: File
-        get() = FilePathFixture.newRootDir()
-
-    val metadata = mutableListOf<JniBlockMeta>()
-
-    override val network: ZcashNetwork
-        get() = ZcashNetwork.Mainnet
+internal class FakeRustBackend(
+    override val network: ZcashNetwork,
+    override val saplingParamDir: File,
+    val metadata: MutableList<JniBlockMeta>
+): RustBackendWelding {
 
     override suspend fun writeBlockMetadata(blockMetadata: Array<JniBlockMeta>): Boolean =
         metadata.addAll(blockMetadata)

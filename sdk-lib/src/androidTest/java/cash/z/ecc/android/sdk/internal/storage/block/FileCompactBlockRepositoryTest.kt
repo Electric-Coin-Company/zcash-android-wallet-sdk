@@ -25,7 +25,7 @@ import kotlin.test.assertTrue
 
 class FileCompactBlockRepositoryTest {
 
-    private val rustBackend: FakeRustBackend = FakeRustBackendFixture.new
+    private val rustBackend: FakeRustBackend = FakeRustBackendFixture.new()
 
     private lateinit var compactBlockRepository: FileCompactBlockRepository
 
