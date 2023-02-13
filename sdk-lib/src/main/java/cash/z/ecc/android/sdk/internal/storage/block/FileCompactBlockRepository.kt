@@ -1,5 +1,3 @@
-@file:Suppress("TooManyFunctions")
-
 package cash.z.ecc.android.sdk.internal.storage.block
 
 import androidx.annotation.VisibleForTesting
