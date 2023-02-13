@@ -959,14 +959,9 @@ class CompactBlockProcessor internal constructor(
             val height = errorHeight + i
             val block = downloader.compactBlockRepository.findCompactBlock(height)
             // sometimes the initial block was inserted via checkpoint and will not appear in the cache. We can get
-            // the hash another way but prevHash is correctly null.
-            val hash = block?.hash
-                ?: repository.findBlockHash(height)
-            Twig.debug {
-                "block: $height\thash=${hash?.toHexReversed()} \tprevHash=${
-                    "" // block?.prevHash?.toByteArray()?.toHexReversed()
-                }"
-            }
+            // the hash another way.
+            val checkedHash = block?.hash ?: repository.findBlockHash(height)
+            Twig.debug { "block: $height\thash=${checkedHash?.toHexReversed()}" }
         }
         Twig.debug { "=================== BLOCKS [$errorHeight..${errorHeight.value + count - 1}]: END ========" }
     }
