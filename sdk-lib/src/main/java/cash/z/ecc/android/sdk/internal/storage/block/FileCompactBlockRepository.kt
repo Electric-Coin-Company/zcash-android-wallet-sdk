@@ -117,13 +117,12 @@ private fun CompactBlock.toJniMetaData(): JniBlockMeta {
     )
 }
 
-@VisibleForTesting
 private fun CompactBlock.createFilename(): String {
     val hashHex = hash.toByteArray().toHexReversed()
     return "$height-$hashHex-$ZcashSdk.BLOCK_FILENAME_SUFFIX"
 }
 
-@VisibleForTesting
+@VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
 internal suspend fun CompactBlock.createTemporaryFile(blocksDirectory: File): File {
     val tempFileName = "${createFilename()}${ZcashSdk.TEMPORARY_FILENAME_SUFFIX}"
     val tmpFile = File(blocksDirectory, tempFileName)
@@ -136,7 +135,7 @@ internal suspend fun CompactBlock.createTemporaryFile(blocksDirectory: File): Fi
     return tmpFile
 }
 
-@VisibleForTesting
+@VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
 internal suspend fun File.finalizeFile(): Boolean {
     // rename the file
     val newFile = File(absolutePath.dropLast(ZcashSdk.TEMPORARY_FILENAME_SUFFIX.length))
