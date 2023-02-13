@@ -1,7 +1,7 @@
 package cash.z.ecc.android.sdk.internal.model
 
 import cash.z.ecc.android.sdk.internal.storage.block.CompactBlockOutputsCounts
-import cash.z.wallet.sdk.rpc.CompactFormats.CompactBlock
+import cash.z.wallet.sdk.internal.rpc.CompactFormats.CompactBlock
 
 class JniBlockMeta(
     val height: Long,

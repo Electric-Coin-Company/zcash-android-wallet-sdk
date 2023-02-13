@@ -140,8 +140,6 @@ class DarksideApi private constructor(
 
     private fun String.toUrl() = Darkside.DarksideBlocksURL.newBuilder().setUrl(this).build()
 
-    private fun BlockHeight.toHeight() = Darkside.DarksideHeight.newBuilder().setHeight(this.value.toInt()).build()
-
     class EmptyResponse : StreamObserver<Service.Empty> {
         companion object {
             private val DEFAULT_DELAY = 20.milliseconds
