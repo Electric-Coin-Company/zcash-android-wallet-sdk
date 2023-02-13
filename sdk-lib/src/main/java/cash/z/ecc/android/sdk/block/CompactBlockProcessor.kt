@@ -45,7 +45,7 @@ import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.wallet.sdk.internal.rpc.Service
 import co.electriccoin.lightwallet.client.ext.BenchmarkingExt
-import co.electriccoin.lightwallet.client.fixture.BlockRangeFixture
+import co.electriccoin.lightwallet.client.fixture.BenchmarkingBlockRangeFixture
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.LightWalletEndpointInfoUnsafe
 import co.electriccoin.lightwallet.client.model.Response
@@ -296,7 +296,7 @@ class CompactBlockProcessor internal constructor(
             if (BenchmarkingExt.isBenchmarking()) {
                 // We inject a benchmark test blocks range at this point to process only a restricted range of blocks
                 // for a more reliable benchmark results.
-                val benchmarkBlockRange = BlockRangeFixture.new().let {
+                val benchmarkBlockRange = BenchmarkingBlockRangeFixture.new().let {
                     // Convert range of Longs to range of BlockHeights
                     BlockHeight.new(ZcashNetwork.Mainnet, it.start)..(
                         BlockHeight.new(ZcashNetwork.Mainnet, it.endInclusive)
