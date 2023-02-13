@@ -91,7 +91,7 @@ private fun List<JniBlockMeta>.isBufferFull(): Boolean {
     return size % ZcashSdk.BLOCKS_METADATA_BUFFER_SIZE == 0
 }
 
-private data class CompactBlockOutputsCounts(
+internal data class CompactBlockOutputsCounts(
     val saplingOutputsCount: Long,
     val orchardActionsCount: Long
 )
@@ -111,13 +111,7 @@ private fun CompactBlock.getOutputsCounts(): CompactBlockOutputsCounts {
 private fun CompactBlock.toJniMetaData(): JniBlockMeta {
     val outputs = getOutputsCounts()
 
-    return JniBlockMeta(
-        height = height,
-        hash = hash.toByteArray(),
-        time = time.toLong(),
-        saplingOutputsCount = outputs.saplingOutputsCount,
-        orchardActionsCount = outputs.orchardActionsCount
-    )
+    return JniBlockMeta.new(this, outputs)
 }
 
 private fun CompactBlock.createFilename(): String {
