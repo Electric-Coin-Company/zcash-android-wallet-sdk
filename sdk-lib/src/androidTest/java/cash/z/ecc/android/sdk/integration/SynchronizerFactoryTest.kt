@@ -34,7 +34,7 @@ class SynchronizerFactoryTest {
         assertTrue(
             "Invalid CacheDB file",
             rustBackend.fsBlockDbRoot.absolutePath.endsWith(
-                "no_backup/co.electricoin.zcash/TestWallet_testnet_${DatabaseCoordinator.DB_FS_CACHE_NAME}"
+                "no_backup/co.electricoin.zcash/TestWallet_testnet_${DatabaseCoordinator.DB_FS_BLOCK_DB_ROOT_NAME}"
             )
         )
         assertTrue(

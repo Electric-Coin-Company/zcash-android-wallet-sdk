@@ -735,7 +735,7 @@ internal object DefaultSynchronizerFactory {
         val coordinator = DatabaseCoordinator.getInstance(context)
 
         return RustBackend.init(
-            coordinator.cacheDbRoot(network, alias),
+            coordinator.fsBlockDbRoot(network, alias),
             coordinator.dataDbFile(network, alias),
             saplingParamTool.properties.paramsDirectory,
             network,
