@@ -16,6 +16,7 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import java.io.File
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -94,8 +95,26 @@ class FileCompactBlockRepositoryTest {
 
         mockedBlockRepository.rewindTo(BlockHeight(rewindHeight))
 
-        val metaData = fakeRustBackend.metadata.filter { it.height > rewindHeight }
-        assertTrue { metaData.isEmpty() }
+        // suppose to be 0
+        val keptMetadataAboveRewindHeight = fakeRustBackend.metadata
+            .filter { it.height > rewindHeight }
+
+        assertTrue { keptMetadataAboveRewindHeight.isEmpty() }
+
+        val expectedRewoundMetadataCount =
+            (testedBlocksRange.endInclusive.value - blocksRangeMiddleValue).toInt()
+
+        assertEquals(expectedRewoundMetadataCount, blocks.count() - fakeRustBackend.metadata.size)
+
+        val expectedKeptMetadataCount =
+            (blocks.count() - expectedRewoundMetadataCount)
+
+        assertEquals(expectedKeptMetadataCount, fakeRustBackend.metadata.size)
+
+        val keptMetadataBelowRewindHeight = fakeRustBackend.metadata
+            .filter { it.height <= rewindHeight }
+
+        assertTrue { keptMetadataBelowRewindHeight.size == expectedKeptMetadataCount }
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
