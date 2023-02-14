@@ -134,12 +134,14 @@ class FileCompactBlockRepositoryTest {
         val blocks = ListOfCompactBlocksFixture.new()
         val block = blocks.first()
 
-        val file = block.createTemporaryFile(FilePathFixture.newBlocksDir())
+        val tempFile = block.createTemporaryFile(FilePathFixture.newBlocksDir())
 
-        val finalizedFile = File(file.absolutePath.dropLast(ZcashSdk.TEMPORARY_FILENAME_SUFFIX.length))
+        val finalizedFile = File(tempFile.absolutePath.dropLast(ZcashSdk.TEMPORARY_FILENAME_SUFFIX.length))
         assertFalse { finalizedFile.existsSuspend() }
 
-        file.finalizeFile()
+        tempFile.finalizeFile()
         assertTrue { finalizedFile.existsSuspend() }
+
+        assertFalse { tempFile.existsSuspend() }
     }
 }
