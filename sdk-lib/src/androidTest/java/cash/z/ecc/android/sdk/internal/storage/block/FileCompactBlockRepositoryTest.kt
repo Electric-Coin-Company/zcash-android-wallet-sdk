@@ -68,12 +68,12 @@ class FileCompactBlockRepositoryTest {
     fun writeBlockTest() = runTest {
         val blocks = ListOfCompactBlocksFixture.new()
 
-        assertTrue { fakeRustBackend.metadata.size == 0 }
+        assertTrue { fakeRustBackend.metadata.isEmpty() }
 
         val mockedBlockRepository = getMockedFileCompactBlockRepository()
         mockedBlockRepository.write(blocks)
 
-        assertTrue { fakeRustBackend.metadata.size == 10 }
+        assertTrue { fakeRustBackend.metadata.size == blocks.count() }
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
