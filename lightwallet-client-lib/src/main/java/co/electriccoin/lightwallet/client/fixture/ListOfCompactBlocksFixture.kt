@@ -10,7 +10,7 @@ import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 @VisibleForTesting(otherwise = VisibleForTesting.PACKAGE_PRIVATE)
 object ListOfCompactBlocksFixture {
 
-    private val DEFAULT_FILE_BLOCK_RANGE = FileBlockRangeFixture.new()
+    val DEFAULT_FILE_BLOCK_RANGE = FileBlockRangeFixture.new()
 
     fun new(
         blocksHeightRange: ClosedRange<BlockHeightUnsafe> = DEFAULT_FILE_BLOCK_RANGE

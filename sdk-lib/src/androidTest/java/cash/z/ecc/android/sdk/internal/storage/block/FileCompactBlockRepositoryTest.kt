@@ -79,9 +79,15 @@ class FileCompactBlockRepositoryTest {
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun rewindToTest() = runTest {
-        val blocks = ListOfCompactBlocksFixture.new()
+        val testedBlocksRange = ListOfCompactBlocksFixture.DEFAULT_FILE_BLOCK_RANGE
 
-        val rewindHeight: Long = 500_005
+        val blocksRangeMiddleValue = testedBlocksRange.run {
+            start.value.plus(endInclusive.value).div(2)
+        }
+
+        val blocks = ListOfCompactBlocksFixture.new(testedBlocksRange)
+
+        val rewindHeight: Long = blocksRangeMiddleValue
 
         val mockedBlockRepository = getMockedFileCompactBlockRepository()
         mockedBlockRepository.write(blocks)
