@@ -36,7 +36,7 @@ class DatabaseCoordinatorTest {
         val destinationDirectory = DatabaseCacheFilesRootFixture.newCacheRoot()
         val expectedDirectoryPath = File(parentDirectory, destinationDirectory).path
 
-        dbCoordinator.cacheDbRoot(
+        dbCoordinator.fsBlockDbRoot(
             DatabaseNameFixture.TEST_DB_NETWORK,
             DatabaseNameFixture.TEST_DB_ALIAS
         ).also { resultFile ->

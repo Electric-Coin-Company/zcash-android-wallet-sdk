@@ -7,7 +7,7 @@ import cash.z.ecc.android.sdk.model.ZcashNetwork
  * Provides a unified way for getting a fixture root name for database cache files for test purposes.
  */
 object DatabaseCacheFilesRootFixture {
-    const val TEST_CACHE_ROOT_NAME = DatabaseCoordinator.DB_FS_CACHE_NAME
+    const val TEST_CACHE_ROOT_NAME = DatabaseCoordinator.DB_FS_BLOCK_DB_ROOT_NAME
     const val TEST_CACHE_ROOT_NAME_ALIAS = "zcash_sdk"
     val TEST_NETWORK = ZcashNetwork.Testnet
 

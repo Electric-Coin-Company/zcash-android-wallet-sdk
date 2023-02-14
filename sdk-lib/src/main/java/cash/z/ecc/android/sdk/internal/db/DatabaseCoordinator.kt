@@ -50,7 +50,7 @@ internal class DatabaseCoordinator private constructor(context: Context) {
         @VisibleForTesting
         internal const val DB_CACHE_NAME_LEGACY = "Cache.db" // $NON-NLS
         const val DB_CACHE_NAME = "cache.sqlite3" // $NON-NLS
-        const val DB_FS_CACHE_NAME = "fs_cache" // $NON-NLS
+        const val DB_FS_BLOCK_DB_ROOT_NAME = "fs_cache" // $NON-NLS
 
         @VisibleForTesting
         internal const val DB_PENDING_TRANSACTIONS_NAME_LEGACY = "PendingTransactions.db" // $NON-NLS
@@ -69,22 +69,22 @@ internal class DatabaseCoordinator private constructor(context: Context) {
     }
 
     /**
-     * Returns the root folder of the Cache database that would correspond to the given
+     * Returns the root folder of the cache database files that would correspond to the given
      * alias and network attributes.
      *
-     * @param network the network associated with the data in the cache database.
-     * @param alias the alias to convert into a database path
+     * @param network the network associated with the data in the cache
+     * @param alias the alias to convert into a cache path
      *
-     * @return the Cache database folder
+     * @return the cache database folder
      */
-    internal suspend fun cacheDbRoot(
+    internal suspend fun fsBlockDbRoot(
         network: ZcashNetwork,
         alias: String
     ): File {
         return newDatabaseFilePointer(
             network,
             alias,
-            DB_FS_CACHE_NAME,
+            DB_FS_BLOCK_DB_ROOT_NAME,
             Files.getZcashNoBackupSubdirectory(applicationContext)
         )
     }
@@ -199,7 +199,7 @@ internal class DatabaseCoordinator private constructor(context: Context) {
                 dataDbFile(network, alias)
             )
             val cacheDeleted = deleteDatabase(
-                cacheDbRoot(network, alias)
+                fsBlockDbRoot(network, alias)
             )
 
             return dataDeleted || cacheDeleted
