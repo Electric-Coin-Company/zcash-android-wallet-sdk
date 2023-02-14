@@ -70,9 +70,11 @@ internal class FileCompactBlockRepository(
         ): FileCompactBlockRepository {
             Twig.debug { "${rustBackend.fsBlockDbRoot.absolutePath} \n  ${rustBackend.dataDbFile.absolutePath}" }
 
-            // create cache directories
-            val blocksDirectory = File(rustBackend.fsBlockDbRoot, ZcashSdk.BLOCKS_DOWNLOAD_DIRECTORY)
-            if (!blocksDirectory.mkdirsSuspend()) {
+            // create and check cache directories
+            val blocksDirectory = File(rustBackend.fsBlockDbRoot, ZcashSdk.BLOCKS_DOWNLOAD_DIRECTORY).also {
+                it.mkdirsSuspend()
+            }
+            if (!blocksDirectory.existsSuspend()) {
                 error("${blocksDirectory.path} directory does not exist and could not be created.")
             }
 
