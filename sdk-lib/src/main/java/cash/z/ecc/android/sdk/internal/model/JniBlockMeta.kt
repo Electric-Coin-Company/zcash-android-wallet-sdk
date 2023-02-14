@@ -8,7 +8,7 @@ class JniBlockMeta(
     val hash: ByteArray,
     val time: Long,
     val saplingOutputsCount: Long,
-    val orchardActionsCount: Long
+    val orchardOutputsCount: Long
 ) {
     companion object {
         internal fun new(block: CompactBlock, outputs: CompactBlockOutputsCounts): JniBlockMeta {
@@ -17,7 +17,7 @@ class JniBlockMeta(
                 hash = block.hash.toByteArray(),
                 time = block.time.toLong(),
                 saplingOutputsCount = outputs.saplingOutputsCount,
-                orchardActionsCount = outputs.orchardActionsCount
+                orchardOutputsCount = outputs.orchardActionsCount
             )
         }
     }
