@@ -4,7 +4,7 @@ import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import java.io.File
 
-internal object FakeRustBackendFixture {
+internal class FakeRustBackendFixture {
 
     private val DEFAULT_SAPLING_PARAM_DIR = FilePathFixture.newRootDir()
     private val DEFAULT_NETWORK = ZcashNetwork.Mainnet
