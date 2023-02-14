@@ -8,6 +8,9 @@ import cash.z.ecc.android.sdk.test.getAppContext
 import kotlinx.coroutines.runBlocking
 import java.io.File
 
+/**
+ * Provides a unified way for getting fixture directories on the database root path for test purposes.
+ */
 object DatabasePathFixture {
     val NO_BACKUP_DIR_PATH: String = runBlocking {
         getAppContext().getNoBackupFilesDirSuspend().absolutePath

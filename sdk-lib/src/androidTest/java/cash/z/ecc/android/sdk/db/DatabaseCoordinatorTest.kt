@@ -4,6 +4,7 @@ import androidx.test.filters.SmallTest
 import cash.z.ecc.android.sdk.internal.db.DatabaseCoordinator
 import cash.z.ecc.android.sdk.internal.ext.existsSuspend
 import cash.z.ecc.android.sdk.test.getAppContext
+import cash.z.ecc.fixture.DatabaseCacheFilesRootFixture
 import cash.z.ecc.fixture.DatabaseNameFixture
 import cash.z.ecc.fixture.DatabasePathFixture
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -30,16 +31,16 @@ class DatabaseCoordinatorTest {
     @Test
     @SmallTest
     @OptIn(ExperimentalCoroutinesApi::class)
-    fun database_cache_file_creation_test() = runTest {
-        val directory = File(DatabasePathFixture.new())
-        val fileName = DatabaseNameFixture.newDb(name = DatabaseCoordinator.DB_FS_CACHE_NAME)
-        val expectedFilePath = File(directory, fileName).path
+    fun database_cache_root_directory_creation_test() = runTest {
+        val parentDirectory = File(DatabasePathFixture.new())
+        val destinationDirectory = DatabaseCacheFilesRootFixture.newCacheRoot()
+        val expectedDirectoryPath = File(parentDirectory, destinationDirectory).path
 
         dbCoordinator.cacheDbRoot(
             DatabaseNameFixture.TEST_DB_NETWORK,
             DatabaseNameFixture.TEST_DB_ALIAS
         ).also { resultFile ->
-            assertEquals(expectedFilePath, resultFile.absolutePath)
+            assertEquals(expectedDirectoryPath, resultFile.absolutePath)
         }
     }
 
@@ -78,7 +79,7 @@ class DatabaseCoordinatorTest {
     @Test
     @SmallTest
     @OptIn(ExperimentalCoroutinesApi::class)
-    fun database_files_move_test() = runTest {
+    fun data_database_files_move_test() = runTest {
         val parentFile = File(
             DatabasePathFixture.new(
                 baseFolderPath = DatabasePathFixture.DATABASE_DIR_PATH,
@@ -89,7 +90,7 @@ class DatabaseCoordinatorTest {
         val originalDbFile = getEmptyFile(
             parent = parentFile,
             fileName = DatabaseNameFixture.newDb(
-                name = DatabaseCoordinator.DB_CACHE_NAME_LEGACY,
+                name = DatabaseCoordinator.DB_DATA_NAME_LEGACY,
                 alias = DatabaseCoordinator.ALIAS_LEGACY
             )
         )
@@ -97,7 +98,7 @@ class DatabaseCoordinatorTest {
         val originalDbJournalFile = getEmptyFile(
             parent = parentFile,
             fileName = DatabaseNameFixture.newDbJournal(
-                name = DatabaseCoordinator.DB_CACHE_NAME_LEGACY,
+                name = DatabaseCoordinator.DB_DATA_NAME_LEGACY,
                 alias = DatabaseCoordinator.ALIAS_LEGACY
             )
         )
@@ -105,22 +106,22 @@ class DatabaseCoordinatorTest {
         val originalDbWalFile = getEmptyFile(
             parent = parentFile,
             fileName = DatabaseNameFixture.newDbWal(
-                name = DatabaseCoordinator.DB_CACHE_NAME_LEGACY,
+                name = DatabaseCoordinator.DB_DATA_NAME_LEGACY,
                 alias = DatabaseCoordinator.ALIAS_LEGACY
             )
         )
 
         val expectedDbFile = File(
             DatabasePathFixture.new(),
-            DatabaseNameFixture.newDb(name = DatabaseCoordinator.DB_CACHE_NAME)
+            DatabaseNameFixture.newDb(name = DatabaseCoordinator.DB_DATA_NAME)
         )
         val expectedDbJournalFile = File(
             DatabasePathFixture.new(),
-            DatabaseNameFixture.newDbJournal(name = DatabaseCoordinator.DB_CACHE_NAME)
+            DatabaseNameFixture.newDbJournal(name = DatabaseCoordinator.DB_DATA_NAME)
         )
         val expectedDbWalFile = File(
             DatabasePathFixture.new(),
-            DatabaseNameFixture.newDbWal(name = DatabaseCoordinator.DB_CACHE_NAME)
+            DatabaseNameFixture.newDbWal(name = DatabaseCoordinator.DB_DATA_NAME)
         )
 
         assertTrue(originalDbFile.existsSuspend())
@@ -131,7 +132,7 @@ class DatabaseCoordinatorTest {
         assertFalse(expectedDbJournalFile.existsSuspend())
         assertFalse(expectedDbWalFile.existsSuspend())
 
-        dbCoordinator.legacyCacheDbFile(
+        dbCoordinator.dataDbFile(
             DatabaseNameFixture.TEST_DB_NETWORK,
             DatabaseNameFixture.TEST_DB_ALIAS
         ).also { resultFile ->
@@ -162,7 +163,7 @@ class DatabaseCoordinatorTest {
     @Test
     @SmallTest
     @OptIn(ExperimentalCoroutinesApi::class)
-    fun delete_database_files_test() = runTest {
+    fun delete_data_database_files_test() = runTest {
         val parentFile = File(
             DatabasePathFixture.new(
                 baseFolderPath = DatabasePathFixture.NO_BACKUP_DIR_PATH,
@@ -172,17 +173,17 @@ class DatabaseCoordinatorTest {
 
         val dbFile = getEmptyFile(
             parent = parentFile,
-            fileName = DatabaseNameFixture.newDb(name = DatabaseCoordinator.DB_FS_CACHE_NAME)
+            fileName = DatabaseNameFixture.newDb(name = DatabaseCoordinator.DB_DATA_NAME)
         )
 
         val dbJournalFile = getEmptyFile(
             parent = parentFile,
-            fileName = DatabaseNameFixture.newDbJournal(name = DatabaseCoordinator.DB_FS_CACHE_NAME)
+            fileName = DatabaseNameFixture.newDbJournal(name = DatabaseCoordinator.DB_DATA_NAME)
         )
 
         val dbWalFile = getEmptyFile(
             parent = parentFile,
-            fileName = DatabaseNameFixture.newDbWal(name = DatabaseCoordinator.DB_FS_CACHE_NAME)
+            fileName = DatabaseNameFixture.newDbWal(name = DatabaseCoordinator.DB_DATA_NAME)
         )
 
         assertTrue(dbFile.existsSuspend())
