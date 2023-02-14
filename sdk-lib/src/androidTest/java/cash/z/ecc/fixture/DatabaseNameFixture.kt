@@ -3,6 +3,9 @@ package cash.z.ecc.fixture
 import cash.z.ecc.android.sdk.internal.db.DatabaseCoordinator
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 
+/**
+ * Provides a unified way for getting a fixture database files names for test purposes.
+ */
 object DatabaseNameFixture {
     const val TEST_DB_NAME = "empty.db"
     const val TEST_DB_JOURNAL_NAME_SUFFIX = DatabaseCoordinator.DATABASE_FILE_JOURNAL_SUFFIX
