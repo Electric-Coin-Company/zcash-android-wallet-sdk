@@ -48,8 +48,8 @@ internal class DatabaseCoordinator private constructor(context: Context) {
         const val DB_DATA_NAME = "data.sqlite3" // $NON-NLS
 
         @VisibleForTesting
-        internal const val DB_CACHE_NAME_LEGACY = "Cache.db" // $NON-NLS
-        const val DB_CACHE_NAME = "cache.sqlite3" // $NON-NLS
+        internal const val DB_CACHE_OLDER_NAME_LEGACY = "Cache.db" // $NON-NLS
+        internal const val DB_CACHE_NEWER_NAME_LEGACY = "cache.sqlite3" // $NON-NLS
         const val DB_FS_BLOCK_DB_ROOT_NAME = "fs_cache" // $NON-NLS
 
         @VisibleForTesting
@@ -81,41 +81,24 @@ internal class DatabaseCoordinator private constructor(context: Context) {
         network: ZcashNetwork,
         alias: String
     ): File {
+        // First we deal with the legacy Cache database files (rollback included) on both older and newer path. In
+        // case of deletion failure caused by any reason, we try it on the next time again.
+        val legacyDbFilesDeleted = deleteLegacyCacheDbFiles(network, alias)
+        Twig.debug {
+            "Legacy Cache database files " +
+                "${if (legacyDbFilesDeleted) {
+                    "are successfully deleted"
+                } else {
+                    "failed to be deleted. We will try it on the next time"
+                }}."
+        }
+
         return newDatabaseFilePointer(
             network,
             alias,
             DB_FS_BLOCK_DB_ROOT_NAME,
             Files.getZcashNoBackupSubdirectory(applicationContext)
         )
-    }
-
-    /**
-     * Returns the file of the legacy Cache database that would correspond to the given
-     * alias and network attributes.
-     *
-     * @param network the network associated with the data in the cache database.
-     * @param alias the alias to convert into a database path
-     *
-     * @return the Cache database file
-     */
-    internal suspend fun legacyCacheDbFile(
-        network: ZcashNetwork,
-        alias: String
-    ): File {
-        val dbLocationsPair = prepareDbFiles(
-            applicationContext,
-            network,
-            alias,
-            DB_CACHE_NAME_LEGACY,
-            DB_CACHE_NAME
-        )
-
-        createFileMutex.withLock {
-            return checkAndMoveDatabaseFiles(
-                dbLocationsPair.first,
-                dbLocationsPair.second
-            )
-        }
     }
 
     /**
@@ -207,11 +190,45 @@ internal class DatabaseCoordinator private constructor(context: Context) {
     }
 
     /**
+     * This checks and potentially deletes all the legacy Cache database files, which correspond to the given alias and
+     * network attributes, as we recently switched to the store blocks on disk mechanism instead of putting them into
+     * the Cache database.
+     *
+     * This function deals with database rollback files too.
+     *
+     * @param network the network associated with the data in the Cache database
+     * @param alias the alias to convert into a database path
+     *
+     * @return true in case of successful deletion of all the files, false otherwise
+     */
+    private suspend fun deleteLegacyCacheDbFiles(
+        network: ZcashNetwork,
+        alias: String
+    ): Boolean {
+        val legacyDatabaseLocationPair = prepareDbFiles(
+            applicationContext,
+            network,
+            alias,
+            DB_CACHE_OLDER_NAME_LEGACY,
+            DB_CACHE_NEWER_NAME_LEGACY
+        )
+
+        var olderLegacyCacheDbDeleted = true
+        var newerLegacyCacheDbDeleted = true
+
+        if (legacyDatabaseLocationPair.first.existsSuspend()) {
+            olderLegacyCacheDbDeleted = deleteDatabase(legacyDatabaseLocationPair.first)
+        }
+        if (legacyDatabaseLocationPair.second.existsSuspend()) {
+            newerLegacyCacheDbDeleted = deleteDatabase(legacyDatabaseLocationPair.second)
+        }
+
+        return olderLegacyCacheDbDeleted && newerLegacyCacheDbDeleted
+    }
+
+    /**
      * This helper function prepares a legacy (i.e. previously created) database file, as well
      * as the preferred (i.e. newly created) file for subsequent use (and eventually move).
-     *
-     * Note: the database file placed under the fake no_backup folder for devices with Android SDK
-     * level lower than 21.
      *
      * @param appContext the application context
      * @param network the network associated with the data in the database.

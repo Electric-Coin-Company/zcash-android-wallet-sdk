@@ -196,4 +196,103 @@ class DatabaseCoordinatorTest {
             assertFalse(dbWalFile.existsSuspend())
         }
     }
+
+    @Test
+    @SmallTest
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun delete_all_legacy_database_files_test() = runTest {
+        // create older location legacy files
+        val olderLegacyParentFile = File(
+            DatabasePathFixture.new(
+                baseFolderPath = DatabasePathFixture.DATABASE_DIR_PATH,
+                internalPath = ""
+            )
+        )
+
+        val olderLegacyDbFile = getEmptyFile(
+            parent = olderLegacyParentFile,
+            fileName = DatabaseNameFixture.newDb(
+                name = DatabaseCoordinator.DB_CACHE_OLDER_NAME_LEGACY,
+                network = DatabaseNameFixture.TEST_DB_NETWORK.networkName,
+                alias = DatabaseCoordinator.ALIAS_LEGACY
+            )
+        )
+
+        val olderLegacyDbJournalFile = getEmptyFile(
+            parent = olderLegacyParentFile,
+            fileName = DatabaseNameFixture.newDbJournal(
+                name = DatabaseCoordinator.DB_CACHE_OLDER_NAME_LEGACY,
+                network = DatabaseNameFixture.TEST_DB_NETWORK.networkName,
+                alias = DatabaseCoordinator.ALIAS_LEGACY
+            )
+        )
+
+        val olderLegacyDbWalFile = getEmptyFile(
+            parent = olderLegacyParentFile,
+            fileName = DatabaseNameFixture.newDbWal(
+                name = DatabaseCoordinator.DB_CACHE_OLDER_NAME_LEGACY,
+                network = DatabaseNameFixture.TEST_DB_NETWORK.networkName,
+                alias = DatabaseCoordinator.ALIAS_LEGACY
+            )
+        )
+
+        // create newer location legacy files
+        val newerLegacyParentFile = File(
+            DatabasePathFixture.new(
+                baseFolderPath = DatabasePathFixture.NO_BACKUP_DIR_PATH,
+                internalPath = DatabasePathFixture.INTERNAL_DATABASE_PATH
+            )
+        )
+
+        val newerLegacyDbFile = getEmptyFile(
+            parent = newerLegacyParentFile,
+            fileName = DatabaseNameFixture.newDb(
+                name = DatabaseCoordinator.DB_CACHE_NEWER_NAME_LEGACY,
+                network = DatabaseNameFixture.TEST_DB_NETWORK.networkName,
+                alias = DatabaseNameFixture.TEST_DB_ALIAS
+            )
+        )
+
+        val newerLegacyDbJournalFile = getEmptyFile(
+            parent = newerLegacyParentFile,
+            fileName = DatabaseNameFixture.newDbJournal(
+                name = DatabaseCoordinator.DB_CACHE_NEWER_NAME_LEGACY,
+                network = DatabaseNameFixture.TEST_DB_NETWORK.networkName,
+                alias = DatabaseNameFixture.TEST_DB_ALIAS
+            )
+        )
+
+        val newerLegacyDbWalFile = getEmptyFile(
+            parent = newerLegacyParentFile,
+            fileName = DatabaseNameFixture.newDbWal(
+                name = DatabaseCoordinator.DB_CACHE_NEWER_NAME_LEGACY,
+                network = DatabaseNameFixture.TEST_DB_NETWORK.networkName,
+                alias = DatabaseNameFixture.TEST_DB_ALIAS
+            )
+        )
+
+        // check all files in place
+        assertTrue(olderLegacyDbFile.existsSuspend())
+        assertTrue(olderLegacyDbJournalFile.existsSuspend())
+        assertTrue(olderLegacyDbWalFile.existsSuspend())
+
+        assertTrue(newerLegacyDbFile.existsSuspend())
+        assertTrue(newerLegacyDbJournalFile.existsSuspend())
+        assertTrue(newerLegacyDbWalFile.existsSuspend())
+
+        // once we access the latest file system blocks storage root directory, all the legacy database files should
+        // be removed
+        dbCoordinator.fsBlockDbRoot(
+            network = DatabaseNameFixture.TEST_DB_NETWORK,
+            alias = DatabaseNameFixture.TEST_DB_ALIAS
+        ).also {
+            assertFalse(olderLegacyDbFile.existsSuspend())
+            assertFalse(olderLegacyDbJournalFile.existsSuspend())
+            assertFalse(olderLegacyDbWalFile.existsSuspend())
+
+            assertFalse(newerLegacyDbFile.existsSuspend())
+            assertFalse(newerLegacyDbJournalFile.existsSuspend())
+            assertFalse(newerLegacyDbWalFile.existsSuspend())
+        }
+    }
 }
