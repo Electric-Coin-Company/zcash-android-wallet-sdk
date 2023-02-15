@@ -27,7 +27,7 @@ internal class FakeRustBackend(
 
     override suspend fun getLatestHeight(): BlockHeight = BlockHeight(metadata.maxOf { it.height })
     override suspend fun findBlockMetadata(height: BlockHeight): JniBlockMeta? {
-        error("Intentionally not implemented in mocked FakeRustBackend implementation.")
+        return metadata.findLast { it.height == height.value }
     }
 
     override suspend fun rewindBlockMetadataToHeight(height: BlockHeight) {

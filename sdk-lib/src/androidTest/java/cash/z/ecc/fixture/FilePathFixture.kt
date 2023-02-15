@@ -4,12 +4,11 @@ import cash.z.ecc.android.sdk.ext.ZcashSdk
 import java.io.File
 
 object FilePathFixture {
+    private val DEFAULT_ROOT_DIR_PATH = DatabasePathFixture.new()
     private const val DEFAULT_BLOCKS_DIR_NAME = ZcashSdk.BLOCKS_DOWNLOAD_DIRECTORY
 
-    internal fun newRootDir(path: String = DatabasePathFixture.new()) = File(path)
-
     internal fun newBlocksDir(
-        rootDir: File = newRootDir(),
-        directoryName: String = DEFAULT_BLOCKS_DIR_NAME
-    ) = File(rootDir, directoryName)
+        rootDirectoryPath: String = DEFAULT_ROOT_DIR_PATH,
+        blockDirectoryName: String = DEFAULT_BLOCKS_DIR_NAME
+    ) = File(rootDirectoryPath, blockDirectoryName)
 }
