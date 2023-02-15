@@ -47,13 +47,14 @@ internal class FileCompactBlockRepository(
             count++
 
             if (metaDataBuffer.isBufferFull()) {
-                // write blocks metadata
+                // write blocks metadata to storage when the buffer is full
                 rustBackend.writeBlockMetadata(metaDataBuffer.toTypedArray())
                 metaDataBuffer.clear()
             }
         }
 
         if (metaDataBuffer.isNotEmpty()) {
+            // write the rest of the blocks metadata to storage even though the buffer is not full
             rustBackend.writeBlockMetadata(metaDataBuffer.toTypedArray())
             metaDataBuffer.clear()
         }

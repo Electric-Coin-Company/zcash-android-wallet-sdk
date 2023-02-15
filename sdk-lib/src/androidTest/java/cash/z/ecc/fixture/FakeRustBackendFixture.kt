@@ -6,8 +6,8 @@ import java.io.File
 
 internal class FakeRustBackendFixture {
 
-    private val DEFAULT_SAPLING_PARAM_DIR = FilePathFixture.newRootDir()
-    private val DEFAULT_NETWORK = ZcashNetwork.Mainnet
+    private val DEFAULT_SAPLING_PARAM_DIR = File(DatabasePathFixture.new())
+    private val DEFAULT_NETWORK = ZcashNetwork.Testnet
     private val DEFAULT_METADATA = mutableListOf<JniBlockMeta>()
 
     fun new(
