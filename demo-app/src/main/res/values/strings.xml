@@ -8,8 +8,6 @@
     <string name="action_faucet">Testnet Faucet</string>
     <string name="action_reset_sdk">Reset SDK</string>
 
-    <string name="action_new_ui">New UI</string>
-
     <!-- Drawer Menu -->
     <string name="menu_home">Home</string>
     <string name="menu_private_key">Get Private Key</string>
