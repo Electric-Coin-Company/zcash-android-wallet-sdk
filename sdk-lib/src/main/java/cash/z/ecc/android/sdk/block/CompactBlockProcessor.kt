@@ -941,18 +941,15 @@ class CompactBlockProcessor internal constructor(
     private suspend fun printValidationErrorInfo(errorHeight: BlockHeight, count: Int = 11) {
         // Note: blocks are public information so it's okay to print them but, still, let's not unless we're
         // debugging something
-        if (!BuildConfig.DEBUG) return
+        if (!BuildConfig.DEBUG) {
+            return
+        }
 
         var errorInfo = fetchValidationErrorInfo(errorHeight)
-        Twig.debug {
-            "validation failed at block ${errorInfo.errorHeight} which had hash " +
-                "${errorInfo.actualPrevHash} but the expected hash was ${errorInfo.expectedPrevHash}"
-        }
+        Twig.debug { "validation failed at block ${errorInfo.errorHeight} with hash: ${errorInfo.hash}" }
+
         errorInfo = fetchValidationErrorInfo(errorHeight + 1)
-        Twig.debug {
-            "The next block block: ${errorInfo.errorHeight} which had hash ${errorInfo.actualPrevHash} but " +
-                "the expected hash was ${errorInfo.expectedPrevHash}"
-        }
+        Twig.debug { "the next block is ${errorInfo.errorHeight} with hash: ${errorInfo.hash}" }
 
         Twig.debug { "=================== BLOCKS [$errorHeight..${errorHeight.value + count - 1}]: START ========" }
         repeat(count) { i ->
@@ -967,13 +964,9 @@ class CompactBlockProcessor internal constructor(
     }
 
     private suspend fun fetchValidationErrorInfo(errorHeight: BlockHeight): ValidationErrorInfo {
-        val hash = repository.findBlockHash(errorHeight + 1)
-            ?.toHexReversed()
-        val prevHash = repository.findBlockHash(errorHeight)?.toHexReversed()
+        val hash = repository.findBlockHash(errorHeight + 1)?.toHexReversed()
 
-        // val compactBlock = downloader.compactBlockRepository.findCompactBlock(errorHeight + 1)
-        val expectedPrevHash = "" // compactBlock?.prevHash?.toByteArray()?.toHexReversed()
-        return ValidationErrorInfo(errorHeight, hash, expectedPrevHash, prevHash)
+        return ValidationErrorInfo(errorHeight, hash)
     }
 
     /**
@@ -1271,9 +1264,7 @@ class CompactBlockProcessor internal constructor(
 
     data class ValidationErrorInfo(
         val errorHeight: BlockHeight,
-        val hash: String?,
-        val expectedPrevHash: String?,
-        val actualPrevHash: String?
+        val hash: String?
     )
 
     //
