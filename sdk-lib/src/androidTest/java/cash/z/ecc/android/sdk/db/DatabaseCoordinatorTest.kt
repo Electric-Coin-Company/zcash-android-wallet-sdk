@@ -197,6 +197,10 @@ class DatabaseCoordinatorTest {
         }
     }
 
+    /**
+     * Note that this situation is just hypothetical, as the legacy database files should be placed only on one of
+     * the legacy locations, not both, but it is alright to test it together.
+     */
     @Test
     @SmallTest
     @OptIn(ExperimentalCoroutinesApi::class)
