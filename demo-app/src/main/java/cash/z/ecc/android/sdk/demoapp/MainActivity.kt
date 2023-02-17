@@ -108,9 +108,6 @@ class MainActivity :
             navController.navigate(R.id.nav_home)
             sharedViewModel.resetSDK()
             true
-        } else if (item.itemId == R.id.action_new_ui) {
-            startActivity(Intent(this, ComposeActivity::class.java))
-            true
         } else {
             super.onOptionsItemSelected(item)
         }

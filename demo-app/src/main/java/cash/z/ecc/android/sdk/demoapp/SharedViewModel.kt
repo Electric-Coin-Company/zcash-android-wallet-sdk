@@ -81,7 +81,8 @@ class SharedViewModel(application: Application) : AndroidViewModel(application) 
                         BlockHeight.new(ZcashNetwork.Mainnet, BlockRangeFixture.new().start)
                     } else {
                         birthdayHeight.value
-                    }
+                    },
+                    alias = OLD_UI_SYNCHRONIZER_ALIAS
                 )
 
                 send(InternalSynchronizerStatus.Available(synchronizer))
@@ -162,5 +163,6 @@ class SharedViewModel(application: Application) : AndroidViewModel(application) 
 
     companion object {
         private val DEFAULT_ANDROID_STATE_TIMEOUT = 5.seconds
+        internal const val OLD_UI_SYNCHRONIZER_ALIAS = "old_ui"
     }
 }
