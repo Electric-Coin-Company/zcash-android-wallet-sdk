@@ -1,8 +1,10 @@
 package cash.z.ecc.android.sdk.internal.model
 
+import androidx.annotation.Keep
 import cash.z.ecc.android.sdk.internal.storage.block.CompactBlockOutputsCounts
 import cash.z.wallet.sdk.internal.rpc.CompactFormats.CompactBlock
 
+@Keep
 class JniBlockMeta(
     val height: Long,
     val hash: ByteArray,
