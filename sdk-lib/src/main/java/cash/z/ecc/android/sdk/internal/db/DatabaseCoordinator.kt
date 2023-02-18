@@ -11,6 +11,7 @@ import cash.z.ecc.android.sdk.internal.Files
 import cash.z.ecc.android.sdk.internal.LazyWithArgument
 import cash.z.ecc.android.sdk.internal.NoBackupContextWrapper
 import cash.z.ecc.android.sdk.internal.Twig
+import cash.z.ecc.android.sdk.internal.ext.deleteRecursivelySuspend
 import cash.z.ecc.android.sdk.internal.ext.deleteSuspend
 import cash.z.ecc.android.sdk.internal.ext.existsSuspend
 import cash.z.ecc.android.sdk.internal.ext.getDatabasePathSuspend
@@ -172,18 +173,17 @@ internal class DatabaseCoordinator private constructor(context: Context) {
      *
      * @param network the network associated with the data in the database.
      * @param alias the alias to convert into a database path
+     *
+     * @return true only if any database deleted, false otherwise
      */
     internal suspend fun deleteDatabases(
         network: ZcashNetwork,
         alias: String
     ): Boolean {
         deleteFileMutex.withLock {
-            val dataDeleted = deleteDatabase(
-                dataDbFile(network, alias)
-            )
-            val cacheDeleted = deleteDatabase(
-                fsBlockDbRoot(network, alias)
-            )
+            val dataDeleted = deleteDatabase(dataDbFile(network, alias))
+
+            val cacheDeleted = fsBlockDbRoot(network, alias).deleteRecursivelySuspend()
 
             return dataDeleted || cacheDeleted
         }
