@@ -79,7 +79,7 @@ class SyncBlockchainBenchmark : UiTestPrerequisites() {
         // Open toolbar overflow menu
         device.findObject(By.desc("More options")).clickAndWaitFor(Until.newWindow(), 2.seconds) // NON-NLS
         // Click on the reset sdk menu item
-        device.findObject(By.text("Reset SDK")).click() // NON-NLS
+        device.findObject(By.text("Reset SDK")).clickAndWaitFor(Until.newWindow(), 2.seconds) // NON-NLS
         device.waitForIdle()
     }
 
