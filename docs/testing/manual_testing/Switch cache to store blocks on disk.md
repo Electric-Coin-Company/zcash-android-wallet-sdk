@@ -33,8 +33,8 @@ Observed result of this manual test should be:
 1. Install the newer version of the SDK and its demo-app to the same device to check the switch to the new type of 
    the CompactBlocks cache storing
    1. Switch to the latest commit on the **Main** branch in your git client
-   2. Update dependencies lock (if needed) and sync Gradle files
-   3. Run the demo-app on the same emulator device as previously
+   1. Update dependencies lock (if needed) and sync Gradle files
+   1. Run the demo-app on the same emulator device as previously
 1. Once the app is opened go through the same steps as previously to let the SDK apply the new cache storing 
    mechanisms 
 1. Open the Device File Explorer in the Android again
