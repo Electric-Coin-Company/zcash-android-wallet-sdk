@@ -8,12 +8,11 @@ internal class FakeRustBackendFixture {
 
     private val DEFAULT_SAPLING_PARAM_DIR = File(DatabasePathFixture.new())
     private val DEFAULT_NETWORK = ZcashNetwork.Testnet
-    private val DEFAULT_METADATA = mutableListOf<JniBlockMeta>()
 
     fun new(
         saplingParamDir: File = DEFAULT_SAPLING_PARAM_DIR,
         network: ZcashNetwork = DEFAULT_NETWORK,
-        metadata: MutableList<JniBlockMeta> = DEFAULT_METADATA
+        metadata: MutableList<JniBlockMeta> = mutableListOf()
     ) = FakeRustBackend(
         saplingParamDir = saplingParamDir,
         network = network,
