@@ -85,14 +85,12 @@ internal class DatabaseCoordinator private constructor(context: Context) {
         // First we deal with the legacy Cache database files (rollback included) on both older and newer path. In
         // case of deletion failure caused by any reason, we try it on the next time again.
         val legacyDbFilesDeleted = deleteLegacyCacheDbFiles(network, alias)
-        Twig.debug {
-            "Legacy Cache database files " +
-                "${if (legacyDbFilesDeleted) {
-                    "are successfully deleted"
-                } else {
-                    "failed to be deleted. We will try it on the next time"
-                }}."
+        val result = if (legacyDbFilesDeleted) {
+            "are successfully deleted"
+        } else {
+            "failed to be deleted. Will be retried it on the next time"
         }
+        Twig.debug { "Legacy Cache database files $result." }
 
         return newDatabaseFilePointer(
             network,
