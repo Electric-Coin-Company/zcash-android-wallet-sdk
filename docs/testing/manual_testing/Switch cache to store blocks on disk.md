@@ -21,7 +21,8 @@ Observed result of this manual test should be:
 1. Update dependencies lock (if needed) and sync Gradle files
 1. Select one of the **Mainnet** build variant from **Build Variant** window
 1. Build and run the demo-app on selected emulator
-1. Once it's opened go through the app to let the SDK create the Cache database files, i.e. visit **Get Balance** screen
+1. Once it's opened select e.g. _Alyssa P. Hacker_ secret phrase and then let SDK create the Cache database files 
+   with auto-start syncing on the home screen
 1. Wait a moment to be sure that the sync mechanism has already been initialized and started to fill in the Cache 
    database with CompactBlocks entries.
 1. Open Device File Explorer in Android Studio, select the same emulator device from the top drop-down menu
