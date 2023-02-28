@@ -1,6 +1,5 @@
 package cash.z.ecc.android.sdk.internal.storage.block
 
-import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.internal.ext.deleteRecursivelySuspend
 import cash.z.ecc.android.sdk.internal.ext.existsSuspend
 import cash.z.ecc.android.sdk.internal.ext.mkdirsSuspend
@@ -122,7 +121,7 @@ class FileCompactBlockRepositoryTest {
         // prepare a list of blocks to be persisted, which has smaller size than buffer size
         val reducedBlocksList = ListOfCompactBlocksFixture.new().apply {
             val reduced = drop(count() / 2)
-            assertTrue { reduced.count() < ZcashSdk.BLOCKS_METADATA_BUFFER_SIZE }
+            assertTrue { reduced.count() < FileCompactBlockRepository.BLOCKS_METADATA_BUFFER_SIZE }
         }
 
         val persistedBlocksCount = blockRepository.write(reducedBlocksList)
@@ -209,7 +208,7 @@ class FileCompactBlockRepositoryTest {
 
         val tempFile = block.createTemporaryFile(blocksDir)
 
-        val finalizedFile = File(tempFile.absolutePath.dropLast(ZcashSdk.TEMPORARY_FILENAME_SUFFIX.length))
+        val finalizedFile = File(tempFile.absolutePath.dropLast(FileCompactBlockRepository.TEMPORARY_FILENAME_SUFFIX.length))
         assertFalse { finalizedFile.existsSuspend() }
 
         tempFile.finalizeFile()
