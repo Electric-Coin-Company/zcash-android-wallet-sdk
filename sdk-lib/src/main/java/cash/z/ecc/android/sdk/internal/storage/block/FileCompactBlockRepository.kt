@@ -1,7 +1,6 @@
 package cash.z.ecc.android.sdk.internal.storage.block
 
 import androidx.annotation.VisibleForTesting
-import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.ext.createNewFileSuspend
 import cash.z.ecc.android.sdk.internal.ext.deleteSuspend
@@ -65,6 +64,25 @@ internal class FileCompactBlockRepository(
     override suspend fun rewindTo(height: BlockHeight) = rustBackend.rewindBlockMetadataToHeight(height)
 
     companion object {
+        /**
+         * The name of the directory for downloading blocks
+         */
+        const val BLOCKS_DOWNLOAD_DIRECTORY = "blocks"
+
+        /**
+         * The suffix for temporary files
+         */
+        const val TEMPORARY_FILENAME_SUFFIX = ".tmp"
+
+        /**
+         * The suffix for block file name
+         */
+        const val BLOCK_FILENAME_SUFFIX = "-compactblock"
+
+        /**
+         * The size of block meta data buffer
+         */
+        const val BLOCKS_METADATA_BUFFER_SIZE = 10
 
         suspend fun new(
             rustBackend: RustBackend
@@ -72,7 +90,7 @@ internal class FileCompactBlockRepository(
             Twig.debug { "${rustBackend.fsBlockDbRoot.absolutePath} \n  ${rustBackend.dataDbFile.absolutePath}" }
 
             // create and check cache directories
-            val blocksDirectory = File(rustBackend.fsBlockDbRoot, ZcashSdk.BLOCKS_DOWNLOAD_DIRECTORY).also {
+            val blocksDirectory = File(rustBackend.fsBlockDbRoot, BLOCKS_DOWNLOAD_DIRECTORY).also {
                 it.mkdirsSuspend()
             }
             if (!blocksDirectory.existsSuspend()) {
@@ -91,7 +109,7 @@ internal class FileCompactBlockRepository(
 //
 
 private fun List<JniBlockMeta>.isBufferFull(): Boolean {
-    return size % ZcashSdk.BLOCKS_METADATA_BUFFER_SIZE == 0
+    return size % FileCompactBlockRepository.BLOCKS_METADATA_BUFFER_SIZE == 0
 }
 
 internal data class CompactBlockOutputsCounts(
@@ -119,12 +137,12 @@ private fun CompactBlock.toJniMetaData(): JniBlockMeta {
 
 private fun CompactBlock.createFilename(): String {
     val hashHex = hash.toByteArray().toHexReversed()
-    return "$height-$hashHex${ZcashSdk.BLOCK_FILENAME_SUFFIX}"
+    return "$height-$hashHex${FileCompactBlockRepository.BLOCK_FILENAME_SUFFIX}"
 }
 
 @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
 internal suspend fun CompactBlock.createTemporaryFile(blocksDirectory: File): File {
-    val tempFileName = "${createFilename()}${ZcashSdk.TEMPORARY_FILENAME_SUFFIX}"
+    val tempFileName = "${createFilename()}${FileCompactBlockRepository.TEMPORARY_FILENAME_SUFFIX}"
     val tmpFile = File(blocksDirectory, tempFileName)
 
     if (tmpFile.existsSuspend()) {
@@ -138,6 +156,6 @@ internal suspend fun CompactBlock.createTemporaryFile(blocksDirectory: File): Fi
 @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
 internal suspend fun File.finalizeFile(): Boolean {
     // rename the file
-    val newFile = File(absolutePath.dropLast(ZcashSdk.TEMPORARY_FILENAME_SUFFIX.length))
+    val newFile = File(absolutePath.dropLast(FileCompactBlockRepository.TEMPORARY_FILENAME_SUFFIX.length))
     return renameToSuspend(newFile)
 }
