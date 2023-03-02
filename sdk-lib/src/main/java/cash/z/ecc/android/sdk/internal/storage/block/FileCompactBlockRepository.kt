@@ -19,6 +19,7 @@ import cash.z.ecc.android.sdk.jni.getLatestBlockHeight
 import cash.z.ecc.android.sdk.jni.rewindBlockMetadataToHeight
 import cash.z.ecc.android.sdk.model.BlockHeight
 import co.electriccoin.lightwallet.client.model.CompactBlockUnsafe
+import kotlinx.coroutines.flow.Flow
 import java.io.File
 
 internal class FileCompactBlockRepository(
@@ -30,12 +31,12 @@ internal class FileCompactBlockRepository(
 
     override suspend fun findCompactBlock(height: BlockHeight) = rustBackend.findBlockMetadata(height)
 
-    override suspend fun write(result: Sequence<CompactBlockUnsafe>): Int {
+    override suspend fun write(blocks: Sequence<CompactBlockUnsafe>): Int {
         var count = 0
 
         val metaDataBuffer = mutableListOf<JniBlockMeta>()
 
-        result.forEach { block ->
+        blocks.forEach { block ->
             val tmpFile = block.createTemporaryFile(blocksDirectory)
             // write compact block bytes
             tmpFile.writeBytesSuspend(block.compactBlockBytes)
@@ -63,6 +64,10 @@ internal class FileCompactBlockRepository(
         }
 
         return count
+    }
+
+    override suspend fun write(blocks: Flow<CompactBlockUnsafe>) {
+        error("Not yet implemented")
     }
 
     override suspend fun rewindTo(height: BlockHeight) = rustBackend.rewindBlockMetadataToHeight(height)

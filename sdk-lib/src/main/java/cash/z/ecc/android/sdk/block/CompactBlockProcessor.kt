@@ -29,8 +29,8 @@ import cash.z.ecc.android.sdk.internal.ext.retryUpTo
 import cash.z.ecc.android.sdk.internal.ext.retryWithBackoff
 import cash.z.ecc.android.sdk.internal.ext.toHexReversed
 import cash.z.ecc.android.sdk.internal.isEmpty
-import cash.z.ecc.android.sdk.internal.model.from
-import cash.z.ecc.android.sdk.internal.model.toBlockHeight
+import cash.z.ecc.android.sdk.internal.model.ext.from
+import cash.z.ecc.android.sdk.internal.model.ext.toBlockHeight
 import cash.z.ecc.android.sdk.internal.repository.DerivedDataRepository
 import cash.z.ecc.android.sdk.jni.Backend
 import cash.z.ecc.android.sdk.jni.RustBackend
@@ -726,14 +726,15 @@ class CompactBlockProcessor internal constructor(
                                 range.endInclusive.value
                             )
                         ) // subtract 1 on the first value because the range is inclusive
+
+                        downloader.downloadBlockRange(downloadedBlockHeight..end, network)
+
                         Twig.debug {
                             "downloaded $downloadedBlockHeight..$end (batch $i of $batches) " +
                                 "[${downloadedBlockHeight..end}]"
                         }
+                        Twig.debug { "Blocks downloaded" }
 
-                        var count = downloader.downloadBlockRange(downloadedBlockHeight..end)
-
-                        Twig.debug { "downloaded $count blocks!" }
                         progress = (i / batches.toFloat() * 100).roundToInt()
                         _progress.value = progress
                         val lastDownloadedHeight = downloader.getLastDownloadedHeight()

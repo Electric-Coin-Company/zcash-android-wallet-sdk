@@ -2,7 +2,7 @@ package cash.z.ecc.android.sdk.util
 
 import androidx.test.platform.app.InstrumentationRegistry
 import cash.z.ecc.android.sdk.internal.Twig
-import cash.z.ecc.android.sdk.internal.model.from
+import cash.z.ecc.android.sdk.internal.model.ext.from
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.Mainnet
 import cash.z.ecc.android.sdk.model.ZcashNetwork

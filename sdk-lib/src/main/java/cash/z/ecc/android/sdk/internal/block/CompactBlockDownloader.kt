@@ -2,15 +2,20 @@ package cash.z.ecc.android.sdk.internal.block
 
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.ext.retryUpTo
-import cash.z.ecc.android.sdk.internal.model.from
+import cash.z.ecc.android.sdk.internal.model.ext.from
 import cash.z.ecc.android.sdk.internal.repository.CompactBlockRepository
 import cash.z.ecc.android.sdk.model.BlockHeight
-import co.electriccoin.lightwallet.client.BlockingLightWalletClient
+import cash.z.ecc.android.sdk.model.ZcashNetwork
+import co.electriccoin.lightwallet.client.CoroutineLightWalletClient
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.LightWalletEndpointInfoUnsafe
 import co.electriccoin.lightwallet.client.model.Response
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onCompletion
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.withContext
 
 /**
@@ -24,11 +29,11 @@ import kotlinx.coroutines.withContext
  */
 open class CompactBlockDownloader private constructor(val compactBlockRepository: CompactBlockRepository) {
 
-    lateinit var lightWalletClient: BlockingLightWalletClient
+    lateinit var lightWalletClient: CoroutineLightWalletClient
         private set
 
     constructor(
-        lightWalletClient: BlockingLightWalletClient,
+        lightWalletClient: CoroutineLightWalletClient,
         compactBlockRepository: CompactBlockRepository
     ) : this(compactBlockRepository) {
         this.lightWalletClient = lightWalletClient
@@ -40,27 +45,30 @@ open class CompactBlockDownloader private constructor(val compactBlockRepository
      *
      * @param heightRange the inclusive range of heights to request. For example 10..20 would
      * request 11 blocks (including block 10 and block 20).
-     *
-     * @return the number of blocks that were returned in the results from the lightWalletClient, or -1 in case of
-     * any communication error.
      */
-    suspend fun downloadBlockRange(heightRange: ClosedRange<BlockHeight>): Int = withContext(IO) {
-        val response = lightWalletClient.getBlockRange(
+    suspend fun downloadBlockRange(heightRange: ClosedRange<BlockHeight>, network: ZcashNetwork) {
+        val flow = lightWalletClient.getBlockRange(
             BlockHeightUnsafe.from(heightRange.start)..BlockHeightUnsafe.from(heightRange.endInclusive)
-        )
-        when (response) {
-            is Response.Success -> {
-                Twig.debug {
-                    "Downloading blocks in range: $heightRange succeeded with ${response.result.count()} blocks " +
-                        "downloaded."
+        ).onEach { response ->
+                when (response) {
+                    is Response.Success -> {
+                        Twig.debug { "Downloading block at height: ${response.result.height} succeeded." }
+                    } else -> {
+                        Twig.debug { "Downloading blocks in range: $heightRange failed with: $response." }
+                    }
                 }
-                compactBlockRepository.write(response.result)
             }
-            else -> {
-                Twig.debug { "Downloading blocks in range: $heightRange failed with: $response." }
-                -1
+            .filter { response ->
+                response is Response.Success
             }
-        }
+            .map { response ->
+                (response as Response.Success).result
+            }
+            .onCompletion {
+                Twig.debug { "All blocks in range: $heightRange downloaded successfully." }
+            }
+
+        compactBlockRepository.write(flow)
     }
 
     /**
@@ -118,7 +126,7 @@ open class CompactBlockDownloader private constructor(val compactBlockRepository
      *
      * @return the full transaction info.
      */
-    fun fetchTransaction(txId: ByteArray) = lightWalletClient.fetchTransaction(txId)
+    suspend fun fetchTransaction(txId: ByteArray) = lightWalletClient.fetchTransaction(txId)
 
     companion object {
         private const val GET_SERVER_INFO_RETRIES = 6
