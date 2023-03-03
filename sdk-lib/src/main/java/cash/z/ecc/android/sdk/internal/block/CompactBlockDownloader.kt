@@ -8,11 +8,12 @@ import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import co.electriccoin.lightwallet.client.CoroutineLightWalletClient
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
+import co.electriccoin.lightwallet.client.model.CompactBlockUnsafe
 import co.electriccoin.lightwallet.client.model.LightWalletEndpointInfoUnsafe
 import co.electriccoin.lightwallet.client.model.Response
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Dispatchers.IO
-import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onEach
@@ -47,7 +48,7 @@ open class CompactBlockDownloader private constructor(val compactBlockRepository
      * request 11 blocks (including block 10 and block 20).
      */
     suspend fun downloadBlockRange(heightRange: ClosedRange<BlockHeight>, network: ZcashNetwork) {
-        val flow = lightWalletClient.getBlockRange(
+        val filteredFlow = lightWalletClient.getBlockRange(
             BlockHeightUnsafe.from(heightRange.start)..BlockHeightUnsafe.from(heightRange.endInclusive)
         ).onEach { response ->
                 when (response) {
@@ -58,17 +59,15 @@ open class CompactBlockDownloader private constructor(val compactBlockRepository
                     }
                 }
             }
-            .filter { response ->
-                response is Response.Success
-            }
+            .filterIsInstance<Response.Success<CompactBlockUnsafe>>()
             .map { response ->
-                (response as Response.Success).result
+                response.result
             }
             .onCompletion {
                 Twig.debug { "All blocks in range: $heightRange downloaded successfully." }
             }
 
-        compactBlockRepository.write(flow)
+        compactBlockRepository.write(filteredFlow)
     }
 
     /**
