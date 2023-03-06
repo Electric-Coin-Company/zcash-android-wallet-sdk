@@ -17,7 +17,7 @@ internal class FakeRustBackend(
     val metadata: MutableList<JniBlockMeta>
 ) : RustBackendWelding {
 
-    override suspend fun writeBlockMetadata(blockMetadata: Array<JniBlockMeta>): Boolean =
+    override suspend fun writeBlockMetadata(blockMetadata: List<JniBlockMeta>): Boolean =
         metadata.addAll(blockMetadata)
 
     override suspend fun rewindToHeight(height: BlockHeight): Boolean {

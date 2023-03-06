@@ -180,11 +180,11 @@ internal class RustBackend private constructor(
             )
         }
 
-    override suspend fun writeBlockMetadata(blockMetadata: Array<JniBlockMeta>) =
+    override suspend fun writeBlockMetadata(blockMetadata: List<JniBlockMeta>) =
         withContext(SdkDispatchers.DATABASE_IO) {
             writeBlockMetadata(
                 fsBlockDbRoot.absolutePath,
-                blockMetadata
+                blockMetadata.toTypedArray()
             )
         }
 

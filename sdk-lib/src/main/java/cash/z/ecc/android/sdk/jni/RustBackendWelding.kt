@@ -81,7 +81,7 @@ internal interface RustBackendWelding {
 
     suspend fun scanBlocks(limit: Int = -1): Boolean
 
-    suspend fun writeBlockMetadata(blockMetadata: Array<JniBlockMeta>): Boolean
+    suspend fun writeBlockMetadata(blockMetadata: List<JniBlockMeta>): Boolean
 
     /**
      * @return The latest height in the CompactBlock cache metadata DB, or Null if no blocks have been cached.
