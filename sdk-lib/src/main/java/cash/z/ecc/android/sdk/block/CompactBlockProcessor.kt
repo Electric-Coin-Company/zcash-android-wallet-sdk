@@ -49,7 +49,6 @@ import co.electriccoin.lightwallet.client.fixture.BenchmarkingBlockRangeFixture
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.LightWalletEndpointInfoUnsafe
 import co.electriccoin.lightwallet.client.model.Response
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -242,6 +241,13 @@ class CompactBlockProcessor internal constructor(
                         }
                         delay(napTime)
                     }
+                    is BlockProcessingResult.FailedDeleteBlockMetadata -> {
+                        Twig.debug {
+                            "Failed to delete temporary blocks metadata files from the device disk. It will" +
+                                " be retried on the next time, while downloading new blocks."
+                        }
+                        // Do nothing. The other phases went correctly.
+                    }
                     is BlockProcessingResult.Error -> {
                         if (consecutiveChainErrors.get() >= RETRIES) {
                             val errorMessage = "ERROR: unable to resolve reorg at height $result after " +
@@ -293,40 +299,69 @@ class CompactBlockProcessor internal constructor(
             setState(Scanned(currentInfo.lastScanRange))
             BlockProcessingResult.NoBlocksToProcess
         } else {
-            if (BenchmarkingExt.isBenchmarking()) {
-                // We inject a benchmark test blocks range at this point to process only a restricted range of blocks
-                // for a more reliable benchmark results.
-                val benchmarkBlockRange = BenchmarkingBlockRangeFixture.new().let {
-                    // Convert range of Longs to range of BlockHeights
-                    BlockHeight.new(ZcashNetwork.Mainnet, it.start)..(
-                        BlockHeight.new(ZcashNetwork.Mainnet, it.endInclusive)
-                        )
-                }
-                downloadNewBlocks(benchmarkBlockRange)
-                val error = validateAndScanNewBlocks(benchmarkBlockRange)
-                if (error != BlockProcessingResult.Success) {
-                    error
+            val processRanges = ProcessBlocksRanges().apply {
+                if (BenchmarkingExt.isBenchmarking()) {
+                    // We inject a benchmark test blocks range at this point to process only a restricted range of
+                    // blocks for a more reliable benchmark results.
+                    val benchmarkBlockRange = BenchmarkingBlockRangeFixture.new().let {
+                        // Convert range of Longs to range of BlockHeights
+                        BlockHeight.new(ZcashNetwork.Mainnet, it.start)..(
+                            BlockHeight.new(ZcashNetwork.Mainnet, it.endInclusive)
+                            )
+                    }
+                    downloadRange = benchmarkBlockRange
+                    scanRange = benchmarkBlockRange
                 } else {
-                    enhanceTransactionDetails(benchmarkBlockRange)
+                    downloadRange = currentInfo.lastDownloadRange
+                    scanRange = currentInfo.lastScanRange
                 }
+            }
+
+            downloadNewBlocks(processRanges.downloadRange)
+
+            val validationResult = validateAndScanNewBlocks(processRanges.scanRange)
+            if (validationResult != BlockProcessingResult.Success) {
+                deleteAllBlocksMetadataFiles()
+                return@withContext validationResult
+            }
+
+            val enhanceResult = processRanges.scanRange?.let { enhanceTransactionDetails(it) }
+                ?: BlockProcessingResult.NoBlocksToProcess
+            if (enhanceResult != BlockProcessingResult.Success) {
+                deleteAllBlocksMetadataFiles()
+                return@withContext enhanceResult
+            }
+
+            val deleteMetadataResult = deleteAllBlocksMetadataFiles()
+            if (deleteMetadataResult) {
+                enhanceResult
             } else {
-                downloadNewBlocks(currentInfo.lastDownloadRange)
-                val error = validateAndScanNewBlocks(currentInfo.lastScanRange)
-                if (error != BlockProcessingResult.Success) {
-                    error
-                } else {
-                    currentInfo.lastScanRange?.let { enhanceTransactionDetails(it) }
-                        ?: BlockProcessingResult.NoBlocksToProcess
-                }
+                BlockProcessingResult.FailedDeleteBlockMetadata
             }
         }
     }
+
+    private suspend fun deleteAllBlocksMetadataFiles(): Boolean {
+        Twig.debug { "Deleting all temporary blocks metadata files now." }
+        // Now we approach to delete all the temporary blocks metadata files from the device disk. Note that we'd
+        // like to ideally do this continuously while syncing a next group of blocks in the future.
+        return downloader.compactBlockRepository.deleteCompactBlocksMetadataFiles()
+    }
+
+    /**
+     * Helper wrapping class to provide more clarity about ranges used in the processing new blocks mechanism.
+     */
+    private data class ProcessBlocksRanges(
+        var downloadRange: ClosedRange<BlockHeight>? = null,
+        var scanRange: ClosedRange<BlockHeight>? = null
+    )
 
     sealed class BlockProcessingResult {
         object NoBlocksToProcess : BlockProcessingResult()
         object Success : BlockProcessingResult()
         object Reconnecting : BlockProcessingResult()
         object FailedEnhance : BlockProcessingResult()
+        object FailedDeleteBlockMetadata : BlockProcessingResult()
         data class Error(val failedAtHeight: BlockHeight) : BlockProcessingResult()
     }
 
@@ -455,7 +490,7 @@ class CompactBlockProcessor internal constructor(
     // TODO [#683]: we still need a way to identify those transactions that failed to be enhanced
     // TODO [#683]: https://github.com/zcash/zcash-android-wallet-sdk/issues/683
 
-    private suspend fun enhance(transaction: TransactionOverview) = withContext(Dispatchers.IO) {
+    private suspend fun enhance(transaction: TransactionOverview) = withContext(IO) {
         transaction.minedHeight?.let { minedHeight ->
             enhanceHelper(transaction.id, transaction.rawId.byteArray, minedHeight)
         }

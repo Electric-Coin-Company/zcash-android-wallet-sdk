@@ -23,6 +23,14 @@ interface CompactBlockRepository {
     suspend fun findCompactBlock(height: BlockHeight): JniBlockMeta?
 
     /**
+     * This function is supposed to be used once the whole blocks sync process done. It removes all the temporary
+     * blocks metadata files from the device disk together with theirs parent directory.
+     *
+     * @return true when its deleted, false if the deletion fails
+     */
+    suspend fun deleteCompactBlocksMetadataFiles(): Boolean
+
+    /**
      * Write the given blocks to this store, which may be anything from an in-memory cache to a DB.
      *
      * @param result the list of compact blocks to persist.
