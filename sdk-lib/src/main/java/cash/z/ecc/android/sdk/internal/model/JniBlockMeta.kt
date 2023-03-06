@@ -43,8 +43,8 @@ class JniBlockMeta(
                 height = block.height,
                 hash = block.hash.toByteArray(),
                 time = block.time.toLong(),
-                saplingOutputsCount = outputs.saplingOutputsCount,
-                orchardOutputsCount = outputs.orchardActionsCount
+                saplingOutputsCount = outputs.saplingOutputsCount.toLong(),
+                orchardOutputsCount = outputs.orchardActionsCount.toLong()
             )
         }
     }

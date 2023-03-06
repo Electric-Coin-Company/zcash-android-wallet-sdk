@@ -113,17 +113,17 @@ private fun List<JniBlockMeta>.isBufferFull(): Boolean {
 }
 
 internal data class CompactBlockOutputsCounts(
-    val saplingOutputsCount: Long,
-    val orchardActionsCount: Long
+    val saplingOutputsCount: UInt,
+    val orchardActionsCount: UInt
 )
 
 private fun CompactBlock.getOutputsCounts(): CompactBlockOutputsCounts {
-    var outputsCount = 0L
-    var actionsCount = 0L
+    var outputsCount: UInt = 0u
+    var actionsCount: UInt = 0u
 
     vtxList.forEach { compactTx ->
-        outputsCount += compactTx.outputsCount
-        actionsCount += compactTx.actionsCount
+        outputsCount += compactTx.outputsCount.toUInt()
+        actionsCount += compactTx.actionsCount.toUInt()
     }
 
     return CompactBlockOutputsCounts(outputsCount, actionsCount)
