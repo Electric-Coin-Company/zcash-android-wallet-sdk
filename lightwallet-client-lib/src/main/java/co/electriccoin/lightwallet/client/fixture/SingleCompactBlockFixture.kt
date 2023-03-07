@@ -9,12 +9,16 @@ import com.google.protobuf.kotlin.toByteStringUtf8
  */
 internal object SingleCompactBlockFixture {
 
-    private const val DEFAULT_BLOCK_HEIGHT = 500_000L
-    private val DEFAULT_BLOCK_HASH = "Lorem ipsum".toByteStringUtf8()
+    const val DEFAULT_BLOCK_HEIGHT = 500_000L
+
+    // Keep this because it makes test assertions easier
+    const val DEFAULT_BLOCK_HASH = DEFAULT_BLOCK_HEIGHT
+
+    internal fun heightToFixtureHash(height: Long) = height.toString().toByteStringUtf8()
 
     fun new(
         blockHeight: Long = DEFAULT_BLOCK_HEIGHT,
-        blockHash: ByteString = DEFAULT_BLOCK_HASH
+        blockHash: ByteString = heightToFixtureHash(blockHeight)
     ): CompactBlock {
         return CompactBlock.newBuilder()
             .setHeight(blockHeight)
