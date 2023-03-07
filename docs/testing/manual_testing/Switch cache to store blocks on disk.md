@@ -19,10 +19,10 @@ Observed result of this manual test should be:
 # Prepare steps
 1. Create some existing persistent wallet state using a version prior to the introduction of the disk-based cache. To do this, check out commit [zcash/zcash-android-wallet-sdk#910](https://github.com/zcash/zcash-android-wallet-sdk/pull/910) (currently commit `a67d287e5cc90fe3a774b02174dca1b32331058c`). 
 1. Update dependencies lock (if needed) and sync Gradle files
-1. Select one of the **Mainnet** build variant from **Build Variant** window
+1. Select one of the **Mainnet** build variants from **Build Variant** window
 1. Build and run the demo-app on selected emulator
-1. Once it's opened select e.g. _Alyssa P. Hacker_ secret phrase and then let SDK create the Cache database files 
-   with auto-start syncing on the home screen
+1. Once the app is open, select e.g. _Alyssa P. Hacker_ secret phrase and then let the SDK create the Cache database 
+   files with auto-start syncing on the home screen
 1. Wait a moment to be sure that the sync mechanism has already been initialized and started to fill in the Cache 
    database with CompactBlocks entries.
 1. Open Device File Explorer in Android Studio, select the same emulator device from the top drop-down menu
@@ -37,13 +37,13 @@ Observed result of this manual test should be:
    1. Update dependencies lock (if needed) and sync Gradle files
    1. Run the demo-app on the same emulator device as previously
 1. Once the app is opened go through the same steps as previously to let the SDK apply the new cache storing 
-   mechanisms 
-1. Open the Device File Explorer in the Android again
-1. Go to `/data/data/cash.z.ecc.android.sdk.demoapp.mainnet/no_backup/co.electricoin.zcash/`. 
-   1. Verify there is a new `zcash_sdk_[network_name]_fs_cache` directory in place.
+   mechanisms
+1. Open the Device File Explorer in the Android Studio again
+1. Go to `/data/data/cash.z.ecc.android.sdk.demoapp.mainnet/no_backup/co.electricoin.zcash/` 
+   1. Verify there is a new `zcash_sdk_[network_name]_fs_cache` directory in place
    1. Verify it contains a `blockmeta.sqlite` block metadata database file
-   1. Also verify that this directory contains a `blocks` directory with new block cache files in it.
-   1. Verify there is no `cache.sqlite3` database file, and check that no rollback files (suffixed with `journal` or `wal`) are present. The 
-      file names can vary, depending on the current build variant.
+   1. Also verify that this directory contains a `blocks` directory with new block cache files in it
+   1. Verify there is no `cache.sqlite3` database file, and check that no rollback files (suffixed with `journal` or
+   `wal`) are present. The file names can vary, depending on the current build variant.
 1. Inspect older legacy database folder `/data/data/cash.z.ecc.android.sdk.demoapp.mainnet/databases/`, which 
    also should not contain `cache.sqlite3` or rollback files.
