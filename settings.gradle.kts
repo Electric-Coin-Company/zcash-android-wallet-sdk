@@ -37,6 +37,7 @@ pluginManagement {
         id("org.jetbrains.kotlin.android") version (kotlinVersion) apply (false)
         id("org.jetbrains.kotlin.plugin.allopen") version (kotlinVersion) apply (false)
         id("wtf.emulator.gradle") version (emulatorWtfGradlePluginVersion) apply (false)
+        id("org.gradle.toolchains.foojay-resolver-convention") version("0.4.0")
     }
 }
 
