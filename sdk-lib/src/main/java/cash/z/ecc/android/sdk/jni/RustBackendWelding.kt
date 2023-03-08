@@ -17,6 +17,8 @@ import java.io.File
  * It is not documented because it is not intended to be used, directly.
  * Instead, use the synchronizer or one of its subcomponents.
  */
+// TODO [#920]: Tweak RustBackend public APIs to have void return values
+// TODO [#920]: https://github.com/zcash/zcash-android-wallet-sdk/issues/920
 @Suppress("TooManyFunctions")
 internal interface RustBackendWelding {
 
