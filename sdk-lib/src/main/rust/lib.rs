@@ -16,7 +16,7 @@ use secrecy::{ExposeSecret, SecretVec};
 use tracing::{debug, error};
 use tracing_subscriber::prelude::*;
 use tracing_subscriber::reload;
-use zcash_address::{ToAddress, ZcashAddress, Network::Main, Network::Test};
+use zcash_address::{ToAddress, ZcashAddress};
 use zcash_client_backend::keys::{DecodingError, UnifiedSpendingKey};
 use zcash_client_backend::{
     address::{RecipientAddress, UnifiedAddress},
@@ -1509,7 +1509,8 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_listTranspa
 ) -> jobjectArray {
     let res = panic::catch_unwind(|| {
         let network = parse_network(network_id as u32)?;
-        let zcash_network = convert_network_into_zcash_address_network(network);
+        // Valid value of the Option<Network> is guaranteed by the previous network_id parsing
+        let zcash_network = Network::address_network(&network);
         let db_data = wallet_db(&env, network, db_data)?;
         let account_id = if account_id >= 0 {
             account_id as u32
@@ -1525,10 +1526,10 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_listTranspa
                     .map(|(taddr, _)| {
                         let taddr = match taddr {
                             TransparentAddress::PublicKey(data) => {
-                                ZcashAddress::from_transparent_p2pkh(zcash_network, *data)
+                                ZcashAddress::from_transparent_p2pkh(zcash_network.unwrap(), *data)
                             }
                             TransparentAddress::Script(data) => {
-                                ZcashAddress::from_transparent_p2sh(zcash_network, *data)
+                                ZcashAddress::from_transparent_p2sh(zcash_network.unwrap(), *data)
                             }
                         };
                         taddr.encode()
@@ -1547,11 +1548,4 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_listTranspa
         }
     });
     unwrap_exc_or(&env, res, ptr::null_mut())
-}
-
-fn convert_network_into_zcash_address_network(zcash_network: zcash_primitives::consensus::Network) -> zcash_address::Network {
-    match zcash_network {
-        MainNetwork => Main,
-        TestNetwork => Test
-    }
 }
