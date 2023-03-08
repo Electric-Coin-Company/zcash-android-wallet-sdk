@@ -178,3 +178,11 @@ project.afterEvaluate {
 
 fun MinimalExternalModuleDependency.asCoordinateString() =
     "${module.group}:${module.name}:${versionConstraint.displayName}"
+
+// Attempt to workaround https://github.com/google/ksp/issues/1288
+kotlin {
+    jvmToolchain {
+        languageVersion.set(JavaLanguageVersion.of(8))
+        vendor.set(JvmVendorSpec.AZUL) // One of the few distributions with Mac M1 support on Java 8
+    }
+}
