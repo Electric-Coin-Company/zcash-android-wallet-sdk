@@ -378,11 +378,6 @@ class SdkSynchronizer private constructor(
     // Private API
     //
 
-    suspend fun refreshUtxos() {
-        Twig.debug { "refreshing utxos" }
-        refreshUtxos(Account.DEFAULT)
-    }
-
     /**
      * Calculate the latest balance, based on the blocks that have been scanned and transmit this
      * information into the flow of [balances].
