@@ -11,8 +11,15 @@ android {
 
     defaultConfig {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
         // To enable benchmarking for emulators, although only a physical device us gives real results
-        testInstrumentationRunnerArguments["androidx.benchmark.suppressErrors"] = "EMULATOR"
+        var suppressOptions = "EMULATOR"
+        // To enable debugging while running benchmark tests, although it reduces their performance
+        if (project.property("IS_DEBUGGABLE_WHILE_BENCHMARKING").toString().toBoolean()) {
+            suppressOptions += ",DEBUGGABLE"
+        }
+        testInstrumentationRunnerArguments["androidx.benchmark.suppressErrors"] = suppressOptions
+
         // To simplify module variants, we assume to run benchmarking against mainnet only
         missingDimensionStrategy("network", "zcashmainnet")
     }

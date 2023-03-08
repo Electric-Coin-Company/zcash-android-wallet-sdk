@@ -90,6 +90,11 @@ android {
             initWith(buildTypes.getByName("release"))
             signingConfig = signingConfigs.getByName("debug")
             matchingFallbacks += listOf("release")
+
+            // To enable debugging while running benchmark tests, although it reduces their performance
+            if (project.property("IS_DEBUGGABLE_WHILE_BENCHMARKING").toString().toBoolean()) {
+                isDebuggable = true
+            }
         }
     }
 

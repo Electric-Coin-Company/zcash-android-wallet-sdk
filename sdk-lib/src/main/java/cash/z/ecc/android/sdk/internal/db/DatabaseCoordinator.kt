@@ -11,6 +11,7 @@ import cash.z.ecc.android.sdk.internal.Files
 import cash.z.ecc.android.sdk.internal.LazyWithArgument
 import cash.z.ecc.android.sdk.internal.NoBackupContextWrapper
 import cash.z.ecc.android.sdk.internal.Twig
+import cash.z.ecc.android.sdk.internal.ext.deleteRecursivelySuspend
 import cash.z.ecc.android.sdk.internal.ext.deleteSuspend
 import cash.z.ecc.android.sdk.internal.ext.existsSuspend
 import cash.z.ecc.android.sdk.internal.ext.getDatabasePathSuspend
@@ -48,8 +49,9 @@ internal class DatabaseCoordinator private constructor(context: Context) {
         const val DB_DATA_NAME = "data.sqlite3" // $NON-NLS
 
         @VisibleForTesting
-        internal const val DB_CACHE_NAME_LEGACY = "Cache.db" // $NON-NLS
-        const val DB_CACHE_NAME = "cache.sqlite3" // $NON-NLS
+        internal const val DB_CACHE_OLDER_NAME_LEGACY = "Cache.db" // $NON-NLS
+        internal const val DB_CACHE_NEWER_NAME_LEGACY = "cache.sqlite3" // $NON-NLS
+        const val DB_FS_BLOCK_DB_ROOT_NAME = "fs_cache" // $NON-NLS
 
         @VisibleForTesting
         internal const val DB_PENDING_TRANSACTIONS_NAME_LEGACY = "PendingTransactions.db" // $NON-NLS
@@ -68,32 +70,34 @@ internal class DatabaseCoordinator private constructor(context: Context) {
     }
 
     /**
-     * Returns the file of the Cache database that would correspond to the given alias
-     * and network attributes.
+     * Returns the root folder of the cache database files that would correspond to the given
+     * alias and network attributes.
      *
-     * @param network the network associated with the data in the cache database.
-     * @param alias the alias to convert into a database path
+     * @param network the network associated with the data in the cache
+     * @param alias the alias to convert into a cache path
      *
-     * @return the Cache database file
+     * @return the cache database folder
      */
-    internal suspend fun cacheDbFile(
+    internal suspend fun fsBlockDbRoot(
         network: ZcashNetwork,
         alias: String
     ): File {
-        val dbLocationsPair = prepareDbFiles(
-            applicationContext,
+        // First we deal with the legacy Cache database files (rollback included) on both older and newer path. In
+        // case of deletion failure caused by any reason, we try it on the next time again.
+        val legacyDbFilesDeleted = deleteLegacyCacheDbFiles(network, alias)
+        val result = if (legacyDbFilesDeleted) {
+            "are successfully deleted"
+        } else {
+            "failed to be deleted. Will be retried it on the next time"
+        }
+        Twig.debug { "Legacy Cache database files $result." }
+
+        return newDatabaseFilePointer(
             network,
             alias,
-            DB_CACHE_NAME_LEGACY,
-            DB_CACHE_NAME
+            DB_FS_BLOCK_DB_ROOT_NAME,
+            Files.getZcashNoBackupSubdirectory(applicationContext)
         )
-
-        createFileMutex.withLock {
-            return checkAndMoveDatabaseFiles(
-                dbLocationsPair.first,
-                dbLocationsPair.second
-            )
-        }
     }
 
     /**
@@ -167,29 +171,62 @@ internal class DatabaseCoordinator private constructor(context: Context) {
      *
      * @param network the network associated with the data in the database.
      * @param alias the alias to convert into a database path
+     *
+     * @return true only if any database deleted, false otherwise
      */
     internal suspend fun deleteDatabases(
         network: ZcashNetwork,
         alias: String
     ): Boolean {
         deleteFileMutex.withLock {
-            val dataDeleted = deleteDatabase(
-                dataDbFile(network, alias)
-            )
-            val cacheDeleted = deleteDatabase(
-                cacheDbFile(network, alias)
-            )
+            val dataDeleted = deleteDatabase(dataDbFile(network, alias))
+
+            val cacheDeleted = fsBlockDbRoot(network, alias).deleteRecursivelySuspend()
 
             return dataDeleted || cacheDeleted
         }
     }
 
     /**
+     * This checks and potentially deletes all the legacy Cache database files, which correspond to the given alias and
+     * network attributes, as we recently switched to the store blocks on disk mechanism instead of putting them into
+     * the Cache database.
+     *
+     * This function deals with database rollback files too.
+     *
+     * @param network the network associated with the data in the Cache database
+     * @param alias the alias to convert into a database path
+     *
+     * @return true in case of successful deletion of all the files, false otherwise
+     */
+    private suspend fun deleteLegacyCacheDbFiles(
+        network: ZcashNetwork,
+        alias: String
+    ): Boolean {
+        val legacyDatabaseLocationPair = prepareDbFiles(
+            applicationContext,
+            network,
+            alias,
+            DB_CACHE_OLDER_NAME_LEGACY,
+            DB_CACHE_NEWER_NAME_LEGACY
+        )
+
+        var olderLegacyCacheDbDeleted = true
+        var newerLegacyCacheDbDeleted = true
+
+        if (legacyDatabaseLocationPair.first.existsSuspend()) {
+            olderLegacyCacheDbDeleted = deleteDatabase(legacyDatabaseLocationPair.first)
+        }
+        if (legacyDatabaseLocationPair.second.existsSuspend()) {
+            newerLegacyCacheDbDeleted = deleteDatabase(legacyDatabaseLocationPair.second)
+        }
+
+        return olderLegacyCacheDbDeleted && newerLegacyCacheDbDeleted
+    }
+
+    /**
      * This helper function prepares a legacy (i.e. previously created) database file, as well
      * as the preferred (i.e. newly created) file for subsequent use (and eventually move).
-     *
-     * Note: the database file placed under the fake no_backup folder for devices with Android SDK
-     * level lower than 21.
      *
      * @param appContext the application context
      * @param network the network associated with the data in the database.

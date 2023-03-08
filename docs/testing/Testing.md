@@ -102,6 +102,62 @@ commits of that date. Generate tests results with the Android Studio run configu
     BUILD SUCCESSFUL in 6m 12s
     ```
 
+#### Feb 18, 2023:
+
+- SDK version: `1.14.0-beta01`
+- Git branch: `765-Store_blocks_on_disk_instead_of_in_SQLite`
+- Note: Switched to storing cache blocks blob files on disk instead of in SQLite database 
+- Device:
+  - Pixel 6 - Android 13:
+    ```
+    Starting 3 tests on Pixel 6 - 13
+
+    StartupBenchmark_appStartup
+    timeToInitialDisplayMs   min 248.6,   median 287.0,   max 385.7
+    Traces: Iteration 0 1 2 3 4
+    
+    StartupBenchmark_tracesSdkStartup
+    ADDRESS_SCREENMs   min   935.5,   median   943.3,   max 1,013.7
+    SAPLING_ADDRESSMs   min     2.1,   median     3.7,   max     6.9
+    TRANSPARENT_ADDRESSMs   min     2.2,   median     3.3,   max     7.5
+    UNIFIED_ADDRESSMs   min     2.2,   median     3.8,   max     5.8
+    Traces: Iteration 0 1 2 3 4
+
+    SyncBlockchainBenchmark_tracesSyncBlockchain
+    BALANCE_SCREENMs   min 67,376.0,   median 67,614.0,   max 73,651.2
+    BLOCKCHAIN_SYNCMs   min 66,449.6,   median 66,624.1,   max 72,865.5
+    DOWNLOADMs   min 52,245.6,   median 52,442.0,   max 56,489.1
+    SCANMs   min 14,061.2,   median 14,074.5,   max 16,261.6
+    VALIDATIONMs   min    114.6,   median    120.7,   max    129.1
+    Traces: Iteration 0 1 2
+
+    BUILD SUCCESSFUL in 5m 9s
+    ```
+  - Pixel 3a - Android 12:
+    ```
+    Starting 3 tests on Pixel 3a - 12
+
+    StartupBenchmark_appStartup
+    timeToInitialDisplayMs   min 475.8,   median 513.6,   max 531.8
+    Traces: Iteration 0 1 2 3 4
+    
+    StartupBenchmark_tracesSdkStartup
+    ADDRESS_SCREENMs   min   978.6,   median 1,094.6,   max 1,156.1
+    SAPLING_ADDRESSMs   min     4.7,   median     6.9,   max     7.3
+    TRANSPARENT_ADDRESSMs   min     5.3,   median     5.5,   max    11.6
+    UNIFIED_ADDRESSMs   min     3.9,   median     7.5,   max    10.8
+    Traces: Iteration 0 1 2 3 4
+
+    SyncBlockchainBenchmark_tracesSyncBlockchain
+    BALANCE_SCREENMs   min 66,203.0,   median 66,274.0,   max 66,472.4
+    BLOCKCHAIN_SYNCMs   min 65,279.5,   median 65,417.6,   max 65,570.8
+    DOWNLOADMs   min 34,191.6,   median 34,392.5,   max 34,447.2
+    SCANMs   min 30,870.4,   median 30,944.6,   max 30,981.0
+    VALIDATIONMs   min    142.4,   median    143.2,   max    154.5
+    Traces: Iteration 0 1 2
+
+    BUILD SUCCESSFUL in 6m 58s
+    ```
 
 
 

@@ -4,7 +4,6 @@ import android.content.Context
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor
 import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.internal.SaplingParamTool
-import cash.z.ecc.android.sdk.internal.db.DatabaseCoordinator
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.PendingTransaction
@@ -467,8 +466,6 @@ interface Synchronizer {
                 birthday ?: zcashNetwork.saplingActivationHeight
             )
 
-            val coordinator = DatabaseCoordinator.getInstance(context)
-
             val rustBackend = DefaultSynchronizerFactory.defaultRustBackend(
                 applicationContext,
                 zcashNetwork,
@@ -477,11 +474,9 @@ interface Synchronizer {
                 saplingParamTool
             )
 
-            val blockStore = DefaultSynchronizerFactory.defaultCompactBlockRepository(
-                applicationContext,
-                coordinator.cacheDbFile(zcashNetwork, alias),
-                zcashNetwork
-            )
+            val blockStore =
+                DefaultSynchronizerFactory
+                    .defaultFileCompactBlockRepository(rustBackend)
 
             val viewingKeys = seed?.let {
                 DerivationTool.deriveUnifiedFullViewingKeys(

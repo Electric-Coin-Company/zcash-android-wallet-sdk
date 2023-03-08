@@ -9,9 +9,9 @@ class BlockRangeFixtureTest {
     @Test
     @SmallTest
     fun compare_default_values() {
-        BlockRangeFixture.new().also {
-            assertEquals(BlockRangeFixture.BLOCK_HEIGHT_LOWER_BOUND, it.start)
-            assertEquals(BlockRangeFixture.BLOCK_HEIGHT_UPPER_BOUND, it.endInclusive)
+        BenchmarkingBlockRangeFixture.new().also {
+            assertEquals(BenchmarkingBlockRangeFixture.BLOCK_HEIGHT_LOWER_BOUND, it.start)
+            assertEquals(BenchmarkingBlockRangeFixture.BLOCK_HEIGHT_UPPER_BOUND, it.endInclusive)
         }
     }
 }

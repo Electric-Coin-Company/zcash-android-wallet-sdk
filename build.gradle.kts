@@ -77,6 +77,8 @@ tasks {
                 "ZCASH_RELEASE_KEY_ALIAS_PASSWORD" to "",
 
                 "IS_SIGN_RELEASE_BUILD_WITH_DEBUG_KEY" to "false",
+                
+                "IS_DEBUGGABLE_WHILE_BENCHMARKING" to "false"
             )
 
             val warnings = expectedPropertyValues.filter { (key, value) ->

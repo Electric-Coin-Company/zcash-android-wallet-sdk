@@ -5,7 +5,7 @@ import cash.z.wallet.sdk.internal.rpc.CompactTxStreamerGrpcKt
 import cash.z.wallet.sdk.internal.rpc.Service
 import co.electriccoin.lightwallet.client.CoroutineLightWalletClient
 import co.electriccoin.lightwallet.client.ext.BenchmarkingExt
-import co.electriccoin.lightwallet.client.fixture.BlockRangeFixture
+import co.electriccoin.lightwallet.client.fixture.BenchmarkingBlockRangeFixture
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
 import co.electriccoin.lightwallet.client.model.LightWalletEndpointInfoUnsafe
@@ -55,7 +55,7 @@ internal class CoroutineLightWalletClientImpl private constructor(
             if (BenchmarkingExt.isBenchmarking()) {
                 // We inject a benchmark test blocks range at this point to process only a restricted range of blocks
                 // for a more reliable benchmark results.
-                Response.Success(BlockHeightUnsafe(BlockRangeFixture.new().endInclusive))
+                Response.Success(BlockHeightUnsafe(BenchmarkingBlockRangeFixture.new().endInclusive))
             } else {
                 val response = requireChannel().createStub(singleRequestTimeout)
                     .getLatestBlock(Service.ChainSpec.newBuilder().build())

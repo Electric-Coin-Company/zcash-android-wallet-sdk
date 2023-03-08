@@ -34,11 +34,13 @@ use zcash_client_backend::{
     wallet::{OvkPolicy, WalletTransparentOutput},
     zip321::{Payment, TransactionRequest},
 };
+use zcash_client_sqlite::chain::init::init_blockmeta_db;
 #[allow(deprecated)]
 use zcash_client_sqlite::wallet::get_rewind_height;
 use zcash_client_sqlite::{
+    chain::BlockMeta,
     wallet::init::{init_accounts_table, init_blocks_table, init_wallet_db, WalletMigrationError},
-    BlockDb, NoteId, WalletDb,
+    FsBlockDb, NoteId, WalletDb,
 };
 use zcash_primitives::consensus::Network::{MainNetwork, TestNetwork};
 use zcash_primitives::{
@@ -47,7 +49,7 @@ use zcash_primitives::{
     legacy::{Script, TransparentAddress},
     memo::{Memo, MemoBytes},
     transaction::{
-        components::{Amount, OutPoint, TxOut},
+        components::{amount::NonNegativeAmount, Amount, OutPoint, TxOut},
         Transaction,
     },
     zip32::{AccountId, DiversifierIndex},
@@ -89,9 +91,9 @@ fn wallet_db<P: Parameters>(
         .map_err(|e| format_err!("Error opening wallet database connection: {}", e))
 }
 
-fn block_db(env: &JNIEnv<'_>, db_data: JString<'_>) -> Result<BlockDb, failure::Error> {
-    BlockDb::for_path(utils::java_string_to_rust(&env, db_data))
-        .map_err(|e| format_err!("Error opening block source database connection: {}", e))
+fn block_db(env: &JNIEnv<'_>, fsblockdb_root: JString<'_>) -> Result<FsBlockDb, failure::Error> {
+    FsBlockDb::for_path(utils::java_string_to_rust(&env, fsblockdb_root))
+        .map_err(|e| format_err!("Error opening block source database connection: {:?}", e))
 }
 
 #[no_mangle]
@@ -128,6 +130,29 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_initOnLoad(
 
     debug!("logs have been initialized successfully");
     print_debug_state();
+}
+
+/// Sets up the internal structure of the blockmeta database.
+///
+/// Returns 0 if successful, or -1 otherwise.
+#[no_mangle]
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_initBlockMetaDb(
+    env: JNIEnv<'_>,
+    _: JClass<'_>,
+    fsblockdb_root: JString<'_>,
+) -> jint {
+    let res = panic::catch_unwind(|| {
+        let mut db_meta = block_db(&env, fsblockdb_root)?;
+
+        match init_blockmeta_db(&mut db_meta) {
+            Ok(()) => Ok(0),
+            Err(e) => Err(format_err!(
+                "Error while initializing block metadata DB: {}",
+                e
+            )),
+        }
+    });
+    unwrap_exc_or(&env, res, -1)
 }
 
 /// Sets up the internal structure of the data database.
@@ -883,6 +908,145 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_getSentMemo
     unwrap_exc_or(&env, res, ptr::null_mut())
 }
 
+fn encode_blockmeta(env: &JNIEnv<'_>, meta: BlockMeta) -> Result<jobject, failure::Error> {
+    let block_hash = env.byte_array_from_slice(&meta.block_hash.0)?;
+    let output = env.new_object(
+        "cash/z/ecc/android/sdk/internal/model/JniBlockMeta",
+        "(J[BJJJ)V",
+        &[
+            JValue::Long(i64::from(u32::from(meta.height))),
+            JValue::Object(unsafe { JObject::from_raw(block_hash) }),
+            JValue::Long(i64::from(meta.block_time)),
+            JValue::Long(i64::from(meta.sapling_outputs_count)),
+            JValue::Long(i64::from(meta.orchard_actions_count)),
+        ],
+    )?;
+    Ok(output.into_raw())
+}
+
+fn decode_blockmeta(env: &JNIEnv<'_>, obj: JObject<'_>) -> Result<BlockMeta, failure::Error> {
+    let long_as_u32 = |name| -> Result<u32, failure::Error> {
+        Ok(u32::try_from(env.get_field(obj, name, "J")?.j()?)?)
+    };
+
+    fn byte_array<const N: usize>(
+        env: &JNIEnv<'_>,
+        obj: JObject<'_>,
+        name: &str,
+    ) -> Result<[u8; N], failure::Error> {
+        let field = env.get_field(obj, name, "[B")?.l()?.into_raw();
+        Ok(env.convert_byte_array(field)?[..].try_into()?)
+    }
+
+    Ok(BlockMeta {
+        height: BlockHeight::from_u32(long_as_u32("height")?),
+        block_hash: BlockHash(byte_array(env, obj, "hash")?),
+        block_time: long_as_u32("time")?,
+        sapling_outputs_count: long_as_u32("saplingOutputsCount")?,
+        orchard_actions_count: long_as_u32("orchardOutputsCount")?,
+    })
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_writeBlockMetadata(
+    env: JNIEnv<'_>,
+    _: JClass<'_>,
+    db_cache: JString<'_>,
+    block_meta: jobjectArray,
+) -> jboolean {
+    let res = panic::catch_unwind(|| {
+        let block_db = block_db(&env, db_cache)?;
+
+        let block_meta = {
+            let count = env.get_array_length(block_meta).unwrap();
+            (0..count)
+                .map(|i| {
+                    env.get_object_array_element(block_meta, i)
+                        .map_err(|e| e.into())
+                        .and_then(|jobj| decode_blockmeta(&env, jobj))
+                })
+                .collect::<Result<Vec<_>, _>>()?
+        };
+
+        match block_db.write_block_metadata(&block_meta) {
+            Ok(()) => Ok(JNI_TRUE),
+            Err(e) => Err(format_err!(
+                "Failed to write block metadata to FsBlockDb: {:?}",
+                e
+            )),
+        }
+    });
+    unwrap_exc_or(&env, res, JNI_FALSE)
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_getLatestHeight(
+    env: JNIEnv<'_>,
+    _: JClass<'_>,
+    fsblockdb_root: JString<'_>,
+) -> jlong {
+    let res = panic::catch_unwind(|| {
+        let block_db = block_db(&env, fsblockdb_root)?;
+
+        match block_db.get_max_cached_height() {
+            Ok(Some(block_height)) => Ok(i64::from(u32::from(block_height))),
+            // Use -1 to return null across the FFI.
+            Ok(None) => Ok(-1),
+            Err(e) => Err(format_err!(
+                "Failed to read block metadata from FsBlockDb: {:?}",
+                e
+            )),
+        }
+    });
+    unwrap_exc_or(&env, res, -1)
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_findBlockMetadata(
+    env: JNIEnv<'_>,
+    _: JClass<'_>,
+    fsblockdb_root: JString<'_>,
+    height: jlong,
+) -> jobject {
+    let res = panic::catch_unwind(|| {
+        let block_db = block_db(&env, fsblockdb_root)?;
+        let height = BlockHeight::try_from(height)?;
+
+        match block_db.find_block(height) {
+            Ok(Some(meta)) => encode_blockmeta(&env, meta),
+            Ok(None) => Ok(ptr::null_mut()),
+            Err(e) => Err(format_err!(
+                "Failed to read block metadata from FsBlockDb: {:?}",
+                e
+            )),
+        }
+    });
+    unwrap_exc_or(&env, res, ptr::null_mut())
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_rewindBlockMetadataToHeight(
+    env: JNIEnv<'_>,
+    _: JClass<'_>,
+    fsblockdb_root: JString<'_>,
+    height: jlong,
+) {
+    let res = panic::catch_unwind(|| {
+        let block_db = block_db(&env, fsblockdb_root)?;
+        let height = BlockHeight::try_from(height)?;
+
+        block_db.rewind_to_height(height).map_err(|e| {
+            format_err!(
+                "Error while rewinding block metadata DB to height {}: {}",
+                height,
+                e
+            )
+        })
+    });
+
+    unwrap_exc_or(&env, res, ())
+}
+
 #[no_mangle]
 pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_validateCombinedChain(
     env: JNIEnv<'_>,
@@ -900,7 +1064,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_validateCom
             .get_max_height_hash()
             .map_err(|e| format_err!("Error while validating chain: {}", e))?;
 
-        let val_res = validate_chain(&network, &block_db, validate_from);
+        let val_res = validate_chain(&block_db, validate_from, None);
 
         if let Err(e) = val_res {
             match e {
@@ -908,7 +1072,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_validateCom
                     let upper_bound_u32 = u32::from(e.at_height());
                     Ok(upper_bound_u32 as i64)
                 }
-                _ => Err(format_err!("Error while validating chain: {}", e)),
+                _ => Err(format_err!("Error while validating chain: {:?}", e)),
             }
         } else {
             // All blocks are valid, so "highest invalid block height" is below genesis.
@@ -997,7 +1161,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_scanBlocks(
         match scan_cached_blocks(&network, &db_cache, &mut db_data, limit) {
             Ok(()) => Ok(JNI_TRUE),
             Err(e) => Err(format_err!(
-                "Rust error while scanning blocks (limit {:?}): {}",
+                "Rust error while scanning blocks (limit {:?}): {:?}",
                 limit,
                 e
             )),
@@ -1251,6 +1415,8 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_shieldToAdd
 
         let prover = LocalTxProver::new(Path::new(&spend_params), Path::new(&output_params));
 
+        let shielding_threshold = NonNegativeAmount::from_u64(100000).unwrap();
+
         zip317_helper(
             (&mut db_data, prover),
             use_zip317_fees,
@@ -1260,6 +1426,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_shieldToAdd
                     &network,
                     prover,
                     &input_selector,
+                    shielding_threshold,
                     &usk,
                     &from_addrs,
                     &MemoBytes::from(&memo),
@@ -1273,6 +1440,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_shieldToAdd
                     &network,
                     prover,
                     &input_selector,
+                    shielding_threshold,
                     &usk,
                     &from_addrs,
                     &MemoBytes::from(&memo),

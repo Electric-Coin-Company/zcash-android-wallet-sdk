@@ -45,7 +45,7 @@ import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.wallet.sdk.internal.rpc.Service
 import co.electriccoin.lightwallet.client.ext.BenchmarkingExt
-import co.electriccoin.lightwallet.client.fixture.BlockRangeFixture
+import co.electriccoin.lightwallet.client.fixture.BenchmarkingBlockRangeFixture
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.LightWalletEndpointInfoUnsafe
 import co.electriccoin.lightwallet.client.model.Response
@@ -296,7 +296,7 @@ class CompactBlockProcessor internal constructor(
             if (BenchmarkingExt.isBenchmarking()) {
                 // We inject a benchmark test blocks range at this point to process only a restricted range of blocks
                 // for a more reliable benchmark results.
-                val benchmarkBlockRange = BlockRangeFixture.new().let {
+                val benchmarkBlockRange = BenchmarkingBlockRangeFixture.new().let {
                     // Convert range of Longs to range of BlockHeights
                     BlockHeight.new(ZcashNetwork.Mainnet, it.start)..(
                         BlockHeight.new(ZcashNetwork.Mainnet, it.endInclusive)
@@ -704,10 +704,7 @@ class CompactBlockProcessor internal constructor(
             return BlockProcessingResult.NoBlocksToProcess
         }
         Twig.debug {
-            "validating blocks in range $range in db: ${
-                (rustBackend as RustBackend).cacheDbFile
-                    .absolutePath
-            }"
+            "validating blocks in range $range in db: ${(rustBackend as RustBackend).fsBlockDbRoot.absolutePath}"
         }
         val result = rustBackend.validateCombinedChain()
 
@@ -944,44 +941,32 @@ class CompactBlockProcessor internal constructor(
     private suspend fun printValidationErrorInfo(errorHeight: BlockHeight, count: Int = 11) {
         // Note: blocks are public information so it's okay to print them but, still, let's not unless we're
         // debugging something
-        if (!BuildConfig.DEBUG) return
+        if (!BuildConfig.DEBUG) {
+            return
+        }
 
         var errorInfo = fetchValidationErrorInfo(errorHeight)
-        Twig.debug {
-            "validation failed at block ${errorInfo.errorHeight} which had hash " +
-                "${errorInfo.actualPrevHash} but the expected hash was ${errorInfo.expectedPrevHash}"
-        }
+        Twig.debug { "validation failed at block ${errorInfo.errorHeight} with hash: ${errorInfo.hash}" }
+
         errorInfo = fetchValidationErrorInfo(errorHeight + 1)
-        Twig.debug {
-            "The next block block: ${errorInfo.errorHeight} which had hash ${errorInfo.actualPrevHash} but " +
-                "the expected hash was ${errorInfo.expectedPrevHash}"
-        }
+        Twig.debug { "the next block is ${errorInfo.errorHeight} with hash: ${errorInfo.hash}" }
 
         Twig.debug { "=================== BLOCKS [$errorHeight..${errorHeight.value + count - 1}]: START ========" }
         repeat(count) { i ->
             val height = errorHeight + i
             val block = downloader.compactBlockRepository.findCompactBlock(height)
             // sometimes the initial block was inserted via checkpoint and will not appear in the cache. We can get
-            // the hash another way but prevHash is correctly null.
-            val hash = block?.hash?.toByteArray()
-                ?: repository.findBlockHash(height)
-            Twig.debug {
-                "block: $height\thash=${hash?.toHexReversed()} \tprevHash=${
-                    block?.prevHash?.toByteArray()?.toHexReversed()
-                }"
-            }
+            // the hash another way.
+            val checkedHash = block?.hash ?: repository.findBlockHash(height)
+            Twig.debug { "block: $height\thash=${checkedHash?.toHexReversed()}" }
         }
         Twig.debug { "=================== BLOCKS [$errorHeight..${errorHeight.value + count - 1}]: END ========" }
     }
 
     private suspend fun fetchValidationErrorInfo(errorHeight: BlockHeight): ValidationErrorInfo {
-        val hash = repository.findBlockHash(errorHeight + 1)
-            ?.toHexReversed()
-        val prevHash = repository.findBlockHash(errorHeight)?.toHexReversed()
+        val hash = repository.findBlockHash(errorHeight + 1)?.toHexReversed()
 
-        val compactBlock = downloader.compactBlockRepository.findCompactBlock(errorHeight + 1)
-        val expectedPrevHash = compactBlock?.prevHash?.toByteArray()?.toHexReversed()
-        return ValidationErrorInfo(errorHeight, hash, expectedPrevHash, prevHash)
+        return ValidationErrorInfo(errorHeight, hash)
     }
 
     /**
@@ -1279,9 +1264,7 @@ class CompactBlockProcessor internal constructor(
 
     data class ValidationErrorInfo(
         val errorHeight: BlockHeight,
-        val hash: String?,
-        val expectedPrevHash: String?,
-        val actualPrevHash: String?
+        val hash: String?
     )
 
     //

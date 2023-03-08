@@ -3,8 +3,10 @@ package cash.z.ecc.android.sdk.jni
 import cash.z.ecc.android.sdk.internal.SaplingParamTool
 import cash.z.ecc.android.sdk.internal.SdkDispatchers
 import cash.z.ecc.android.sdk.internal.Twig
+import cash.z.ecc.android.sdk.internal.ext.deleteRecursivelySuspend
 import cash.z.ecc.android.sdk.internal.ext.deleteSuspend
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
+import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.WalletBalance
@@ -25,24 +27,48 @@ internal class RustBackend private constructor(
     override val network: ZcashNetwork,
     val birthdayHeight: BlockHeight,
     val dataDbFile: File,
-    val cacheDbFile: File,
+    val fsBlockDbRoot: File,
     override val saplingParamDir: File
 ) : RustBackendWelding {
 
-    suspend fun clear(clearCacheDb: Boolean = true, clearDataDb: Boolean = true) {
-        if (clearCacheDb) {
-            Twig.debug { "Deleting the cache database!" }
-            cacheDbFile.deleteSuspend()
+    /**
+     * This function deletes the data database file and the cache directory (compact blocks files) if set by input
+     * parameters.
+     *
+     * @param clearCache to request the cache directory and its content deletion
+     * @param clearDataDb to request the data database file deletion
+     *
+     * @return false in case of any required and failed deletion, true otherwise.
+     */
+    suspend fun clear(clearCache: Boolean = true, clearDataDb: Boolean = true): Boolean {
+        var cacheClearResult = true
+        var dataClearResult = true
+        if (clearCache) {
+            Twig.debug { "Deleting the cache files..." }
+            fsBlockDbRoot.deleteRecursivelySuspend().also { result ->
+                Twig.debug { "Deletion of the cache files ${if (result) "succeeded" else "failed"}!" }
+                cacheClearResult = result
+            }
         }
         if (clearDataDb) {
-            Twig.debug { "Deleting the data database!" }
-            dataDbFile.deleteSuspend()
+            Twig.debug { "Deleting the data database..." }
+            dataDbFile.deleteSuspend().also { result ->
+                Twig.debug { "Deletion of the data database ${if (result) "succeeded" else "failed"}!" }
+                dataClearResult = result
+            }
         }
+        return cacheClearResult && dataClearResult
     }
 
     //
     // Wrapper Functions
     //
+
+    override suspend fun initBlockMetaDb() = withContext(SdkDispatchers.DATABASE_IO) {
+        initBlockMetaDb(
+            fsBlockDbRoot.absolutePath,
+        )
+    }
 
     override suspend fun initDataDb(seed: ByteArray?) = withContext(SdkDispatchers.DATABASE_IO) {
         initDataDb(
@@ -145,27 +171,64 @@ internal class RustBackend private constructor(
             )
         }
 
-    override suspend fun getSentMemoAsUtf8(idNote: Long) = withContext(SdkDispatchers.DATABASE_IO) {
-        getSentMemoAsUtf8(
-            dataDbFile.absolutePath,
-            idNote,
-            networkId = network.id
-        )
-    }
-
-    override suspend fun validateCombinedChain() = withContext(SdkDispatchers.DATABASE_IO) {
-        val validationResult = validateCombinedChain(
-            cacheDbFile.absolutePath,
-            dataDbFile.absolutePath,
-            networkId = network.id
-        )
-
-        if (-1L == validationResult) {
-            null
-        } else {
-            BlockHeight.new(network, validationResult)
+    override suspend fun getSentMemoAsUtf8(idNote: Long) =
+        withContext(SdkDispatchers.DATABASE_IO) {
+            getSentMemoAsUtf8(
+                dataDbFile.absolutePath,
+                idNote,
+                networkId = network.id
+            )
         }
-    }
+
+    override suspend fun writeBlockMetadata(blockMetadata: List<JniBlockMeta>) =
+        withContext(SdkDispatchers.DATABASE_IO) {
+            writeBlockMetadata(
+                fsBlockDbRoot.absolutePath,
+                blockMetadata.toTypedArray()
+            )
+        }
+
+    override suspend fun getLatestHeight() =
+        withContext(SdkDispatchers.DATABASE_IO) {
+            val height = getLatestHeight(fsBlockDbRoot.absolutePath)
+
+            if (-1L == height) {
+                null
+            } else {
+                BlockHeight.new(network, height)
+            }
+        }
+
+    override suspend fun findBlockMetadata(height: BlockHeight) =
+        withContext(SdkDispatchers.DATABASE_IO) {
+            findBlockMetadata(
+                fsBlockDbRoot.absolutePath,
+                height.value
+            )
+        }
+
+    override suspend fun rewindBlockMetadataToHeight(height: BlockHeight) =
+        withContext(SdkDispatchers.DATABASE_IO) {
+            rewindBlockMetadataToHeight(
+                fsBlockDbRoot.absolutePath,
+                height.value
+            )
+        }
+
+    override suspend fun validateCombinedChain() =
+        withContext(SdkDispatchers.DATABASE_IO) {
+            val validationResult = validateCombinedChain(
+                fsBlockDbRoot.absolutePath,
+                dataDbFile.absolutePath,
+                networkId = network.id
+            )
+
+            if (-1L == validationResult) {
+                null
+            } else {
+                BlockHeight.new(network, validationResult)
+            }
+        }
 
     override suspend fun getNearestRewindHeight(height: BlockHeight): BlockHeight =
         withContext(SdkDispatchers.DATABASE_IO) {
@@ -196,7 +259,7 @@ internal class RustBackend private constructor(
     override suspend fun scanBlocks(limit: Int): Boolean {
         return withContext(SdkDispatchers.DATABASE_IO) {
             scanBlocks(
-                cacheDbFile.absolutePath,
+                fsBlockDbRoot.absolutePath,
                 dataDbFile.absolutePath,
                 limit,
                 networkId = network.id
@@ -340,7 +403,7 @@ internal class RustBackend private constructor(
          * function once, it is idempotent.
          */
         suspend fun init(
-            cacheDbFile: File,
+            fsBlockDbRoot: File,
             dataDbFile: File,
             saplingParamsDir: File,
             zcashNetwork: ZcashNetwork,
@@ -352,7 +415,7 @@ internal class RustBackend private constructor(
                 zcashNetwork,
                 birthdayHeight,
                 dataDbFile = dataDbFile,
-                cacheDbFile = cacheDbFile,
+                fsBlockDbRoot = fsBlockDbRoot,
                 saplingParamDir = saplingParamsDir
             )
         }
@@ -363,6 +426,9 @@ internal class RustBackend private constructor(
 
         @JvmStatic
         private external fun initOnLoad()
+
+        @JvmStatic
+        private external fun initBlockMetaDb(fsBlockDbRoot: String): Int
 
         @JvmStatic
         private external fun initDataDb(dbDataPath: String, seed: ByteArray?, networkId: Int): Int
@@ -439,6 +505,27 @@ internal class RustBackend private constructor(
             dNote: Long,
             networkId: Int
         ): String?
+
+        @JvmStatic
+        private external fun writeBlockMetadata(
+            dbCachePath: String,
+            blockMeta: Array<JniBlockMeta>
+        ): Boolean
+
+        @JvmStatic
+        private external fun getLatestHeight(dbCachePath: String): Long
+
+        @JvmStatic
+        private external fun findBlockMetadata(
+            dbCachePath: String,
+            height: Long
+        ): JniBlockMeta?
+
+        @JvmStatic
+        private external fun rewindBlockMetadataToHeight(
+            dbCachePath: String,
+            height: Long
+        )
 
         @JvmStatic
         private external fun validateCombinedChain(

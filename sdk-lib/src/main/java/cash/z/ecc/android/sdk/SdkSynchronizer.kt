@@ -23,7 +23,6 @@ import cash.z.ecc.android.sdk.internal.SaplingParamTool
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.block.CompactBlockDownloader
 import cash.z.ecc.android.sdk.internal.db.DatabaseCoordinator
-import cash.z.ecc.android.sdk.internal.db.block.DbCompactBlockRepository
 import cash.z.ecc.android.sdk.internal.db.derived.DbDerivedDataRepository
 import cash.z.ecc.android.sdk.internal.db.derived.DerivedDataDb
 import cash.z.ecc.android.sdk.internal.ext.toHexReversed
@@ -32,6 +31,7 @@ import cash.z.ecc.android.sdk.internal.isEmpty
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
 import cash.z.ecc.android.sdk.internal.repository.CompactBlockRepository
 import cash.z.ecc.android.sdk.internal.repository.DerivedDataRepository
+import cash.z.ecc.android.sdk.internal.storage.block.FileCompactBlockRepository
 import cash.z.ecc.android.sdk.internal.transaction.OutboundTransactionManager
 import cash.z.ecc.android.sdk.internal.transaction.PersistentTransactionManager
 import cash.z.ecc.android.sdk.internal.transaction.TransactionEncoder
@@ -80,7 +80,6 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
-import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.CoroutineContext
 
@@ -736,7 +735,7 @@ internal object DefaultSynchronizerFactory {
         val coordinator = DatabaseCoordinator.getInstance(context)
 
         return RustBackend.init(
-            coordinator.cacheDbFile(network, alias),
+            coordinator.fsBlockDbRoot(network, alias),
             coordinator.dataDbFile(network, alias),
             saplingParamTool.properties.paramsDirectory,
             network,
@@ -764,12 +763,10 @@ internal object DefaultSynchronizerFactory {
             )
         )
 
-    internal fun defaultCompactBlockRepository(context: Context, cacheDbFile: File, zcashNetwork: ZcashNetwork):
+    internal suspend fun defaultFileCompactBlockRepository(rustBackend: RustBackend):
         CompactBlockRepository =
-        DbCompactBlockRepository.new(
-            context,
-            zcashNetwork,
-            cacheDbFile
+        FileCompactBlockRepository.new(
+            rustBackend
         )
 
     fun defaultService(context: Context, lightWalletEndpoint: LightWalletEndpoint): BlockingLightWalletClient =

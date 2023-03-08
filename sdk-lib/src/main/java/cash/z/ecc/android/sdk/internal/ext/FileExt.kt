@@ -1,4 +1,4 @@
-@file:Suppress("ktlint:filename")
+@file:Suppress("ktlint:filename", "TooManyFunctions")
 
 package cash.z.ecc.android.sdk.internal.ext
 
@@ -26,6 +26,10 @@ suspend fun File.listFilesSuspend(): Array<File>? = withContext(Dispatchers.IO) 
 suspend fun File.inputStreamSuspend(): FileInputStream = withContext(Dispatchers.IO) { inputStream() }
 
 suspend fun File.createNewFileSuspend() = withContext(Dispatchers.IO) { createNewFile() }
+
+suspend fun File.writeBytesSuspend(byteArray: ByteArray) = withContext(Dispatchers.IO) { writeBytes(byteArray) }
+
+suspend fun File.readBytesSuspend() = withContext(Dispatchers.IO) { readBytes() }
 
 /**
  * Preferred buffer size. We use the same buffer size as BufferedInputStream does.

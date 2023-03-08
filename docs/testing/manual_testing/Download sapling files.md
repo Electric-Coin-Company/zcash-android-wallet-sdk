@@ -13,18 +13,18 @@ of automatic user data backup to user's cloud storage. Our sapling files are qui
 
 # Download files steps
 1. Remove a previous version of the demo-app from the emulator, if there is any 
-2. Install the latest version of the demo-app from the latest commit on the **Main** branch
-3. Run the demo-app on selected emulator
-4. Once it's opened on the Home screen, change the wallet seed phrase to your preferred one to have some funds
+1. Install the latest version of the demo-app from the latest commit on the **Main** branch
+1. Run the demo-app on selected emulator
+1. Once it's opened on the Home screen, change the wallet seed phrase to your preferred one to have some funds
 available, which can be spent for the purpose of this test
-5. Go to the Send screen and wait for Downloading and Syncing processes to finish
-6. Then type the ZEC amount you want to send and the Address to which you want the Zec amount sent
-7. Wait for send confirmation
-8. Sapling params files should be now downloaded in the preferred location. Open Device File Explorer from Android 
+1. Go to the Send screen and wait for Downloading and Syncing processes to finish
+1. Then type the ZEC amount you want to send and the Address to which you want the Zec amount sent
+1. Wait for send confirmation
+1. Sapling params files should be now downloaded in the preferred location. Open Device File Explorer from Android 
 Studio bottom-left corner, select the same emulator device from the top. Go to
 `/data/data/cash.z.ecc.android.sdk.demoapp.mainnet/no_backup/co.electricoin.zcash`, which should be created 
 automatically
-9. Now verify there both of our sapling params files (`sapling-spend.params`, `sapling-output.params`) placed in the 
+1. Now verify there both of our sapling params files (`sapling-spend.params`, `sapling-output.params`) placed in the 
 `no_backup/co.electricoin.zcash` folder
 
 # Check result
