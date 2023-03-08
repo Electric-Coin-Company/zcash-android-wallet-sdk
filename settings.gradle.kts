@@ -24,6 +24,7 @@ pluginManagement {
         val kotlinVersion = extra["KOTLIN_VERSION"].toString()
         val kspVersion = extra["KSP_VERSION"].toString()
         val protobufVersion = extra["PROTOBUF_GRADLE_PLUGIN_VERSION"].toString()
+        val toolchainResolverVersion = extra["FOOJAY_TOOLCHAIN_RESOLVER_VERSION"].toString()
 
         id("com.android.application") version (androidGradlePluginVersion) apply (false)
         id("com.android.library") version (androidGradlePluginVersion) apply (false)
@@ -33,11 +34,16 @@ pluginManagement {
         id("com.google.protobuf") version (protobufVersion) apply (false)
         id("com.osacky.fulladle") version (fulladleVersion) apply (false)
         id("io.gitlab.arturbosch.detekt") version (detektVersion) apply (false)
+        id("org.gradle.toolchains.foojay-resolver-convention") version(toolchainResolverVersion) apply (false)
         id("org.jetbrains.dokka") version (dokkaVersion) apply (false)
         id("org.jetbrains.kotlin.android") version (kotlinVersion) apply (false)
         id("org.jetbrains.kotlin.plugin.allopen") version (kotlinVersion) apply (false)
         id("wtf.emulator.gradle") version (emulatorWtfGradlePluginVersion) apply (false)
     }
+}
+
+plugins {
+    id("org.gradle.toolchains.foojay-resolver-convention")
 }
 
 dependencyResolutionManagement {
