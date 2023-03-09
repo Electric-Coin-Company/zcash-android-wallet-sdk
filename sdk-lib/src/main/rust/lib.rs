@@ -1510,7 +1510,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_listTranspa
     let res = panic::catch_unwind(|| {
         let network = parse_network(network_id as u32)?;
         // Valid value of the Option<Network> is guaranteed by the previous network_id parsing
-        let zcash_network = Network::address_network(&network);
+        let zcash_network = network.address_network().expect("network_id parsing should not have resulted in an unrecognized network type.");
         let db_data = wallet_db(&env, network, db_data)?;
         let account_id = if account_id >= 0 {
             account_id as u32
@@ -1526,7 +1526,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_listTranspa
                     .map(|(taddr, _)| {
                         let taddr = match taddr {
                             TransparentAddress::PublicKey(data) => {
-                                ZcashAddress::from_transparent_p2pkh(zcash_network.unwrap(), *data)
+                                ZcashAddress::from_transparent_p2pkh(zcash_network, *data)
                             }
                             TransparentAddress::Script(data) => {
                                 ZcashAddress::from_transparent_p2sh(zcash_network.unwrap(), *data)
