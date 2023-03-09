@@ -17,6 +17,8 @@ import java.io.File
  * It is not documented because it is not intended to be used, directly.
  * Instead, use the synchronizer or one of its subcomponents.
  */
+// TODO [#920]: Tweak RustBackend public APIs to have void return values
+// TODO [#920]: https://github.com/zcash/zcash-android-wallet-sdk/issues/920
 @Suppress("TooManyFunctions")
 internal interface RustBackendWelding {
 
@@ -57,13 +59,15 @@ internal interface RustBackendWelding {
 
     fun isValidUnifiedAddr(addr: String): Boolean
 
-    suspend fun getCurrentAddress(account: Int = 0): String
+    suspend fun getCurrentAddress(account: Account): String
 
     fun getTransparentReceiver(ua: String): String?
 
     fun getSaplingReceiver(ua: String): String?
 
-    suspend fun getBalance(account: Int = 0): Zatoshi
+    suspend fun listTransparentReceivers(account: Account): List<String>
+
+    suspend fun getBalance(account: Account): Zatoshi
 
     fun getBranchIdForHeight(height: BlockHeight): Long
 
@@ -71,7 +75,7 @@ internal interface RustBackendWelding {
 
     suspend fun getSentMemoAsUtf8(idNote: Long): String?
 
-    suspend fun getVerifiedBalance(account: Int = 0): Zatoshi
+    suspend fun getVerifiedBalance(account: Account): Zatoshi
 
 //    fun parseTransactionDataList(tdl: LocalRpcTypes.TransactionDataList): LocalRpcTypes.TransparentTransactionList
 

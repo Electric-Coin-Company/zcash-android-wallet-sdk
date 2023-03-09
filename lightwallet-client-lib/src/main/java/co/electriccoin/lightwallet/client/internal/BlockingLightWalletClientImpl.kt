@@ -30,6 +30,7 @@ import kotlin.time.Duration.Companion.seconds
  * is created for streaming requests, it will use a deadline that is after the given duration from
  * now.
  */
+@Suppress("TooManyFunctions")
 internal class BlockingLightWalletClientImpl private constructor(
     private val channelFactory: ChannelFactory,
     private val lightWalletEndpoint: LightWalletEndpoint,
@@ -119,17 +120,26 @@ internal class BlockingLightWalletClientImpl private constructor(
     }
 
     override fun fetchUtxos(
-        tAddress: String,
+        tAddresses: List<String>,
         startHeight: BlockHeightUnsafe
     ): Sequence<Service.GetAddressUtxosReply> {
-        require(tAddress.isNotBlank()) {
-            "${Constants.ILLEGAL_ARGUMENT_EXCEPTION_MESSAGE} address: $tAddress." // NON-NLS
+        require(tAddresses.isNotEmpty() && tAddresses.all { it.isNotBlank() }) {
+            "${Constants.ILLEGAL_ARGUMENT_EXCEPTION_MESSAGE} array of addresses contains invalid item." // NON-NLS
         }
 
+        val builder = Service.GetAddressUtxosArg.newBuilder()
+
+        // build the request with the different addresses
+        tAddresses.forEachIndexed { index, tAddress ->
+            builder.setAddresses(index, tAddress)
+        }
+
+        builder.startHeight = startHeight.value
+
         val result = requireChannel().createStub().getAddressUtxos(
-            Service.GetAddressUtxosArg.newBuilder().setAddresses(0, tAddress)
-                .setStartHeight(startHeight.value).build()
+            builder.build()
         )
+
         return result.addressUtxosList.asSequence()
     }
 

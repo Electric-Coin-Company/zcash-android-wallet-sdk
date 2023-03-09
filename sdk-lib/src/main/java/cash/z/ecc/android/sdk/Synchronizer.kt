@@ -276,12 +276,15 @@ interface Synchronizer {
     suspend fun validateAddress(address: String): AddressType
 
     /**
-     * Download all UTXOs for the given address and store any new ones in the database.
+     * Download all UTXOs for the given account addresses and store any new ones in the database.
      *
-     * @return the number of utxos that were downloaded and addded to the UTXO table.
+     * @param account The Account, for which all addresses blocks will be downloaded.
+     * @param since The BlockHeight, from which blocks will be downloaded.
+     *
+     * @return the number of utxos that were downloaded and added to the UTXO table.
      */
     suspend fun refreshUtxos(
-        tAddr: String,
+        account: Account = Account.DEFAULT,
         since: BlockHeight = network.saplingActivationHeight
     ): Int?
 
