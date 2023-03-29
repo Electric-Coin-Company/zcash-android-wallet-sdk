@@ -54,7 +54,7 @@ jobs:
         uses: actions/checkout@24cb9080177205b6e8c946b17badbe402adc938f
       - name: Setup
         id: setup
-        timeout-minutes: 35
+        timeout-minutes: 40
         uses: ./.github/actions/setup
       - name: Deploy to Maven Local
         timeout-minutes: 25
