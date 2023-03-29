@@ -69,6 +69,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import java.io.File
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.CoroutineContext
 
@@ -104,6 +106,8 @@ class SdkSynchronizer private constructor(
         private val instances: MutableMap<SynchronizerKey, InstanceState> =
             ConcurrentHashMap<SynchronizerKey, InstanceState>()
 
+        private val mutex = Mutex()
+
         /**
          * @throws IllegalStateException If multiple instances of synchronizer with the same network+alias are
          * active at the same time.  Call `close` to finish one synchronizer before starting another one with the same
@@ -120,19 +124,20 @@ class SdkSynchronizer private constructor(
         ): CloseableSynchronizer {
             val synchronizerKey = SynchronizerKey(zcashNetwork, alias)
 
-            waitForShutdown(synchronizerKey)
-            checkForExistingSynchronizers(synchronizerKey)
+            return mutex.withLock {
+                waitForShutdown(synchronizerKey)
+                checkForExistingSynchronizers(synchronizerKey)
 
-            return SdkSynchronizer(
-                synchronizerKey,
-                repository,
-                txManager,
-                processor,
-                backend
-            ).apply {
-                instances[synchronizerKey] = InstanceState.Active
-
-                start()
+                SdkSynchronizer(
+                    synchronizerKey,
+                    repository,
+                    txManager,
+                    processor,
+                    backend
+                ).apply {
+                    instances[synchronizerKey] = InstanceState.Active
+                    start()
+                }
             }
         }
 
@@ -158,10 +163,12 @@ class SdkSynchronizer private constructor(
         ): Boolean {
             val key = SynchronizerKey(network, alias)
 
-            waitForShutdown(key)
-            checkForExistingSynchronizers(key)
+            return mutex.withLock {
+                waitForShutdown(key)
+                checkForExistingSynchronizers(key)
 
-            return DatabaseCoordinator.getInstance(appContext).deleteDatabases(network, alias)
+                DatabaseCoordinator.getInstance(appContext).deleteDatabases(network, alias)
+            }
         }
     }
 
