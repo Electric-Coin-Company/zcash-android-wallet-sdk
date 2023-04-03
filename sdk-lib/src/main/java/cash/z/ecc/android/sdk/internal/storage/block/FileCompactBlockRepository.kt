@@ -6,7 +6,6 @@ import cash.z.ecc.android.sdk.internal.ext.createNewFileSuspend
 import cash.z.ecc.android.sdk.internal.ext.deleteRecursivelySuspend
 import cash.z.ecc.android.sdk.internal.ext.deleteSuspend
 import cash.z.ecc.android.sdk.internal.ext.existsSuspend
-import cash.z.ecc.android.sdk.internal.ext.listFilesSuspend
 import cash.z.ecc.android.sdk.internal.ext.mkdirsSuspend
 import cash.z.ecc.android.sdk.internal.ext.renameToSuspend
 import cash.z.ecc.android.sdk.internal.ext.toHexReversed
@@ -66,16 +65,12 @@ internal class FileCompactBlockRepository(
     override suspend fun rewindTo(height: BlockHeight) = rustBackend.rewindBlockMetadataToHeight(height)
 
     override suspend fun deleteCompactBlocksMetadataFiles(): Boolean {
-        // Fixme: remove childrenCount before finishing
-        val childrenCount = blocksDirectory.listFilesSuspend()?.count()
-        Twig.debug {
-            "Removing blocks metadata directory ${blocksDirectory.path} with all its " +
-                "$childrenCount children."
-        }
+        Twig.debug { "Removing blocks metadata directory ${blocksDirectory.path} with all its children." }
 
         if (blocksDirectory.existsSuspend()) {
             return blocksDirectory.deleteRecursivelySuspend()
         }
+
         return true
     }
 

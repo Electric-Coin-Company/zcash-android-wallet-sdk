@@ -26,7 +26,7 @@ interface CompactBlockRepository {
      * This function is supposed to be used once the whole blocks sync process done. It removes all the temporary
      * blocks metadata files from the device disk together with theirs parent directory.
      *
-     * @return true when its deleted, false if the deletion fails
+     * @return true when all blocks metadata files are deleted, false only if the deletion fails
      */
     suspend fun deleteCompactBlocksMetadataFiles(): Boolean
 
