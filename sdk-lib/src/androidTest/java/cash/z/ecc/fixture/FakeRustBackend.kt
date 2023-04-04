@@ -3,6 +3,7 @@ package cash.z.ecc.fixture
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.jni.RustBackendWelding
+import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.WalletBalance
@@ -70,7 +71,7 @@ internal class FakeRustBackend(
     override fun isValidUnifiedAddr(addr: String): Boolean =
         error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 
-    override suspend fun getCurrentAddress(account: Int): String =
+    override suspend fun getCurrentAddress(account: Account): String =
         error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 
     override fun getTransparentReceiver(ua: String): String? =
@@ -79,7 +80,10 @@ internal class FakeRustBackend(
     override fun getSaplingReceiver(ua: String): String? =
         error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 
-    override suspend fun getBalance(account: Int): Zatoshi =
+    override suspend fun listTransparentReceivers(account: Account): List<String> =
+        error("Intentionally not implemented in mocked FakeRustBackend implementation.")
+
+    override suspend fun getBalance(account: Account): Zatoshi =
         error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 
     override fun getBranchIdForHeight(height: BlockHeight): Long =
@@ -91,7 +95,7 @@ internal class FakeRustBackend(
     override suspend fun getSentMemoAsUtf8(idNote: Long): String? =
         error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 
-    override suspend fun getVerifiedBalance(account: Int): Zatoshi =
+    override suspend fun getVerifiedBalance(account: Account): Zatoshi =
         error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 
     override suspend fun getNearestRewindHeight(height: BlockHeight): BlockHeight =

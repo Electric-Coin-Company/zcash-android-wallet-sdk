@@ -84,3 +84,4 @@ backup-dbs/
 .DS_Store
 /.idea/androidTestResultsUserPreferences.xml
 /.idea/inspectionProfiles/Project_Default.xml
+/.idea/kotlinc.xml

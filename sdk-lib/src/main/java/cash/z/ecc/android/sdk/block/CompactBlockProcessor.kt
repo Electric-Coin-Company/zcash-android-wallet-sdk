@@ -3,14 +3,11 @@ package cash.z.ecc.android.sdk.block
 import androidx.annotation.VisibleForTesting
 import cash.z.ecc.android.sdk.BuildConfig
 import cash.z.ecc.android.sdk.annotation.OpenForTesting
-import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Disconnected
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Downloading
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Enhancing
-import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Initialized
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Scanned
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Scanning
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Stopped
-import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Validating
 import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException
 import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException.EnhanceTransactionError.EnhanceTxDecryptError
 import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException.EnhanceTransactionError.EnhanceTxDownloadError
@@ -129,7 +126,7 @@ class CompactBlockProcessor internal constructor(
         )
     )
 
-    private val _state: MutableStateFlow<State> = MutableStateFlow(Initialized)
+    private val _state: MutableStateFlow<State> = MutableStateFlow(State.Initialized)
     private val _progress = MutableStateFlow(0)
     private val _processorInfo = MutableStateFlow(ProcessorInfo(null, null, null, null, null))
     private val _networkHeight = MutableStateFlow<BlockHeight?>(null)
@@ -217,9 +214,8 @@ class CompactBlockProcessor internal constructor(
                         delay(napTime)
                     }
                     BlockProcessingResult.NoBlocksToProcess, BlockProcessingResult.FailedEnhance -> {
-                        val noWorkDone =
-                            currentInfo.lastDownloadRange?.isEmpty() ?: true &&
-                                currentInfo.lastScanRange?.isEmpty() ?: true
+                        val noWorkDone = currentInfo.lastDownloadRange?.isEmpty() ?: true &&
+                            currentInfo.lastScanRange?.isEmpty() ?: true
                         val summary = if (noWorkDone) {
                             "Nothing to process: no new blocks to download or scan"
                         } else {
@@ -292,11 +288,11 @@ class CompactBlockProcessor internal constructor(
 
         if (!updateRanges()) {
             Twig.debug { "Disconnection detected! Attempting to reconnect!" }
-            setState(Disconnected)
+            setState(State.Disconnected)
             downloader.lightWalletClient.reconnect()
             BlockProcessingResult.Reconnecting
         } else if (currentInfo.lastDownloadRange.isEmpty() && currentInfo.lastScanRange.isEmpty()) {
-            setState(Scanned(currentInfo.lastScanRange))
+            setState(State.Scanned(currentInfo.lastScanRange))
             BlockProcessingResult.NoBlocksToProcess
         } else {
             val processRanges = ProcessBlocksRanges().apply {
@@ -442,7 +438,7 @@ class CompactBlockProcessor internal constructor(
      */
     private suspend fun validateAndScanNewBlocks(lastScanRange: ClosedRange<BlockHeight>?): BlockProcessingResult =
         withContext(IO) {
-            setState(Validating)
+            setState(State.Validating)
             val result = validateNewBlocks(lastScanRange)
             if (result == BlockProcessingResult.Success) {
                 // in theory, a scan should not fail after validation succeeds but maybe consider
@@ -593,7 +589,7 @@ class CompactBlockProcessor internal constructor(
     var failedUtxoFetches = 0
 
     @Suppress("MagicNumber")
-    internal suspend fun refreshUtxos(tAddress: String, startHeight: BlockHeight): Int? =
+    internal suspend fun refreshUtxos(account: Account, startHeight: BlockHeight): Int? =
         withContext(IO) {
             var count: Int? = null
             // TODO [683]: cleanup the way that we prevent this from running excessively
@@ -604,11 +600,14 @@ class CompactBlockProcessor internal constructor(
                 @Suppress("TooGenericExceptionCaught")
                 try {
                     retryUpTo(3) {
+                        val tAddresses = rustBackend.listTransparentReceivers(account)
+
                         val result = downloader.lightWalletClient.fetchUtxos(
-                            tAddress,
+                            tAddresses,
                             BlockHeightUnsafe.from(startHeight)
                         )
-                        count = processUtxoResult(result, tAddress, startHeight)
+
+                        count = processUtxoResult(result, startHeight)
                     }
                 } catch (e: Throwable) {
                     failedUtxoFetches++
@@ -629,11 +628,9 @@ class CompactBlockProcessor internal constructor(
 
     internal suspend fun processUtxoResult(
         result: Sequence<Service.GetAddressUtxosReply>,
-        tAddress: String,
         startHeight: BlockHeight
     ): Int = withContext(IO) {
         var skipped = 0
-        val aboveHeight = startHeight
         // TODO(str4d): We no longer clear UTXOs here, as rustBackend.putUtxo now uses an upsert instead of an insert.
         //  This means that now-spent UTXOs would previously have been deleted, but now are left in the database (like
         //  shielded notes). Due to the fact that the lightwalletd query only returns _current_ UTXOs, we don't learn
@@ -643,13 +640,16 @@ class CompactBlockProcessor internal constructor(
         //  shielding transactions, and at least one shielded note from each shielding transaction is always enhanced.
         //  However, for greater reliability, we may want to alter the Data Access API to support "inferring spentness"
         //  from what is _not_ returned as a UTXO, or alternatively fetch TXOs from lightwalletd instead of just UTXOs.
-        Twig.debug { "Checking for UTXOs above height $aboveHeight" }
+        Twig.debug { "Checking for UTXOs above height $startHeight" }
         result.forEach { utxo: Service.GetAddressUtxosReply ->
             Twig.debug { "Found UTXO at height ${utxo.height.toInt()} with ${utxo.valueZat} zatoshi" }
             @Suppress("TooGenericExceptionCaught")
             try {
+                // TODO [#920]: Tweak RustBackend public APIs to have void return values.
+                // TODO [#920]: Thus, we don't need to check the boolean result of this call until fixed.
+                // TODO [#920]: https://github.com/zcash/zcash-android-wallet-sdk/issues/920
                 rustBackend.putUtxo(
-                    tAddress,
+                    utxo.address,
                     utxo.txid.toByteArray(),
                     utxo.index,
                     utxo.script.toByteArray(),
@@ -1039,7 +1039,6 @@ class CompactBlockProcessor internal constructor(
         val interval = POLL_INTERVAL
         val now = System.currentTimeMillis()
         val deltaToNextInteral = interval - (now + interval).rem(interval)
-        // twig("sleeping for ${deltaToNextInteral}ms from $now in order to wake at ${now + deltaToNextInteral}")
         return deltaToNextInteral
     }
 
@@ -1094,7 +1093,7 @@ class CompactBlockProcessor internal constructor(
      * @return the current unified address of this account.
      */
     suspend fun getCurrentAddress(account: Account) =
-        rustBackend.getCurrentAddress(account.value)
+        rustBackend.getCurrentAddress(account)
 
     /**
      * Get the legacy Sapling address corresponding to the current unified address for the given wallet account.
@@ -1103,7 +1102,7 @@ class CompactBlockProcessor internal constructor(
      */
     suspend fun getLegacySaplingAddress(account: Account) =
         rustBackend.getSaplingReceiver(
-            rustBackend.getCurrentAddress(account.value)
+            rustBackend.getCurrentAddress(account)
         )
             ?: throw InitializeException.MissingAddressException("legacy Sapling")
 
@@ -1114,7 +1113,7 @@ class CompactBlockProcessor internal constructor(
      */
     suspend fun getTransparentAddress(account: Account) =
         rustBackend.getTransparentReceiver(
-            rustBackend.getCurrentAddress(account.value)
+            rustBackend.getCurrentAddress(account)
         )
             ?: throw InitializeException.MissingAddressException("legacy transparent")
 
@@ -1128,9 +1127,9 @@ class CompactBlockProcessor internal constructor(
     suspend fun getBalanceInfo(account: Account): WalletBalance {
         @Suppress("TooGenericExceptionCaught")
         return try {
-            val balanceTotal = rustBackend.getBalance(account.value)
+            val balanceTotal = rustBackend.getBalance(account)
             Twig.debug { "found total balance: $balanceTotal" }
-            val balanceAvailable = rustBackend.getVerifiedBalance(account.value)
+            val balanceAvailable = rustBackend.getVerifiedBalance(account)
             Twig.debug { "found available balance: $balanceAvailable" }
             WalletBalance(balanceTotal, balanceAvailable)
         } catch (t: Throwable) {

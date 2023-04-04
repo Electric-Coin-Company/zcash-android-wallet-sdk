@@ -59,10 +59,11 @@ class TestWallet(
     // Although runBlocking isn't great, this usage is OK because this is only used within the
     // automated tests
 
+    private val account = Account.DEFAULT
     private val context = InstrumentationRegistry.getInstrumentation().context
     private val seed: ByteArray = Mnemonics.MnemonicCode(seedPhrase).toSeed()
     private val shieldedSpendingKey =
-        runBlocking { DerivationTool.deriveUnifiedSpendingKey(seed, network = network, Account.DEFAULT) }
+        runBlocking { DerivationTool.deriveUnifiedSpendingKey(seed, network = network, account) }
     val synchronizer: SdkSynchronizer = Synchronizer.newBlocking(
         context,
         network,
@@ -74,14 +75,14 @@ class TestWallet(
 
     val available get() = synchronizer.saplingBalances.value?.available
     val unifiedAddress =
-        runBlocking { synchronizer.getUnifiedAddress(Account.DEFAULT) }
+        runBlocking { synchronizer.getUnifiedAddress(account) }
     val transparentAddress =
-        runBlocking { synchronizer.getTransparentAddress(Account.DEFAULT) }
+        runBlocking { synchronizer.getTransparentAddress(account) }
     val birthdayHeight get() = synchronizer.latestBirthdayHeight
     val networkName get() = synchronizer.network.networkName
 
     suspend fun transparentBalance(): WalletBalance {
-        synchronizer.refreshUtxos(transparentAddress, synchronizer.latestBirthdayHeight)
+        synchronizer.refreshUtxos(account, synchronizer.latestBirthdayHeight)
         return synchronizer.getTransparentBalance(transparentAddress)
     }
 
@@ -116,8 +117,7 @@ class TestWallet(
     }
 
     suspend fun shieldFunds(): TestWallet {
-        Twig.debug { "checking $transparentAddress for transactions!" }
-        synchronizer.refreshUtxos(transparentAddress, BlockHeight.new(ZcashNetwork.Mainnet, 935000)).let { count ->
+        synchronizer.refreshUtxos(Account.DEFAULT, BlockHeight.new(ZcashNetwork.Mainnet, 935000)).let { count ->
             Twig.debug { "FOUND $count new UTXOs" }
         }
 

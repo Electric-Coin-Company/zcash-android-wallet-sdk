@@ -8,7 +8,7 @@ runs:
       run: |
         echo "home=${HOME}" >> "$GITHUB_ENV"
     - name: Set up Java
-      uses: actions/setup-java@3f07048e3d294f56e9b90ac5ea2c6f74e9ad0f98
+      uses: actions/setup-java@5ffc13f4174014e2d4d4572b3d74c3fa61aeb2c2
       with:
         distribution: 'temurin'
         java-version: 17
@@ -22,6 +22,9 @@ runs:
     - name: Setup Rust
       shell: bash
       run: |
+        # Rust 1.68+ is not compatible yet https://github.com/zcash/zcash-android-wallet-sdk/issues/958
+        rustup install 1.67.1
+        rustup default 1.67.1
         rustup target add armv7-linux-androideabi aarch64-linux-android i686-linux-android x86_64-linux-android
     - name: Disable Gradle Daemon
       shell: bash
@@ -31,13 +34,13 @@ runs:
         echo "org.gradle.daemon=false" >> ~/.gradle/gradle.properties
     - name: Gradle Wrapper Cache
       id: gradle-wrapper-cache
-      uses: actions/cache@69d9d449aced6a2ede0bc19182fadc3a0a42d2b0
+      uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8
       with:
         path: ~/.gradle/wrapper
         key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles(format('{0}{1}', github.workspace, '/gradle/wrapper/gradle-wrapper.properties')) }}
     - name: Gradle Dependency Cache
       id: gradle-dependency-cache
-      uses: actions/cache@69d9d449aced6a2ede0bc19182fadc3a0a42d2b0
+      uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8
       with:
         path: ~/.gradle/caches/modules-2
         key: ${{ runner.os }}-gradle-deps-${{ hashFiles(format('{0}{1}', github.workspace, '/gradle.properties')) }}
@@ -48,7 +51,7 @@ runs:
 # 2. Relying on the sha for an exact match so that the prime_cache job is re-used by all dependent jobs in a single workflow run
     - name: Gradle Build Cache
       id: gradle-build-cache
-      uses: actions/cache@69d9d449aced6a2ede0bc19182fadc3a0a42d2b0
+      uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8
       with:
         path: |
           ~/.gradle/caches/build-cache-1
@@ -59,7 +62,7 @@ runs:
           ${{ runner.os }}-gradle-build-
     - name: Rust Cache
       id: rust-cache
-      uses: actions/cache@69d9d449aced6a2ede0bc19182fadc3a0a42d2b0
+      uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8
       with:
         path: |
           sdk-lib/target

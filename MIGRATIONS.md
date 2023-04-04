@@ -1,6 +1,11 @@
 Troubleshooting Migrations
 ==========
 
+Migration to Version 1.14
+---------------------------------
+The updated `Synchronizer.refreshUtxos` is now supposed to be called with `Account` parameter instead of `String` 
+address parameter. The Account object provides a default `0` index Account with `Account.DEFAULT`.    
+
 Migration to Version 1.13
 ---------------------------------
 Update usages of `z.cash.ecc.android.sdk.model.LightWalletEndpoint` to `co.electriccoin.lightwallet.client.model.LightWalletEndpoint`.

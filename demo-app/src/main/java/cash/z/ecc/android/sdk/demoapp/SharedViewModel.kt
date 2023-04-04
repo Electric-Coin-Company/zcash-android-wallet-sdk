@@ -127,7 +127,8 @@ class SharedViewModel(application: Application) : AndroidViewModel(application) 
                     .onFirst {
                         val didDelete = Synchronizer.erase(
                             appContext = getApplication(),
-                            network = ZcashNetwork.fromResources(getApplication())
+                            network = ZcashNetwork.fromResources(getApplication()),
+                            alias = OLD_UI_SYNCHRONIZER_ALIAS
                         )
                         Twig.debug { "SDK erase result: $didDelete" }
                     }

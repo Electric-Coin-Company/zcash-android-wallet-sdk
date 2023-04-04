@@ -378,11 +378,6 @@ class SdkSynchronizer private constructor(
     // Private API
     //
 
-    suspend fun refreshUtxos() {
-        Twig.debug { "refreshing utxos" }
-        refreshUtxos(getTransparentAddress())
-    }
-
     /**
      * Calculate the latest balance, based on the blocks that have been scanned and transmit this
      * information into the flow of [balances].
@@ -672,8 +667,8 @@ class SdkSynchronizer private constructor(
         }
     }
 
-    override suspend fun refreshUtxos(tAddr: String, since: BlockHeight): Int? {
-        return processor.refreshUtxos(tAddr, since)
+    override suspend fun refreshUtxos(account: Account, since: BlockHeight): Int? {
+        return processor.refreshUtxos(account, since)
     }
 
     override suspend fun getTransparentBalance(tAddr: String): WalletBalance {
@@ -763,8 +758,11 @@ internal object DefaultSynchronizerFactory {
             )
         )
 
-    internal suspend fun defaultFileCompactBlockRepository(rustBackend: RustBackend): CompactBlockRepository =
-        FileCompactBlockRepository.new(rustBackend)
+    internal suspend fun defaultFileCompactBlockRepository(rustBackend: RustBackend):
+        CompactBlockRepository =
+        FileCompactBlockRepository.new(
+            rustBackend
+        )
 
     fun defaultService(context: Context, lightWalletEndpoint: LightWalletEndpoint): BlockingLightWalletClient =
         BlockingLightWalletClient.new(context, lightWalletEndpoint)
