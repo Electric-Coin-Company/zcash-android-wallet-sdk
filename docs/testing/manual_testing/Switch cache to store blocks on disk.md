@@ -41,9 +41,13 @@ Observed result of this manual test should be:
 1. Open the Device File Explorer in the Android again
 1. Go to `/data/data/cash.z.ecc.android.sdk.demoapp.mainnet/no_backup/co.electricoin.zcash/`. 
    1. Verify there is a new `zcash_sdk_[network_name]_fs_cache` directory placed.
-   1. Verify it contains`blockmeta.sqlite` blocks metadata database file
-   1. As well as `blocks` directory with the new blob blocks cache files in it.
+   1. Verify it contains `blockmeta.sqlite` blocks metadata database file
+   1. As well as the temporary `blocks` directory with the new blob blocks cache files in it.
    1. Verify there are no `cache.sqlite3` and its rollback files too (suffixed with `journal` or `wal`) placed. The 
       file names can vary, depending on the current build variant.
 1. Go to the older legacy database folder `/data/data/cash.z.ecc.android.sdk.demoapp.mainnet/databases/`, which 
    should not contain `cache.sqlite3` and its rollback files neither.
+1. Once the whole sync process is done, verify that the temporary `blocks` directory is removed from the device 
+   storage with all its blocks metadata files, or is empty, as it's automatically created by the new blocks polling 
+   mechanism. 
+1. Verify also that the `blockmeta.sqlite` still preserves
