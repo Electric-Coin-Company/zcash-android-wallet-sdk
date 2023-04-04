@@ -2,6 +2,7 @@ package cash.z.ecc.android.sdk.internal.storage.block
 
 import cash.z.ecc.android.sdk.internal.ext.deleteRecursivelySuspend
 import cash.z.ecc.android.sdk.internal.ext.existsSuspend
+import cash.z.ecc.android.sdk.internal.ext.listSuspend
 import cash.z.ecc.android.sdk.internal.ext.mkdirsSuspend
 import cash.z.ecc.android.sdk.jni.RustBackendWelding
 import cash.z.ecc.android.sdk.model.BlockHeight
@@ -27,13 +28,12 @@ class FileCompactBlockRepositoryTest {
     @OptIn(ExperimentalCoroutinesApi::class)
     @Before
     fun setup() = runTest {
-        val rootDirectory = FilePathFixture.newBlocksDir()
-        if (rootDirectory.existsSuspend()) {
-            rootDirectory.deleteRecursivelySuspend()
+        val blocksDirectory = FilePathFixture.newBlocksDir()
+        if (blocksDirectory.existsSuspend()) {
+            blocksDirectory.deleteRecursivelySuspend()
         }
 
-        val blocksDir = FilePathFixture.newBlocksDir()
-        blocksDir.mkdirsSuspend()
+        blocksDirectory.mkdirsSuspend()
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -146,6 +146,40 @@ class FileCompactBlockRepositoryTest {
         assertTrue { rootBlocksDirectory.exists() }
         assertEquals(blocks.count(), persistedBlocksCount)
         assertEquals(blocks.count(), rootBlocksDirectory.list()!!.size)
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun deleteCompactBlocksMetadataFilesTest() = runTest {
+        val rustBackend = FakeRustBackendFixture().new()
+        val blocksDirectory = FilePathFixture.newBlocksDir()
+        val parentDirectory = blocksDirectory.parentFile!!
+
+        val blockRepository = getMockedFileCompactBlockRepository(rustBackend, blocksDirectory)
+
+        val testedBlocksRange = ListOfCompactBlocksFixture.DEFAULT_FILE_BLOCK_RANGE
+        val blocks = ListOfCompactBlocksFixture.new(testedBlocksRange)
+
+        val persistedBlocksCount = blockRepository.write(blocks)
+
+        parentDirectory.also {
+            assertTrue(it.existsSuspend())
+            assertTrue(it.listSuspend()!!.contains(FilePathFixture.DEFAULT_BLOCKS_DIR_NAME))
+        }
+        blocksDirectory.also {
+            assertTrue(it.existsSuspend())
+            assertEquals(blocks.count(), persistedBlocksCount)
+        }
+
+        blockRepository.deleteCompactBlocksMetadataFiles()
+
+        parentDirectory.also {
+            assertTrue(it.existsSuspend())
+            assertFalse(it.listSuspend()!!.contains(FilePathFixture.DEFAULT_BLOCKS_DIR_NAME))
+        }
+        blocksDirectory.also { blocksDir ->
+            assertFalse(blocksDir.existsSuspend())
+        }
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)

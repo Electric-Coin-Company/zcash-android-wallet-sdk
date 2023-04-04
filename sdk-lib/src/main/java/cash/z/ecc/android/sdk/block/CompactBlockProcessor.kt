@@ -305,7 +305,9 @@ class CompactBlockProcessor internal constructor(
                     // blocks for a more reliable benchmark results.
                     val benchmarkBlockRange = BenchmarkingBlockRangeFixture.new().let {
                         // Convert range of Longs to range of BlockHeights
-                        BlockHeight.new(ZcashNetwork.Mainnet, it.start)..(BlockHeight.new(ZcashNetwork.Mainnet, it.endInclusive))
+                        BlockHeight.new(ZcashNetwork.Mainnet, it.start)..(
+                            BlockHeight.new(ZcashNetwork.Mainnet, it.endInclusive)
+                            )
                     }
                     downloadRange = benchmarkBlockRange
                     scanRange = benchmarkBlockRange
