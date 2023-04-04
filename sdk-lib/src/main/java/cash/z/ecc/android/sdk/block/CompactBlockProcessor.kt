@@ -321,27 +321,32 @@ class CompactBlockProcessor internal constructor(
                 return@withContext validationResult
             }
 
-            val enhanceResult = processRanges.scanRange?.let { enhanceTransactionDetails(it) }
-                ?: BlockProcessingResult.NoBlocksToProcess
-            if (enhanceResult != BlockProcessingResult.Success) {
-                deleteAllBlocksMetadataFiles()
+            val deleteMetadataResult = deleteAllBlocksMetadataFiles()
+
+            val enhanceResult = enhanceTransactionDetails(processRanges.scanRange)
+
+            // Return enhance or delete operations result in case of any failure happened
+            if (enhanceResult != BlockProcessingResult.Success ||
+                enhanceResult != BlockProcessingResult.NoBlocksToProcess
+            ) {
                 return@withContext enhanceResult
+            } else if (deleteMetadataResult != BlockProcessingResult.Success) {
+                return@withContext BlockProcessingResult.FailedDeleteBlockMetadata
             }
 
-            val deleteMetadataResult = deleteAllBlocksMetadataFiles()
-            if (deleteMetadataResult) {
-                enhanceResult
-            } else {
-                BlockProcessingResult.FailedDeleteBlockMetadata
-            }
+            return@withContext BlockProcessingResult.Success
         }
     }
 
-    private suspend fun deleteAllBlocksMetadataFiles(): Boolean {
+    private suspend fun deleteAllBlocksMetadataFiles(): BlockProcessingResult {
         Twig.debug { "Deleting all temporary blocks metadata files now." }
         // Now we approach to delete all the temporary blocks metadata files from the device disk. Note that we'd
         // like to ideally do this continuously while syncing a next group of blocks in the future.
-        return downloader.compactBlockRepository.deleteCompactBlocksMetadataFiles()
+        return if (downloader.compactBlockRepository.deleteCompactBlocksMetadataFiles()) {
+            BlockProcessingResult.Success
+        } else {
+            BlockProcessingResult.FailedDeleteBlockMetadata
+        }
     }
 
     /**
@@ -456,7 +461,11 @@ class CompactBlockProcessor internal constructor(
             result
         }
 
-    private suspend fun enhanceTransactionDetails(lastScanRange: ClosedRange<BlockHeight>): BlockProcessingResult {
+    private suspend fun enhanceTransactionDetails(lastScanRange: ClosedRange<BlockHeight>?): BlockProcessingResult {
+        if (lastScanRange == null) {
+            return BlockProcessingResult.NoBlocksToProcess
+        }
+
         Twig.debug { "Enhancing transaction details for blocks $lastScanRange" }
         setState(Enhancing)
         @Suppress("TooGenericExceptionCaught")
