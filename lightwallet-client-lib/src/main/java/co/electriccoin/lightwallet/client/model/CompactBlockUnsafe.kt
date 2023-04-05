@@ -1,6 +1,11 @@
 package co.electriccoin.lightwallet.client.model
 
 import cash.z.wallet.sdk.internal.rpc.CompactFormats.CompactBlock
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
+import java.io.ObjectInputStream
+import java.io.ObjectOutputStream
+import java.io.Serializable
 
 /**
  * CompactBlock is a packaging of ONLY the data from a block that's needed to:
@@ -19,7 +24,7 @@ class CompactBlockUnsafe(
     val time: Int, // Unix epoch time when the block was mined
     val header: ByteArray, // (hash, prevHash, and time) OR (full header)
     val vtx: List<CompactTxUnsafe> // zero or more compact transactions from this block
-) {
+) : Serializable {
     companion object {
         fun new(compactBlock: CompactBlock) = CompactBlockUnsafe(
             protoVersion = compactBlock.protoVersion,
@@ -30,10 +35,23 @@ class CompactBlockUnsafe(
             header = compactBlock.header.toByteArray(),
             vtx = compactBlock.vtxList.map { CompactTxUnsafe.new(it) }
         )
+
+        fun fromByteArray(byteArray: ByteArray): CompactBlockUnsafe {
+            ByteArrayInputStream(byteArray).use { byteArrayInputStream ->
+                ObjectInputStream(byteArrayInputStream).use { objectInputStream ->
+                    return objectInputStream.readObject() as CompactBlockUnsafe
+                }
+            }
+        }
     }
 
     fun toByteArray(): ByteArray {
-        // Fixme need proper implementation
-        error("Intentionally not implemented.")
+        ByteArrayOutputStream().use { byteArrayOutputStream ->
+            ObjectOutputStream(byteArrayOutputStream).use { objectOutputStream ->
+                objectOutputStream.writeObject(this)
+                objectOutputStream.flush()
+                return byteArrayOutputStream.toByteArray()
+            }
+        }
     }
 }

@@ -1,7 +1,9 @@
 package co.electriccoin.lightwallet.client.fixture
 
+import android.R.attr.value
 import co.electriccoin.lightwallet.client.model.CompactBlockUnsafe
 import co.electriccoin.lightwallet.client.model.CompactTxUnsafe
+import java.nio.ByteBuffer
 
 /**
  * Used for getting single mocked compact block for processing and persisting purposes.
@@ -12,11 +14,11 @@ internal object SingleCompactBlockFixture {
     internal const val DEFAULT_HEIGHT = 500_000L
     internal const val DEFAULT_TIME = 0
 
-    // Keep these because it makes test assertions easier
     internal const val DEFAULT_HASH = DEFAULT_HEIGHT
     internal const val DEFAULT_PREV_HASH = DEFAULT_HEIGHT
     internal const val DEFAULT_HEADER = DEFAULT_HEIGHT
-    internal fun heightToFixtureData(height: Long) = height.toString().toByteArray()
+    internal fun heightToFixtureData(height: Long) = BytesConversionHelper.longToBytes(height)
+    internal fun fixtureDataToHeight(byteArray: ByteArray) = BytesConversionHelper.bytesToLong(byteArray)
 
     // We could fill with a fixture value if needed for testing
     internal val DEFAULT_VTX = emptyList<CompactTxUnsafe>()
@@ -40,5 +42,24 @@ internal object SingleCompactBlockFixture {
             header = header,
             vtx = vtxList
         )
+    }
+}
+
+private object BytesConversionHelper {
+    private fun getBuffer(): ByteBuffer {
+        return ByteBuffer.allocate(java.lang.Long.BYTES)
+    }
+
+    fun longToBytes(x: Long): ByteArray {
+        val buffer = getBuffer()
+        buffer.putLong(0, x)
+        return buffer.array()
+    }
+
+    fun bytesToLong(bytes: ByteArray): Long {
+        val buffer = getBuffer()
+        buffer.put(bytes, 0, bytes.size)
+        buffer.flip()
+        return buffer.long
     }
 }
