@@ -12,7 +12,7 @@ import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.demoapp.util.mainActivity
 import cash.z.ecc.android.sdk.demoapp.util.toRelativeTime
 import cash.z.ecc.android.sdk.demoapp.util.withCommas
-import cash.z.ecc.android.sdk.internal.twig
+import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
@@ -36,11 +36,11 @@ class GetBlockRangeFragment : BaseDemoFragment<FragmentGetBlockRangeBinding>() {
 
         val blocks = when (response) {
             is Response.Success -> {
-                twig("Get blocks: ${response.result} for range: $range succeeded.")
+                Twig.debug { "Get blocks: ${response.result} for range: $range succeeded." }
                 response.result
             }
             else -> {
-                twig("Get blocks for range: $range failed with: $response.")
+                Twig.debug { "Get blocks for range: $range failed with: $response." }
                 null
             }
         }

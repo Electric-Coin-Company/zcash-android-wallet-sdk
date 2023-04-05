@@ -50,14 +50,14 @@ open class CompactBlockDownloader private constructor(val compactBlockRepository
         )
         when (response) {
             is Response.Success -> {
-                twig(
+                Twig.debug {
                     "Downloading blocks in range: $heightRange succeeded with ${response.result.count()} blocks " +
                         "downloaded."
-                )
+                }
                 compactBlockRepository.write(response.result)
             }
             else -> {
-                twig("Downloading blocks in range: $heightRange failed with: $response.")
+                Twig.debug { "Downloading blocks in range: $heightRange failed with: $response." }
                 -1
             }
         }

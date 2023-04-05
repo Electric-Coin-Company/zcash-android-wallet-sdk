@@ -1,28 +1,44 @@
 package co.electriccoin.lightwallet.client.fixture
 
-import cash.z.wallet.sdk.internal.rpc.CompactFormats.CompactBlock
-import com.google.protobuf.ByteString
-import com.google.protobuf.kotlin.toByteStringUtf8
+import co.electriccoin.lightwallet.client.model.CompactBlockUnsafe
+import co.electriccoin.lightwallet.client.model.CompactTxUnsafe
 
 /**
  * Used for getting single mocked compact block for processing and persisting purposes.
  */
 internal object SingleCompactBlockFixture {
 
-    const val DEFAULT_BLOCK_HEIGHT = 500_000L
+    internal const val DEFAULT_PROTO_VERSION = 1
+    internal const val DEFAULT_HEIGHT = 500_000L
+    internal const val DEFAULT_TIME = 0
 
-    // Keep this because it makes test assertions easier
-    const val DEFAULT_BLOCK_HASH = DEFAULT_BLOCK_HEIGHT
+    // Keep these because it makes test assertions easier
+    internal const val DEFAULT_HASH = DEFAULT_HEIGHT
+    internal const val DEFAULT_PREV_HASH = DEFAULT_HEIGHT
+    internal const val DEFAULT_HEADER = DEFAULT_HEIGHT
+    internal fun heightToFixtureData(height: Long) = height.toString().toByteArray()
 
-    internal fun heightToFixtureHash(height: Long) = height.toString().toByteStringUtf8()
+    // We could fill with a fixture value if needed for testing
+    internal val DEFAULT_VTX = emptyList<CompactTxUnsafe>()
 
+    @Suppress("LongParameterList")
     fun new(
-        blockHeight: Long = DEFAULT_BLOCK_HEIGHT,
-        blockHash: ByteString = heightToFixtureHash(blockHeight)
-    ): CompactBlock {
-        return CompactBlock.newBuilder()
-            .setHeight(blockHeight)
-            .setHash(blockHash)
-            .build()
+        protoVersion: Int = DEFAULT_PROTO_VERSION,
+        height: Long = DEFAULT_HEIGHT,
+        hash: ByteArray = heightToFixtureData(height),
+        prevHash: ByteArray = heightToFixtureData(height),
+        time: Int = DEFAULT_TIME,
+        header: ByteArray = heightToFixtureData(height),
+        vtxList: List<CompactTxUnsafe> = DEFAULT_VTX
+    ): CompactBlockUnsafe {
+        return CompactBlockUnsafe(
+            protoVersion = protoVersion,
+            height = height,
+            hash = hash,
+            prevHash = prevHash,
+            time = time,
+            header = header,
+            vtx = vtxList
+        )
     }
 }
