@@ -22,14 +22,20 @@ class CompactBlockUnsafeTest {
 
             assertEquals(SingleCompactBlockFixture.DEFAULT_HEIGHT, it.height)
 
-            assertEquals(SingleCompactBlockFixture.DEFAULT_HASH,
-                SingleCompactBlockFixture.fixtureDataToHeight(it.hash))
+            assertEquals(
+                SingleCompactBlockFixture.DEFAULT_HASH,
+                SingleCompactBlockFixture.fixtureDataToHeight(it.hash)
+            )
 
-            assertEquals(SingleCompactBlockFixture.DEFAULT_PREV_HASH,
-                SingleCompactBlockFixture.fixtureDataToHeight(it.prevHash))
+            assertEquals(
+                SingleCompactBlockFixture.DEFAULT_PREV_HASH,
+                SingleCompactBlockFixture.fixtureDataToHeight(it.prevHash)
+            )
 
-            assertEquals(SingleCompactBlockFixture.DEFAULT_HEADER,
-                SingleCompactBlockFixture.fixtureDataToHeight(it.header))
+            assertEquals(
+                SingleCompactBlockFixture.DEFAULT_HEADER,
+                SingleCompactBlockFixture.fixtureDataToHeight(it.header)
+            )
 
             assertEquals(SingleCompactBlockFixture.DEFAULT_TIME, it.time)
 

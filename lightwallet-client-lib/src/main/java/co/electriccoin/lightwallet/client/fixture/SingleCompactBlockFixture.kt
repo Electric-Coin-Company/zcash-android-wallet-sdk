@@ -1,6 +1,5 @@
 package co.electriccoin.lightwallet.client.fixture
 
-import android.R.attr.value
 import co.electriccoin.lightwallet.client.model.CompactBlockUnsafe
 import co.electriccoin.lightwallet.client.model.CompactTxUnsafe
 import java.nio.ByteBuffer

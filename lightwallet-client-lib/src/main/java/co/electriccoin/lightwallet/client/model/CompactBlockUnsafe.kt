@@ -26,6 +26,8 @@ class CompactBlockUnsafe(
     val vtx: List<CompactTxUnsafe> // zero or more compact transactions from this block
 ) : Serializable {
     companion object {
+        const val serialVersionUID = 1L
+
         fun new(compactBlock: CompactBlock) = CompactBlockUnsafe(
             protoVersion = compactBlock.protoVersion,
             height = compactBlock.height,
