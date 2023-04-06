@@ -5,7 +5,6 @@ import cash.z.ecc.android.sdk.internal.ext.retryUpTo
 import cash.z.ecc.android.sdk.internal.model.ext.from
 import cash.z.ecc.android.sdk.internal.repository.CompactBlockRepository
 import cash.z.ecc.android.sdk.model.BlockHeight
-import cash.z.ecc.android.sdk.model.ZcashNetwork
 import co.electriccoin.lightwallet.client.CoroutineLightWalletClient
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.CompactBlockUnsafe
@@ -47,18 +46,18 @@ open class CompactBlockDownloader private constructor(val compactBlockRepository
      * @param heightRange the inclusive range of heights to request. For example 10..20 would
      * request 11 blocks (including block 10 and block 20).
      */
-    suspend fun downloadBlockRange(heightRange: ClosedRange<BlockHeight>, network: ZcashNetwork) {
+    suspend fun downloadBlockRange(heightRange: ClosedRange<BlockHeight>) {
         val filteredFlow = lightWalletClient.getBlockRange(
             BlockHeightUnsafe.from(heightRange.start)..BlockHeightUnsafe.from(heightRange.endInclusive)
         ).onEach { response ->
-                when (response) {
-                    is Response.Success -> {
-                        Twig.debug { "Downloading block at height: ${response.result.height} succeeded." }
-                    } else -> {
-                        Twig.debug { "Downloading blocks in range: $heightRange failed with: $response." }
-                    }
+            when (response) {
+                is Response.Success -> {
+                    Twig.debug { "Downloading block at height: ${response.result.height} succeeded." }
+                } else -> {
+                    Twig.debug { "Downloading blocks in range: $heightRange failed with: $response." }
                 }
             }
+        }
             .filterIsInstance<Response.Success<CompactBlockUnsafe>>()
             .map { response ->
                 response.result

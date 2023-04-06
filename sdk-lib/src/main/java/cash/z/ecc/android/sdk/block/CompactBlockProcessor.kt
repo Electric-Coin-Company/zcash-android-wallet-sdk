@@ -625,8 +625,9 @@ class CompactBlockProcessor internal constructor(
                             tAddresses,
                             BlockHeightUnsafe.from(startHeight)
                         )
-
-                        count = processUtxoResult(result, startHeight)
+                        // Fixme commented out temporarily
+                        println(result)
+                        count = 1 // processUtxoResult(result, startHeight)
                     }
                 } catch (e: Throwable) {
                     failedUtxoFetches++
@@ -727,7 +728,7 @@ class CompactBlockProcessor internal constructor(
                             )
                         ) // subtract 1 on the first value because the range is inclusive
 
-                        downloader.downloadBlockRange(downloadedBlockHeight..end, network)
+                        downloader.downloadBlockRange(downloadedBlockHeight..end)
 
                         Twig.debug {
                             "downloaded $downloadedBlockHeight..$end (batch $i of $batches) " +

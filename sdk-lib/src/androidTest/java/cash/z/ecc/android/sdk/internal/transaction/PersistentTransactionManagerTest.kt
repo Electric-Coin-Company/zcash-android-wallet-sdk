@@ -18,7 +18,7 @@ import cash.z.ecc.android.sdk.test.ScopedTest
 import cash.z.ecc.android.sdk.test.getAppContext
 import cash.z.ecc.fixture.DatabaseNameFixture
 import cash.z.ecc.fixture.DatabasePathFixture
-import co.electriccoin.lightwallet.client.BlockingLightWalletClient
+import co.electriccoin.lightwallet.client.CoroutineLightWalletClient
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.stub
 import kotlinx.coroutines.delay
@@ -42,7 +42,7 @@ class PersistentTransactionManagerTest : ScopedTest() {
     internal lateinit var mockEncoder: TransactionEncoder
 
     @Mock
-    lateinit var mockService: BlockingLightWalletClient
+    lateinit var mockService: CoroutineLightWalletClient
 
     private val pendingDbFile = File(
         DatabasePathFixture.new(),
