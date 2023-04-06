@@ -38,7 +38,7 @@ internal class FileCompactBlockRepository(
         result.forEach { block ->
             val tmpFile = block.createTemporaryFile(blocksDirectory)
             // write compact block bytes
-            tmpFile.writeBytesSuspend(block.toByteArray())
+            tmpFile.writeBytesSuspend(block.compactBlockBytes)
             // buffer metadata
             metaDataBuffer.add(block.toJniMetaData())
 
@@ -126,27 +126,8 @@ private fun List<JniBlockMeta>.isBufferFull(): Boolean {
     return size % FileCompactBlockRepository.BLOCKS_METADATA_BUFFER_SIZE == 0
 }
 
-internal data class CompactBlockOutputsCounts(
-    val saplingOutputsCount: UInt,
-    val orchardActionsCount: UInt
-)
-
-private fun CompactBlockUnsafe.getOutputsCounts(): CompactBlockOutputsCounts {
-    var outputsCount: UInt = 0u
-    var actionsCount: UInt = 0u
-
-    vtx.forEach { compactTx ->
-        outputsCount += compactTx.outputs.count().toUInt()
-        actionsCount += compactTx.actions.count().toUInt()
-    }
-
-    return CompactBlockOutputsCounts(outputsCount, actionsCount)
-}
-
 private fun CompactBlockUnsafe.toJniMetaData(): JniBlockMeta {
-    val outputs = getOutputsCounts()
-
-    return JniBlockMeta.new(this, outputs)
+    return JniBlockMeta.new(this)
 }
 
 private fun CompactBlockUnsafe.createFilename(): String {

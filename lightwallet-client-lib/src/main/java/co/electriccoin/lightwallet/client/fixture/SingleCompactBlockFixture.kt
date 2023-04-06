@@ -1,7 +1,6 @@
 package co.electriccoin.lightwallet.client.fixture
 
 import co.electriccoin.lightwallet.client.model.CompactBlockUnsafe
-import co.electriccoin.lightwallet.client.model.CompactTxUnsafe
 import java.nio.ByteBuffer
 
 /**
@@ -9,37 +8,31 @@ import java.nio.ByteBuffer
  */
 internal object SingleCompactBlockFixture {
 
-    internal const val DEFAULT_PROTO_VERSION = 1
     internal const val DEFAULT_HEIGHT = 500_000L
     internal const val DEFAULT_TIME = 0
-
+    internal const val DEFAULT_SAPLING_OUTPUT_COUNT = 1u
+    internal const val DEFAULT_ORCHARD_OUTPUT_COUNT = 2u
     internal const val DEFAULT_HASH = DEFAULT_HEIGHT
-    internal const val DEFAULT_PREV_HASH = DEFAULT_HEIGHT
-    internal const val DEFAULT_HEADER = DEFAULT_HEIGHT
+    internal const val DEFAULT_BLOCK_BYTES = DEFAULT_HEIGHT
     internal fun heightToFixtureData(height: Long) = BytesConversionHelper.longToBytes(height)
     internal fun fixtureDataToHeight(byteArray: ByteArray) = BytesConversionHelper.bytesToLong(byteArray)
 
-    // We could fill with a fixture value if needed for testing
-    internal val DEFAULT_VTX = emptyList<CompactTxUnsafe>()
-
     @Suppress("LongParameterList")
     fun new(
-        protoVersion: Int = DEFAULT_PROTO_VERSION,
         height: Long = DEFAULT_HEIGHT,
         hash: ByteArray = heightToFixtureData(height),
-        prevHash: ByteArray = heightToFixtureData(height),
         time: Int = DEFAULT_TIME,
-        header: ByteArray = heightToFixtureData(height),
-        vtxList: List<CompactTxUnsafe> = DEFAULT_VTX
+        saplingOutputsCount: UInt = DEFAULT_SAPLING_OUTPUT_COUNT,
+        orchardOutputsCount: UInt = DEFAULT_ORCHARD_OUTPUT_COUNT,
+        blockBytes: ByteArray = heightToFixtureData(DEFAULT_BLOCK_BYTES)
     ): CompactBlockUnsafe {
         return CompactBlockUnsafe(
-            protoVersion = protoVersion,
             height = height,
             hash = hash,
-            prevHash = prevHash,
             time = time,
-            header = header,
-            vtx = vtxList
+            saplingOutputsCount = saplingOutputsCount,
+            orchardOutputsCount = orchardOutputsCount,
+            compactBlockBytes = blockBytes
         )
     }
 }

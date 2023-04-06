@@ -74,6 +74,8 @@ class TransactionCounterUtil {
 
         assert(response is Response.Success) { "Server communication failed." }
 
+        /* Fixme: vtx is not available anymore. Once we'll decide to enable this test again, we could compare a known
+             outputs count for the selected blocks range with the calculated outputs count from synced the blocks
         (response as Response.Success).result.forEach { compactBlock ->
             compactBlock.vtx.map { it.outputs.size }.forEach { oCount ->
                 outputCounts[oCount] = (outputCounts[oCount] ?: 0) + oCount.coerceAtLeast(1)
@@ -84,6 +86,7 @@ class TransactionCounterUtil {
                 totalTxs += count
             }
         }
+         */
         Twig.debug { "txs: $txCounts" }
         Twig.debug { "outputs: $outputCounts" }
         Twig.debug { "total: $totalTxs  $totalOutputs" }

@@ -53,38 +53,22 @@ class GetBlockRangeFragment : BaseDemoFragment<FragmentGetBlockRangeBinding>() {
         binding.textInfo.text = HtmlCompat.fromHtml(
             blocks?.toList()?.run {
                 val count = size
-                val emptyCount = count { it.vtx.isEmpty() }
-                val maxTxs = maxByOrNull { it.vtx.size }
-                val maxIns = maxByOrNull { block ->
-                    block.vtx.maxOfOrNull { it.spends.size } ?: -1
-                }
-                val maxInTx = maxIns?.vtx?.maxByOrNull { it.spends.size }
-                val maxOuts = maxByOrNull { block ->
-                    block.vtx.maxOfOrNull { it.outputs.size } ?: -1
-                }
-                val maxOutTx = maxOuts?.vtx?.maxByOrNull { it.outputs.size }
-                val txCount = sumOf { it.vtx.size }
-                val outCount = sumOf { block -> block.vtx.sumOf { it.outputs.size } }
-                val inCount = sumOf { block -> block.vtx.sumOf { it.spends.size } }
-
                 val processTime = System.currentTimeMillis() - start - fetchDelta
+                var totalSaplingOutputCount: UInt = 0u
+                var totalOrchardOutputCount: UInt = 0u
+                forEach {
+                    totalSaplingOutputCount += it.saplingOutputsCount
+                    totalOrchardOutputCount += it.orchardOutputsCount
+                }
+
                 @Suppress("MaxLineLength", "MagicNumber")
                 """
                 <b>total blocks:</b> ${count.withCommas()}
                 <br/><b>fetch time:</b> ${if (fetchDelta > 1000) "%.2f sec".format(fetchDelta / 1000.0) else "%d ms".format(fetchDelta)}
                 <br/><b>process time:</b> ${if (processTime > 1000) "%.2f sec".format(processTime / 1000.0) else "%d ms".format(processTime)}
                 <br/><b>block time range:</b> ${first().time.toRelativeTime(requireApplicationContext())}<br/>&nbsp;&nbsp to ${last().time.toRelativeTime(requireApplicationContext())}
-                <br/><b>total empty blocks:</b> ${emptyCount.withCommas()}
-                <br/><b>total TXs:</b> ${txCount.withCommas()}
-                <br/><b>total outputs:</b> ${outCount.withCommas()}
-                <br/><b>total inputs:</b> ${inCount.withCommas()}
-                <br/><b>avg TXs/block:</b> ${"%.1f".format(txCount / count.toDouble())}
-                <br/><b>avg TXs (excluding empty blocks):</b> ${"%.1f".format(txCount.toDouble() / (count - emptyCount))}
-                <br/><b>avg OUTs [per block / per TX]:</b> ${"%.1f / %.1f".format(outCount.toDouble() / (count - emptyCount), outCount.toDouble() / txCount)}
-                <br/><b>avg INs [per block / per TX]:</b> ${"%.1f / %.1f".format(inCount.toDouble() / (count - emptyCount), inCount.toDouble() / txCount)}
-                <br/><b>most shielded TXs:</b> ${if (maxTxs == null) "none" else "${maxTxs.vtx.size} in block ${maxTxs.height.withCommas()}"}
-                <br/><b>most shielded INs:</b> ${if (maxInTx == null) "none" else "${maxInTx.spends.size} in block ${maxIns.height.withCommas()} at tx index ${maxInTx.index}"}
-                <br/><b>most shielded OUTs:</b> ${if (maxOutTx == null) "none" else "${maxOutTx.outputs.size} in block ${maxOuts.height.withCommas()} at tx index ${maxOutTx.index}"}
+                <br/><b>total sapling outputs:</b> $totalSaplingOutputCount
+                <br/><b>total orchard outputs:</b> $totalOrchardOutputCount
                 """.trimIndent()
             } ?: "No blocks found in that range.",
             HtmlCompat.FROM_HTML_MODE_LEGACY

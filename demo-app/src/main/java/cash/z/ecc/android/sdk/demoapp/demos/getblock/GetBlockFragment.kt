@@ -9,7 +9,6 @@ import cash.z.ecc.android.sdk.demoapp.databinding.FragmentGetBlockBinding
 import cash.z.ecc.android.sdk.demoapp.ext.requireApplicationContext
 import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.demoapp.util.mainActivity
-import cash.z.ecc.android.sdk.demoapp.util.toHtml
 import cash.z.ecc.android.sdk.demoapp.util.toRelativeTime
 import cash.z.ecc.android.sdk.demoapp.util.withCommas
 import cash.z.ecc.android.sdk.ext.toHex
@@ -49,10 +48,9 @@ class GetBlockFragment : BaseDemoFragment<FragmentGetBlockBinding>() {
             """
                 <b>block height:</b> ${block?.height.withCommas()}
                 <br/><b>block time:</b> ${block?.time.toRelativeTime(requireApplicationContext())}
-                <br/><b>number of shielded TXs:</b> ${block?.vtx?.size}
+                <br/><b>number of sapling outputs:</b> ${block?.saplingOutputsCount}
+                <br/><b>number of orchard outputs:</b> ${block?.orchardOutputsCount}
                 <br/><b>hash:</b> ${block?.hash?.toHex()}
-                <br/><b>prevHash:</b> ${block?.prevHash?.toHex()}
-                ${block?.vtx.toHtml()}
             """.trimIndent(),
             HtmlCompat.FROM_HTML_MODE_LEGACY
         )

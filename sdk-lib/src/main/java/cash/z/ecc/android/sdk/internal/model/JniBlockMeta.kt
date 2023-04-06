@@ -1,7 +1,6 @@
 package cash.z.ecc.android.sdk.internal.model
 
 import androidx.annotation.Keep
-import cash.z.ecc.android.sdk.internal.storage.block.CompactBlockOutputsCounts
 import co.electriccoin.lightwallet.client.model.CompactBlockUnsafe
 
 /**
@@ -38,13 +37,13 @@ class JniBlockMeta(
     companion object {
         private val UINT_RANGE = 0.toLong()..UInt.MAX_VALUE.toLong()
 
-        internal fun new(block: CompactBlockUnsafe, outputs: CompactBlockOutputsCounts): JniBlockMeta {
+        internal fun new(block: CompactBlockUnsafe): JniBlockMeta {
             return JniBlockMeta(
                 height = block.height,
                 hash = block.hash,
                 time = block.time.toLong(),
-                saplingOutputsCount = outputs.saplingOutputsCount.toLong(),
-                orchardOutputsCount = outputs.orchardActionsCount.toLong()
+                saplingOutputsCount = block.saplingOutputsCount.toLong(),
+                orchardOutputsCount = block.orchardOutputsCount.toLong()
             )
         }
     }
