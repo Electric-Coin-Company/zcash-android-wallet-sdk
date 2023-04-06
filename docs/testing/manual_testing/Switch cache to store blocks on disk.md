@@ -48,6 +48,5 @@ Observed result of this manual test should be:
 1. Inspect older legacy database folder `/data/data/cash.z.ecc.android.sdk.demoapp.mainnet/databases/`, which 
    also should not contain `cache.sqlite3` or rollback files.
 1. Once the whole sync process is done, verify that the temporary `blocks` directory is removed from the device
-   storage with all its blocks metadata files, or is empty, as it's automatically created by the new blocks polling
-   mechanism.
+   storage with all its block files, or is empty, as it's automatically created by the new blocks polling mechanism.
 1. Verify also that the `blockmeta.sqlite` still preserves

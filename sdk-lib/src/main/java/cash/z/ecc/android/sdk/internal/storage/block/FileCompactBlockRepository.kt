@@ -64,8 +64,8 @@ internal class FileCompactBlockRepository(
 
     override suspend fun rewindTo(height: BlockHeight) = rustBackend.rewindBlockMetadataToHeight(height)
 
-    override suspend fun deleteCompactBlocksMetadataFiles(): Boolean {
-        Twig.debug { "Removing blocks metadata directory ${blocksDirectory.path} with all its children." }
+    override suspend fun deleteCompactBlockFiles(): Boolean {
+        Twig.debug { "Removing blocks directory ${blocksDirectory.path} with all its children." }
 
         if (blocksDirectory.existsSuspend()) {
             return blocksDirectory.deleteRecursivelySuspend()

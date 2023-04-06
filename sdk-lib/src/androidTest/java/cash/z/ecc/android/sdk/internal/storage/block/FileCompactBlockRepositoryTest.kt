@@ -150,7 +150,7 @@ class FileCompactBlockRepositoryTest {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
-    fun deleteCompactBlocksMetadataFilesTest() = runTest {
+    fun deleteCompactBlockFilesTest() = runTest {
         val rustBackend = FakeRustBackendFixture().new()
         val blocksDirectory = FilePathFixture.newBlocksDir()
         val parentDirectory = blocksDirectory.parentFile!!
@@ -171,7 +171,7 @@ class FileCompactBlockRepositoryTest {
             assertEquals(blocks.count(), persistedBlocksCount)
         }
 
-        blockRepository.deleteCompactBlocksMetadataFiles()
+        blockRepository.deleteCompactBlockFiles()
 
         parentDirectory.also {
             assertTrue(it.existsSuspend())

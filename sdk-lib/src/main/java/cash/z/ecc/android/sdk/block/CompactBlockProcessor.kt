@@ -237,10 +237,10 @@ class CompactBlockProcessor internal constructor(
                         }
                         delay(napTime)
                     }
-                    is BlockProcessingResult.FailedDeleteBlockMetadata -> {
+                    is BlockProcessingResult.FailedDeleteBlocks -> {
                         Twig.debug {
-                            "Failed to delete temporary blocks metadata files from the device disk. It will" +
-                                " be retried on the next time, while downloading new blocks."
+                            "Failed to delete temporary blocks files from the device disk. It will be retried on the" +
+                                " next time, while downloading new blocks."
                         }
                         // Do nothing. The other phases went correctly.
                     }
@@ -317,11 +317,11 @@ class CompactBlockProcessor internal constructor(
 
             val validationResult = validateAndScanNewBlocks(processRanges.scanRange)
             if (validationResult != BlockProcessingResult.Success) {
-                deleteAllBlocksMetadataFiles()
+                deleteAllBlockFiles()
                 return@withContext validationResult
             }
 
-            val deleteMetadataResult = deleteAllBlocksMetadataFiles()
+            val deleteBlocksResult = deleteAllBlockFiles()
 
             val enhanceResult = enhanceTransactionDetails(processRanges.scanRange)
 
@@ -330,22 +330,22 @@ class CompactBlockProcessor internal constructor(
                 enhanceResult != BlockProcessingResult.NoBlocksToProcess
             ) {
                 return@withContext enhanceResult
-            } else if (deleteMetadataResult != BlockProcessingResult.Success) {
-                return@withContext BlockProcessingResult.FailedDeleteBlockMetadata
+            } else if (deleteBlocksResult != BlockProcessingResult.Success) {
+                return@withContext BlockProcessingResult.FailedDeleteBlocks
             }
 
             return@withContext BlockProcessingResult.Success
         }
     }
 
-    private suspend fun deleteAllBlocksMetadataFiles(): BlockProcessingResult {
-        Twig.debug { "Deleting all temporary blocks metadata files now." }
-        // Now we approach to delete all the temporary blocks metadata files from the device disk. Note that we'd
+    private suspend fun deleteAllBlockFiles(): BlockProcessingResult {
+        Twig.debug { "Deleting all temporary blocks files now." }
+        // Now we approach to delete all the temporary blocks files from the device disk. Note that we'd
         // like to ideally do this continuously while syncing a next group of blocks in the future.
-        return if (downloader.compactBlockRepository.deleteCompactBlocksMetadataFiles()) {
+        return if (downloader.compactBlockRepository.deleteCompactBlockFiles()) {
             BlockProcessingResult.Success
         } else {
-            BlockProcessingResult.FailedDeleteBlockMetadata
+            BlockProcessingResult.FailedDeleteBlocks
         }
     }
 
@@ -362,7 +362,7 @@ class CompactBlockProcessor internal constructor(
         object Success : BlockProcessingResult()
         object Reconnecting : BlockProcessingResult()
         object FailedEnhance : BlockProcessingResult()
-        object FailedDeleteBlockMetadata : BlockProcessingResult()
+        object FailedDeleteBlocks : BlockProcessingResult()
         data class Error(val failedAtHeight: BlockHeight) : BlockProcessingResult()
     }
 
