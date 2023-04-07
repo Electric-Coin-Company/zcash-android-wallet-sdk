@@ -12,10 +12,12 @@ import cash.z.ecc.android.sdk.demoapp.databinding.FragmentGetLatestHeightBinding
  */
 class GetLatestHeightFragment : BaseDemoFragment<FragmentGetLatestHeightBinding>() {
 
+    // TODO [#973]: Eliminate old UI demo-app
+    // TODO [#973]: https://github.com/zcash/zcash-android-wallet-sdk/issues/973
     private fun displayLatestHeight() {
         // note: this is a blocking call, a real app wouldn't do this on the main thread
         //       instead, a production app would leverage the synchronizer like in the other demos
-        binding.textInfo.text = lightWalletClient?.getLatestBlockHeight().toString()
+        // binding.textInfo.text = lightWalletClient?.getLatestBlockHeight().toString()
     }
 
     //

@@ -3,21 +3,11 @@ package cash.z.ecc.android.sdk.demoapp.demos.getblock
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
-import androidx.core.text.HtmlCompat
 import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
 import cash.z.ecc.android.sdk.demoapp.databinding.FragmentGetBlockBinding
-import cash.z.ecc.android.sdk.demoapp.ext.requireApplicationContext
-import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.demoapp.util.mainActivity
-import cash.z.ecc.android.sdk.demoapp.util.toRelativeTime
-import cash.z.ecc.android.sdk.demoapp.util.withCommas
-import cash.z.ecc.android.sdk.ext.toHex
-import cash.z.ecc.android.sdk.internal.Twig
-import cash.z.ecc.android.sdk.model.BlockHeight
-import cash.z.ecc.android.sdk.model.ZcashNetwork
-import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
-import co.electriccoin.lightwallet.client.model.Response
-import kotlin.math.min
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 
 /**
  * Retrieves a compact block from the lightwalletd server and displays basic information about it.
@@ -26,51 +16,57 @@ import kotlin.math.min
  */
 class GetBlockFragment : BaseDemoFragment<FragmentGetBlockBinding>() {
 
-    private fun setBlockHeight(blockHeight: BlockHeight) {
-        val response = lightWalletClient?.getBlockRange(
-            BlockHeightUnsafe(blockHeight.value)..BlockHeightUnsafe(blockHeight.value)
-        )
+    // TODO [#973]: Eliminate old UI demo-app
+    // TODO [#973]: https://github.com/zcash/zcash-android-wallet-sdk/issues/973
+    /*
+    var coroutineScope: CoroutineScope = CoroutineScope(Dispatchers.Main)
 
-        val blocks = when (response) {
-            is Response.Success -> {
-                Twig.debug { "Get block: ${response.result} for height: $blockHeight succeeded." }
-                response.result
-            }
-            else -> {
-                Twig.debug { "Get block for height: $blockHeight failed with: $response." }
-                null
+    private fun setBlockHeight(blockHeight: BlockHeight) {
+        lightWalletClient?.getBlockRange(
+            BlockHeightUnsafe(blockHeight.value)..BlockHeightUnsafe(blockHeight.value)
+        )?.onFirstWith(coroutineScope) { response ->
+            when (response) {
+                is Response.Success<CompactBlockUnsafe> -> {
+                    Twig.debug { "Get block: ${response.result} for height: $blockHeight succeeded." }
+
+                    binding.textInfo.visibility = View.VISIBLE
+                    binding.textInfo.text = HtmlCompat.fromHtml(
+                        """
+                            <b>block height:</b> ${response.result.height.withCommas()}
+                            <br/><b>block time:</b> ${response.result.time.toRelativeTime(requireApplicationContext())}
+                            <br/><b>number of sapling outputs:</b> ${response.result.saplingOutputsCount}
+                            <br/><b>number of orchard outputs:</b> ${response.result.orchardOutputsCount}
+                            <br/><b>hash:</b> ${response.result.hash.toHex()}
+                        """.trimIndent(),
+                        HtmlCompat.FROM_HTML_MODE_LEGACY
+                    )
+                }
+                else -> {
+                    Twig.debug { "Get block for height: $blockHeight failed with: $response." }
+                    null
+                }
             }
         }
-
-        val block = blocks?.firstOrNull()
-        binding.textInfo.visibility = View.VISIBLE
-        binding.textInfo.text = HtmlCompat.fromHtml(
-            """
-                <b>block height:</b> ${block?.height.withCommas()}
-                <br/><b>block time:</b> ${block?.time.toRelativeTime(requireApplicationContext())}
-                <br/><b>number of sapling outputs:</b> ${block?.saplingOutputsCount}
-                <br/><b>number of orchard outputs:</b> ${block?.orchardOutputsCount}
-                <br/><b>hash:</b> ${block?.hash?.toHex()}
-            """.trimIndent(),
-            HtmlCompat.FROM_HTML_MODE_LEGACY
-        )
     }
+     */
 
     @Suppress("UNUSED_PARAMETER")
     private fun onApply(unused: View? = null) {
-        val network = ZcashNetwork.fromResources(requireApplicationContext())
-        val newHeight = min(
-            binding.textBlockHeight.text.toString().toLongOrNull()
-                ?: network.saplingActivationHeight.value,
-            network.saplingActivationHeight.value
-        )
+        // TODO [#973]: Eliminate old UI demo-app
+        // TODO [#973]: https://github.com/zcash/zcash-android-wallet-sdk/issues/973
+        // val network = ZcashNetwork.fromResources(requireApplicationContext())
+        // val newHeight = min(
+        //     binding.textBlockHeight.text.toString().toLongOrNull()
+        //         ?: network.saplingActivationHeight.value,
+        //     network.saplingActivationHeight.value
+        // )
 
         @Suppress("TooGenericExceptionCaught")
-        try {
-            setBlockHeight(BlockHeight.new(network, newHeight))
-        } catch (t: Throwable) {
-            toast("Error: $t")
-        }
+        // try {
+        //     setBlockHeight(BlockHeight.new(network, newHeight))
+        // } catch (t: Throwable) {
+        //     toast("Error: $t")
+        // }
         mainActivity()?.hideKeyboard()
     }
 

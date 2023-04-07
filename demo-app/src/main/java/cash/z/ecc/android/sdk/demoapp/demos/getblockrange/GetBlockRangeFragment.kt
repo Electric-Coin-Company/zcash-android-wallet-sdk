@@ -3,20 +3,13 @@ package cash.z.ecc.android.sdk.demoapp.demos.getblockrange
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
-import androidx.core.text.HtmlCompat
 import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
 import cash.z.ecc.android.sdk.demoapp.R
 import cash.z.ecc.android.sdk.demoapp.databinding.FragmentGetBlockRangeBinding
 import cash.z.ecc.android.sdk.demoapp.ext.requireApplicationContext
 import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.demoapp.util.mainActivity
-import cash.z.ecc.android.sdk.demoapp.util.toRelativeTime
-import cash.z.ecc.android.sdk.demoapp.util.withCommas
-import cash.z.ecc.android.sdk.internal.Twig
-import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.ZcashNetwork
-import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
-import co.electriccoin.lightwallet.client.model.Response
 import kotlin.math.max
 
 /**
@@ -27,6 +20,10 @@ import kotlin.math.max
  */
 class GetBlockRangeFragment : BaseDemoFragment<FragmentGetBlockRangeBinding>() {
 
+    // TODO [#973]: Eliminate old UI demo-app
+    // TODO [#973]: https://github.com/zcash/zcash-android-wallet-sdk/issues/973
+    @Suppress("MaxLineLength", "MagicNumber", "UNUSED_PARAMETER")
+    /*
     private fun setBlockRange(blockRange: ClosedRange<BlockHeight>) {
         val start = System.currentTimeMillis()
 
@@ -74,8 +71,8 @@ class GetBlockRangeFragment : BaseDemoFragment<FragmentGetBlockRangeBinding>() {
             HtmlCompat.FROM_HTML_MODE_LEGACY
         )
     }
+     */
 
-    @Suppress("UNUSED_PARAMETER")
     private fun onApply(unused: View) {
         val network = ZcashNetwork.fromResources(requireApplicationContext())
         val start = max(
@@ -96,12 +93,14 @@ class GetBlockRangeFragment : BaseDemoFragment<FragmentGetBlockRangeBinding>() {
                     setText(R.string.loading)
                     binding.textInfo.setText(R.string.loading)
                     post {
-                        setBlockRange(
-                            BlockHeight.new(network, start)..BlockHeight.new(
-                                network,
-                                end
-                            )
-                        )
+                        // TODO [#973]: Eliminate old UI demo-app
+                        // TODO [#973]: https://github.com/zcash/zcash-android-wallet-sdk/issues/973
+                        // setBlockRange(
+                        //     BlockHeight.new(network, start)..BlockHeight.new(
+                        //         network,
+                        //         end
+                        //     )
+                        // )
                         isEnabled = true
                         setText(R.string.apply)
                     }
