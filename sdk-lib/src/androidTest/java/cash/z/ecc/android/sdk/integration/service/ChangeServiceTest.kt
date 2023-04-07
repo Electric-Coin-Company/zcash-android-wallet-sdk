@@ -10,7 +10,6 @@ import cash.z.ecc.android.sdk.internal.repository.CompactBlockRepository
 import cash.z.ecc.android.sdk.model.Mainnet
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.test.ScopedTest
-import co.electriccoin.lightwallet.client.BlockingLightWalletClient
 import co.electriccoin.lightwallet.client.CoroutineLightWalletClient
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
@@ -42,13 +41,13 @@ class ChangeServiceTest : ScopedTest() {
     val service = CoroutineLightWalletClient.new(context, lightWalletEndpoint)
 
     lateinit var downloader: CompactBlockDownloader
-    lateinit var otherService: BlockingLightWalletClient
+    lateinit var otherService: CoroutineLightWalletClient
 
     @Before
     fun setup() {
         initMocks()
         downloader = CompactBlockDownloader(service, mockBlockStore)
-        otherService = BlockingLightWalletClient.new(context, eccEndpoint)
+        otherService = CoroutineLightWalletClient.new(context, eccEndpoint)
     }
 
     @After
@@ -67,7 +66,7 @@ class ChangeServiceTest : ScopedTest() {
         runCatching {
             service.getLatestBlockHeight()
         }.onFailure {
-            Twig.debug(it) { "" }
+            Twig.debug(it) { "Failed to retrieve data" }
         }.onSuccess {
             assertTrue(it is Response.Success<BlockHeightUnsafe>)
 

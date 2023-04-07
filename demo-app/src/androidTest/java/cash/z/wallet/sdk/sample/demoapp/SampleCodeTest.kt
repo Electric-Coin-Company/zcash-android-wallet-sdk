@@ -13,12 +13,19 @@ import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.model.defaultForNetwork
 import cash.z.ecc.android.sdk.model.isFailure
 import cash.z.ecc.android.sdk.tool.DerivationTool
-import co.electriccoin.lightwallet.client.BlockingLightWalletClient
+import co.electriccoin.lightwallet.client.CoroutineLightWalletClient
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
+import co.electriccoin.lightwallet.client.model.CompactBlockUnsafe
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
 import co.electriccoin.lightwallet.client.model.Response
 import co.electriccoin.lightwallet.client.new
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.filterIsInstance
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -79,15 +86,24 @@ class SampleCodeTest {
     // ///////////////////////////////////////////////////
     // Query latest block height
     @Test
-    fun getLatestBlockHeightTest() {
-        val lightwalletClient = BlockingLightWalletClient.new(context, lightwalletdHost)
-        log("Latest Block: ${lightwalletClient.getLatestBlockHeight()}")
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun getLatestBlockHeightTest() = runTest {
+        // Test the result, only if there is no server communication problem.
+        runCatching {
+            CoroutineLightWalletClient.new(context, lightwalletdHost).getLatestBlockHeight()
+        }.onFailure {
+            Twig.debug(it) { "Failed to retrieve data" }
+        }.onSuccess {
+            assertTrue(it is Response.Success<BlockHeightUnsafe>)
+            Twig.debug { "Latest Block: ${(it as Response.Success<BlockHeightUnsafe>).result}" }
+        }
     }
 
     // ///////////////////////////////////////////////////
     // Download compact block range
     @Test
-    fun getBlockRange() {
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun getBlockRange() = runTest {
         val blockRange = BlockHeightUnsafe(
             BlockHeight.new(
                 ZcashNetwork.Mainnet,
@@ -102,18 +118,28 @@ class SampleCodeTest {
                 )
         )
 
-        val lightwalletClient = BlockingLightWalletClient.new(context, lightwalletdHost)
+        val lightWalletClient = CoroutineLightWalletClient.new(context, lightwalletdHost)
 
-        val response = lightwalletClient.getBlockRange(blockRange)
+        // Test the result, only if there is no server communication problem.
+        runCatching {
+            lightWalletClient.getBlockRange(blockRange)
+        }.onFailure {
+            Twig.debug(it) { "Failed to retrieve data" }
+        }.onSuccess {
+            it.onEach { response ->
+                assert(response is Response.Success) { "Server communication failed." }
+            }
+                .filterIsInstance<Response.Success<CompactBlockUnsafe>>()
+                .map { response ->
+                    response.result
+                }.toList()
+                .also { blocks ->
+                    assertEquals(blockRange.endInclusive.value - blockRange.start.value, blocks.count())
 
-        assert(response is Response.Success) { "Server communication failed." }
-
-        val blocks = (response as Response.Success).result
-
-        assertEquals(blockRange.endInclusive.value - blockRange.start.value, blocks.count())
-
-        blocks.forEachIndexed { i, block ->
-            log("Block #$i:    height:${block.height}   hash:${block.hash.toHex()}")
+                    blocks.forEachIndexed { i, block ->
+                        log("Block #$i:    height:${block.height}   hash:${block.hash.toHex()}")
+                    }
+                }
         }
     }
 
