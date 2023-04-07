@@ -23,6 +23,8 @@ suspend fun File.deleteRecursivelySuspend() = withContext(Dispatchers.IO) { dele
 
 suspend fun File.listFilesSuspend(): Array<File>? = withContext(Dispatchers.IO) { listFiles() }
 
+suspend fun File.listSuspend(): Array<String>? = withContext(Dispatchers.IO) { list() }
+
 suspend fun File.inputStreamSuspend(): FileInputStream = withContext(Dispatchers.IO) { inputStream() }
 
 suspend fun File.createNewFileSuspend() = withContext(Dispatchers.IO) { createNewFile() }

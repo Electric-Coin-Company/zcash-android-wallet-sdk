@@ -46,7 +46,6 @@ import co.electriccoin.lightwallet.client.fixture.BenchmarkingBlockRangeFixture
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.LightWalletEndpointInfoUnsafe
 import co.electriccoin.lightwallet.client.model.Response
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -238,6 +237,13 @@ class CompactBlockProcessor internal constructor(
                         }
                         delay(napTime)
                     }
+                    is BlockProcessingResult.FailedDeleteBlocks -> {
+                        Twig.debug {
+                            "Failed to delete temporary blocks files from the device disk. It will be retried on the" +
+                                " next time, while downloading new blocks."
+                        }
+                        // Do nothing. The other phases went correctly.
+                    }
                     is BlockProcessingResult.Error -> {
                         if (consecutiveChainErrors.get() >= RETRIES) {
                             val errorMessage = "ERROR: unable to resolve reorg at height $result after " +
@@ -289,40 +295,74 @@ class CompactBlockProcessor internal constructor(
             setState(State.Scanned(currentInfo.lastScanRange))
             BlockProcessingResult.NoBlocksToProcess
         } else {
-            if (BenchmarkingExt.isBenchmarking()) {
-                // We inject a benchmark test blocks range at this point to process only a restricted range of blocks
-                // for a more reliable benchmark results.
-                val benchmarkBlockRange = BenchmarkingBlockRangeFixture.new().let {
-                    // Convert range of Longs to range of BlockHeights
-                    BlockHeight.new(ZcashNetwork.Mainnet, it.start)..(
-                        BlockHeight.new(ZcashNetwork.Mainnet, it.endInclusive)
-                        )
-                }
-                downloadNewBlocks(benchmarkBlockRange)
-                val error = validateAndScanNewBlocks(benchmarkBlockRange)
-                if (error != BlockProcessingResult.Success) {
-                    error
+            val processRanges = ProcessBlocksRanges().apply {
+                if (BenchmarkingExt.isBenchmarking()) {
+                    // We inject a benchmark test blocks range at this point to process only a restricted range of
+                    // blocks for a more reliable benchmark results.
+                    val benchmarkBlockRange = BenchmarkingBlockRangeFixture.new().let {
+                        // Convert range of Longs to range of BlockHeights
+                        BlockHeight.new(ZcashNetwork.Mainnet, it.start)..(
+                            BlockHeight.new(ZcashNetwork.Mainnet, it.endInclusive)
+                            )
+                    }
+                    downloadRange = benchmarkBlockRange
+                    scanRange = benchmarkBlockRange
                 } else {
-                    enhanceTransactionDetails(benchmarkBlockRange)
-                }
-            } else {
-                downloadNewBlocks(currentInfo.lastDownloadRange)
-                val error = validateAndScanNewBlocks(currentInfo.lastScanRange)
-                if (error != BlockProcessingResult.Success) {
-                    error
-                } else {
-                    currentInfo.lastScanRange?.let { enhanceTransactionDetails(it) }
-                        ?: BlockProcessingResult.NoBlocksToProcess
+                    downloadRange = currentInfo.lastDownloadRange
+                    scanRange = currentInfo.lastScanRange
                 }
             }
+
+            downloadNewBlocks(processRanges.downloadRange)
+
+            val validationResult = validateAndScanNewBlocks(processRanges.scanRange)
+            if (validationResult != BlockProcessingResult.Success) {
+                deleteAllBlockFiles()
+                return@withContext validationResult
+            }
+
+            val deleteBlocksResult = deleteAllBlockFiles()
+
+            val enhanceResult = enhanceTransactionDetails(processRanges.scanRange)
+
+            // Return enhance or delete operations result in case of any failure happened
+            if (enhanceResult != BlockProcessingResult.Success ||
+                enhanceResult != BlockProcessingResult.NoBlocksToProcess
+            ) {
+                return@withContext enhanceResult
+            } else if (deleteBlocksResult != BlockProcessingResult.Success) {
+                return@withContext BlockProcessingResult.FailedDeleteBlocks
+            }
+
+            return@withContext BlockProcessingResult.Success
         }
     }
+
+    private suspend fun deleteAllBlockFiles(): BlockProcessingResult {
+        Twig.debug { "Deleting all temporary blocks files now." }
+        // Now we approach to delete all the temporary blocks files from the device disk. Note that we'd
+        // like to ideally do this continuously while syncing a next group of blocks in the future.
+        return if (downloader.compactBlockRepository.deleteCompactBlockFiles()) {
+            BlockProcessingResult.Success
+        } else {
+            BlockProcessingResult.FailedDeleteBlocks
+        }
+    }
+
+    /**
+     * Helper wrapping class to provide more clarity about ranges used in the processing new blocks mechanism.
+     */
+    private data class ProcessBlocksRanges(
+        var downloadRange: ClosedRange<BlockHeight>? = null,
+        var scanRange: ClosedRange<BlockHeight>? = null
+    )
 
     sealed class BlockProcessingResult {
         object NoBlocksToProcess : BlockProcessingResult()
         object Success : BlockProcessingResult()
         object Reconnecting : BlockProcessingResult()
         object FailedEnhance : BlockProcessingResult()
+        object FailedDeleteBlocks : BlockProcessingResult()
         data class Error(val failedAtHeight: BlockHeight) : BlockProcessingResult()
     }
 
@@ -421,7 +461,11 @@ class CompactBlockProcessor internal constructor(
             result
         }
 
-    private suspend fun enhanceTransactionDetails(lastScanRange: ClosedRange<BlockHeight>): BlockProcessingResult {
+    private suspend fun enhanceTransactionDetails(lastScanRange: ClosedRange<BlockHeight>?): BlockProcessingResult {
+        if (lastScanRange == null) {
+            return BlockProcessingResult.NoBlocksToProcess
+        }
+
         Twig.debug { "Enhancing transaction details for blocks $lastScanRange" }
         setState(Enhancing)
         @Suppress("TooGenericExceptionCaught")
@@ -448,10 +492,10 @@ class CompactBlockProcessor internal constructor(
             BlockProcessingResult.FailedEnhance
         }
     }
-// TODO [#683]: we still need a way to identify those transactions that failed to be enhanced
-// TODO [#683]: https://github.com/zcash/zcash-android-wallet-sdk/issues/683
+    // TODO [#683]: we still need a way to identify those transactions that failed to be enhanced
+    // TODO [#683]: https://github.com/zcash/zcash-android-wallet-sdk/issues/683
 
-    private suspend fun enhance(transaction: TransactionOverview) = withContext(Dispatchers.IO) {
+    private suspend fun enhance(transaction: TransactionOverview) = withContext(IO) {
         transaction.minedHeight?.let { minedHeight ->
             enhanceHelper(transaction.id, transaction.rawId.byteArray, minedHeight)
         }
@@ -480,7 +524,7 @@ class CompactBlockProcessor internal constructor(
     /**
      * Confirm that the wallet data is properly setup for use.
      */
-// Need to refactor this to be less ugly and more testable
+    // Need to refactor this to be less ugly and more testable
     @Suppress("NestedBlockDepth")
     private suspend fun verifySetup() {
         // verify that the data is initialized
@@ -642,7 +686,7 @@ class CompactBlockProcessor internal constructor(
      * @param range the range of blocks to download.
      */
     @VisibleForTesting
-// allow mocks to verify how this is called, rather than the downloader, which is more complex
+    // allow mocks to verify how this is called, rather than the downloader, which is more complex
     @Suppress("MagicNumber")
     internal suspend fun downloadNewBlocks(range: ClosedRange<BlockHeight>?) =
         withContext<Unit>(IO) {
@@ -1048,7 +1092,7 @@ class CompactBlockProcessor internal constructor(
         repository.lastScannedHeight()
 
     // CompactBlockProcessor is the wrong place for this, but it's where all the other APIs that need
-//  access to the RustBackend live. This should be refactored.
+    //  access to the RustBackend live. This should be refactored.
     internal suspend fun createAccount(seed: ByteArray): UnifiedSpendingKey =
         rustBackend.createAccount(seed)
 
@@ -1266,9 +1310,9 @@ class CompactBlockProcessor internal constructor(
         val hash: String?
     )
 
-//
-// Helper Extensions
-//
+    //
+    // Helper Extensions
+    //
 
     /**
      * Log the mutex in great detail just in case we need it for troubleshooting deadlock.

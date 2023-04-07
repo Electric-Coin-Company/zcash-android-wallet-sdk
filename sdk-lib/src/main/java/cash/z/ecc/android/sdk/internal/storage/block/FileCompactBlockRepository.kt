@@ -3,6 +3,7 @@ package cash.z.ecc.android.sdk.internal.storage.block
 import androidx.annotation.VisibleForTesting
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.ext.createNewFileSuspend
+import cash.z.ecc.android.sdk.internal.ext.deleteRecursivelySuspend
 import cash.z.ecc.android.sdk.internal.ext.deleteSuspend
 import cash.z.ecc.android.sdk.internal.ext.existsSuspend
 import cash.z.ecc.android.sdk.internal.ext.mkdirsSuspend
@@ -62,6 +63,16 @@ internal class FileCompactBlockRepository(
     }
 
     override suspend fun rewindTo(height: BlockHeight) = rustBackend.rewindBlockMetadataToHeight(height)
+
+    override suspend fun deleteCompactBlockFiles(): Boolean {
+        Twig.debug { "Removing blocks directory ${blocksDirectory.path} with all its children." }
+
+        if (blocksDirectory.existsSuspend()) {
+            return blocksDirectory.deleteRecursivelySuspend()
+        }
+
+        return true
+    }
 
     companion object {
         /**

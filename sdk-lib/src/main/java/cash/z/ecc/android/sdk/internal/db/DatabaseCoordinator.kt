@@ -104,7 +104,7 @@ internal class DatabaseCoordinator private constructor(context: Context) {
      * Returns the file of the Data database that would correspond to the given alias
      * and network attributes.
      *
-     * @param network the network associated with the data in the database.
+     * @param network the network associated with the data in the database
      * @param alias the alias to convert into a database path
      *
      * @return the Data database file
@@ -135,7 +135,7 @@ internal class DatabaseCoordinator private constructor(context: Context) {
      * PendingTransactions.db, we choose slightly different approach, but it also leads to
      * original database files migration with additional renaming too.
      *
-     * @param network the network associated with the data in the database.
+     * @param network the network associated with the data in the database
      * @param alias the alias to convert into a database path
      *
      * @return the PendingTransaction database file
@@ -169,7 +169,7 @@ internal class DatabaseCoordinator private constructor(context: Context) {
      * Function for common deletion of Data and Cache database files. It also checks and deletes
      * additional journal and wal files, if they exist.
      *
-     * @param network the network associated with the data in the database.
+     * @param network the network associated with the data in the database
      * @param alias the alias to convert into a database path
      *
      * @return true only if any database deleted, false otherwise
@@ -229,7 +229,7 @@ internal class DatabaseCoordinator private constructor(context: Context) {
      * as the preferred (i.e. newly created) file for subsequent use (and eventually move).
      *
      * @param appContext the application context
-     * @param network the network associated with the data in the database.
+     * @param network the network associated with the data in the database
      * @param alias the alias to convert into a database path
      * @param databaseName the name of the new database file
      */
@@ -425,8 +425,8 @@ internal class DatabaseCoordinator private constructor(context: Context) {
  * instantiation.
  *
  * @param context
- * @param klass The database class.
- * @param databaseFile  The database file.
+ * @param klass the database class
+ * @param databaseFile the database file
  * @return A {@code RoomDatabaseBuilder<T>} which you can use to create the database.
  */
 internal fun <T : RoomDatabase> commonDatabaseBuilder(
