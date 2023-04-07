@@ -6,24 +6,23 @@ import cash.z.ecc.android.sdk.internal.model.ext.from
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.Mainnet
 import cash.z.ecc.android.sdk.model.ZcashNetwork
-import co.electriccoin.lightwallet.client.BlockingLightWalletClient
+import co.electriccoin.lightwallet.client.CoroutineLightWalletClient
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
-import co.electriccoin.lightwallet.client.model.Response
 import co.electriccoin.lightwallet.client.new
 import org.junit.Ignore
 import org.junit.Test
 
 class TransactionCounterUtil {
     private val context = InstrumentationRegistry.getInstrumentation().context
-    private val lightWalletClient = BlockingLightWalletClient.new(context, LightWalletEndpoint.Mainnet)
+    private val lightWalletClient = CoroutineLightWalletClient.new(context, LightWalletEndpoint.Mainnet)
 
     @Test
     @Ignore("This test is broken")
     fun testBlockSize() {
         val sizes = mutableMapOf<Int, Int>()
 
-        val response = lightWalletClient.getBlockRange(
+        lightWalletClient.getBlockRange(
             BlockHeightUnsafe.from(
                 BlockHeight.new(
                     ZcashNetwork.Mainnet,
@@ -36,10 +35,11 @@ class TransactionCounterUtil {
                 )
             )
         )
-
+        /*
+        Fixme: work with flow instead of sequence
         assert(response is Response.Success)
 
-        /* Fixme: serializedSize is not available anymore
+        Fixme: serializedSize is not available anymore
         (response as Response.Success).result.forEach { compactBlock ->
             twig("h: ${compactBlock.header.size}")
             val s = compactBlock.serializedSize
@@ -58,7 +58,7 @@ class TransactionCounterUtil {
         var totalOutputs = 0
         var totalTxs = 0
 
-        val response = lightWalletClient.getBlockRange(
+        lightWalletClient.getBlockRange(
             BlockHeightUnsafe.from(
                 BlockHeight.new(
                     ZcashNetwork.Mainnet,
@@ -71,10 +71,11 @@ class TransactionCounterUtil {
                 )
             )
         )
-
+        /*
+        Fixme: work with flow instead of sequence
         assert(response is Response.Success) { "Server communication failed." }
 
-        /* Fixme: vtx is not available anymore. Once we'll decide to enable this test again, we could compare a known
+        Fixme: vtx is not available anymore. Once we'll decide to enable this test again, we could compare a known
              outputs count for the selected blocks range with the calculated outputs count from synced the blocks
         (response as Response.Success).result.forEach { compactBlock ->
             compactBlock.vtx.map { it.outputs.size }.forEach { oCount ->

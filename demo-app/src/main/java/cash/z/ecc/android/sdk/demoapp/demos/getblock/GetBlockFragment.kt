@@ -6,8 +6,6 @@ import android.view.View
 import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
 import cash.z.ecc.android.sdk.demoapp.databinding.FragmentGetBlockBinding
 import cash.z.ecc.android.sdk.demoapp.util.mainActivity
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 
 /**
  * Retrieves a compact block from the lightwalletd server and displays basic information about it.
