@@ -17,7 +17,7 @@ import io.grpc.CallOptions
 import io.grpc.Channel
 import io.grpc.ConnectivityState
 import io.grpc.ManagedChannel
-import io.grpc.StatusRuntimeException
+import io.grpc.StatusException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flowOf
@@ -60,7 +60,7 @@ internal class CoroutineLightWalletClientImpl private constructor(
                     val failure: Response.Failure<CompactBlockUnsafe> = GrpcStatusResolver.resolveFailureFromStatus(it)
                     emit(failure)
                 }
-        } catch (e: StatusRuntimeException) {
+        } catch (e: StatusException) {
             flowOf(GrpcStatusResolver.resolveFailureFromStatus(e))
         }
     }
@@ -79,7 +79,7 @@ internal class CoroutineLightWalletClientImpl private constructor(
 
                 Response.Success(blockHeight)
             }
-        } catch (e: StatusRuntimeException) {
+        } catch (e: StatusException) {
             GrpcStatusResolver.resolveFailureFromStatus(e)
         }
     }
@@ -93,7 +93,7 @@ internal class CoroutineLightWalletClientImpl private constructor(
             val lightwalletEndpointInfo = LightWalletEndpointInfoUnsafe.new(lightdInfo)
 
             Response.Success(lightwalletEndpointInfo)
-        } catch (e: StatusRuntimeException) {
+        } catch (e: StatusException) {
             GrpcStatusResolver.resolveFailureFromStatus(e)
         }
     }
@@ -112,7 +112,7 @@ internal class CoroutineLightWalletClientImpl private constructor(
             val sendResponse = SendResponseUnsafe.new(response)
 
             Response.Success(sendResponse)
-        } catch (e: StatusRuntimeException) {
+        } catch (e: StatusException) {
             GrpcStatusResolver.resolveFailureFromStatus(e)
         }
     }
@@ -130,7 +130,7 @@ internal class CoroutineLightWalletClientImpl private constructor(
             val transactionResponse = RawTransactionUnsafe.new(response)
 
             Response.Success(transactionResponse)
-        } catch (e: StatusRuntimeException) {
+        } catch (e: StatusException) {
             GrpcStatusResolver.resolveFailureFromStatus(e)
         }
     }

@@ -16,7 +16,7 @@ import com.google.protobuf.ByteString
 import io.grpc.Channel
 import io.grpc.ConnectivityState
 import io.grpc.ManagedChannel
-import io.grpc.StatusRuntimeException
+import io.grpc.StatusException
 import java.util.concurrent.TimeUnit
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
@@ -53,7 +53,7 @@ internal class BlockingLightWalletClientImpl private constructor(
                 }
 
             Response.Success(response)
-        } catch (e: StatusRuntimeException) {
+        } catch (e: StatusException) {
             GrpcStatusResolver.resolveFailureFromStatus(e)
         }
     }
@@ -72,7 +72,7 @@ internal class BlockingLightWalletClientImpl private constructor(
 
                 Response.Success(blockHeight)
             }
-        } catch (e: StatusRuntimeException) {
+        } catch (e: StatusException) {
             GrpcStatusResolver.resolveFailureFromStatus(e)
         }
     }
@@ -86,7 +86,7 @@ internal class BlockingLightWalletClientImpl private constructor(
             val lightwalletEndpointInfo = LightWalletEndpointInfoUnsafe.new(lightdInfo)
 
             Response.Success(lightwalletEndpointInfo)
-        } catch (e: StatusRuntimeException) {
+        } catch (e: StatusException) {
             GrpcStatusResolver.resolveFailureFromStatus(e)
         }
     }
@@ -105,7 +105,7 @@ internal class BlockingLightWalletClientImpl private constructor(
             val sendResponse = SendResponseUnsafe.new(response)
 
             Response.Success(sendResponse)
-        } catch (e: StatusRuntimeException) {
+        } catch (e: StatusException) {
             GrpcStatusResolver.resolveFailureFromStatus(e)
         }
     }
@@ -123,7 +123,7 @@ internal class BlockingLightWalletClientImpl private constructor(
             val transactionResponse = RawTransactionUnsafe.new(response)
 
             Response.Success(transactionResponse)
-        } catch (e: StatusRuntimeException) {
+        } catch (e: StatusException) {
             GrpcStatusResolver.resolveFailureFromStatus(e)
         }
     }
