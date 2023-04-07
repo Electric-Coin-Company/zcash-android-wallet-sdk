@@ -60,6 +60,8 @@ import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -728,13 +730,15 @@ class CompactBlockProcessor internal constructor(
                             )
                         ) // subtract 1 on the first value because the range is inclusive
 
-                        downloader.downloadBlockRange(downloadedBlockHeight..end)
+                        Twig.debug { "Starting block batch $i download" }
 
-                        Twig.debug {
-                            "downloaded $downloadedBlockHeight..$end (batch $i of $batches) " +
-                                "[${downloadedBlockHeight..end}]"
-                        }
-                        Twig.debug { "Blocks downloaded" }
+                        downloader.downloadBlockRange(downloadedBlockHeight..end).onEach {
+                            Twig.debug {
+                                "Downloaded $it blocks [${downloadedBlockHeight..end}] in batch $i of $batches"
+                            }
+                        }.collect()
+
+                        Twig.debug { "Block batch $i downloaded" }
 
                         progress = (i / batches.toFloat() * 100).roundToInt()
                         _progress.value = progress

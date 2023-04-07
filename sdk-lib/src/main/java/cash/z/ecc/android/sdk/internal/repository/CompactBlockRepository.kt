@@ -43,8 +43,9 @@ interface CompactBlockRepository {
      * Write the given flow of blocks to this store, which may be anything from an in-memory cache to a DB.
      *
      * @param blocks Flow of compact blocks to persist.
+     * * @return Flow of number of blocks that were written.
      */
-    suspend fun write(blocks: Flow<CompactBlockUnsafe>)
+    suspend fun write(blocks: Flow<CompactBlockUnsafe>): Flow<Int>
 
     /**
      * Remove every block above the given height.

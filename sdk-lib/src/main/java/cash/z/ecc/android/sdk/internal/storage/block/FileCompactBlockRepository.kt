@@ -20,6 +20,10 @@ import cash.z.ecc.android.sdk.jni.rewindBlockMetadataToHeight
 import cash.z.ecc.android.sdk.model.BlockHeight
 import co.electriccoin.lightwallet.client.model.CompactBlockUnsafe
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.FlowCollector
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.onEach
 import java.io.File
 
 internal class FileCompactBlockRepository(
@@ -27,14 +31,15 @@ internal class FileCompactBlockRepository(
     private val rustBackend: Backend
 ) : CompactBlockRepository {
 
+    private var currentBufferSize = 0
+    private val metaDataBuffer: MutableList<JniBlockMeta> by lazy { mutableListOf() }
+
     override suspend fun getLatestHeight() = rustBackend.getLatestBlockHeight()
 
     override suspend fun findCompactBlock(height: BlockHeight) = rustBackend.findBlockMetadata(height)
 
     override suspend fun write(blocks: Sequence<CompactBlockUnsafe>): Int {
-        var count = 0
-
-        val metaDataBuffer = mutableListOf<JniBlockMeta>()
+        currentBufferSize = 0
 
         blocks.forEach { block ->
             val tmpFile = block.createTemporaryFile(blocksDirectory)
@@ -48,7 +53,7 @@ internal class FileCompactBlockRepository(
                 "Failed to finalize file: ${tmpFile.absolutePath}"
             }
 
-            count++
+            currentBufferSize++
 
             if (metaDataBuffer.isBufferFull()) {
                 // write blocks metadata to storage when the buffer is full
@@ -63,11 +68,44 @@ internal class FileCompactBlockRepository(
             metaDataBuffer.clear()
         }
 
-        return count
+        return currentBufferSize
     }
 
-    override suspend fun write(blocks: Flow<CompactBlockUnsafe>) {
-        error("Not yet implemented")
+    override suspend fun write(blocks: Flow<CompactBlockUnsafe>): Flow<Int> {
+        return flow {
+            blocks.onEach { block ->
+                val tmpFile = block.createTemporaryFile(blocksDirectory)
+                // write compact block bytes
+                tmpFile.writeBytesSuspend(block.compactBlockBytes)
+                // buffer metadata
+                metaDataBuffer.add(block.toJniMetaData())
+
+                val isFinalizeSuccessful = tmpFile.finalizeFile()
+                check(isFinalizeSuccessful) {
+                    "Failed to finalize file: ${tmpFile.absolutePath}"
+                }
+
+                currentBufferSize++
+
+                if (metaDataBuffer.isBufferFull()) {
+                    reportWriteResult(metaDataBuffer)
+                }
+            }.collect()
+
+            if (metaDataBuffer.isNotEmpty()) {
+                reportWriteResult(metaDataBuffer)
+            }
+        }
+    }
+
+    /*
+     * Write block metadata to storage when the buffer is full or when we reached the current range end.
+     */
+    private suspend fun FlowCollector<Int>.reportWriteResult(metaDataBuffer: MutableList<JniBlockMeta>) {
+        rustBackend.writeBlockMetadata(metaDataBuffer)
+        emit(metaDataBuffer.size)
+        metaDataBuffer.clear()
+        currentBufferSize = 0
     }
 
     override suspend fun rewindTo(height: BlockHeight) = rustBackend.rewindBlockMetadataToHeight(height)
