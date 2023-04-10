@@ -32,8 +32,18 @@ import cash.z.ecc.android.sdk.internal.isEmpty
 import cash.z.ecc.android.sdk.internal.model.from
 import cash.z.ecc.android.sdk.internal.model.toBlockHeight
 import cash.z.ecc.android.sdk.internal.repository.DerivedDataRepository
+import cash.z.ecc.android.sdk.jni.Backend
 import cash.z.ecc.android.sdk.jni.RustBackend
-import cash.z.ecc.android.sdk.jni.RustBackendWelding
+import cash.z.ecc.android.sdk.jni.createAccountAndGetSpendingKey
+import cash.z.ecc.android.sdk.jni.getBalance
+import cash.z.ecc.android.sdk.jni.getBranchIdForHeight
+import cash.z.ecc.android.sdk.jni.getCurrentAddress
+import cash.z.ecc.android.sdk.jni.getDownloadedUtxoBalance
+import cash.z.ecc.android.sdk.jni.getNearestRewindHeight
+import cash.z.ecc.android.sdk.jni.getVerifiedBalance
+import cash.z.ecc.android.sdk.jni.listTransparentReceivers
+import cash.z.ecc.android.sdk.jni.rewindToHeight
+import cash.z.ecc.android.sdk.jni.validateCombinedChainOrErrorBlockHeight
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.TransactionOverview
@@ -80,7 +90,7 @@ import kotlin.time.Duration.Companion.days
 class CompactBlockProcessor internal constructor(
     val downloader: CompactBlockDownloader,
     private val repository: DerivedDataRepository,
-    private val rustBackend: RustBackendWelding,
+    private val rustBackend: Backend,
     minimumHeight: BlockHeight = rustBackend.network.saplingActivationHeight
 ) {
     /**
@@ -750,7 +760,7 @@ class CompactBlockProcessor internal constructor(
         Twig.debug {
             "validating blocks in range $range in db: ${(rustBackend as RustBackend).fsBlockDbRoot.absolutePath}"
         }
-        val result = rustBackend.validateCombinedChain()
+        val result = rustBackend.validateCombinedChainOrErrorBlockHeight()
 
         return if (null == result) {
             BlockProcessingResult.Success
@@ -1094,7 +1104,7 @@ class CompactBlockProcessor internal constructor(
     // CompactBlockProcessor is the wrong place for this, but it's where all the other APIs that need
     //  access to the RustBackend live. This should be refactored.
     internal suspend fun createAccount(seed: ByteArray): UnifiedSpendingKey =
-        rustBackend.createAccount(seed)
+        rustBackend.createAccountAndGetSpendingKey(seed)
 
     /**
      * Get the current unified address for the given wallet account.

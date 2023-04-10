@@ -5,16 +5,9 @@ import cash.z.ecc.android.sdk.internal.SdkDispatchers
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.ext.deleteRecursivelySuspend
 import cash.z.ecc.android.sdk.internal.ext.deleteSuspend
-import cash.z.ecc.android.sdk.internal.model.Checkpoint
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
-import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
-import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
-import cash.z.ecc.android.sdk.model.WalletBalance
-import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
-import cash.z.ecc.android.sdk.tool.DerivationTool
-import cash.z.ecc.android.sdk.type.UnifiedFullViewingKey
 import kotlinx.coroutines.withContext
 import java.io.File
 
@@ -30,7 +23,7 @@ internal class RustBackend private constructor(
     val dataDbFile: File,
     val fsBlockDbRoot: File,
     override val saplingParamDir: File
-) : RustBackendWelding {
+) : Backend {
 
     /**
      * This function deletes the data database file and the cache directory (compact blocks files) if set by input
@@ -79,7 +72,7 @@ internal class RustBackend private constructor(
         )
     }
 
-    override suspend fun createAccount(seed: ByteArray): UnifiedSpendingKey {
+    override suspend fun createAccount(seed: ByteArray): UnifiedSpendingKeyJni {
         return withContext(SdkDispatchers.DATABASE_IO) {
             createAccount(
                 dataDbFile.absolutePath,
@@ -89,48 +82,42 @@ internal class RustBackend private constructor(
         }
     }
 
-    override suspend fun initAccountsTable(vararg keys: UnifiedFullViewingKey): Boolean {
-        val ufvks = Array(keys.size) { keys[it].encoding }
-
+    /**
+     * @param keys A list of UFVKs to initialize the accounts table with
+     */
+    override suspend fun initAccountsTable(vararg keys: String): Boolean {
         return withContext(SdkDispatchers.DATABASE_IO) {
             initAccountsTableWithKeys(
                 dataDbFile.absolutePath,
-                ufvks,
+                keys,
                 networkId = network.id
             )
-        }
-    }
-
-    override suspend fun initAccountsTable(
-        seed: ByteArray,
-        numberOfAccounts: Int
-    ): Array<UnifiedFullViewingKey> {
-        return DerivationTool.deriveUnifiedFullViewingKeys(seed, network, numberOfAccounts).apply {
-            @Suppress("SpreadOperator")
-            initAccountsTable(*this)
         }
     }
 
     override suspend fun initBlocksTable(
-        checkpoint: Checkpoint
+        checkpointHeight: Long,
+        checkpointHash: String,
+        checkpointTime: Long,
+        checkpointSaplingTree: String,
     ): Boolean {
         return withContext(SdkDispatchers.DATABASE_IO) {
             initBlocksTable(
                 dataDbFile.absolutePath,
-                checkpoint.height.value,
-                checkpoint.hash,
-                checkpoint.epochSeconds,
-                checkpoint.tree,
+                checkpointHeight,
+                checkpointHash,
+                checkpointTime,
+                checkpointSaplingTree,
                 networkId = network.id
             )
         }
     }
 
-    override suspend fun getCurrentAddress(account: Account) =
+    override suspend fun getCurrentAddress(account: Int) =
         withContext(SdkDispatchers.DATABASE_IO) {
             getCurrentAddress(
                 dataDbFile.absolutePath,
-                account.value,
+                account,
                 networkId = network.id
             )
         }
@@ -139,38 +126,38 @@ internal class RustBackend private constructor(
 
     override fun getSaplingReceiver(ua: String) = getSaplingReceiverForUnifiedAddress(ua)
 
-    override suspend fun listTransparentReceivers(account: Account): List<String> {
+    override suspend fun listTransparentReceivers(account: Int): List<String> {
         return withContext(SdkDispatchers.DATABASE_IO) {
             listTransparentReceivers(
                 dbDataPath = dataDbFile.absolutePath,
-                account = account.value,
+                account = account,
                 networkId = network.id
             ).asList()
         }
     }
 
-    override suspend fun getBalance(account: Account): Zatoshi {
+    override suspend fun getBalance(account: Int): Long {
         val longValue = withContext(SdkDispatchers.DATABASE_IO) {
             getBalance(
                 dataDbFile.absolutePath,
-                account.value,
+                account,
                 networkId = network.id
             )
         }
 
-        return Zatoshi(longValue)
+        return longValue
     }
 
-    override suspend fun getVerifiedBalance(account: Account): Zatoshi {
+    override suspend fun getVerifiedBalance(account: Int): Long {
         val longValue = withContext(SdkDispatchers.DATABASE_IO) {
             getVerifiedBalance(
                 dbDataPath = dataDbFile.absolutePath,
-                account = account.value,
+                account = account,
                 networkId = network.id
             )
         }
 
-        return Zatoshi(longValue)
+        return longValue
     }
 
     override suspend fun getReceivedMemoAsUtf8(idNote: Long) =
@@ -206,27 +193,27 @@ internal class RustBackend private constructor(
             if (-1L == height) {
                 null
             } else {
-                BlockHeight.new(network, height)
+                height
             }
         }
 
-    override suspend fun findBlockMetadata(height: BlockHeight) =
+    override suspend fun findBlockMetadata(height: Long) =
         withContext(SdkDispatchers.DATABASE_IO) {
             findBlockMetadata(
                 fsBlockDbRoot.absolutePath,
-                height.value
+                height
             )
         }
 
-    override suspend fun rewindBlockMetadataToHeight(height: BlockHeight) =
+    override suspend fun rewindBlockMetadataToHeight(height: Long) =
         withContext(SdkDispatchers.DATABASE_IO) {
             rewindBlockMetadataToHeight(
                 fsBlockDbRoot.absolutePath,
-                height.value
+                height
             )
         }
 
-    override suspend fun validateCombinedChain() =
+    override suspend fun validateCombinedChainOrErrorHeight() =
         withContext(SdkDispatchers.DATABASE_IO) {
             val validationResult = validateCombinedChain(
                 fsBlockDbRoot.absolutePath,
@@ -237,19 +224,34 @@ internal class RustBackend private constructor(
             if (-1L == validationResult) {
                 null
             } else {
-                BlockHeight.new(network, validationResult)
+                validationResult
             }
         }
 
-    override suspend fun getNearestRewindHeight(height: BlockHeight): BlockHeight =
+    override suspend fun getVerifiedTransparentBalance(address: String): Long =
         withContext(SdkDispatchers.DATABASE_IO) {
-            BlockHeight.new(
-                network,
-                getNearestRewindHeight(
-                    dataDbFile.absolutePath,
-                    height.value,
-                    networkId = network.id
-                )
+            getVerifiedTransparentBalance(
+                dataDbFile.absolutePath,
+                address,
+                networkId = network.id
+            )
+        }
+
+    override suspend fun getTotalTransparentBalance(address: String): Long =
+        withContext(SdkDispatchers.DATABASE_IO) {
+            getTotalTransparentBalance(
+                dataDbFile.absolutePath,
+                address,
+                networkId = network.id
+            )
+        }
+
+    override suspend fun getNearestRewindHeight(height: Long): Long =
+        withContext(SdkDispatchers.DATABASE_IO) {
+            getNearestRewindHeight(
+                dataDbFile.absolutePath,
+                height,
+                networkId = network.id
             )
         }
 
@@ -258,11 +260,11 @@ internal class RustBackend private constructor(
      *
      * DELETE FROM blocks WHERE height > ?
      */
-    override suspend fun rewindToHeight(height: BlockHeight) =
+    override suspend fun rewindToHeight(height: Long) =
         withContext(SdkDispatchers.DATABASE_IO) {
             rewindToHeight(
                 dataDbFile.absolutePath,
-                height.value,
+                height,
                 networkId = network.id
             )
         }
@@ -288,14 +290,15 @@ internal class RustBackend private constructor(
         }
 
     override suspend fun createToAddress(
-        usk: UnifiedSpendingKey,
+        account: Int,
+        unifiedSpendingKey: ByteArray,
         to: String,
         value: Long,
         memo: ByteArray?
     ): Long = withContext(SdkDispatchers.DATABASE_IO) {
         createToAddress(
             dataDbFile.absolutePath,
-            usk.copyBytes(),
+            unifiedSpendingKey,
             to,
             value,
             memo ?: ByteArray(0),
@@ -307,14 +310,15 @@ internal class RustBackend private constructor(
     }
 
     override suspend fun shieldToAddress(
-        usk: UnifiedSpendingKey,
+        account: Int,
+        unifiedSpendingKey: ByteArray,
         memo: ByteArray?
     ): Long {
         Twig.debug { "TMP: shieldToAddress with db path: $dataDbFile, ${memo?.size}" }
         return withContext(SdkDispatchers.DATABASE_IO) {
             shieldToAddress(
                 dataDbFile.absolutePath,
-                usk.copyBytes(),
+                unifiedSpendingKey,
                 memo ?: ByteArray(0),
                 File(saplingParamDir, SaplingParamTool.SPEND_PARAM_FILE_NAME).absolutePath,
                 File(saplingParamDir, SaplingParamTool.OUTPUT_PARAM_FILE_NAME).absolutePath,
@@ -344,24 +348,6 @@ internal class RustBackend private constructor(
         )
     }
 
-    override suspend fun getDownloadedUtxoBalance(address: String): WalletBalance {
-        val verified = withContext(SdkDispatchers.DATABASE_IO) {
-            getVerifiedTransparentBalance(
-                dataDbFile.absolutePath,
-                address,
-                networkId = network.id
-            )
-        }
-        val total = withContext(SdkDispatchers.DATABASE_IO) {
-            getTotalTransparentBalance(
-                dataDbFile.absolutePath,
-                address,
-                networkId = network.id
-            )
-        }
-        return WalletBalance(Zatoshi(total), Zatoshi(verified))
-    }
-
     override fun isValidShieldedAddr(addr: String) =
         isValidShieldedAddress(addr, networkId = network.id)
 
@@ -371,8 +357,8 @@ internal class RustBackend private constructor(
     override fun isValidUnifiedAddr(addr: String) =
         isValidUnifiedAddress(addr, networkId = network.id)
 
-    override fun getBranchIdForHeight(height: BlockHeight): Long =
-        branchIdForHeight(height.value, networkId = network.id)
+    override fun getBranchIdForHeight(height: Long): Long =
+        branchIdForHeight(height, networkId = network.id)
 
 //    /**
 //     * This is a proof-of-concept for doing Local RPC, where we are effectively using the JNI
@@ -463,7 +449,7 @@ internal class RustBackend private constructor(
         ): Boolean
 
         @JvmStatic
-        private external fun createAccount(dbDataPath: String, seed: ByteArray, networkId: Int): UnifiedSpendingKey
+        private external fun createAccount(dbDataPath: String, seed: ByteArray, networkId: Int): UnifiedSpendingKeyJni
 
         @JvmStatic
         private external fun getCurrentAddress(

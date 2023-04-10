@@ -12,18 +12,21 @@ import cash.z.ecc.android.sdk.internal.ext.toHexReversed
 import cash.z.ecc.android.sdk.internal.ext.writeBytesSuspend
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.internal.repository.CompactBlockRepository
+import cash.z.ecc.android.sdk.jni.Backend
 import cash.z.ecc.android.sdk.jni.RustBackend
-import cash.z.ecc.android.sdk.jni.RustBackendWelding
+import cash.z.ecc.android.sdk.jni.findBlockMetadata
+import cash.z.ecc.android.sdk.jni.getLatestBlockHeight
+import cash.z.ecc.android.sdk.jni.rewindBlockMetadataToHeight
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.wallet.sdk.internal.rpc.CompactFormats.CompactBlock
 import java.io.File
 
 internal class FileCompactBlockRepository(
     private val blocksDirectory: File,
-    private val rustBackend: RustBackendWelding
+    private val rustBackend: Backend
 ) : CompactBlockRepository {
 
-    override suspend fun getLatestHeight() = rustBackend.getLatestHeight()
+    override suspend fun getLatestHeight() = rustBackend.getLatestBlockHeight()
 
     override suspend fun findCompactBlock(height: BlockHeight) = rustBackend.findBlockMetadata(height)
 

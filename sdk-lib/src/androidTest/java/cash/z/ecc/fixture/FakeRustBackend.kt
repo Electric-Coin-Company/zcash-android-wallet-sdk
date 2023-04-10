@@ -1,65 +1,84 @@
 package cash.z.ecc.fixture
 
-import cash.z.ecc.android.sdk.internal.model.Checkpoint
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
-import cash.z.ecc.android.sdk.jni.RustBackendWelding
-import cash.z.ecc.android.sdk.model.Account
+import cash.z.ecc.android.sdk.jni.Backend
+import cash.z.ecc.android.sdk.jni.UnifiedSpendingKeyJni
 import cash.z.ecc.android.sdk.model.BlockHeight
-import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
-import cash.z.ecc.android.sdk.model.WalletBalance
-import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
-import cash.z.ecc.android.sdk.type.UnifiedFullViewingKey
 import java.io.File
 
 internal class FakeRustBackend(
     override val network: ZcashNetwork,
     override val saplingParamDir: File,
     val metadata: MutableList<JniBlockMeta>
-) : RustBackendWelding {
+) : Backend {
 
     override suspend fun writeBlockMetadata(blockMetadata: List<JniBlockMeta>): Boolean =
         metadata.addAll(blockMetadata)
 
-    override suspend fun rewindToHeight(height: BlockHeight): Boolean {
-        metadata.removeAll { it.height > height.value }
+    override suspend fun rewindToHeight(height: Long): Boolean {
+        metadata.removeAll { it.height > height }
         return true
     }
 
-    override suspend fun getLatestHeight(): BlockHeight = BlockHeight(metadata.maxOf { it.height })
-    override suspend fun findBlockMetadata(height: BlockHeight): JniBlockMeta? {
-        return metadata.findLast { it.height == height.value }
+    override suspend fun getLatestHeight(): Long = metadata.maxOf { it.height }
+    override suspend fun validateCombinedChainOrErrorHeight(): Long? {
+        TODO("Not yet implemented")
     }
 
-    override suspend fun rewindBlockMetadataToHeight(height: BlockHeight) {
-        metadata.removeAll { it.height > height.value }
+    override suspend fun getVerifiedTransparentBalance(address: String): Long {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun getTotalTransparentBalance(address: String): Long {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun findBlockMetadata(height: Long): JniBlockMeta? {
+        return metadata.findLast { it.height == height }
+    }
+
+    override suspend fun rewindBlockMetadataToHeight(height: Long) {
+        metadata.removeAll { it.height > height }
     }
 
     override suspend fun initBlockMetaDb(): Int =
         error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 
-    override suspend fun createToAddress(usk: UnifiedSpendingKey, to: String, value: Long, memo: ByteArray?): Long =
-        error("Intentionally not implemented in mocked FakeRustBackend implementation.")
+    override suspend fun createToAddress(
+        account: Int,
+        unifiedSpendingKey: ByteArray,
+        to: String,
+        value: Long,
+        memo: ByteArray?
+    ): Long {
+        TODO("Not yet implemented")
+    }
 
-    override suspend fun shieldToAddress(usk: UnifiedSpendingKey, memo: ByteArray?): Long =
-        error("Intentionally not implemented in mocked FakeRustBackend implementation.")
+    override suspend fun shieldToAddress(account: Int, unifiedSpendingKey: ByteArray, memo: ByteArray?): Long {
+        TODO("Not yet implemented")
+    }
 
     override suspend fun decryptAndStoreTransaction(tx: ByteArray) =
         error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 
-    override suspend fun initAccountsTable(seed: ByteArray, numberOfAccounts: Int): Array<UnifiedFullViewingKey> =
-        error("Intentionally not implemented in mocked FakeRustBackend implementation.")
+    override suspend fun initAccountsTable(vararg keys: String): Boolean {
+        TODO("Not yet implemented")
+    }
 
-    override suspend fun initAccountsTable(vararg keys: UnifiedFullViewingKey): Boolean =
-        error("Intentionally not implemented in mocked FakeRustBackend implementation.")
-
-    override suspend fun initBlocksTable(checkpoint: Checkpoint): Boolean =
-        error("Intentionally not implemented in mocked FakeRustBackend implementation.")
+    override suspend fun initBlocksTable(
+        checkpointHeight: Long,
+        checkpointHash: String,
+        checkpointTime: Long,
+        checkpointSaplingTree: String
+    ): Boolean {
+        TODO("Not yet implemented")
+    }
 
     override suspend fun initDataDb(seed: ByteArray?): Int =
         error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 
-    override suspend fun createAccount(seed: ByteArray): UnifiedSpendingKey =
+    override suspend fun createAccount(seed: ByteArray): UnifiedSpendingKeyJni =
         error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 
     override fun isValidShieldedAddr(addr: String): Boolean =
@@ -71,8 +90,9 @@ internal class FakeRustBackend(
     override fun isValidUnifiedAddr(addr: String): Boolean =
         error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 
-    override suspend fun getCurrentAddress(account: Account): String =
-        error("Intentionally not implemented in mocked FakeRustBackend implementation.")
+    override suspend fun getCurrentAddress(account: Int): String {
+        TODO("Not yet implemented")
+    }
 
     override fun getTransparentReceiver(ua: String): String? =
         error("Intentionally not implemented in mocked FakeRustBackend implementation.")
@@ -80,14 +100,17 @@ internal class FakeRustBackend(
     override fun getSaplingReceiver(ua: String): String? =
         error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 
-    override suspend fun listTransparentReceivers(account: Account): List<String> =
-        error("Intentionally not implemented in mocked FakeRustBackend implementation.")
+    override suspend fun listTransparentReceivers(account: Int): List<String> {
+        TODO("Not yet implemented")
+    }
 
-    override suspend fun getBalance(account: Account): Zatoshi =
-        error("Intentionally not implemented in mocked FakeRustBackend implementation.")
+    override suspend fun getBalance(account: Int): Long {
+        TODO("Not yet implemented")
+    }
 
-    override fun getBranchIdForHeight(height: BlockHeight): Long =
-        error("Intentionally not implemented in mocked FakeRustBackend implementation.")
+    override fun getBranchIdForHeight(height: Long): Long {
+        TODO("Not yet implemented")
+    }
 
     override suspend fun getReceivedMemoAsUtf8(idNote: Long): String? =
         error("Intentionally not implemented in mocked FakeRustBackend implementation.")
@@ -95,16 +118,15 @@ internal class FakeRustBackend(
     override suspend fun getSentMemoAsUtf8(idNote: Long): String? =
         error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 
-    override suspend fun getVerifiedBalance(account: Account): Zatoshi =
-        error("Intentionally not implemented in mocked FakeRustBackend implementation.")
+    override suspend fun getVerifiedBalance(account: Int): Long {
+        TODO("Not yet implemented")
+    }
 
-    override suspend fun getNearestRewindHeight(height: BlockHeight): BlockHeight =
-        error("Intentionally not implemented in mocked FakeRustBackend implementation.")
+    override suspend fun getNearestRewindHeight(height: Long): Long {
+        TODO("Not yet implemented")
+    }
 
     override suspend fun scanBlocks(limit: Int): Boolean =
-        error("Intentionally not implemented in mocked FakeRustBackend implementation.")
-
-    override suspend fun validateCombinedChain(): BlockHeight? =
         error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 
     override suspend fun putUtxo(
@@ -115,7 +137,4 @@ internal class FakeRustBackend(
         value: Long,
         height: BlockHeight
     ): Boolean = error("Intentionally not implemented in mocked FakeRustBackend implementation.")
-
-    override suspend fun getDownloadedUtxoBalance(address: String): WalletBalance =
-        error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 }
