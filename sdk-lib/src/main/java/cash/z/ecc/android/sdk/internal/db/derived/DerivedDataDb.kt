@@ -7,8 +7,10 @@ import cash.z.ecc.android.sdk.internal.db.ReadOnlySupportSqliteOpenHelper
 import cash.z.ecc.android.sdk.internal.ext.tryWarn
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
 import cash.z.ecc.android.sdk.jni.RustBackend
+import cash.z.ecc.android.sdk.jni.initAccountsTable
+import cash.z.ecc.android.sdk.jni.initBlocksTable
+import cash.z.ecc.android.sdk.model.UnifiedFullViewingKey
 import cash.z.ecc.android.sdk.model.ZcashNetwork
-import cash.z.ecc.android.sdk.type.UnifiedFullViewingKey
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 

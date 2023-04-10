@@ -1,7 +1,6 @@
-package cash.z.ecc.android.sdk.model
+package cash.z.ecc.android.sdk.jni
 
-import cash.z.ecc.android.sdk.jni.RustBackend
-import cash.z.ecc.android.sdk.jni.UnifiedSpendingKeyJni
+import androidx.annotation.Keep
 
 /**
  * A [ZIP 316](https://zips.z.cash/zip-0316) Unified Spending Key.
@@ -12,9 +11,9 @@ import cash.z.ecc.android.sdk.jni.UnifiedSpendingKeyJni
  * derived at the time of its creation. As such, it is not suitable for long-term storage,
  * export/import, or backup purposes.
  */
-class UnifiedSpendingKey private constructor(
-    val account: Account,
-
+@Keep
+class UnifiedSpendingKeyJni(
+    val account: Int,
     /**
      * The binary encoding of the [ZIP 316](https://zips.z.cash/zip-0316) Unified Spending
      * Key for [account].
@@ -23,14 +22,9 @@ class UnifiedSpendingKey private constructor(
      * inherently unstable, and only intended to be passed between the SDK and the storage
      * backend. Wallets **MUST NOT** allow this encoding to be exported or imported.
      */
-    private val bytes: FirstClassByteArray
+    private val bytes: ByteArray
 ) {
 
-    internal constructor(uskJni: UnifiedSpendingKeyJni) : this(
-        Account(uskJni.account),
-        FirstClassByteArray(uskJni.copyBytes())
-    )
-
     /**
      * The binary encoding of the [ZIP 316](https://zips.z.cash/zip-0316) Unified Spending
      * Key for [account].
@@ -39,19 +33,19 @@ class UnifiedSpendingKey private constructor(
      * inherently unstable, and only intended to be passed between the SDK and the storage
      * backend. Wallets **MUST NOT** allow this encoding to be exported or imported.
      */
-    fun copyBytes() = bytes.byteArray.copyOf()
+    fun copyBytes() = bytes.copyOf()
 
     // Override to prevent leaking key to logs
-    override fun toString() = "UnifiedSpendingKey(account=$account)"
+    override fun toString() = "UnifiedSpendingKeyJni(account=$account)"
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
 
-        other as UnifiedSpendingKey
+        other as UnifiedSpendingKeyJni
 
         if (account != other.account) return false
-        if (bytes != other.bytes) return false
+        if (!bytes.contentEquals(other.bytes)) return false
 
         return true
     }
@@ -60,26 +54,5 @@ class UnifiedSpendingKey private constructor(
         var result = account.hashCode()
         result = 31 * result + bytes.hashCode()
         return result
-    }
-
-    companion object {
-
-        /**
-         * This method may fail if the [bytes] no longer represent a valid key.  A key could become invalid due to
-         * network upgrades or other internal changes.  If a non-successful result is returned, clients are expected
-         * to use [DerivationTool.deriveUnifiedSpendingKey] to regenerate the key from the seed.
-         *
-         * @return A validated UnifiedSpendingKey.
-         */
-        suspend fun new(account: Account, bytes: ByteArray): Result<UnifiedSpendingKey> {
-            val bytesCopy = bytes.copyOf()
-            RustBackend.loadLibrary()
-            return runCatching {
-                // We can ignore the Boolean returned from this, because if an error
-                // occurs the Rust side will throw.
-                RustBackend.validateUnifiedSpendingKey(bytesCopy)
-                UnifiedSpendingKey(account, FirstClassByteArray(bytesCopy))
-            }
-        }
     }
 }

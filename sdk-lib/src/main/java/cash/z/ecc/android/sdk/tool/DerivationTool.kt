@@ -1,14 +1,15 @@
 package cash.z.ecc.android.sdk.tool
 
+import cash.z.ecc.android.sdk.jni.Derivation
 import cash.z.ecc.android.sdk.jni.RustBackend
-import cash.z.ecc.android.sdk.jni.RustBackendWelding
+import cash.z.ecc.android.sdk.jni.UnifiedSpendingKeyJni
 import cash.z.ecc.android.sdk.model.Account
+import cash.z.ecc.android.sdk.model.UnifiedFullViewingKey
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.ZcashNetwork
-import cash.z.ecc.android.sdk.type.UnifiedFullViewingKey
 
 @Suppress("TooManyFunctions")
-object DerivationTool : RustBackendWelding.Derivation {
+object DerivationTool : Derivation {
 
     /**
      * Given a seed and a number of accounts, return the associated Unified Full Viewing Keys.
@@ -63,7 +64,7 @@ object DerivationTool : RustBackendWelding.Derivation {
         network: ZcashNetwork,
         account: Account
     ): UnifiedSpendingKey = withRustBackendLoaded {
-        deriveSpendingKey(seed, account.value, networkId = network.id)
+        UnifiedSpendingKey(deriveSpendingKey(seed, account.value, networkId = network.id))
     }
 
     /**
@@ -118,7 +119,7 @@ object DerivationTool : RustBackendWelding.Derivation {
         seed: ByteArray,
         account: Int,
         networkId: Int
-    ): UnifiedSpendingKey
+    ): UnifiedSpendingKeyJni
 
     @JvmStatic
     private external fun deriveUnifiedFullViewingKeysFromSeed(

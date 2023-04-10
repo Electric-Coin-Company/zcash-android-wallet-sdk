@@ -21,7 +21,7 @@ class BranchIdTest internal constructor(
     private val height: BlockHeight,
     private val branchId: Long,
     private val branchHex: String,
-    private val rustBackend: RustBackendWelding
+    private val rustBackend: Backend
 ) {
 
     @Test

@@ -6,7 +6,10 @@ import cash.z.ecc.android.sdk.internal.SaplingParamTool
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.model.EncodedTransaction
 import cash.z.ecc.android.sdk.internal.repository.DerivedDataRepository
-import cash.z.ecc.android.sdk.jni.RustBackendWelding
+import cash.z.ecc.android.sdk.jni.Backend
+import cash.z.ecc.android.sdk.jni.createToAddress
+import cash.z.ecc.android.sdk.jni.getBranchIdForHeight
+import cash.z.ecc.android.sdk.jni.shieldToAddress
 import cash.z.ecc.android.sdk.model.TransactionRecipient
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.Zatoshi
@@ -21,7 +24,7 @@ import cash.z.ecc.android.sdk.model.Zatoshi
  * such as the raw bytes and raw txId.
  */
 internal class WalletTransactionEncoder(
-    private val rustBackend: RustBackendWelding,
+    private val rustBackend: Backend,
     private val saplingParamTool: SaplingParamTool,
     private val repository: DerivedDataRepository
 ) : TransactionEncoder {
