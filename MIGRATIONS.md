@@ -1,10 +1,9 @@
 Troubleshooting Migrations
 ==========
 
-Migration to Version 1.14
+Migration to Version 1.15
 ---------------------------------
-The updated `Synchronizer.refreshUtxos` is now supposed to be called with `Account` parameter instead of `String` 
-address parameter. The Account object provides a default `0` index Account with `Account.DEFAULT`.    
+The updated `Synchronizer.refreshUtxos` is now supposed to be called with `Account` parameter instead of `String` address parameter. The Account object provides a default `0` index Account with `Account.DEFAULT`.    
 
 Migration to Version 1.13
 ---------------------------------
