@@ -1,7 +1,6 @@
 package cash.z.ecc.android.sdk.db
 
 import androidx.test.filters.SmallTest
-import cash.z.ecc.android.sdk.internal.AndroidApiVersion
 import cash.z.ecc.android.sdk.internal.db.DatabaseCoordinator
 import cash.z.ecc.android.sdk.internal.db.commonDatabaseBuilder
 import cash.z.ecc.android.sdk.internal.db.pending.PendingTransactionDb
@@ -30,12 +29,6 @@ class CommonDatabaseBuilderTest {
 
         assertNotNull(db)
 
-        val expectedDbName = if (AndroidApiVersion.isAtLeastO_MR1) {
-            dbFileName
-        } else {
-            dbFile.absolutePath
-        }
-
-        assertEquals(expectedDbName, db.openHelper.databaseName)
+        assertEquals(dbFileName, db.openHelper.databaseName)
     }
 }

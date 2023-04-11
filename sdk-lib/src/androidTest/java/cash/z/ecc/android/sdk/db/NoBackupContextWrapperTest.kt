@@ -1,7 +1,5 @@
 package cash.z.ecc.android.sdk.db
 
-import android.os.Build
-import androidx.test.filters.SdkSuppress
 import androidx.test.filters.SmallTest
 import cash.z.ecc.android.sdk.internal.NoBackupContextWrapper
 import cash.z.ecc.android.sdk.test.getAppContext
@@ -11,7 +9,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
 
-@SdkSuppress(minSdkVersion = Build.VERSION_CODES.O_MR1)
 class NoBackupContextWrapperTest {
 
     private val databaseParentDir = File(DatabasePathFixture.new())
