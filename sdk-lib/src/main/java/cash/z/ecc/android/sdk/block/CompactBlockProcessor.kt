@@ -630,7 +630,7 @@ class CompactBlockProcessor internal constructor(
                             BlockHeightUnsafe.from(startHeight)
                         ).onEach { response ->
                             Twig.debug { "Fetched UTXO with txid: ${response.txid}" }
-                            val processResult = processUtxoResult(response, startHeight)
+                            val processResult = processUtxoResult(response)
                             if (processResult) {
                                 count++
                             }
@@ -662,10 +662,7 @@ class CompactBlockProcessor internal constructor(
     /**
      * @return True in case of the UTXO processed successfully, false otherwise
      */
-    internal suspend fun processUtxoResult(
-        utxo: Service.GetAddressUtxosReply,
-        startHeight: BlockHeight
-    ): Boolean = withContext(IO) {
+    internal suspend fun processUtxoResult(utxo: Service.GetAddressUtxosReply): Boolean = withContext(IO) {
         // TODO(str4d): We no longer clear UTXOs here, as rustBackend.putUtxo now uses an upsert instead of an insert.
         //  This means that now-spent UTXOs would previously have been deleted, but now are left in the database (like
         //  shielded notes). Due to the fact that the lightwalletd query only returns _current_ UTXOs, we don't learn

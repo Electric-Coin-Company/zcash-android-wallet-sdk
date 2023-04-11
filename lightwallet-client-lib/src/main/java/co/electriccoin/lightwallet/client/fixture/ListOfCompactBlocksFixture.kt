@@ -3,6 +3,8 @@ package co.electriccoin.lightwallet.client.fixture
 import androidx.annotation.VisibleForTesting
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.CompactBlockUnsafe
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.asFlow
 
 /**
  * Used for getting mocked blocks list for processing and persisting compact blocks purposes.
@@ -12,7 +14,7 @@ object ListOfCompactBlocksFixture {
 
     val DEFAULT_FILE_BLOCK_RANGE = FileBlockRangeFixture.new()
 
-    fun new(
+    fun newSequence(
         blocksHeightRange: ClosedRange<BlockHeightUnsafe> = DEFAULT_FILE_BLOCK_RANGE
     ): Sequence<CompactBlockUnsafe> {
         val blocks = mutableListOf<CompactBlockUnsafe>()
@@ -24,5 +26,11 @@ object ListOfCompactBlocksFixture {
         }
 
         return blocks.asSequence()
+    }
+
+    fun newFlow(
+        blocksHeightRange: ClosedRange<BlockHeightUnsafe> = DEFAULT_FILE_BLOCK_RANGE
+    ): Flow<CompactBlockUnsafe> {
+        return newSequence(blocksHeightRange).asFlow()
     }
 }

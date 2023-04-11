@@ -38,39 +38,6 @@ internal class FileCompactBlockRepository(
 
     override suspend fun findCompactBlock(height: BlockHeight) = rustBackend.findBlockMetadata(height)
 
-    override suspend fun write(blocks: Sequence<CompactBlockUnsafe>): Int {
-        currentBufferSize = 0
-
-        blocks.forEach { block ->
-            val tmpFile = block.createTemporaryFile(blocksDirectory)
-            // write compact block bytes
-            tmpFile.writeBytesSuspend(block.compactBlockBytes)
-            // buffer metadata
-            metaDataBuffer.add(block.toJniMetaData())
-
-            val isFinalizeSuccessful = tmpFile.finalizeFile()
-            check(isFinalizeSuccessful) {
-                "Failed to finalize file: ${tmpFile.absolutePath}"
-            }
-
-            currentBufferSize++
-
-            if (metaDataBuffer.isBufferFull()) {
-                // write blocks metadata to storage when the buffer is full
-                rustBackend.writeBlockMetadata(metaDataBuffer)
-                metaDataBuffer.clear()
-            }
-        }
-
-        if (metaDataBuffer.isNotEmpty()) {
-            // write the rest of the blocks metadata to storage even though the buffer is not full
-            rustBackend.writeBlockMetadata(metaDataBuffer)
-            metaDataBuffer.clear()
-        }
-
-        return currentBufferSize
-    }
-
     override suspend fun write(blocks: Flow<CompactBlockUnsafe>): Flow<Int> {
         return flow {
             blocks.onEach { block ->

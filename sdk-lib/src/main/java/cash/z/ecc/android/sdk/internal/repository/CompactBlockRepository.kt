@@ -32,18 +32,10 @@ interface CompactBlockRepository {
     suspend fun deleteCompactBlockFiles(): Boolean
 
     /**
-     * Write the given blocks to this store, which may be anything from an in-memory cache to a DB.
-     *
-     * @param blocks the list of compact blocks to persist.
-     * @return Number of blocks that were written.
-     */
-    suspend fun write(blocks: Sequence<CompactBlockUnsafe>): Int
-
-    /**
      * Write the given flow of blocks to this store, which may be anything from an in-memory cache to a DB.
      *
      * @param blocks Flow of compact blocks to persist.
-     * * @return Flow of number of blocks that were written.
+     * @return Flow of number of blocks that were written.
      */
     suspend fun write(blocks: Flow<CompactBlockUnsafe>): Flow<Int>
 
