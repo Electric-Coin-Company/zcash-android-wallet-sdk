@@ -145,6 +145,8 @@ internal class CoroutineLightWalletClientImpl private constructor(
 
         val builder = Service.GetAddressUtxosArg.newBuilder()
 
+        // TODO [#941]: Fetch UTXOs setAddress() failure
+        // TODO [#941]: https://github.com/zcash/zcash-android-wallet-sdk/issues/941
         // build the request with the different addresses
         tAddresses.forEachIndexed { index, tAddress ->
             builder.setAddresses(index, tAddress)
