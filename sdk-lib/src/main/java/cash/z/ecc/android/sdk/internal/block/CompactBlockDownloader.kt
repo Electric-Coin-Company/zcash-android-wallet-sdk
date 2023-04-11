@@ -64,7 +64,11 @@ open class CompactBlockDownloader private constructor(val compactBlockRepository
                 response.result
             }
             .onCompletion {
-                Twig.debug { "All blocks in range: $heightRange downloaded successfully." }
+                if (it != null) {
+                    Twig.debug { "Blocks in range $heightRange failed to download with: $it" }
+                } else {
+                    Twig.debug { "All blocks in range $heightRange downloaded successfully" }
+                }
             }
 
         return compactBlockRepository.write(filteredFlow)
