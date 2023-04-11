@@ -667,7 +667,7 @@ class SdkSynchronizer private constructor(
         }
     }
 
-    override suspend fun refreshUtxos(account: Account, since: BlockHeight): Int? {
+    override suspend fun refreshUtxos(account: Account, since: BlockHeight): Int {
         return processor.refreshUtxos(account, since)
     }
 
