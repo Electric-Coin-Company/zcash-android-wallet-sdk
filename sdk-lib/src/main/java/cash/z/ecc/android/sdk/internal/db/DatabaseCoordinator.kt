@@ -6,7 +6,6 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import cash.z.ecc.android.sdk.exception.InitializeException
 import cash.z.ecc.android.sdk.ext.ZcashSdk
-import cash.z.ecc.android.sdk.internal.AndroidApiVersion
 import cash.z.ecc.android.sdk.internal.Files
 import cash.z.ecc.android.sdk.internal.LazyWithArgument
 import cash.z.ecc.android.sdk.internal.NoBackupContextWrapper
@@ -434,20 +433,12 @@ internal fun <T : RoomDatabase> commonDatabaseBuilder(
     klass: Class<T>,
     databaseFile: File
 ): RoomDatabase.Builder<T> {
-    return if (AndroidApiVersion.isAtLeastO_MR1) {
-        Room.databaseBuilder(
-            NoBackupContextWrapper(
-                context,
-                databaseFile.parentFile ?: throw InitializeException.DatabasePathException
-            ),
-            klass,
-            databaseFile.name
-        )
-    } else {
-        Room.databaseBuilder(
+    return Room.databaseBuilder(
+        NoBackupContextWrapper(
             context,
-            klass,
-            databaseFile.absolutePath
-        )
-    }
+            databaseFile.parentFile ?: throw InitializeException.DatabasePathException
+        ),
+        klass,
+        databaseFile.name
+    )
 }

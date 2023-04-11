@@ -5,7 +5,6 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import androidx.sqlite.db.SupportSQLiteOpenHelper
 import androidx.sqlite.db.framework.FrameworkSQLiteOpenHelperFactory
 import cash.z.ecc.android.sdk.exception.InitializeException
-import cash.z.ecc.android.sdk.internal.AndroidApiVersion
 import cash.z.ecc.android.sdk.internal.NoBackupContextWrapper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -27,23 +26,15 @@ object ReadOnlySupportSqliteOpenHelper {
         databaseVersion: Int
     ): SupportSQLiteDatabase {
         return withContext(Dispatchers.IO) {
-            val config = if (AndroidApiVersion.isAtLeastO_MR1) {
-                val contextWrapper = NoBackupContextWrapper(
-                    context,
-                    file.parentFile ?: throw InitializeException.DatabasePathException
-                )
-                SupportSQLiteOpenHelper.Configuration.builder(contextWrapper)
-                    .apply {
-                        name(file.name)
-                        callback(ReadOnlyCallback(databaseVersion))
-                    }.build()
-            } else {
-                SupportSQLiteOpenHelper.Configuration.builder(context)
-                    .apply {
-                        name(file.absolutePath)
-                        callback(ReadOnlyCallback(databaseVersion))
-                    }.build()
-            }
+            val contextWrapper = NoBackupContextWrapper(
+                context,
+                file.parentFile ?: throw InitializeException.DatabasePathException
+            )
+            val config = SupportSQLiteOpenHelper.Configuration.builder(contextWrapper)
+                .apply {
+                    name(file.name)
+                    callback(ReadOnlyCallback(databaseVersion))
+                }.build()
 
             FrameworkSQLiteOpenHelperFactory().create(config).readableDatabase
         }

@@ -1,6 +1,10 @@
 Change Log
 ==========
 
+## 1.16.0-beta01
+### Changed
+ - The minimum supported version of Android is now API level 27.
+
 ## 1.15.0-beta01
 ### Changed
 - A new package `sdk-incubator-lib` is now available as a public API.  This package contains experimental APIs that may be promoted to the SDK in the future.  The APIs in this package are not guaranteed to be stable, and may change at any time.
