@@ -628,17 +628,17 @@ class CompactBlockProcessor internal constructor(
                         downloader.lightWalletClient.fetchUtxos(
                             tAddresses,
                             BlockHeightUnsafe.from(startHeight)
-                        ).onEach { response ->
-                            Twig.debug { "Fetched UTXO with txid: ${response.txid}" }
-                            val processResult = processUtxoResult(response)
-                            if (processResult) {
-                                count++
-                            }
-                        }.onCompletion {
+                        ).onCompletion {
                             if (it != null) {
                                 Twig.debug { "UTXOs from height $startHeight failed to download with: $it" }
                             } else {
                                 Twig.debug { "All UTXOs from height $startHeight fetched successfully" }
+                            }
+                        }.collect { response ->
+                            Twig.debug { "Fetched UTXO with txid: ${response.txid}" }
+                            val processResult = processUtxoResult(response)
+                            if (processResult) {
+                                count++
                             }
                         }
                     }
