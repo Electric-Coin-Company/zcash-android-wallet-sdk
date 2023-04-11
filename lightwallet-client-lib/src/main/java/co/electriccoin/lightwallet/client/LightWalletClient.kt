@@ -3,7 +3,7 @@ package co.electriccoin.lightwallet.client
 import android.content.Context
 import cash.z.wallet.sdk.internal.rpc.Service
 import co.electriccoin.lightwallet.client.internal.AndroidChannelFactory
-import co.electriccoin.lightwallet.client.internal.CoroutineLightWalletClientImpl
+import co.electriccoin.lightwallet.client.internal.LightWalletClientImpl
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.CompactBlockUnsafe
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
@@ -19,7 +19,7 @@ import kotlinx.coroutines.flow.Flow
 /**
  * Client for interacting with lightwalletd.
  */
-interface CoroutineLightWalletClient {
+interface LightWalletClient {
 
     /**
      * @return the full transaction info.
@@ -97,8 +97,8 @@ interface CoroutineLightWalletClient {
 /**
  * @return A new client specifically for Android devices.
  */
-fun CoroutineLightWalletClient.Companion.new(
+fun LightWalletClient.Companion.new(
     context: Context,
     lightWalletEndpoint: LightWalletEndpoint
-): CoroutineLightWalletClient =
-    CoroutineLightWalletClientImpl.new(AndroidChannelFactory(context), lightWalletEndpoint)
+): LightWalletClient =
+    LightWalletClientImpl.new(AndroidChannelFactory(context), lightWalletEndpoint)

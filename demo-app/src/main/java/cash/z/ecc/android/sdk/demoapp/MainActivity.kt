@@ -23,7 +23,7 @@ import androidx.viewbinding.ViewBinding
 import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.model.defaultForNetwork
-import co.electriccoin.lightwallet.client.CoroutineLightWalletClient
+import co.electriccoin.lightwallet.client.LightWalletClient
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
 import co.electriccoin.lightwallet.client.new
 import com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -44,7 +44,7 @@ class MainActivity :
      * this object because it would utilize the synchronizer, instead, which exposes APIs that
      * automatically sync with the server.
      */
-    var lightwalletClient: CoroutineLightWalletClient? = null
+    var lightwalletClient: LightWalletClient? = null
         private set
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -127,7 +127,7 @@ class MainActivity :
             lightwalletClient?.shutdown()
         }
         val network = ZcashNetwork.fromResources(applicationContext)
-        lightwalletClient = CoroutineLightWalletClient.new(
+        lightwalletClient = LightWalletClient.new(
             applicationContext,
             LightWalletEndpoint.defaultForNetwork(network)
         )

@@ -2,7 +2,7 @@ package co.electriccoin.lightwallet.client.internal
 
 import cash.z.wallet.sdk.internal.rpc.CompactTxStreamerGrpcKt
 import cash.z.wallet.sdk.internal.rpc.Service
-import co.electriccoin.lightwallet.client.CoroutineLightWalletClient
+import co.electriccoin.lightwallet.client.LightWalletClient
 import co.electriccoin.lightwallet.client.ext.BenchmarkingExt
 import co.electriccoin.lightwallet.client.fixture.BenchmarkingBlockRangeFixture
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
@@ -36,12 +36,12 @@ import kotlin.time.Duration.Companion.seconds
  * now.
  */
 @Suppress("TooManyFunctions")
-internal class CoroutineLightWalletClientImpl private constructor(
+internal class LightWalletClientImpl private constructor(
     private val channelFactory: ChannelFactory,
     private val lightWalletEndpoint: LightWalletEndpoint,
     private val singleRequestTimeout: Duration = 10.seconds,
     private val streamingRequestTimeout: Duration = 90.seconds
-) : CoroutineLightWalletClient {
+) : LightWalletClient {
 
     private var channel = channelFactory.newChannel(lightWalletEndpoint)
 
@@ -198,8 +198,8 @@ internal class CoroutineLightWalletClientImpl private constructor(
         fun new(
             channelFactory: ChannelFactory,
             lightWalletEndpoint: LightWalletEndpoint
-        ): CoroutineLightWalletClientImpl {
-            return CoroutineLightWalletClientImpl(channelFactory, lightWalletEndpoint)
+        ): LightWalletClientImpl {
+            return LightWalletClientImpl(channelFactory, lightWalletEndpoint)
         }
     }
 }

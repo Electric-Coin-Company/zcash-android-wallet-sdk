@@ -5,7 +5,7 @@ import cash.z.ecc.android.sdk.internal.ext.retryUpTo
 import cash.z.ecc.android.sdk.internal.model.ext.from
 import cash.z.ecc.android.sdk.internal.repository.CompactBlockRepository
 import cash.z.ecc.android.sdk.model.BlockHeight
-import co.electriccoin.lightwallet.client.CoroutineLightWalletClient
+import co.electriccoin.lightwallet.client.LightWalletClient
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.CompactBlockUnsafe
 import co.electriccoin.lightwallet.client.model.LightWalletEndpointInfoUnsafe
@@ -30,11 +30,11 @@ import kotlinx.coroutines.withContext
  */
 open class CompactBlockDownloader private constructor(val compactBlockRepository: CompactBlockRepository) {
 
-    lateinit var lightWalletClient: CoroutineLightWalletClient
+    lateinit var lightWalletClient: LightWalletClient
         private set
 
     constructor(
-        lightWalletClient: CoroutineLightWalletClient,
+        lightWalletClient: LightWalletClient,
         compactBlockRepository: CompactBlockRepository
     ) : this(compactBlockRepository) {
         this.lightWalletClient = lightWalletClient
