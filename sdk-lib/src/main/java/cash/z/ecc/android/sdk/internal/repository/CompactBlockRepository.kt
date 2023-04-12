@@ -37,7 +37,7 @@ interface CompactBlockRepository {
      * @param blocks Flow of compact blocks to persist.
      * @return Flow of number of blocks that were written.
      */
-    suspend fun write(blocks: Flow<CompactBlockUnsafe>): Flow<Int>
+    suspend fun write(blocks: Flow<CompactBlockUnsafe>): Int
 
     /**
      * Remove every block above the given height.

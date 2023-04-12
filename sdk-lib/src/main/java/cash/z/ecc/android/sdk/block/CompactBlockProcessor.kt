@@ -60,9 +60,7 @@ import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.onCompletion
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -738,11 +736,11 @@ class CompactBlockProcessor internal constructor(
 
                         Twig.debug { "Starting block batch $i download" }
 
-                        downloader.downloadBlockRange(downloadedBlockHeight..end).onEach {
-                            Twig.debug {
-                                "Downloaded $it blocks [${downloadedBlockHeight..end}] in batch $i of $batches"
-                            }
-                        }.collect()
+                        val downloadedCount = downloader.downloadBlockRange(downloadedBlockHeight..end)
+
+                        Twig.debug {
+                            "Downloaded $downloadedCount blocks [${downloadedBlockHeight..end}] in batch $i of $batches"
+                        }
 
                         Twig.debug { "Block batch $i downloaded" }
 

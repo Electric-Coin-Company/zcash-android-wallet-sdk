@@ -20,8 +20,8 @@ import cash.z.ecc.android.sdk.jni.rewindBlockMetadataToHeight
 import cash.z.ecc.android.sdk.model.BlockHeight
 import co.electriccoin.lightwallet.client.model.CompactBlockUnsafe
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.onEach
 import java.io.File
@@ -38,7 +38,7 @@ internal class FileCompactBlockRepository(
 
     override suspend fun findCompactBlock(height: BlockHeight) = rustBackend.findBlockMetadata(height)
 
-    override suspend fun write(blocks: Flow<CompactBlockUnsafe>): Flow<Int> {
+    override suspend fun write(blocks: Flow<CompactBlockUnsafe>): Int {
         return flow {
             blocks.onEach { block ->
                 val tmpFile = block.createTemporaryFile(blocksDirectory)
@@ -55,24 +55,25 @@ internal class FileCompactBlockRepository(
                 currentBufferSize++
 
                 if (metaDataBuffer.isBufferFull()) {
-                    reportWriteResult(metaDataBuffer)
+                    emit(writeAndClearBuffer(metaDataBuffer))
                 }
             }.collect()
 
             if (metaDataBuffer.isNotEmpty()) {
-                reportWriteResult(metaDataBuffer)
+                emit(writeAndClearBuffer(metaDataBuffer))
             }
-        }
+        }.first()
     }
 
     /*
      * Write block metadata to storage when the buffer is full or when we reached the current range end.
      */
-    private suspend fun FlowCollector<Int>.reportWriteResult(metaDataBuffer: MutableList<JniBlockMeta>) {
+    private suspend fun writeAndClearBuffer(metaDataBuffer: MutableList<JniBlockMeta>): Int {
         rustBackend.writeBlockMetadata(metaDataBuffer)
-        emit(metaDataBuffer.size)
+        val writtenBlocksSize = metaDataBuffer.size
         metaDataBuffer.clear()
         currentBufferSize = 0
+        return writtenBlocksSize
     }
 
     override suspend fun rewindTo(height: BlockHeight) = rustBackend.rewindBlockMetadataToHeight(height)

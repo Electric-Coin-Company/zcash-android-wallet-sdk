@@ -12,7 +12,6 @@ import co.electriccoin.lightwallet.client.model.LightWalletEndpointInfoUnsafe
 import co.electriccoin.lightwallet.client.model.Response
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Dispatchers.IO
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onCompletion
@@ -47,7 +46,7 @@ open class CompactBlockDownloader private constructor(val compactBlockRepository
      * @param heightRange the inclusive range of heights to request. For example 10..20 would
      * request 11 blocks (including block 10 and block 20).
      */
-    suspend fun downloadBlockRange(heightRange: ClosedRange<BlockHeight>): Flow<Int> {
+    suspend fun downloadBlockRange(heightRange: ClosedRange<BlockHeight>): Int {
         val filteredFlow = lightWalletClient.getBlockRange(
             BlockHeightUnsafe.from(heightRange.start)..BlockHeightUnsafe.from(heightRange.endInclusive)
         ).onEach { response ->
