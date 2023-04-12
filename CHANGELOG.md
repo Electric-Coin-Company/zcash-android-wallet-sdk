@@ -1,6 +1,9 @@
 Change Log
 ==========
 
+## 1.17.0-beta01
+- Synchronizer APIs for listing sent and received transactions have been removed
+
 ## 1.16.0-beta01
 ### Changed
  - The minimum supported version of Android is now API level 27.

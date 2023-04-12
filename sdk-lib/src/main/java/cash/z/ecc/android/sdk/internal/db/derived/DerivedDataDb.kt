@@ -26,10 +26,6 @@ internal class DerivedDataDb private constructor(
 
     val allTransactionView = AllTransactionView(zcashNetwork, sqliteDatabase)
 
-    val sentTransactionView = SentTransactionView(zcashNetwork, sqliteDatabase)
-
-    val receivedTransactionView = ReceivedTransactionView(zcashNetwork, sqliteDatabase)
-
     val sentNotesTable = SentNoteTable(zcashNetwork, sqliteDatabase)
 
     val receivedNotesTable = ReceivedNoteTable(zcashNetwork, sqliteDatabase)

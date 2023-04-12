@@ -1,6 +1,10 @@
 Troubleshooting Migrations
 ==========
 
+Migration to Version 1.17
+---------------------------------
+Synchronizer APIs for listing sent and received transactions have been removed.  Clients should use `Synchronizer.clearedTransactions`, filtering on the field `TransactionOverview.isSentTransaction`.
+
 Migration to Version 1.15
 ---------------------------------
 The updated `Synchronizer.refreshUtxos` is now supposed to be called with `Account` parameter instead of `String` address parameter. The Account object provides a default `0` index Account with `Account.DEFAULT`.    
