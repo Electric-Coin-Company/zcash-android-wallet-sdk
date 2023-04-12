@@ -5,7 +5,7 @@ import cash.z.ecc.android.sdk.test.getAppContext
 import kotlin.test.Ignore
 import kotlin.test.Test
 
-class CoroutineLightWalletClientImplTest {
+class LightWalletClientImplTest {
 
     private val channelFactory = AndroidChannelFactory(getAppContext())
 

@@ -15,7 +15,7 @@ import cash.z.ecc.android.sdk.model.isSubmitSuccess
 import cash.z.ecc.android.sdk.test.ScopedTest
 import cash.z.ecc.android.sdk.tool.CheckpointTool
 import cash.z.ecc.android.sdk.tool.DerivationTool
-import co.electriccoin.lightwallet.client.CoroutineLightWalletClient
+import co.electriccoin.lightwallet.client.LightWalletClient
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
 import co.electriccoin.lightwallet.client.model.Response
@@ -44,7 +44,7 @@ class TestnetIntegrationTest : ScopedTest() {
     @Ignore("This test is broken")
     @OptIn(ExperimentalCoroutinesApi::class)
     fun testLatestBlockTest() = runTest {
-        val service = CoroutineLightWalletClient.new(
+        val service = LightWalletClient.new(
             context,
             lightWalletEndpoint
         )

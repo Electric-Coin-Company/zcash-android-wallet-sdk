@@ -10,7 +10,7 @@ import cash.z.ecc.android.sdk.internal.repository.CompactBlockRepository
 import cash.z.ecc.android.sdk.model.Mainnet
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.test.ScopedTest
-import co.electriccoin.lightwallet.client.CoroutineLightWalletClient
+import co.electriccoin.lightwallet.client.LightWalletClient
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
 import co.electriccoin.lightwallet.client.model.Response
@@ -38,16 +38,16 @@ class ChangeServiceTest : ScopedTest() {
     lateinit var mockBlockStore: CompactBlockRepository
     var mockCloseable: AutoCloseable? = null
 
-    val service = CoroutineLightWalletClient.new(context, lightWalletEndpoint)
+    val service = LightWalletClient.new(context, lightWalletEndpoint)
 
     lateinit var downloader: CompactBlockDownloader
-    lateinit var otherService: CoroutineLightWalletClient
+    lateinit var otherService: LightWalletClient
 
     @Before
     fun setup() {
         initMocks()
         downloader = CompactBlockDownloader(service, mockBlockStore)
-        otherService = CoroutineLightWalletClient.new(context, eccEndpoint)
+        otherService = LightWalletClient.new(context, eccEndpoint)
     }
 
     @After

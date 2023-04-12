@@ -27,7 +27,7 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 /**
- * Implementation of CoroutineLightWalletClient using gRPC for requests to lightwalletd.
+ * Implementation of LightWalletClient using gRPC for requests to lightwalletd.
  *
  * @property singleRequestTimeout the timeout to use for non-streaming requests. When a new stub
  * is created, it will use a deadline that is after the given duration from now.
@@ -181,7 +181,7 @@ internal class LightWalletClientImpl private constructor(
         channel = channelFactory.newChannel(lightWalletEndpoint)
     }
 
-    // These make the CoroutineLightWalletClientImpl not thread safe. In the long-term, we should
+    // These make the LightWalletClientImpl not thread safe. In the long-term, we should
     // consider making it thread safe.
     private var stateCount = 0
     private var state: ConnectivityState? = null

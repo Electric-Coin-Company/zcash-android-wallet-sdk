@@ -6,7 +6,7 @@ import cash.z.ecc.android.sdk.internal.model.ext.from
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.Mainnet
 import cash.z.ecc.android.sdk.model.ZcashNetwork
-import co.electriccoin.lightwallet.client.CoroutineLightWalletClient
+import co.electriccoin.lightwallet.client.LightWalletClient
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
 import co.electriccoin.lightwallet.client.new
@@ -15,7 +15,7 @@ import org.junit.Test
 
 class TransactionCounterUtil {
     private val context = InstrumentationRegistry.getInstrumentation().context
-    private val lightWalletClient = CoroutineLightWalletClient.new(context, LightWalletEndpoint.Mainnet)
+    private val lightWalletClient = LightWalletClient.new(context, LightWalletEndpoint.Mainnet)
 
     @Test
     @Ignore("This test is broken")

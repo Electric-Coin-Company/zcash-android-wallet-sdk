@@ -13,7 +13,7 @@ import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.model.defaultForNetwork
 import cash.z.ecc.android.sdk.model.isFailure
 import cash.z.ecc.android.sdk.tool.DerivationTool
-import co.electriccoin.lightwallet.client.CoroutineLightWalletClient
+import co.electriccoin.lightwallet.client.LightWalletClient
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.CompactBlockUnsafe
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
@@ -90,7 +90,7 @@ class SampleCodeTest {
     fun getLatestBlockHeightTest() = runTest {
         // Test the result, only if there is no server communication problem.
         runCatching {
-            CoroutineLightWalletClient.new(context, lightwalletdHost).getLatestBlockHeight()
+            LightWalletClient.new(context, lightwalletdHost).getLatestBlockHeight()
         }.onFailure {
             Twig.debug(it) { "Failed to retrieve data" }
         }.onSuccess {
@@ -118,7 +118,7 @@ class SampleCodeTest {
                 )
         )
 
-        val lightWalletClient = CoroutineLightWalletClient.new(context, lightwalletdHost)
+        val lightWalletClient = LightWalletClient.new(context, lightwalletdHost)
 
         // Test the result, only if there is no server communication problem.
         runCatching {
