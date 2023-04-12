@@ -20,10 +20,6 @@ import cash.z.ecc.android.sdk.jni.rewindBlockMetadataToHeight
 import cash.z.ecc.android.sdk.model.BlockHeight
 import co.electriccoin.lightwallet.client.model.CompactBlockUnsafe
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.onEach
 import java.io.File
 
 internal class FileCompactBlockRepository(
@@ -31,38 +27,42 @@ internal class FileCompactBlockRepository(
     private val rustBackend: Backend
 ) : CompactBlockRepository {
 
-    private var currentBufferSize = 0
-    private val metaDataBuffer: MutableList<JniBlockMeta> by lazy { mutableListOf() }
-
     override suspend fun getLatestHeight() = rustBackend.getLatestBlockHeight()
 
     override suspend fun findCompactBlock(height: BlockHeight) = rustBackend.findBlockMetadata(height)
 
     override suspend fun write(blocks: Flow<CompactBlockUnsafe>): Int {
-        return flow {
-            blocks.onEach { block ->
-                val tmpFile = block.createTemporaryFile(blocksDirectory)
-                // write compact block bytes
-                tmpFile.writeBytesSuspend(block.compactBlockBytes)
-                // buffer metadata
-                metaDataBuffer.add(block.toJniMetaData())
+        var totalBlocksWritten = 0
+        var currentBufferSize = 0
+        val metaDataBuffer = mutableListOf<JniBlockMeta>()
+        blocks.collect { block ->
+            val tmpFile = block.createTemporaryFile(blocksDirectory)
+            // write compact block bytes
+            tmpFile.writeBytesSuspend(block.compactBlockBytes)
+            // buffer metadata
+            metaDataBuffer.add(block.toJniMetaData())
 
-                val isFinalizeSuccessful = tmpFile.finalizeFile()
-                check(isFinalizeSuccessful) {
-                    "Failed to finalize file: ${tmpFile.absolutePath}"
-                }
-
-                currentBufferSize++
-
-                if (metaDataBuffer.isBufferFull()) {
-                    emit(writeAndClearBuffer(metaDataBuffer))
-                }
-            }.collect()
-
-            if (metaDataBuffer.isNotEmpty()) {
-                emit(writeAndClearBuffer(metaDataBuffer))
+            val isFinalizeSuccessful = tmpFile.finalizeFile()
+            check(isFinalizeSuccessful) {
+                "Failed to finalize file: ${tmpFile.absolutePath}"
             }
-        }.first()
+
+            currentBufferSize++
+
+            if (metaDataBuffer.isBufferFull()) {
+                val blocksWritten = writeAndClearBuffer(metaDataBuffer)
+                totalBlocksWritten += blocksWritten
+                currentBufferSize -= blocksWritten
+            }
+        }
+
+        if (metaDataBuffer.isNotEmpty()) {
+            val blocksWritten = writeAndClearBuffer(metaDataBuffer)
+            totalBlocksWritten += blocksWritten
+            currentBufferSize -= blocksWritten
+        }
+
+        return totalBlocksWritten
     }
 
     /*
@@ -72,7 +72,6 @@ internal class FileCompactBlockRepository(
         rustBackend.writeBlockMetadata(metaDataBuffer)
         val writtenBlocksSize = metaDataBuffer.size
         metaDataBuffer.clear()
-        currentBufferSize = 0
         return writtenBlocksSize
     }
 
