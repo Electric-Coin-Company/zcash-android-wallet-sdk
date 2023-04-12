@@ -2,7 +2,6 @@ package cash.z.ecc.android.sdk.internal.repository
 
 import cash.z.ecc.android.sdk.internal.model.EncodedTransaction
 import cash.z.ecc.android.sdk.model.BlockHeight
-import cash.z.ecc.android.sdk.model.Transaction
 import cash.z.ecc.android.sdk.model.TransactionOverview
 import cash.z.ecc.android.sdk.model.TransactionRecipient
 import kotlinx.coroutines.flow.Flow
@@ -95,12 +94,6 @@ internal interface DerivedDataRepository {
      * We'll come back to this and improve it in the future.  This implementation is already an improvement over
      * prior versions.
      */
-
-    /** A flow of all the inbound confirmed transactions */
-    val receivedTransactions: Flow<List<Transaction.Received>>
-
-    /** A flow of all the outbound confirmed transactions */
-    val sentTransactions: Flow<List<Transaction.Sent>>
 
     /** A flow of all the inbound and outbound confirmed transactions */
     val allTransactions: Flow<List<TransactionOverview>>

@@ -3,7 +3,6 @@ package cash.z.ecc.android.sdk.internal.db.derived
 import cash.z.ecc.android.sdk.internal.model.EncodedTransaction
 import cash.z.ecc.android.sdk.internal.repository.DerivedDataRepository
 import cash.z.ecc.android.sdk.model.BlockHeight
-import cash.z.ecc.android.sdk.model.Transaction
 import cash.z.ecc.android.sdk.model.TransactionOverview
 import cash.z.ecc.android.sdk.model.TransactionRecipient
 import kotlinx.coroutines.flow.Flow
@@ -57,10 +56,6 @@ internal class DbDerivedDataRepository(
         // toInt() should be safe because we expect very few accounts
         .toInt()
 
-    override val receivedTransactions: Flow<List<Transaction.Received>>
-        get() = invalidatingFlow.map { derivedDataDb.receivedTransactionView.getReceivedTransactions().toList() }
-    override val sentTransactions: Flow<List<Transaction.Sent>>
-        get() = invalidatingFlow.map { derivedDataDb.sentTransactionView.getSentTransactions().toList() }
     override val allTransactions: Flow<List<TransactionOverview>>
         get() = invalidatingFlow.map { derivedDataDb.allTransactionView.getAllTransactions().toList() }
 

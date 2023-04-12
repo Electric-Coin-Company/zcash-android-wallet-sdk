@@ -7,7 +7,6 @@ import cash.z.ecc.android.sdk.internal.SaplingParamTool
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.PendingTransaction
-import cash.z.ecc.android.sdk.model.Transaction
 import cash.z.ecc.android.sdk.model.TransactionOverview
 import cash.z.ecc.android.sdk.model.TransactionRecipient
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
@@ -98,16 +97,6 @@ interface Synchronizer {
      * A flow of all the transactions that are on the blockchain.
      */
     val clearedTransactions: Flow<List<TransactionOverview>>
-
-    /**
-     * A flow of all transactions related to sending funds.
-     */
-    val sentTransactions: Flow<List<Transaction.Sent>>
-
-    /**
-     * A flow of all transactions related to receiving funds.
-     */
-    val receivedTransactions: Flow<List<Transaction.Received>>
 
     //
     // Latest Properties

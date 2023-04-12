@@ -199,8 +199,6 @@ class SdkSynchronizer private constructor(
 
     override val clearedTransactions get() = storage.allTransactions
     override val pendingTransactions = txManager.getAll()
-    override val sentTransactions get() = storage.sentTransactions
-    override val receivedTransactions get() = storage.receivedTransactions
 
     //
     // Status
