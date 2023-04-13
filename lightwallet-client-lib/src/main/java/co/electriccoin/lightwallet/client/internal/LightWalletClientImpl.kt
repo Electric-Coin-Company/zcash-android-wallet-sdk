@@ -103,10 +103,12 @@ internal class LightWalletClientImpl private constructor(
             "${Constants.ILLEGAL_ARGUMENT_EXCEPTION_MESSAGE} Failed to submit transaction because it was empty, so " +
                 "this request was ignored on the client-side." // NON-NLS
         }
+
+        val request = Service.RawTransaction.newBuilder()
+            .setData(ByteString.copyFrom(spendTransaction))
+            .build()
+
         return try {
-            val request =
-                Service.RawTransaction.newBuilder().setData(ByteString.copyFrom(spendTransaction))
-                    .build()
             val response = requireChannel().createStub().sendTransaction(request)
 
             val sendResponse = SendResponseUnsafe.new(response)
@@ -122,9 +124,10 @@ internal class LightWalletClientImpl private constructor(
             "${Constants.ILLEGAL_ARGUMENT_EXCEPTION_MESSAGE} Failed to start fetching the transaction with null " +
                 "transaction ID, so this request was ignored on the client-side." // NON-NLS
         }
-        return try {
-            val request = Service.TxFilter.newBuilder().setHash(ByteString.copyFrom(txId)).build()
 
+        val request = Service.TxFilter.newBuilder().setHash(ByteString.copyFrom(txId)).build()
+
+        return try {
             val response = requireChannel().createStub().getTransaction(request)
 
             val transactionResponse = RawTransactionUnsafe.new(response)
@@ -166,11 +169,13 @@ internal class LightWalletClientImpl private constructor(
         require(!blockHeightRange.isEmpty() && tAddress.isNotBlank()) {
             "${Constants.ILLEGAL_ARGUMENT_EXCEPTION_MESSAGE} range: $blockHeightRange, address: $tAddress." // NON-NLS
         }
+
+        val request = Service.TransparentAddressBlockFilter.newBuilder()
+            .setAddress(tAddress)
+            .setRange(blockHeightRange.toBlockRange())
+            .build()
+
         return try {
-            val request = Service.TransparentAddressBlockFilter.newBuilder()
-                .setAddress(tAddress)
-                .setRange(blockHeightRange.toBlockRange())
-                .build()
             requireChannel().createStub(streamingRequestTimeout)
                 .getTaddressTxids(request)
                 .map {
