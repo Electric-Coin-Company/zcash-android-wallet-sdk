@@ -7,6 +7,7 @@ import co.electriccoin.lightwallet.client.ext.BenchmarkingExt
 import co.electriccoin.lightwallet.client.fixture.BenchmarkingBlockRangeFixture
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.CompactBlockUnsafe
+import co.electriccoin.lightwallet.client.model.GetAddressUtxosReplyUnsafe
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
 import co.electriccoin.lightwallet.client.model.LightWalletEndpointInfoUnsafe
 import co.electriccoin.lightwallet.client.model.RawTransactionUnsafe
@@ -141,25 +142,37 @@ internal class LightWalletClientImpl private constructor(
     override suspend fun fetchUtxos(
         tAddresses: List<String>,
         startHeight: BlockHeightUnsafe
-    ): Flow<Service.GetAddressUtxosReply> {
+    ): Flow<Response<GetAddressUtxosReplyUnsafe>> {
         require(tAddresses.isNotEmpty() && tAddresses.all { it.isNotBlank() }) {
             "${Constants.ILLEGAL_ARGUMENT_EXCEPTION_MESSAGE} array of addresses contains invalid item." // NON-NLS
         }
 
-        val builder = Service.GetAddressUtxosArg.newBuilder()
+        val getUtxosBuilder = Service.GetAddressUtxosArg.newBuilder()
 
         // TODO [#941]: Fetch UTXOs setAddress() failure
         // TODO [#941]: https://github.com/zcash/zcash-android-wallet-sdk/issues/941
-        // build the request with the different addresses
+        // Build the request with the different addresses
         tAddresses.forEachIndexed { index, tAddress ->
-            builder.setAddresses(index, tAddress)
+            getUtxosBuilder.setAddresses(index, tAddress)
         }
 
-        builder.startHeight = startHeight.value
+        val request = getUtxosBuilder.build()
 
-        return requireChannel().createStub().getAddressUtxosStream(
-            builder.build()
-        )
+        return try {
+            requireChannel().createStub(streamingRequestTimeout)
+                .getAddressUtxosStream(request)
+                .map {
+                    val response: Response<GetAddressUtxosReplyUnsafe> =
+                        Response.Success(GetAddressUtxosReplyUnsafe.new(it))
+                    response
+                }.catch {
+                    val failure: Response.Failure<GetAddressUtxosReplyUnsafe> =
+                        GrpcStatusResolver.resolveFailureFromStatus(it)
+                    emit(failure)
+                }
+        } catch (e: StatusException) {
+            flowOf(GrpcStatusResolver.resolveFailureFromStatus(e))
+        }
     }
 
     override fun getTAddressTransactions(

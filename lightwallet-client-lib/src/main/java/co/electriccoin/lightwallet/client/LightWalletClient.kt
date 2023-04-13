@@ -1,11 +1,11 @@
 package co.electriccoin.lightwallet.client
 
 import android.content.Context
-import cash.z.wallet.sdk.internal.rpc.Service
 import co.electriccoin.lightwallet.client.internal.AndroidChannelFactory
 import co.electriccoin.lightwallet.client.internal.LightWalletClientImpl
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.CompactBlockUnsafe
+import co.electriccoin.lightwallet.client.model.GetAddressUtxosReplyUnsafe
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
 import co.electriccoin.lightwallet.client.model.LightWalletEndpointInfoUnsafe
 import co.electriccoin.lightwallet.client.model.RawTransactionUnsafe
@@ -34,7 +34,7 @@ interface LightWalletClient {
     suspend fun fetchUtxos(
         tAddresses: List<String>,
         startHeight: BlockHeightUnsafe
-    ): Flow<Service.GetAddressUtxosReply>
+    ): Flow<Response<GetAddressUtxosReplyUnsafe>>
 
     /**
      * @param heightRange the inclusive range to fetch. For instance if 1..5 is given, then every
