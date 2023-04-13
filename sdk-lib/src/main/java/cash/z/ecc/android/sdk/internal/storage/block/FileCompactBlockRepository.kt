@@ -33,7 +33,6 @@ internal class FileCompactBlockRepository(
 
     override suspend fun write(blocks: Flow<CompactBlockUnsafe>): Int {
         var totalBlocksWritten = 0
-        var currentBufferSize = 0
         val metaDataBuffer = mutableListOf<JniBlockMeta>()
         blocks.collect { block ->
             val tmpFile = block.createTemporaryFile(blocksDirectory)
@@ -47,19 +46,15 @@ internal class FileCompactBlockRepository(
                 "Failed to finalize file: ${tmpFile.absolutePath}"
             }
 
-            currentBufferSize++
-
             if (metaDataBuffer.isBufferFull()) {
                 val blocksWritten = writeAndClearBuffer(metaDataBuffer)
                 totalBlocksWritten += blocksWritten
-                currentBufferSize -= blocksWritten
             }
         }
 
         if (metaDataBuffer.isNotEmpty()) {
             val blocksWritten = writeAndClearBuffer(metaDataBuffer)
             totalBlocksWritten += blocksWritten
-            currentBufferSize -= blocksWritten
         }
 
         return totalBlocksWritten
@@ -70,9 +65,9 @@ internal class FileCompactBlockRepository(
      */
     private suspend fun writeAndClearBuffer(metaDataBuffer: MutableList<JniBlockMeta>): Int {
         rustBackend.writeBlockMetadata(metaDataBuffer)
-        val writtenBlocksSize = metaDataBuffer.size
+        val blocksWrittenCount = metaDataBuffer.size
         metaDataBuffer.clear()
-        return writtenBlocksSize
+        return blocksWrittenCount
     }
 
     override suspend fun rewindTo(height: BlockHeight) = rustBackend.rewindBlockMetadataToHeight(height)
