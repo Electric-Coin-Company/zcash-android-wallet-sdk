@@ -162,14 +162,28 @@ internal class LightWalletClientImpl private constructor(
     override fun getTAddressTransactions(
         tAddress: String,
         blockHeightRange: ClosedRange<BlockHeightUnsafe>
-    ): Flow<Service.RawTransaction> {
+    ): Flow<Response<RawTransactionUnsafe>> {
         require(!blockHeightRange.isEmpty() && tAddress.isNotBlank()) {
             "${Constants.ILLEGAL_ARGUMENT_EXCEPTION_MESSAGE} range: $blockHeightRange, address: $tAddress." // NON-NLS
         }
-        return requireChannel().createStub().getTaddressTxids(
-            Service.TransparentAddressBlockFilter.newBuilder().setAddress(tAddress)
-                .setRange(blockHeightRange.toBlockRange()).build()
-        )
+        return try {
+            val request = Service.TransparentAddressBlockFilter.newBuilder()
+                .setAddress(tAddress)
+                .setRange(blockHeightRange.toBlockRange())
+                .build()
+            requireChannel().createStub(streamingRequestTimeout)
+                .getTaddressTxids(request)
+                .map {
+                    val response: Response<RawTransactionUnsafe> = Response.Success(RawTransactionUnsafe.new(it))
+                    response
+                }.catch {
+                    val failure: Response.Failure<RawTransactionUnsafe> =
+                        GrpcStatusResolver.resolveFailureFromStatus(it)
+                    emit(failure)
+                }
+        } catch (e: StatusException) {
+            flowOf(GrpcStatusResolver.resolveFailureFromStatus(e))
+        }
     }
 
     override fun shutdown() {

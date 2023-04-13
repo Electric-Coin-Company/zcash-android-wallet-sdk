@@ -71,7 +71,7 @@ interface LightWalletClient {
     fun getTAddressTransactions(
         tAddress: String,
         blockHeightRange: ClosedRange<BlockHeightUnsafe>
-    ): Flow<Service.RawTransaction>
+    ): Flow<Response<RawTransactionUnsafe>>
 
     /**
      * Reconnect to the same or a different server. This is useful when the connection is
