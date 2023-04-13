@@ -52,9 +52,9 @@ open class CompactBlockDownloader private constructor(val compactBlockRepository
         ).onEach { response ->
             when (response) {
                 is Response.Success -> {
-                    Twig.debug { "Downloading block at height: ${response.result.height} succeeded." }
+                    Twig.verbose { "Downloading block at height: ${response.result.height} succeeded." }
                 } else -> {
-                    Twig.debug { "Downloading blocks in range: $heightRange failed with: $response." }
+                    Twig.warn { "Downloading blocks in range: $heightRange failed with: $response." }
                 }
             }
         }
@@ -64,9 +64,9 @@ open class CompactBlockDownloader private constructor(val compactBlockRepository
             }
             .onCompletion {
                 if (it != null) {
-                    Twig.debug { "Blocks in range $heightRange failed to download with: $it" }
+                    Twig.warn { "Blocks in range $heightRange failed to download with: $it" }
                 } else {
-                    Twig.debug { "All blocks in range $heightRange downloaded successfully" }
+                    Twig.verbose { "All blocks in range $heightRange downloaded successfully" }
                 }
             }
 

@@ -734,7 +734,7 @@ class CompactBlockProcessor internal constructor(
                             )
                         ) // subtract 1 on the first value because the range is inclusive
 
-                        Twig.debug { "Starting block batch $i download" }
+                        Twig.verbose { "Starting block batch $i download" }
 
                         val downloadedCount = downloader.downloadBlockRange(downloadedBlockHeight..end)
 
@@ -742,7 +742,7 @@ class CompactBlockProcessor internal constructor(
                             "Downloaded $downloadedCount blocks [${downloadedBlockHeight..end}] in batch $i of $batches"
                         }
 
-                        Twig.debug { "Block batch $i downloaded" }
+                        Twig.verbose { "Block batch $i downloaded" }
 
                         progress = (i / batches.toFloat() * 100).roundToInt()
                         _progress.value = progress
