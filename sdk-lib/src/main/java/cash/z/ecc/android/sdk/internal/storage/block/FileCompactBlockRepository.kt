@@ -18,7 +18,8 @@ import cash.z.ecc.android.sdk.jni.findBlockMetadata
 import cash.z.ecc.android.sdk.jni.getLatestBlockHeight
 import cash.z.ecc.android.sdk.jni.rewindBlockMetadataToHeight
 import cash.z.ecc.android.sdk.model.BlockHeight
-import cash.z.wallet.sdk.internal.rpc.CompactFormats.CompactBlock
+import co.electriccoin.lightwallet.client.model.CompactBlockUnsafe
+import kotlinx.coroutines.flow.Flow
 import java.io.File
 
 internal class FileCompactBlockRepository(
@@ -30,15 +31,13 @@ internal class FileCompactBlockRepository(
 
     override suspend fun findCompactBlock(height: BlockHeight) = rustBackend.findBlockMetadata(height)
 
-    override suspend fun write(result: Sequence<CompactBlock>): Int {
-        var count = 0
-
+    override suspend fun write(blocks: Flow<CompactBlockUnsafe>): Int {
+        var totalBlocksWritten = 0
         val metaDataBuffer = mutableListOf<JniBlockMeta>()
-
-        result.forEach { block ->
+        blocks.collect { block ->
             val tmpFile = block.createTemporaryFile(blocksDirectory)
             // write compact block bytes
-            tmpFile.writeBytesSuspend(block.toByteArray())
+            tmpFile.writeBytesSuspend(block.compactBlockBytes)
             // buffer metadata
             metaDataBuffer.add(block.toJniMetaData())
 
@@ -47,22 +46,28 @@ internal class FileCompactBlockRepository(
                 "Failed to finalize file: ${tmpFile.absolutePath}"
             }
 
-            count++
-
             if (metaDataBuffer.isBufferFull()) {
-                // write blocks metadata to storage when the buffer is full
-                rustBackend.writeBlockMetadata(metaDataBuffer)
-                metaDataBuffer.clear()
+                val blocksWritten = writeAndClearBuffer(metaDataBuffer)
+                totalBlocksWritten += blocksWritten
             }
         }
 
         if (metaDataBuffer.isNotEmpty()) {
-            // write the rest of the blocks metadata to storage even though the buffer is not full
-            rustBackend.writeBlockMetadata(metaDataBuffer)
-            metaDataBuffer.clear()
+            val blocksWritten = writeAndClearBuffer(metaDataBuffer)
+            totalBlocksWritten += blocksWritten
         }
 
-        return count
+        return totalBlocksWritten
+    }
+
+    /*
+     * Write block metadata to storage when the buffer is full or when we reached the current range end.
+     */
+    private suspend fun writeAndClearBuffer(metaDataBuffer: MutableList<JniBlockMeta>): Int {
+        rustBackend.writeBlockMetadata(metaDataBuffer)
+        val blocksWrittenCount = metaDataBuffer.size
+        metaDataBuffer.clear()
+        return blocksWrittenCount
     }
 
     override suspend fun rewindTo(height: BlockHeight) = rustBackend.rewindBlockMetadataToHeight(height)
@@ -126,36 +131,17 @@ private fun List<JniBlockMeta>.isBufferFull(): Boolean {
     return size % FileCompactBlockRepository.BLOCKS_METADATA_BUFFER_SIZE == 0
 }
 
-internal data class CompactBlockOutputsCounts(
-    val saplingOutputsCount: UInt,
-    val orchardActionsCount: UInt
-)
-
-private fun CompactBlock.getOutputsCounts(): CompactBlockOutputsCounts {
-    var outputsCount: UInt = 0u
-    var actionsCount: UInt = 0u
-
-    vtxList.forEach { compactTx ->
-        outputsCount += compactTx.outputsCount.toUInt()
-        actionsCount += compactTx.actionsCount.toUInt()
-    }
-
-    return CompactBlockOutputsCounts(outputsCount, actionsCount)
+private fun CompactBlockUnsafe.toJniMetaData(): JniBlockMeta {
+    return JniBlockMeta.new(this)
 }
 
-private fun CompactBlock.toJniMetaData(): JniBlockMeta {
-    val outputs = getOutputsCounts()
-
-    return JniBlockMeta.new(this, outputs)
-}
-
-private fun CompactBlock.createFilename(): String {
-    val hashHex = hash.toByteArray().toHexReversed()
+private fun CompactBlockUnsafe.createFilename(): String {
+    val hashHex = hash.toHexReversed()
     return "$height-$hashHex${FileCompactBlockRepository.BLOCK_FILENAME_SUFFIX}"
 }
 
 @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-internal suspend fun CompactBlock.createTemporaryFile(blocksDirectory: File): File {
+internal suspend fun CompactBlockUnsafe.createTemporaryFile(blocksDirectory: File): File {
     val tempFileName = "${createFilename()}${FileCompactBlockRepository.TEMPORARY_FILENAME_SUFFIX}"
     val tmpFile = File(blocksDirectory, tempFileName)
 

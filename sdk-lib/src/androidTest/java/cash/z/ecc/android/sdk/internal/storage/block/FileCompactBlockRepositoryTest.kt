@@ -11,6 +11,10 @@ import cash.z.ecc.fixture.FakeRustBackendFixture
 import cash.z.ecc.fixture.FilePathFixture
 import co.electriccoin.lightwallet.client.fixture.ListOfCompactBlocksFixture
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.count
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.last
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -58,7 +62,7 @@ class FileCompactBlockRepositoryTest {
         val rustBackend = FakeRustBackendFixture().new()
         val blockRepository = getMockedFileCompactBlockRepository(rustBackend, FilePathFixture.newBlocksDir())
 
-        val blocks = ListOfCompactBlocksFixture.new()
+        val blocks = ListOfCompactBlocksFixture.newFlow()
 
         blockRepository.write(blocks)
 
@@ -72,7 +76,7 @@ class FileCompactBlockRepositoryTest {
         val rustBackend = FakeRustBackendFixture().new()
         val blockRepository = getMockedFileCompactBlockRepository(rustBackend, FilePathFixture.newBlocksDir())
 
-        val blocks = ListOfCompactBlocksFixture.new()
+        val blocks = ListOfCompactBlocksFixture.newFlow()
 
         blockRepository.write(blocks)
 
@@ -103,10 +107,10 @@ class FileCompactBlockRepositoryTest {
 
         assertTrue { rustBackend.metadata.isEmpty() }
 
-        val blocks = ListOfCompactBlocksFixture.new()
-        val persistedBlocksCount = blockRepository.write(blocks)
+        val blocks = ListOfCompactBlocksFixture.newFlow()
+        val persistedCount = blockRepository.write(blocks)
 
-        assertEquals(blocks.count(), persistedBlocksCount)
+        assertEquals(blocks.count(), persistedCount)
         assertEquals(blocks.count(), rustBackend.metadata.size)
     }
 
@@ -119,14 +123,14 @@ class FileCompactBlockRepositoryTest {
         assertTrue { rustBackend.metadata.isEmpty() }
 
         // prepare a list of blocks to be persisted, which has smaller size than buffer size
-        val reducedBlocksList = ListOfCompactBlocksFixture.new().apply {
+        val reducedBlocksList = ListOfCompactBlocksFixture.newFlow().apply {
             val reduced = drop(count() / 2)
             assertTrue { reduced.count() < FileCompactBlockRepository.BLOCKS_METADATA_BUFFER_SIZE }
         }
 
-        val persistedBlocksCount = blockRepository.write(reducedBlocksList)
+        val persistedCount = blockRepository.write(reducedBlocksList)
 
-        assertEquals(reducedBlocksList.count(), persistedBlocksCount)
+        assertEquals(reducedBlocksList.count(), persistedCount)
         assertEquals(reducedBlocksList.count(), rustBackend.metadata.size)
     }
 
@@ -140,11 +144,12 @@ class FileCompactBlockRepositoryTest {
         assertTrue { rootBlocksDirectory.exists() }
         assertTrue { rootBlocksDirectory.list()!!.isEmpty() }
 
-        val blocks = ListOfCompactBlocksFixture.new()
-        val persistedBlocksCount = blockRepository.write(blocks)
+        val blocks = ListOfCompactBlocksFixture.newFlow()
+
+        val persistedCount = blockRepository.write(blocks)
 
         assertTrue { rootBlocksDirectory.exists() }
-        assertEquals(blocks.count(), persistedBlocksCount)
+        assertEquals(blocks.count(), persistedCount)
         assertEquals(blocks.count(), rootBlocksDirectory.list()!!.size)
     }
 
@@ -158,17 +163,18 @@ class FileCompactBlockRepositoryTest {
         val blockRepository = getMockedFileCompactBlockRepository(rustBackend, blocksDirectory)
 
         val testedBlocksRange = ListOfCompactBlocksFixture.DEFAULT_FILE_BLOCK_RANGE
-        val blocks = ListOfCompactBlocksFixture.new(testedBlocksRange)
+        val blocks = ListOfCompactBlocksFixture.newFlow(testedBlocksRange)
 
-        val persistedBlocksCount = blockRepository.write(blocks)
+        val persistedCount = blockRepository.write(blocks)
 
         parentDirectory.also {
             assertTrue(it.existsSuspend())
             assertTrue(it.listSuspend()!!.contains(FilePathFixture.DEFAULT_BLOCKS_DIR_NAME))
         }
+
         blocksDirectory.also {
             assertTrue(it.existsSuspend())
-            assertEquals(blocks.count(), persistedBlocksCount)
+            assertEquals(blocks.count(), persistedCount)
         }
 
         blockRepository.deleteCompactBlockFiles()
@@ -177,6 +183,7 @@ class FileCompactBlockRepositoryTest {
             assertTrue(it.existsSuspend())
             assertFalse(it.listSuspend()!!.contains(FilePathFixture.DEFAULT_BLOCKS_DIR_NAME))
         }
+
         blocksDirectory.also { blocksDir ->
             assertFalse(blocksDir.existsSuspend())
         }
@@ -190,7 +197,7 @@ class FileCompactBlockRepositoryTest {
 
         val testedBlocksRange = ListOfCompactBlocksFixture.DEFAULT_FILE_BLOCK_RANGE
 
-        val blocks = ListOfCompactBlocksFixture.new(testedBlocksRange)
+        val blocks = ListOfCompactBlocksFixture.newFlow(testedBlocksRange)
         blockRepository.write(blocks)
 
         val blocksRangeMiddleValue = testedBlocksRange.run {
@@ -225,7 +232,7 @@ class FileCompactBlockRepositoryTest {
     @Test
     fun createTemporaryFileTest() = runTest {
         val blocksDir = FilePathFixture.newBlocksDir()
-        val blocks = ListOfCompactBlocksFixture.new()
+        val blocks = ListOfCompactBlocksFixture.newSequence()
         val block = blocks.first()
 
         val file = block.createTemporaryFile(blocksDir)
@@ -237,7 +244,7 @@ class FileCompactBlockRepositoryTest {
     @Test
     fun finalizeFileTest() = runTest {
         val blocksDir = FilePathFixture.newBlocksDir()
-        val blocks = ListOfCompactBlocksFixture.new()
+        val blocks = ListOfCompactBlocksFixture.newSequence()
         val block = blocks.first()
 
         val tempFile = block.createTemporaryFile(blocksDir)

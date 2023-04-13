@@ -29,8 +29,8 @@ import cash.z.ecc.android.sdk.internal.ext.retryUpTo
 import cash.z.ecc.android.sdk.internal.ext.retryWithBackoff
 import cash.z.ecc.android.sdk.internal.ext.toHexReversed
 import cash.z.ecc.android.sdk.internal.isEmpty
-import cash.z.ecc.android.sdk.internal.model.from
-import cash.z.ecc.android.sdk.internal.model.toBlockHeight
+import cash.z.ecc.android.sdk.internal.model.ext.from
+import cash.z.ecc.android.sdk.internal.model.ext.toBlockHeight
 import cash.z.ecc.android.sdk.internal.repository.DerivedDataRepository
 import cash.z.ecc.android.sdk.jni.Backend
 import cash.z.ecc.android.sdk.jni.RustBackend
@@ -60,6 +60,7 @@ import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -608,9 +609,10 @@ class CompactBlockProcessor internal constructor(
     var failedUtxoFetches = 0
 
     @Suppress("MagicNumber")
-    internal suspend fun refreshUtxos(account: Account, startHeight: BlockHeight): Int? =
+    internal suspend fun refreshUtxos(account: Account, startHeight: BlockHeight): Int =
         withContext(IO) {
-            var count: Int? = null
+            Twig.debug { "Checking for UTXOs above height $startHeight" }
+            var count = 0
             // TODO [683]: cleanup the way that we prevent this from running excessively
             //       For now, try for about 3 blocks per app launch. If the service fails it is
             //       probably disabled on ligthtwalletd, so then stop trying until the next app launch.
@@ -621,12 +623,22 @@ class CompactBlockProcessor internal constructor(
                     retryUpTo(3) {
                         val tAddresses = rustBackend.listTransparentReceivers(account)
 
-                        val result = downloader.lightWalletClient.fetchUtxos(
+                        downloader.lightWalletClient.fetchUtxos(
                             tAddresses,
                             BlockHeightUnsafe.from(startHeight)
-                        )
-
-                        count = processUtxoResult(result, startHeight)
+                        ).onCompletion {
+                            if (it != null) {
+                                Twig.debug { "UTXOs from height $startHeight failed to download with: $it" }
+                            } else {
+                                Twig.debug { "All UTXOs from height $startHeight fetched successfully" }
+                            }
+                        }.collect { response ->
+                            Twig.debug { "Fetched UTXO with txid: ${response.txid}" }
+                            val processResult = processUtxoResult(response)
+                            if (processResult) {
+                                count++
+                            }
+                        }
                     }
                 } catch (e: Throwable) {
                     failedUtxoFetches++
@@ -645,11 +657,10 @@ class CompactBlockProcessor internal constructor(
             count
         }
 
-    internal suspend fun processUtxoResult(
-        result: Sequence<Service.GetAddressUtxosReply>,
-        startHeight: BlockHeight
-    ): Int = withContext(IO) {
-        var skipped = 0
+    /**
+     * @return True in case of the UTXO processed successfully, false otherwise
+     */
+    internal suspend fun processUtxoResult(utxo: Service.GetAddressUtxosReply): Boolean = withContext(IO) {
         // TODO(str4d): We no longer clear UTXOs here, as rustBackend.putUtxo now uses an upsert instead of an insert.
         //  This means that now-spent UTXOs would previously have been deleted, but now are left in the database (like
         //  shielded notes). Due to the fact that the lightwalletd query only returns _current_ UTXOs, we don't learn
@@ -659,35 +670,31 @@ class CompactBlockProcessor internal constructor(
         //  shielding transactions, and at least one shielded note from each shielding transaction is always enhanced.
         //  However, for greater reliability, we may want to alter the Data Access API to support "inferring spentness"
         //  from what is _not_ returned as a UTXO, or alternatively fetch TXOs from lightwalletd instead of just UTXOs.
-        Twig.debug { "Checking for UTXOs above height $startHeight" }
-        result.forEach { utxo: Service.GetAddressUtxosReply ->
-            Twig.debug { "Found UTXO at height ${utxo.height.toInt()} with ${utxo.valueZat} zatoshi" }
-            @Suppress("TooGenericExceptionCaught")
-            try {
-                // TODO [#920]: Tweak RustBackend public APIs to have void return values.
-                // TODO [#920]: Thus, we don't need to check the boolean result of this call until fixed.
-                // TODO [#920]: https://github.com/zcash/zcash-android-wallet-sdk/issues/920
-                rustBackend.putUtxo(
-                    utxo.address,
-                    utxo.txid.toByteArray(),
-                    utxo.index,
-                    utxo.script.toByteArray(),
-                    utxo.valueZat,
-                    BlockHeight(utxo.height)
-                )
-            } catch (t: Throwable) {
-                // TODO [#683]: more accurately track the utxos that were skipped (in theory, this could fail for other
-                //  reasons)
-                // TODO [#683]: https://github.com/zcash/zcash-android-wallet-sdk/issues/683
-                skipped++
-                Twig.debug {
-                    "Warning: Ignoring transaction at height ${utxo.height} @ index ${utxo.index} because " +
-                        "it already exists. Exception message: ${t.message}, caused by: ${t.cause}."
-                }
+        Twig.debug { "Found UTXO at height ${utxo.height.toInt()} with ${utxo.valueZat} zatoshi" }
+        @Suppress("TooGenericExceptionCaught")
+        return@withContext try {
+            // TODO [#920]: Tweak RustBackend public APIs to have void return values.
+            // TODO [#920]: Thus, we don't need to check the boolean result of this call until fixed.
+            // TODO [#920]: https://github.com/zcash/zcash-android-wallet-sdk/issues/920
+            rustBackend.putUtxo(
+                utxo.address,
+                utxo.txid.toByteArray(),
+                utxo.index,
+                utxo.script.toByteArray(),
+                utxo.valueZat,
+                BlockHeight(utxo.height)
+            )
+            true
+        } catch (t: Throwable) {
+            Twig.debug {
+                "Warning: Ignoring transaction at height ${utxo.height} @ index ${utxo.index} because " +
+                    "it already exists. Exception message: ${t.message}, caused by: ${t.cause}."
             }
+            // TODO [#683]: more accurately track the utxos that were skipped (in theory, this could fail for other
+            //  reasons)
+            // TODO [#683]: https://github.com/zcash/zcash-android-wallet-sdk/issues/683
+            false
         }
-        // return the number of UTXOs that were downloaded
-        result.count() - skipped
     }
 
     /**
@@ -726,14 +733,17 @@ class CompactBlockProcessor internal constructor(
                                 range.endInclusive.value
                             )
                         ) // subtract 1 on the first value because the range is inclusive
+
+                        Twig.verbose { "Starting block batch $i download" }
+
+                        val downloadedCount = downloader.downloadBlockRange(downloadedBlockHeight..end)
+
                         Twig.debug {
-                            "downloaded $downloadedBlockHeight..$end (batch $i of $batches) " +
-                                "[${downloadedBlockHeight..end}]"
+                            "Downloaded $downloadedCount blocks [${downloadedBlockHeight..end}] in batch $i of $batches"
                         }
 
-                        var count = downloader.downloadBlockRange(downloadedBlockHeight..end)
+                        Twig.verbose { "Block batch $i downloaded" }
 
-                        Twig.debug { "downloaded $count blocks!" }
                         progress = (i / batches.toFloat() * 100).roundToInt()
                         _progress.value = progress
                         val lastDownloadedHeight = downloader.getLastDownloadedHeight()

@@ -58,7 +58,7 @@ import cash.z.ecc.android.sdk.type.AddressType.Shielded
 import cash.z.ecc.android.sdk.type.AddressType.Transparent
 import cash.z.ecc.android.sdk.type.AddressType.Unified
 import cash.z.ecc.android.sdk.type.ConsensusMatchType
-import co.electriccoin.lightwallet.client.BlockingLightWalletClient
+import co.electriccoin.lightwallet.client.LightWalletClient
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
 import co.electriccoin.lightwallet.client.new
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -667,7 +667,7 @@ class SdkSynchronizer private constructor(
         }
     }
 
-    override suspend fun refreshUtxos(account: Account, since: BlockHeight): Int? {
+    override suspend fun refreshUtxos(account: Account, since: BlockHeight): Int {
         return processor.refreshUtxos(account, since)
     }
 
@@ -764,8 +764,8 @@ internal object DefaultSynchronizerFactory {
             rustBackend
         )
 
-    fun defaultService(context: Context, lightWalletEndpoint: LightWalletEndpoint): BlockingLightWalletClient =
-        BlockingLightWalletClient.new(context, lightWalletEndpoint)
+    fun defaultService(context: Context, lightWalletEndpoint: LightWalletEndpoint): LightWalletClient =
+        LightWalletClient.new(context, lightWalletEndpoint)
 
     internal fun defaultEncoder(
         rustBackend: RustBackend,
@@ -774,7 +774,7 @@ internal object DefaultSynchronizerFactory {
     ): TransactionEncoder = WalletTransactionEncoder(rustBackend, saplingParamTool, repository)
 
     fun defaultDownloader(
-        service: BlockingLightWalletClient,
+        service: LightWalletClient,
         blockStore: CompactBlockRepository
     ): CompactBlockDownloader = CompactBlockDownloader(service, blockStore)
 
@@ -783,7 +783,7 @@ internal object DefaultSynchronizerFactory {
         zcashNetwork: ZcashNetwork,
         alias: String,
         encoder: TransactionEncoder,
-        service: BlockingLightWalletClient
+        service: LightWalletClient
     ): OutboundTransactionManager {
         val databaseFile = DatabaseCoordinator.getInstance(context).pendingTransactionsDbFile(
             zcashNetwork,

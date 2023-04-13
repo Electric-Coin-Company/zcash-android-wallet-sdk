@@ -1,28 +1,57 @@
 package co.electriccoin.lightwallet.client.fixture
 
-import cash.z.wallet.sdk.internal.rpc.CompactFormats.CompactBlock
-import com.google.protobuf.ByteString
-import com.google.protobuf.kotlin.toByteStringUtf8
+import co.electriccoin.lightwallet.client.model.CompactBlockUnsafe
+import java.nio.ByteBuffer
 
 /**
  * Used for getting single mocked compact block for processing and persisting purposes.
  */
 internal object SingleCompactBlockFixture {
 
-    const val DEFAULT_BLOCK_HEIGHT = 500_000L
+    internal const val DEFAULT_HEIGHT = 500_000L
+    internal const val DEFAULT_TIME = 0
+    internal const val DEFAULT_SAPLING_OUTPUT_COUNT = 1u
+    internal const val DEFAULT_ORCHARD_OUTPUT_COUNT = 2u
+    internal const val DEFAULT_HASH = DEFAULT_HEIGHT
+    internal const val DEFAULT_BLOCK_BYTES = DEFAULT_HEIGHT
+    internal fun heightToFixtureData(height: Long) = BytesConversionHelper.longToBytes(height)
+    internal fun fixtureDataToHeight(byteArray: ByteArray) = BytesConversionHelper.bytesToLong(byteArray)
 
-    // Keep this because it makes test assertions easier
-    const val DEFAULT_BLOCK_HASH = DEFAULT_BLOCK_HEIGHT
-
-    internal fun heightToFixtureHash(height: Long) = height.toString().toByteStringUtf8()
-
+    @Suppress("LongParameterList")
     fun new(
-        blockHeight: Long = DEFAULT_BLOCK_HEIGHT,
-        blockHash: ByteString = heightToFixtureHash(blockHeight)
-    ): CompactBlock {
-        return CompactBlock.newBuilder()
-            .setHeight(blockHeight)
-            .setHash(blockHash)
-            .build()
+        height: Long = DEFAULT_HEIGHT,
+        hash: ByteArray = heightToFixtureData(height),
+        time: Int = DEFAULT_TIME,
+        saplingOutputsCount: UInt = DEFAULT_SAPLING_OUTPUT_COUNT,
+        orchardOutputsCount: UInt = DEFAULT_ORCHARD_OUTPUT_COUNT,
+        blockBytes: ByteArray = heightToFixtureData(DEFAULT_BLOCK_BYTES)
+    ): CompactBlockUnsafe {
+        return CompactBlockUnsafe(
+            height = height,
+            hash = hash,
+            time = time,
+            saplingOutputsCount = saplingOutputsCount,
+            orchardOutputsCount = orchardOutputsCount,
+            compactBlockBytes = blockBytes
+        )
+    }
+}
+
+private object BytesConversionHelper {
+    private fun getBuffer(): ByteBuffer {
+        return ByteBuffer.allocate(java.lang.Long.BYTES)
+    }
+
+    fun longToBytes(x: Long): ByteArray {
+        val buffer = getBuffer()
+        buffer.putLong(0, x)
+        return buffer.array()
+    }
+
+    fun bytesToLong(bytes: ByteArray): Long {
+        val buffer = getBuffer()
+        buffer.put(bytes, 0, bytes.size)
+        buffer.flip()
+        return buffer.long
     }
 }

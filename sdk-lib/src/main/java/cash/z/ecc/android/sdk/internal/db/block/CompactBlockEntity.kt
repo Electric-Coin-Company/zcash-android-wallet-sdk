@@ -29,7 +29,7 @@ data class CompactBlockEntity(
         return result
     }
 
-    internal fun toCompactBlock(zcashNetwork: ZcashNetwork) = CompactBlock(
+    internal fun toCompactBlock(zcashNetwork: ZcashNetwork) = CompactBlock.new(
         BlockHeight.new(zcashNetwork, height),
         FirstClassByteArray(data)
     )

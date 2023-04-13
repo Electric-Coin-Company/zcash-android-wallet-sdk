@@ -2,7 +2,8 @@ package cash.z.ecc.android.sdk.internal.repository
 
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.model.BlockHeight
-import cash.z.wallet.sdk.internal.rpc.CompactFormats
+import co.electriccoin.lightwallet.client.model.CompactBlockUnsafe
+import kotlinx.coroutines.flow.Flow
 
 /**
  * Interface for storing compact blocks.
@@ -31,12 +32,12 @@ interface CompactBlockRepository {
     suspend fun deleteCompactBlockFiles(): Boolean
 
     /**
-     * Write the given blocks to this store, which may be anything from an in-memory cache to a DB.
+     * Write the given flow of blocks to this store, which may be anything from an in-memory cache to a DB.
      *
-     * @param result the list of compact blocks to persist.
-     * @return Number of blocks that were written.
+     * @param blocks Flow of compact blocks to persist.
+     * @return Flow of number of blocks that were written.
      */
-    suspend fun write(result: Sequence<CompactFormats.CompactBlock>): Int
+    suspend fun write(blocks: Flow<CompactBlockUnsafe>): Int
 
     /**
      * Remove every block above the given height.

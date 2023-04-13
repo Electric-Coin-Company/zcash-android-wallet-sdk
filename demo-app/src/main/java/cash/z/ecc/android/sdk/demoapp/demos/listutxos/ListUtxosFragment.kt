@@ -21,7 +21,6 @@ import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.TransactionOverview
 import cash.z.ecc.android.sdk.model.ZcashNetwork
-import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
@@ -29,7 +28,6 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlin.math.max
 
 /**
  * ===============================================================================================
@@ -73,47 +71,49 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
         sharedViewModel.synchronizerFlow.value?.let { synchronizer ->
             binding.textStatus.text = "loading..."
             binding.textStatus.post {
-                val network = ZcashNetwork.fromResources(requireApplicationContext())
-                binding.textStatus.requestFocus()
-                val addressToUse = binding.inputAddress.text.toString()
-                val startToUse = max(
-                    binding.inputRangeStart.text.toString().toLongOrNull()
-                        ?: network.saplingActivationHeight.value,
-                    network.saplingActivationHeight.value
-                )
-                val endToUse = binding.inputRangeEnd.text.toString().toLongOrNull()
-                    ?: getUxtoEndHeight(requireApplicationContext()).value
-                var allStart = now
-                Twig.debug { "loading transactions in range $startToUse..$endToUse" }
-                val txids = lightWalletClient?.getTAddressTransactions(
-                    addressToUse,
-                    BlockHeightUnsafe(startToUse)..BlockHeightUnsafe(endToUse)
-                )
-                var delta = now - allStart
-                updateStatus("found ${txids?.toList()?.size} transactions in ${delta}ms.", false)
-
-                txids?.map {
-                    // Disabled during migration to newer SDK version; this appears to have been
-                    // leveraging non-public  APIs in the SDK so perhaps should be removed
-                    // it.data.apply {
-                    //     try {
-                    //         runBlocking { initializer.rustBackend.decryptAndStoreTransaction(toByteArray()) }
-                    //     } catch (t: Throwable) {
-                    //         twig("failed to decrypt and store transaction due to: $t")
-                    //     }
-                    // }
-                }?.let { _ ->
-                    // Disabled during migration to newer SDK version; this appears to have been
-                    // leveraging non-public  APIs in the SDK so perhaps should be removed
-                    // val parseStart = now
-                    // val tList = LocalRpcTypes.TransactionDataList.newBuilder().addAllData(txData).build()
-                    // val parsedTransactions = initializer.rustBackend.parseTransactionDataList(tList)
-                    // delta = now - parseStart
-                    // updateStatus("parsed txs in ${delta}ms.")
-                }
+                // TODO [#973]: Eliminate old UI demo-app
+                // TODO [#973]: https://github.com/zcash/zcash-android-wallet-sdk/issues/973
+                // val network = ZcashNetwork.fromResources(requireApplicationContext())
+                // binding.textStatus.requestFocus()
+                // val addressToUse = binding.inputAddress.text.toString()
+                // val startToUse = max(
+                //     binding.inputRangeStart.text.toString().toLongOrNull()
+                //         ?: network.saplingActivationHeight.value,
+                //     network.saplingActivationHeight.value
+                // )
+                // val endToUse = binding.inputRangeEnd.text.toString().toLongOrNull()
+                //     ?: getUxtoEndHeight(requireApplicationContext()).value
+                // var allStart = now
+                // Twig.debug { "loading transactions in range $startToUse..$endToUse" }
+                // val txids = lightWalletClient?.getTAddressTransactions(
+                //     addressToUse,
+                //     BlockHeightUnsafe(startToUse)..BlockHeightUnsafe(endToUse)
+                // )
+                // var delta = now - allStart
+                // updateStatus("found ${txids?.toList()?.size} transactions in ${delta}ms.", false)
+                //
+                // txids?.map {
+                //     // Disabled during migration to newer SDK version; this appears to have been
+                //     // leveraging non-public  APIs in the SDK so perhaps should be removed
+                //     // it.data.apply {
+                //     //     try {
+                //     //         runBlocking { initializer.rustBackend.decryptAndStoreTransaction(toByteArray()) }
+                //     //     } catch (t: Throwable) {
+                //     //         twig("failed to decrypt and store transaction due to: $t")
+                //     //     }
+                //     // }
+                // }?.let { _ ->
+                //     // Disabled during migration to newer SDK version; this appears to have been
+                //     // leveraging non-public  APIs in the SDK so perhaps should be removed
+                //     // val parseStart = now
+                //     // val tList = LocalRpcTypes.TransactionDataList.newBuilder().addAllData(txData).build()
+                //     // val parsedTransactions = initializer.rustBackend.parseTransactionDataList(tList)
+                //     // delta = now - parseStart
+                //     // updateStatus("parsed txs in ${delta}ms.")
+                // }
                 (synchronizer as SdkSynchronizer).refreshTransactions()
-                delta = now - allStart
-                updateStatus("Total time ${delta}ms.")
+                // delta = now - allStart
+                // updateStatus("Total time ${delta}ms.")
 
                 lifecycleScope.launch {
                     withContext(Dispatchers.IO) {
@@ -129,7 +129,7 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
         }
     }
 
-    private val now get() = System.currentTimeMillis()
+    // private val now get() = System.currentTimeMillis()
 
     private fun updateStatus(message: String, append: Boolean = true) {
         if (append) {

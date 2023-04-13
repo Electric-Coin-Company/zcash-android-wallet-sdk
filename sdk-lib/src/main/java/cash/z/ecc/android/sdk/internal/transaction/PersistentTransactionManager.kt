@@ -19,7 +19,7 @@ import cash.z.ecc.android.sdk.model.TransactionRecipient
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
-import co.electriccoin.lightwallet.client.BlockingLightWalletClient
+import co.electriccoin.lightwallet.client.LightWalletClient
 import co.electriccoin.lightwallet.client.model.Response
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Dispatchers.IO
@@ -47,7 +47,7 @@ internal class PersistentTransactionManager(
     db: PendingTransactionDb,
     private val zcashNetwork: ZcashNetwork,
     internal val encoder: TransactionEncoder,
-    private val service: BlockingLightWalletClient
+    private val service: LightWalletClient
 ) : OutboundTransactionManager {
 
     private val daoMutex = Mutex()
@@ -363,7 +363,7 @@ internal class PersistentTransactionManager(
             appContext: Context,
             zcashNetwork: ZcashNetwork,
             encoder: TransactionEncoder,
-            service: BlockingLightWalletClient,
+            service: LightWalletClient,
             databaseFile: File
         ) = PersistentTransactionManager(
             commonDatabaseBuilder(

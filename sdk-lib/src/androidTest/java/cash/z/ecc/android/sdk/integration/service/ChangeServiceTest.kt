@@ -10,11 +10,13 @@ import cash.z.ecc.android.sdk.internal.repository.CompactBlockRepository
 import cash.z.ecc.android.sdk.model.Mainnet
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.test.ScopedTest
-import co.electriccoin.lightwallet.client.BlockingLightWalletClient
+import co.electriccoin.lightwallet.client.LightWalletClient
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
 import co.electriccoin.lightwallet.client.model.Response
 import co.electriccoin.lightwallet.client.new
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -36,16 +38,16 @@ class ChangeServiceTest : ScopedTest() {
     lateinit var mockBlockStore: CompactBlockRepository
     var mockCloseable: AutoCloseable? = null
 
-    val service = BlockingLightWalletClient.new(context, lightWalletEndpoint)
+    val service = LightWalletClient.new(context, lightWalletEndpoint)
 
     lateinit var downloader: CompactBlockDownloader
-    lateinit var otherService: BlockingLightWalletClient
+    lateinit var otherService: LightWalletClient
 
     @Before
     fun setup() {
         initMocks()
         downloader = CompactBlockDownloader(service, mockBlockStore)
-        otherService = BlockingLightWalletClient.new(context, eccEndpoint)
+        otherService = LightWalletClient.new(context, eccEndpoint)
     }
 
     @After
@@ -58,16 +60,20 @@ class ChangeServiceTest : ScopedTest() {
     }
 
     @Test
-    fun testSanityCheck() {
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun testSanityCheck() = runTest {
         // Test the result, only if there is no server communication problem.
-        val result = runCatching {
-            return@runCatching service.getLatestBlockHeight()
+        runCatching {
+            service.getLatestBlockHeight()
         }.onFailure {
-            Twig.debug(it) { "" }
-        }.getOrElse { return }
+            Twig.debug(it) { "Failed to retrieve data" }
+        }.onSuccess {
+            assertTrue(it is Response.Success<BlockHeightUnsafe>)
 
-        assertTrue(result is Response.Success<BlockHeightUnsafe>)
-
-        assertTrue((result as Response.Success<BlockHeightUnsafe>).result.value > network.saplingActivationHeight.value)
+            assertTrue(
+                (it as Response.Success<BlockHeightUnsafe>).result.value > network.saplingActivationHeight
+                    .value
+            )
+        }
     }
 }

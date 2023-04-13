@@ -3,18 +3,13 @@ package cash.z.ecc.android.sdk.demoapp.demos.getblockrange
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
-import androidx.core.text.HtmlCompat
 import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
 import cash.z.ecc.android.sdk.demoapp.R
 import cash.z.ecc.android.sdk.demoapp.databinding.FragmentGetBlockRangeBinding
 import cash.z.ecc.android.sdk.demoapp.ext.requireApplicationContext
 import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.demoapp.util.mainActivity
-import cash.z.ecc.android.sdk.demoapp.util.toRelativeTime
-import cash.z.ecc.android.sdk.demoapp.util.withCommas
-import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.ZcashNetwork
-import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import kotlin.math.max
 
 /**
@@ -25,14 +20,28 @@ import kotlin.math.max
  */
 class GetBlockRangeFragment : BaseDemoFragment<FragmentGetBlockRangeBinding>() {
 
+    // TODO [#973]: Eliminate old UI demo-app
+    // TODO [#973]: https://github.com/zcash/zcash-android-wallet-sdk/issues/973
+    @Suppress("MaxLineLength", "MagicNumber", "UNUSED_PARAMETER")
+    /*
     private fun setBlockRange(blockRange: ClosedRange<BlockHeight>) {
         val start = System.currentTimeMillis()
-        val blocks =
-            lightWalletClient?.getBlockRange(
-                BlockHeightUnsafe(blockRange.start.value)..BlockHeightUnsafe(
-                    blockRange.endInclusive.value
-                )
-            )
+
+        val range = BlockHeightUnsafe(blockRange.start.value)..BlockHeightUnsafe(blockRange.endInclusive.value)
+
+        val response = lightWalletClient?.getBlockRange(range)
+
+        val blocks = when (response) {
+            is Response.Success -> {
+                Twig.debug { "Get blocks: ${response.result} for range: $range succeeded." }
+                response.result
+            }
+            else -> {
+                Twig.debug { "Get blocks for range: $range failed with: $response." }
+                null
+            }
+        }
+
         val fetchDelta = System.currentTimeMillis() - start
 
         // Note: This is a demo so we won't worry about iterating efficiently over these blocks
@@ -41,45 +50,29 @@ class GetBlockRangeFragment : BaseDemoFragment<FragmentGetBlockRangeBinding>() {
         binding.textInfo.text = HtmlCompat.fromHtml(
             blocks?.toList()?.run {
                 val count = size
-                val emptyCount = count { it.vtxCount == 0 }
-                val maxTxs = maxByOrNull { it.vtxCount }
-                val maxIns = maxByOrNull { block ->
-                    block.vtxList.maxOfOrNull { it.spendsCount } ?: -1
-                }
-                val maxInTx = maxIns?.vtxList?.maxByOrNull { it.spendsCount }
-                val maxOuts = maxByOrNull { block ->
-                    block.vtxList.maxOfOrNull { it.outputsCount } ?: -1
-                }
-                val maxOutTx = maxOuts?.vtxList?.maxByOrNull { it.outputsCount }
-                val txCount = sumOf { it.vtxCount }
-                val outCount = sumOf { block -> block.vtxList.sumOf { it.outputsCount } }
-                val inCount = sumOf { block -> block.vtxList.sumOf { it.spendsCount } }
-
                 val processTime = System.currentTimeMillis() - start - fetchDelta
+                var totalSaplingOutputCount: UInt = 0u
+                var totalOrchardOutputCount: UInt = 0u
+                forEach {
+                    totalSaplingOutputCount += it.saplingOutputsCount
+                    totalOrchardOutputCount += it.orchardOutputsCount
+                }
+
                 @Suppress("MaxLineLength", "MagicNumber")
                 """
                 <b>total blocks:</b> ${count.withCommas()}
                 <br/><b>fetch time:</b> ${if (fetchDelta > 1000) "%.2f sec".format(fetchDelta / 1000.0) else "%d ms".format(fetchDelta)}
                 <br/><b>process time:</b> ${if (processTime > 1000) "%.2f sec".format(processTime / 1000.0) else "%d ms".format(processTime)}
                 <br/><b>block time range:</b> ${first().time.toRelativeTime(requireApplicationContext())}<br/>&nbsp;&nbsp to ${last().time.toRelativeTime(requireApplicationContext())}
-                <br/><b>total empty blocks:</b> ${emptyCount.withCommas()}
-                <br/><b>total TXs:</b> ${txCount.withCommas()}
-                <br/><b>total outputs:</b> ${outCount.withCommas()}
-                <br/><b>total inputs:</b> ${inCount.withCommas()}
-                <br/><b>avg TXs/block:</b> ${"%.1f".format(txCount / count.toDouble())}
-                <br/><b>avg TXs (excluding empty blocks):</b> ${"%.1f".format(txCount.toDouble() / (count - emptyCount))}
-                <br/><b>avg OUTs [per block / per TX]:</b> ${"%.1f / %.1f".format(outCount.toDouble() / (count - emptyCount), outCount.toDouble() / txCount)}
-                <br/><b>avg INs [per block / per TX]:</b> ${"%.1f / %.1f".format(inCount.toDouble() / (count - emptyCount), inCount.toDouble() / txCount)}
-                <br/><b>most shielded TXs:</b> ${if (maxTxs == null) "none" else "${maxTxs.vtxCount} in block ${maxTxs.height.withCommas()}"}
-                <br/><b>most shielded INs:</b> ${if (maxInTx == null) "none" else "${maxInTx.spendsCount} in block ${maxIns.height.withCommas()} at tx index ${maxInTx.index}"}
-                <br/><b>most shielded OUTs:</b> ${if (maxOutTx == null) "none" else "${maxOutTx.outputsCount} in block ${maxOuts.height.withCommas()} at tx index ${maxOutTx.index}"}
+                <br/><b>total sapling outputs:</b> $totalSaplingOutputCount
+                <br/><b>total orchard outputs:</b> $totalOrchardOutputCount
                 """.trimIndent()
             } ?: "No blocks found in that range.",
             HtmlCompat.FROM_HTML_MODE_LEGACY
         )
     }
+     */
 
-    @Suppress("UNUSED_PARAMETER")
     private fun onApply(unused: View) {
         val network = ZcashNetwork.fromResources(requireApplicationContext())
         val start = max(
@@ -100,12 +93,14 @@ class GetBlockRangeFragment : BaseDemoFragment<FragmentGetBlockRangeBinding>() {
                     setText(R.string.loading)
                     binding.textInfo.setText(R.string.loading)
                     post {
-                        setBlockRange(
-                            BlockHeight.new(network, start)..BlockHeight.new(
-                                network,
-                                end
-                            )
-                        )
+                        // TODO [#973]: Eliminate old UI demo-app
+                        // TODO [#973]: https://github.com/zcash/zcash-android-wallet-sdk/issues/973
+                        // setBlockRange(
+                        //     BlockHeight.new(network, start)..BlockHeight.new(
+                        //         network,
+                        //         end
+                        //     )
+                        // )
                         isEnabled = true
                         setText(R.string.apply)
                     }

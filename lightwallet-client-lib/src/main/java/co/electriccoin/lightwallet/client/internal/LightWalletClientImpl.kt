@@ -1,28 +1,33 @@
 package co.electriccoin.lightwallet.client.internal
 
-import cash.z.wallet.sdk.internal.rpc.CompactFormats
-import cash.z.wallet.sdk.internal.rpc.CompactTxStreamerGrpc
+import cash.z.wallet.sdk.internal.rpc.CompactTxStreamerGrpcKt
 import cash.z.wallet.sdk.internal.rpc.Service
-import co.electriccoin.lightwallet.client.BlockingLightWalletClient
+import co.electriccoin.lightwallet.client.LightWalletClient
 import co.electriccoin.lightwallet.client.ext.BenchmarkingExt
 import co.electriccoin.lightwallet.client.fixture.BenchmarkingBlockRangeFixture
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
+import co.electriccoin.lightwallet.client.model.CompactBlockUnsafe
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
 import co.electriccoin.lightwallet.client.model.LightWalletEndpointInfoUnsafe
 import co.electriccoin.lightwallet.client.model.RawTransactionUnsafe
 import co.electriccoin.lightwallet.client.model.Response
 import co.electriccoin.lightwallet.client.model.SendResponseUnsafe
 import com.google.protobuf.ByteString
+import io.grpc.CallOptions
 import io.grpc.Channel
 import io.grpc.ConnectivityState
 import io.grpc.ManagedChannel
-import io.grpc.StatusRuntimeException
+import io.grpc.StatusException
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import java.util.concurrent.TimeUnit
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 /**
- * Implementation of BlockingLightWalletClient using gRPC for requests to lightwalletd.
+ * Implementation of LightWalletClient using gRPC for requests to lightwalletd.
  *
  * @property singleRequestTimeout the timeout to use for non-streaming requests. When a new stub
  * is created, it will use a deadline that is after the given duration from now.
@@ -31,25 +36,36 @@ import kotlin.time.Duration.Companion.seconds
  * now.
  */
 @Suppress("TooManyFunctions")
-internal class BlockingLightWalletClientImpl private constructor(
+internal class LightWalletClientImpl private constructor(
     private val channelFactory: ChannelFactory,
     private val lightWalletEndpoint: LightWalletEndpoint,
     private val singleRequestTimeout: Duration = 10.seconds,
     private val streamingRequestTimeout: Duration = 90.seconds
-) : BlockingLightWalletClient {
+) : LightWalletClient {
 
     private var channel = channelFactory.newChannel(lightWalletEndpoint)
 
-    override fun getBlockRange(heightRange: ClosedRange<BlockHeightUnsafe>): Sequence<CompactFormats.CompactBlock> {
+    override fun getBlockRange(heightRange: ClosedRange<BlockHeightUnsafe>): Flow<Response<CompactBlockUnsafe>> {
         require(!heightRange.isEmpty()) {
             "${Constants.ILLEGAL_ARGUMENT_EXCEPTION_MESSAGE} range: $heightRange." // NON-NLS
         }
 
-        return requireChannel().createStub(streamingRequestTimeout)
-            .getBlockRange(heightRange.toBlockRange()).iterator().asSequence()
+        return try {
+            requireChannel().createStub(streamingRequestTimeout)
+                .getBlockRange(heightRange.toBlockRange())
+                .map {
+                    val response: Response<CompactBlockUnsafe> = Response.Success(CompactBlockUnsafe.new(it))
+                    response
+                }.catch {
+                    val failure: Response.Failure<CompactBlockUnsafe> = GrpcStatusResolver.resolveFailureFromStatus(it)
+                    emit(failure)
+                }
+        } catch (e: StatusException) {
+            flowOf(GrpcStatusResolver.resolveFailureFromStatus(e))
+        }
     }
 
-    override fun getLatestBlockHeight(): Response<BlockHeightUnsafe> {
+    override suspend fun getLatestBlockHeight(): Response<BlockHeightUnsafe> {
         return try {
             if (BenchmarkingExt.isBenchmarking()) {
                 // We inject a benchmark test blocks range at this point to process only a restricted range of blocks
@@ -63,13 +79,13 @@ internal class BlockingLightWalletClientImpl private constructor(
 
                 Response.Success(blockHeight)
             }
-        } catch (e: StatusRuntimeException) {
+        } catch (e: StatusException) {
             GrpcStatusResolver.resolveFailureFromStatus(e)
         }
     }
 
     @Suppress("SwallowedException")
-    override fun getServerInfo(): Response<LightWalletEndpointInfoUnsafe> {
+    override suspend fun getServerInfo(): Response<LightWalletEndpointInfoUnsafe> {
         return try {
             val lightdInfo = requireChannel().createStub(singleRequestTimeout)
                 .getLightdInfo(Service.Empty.newBuilder().build())
@@ -77,12 +93,12 @@ internal class BlockingLightWalletClientImpl private constructor(
             val lightwalletEndpointInfo = LightWalletEndpointInfoUnsafe.new(lightdInfo)
 
             Response.Success(lightwalletEndpointInfo)
-        } catch (e: StatusRuntimeException) {
+        } catch (e: StatusException) {
             GrpcStatusResolver.resolveFailureFromStatus(e)
         }
     }
 
-    override fun submitTransaction(spendTransaction: ByteArray): Response<SendResponseUnsafe> {
+    override suspend fun submitTransaction(spendTransaction: ByteArray): Response<SendResponseUnsafe> {
         require(spendTransaction.isNotEmpty()) {
             "${Constants.ILLEGAL_ARGUMENT_EXCEPTION_MESSAGE} Failed to submit transaction because it was empty, so " +
                 "this request was ignored on the client-side." // NON-NLS
@@ -96,12 +112,12 @@ internal class BlockingLightWalletClientImpl private constructor(
             val sendResponse = SendResponseUnsafe.new(response)
 
             Response.Success(sendResponse)
-        } catch (e: StatusRuntimeException) {
+        } catch (e: StatusException) {
             GrpcStatusResolver.resolveFailureFromStatus(e)
         }
     }
 
-    override fun fetchTransaction(txId: ByteArray): Response<RawTransactionUnsafe> {
+    override suspend fun fetchTransaction(txId: ByteArray): Response<RawTransactionUnsafe> {
         require(txId.isNotEmpty()) {
             "${Constants.ILLEGAL_ARGUMENT_EXCEPTION_MESSAGE} Failed to start fetching the transaction with null " +
                 "transaction ID, so this request was ignored on the client-side." // NON-NLS
@@ -114,21 +130,23 @@ internal class BlockingLightWalletClientImpl private constructor(
             val transactionResponse = RawTransactionUnsafe.new(response)
 
             Response.Success(transactionResponse)
-        } catch (e: StatusRuntimeException) {
+        } catch (e: StatusException) {
             GrpcStatusResolver.resolveFailureFromStatus(e)
         }
     }
 
-    override fun fetchUtxos(
+    override suspend fun fetchUtxos(
         tAddresses: List<String>,
         startHeight: BlockHeightUnsafe
-    ): Sequence<Service.GetAddressUtxosReply> {
+    ): Flow<Service.GetAddressUtxosReply> {
         require(tAddresses.isNotEmpty() && tAddresses.all { it.isNotBlank() }) {
             "${Constants.ILLEGAL_ARGUMENT_EXCEPTION_MESSAGE} array of addresses contains invalid item." // NON-NLS
         }
 
         val builder = Service.GetAddressUtxosArg.newBuilder()
 
+        // TODO [#941]: Fetch UTXOs setAddress() failure
+        // TODO [#941]: https://github.com/zcash/zcash-android-wallet-sdk/issues/941
         // build the request with the different addresses
         tAddresses.forEachIndexed { index, tAddress ->
             builder.setAddresses(index, tAddress)
@@ -136,25 +154,22 @@ internal class BlockingLightWalletClientImpl private constructor(
 
         builder.startHeight = startHeight.value
 
-        val result = requireChannel().createStub().getAddressUtxos(
+        return requireChannel().createStub().getAddressUtxosStream(
             builder.build()
         )
-
-        return result.addressUtxosList.asSequence()
     }
 
     override fun getTAddressTransactions(
         tAddress: String,
         blockHeightRange: ClosedRange<BlockHeightUnsafe>
-    ): Sequence<Service.RawTransaction> {
+    ): Flow<Service.RawTransaction> {
         require(!blockHeightRange.isEmpty() && tAddress.isNotBlank()) {
             "${Constants.ILLEGAL_ARGUMENT_EXCEPTION_MESSAGE} range: $blockHeightRange, address: $tAddress." // NON-NLS
         }
-
         return requireChannel().createStub().getTaddressTxids(
             Service.TransparentAddressBlockFilter.newBuilder().setAddress(tAddress)
                 .setRange(blockHeightRange.toBlockRange()).build()
-        ).iterator().asSequence()
+        )
     }
 
     override fun shutdown() {
@@ -166,7 +181,8 @@ internal class BlockingLightWalletClientImpl private constructor(
         channel = channelFactory.newChannel(lightWalletEndpoint)
     }
 
-    // These make the implementation of BlockingLightWalletClientImpl not thread-safe.
+    // These make the LightWalletClientImpl not thread safe. In the long-term, we should
+    // consider making it thread safe.
     private var stateCount = 0
     private var state: ConnectivityState? = null
     private fun requireChannel(): ManagedChannel {
@@ -182,14 +198,14 @@ internal class BlockingLightWalletClientImpl private constructor(
         fun new(
             channelFactory: ChannelFactory,
             lightWalletEndpoint: LightWalletEndpoint
-        ): BlockingLightWalletClient {
-            return BlockingLightWalletClientImpl(channelFactory, lightWalletEndpoint)
+        ): LightWalletClientImpl {
+            return LightWalletClientImpl(channelFactory, lightWalletEndpoint)
         }
     }
 }
 
 private fun Channel.createStub(timeoutSec: Duration = 60.seconds) =
-    CompactTxStreamerGrpc.newBlockingStub(this)
+    CompactTxStreamerGrpcKt.CompactTxStreamerCoroutineStub(this, CallOptions.DEFAULT)
         .withDeadlineAfter(timeoutSec.inWholeSeconds, TimeUnit.SECONDS)
 
 private fun BlockHeightUnsafe.toBlockHeight(): Service.BlockID =
