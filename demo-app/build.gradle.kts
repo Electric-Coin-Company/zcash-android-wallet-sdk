@@ -142,7 +142,7 @@ fladle {
     // Firebase Test Lab has min and max values that might differ from our project's
     // These are determined by `gcloud firebase test android models list`
     @Suppress("MagicNumber", "PropertyName", "VariableNaming")
-    val FIREBASE_TEST_LAB_MIN_API = 19
+    val FIREBASE_TEST_LAB_MIN_API = 27 // Minimum for Pixel2.arm device
 
     @Suppress("MagicNumber", "PropertyName", "VariableNaming")
     val FIREBASE_TEST_LAB_MAX_API = 33
@@ -180,7 +180,7 @@ fladle {
             testTimeout.set("5m")
 
             devices.addAll(
-                mapOf("model" to "Nexus5X", "version" to minSdkVersion),
+                mapOf("model" to "Pixel2.arm", "version" to minSdkVersion),
                 mapOf("model" to "Pixel2.arm", "version" to targetSdkVersion)
             )
 
