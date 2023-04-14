@@ -16,7 +16,7 @@ internal object SdkExecutors {
     val DATABASE_IO = Executors.newSingleThreadExecutor()
 }
 
-internal object SdkDispatchers {
+object SdkDispatchers {
     /**
      * Dispatcher used for database IO that's shared with the Rust native library.
      */

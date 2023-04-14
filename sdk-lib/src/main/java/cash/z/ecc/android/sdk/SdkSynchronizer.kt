@@ -17,15 +17,17 @@ import cash.z.ecc.android.sdk.exception.TransactionEncoderException
 import cash.z.ecc.android.sdk.exception.TransactionSubmitException
 import cash.z.ecc.android.sdk.ext.ConsensusBranchId
 import cash.z.ecc.android.sdk.ext.ZcashSdk
+import cash.z.ecc.android.sdk.internal.Backend
 import cash.z.ecc.android.sdk.internal.SaplingParamTool
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.block.CompactBlockDownloader
 import cash.z.ecc.android.sdk.internal.db.DatabaseCoordinator
 import cash.z.ecc.android.sdk.internal.db.derived.DbDerivedDataRepository
 import cash.z.ecc.android.sdk.internal.db.derived.DerivedDataDb
+import cash.z.ecc.android.sdk.internal.ext.isNullOrEmpty
 import cash.z.ecc.android.sdk.internal.ext.toHexReversed
 import cash.z.ecc.android.sdk.internal.ext.tryNull
-import cash.z.ecc.android.sdk.internal.isNullOrEmpty
+import cash.z.ecc.android.sdk.internal.jni.RustBackend
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
 import cash.z.ecc.android.sdk.internal.repository.CompactBlockRepository
 import cash.z.ecc.android.sdk.internal.repository.DerivedDataRepository
@@ -34,7 +36,6 @@ import cash.z.ecc.android.sdk.internal.transaction.OutboundTransactionManager
 import cash.z.ecc.android.sdk.internal.transaction.OutboundTransactionManagerImpl
 import cash.z.ecc.android.sdk.internal.transaction.TransactionEncoder
 import cash.z.ecc.android.sdk.internal.transaction.TransactionEncoderImpl
-import cash.z.ecc.android.sdk.jni.RustBackend
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.PercentDecimal
@@ -69,6 +70,7 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.CoroutineContext
 
@@ -92,7 +94,7 @@ class SdkSynchronizer private constructor(
     private val storage: DerivedDataRepository,
     private val txManager: OutboundTransactionManager,
     val processor: CompactBlockProcessor,
-    private val rustBackend: RustBackend
+    private val backend: Backend
 ) : CloseableSynchronizer {
 
     companion object {
@@ -116,7 +118,7 @@ class SdkSynchronizer private constructor(
             repository: DerivedDataRepository,
             txManager: OutboundTransactionManager,
             processor: CompactBlockProcessor,
-            rustBackend: RustBackend
+            backend: Backend
         ): CloseableSynchronizer {
             val synchronizerKey = SynchronizerKey(zcashNetwork, alias)
 
@@ -128,7 +130,7 @@ class SdkSynchronizer private constructor(
                 repository,
                 txManager,
                 processor,
-                rustBackend
+                backend
             ).apply {
                 instances[synchronizerKey] = InstanceState.Active
 
@@ -311,10 +313,10 @@ class SdkSynchronizer private constructor(
         return storage.getNoteIds(transactionOverview.id).map {
             when (transactionOverview.isSentTransaction) {
                 true -> {
-                    rustBackend.getSentMemoAsUtf8(it)
+                    backend.getSentMemoAsUtf8(it)
                 }
                 false -> {
-                    rustBackend.getReceivedMemoAsUtf8(it)
+                    backend.getReceivedMemoAsUtf8(it)
                 }
             }
         }.filterNotNull()
@@ -405,7 +407,6 @@ class SdkSynchronizer private constructor(
                         lastScanTime = now
                         SYNCED
                     }
-
                     is Stopped -> STOPPED
                     is Disconnected -> DISCONNECTED
                     is Syncing, Initialized -> SYNCING
@@ -509,25 +510,25 @@ class SdkSynchronizer private constructor(
 
     // Not ready to be a public API; internal for testing only
     internal suspend fun createAccount(seed: ByteArray): UnifiedSpendingKey =
-        CompactBlockProcessor.createAccount(rustBackend, seed)
+        CompactBlockProcessor.createAccount(backend, seed)
 
     /**
      * Returns the current Unified Address for this account.
      */
     override suspend fun getUnifiedAddress(account: Account): String =
-        CompactBlockProcessor.getCurrentAddress(rustBackend, account)
+        CompactBlockProcessor.getCurrentAddress(backend, account)
 
     /**
      * Returns the legacy Sapling address corresponding to the current Unified Address for this account.
      */
     override suspend fun getSaplingAddress(account: Account): String =
-        CompactBlockProcessor.getLegacySaplingAddress(rustBackend, account)
+        CompactBlockProcessor.getLegacySaplingAddress(backend, account)
 
     /**
      * Returns the legacy transparent address corresponding to the current Unified Address for this account.
      */
     override suspend fun getTransparentAddress(account: Account): String =
-        CompactBlockProcessor.getTransparentAddress(rustBackend, account)
+        CompactBlockProcessor.getTransparentAddress(backend, account)
 
     @Throws(TransactionEncoderException::class, TransactionSubmitException::class)
     override suspend fun sendToAddress(
@@ -557,7 +558,7 @@ class SdkSynchronizer private constructor(
         memo: String
     ): Long {
         Twig.debug { "Initializing shielding transaction" }
-        val tAddr = CompactBlockProcessor.getTransparentAddress(rustBackend, usk.account)
+        val tAddr = CompactBlockProcessor.getTransparentAddress(backend, usk.account)
         val tBalance = processor.getUtxoCacheBalance(tAddr)
 
         val encodedTx = txManager.encode(
@@ -628,26 +629,26 @@ class SdkSynchronizer private constructor(
  */
 internal object DefaultSynchronizerFactory {
 
-    internal suspend fun defaultRustBackend(
+    internal suspend fun defaultBackend(
         network: ZcashNetwork,
         alias: String,
-        blockHeight: BlockHeight,
         saplingParamTool: SaplingParamTool,
         coordinator: DatabaseCoordinator
-    ): RustBackend {
-        return RustBackend.init(
+    ): Backend {
+        return RustBackend.new(
             coordinator.fsBlockDbRoot(network, alias),
             coordinator.dataDbFile(network, alias),
-            saplingParamTool.properties.paramsDirectory,
-            network,
-            blockHeight
+            saplingOutputFile = saplingParamTool.outputParamsFile,
+            saplingSpendFile = saplingParamTool.spendParamsFile,
+            zcashNetworkId = network.id
         )
     }
 
     @Suppress("LongParameterList")
     internal suspend fun defaultDerivedDataRepository(
         context: Context,
-        rustBackend: RustBackend,
+        rustBackend: Backend,
+        databaseFile: File,
         zcashNetwork: ZcashNetwork,
         checkpoint: Checkpoint,
         seed: ByteArray?,
@@ -657,6 +658,7 @@ internal object DefaultSynchronizerFactory {
             DerivedDataDb.new(
                 context,
                 rustBackend,
+                databaseFile,
                 zcashNetwork,
                 checkpoint,
                 seed,
@@ -664,19 +666,20 @@ internal object DefaultSynchronizerFactory {
             )
         )
 
-    internal suspend fun defaultFileCompactBlockRepository(rustBackend: RustBackend): CompactBlockRepository =
+    internal suspend fun defaultCompactBlockRepository(blockCacheRoot: File, backend: Backend): CompactBlockRepository =
         FileCompactBlockRepository.new(
-            rustBackend
+            blockCacheRoot,
+            backend
         )
 
     fun defaultService(context: Context, lightWalletEndpoint: LightWalletEndpoint): LightWalletClient =
         LightWalletClient.new(context, lightWalletEndpoint)
 
     internal fun defaultEncoder(
-        rustBackend: RustBackend,
+        backend: Backend,
         saplingParamTool: SaplingParamTool,
         repository: DerivedDataRepository
-    ): TransactionEncoder = TransactionEncoderImpl(rustBackend, saplingParamTool, repository)
+    ): TransactionEncoder = TransactionEncoderImpl(backend, saplingParamTool, repository)
 
     fun defaultDownloader(
         service: LightWalletClient,
@@ -689,19 +692,20 @@ internal object DefaultSynchronizerFactory {
     ): OutboundTransactionManager {
         return OutboundTransactionManagerImpl.new(
             encoder,
-            service,
+            service
         )
     }
 
     internal fun defaultProcessor(
-        rustBackend: RustBackend,
+        backend: Backend,
         downloader: CompactBlockDownloader,
-        repository: DerivedDataRepository
+        repository: DerivedDataRepository,
+        birthdayHeight: BlockHeight
     ): CompactBlockProcessor = CompactBlockProcessor(
         downloader,
         repository,
-        rustBackend,
-        rustBackend.birthdayHeight
+        backend,
+        birthdayHeight
     )
 }
 

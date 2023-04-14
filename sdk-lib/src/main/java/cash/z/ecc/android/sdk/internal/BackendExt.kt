@@ -1,8 +1,8 @@
 @file:Suppress("TooManyFunctions")
 
-package cash.z.ecc.android.sdk.jni
+package cash.z.ecc.android.sdk.internal
 
-import cash.z.ecc.android.sdk.internal.SdkDispatchers
+import cash.z.ecc.android.sdk.internal.jni.RustDerivationTool
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.model.Account
@@ -11,8 +11,11 @@ import cash.z.ecc.android.sdk.model.UnifiedFullViewingKey
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
-import cash.z.ecc.android.sdk.tool.DerivationTool
+import cash.z.ecc.android.sdk.model.ZcashNetwork
 import kotlinx.coroutines.withContext
+
+internal val Backend.network: ZcashNetwork
+    get() = ZcashNetwork.from(networkId)
 
 internal suspend fun Backend.initAccountsTable(vararg keys: UnifiedFullViewingKey): Boolean {
     val ufvks = Array(keys.size) { keys[it].encoding }
@@ -21,14 +24,14 @@ internal suspend fun Backend.initAccountsTable(vararg keys: UnifiedFullViewingKe
     return initAccountsTable(*ufvks)
 }
 
-internal suspend fun Backend.initAccountsTable(
+internal suspend fun Backend.initAccountsTableTypesafe(
     seed: ByteArray,
     numberOfAccounts: Int
-): Array<UnifiedFullViewingKey> {
-    return DerivationTool.deriveUnifiedFullViewingKeys(seed, network, numberOfAccounts).apply {
+): List<UnifiedFullViewingKey> {
+    return RustDerivationTool.deriveUnifiedFullViewingKeys(seed, networkId, numberOfAccounts).also {
         @Suppress("SpreadOperator")
-        initAccountsTable(*this)
-    }
+        initAccountsTable(*it)
+    }.map { UnifiedFullViewingKey(it) }
 }
 
 internal suspend fun Backend.initBlocksTable(checkpoint: Checkpoint): Boolean = initBlocksTable(
@@ -80,7 +83,7 @@ internal suspend fun Backend.getVerifiedBalance(account: Account): Zatoshi = Zat
 )
 
 internal suspend fun Backend.getNearestRewindHeight(height: BlockHeight): BlockHeight = BlockHeight.new(
-    network,
+    ZcashNetwork.from(networkId),
     getNearestRewindHeight(height.value)
 )
 
@@ -88,7 +91,7 @@ internal suspend fun Backend.rewindToHeight(height: BlockHeight): Boolean = rewi
 
 internal suspend fun Backend.getLatestBlockHeight(): BlockHeight? = getLatestHeight()?.let {
     BlockHeight.new(
-        network,
+        ZcashNetwork.from(networkId),
         it
     )
 }
@@ -106,7 +109,7 @@ internal suspend fun Backend.rewindBlockMetadataToHeight(height: BlockHeight) =
 internal suspend fun Backend.validateCombinedChainOrErrorBlockHeight(limit: Long?): BlockHeight? =
     validateCombinedChainOrErrorHeight(limit)?.let {
         BlockHeight.new(
-            network,
+            ZcashNetwork.from(networkId),
             it
         )
     }
@@ -124,3 +127,20 @@ internal suspend fun Backend.getDownloadedUtxoBalance(address: String): WalletBa
     }
     return WalletBalance(Zatoshi(total), Zatoshi(verified))
 }
+
+@Suppress("LongParameterList")
+internal suspend fun Backend.putUtxo(
+    tAddress: String,
+    txId: ByteArray,
+    index: Int,
+    script: ByteArray,
+    value: Long,
+    height: BlockHeight
+): Boolean = putUtxo(
+    tAddress,
+    txId,
+    index,
+    script,
+    value,
+    height.value
+)

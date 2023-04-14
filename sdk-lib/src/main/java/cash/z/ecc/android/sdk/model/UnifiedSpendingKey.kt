@@ -1,7 +1,7 @@
 package cash.z.ecc.android.sdk.model
 
-import cash.z.ecc.android.sdk.jni.RustBackend
-import cash.z.ecc.android.sdk.jni.UnifiedSpendingKeyJni
+import cash.z.ecc.android.sdk.internal.jni.RustBackend
+import cash.z.ecc.android.sdk.internal.model.JniUnifiedSpendingKey
 
 /**
  * A [ZIP 316](https://zips.z.cash/zip-0316) Unified Spending Key.
@@ -26,9 +26,9 @@ class UnifiedSpendingKey private constructor(
     private val bytes: FirstClassByteArray
 ) {
 
-    internal constructor(uskJni: UnifiedSpendingKeyJni) : this(
+    internal constructor(uskJni: JniUnifiedSpendingKey) : this(
         Account(uskJni.account),
-        FirstClassByteArray(uskJni.copyBytes())
+        FirstClassByteArray(uskJni.bytes.copyOf())
     )
 
     /**
@@ -75,9 +75,7 @@ class UnifiedSpendingKey private constructor(
             val bytesCopy = bytes.copyOf()
             RustBackend.loadLibrary()
             return runCatching {
-                // We can ignore the Boolean returned from this, because if an error
-                // occurs the Rust side will throw.
-                RustBackend.validateUnifiedSpendingKey(bytesCopy)
+                require(RustBackend.validateUnifiedSpendingKey(bytesCopy))
                 UnifiedSpendingKey(account, FirstClassByteArray(bytesCopy))
             }
         }

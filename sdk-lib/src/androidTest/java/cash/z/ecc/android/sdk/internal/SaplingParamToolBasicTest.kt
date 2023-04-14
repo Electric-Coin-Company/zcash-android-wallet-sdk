@@ -1,5 +1,6 @@
 package cash.z.ecc.android.sdk.internal
 
+import androidx.test.core.app.ApplicationProvider
 import androidx.test.filters.MediumTest
 import androidx.test.filters.SmallTest
 import cash.z.ecc.android.sdk.exception.TransactionEncoderException
@@ -11,6 +12,7 @@ import cash.z.ecc.fixture.SaplingParamsFixture
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
+import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
 import java.io.File
@@ -167,5 +169,18 @@ class SaplingParamToolBasicTest {
         assertFailsWith<TransactionEncoderException.MissingParamsException> {
             saplingParamTool.ensureParams(SaplingParamToolFixture.PARAMS_DIRECTORY)
         }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    @SmallTest
+    fun sapling_params_path() = runTest {
+        val paramsDir = SaplingParamTool.new(ApplicationProvider.getApplicationContext()).properties.paramsDirectory
+        Assert.assertTrue(
+            "Invalid CacheDB params dir",
+            paramsDir.endsWith(
+                "no_backup/co.electricoin.zcash"
+            )
+        )
     }
 }

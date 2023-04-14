@@ -2,6 +2,10 @@ package cash.z.ecc.android.sdk.jni
 
 import cash.z.ecc.android.sdk.annotation.MaintainedTest
 import cash.z.ecc.android.sdk.annotation.TestPurpose
+import cash.z.ecc.android.sdk.internal.Backend
+import cash.z.ecc.android.sdk.internal.getBranchIdForHeight
+import cash.z.ecc.android.sdk.internal.jni.RustBackend
+import cash.z.ecc.android.sdk.internal.network
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import kotlinx.coroutines.runBlocking
@@ -47,21 +51,21 @@ class BranchIdTest internal constructor(
             // However, due to quirks on certain devices, we created this test at the Android level,
             // as a sanity check
             val testnetBackend = runBlocking {
-                RustBackend.init(
+                RustBackend.new(
                     File(""),
                     File(""),
                     File(""),
-                    ZcashNetwork.Testnet,
-                    ZcashNetwork.Testnet.saplingActivationHeight
+                    File(""),
+                    ZcashNetwork.Testnet.id,
                 )
             }
             val mainnetBackend = runBlocking {
-                RustBackend.init(
+                RustBackend.new(
                     File(""),
                     File(""),
                     File(""),
-                    ZcashNetwork.Mainnet,
-                    ZcashNetwork.Mainnet.saplingActivationHeight
+                    File(""),
+                    ZcashNetwork.Mainnet.id,
                 )
             }
             return listOf(

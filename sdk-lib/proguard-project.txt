@@ -19,6 +19,5 @@
 -keep public class cash.z.ecc.android.sdk.db.entity.* { public protected *; }
 -keep public class cash.z.ecc.android.sdk.exception.* { public protected *; }
 -keep public class cash.z.ecc.android.sdk.ext.* { public protected *; }
--keep public class cash.z.ecc.android.sdk.jni.* { public protected *; }
 -keep public class cash.z.ecc.android.sdk.tool.* { public protected *; }
 -keep public class cash.z.ecc.android.sdk.type.* { public protected *; }

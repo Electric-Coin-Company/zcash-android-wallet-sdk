@@ -1,4 +1,4 @@
-package cash.z.ecc.android.sdk.jni
+package cash.z.ecc.android.sdk.internal
 
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
@@ -8,6 +8,7 @@ import cash.z.ecc.android.sdk.model.UnifiedFullViewingKey
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
 
+// This class is currently unused, although the goal is to swap out usages of BackendExt for this throughout the SDK.
 @Suppress("TooManyFunctions")
 internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBackend {
     override suspend fun initAccountsTable(vararg keys: UnifiedFullViewingKey): Boolean =
@@ -16,7 +17,7 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
     override suspend fun initAccountsTable(
         seed: ByteArray,
         numberOfAccounts: Int
-    ): Array<UnifiedFullViewingKey> = backend.initAccountsTable(seed, numberOfAccounts)
+    ): List<UnifiedFullViewingKey> = backend.initAccountsTableTypesafe(seed, numberOfAccounts)
 
     override suspend fun initBlocksTable(checkpoint: Checkpoint): Boolean = backend.initBlocksTable(checkpoint)
 

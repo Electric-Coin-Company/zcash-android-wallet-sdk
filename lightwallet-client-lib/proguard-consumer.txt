@@ -1,7 +1,3 @@
--keepclasseswithmembernames,includedescriptorclasses class * {
-    native <methods>;
-}
-
 # https://github.com/grpc/grpc-java/blob/master/android/proguard-rules.txt
 -keepclassmembers class io.grpc.okhttp.OkHttpChannelBuilder {
   io.grpc.okhttp.OkHttpChannelBuilder forTarget(java.lang.String);

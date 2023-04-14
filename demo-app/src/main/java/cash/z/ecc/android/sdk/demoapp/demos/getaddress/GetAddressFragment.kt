@@ -84,7 +84,7 @@ class GetAddressFragment : BaseDemoFragment<FragmentGetAddressBinding>() {
     override fun onActionButtonClicked() {
         viewLifecycleOwner.lifecycleScope.launch {
             copyToClipboard(
-                DerivationTool.deriveUnifiedAddress(
+                DerivationTool.DEFAULT.deriveUnifiedAddress(
                     viewingKey.encoding,
                     ZcashNetwork.fromResources(requireApplicationContext())
                 ),

@@ -7,13 +7,14 @@ import cash.z.ecc.android.sdk.Synchronizer.Status.SYNCED
 import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.ext.onFirst
 import cash.z.ecc.android.sdk.internal.Twig
+import cash.z.ecc.android.sdk.internal.deriveUnifiedSpendingKey
+import cash.z.ecc.android.sdk.internal.jni.RustDerivationTool
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.test.ScopedTest
 import cash.z.ecc.android.sdk.tool.CheckpointTool
-import cash.z.ecc.android.sdk.tool.DerivationTool
 import co.electriccoin.lightwallet.client.LightWalletClient
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
@@ -101,7 +102,7 @@ class TestnetIntegrationTest : ScopedTest() {
     }
 
     private suspend fun sendFunds(): Boolean {
-        val spendingKey = DerivationTool.deriveUnifiedSpendingKey(seed, synchronizer.network, Account.DEFAULT)
+        val spendingKey = RustDerivationTool.deriveUnifiedSpendingKey(seed, synchronizer.network, Account.DEFAULT)
         log("sending to address")
         synchronizer.sendToAddress(
             spendingKey,

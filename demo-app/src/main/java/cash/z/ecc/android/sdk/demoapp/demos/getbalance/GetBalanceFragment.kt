@@ -69,7 +69,7 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
             setOnClickListener {
                 lifecycleScope.launch {
                     sharedViewModel.synchronizerFlow.value?.shieldFunds(
-                        DerivationTool.deriveUnifiedSpendingKey(
+                        DerivationTool.DEFAULT.deriveUnifiedSpendingKey(
                             seed,
                             network,
                             Account.DEFAULT

@@ -37,7 +37,7 @@ class JniBlockMeta(
     companion object {
         private val UINT_RANGE = 0.toLong()..UInt.MAX_VALUE.toLong()
 
-        internal fun new(block: CompactBlockUnsafe): JniBlockMeta {
+        fun new(block: CompactBlockUnsafe): JniBlockMeta {
             return JniBlockMeta(
                 height = block.height,
                 hash = block.hash,

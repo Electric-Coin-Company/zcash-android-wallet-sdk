@@ -46,7 +46,7 @@ class CompactBlockUnsafe(
         }
     }
 
-    private data class CompactBlockOutputsCounts(
+    data class CompactBlockOutputsCounts(
         val saplingOutputsCount: UInt,
         val orchardActionsCount: UInt
     )

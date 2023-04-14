@@ -1,4 +1,4 @@
-package cash.z.ecc.android.sdk.jni
+package cash.z.ecc.android.sdk.internal
 
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
@@ -16,7 +16,7 @@ internal interface TypesafeBackend {
     suspend fun initAccountsTable(
         seed: ByteArray,
         numberOfAccounts: Int
-    ): Array<UnifiedFullViewingKey>
+    ): List<UnifiedFullViewingKey>
 
     suspend fun initBlocksTable(checkpoint: Checkpoint): Boolean
 

@@ -1,4 +1,4 @@
-package cash.z.ecc.android.sdk.jni
+package cash.z.ecc.android.sdk.internal.model
 
 import androidx.annotation.Keep
 
@@ -12,7 +12,7 @@ import androidx.annotation.Keep
  * export/import, or backup purposes.
  */
 @Keep
-class UnifiedSpendingKeyJni(
+class JniUnifiedSpendingKey(
     val account: Int,
     /**
      * The binary encoding of the [ZIP 316](https://zips.z.cash/zip-0316) Unified Spending
@@ -22,27 +22,17 @@ class UnifiedSpendingKeyJni(
      * inherently unstable, and only intended to be passed between the SDK and the storage
      * backend. Wallets **MUST NOT** allow this encoding to be exported or imported.
      */
-    private val bytes: ByteArray
+    val bytes: ByteArray
 ) {
 
-    /**
-     * The binary encoding of the [ZIP 316](https://zips.z.cash/zip-0316) Unified Spending
-     * Key for [account].
-     *
-     * This encoding **MUST NOT** be exposed to users. It is an internal encoding that is
-     * inherently unstable, and only intended to be passed between the SDK and the storage
-     * backend. Wallets **MUST NOT** allow this encoding to be exported or imported.
-     */
-    fun copyBytes() = bytes.copyOf()
-
     // Override to prevent leaking key to logs
-    override fun toString() = "UnifiedSpendingKeyJni(account=$account)"
+    override fun toString() = "JniUnifiedSpendingKey(account=$account, bytes=***)"
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
 
-        other as UnifiedSpendingKeyJni
+        other as JniUnifiedSpendingKey
 
         if (account != other.account) return false
         if (!bytes.contentEquals(other.bytes)) return false

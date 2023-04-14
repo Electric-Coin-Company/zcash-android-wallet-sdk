@@ -1,9 +1,10 @@
 package cash.z.ecc.android.sdk.fixture
 
 import cash.z.ecc.android.bip39.Mnemonics
+import cash.z.ecc.android.sdk.internal.deriveUnifiedSpendingKey
+import cash.z.ecc.android.sdk.internal.jni.RustDerivationTool
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.ZcashNetwork
-import cash.z.ecc.android.sdk.tool.DerivationTool
 
 object WalletFixture {
     val NETWORK = ZcashNetwork.Mainnet
@@ -14,5 +15,5 @@ object WalletFixture {
         seed: String = SEED_PHRASE,
         network: ZcashNetwork = NETWORK,
         account: Account = Account.DEFAULT
-    ) = DerivationTool.deriveUnifiedSpendingKey(Mnemonics.MnemonicCode(seed).toEntropy(), network, account)
+    ) = RustDerivationTool.deriveUnifiedSpendingKey(Mnemonics.MnemonicCode(seed).toEntropy(), network, account)
 }

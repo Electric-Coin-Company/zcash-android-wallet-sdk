@@ -1,9 +1,7 @@
-package cash.z.ecc.android.sdk.jni
+package cash.z.ecc.android.sdk.internal
 
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
-import cash.z.ecc.android.sdk.model.BlockHeight
-import cash.z.ecc.android.sdk.model.ZcashNetwork
-import java.io.File
+import cash.z.ecc.android.sdk.internal.model.JniUnifiedSpendingKey
 
 /**
  * Contract defining the exposed capabilities of the Rust backend.
@@ -14,11 +12,9 @@ import java.io.File
 // TODO [#920]: Tweak RustBackend public APIs to have void return values
 // TODO [#920]: https://github.com/zcash/zcash-android-wallet-sdk/issues/920
 @Suppress("TooManyFunctions")
-internal interface Backend {
+interface Backend {
 
-    val network: ZcashNetwork
-
-    val saplingParamDir: File
+    val networkId: Int
 
     suspend fun initBlockMetaDb(): Int
 
@@ -53,7 +49,7 @@ internal interface Backend {
 
     suspend fun initDataDb(seed: ByteArray?): Int
 
-    suspend fun createAccount(seed: ByteArray): UnifiedSpendingKeyJni
+    suspend fun createAccount(seed: ByteArray): JniUnifiedSpendingKey
 
     fun isValidShieldedAddr(addr: String): Boolean
 
@@ -112,6 +108,6 @@ internal interface Backend {
         index: Int,
         script: ByteArray,
         value: Long,
-        height: BlockHeight
+        height: Long
     ): Boolean
 }

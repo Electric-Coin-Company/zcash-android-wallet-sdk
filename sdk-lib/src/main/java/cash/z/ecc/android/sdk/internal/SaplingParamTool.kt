@@ -21,6 +21,13 @@ import java.nio.channels.Channels
 import kotlin.time.Duration.Companion.milliseconds
 
 internal class SaplingParamTool(val properties: SaplingParamToolProperties) {
+
+    val spendParamsFile: File
+        get() = File(properties.paramsDirectory, SPEND_PARAM_FILE_NAME)
+
+    val outputParamsFile: File
+        get() = File(properties.paramsDirectory, OUTPUT_PARAM_FILE_NAME)
+
     companion object {
         /**
          * Maximum file size for the sapling spend params - 50MB

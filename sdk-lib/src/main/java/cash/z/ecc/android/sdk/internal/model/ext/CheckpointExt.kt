@@ -1,4 +1,4 @@
-package cash.z.ecc.android.sdk.internal
+package cash.z.ecc.android.sdk.internal.model.ext
 
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
 import cash.z.ecc.android.sdk.model.BlockHeight

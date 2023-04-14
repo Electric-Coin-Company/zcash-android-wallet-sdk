@@ -2,14 +2,15 @@ package cash.z.ecc.android.sdk.internal.transaction
 
 import cash.z.ecc.android.sdk.exception.TransactionEncoderException
 import cash.z.ecc.android.sdk.ext.masked
+import cash.z.ecc.android.sdk.internal.Backend
 import cash.z.ecc.android.sdk.internal.SaplingParamTool
 import cash.z.ecc.android.sdk.internal.Twig
+import cash.z.ecc.android.sdk.internal.createToAddress
+import cash.z.ecc.android.sdk.internal.getBranchIdForHeight
 import cash.z.ecc.android.sdk.internal.model.EncodedTransaction
+import cash.z.ecc.android.sdk.internal.network
 import cash.z.ecc.android.sdk.internal.repository.DerivedDataRepository
-import cash.z.ecc.android.sdk.jni.Backend
-import cash.z.ecc.android.sdk.jni.createToAddress
-import cash.z.ecc.android.sdk.jni.getBranchIdForHeight
-import cash.z.ecc.android.sdk.jni.shieldToAddress
+import cash.z.ecc.android.sdk.internal.shieldToAddress
 import cash.z.ecc.android.sdk.model.TransactionRecipient
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.Zatoshi
@@ -19,7 +20,7 @@ import cash.z.ecc.android.sdk.model.Zatoshi
  * behaving like a stateless API so that callers can request [createTransaction] and receive a
  * result, even though there are intermediate database interactions.
  *
- * @property backend the instance of RustBackendWelding to use for creating and validating.
+ * @property rustBackend the instance of RustBackendWelding to use for creating and validating.
  * @property repository the repository that stores information about the transactions being created
  * such as the raw bytes and raw txId.
  */
@@ -132,7 +133,7 @@ internal class TransactionEncoderImpl(
 
         @Suppress("TooGenericExceptionCaught")
         return try {
-            saplingParamTool.ensureParams(backend.saplingParamDir)
+            saplingParamTool.ensureParams(saplingParamTool.properties.paramsDirectory)
             Twig.debug { "params exist! attempting to send..." }
             backend.createToAddress(
                 usk,
@@ -154,7 +155,7 @@ internal class TransactionEncoderImpl(
     ): Long {
         @Suppress("TooGenericExceptionCaught")
         return try {
-            saplingParamTool.ensureParams(backend.saplingParamDir)
+            saplingParamTool.ensureParams(saplingParamTool.properties.paramsDirectory)
             Twig.debug { "params exist! attempting to shield..." }
             backend.shieldToAddress(
                 usk,

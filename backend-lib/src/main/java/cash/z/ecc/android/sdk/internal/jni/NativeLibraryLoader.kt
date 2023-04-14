@@ -1,12 +1,10 @@
-package cash.z.ecc.android.sdk.jni
+package cash.z.ecc.android.sdk.internal.jni
 
-import cash.z.ecc.android.sdk.internal.Twig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.util.concurrent.atomic.AtomicBoolean
-import kotlin.system.measureTimeMillis
 
 /**
  * Loads a native library once.  This class is thread-safe.
@@ -39,14 +37,7 @@ internal class NativeLibraryLoader(private val libraryName: String) {
 
     private suspend fun loadNativeLibrary() {
         runCatching {
-            Twig.debug { "Loading native library $libraryName" }
-
-            val loadTimeMillis = measureTimeMillis {
-                loadLibrarySuspend(libraryName)
-            }
-
-            Twig.debug { "Loading native library took $loadTimeMillis milliseconds" }
-
+            loadLibrarySuspend(libraryName)
             isLoaded.set(true)
         }.onFailure {
             // Fail fast, because this is not a recoverable error

@@ -5,8 +5,11 @@ import cash.z.ecc.android.bip39.Mnemonics.MnemonicCode
 import cash.z.ecc.android.bip39.toSeed
 import cash.z.ecc.android.sdk.annotation.MaintainedTest
 import cash.z.ecc.android.sdk.annotation.TestPurpose
+import cash.z.ecc.android.sdk.internal.Derivation
+import cash.z.ecc.android.sdk.internal.deriveUnifiedAddress
+import cash.z.ecc.android.sdk.internal.deriveUnifiedFullViewingKeysTypesafe
+import cash.z.ecc.android.sdk.internal.jni.RustDerivationTool
 import cash.z.ecc.android.sdk.model.ZcashNetwork
-import cash.z.ecc.android.sdk.tool.DerivationTool
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.BeforeClass
@@ -21,10 +24,15 @@ class TransparentTest(val expected: Expected, val network: ZcashNetwork) {
 
     @Test
     fun deriveUnifiedFullViewingKeysFromSeedTest() = runBlocking {
-        val ufvks = DerivationTool.deriveUnifiedFullViewingKeys(SEED, network = network)
+        val ufvks = RustDerivationTool.deriveUnifiedFullViewingKeysTypesafe(
+            SEED,
+            network = network,
+            numberOfAccounts =
+            Derivation.DEFAULT_NUMBER_OF_ACCOUNTS
+        )
         assertEquals(1, ufvks.size)
         val ufvk = ufvks.first()
-        assertEquals(expected.uAddr, DerivationTool.deriveUnifiedAddress(ufvk.encoding, network = network))
+        assertEquals(expected.uAddr, RustDerivationTool.deriveUnifiedAddress(ufvk.encoding, network = network))
         // TODO: If we need this, change DerivationTool to derive from the UFVK instead of the public key.
         // assertEquals(expected.tAddr, DerivationTool.deriveTransparentAddressFromPublicKey(ufvk.encoding,
         //     network = network))

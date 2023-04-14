@@ -1,15 +1,11 @@
 package cash.z.ecc.fixture
 
+import cash.z.ecc.android.sdk.internal.Backend
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
-import cash.z.ecc.android.sdk.jni.Backend
-import cash.z.ecc.android.sdk.jni.UnifiedSpendingKeyJni
-import cash.z.ecc.android.sdk.model.BlockHeight
-import cash.z.ecc.android.sdk.model.ZcashNetwork
-import java.io.File
+import cash.z.ecc.android.sdk.internal.model.JniUnifiedSpendingKey
 
 internal class FakeRustBackend(
-    override val network: ZcashNetwork,
-    override val saplingParamDir: File,
+    override val networkId: Int,
     val metadata: MutableList<JniBlockMeta>
 ) : Backend {
 
@@ -31,6 +27,17 @@ internal class FakeRustBackend(
     }
 
     override suspend fun getTotalTransparentBalance(address: String): Long {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun putUtxo(
+        tAddress: String,
+        txId: ByteArray,
+        index: Int,
+        script: ByteArray,
+        value: Long,
+        height: Long
+    ): Boolean {
         TODO("Not yet implemented")
     }
 
@@ -78,7 +85,7 @@ internal class FakeRustBackend(
     override suspend fun initDataDb(seed: ByteArray?): Int =
         error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 
-    override suspend fun createAccount(seed: ByteArray): UnifiedSpendingKeyJni =
+    override suspend fun createAccount(seed: ByteArray): JniUnifiedSpendingKey =
         error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 
     override fun isValidShieldedAddr(addr: String): Boolean =
@@ -128,13 +135,4 @@ internal class FakeRustBackend(
 
     override suspend fun scanBlocks(limit: Long?): Boolean =
         error("Intentionally not implemented in mocked FakeRustBackend implementation.")
-
-    override suspend fun putUtxo(
-        tAddress: String,
-        txId: ByteArray,
-        index: Int,
-        script: ByteArray,
-        value: Long,
-        height: BlockHeight
-    ): Boolean = error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 }

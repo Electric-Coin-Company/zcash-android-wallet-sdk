@@ -1,13 +1,11 @@
-package cash.z.ecc.android.sdk.jni
+package cash.z.ecc.android.sdk.internal.jni
 
-import cash.z.ecc.android.sdk.internal.SaplingParamTool
+import cash.z.ecc.android.sdk.internal.Backend
 import cash.z.ecc.android.sdk.internal.SdkDispatchers
-import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.ext.deleteRecursivelySuspend
 import cash.z.ecc.android.sdk.internal.ext.deleteSuspend
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
-import cash.z.ecc.android.sdk.model.BlockHeight
-import cash.z.ecc.android.sdk.model.ZcashNetwork
+import cash.z.ecc.android.sdk.internal.model.JniUnifiedSpendingKey
 import kotlinx.coroutines.withContext
 import java.io.File
 
@@ -17,12 +15,12 @@ import java.io.File
  * should be used such as Wallet.kt or CompactBlockProcessor.kt.
  */
 @Suppress("TooManyFunctions")
-internal class RustBackend private constructor(
-    override val network: ZcashNetwork,
-    val birthdayHeight: BlockHeight,
-    val dataDbFile: File,
-    val fsBlockDbRoot: File,
-    override val saplingParamDir: File
+class RustBackend private constructor(
+    override val networkId: Int,
+    private val dataDbFile: File,
+    private val fsBlockDbRoot: File,
+    private val saplingSpendFile: File,
+    private val saplingOutputFile: File,
 ) : Backend {
 
     /**
@@ -38,16 +36,14 @@ internal class RustBackend private constructor(
         var cacheClearResult = true
         var dataClearResult = true
         if (clearCache) {
-            Twig.debug { "Deleting the cache files..." }
             fsBlockDbRoot.deleteRecursivelySuspend().also { result ->
-                Twig.debug { "Deletion of the cache files ${if (result) "succeeded" else "failed"}!" }
+                // Twig.debug { "Deletion of the cache files ${if (result) "succeeded" else "failed"}!" }
                 cacheClearResult = result
             }
         }
         if (clearDataDb) {
-            Twig.debug { "Deleting the data database..." }
             dataDbFile.deleteSuspend().also { result ->
-                Twig.debug { "Deletion of the data database ${if (result) "succeeded" else "failed"}!" }
+                // Twig.debug { "Deletion of the data database ${if (result) "succeeded" else "failed"}!" }
                 dataClearResult = result
             }
         }
@@ -68,16 +64,16 @@ internal class RustBackend private constructor(
         initDataDb(
             dataDbFile.absolutePath,
             seed,
-            networkId = network.id
+            networkId = networkId
         )
     }
 
-    override suspend fun createAccount(seed: ByteArray): UnifiedSpendingKeyJni {
+    override suspend fun createAccount(seed: ByteArray): JniUnifiedSpendingKey {
         return withContext(SdkDispatchers.DATABASE_IO) {
             createAccount(
                 dataDbFile.absolutePath,
                 seed,
-                networkId = network.id
+                networkId = networkId
             )
         }
     }
@@ -90,7 +86,7 @@ internal class RustBackend private constructor(
             initAccountsTableWithKeys(
                 dataDbFile.absolutePath,
                 keys,
-                networkId = network.id
+                networkId = networkId
             )
         }
     }
@@ -108,7 +104,7 @@ internal class RustBackend private constructor(
                 checkpointHash,
                 checkpointTime,
                 checkpointSaplingTree,
-                networkId = network.id
+                networkId = networkId
             )
         }
     }
@@ -118,7 +114,7 @@ internal class RustBackend private constructor(
             getCurrentAddress(
                 dataDbFile.absolutePath,
                 account,
-                networkId = network.id
+                networkId = networkId
             )
         }
 
@@ -131,7 +127,7 @@ internal class RustBackend private constructor(
             listTransparentReceivers(
                 dbDataPath = dataDbFile.absolutePath,
                 account = account,
-                networkId = network.id
+                networkId = networkId
             ).asList()
         }
     }
@@ -141,7 +137,7 @@ internal class RustBackend private constructor(
             getBalance(
                 dataDbFile.absolutePath,
                 account,
-                networkId = network.id
+                networkId = networkId
             )
         }
 
@@ -153,7 +149,7 @@ internal class RustBackend private constructor(
             getVerifiedBalance(
                 dbDataPath = dataDbFile.absolutePath,
                 account = account,
-                networkId = network.id
+                networkId = networkId
             )
         }
 
@@ -165,7 +161,7 @@ internal class RustBackend private constructor(
             getReceivedMemoAsUtf8(
                 dataDbFile.absolutePath,
                 idNote,
-                networkId = network.id
+                networkId = networkId
             )
         }
 
@@ -174,7 +170,7 @@ internal class RustBackend private constructor(
             getSentMemoAsUtf8(
                 dataDbFile.absolutePath,
                 idNote,
-                networkId = network.id
+                networkId = networkId
             )
         }
 
@@ -219,7 +215,7 @@ internal class RustBackend private constructor(
                 dbCachePath = fsBlockDbRoot.absolutePath,
                 dbDataPath = dataDbFile.absolutePath,
                 limit = limit ?: -1,
-                networkId = network.id
+                networkId = networkId
             )
 
             if (-1L == validationResult) {
@@ -234,7 +230,7 @@ internal class RustBackend private constructor(
             getVerifiedTransparentBalance(
                 dataDbFile.absolutePath,
                 address,
-                networkId = network.id
+                networkId = networkId
             )
         }
 
@@ -243,7 +239,7 @@ internal class RustBackend private constructor(
             getTotalTransparentBalance(
                 dataDbFile.absolutePath,
                 address,
-                networkId = network.id
+                networkId = networkId
             )
         }
 
@@ -252,7 +248,7 @@ internal class RustBackend private constructor(
             getNearestRewindHeight(
                 dataDbFile.absolutePath,
                 height,
-                networkId = network.id
+                networkId = networkId
             )
         }
 
@@ -266,7 +262,7 @@ internal class RustBackend private constructor(
             rewindToHeight(
                 dataDbFile.absolutePath,
                 height,
-                networkId = network.id
+                networkId = networkId
             )
         }
 
@@ -276,7 +272,7 @@ internal class RustBackend private constructor(
                 fsBlockDbRoot.absolutePath,
                 dataDbFile.absolutePath,
                 limit ?: -1,
-                networkId = network.id
+                networkId = networkId
             )
         }
     }
@@ -286,7 +282,7 @@ internal class RustBackend private constructor(
             decryptAndStoreTransaction(
                 dataDbFile.absolutePath,
                 tx,
-                networkId = network.id
+                networkId = networkId
             )
         }
 
@@ -303,9 +299,9 @@ internal class RustBackend private constructor(
             to,
             value,
             memo ?: ByteArray(0),
-            File(saplingParamDir, SaplingParamTool.SPEND_PARAM_FILE_NAME).absolutePath,
-            File(saplingParamDir, SaplingParamTool.OUTPUT_PARAM_FILE_NAME).absolutePath,
-            networkId = network.id,
+            spendParamsPath = saplingSpendFile.absolutePath,
+            outputParamsPath = saplingOutputFile.absolutePath,
+            networkId = networkId,
             useZip317Fees = IS_USE_ZIP_317_FEES
         )
     }
@@ -315,15 +311,14 @@ internal class RustBackend private constructor(
         unifiedSpendingKey: ByteArray,
         memo: ByteArray?
     ): Long {
-        Twig.debug { "TMP: shieldToAddress with db path: $dataDbFile, ${memo?.size}" }
         return withContext(SdkDispatchers.DATABASE_IO) {
             shieldToAddress(
                 dataDbFile.absolutePath,
                 unifiedSpendingKey,
                 memo ?: ByteArray(0),
-                File(saplingParamDir, SaplingParamTool.SPEND_PARAM_FILE_NAME).absolutePath,
-                File(saplingParamDir, SaplingParamTool.OUTPUT_PARAM_FILE_NAME).absolutePath,
-                networkId = network.id,
+                spendParamsPath = saplingSpendFile.absolutePath,
+                outputParamsPath = saplingOutputFile.absolutePath,
+                networkId = networkId,
                 useZip317Fees = IS_USE_ZIP_317_FEES
             )
         }
@@ -335,7 +330,7 @@ internal class RustBackend private constructor(
         index: Int,
         script: ByteArray,
         value: Long,
-        height: BlockHeight
+        height: Long
     ): Boolean = withContext(SdkDispatchers.DATABASE_IO) {
         putUtxo(
             dataDbFile.absolutePath,
@@ -344,22 +339,22 @@ internal class RustBackend private constructor(
             index,
             script,
             value,
-            height.value,
-            networkId = network.id
+            height,
+            networkId = networkId
         )
     }
 
     override fun isValidShieldedAddr(addr: String) =
-        isValidShieldedAddress(addr, networkId = network.id)
+        isValidShieldedAddress(addr, networkId = networkId)
 
     override fun isValidTransparentAddr(addr: String) =
-        isValidTransparentAddress(addr, networkId = network.id)
+        isValidTransparentAddress(addr, networkId = networkId)
 
     override fun isValidUnifiedAddr(addr: String) =
-        isValidUnifiedAddress(addr, networkId = network.id)
+        isValidUnifiedAddress(addr, networkId = networkId)
 
     override fun getBranchIdForHeight(height: Long): Long =
-        branchIdForHeight(height, networkId = network.id)
+        branchIdForHeight(height, networkId = networkId)
 
 //    /**
 //     * This is a proof-of-concept for doing Local RPC, where we are effectively using the JNI
@@ -400,21 +395,21 @@ internal class RustBackend private constructor(
          * Loads the library and initializes path variables. Although it is best to only call this
          * function once, it is idempotent.
          */
-        suspend fun init(
+        suspend fun new(
             fsBlockDbRoot: File,
             dataDbFile: File,
-            saplingParamsDir: File,
-            zcashNetwork: ZcashNetwork,
-            birthdayHeight: BlockHeight
+            saplingSpendFile: File,
+            saplingOutputFile: File,
+            zcashNetworkId: Int,
         ): RustBackend {
             loadLibrary()
 
             return RustBackend(
-                zcashNetwork,
-                birthdayHeight,
+                zcashNetworkId,
                 dataDbFile = dataDbFile,
                 fsBlockDbRoot = fsBlockDbRoot,
-                saplingParamDir = saplingParamsDir
+                saplingSpendFile = saplingSpendFile,
+                saplingOutputFile = saplingOutputFile
             )
         }
 
@@ -450,7 +445,7 @@ internal class RustBackend private constructor(
         ): Boolean
 
         @JvmStatic
-        private external fun createAccount(dbDataPath: String, seed: ByteArray, networkId: Int): UnifiedSpendingKeyJni
+        private external fun createAccount(dbDataPath: String, seed: ByteArray, networkId: Int): JniUnifiedSpendingKey
 
         @JvmStatic
         private external fun getCurrentAddress(
@@ -468,7 +463,7 @@ internal class RustBackend private constructor(
         @JvmStatic
         private external fun listTransparentReceivers(dbDataPath: String, account: Int, networkId: Int): Array<String>
 
-        internal fun validateUnifiedSpendingKey(bytes: ByteArray) =
+        fun validateUnifiedSpendingKey(bytes: ByteArray) =
             isValidSpendingKey(bytes)
 
         @JvmStatic

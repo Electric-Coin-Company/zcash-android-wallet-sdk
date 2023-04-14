@@ -20,7 +20,7 @@ sealed class WalletFixture {
         seed: String = seedPhrase,
         network: ZcashNetwork,
         account: Account = Account.DEFAULT
-    ) = DerivationTool.deriveUnifiedSpendingKey(Mnemonics.MnemonicCode(seed).toEntropy(), network, account)
+    ) = DerivationTool.DEFAULT.deriveUnifiedSpendingKey(Mnemonics.MnemonicCode(seed).toEntropy(), network, account)
 
     @Suppress("MaxLineLength")
     object Ben : WalletFixture() {

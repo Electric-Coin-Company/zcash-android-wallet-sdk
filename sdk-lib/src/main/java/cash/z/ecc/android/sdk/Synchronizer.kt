@@ -3,8 +3,11 @@ package cash.z.ecc.android.sdk
 import android.content.Context
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor
 import cash.z.ecc.android.sdk.ext.ZcashSdk
+import cash.z.ecc.android.sdk.internal.Derivation
 import cash.z.ecc.android.sdk.internal.SaplingParamTool
 import cash.z.ecc.android.sdk.internal.db.DatabaseCoordinator
+import cash.z.ecc.android.sdk.internal.deriveUnifiedFullViewingKeysTypesafe
+import cash.z.ecc.android.sdk.internal.jni.RustDerivationTool
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.PercentDecimal
@@ -15,7 +18,6 @@ import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.tool.CheckpointTool
-import cash.z.ecc.android.sdk.tool.DerivationTool
 import cash.z.ecc.android.sdk.type.AddressType
 import cash.z.ecc.android.sdk.type.ConsensusMatchType
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
@@ -412,7 +414,7 @@ interface Synchronizer {
          * If customized initialization is required (e.g. for dependency injection or testing), see
          * [DefaultSynchronizerFactory].
          */
-        @Suppress("LongParameterList")
+        @Suppress("LongParameterList", "LongMethod")
         suspend fun new(
             context: Context,
             zcashNetwork: ZcashNetwork,
@@ -437,29 +439,29 @@ interface Synchronizer {
             // The pending transaction database no longer exists, so we can delete the file
             coordinator.deletePendingTransactionDatabase(zcashNetwork, alias)
 
-            val rustBackend = DefaultSynchronizerFactory.defaultRustBackend(
+            val backend = DefaultSynchronizerFactory.defaultBackend(
                 zcashNetwork,
                 alias,
-                loadedCheckpoint.height,
                 saplingParamTool,
                 coordinator
             )
 
             val blockStore =
                 DefaultSynchronizerFactory
-                    .defaultFileCompactBlockRepository(rustBackend)
+                    .defaultCompactBlockRepository(coordinator.fsBlockDbRoot(zcashNetwork, alias), backend)
 
             val viewingKeys = seed?.let {
-                DerivationTool.deriveUnifiedFullViewingKeys(
+                RustDerivationTool.deriveUnifiedFullViewingKeysTypesafe(
                     seed,
                     zcashNetwork,
-                    1
+                    Derivation.DEFAULT_NUMBER_OF_ACCOUNTS
                 ).toList()
             } ?: emptyList()
 
             val repository = DefaultSynchronizerFactory.defaultDerivedDataRepository(
                 applicationContext,
-                rustBackend,
+                backend,
+                coordinator.dataDbFile(zcashNetwork, alias),
                 zcashNetwork,
                 loadedCheckpoint,
                 seed,
@@ -467,10 +469,19 @@ interface Synchronizer {
             )
 
             val service = DefaultSynchronizerFactory.defaultService(applicationContext, lightWalletEndpoint)
-            val encoder = DefaultSynchronizerFactory.defaultEncoder(rustBackend, saplingParamTool, repository)
+            val encoder = DefaultSynchronizerFactory.defaultEncoder(backend, saplingParamTool, repository)
             val downloader = DefaultSynchronizerFactory.defaultDownloader(service, blockStore)
-            val txManager = DefaultSynchronizerFactory.defaultTxManager(encoder, service)
-            val processor = DefaultSynchronizerFactory.defaultProcessor(rustBackend, downloader, repository)
+            val txManager = DefaultSynchronizerFactory.defaultTxManager(
+                encoder,
+                service
+            )
+            val processor = DefaultSynchronizerFactory.defaultProcessor(
+                backend,
+                downloader,
+                repository,
+                birthday
+                    ?: zcashNetwork.saplingActivationHeight
+            )
 
             return SdkSynchronizer.new(
                 zcashNetwork,
@@ -478,7 +489,7 @@ interface Synchronizer {
                 repository,
                 txManager,
                 processor,
-                rustBackend
+                backend
             )
         }
 

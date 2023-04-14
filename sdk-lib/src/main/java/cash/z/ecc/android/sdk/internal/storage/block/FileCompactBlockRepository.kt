@@ -1,6 +1,7 @@
 package cash.z.ecc.android.sdk.internal.storage.block
 
 import androidx.annotation.VisibleForTesting
+import cash.z.ecc.android.sdk.internal.Backend
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.ext.createNewFileSuspend
 import cash.z.ecc.android.sdk.internal.ext.deleteRecursivelySuspend
@@ -12,13 +13,11 @@ import cash.z.ecc.android.sdk.internal.ext.mkdirsSuspend
 import cash.z.ecc.android.sdk.internal.ext.renameToSuspend
 import cash.z.ecc.android.sdk.internal.ext.toHexReversed
 import cash.z.ecc.android.sdk.internal.ext.writeBytesSuspend
+import cash.z.ecc.android.sdk.internal.findBlockMetadata
+import cash.z.ecc.android.sdk.internal.getLatestBlockHeight
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.internal.repository.CompactBlockRepository
-import cash.z.ecc.android.sdk.jni.Backend
-import cash.z.ecc.android.sdk.jni.RustBackend
-import cash.z.ecc.android.sdk.jni.findBlockMetadata
-import cash.z.ecc.android.sdk.jni.getLatestBlockHeight
-import cash.z.ecc.android.sdk.jni.rewindBlockMetadataToHeight
+import cash.z.ecc.android.sdk.internal.rewindBlockMetadataToHeight
 import cash.z.ecc.android.sdk.model.BlockHeight
 import co.electriccoin.lightwallet.client.model.CompactBlockUnsafe
 import kotlinx.coroutines.flow.Flow
@@ -26,12 +25,12 @@ import java.io.File
 
 internal class FileCompactBlockRepository(
     private val blocksDirectory: File,
-    private val rustBackend: Backend
+    private val backend: Backend
 ) : CompactBlockRepository {
 
-    override suspend fun getLatestHeight() = rustBackend.getLatestBlockHeight()
+    override suspend fun getLatestHeight() = backend.getLatestBlockHeight()
 
-    override suspend fun findCompactBlock(height: BlockHeight) = rustBackend.findBlockMetadata(height)
+    override suspend fun findCompactBlock(height: BlockHeight) = backend.findBlockMetadata(height)
 
     override suspend fun write(blocks: Flow<CompactBlockUnsafe>): List<JniBlockMeta> {
         val processingBlocks = mutableListOf<JniBlockMeta>()
@@ -66,11 +65,11 @@ internal class FileCompactBlockRepository(
      * Write block metadata to storage when the buffer is full or when we reached the current range end.
      */
     private suspend fun writeAndClearBuffer(metaDataBuffer: MutableList<JniBlockMeta>) {
-        rustBackend.writeBlockMetadata(metaDataBuffer)
+        backend.writeBlockMetadata(metaDataBuffer)
         metaDataBuffer.clear()
     }
 
-    override suspend fun rewindTo(height: BlockHeight) = rustBackend.rewindBlockMetadataToHeight(height)
+    override suspend fun rewindTo(height: BlockHeight) = backend.rewindBlockMetadataToHeight(height)
 
     override suspend fun deleteAllCompactBlockFiles(): Boolean {
         Twig.verbose { "Deleting all blocks from directory ${blocksDirectory.path}" }
@@ -129,13 +128,16 @@ internal class FileCompactBlockRepository(
          */
         const val BLOCKS_METADATA_BUFFER_SIZE = 10
 
+        /**
+         * @param blockCacheRoot The root directory for the compact block cache (contains the database and a
+         * subdirectory for the blocks).
+         */
         suspend fun new(
-            rustBackend: RustBackend
+            blockCacheRoot: File,
+            rustBackend: Backend
         ): FileCompactBlockRepository {
-            Twig.debug { "${rustBackend.fsBlockDbRoot.absolutePath} \n  ${rustBackend.dataDbFile.absolutePath}" }
-
             // create and check cache directories
-            val blocksDirectory = File(rustBackend.fsBlockDbRoot, BLOCKS_DOWNLOAD_DIRECTORY).also {
+            val blocksDirectory = File(blockCacheRoot, BLOCKS_DOWNLOAD_DIRECTORY).also {
                 it.mkdirsSuspend()
             }
             if (!blocksDirectory.existsSuspend()) {
