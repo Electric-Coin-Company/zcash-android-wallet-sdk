@@ -13,6 +13,7 @@ import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException.EnhanceTr
 import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException.EnhanceTransactionError.EnhanceTxDownloadError
 import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException.MismatchedNetwork
 import cash.z.ecc.android.sdk.exception.InitializeException
+import cash.z.ecc.android.sdk.exception.LightWalletException
 import cash.z.ecc.android.sdk.exception.RustLayerException
 import cash.z.ecc.android.sdk.ext.BatchMetrics
 import cash.z.ecc.android.sdk.ext.ZcashSdk
@@ -611,7 +612,7 @@ class CompactBlockProcessor internal constructor(
 
     var failedUtxoFetches = 0
 
-    @Suppress("MagicNumber")
+    @Suppress("MagicNumber", "LongMethod")
     internal suspend fun refreshUtxos(account: Account, startHeight: BlockHeight): Int =
         withContext(IO) {
             Twig.debug { "Checking for UTXOs above height $startHeight" }
@@ -635,7 +636,15 @@ class CompactBlockProcessor internal constructor(
                                     Twig.verbose { "Downloading UTXO at height: ${response.result.height} succeeded." }
                                 }
                                 is Response.Failure -> {
-                                    Twig.warn { "Downloading UTXO from height: $startHeight failed with: $response." }
+                                    Twig.warn {
+                                        "Downloading UTXO from height:" +
+                                            " $startHeight failed with: ${response.description}."
+                                    }
+                                    throw LightWalletException.FetchUtxosException(
+                                        response.code,
+                                        response.description,
+                                        response.toThrowable()
+                                    )
                                 }
                             }
                         }

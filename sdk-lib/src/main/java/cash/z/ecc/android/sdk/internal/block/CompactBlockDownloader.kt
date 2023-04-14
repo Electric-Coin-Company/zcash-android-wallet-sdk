@@ -1,5 +1,6 @@
 package cash.z.ecc.android.sdk.internal.block
 
+import cash.z.ecc.android.sdk.exception.LightWalletException
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.ext.retryUpTo
 import cash.z.ecc.android.sdk.internal.model.ext.from
@@ -45,7 +46,10 @@ open class CompactBlockDownloader private constructor(val compactBlockRepository
      *
      * @param heightRange the inclusive range of heights to request. For example 10..20 would
      * request 11 blocks (including block 10 and block 20).
+     * @throws LightWalletException.DownloadBlockException if any error while downloading the blocks occurs
+     * @return Number of blocks, which were successfully written to storage
      */
+    @Throws(LightWalletException.DownloadBlockException::class)
     suspend fun downloadBlockRange(heightRange: ClosedRange<BlockHeight>): Int {
         val filteredFlow = lightWalletClient.getBlockRange(
             BlockHeightUnsafe.from(heightRange.start)..BlockHeightUnsafe.from(heightRange.endInclusive)
@@ -53,8 +57,14 @@ open class CompactBlockDownloader private constructor(val compactBlockRepository
             when (response) {
                 is Response.Success -> {
                     Twig.verbose { "Downloading block at height: ${response.result.height} succeeded." }
-                } else -> {
-                    Twig.warn { "Downloading blocks in range: $heightRange failed with: $response." }
+                }
+                is Response.Failure -> {
+                    Twig.warn { "Downloading blocks in range: $heightRange failed with: ${response.description}." }
+                    throw LightWalletException.DownloadBlockException(
+                        response.code,
+                        response.description,
+                        response.toThrowable()
+                    )
                 }
             }
         }
@@ -89,8 +99,7 @@ open class CompactBlockDownloader private constructor(val compactBlockRepository
      *
      * @return the latest block height.
      */
-    suspend fun getLatestBlockHeight() =
-        lightWalletClient.getLatestBlockHeight()
+    suspend fun getLatestBlockHeight() = lightWalletClient.getLatestBlockHeight()
 
     /**
      * Return the latest block height that has been persisted into the [CompactBlockRepository].
