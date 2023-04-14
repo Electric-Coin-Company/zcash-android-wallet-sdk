@@ -1,20 +1,17 @@
 package co.electriccoin.lightwallet.client
 
 import android.content.Context
-import cash.z.wallet.sdk.internal.rpc.Service
 import co.electriccoin.lightwallet.client.internal.AndroidChannelFactory
 import co.electriccoin.lightwallet.client.internal.LightWalletClientImpl
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.CompactBlockUnsafe
+import co.electriccoin.lightwallet.client.model.GetAddressUtxosReplyUnsafe
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
 import co.electriccoin.lightwallet.client.model.LightWalletEndpointInfoUnsafe
 import co.electriccoin.lightwallet.client.model.RawTransactionUnsafe
 import co.electriccoin.lightwallet.client.model.Response
 import co.electriccoin.lightwallet.client.model.SendResponseUnsafe
 import kotlinx.coroutines.flow.Flow
-
-// TODO [895]: Let remaining server calls adopt new response result
-// TODO [895]: https://github.com/zcash/zcash-android-wallet-sdk/issues/895
 
 /**
  * Client for interacting with lightwalletd.
@@ -37,7 +34,7 @@ interface LightWalletClient {
     suspend fun fetchUtxos(
         tAddresses: List<String>,
         startHeight: BlockHeightUnsafe
-    ): Flow<Service.GetAddressUtxosReply>
+    ): Flow<Response<GetAddressUtxosReplyUnsafe>>
 
     /**
      * @param heightRange the inclusive range to fetch. For instance if 1..5 is given, then every
@@ -71,7 +68,7 @@ interface LightWalletClient {
     fun getTAddressTransactions(
         tAddress: String,
         blockHeightRange: ClosedRange<BlockHeightUnsafe>
-    ): Flow<Service.RawTransaction>
+    ): Flow<Response<RawTransactionUnsafe>>
 
     /**
      * Reconnect to the same or a different server. This is useful when the connection is

@@ -7,6 +7,7 @@ import co.electriccoin.lightwallet.client.ext.BenchmarkingExt
 import co.electriccoin.lightwallet.client.fixture.BenchmarkingBlockRangeFixture
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.CompactBlockUnsafe
+import co.electriccoin.lightwallet.client.model.GetAddressUtxosReplyUnsafe
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
 import co.electriccoin.lightwallet.client.model.LightWalletEndpointInfoUnsafe
 import co.electriccoin.lightwallet.client.model.RawTransactionUnsafe
@@ -103,10 +104,12 @@ internal class LightWalletClientImpl private constructor(
             "${Constants.ILLEGAL_ARGUMENT_EXCEPTION_MESSAGE} Failed to submit transaction because it was empty, so " +
                 "this request was ignored on the client-side." // NON-NLS
         }
+
+        val request = Service.RawTransaction.newBuilder()
+            .setData(ByteString.copyFrom(spendTransaction))
+            .build()
+
         return try {
-            val request =
-                Service.RawTransaction.newBuilder().setData(ByteString.copyFrom(spendTransaction))
-                    .build()
             val response = requireChannel().createStub().sendTransaction(request)
 
             val sendResponse = SendResponseUnsafe.new(response)
@@ -122,9 +125,10 @@ internal class LightWalletClientImpl private constructor(
             "${Constants.ILLEGAL_ARGUMENT_EXCEPTION_MESSAGE} Failed to start fetching the transaction with null " +
                 "transaction ID, so this request was ignored on the client-side." // NON-NLS
         }
-        return try {
-            val request = Service.TxFilter.newBuilder().setHash(ByteString.copyFrom(txId)).build()
 
+        val request = Service.TxFilter.newBuilder().setHash(ByteString.copyFrom(txId)).build()
+
+        return try {
             val response = requireChannel().createStub().getTransaction(request)
 
             val transactionResponse = RawTransactionUnsafe.new(response)
@@ -138,38 +142,66 @@ internal class LightWalletClientImpl private constructor(
     override suspend fun fetchUtxos(
         tAddresses: List<String>,
         startHeight: BlockHeightUnsafe
-    ): Flow<Service.GetAddressUtxosReply> {
+    ): Flow<Response<GetAddressUtxosReplyUnsafe>> {
         require(tAddresses.isNotEmpty() && tAddresses.all { it.isNotBlank() }) {
             "${Constants.ILLEGAL_ARGUMENT_EXCEPTION_MESSAGE} array of addresses contains invalid item." // NON-NLS
         }
 
-        val builder = Service.GetAddressUtxosArg.newBuilder()
+        val getUtxosBuilder = Service.GetAddressUtxosArg.newBuilder()
 
         // TODO [#941]: Fetch UTXOs setAddress() failure
         // TODO [#941]: https://github.com/zcash/zcash-android-wallet-sdk/issues/941
-        // build the request with the different addresses
+        // Build the request with the different addresses
         tAddresses.forEachIndexed { index, tAddress ->
-            builder.setAddresses(index, tAddress)
+            getUtxosBuilder.setAddresses(index, tAddress)
         }
 
-        builder.startHeight = startHeight.value
+        val request = getUtxosBuilder.build()
 
-        return requireChannel().createStub().getAddressUtxosStream(
-            builder.build()
-        )
+        return try {
+            requireChannel().createStub(streamingRequestTimeout)
+                .getAddressUtxosStream(request)
+                .map {
+                    val response: Response<GetAddressUtxosReplyUnsafe> =
+                        Response.Success(GetAddressUtxosReplyUnsafe.new(it))
+                    response
+                }.catch {
+                    val failure: Response.Failure<GetAddressUtxosReplyUnsafe> =
+                        GrpcStatusResolver.resolveFailureFromStatus(it)
+                    emit(failure)
+                }
+        } catch (e: StatusException) {
+            flowOf(GrpcStatusResolver.resolveFailureFromStatus(e))
+        }
     }
 
     override fun getTAddressTransactions(
         tAddress: String,
         blockHeightRange: ClosedRange<BlockHeightUnsafe>
-    ): Flow<Service.RawTransaction> {
+    ): Flow<Response<RawTransactionUnsafe>> {
         require(!blockHeightRange.isEmpty() && tAddress.isNotBlank()) {
             "${Constants.ILLEGAL_ARGUMENT_EXCEPTION_MESSAGE} range: $blockHeightRange, address: $tAddress." // NON-NLS
         }
-        return requireChannel().createStub().getTaddressTxids(
-            Service.TransparentAddressBlockFilter.newBuilder().setAddress(tAddress)
-                .setRange(blockHeightRange.toBlockRange()).build()
-        )
+
+        val request = Service.TransparentAddressBlockFilter.newBuilder()
+            .setAddress(tAddress)
+            .setRange(blockHeightRange.toBlockRange())
+            .build()
+
+        return try {
+            requireChannel().createStub(streamingRequestTimeout)
+                .getTaddressTxids(request)
+                .map {
+                    val response: Response<RawTransactionUnsafe> = Response.Success(RawTransactionUnsafe.new(it))
+                    response
+                }.catch {
+                    val failure: Response.Failure<RawTransactionUnsafe> =
+                        GrpcStatusResolver.resolveFailureFromStatus(it)
+                    emit(failure)
+                }
+        } catch (e: StatusException) {
+            flowOf(GrpcStatusResolver.resolveFailureFromStatus(e))
+        }
     }
 
     override fun shutdown() {

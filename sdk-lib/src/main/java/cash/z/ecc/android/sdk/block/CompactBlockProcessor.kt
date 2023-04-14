@@ -13,6 +13,7 @@ import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException.EnhanceTr
 import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException.EnhanceTransactionError.EnhanceTxDownloadError
 import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException.MismatchedNetwork
 import cash.z.ecc.android.sdk.exception.InitializeException
+import cash.z.ecc.android.sdk.exception.LightWalletException
 import cash.z.ecc.android.sdk.exception.RustLayerException
 import cash.z.ecc.android.sdk.ext.BatchMetrics
 import cash.z.ecc.android.sdk.ext.ZcashSdk
@@ -50,17 +51,20 @@ import cash.z.ecc.android.sdk.model.TransactionOverview
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.ZcashNetwork
-import cash.z.wallet.sdk.internal.rpc.Service
 import co.electriccoin.lightwallet.client.ext.BenchmarkingExt
 import co.electriccoin.lightwallet.client.fixture.BenchmarkingBlockRangeFixture
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
+import co.electriccoin.lightwallet.client.model.GetAddressUtxosReplyUnsafe
 import co.electriccoin.lightwallet.client.model.LightWalletEndpointInfoUnsafe
 import co.electriccoin.lightwallet.client.model.Response
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.filterIsInstance
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onCompletion
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -608,7 +612,7 @@ class CompactBlockProcessor internal constructor(
 
     var failedUtxoFetches = 0
 
-    @Suppress("MagicNumber")
+    @Suppress("MagicNumber", "LongMethod")
     internal suspend fun refreshUtxos(account: Account, startHeight: BlockHeight): Int =
         withContext(IO) {
             Twig.debug { "Checking for UTXOs above height $startHeight" }
@@ -626,19 +630,41 @@ class CompactBlockProcessor internal constructor(
                         downloader.lightWalletClient.fetchUtxos(
                             tAddresses,
                             BlockHeightUnsafe.from(startHeight)
-                        ).onCompletion {
-                            if (it != null) {
-                                Twig.debug { "UTXOs from height $startHeight failed to download with: $it" }
-                            } else {
-                                Twig.debug { "All UTXOs from height $startHeight fetched successfully" }
-                            }
-                        }.collect { response ->
-                            Twig.debug { "Fetched UTXO with txid: ${response.txid}" }
-                            val processResult = processUtxoResult(response)
-                            if (processResult) {
-                                count++
+                        ).onEach { response ->
+                            when (response) {
+                                is Response.Success -> {
+                                    Twig.verbose { "Downloading UTXO at height: ${response.result.height} succeeded." }
+                                }
+                                is Response.Failure -> {
+                                    Twig.warn {
+                                        "Downloading UTXO from height:" +
+                                            " $startHeight failed with: ${response.description}."
+                                    }
+                                    throw LightWalletException.FetchUtxosException(
+                                        response.code,
+                                        response.description,
+                                        response.toThrowable()
+                                    )
+                                }
                             }
                         }
+                            .filterIsInstance<Response.Success<GetAddressUtxosReplyUnsafe>>()
+                            .map { response ->
+                                response.result
+                            }
+                            .onCompletion {
+                                if (it != null) {
+                                    Twig.debug { "UTXOs from height $startHeight failed to download with: $it" }
+                                } else {
+                                    Twig.debug { "All UTXOs from height $startHeight fetched successfully" }
+                                }
+                            }.collect { utxo ->
+                                Twig.debug { "Fetched UTXO with txid: ${utxo.txid}" }
+                                val processResult = processUtxoResult(utxo)
+                                if (processResult) {
+                                    count++
+                                }
+                            }
                     }
                 } catch (e: Throwable) {
                     failedUtxoFetches++
@@ -660,7 +686,7 @@ class CompactBlockProcessor internal constructor(
     /**
      * @return True in case of the UTXO processed successfully, false otherwise
      */
-    internal suspend fun processUtxoResult(utxo: Service.GetAddressUtxosReply): Boolean = withContext(IO) {
+    internal suspend fun processUtxoResult(utxo: GetAddressUtxosReplyUnsafe): Boolean = withContext(IO) {
         // TODO(str4d): We no longer clear UTXOs here, as rustBackend.putUtxo now uses an upsert instead of an insert.
         //  This means that now-spent UTXOs would previously have been deleted, but now are left in the database (like
         //  shielded notes). Due to the fact that the lightwalletd query only returns _current_ UTXOs, we don't learn
@@ -678,9 +704,9 @@ class CompactBlockProcessor internal constructor(
             // TODO [#920]: https://github.com/zcash/zcash-android-wallet-sdk/issues/920
             rustBackend.putUtxo(
                 utxo.address,
-                utxo.txid.toByteArray(),
+                utxo.txid,
                 utxo.index,
-                utxo.script.toByteArray(),
+                utxo.script,
                 utxo.valueZat,
                 BlockHeight(utxo.height)
             )

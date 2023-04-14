@@ -270,6 +270,16 @@ sealed class LightWalletException(message: String, cause: Throwable? = null) : S
             }
         }
     }
+
+    class DownloadBlockException(code: Int, description: String?, cause: Throwable) : SdkException(
+        "Failed to download block with code: $code due to: ${description ?: "-"}",
+        cause
+    )
+
+    class FetchUtxosException(code: Int, description: String?, cause: Throwable) : SdkException(
+        "Failed to fetch UTXOs with code: $code due to: ${description ?: "-"}",
+        cause
+    )
 }
 
 /**

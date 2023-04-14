@@ -34,7 +34,6 @@ fun ComposablePreview() {
 }
 
 @Composable
-@OptIn(ExperimentalMaterial3Api::class)
 fun Seed(
     zcashNetwork: ZcashNetwork,
     onExistingWallet: (PersistableWallet) -> Unit,
