@@ -6,7 +6,7 @@ data class ZecSend(val destination: WalletAddress, val amount: Zatoshi, val memo
     companion object
 }
 
-fun Synchronizer.send(spendingKey: UnifiedSpendingKey, send: ZecSend) = sendToAddress(
+suspend fun Synchronizer.send(spendingKey: UnifiedSpendingKey, send: ZecSend) = sendToAddress(
     spendingKey,
     send.amount,
     send.destination.address,

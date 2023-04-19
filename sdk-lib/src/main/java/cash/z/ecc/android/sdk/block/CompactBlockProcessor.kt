@@ -25,6 +25,7 @@ import cash.z.ecc.android.sdk.internal.ext.retryWithBackoff
 import cash.z.ecc.android.sdk.internal.ext.toHexReversed
 import cash.z.ecc.android.sdk.internal.isNullOrEmpty
 import cash.z.ecc.android.sdk.internal.length
+import cash.z.ecc.android.sdk.internal.model.DbTransactionOverview
 import cash.z.ecc.android.sdk.internal.model.ext.from
 import cash.z.ecc.android.sdk.internal.model.ext.toBlockHeight
 import cash.z.ecc.android.sdk.internal.repository.DerivedDataRepository
@@ -41,7 +42,6 @@ import cash.z.ecc.android.sdk.jni.rewindToHeight
 import cash.z.ecc.android.sdk.jni.validateCombinedChainOrErrorBlockHeight
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
-import cash.z.ecc.android.sdk.model.TransactionOverview
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.ZcashNetwork
@@ -487,7 +487,7 @@ class CompactBlockProcessor internal constructor(
     // TODO [#683]: we still need a way to identify those transactions that failed to be enhanced
     // TODO [#683]: https://github.com/zcash/zcash-android-wallet-sdk/issues/683
 
-    private suspend fun enhance(transaction: TransactionOverview) {
+    private suspend fun enhance(transaction: DbTransactionOverview) {
         transaction.minedHeight?.let { minedHeight ->
             enhanceHelper(transaction.id, transaction.rawId.byteArray, minedHeight)
         }

@@ -3,7 +3,6 @@ plugins {
     id("org.jetbrains.kotlin.android")
     id("zcash-sdk.android-conventions")
 
-    id("com.google.devtools.ksp")
     id("org.jetbrains.kotlin.plugin.allopen")
     id("org.jetbrains.dokka")
     id("org.mozilla.rust-android-gradle.rust-android")
@@ -34,10 +33,6 @@ android {
     useLibrary("android.test.runner")
 
     defaultConfig {
-        ksp {
-            arg("room.schemaLocation", "$projectDir/schemas")
-        }
-
         consumerProguardFiles("proguard-consumer.txt")
     }
 
@@ -118,11 +113,6 @@ dependencies {
     // Architecture Components: Lifecycle
     implementation(libs.androidx.lifecycle.runtime)
     implementation(libs.androidx.lifecycle.common)
-
-    // Architecture Components: Room
-    implementation(libs.androidx.room.core)
-    implementation(libs.androidx.paging)
-    ksp(libs.androidx.room.compiler)
 
     // For direct database access
     // TODO [#703]: Eliminate this dependency

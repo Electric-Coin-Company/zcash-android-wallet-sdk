@@ -31,12 +31,13 @@
     <string name="sapling_address">Sapling address</string>
     <string name="transparent_address">Transparent address</string>
     <string name="action_shield">Shield Funds</string>
+    <string name="send_status">Send status: <xliff:g id="status" example="Idle">%1$s</xliff:g></string>
 
     <string name="unified_address_tag">Zcash unified address</string>
     <string name="sapling_address_tag">Zcash sapling address</string>
     <string name="transparent_address_tag">Zcash transparent address</string>
-    <string name="address_copied" formatted="true"><xliff:g id="address" example="t1TdMMj5zzMtt...">Copied to
-        clipboard: %1$s</xliff:g></string>
+    <string name="address_copied" formatted="true">Copied to clipboard: <xliff:g id="address"
+        example="t1TdMMj5zzMtt...">%1$s</xliff:g></string>
 
     <string name="configure_seed">Please select your wallet secret phrase</string>
     <string name="person_alyssa">Alyssa P. Hacker</string>

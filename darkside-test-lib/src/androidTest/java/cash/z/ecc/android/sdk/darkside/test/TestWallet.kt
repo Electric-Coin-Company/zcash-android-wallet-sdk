@@ -12,18 +12,13 @@ import cash.z.ecc.android.sdk.model.Darkside
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
-import cash.z.ecc.android.sdk.model.isPending
 import cash.z.ecc.android.sdk.tool.DerivationTool
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.onCompletion
-import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.newFixedThreadPoolContext
 import kotlinx.coroutines.runBlocking
@@ -106,8 +101,6 @@ class TestWallet(
         amount: Zatoshi = Zatoshi(500L)
     ): TestWallet {
         synchronizer.sendToAddress(shieldedSpendingKey, amount, address, memo)
-            .takeWhile { it.isPending(null) }
-            .collect { _ -> }
         return this
     }
 
@@ -124,9 +117,6 @@ class TestWallet(
         synchronizer.getTransparentBalance(transparentAddress).let { walletBalance ->
             if (walletBalance.available.value > 0L) {
                 synchronizer.shieldFunds(shieldedSpendingKey)
-                    .onCompletion { Twig.debug { "done shielding funds" } }
-                    .catch { Twig.debug { "Failed with $it" } }
-                    .collect()
             }
         }
 

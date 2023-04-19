@@ -143,11 +143,6 @@ sealed class CompactBlockProcessorException(message: String, cause: Throwable? =
  * Exceptions related to the wallet's birthday.
  */
 sealed class BirthdayException(message: String, cause: Throwable? = null) : SdkException(message, cause) {
-    object UninitializedBirthdayException : BirthdayException(
-        "Error the birthday cannot be" +
-            " accessed before it is initialized. Verify that the new, import or open functions" +
-            " have been called on the initializer."
-    )
     class MissingBirthdayFilesException(directory: String) : BirthdayException(
         "Cannot initialize wallet because no birthday files were found in the $directory directory."
     )
@@ -312,3 +307,5 @@ sealed class TransactionEncoderException(
             " height was $lastScannedHeight."
     )
 }
+
+class TransactionSubmitException : Exception()

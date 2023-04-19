@@ -2,7 +2,10 @@ Change Log
 ==========
 
 ## 1.17.0-beta01
-- Synchronizer APIs for listing sent and received transactions have been removed
+- Synchronizer APIs for listing sent and received transactions have been removed.
+- Synchronizer APIs for listing pending transactions have been removed, along with the `PendingTransaction` object.
+- `Synchronizer.clearedTransactions` has been renamed to `Synchronizer.transactions` and includes sent, received, and pending transactions.
+- `Synchronizer.send()` and `shieldFunds()` are now `suspend` functions with `Long` return values representing the ID of the newly created transaction.  Errors are reported by thrown exceptions.
 
 ## 1.16.0-beta01
 ### Changed

@@ -1,8 +1,8 @@
 package cash.z.ecc.android.sdk.internal.repository
 
+import cash.z.ecc.android.sdk.internal.model.DbTransactionOverview
 import cash.z.ecc.android.sdk.internal.model.EncodedTransaction
 import cash.z.ecc.android.sdk.model.BlockHeight
-import cash.z.ecc.android.sdk.model.TransactionOverview
 import cash.z.ecc.android.sdk.model.TransactionRecipient
 import kotlinx.coroutines.flow.Flow
 
@@ -51,9 +51,9 @@ internal interface DerivedDataRepository {
      *
      * @return a list of transactions that were mined in the given range, inclusive.
      */
-    suspend fun findNewTransactions(blockHeightRange: ClosedRange<BlockHeight>): List<TransactionOverview>
+    suspend fun findNewTransactions(blockHeightRange: ClosedRange<BlockHeight>): List<DbTransactionOverview>
 
-    suspend fun getOldestTransaction(): TransactionOverview?
+    suspend fun getOldestTransaction(): DbTransactionOverview?
 
     /**
      * Find the mined height that matches the given raw tx_id in bytes. This is useful for matching
@@ -95,8 +95,7 @@ internal interface DerivedDataRepository {
      * prior versions.
      */
 
-    /** A flow of all the inbound and outbound confirmed transactions */
-    val allTransactions: Flow<List<TransactionOverview>>
+    val allTransactions: Flow<List<DbTransactionOverview>>
 
     fun getNoteIds(transactionId: Long): Flow<Long>
 

@@ -16,20 +16,11 @@ import cash.z.ecc.android.sdk.demoapp.DemoConstants
 import cash.z.ecc.android.sdk.demoapp.R
 import cash.z.ecc.android.sdk.demoapp.databinding.FragmentSendBinding
 import cash.z.ecc.android.sdk.demoapp.util.mainActivity
-import cash.z.ecc.android.sdk.ext.collectWith
 import cash.z.ecc.android.sdk.ext.convertZatoshiToZecString
 import cash.z.ecc.android.sdk.ext.convertZecToZatoshi
 import cash.z.ecc.android.sdk.ext.toZecString
-import cash.z.ecc.android.sdk.internal.Twig
-import cash.z.ecc.android.sdk.model.PendingTransaction
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.WalletBalance
-import cash.z.ecc.android.sdk.model.isCreated
-import cash.z.ecc.android.sdk.model.isCreating
-import cash.z.ecc.android.sdk.model.isFailedEncoding
-import cash.z.ecc.android.sdk.model.isFailedSubmit
-import cash.z.ecc.android.sdk.model.isMined
-import cash.z.ecc.android.sdk.model.isSubmitSuccess
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
@@ -169,30 +160,10 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
                 amount,
                 toAddress,
                 "Funds from Demo App"
-            )?.collectWith(lifecycleScope, ::onPendingTxUpdated)
+            )
         }
 
         mainActivity()?.hideKeyboard()
-    }
-
-    @Suppress("ComplexMethod")
-    private fun onPendingTxUpdated(pendingTransaction: PendingTransaction?) {
-        val message = when {
-            pendingTransaction == null -> "Transaction not found"
-            pendingTransaction.isMined() -> "Transaction Mined!\n\nSEND COMPLETE".also { isSending = false }
-            pendingTransaction.isSubmitSuccess() -> "Successfully submitted transaction!\nAwaiting confirmation..."
-            pendingTransaction.isFailedEncoding() ->
-                "ERROR: failed to encode transaction!".also { isSending = false }
-            pendingTransaction.isFailedSubmit() ->
-                "ERROR: failed to submit transaction!".also { isSending = false }
-            pendingTransaction.isCreated() -> "Transaction creation complete! (id: $id)"
-            pendingTransaction.isCreating() -> "Creating transaction!".also { onResetInfo() }
-            else -> "Transaction updated!".also { Twig.debug { "Unhandled TX state: $pendingTransaction" } }
-        }
-        Twig.debug { "Pending TX Updated: $message" }
-        binding.textInfo.apply {
-            text = "$text\n$message"
-        }
     }
 
     private fun onUpdateSendButton() {
@@ -213,10 +184,6 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
                 }
             }
         }
-    }
-
-    private fun onResetInfo() {
-        binding.textInfo.text = "Active Transaction:"
     }
 
     //

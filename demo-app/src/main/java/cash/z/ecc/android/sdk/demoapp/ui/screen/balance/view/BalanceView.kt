@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import cash.z.ecc.android.sdk.demoapp.R
+import cash.z.ecc.android.sdk.demoapp.ui.screen.home.viewmodel.SendState
 import cash.z.ecc.android.sdk.demoapp.ui.screen.home.viewmodel.WalletSnapshot
 import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.model.toZecString
@@ -36,6 +37,7 @@ import cash.z.ecc.android.sdk.model.toZecString
 @Composable
 fun Balance(
     walletSnapshot: WalletSnapshot,
+    sendState: SendState,
     onShieldFunds: () -> Unit,
     onBack: () -> Unit,
 ) {
@@ -46,6 +48,7 @@ fun Balance(
         BalanceMainContent(
             paddingValues = paddingValues,
             walletSnapshot,
+            sendState,
             onShieldFunds = onShieldFunds
         )
     }
@@ -73,6 +76,7 @@ private fun BalanceTopAppBar(onBack: () -> Unit) {
 private fun BalanceMainContent(
     paddingValues: PaddingValues,
     walletSnapshot: WalletSnapshot,
+    sendState: SendState,
     onShieldFunds: () -> Unit
 ) {
     Column(
@@ -133,5 +137,8 @@ private fun BalanceMainContent(
                 Text(stringResource(id = R.string.action_shield))
             }
         }
+
+        // Eventually there should be something to clear the status
+        Text(stringResource(id = R.string.send_status, sendState.toString()))
     }
 }

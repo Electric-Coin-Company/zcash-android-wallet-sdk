@@ -11,7 +11,6 @@ import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
-import cash.z.ecc.android.sdk.model.isSubmitSuccess
 import cash.z.ecc.android.sdk.test.ScopedTest
 import cash.z.ecc.android.sdk.tool.CheckpointTool
 import cash.z.ecc.android.sdk.tool.DerivationTool
@@ -109,10 +108,7 @@ class TestnetIntegrationTest : ScopedTest() {
             ZcashSdk.MINERS_FEE,
             toAddress,
             "first mainnet tx from the SDK"
-        ).filter { it.isSubmitSuccess() }.onFirst {
-            log("DONE SENDING!!!")
-        }
-        log("returning true from sendFunds")
+        )
         return true
     }
 

@@ -17,12 +17,13 @@ class SynchronizerFactoryTest {
     @SmallTest
     fun testFilePaths() {
         val rustBackend = runBlocking {
+            val coordinator = DatabaseCoordinator.getInstance(ApplicationProvider.getApplicationContext())
             DefaultSynchronizerFactory.defaultRustBackend(
-                ApplicationProvider.getApplicationContext(),
                 ZcashNetwork.Testnet,
                 "TestWallet",
                 TestWallet.Backups.SAMPLE_WALLET.testnetBirthday,
-                SaplingParamTool.new(ApplicationProvider.getApplicationContext())
+                SaplingParamTool.new(ApplicationProvider.getApplicationContext()),
+                coordinator
             )
         }
         assertTrue(

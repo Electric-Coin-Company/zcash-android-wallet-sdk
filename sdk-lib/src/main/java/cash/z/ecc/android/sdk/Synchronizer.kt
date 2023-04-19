@@ -4,9 +4,9 @@ import android.content.Context
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor
 import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.internal.SaplingParamTool
+import cash.z.ecc.android.sdk.internal.db.DatabaseCoordinator
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
-import cash.z.ecc.android.sdk.model.PendingTransaction
 import cash.z.ecc.android.sdk.model.TransactionOverview
 import cash.z.ecc.android.sdk.model.TransactionRecipient
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
@@ -23,18 +23,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.runBlocking
 import java.io.Closeable
 
-/**
- * Primary interface for interacting with the SDK. Defines the contract that specific
- * implementations like [MockSynchronizer] and [SdkSynchronizer] fulfill. Given the language-level
- * support for coroutines, we favor their use in the SDK and incorporate that choice into this
- * contract.
- */
 @Suppress("TooManyFunctions")
 interface Synchronizer {
-
-    //
-    // Flows
-    //
 
     // Status
 
@@ -85,18 +75,10 @@ interface Synchronizer {
      */
     val transparentBalances: StateFlow<WalletBalance?>
 
-    // Transactions
-
-    /**
-     * A flow of all the outbound pending transaction that have been sent but are awaiting
-     * confirmations.
-     */
-    val pendingTransactions: Flow<List<PendingTransaction>>
-
     /**
      * A flow of all the transactions that are on the blockchain.
      */
-    val clearedTransactions: Flow<List<TransactionOverview>>
+    val transactions: Flow<List<TransactionOverview>>
 
     //
     // Latest Properties
@@ -187,17 +169,17 @@ interface Synchronizer {
      * useful for updating the UI without needing to poll. Of course, polling is always an option
      * for any wallet that wants to ignore this return value.
      */
-    fun sendToAddress(
+    suspend fun sendToAddress(
         usk: UnifiedSpendingKey,
         amount: Zatoshi,
         toAddress: String,
         memo: String = ""
-    ): Flow<PendingTransaction>
+    ): Long
 
-    fun shieldFunds(
+    suspend fun shieldFunds(
         usk: UnifiedSpendingKey,
         memo: String = ZcashSdk.DEFAULT_SHIELD_FUNDS_MEMO_PREFIX
-    ): Flow<PendingTransaction>
+    ): Long
 
     /**
      * Returns true when the given address is a valid z-addr. Invalid addresses will throw an
@@ -449,12 +431,16 @@ interface Synchronizer {
                 birthday ?: zcashNetwork.saplingActivationHeight
             )
 
+            val coordinator = DatabaseCoordinator.getInstance(context)
+            // The pending transaction database no longer exists, so we can delete the file
+            coordinator.deletePendingTransactionDatabase(zcashNetwork, alias)
+
             val rustBackend = DefaultSynchronizerFactory.defaultRustBackend(
-                applicationContext,
                 zcashNetwork,
                 alias,
                 loadedCheckpoint.height,
-                saplingParamTool
+                saplingParamTool,
+                coordinator
             )
 
             val blockStore =
@@ -481,13 +467,7 @@ interface Synchronizer {
             val service = DefaultSynchronizerFactory.defaultService(applicationContext, lightWalletEndpoint)
             val encoder = DefaultSynchronizerFactory.defaultEncoder(rustBackend, saplingParamTool, repository)
             val downloader = DefaultSynchronizerFactory.defaultDownloader(service, blockStore)
-            val txManager = DefaultSynchronizerFactory.defaultTxManager(
-                applicationContext,
-                zcashNetwork,
-                alias,
-                encoder,
-                service
-            )
+            val txManager = DefaultSynchronizerFactory.defaultTxManager(encoder, service)
             val processor = DefaultSynchronizerFactory.defaultProcessor(rustBackend, downloader, repository)
 
             return SdkSynchronizer.new(

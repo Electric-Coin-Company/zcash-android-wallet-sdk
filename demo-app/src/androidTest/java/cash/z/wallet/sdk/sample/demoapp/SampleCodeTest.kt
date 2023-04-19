@@ -11,7 +11,6 @@ import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.Mainnet
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.model.defaultForNetwork
-import cash.z.ecc.android.sdk.model.isFailure
 import cash.z.ecc.android.sdk.tool.DerivationTool
 import co.electriccoin.lightwallet.client.LightWalletClient
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
@@ -180,11 +179,7 @@ class SampleCodeTest {
         val address = "ztestsapling1tklsjr0wyw0d58f3p7wufvrj2cyfv6q6caumyueadq8qvqt8lda6v6tpx474rfru9y6u75u7qnw"
         val memo = "Test Transaction"
         val spendingKey = DerivationTool.deriveUnifiedSpendingKey(seed, ZcashNetwork.Mainnet, Account.DEFAULT)
-        val transactionFlow = synchronizer.sendToAddress(spendingKey, amount, address, memo)
-        transactionFlow.collect {
-            log("pending transaction updated $it")
-            assertTrue("Failed to send funds. See log for details.", !it.isFailure())
-        }
+        synchronizer.sendToAddress(spendingKey, amount, address, memo)
     }
 
     // /////////////////////////////////////////////////////
