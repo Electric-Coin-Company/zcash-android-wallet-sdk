@@ -149,12 +149,8 @@ internal class LightWalletClientImpl private constructor(
 
         val getUtxosBuilder = Service.GetAddressUtxosArg.newBuilder()
 
-        // TODO [#941]: Fetch UTXOs setAddress() failure
-        // TODO [#941]: https://github.com/zcash/zcash-android-wallet-sdk/issues/941
         // Build the request with the different addresses
-        tAddresses.forEachIndexed { index, tAddress ->
-            getUtxosBuilder.setAddresses(index, tAddress)
-        }
+        getUtxosBuilder.addAllAddresses(tAddresses)
 
         val request = getUtxosBuilder.build()
 
