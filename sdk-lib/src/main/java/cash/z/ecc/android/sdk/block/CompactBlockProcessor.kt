@@ -51,7 +51,6 @@ import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.GetAddressUtxosReplyUnsafe
 import co.electriccoin.lightwallet.client.model.LightWalletEndpointInfoUnsafe
 import co.electriccoin.lightwallet.client.model.Response
-import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -61,10 +60,8 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withContext
 import java.util.Locale
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.max
@@ -202,7 +199,7 @@ class CompactBlockProcessor internal constructor(
      * Download compact blocks, verify and scan them until [stop] is called.
      */
     @Suppress("LongMethod")
-    suspend fun start() = withContext(IO) {
+    suspend fun start() {
         verifySetup()
         updateBirthdayHeight()
         Twig.debug { "setup verified. processor starting" }
@@ -224,6 +221,7 @@ class CompactBlockProcessor internal constructor(
                         }
                         delay(napTime)
                     }
+
                     BlockProcessingResult.NoBlocksToProcess, BlockProcessingResult.FailedEnhance -> {
                         val noWorkDone = currentInfo.lastSyncRange?.isEmpty() ?: true
                         val summary = if (noWorkDone) {
@@ -247,6 +245,7 @@ class CompactBlockProcessor internal constructor(
                         }
                         delay(napTime)
                     }
+
                     is BlockProcessingResult.FailedDeleteBlocks -> {
                         Twig.warn {
                             "Failed to delete temporary blocks files from the device disk. It will be retried on the" +
@@ -254,24 +253,28 @@ class CompactBlockProcessor internal constructor(
                         }
                         // Do nothing. The other phases went correctly.
                     }
+
                     is BlockProcessingResult.FailedDownloadingBlocks -> {
                         Twig.error { "Failed while downloading blocks at height: ${result.failedAtHeight}" }
                         checkErrorResult(result.failedAtHeight)
                     }
+
                     is BlockProcessingResult.FailedValidationBlocks -> {
                         Twig.error { "Failed while validating blocks at height: ${result.failedAtHeight}" }
                         checkErrorResult(result.failedAtHeight)
                     }
+
                     is BlockProcessingResult.FailedScanningBlocks -> {
                         Twig.error { "Failed while scanning blocks at height: ${result.failedAtHeight}" }
                         checkErrorResult(result.failedAtHeight)
                     }
+
                     is BlockProcessingResult.Success -> {
                         // Do nothing. We are done.
                     }
                 }
             }
-        } while (isActive && _state.value !is State.Stopped)
+        } while (_state.value !is State.Stopped)
         Twig.debug { "processor complete" }
         stop()
     }
@@ -401,7 +404,7 @@ class CompactBlockProcessor internal constructor(
      *
      * @return true when the update succeeds.
      */
-    private suspend fun updateRanges(): Boolean = withContext(IO) {
+    private suspend fun updateRanges(): Boolean {
         // This fetches the latest height each time this method is called, which can be very inefficient
         // when downloading all of the blocks from the server
         val networkBlockHeight = run {
@@ -412,7 +415,7 @@ class CompactBlockProcessor internal constructor(
                 }
 
             runCatching { networkBlockHeightUnsafe?.toBlockHeight(network) }.getOrNull()
-        } ?: return@withContext false
+        } ?: return false
 
         // TODO [#683]: rethink this and make it easier to understand what's happening. Can we reduce this
         //  so that we only work with actual changing info rather than periodic snapshots? Do we need
@@ -447,7 +450,7 @@ class CompactBlockProcessor internal constructor(
             )
         }
 
-        true
+        return true
     }
 
     private suspend fun enhanceTransactionDetails(lastScanRange: ClosedRange<BlockHeight>?): BlockProcessingResult {
@@ -484,7 +487,7 @@ class CompactBlockProcessor internal constructor(
     // TODO [#683]: we still need a way to identify those transactions that failed to be enhanced
     // TODO [#683]: https://github.com/zcash/zcash-android-wallet-sdk/issues/683
 
-    private suspend fun enhance(transaction: TransactionOverview) = withContext(IO) {
+    private suspend fun enhance(transaction: TransactionOverview) {
         transaction.minedHeight?.let { minedHeight ->
             enhanceHelper(transaction.id, transaction.rawId.byteArray, minedHeight)
         }
@@ -504,6 +507,7 @@ class CompactBlockProcessor internal constructor(
                     onProcessorError(EnhanceTxDecryptError(minedHeight, error))
                 }
             }
+
             is Response.Failure -> {
                 onProcessorError(EnhanceTxDownloadError(minedHeight, response.toThrowable()))
             }
@@ -587,80 +591,81 @@ class CompactBlockProcessor internal constructor(
     var failedUtxoFetches = 0
 
     @Suppress("MagicNumber", "LongMethod")
-    internal suspend fun refreshUtxos(account: Account, startHeight: BlockHeight): Int =
-        withContext(IO) {
-            Twig.debug { "Checking for UTXOs above height $startHeight" }
-            var count = 0
-            // TODO [683]: cleanup the way that we prevent this from running excessively
-            //       For now, try for about 3 blocks per app launch. If the service fails it is
-            //       probably disabled on ligthtwalletd, so then stop trying until the next app launch.
-            // TODO [#683]: https://github.com/zcash/zcash-android-wallet-sdk/issues/683
-            if (failedUtxoFetches < 9) { // there are 3 attempts per block
-                @Suppress("TooGenericExceptionCaught")
-                try {
-                    retryUpTo(3) {
-                        val tAddresses = rustBackend.listTransparentReceivers(account)
+    internal suspend fun refreshUtxos(account: Account, startHeight: BlockHeight): Int {
+        Twig.debug { "Checking for UTXOs above height $startHeight" }
+        var count = 0
+        // TODO [683]: cleanup the way that we prevent this from running excessively
+        //       For now, try for about 3 blocks per app launch. If the service fails it is
+        //       probably disabled on ligthtwalletd, so then stop trying until the next app launch.
+        // TODO [#683]: https://github.com/zcash/zcash-android-wallet-sdk/issues/683
+        if (failedUtxoFetches < 9) { // there are 3 attempts per block
+            @Suppress("TooGenericExceptionCaught")
+            try {
+                retryUpTo(3) {
+                    val tAddresses = rustBackend.listTransparentReceivers(account)
 
-                        downloader.lightWalletClient.fetchUtxos(
-                            tAddresses,
-                            BlockHeightUnsafe.from(startHeight)
-                        ).onEach { response ->
-                            when (response) {
-                                is Response.Success -> {
-                                    Twig.verbose { "Downloading UTXO at height: ${response.result.height} succeeded." }
+                    downloader.lightWalletClient.fetchUtxos(
+                        tAddresses,
+                        BlockHeightUnsafe.from(startHeight)
+                    ).onEach { response ->
+                        when (response) {
+                            is Response.Success -> {
+                                Twig.verbose { "Downloading UTXO at height: ${response.result.height} succeeded." }
+                            }
+
+                            is Response.Failure -> {
+                                Twig.warn {
+                                    "Downloading UTXO from height:" +
+                                        " $startHeight failed with: ${response.description}."
                                 }
-                                is Response.Failure -> {
-                                    Twig.warn {
-                                        "Downloading UTXO from height:" +
-                                            " $startHeight failed with: ${response.description}."
-                                    }
-                                    throw LightWalletException.FetchUtxosException(
-                                        response.code,
-                                        response.description,
-                                        response.toThrowable()
-                                    )
-                                }
+                                throw LightWalletException.FetchUtxosException(
+                                    response.code,
+                                    response.description,
+                                    response.toThrowable()
+                                )
                             }
                         }
-                            .filterIsInstance<Response.Success<GetAddressUtxosReplyUnsafe>>()
-                            .map { response ->
-                                response.result
-                            }
-                            .onCompletion {
-                                if (it != null) {
-                                    Twig.debug { "UTXOs from height $startHeight failed to download with: $it" }
-                                } else {
-                                    Twig.debug { "All UTXOs from height $startHeight fetched successfully" }
-                                }
-                            }.collect { utxo ->
-                                Twig.debug { "Fetched UTXO with txid: ${utxo.txid}" }
-                                val processResult = processUtxoResult(utxo)
-                                if (processResult) {
-                                    count++
-                                }
-                            }
                     }
-                } catch (e: Throwable) {
-                    failedUtxoFetches++
-                    Twig.debug {
-                        "Warning: Fetching UTXOs is repeatedly failing! We will only try about " +
-                            "${(9 - failedUtxoFetches + 2) / 3} more times then give up for this session. " +
-                            "Exception message: ${e.message}, caused by: ${e.cause}."
-                    }
+                        .filterIsInstance<Response.Success<GetAddressUtxosReplyUnsafe>>()
+                        .map { response ->
+                            response.result
+                        }
+                        .onCompletion {
+                            if (it != null) {
+                                Twig.debug { "UTXOs from height $startHeight failed to download with: $it" }
+                            } else {
+                                Twig.debug { "All UTXOs from height $startHeight fetched successfully" }
+                            }
+                        }.collect { utxo ->
+                            Twig.debug { "Fetched UTXO with txid: ${utxo.txid}" }
+                            val processResult = processUtxoResult(utxo)
+                            if (processResult) {
+                                count++
+                            }
+                        }
                 }
-            } else {
+            } catch (e: Throwable) {
+                failedUtxoFetches++
                 Twig.debug {
-                    "Warning: gave up on fetching UTXOs for this session. It seems to unavailable on " +
-                        "lightwalletd."
+                    "Warning: Fetching UTXOs is repeatedly failing! We will only try about " +
+                        "${(9 - failedUtxoFetches + 2) / 3} more times then give up for this session. " +
+                        "Exception message: ${e.message}, caused by: ${e.cause}."
                 }
             }
-            count
+        } else {
+            Twig.debug {
+                "Warning: gave up on fetching UTXOs for this session. It seems to unavailable on " +
+                    "lightwalletd."
+            }
         }
+
+        return count
+    }
 
     /**
      * @return True in case of the UTXO processed successfully, false otherwise
      */
-    internal suspend fun processUtxoResult(utxo: GetAddressUtxosReplyUnsafe): Boolean = withContext(IO) {
+    internal suspend fun processUtxoResult(utxo: GetAddressUtxosReplyUnsafe): Boolean {
         // TODO(str4d): We no longer clear UTXOs here, as rustBackend.putUtxo now uses an upsert instead of an insert.
         //  This means that now-spent UTXOs would previously have been deleted, but now are left in the database (like
         //  shielded notes). Due to the fact that the lightwalletd query only returns _current_ UTXOs, we don't learn
@@ -672,7 +677,7 @@ class CompactBlockProcessor internal constructor(
         //  from what is _not_ returned as a UTXO, or alternatively fetch TXOs from lightwalletd instead of just UTXOs.
         Twig.debug { "Found UTXO at height ${utxo.height.toInt()} with ${utxo.valueZat} zatoshi" }
         @Suppress("TooGenericExceptionCaught")
-        return@withContext try {
+        return try {
             // TODO [#920]: Tweak RustBackend public APIs to have void return values.
             // TODO [#920]: Thus, we don't need to check the boolean result of this call until fixed.
             // TODO [#920]: https://github.com/zcash/zcash-android-wallet-sdk/issues/920
@@ -853,7 +858,7 @@ class CompactBlockProcessor internal constructor(
         internal suspend fun downloadBatchOfBlocks(
             downloader: CompactBlockDownloader,
             batch: Batch
-        ): BlockProcessingResult = withContext(IO) {
+        ): BlockProcessingResult {
             var downloadedCount = 0
             retryUpTo(RETRIES, { CompactBlockProcessorException.FailedDownload(it) }) { failedAttempts ->
                 if (failedAttempts == 0) {
@@ -866,7 +871,7 @@ class CompactBlockProcessor internal constructor(
             }
             Twig.verbose { "Successfully downloaded batch: $batch of $downloadedCount blocks" }
 
-            return@withContext if (downloadedCount > 0) {
+            return if (downloadedCount > 0) {
                 BlockProcessingResult.Success
             } else {
                 BlockProcessingResult.FailedDownloadingBlocks(batch.range.start)
@@ -890,39 +895,37 @@ class CompactBlockProcessor internal constructor(
         @VisibleForTesting
         @Throws(CompactBlockProcessorException.FailedScan::class)
         @Suppress("MagicNumber")
-        internal suspend fun scanBatchOfBlocks(batch: Batch, backend: Backend): BlockProcessingResult =
-            withContext(IO) {
-                // Attempt to scan a few times to work around any concurrent modification errors, then
-                // rethrow as an official processorError which is handled by [start.retryWithBackoff]
-                var scanResult = false
-                retryUpTo(RETRIES, { CompactBlockProcessorException.FailedScan(it) }) { failedAttempts ->
-                    if (failedAttempts == 0) {
-                        Twig.verbose { "Starting to scan batch $batch" }
-                    } else {
-                        Twig.verbose { "Retrying to scan batch $batch after $failedAttempts failure(s)..." }
-                    }
-
-                    scanResult = backend.scanBlocks(SCAN_BATCH_SIZE)
-                }
-                return@withContext if (scanResult) {
-                    Twig.verbose { "Successfully scanned batch $batch" }
-                    BlockProcessingResult.Success
+        internal suspend fun scanBatchOfBlocks(batch: Batch, backend: Backend): BlockProcessingResult {
+            // Attempt to scan a few times to work around any concurrent modification errors, then
+            // rethrow as an official processorError which is handled by [start.retryWithBackoff]
+            var scanResult = false
+            retryUpTo(RETRIES, { CompactBlockProcessorException.FailedScan(it) }) { failedAttempts ->
+                if (failedAttempts == 0) {
+                    Twig.verbose { "Starting to scan batch $batch" }
                 } else {
-                    BlockProcessingResult.FailedScanningBlocks(batch.range.start)
+                    Twig.verbose { "Retrying to scan batch $batch after $failedAttempts failure(s)..." }
                 }
+
+                scanResult = backend.scanBlocks(SCAN_BATCH_SIZE)
             }
+            return if (scanResult) {
+                Twig.verbose { "Successfully scanned batch $batch" }
+                BlockProcessingResult.Success
+            } else {
+                BlockProcessingResult.FailedScanningBlocks(batch.range.start)
+            }
+        }
 
         @VisibleForTesting
-        internal suspend fun deleteAllBlockFiles(downloader: CompactBlockDownloader): BlockProcessingResult =
-            withContext(IO) {
-                Twig.verbose { "Starting delete all temporary block files now" }
-                return@withContext if (downloader.compactBlockRepository.deleteCompactBlockFiles()) {
-                    Twig.verbose { "Successfully deleted all temporary block files" }
-                    BlockProcessingResult.Success
-                } else {
-                    BlockProcessingResult.FailedDeleteBlocks
-                }
+        internal suspend fun deleteAllBlockFiles(downloader: CompactBlockDownloader): BlockProcessingResult {
+            Twig.verbose { "Starting delete all temporary block files now" }
+            return if (downloader.compactBlockRepository.deleteCompactBlockFiles()) {
+                Twig.verbose { "Successfully deleted all temporary block files" }
+                BlockProcessingResult.Success
+            } else {
+                BlockProcessingResult.FailedDeleteBlocks
             }
+        }
 
         /**
          * Get the height of the last block that was scanned by this processor.
@@ -999,10 +1002,8 @@ class CompactBlockProcessor internal constructor(
             lastSyncRange = lastSyncRange
         )
 
-        withContext(IO) {
-            _networkHeight.value = networkBlockHeight
-            _processorInfo.value = currentInfo
-        }
+        _networkHeight.value = networkBlockHeight
+        _processorInfo.value = currentInfo
     }
 
     private suspend fun handleChainError(errorHeight: BlockHeight) {
@@ -1052,7 +1053,7 @@ class CompactBlockProcessor internal constructor(
     suspend fun rewindToNearestHeight(
         height: BlockHeight,
         alsoClearBlockCache: Boolean = false
-    ) = withContext(IO) {
+    ) {
         processingMutex.withLockLogged("rewindToHeight") {
             val lastSyncedHeight = currentInfo.lastSyncedHeight
             val lastLocalBlock = repository.lastScannedHeight()
