@@ -24,8 +24,6 @@ object WalletSnapshotFixture {
         processorInfo: CompactBlockProcessor.ProcessorInfo = CompactBlockProcessor.ProcessorInfo(
             null,
             null,
-            null,
-            null,
             null
         ),
         orchardBalance: WalletBalance = ORCHARD_BALANCE,

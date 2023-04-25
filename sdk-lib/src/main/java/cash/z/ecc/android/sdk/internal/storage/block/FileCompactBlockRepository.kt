@@ -6,6 +6,7 @@ import cash.z.ecc.android.sdk.internal.ext.createNewFileSuspend
 import cash.z.ecc.android.sdk.internal.ext.deleteRecursivelySuspend
 import cash.z.ecc.android.sdk.internal.ext.deleteSuspend
 import cash.z.ecc.android.sdk.internal.ext.existsSuspend
+import cash.z.ecc.android.sdk.internal.ext.listFilesSuspend
 import cash.z.ecc.android.sdk.internal.ext.mkdirsSuspend
 import cash.z.ecc.android.sdk.internal.ext.renameToSuspend
 import cash.z.ecc.android.sdk.internal.ext.toHexReversed
@@ -73,13 +74,25 @@ internal class FileCompactBlockRepository(
     override suspend fun rewindTo(height: BlockHeight) = rustBackend.rewindBlockMetadataToHeight(height)
 
     override suspend fun deleteCompactBlockFiles(): Boolean {
-        Twig.debug { "Removing blocks directory ${blocksDirectory.path} with all its children." }
+        Twig.verbose { "Deleting all blocks from directory ${blocksDirectory.path}" }
 
-        if (blocksDirectory.existsSuspend()) {
-            return blocksDirectory.deleteRecursivelySuspend()
-        }
-
-        return true
+        return runCatching {
+            if (blocksDirectory.existsSuspend()) {
+                blocksDirectory.listFilesSuspend()?.forEach {
+                    val result = if (it.isDirectory) {
+                        it.deleteRecursivelySuspend()
+                    } else {
+                        it.deleteSuspend()
+                    }
+                    if (!result) {
+                        return false
+                    }
+                }
+            }
+            return true
+        }.onFailure { error ->
+            Twig.error(error) { "Failed while deleting block files from disk" }
+        }.getOrDefault(false)
     }
 
     companion object {

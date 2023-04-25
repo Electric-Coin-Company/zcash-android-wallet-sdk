@@ -24,13 +24,13 @@ class ReorgSetupTest : ScopedTest() {
     @Test
     fun testBeforeReorg_minHeight() = timeout(30_000L) {
         // validate that we are synced, at least to the birthday height
-        validator.validateMinHeightDownloaded(birthdayHeight)
+        validator.validateMinHeightSynced(birthdayHeight)
     }
 
     @Test
     fun testBeforeReorg_maxHeight() = timeout(30_000L) {
         // validate that we are not synced beyond the target height
-        validator.validateMaxHeightScanned(targetHeight)
+        validator.validateMaxHeightSynced(targetHeight)
     }
 
     companion object {

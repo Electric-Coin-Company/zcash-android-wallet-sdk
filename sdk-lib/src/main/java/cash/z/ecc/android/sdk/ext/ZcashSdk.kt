@@ -38,7 +38,7 @@ object ZcashSdk {
     // Because blocks are buffered in memory upon download and storage into SQLite, there is an upper bound
     // above which OutOfMemoryError is thrown. Experimentally, this value is below 50 blocks.
     // Back of the envelope calculation says the maximum block size is ~100kb.
-    const val DOWNLOAD_BATCH_SIZE = 10
+    const val SYNC_BATCH_SIZE = 10
 
     /**
      * Default size of batches of blocks to scan via librustzcash. The smaller this number the more granular information

@@ -181,11 +181,12 @@ class FileCompactBlockRepositoryTest {
 
         parentDirectory.also {
             assertTrue(it.existsSuspend())
-            assertFalse(it.listSuspend()!!.contains(FilePathFixture.DEFAULT_BLOCKS_DIR_NAME))
+            assertTrue(it.listSuspend()!!.contains(FilePathFixture.DEFAULT_BLOCKS_DIR_NAME))
         }
 
         blocksDirectory.also { blocksDir ->
-            assertFalse(blocksDir.existsSuspend())
+            assertTrue(blocksDir.existsSuspend())
+            assertTrue(blocksDir.listSuspend()!!.isEmpty())
         }
     }
 

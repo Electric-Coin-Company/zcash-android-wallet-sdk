@@ -198,12 +198,12 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
     }
 
     private fun onProcessorInfoUpdated(info: CompactBlockProcessor.ProcessorInfo) {
-        if (info.isScanning) binding.textStatus.text = "Scanning blocks...${info.scanProgress}%"
+        if (info.isSyncing) binding.textStatus.text = "Syncing blocks...${info.syncProgress}%"
     }
 
     @Suppress("MagicNumber")
     private fun onProgress(i: Int) {
-        if (i < 100) binding.textStatus.text = "Downloading blocks...$i%"
+        if (i < 100) binding.textStatus.text = "Syncing blocks...$i%"
     }
 
     private fun onStatus(status: Synchronizer.Status) {

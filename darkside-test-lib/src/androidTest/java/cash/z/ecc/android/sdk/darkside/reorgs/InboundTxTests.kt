@@ -13,13 +13,8 @@ import org.junit.runner.RunWith
 class InboundTxTests : ScopedTest() {
 
     @Test
-    fun testTargetBlock_downloaded() {
-        validator.validateMinHeightDownloaded(firstBlock)
-    }
-
-    @Test
-    fun testTargetBlock_scanned() {
-        validator.validateMinHeightScanned(BlockHeight.new(ZcashNetwork.Mainnet, targetTxBlock.value - 1))
+    fun testTargetBlock_synced() {
+        validator.validateMinHeightSynced(firstBlock)
     }
 
     @Test

@@ -372,29 +372,20 @@ interface Synchronizer {
         DISCONNECTED,
 
         /**
-         * Indicates that this Synchronizer is actively preparing to start, which usually involves
-         * setting up database tables, migrations or taking other maintenance steps that need to
-         * occur after an upgrade.
-         */
-        PREPARING,
-
-        /**
-         * Indicates that this Synchronizer is actively downloading new blocks from the server.
-         */
-        DOWNLOADING,
-
-        /**
-         * Indicates that this Synchronizer is actively validating new blocks that were downloaded
+         * Indicates that the Synchronizer is actively syncing new blocks. It starts with downloading
+         * new blocks, then validating these blocks and scanning them at the end.
+         *
+         * In **Downloading** sub-phase the Synchronizer is actively downloading new blocks from the
+         * server.
+         *
+         * In **Validating** sub-phase the Synchronizer is actively validating new blocks that were downloaded
          * from the server. Blocks need to be verified before they are scanned. This confirms that
          * each block is chain-sequential, thereby detecting missing blocks and reorgs.
-         */
-        VALIDATING,
-
-        /**
-         * Indicates that this Synchronizer is actively decrypting new blocks that were downloaded
+         *
+         * In **Scanning** sub-phase Synchronizer is actively decrypting new blocks that were downloaded
          * from the server.
          */
-        SCANNING,
+        SYNCING,
 
         /**
          * Indicates that this Synchronizer is actively enhancing newly scanned blocks with

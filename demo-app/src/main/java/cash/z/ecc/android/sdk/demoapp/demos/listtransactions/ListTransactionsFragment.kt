@@ -77,12 +77,12 @@ class ListTransactionsFragment : BaseDemoFragment<FragmentListTransactionsBindin
     //
 
     private fun onProcessorInfoUpdated(info: CompactBlockProcessor.ProcessorInfo) {
-        if (info.isScanning) binding.textInfo.text = "Scanning blocks...${info.scanProgress}%"
+        if (info.isSyncing) binding.textInfo.text = "Syncing blocks...${info.syncProgress}%"
     }
 
     @Suppress("MagicNumber")
     private fun onProgress(i: Int) {
-        if (i < 100) binding.textInfo.text = "Downloading blocks...$i%"
+        if (i < 100) binding.textInfo.text = "Syncing blocks...$i%"
     }
 
     private fun onStatus(status: Synchronizer.Status) {

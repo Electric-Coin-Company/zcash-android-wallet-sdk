@@ -2,21 +2,17 @@ package cash.z.ecc.android.sdk
 
 import android.content.Context
 import cash.z.ecc.android.sdk.Synchronizer.Status.DISCONNECTED
-import cash.z.ecc.android.sdk.Synchronizer.Status.DOWNLOADING
 import cash.z.ecc.android.sdk.Synchronizer.Status.ENHANCING
-import cash.z.ecc.android.sdk.Synchronizer.Status.SCANNING
 import cash.z.ecc.android.sdk.Synchronizer.Status.STOPPED
 import cash.z.ecc.android.sdk.Synchronizer.Status.SYNCED
-import cash.z.ecc.android.sdk.Synchronizer.Status.VALIDATING
+import cash.z.ecc.android.sdk.Synchronizer.Status.SYNCING
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Disconnected
-import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Downloading
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Enhancing
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Initialized
-import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Scanned
-import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Scanning
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Stopped
-import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Validating
+import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Synced
+import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Syncing
 import cash.z.ecc.android.sdk.ext.ConsensusBranchId
 import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.internal.SaplingParamTool
@@ -27,7 +23,7 @@ import cash.z.ecc.android.sdk.internal.db.derived.DbDerivedDataRepository
 import cash.z.ecc.android.sdk.internal.db.derived.DerivedDataDb
 import cash.z.ecc.android.sdk.internal.ext.toHexReversed
 import cash.z.ecc.android.sdk.internal.ext.tryNull
-import cash.z.ecc.android.sdk.internal.isEmpty
+import cash.z.ecc.android.sdk.internal.isNullOrEmpty
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
 import cash.z.ecc.android.sdk.internal.repository.CompactBlockRepository
 import cash.z.ecc.android.sdk.internal.repository.DerivedDataRepository
@@ -411,18 +407,16 @@ class SdkSynchronizer private constructor(
         processor.onChainErrorListener = ::onChainError
         processor.state.onEach {
             when (it) {
-                is Scanned -> {
+                is Synced -> {
                     val now = System.currentTimeMillis()
                     // do a bit of housekeeping and then report synced status
-                    onScanComplete(it.scannedRange, now - lastScanTime)
+                    onScanComplete(it.syncedRange, now - lastScanTime)
                     lastScanTime = now
                     SYNCED
                 }
                 is Stopped -> STOPPED
                 is Disconnected -> DISCONNECTED
-                is Downloading, Initialized -> DOWNLOADING
-                is Validating -> VALIDATING
-                is Scanning -> SCANNING
+                is Syncing, Initialized -> SYNCING
                 is Enhancing -> ENHANCING
             }.let { synchronizerStatus ->
                 //  ignore enhancing status for now
@@ -501,8 +495,8 @@ class SdkSynchronizer private constructor(
         // - if it's the first time we finished scanning
         // - if we check for blocks 5 times and find nothing was mined
         @Suppress("MagicNumber")
-        val shouldRefresh = !scannedRange.isEmpty() || elapsedMillis > (ZcashSdk.POLL_INTERVAL * 5)
-        val reason = if (scannedRange.isEmpty()) "it's been a while" else "new blocks were scanned"
+        val shouldRefresh = !scannedRange.isNullOrEmpty() || elapsedMillis > (ZcashSdk.POLL_INTERVAL * 5)
+        val reason = if (scannedRange.isNullOrEmpty()) "it's been a while" else "new blocks were scanned"
 
         // TRICKY:
         // Keep an eye on this section because there is a potential for concurrent DB
@@ -591,25 +585,25 @@ class SdkSynchronizer private constructor(
 
     // Not ready to be a public API; internal for testing only
     internal suspend fun createAccount(seed: ByteArray): UnifiedSpendingKey =
-        processor.createAccount(seed)
+        CompactBlockProcessor.createAccount(rustBackend, seed)
 
     /**
      * Returns the current Unified Address for this account.
      */
     override suspend fun getUnifiedAddress(account: Account): String =
-        processor.getCurrentAddress(account)
+        CompactBlockProcessor.getCurrentAddress(rustBackend, account)
 
     /**
      * Returns the legacy Sapling address corresponding to the current Unified Address for this account.
      */
     override suspend fun getSaplingAddress(account: Account): String =
-        processor.getLegacySaplingAddress(account)
+        CompactBlockProcessor.getLegacySaplingAddress(rustBackend, account)
 
     /**
      * Returns the legacy transparent address corresponding to the current Unified Address for this account.
      */
     override suspend fun getTransparentAddress(account: Account): String =
-        processor.getTransparentAddress(account)
+        CompactBlockProcessor.getTransparentAddress(rustBackend, account)
 
     override fun sendToAddress(
         usk: UnifiedSpendingKey,
@@ -643,7 +637,7 @@ class SdkSynchronizer private constructor(
     ): Flow<PendingTransaction> {
         Twig.debug { "Initializing shielding transaction" }
         val deferred = coroutineScope.async {
-            val tAddr = processor.getTransparentAddress(usk.account)
+            val tAddr = CompactBlockProcessor.getTransparentAddress(rustBackend, usk.account)
             val tBalance = processor.getUtxoCacheBalance(tAddr)
 
             // Emit the placeholder transaction, then switch to monitoring the database

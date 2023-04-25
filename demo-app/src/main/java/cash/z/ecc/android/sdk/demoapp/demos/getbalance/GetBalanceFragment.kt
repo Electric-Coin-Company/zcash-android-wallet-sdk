@@ -163,33 +163,15 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
         Twig.debug { "Synchronizer status: $status" }
         // report benchmark event
         val traceEvents = when (status) {
-            Synchronizer.Status.DOWNLOADING -> {
-                listOf(
-                    SyncBlockchainBenchmarkTrace.Event.BLOCKCHAIN_SYNC_START,
-                    SyncBlockchainBenchmarkTrace.Event.DOWNLOAD_START
-                )
-            }
-            Synchronizer.Status.VALIDATING -> {
-                listOf(
-                    SyncBlockchainBenchmarkTrace.Event.DOWNLOAD_END,
-                    SyncBlockchainBenchmarkTrace.Event.VALIDATION_START
-                )
-            }
-            Synchronizer.Status.SCANNING -> {
-                listOf(
-                    SyncBlockchainBenchmarkTrace.Event.VALIDATION_END,
-                    SyncBlockchainBenchmarkTrace.Event.SCAN_START
-                )
+            Synchronizer.Status.SYNCING -> {
+                SyncBlockchainBenchmarkTrace.Event.BLOCKCHAIN_SYNC_START
             }
             Synchronizer.Status.SYNCED -> {
-                listOf(
-                    SyncBlockchainBenchmarkTrace.Event.SCAN_END,
-                    SyncBlockchainBenchmarkTrace.Event.BLOCKCHAIN_SYNC_END
-                )
+                SyncBlockchainBenchmarkTrace.Event.BLOCKCHAIN_SYNC_END
             }
             else -> null
         }
-        traceEvents?.forEach { reportTraceEvent(it) }
+        traceEvents?.let { reportTraceEvent(it) }
 
         binding.textStatus.text = "Status: $status"
         sharedViewModel.synchronizerFlow.value?.let { synchronizer ->
@@ -202,12 +184,12 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
     @Suppress("MagicNumber")
     private fun onProgress(i: Int) {
         if (i < 100) {
-            binding.textStatus.text = "Downloading blocks...$i%"
+            binding.textStatus.text = "Syncing blocks...$i%"
         }
     }
 
     private fun onProcessorInfoUpdated(info: CompactBlockProcessor.ProcessorInfo) {
-        if (info.isScanning) binding.textStatus.text = "Scanning blocks...${info.scanProgress}%"
+        if (info.isSyncing) binding.textStatus.text = "Syncing blocks...${info.syncProgress}%"
     }
 }
 
