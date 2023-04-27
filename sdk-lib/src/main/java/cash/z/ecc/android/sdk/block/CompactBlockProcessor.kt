@@ -17,7 +17,6 @@ import cash.z.ecc.android.sdk.ext.ZcashSdk.MAX_REORG_SIZE
 import cash.z.ecc.android.sdk.ext.ZcashSdk.POLL_INTERVAL
 import cash.z.ecc.android.sdk.ext.ZcashSdk.RETRIES
 import cash.z.ecc.android.sdk.ext.ZcashSdk.REWIND_DISTANCE
-import cash.z.ecc.android.sdk.ext.ZcashSdk.SCAN_BATCH_SIZE
 import cash.z.ecc.android.sdk.ext.ZcashSdk.SYNC_BATCH_SIZE
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.block.CompactBlockDownloader
@@ -25,6 +24,7 @@ import cash.z.ecc.android.sdk.internal.ext.retryUpTo
 import cash.z.ecc.android.sdk.internal.ext.retryWithBackoff
 import cash.z.ecc.android.sdk.internal.ext.toHexReversed
 import cash.z.ecc.android.sdk.internal.isNullOrEmpty
+import cash.z.ecc.android.sdk.internal.length
 import cash.z.ecc.android.sdk.internal.model.ext.from
 import cash.z.ecc.android.sdk.internal.model.ext.toBlockHeight
 import cash.z.ecc.android.sdk.internal.repository.DerivedDataRepository
@@ -882,6 +882,7 @@ class CompactBlockProcessor internal constructor(
         internal suspend fun validateBatchOfBlocks(batch: Batch, backend: Backend): BlockProcessingResult {
             Twig.verbose { "Starting to validate batch $batch" }
 
+            // Rust layer does not provide a limit (height) for validating for now, so we validate all the chain
             val result = backend.validateCombinedChainOrErrorBlockHeight()
 
             return if (null == result) {
@@ -893,21 +894,9 @@ class CompactBlockProcessor internal constructor(
         }
 
         @VisibleForTesting
-        @Throws(CompactBlockProcessorException.FailedScan::class)
         @Suppress("MagicNumber")
         internal suspend fun scanBatchOfBlocks(batch: Batch, backend: Backend): BlockProcessingResult {
-            // Attempt to scan a few times to work around any concurrent modification errors, then
-            // rethrow as an official processorError which is handled by [start.retryWithBackoff]
-            var scanResult = false
-            retryUpTo(RETRIES, { CompactBlockProcessorException.FailedScan(it) }) { failedAttempts ->
-                if (failedAttempts == 0) {
-                    Twig.verbose { "Starting to scan batch $batch" }
-                } else {
-                    Twig.verbose { "Retrying to scan batch $batch after $failedAttempts failure(s)..." }
-                }
-
-                scanResult = backend.scanBlocks(SCAN_BATCH_SIZE)
-            }
+            val scanResult = backend.scanBlocks(batch.range.length().toInt())
             return if (scanResult) {
                 Twig.verbose { "Successfully scanned batch $batch" }
                 BlockProcessingResult.Success
