@@ -707,15 +707,15 @@ class CompactBlockProcessor internal constructor(
             downloader: CompactBlockDownloader,
             repository: DerivedDataRepository,
             network: ZcashNetwork,
-            syncRange: ClosedRange<BlockHeight>?,
+            syncRange: ClosedRange<BlockHeight>,
             withDownload: Boolean
         ): Flow<BatchSyncProgress> = flow {
-            if (syncRange.isNullOrEmpty()) {
+            if (syncRange.isEmpty()) {
                 Twig.debug { "No blocks to sync" }
             } else {
                 Twig.debug { "Syncing blocks in range $syncRange" }
 
-                val batches = getBatchedBlockList(syncRange!!, network)
+                val batches = getBatchedBlockList(syncRange, network)
 
                 // While we run the sync sub-phases for each batch serially now, we'd like to run them in
                 // parallel to speed up the overall sync process time
