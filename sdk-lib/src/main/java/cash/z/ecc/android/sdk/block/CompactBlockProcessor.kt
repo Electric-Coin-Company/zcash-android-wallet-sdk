@@ -774,7 +774,7 @@ class CompactBlockProcessor internal constructor(
                     deleteAllBlockFiles(
                         downloader = downloader
                     ).takeIf { it != BlockProcessingResult.Success }?.let { result ->
-                        Twig.warn { "Download batch phase failed with: $result" }
+                        Twig.warn { "Delete batch block files failed with: $result" }
                         emit(
                             BatchSyncProgress(
                                 percentage = (batch.index / batches.size.toFloat() * 100).roundToInt(),
