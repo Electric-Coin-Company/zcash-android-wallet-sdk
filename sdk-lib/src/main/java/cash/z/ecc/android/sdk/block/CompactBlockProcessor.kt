@@ -420,9 +420,11 @@ class CompactBlockProcessor internal constructor(
             )
         }
         val lastSyncedHeight = if (lastDownloadedHeight.value - lastScannedHeight.value > 0) {
-            Twig.verbose { "Clearing blocks of last persisted batch within the last scanned height " +
-                "$lastScannedHeight and last download height $lastDownloadedHeight, as all these blocks " +
-                "possibly haven't been validated and scanned in the previous blocks sync attempt." }
+            Twig.verbose {
+                "Clearing blocks of last persisted batch within the last scanned height " +
+                    "$lastScannedHeight and last download height $lastDownloadedHeight, as all these blocks " +
+                    "possibly haven't been validated and scanned in the previous blocks sync attempt."
+            }
             downloader.rewindToHeight(lastScannedHeight)
             lastScannedHeight
         } else {
