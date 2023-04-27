@@ -77,23 +77,19 @@ internal class FileCompactBlockRepository(
     override suspend fun deleteCompactBlockFiles(): Boolean {
         Twig.verbose { "Deleting all blocks from directory ${blocksDirectory.path}" }
 
-        return runCatching {
-            if (blocksDirectory.existsSuspend()) {
-                blocksDirectory.listFilesSuspend()?.forEach {
-                    val result = if (it.isDirectorySuspend()) {
-                        it.deleteRecursivelySuspend()
-                    } else {
-                        it.deleteSuspend()
-                    }
-                    if (!result) {
-                        return false
-                    }
+        if (blocksDirectory.existsSuspend()) {
+            blocksDirectory.listFilesSuspend()?.forEach {
+                val result = if (it.isDirectorySuspend()) {
+                    it.deleteRecursivelySuspend()
+                } else {
+                    it.deleteSuspend()
+                }
+                if (!result) {
+                    return false
                 }
             }
-            return true
-        }.onFailure { error ->
-            Twig.error(error) { "Failed while deleting block files from disk" }
-        }.getOrDefault(false)
+        }
+        return true
     }
 
     companion object {
