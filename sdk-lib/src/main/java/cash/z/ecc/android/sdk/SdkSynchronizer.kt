@@ -283,7 +283,7 @@ class SdkSynchronizer private constructor(
      * [processorInfo].
      */
     override val latestHeight
-        get() = processor.currentInfo.networkBlockHeight
+        get() = processor.processorInfo.value.networkBlockHeight
 
     override val latestBirthdayHeight
         get() = processor.birthdayHeight
