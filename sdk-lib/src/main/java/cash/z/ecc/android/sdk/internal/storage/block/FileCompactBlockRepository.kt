@@ -6,6 +6,7 @@ import cash.z.ecc.android.sdk.internal.ext.createNewFileSuspend
 import cash.z.ecc.android.sdk.internal.ext.deleteRecursivelySuspend
 import cash.z.ecc.android.sdk.internal.ext.deleteSuspend
 import cash.z.ecc.android.sdk.internal.ext.existsSuspend
+import cash.z.ecc.android.sdk.internal.ext.isDirectorySuspend
 import cash.z.ecc.android.sdk.internal.ext.listFilesSuspend
 import cash.z.ecc.android.sdk.internal.ext.mkdirsSuspend
 import cash.z.ecc.android.sdk.internal.ext.renameToSuspend
@@ -79,7 +80,7 @@ internal class FileCompactBlockRepository(
         return runCatching {
             if (blocksDirectory.existsSuspend()) {
                 blocksDirectory.listFilesSuspend()?.forEach {
-                    val result = if (it.isDirectory) {
+                    val result = if (it.isDirectorySuspend()) {
                         it.deleteRecursivelySuspend()
                     } else {
                         it.deleteSuspend()
