@@ -407,23 +407,31 @@ class CompactBlockProcessor internal constructor(
             runCatching { networkBlockHeightUnsafe?.toBlockHeight(network) }.getOrNull()
         } ?: return false
 
-        // TODO [#683]: rethink this and make it easier to understand what's happening. Can we reduce this
-        //  so that we only work with actual changing info rather than periodic snapshots? Do we need
-        //  to calculate these derived values every time?
-        // TODO [#683]: https://github.com/zcash/zcash-android-wallet-sdk/issues/683
+        // If we find out that we previously downloaded, but not validated and scanned persisted blocks, we need
+        // to rewind the blocks above the last scanned height first.
+        val lastScannedHeight = getLastScannedHeight(repository)
+        val lastDownloadedHeight = getLastDownloadedHeight(downloader).let {
+            BlockHeight.new(
+                network,
+                max(
+                    it?.value ?: 0,
+                    lowerBoundHeight.value - 1
+                )
+            )
+        }
+        val lastSyncedHeight = if (lastDownloadedHeight.value - lastScannedHeight.value > 0) {
+            Twig.verbose { "Clearing blocks of last persisted batch within the last scanned height " +
+                "$lastScannedHeight and last download height $lastDownloadedHeight, as all these blocks " +
+                "possibly haven't been validated and scanned in the previous blocks sync attempt." }
+            downloader.rewindToHeight(lastScannedHeight)
+            lastScannedHeight
+        } else {
+            lastDownloadedHeight
+        }
+
         ProcessorInfo(
             networkBlockHeight = networkBlockHeight,
-            // We should rather start from the last scanned height, but then it causes a trouble when we try to
-            // re-download already persisted blocks
-            lastSyncedHeight = downloader.getLastDownloadedHeight().let {
-                BlockHeight.new(
-                    network,
-                    max(
-                        it?.value ?: 0,
-                        lowerBoundHeight.value - 1
-                    )
-                )
-            },
+            lastSyncedHeight = lastSyncedHeight,
             lastSyncRange = null
         ).let { initialInfo ->
             updateProgress(

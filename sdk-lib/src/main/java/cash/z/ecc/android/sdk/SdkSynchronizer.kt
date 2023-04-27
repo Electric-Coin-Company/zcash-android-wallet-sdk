@@ -750,11 +750,8 @@ internal object DefaultSynchronizerFactory {
             )
         )
 
-    internal suspend fun defaultFileCompactBlockRepository(rustBackend: RustBackend):
-        CompactBlockRepository =
-        FileCompactBlockRepository.new(
-            rustBackend
-        )
+    internal suspend fun defaultFileCompactBlockRepository(rustBackend: RustBackend): CompactBlockRepository =
+        FileCompactBlockRepository.new(rustBackend)
 
     fun defaultService(context: Context, lightWalletEndpoint: LightWalletEndpoint): LightWalletClient =
         LightWalletClient.new(context, lightWalletEndpoint)
