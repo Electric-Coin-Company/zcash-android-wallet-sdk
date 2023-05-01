@@ -427,24 +427,11 @@ class CompactBlockProcessor internal constructor(
             lastDownloadedHeight
         }
 
-        ProcessorInfo(
+        updateProgress(
             networkBlockHeight = networkBlockHeight,
             lastSyncedHeight = lastSyncedHeight,
-            lastSyncRange = null
-        ).let { initialInfo ->
-            updateProgress(
-                networkBlockHeight = initialInfo.networkBlockHeight,
-                lastSyncedHeight = initialInfo.lastSyncedHeight,
-                lastSyncRange = if (
-                    initialInfo.lastSyncedHeight != null &&
-                    initialInfo.networkBlockHeight != null
-                ) {
-                    initialInfo.lastSyncedHeight + 1..initialInfo.networkBlockHeight
-                } else {
-                    null
-                }
-            )
-        }
+            lastSyncRange = lastSyncedHeight + 1..networkBlockHeight
+        )
 
         return true
     }
@@ -711,14 +698,14 @@ class CompactBlockProcessor internal constructor(
 
         /**
          * Default size of batches of blocks to request from the compact block service. Then it's also used as a default
-         * size of batches of blocks to scan via librustzcash. The smaller this number the more granular information can be
-         * provided about scan state. Unfortunately, it may also lead to a lot of overhead during scanning.
+         * size of batches of blocks to scan via librustzcash. The smaller this number the more granular information can
+         * be provided about scan state. Unfortunately, it may also lead to a lot of overhead during scanning.
          */
         internal const val SYNC_BATCH_SIZE = 10
 
         /**
-         * Default number of blocks to rewind when a chain reorg is detected. This should be large enough to recover from
-         * the reorg but smaller than the theoretical max reorg size of 100.
+         * Default number of blocks to rewind when a chain reorg is detected. This should be large enough to recover
+         * from the reorg but smaller than the theoretical max reorg size of 100.
          */
         internal const val REWIND_DISTANCE = 10
 
@@ -998,7 +985,7 @@ class CompactBlockProcessor internal constructor(
      * wanted to sync. In most cases, it will be an invalid range because we'd like to sync blocks
      * that we don't yet have.
      */
-    private suspend fun updateProgress(
+    private fun updateProgress(
         networkBlockHeight: BlockHeight? = _processorInfo.value.networkBlockHeight,
         lastSyncedHeight: BlockHeight? = _processorInfo.value.lastSyncedHeight,
         lastSyncRange: ClosedRange<BlockHeight>? = _processorInfo.value.lastSyncRange,
