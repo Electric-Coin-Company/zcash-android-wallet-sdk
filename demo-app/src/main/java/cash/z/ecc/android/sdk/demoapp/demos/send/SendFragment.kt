@@ -126,7 +126,7 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
     private fun onStatus(status: Synchronizer.Status) {
         binding.textStatus.text = "Status: $status"
         isSyncing = status != Synchronizer.Status.SYNCED
-        if (status == Synchronizer.Status.SCANNING) {
+        if (status == Synchronizer.Status.SYNCING) {
             binding.textBalance.text = "Calculating balance..."
         } else {
             if (!isSyncing) onBalance(balance)
@@ -136,7 +136,7 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
     @Suppress("MagicNumber")
     private fun onProgress(i: Int) {
         if (i < 100) {
-            binding.textStatus.text = "Downloading blocks...$i%"
+            binding.textStatus.text = "Syncing blocks...$i%"
             binding.textBalance.visibility = View.INVISIBLE
         } else {
             binding.textBalance.visibility = View.VISIBLE
@@ -144,7 +144,7 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
     }
 
     private fun onProcessorInfoUpdated(info: CompactBlockProcessor.ProcessorInfo) {
-        if (info.isScanning) binding.textStatus.text = "Scanning blocks...${info.scanProgress}%"
+        if (info.isSyncing) binding.textStatus.text = "Syncing blocks...${info.syncProgress}%"
     }
 
     @Suppress("MagicNumber")

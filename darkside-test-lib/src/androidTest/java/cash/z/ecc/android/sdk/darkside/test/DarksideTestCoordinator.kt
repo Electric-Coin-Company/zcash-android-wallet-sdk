@@ -97,13 +97,15 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
      */
     fun await(timeout: Long = 60_000L, targetHeight: BlockHeight? = null) = runBlocking {
         ScopedTest.timeoutWith(this, timeout) {
-            synchronizer.status.map {
+            synchronizer.status.map { status ->
                 // whenever we're waiting for a target height, for simplicity, if we're sleeping,
                 // and in between polls, then consider it that we're not synced
-                if (targetHeight != null && synchronizer.processor.getLastScannedHeight() < targetHeight) {
-                    Synchronizer.Status.DOWNLOADING
+                if (targetHeight != null &&
+                    (synchronizer.processorInfo.first().lastSyncedHeight?.let { it < targetHeight }) == true
+                ) {
+                    Synchronizer.Status.SYNCING
                 } else {
-                    it
+                    status
                 }
             }.filter { it == Synchronizer.Status.SYNCED }.first()
         }
@@ -150,35 +152,24 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
             )
         }
 
-        fun validateMinHeightDownloaded(minHeight: BlockHeight) = runBlocking<Unit> {
+        fun validateMinHeightSynced(minHeight: BlockHeight) = runBlocking<Unit> {
             val info = synchronizer.processorInfo.first()
-            val lastDownloadedHeight = info.lastDownloadedHeight
-            assertNotNull(lastDownloadedHeight)
+            val lastSyncedHeight = info.lastSyncedHeight
+            assertNotNull(lastSyncedHeight)
             assertTrue(
-                "Expected to have at least downloaded $minHeight but the last downloaded block was" +
-                    " $lastDownloadedHeight! Full details: $info",
-                lastDownloadedHeight!! >= minHeight
+                "Expected to have at least synced $minHeight but the last synced block was" +
+                    " $lastSyncedHeight! Full details: $info",
+                lastSyncedHeight!! >= minHeight
             )
         }
 
-        fun validateMinHeightScanned(minHeight: BlockHeight) = runBlocking<Unit> {
-            val info = synchronizer.processorInfo.first()
-            val lastScannedHeight = info.lastScannedHeight
-            assertNotNull(lastScannedHeight)
-            assertTrue(
-                "Expected to have at least scanned $minHeight but the last scanned block was" +
-                    " $lastScannedHeight! Full details: $info",
-                lastScannedHeight!! >= minHeight
-            )
-        }
-
-        fun validateMaxHeightScanned(maxHeight: BlockHeight) = runBlocking<Unit> {
-            val lastDownloadedHeight = synchronizer.processorInfo.first().lastScannedHeight
-            assertNotNull(lastDownloadedHeight)
+        fun validateMaxHeightSynced(maxHeight: BlockHeight) = runBlocking<Unit> {
+            val lastSyncedHeight = synchronizer.processorInfo.first().lastSyncedHeight
+            assertNotNull(lastSyncedHeight)
             assertTrue(
                 "Did not expect to be synced beyond $maxHeight but we are synced to" +
-                    " $lastDownloadedHeight",
-                lastDownloadedHeight!! <= maxHeight
+                    " $lastSyncedHeight",
+                lastSyncedHeight!! <= maxHeight
             )
         }
 

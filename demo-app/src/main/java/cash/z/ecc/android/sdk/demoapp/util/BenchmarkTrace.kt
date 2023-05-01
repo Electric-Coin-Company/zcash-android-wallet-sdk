@@ -38,24 +38,6 @@ object SyncBlockchainBenchmarkTrace : BenchmarkTrace {
             Event.BLOCKCHAIN_SYNC_END -> {
                 Trace.endAsyncSection(Event.BLOCKCHAIN_SYNC_END.section, Event.BLOCKCHAIN_SYNC_END.cookie)
             }
-            Event.DOWNLOAD_START -> {
-                Trace.beginAsyncSection(Event.DOWNLOAD_START.section, Event.DOWNLOAD_START.cookie)
-            }
-            Event.DOWNLOAD_END -> {
-                Trace.endAsyncSection(Event.DOWNLOAD_END.section, Event.DOWNLOAD_END.cookie)
-            }
-            Event.VALIDATION_START -> {
-                Trace.beginAsyncSection(Event.VALIDATION_START.section, Event.VALIDATION_START.cookie)
-            }
-            Event.VALIDATION_END -> {
-                Trace.endAsyncSection(Event.VALIDATION_END.section, Event.VALIDATION_END.cookie)
-            }
-            Event.SCAN_START -> {
-                Trace.beginAsyncSection(Event.SCAN_START.section, Event.SCAN_START.cookie)
-            }
-            Event.SCAN_END -> {
-                Trace.endAsyncSection(Event.SCAN_END.section, Event.SCAN_END.cookie)
-            }
             else -> { /* nothing to write */
             }
         }
@@ -78,30 +60,6 @@ object SyncBlockchainBenchmarkTrace : BenchmarkTrace {
         BLOCKCHAIN_SYNC_END {
             override val section: String = "BLOCKCHAIN_SYNC" // NON-NLS
             override val cookie: Int = 200
-        },
-        DOWNLOAD_START {
-            override val section: String = "DOWNLOAD" // NON-NLS
-            override val cookie: Int = 300
-        },
-        DOWNLOAD_END {
-            override val section: String = "DOWNLOAD" // NON-NLS
-            override val cookie: Int = 300
-        },
-        VALIDATION_START {
-            override val section: String = "VALIDATION" // NON-NLS
-            override val cookie: Int = 400
-        },
-        VALIDATION_END {
-            override val section: String = "VALIDATION" // NON-NLS
-            override val cookie: Int = 400
-        },
-        SCAN_START {
-            override val section: String = "SCAN" // NON-NLS
-            override val cookie: Int = 500
-        },
-        SCAN_END {
-            override val section: String = "SCAN" // NON-NLS
-            override val cookie: Int = 500
         }
     }
 }

@@ -33,18 +33,11 @@ object ZcashSdk {
     const val EXPIRY_OFFSET = 20
 
     /**
-     * Default size of batches of blocks to request from the compact block service.
+     * Default size of batches of blocks to request from the compact block service. Then it's also used as a default
+     * size of batches of blocks to scan via librustzcash. The smaller this number the more granular information can be
+     * provided about scan state. Unfortunately, it may also lead to a lot of overhead during scanning.
      */
-    // Because blocks are buffered in memory upon download and storage into SQLite, there is an upper bound
-    // above which OutOfMemoryError is thrown. Experimentally, this value is below 50 blocks.
-    // Back of the envelope calculation says the maximum block size is ~100kb.
-    const val DOWNLOAD_BATCH_SIZE = 10
-
-    /**
-     * Default size of batches of blocks to scan via librustzcash. The smaller this number the more granular information
-     * can be provided about scan state. Unfortunately, it may also lead to a lot of overhead during scanning.
-     */
-    const val SCAN_BATCH_SIZE = 150
+    const val SYNC_BATCH_SIZE = 10
 
     /**
      * Default amount of time, in milliseconds, to poll for new blocks. Typically, this should be about half the average
