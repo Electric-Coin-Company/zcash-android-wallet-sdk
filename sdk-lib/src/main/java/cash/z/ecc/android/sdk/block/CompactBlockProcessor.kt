@@ -13,11 +13,7 @@ import cash.z.ecc.android.sdk.exception.RustLayerException
 import cash.z.ecc.android.sdk.ext.BatchMetrics
 import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.ext.ZcashSdk.MAX_BACKOFF_INTERVAL
-import cash.z.ecc.android.sdk.ext.ZcashSdk.MAX_REORG_SIZE
 import cash.z.ecc.android.sdk.ext.ZcashSdk.POLL_INTERVAL
-import cash.z.ecc.android.sdk.ext.ZcashSdk.RETRIES
-import cash.z.ecc.android.sdk.ext.ZcashSdk.REWIND_DISTANCE
-import cash.z.ecc.android.sdk.ext.ZcashSdk.SYNC_BATCH_SIZE
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.block.CompactBlockDownloader
 import cash.z.ecc.android.sdk.internal.ext.retryUpTo
@@ -703,6 +699,29 @@ class CompactBlockProcessor internal constructor(
     }
 
     companion object {
+        /**
+         * Default attempts at retrying.
+         */
+        internal const val RETRIES = 5
+
+        /**
+         * The theoretical maximum number of blocks in a reorg, due to other bottlenecks in the protocol design.
+         */
+        internal const val MAX_REORG_SIZE = 100
+
+        /**
+         * Default size of batches of blocks to request from the compact block service. Then it's also used as a default
+         * size of batches of blocks to scan via librustzcash. The smaller this number the more granular information can be
+         * provided about scan state. Unfortunately, it may also lead to a lot of overhead during scanning.
+         */
+        internal const val SYNC_BATCH_SIZE = 10
+
+        /**
+         * Default number of blocks to rewind when a chain reorg is detected. This should be large enough to recover from
+         * the reorg but smaller than the theoretical max reorg size of 100.
+         */
+        internal const val REWIND_DISTANCE = 10
+
         /**
          * Request all blocks in the given range and persist them locally for processing, later.
          *

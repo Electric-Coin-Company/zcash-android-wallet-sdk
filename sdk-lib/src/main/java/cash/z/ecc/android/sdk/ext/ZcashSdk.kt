@@ -17,11 +17,6 @@ object ZcashSdk {
     val MINERS_FEE = Zatoshi(1_000L)
 
     /**
-     * The theoretical maximum number of blocks in a reorg, due to other bottlenecks in the protocol design.
-     */
-    const val MAX_REORG_SIZE = 100
-
-    /**
      * The maximum length of a memo.
      */
     const val MAX_MEMO_SIZE = 512
@@ -31,13 +26,6 @@ object ZcashSdk {
      * controlled by the rust backend but it is helpful to know what it is set to and should be kept in sync.
      */
     const val EXPIRY_OFFSET = 20
-
-    /**
-     * Default size of batches of blocks to request from the compact block service. Then it's also used as a default
-     * size of batches of blocks to scan via librustzcash. The smaller this number the more granular information can be
-     * provided about scan state. Unfortunately, it may also lead to a lot of overhead during scanning.
-     */
-    const val SYNC_BATCH_SIZE = 10
 
     /**
      * Default amount of time, in milliseconds, to poll for new blocks. Typically, this should be about half the average
@@ -51,21 +39,10 @@ object ZcashSdk {
     const val BLOCK_INTERVAL_MILLIS = 75_000L
 
     /**
-     * Default attempts at retrying.
-     */
-    const val RETRIES = 5
-
-    /**
      * The default maximum amount of time to wait during retry backoff intervals. Failed loops will never wait longer
      * than this before retyring.
      */
     const val MAX_BACKOFF_INTERVAL = 600_000L
-
-    /**
-     * Default number of blocks to rewind when a chain reorg is detected. This should be large enough to recover from
-     * the reorg but smaller than the theoretical max reorg size of 100.
-     */
-    const val REWIND_DISTANCE = 10
 
     /**
      * The default memo to use when shielding transparent funds.
