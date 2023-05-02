@@ -91,7 +91,7 @@ class BalancePrinterUtil {
                 - or maybe just set the data destination for the processor
                 - I might need to consider how state is impacting this design
                     - can we be more stateless and thereby improve the flexibility of this code?!!!
-                  */
+                 */
                 synchronizer?.close()
                 synchronizer = Synchronizer.new(
                     context,

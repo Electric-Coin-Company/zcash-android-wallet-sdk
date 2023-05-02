@@ -13,7 +13,7 @@ import kotlinx.coroutines.MainCoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import java.util.concurrent.Executor
 
-/* Adapted from LivePagedListBuilder */
+// Adapted from LivePagedListBuilder
 class FlowPagedListBuilder<Key, Value>(
     private val dataSourceFactory: DataSource.Factory<Key, Value>,
     private val config: PagedList.Config,

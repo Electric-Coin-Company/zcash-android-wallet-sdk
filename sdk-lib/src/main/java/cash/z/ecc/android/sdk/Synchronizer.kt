@@ -36,7 +36,7 @@ interface Synchronizer {
     // Flows
     //
 
-    /* Status */
+    // Status
 
     /**
      * The network to which this synchronizer is connected and from which it is processing blocks.
@@ -85,7 +85,7 @@ interface Synchronizer {
      */
     val transparentBalances: StateFlow<WalletBalance?>
 
-    /* Transactions */
+    // Transactions
 
     /**
      * A flow of all the outbound pending transaction that have been sent but are awaiting

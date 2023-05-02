@@ -45,7 +45,7 @@ class TransactionCounterUtil {
             val s = compactBlock.serializedSize
             sizes[s] = (sizes[s] ?: 0) + 1
         }
-        */
+         */
 
         Twig.debug { "sizes: ${sizes.toSortedMap()}" }
     }

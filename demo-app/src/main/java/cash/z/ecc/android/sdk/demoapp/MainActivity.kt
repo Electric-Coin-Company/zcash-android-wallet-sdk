@@ -155,7 +155,7 @@ class MainActivity :
         getSystemService<InputMethodManager>()?.hideSoftInputFromWindow(windowToken, 0)
     }
 
-    /* DrawerListener implementation */
+    // DrawerListener implementation
 
     @Suppress("EmptyFunctionBlock")
     override fun onDrawerStateChanged(newState: Int) {
