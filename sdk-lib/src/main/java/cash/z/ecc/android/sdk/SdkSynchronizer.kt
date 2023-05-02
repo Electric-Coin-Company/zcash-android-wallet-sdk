@@ -324,18 +324,16 @@ class SdkSynchronizer private constructor(
     }
 
     override fun getMemos(transactionOverview: TransactionOverview): Flow<String> {
-        return when (transactionOverview.isSentTransaction) {
-            true -> {
-                val sentNoteIds = storage.getSentNoteIds(transactionOverview.id)
-
-                sentNoteIds.map { rustBackend.getSentMemoAsUtf8(it) }.filterNotNull()
+        return storage.getNoteIds(transactionOverview.id).map {
+            when (transactionOverview.isSentTransaction) {
+                true -> {
+                    rustBackend.getSentMemoAsUtf8(it)
+                }
+                false -> {
+                    rustBackend.getReceivedMemoAsUtf8(it)
+                }
             }
-            false -> {
-                val receivedNoteIds = storage.getReceivedNoteIds(transactionOverview.id)
-
-                receivedNoteIds.map { rustBackend.getReceivedMemoAsUtf8(it) }.filterNotNull()
-            }
-        }
+        }.filterNotNull()
     }
 
     override fun getRecipients(transactionOverview: TransactionOverview): Flow<TransactionRecipient> {
@@ -414,6 +412,7 @@ class SdkSynchronizer private constructor(
                     lastScanTime = now
                     SYNCED
                 }
+
                 is Stopped -> STOPPED
                 is Disconnected -> DISCONNECTED
                 is Syncing, Initialized -> SYNCING

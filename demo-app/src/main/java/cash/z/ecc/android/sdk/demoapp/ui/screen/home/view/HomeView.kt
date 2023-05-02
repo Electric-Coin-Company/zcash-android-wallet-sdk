@@ -37,10 +37,11 @@ fun ComposablePreviewHome() {
     MaterialTheme {
         Home(
             WalletSnapshotFixture.new(),
+            isTestnet = true,
             goBalance = {},
             goSend = {},
             goAddressDetails = {},
-            isTestnet = true,
+            goTransactions = {},
             goTestnetFaucet = {},
             resetSdk = {}
         )
@@ -56,6 +57,7 @@ fun Home(
     goBalance: () -> Unit,
     goSend: () -> Unit,
     goAddressDetails: () -> Unit,
+    goTransactions: () -> Unit,
     goTestnetFaucet: () -> Unit,
     resetSdk: () -> Unit,
 ) {
@@ -67,7 +69,8 @@ fun Home(
             walletSnapshot,
             goBalance = goBalance,
             goSend = goSend,
-            goAddressDetails = goAddressDetails
+            goAddressDetails = goAddressDetails,
+            goTransactions = goTransactions
         )
     }
 }
@@ -126,12 +129,14 @@ private fun DebugMenu(
 }
 
 @Composable
+@Suppress("LongParameterList")
 private fun HomeMainContent(
     paddingValues: PaddingValues,
     walletSnapshot: WalletSnapshot,
     goBalance: () -> Unit,
     goSend: () -> Unit,
-    goAddressDetails: () -> Unit
+    goAddressDetails: () -> Unit,
+    goTransactions: () -> Unit
 ) {
     Column(
         Modifier
@@ -148,6 +153,10 @@ private fun HomeMainContent(
 
         Button(goAddressDetails) {
             Text(text = stringResource(id = R.string.menu_address))
+        }
+
+        Button(goTransactions) {
+            Text(text = stringResource(id = R.string.menu_transactions))
         }
 
         Text(text = stringResource(id = R.string.home_status, walletSnapshot.status.toString()))

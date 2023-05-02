@@ -17,7 +17,7 @@
     <string name="menu_block">Get Block</string>
     <string name="menu_block_range">Get Block Range</string>
     <string name="menu_decrypt">Decrypt Block</string>
-    <string name="menu_transactions">List Transactions</string>
+    <string name="menu_transactions">Transactions</string>
     <string name="menu_utxos">List UTXOs</string>
     <string name="menu_send">Send</string>
 

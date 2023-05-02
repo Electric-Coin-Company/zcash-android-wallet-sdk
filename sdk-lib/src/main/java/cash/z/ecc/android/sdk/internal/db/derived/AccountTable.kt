@@ -17,6 +17,6 @@ internal class AccountTable(private val sqliteDatabase: SupportSQLiteDatabase) {
     ).first()
 }
 
-object AccountTableDefinition {
+internal object AccountTableDefinition {
     const val TABLE_NAME = "accounts" // $NON-NLS
 }

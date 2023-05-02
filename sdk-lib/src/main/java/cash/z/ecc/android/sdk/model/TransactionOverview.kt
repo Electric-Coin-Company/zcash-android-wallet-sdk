@@ -17,7 +17,6 @@ data class TransactionOverview internal constructor(
     val netValue: Zatoshi,
     val feePaid: Zatoshi,
     val isChange: Boolean,
-    val isWalletInternal: Boolean,
     val receivedNoteCount: Int,
     val sentNoteCount: Int,
     val memoCount: Int,

@@ -56,12 +56,9 @@ internal class AllTransactionView(
             cursor.getColumnIndex(AllTransactionViewDefinition.COLUMN_BLOB_RAW_TRANSACTION_ID)
         val expiryHeightIndex = cursor.getColumnIndex(AllTransactionViewDefinition.COLUMN_INTEGER_EXPIRY_HEIGHT)
         val rawIndex = cursor.getColumnIndex(AllTransactionViewDefinition.COLUMN_BLOB_RAW)
-        val netValueIndex = cursor.getColumnIndex(AllTransactionViewDefinition.COLUMN_LONG_VALUE)
+        val netValueIndex = cursor.getColumnIndex(AllTransactionViewDefinition.COLUMN_LONG_ACCOUNT_BALANCE_DELTA)
         val feePaidIndex = cursor.getColumnIndex(AllTransactionViewDefinition.COLUMN_LONG_FEE_PAID)
         val isChangeIndex = cursor.getColumnIndex(AllTransactionViewDefinition.COLUMN_BOOLEAN_IS_CHANGE)
-        val isWalletInternalIndex = cursor.getColumnIndex(
-            AllTransactionViewDefinition.COLUMN_BOOLEAN_IS_WALLET_INTERNAL
-        )
         val receivedNoteCountIndex = cursor.getColumnIndex(
             AllTransactionViewDefinition.COLUMN_INTEGER_RECEIVED_NOTE_COUNT
         )
@@ -89,7 +86,6 @@ internal class AllTransactionView(
             netValue = Zatoshi(netValueLong.absoluteValue),
             feePaid = Zatoshi(cursor.getLong(feePaidIndex)),
             isChange = cursor.getInt(isChangeIndex) != 0,
-            isWalletInternal = cursor.getInt(isWalletInternalIndex) != 0,
             receivedNoteCount = cursor.getInt(receivedNoteCountIndex),
             sentNoteCount = cursor.getInt(sentNoteCountIndex),
             memoCount = cursor.getInt(memoCountIndex),
@@ -146,11 +142,9 @@ internal object AllTransactionViewDefinition {
 
     const val COLUMN_BLOB_RAW = "raw" // $NON-NLS
 
-    const val COLUMN_LONG_VALUE = "net_value" // $NON-NLS
+    const val COLUMN_LONG_ACCOUNT_BALANCE_DELTA = "account_balance_delta" // $NON-NLS
 
     const val COLUMN_LONG_FEE_PAID = "fee_paid" // $NON-NLS
-
-    const val COLUMN_BOOLEAN_IS_WALLET_INTERNAL = "is_wallet_internal" // $NON-NLS
 
     const val COLUMN_BOOLEAN_IS_CHANGE = "has_change" // $NON-NLS
 

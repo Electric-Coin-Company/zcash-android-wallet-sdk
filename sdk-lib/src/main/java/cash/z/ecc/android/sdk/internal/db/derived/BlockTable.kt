@@ -79,7 +79,7 @@ internal class BlockTable(private val zcashNetwork: ZcashNetwork, private val sq
     }
 }
 
-object BlockTableDefinition {
+internal object BlockTableDefinition {
     const val TABLE_NAME = "blocks" // $NON-NLS
 
     const val COLUMN_LONG_HEIGHT = "height" // $NON-NLS
