@@ -9,7 +9,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 
-/* Adapted from LiveDataPagedList */
+// Adapted from LiveDataPagedList
 
 /**
  * Constructs a `Flow<PagedList>`, from this `DataSource.Factory`, convenience for

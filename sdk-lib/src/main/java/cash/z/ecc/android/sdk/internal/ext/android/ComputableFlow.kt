@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.launch
 
-/* Adapted from ComputableLiveData */
+// Adapted from ComputableLiveData
 abstract class ComputableFlow<T>(dispatcher: CoroutineDispatcher = Dispatchers.IO) {
     private val computationScope: CoroutineScope = CoroutineScope(dispatcher)
     private val computationFlow: MutableSharedFlow<T> = MutableSharedFlow(replay = 1)

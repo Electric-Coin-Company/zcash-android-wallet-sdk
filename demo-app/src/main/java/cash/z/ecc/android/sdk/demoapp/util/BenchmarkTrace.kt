@@ -38,7 +38,7 @@ object SyncBlockchainBenchmarkTrace : BenchmarkTrace {
             Event.BLOCKCHAIN_SYNC_END -> {
                 Trace.endAsyncSection(Event.BLOCKCHAIN_SYNC_END.section, Event.BLOCKCHAIN_SYNC_END.cookie)
             }
-            else -> { /* nothing to write */
+            else -> { // nothing to write
             }
         }
     }
@@ -99,7 +99,7 @@ object ProvideAddressBenchmarkTrace : BenchmarkTrace {
             Event.TRANSPARENT_ADDRESS_END -> {
                 Trace.endAsyncSection(Event.TRANSPARENT_ADDRESS_END.section, Event.TRANSPARENT_ADDRESS_END.cookie)
             }
-            else -> { /* nothing to write */
+            else -> { // nothing to write
             }
         }
     }
