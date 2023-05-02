@@ -1483,7 +1483,6 @@ fn parse_network(value: u32) -> Result<Network, failure::Error> {
     }
 }
 
-
 /// Returns a list of the transparent receivers for the diversified unified addresses that have
 /// been allocated for the provided account.
 ///
@@ -1507,7 +1506,8 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_listTranspa
 ) -> jobjectArray {
     let res = panic::catch_unwind(|| {
         let network = parse_network(network_id as u32)?;
-        let zcash_network = network.address_network()
+        let zcash_network = network
+            .address_network()
             .expect("network_id parsing should not have resulted in an unrecognized network type.");
         let db_data = wallet_db(&env, network, db_data)?;
         let account_id = if account_id >= 0 {
@@ -1534,14 +1534,14 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_listTranspa
                     })
                     .collect::<Vec<_>>();
 
-                    Ok(utils::rust_vec_to_java(
-                        &env,
-                        trasparent_receivers,
-                        "java/lang/String",
-                        |env, taddr| env.new_string(taddr),
-                        |env| env.new_string(""),
-                    ))
-                },
+                Ok(utils::rust_vec_to_java(
+                    &env,
+                    trasparent_receivers,
+                    "java/lang/String",
+                    |env, taddr| env.new_string(taddr),
+                    |env| env.new_string(""),
+                ))
+            }
             Err(e) => Err(format_err!("Error while fetching address: {}", e)),
         }
     });
