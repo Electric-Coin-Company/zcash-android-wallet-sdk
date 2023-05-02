@@ -26,9 +26,7 @@ internal class DerivedDataDb private constructor(
 
     val allTransactionView = AllTransactionView(zcashNetwork, sqliteDatabase)
 
-    val sentNotesTable = SentNoteTable(zcashNetwork, sqliteDatabase)
-
-    val receivedNotesTable = ReceivedNoteTable(zcashNetwork, sqliteDatabase)
+    val txOutputsView = TxOutputsView(zcashNetwork, sqliteDatabase)
 
     suspend fun close() {
         withContext(Dispatchers.IO) {

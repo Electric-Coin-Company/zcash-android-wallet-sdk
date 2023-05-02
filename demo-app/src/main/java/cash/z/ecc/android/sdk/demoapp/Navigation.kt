@@ -20,12 +20,14 @@ import androidx.navigation.compose.rememberNavController
 import cash.z.ecc.android.sdk.demoapp.NavigationTargets.BALANCE
 import cash.z.ecc.android.sdk.demoapp.NavigationTargets.HOME
 import cash.z.ecc.android.sdk.demoapp.NavigationTargets.SEND
+import cash.z.ecc.android.sdk.demoapp.NavigationTargets.TRANSACTIONS
 import cash.z.ecc.android.sdk.demoapp.NavigationTargets.WALLET_ADDRESS_DETAILS
 import cash.z.ecc.android.sdk.demoapp.ui.screen.addresses.view.Addresses
 import cash.z.ecc.android.sdk.demoapp.ui.screen.balance.view.Balance
 import cash.z.ecc.android.sdk.demoapp.ui.screen.home.view.Home
 import cash.z.ecc.android.sdk.demoapp.ui.screen.home.viewmodel.WalletViewModel
 import cash.z.ecc.android.sdk.demoapp.ui.screen.send.view.Send
+import cash.z.ecc.android.sdk.demoapp.ui.screen.transactions.view.Transactions
 import cash.z.ecc.android.sdk.demoapp.util.AndroidApiVersion
 import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.model.ZcashNetwork
@@ -59,6 +61,7 @@ internal fun ComposeActivity.Navigation() {
                             // An improvement here in the future would be showing a snackbar or error dialog.
                         }
                     },
+                    goTransactions = { navController.navigateJustOnce(TRANSACTIONS) },
                     resetSdk = { walletViewModel.resetSdk() }
                 )
             }
@@ -114,6 +117,17 @@ internal fun ComposeActivity.Navigation() {
                         walletViewModel.send(it)
                         navController.popBackStackJustOnce(SEND)
                     },
+                    onBack = { navController.popBackStackJustOnce(SEND) }
+                )
+            }
+        }
+        composable(TRANSACTIONS) {
+            val synchronizer = walletViewModel.synchronizer.collectAsStateWithLifecycle().value
+            if (null == synchronizer) {
+                // Display loading indicator
+            } else {
+                Transactions(
+                    synchronizer = synchronizer,
                     onBack = { navController.popBackStackJustOnce(SEND) }
                 )
             }
@@ -193,4 +207,6 @@ object NavigationTargets {
     const val WALLET_ADDRESS_DETAILS = "wallet_address_details" // NON-NLS
 
     const val SEND = "send" // NON-NLS
+
+    const val TRANSACTIONS = "transactions" // NON-NLS
 }

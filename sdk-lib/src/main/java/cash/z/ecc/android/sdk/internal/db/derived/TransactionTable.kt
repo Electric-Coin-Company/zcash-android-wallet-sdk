@@ -118,7 +118,7 @@ internal class TransactionTable(
     }
 }
 
-object TransactionTableDefinition {
+internal object TransactionTableDefinition {
     const val TABLE_NAME = "transactions" // $NON-NLS
 
     const val COLUMN_INTEGER_ID = "id_tx" // $NON-NLS
