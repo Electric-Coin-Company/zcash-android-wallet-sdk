@@ -2389,6 +2389,7 @@ dependencies = [
  "jni",
  "libc",
  "log-panics",
+ "orchard",
  "paranoid-android",
  "schemer",
  "secp256k1",

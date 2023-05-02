@@ -24,6 +24,7 @@ zcash_client_backend = { version = "0.9", features = ["transparent-inputs", "uns
 zcash_client_sqlite = { version = "0.7", features = ["transparent-inputs", "unstable"] }
 zcash_primitives = "0.11"
 zcash_proofs = "0.11"
+orchard = { version = "0.4", default-features = false }
 
 # Logging
 log-panics = "2.0.0"
