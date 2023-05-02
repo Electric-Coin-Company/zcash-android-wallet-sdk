@@ -35,8 +35,6 @@ use zcash_client_backend::{
     zip321::{Payment, TransactionRequest},
 };
 use zcash_client_sqlite::chain::init::init_blockmeta_db;
-#[allow(deprecated)]
-use zcash_client_sqlite::wallet::get_rewind_height;
 use zcash_client_sqlite::{
     chain::BlockMeta,
     wallet::init::{init_accounts_table, init_blocks_table, init_wallet_db, WalletMigrationError},
@@ -1035,7 +1033,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_rewindBlock
         let block_db = block_db(&env, fsblockdb_root)?;
         let height = BlockHeight::try_from(height)?;
 
-        block_db.rewind_to_height(height).map_err(|e| {
+        block_db.truncate_to_height(height).map_err(|e| {
             format_err!(
                 "Error while rewinding block metadata DB to height {}: {}",
                 height,
@@ -1098,7 +1096,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_getNearestR
         } else {
             let network = parse_network(network_id as u32)?;
             let db_data = wallet_db(&env, network, db_data)?;
-            match get_rewind_height(&db_data) {
+            match db_data.get_min_unspent_height() {
                 Ok(Some(best_height)) => {
                     let first_unspent_note_height = u32::from(best_height);
                     Ok(std::cmp::min(
@@ -1134,7 +1132,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_rewindToHei
 
         let height = BlockHeight::try_from(height)?;
         db_data
-            .rewind_to_height(height)
+            .truncate_to_height(height)
             .map(|_| 1)
             .map_err(|e| format_err!("Error while rewinding data DB to height {}: {}", height, e))
     });
