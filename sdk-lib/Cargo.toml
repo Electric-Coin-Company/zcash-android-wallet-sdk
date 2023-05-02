@@ -20,10 +20,10 @@ schemer = "0.2"
 secp256k1 = "0.21"
 secrecy = "0.8"
 zcash_address = "0.2"
-zcash_client_backend = { version = "0.7", features = ["transparent-inputs", "unstable"] }
-zcash_client_sqlite = { version = "0.5", features = ["transparent-inputs", "unstable"] }
-zcash_primitives = "0.10"
-zcash_proofs = "0.10"
+zcash_client_backend = { version = "0.9", features = ["transparent-inputs", "unstable"] }
+zcash_client_sqlite = { version = "0.7", features = ["transparent-inputs", "unstable"] }
+zcash_primitives = "0.11"
+zcash_proofs = "0.11"
 
 # Logging
 log-panics = "2.0.0"
