@@ -22,7 +22,7 @@ internal class FakeRustBackend(
     }
 
     override suspend fun getLatestHeight(): Long = metadata.maxOf { it.height }
-    override suspend fun validateCombinedChainOrErrorHeight(): Long? {
+    override suspend fun validateCombinedChainOrErrorHeight(limit: Int): Long? {
         TODO("Not yet implemented")
     }
 

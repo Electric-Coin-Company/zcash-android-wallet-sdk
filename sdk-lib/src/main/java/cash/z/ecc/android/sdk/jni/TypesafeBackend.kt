@@ -41,9 +41,10 @@ internal interface TypesafeBackend {
     suspend fun rewindBlockMetadataToHeight(height: BlockHeight)
 
     /**
+     * @param limit The limit provides an efficient way how to restrict the portion of blocks, which will be validated.
      * @return Null if successful. If an error occurs, the height will be the height where the error was detected.
      */
-    suspend fun validateCombinedChainOrErrorBlockHeight(): BlockHeight?
+    suspend fun validateCombinedChainOrErrorBlockHeight(limit: Int): BlockHeight?
 
     suspend fun getDownloadedUtxoBalance(address: String): WalletBalance
 }

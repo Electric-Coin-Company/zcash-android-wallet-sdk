@@ -43,10 +43,11 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
     override suspend fun rewindBlockMetadataToHeight(height: BlockHeight) = backend.rewindBlockMetadataToHeight(height)
 
     /**
+     * @param limit The limit provides an efficient way how to restrict the portion of blocks, which will be validated.
      * @return Null if successful. If an error occurs, the height will be the height where the error was detected.
      */
-    override suspend fun validateCombinedChainOrErrorBlockHeight(): BlockHeight? =
-        backend.validateCombinedChainOrErrorBlockHeight()
+    override suspend fun validateCombinedChainOrErrorBlockHeight(limit: Int): BlockHeight? =
+        backend.validateCombinedChainOrErrorBlockHeight(limit)
 
     override suspend fun getDownloadedUtxoBalance(address: String): WalletBalance =
         backend.getDownloadedUtxoBalance(address)

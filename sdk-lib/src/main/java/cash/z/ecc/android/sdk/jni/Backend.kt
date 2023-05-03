@@ -97,9 +97,10 @@ internal interface Backend {
     suspend fun rewindBlockMetadataToHeight(height: Long)
 
     /**
+     * @param limit The limit provides an efficient way how to restrict the portion of blocks, which will be validated.
      * @return Null if successful. If an error occurs, the height will be the blockheight where the error was detected.
      */
-    suspend fun validateCombinedChainOrErrorHeight(): Long?
+    suspend fun validateCombinedChainOrErrorHeight(limit: Int = -1): Long?
 
     suspend fun getVerifiedTransparentBalance(address: String): Long
     suspend fun getTotalTransparentBalance(address: String): Long
