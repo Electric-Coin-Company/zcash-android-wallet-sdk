@@ -955,8 +955,10 @@ class CompactBlockProcessor internal constructor(
         }
 
         @VisibleForTesting
-        internal suspend fun deleteFilesOfBatchOfBlocks(batch: BlockBatch, downloader: CompactBlockDownloader):
-            BlockProcessingResult {
+        internal suspend fun deleteFilesOfBatchOfBlocks(
+            batch: BlockBatch,
+            downloader: CompactBlockDownloader
+        ): BlockProcessingResult {
             Twig.verbose { "Starting to delete temporary block files from batch: $batch" }
 
             return batch.blocks?.let { blocks ->
