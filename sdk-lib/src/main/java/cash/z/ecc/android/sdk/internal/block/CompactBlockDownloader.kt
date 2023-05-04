@@ -3,6 +3,7 @@ package cash.z.ecc.android.sdk.internal.block
 import cash.z.ecc.android.sdk.exception.LightWalletException
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.ext.retryUpTo
+import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.internal.model.ext.from
 import cash.z.ecc.android.sdk.internal.repository.CompactBlockRepository
 import cash.z.ecc.android.sdk.model.BlockHeight
@@ -47,10 +48,11 @@ open class CompactBlockDownloader private constructor(val compactBlockRepository
      * @param heightRange the inclusive range of heights to request. For example 10..20 would
      * request 11 blocks (including block 10 and block 20).
      * @throws LightWalletException.DownloadBlockException if any error while downloading the blocks occurs
-     * @return Number of blocks, which were successfully written to storage
+     * @return List of JniBlockMeta objects, which describe the original CompactBlock objects, which were just
+     * downloaded and persisted on the device disk
      */
     @Throws(LightWalletException.DownloadBlockException::class)
-    suspend fun downloadBlockRange(heightRange: ClosedRange<BlockHeight>): Int {
+    suspend fun downloadBlockRange(heightRange: ClosedRange<BlockHeight>): List<JniBlockMeta> {
         val filteredFlow = lightWalletClient.getBlockRange(
             BlockHeightUnsafe.from(heightRange.start)..BlockHeightUnsafe.from(heightRange.endInclusive)
         ).onEach { response ->

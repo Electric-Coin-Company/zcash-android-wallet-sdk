@@ -1,6 +1,10 @@
 Change Log
 ==========
 
+## Unreleased
+- `Synchronizer.progress` now returns Flow<PercentDecimal> instead of Flow<Int>. `PercentDecimal` is type-safe model.
+  Use `PercentDecimal.toPercentage()` to get a number in 0-100% scale.
+
 ## 1.17.0-beta01
 - Synchronizer APIs for listing sent and received transactions have been removed.
 - Synchronizer APIs for listing pending transactions have been removed, along with the `PendingTransaction` object.

@@ -25,11 +25,19 @@ interface CompactBlockRepository {
 
     /**
      * This function is supposed to be used once the whole blocks sync process done. It removes all the temporary
-     * block files from the device disk together with theirs parent directory.
+     * block files from the device disk.
      *
      * @return true when all block files are deleted, false only if the deletion fails
      */
-    suspend fun deleteCompactBlockFiles(): Boolean
+    suspend fun deleteAllCompactBlockFiles(): Boolean
+
+    /**
+     * This function is supposed to be used continuously while sync process is in progress. It removes all the temporary
+     * block files from the given list of blocks from the device disk.
+     *
+     * @return true when all block files from the list are deleted, false only if the deletion fails
+     */
+    suspend fun deleteCompactBlockFiles(blocks: List<JniBlockMeta>): Boolean
 
     /**
      * Write the given flow of blocks to this store, which may be anything from an in-memory cache to a DB.
@@ -37,7 +45,7 @@ interface CompactBlockRepository {
      * @param blocks Flow of compact blocks to persist.
      * @return Flow of number of blocks that were written.
      */
-    suspend fun write(blocks: Flow<CompactBlockUnsafe>): Int
+    suspend fun write(blocks: Flow<CompactBlockUnsafe>): List<JniBlockMeta>
 
     /**
      * Remove every block above the given height.

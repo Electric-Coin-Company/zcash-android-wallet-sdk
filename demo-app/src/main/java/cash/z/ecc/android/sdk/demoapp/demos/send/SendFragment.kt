@@ -19,6 +19,7 @@ import cash.z.ecc.android.sdk.demoapp.util.mainActivity
 import cash.z.ecc.android.sdk.ext.convertZatoshiToZecString
 import cash.z.ecc.android.sdk.ext.convertZecToZatoshi
 import cash.z.ecc.android.sdk.ext.toZecString
+import cash.z.ecc.android.sdk.model.PercentDecimal
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.WalletBalance
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -125,9 +126,9 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
     }
 
     @Suppress("MagicNumber")
-    private fun onProgress(i: Int) {
-        if (i < 100) {
-            binding.textStatus.text = "Syncing blocks...$i%"
+    private fun onProgress(percent: PercentDecimal) {
+        if (percent.isLessThanHundredPercent()) {
+            binding.textStatus.text = "Syncing blocks...${percent.toPercentage()}%"
             binding.textBalance.visibility = View.INVISIBLE
         } else {
             binding.textBalance.visibility = View.VISIBLE

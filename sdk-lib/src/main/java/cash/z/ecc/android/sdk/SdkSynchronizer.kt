@@ -37,6 +37,7 @@ import cash.z.ecc.android.sdk.internal.transaction.TransactionEncoderImpl
 import cash.z.ecc.android.sdk.jni.RustBackend
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
+import cash.z.ecc.android.sdk.model.PercentDecimal
 import cash.z.ecc.android.sdk.model.TransactionOverview
 import cash.z.ecc.android.sdk.model.TransactionRecipient
 import cash.z.ecc.android.sdk.model.UnifiedFullViewingKey
@@ -193,12 +194,12 @@ class SdkSynchronizer private constructor(
     override val status = _status.asStateFlow()
 
     /**
-     * Indicates the download progress of the Synchronizer. When progress reaches 100, that
-     * signals that the Synchronizer is in sync with the network. Balances should be considered
+     * Indicates the download progress of the Synchronizer. When progress reaches `PercentDecimal.ONE_HUNDRED_PERCENT`,
+     * that signals that the Synchronizer is in sync with the network. Balances should be considered
      * inaccurate and outbound transactions should be prevented until this sync is complete. It is
      * a simplified version of [processorInfo].
      */
-    override val progress: Flow<Int> = processor.progress
+    override val progress: Flow<PercentDecimal> = processor.progress
 
     /**
      * Indicates the latest information about the blocks that have been processed by the SDK. This

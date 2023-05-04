@@ -14,6 +14,7 @@ import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
 import cash.z.ecc.android.sdk.demoapp.R
 import cash.z.ecc.android.sdk.demoapp.databinding.FragmentListTransactionsBinding
 import cash.z.ecc.android.sdk.internal.Twig
+import cash.z.ecc.android.sdk.model.PercentDecimal
 import cash.z.ecc.android.sdk.model.TransactionOverview
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.filterNotNull
@@ -81,8 +82,8 @@ class ListTransactionsFragment : BaseDemoFragment<FragmentListTransactionsBindin
     }
 
     @Suppress("MagicNumber")
-    private fun onProgress(i: Int) {
-        if (i < 100) binding.textInfo.text = "Syncing blocks...$i%"
+    private fun onProgress(percent: PercentDecimal) {
+        if (percent.isLessThanHundredPercent()) binding.textInfo.text = "Syncing blocks...${percent.toPercentage()}%"
     }
 
     private fun onStatus(status: Synchronizer.Status) {
