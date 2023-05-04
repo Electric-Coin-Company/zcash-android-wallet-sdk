@@ -103,7 +103,7 @@ internal suspend fun Backend.rewindBlockMetadataToHeight(height: BlockHeight) =
  * @param limit The limit provides an efficient way how to restrict the portion of blocks, which will be validated.
  * @return Null if successful. If an error occurs, the height will be the height where the error was detected.
  */
-internal suspend fun Backend.validateCombinedChainOrErrorBlockHeight(limit: Int = -1): BlockHeight? =
+internal suspend fun Backend.validateCombinedChainOrErrorBlockHeight(limit: Long?): BlockHeight? =
     validateCombinedChainOrErrorHeight(limit)?.let {
         BlockHeight.new(
             network,

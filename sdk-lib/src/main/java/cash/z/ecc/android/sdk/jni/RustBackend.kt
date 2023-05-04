@@ -213,12 +213,12 @@ internal class RustBackend private constructor(
             )
         }
 
-    override suspend fun validateCombinedChainOrErrorHeight(limit: Int) =
+    override suspend fun validateCombinedChainOrErrorHeight(limit: Long?) =
         withContext(SdkDispatchers.DATABASE_IO) {
             val validationResult = validateCombinedChain(
                 dbCachePath = fsBlockDbRoot.absolutePath,
                 dbDataPath = dataDbFile.absolutePath,
-                limit = limit,
+                limit = limit ?: -1,
                 networkId = network.id
             )
 
@@ -270,12 +270,12 @@ internal class RustBackend private constructor(
             )
         }
 
-    override suspend fun scanBlocks(limit: Int): Boolean {
+    override suspend fun scanBlocks(limit: Long?): Boolean {
         return withContext(SdkDispatchers.DATABASE_IO) {
             scanBlocks(
                 fsBlockDbRoot.absolutePath,
                 dataDbFile.absolutePath,
-                limit,
+                limit ?: -1,
                 networkId = network.id
             )
         }
@@ -532,7 +532,7 @@ internal class RustBackend private constructor(
         private external fun validateCombinedChain(
             dbCachePath: String,
             dbDataPath: String,
-            limit: Int,
+            limit: Long,
             networkId: Int
         ): Long
 
@@ -554,7 +554,7 @@ internal class RustBackend private constructor(
         private external fun scanBlocks(
             dbCachePath: String,
             dbDataPath: String,
-            limit: Int,
+            limit: Long,
             networkId: Int
         ): Boolean
 

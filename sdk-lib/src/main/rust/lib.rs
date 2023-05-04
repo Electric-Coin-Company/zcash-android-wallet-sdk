@@ -1051,7 +1051,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_validateCom
     _: JClass<'_>,
     db_cache: JString<'_>,
     db_data: JString<'_>,
-    limit: jint, 
+    limit: jlong,
     network_id: jint,
 ) -> jlong {
     let res = panic::catch_unwind(|| {
@@ -1148,7 +1148,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_scanBlocks(
     _: JClass<'_>,
     db_cache: JString<'_>,
     db_data: JString<'_>,
-    limit: jint,
+    limit: jlong,
     network_id: jint,
 ) -> jboolean {
     let res = panic::catch_unwind(|| {

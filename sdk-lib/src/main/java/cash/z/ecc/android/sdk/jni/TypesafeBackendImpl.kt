@@ -46,7 +46,7 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
      * @param limit The limit provides an efficient way how to restrict the portion of blocks, which will be validated.
      * @return Null if successful. If an error occurs, the height will be the height where the error was detected.
      */
-    override suspend fun validateCombinedChainOrErrorBlockHeight(limit: Int): BlockHeight? =
+    override suspend fun validateCombinedChainOrErrorBlockHeight(limit: Long?): BlockHeight? =
         backend.validateCombinedChainOrErrorBlockHeight(limit)
 
     override suspend fun getDownloadedUtxoBalance(address: String): WalletBalance =
