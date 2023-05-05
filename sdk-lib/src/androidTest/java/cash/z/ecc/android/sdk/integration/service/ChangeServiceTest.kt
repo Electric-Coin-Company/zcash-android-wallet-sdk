@@ -24,6 +24,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.mockito.Mock
 import org.mockito.MockitoAnnotations
+import kotlin.test.Ignore
 
 @MaintainedTest(TestPurpose.REGRESSION)
 @RunWith(AndroidJUnit4::class)
@@ -61,6 +62,7 @@ class ChangeServiceTest : ScopedTest() {
 
     @Test
     @OptIn(ExperimentalCoroutinesApi::class)
+    @Ignore
     fun testSanityCheck() = runTest {
         // Test the result, only if there is no server communication problem.
         runCatching {

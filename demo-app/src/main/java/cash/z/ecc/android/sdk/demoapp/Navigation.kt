@@ -74,7 +74,11 @@ internal fun ComposeActivity.Navigation() {
                 Balance(
                     walletSnapshot,
                     onShieldFunds = { walletViewModel.shieldFunds() },
-                    onBack = { navController.popBackStackJustOnce(BALANCE) },
+                    sendState = walletViewModel.sendState.collectAsStateWithLifecycle().value,
+                    onBack = {
+                        walletViewModel.clearSendOrShieldState()
+                        navController.popBackStackJustOnce(BALANCE)
+                    },
                 )
             }
         }
@@ -112,12 +116,14 @@ internal fun ComposeActivity.Navigation() {
             } else {
                 Send(
                     walletSnapshot = walletSnapshot,
+                    sendState = walletViewModel.sendState.collectAsStateWithLifecycle().value,
                     onSend = {
-                        // In the future, consider observing the flow and providing UI updates
                         walletViewModel.send(it)
-                        navController.popBackStackJustOnce(SEND)
                     },
-                    onBack = { navController.popBackStackJustOnce(SEND) }
+                    onBack = {
+                        walletViewModel.clearSendOrShieldState()
+                        navController.popBackStackJustOnce(SEND)
+                    }
                 )
             }
         }

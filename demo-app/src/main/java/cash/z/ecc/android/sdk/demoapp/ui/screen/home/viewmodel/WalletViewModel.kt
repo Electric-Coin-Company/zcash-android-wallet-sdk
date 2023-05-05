@@ -17,7 +17,6 @@ import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
-import cash.z.ecc.android.sdk.model.PendingTransaction
 import cash.z.ecc.android.sdk.model.PercentDecimal
 import cash.z.ecc.android.sdk.model.PersistableWallet
 import cash.z.ecc.android.sdk.model.WalletAddresses
@@ -25,20 +24,18 @@ import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.model.ZecSend
-import cash.z.ecc.android.sdk.model.isMined
-import cash.z.ecc.android.sdk.model.isSubmitSuccess
 import cash.z.ecc.android.sdk.model.send
 import cash.z.ecc.android.sdk.tool.DerivationTool
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.WhileSubscribed
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
@@ -130,6 +127,10 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
             null
         )
 
+    private val mutableSendState = MutableStateFlow<SendState>(SendState.None)
+
+    val sendState: StateFlow<SendState> = mutableSendState
+
     /**
      * Creates a wallet asynchronously and then persists it.  Clients observe
      * [secretState] to see the side effects.  This would be used for a user creating a new wallet.
@@ -163,36 +164,57 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     /**
-     * Asynchronously sends funds.
+     * Asynchronously sends funds.  Note that two sending operations cannot occur at the same time.
+     *
+     * Observe the result via [sendState].
      */
     fun send(zecSend: ZecSend) {
-        // Note that if synchronizer is null this will silently fail
+        if (sendState.value is SendState.Sending) {
+            return
+        }
+
+        mutableSendState.value = SendState.Sending
+
         val synchronizer = synchronizer.value
         if (null != synchronizer) {
             viewModelScope.launch {
                 val spendingKey = spendingKey.filterNotNull().first()
-                synchronizer.send(spendingKey, zecSend)
+                runCatching { synchronizer.send(spendingKey, zecSend) }
+                    .onSuccess { mutableSendState.value = SendState.Sent(it) }
+                    .onFailure { mutableSendState.value = SendState.Error(it) }
             }
         } else {
-            Twig.info { "Unable to send funds" }
+            SendState.Error(IllegalStateException("Unable to send funds because synchronizer is not loaded."))
         }
     }
 
     /**
-     * Asynchronously shields transparent funds.
+     * Asynchronously shields transparent funds.  Note that two shielding operations cannot occur at the same time.
+     *
+     * Observe the result via [sendState].
      */
     fun shieldFunds() {
-        // Note that if synchronizer is null this will silently fail
-        val synchronizer = synchronizer.value
+        if (sendState.value is SendState.Sending) {
+            return
+        }
 
+        mutableSendState.value = SendState.Sending
+
+        val synchronizer = synchronizer.value
         if (null != synchronizer) {
             viewModelScope.launch {
                 val spendingKey = spendingKey.filterNotNull().first()
-                synchronizer.shieldFunds(spendingKey)
+                kotlin.runCatching { synchronizer.shieldFunds(spendingKey) }
+                    .onSuccess { mutableSendState.value = SendState.Sent(it) }
+                    .onFailure { mutableSendState.value = SendState.Error(it) }
             }
         } else {
-            Twig.info { "Unable to shield funds" }
+            SendState.Error(IllegalStateException("Unable to send funds because synchronizer is not loaded."))
         }
+    }
+
+    fun clearSendOrShieldState() {
+        mutableSendState.value = SendState.None
     }
 
     /**
@@ -221,6 +243,21 @@ sealed class SecretState {
     object Loading : SecretState()
     object None : SecretState()
     class Ready(val persistableWallet: PersistableWallet) : SecretState()
+}
+
+sealed class SendState {
+    object None : SendState() {
+        override fun toString(): String = "None"
+    }
+    object Sending : SendState() {
+        override fun toString(): String = "Sending"
+    }
+    class Sent(val localTxId: Long) : SendState() {
+        override fun toString(): String = "Sent"
+    }
+    class Error(val error: Throwable) : SendState() {
+        override fun toString(): String = "Error ${error.message}"
+    }
 }
 
 /**
@@ -294,24 +331,18 @@ private fun Synchronizer.toWalletSnapshot() =
         orchardBalances, // 2
         saplingBalances, // 3
         transparentBalances, // 4
-        pendingTransactions.distinctUntilChanged(), // 5
-        progress, // 6
-        toCommonError() // 7
+        progress, // 5
+        toCommonError() // 6
     ) { flows ->
-        val pendingCount = (flows[5] as List<*>)
-            .filterIsInstance(PendingTransaction::class.java)
-            .count {
-                it.isSubmitSuccess() && !it.isMined()
-            }
         val orchardBalance = flows[2] as WalletBalance?
         val saplingBalance = flows[3] as WalletBalance?
         val transparentBalance = flows[4] as WalletBalance?
 
-        val progressPercentDecimal = (flows[6] as Int).let { value ->
+        val progressPercentDecimal = (flows[5] as Int).let { value ->
             if (value > PercentDecimal.MAX || value < PercentDecimal.MIN) {
                 PercentDecimal.ZERO_PERCENT
             }
-            PercentDecimal((flows[6] as Int) / 100f)
+            PercentDecimal(value / 100f)
         }
 
         WalletSnapshot(
@@ -320,8 +351,7 @@ private fun Synchronizer.toWalletSnapshot() =
             orchardBalance ?: WalletBalance(Zatoshi(0), Zatoshi(0)),
             saplingBalance ?: WalletBalance(Zatoshi(0), Zatoshi(0)),
             transparentBalance ?: WalletBalance(Zatoshi(0), Zatoshi(0)),
-            pendingCount,
             progressPercentDecimal,
-            flows[7] as SynchronizerError?
+            flows[6] as SynchronizerError?
         )
     }

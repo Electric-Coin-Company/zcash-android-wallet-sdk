@@ -34,6 +34,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import cash.z.ecc.android.sdk.demoapp.R
 import cash.z.ecc.android.sdk.demoapp.ui.common.MINIMAL_WEIGHT
+import cash.z.ecc.android.sdk.demoapp.ui.screen.home.viewmodel.SendState
 import cash.z.ecc.android.sdk.demoapp.ui.screen.home.viewmodel.WalletSnapshot
 import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.fixture.WalletFixture
@@ -58,6 +59,7 @@ import cash.z.ecc.android.sdk.model.toZecString
 @Composable
 fun Send(
     walletSnapshot: WalletSnapshot,
+    sendState: SendState,
     onSend: (ZecSend) -> Unit,
     onBack: () -> Unit
 ) {
@@ -67,6 +69,7 @@ fun Send(
         SendMainContent(
             paddingValues = paddingValues,
             walletSnapshot = walletSnapshot,
+            sendState = sendState,
             onSend = onSend
         )
     }
@@ -96,6 +99,7 @@ private fun SendTopAppBar(onBack: () -> Unit) {
 private fun SendMainContent(
     paddingValues: PaddingValues,
     walletSnapshot: WalletSnapshot,
+    sendState: SendState,
     onSend: (ZecSend) -> Unit
 ) {
     val context = LocalContext.current
@@ -236,5 +240,7 @@ private fun SendMainContent(
         ) {
             Text(stringResource(id = R.string.send_button))
         }
+
+        Text(stringResource(id = R.string.send_status, sendState.toString()))
     }
 }

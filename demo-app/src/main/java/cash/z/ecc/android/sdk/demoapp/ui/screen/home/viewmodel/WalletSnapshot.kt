@@ -13,7 +13,6 @@ data class WalletSnapshot(
     val orchardBalance: WalletBalance,
     val saplingBalance: WalletBalance,
     val transparentBalance: WalletBalance,
-    val pendingCount: Int,
     val progress: PercentDecimal,
     val synchronizerError: SynchronizerError?
 ) {

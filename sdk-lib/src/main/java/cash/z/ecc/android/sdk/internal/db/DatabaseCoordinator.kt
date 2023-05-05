@@ -2,13 +2,10 @@ package cash.z.ecc.android.sdk.internal.db
 
 import android.content.Context
 import androidx.annotation.VisibleForTesting
-import androidx.room.Room
-import androidx.room.RoomDatabase
 import cash.z.ecc.android.sdk.exception.InitializeException
 import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.internal.Files
 import cash.z.ecc.android.sdk.internal.LazyWithArgument
-import cash.z.ecc.android.sdk.internal.NoBackupContextWrapper
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.ext.deleteRecursivelySuspend
 import cash.z.ecc.android.sdk.internal.ext.deleteSuspend
@@ -183,6 +180,24 @@ internal class DatabaseCoordinator private constructor(context: Context) {
             val cacheDeleted = fsBlockDbRoot(network, alias).deleteRecursivelySuspend()
 
             return dataDeleted || cacheDeleted
+        }
+    }
+
+    /**
+     * Function for common deletion of pending transaction database files. It also checks and deletes
+     * additional journal and wal files, if they exist.
+     *
+     * @param network the network associated with the data in the database
+     * @param alias the alias to convert into a database path
+     *
+     * @return true only if any database deleted, false otherwise
+     */
+    internal suspend fun deletePendingTransactionDatabase(
+        network: ZcashNetwork,
+        alias: String
+    ): Boolean {
+        deleteFileMutex.withLock {
+            return deleteDatabase(pendingTransactionsDbFile(network, alias))
         }
     }
 
@@ -412,33 +427,4 @@ internal class DatabaseCoordinator private constructor(context: Context) {
 
         return file.deleteSuspend()
     }
-}
-
-/**
- * The purpose of this function is to provide Room.Builder via a static Room.databaseBuilder with
- * an injection of our NoBackupContextWrapper to override the behavior of getDatabasePath() for
- * Android SDK level 27 and higher and regular Context class for the Android SDK level 26 and lower.
- *
- * Note: ideally we'd make this extension function or override the Room.databaseBuilder function,
- * but it's not possible, as it's a static function on Room class, which does not allow its
- * instantiation.
- *
- * @param context
- * @param klass the database class
- * @param databaseFile the database file
- * @return A {@code RoomDatabaseBuilder<T>} which you can use to create the database.
- */
-internal fun <T : RoomDatabase> commonDatabaseBuilder(
-    context: Context,
-    klass: Class<T>,
-    databaseFile: File
-): RoomDatabase.Builder<T> {
-    return Room.databaseBuilder(
-        NoBackupContextWrapper(
-            context,
-            databaseFile.parentFile ?: throw InitializeException.DatabasePathException
-        ),
-        klass,
-        databaseFile.name
-    )
 }

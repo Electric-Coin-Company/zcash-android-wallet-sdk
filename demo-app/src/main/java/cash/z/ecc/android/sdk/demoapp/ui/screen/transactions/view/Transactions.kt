@@ -59,7 +59,7 @@ fun Transactions(
             TransactionsMainContent(
                 paddingValues = paddingValues,
                 synchronizer,
-                synchronizer.clearedTransactions.collectAsStateWithLifecycle(initialValue = emptyList()).value
+                synchronizer.transactions.collectAsStateWithLifecycle(initialValue = emptyList()).value
             )
         }
     }

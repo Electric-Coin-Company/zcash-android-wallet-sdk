@@ -29,7 +29,6 @@ object WalletSnapshotFixture {
         orchardBalance: WalletBalance = ORCHARD_BALANCE,
         saplingBalance: WalletBalance = SAPLING_BALANCE,
         transparentBalance: WalletBalance = TRANSPARENT_BALANCE,
-        pendingCount: Int = 0,
         progress: PercentDecimal = PROGRESS,
         synchronizerError: SynchronizerError? = null
     ) = WalletSnapshot(
@@ -38,7 +37,6 @@ object WalletSnapshotFixture {
         orchardBalance,
         saplingBalance,
         transparentBalance,
-        pendingCount,
         progress,
         synchronizerError
     )

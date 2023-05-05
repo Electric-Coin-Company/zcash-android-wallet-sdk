@@ -4,9 +4,9 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import cash.z.ecc.android.sdk.internal.db.CursorParser
 import cash.z.ecc.android.sdk.internal.db.optBlobOrThrow
 import cash.z.ecc.android.sdk.internal.db.queryAndMap
+import cash.z.ecc.android.sdk.internal.model.DbTransactionOverview
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.FirstClassByteArray
-import cash.z.ecc.android.sdk.model.TransactionOverview
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import kotlinx.coroutines.flow.first
@@ -45,7 +45,7 @@ internal class AllTransactionView(
         private val PROJECTION_COUNT = arrayOf("COUNT(*)") // $NON-NLS
     }
 
-    private val cursorParser: CursorParser<TransactionOverview> = CursorParser { cursor ->
+    private val cursorParser: CursorParser<DbTransactionOverview> = CursorParser { cursor ->
         val idColumnIndex = cursor.getColumnIndex(AllTransactionViewDefinition.COLUMN_INTEGER_ID)
         val minedHeightColumnIndex =
             cursor.getColumnIndex(AllTransactionViewDefinition.COLUMN_INTEGER_MINED_HEIGHT)
@@ -71,7 +71,7 @@ internal class AllTransactionView(
 
         val expiryHeightLong = cursor.getLong(expiryHeightIndex)
 
-        TransactionOverview(
+        DbTransactionOverview(
             id = cursor.getLong(idColumnIndex),
             rawId = FirstClassByteArray(cursor.getBlob(rawTransactionIdIndex)),
             minedHeight = BlockHeight.new(zcashNetwork, cursor.getLong(minedHeightColumnIndex)),

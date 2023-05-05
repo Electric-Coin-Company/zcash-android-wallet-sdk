@@ -1,9 +1,9 @@
 package cash.z.ecc.android.sdk.internal.db.derived
 
+import cash.z.ecc.android.sdk.internal.model.DbTransactionOverview
 import cash.z.ecc.android.sdk.internal.model.EncodedTransaction
 import cash.z.ecc.android.sdk.internal.repository.DerivedDataRepository
 import cash.z.ecc.android.sdk.model.BlockHeight
-import cash.z.ecc.android.sdk.model.TransactionOverview
 import cash.z.ecc.android.sdk.model.TransactionRecipient
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -33,7 +33,7 @@ internal class DbDerivedDataRepository(
         return derivedDataDb.transactionTable.findEncodedTransactionById(txId)
     }
 
-    override suspend fun findNewTransactions(blockHeightRange: ClosedRange<BlockHeight>): List<TransactionOverview> =
+    override suspend fun findNewTransactions(blockHeightRange: ClosedRange<BlockHeight>): List<DbTransactionOverview> =
         derivedDataDb.allTransactionView.getTransactionRange(blockHeightRange).toList()
 
     override suspend fun getOldestTransaction() = derivedDataDb.allTransactionView.getOldestTransaction()
@@ -56,7 +56,7 @@ internal class DbDerivedDataRepository(
         // toInt() should be safe because we expect very few accounts
         .toInt()
 
-    override val allTransactions: Flow<List<TransactionOverview>>
+    override val allTransactions: Flow<List<DbTransactionOverview>>
         get() = invalidatingFlow.map { derivedDataDb.allTransactionView.getAllTransactions().toList() }
 
     override fun getNoteIds(transactionId: Long) = derivedDataDb.txOutputsView.getNoteIds(transactionId)

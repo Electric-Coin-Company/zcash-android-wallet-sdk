@@ -13,6 +13,8 @@ import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Initialized
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Stopped
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Synced
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Syncing
+import cash.z.ecc.android.sdk.exception.TransactionEncoderException
+import cash.z.ecc.android.sdk.exception.TransactionSubmitException
 import cash.z.ecc.android.sdk.ext.ConsensusBranchId
 import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.internal.SaplingParamTool
@@ -29,13 +31,12 @@ import cash.z.ecc.android.sdk.internal.repository.CompactBlockRepository
 import cash.z.ecc.android.sdk.internal.repository.DerivedDataRepository
 import cash.z.ecc.android.sdk.internal.storage.block.FileCompactBlockRepository
 import cash.z.ecc.android.sdk.internal.transaction.OutboundTransactionManager
-import cash.z.ecc.android.sdk.internal.transaction.PersistentTransactionManager
+import cash.z.ecc.android.sdk.internal.transaction.OutboundTransactionManagerImpl
 import cash.z.ecc.android.sdk.internal.transaction.TransactionEncoder
-import cash.z.ecc.android.sdk.internal.transaction.WalletTransactionEncoder
+import cash.z.ecc.android.sdk.internal.transaction.TransactionEncoderImpl
 import cash.z.ecc.android.sdk.jni.RustBackend
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
-import cash.z.ecc.android.sdk.model.PendingTransaction
 import cash.z.ecc.android.sdk.model.TransactionOverview
 import cash.z.ecc.android.sdk.model.TransactionRecipient
 import cash.z.ecc.android.sdk.model.UnifiedFullViewingKey
@@ -43,12 +44,6 @@ import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
-import cash.z.ecc.android.sdk.model.isExpired
-import cash.z.ecc.android.sdk.model.isLongExpired
-import cash.z.ecc.android.sdk.model.isMarkedForDeletion
-import cash.z.ecc.android.sdk.model.isMined
-import cash.z.ecc.android.sdk.model.isSafeToDiscard
-import cash.z.ecc.android.sdk.model.isSubmitSuccess
 import cash.z.ecc.android.sdk.type.AddressType
 import cash.z.ecc.android.sdk.type.AddressType.Shielded
 import cash.z.ecc.android.sdk.type.AddressType.Transparent
@@ -62,16 +57,13 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
@@ -181,24 +173,14 @@ class SdkSynchronizer private constructor(
 
     var coroutineScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
-    //
-    // Balances
-    //
-
     override val orchardBalances = _orchardBalances.asStateFlow()
     override val saplingBalances = _saplingBalances.asStateFlow()
     override val transparentBalances = _transparentBalances.asStateFlow()
-
-    //
-    // Transactions
-    //
-
-    override val clearedTransactions get() = storage.allTransactions
-    override val pendingTransactions = txManager.getAll()
-
-    //
-    // Status
-    //
+    override val transactions
+        get() = combine(processor.networkHeight, storage.allTransactions) { networkHeight, allTransactions ->
+            val latestBlockHeight = networkHeight ?: storage.lastScannedHeight()
+            allTransactions.map { TransactionOverview.new(it, latestBlockHeight) }
+        }
 
     override val network: ZcashNetwork get() = processor.network
 
@@ -516,66 +498,9 @@ class SdkSynchronizer private constructor(
             Twig.debug { "Triggering balance refresh since $reason!" }
             refreshAllBalances()
 
-            Twig.debug { "Triggering pending transaction refresh since $reason!" }
-            refreshPendingTransactions()
-
             Twig.debug { "Triggering transaction refresh since $reason!" }
             refreshTransactions()
         }
-    }
-
-    @Suppress("LongMethod", "ComplexMethod")
-    private suspend fun refreshPendingTransactions() {
-        Twig.debug { "[cleanup] beginning to refresh and clean up pending transactions" }
-        // TODO [#682]: this would be the place to clear out any stale pending transactions. Remove filter logic and
-        //  then delete any pending transaction with sufficient confirmations (all in one db transaction).
-        // TODO [#682]: https://github.com/zcash/zcash-android-wallet-sdk/issues/682
-        val allPendingTxs = txManager.getAll().first()
-        val lastScannedHeight = storage.lastScannedHeight()
-
-        allPendingTxs.filter { it.isSubmitSuccess() && !it.isMined() }
-            .forEach { pendingTx ->
-                Twig.debug { "checking for updates on pendingTx id: ${pendingTx.id}" }
-                pendingTx.rawTransactionId?.let { rawId ->
-                    storage.findMinedHeight(rawId.byteArray)?.let { minedHeight ->
-                        Twig.debug {
-                            "found matching transaction for pending transaction with id" +
-                                " ${pendingTx.id} mined at height $minedHeight!"
-                        }
-                        txManager.applyMinedHeight(pendingTx, minedHeight)
-                    }
-                }
-            }
-
-        Twig.debug { "[cleanup] beginning to cleanup expired transactions" }
-        // Experimental: cleanup expired transactions
-        // note: don't delete the pendingTx until the related data has been scrubbed, or else you
-        // lose the thing that identifies the other data as invalid
-        // so we first mark the data for deletion, during the previous "cleanup" step, by removing
-        // the thing that we're trying to preserve to signal we no longer need it
-        // sometimes apps crash or things go wrong and we get an orphaned pendingTx that we'll poll
-        // forever, so maybe just get rid of all of them after a long while
-        allPendingTxs.filter {
-            (
-                it.isExpired(
-                    lastScannedHeight,
-                    network.saplingActivationHeight
-                ) && it.isMarkedForDeletion()
-                ) ||
-                it.isLongExpired(
-                    lastScannedHeight,
-                    network.saplingActivationHeight
-                ) || it.isSafeToDiscard()
-        }.forEach {
-            val result = txManager.abort(it)
-            Twig.debug {
-                "[cleanup] FOUND EXPIRED pendingTX (lastScanHeight: $lastScannedHeight " +
-                    " expiryHeight: ${it.expiryHeight}): and ${it.id} " +
-                    "${if (result > 0) "successfully removed" else "failed to remove"} it"
-            }
-        }
-
-        Twig.debug { "[cleanup] done refreshing and cleaning up pending transactions" }
     }
 
     //
@@ -604,57 +529,49 @@ class SdkSynchronizer private constructor(
     override suspend fun getTransparentAddress(account: Account): String =
         CompactBlockProcessor.getTransparentAddress(rustBackend, account)
 
-    override fun sendToAddress(
+    @Throws(TransactionEncoderException::class, TransactionSubmitException::class)
+    override suspend fun sendToAddress(
         usk: UnifiedSpendingKey,
         amount: Zatoshi,
         toAddress: String,
         memo: String
-    ): Flow<PendingTransaction> {
-        // Using a job to ensure that even if the flow is collected multiple times, the transaction is only submitted
-        // once
-        val deferred = coroutineScope.async {
-            // Emit the placeholder transaction, then switch to monitoring the database
-            val placeHolderTx =
-                txManager.initSpend(amount, TransactionRecipient.Address(toAddress), memo, usk.account)
+    ): Long {
+        val encodedTx = txManager.encode(
+            usk,
+            amount,
+            TransactionRecipient.Address(toAddress),
+            memo,
+            usk.account
+        )
 
-            txManager.encode(usk, placeHolderTx).let { encodedTx ->
-                txManager.submit(encodedTx)
-            }
-
-            placeHolderTx.id
-        }
-
-        return flow<PendingTransaction> {
-            val placeHolderTxId = deferred.await()
-            emitAll(txManager.monitorById(placeHolderTxId))
+        if (txManager.submit(encodedTx)) {
+            return storage.findMatchingTransactionId(encodedTx.txId.byteArray)!!
+        } else {
+            throw TransactionSubmitException()
         }
     }
 
-    override fun shieldFunds(
+    @Throws(TransactionEncoderException::class, TransactionSubmitException::class)
+    override suspend fun shieldFunds(
         usk: UnifiedSpendingKey,
         memo: String
-    ): Flow<PendingTransaction> {
+    ): Long {
         Twig.debug { "Initializing shielding transaction" }
-        val deferred = coroutineScope.async {
-            val tAddr = CompactBlockProcessor.getTransparentAddress(rustBackend, usk.account)
-            val tBalance = processor.getUtxoCacheBalance(tAddr)
+        val tAddr = CompactBlockProcessor.getTransparentAddress(rustBackend, usk.account)
+        val tBalance = processor.getUtxoCacheBalance(tAddr)
 
-            // Emit the placeholder transaction, then switch to monitoring the database
-            val placeHolderTx = txManager.initSpend(
-                tBalance.available,
-                TransactionRecipient.Account(usk.account),
-                memo,
-                usk.account
-            )
-            val encodedTx = txManager.encode("", usk, placeHolderTx)
-            txManager.submit(encodedTx)
+        val encodedTx = txManager.encode(
+            usk,
+            tBalance.available,
+            TransactionRecipient.Account(usk.account),
+            memo,
+            usk.account
+        )
 
-            placeHolderTx.id
-        }
-
-        return flow<PendingTransaction> {
-            val placeHolderTxId = deferred.await()
-            emitAll(txManager.monitorById(placeHolderTxId))
+        if (txManager.submit(encodedTx)) {
+            return storage.findMatchingTransactionId(encodedTx.txId.byteArray)!!
+        } else {
+            throw TransactionSubmitException()
         }
     }
 
@@ -695,7 +612,7 @@ class SdkSynchronizer private constructor(
     override suspend fun validateConsensusBranch(): ConsensusMatchType {
         val serverBranchId = tryNull { processor.downloader.getServerInfo()?.consensusBranchId }
         val sdkBranchId = tryNull {
-            (txManager as PersistentTransactionManager).encoder.getConsensusBranchId()
+            (txManager as OutboundTransactionManagerImpl).encoder.getConsensusBranchId()
         }
         return ConsensusMatchType(
             sdkBranchId?.let { ConsensusBranchId.fromId(it) },
@@ -712,14 +629,12 @@ class SdkSynchronizer private constructor(
 internal object DefaultSynchronizerFactory {
 
     internal suspend fun defaultRustBackend(
-        context: Context,
         network: ZcashNetwork,
         alias: String,
         blockHeight: BlockHeight,
-        saplingParamTool: SaplingParamTool
+        saplingParamTool: SaplingParamTool,
+        coordinator: DatabaseCoordinator
     ): RustBackend {
-        val coordinator = DatabaseCoordinator.getInstance(context)
-
         return RustBackend.init(
             coordinator.fsBlockDbRoot(network, alias),
             coordinator.dataDbFile(network, alias),
@@ -750,7 +665,9 @@ internal object DefaultSynchronizerFactory {
         )
 
     internal suspend fun defaultFileCompactBlockRepository(rustBackend: RustBackend): CompactBlockRepository =
-        FileCompactBlockRepository.new(rustBackend)
+        FileCompactBlockRepository.new(
+            rustBackend
+        )
 
     fun defaultService(context: Context, lightWalletEndpoint: LightWalletEndpoint): LightWalletClient =
         LightWalletClient.new(context, lightWalletEndpoint)
@@ -759,31 +676,20 @@ internal object DefaultSynchronizerFactory {
         rustBackend: RustBackend,
         saplingParamTool: SaplingParamTool,
         repository: DerivedDataRepository
-    ): TransactionEncoder = WalletTransactionEncoder(rustBackend, saplingParamTool, repository)
+    ): TransactionEncoder = TransactionEncoderImpl(rustBackend, saplingParamTool, repository)
 
     fun defaultDownloader(
         service: LightWalletClient,
         blockStore: CompactBlockRepository
     ): CompactBlockDownloader = CompactBlockDownloader(service, blockStore)
 
-    internal suspend fun defaultTxManager(
-        context: Context,
-        zcashNetwork: ZcashNetwork,
-        alias: String,
+    internal fun defaultTxManager(
         encoder: TransactionEncoder,
         service: LightWalletClient
     ): OutboundTransactionManager {
-        val databaseFile = DatabaseCoordinator.getInstance(context).pendingTransactionsDbFile(
-            zcashNetwork,
-            alias
-        )
-
-        return PersistentTransactionManager.new(
-            context,
-            zcashNetwork,
+        return OutboundTransactionManagerImpl.new(
             encoder,
             service,
-            databaseFile
         )
     }
 
