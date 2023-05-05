@@ -5,7 +5,7 @@ Migration to Version 1.17
 ---------------------------------
 Synchronizer APIs for listing sent and received transactions have been removed.  Clients should use `Synchronizer.transactions`, filtering on the field `TransactionOverview.isSentTransaction`.
 
-Synchronizer APIs for pending transactions have been removed.  Clients should use `Synchronizer.transactions`, filtering on the field `TransactionOverview.isMined`
+Synchronizer APIs for pending transactions have been removed.  Clients should use `Synchronizer.transactions`, filtering on the field `TransactionOverview.transactionState`
 
 The Synchronizer APIs for sending transactions (`send()` and `shieldFunds()`) are now suspend functions that return `Long` which contains the ID of the newly created transaction.  To monitor for changes to pending transactions, observe `Synchronizer.transactions`.  If a failure occurs, `send()` and `shieldFunds()` throw exceptions.
 
