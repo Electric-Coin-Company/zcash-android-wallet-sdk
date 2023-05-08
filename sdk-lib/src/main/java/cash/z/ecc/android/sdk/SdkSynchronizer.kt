@@ -379,36 +379,44 @@ class SdkSynchronizer private constructor(
         return !validateAddress(address).isNotValid
     }
 
-    private fun CoroutineScope.onReady() = launch(CoroutineExceptionHandler(::onCriticalError)) {
+    private fun CoroutineScope.onReady() {
         Twig.debug { "Starting synchronizer…" }
 
-        var lastScanTime = 0L
-        processor.onProcessorErrorListener = ::onProcessorError
-        processor.onSetupErrorListener = ::onSetupError
-        processor.onChainErrorListener = ::onChainError
-        processor.state.onEach {
-            when (it) {
-                is Synced -> {
-                    val now = System.currentTimeMillis()
-                    // do a bit of housekeeping and then report synced status
-                    onScanComplete(it.syncedRange, now - lastScanTime)
-                    lastScanTime = now
-                    SYNCED
-                }
+        // Triggering UTXOs fetch at the beginning of the block sync right after the app start, as it makes the
+        // transparent transactions appearance faster
+        launch(CoroutineExceptionHandler(::onCriticalError)) {
+            refreshUtxos()
+        }
 
-                is Stopped -> STOPPED
-                is Disconnected -> DISCONNECTED
-                is Syncing, Initialized -> SYNCING
-                is Enhancing -> ENHANCING
-            }.let { synchronizerStatus ->
-                //  ignore enhancing status for now
-                // TODO [#682]: clean this up and handle enhancing gracefully
-                // TODO [#682]: https://github.com/zcash/zcash-android-wallet-sdk/issues/682
-                if (synchronizerStatus != ENHANCING) _status.value = synchronizerStatus
-            }
-        }.launchIn(this)
-        processor.start()
-        Twig.debug { "Completed starting synchronizer" }
+        launch(CoroutineExceptionHandler(::onCriticalError)) {
+            var lastScanTime = 0L
+            processor.onProcessorErrorListener = ::onProcessorError
+            processor.onSetupErrorListener = ::onSetupError
+            processor.onChainErrorListener = ::onChainError
+            processor.state.onEach {
+                when (it) {
+                    is Synced -> {
+                        val now = System.currentTimeMillis()
+                        // do a bit of housekeeping and then report synced status
+                        onScanComplete(it.syncedRange, now - lastScanTime)
+                        lastScanTime = now
+                        SYNCED
+                    }
+
+                    is Stopped -> STOPPED
+                    is Disconnected -> DISCONNECTED
+                    is Syncing, Initialized -> SYNCING
+                    is Enhancing -> ENHANCING
+                }.let { synchronizerStatus ->
+                    //  ignore enhancing status for now
+                    // TODO [#682]: clean this up and handle enhancing gracefully
+                    // TODO [#682]: https://github.com/zcash/zcash-android-wallet-sdk/issues/682
+                    if (synchronizerStatus != ENHANCING) _status.value = synchronizerStatus
+                }
+            }.launchIn(this)
+            processor.start()
+            Twig.debug { "Completed starting synchronizer" }
+        }
     }
 
     @Suppress("UNUSED_PARAMETER")
