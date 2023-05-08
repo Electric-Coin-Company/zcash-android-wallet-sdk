@@ -21,6 +21,7 @@ import cash.z.ecc.android.sdk.internal.ext.retryWithBackoff
 import cash.z.ecc.android.sdk.internal.ext.toHexReversed
 import cash.z.ecc.android.sdk.internal.isNullOrEmpty
 import cash.z.ecc.android.sdk.internal.length
+import cash.z.ecc.android.sdk.internal.model.BlockBatch
 import cash.z.ecc.android.sdk.internal.model.DbTransactionOverview
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.internal.model.ext.from
@@ -38,7 +39,6 @@ import cash.z.ecc.android.sdk.jni.listTransparentReceivers
 import cash.z.ecc.android.sdk.jni.rewindToHeight
 import cash.z.ecc.android.sdk.jni.validateCombinedChainOrErrorBlockHeight
 import cash.z.ecc.android.sdk.model.Account
-import cash.z.ecc.android.sdk.internal.model.BlockBatch
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.PercentDecimal
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
