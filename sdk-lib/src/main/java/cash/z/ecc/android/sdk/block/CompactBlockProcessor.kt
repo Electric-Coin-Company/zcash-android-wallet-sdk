@@ -38,7 +38,7 @@ import cash.z.ecc.android.sdk.jni.listTransparentReceivers
 import cash.z.ecc.android.sdk.jni.rewindToHeight
 import cash.z.ecc.android.sdk.jni.validateCombinedChainOrErrorBlockHeight
 import cash.z.ecc.android.sdk.model.Account
-import cash.z.ecc.android.sdk.model.BlockBatch
+import cash.z.ecc.android.sdk.internal.model.BlockBatch
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.PercentDecimal
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
