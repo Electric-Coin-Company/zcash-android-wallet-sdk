@@ -2,8 +2,16 @@ Change Log
 ==========
 
 ## Unreleased
-- `Synchronizer.progress` now returns Flow<PercentDecimal> instead of Flow<Int>. `PercentDecimal` is type-safe model.
-  Use `PercentDecimal.toPercentage()` to get a number in 0-100% scale.
+- The SDK's `CompactBlockProcessor` switched from processing **all blocks in one run** mechanism to **batched blocks** 
+processing. This was necessary for the sync state's parallelization. Example of syncing of the latest 
+  100 blocks:
+  - Previously: _Download 100 blocks -> Validate 100 blocks -> Scan 100 blocks -> SYNCED_
+  - Now: _10x (Download 10 blocks -> Validate 10 blocks -> Scan 10 blocks) -> SYNCED_
+- `Synchronizer.progress` now returns `Flow<PercentDecimal>` instead of `Flow<Int>`. PercentDecimal is a type-safe 
+  model.
+  Use `PercentDecimal.toPercentage()` to get a number within 0-100% scale.
+- `Synchronizer.status` now provides a new `SYNCING` state, which covers all three previous `DOWNLOADING`, 
+  `VALIDATING`, and `SCANNING` states, which were eliminated in favor of `SYNCING` state.
 
 ## 1.17.0-beta01
 - Synchronizer APIs for listing sent and received transactions have been removed.
