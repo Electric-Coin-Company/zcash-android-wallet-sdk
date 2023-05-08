@@ -868,7 +868,7 @@ class CompactBlockProcessor internal constructor(
             }
 
             var start = syncRange.start
-            return mutableListOf<BlockBatch>().apply {
+            return buildList {
                 for (index in 1..batchCount) {
                     val end = BlockHeight.new(
                         network,
