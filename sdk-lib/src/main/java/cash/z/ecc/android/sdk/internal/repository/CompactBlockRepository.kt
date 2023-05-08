@@ -27,7 +27,7 @@ interface CompactBlockRepository {
      * This function is supposed to be used once the whole blocks sync process done. It removes all the temporary
      * block files from the device disk.
      *
-     * @return true when all block files are deleted, false only if the deletion fails
+     * @return true when all block files are deleted or do not exist, false only if the deletion fails
      */
     suspend fun deleteAllCompactBlockFiles(): Boolean
 
@@ -35,7 +35,7 @@ interface CompactBlockRepository {
      * This function is supposed to be used continuously while sync process is in progress. It removes all the temporary
      * block files from the given list of blocks from the device disk.
      *
-     * @return true when all block files from the list are deleted, false only if the deletion fails
+     * @return true when all block files from the list are deleted or do not exist, false only if the deletion fails
      */
     suspend fun deleteCompactBlockFiles(blocks: List<JniBlockMeta>): Boolean
 
