@@ -10,9 +10,16 @@ value class PercentDecimal(val decimal: Float) {
         require(decimal <= MAX)
     }
 
+    fun isLessThanHundredPercent(): Boolean = decimal < MAX
+
+    fun isMoreThanZeroPercent(): Boolean = decimal > MIN
+
+    @Suppress("MagicNumber")
+    fun toPercentage(): Int = (decimal * 100).toInt()
+
     companion object {
-        const val MIN = 0.0f
-        const val MAX = 1.0f
+        private const val MIN = 0.0f
+        private const val MAX = 1.0f
         val ZERO_PERCENT = PercentDecimal(MIN)
         val ONE_HUNDRED_PERCENT = PercentDecimal(MAX)
 

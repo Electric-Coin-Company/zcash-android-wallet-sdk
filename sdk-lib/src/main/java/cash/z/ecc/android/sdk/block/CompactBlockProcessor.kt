@@ -13,11 +13,7 @@ import cash.z.ecc.android.sdk.exception.RustLayerException
 import cash.z.ecc.android.sdk.ext.BatchMetrics
 import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.ext.ZcashSdk.MAX_BACKOFF_INTERVAL
-import cash.z.ecc.android.sdk.ext.ZcashSdk.MAX_REORG_SIZE
 import cash.z.ecc.android.sdk.ext.ZcashSdk.POLL_INTERVAL
-import cash.z.ecc.android.sdk.ext.ZcashSdk.RETRIES
-import cash.z.ecc.android.sdk.ext.ZcashSdk.REWIND_DISTANCE
-import cash.z.ecc.android.sdk.ext.ZcashSdk.SYNC_BATCH_SIZE
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.block.CompactBlockDownloader
 import cash.z.ecc.android.sdk.internal.ext.retryUpTo
@@ -25,7 +21,9 @@ import cash.z.ecc.android.sdk.internal.ext.retryWithBackoff
 import cash.z.ecc.android.sdk.internal.ext.toHexReversed
 import cash.z.ecc.android.sdk.internal.isNullOrEmpty
 import cash.z.ecc.android.sdk.internal.length
+import cash.z.ecc.android.sdk.internal.model.BlockBatch
 import cash.z.ecc.android.sdk.internal.model.DbTransactionOverview
+import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.internal.model.ext.from
 import cash.z.ecc.android.sdk.internal.model.ext.toBlockHeight
 import cash.z.ecc.android.sdk.internal.repository.DerivedDataRepository
@@ -42,6 +40,7 @@ import cash.z.ecc.android.sdk.jni.rewindToHeight
 import cash.z.ecc.android.sdk.jni.validateCombinedChainOrErrorBlockHeight
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
+import cash.z.ecc.android.sdk.model.PercentDecimal
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.ZcashNetwork
@@ -54,12 +53,16 @@ import co.electriccoin.lightwallet.client.model.Response
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.buffer
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.util.Locale
@@ -135,7 +138,7 @@ class CompactBlockProcessor internal constructor(
     )
 
     private val _state: MutableStateFlow<State> = MutableStateFlow(State.Initialized)
-    private val _progress = MutableStateFlow(0)
+    private val _progress = MutableStateFlow(PercentDecimal.ZERO_PERCENT)
     private val _processorInfo = MutableStateFlow(ProcessorInfo(null, null, null))
     private val _networkHeight = MutableStateFlow<BlockHeight?>(null)
     private val processingMutex = Mutex()
@@ -191,7 +194,15 @@ class CompactBlockProcessor internal constructor(
     @Suppress("LongMethod")
     suspend fun start() {
         verifySetup()
+
         updateBirthdayHeight()
+
+        // Clear any undeleted left over block files from previous sync attempts
+        deleteAllBlockFiles(
+            downloader = downloader,
+            lastKnownHeight = getLastScannedHeight(repository)
+        )
+
         Twig.debug { "setup verified. processor starting" }
 
         // using do/while makes it easier to execute exactly one loop which helps with testing this processor quickly
@@ -237,30 +248,34 @@ class CompactBlockProcessor internal constructor(
                     }
 
                     is BlockProcessingResult.FailedDeleteBlocks -> {
-                        Twig.warn {
+                        Twig.error {
                             "Failed to delete temporary blocks files from the device disk. It will be retried on the" +
                                 " next time, while downloading new blocks."
                         }
-                        // Do nothing. The other phases went correctly.
+                        checkErrorResult(result.failedAtHeight)
                     }
 
-                    is BlockProcessingResult.FailedDownloadingBlocks -> {
+                    is BlockProcessingResult.FailedDownloadBlocks -> {
                         Twig.error { "Failed while downloading blocks at height: ${result.failedAtHeight}" }
                         checkErrorResult(result.failedAtHeight)
                     }
 
-                    is BlockProcessingResult.FailedValidationBlocks -> {
+                    is BlockProcessingResult.FailedValidateBlocks -> {
                         Twig.error { "Failed while validating blocks at height: ${result.failedAtHeight}" }
                         checkErrorResult(result.failedAtHeight)
                     }
 
-                    is BlockProcessingResult.FailedScanningBlocks -> {
+                    is BlockProcessingResult.FailedScanBlocks -> {
                         Twig.error { "Failed while scanning blocks at height: ${result.failedAtHeight}" }
                         checkErrorResult(result.failedAtHeight)
                     }
 
                     is BlockProcessingResult.Success -> {
                         // Do nothing. We are done.
+                    }
+
+                    is BlockProcessingResult.DownloadSuccess -> {
+                        // Do nothing. Syncing of blocks is in progress.
                     }
                 }
             }
@@ -281,7 +296,7 @@ class CompactBlockProcessor internal constructor(
     }
 
     /**
-     * Sets the state to [Stopped], which causes the processor loop to exit.
+     * Sets the state to [State.Stopped], which causes the processor loop to exit.
      */
     suspend fun stop() {
         runCatching {
@@ -352,16 +367,21 @@ class CompactBlockProcessor internal constructor(
             _progress.value = syncProgress.percentage
             updateProgress(lastSyncedHeight = syncProgress.lastSyncedHeight)
 
-            if (syncProgress.result != BlockProcessingResult.Success ||
-                syncProgress.result != BlockProcessingResult.FailedDeleteBlocks
-            ) {
+            // Cancel collecting in case of any unwanted state comes
+            if (syncProgress.result != BlockProcessingResult.Success) {
                 syncResult = syncProgress.result
-
                 return@collect
             }
         }
         if (syncResult != BlockProcessingResult.Success) {
-            // We should also set the synchronizer status to error here
+            // Remove persisted but not validated and scanned blocks in case of any failure
+            val lastScannedHeight = getLastScannedHeight(repository)
+            downloader.rewindToHeight(lastScannedHeight)
+            deleteAllBlockFiles(
+                downloader = downloader,
+                lastKnownHeight = lastScannedHeight
+            )
+
             return syncResult
         }
 
@@ -380,11 +400,12 @@ class CompactBlockProcessor internal constructor(
     sealed class BlockProcessingResult {
         object NoBlocksToProcess : BlockProcessingResult()
         object Success : BlockProcessingResult()
+        data class DownloadSuccess(val downloadedBlocks: List<JniBlockMeta>?) : BlockProcessingResult()
         object Reconnecting : BlockProcessingResult()
-        data class FailedDownloadingBlocks(val failedAtHeight: BlockHeight) : BlockProcessingResult()
-        data class FailedScanningBlocks(val failedAtHeight: BlockHeight) : BlockProcessingResult()
-        data class FailedValidationBlocks(val failedAtHeight: BlockHeight) : BlockProcessingResult()
-        object FailedDeleteBlocks : BlockProcessingResult()
+        data class FailedDownloadBlocks(val failedAtHeight: BlockHeight) : BlockProcessingResult()
+        data class FailedScanBlocks(val failedAtHeight: BlockHeight) : BlockProcessingResult()
+        data class FailedValidateBlocks(val failedAtHeight: BlockHeight) : BlockProcessingResult()
+        data class FailedDeleteBlocks(val failedAtHeight: BlockHeight) : BlockProcessingResult()
         object FailedEnhance : BlockProcessingResult()
     }
 
@@ -431,24 +452,11 @@ class CompactBlockProcessor internal constructor(
             lastDownloadedHeight
         }
 
-        ProcessorInfo(
+        updateProgress(
             networkBlockHeight = networkBlockHeight,
             lastSyncedHeight = lastSyncedHeight,
-            lastSyncRange = null
-        ).let { initialInfo ->
-            updateProgress(
-                networkBlockHeight = initialInfo.networkBlockHeight,
-                lastSyncedHeight = initialInfo.lastSyncedHeight,
-                lastSyncRange = if (
-                    initialInfo.lastSyncedHeight != null &&
-                    initialInfo.networkBlockHeight != null
-                ) {
-                    initialInfo.lastSyncedHeight + 1..initialInfo.networkBlockHeight
-                } else {
-                    null
-                }
-            )
-        }
+            lastSyncRange = lastSyncedHeight + 1..networkBlockHeight
+        )
 
         return true
     }
@@ -704,14 +712,43 @@ class CompactBlockProcessor internal constructor(
 
     companion object {
         /**
-         * Request all blocks in the given range and persist them locally for processing, later.
+         * Default attempts at retrying.
+         */
+        internal const val RETRIES = 5
+
+        /**
+         * The theoretical maximum number of blocks in a reorg, due to other bottlenecks in the protocol design.
+         */
+        internal const val MAX_REORG_SIZE = 100
+
+        /**
+         * Default size of batches of blocks to request from the compact block service. Then it's also used as a default
+         * size of batches of blocks to scan via librustzcash. The smaller this number the more granular information can
+         * be provided about scan state. Unfortunately, it may also lead to a lot of overhead during scanning.
+         */
+        internal const val SYNC_BATCH_SIZE = 10
+
+        /**
+         * Default number of blocks to rewind when a chain reorg is detected. This should be large enough to recover
+         * from the reorg but smaller than the theoretical max reorg size of 100.
+         */
+        internal const val REWIND_DISTANCE = 10
+
+        /**
+         * Requests, processes and persists all blocks from the given range.
          *
-         * @param syncRange the range of blocks to download.
+         * @param backend the Rust backend component
+         * @param downloader the compact block downloader component
+         * @param repository the derived data repository component
+         * @param network the network in which the sync mechanism operates
+         * @param syncRange the range of blocks to download
          * @param withDownload the flag indicating whether the blocks should also be downloaded and processed, or
-         * processed existing blocks.
+         * processed existing blocks
+
+         * @return Flow of BatchSyncProgress sync results
          */
         @VisibleForTesting
-        @Suppress("MagicNumber", "LongParameterList", "LongMethod")
+        @Suppress("LongParameterList", "LongMethod")
         internal suspend fun syncNewBlocks(
             backend: Backend,
             downloader: CompactBlockDownloader,
@@ -722,104 +759,104 @@ class CompactBlockProcessor internal constructor(
         ): Flow<BatchSyncProgress> = flow {
             if (syncRange.isEmpty()) {
                 Twig.debug { "No blocks to sync" }
+                emit(
+                    BatchSyncProgress(
+                        percentage = PercentDecimal.ONE_HUNDRED_PERCENT,
+                        lastSyncedHeight = getLastScannedHeight(repository),
+                        result = BlockProcessingResult.Success
+                    )
+                )
             } else {
                 Twig.debug { "Syncing blocks in range $syncRange" }
 
                 val batches = getBatchedBlockList(syncRange, network)
 
-                // While we run the sync sub-phases for each batch serially now, we'd like to run them in
-                // parallel to speed up the overall sync process time
-                batches.forEach { batch ->
-                    Twig.debug { "Sync batch: ${batch.index} of ${batches.size} - $batch" }
-                    Twig.verbose { "Starting to sync batch: $batch" }
+                batches.asFlow().map {
+                    Twig.debug { "Syncing process starts for batch: $it" }
 
-                    // Download
-                    if (withDownload) {
-                        downloadBatchOfBlocks(
-                            downloader = downloader,
-                            batch = batch
-                        ).takeIf { it != BlockProcessingResult.Success }?.let { result ->
-                            emit(
-                                BatchSyncProgress(
-                                    percentage = (batch.index / batches.size.toFloat() * 100).roundToInt(),
-                                    lastSyncedHeight = getLastScannedHeight(repository),
-                                    result = result
-                                )
+                    // Run downloading stage
+                    SyncStageResult(
+                        batch = it,
+                        stageResult = if (withDownload) {
+                            downloadBatchOfBlocks(
+                                downloader = downloader,
+                                batch = it
                             )
-                            return@flow
+                        } else {
+                            BlockProcessingResult.DownloadSuccess(null)
                         }
-                    }
+                    )
+                }.buffer(1).map { downloadStageResult ->
+                    Twig.debug { "Download stage done with result: $downloadStageResult" }
 
-                    // Validate
-                    validateBatchOfBlocks(
-                        backend = backend,
-                        batch = batch
-                    ).takeIf { it != BlockProcessingResult.Success }?.let { result ->
-                        emit(
-                            BatchSyncProgress(
-                                percentage = (batch.index / batches.size.toFloat() * 100).roundToInt(),
-                                lastSyncedHeight = getLastScannedHeight(repository),
-                                result = result
+                    if (downloadStageResult.stageResult !is BlockProcessingResult.DownloadSuccess) {
+                        // In case of any failure, we just propagate the result
+                        downloadStageResult
+                    } else {
+                        // Enrich batch model with fetched blocks. It's useful for later blocks deletion
+                        downloadStageResult.batch.blocks = downloadStageResult.stageResult.downloadedBlocks
+
+                        // Run validation stage
+                        SyncStageResult(
+                            downloadStageResult.batch,
+                            validateBatchOfBlocks(
+                                backend = backend,
+                                batch = downloadStageResult.batch
                             )
                         )
-                        return@flow
                     }
+                }.map { validateResult ->
+                    Twig.debug { "Validation stage done with result: $validateResult" }
 
-                    // Scan
-                    scanBatchOfBlocks(
-                        backend = backend,
-                        batch = batch
-                    ).takeIf { it != BlockProcessingResult.Success }?.let { result ->
-                        emit(
-                            BatchSyncProgress(
-                                percentage = (batch.index / batches.size.toFloat() * 100).roundToInt(),
-                                lastSyncedHeight = getLastScannedHeight(repository),
-                                result = result
+                    if (validateResult.stageResult != BlockProcessingResult.Success) {
+                        validateResult
+                    } else {
+                        // Run scanning stage
+                        SyncStageResult(
+                            validateResult.batch,
+                            scanBatchOfBlocks(
+                                backend = backend,
+                                batch = validateResult.batch
                             )
                         )
-                        return@flow
                     }
+                }.map { scanResult ->
+                    Twig.debug { "Scan stage done with result: $scanResult" }
 
-                    // Delete
-                    deleteAllBlockFiles(
-                        downloader = downloader
-                    ).takeIf { it != BlockProcessingResult.Success }?.let { result ->
-                        Twig.warn { "Delete batch block files failed with: $result" }
-                        emit(
-                            BatchSyncProgress(
-                                percentage = (batch.index / batches.size.toFloat() * 100).roundToInt(),
-                                lastSyncedHeight = getLastScannedHeight(repository),
-                                result = result
+                    if (scanResult.stageResult != BlockProcessingResult.Success) {
+                        scanResult
+                    } else {
+                        // Run deletion stage
+                        SyncStageResult(
+                            scanResult.batch,
+                            deleteFilesOfBatchOfBlocks(
+                                downloader = downloader,
+                                batch = scanResult.batch
                             )
                         )
-                        // We intentionally do not exit the processing of blocks as the failed deletion phase is not
-                        // critical
                     }
+                }.onEach { deleteResult ->
+                    Twig.debug { "Deletion stage done with result: $deleteResult" }
 
-                    Twig.verbose { "Done with batch: $batch" }
                     emit(
                         BatchSyncProgress(
-                            percentage = (batch.index / batches.size.toFloat() * 100).roundToInt(),
+                            percentage = PercentDecimal(deleteResult.batch.index / batches.size.toFloat()),
                             lastSyncedHeight = getLastScannedHeight(repository),
-                            result = BlockProcessingResult.Success
+                            result = deleteResult.stageResult
                         )
                     )
-                }
-            }
 
-            emit(
-                BatchSyncProgress(
-                    percentage = 100,
-                    lastSyncedHeight = getLastScannedHeight(repository),
-                    result = BlockProcessingResult.Success
-                )
-            )
+                    Twig.debug { "All sync stages done for the batch: ${deleteResult.batch}" }
+                }.takeWhile { continuousResult ->
+                    continuousResult.stageResult == BlockProcessingResult.Success
+                }.collect()
+            }
         }
 
         private fun getBatchedBlockList(
             syncRange: ClosedRange<BlockHeight>,
             network: ZcashNetwork
-        ): List<Batch> {
+        ): List<BlockBatch> {
             val missingBlockCount = syncRange.endInclusive.value - syncRange.start.value + 1
             val batchCount = (
                 missingBlockCount / SYNC_BATCH_SIZE +
@@ -831,7 +868,7 @@ class CompactBlockProcessor internal constructor(
             }
 
             var start = syncRange.start
-            return mutableListOf<Batch>().apply {
+            return buildList {
                 for (index in 1..batchCount) {
                     val end = BlockHeight.new(
                         network,
@@ -841,7 +878,7 @@ class CompactBlockProcessor internal constructor(
                         )
                     ) // subtract 1 on the first value because the range is inclusive
 
-                    add(Batch(index, start..end))
+                    add(BlockBatch(index, start..end))
                     start = end + 1
                 }
             }
@@ -857,9 +894,9 @@ class CompactBlockProcessor internal constructor(
         @Suppress("MagicNumber")
         internal suspend fun downloadBatchOfBlocks(
             downloader: CompactBlockDownloader,
-            batch: Batch
+            batch: BlockBatch
         ): BlockProcessingResult {
-            var downloadedCount = 0
+            var downloadedBlocks = listOf<JniBlockMeta>()
             retryUpTo(RETRIES, { CompactBlockProcessorException.FailedDownload(it) }) { failedAttempts ->
                 if (failedAttempts == 0) {
                     Twig.verbose { "Starting to download batch $batch" }
@@ -867,19 +904,19 @@ class CompactBlockProcessor internal constructor(
                     Twig.verbose { "Retrying to download batch $batch after $failedAttempts failure(s)..." }
                 }
 
-                downloadedCount = downloader.downloadBlockRange(batch.range)
+                downloadedBlocks = downloader.downloadBlockRange(batch.range)
             }
-            Twig.verbose { "Successfully downloaded batch: $batch of $downloadedCount blocks" }
+            Twig.verbose { "Successfully downloaded batch: $batch of $downloadedBlocks blocks" }
 
-            return if (downloadedCount > 0) {
-                BlockProcessingResult.Success
+            return if (downloadedBlocks.isNotEmpty()) {
+                BlockProcessingResult.DownloadSuccess(downloadedBlocks)
             } else {
-                BlockProcessingResult.FailedDownloadingBlocks(batch.range.start)
+                BlockProcessingResult.FailedDownloadBlocks(batch.range.start)
             }
         }
 
         @VisibleForTesting
-        internal suspend fun validateBatchOfBlocks(batch: Batch, backend: Backend): BlockProcessingResult {
+        internal suspend fun validateBatchOfBlocks(batch: BlockBatch, backend: Backend): BlockProcessingResult {
             Twig.verbose { "Starting to validate batch $batch" }
 
             val result = backend.validateCombinedChainOrErrorBlockHeight(batch.range.length())
@@ -888,31 +925,51 @@ class CompactBlockProcessor internal constructor(
                 Twig.verbose { "Successfully validated batch $batch" }
                 BlockProcessingResult.Success
             } else {
-                BlockProcessingResult.FailedValidationBlocks(result)
+                BlockProcessingResult.FailedValidateBlocks(result)
             }
         }
 
         @VisibleForTesting
-        @Suppress("MagicNumber")
-        internal suspend fun scanBatchOfBlocks(batch: Batch, backend: Backend): BlockProcessingResult {
+        internal suspend fun scanBatchOfBlocks(batch: BlockBatch, backend: Backend): BlockProcessingResult {
             val scanResult = backend.scanBlocks(batch.range.length())
             return if (scanResult) {
                 Twig.verbose { "Successfully scanned batch $batch" }
                 BlockProcessingResult.Success
             } else {
-                BlockProcessingResult.FailedScanningBlocks(batch.range.start)
+                BlockProcessingResult.FailedScanBlocks(batch.range.start)
             }
         }
 
         @VisibleForTesting
-        internal suspend fun deleteAllBlockFiles(downloader: CompactBlockDownloader): BlockProcessingResult {
-            Twig.verbose { "Starting delete all temporary block files now" }
-            return if (downloader.compactBlockRepository.deleteCompactBlockFiles()) {
+        internal suspend fun deleteAllBlockFiles(
+            downloader: CompactBlockDownloader,
+            lastKnownHeight: BlockHeight
+        ): BlockProcessingResult {
+            Twig.verbose { "Starting to delete all temporary block files" }
+            return if (downloader.compactBlockRepository.deleteAllCompactBlockFiles()) {
                 Twig.verbose { "Successfully deleted all temporary block files" }
                 BlockProcessingResult.Success
             } else {
-                BlockProcessingResult.FailedDeleteBlocks
+                BlockProcessingResult.FailedDeleteBlocks(lastKnownHeight)
             }
+        }
+
+        @VisibleForTesting
+        internal suspend fun deleteFilesOfBatchOfBlocks(
+            batch: BlockBatch,
+            downloader: CompactBlockDownloader
+        ): BlockProcessingResult {
+            Twig.verbose { "Starting to delete temporary block files from batch: $batch" }
+
+            return batch.blocks?.let { blocks ->
+                val deleted = downloader.compactBlockRepository.deleteCompactBlockFiles(blocks)
+                if (deleted) {
+                    Twig.verbose { "Successfully deleted all temporary batched block files" }
+                    BlockProcessingResult.Success
+                } else {
+                    BlockProcessingResult.FailedDeleteBlocks(batch.range.start)
+                }
+            } ?: BlockProcessingResult.Success
         }
 
         /**
@@ -979,7 +1036,7 @@ class CompactBlockProcessor internal constructor(
      * wanted to sync. In most cases, it will be an invalid range because we'd like to sync blocks
      * that we don't yet have.
      */
-    private suspend fun updateProgress(
+    private fun updateProgress(
         networkBlockHeight: BlockHeight? = _processorInfo.value.networkBlockHeight,
         lastSyncedHeight: BlockHeight? = _processorInfo.value.lastSyncedHeight,
         lastSyncRange: ClosedRange<BlockHeight>? = _processorInfo.value.lastSyncRange,
@@ -1086,7 +1143,7 @@ class CompactBlockProcessor internal constructor(
                         lastSyncRange = (targetHeight + 1)..currentNetworkBlockHeight
                     )
                 }
-                _progress.value = 0
+                _progress.value = PercentDecimal.ZERO_PERCENT
             } else {
                 if (null == currentNetworkBlockHeight) {
                     updateProgress(
@@ -1100,7 +1157,7 @@ class CompactBlockProcessor internal constructor(
                     )
                 }
 
-                _progress.value = 0
+                _progress.value = PercentDecimal.ZERO_PERCENT
 
                 if (null != lastSyncedHeight) {
                     val range = (targetHeight + 1)..lastSyncedHeight
@@ -1259,7 +1316,7 @@ class CompactBlockProcessor internal constructor(
         interface ISyncing
 
         /**
-         * [State] for common syncing phase. It starts with downloading new blocks, then validating these blocks
+         * [State] for common syncing stage. It starts with downloading new blocks, then validating these blocks
          * and scanning them at the end.
          *
          * **Downloading** is when the wallet is actively downloading compact blocks because the latest
@@ -1275,7 +1332,7 @@ class CompactBlockProcessor internal constructor(
         object Syncing : IConnected, ISyncing, State()
 
         /**
-         * [State] for when we are done with syncing the blocks, for now, i.e. all necessary phases done (download,
+         * [State] for when we are done with syncing the blocks, for now, i.e. all necessary stages done (download,
          * validate, and scan).
          */
         class Synced(val syncedRange: ClosedRange<BlockHeight>?) : IConnected, ISyncing, State()
@@ -1306,15 +1363,21 @@ class CompactBlockProcessor internal constructor(
         object Initialized : State()
     }
 
-    internal data class Batch(
-        val index: Long,
-        val range: ClosedRange<BlockHeight>
-    )
-
+    /**
+     * Progress model class for sharing the whole batch sync progress out of the sync process.
+     */
     internal data class BatchSyncProgress(
-        val percentage: Int,
+        val percentage: PercentDecimal,
         val lastSyncedHeight: BlockHeight?,
         val result: BlockProcessingResult
+    )
+
+    /**
+     * Progress model class for sharing particular sync stage result internally in the sync process.
+     */
+    private data class SyncStageResult(
+        val batch: BlockBatch,
+        val stageResult: BlockProcessingResult
     )
 
     /**

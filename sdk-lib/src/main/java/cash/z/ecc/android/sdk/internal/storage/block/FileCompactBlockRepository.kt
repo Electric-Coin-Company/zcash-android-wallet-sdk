@@ -33,8 +33,8 @@ internal class FileCompactBlockRepository(
 
     override suspend fun findCompactBlock(height: BlockHeight) = rustBackend.findBlockMetadata(height)
 
-    override suspend fun write(blocks: Flow<CompactBlockUnsafe>): Int {
-        var totalBlocksWritten = 0
+    override suspend fun write(blocks: Flow<CompactBlockUnsafe>): List<JniBlockMeta> {
+        val processingBlocks = mutableListOf<JniBlockMeta>()
         val metaDataBuffer = mutableListOf<JniBlockMeta>()
         blocks.collect { block ->
             val tmpFile = block.createTemporaryFile(blocksDirectory)
@@ -49,32 +49,30 @@ internal class FileCompactBlockRepository(
             }
 
             if (metaDataBuffer.isBufferFull()) {
-                val blocksWritten = writeAndClearBuffer(metaDataBuffer)
-                totalBlocksWritten += blocksWritten
+                processingBlocks.addAll(metaDataBuffer)
+                writeAndClearBuffer(metaDataBuffer)
             }
         }
 
         if (metaDataBuffer.isNotEmpty()) {
-            val blocksWritten = writeAndClearBuffer(metaDataBuffer)
-            totalBlocksWritten += blocksWritten
+            processingBlocks.addAll(metaDataBuffer)
+            writeAndClearBuffer(metaDataBuffer)
         }
 
-        return totalBlocksWritten
+        return processingBlocks
     }
 
     /*
      * Write block metadata to storage when the buffer is full or when we reached the current range end.
      */
-    private suspend fun writeAndClearBuffer(metaDataBuffer: MutableList<JniBlockMeta>): Int {
+    private suspend fun writeAndClearBuffer(metaDataBuffer: MutableList<JniBlockMeta>) {
         rustBackend.writeBlockMetadata(metaDataBuffer)
-        val blocksWrittenCount = metaDataBuffer.size
         metaDataBuffer.clear()
-        return blocksWrittenCount
     }
 
     override suspend fun rewindTo(height: BlockHeight) = rustBackend.rewindBlockMetadataToHeight(height)
 
-    override suspend fun deleteCompactBlockFiles(): Boolean {
+    override suspend fun deleteAllCompactBlockFiles(): Boolean {
         Twig.verbose { "Deleting all blocks from directory ${blocksDirectory.path}" }
 
         if (blocksDirectory.existsSuspend()) {
@@ -85,6 +83,24 @@ internal class FileCompactBlockRepository(
                     it.deleteSuspend()
                 }
                 if (!result) {
+                    return false
+                }
+            }
+        }
+        return true
+    }
+
+    override suspend fun deleteCompactBlockFiles(blocks: List<JniBlockMeta>): Boolean {
+        Twig.verbose { "Deleting ${blocks.size} blocks from directory ${blocksDirectory.path}" }
+
+        if (blocksDirectory.existsSuspend()) {
+            blocks.forEach { block ->
+                val blockFile = block.getFile(blocksDirectory)
+                if (!blockFile.existsSuspend()) {
+                    return@forEach // aka continue
+                }
+                val deleted = blockFile.deleteSuspend()
+                if (!deleted) {
                     return false
                 }
             }
@@ -143,6 +159,16 @@ private fun List<JniBlockMeta>.isBufferFull(): Boolean {
 
 private fun CompactBlockUnsafe.toJniMetaData(): JniBlockMeta {
     return JniBlockMeta.new(this)
+}
+
+private fun JniBlockMeta.createFilename(): String {
+    val hashHex = hash.toHexReversed()
+    return "$height-$hashHex${FileCompactBlockRepository.BLOCK_FILENAME_SUFFIX}"
+}
+
+@VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+private fun JniBlockMeta.getFile(blocksDirectory: File): File {
+    return File(blocksDirectory, createFilename())
 }
 
 private fun CompactBlockUnsafe.createFilename(): String {

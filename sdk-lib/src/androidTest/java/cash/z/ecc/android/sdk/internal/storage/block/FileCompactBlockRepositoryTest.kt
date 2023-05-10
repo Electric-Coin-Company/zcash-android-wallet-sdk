@@ -108,9 +108,9 @@ class FileCompactBlockRepositoryTest {
         assertTrue { rustBackend.metadata.isEmpty() }
 
         val blocks = ListOfCompactBlocksFixture.newFlow()
-        val persistedCount = blockRepository.write(blocks)
+        val persistedBlocks = blockRepository.write(blocks)
 
-        assertEquals(blocks.count(), persistedCount)
+        assertEquals(blocks.count(), persistedBlocks.size)
         assertEquals(blocks.count(), rustBackend.metadata.size)
     }
 
@@ -128,9 +128,9 @@ class FileCompactBlockRepositoryTest {
             assertTrue { reduced.count() < FileCompactBlockRepository.BLOCKS_METADATA_BUFFER_SIZE }
         }
 
-        val persistedCount = blockRepository.write(reducedBlocksList)
+        val persistedBlocks = blockRepository.write(reducedBlocksList)
 
-        assertEquals(reducedBlocksList.count(), persistedCount)
+        assertEquals(reducedBlocksList.count(), persistedBlocks.size)
         assertEquals(reducedBlocksList.count(), rustBackend.metadata.size)
     }
 
@@ -146,10 +146,10 @@ class FileCompactBlockRepositoryTest {
 
         val blocks = ListOfCompactBlocksFixture.newFlow()
 
-        val persistedCount = blockRepository.write(blocks)
+        val persistedBlocks = blockRepository.write(blocks)
 
         assertTrue { rootBlocksDirectory.exists() }
-        assertEquals(blocks.count(), persistedCount)
+        assertEquals(blocks.count(), persistedBlocks.size)
         assertEquals(blocks.count(), rootBlocksDirectory.list()!!.size)
     }
 
@@ -165,7 +165,7 @@ class FileCompactBlockRepositoryTest {
         val testedBlocksRange = ListOfCompactBlocksFixture.DEFAULT_FILE_BLOCK_RANGE
         val blocks = ListOfCompactBlocksFixture.newFlow(testedBlocksRange)
 
-        val persistedCount = blockRepository.write(blocks)
+        val persistedBlocks = blockRepository.write(blocks)
 
         parentDirectory.also {
             assertTrue(it.existsSuspend())
@@ -174,10 +174,10 @@ class FileCompactBlockRepositoryTest {
 
         blocksDirectory.also {
             assertTrue(it.existsSuspend())
-            assertEquals(blocks.count(), persistedCount)
+            assertEquals(blocks.count(), persistedBlocks.size)
         }
 
-        blockRepository.deleteCompactBlockFiles()
+        blockRepository.deleteAllCompactBlockFiles()
 
         parentDirectory.also {
             assertTrue(it.existsSuspend())

@@ -7,6 +7,7 @@ import cash.z.ecc.android.sdk.internal.SaplingParamTool
 import cash.z.ecc.android.sdk.internal.db.DatabaseCoordinator
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
+import cash.z.ecc.android.sdk.model.PercentDecimal
 import cash.z.ecc.android.sdk.model.TransactionOverview
 import cash.z.ecc.android.sdk.model.TransactionRecipient
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
@@ -41,10 +42,11 @@ interface Synchronizer {
 
     /**
      * A flow of progress values, typically corresponding to this Synchronizer downloading blocks.
-     * Typically, any non- zero value below 100 indicates that progress indicators can be shown and
-     * a value of 100 signals that progress is complete and any progress indicators can be hidden.
+     * Typically, any non-zero value below `PercentDecimal.ONE_HUNDRED_PERCENT` indicates that progress indicators can
+     * be shown and a value of `PercentDecimal.ONE_HUNDRED_PERCENT` signals that progress is complete and any progress
+     * indicators can be hidden.
      */
-    val progress: Flow<Int>
+    val progress: Flow<PercentDecimal>
 
     /**
      * A flow of processor details, updated every time blocks are processed to include the latest

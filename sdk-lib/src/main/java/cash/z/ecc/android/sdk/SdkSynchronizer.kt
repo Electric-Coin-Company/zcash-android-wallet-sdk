@@ -37,6 +37,7 @@ import cash.z.ecc.android.sdk.internal.transaction.TransactionEncoderImpl
 import cash.z.ecc.android.sdk.jni.RustBackend
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
+import cash.z.ecc.android.sdk.model.PercentDecimal
 import cash.z.ecc.android.sdk.model.TransactionOverview
 import cash.z.ecc.android.sdk.model.TransactionRecipient
 import cash.z.ecc.android.sdk.model.UnifiedFullViewingKey
@@ -193,12 +194,12 @@ class SdkSynchronizer private constructor(
     override val status = _status.asStateFlow()
 
     /**
-     * Indicates the download progress of the Synchronizer. When progress reaches 100, that
-     * signals that the Synchronizer is in sync with the network. Balances should be considered
+     * Indicates the download progress of the Synchronizer. When progress reaches `PercentDecimal.ONE_HUNDRED_PERCENT`,
+     * that signals that the Synchronizer is in sync with the network. Balances should be considered
      * inaccurate and outbound transactions should be prevented until this sync is complete. It is
      * a simplified version of [processorInfo].
      */
-    override val progress: Flow<Int> = processor.progress
+    override val progress: Flow<PercentDecimal> = processor.progress
 
     /**
      * Indicates the latest information about the blocks that have been processed by the SDK. This
@@ -479,18 +480,6 @@ class SdkSynchronizer private constructor(
         val shouldRefresh = !scannedRange.isNullOrEmpty() || elapsedMillis > (ZcashSdk.POLL_INTERVAL * 5)
         val reason = if (scannedRange.isNullOrEmpty()) "it's been a while" else "new blocks were scanned"
 
-        // TRICKY:
-        // Keep an eye on this section because there is a potential for concurrent DB
-        // modification. A change in transactions means a change in balance. Calculating the
-        // balance requires touching transactions. If both are done in separate threads, the
-        // database can have issues. On Android, this would manifest as a false positive for a
-        // "malformed database" exception when the database is not actually corrupt but rather
-        // locked (i.e. it's a bad error message).
-        // The balance refresh is done first because it is coroutine-based and will fully
-        // complete by the time the function returns.
-        // Ultimately, refreshing the transactions just invalidates views of data that
-        // already exists and it completes on another thread so it should come after the
-        // balance refresh is complete.
         if (shouldRefresh) {
             Twig.debug { "Triggering utxo refresh since $reason!" }
             refreshUtxos()

@@ -19,6 +19,7 @@ import cash.z.ecc.android.sdk.demoapp.util.mainActivity
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
+import cash.z.ecc.android.sdk.model.PercentDecimal
 import cash.z.ecc.android.sdk.model.TransactionOverview
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import kotlinx.coroutines.Dispatchers
@@ -202,8 +203,8 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
     }
 
     @Suppress("MagicNumber")
-    private fun onProgress(i: Int) {
-        if (i < 100) binding.textStatus.text = "Syncing blocks...$i%"
+    private fun onProgress(percent: PercentDecimal) {
+        if (percent.isLessThanHundredPercent()) binding.textStatus.text = "Syncing blocks...${percent.toPercentage()}%"
     }
 
     private fun onStatus(status: Synchronizer.Status) {
