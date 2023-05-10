@@ -1051,18 +1051,20 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_validateCom
     _: JClass<'_>,
     db_cache: JString<'_>,
     db_data: JString<'_>,
+    limit: jlong,
     network_id: jint,
 ) -> jlong {
     let res = panic::catch_unwind(|| {
         let network = parse_network(network_id as u32)?;
         let block_db = block_db(&env, db_cache)?;
         let db_data = wallet_db(&env, network, db_data)?;
+        let validate_limit = u32::try_from(limit).ok();
 
         let validate_from = (&db_data)
             .get_max_height_hash()
             .map_err(|e| format_err!("Error while validating chain: {}", e))?;
 
-        let val_res = validate_chain(&block_db, validate_from, None);
+        let val_res = validate_chain(&block_db, validate_from, validate_limit);
 
         if let Err(e) = val_res {
             match e {
@@ -1146,7 +1148,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_jni_RustBackend_scanBlocks(
     _: JClass<'_>,
     db_cache: JString<'_>,
     db_data: JString<'_>,
-    limit: jint,
+    limit: jlong,
     network_id: jint,
 ) -> jboolean {
     let res = panic::catch_unwind(|| {

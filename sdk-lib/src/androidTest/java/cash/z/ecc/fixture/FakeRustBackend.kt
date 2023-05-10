@@ -22,7 +22,7 @@ internal class FakeRustBackend(
     }
 
     override suspend fun getLatestHeight(): Long = metadata.maxOf { it.height }
-    override suspend fun validateCombinedChainOrErrorHeight(): Long? {
+    override suspend fun validateCombinedChainOrErrorHeight(limit: Long?): Long? {
         TODO("Not yet implemented")
     }
 
@@ -126,7 +126,7 @@ internal class FakeRustBackend(
         TODO("Not yet implemented")
     }
 
-    override suspend fun scanBlocks(limit: Int): Boolean =
+    override suspend fun scanBlocks(limit: Long?): Boolean =
         error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 
     override suspend fun putUtxo(

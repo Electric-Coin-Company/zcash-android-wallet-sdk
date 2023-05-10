@@ -882,8 +882,7 @@ class CompactBlockProcessor internal constructor(
         internal suspend fun validateBatchOfBlocks(batch: Batch, backend: Backend): BlockProcessingResult {
             Twig.verbose { "Starting to validate batch $batch" }
 
-            // Rust layer does not provide a limit (height) for validating for now, so we validate all the chain
-            val result = backend.validateCombinedChainOrErrorBlockHeight()
+            val result = backend.validateCombinedChainOrErrorBlockHeight(batch.range.length())
 
             return if (null == result) {
                 Twig.verbose { "Successfully validated batch $batch" }
@@ -896,7 +895,7 @@ class CompactBlockProcessor internal constructor(
         @VisibleForTesting
         @Suppress("MagicNumber")
         internal suspend fun scanBatchOfBlocks(batch: Batch, backend: Backend): BlockProcessingResult {
-            val scanResult = backend.scanBlocks(batch.range.length().toInt())
+            val scanResult = backend.scanBlocks(batch.range.length())
             return if (scanResult) {
                 Twig.verbose { "Successfully scanned batch $batch" }
                 BlockProcessingResult.Success

@@ -83,7 +83,7 @@ internal interface Backend {
 
     suspend fun rewindToHeight(height: Long): Boolean
 
-    suspend fun scanBlocks(limit: Int = -1): Boolean
+    suspend fun scanBlocks(limit: Long?): Boolean
 
     suspend fun writeBlockMetadata(blockMetadata: List<JniBlockMeta>): Boolean
 
@@ -97,9 +97,10 @@ internal interface Backend {
     suspend fun rewindBlockMetadataToHeight(height: Long)
 
     /**
+     * @param limit The limit provides an efficient way how to restrict the portion of blocks, which will be validated.
      * @return Null if successful. If an error occurs, the height will be the blockheight where the error was detected.
      */
-    suspend fun validateCombinedChainOrErrorHeight(): Long?
+    suspend fun validateCombinedChainOrErrorHeight(limit: Long?): Long?
 
     suspend fun getVerifiedTransparentBalance(address: String): Long
     suspend fun getTotalTransparentBalance(address: String): Long
