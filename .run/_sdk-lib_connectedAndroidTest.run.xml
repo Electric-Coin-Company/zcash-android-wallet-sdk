@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="demo-app-benchmark-test:connectedBenchmarkAndroidTest" type="AndroidTestRunConfigurationType" factoryName="Android Instrumented Tests">
-    <module name="zcash-android-sdk.demo-app-benchmark-test.main" />
+  <configuration default="false" name=":sdk-lib:connectedAndroidTest" type="AndroidTestRunConfigurationType" factoryName="Android Instrumented Tests">
+    <module name="zcash-android-sdk.sdk-lib.androidTest" />
     <option name="TESTING_TYPE" value="0" />
     <option name="METHOD_NAME" value="" />
     <option name="CLASS_NAME" value="" />
@@ -53,7 +53,7 @@
       <option name="ADVANCED_PROFILING_ENABLED" value="false" />
       <option name="STARTUP_PROFILING_ENABLED" value="false" />
       <option name="STARTUP_CPU_PROFILING_ENABLED" value="false" />
-      <option name="STARTUP_CPU_PROFILING_CONFIGURATION_NAME" value="Java/Kotlin Method Sample (legacy)" />
+      <option name="STARTUP_CPU_PROFILING_CONFIGURATION_NAME" value="Callstack Sample" />
       <option name="STARTUP_NATIVE_MEMORY_PROFILING_ENABLED" value="false" />
       <option name="NATIVE_MEMORY_SAMPLE_RATE_BYTES" value="2048" />
     </Profilers>
