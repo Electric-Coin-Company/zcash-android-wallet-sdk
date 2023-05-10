@@ -386,6 +386,7 @@ class SdkSynchronizer private constructor(
         // transparent transactions appearance faster
         launch(CoroutineExceptionHandler(::onCriticalError)) {
             refreshUtxos()
+            refreshTransparentBalance()
         }
 
         launch(CoroutineExceptionHandler(::onCriticalError)) {
