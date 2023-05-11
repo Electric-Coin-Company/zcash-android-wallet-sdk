@@ -645,7 +645,7 @@ class CompactBlockProcessor internal constructor(
                                 Twig.debug { "All UTXOs from height $startHeight fetched successfully" }
                             }
                         }.collect { utxo ->
-                            Twig.debug { "Fetched UTXO with txid: ${utxo.txid}" }
+                            Twig.verbose { "Fetched UTXO at height: ${utxo.height}" }
                             val processResult = processUtxoResult(utxo)
                             if (processResult) {
                                 count++
