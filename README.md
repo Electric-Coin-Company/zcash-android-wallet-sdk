@@ -36,9 +36,7 @@ If you're a developer consuming this SDK in your own app, see [Consumers.md](doc
 
 A primitive example to exercise the SDK exists in this repo, under [Demo App](demo-app).
 
-There are also more comprehensive sample walletes:
- * [ECC Sample Wallet](https://github.com/zcash/zcash-android-wallet) — A basic sample application.
- * [Secant Sample Wallet](https://github.com/zcash/secant-android-wallet) — A more modern codebase written in Compose.  This repository is a work-in-progress and is not fully functional yet as of August 2022, although it will be our primary sample application in the future.
+[Secant Sample Wallet](https://github.com/zcash/secant-android-wallet) is a more comprehensive sample application.
 
 # Maintainers and Contributors
 If you're building the SDK from source or modifying the SDK:
