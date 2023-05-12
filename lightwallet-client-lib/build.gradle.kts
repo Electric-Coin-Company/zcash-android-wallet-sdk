@@ -115,7 +115,8 @@ dependencies {
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.android)
 
-    // TODO [#673]: Make `implementation` https://github.com/zcash/zcash-android-wallet-sdk/issues/673
+    // TODO [#1030]: Make sdk-lib gRPC objects free (and then make this `implementation`)
+    // TODO [#1030]: https://github.com/zcash/zcash-android-wallet-sdk/issues/1030
     api(libs.bundles.grpc)
 
     // Tests
