@@ -1,30 +1,19 @@
 # Change Log
-
-# Upcoming 
- - The SDK's internals for connecting with librustzcash have been refactored to a separate Gradle module `backend-lib` (and therefore a separate artifact) which is a transitive dependency of the Zcash Android SDK
- - `DerivationTool` is now an interface, rather than an `object`, which makes it easier to inject alternative implementations into tests.  To adapt to the new API, replace calls to `DerivationTool.methodName()` with `DerivationTool.DEFAULT.methodName()`.  The companion property `DEFAULT` provides the 
- - `DerivationTool.deriveUnifiedFullViewingKeys()` no longer has a default argument for `numberOfAccounts`.  Clients should now pass `DerivationTool.DEFAULT_NUMBER_OF_ACCOUNTS` as the value. Note that the SDK does not currently have proper support for multiple accounts.
  
-
 ## Unreleased
-- The SDK's `CompactBlockProcessor` switched from processing **all blocks in one run** mechanism to **batched blocks** 
-processing. This was necessary for the sync state's parallelization. Example of syncing of the latest 
-  100 blocks:
-  - Previously: _Download 100 blocks -> Validate 100 blocks -> Scan 100 blocks -> SYNCED_
-  - Now: _10x (Download 10 blocks -> Validate 10 blocks -> Scan 10 blocks) -> SYNCED_
-- `Synchronizer.progress` now returns `Flow<PercentDecimal>` instead of `Flow<Int>`. PercentDecimal is a type-safe 
-  model.
-  Use `PercentDecimal.toPercentage()` to get a number within 0-100% scale.
-- `Synchronizer.status` now provides a new `SYNCING` state, which covers all three previous `DOWNLOADING`, 
-  `VALIDATING`, and `SCANNING` states, which were eliminated in favor of `SYNCING` state.
-
-## 1.17.0-beta01
-- Synchronizer APIs for listing sent and received transactions have been removed.
-- Synchronizer APIs for listing pending transactions have been removed, along with the `PendingTransaction` object.
-- `Synchronizer.clearedTransactions` has been renamed to `Synchronizer.transactions` and includes sent, received, and pending transactions.
+- Transparent fund balances are now displayed almost immediately
+- Synchronization of shielded balances and transaction history is about 30% faster
+- Disk space usage is reduced by about 90%
+- `Synchronizer.status` has been simplified by combining `DOWNLOADING`, `VALIDATING`, and `SCANNING` states into a single `SYNCING` state.
+- `Synchronizer.progress` now returns `Flow<PercentDecimal>` instead of `Flow<Int>`. PercentDecimal is a type-safe model. Use `PercentDecimal.toPercentage()` to get a number within 0-100% scale.
+- `Synchronizer.clearedTransactions` has been renamed to `Synchronizer.transactions` and includes sent, received, and pending transactions.  Synchronizer APIs for listing sent, received, and pending transactions have been removed.  Clients can determine whether a transaction is sent, received, or pending by filtering the `TransactionOverview` objects returned by `Synchronizer.transactions`
 - `Synchronizer.send()` and `shieldFunds()` are now `suspend` functions with `Long` return values representing the ID of the newly created transaction.  Errors are reported by thrown exceptions.
+ - `DerivationTool` is now an interface, rather than an `object`, which makes it easier to inject alternative implementations into tests.  To adapt to the new API, replace calls to `DerivationTool.methodName()` with `DerivationTool.DEFAULT.methodName()`.  The companion property `DEFAULT` provides a default implementation
+ - `DerivationTool.deriveUnifiedFullViewingKeys()` no longer has a default argument for `numberOfAccounts`.  Clients should now pass `DerivationTool.DEFAULT_NUMBER_OF_ACCOUNTS` as the value. Note that the SDK does not currently have proper support for multiple accounts.
+ - The SDK's internals for connecting with librustzcash have been refactored to a separate Gradle module `backend-lib` (and therefore a separate artifact) which is a transitive dependency of the Zcash Android SDK.  SDK consumers that use Gradle dependency locks may notice this difference, but otherwise it should be mostly an invisible change.
 
 ## 1.16.0-beta01
+(This version was only deployed as a snapshot and not released on Maven Central)
 ### Changed
  - The minimum supported version of Android is now API level 27.
 
@@ -32,7 +21,7 @@ processing. This was necessary for the sync state's parallelization. Example of 
 ### Changed
 - A new package `sdk-incubator-lib` is now available as a public API.  This package contains experimental APIs that may be promoted to the SDK in the future.  The APIs in this package are not guaranteed to be stable, and may change at any time.
 - `Synchronizer.refreshUtxos` now takes `Account` type as first parameter instead of transparent address of type 
-    `String`, and thus it downloads all UTXOs for the given account addresses.
+    `String`, and thus it downloads all UTXOs for the given account addresses. The Account object provides a default `0` index Account with `Account.DEFAULT`.
 
 ## 1.14.0-beta01
 ### Changed
@@ -46,6 +35,7 @@ processing. This was necessary for the sync state's parallelization. Example of 
     - The new networking module now provides a `LightWalletClient` for asynchronous calls.
     - Most unary calls respond with the new `Response` class and its subclasses. Streaming calls will be updated 
       with the Response class later.
+    - SDK clients should avoid using generated GRPC objects, as these are an internal implementation detail and are in process of being removed from the public API.  Any clients using GRPC objects will find these have been repackaged from `cash.z.wallet.sdk.rpc` to `cash.z.wallet.sdk.internal.rpc` to signal they are not a public API.
 
 ## 1.12.0-beta01
 ### Changed

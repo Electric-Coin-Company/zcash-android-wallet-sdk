@@ -1,27 +1,7 @@
 Troubleshooting Migrations
 ==========
 
-Migration to Version 1.17
----------------------------------
-Synchronizer APIs for listing sent and received transactions have been removed.  Clients should use `Synchronizer.transactions`, filtering on the field `TransactionOverview.isSentTransaction`.
-
-Synchronizer APIs for pending transactions have been removed.  Clients should use `Synchronizer.transactions`, filtering on the field `TransactionOverview.transactionState`
-
-The Synchronizer APIs for sending transactions (`send()` and `shieldFunds()`) are now suspend functions that return `Long` which contains the ID of the newly created transaction.  To monitor for changes to pending transactions, observe `Synchronizer.transactions`.  If a failure occurs, `send()` and `shieldFunds()` throw exceptions.
-
-Migration to Version 1.15
----------------------------------
-The updated `Synchronizer.refreshUtxos` is now supposed to be called with `Account` parameter instead of `String` address parameter. The Account object provides a default `0` index Account with `Account.DEFAULT`.    
-
-Migration to Version 1.13
----------------------------------
-Update usages of `z.cash.ecc.android.sdk.model.LightWalletEndpoint` to `co.electriccoin.lightwallet.client.model.LightWalletEndpoint`.
-
-SDK clients should avoid using generated GRPC objects, as these are an internal implementation detail and are in process of being removed from the public API.  Any clients using GRPC objects will find these have been repackaged from `cash.z.wallet.sdk.rpc` to `cash.z.wallet.sdk.internal.rpc` to signal they are not a public API.
-
-Migration to Version 1.12
----------------------------------
-`TransactionOverview`, `Transaction.Sent`, and `Transaction.Received` have been updated to reflect that `minedHeight` is nullable.
+Note: Going forward, migrations will be incorporated into the CHANGELOG.md.
 
 Migration to Version 1.11
 ---------------------------------
