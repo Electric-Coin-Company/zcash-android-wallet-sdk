@@ -357,26 +357,26 @@ interface Synchronizer {
         DISCONNECTED,
 
         /**
-         * Indicates that the Synchronizer is actively syncing new blocks. It starts with downloading
-         * new blocks, then validating these blocks and scanning them at the end.
+         * Indicates that the Synchronizer is actively syncing new blocks. It consists of these stages downloading
+         * new blocks, validating these blocks, then scanning them, deleting the temporary persisted block files, and
+         * enhancing transaction details at the end.
          *
-         * In **Downloading** sub-phase the Synchronizer is actively downloading new blocks from the
+         * In **Downloading** stage the Synchronizer is actively downloading new blocks from the
          * server.
          *
-         * In **Validating** sub-phase the Synchronizer is actively validating new blocks that were downloaded
+         * In **Validating** stage the Synchronizer is actively validating new blocks that were downloaded
          * from the server. Blocks need to be verified before they are scanned. This confirms that
          * each block is chain-sequential, thereby detecting missing blocks and reorgs.
          *
-         * In **Scanning** sub-phase Synchronizer is actively decrypting new blocks that were downloaded
+         * In **Scanning** stage Synchronizer is actively decrypting new blocks that were downloaded
          * from the server.
+         *
+         * In **Deleting** stage are all temporary persisted block files removed from the persistence.
+         *
+         * In **Enhancing** stage is the Synchronizer actively enhancing newly scanned blocks with additional
+         * transaction details, fetched from the server.
          */
         SYNCING,
-
-        /**
-         * Indicates that this Synchronizer is actively enhancing newly scanned blocks with
-         * additional transaction details, fetched from the server.
-         */
-        ENHANCING,
 
         /**
          * Indicates that this Synchronizer is fully up to date and ready for all wallet functions.

@@ -225,7 +225,10 @@ class CompactBlockProcessor internal constructor(
                         delay(napTime)
                     }
 
-                    BlockProcessingResult.NoBlocksToProcess, BlockProcessingResult.FailedEnhance -> {
+                    BlockProcessingResult.NoBlocksToProcess,
+                    // Fixme: We should possibly treat this error differently, as it's critical now
+                    // Fixme: We newly have a throwable here as well
+                    is BlockProcessingResult.FailedEnhance -> {
                         val noWorkDone = _processorInfo.value.lastSyncRange?.isEmpty() ?: true
                         val summary = if (noWorkDone) {
                             "Nothing to process: no new blocks to sync"
@@ -236,7 +239,7 @@ class CompactBlockProcessor internal constructor(
                         val napTime = calculatePollInterval()
                         Twig.debug {
                             "$summary${
-                                if (result == BlockProcessingResult.FailedEnhance) {
+                                if (result is BlockProcessingResult.FailedEnhance) {
                                     " (but there were" +
                                         " enhancement errors! We ignore those, for now. Memos in this block range are" +
                                         " probably missing! This will be improved in a future release.)"
@@ -278,6 +281,10 @@ class CompactBlockProcessor internal constructor(
 
                     is BlockProcessingResult.DownloadSuccess -> {
                         // Do nothing. Syncing of blocks is in progress.
+                    }
+
+                    BlockProcessingResult.UpdateBirthday -> {
+                        // Do nothing. The birthday was just updated.
                     }
                 }
             }
@@ -356,7 +363,7 @@ class CompactBlockProcessor internal constructor(
     ): BlockProcessingResult {
         _state.value = State.Syncing
 
-        // Sync
+        // Syncing last blocks and enhancing transactions
         var syncResult: BlockProcessingResult = BlockProcessingResult.Success
         syncNewBlocks(
             backend = backend,
@@ -369,12 +376,14 @@ class CompactBlockProcessor internal constructor(
             _progress.value = syncProgress.percentage
             updateProgress(lastSyncedHeight = syncProgress.lastSyncedHeight)
 
-            // Cancel collecting in case of any unwanted state comes
-            if (syncProgress.result != BlockProcessingResult.Success) {
+            if (syncProgress.result == BlockProcessingResult.UpdateBirthday) {
+                updateBirthdayHeight()
+            } else if (syncProgress.result != BlockProcessingResult.Success) {
                 syncResult = syncProgress.result
                 return@collect
             }
         }
+
         if (syncResult != BlockProcessingResult.Success) {
             // Remove persisted but not validated and scanned blocks in case of any failure
             val lastScannedHeight = getLastScannedHeight(repository)
@@ -387,15 +396,6 @@ class CompactBlockProcessor internal constructor(
             return syncResult
         }
 
-        // Enhance
-        val enhanceResult = enhanceTransactionDetails(syncRange)
-
-        if (enhanceResult != BlockProcessingResult.Success ||
-            enhanceResult != BlockProcessingResult.NoBlocksToProcess
-        ) {
-            return enhanceResult
-        }
-
         return BlockProcessingResult.Success
     }
 
@@ -403,12 +403,13 @@ class CompactBlockProcessor internal constructor(
         object NoBlocksToProcess : BlockProcessingResult()
         object Success : BlockProcessingResult()
         data class DownloadSuccess(val downloadedBlocks: List<JniBlockMeta>?) : BlockProcessingResult()
+        object UpdateBirthday : BlockProcessingResult()
         object Reconnecting : BlockProcessingResult()
         data class FailedDownloadBlocks(val failedAtHeight: BlockHeight) : BlockProcessingResult()
         data class FailedScanBlocks(val failedAtHeight: BlockHeight) : BlockProcessingResult()
         data class FailedValidateBlocks(val failedAtHeight: BlockHeight) : BlockProcessingResult()
         data class FailedDeleteBlocks(val failedAtHeight: BlockHeight) : BlockProcessingResult()
-        object FailedEnhance : BlockProcessingResult()
+        data class FailedEnhance(val error: Throwable) : BlockProcessingResult()
     }
 
     /**
@@ -461,67 +462,6 @@ class CompactBlockProcessor internal constructor(
         )
 
         return true
-    }
-
-    private suspend fun enhanceTransactionDetails(lastScanRange: ClosedRange<BlockHeight>?): BlockProcessingResult {
-        if (lastScanRange == null) {
-            return BlockProcessingResult.NoBlocksToProcess
-        }
-
-        Twig.debug { "Enhancing transaction details for blocks $lastScanRange" }
-        setState(State.Enhancing)
-        @Suppress("TooGenericExceptionCaught")
-        return try {
-            val newTxs = repository.findNewTransactions(lastScanRange)
-            if (newTxs.isEmpty()) {
-                Twig.debug { "no new transactions found in $lastScanRange" }
-            } else {
-                Twig.debug { "enhancing ${newTxs.size} transaction(s)!" }
-                // if the first transaction has been added
-                if (newTxs.size.toLong() == repository.getTransactionCount()) {
-                    Twig.debug { "Encountered the first transaction. This changes the birthday height!" }
-                    updateBirthdayHeight()
-                }
-            }
-
-            newTxs.filter { it.minedHeight != null }.onEach { newTransaction ->
-                enhance(newTransaction)
-            }
-            Twig.debug { "Done enhancing transaction details" }
-            BlockProcessingResult.Success
-        } catch (t: Throwable) {
-            Twig.debug { "Failed to enhance due to: ${t.message} caused by: ${t.cause}" }
-            BlockProcessingResult.FailedEnhance
-        }
-    }
-    // TODO [#683]: we still need a way to identify those transactions that failed to be enhanced
-    // TODO [#683]: https://github.com/zcash/zcash-android-wallet-sdk/issues/683
-
-    private suspend fun enhance(transaction: DbTransactionOverview) {
-        transaction.minedHeight?.let { minedHeight ->
-            enhanceHelper(transaction.id, transaction.rawId.byteArray, minedHeight)
-        }
-    }
-
-    private suspend fun enhanceHelper(id: Long, rawTransactionId: ByteArray, minedHeight: BlockHeight) {
-        Twig.debug { "START: enhancing transaction (id:$id  block:$minedHeight)" }
-
-        when (val response = downloader.fetchTransaction(rawTransactionId)) {
-            is Response.Success -> {
-                runCatching {
-                    Twig.debug { "decrypting and storing transaction (id:$id  block:$minedHeight)" }
-                    backend.decryptAndStoreTransaction(response.result.data)
-                }.onSuccess {
-                    Twig.debug { "DONE: enhancing transaction (id:$id  block:$minedHeight)" }
-                }.onFailure { error ->
-                    onProcessorError(EnhanceTxDecryptError(minedHeight, error))
-                }
-            }
-
-            is Response.Failure -> {
-                onProcessorError(EnhanceTxDownloadError(minedHeight, response.toThrowable()))
-            }
-        }
     }
 
     /**
@@ -725,10 +665,16 @@ class CompactBlockProcessor internal constructor(
 
         /**
          * Default size of batches of blocks to request from the compact block service. Then it's also used as a default
-         * size of batches of blocks to scan via librustzcash. The smaller this number the more granular information can
-         * be provided about scan state. Unfortunately, it may also lead to a lot of overhead during scanning.
+         * size of batches of blocks to validate and scan via librustzcash. For scanning action applies this - the
+         * smaller this number the more granular information can be provided about scan state. Unfortunately, it may
+         * also lead to a lot of overhead during scanning.
          */
         internal const val SYNC_BATCH_SIZE = 10
+
+        /**
+         * Default size of batch of blocks for running the transaction enhancing.
+         */
+        internal const val ENHANCE_BATCH_SIZE = 1000
 
         /**
          * Default number of blocks to rewind when a chain reorg is detected. This should be large enough to recover
@@ -739,7 +685,7 @@ class CompactBlockProcessor internal constructor(
         /**
          * Requests, processes and persists all blocks from the given range.
          *
-         * @param backend the Rust backend component
+         * @param rustBackend the Rust backend component
          * @param downloader the compact block downloader component
          * @param repository the derived data repository component
          * @param network the network in which the sync mechanism operates
@@ -772,6 +718,8 @@ class CompactBlockProcessor internal constructor(
                 Twig.debug { "Syncing blocks in range $syncRange" }
 
                 val batches = getBatchedBlockList(syncRange, network)
+
+                var enhancingRange = syncRange.start..syncRange.start
 
                 batches.asFlow().map {
                     Twig.debug { "Syncing process starts for batch: $it" }
@@ -837,7 +785,7 @@ class CompactBlockProcessor internal constructor(
                             )
                         )
                     }
-                }.onEach { deleteResult ->
+                }.buffer(1).onEach { deleteResult ->
                     Twig.debug { "Deletion stage done with result: $deleteResult" }
 
                     emit(
@@ -848,9 +796,44 @@ class CompactBlockProcessor internal constructor(
                         )
                     )
 
+                    // Increment and compare the range for triggering the enhancing
+                    enhancingRange = enhancingRange.start..deleteResult.batch.range.endInclusive
+                    if (enhancingRange.length() >= ENHANCE_BATCH_SIZE) {
+                        // Copy the range for use and reset for the next incrementation
+                        val currentEnhancingRange = enhancingRange
+                        enhancingRange = enhancingRange.endInclusive..enhancingRange.endInclusive
+                        enhanceTransactionDetails(
+                            range = currentEnhancingRange,
+                            repository = repository,
+                            rustBackend = backend,
+                            downloader = downloader
+                        ).collect { enhancingResult ->
+                            when (enhancingResult) {
+                                is BlockProcessingResult.UpdateBirthday -> {
+                                    Twig.debug { "Birthday height update report" }
+                                }
+                                is BlockProcessingResult.FailedEnhance -> {
+                                    Twig.error { "Enhancing failed for: $enhancingRange with $enhancingResult" }
+                                    // Fixme: We want to threat this error somehow
+                                }
+                                else -> {
+                                    // All went right
+                                }
+                            }
+                            emit(
+                                BatchSyncProgress(
+                                    percentage = PercentDecimal(deleteResult.batch.index / batches.size.toFloat()),
+                                    lastSyncedHeight = getLastScannedHeight(repository),
+                                    result = enhancingResult
+                                )
+                            )
+                        }
+                    }
+
                     Twig.debug { "All sync stages done for the batch: ${deleteResult.batch}" }
                 }.takeWhile { continuousResult ->
-                    continuousResult.stageResult == BlockProcessingResult.Success
+                    continuousResult.stageResult == BlockProcessingResult.Success ||
+                        continuousResult.stageResult == BlockProcessingResult.UpdateBirthday
                 }.collect()
             }
         }
@@ -972,6 +955,89 @@ class CompactBlockProcessor internal constructor(
                     BlockProcessingResult.FailedDeleteBlocks(batch.range.start)
                 }
             } ?: BlockProcessingResult.Success
+        }
+
+        @VisibleForTesting
+        internal suspend fun enhanceTransactionDetails(
+            range: ClosedRange<BlockHeight>,
+            repository: DerivedDataRepository,
+            rustBackend: Backend,
+            downloader: CompactBlockDownloader
+        ): Flow<BlockProcessingResult> = flow {
+            Twig.debug { "Enhancing transaction details for blocks $range" }
+
+            val newTxs = repository.findNewTransactions(range)
+            if (newTxs.isEmpty()) {
+                Twig.debug { "No new transactions found in $range" }
+            } else {
+                Twig.debug { "Enhancing ${newTxs.size} transaction(s)!" }
+
+                // If the first transaction has been added
+                if (newTxs.size.toLong() == repository.getTransactionCount()) {
+                    Twig.debug { "Encountered the first transaction. This changes the birthday height!" }
+                    emit(BlockProcessingResult.UpdateBirthday)
+                }
+
+                newTxs.filter { it.minedHeight != null }.onEach { newTransaction ->
+                    val trEnhanceResult = enhance(newTransaction, rustBackend, downloader)
+                    if (trEnhanceResult is BlockProcessingResult.FailedEnhance) {
+                        Twig.error { "Encountered transaction enhancing error: ${trEnhanceResult.error}" }
+                        emit(trEnhanceResult)
+                        // We intentionally do not terminate the overall enhancing, just reporting it
+                    }
+                }
+            }
+
+            Twig.debug { "Done enhancing transaction details" }
+            BlockProcessingResult.Success
+        }
+
+        private suspend fun enhance(
+            transaction: DbTransactionOverview,
+            backend: Backend,
+            downloader: CompactBlockDownloader
+        ): BlockProcessingResult {
+            return if (transaction.minedHeight != null) {
+                enhanceHelper(
+                    id = transaction.id,
+                    rawTransactionId = transaction.rawId.byteArray,
+                    minedHeight = transaction.minedHeight,
+                    backend = backend,
+                    downloader = downloader
+                )
+            } else {
+                BlockProcessingResult.Success
+            }
+        }
+
+        private suspend fun enhanceHelper(
+            id: Long,
+            rawTransactionId: ByteArray,
+            minedHeight: BlockHeight,
+            backend: Backend,
+            downloader: CompactBlockDownloader
+        ): BlockProcessingResult {
+            Twig.debug { "START: enhancing transaction (id:$id  block:$minedHeight)" }
+
+            val fetchResponse = downloader.fetchTransaction(rawTransactionId)
+            val enhancingResult = when (fetchResponse) {
+                is Response.Success -> {
+                    try {
+                        Twig.debug { "Decrypting and storing transaction (id:$id  block:$minedHeight)" }
+                        backend.decryptAndStoreTransaction(fetchResponse.result.data)
+                        Twig.debug { "DONE: enhancing transaction (id:$id  block:$minedHeight)" }
+                        BlockProcessingResult.Success
+                    } catch (exception: RuntimeException) {
+                        BlockProcessingResult.FailedEnhance(EnhanceTxDecryptError(minedHeight, exception))
+                    }
+                }
+                is Response.Failure -> {
+                    BlockProcessingResult.FailedEnhance(
+                        EnhanceTxDownloadError(minedHeight, fetchResponse.toThrowable())
+                    )
+                }
+            }
+            return enhancingResult
         }
 
         /**
@@ -1330,6 +1396,14 @@ class CompactBlockProcessor internal constructor(
          * block, which determines whether a reorg has happened on our watch.
          *
          * **Scanning** is when the blocks that have been downloaded are actively being decrypted.
+         *
+         * **Deleting** is when the temporary block files being removed from the persistence.
+         *
+         * **Enhancing** is when transaction details are being retrieved. This typically means the wallet has
+         * downloaded and scanned blocks and is now processing any transactions that were discovered. Once a
+         * transaction is discovered, followup network requests are needed in order to retrieve memos or outbound
+         * transaction information, like the recipient address. The existing information we have about transactions
+         * is enhanced by the new information.
          */
         object Syncing : IConnected, ISyncing, State()
 
@@ -1338,15 +1412,6 @@ class CompactBlockProcessor internal constructor(
          * validate, and scan).
          */
         class Synced(val syncedRange: ClosedRange<BlockHeight>?) : IConnected, ISyncing, State()
-
-        /**
-         * [State] for when transaction details are being retrieved. This typically means the wallet
-         * has downloaded and scanned blocks and is now processing any transactions that were
-         * discovered. Once a transaction is discovered, followup network requests are needed in
-         * order to retrieve memos or outbound transaction information, like the recipient address.
-         * The existing information we have about transactions is enhanced by the new information.
-         */
-        object Enhancing : IConnected, ISyncing, State()
 
         /**
          * [State] for when we have no connection to lightwalletd.

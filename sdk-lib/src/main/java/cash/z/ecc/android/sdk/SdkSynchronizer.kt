@@ -2,13 +2,11 @@ package cash.z.ecc.android.sdk
 
 import android.content.Context
 import cash.z.ecc.android.sdk.Synchronizer.Status.DISCONNECTED
-import cash.z.ecc.android.sdk.Synchronizer.Status.ENHANCING
 import cash.z.ecc.android.sdk.Synchronizer.Status.STOPPED
 import cash.z.ecc.android.sdk.Synchronizer.Status.SYNCED
 import cash.z.ecc.android.sdk.Synchronizer.Status.SYNCING
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Disconnected
-import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Enhancing
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Initialized
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Stopped
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Synced
@@ -410,12 +408,8 @@ class SdkSynchronizer private constructor(
                     is Stopped -> STOPPED
                     is Disconnected -> DISCONNECTED
                     is Syncing, Initialized -> SYNCING
-                    is Enhancing -> ENHANCING
                 }.let { synchronizerStatus ->
-                    //  ignore enhancing status for now
-                    // TODO [#682]: clean this up and handle enhancing gracefully
-                    // TODO [#682]: https://github.com/zcash/zcash-android-wallet-sdk/issues/682
-                    if (synchronizerStatus != ENHANCING) _status.value = synchronizerStatus
+                    _status.value = synchronizerStatus
                 }
             }.launchIn(this)
             processor.start()
