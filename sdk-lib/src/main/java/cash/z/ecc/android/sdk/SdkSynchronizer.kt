@@ -282,6 +282,7 @@ class SdkSynchronizer private constructor(
         val shutdownJob = coroutineScope.launch {
             Twig.debug { "Stopping synchronizer $synchronizerKey…" }
             processor.stop()
+            storage.close()
         }
 
         instances[synchronizerKey] = InstanceState.ShuttingDown(shutdownJob)
