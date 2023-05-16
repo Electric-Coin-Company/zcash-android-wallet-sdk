@@ -15,4 +15,4 @@
 -keep public class cash.z.ecc.android.sdk.internal.Backend { public protected *; }
 -keep public class cash.z.ecc.android.sdk.internal.Derivation { public protected *; }
 -keep public class cash.z.ecc.android.sdk.internal.jni.RustBackend { public protected *; }
--keep public class cash.z.ecc.android.sdk.internal.model { public protected *; }
+-keep public class cash.z.ecc.android.sdk.internal.model.* { public protected *; }
