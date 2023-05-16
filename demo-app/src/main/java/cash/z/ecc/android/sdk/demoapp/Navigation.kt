@@ -134,7 +134,7 @@ internal fun ComposeActivity.Navigation() {
             } else {
                 Transactions(
                     synchronizer = synchronizer,
-                    onBack = { navController.popBackStackJustOnce(SEND) }
+                    onBack = { navController.popBackStackJustOnce(TRANSACTIONS) }
                 )
             }
         }
