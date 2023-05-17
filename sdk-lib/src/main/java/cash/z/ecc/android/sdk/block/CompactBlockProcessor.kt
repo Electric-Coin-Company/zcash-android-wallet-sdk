@@ -10,7 +10,6 @@ import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException.Mismatche
 import cash.z.ecc.android.sdk.exception.InitializeException
 import cash.z.ecc.android.sdk.exception.LightWalletException
 import cash.z.ecc.android.sdk.exception.RustLayerException
-import cash.z.ecc.android.sdk.ext.BatchMetrics
 import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.ext.ZcashSdk.MAX_BACKOFF_INTERVAL
 import cash.z.ecc.android.sdk.ext.ZcashSdk.POLL_INTERVAL
@@ -121,15 +120,6 @@ class CompactBlockProcessor internal constructor(
      */
     var onSetupErrorListener: ((Throwable) -> Boolean)? = null
 
-    /**
-     * Callback for apps to report scan times. As blocks are scanned in batches, this listener is
-     * invoked at the end of every batch and the second parameter is only true when all batches are
-     * complete. The first parameter contains useful information on the blocks scanned per second.
-     *
-     * The Boolean param (isComplete) is true when this event represents the completion of a scan
-     */
-    var onScanMetricCompleteListener: ((BatchMetrics, Boolean) -> Unit)? = null
-
     private val consecutiveChainErrors = AtomicInteger(0)
 
     /**
@@ -225,10 +215,7 @@ class CompactBlockProcessor internal constructor(
                         delay(napTime)
                     }
 
-                    BlockProcessingResult.NoBlocksToProcess,
-                    // Fixme: We should possibly treat this error differently, as it's critical now
-                    // Fixme: We newly have a throwable here as well
-                    is BlockProcessingResult.FailedEnhance -> {
+                    BlockProcessingResult.NoBlocksToProcess -> {
                         val noWorkDone = _processorInfo.value.lastSyncRange?.isEmpty() ?: true
                         val summary = if (noWorkDone) {
                             "Nothing to process: no new blocks to sync"
@@ -238,18 +225,18 @@ class CompactBlockProcessor internal constructor(
                         consecutiveChainErrors.set(0)
                         val napTime = calculatePollInterval()
                         Twig.debug {
-                            "$summary${
-                                if (result is BlockProcessingResult.FailedEnhance) {
-                                    " (but there were" +
-                                        " enhancement errors! We ignore those, for now. Memos in this block range are" +
-                                        " probably missing! This will be improved in a future release.)"
-                                } else {
-                                    ""
-                                }
-                            }! Sleeping" +
-                                " for ${napTime}ms (latest height: ${_processorInfo.value.networkBlockHeight})."
+                            "$summary Sleeping for ${napTime}ms " +
+                                "(latest height: ${_processorInfo.value.networkBlockHeight})."
                         }
                         delay(napTime)
+                    }
+
+                    is BlockProcessingResult.FailedEnhance -> {
+                        Twig.error {
+                            "Failed while enhancing transaction details at height: ${result.error.height} +" +
+                                "with: ${result.error}"
+                        }
+                        checkErrorResult(result.error.height)
                     }
 
                     is BlockProcessingResult.FailedDeleteBlocks -> {
@@ -276,7 +263,7 @@ class CompactBlockProcessor internal constructor(
                     }
 
                     is BlockProcessingResult.Success -> {
-                        // Do nothing. We are done.
+                        // Do nothing.
                     }
 
                     is BlockProcessingResult.DownloadSuccess -> {
@@ -409,7 +396,8 @@ class CompactBlockProcessor internal constructor(
         data class FailedScanBlocks(val failedAtHeight: BlockHeight) : BlockProcessingResult()
         data class FailedValidateBlocks(val failedAtHeight: BlockHeight) : BlockProcessingResult()
         data class FailedDeleteBlocks(val failedAtHeight: BlockHeight) : BlockProcessingResult()
-        data class FailedEnhance(val error: Throwable) : BlockProcessingResult()
+        data class FailedEnhance(val error: CompactBlockProcessorException.EnhanceTransactionError) :
+            BlockProcessingResult()
     }
 
     /**
@@ -785,7 +773,7 @@ class CompactBlockProcessor internal constructor(
                             )
                         )
                     }
-                }.buffer(1).onEach { deleteResult ->
+                }.onEach { deleteResult ->
                     Twig.debug { "Deletion stage done with result: $deleteResult" }
 
                     emit(
@@ -808,13 +796,13 @@ class CompactBlockProcessor internal constructor(
                             rustBackend = backend,
                             downloader = downloader
                         ).collect { enhancingResult ->
+                            Twig.debug { "Enhancing result: $enhancingResult" }
                             when (enhancingResult) {
                                 is BlockProcessingResult.UpdateBirthday -> {
-                                    Twig.debug { "Birthday height update report" }
+                                    Twig.debug { "Birthday height update reporting" }
                                 }
                                 is BlockProcessingResult.FailedEnhance -> {
                                     Twig.error { "Enhancing failed for: $enhancingRange with $enhancingResult" }
-                                    // Fixme: We want to threat this error somehow
                                 }
                                 else -> {
                                     // All went right
@@ -983,13 +971,13 @@ class CompactBlockProcessor internal constructor(
                     if (trEnhanceResult is BlockProcessingResult.FailedEnhance) {
                         Twig.error { "Encountered transaction enhancing error: ${trEnhanceResult.error}" }
                         emit(trEnhanceResult)
-                        // We intentionally do not terminate the overall enhancing, just reporting it
+                        // We intentionally do not terminate the batch enhancing, just reporting it
                     }
                 }
             }
 
             Twig.debug { "Done enhancing transaction details" }
-            BlockProcessingResult.Success
+            emit(BlockProcessingResult.Success)
         }
 
         private suspend fun enhance(
@@ -1022,6 +1010,7 @@ class CompactBlockProcessor internal constructor(
             val fetchResponse = downloader.fetchTransaction(rawTransactionId)
             val enhancingResult = when (fetchResponse) {
                 is Response.Success -> {
+                    @Suppress("TooGenericExceptionCaught") // RuntimeException comes from the Rust layer
                     try {
                         Twig.debug { "Decrypting and storing transaction (id:$id  block:$minedHeight)" }
                         backend.decryptAndStoreTransaction(fetchResponse.result.data)
