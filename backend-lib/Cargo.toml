@@ -26,6 +26,9 @@ zcash_primitives = "0.11"
 zcash_proofs = "0.11"
 orchard = { version = "0.4", default-features = false }
 
+# Initialization
+rayon = "1.7"
+
 # Logging
 log-panics = "2.0.0"
 paranoid-android = "0.2"

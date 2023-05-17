@@ -126,7 +126,13 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_in
         error!("Failed to reload tracing subscriber with NDK APIs: {}", e);
     }
 
-    debug!("logs have been initialized successfully");
+    // Manually build the Rayon thread pool, so we can name the threads.
+    rayon::ThreadPoolBuilder::new()
+        .thread_name(|i| format!("zc-rayon-{}", i))
+        .build_global()
+        .expect("Only initialized once");
+
+    debug!("Rust backend has been initialized successfully");
     print_debug_state();
 }
 
