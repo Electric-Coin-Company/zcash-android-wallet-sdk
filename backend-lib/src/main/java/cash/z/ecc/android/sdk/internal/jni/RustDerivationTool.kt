@@ -3,37 +3,29 @@ package cash.z.ecc.android.sdk.internal.jni
 import cash.z.ecc.android.sdk.internal.Derivation
 import cash.z.ecc.android.sdk.internal.model.JniUnifiedSpendingKey
 
-@Suppress("TooManyFunctions")
-object RustDerivationTool : Derivation {
+class RustDerivationTool private constructor() : Derivation {
 
-    override suspend fun deriveUnifiedFullViewingKeys(
+    override fun deriveUnifiedFullViewingKeys(
         seed: ByteArray,
         networkId: Int,
         numberOfAccounts: Int
     ): Array<String> =
-        withRustBackendLoaded {
-            deriveUnifiedFullViewingKeysFromSeed(seed, numberOfAccounts, networkId = networkId)
-        }
+        deriveUnifiedFullViewingKeysFromSeed(seed, numberOfAccounts, networkId = networkId)
 
-    override suspend fun deriveUnifiedFullViewingKey(
+    override fun deriveUnifiedFullViewingKey(
         usk: JniUnifiedSpendingKey,
         networkId: Int
-    ): String = withRustBackendLoaded {
+    ): String =
         deriveUnifiedFullViewingKey(usk.bytes, networkId = networkId)
-    }
 
-    override suspend fun deriveUnifiedSpendingKey(
+    override fun deriveUnifiedSpendingKey(
         seed: ByteArray,
         networkId: Int,
         accountIndex: Int
-    ): JniUnifiedSpendingKey = withRustBackendLoaded {
-        deriveSpendingKey(seed, accountIndex, networkId = networkId)
-    }
+    ): JniUnifiedSpendingKey = deriveSpendingKey(seed, accountIndex, networkId = networkId)
 
-    override suspend fun deriveUnifiedAddress(seed: ByteArray, networkId: Int, accountIndex: Int): String =
-        withRustBackendLoaded {
-            deriveUnifiedAddressFromSeed(seed, accountIndex = accountIndex, networkId = networkId)
-        }
+    override fun deriveUnifiedAddress(seed: ByteArray, networkId: Int, accountIndex: Int): String =
+        deriveUnifiedAddressFromSeed(seed, accountIndex = accountIndex, networkId = networkId)
 
     /**
      * Given a Unified Full Viewing Key string, return the associated Unified Address.
@@ -43,51 +35,44 @@ object RustDerivationTool : Derivation {
      *
      * @return the address that corresponds to the viewing key.
      */
-    override suspend fun deriveUnifiedAddress(
+    override fun deriveUnifiedAddress(
         viewingKey: String,
         networkId: Int
-    ): String = withRustBackendLoaded {
+    ): String =
         deriveUnifiedAddressFromViewingKey(viewingKey, networkId = networkId)
+
+    companion object {
+        suspend fun new(): Derivation {
+            RustBackend.loadLibrary()
+
+            return RustDerivationTool()
+        }
+
+        @JvmStatic
+        private external fun deriveSpendingKey(
+            seed: ByteArray,
+            account: Int,
+            networkId: Int
+        ): JniUnifiedSpendingKey
+
+        @JvmStatic
+        private external fun deriveUnifiedFullViewingKeysFromSeed(
+            seed: ByteArray,
+            numberOfAccounts: Int,
+            networkId: Int
+        ): Array<String>
+
+        @JvmStatic
+        private external fun deriveUnifiedFullViewingKey(usk: ByteArray, networkId: Int): String
+
+        @JvmStatic
+        private external fun deriveUnifiedAddressFromSeed(
+            seed: ByteArray,
+            accountIndex: Int,
+            networkId: Int
+        ): String
+
+        @JvmStatic
+        private external fun deriveUnifiedAddressFromViewingKey(key: String, networkId: Int): String
     }
-
-    /**
-     * A helper function to ensure that the Rust libraries are loaded before any code in this
-     * class attempts to interact with it, indirectly, by invoking JNI functions. It would be
-     * nice to have an annotation like @UsesSystemLibrary for this
-     */
-    private suspend fun <T> withRustBackendLoaded(block: () -> T): T {
-        RustBackend.loadLibrary()
-        return block()
-    }
-
-    //
-    // JNI functions
-    //
-
-    @JvmStatic
-    private external fun deriveSpendingKey(
-        seed: ByteArray,
-        account: Int,
-        networkId: Int
-    ): JniUnifiedSpendingKey
-
-    @JvmStatic
-    private external fun deriveUnifiedFullViewingKeysFromSeed(
-        seed: ByteArray,
-        numberOfAccounts: Int,
-        networkId: Int
-    ): Array<String>
-
-    @JvmStatic
-    private external fun deriveUnifiedFullViewingKey(usk: ByteArray, networkId: Int): String
-
-    @JvmStatic
-    private external fun deriveUnifiedAddressFromSeed(
-        seed: ByteArray,
-        accountIndex: Int,
-        networkId: Int
-    ): String
-
-    @JvmStatic
-    private external fun deriveUnifiedAddressFromViewingKey(key: String, networkId: Int): String
 }

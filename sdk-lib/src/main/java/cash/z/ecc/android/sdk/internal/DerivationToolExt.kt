@@ -6,24 +6,24 @@ import cash.z.ecc.android.sdk.model.UnifiedFullViewingKey
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 
-suspend fun Derivation.deriveUnifiedAddress(
+fun Derivation.deriveUnifiedAddress(
     seed: ByteArray,
     network: ZcashNetwork,
     account: Account
 ): String = deriveUnifiedAddress(seed, network.id, account.value)
 
-suspend fun Derivation.deriveUnifiedAddress(
+fun Derivation.deriveUnifiedAddress(
     viewingKey: String,
     network: ZcashNetwork,
 ): String = deriveUnifiedAddress(viewingKey, network.id)
 
-suspend fun Derivation.deriveUnifiedSpendingKey(
+fun Derivation.deriveUnifiedSpendingKey(
     seed: ByteArray,
     network: ZcashNetwork,
     account: Account
 ): UnifiedSpendingKey = UnifiedSpendingKey(deriveUnifiedSpendingKey(seed, network.id, account.value))
 
-suspend fun Derivation.deriveUnifiedFullViewingKey(
+fun Derivation.deriveUnifiedFullViewingKey(
     usk: UnifiedSpendingKey,
     network: ZcashNetwork
 ): UnifiedFullViewingKey = UnifiedFullViewingKey(
@@ -36,7 +36,7 @@ suspend fun Derivation.deriveUnifiedFullViewingKey(
     )
 )
 
-suspend fun Derivation.deriveUnifiedFullViewingKeysTypesafe(
+fun Derivation.deriveUnifiedFullViewingKeysTypesafe(
     seed: ByteArray,
     network: ZcashNetwork,
     numberOfAccounts: Int

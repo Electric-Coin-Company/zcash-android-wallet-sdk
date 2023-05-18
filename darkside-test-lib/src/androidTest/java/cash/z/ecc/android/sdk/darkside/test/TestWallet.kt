@@ -58,7 +58,7 @@ class TestWallet(
     private val context = InstrumentationRegistry.getInstrumentation().context
     private val seed: ByteArray = Mnemonics.MnemonicCode(seedPhrase).toSeed()
     private val shieldedSpendingKey =
-        runBlocking { DerivationTool.DEFAULT.deriveUnifiedSpendingKey(seed, network = network, account) }
+        runBlocking { DerivationTool.getInstance().deriveUnifiedSpendingKey(seed, network = network, account) }
     val synchronizer: SdkSynchronizer = Synchronizer.newBlocking(
         context,
         network,

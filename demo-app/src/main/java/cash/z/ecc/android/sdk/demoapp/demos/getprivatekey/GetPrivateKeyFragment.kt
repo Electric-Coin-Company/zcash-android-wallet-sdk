@@ -47,14 +47,14 @@ class GetPrivateKeyFragment : BaseDemoFragment<FragmentGetPrivateKeyBinding>() {
         lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 @Suppress("MagicNumber")
-                val spendingKey = DerivationTool.DEFAULT.deriveUnifiedSpendingKey(
+                val spendingKey = DerivationTool.getInstance().deriveUnifiedSpendingKey(
                     seed,
                     ZcashNetwork.fromResources(requireApplicationContext()),
                     Account(5)
                 )
 
                 // derive the key that allows you to view but not spend transactions
-                val viewingKey = DerivationTool.DEFAULT.deriveUnifiedFullViewingKey(
+                val viewingKey = DerivationTool.getInstance().deriveUnifiedFullViewingKey(
                     spendingKey,
                     ZcashNetwork.fromResources(requireApplicationContext())
                 )
@@ -91,7 +91,7 @@ class GetPrivateKeyFragment : BaseDemoFragment<FragmentGetPrivateKeyBinding>() {
     override fun onActionButtonClicked() {
         lifecycleScope.launch {
             copyToClipboard(
-                DerivationTool.DEFAULT.deriveUnifiedFullViewingKeys(
+                DerivationTool.getInstance().deriveUnifiedFullViewingKeys(
                     seed,
                     ZcashNetwork.fromResources(requireApplicationContext()),
                     DerivationTool.DEFAULT_NUMBER_OF_ACCOUNTS

@@ -32,7 +32,7 @@ class AddressGeneratorUtil {
             .map { seedPhrase ->
                 mnemonics.toSeed(seedPhrase.toCharArray())
             }.map { seed ->
-                RustDerivationTool.deriveUnifiedAddress(seed, ZcashNetwork.Mainnet, Account.DEFAULT)
+                RustDerivationTool.new().deriveUnifiedAddress(seed, ZcashNetwork.Mainnet, Account.DEFAULT)
             }.collect { address ->
                 println("xrxrx2\t$address")
                 assertTrue(address.startsWith("u1"))

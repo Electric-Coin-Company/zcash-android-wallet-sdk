@@ -6,8 +6,6 @@ import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.internal.Derivation
 import cash.z.ecc.android.sdk.internal.SaplingParamTool
 import cash.z.ecc.android.sdk.internal.db.DatabaseCoordinator
-import cash.z.ecc.android.sdk.internal.deriveUnifiedFullViewingKeysTypesafe
-import cash.z.ecc.android.sdk.internal.jni.RustDerivationTool
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.PercentDecimal
@@ -18,6 +16,7 @@ import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.tool.CheckpointTool
+import cash.z.ecc.android.sdk.tool.DerivationTool
 import cash.z.ecc.android.sdk.type.AddressType
 import cash.z.ecc.android.sdk.type.ConsensusMatchType
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
@@ -451,7 +450,7 @@ interface Synchronizer {
                     .defaultCompactBlockRepository(coordinator.fsBlockDbRoot(zcashNetwork, alias), backend)
 
             val viewingKeys = seed?.let {
-                RustDerivationTool.deriveUnifiedFullViewingKeysTypesafe(
+                DerivationTool.getInstance().deriveUnifiedFullViewingKeys(
                     seed,
                     zcashNetwork,
                     Derivation.DEFAULT_NUMBER_OF_ACCOUNTS

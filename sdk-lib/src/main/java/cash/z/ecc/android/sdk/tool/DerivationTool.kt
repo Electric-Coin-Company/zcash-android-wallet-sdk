@@ -1,6 +1,7 @@
 package cash.z.ecc.android.sdk.tool
 
 import cash.z.ecc.android.sdk.internal.Derivation
+import cash.z.ecc.android.sdk.internal.SuspendingLazy
 import cash.z.ecc.android.sdk.internal.TypesafeDerivationToolImpl
 import cash.z.ecc.android.sdk.internal.jni.RustDerivationTool
 import cash.z.ecc.android.sdk.model.Account
@@ -81,6 +82,9 @@ interface DerivationTool {
     companion object {
         const val DEFAULT_NUMBER_OF_ACCOUNTS = Derivation.DEFAULT_NUMBER_OF_ACCOUNTS
 
-        val DEFAULT: DerivationTool = TypesafeDerivationToolImpl(RustDerivationTool)
+        private val instance = SuspendingLazy<Unit, DerivationTool> {
+            TypesafeDerivationToolImpl(RustDerivationTool.new())
+        }
+        suspend fun getInstance() = instance.getInstance(Unit)
     }
 }

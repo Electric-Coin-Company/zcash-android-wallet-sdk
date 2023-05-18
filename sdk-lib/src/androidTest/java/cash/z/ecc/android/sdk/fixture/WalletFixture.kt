@@ -15,5 +15,5 @@ object WalletFixture {
         seed: String = SEED_PHRASE,
         network: ZcashNetwork = NETWORK,
         account: Account = Account.DEFAULT
-    ) = RustDerivationTool.deriveUnifiedSpendingKey(Mnemonics.MnemonicCode(seed).toEntropy(), network, account)
+    ) = RustDerivationTool.new().deriveUnifiedSpendingKey(Mnemonics.MnemonicCode(seed).toEntropy(), network, account)
 }

@@ -59,7 +59,7 @@ class TestWallet(
     private val context = InstrumentationRegistry.getInstrumentation().context
     private val seed: ByteArray = Mnemonics.MnemonicCode(seedPhrase).toSeed()
     private val spendingKey =
-        runBlocking { RustDerivationTool.deriveUnifiedSpendingKey(seed, network = network, account) }
+        runBlocking { RustDerivationTool.new().deriveUnifiedSpendingKey(seed, network = network, account) }
     val synchronizer: SdkSynchronizer = Synchronizer.newBlocking(
         context,
         network,

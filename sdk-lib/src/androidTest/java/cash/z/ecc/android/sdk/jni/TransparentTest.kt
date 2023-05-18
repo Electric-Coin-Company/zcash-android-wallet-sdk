@@ -24,7 +24,7 @@ class TransparentTest(val expected: Expected, val network: ZcashNetwork) {
 
     @Test
     fun deriveUnifiedFullViewingKeysFromSeedTest() = runBlocking {
-        val ufvks = RustDerivationTool.deriveUnifiedFullViewingKeysTypesafe(
+        val ufvks = RustDerivationTool.new().deriveUnifiedFullViewingKeysTypesafe(
             SEED,
             network = network,
             numberOfAccounts =
@@ -32,7 +32,7 @@ class TransparentTest(val expected: Expected, val network: ZcashNetwork) {
         )
         assertEquals(1, ufvks.size)
         val ufvk = ufvks.first()
-        assertEquals(expected.uAddr, RustDerivationTool.deriveUnifiedAddress(ufvk.encoding, network = network))
+        assertEquals(expected.uAddr, RustDerivationTool.new().deriveUnifiedAddress(ufvk.encoding, network = network))
         // TODO: If we need this, change DerivationTool to derive from the UFVK instead of the public key.
         // assertEquals(expected.tAddr, DerivationTool.deriveTransparentAddressFromPublicKey(ufvk.encoding,
         //     network = network))

@@ -19,7 +19,7 @@ class RustDerivationToolTest {
         val bytesOne = Mnemonics.MnemonicCode(SEED_PHRASE).toEntropy()
         val bytesTwo = Mnemonics.MnemonicCode(SEED_PHRASE).toEntropy()
 
-        RustDerivationTool.deriveUnifiedSpendingKey(bytesOne, networkId = 1, accountIndex = 0)
+        RustDerivationTool.new().deriveUnifiedSpendingKey(bytesOne, networkId = 1, accountIndex = 0)
 
         assertContentEquals(bytesTwo, bytesOne)
     }

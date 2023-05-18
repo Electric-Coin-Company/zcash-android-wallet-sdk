@@ -2,7 +2,6 @@
 
 package cash.z.ecc.android.sdk.internal
 
-import cash.z.ecc.android.sdk.internal.jni.RustDerivationTool
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.model.Account
@@ -12,6 +11,7 @@ import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
+import cash.z.ecc.android.sdk.tool.DerivationTool
 import kotlinx.coroutines.withContext
 
 internal val Backend.network: ZcashNetwork
@@ -28,10 +28,7 @@ internal suspend fun Backend.initAccountsTableTypesafe(
     seed: ByteArray,
     numberOfAccounts: Int
 ): List<UnifiedFullViewingKey> {
-    return RustDerivationTool.deriveUnifiedFullViewingKeys(seed, networkId, numberOfAccounts).also {
-        @Suppress("SpreadOperator")
-        initAccountsTable(*it)
-    }.map { UnifiedFullViewingKey(it) }
+    return DerivationTool.getInstance().deriveUnifiedFullViewingKeys(seed, network, numberOfAccounts)
 }
 
 internal suspend fun Backend.initBlocksTable(checkpoint: Checkpoint): Boolean = initBlocksTable(
