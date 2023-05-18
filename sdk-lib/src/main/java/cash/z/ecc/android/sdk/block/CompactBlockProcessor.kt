@@ -339,7 +339,7 @@ class CompactBlockProcessor internal constructor(
             syncBlocksAndEnhanceTransactions(
                 syncRange = syncRange,
                 withDownload = true,
-                enhanceStartHeight = _processorInfo.value.firstUnEnhancedHeight
+                enhanceStartHeight = _processorInfo.value.firstUnenhancedHeight
             )
         }
     }
@@ -453,7 +453,7 @@ class CompactBlockProcessor internal constructor(
             networkBlockHeight = networkBlockHeight,
             lastSyncedHeight = lastSyncedHeight,
             lastSyncRange = lastSyncedHeight + 1..networkBlockHeight,
-            firstUnEnhancedHeight = firstUnEnhancedHeight
+            firstUnenhancedHeight = firstUnEnhancedHeight
         )
 
         return true
@@ -1123,21 +1123,21 @@ class CompactBlockProcessor internal constructor(
      * @param lastSyncRange the inclusive range to sync. This represents what we most recently
      * wanted to sync. In most cases, it will be an invalid range because we'd like to sync blocks
      * that we don't yet have.
-     * @param firstUnEnhancedHeight the height in which the enhancing should start, or null in case of no previous
+     * @param firstUnenhancedHeight the height in which the enhancing should start, or null in case of no previous
      * transaction enhancing done yet
      */
     private fun updateProgress(
         networkBlockHeight: BlockHeight? = _processorInfo.value.networkBlockHeight,
         lastSyncedHeight: BlockHeight? = _processorInfo.value.lastSyncedHeight,
         lastSyncRange: ClosedRange<BlockHeight>? = _processorInfo.value.lastSyncRange,
-        firstUnEnhancedHeight: BlockHeight? = _processorInfo.value.firstUnEnhancedHeight,
+        firstUnenhancedHeight: BlockHeight? = _processorInfo.value.firstUnenhancedHeight,
     ) {
         _networkHeight.value = networkBlockHeight
         _processorInfo.value = ProcessorInfo(
             networkBlockHeight = networkBlockHeight,
             lastSyncedHeight = lastSyncedHeight,
             lastSyncRange = lastSyncRange,
-            firstUnEnhancedHeight = firstUnEnhancedHeight
+            firstUnenhancedHeight = firstUnenhancedHeight
         )
     }
 
@@ -1482,14 +1482,14 @@ class CompactBlockProcessor internal constructor(
      * @param lastSyncRange inclusive range to sync. Meaning, if the range is 10..10,
      * then we will download exactly block 10. If the range is 11..10, then we want to download
      * block 11 but can't.
-     * @param firstUnEnhancedHeight the height in which the enhancing should start, or null in case of no previous
+     * @param firstUnenhancedHeight the height in which the enhancing should start, or null in case of no previous
      * transaction enhancing done yet
      */
     data class ProcessorInfo(
         val networkBlockHeight: BlockHeight?,
         val lastSyncedHeight: BlockHeight?,
         val lastSyncRange: ClosedRange<BlockHeight>?,
-        val firstUnEnhancedHeight: BlockHeight?
+        val firstUnenhancedHeight: BlockHeight?
     ) {
         /**
          * Determines whether this instance is actively syncing compact blocks.
