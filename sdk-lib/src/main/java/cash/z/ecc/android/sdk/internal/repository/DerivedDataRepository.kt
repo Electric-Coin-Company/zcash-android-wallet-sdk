@@ -20,6 +20,14 @@ internal interface DerivedDataRepository {
     suspend fun lastScannedHeight(): BlockHeight
 
     /**
+     * The height of the first transaction that hasn't been enhanced yet.
+     *
+     * @return the height of the first un-enhanced transaction in the repository, or null in case of all transaction
+     * enhanced or no entry found
+     */
+    suspend fun firstUnEnhancedHeight(): BlockHeight?
+
+    /**
      * The height of the first block in this repository. This is typically the checkpoint that was
      * used to initialize this wallet. If we overwrite this block, it breaks our ability to spend
      * funds.

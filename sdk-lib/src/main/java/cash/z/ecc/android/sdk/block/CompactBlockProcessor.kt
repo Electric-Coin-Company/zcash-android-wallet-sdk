@@ -136,7 +136,7 @@ class CompactBlockProcessor internal constructor(
 
     private val _state: MutableStateFlow<State> = MutableStateFlow(State.Initialized)
     private val _progress = MutableStateFlow(PercentDecimal.ZERO_PERCENT)
-    private val _processorInfo = MutableStateFlow(ProcessorInfo(null, null, null))
+    private val _processorInfo = MutableStateFlow(ProcessorInfo(null, null, null, null))
     private val _networkHeight = MutableStateFlow<BlockHeight?>(null)
     private val processingMutex = Mutex()
 
@@ -168,7 +168,7 @@ class CompactBlockProcessor internal constructor(
     val processorInfo = _processorInfo.asStateFlow()
 
     /**
-     * The flow of network height. This value is updated at the same time that [currentInfo] is
+     * The flow of network height. This value is updated at the same time that [processorInfo] is
      * updated but this allows consumers to have the information pushed instead of polling.
      */
     val networkHeight = _networkHeight.asStateFlow()
@@ -338,7 +338,8 @@ class CompactBlockProcessor internal constructor(
 
             syncBlocksAndEnhanceTransactions(
                 syncRange = syncRange,
-                withDownload = true
+                withDownload = true,
+                enhanceStartHeight = _processorInfo.value.firstUnEnhancedHeight
             )
         }
     }
@@ -346,19 +347,21 @@ class CompactBlockProcessor internal constructor(
     @Suppress("ReturnCount")
     private suspend fun syncBlocksAndEnhanceTransactions(
         syncRange: ClosedRange<BlockHeight>,
-        withDownload: Boolean
+        withDownload: Boolean,
+        enhanceStartHeight: BlockHeight?
     ): BlockProcessingResult {
         _state.value = State.Syncing
 
         // Syncing last blocks and enhancing transactions
         var syncResult: BlockProcessingResult = BlockProcessingResult.Success
-        syncNewBlocks(
+        runSyncingAndEnhancing(
             backend = backend,
             downloader = downloader,
             repository = repository,
             network = network,
             syncRange = syncRange,
-            withDownload = withDownload
+            withDownload = withDownload,
+            enhanceStartHeight = enhanceStartHeight
         ).collect { syncProgress ->
             _progress.value = syncProgress.percentage
             updateProgress(lastSyncedHeight = syncProgress.lastSyncedHeight)
@@ -443,10 +446,14 @@ class CompactBlockProcessor internal constructor(
             lastDownloadedHeight
         }
 
+        // Get the first un-enhanced transaction from the repository
+        val firstUnEnhancedHeight = getFirstUnEnhancedHeight(repository)
+
         updateProgress(
             networkBlockHeight = networkBlockHeight,
             lastSyncedHeight = lastSyncedHeight,
-            lastSyncRange = lastSyncedHeight + 1..networkBlockHeight
+            lastSyncRange = lastSyncedHeight + 1..networkBlockHeight,
+            firstUnEnhancedHeight = firstUnEnhancedHeight
         )
 
         return true
@@ -680,18 +687,21 @@ class CompactBlockProcessor internal constructor(
          * @param syncRange the range of blocks to download
          * @param withDownload the flag indicating whether the blocks should also be downloaded and processed, or
          * processed existing blocks
+         * @param enhanceStartHeight the height in which the enhancing should start, or null in case of no previous
+         * transaction enhancing done yet
 
-         * @return Flow of BatchSyncProgress sync results
+         * @return Flow of BatchSyncProgress sync and enhancement results
          */
         @VisibleForTesting
         @Suppress("LongParameterList", "LongMethod")
-        internal suspend fun syncNewBlocks(
+        internal suspend fun runSyncingAndEnhancing(
             backend: Backend,
             downloader: CompactBlockDownloader,
             repository: DerivedDataRepository,
             network: ZcashNetwork,
             syncRange: ClosedRange<BlockHeight>,
-            withDownload: Boolean
+            withDownload: Boolean,
+            enhanceStartHeight: BlockHeight?,
         ): Flow<BatchSyncProgress> = flow {
             if (syncRange.isEmpty()) {
                 Twig.debug { "No blocks to sync" }
@@ -707,7 +717,12 @@ class CompactBlockProcessor internal constructor(
 
                 val batches = getBatchedBlockList(syncRange, network)
 
-                var enhancingRange = syncRange.start..syncRange.start
+                // Check for the last enhanced height and eventually set is as the beginning of the next enhancing range
+                var enhancingRange = if (enhanceStartHeight != null) {
+                    BlockHeight(min(syncRange.start.value, enhanceStartHeight.value))..syncRange.start
+                } else {
+                    syncRange.start..syncRange.start
+                }
 
                 batches.asFlow().map {
                     Twig.debug { "Syncing process starts for batch: $it" }
@@ -773,20 +788,26 @@ class CompactBlockProcessor internal constructor(
                             )
                         )
                     }
-                }.onEach { deleteResult ->
-                    Twig.debug { "Deletion stage done with result: $deleteResult" }
+                }.onEach { continuousResult ->
+                    Twig.debug { "Deletion stage done with result: $continuousResult" }
 
                     emit(
                         BatchSyncProgress(
-                            percentage = PercentDecimal(deleteResult.batch.index / batches.size.toFloat()),
+                            percentage = PercentDecimal(continuousResult.batch.order / batches.size.toFloat()),
                             lastSyncedHeight = getLastScannedHeight(repository),
-                            result = deleteResult.stageResult
+                            result = continuousResult.stageResult
                         )
                     )
 
                     // Increment and compare the range for triggering the enhancing
-                    enhancingRange = enhancingRange.start..deleteResult.batch.range.endInclusive
-                    if (enhancingRange.length() >= ENHANCE_BATCH_SIZE) {
+                    enhancingRange = enhancingRange.start..continuousResult.batch.range.endInclusive
+
+                    // Enhance is run in case of the range is on or over its limit, or in case of any failure
+                    // state comes from the previous stages, or if the end of the sync range is reached
+                    if (enhancingRange.length() >= ENHANCE_BATCH_SIZE ||
+                        continuousResult.stageResult != BlockProcessingResult.Success ||
+                        continuousResult.batch.order == batches.size.toLong()
+                    ) {
                         // Copy the range for use and reset for the next incrementation
                         val currentEnhancingRange = enhancingRange
                         enhancingRange = enhancingRange.endInclusive..enhancingRange.endInclusive
@@ -805,12 +826,12 @@ class CompactBlockProcessor internal constructor(
                                     Twig.error { "Enhancing failed for: $enhancingRange with $enhancingResult" }
                                 }
                                 else -> {
-                                    // All went right
+                                    // Transactions enhanced correctly
                                 }
                             }
                             emit(
                                 BatchSyncProgress(
-                                    percentage = PercentDecimal(deleteResult.batch.index / batches.size.toFloat()),
+                                    percentage = PercentDecimal(continuousResult.batch.order / batches.size.toFloat()),
                                     lastSyncedHeight = getLastScannedHeight(repository),
                                     result = enhancingResult
                                 )
@@ -818,10 +839,10 @@ class CompactBlockProcessor internal constructor(
                         }
                     }
 
-                    Twig.debug { "All sync stages done for the batch: ${deleteResult.batch}" }
-                }.takeWhile { continuousResult ->
-                    continuousResult.stageResult == BlockProcessingResult.Success ||
-                        continuousResult.stageResult == BlockProcessingResult.UpdateBirthday
+                    Twig.debug { "All sync stages done for the batch: ${continuousResult.batch}" }
+                }.takeWhile { batchProcessResult ->
+                    batchProcessResult.stageResult == BlockProcessingResult.Success ||
+                        batchProcessResult.stageResult == BlockProcessingResult.UpdateBirthday
                 }.collect()
             }
         }
@@ -971,7 +992,7 @@ class CompactBlockProcessor internal constructor(
                     if (trEnhanceResult is BlockProcessingResult.FailedEnhance) {
                         Twig.error { "Encountered transaction enhancing error: ${trEnhanceResult.error}" }
                         emit(trEnhanceResult)
-                        // We intentionally do not terminate the batch enhancing, just reporting it
+                        // We intentionally do not terminate the batch enhancing here, just reporting it
                     }
                 }
             }
@@ -1039,6 +1060,16 @@ class CompactBlockProcessor internal constructor(
             repository.lastScannedHeight()
 
         /**
+         * Get the height of the first un-enhanced transaction detail from the repository.
+         *
+         * @return the oldest transaction which hasn't been enhanced yet, or null in case of all transaction enhanced
+         * or repository is empty
+         */
+        @VisibleForTesting
+        internal suspend fun getFirstUnEnhancedHeight(repository: DerivedDataRepository) =
+            repository.firstUnEnhancedHeight()
+
+        /**
          * Get the height of the last block that was downloaded by this processor.
          *
          * @return the last downloaded height reported by the downloader.
@@ -1092,17 +1123,21 @@ class CompactBlockProcessor internal constructor(
      * @param lastSyncRange the inclusive range to sync. This represents what we most recently
      * wanted to sync. In most cases, it will be an invalid range because we'd like to sync blocks
      * that we don't yet have.
+     * @param firstUnEnhancedHeight the height in which the enhancing should start, or null in case of no previous
+     * transaction enhancing done yet
      */
     private fun updateProgress(
         networkBlockHeight: BlockHeight? = _processorInfo.value.networkBlockHeight,
         lastSyncedHeight: BlockHeight? = _processorInfo.value.lastSyncedHeight,
         lastSyncRange: ClosedRange<BlockHeight>? = _processorInfo.value.lastSyncRange,
+        firstUnEnhancedHeight: BlockHeight? = _processorInfo.value.firstUnEnhancedHeight,
     ) {
         _networkHeight.value = networkBlockHeight
         _processorInfo.value = ProcessorInfo(
             networkBlockHeight = networkBlockHeight,
             lastSyncedHeight = lastSyncedHeight,
-            lastSyncRange = lastSyncRange
+            lastSyncRange = lastSyncRange,
+            firstUnEnhancedHeight = firstUnEnhancedHeight
         )
     }
 
@@ -1226,7 +1261,8 @@ class CompactBlockProcessor internal constructor(
 
                     syncBlocksAndEnhanceTransactions(
                         syncRange = range,
-                        withDownload = false
+                        withDownload = false,
+                        enhanceStartHeight = null
                     )
                 }
             }
@@ -1299,8 +1335,8 @@ class CompactBlockProcessor internal constructor(
     private fun calculatePollInterval(fastIntervalDesired: Boolean = false): Long {
         val interval = POLL_INTERVAL
         val now = System.currentTimeMillis()
-        val deltaToNextInteral = interval - (now + interval).rem(interval)
-        return deltaToNextInteral
+        val deltaToNextInterval = interval - (now + interval).rem(interval)
+        return deltaToNextInterval
     }
 
     suspend fun calculateBirthdayHeight(): BlockHeight {
@@ -1446,23 +1482,15 @@ class CompactBlockProcessor internal constructor(
      * @param lastSyncRange inclusive range to sync. Meaning, if the range is 10..10,
      * then we will download exactly block 10. If the range is 11..10, then we want to download
      * block 11 but can't.
+     * @param firstUnEnhancedHeight the height in which the enhancing should start, or null in case of no previous
+     * transaction enhancing done yet
      */
     data class ProcessorInfo(
         val networkBlockHeight: BlockHeight?,
         val lastSyncedHeight: BlockHeight?,
-        val lastSyncRange: ClosedRange<BlockHeight>?
+        val lastSyncRange: ClosedRange<BlockHeight>?,
+        val firstUnEnhancedHeight: BlockHeight?
     ) {
-
-        /**
-         * Determines whether this instance has data.
-         *
-         * @return false when all values match their defaults.
-         */
-        val hasData
-            get() = networkBlockHeight != null ||
-                lastSyncedHeight != null ||
-                lastSyncRange != null
-
         /**
          * Determines whether this instance is actively syncing compact blocks.
          *

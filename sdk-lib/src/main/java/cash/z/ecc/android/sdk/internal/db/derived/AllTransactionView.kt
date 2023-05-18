@@ -22,6 +22,8 @@ internal class AllTransactionView(
 
         private const val COLUMN_SORT_HEIGHT = "sort_height" // $NON-NLS
 
+        private const val QUERY_LIMIT = "1" // $NON-NLS
+
         private val COLUMNS = arrayOf(
             "*", // $NON-NLS
             @Suppress("MaxLineLength")
@@ -35,6 +37,12 @@ internal class AllTransactionView(
             AllTransactionViewDefinition.COLUMN_INTEGER_ID
         )
 
+        private val ORDER_BY_MINED_HEIGHT = String.format(
+            Locale.ROOT,
+            "%s ASC", // $NON-NLS
+            AllTransactionViewDefinition.COLUMN_INTEGER_MINED_HEIGHT
+        )
+
         private val SELECTION_BLOCK_RANGE = String.format(
             Locale.ROOT,
             "%s >= ? AND %s <= ?", // $NON-NLS
@@ -42,7 +50,15 @@ internal class AllTransactionView(
             AllTransactionViewDefinition.COLUMN_INTEGER_MINED_HEIGHT
         )
 
+        private val SELECTION_RAW_IS_NULL = String.format(
+            Locale.ROOT,
+            "%s IS NULL", // $NON-NLS
+            AllTransactionViewDefinition.COLUMN_BLOB_RAW
+        )
+
         private val PROJECTION_COUNT = arrayOf("COUNT(*)") // $NON-NLS
+
+        private val PROJECTION_MINED_HEIGHT = arrayOf(AllTransactionViewDefinition.COLUMN_INTEGER_MINED_HEIGHT)
     }
 
     private val cursorParser: CursorParser<DbTransactionOverview> = CursorParser { cursor ->
@@ -122,9 +138,27 @@ internal class AllTransactionView(
             table = AllTransactionViewDefinition.VIEW_NAME,
             columns = COLUMNS,
             orderBy = ORDER_BY,
-            limit = "1",
+            limit = QUERY_LIMIT,
             cursorParser = cursorParser
         ).firstOrNull()
+
+    suspend fun firstUnEnhancedHeight(): BlockHeight? {
+        val heightLong =
+            sqliteDatabase.queryAndMap(
+                table = AllTransactionViewDefinition.VIEW_NAME,
+                columns = PROJECTION_MINED_HEIGHT,
+                orderBy = ORDER_BY_MINED_HEIGHT,
+                selection = SELECTION_RAW_IS_NULL,
+                limit = QUERY_LIMIT,
+                cursorParser = { it.getLong(0) }
+            ).firstOrNull()
+
+        return if (heightLong != null) {
+            BlockHeight.new(zcashNetwork, heightLong)
+        } else {
+            null
+        }
+    }
 }
 
 internal object AllTransactionViewDefinition {
