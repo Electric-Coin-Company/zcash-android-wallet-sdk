@@ -9,7 +9,7 @@ import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -140,7 +140,7 @@ class WalletCoordinator(
      * Resets persisted data in the SDK, but preserves the wallet secret.  This will cause the
      * WalletCoordinator to emit a new synchronizer instance.
      */
-    @OptIn(FlowPreview::class)
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun resetSdk() {
         walletScope.launch {
             val zcashNetwork = persistableWallet.first()?.network
