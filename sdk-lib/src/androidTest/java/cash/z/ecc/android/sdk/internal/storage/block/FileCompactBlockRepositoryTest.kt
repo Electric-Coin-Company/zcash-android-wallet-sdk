@@ -1,10 +1,10 @@
 package cash.z.ecc.android.sdk.internal.storage.block
 
+import cash.z.ecc.android.sdk.internal.Backend
 import cash.z.ecc.android.sdk.internal.ext.deleteRecursivelySuspend
 import cash.z.ecc.android.sdk.internal.ext.existsSuspend
 import cash.z.ecc.android.sdk.internal.ext.listSuspend
 import cash.z.ecc.android.sdk.internal.ext.mkdirsSuspend
-import cash.z.ecc.android.sdk.jni.Backend
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.fixture.FakeRustBackendFixture

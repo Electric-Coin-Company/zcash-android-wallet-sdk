@@ -14,30 +14,31 @@ import cash.z.ecc.android.sdk.ext.BatchMetrics
 import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.ext.ZcashSdk.MAX_BACKOFF_INTERVAL
 import cash.z.ecc.android.sdk.ext.ZcashSdk.POLL_INTERVAL
+import cash.z.ecc.android.sdk.internal.Backend
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.block.CompactBlockDownloader
+import cash.z.ecc.android.sdk.internal.createAccountAndGetSpendingKey
+import cash.z.ecc.android.sdk.internal.ext.isNullOrEmpty
+import cash.z.ecc.android.sdk.internal.ext.length
 import cash.z.ecc.android.sdk.internal.ext.retryUpTo
 import cash.z.ecc.android.sdk.internal.ext.retryWithBackoff
 import cash.z.ecc.android.sdk.internal.ext.toHexReversed
-import cash.z.ecc.android.sdk.internal.isNullOrEmpty
-import cash.z.ecc.android.sdk.internal.length
+import cash.z.ecc.android.sdk.internal.getBalance
+import cash.z.ecc.android.sdk.internal.getBranchIdForHeight
+import cash.z.ecc.android.sdk.internal.getCurrentAddress
+import cash.z.ecc.android.sdk.internal.getDownloadedUtxoBalance
+import cash.z.ecc.android.sdk.internal.getNearestRewindHeight
+import cash.z.ecc.android.sdk.internal.getVerifiedBalance
+import cash.z.ecc.android.sdk.internal.listTransparentReceivers
 import cash.z.ecc.android.sdk.internal.model.BlockBatch
 import cash.z.ecc.android.sdk.internal.model.DbTransactionOverview
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.internal.model.ext.from
 import cash.z.ecc.android.sdk.internal.model.ext.toBlockHeight
+import cash.z.ecc.android.sdk.internal.network
 import cash.z.ecc.android.sdk.internal.repository.DerivedDataRepository
-import cash.z.ecc.android.sdk.jni.Backend
-import cash.z.ecc.android.sdk.jni.createAccountAndGetSpendingKey
-import cash.z.ecc.android.sdk.jni.getBalance
-import cash.z.ecc.android.sdk.jni.getBranchIdForHeight
-import cash.z.ecc.android.sdk.jni.getCurrentAddress
-import cash.z.ecc.android.sdk.jni.getDownloadedUtxoBalance
-import cash.z.ecc.android.sdk.jni.getNearestRewindHeight
-import cash.z.ecc.android.sdk.jni.getVerifiedBalance
-import cash.z.ecc.android.sdk.jni.listTransparentReceivers
-import cash.z.ecc.android.sdk.jni.rewindToHeight
-import cash.z.ecc.android.sdk.jni.validateCombinedChainOrErrorBlockHeight
+import cash.z.ecc.android.sdk.internal.rewindToHeight
+import cash.z.ecc.android.sdk.internal.validateCombinedChainOrErrorBlockHeight
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.PercentDecimal
@@ -80,7 +81,7 @@ import kotlin.time.Duration.Companion.days
  * @property downloader the component responsible for downloading compact blocks and persisting them
  * locally for processing.
  * @property repository the repository holding transaction information.
- * @property rustBackend the librustzcash functionality available and exposed to the SDK.
+ * @property backend the librustzcash functionality available and exposed to the SDK.
  * @param minimumHeight the lowest height that we could care about. This is mostly used during
  * reorgs as a backstop to make sure we do not rewind beyond sapling activation. It also is factored
  * in when considering initial range to download. In most cases, this should be the birthday height
@@ -91,8 +92,8 @@ import kotlin.time.Duration.Companion.days
 class CompactBlockProcessor internal constructor(
     val downloader: CompactBlockDownloader,
     private val repository: DerivedDataRepository,
-    private val rustBackend: Backend,
-    minimumHeight: BlockHeight = rustBackend.network.saplingActivationHeight
+    private val backend: Backend,
+    minimumHeight: BlockHeight
 ) {
     /**
      * Callback for any non-trivial errors that occur while processing compact blocks.
@@ -130,9 +131,15 @@ class CompactBlockProcessor internal constructor(
     var onScanMetricCompleteListener: ((BatchMetrics, Boolean) -> Unit)? = null
 
     private val consecutiveChainErrors = AtomicInteger(0)
+
+    /**
+     * The zcash network that is being processed. Either Testnet or Mainnet.
+     */
+    val network = backend.network
+
     private val lowerBoundHeight: BlockHeight = BlockHeight(
         max(
-            rustBackend.network.saplingActivationHeight.value,
+            network.saplingActivationHeight.value,
             minimumHeight.value - MAX_REORG_SIZE
         )
     )
@@ -151,11 +158,6 @@ class CompactBlockProcessor internal constructor(
      * effectively fixed.
      */
     private val _birthdayHeight = MutableStateFlow(lowerBoundHeight)
-
-    /**
-     * The zcash network that is being processed. Either Testnet or Mainnet.
-     */
-    val network = rustBackend.network
 
     /**
      * The flow of state values so that a wallet can monitor the state of this class without needing
@@ -357,7 +359,7 @@ class CompactBlockProcessor internal constructor(
         // Sync
         var syncResult: BlockProcessingResult = BlockProcessingResult.Success
         syncNewBlocks(
-            backend = rustBackend,
+            backend = backend,
             downloader = downloader,
             repository = repository,
             network = network,
@@ -508,7 +510,7 @@ class CompactBlockProcessor internal constructor(
             is Response.Success -> {
                 runCatching {
                     Twig.debug { "decrypting and storing transaction (id:$id  block:$minedHeight)" }
-                    rustBackend.decryptAndStoreTransaction(response.result.data)
+                    backend.decryptAndStoreTransaction(response.result.data)
                 }.onSuccess {
                     Twig.debug { "DONE: enhancing transaction (id:$id  block:$minedHeight)" }
                 }.onFailure { error ->
@@ -548,9 +550,9 @@ class CompactBlockProcessor internal constructor(
                 } else {
                     val clientBranch = "%x".format(
                         Locale.ROOT,
-                        rustBackend.getBranchIdForHeight(serverBlockHeight)
+                        backend.getBranchIdForHeight(serverBlockHeight)
                     )
-                    val network = rustBackend.network.networkName
+                    val network = backend.network.networkName
 
                     if (!clientBranch.equals(info.consensusBranchId, true)) {
                         MismatchedNetwork(
@@ -610,7 +612,7 @@ class CompactBlockProcessor internal constructor(
             @Suppress("TooGenericExceptionCaught")
             try {
                 retryUpTo(3) {
-                    val tAddresses = rustBackend.listTransparentReceivers(account)
+                    val tAddresses = backend.listTransparentReceivers(account)
 
                     downloader.lightWalletClient.fetchUtxos(
                         tAddresses,
@@ -689,13 +691,13 @@ class CompactBlockProcessor internal constructor(
             // TODO [#920]: Tweak RustBackend public APIs to have void return values.
             // TODO [#920]: Thus, we don't need to check the boolean result of this call until fixed.
             // TODO [#920]: https://github.com/zcash/zcash-android-wallet-sdk/issues/920
-            rustBackend.putUtxo(
+            backend.putUtxo(
                 utxo.address,
                 utxo.txid,
                 utxo.index,
                 utxo.script,
                 utxo.valueZat,
-                BlockHeight(utxo.height)
+                utxo.height
             )
             true
         } catch (t: Throwable) {
@@ -1071,7 +1073,7 @@ class CompactBlockProcessor internal constructor(
             // tricky: subtract one because we delete ABOVE this block
             // This could create an invalid height if if height was saplingActivationHeight
             val rewindHeight = BlockHeight(height.value - 1)
-            rustBackend.getNearestRewindHeight(rewindHeight)
+            backend.getNearestRewindHeight(rewindHeight)
         }
     }
 
@@ -1109,10 +1111,10 @@ class CompactBlockProcessor internal constructor(
 
             if (null == lastSyncedHeight && targetHeight < lastLocalBlock) {
                 Twig.debug { "Rewinding because targetHeight is less than lastLocalBlock." }
-                rustBackend.rewindToHeight(targetHeight)
+                backend.rewindToHeight(targetHeight)
             } else if (null != lastSyncedHeight && targetHeight < lastSyncedHeight) {
                 Twig.debug { "Rewinding because targetHeight is less than lastSyncedHeight." }
-                rustBackend.rewindToHeight(targetHeight)
+                backend.rewindToHeight(targetHeight)
             } else {
                 Twig.debug {
                     "Not rewinding dataDb because the last synced height is $lastSyncedHeight and the" +
@@ -1265,7 +1267,7 @@ class CompactBlockProcessor internal constructor(
         }
         return buildList<BlockHeight> {
             add(lowerBoundHeight)
-            add(rustBackend.network.saplingActivationHeight)
+            add(backend.network.saplingActivationHeight)
             oldestTransactionHeight?.let { add(it) }
         }.maxOf { it }
     }
@@ -1280,9 +1282,9 @@ class CompactBlockProcessor internal constructor(
     suspend fun getBalanceInfo(account: Account): WalletBalance {
         @Suppress("TooGenericExceptionCaught")
         return try {
-            val balanceTotal = rustBackend.getBalance(account)
+            val balanceTotal = backend.getBalance(account)
             Twig.debug { "found total balance: $balanceTotal" }
-            val balanceAvailable = rustBackend.getVerifiedBalance(account)
+            val balanceAvailable = backend.getVerifiedBalance(account)
             Twig.debug { "found available balance: $balanceAvailable" }
             WalletBalance(balanceTotal, balanceAvailable)
         } catch (t: Throwable) {
@@ -1292,7 +1294,7 @@ class CompactBlockProcessor internal constructor(
     }
 
     suspend fun getUtxoCacheBalance(address: String): WalletBalance =
-        rustBackend.getDownloadedUtxoBalance(address)
+        backend.getDownloadedUtxoBalance(address)
 
     /**
      * Transmits the given state for this processor.

@@ -269,6 +269,7 @@ rootProject.name = "zcash-android-sdk"
 
 includeBuild("build-conventions")
 
+include("backend-lib")
 include("darkside-test-lib")
 include("demo-app")
 include("demo-app-benchmark-test")

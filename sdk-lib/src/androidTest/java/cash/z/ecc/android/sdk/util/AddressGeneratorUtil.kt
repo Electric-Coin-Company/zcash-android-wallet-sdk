@@ -1,9 +1,10 @@
 package cash.z.ecc.android.sdk.util
 
+import cash.z.ecc.android.sdk.internal.deriveUnifiedAddress
+import cash.z.ecc.android.sdk.internal.jni.RustDerivationTool
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.test.readFileLinesInFlow
-import cash.z.ecc.android.sdk.tool.DerivationTool
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.runBlocking
@@ -31,7 +32,7 @@ class AddressGeneratorUtil {
             .map { seedPhrase ->
                 mnemonics.toSeed(seedPhrase.toCharArray())
             }.map { seed ->
-                DerivationTool.deriveUnifiedAddress(seed, ZcashNetwork.Mainnet, Account.DEFAULT)
+                RustDerivationTool.new().deriveUnifiedAddress(seed, ZcashNetwork.Mainnet, Account.DEFAULT)
             }.collect { address ->
                 println("xrxrx2\t$address")
                 assertTrue(address.startsWith("u1"))

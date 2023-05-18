@@ -101,7 +101,7 @@ class TestnetIntegrationTest : ScopedTest() {
     }
 
     private suspend fun sendFunds(): Boolean {
-        val spendingKey = DerivationTool.deriveUnifiedSpendingKey(seed, synchronizer.network, Account.DEFAULT)
+        val spendingKey = DerivationTool.getInstance().deriveUnifiedSpendingKey(seed, synchronizer.network, Account.DEFAULT)
         log("sending to address")
         synchronizer.sendToAddress(
             spendingKey,

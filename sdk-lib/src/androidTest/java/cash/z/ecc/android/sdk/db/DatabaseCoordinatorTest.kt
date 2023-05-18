@@ -1,8 +1,9 @@
 package cash.z.ecc.android.sdk.db
 
+import androidx.test.core.app.ApplicationProvider
 import androidx.test.filters.SmallTest
 import cash.z.ecc.android.sdk.internal.db.DatabaseCoordinator
-import cash.z.ecc.android.sdk.internal.ext.existsSuspend
+import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.test.getAppContext
 import cash.z.ecc.fixture.DatabaseCacheFilesRootFixture
 import cash.z.ecc.fixture.DatabaseNameFixture
@@ -124,28 +125,28 @@ class DatabaseCoordinatorTest {
             DatabaseNameFixture.newDbWal(name = DatabaseCoordinator.DB_DATA_NAME)
         )
 
-        assertTrue(originalDbFile.existsSuspend())
-        assertTrue(originalDbJournalFile.existsSuspend())
-        assertTrue(originalDbWalFile.existsSuspend())
+        assertTrue(originalDbFile.exists())
+        assertTrue(originalDbJournalFile.exists())
+        assertTrue(originalDbWalFile.exists())
 
-        assertFalse(expectedDbFile.existsSuspend())
-        assertFalse(expectedDbJournalFile.existsSuspend())
-        assertFalse(expectedDbWalFile.existsSuspend())
+        assertFalse(expectedDbFile.exists())
+        assertFalse(expectedDbJournalFile.exists())
+        assertFalse(expectedDbWalFile.exists())
 
         dbCoordinator.dataDbFile(
             DatabaseNameFixture.TEST_DB_NETWORK,
             DatabaseNameFixture.TEST_DB_ALIAS
         ).also { resultFile ->
-            assertTrue(resultFile.existsSuspend())
+            assertTrue(resultFile.exists())
             assertEquals(expectedDbFile.absolutePath, resultFile.absolutePath)
 
-            assertTrue(expectedDbFile.existsSuspend())
-            assertTrue(expectedDbJournalFile.existsSuspend())
-            assertTrue(expectedDbWalFile.existsSuspend())
+            assertTrue(expectedDbFile.exists())
+            assertTrue(expectedDbJournalFile.exists())
+            assertTrue(expectedDbWalFile.exists())
 
-            assertFalse(originalDbFile.existsSuspend())
-            assertFalse(originalDbJournalFile.existsSuspend())
-            assertFalse(originalDbWalFile.existsSuspend())
+            assertFalse(originalDbFile.exists())
+            assertFalse(originalDbJournalFile.exists())
+            assertFalse(originalDbWalFile.exists())
         }
     }
 
@@ -186,14 +187,14 @@ class DatabaseCoordinatorTest {
             fileName = DatabaseNameFixture.newDbWal(name = DatabaseCoordinator.DB_DATA_NAME)
         )
 
-        assertTrue(dbFile.existsSuspend())
-        assertTrue(dbJournalFile.existsSuspend())
-        assertTrue(dbWalFile.existsSuspend())
+        assertTrue(dbFile.exists())
+        assertTrue(dbJournalFile.exists())
+        assertTrue(dbWalFile.exists())
 
         dbCoordinator.deleteDatabases(DatabaseNameFixture.TEST_DB_NETWORK, DatabaseNameFixture.TEST_DB_ALIAS).also {
-            assertFalse(dbFile.existsSuspend())
-            assertFalse(dbJournalFile.existsSuspend())
-            assertFalse(dbWalFile.existsSuspend())
+            assertFalse(dbFile.exists())
+            assertFalse(dbJournalFile.exists())
+            assertFalse(dbWalFile.exists())
         }
     }
 
@@ -276,13 +277,13 @@ class DatabaseCoordinatorTest {
         )
 
         // check all files in place
-        assertTrue(olderLegacyDbFile.existsSuspend())
-        assertTrue(olderLegacyDbJournalFile.existsSuspend())
-        assertTrue(olderLegacyDbWalFile.existsSuspend())
+        assertTrue(olderLegacyDbFile.exists())
+        assertTrue(olderLegacyDbJournalFile.exists())
+        assertTrue(olderLegacyDbWalFile.exists())
 
-        assertTrue(newerLegacyDbFile.existsSuspend())
-        assertTrue(newerLegacyDbJournalFile.existsSuspend())
-        assertTrue(newerLegacyDbWalFile.existsSuspend())
+        assertTrue(newerLegacyDbFile.exists())
+        assertTrue(newerLegacyDbJournalFile.exists())
+        assertTrue(newerLegacyDbWalFile.exists())
 
         // once we access the latest file system blocks storage root directory, all the legacy database files should
         // be removed
@@ -290,13 +291,41 @@ class DatabaseCoordinatorTest {
             network = DatabaseNameFixture.TEST_DB_NETWORK,
             alias = DatabaseNameFixture.TEST_DB_ALIAS
         ).also {
-            assertFalse(olderLegacyDbFile.existsSuspend())
-            assertFalse(olderLegacyDbJournalFile.existsSuspend())
-            assertFalse(olderLegacyDbWalFile.existsSuspend())
+            assertFalse(olderLegacyDbFile.exists())
+            assertFalse(olderLegacyDbJournalFile.exists())
+            assertFalse(olderLegacyDbWalFile.exists())
 
-            assertFalse(newerLegacyDbFile.existsSuspend())
-            assertFalse(newerLegacyDbJournalFile.existsSuspend())
-            assertFalse(newerLegacyDbWalFile.existsSuspend())
+            assertFalse(newerLegacyDbFile.exists())
+            assertFalse(newerLegacyDbJournalFile.exists())
+            assertFalse(newerLegacyDbWalFile.exists())
         }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    @SmallTest
+    fun data_db_path() = runTest {
+        val coordinator = DatabaseCoordinator.getInstance(ApplicationProvider.getApplicationContext())
+        val dataDbFile = coordinator.dataDbFile(ZcashNetwork.Testnet, "TestWallet")
+        assertTrue(
+            "Invalid DataDB file",
+            dataDbFile.absolutePath.endsWith(
+                "no_backup/co.electricoin.zcash/TestWallet_testnet_${DatabaseCoordinator.DB_DATA_NAME}"
+            )
+        )
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    @SmallTest
+    fun cache_path() = runTest {
+        val coordinator = DatabaseCoordinator.getInstance(ApplicationProvider.getApplicationContext())
+        val cache = coordinator.fsBlockDbRoot(ZcashNetwork.Testnet, "TestWallet")
+        assertTrue(
+            "Invalid CacheDB file",
+            cache.absolutePath.endsWith(
+                "no_backup/co.electricoin.zcash/TestWallet_testnet_${DatabaseCoordinator.DB_FS_BLOCK_DB_ROOT_NAME}"
+            )
+        )
     }
 }

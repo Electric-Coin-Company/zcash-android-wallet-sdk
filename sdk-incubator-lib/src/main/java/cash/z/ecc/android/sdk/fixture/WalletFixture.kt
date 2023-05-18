@@ -20,7 +20,11 @@ sealed class WalletFixture {
         seed: String = seedPhrase,
         network: ZcashNetwork,
         account: Account = Account.DEFAULT
-    ) = DerivationTool.deriveUnifiedSpendingKey(Mnemonics.MnemonicCode(seed).toEntropy(), network, account)
+    ) = DerivationTool.getInstance().deriveUnifiedSpendingKey(
+        Mnemonics.MnemonicCode(seed).toEntropy(),
+        network,
+        account
+    )
 
     @Suppress("MaxLineLength")
     object Ben : WalletFixture() {
@@ -34,9 +38,11 @@ sealed class WalletFixture {
             ZcashNetwork.ID_TESTNET -> {
                 BlockHeight.new(zcashNetwork, 2170000L)
             }
+
             ZcashNetwork.ID_MAINNET -> {
                 BlockHeight.new(zcashNetwork, 1935000L)
             }
+
             else -> error("Unknown network $zcashNetwork")
         }
 
@@ -50,6 +56,7 @@ sealed class WalletFixture {
                     transparent = "tmP3uLtGx5GPddkq8a6ddmXhqJJ3vy6tpTE"
                 )
             }
+
             ZcashNetwork.ID_MAINNET -> {
                 Addresses(
                     unified =
@@ -59,6 +66,7 @@ sealed class WalletFixture {
                     transparent = "t1JP7PHu72xHztsZiwH6cye4yvC9Prb3EvQ"
                 )
             }
+
             else -> error("Unknown network $zcashNetwork")
         }
     }
@@ -76,9 +84,11 @@ sealed class WalletFixture {
             ZcashNetwork.ID_TESTNET -> {
                 BlockHeight.new(zcashNetwork, 2170000L)
             }
+
             ZcashNetwork.ID_MAINNET -> {
                 BlockHeight.new(zcashNetwork, 1935000L)
             }
+
             else -> error("Unknown network $zcashNetwork")
         }
 
@@ -92,6 +102,7 @@ sealed class WalletFixture {
                     transparent = "tmCxJG72RWN66xwPtNgu4iKHpyysGrc7rEg"
                 )
             }
+
             ZcashNetwork.ID_MAINNET -> {
                 Addresses(
                     unified =
@@ -101,6 +112,7 @@ sealed class WalletFixture {
                     transparent = "t1duiEGg7b39nfQee3XaTY4f5McqfyJKhBi"
                 )
             }
+
             else -> error("Unknown network $zcashNetwork")
         }
     }

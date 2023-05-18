@@ -5,7 +5,6 @@ plugins {
 
     id("org.jetbrains.kotlin.plugin.allopen")
     id("org.jetbrains.dokka")
-    id("org.mozilla.rust-android-gradle.rust-android")
 
     id("wtf.emulator.gradle")
     id("zcash-sdk.emulator-wtf-conventions")
@@ -84,28 +83,9 @@ tasks.dokkaHtml.configure {
     }
 }
 
-cargo {
-    module = "."
-    libname = "zcashwalletsdk"
-    targets = listOf(
-        "arm",
-        "arm64",
-        "x86",
-        "x86_64"
-    )
-    apiLevels = mapOf(
-        "arm" to 16,
-        "arm64" to 21,
-        "x86" to 16,
-        "x86_64" to 21,
-    )
-
-    profile = "release"
-    prebuiltToolchains = true
-}
-
 dependencies {
     api(projects.lightwalletClientLib)
+    implementation(projects.backendLib)
 
     implementation(libs.androidx.annotation)
     implementation(libs.androidx.appcompat)
@@ -147,23 +127,6 @@ dependencies {
     // sample mnemonic plugin
     androidTestImplementation(libs.zcashwalletplgn)
     androidTestImplementation(libs.bip39)
-}
-
-tasks {
-    /*
-     * The Mozilla Rust Gradle plugin caches the native build data under the "target" directory,
-     * which does not normally get deleted during a clean. The following task and dependency solves
-     * that.
-     */
-    getByName<Delete>("clean").dependsOn(create<Delete>("cleanRustBuildOutput") {
-        delete("target")
-    })
-}
-
-project.afterEvaluate {
-    val cargoTask = tasks.getByName("cargoBuild")
-    tasks.getByName("javaPreCompileDebug").dependsOn(cargoTask)
-    tasks.getByName("javaPreCompileRelease").dependsOn(cargoTask)
 }
 
 fun MinimalExternalModuleDependency.asCoordinateString() =

@@ -1,0 +1,18 @@
+# This improves obfuscation and moves non-public classes to their own namespace.
+-repackageclasses 'cash.z.ecc.android.sdk.internal'
+
+# This makes it easier to autocomplete methods in an IDE using this obfuscated library.
+-keepparameternames
+
+# The ProGuard manual recommends keeping these attributes for libraries.
+-keepattributes EnclosingMethod,InnerClasses,Signature,Exceptions,*Annotation*
+
+# Ensure that stacktraces are reversible.
+-renamesourcefileattribute SourceFile
+-keepattributes SourceFile,LineNumberTable
+
+# Keep the public interface of the library.
+-keep public class cash.z.ecc.android.sdk.internal.Backend { public protected *; }
+-keep public class cash.z.ecc.android.sdk.internal.Derivation { public protected *; }
+-keep public class cash.z.ecc.android.sdk.internal.jni.RustBackend { public protected *; }
+-keep public class cash.z.ecc.android.sdk.internal.model.* { public protected *; }
