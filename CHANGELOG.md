@@ -1,6 +1,6 @@
 # Change Log
  
-## Unreleased
+## 1.17.0-beta01
 - Transparent fund balances are now displayed almost immediately
 - Synchronization of shielded balances and transaction history is about 30% faster
 - Disk space usage is reduced by about 90%
