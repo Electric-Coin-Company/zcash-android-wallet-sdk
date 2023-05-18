@@ -808,7 +808,7 @@ class CompactBlockProcessor internal constructor(
                         continuousResult.stageResult != BlockProcessingResult.Success ||
                         continuousResult.batch.order == batches.size.toLong()
                     ) {
-                        // Copy the range for use and reset for the next incrementation
+                        // Copy the range for use and reset for the next iteration
                         val currentEnhancingRange = enhancingRange
                         enhancingRange = enhancingRange.endInclusive..enhancingRange.endInclusive
                         enhanceTransactionDetails(
