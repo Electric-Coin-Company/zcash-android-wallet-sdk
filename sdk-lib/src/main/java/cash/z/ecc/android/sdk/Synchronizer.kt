@@ -357,23 +357,23 @@ interface Synchronizer {
         DISCONNECTED,
 
         /**
-         * Indicates that the Synchronizer is actively syncing new blocks. It consists of these stages downloading
-         * new blocks, validating these blocks, then scanning them, deleting the temporary persisted block files, and
-         * enhancing transaction details at the end.
+         * Indicates that the Synchronizer is actively syncing new blocks. It goes through these stages internally:
+         * downloading new blocks, validating these blocks, then scanning them, deleting the temporary persisted block
+         * files, and enhancing transaction details at the end.
          *
-         * In **Downloading** stage the Synchronizer is actively downloading new blocks from the
+         * In the downloading stage, the Synchronizer is actively downloading new blocks from the
          * server.
          *
-         * In **Validating** stage the Synchronizer is actively validating new blocks that were downloaded
+         * In the validating stage, the Synchronizer is actively validating new blocks that were downloaded
          * from the server. Blocks need to be verified before they are scanned. This confirms that
          * each block is chain-sequential, thereby detecting missing blocks and reorgs.
          *
-         * In **Scanning** stage Synchronizer is actively decrypting new blocks that were downloaded
+         * In the scanning stage, Synchronizer is actively decrypting new blocks that were downloaded
          * from the server.
          *
-         * In **Deleting** stage are all temporary persisted block files removed from the persistence.
+         * In the deleting stage are all temporary persisted block files removed from the persistence.
          *
-         * In **Enhancing** stage is the Synchronizer actively enhancing newly scanned blocks with additional
+         * In the enhancing stage is the Synchronizer actively enhancing newly scanned blocks with additional
          * transaction details, fetched from the server.
          */
         SYNCING,
