@@ -1333,6 +1333,8 @@ class CompactBlockProcessor internal constructor(
      * when we unexpectedly lose server connection or are waiting for an event to happen on the
      * chain. We can pass this desire along now and later figure out how to handle it, privately.
      ￼*/
+    // TODO [#1048]: Consider using Kotlin Duration rather than Long in the calculatePollInterval
+    // TODO [#1048]: https://github.com/zcash/zcash-android-wallet-sdk/issues/1048
     @Suppress("UNUSED_PARAMETER")
     private fun calculatePollInterval(fastIntervalDesired: Boolean = false): Long {
         val interval = POLL_INTERVAL
