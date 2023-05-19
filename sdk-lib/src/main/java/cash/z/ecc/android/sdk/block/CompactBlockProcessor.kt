@@ -818,6 +818,8 @@ class CompactBlockProcessor internal constructor(
                             downloader = downloader
                         ).collect { enhancingResult ->
                             Twig.debug { "Enhancing result: $enhancingResult" }
+                            // TODO [#1047]: CompactBlockProcessor: Consider a separate sub-stage result handling
+                            // TODO [#1047]: https://github.com/zcash/zcash-android-wallet-sdk/issues/1047
                             when (enhancingResult) {
                                 is BlockProcessingResult.UpdateBirthday -> {
                                     Twig.debug { "Birthday height update reporting" }
