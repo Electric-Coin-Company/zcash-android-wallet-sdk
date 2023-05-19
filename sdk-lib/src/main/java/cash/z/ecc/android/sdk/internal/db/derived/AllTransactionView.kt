@@ -142,7 +142,7 @@ internal class AllTransactionView(
             cursorParser = cursorParser
         ).firstOrNull()
 
-    suspend fun firstUnEnhancedHeight(): BlockHeight? {
+    suspend fun firstUnenhancedHeight(): BlockHeight? {
         val heightLong =
             sqliteDatabase.queryAndMap(
                 table = AllTransactionViewDefinition.VIEW_NAME,

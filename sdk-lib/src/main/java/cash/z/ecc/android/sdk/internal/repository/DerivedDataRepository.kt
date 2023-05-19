@@ -25,7 +25,7 @@ internal interface DerivedDataRepository {
      * @return the height of the first un-enhanced transaction in the repository, or null in case of all transaction
      * enhanced or no entry found
      */
-    suspend fun firstUnEnhancedHeight(): BlockHeight?
+    suspend fun firstUnenhancedHeight(): BlockHeight?
 
     /**
      * The height of the first block in this repository. This is typically the checkpoint that was

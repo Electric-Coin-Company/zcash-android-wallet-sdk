@@ -447,13 +447,13 @@ class CompactBlockProcessor internal constructor(
         }
 
         // Get the first un-enhanced transaction from the repository
-        val firstUnEnhancedHeight = getFirstUnEnhancedHeight(repository)
+        val firstUnenhancedHeight = getFirstUnenhancedHeight(repository)
 
         updateProgress(
             networkBlockHeight = networkBlockHeight,
             lastSyncedHeight = lastSyncedHeight,
             lastSyncRange = lastSyncedHeight + 1..networkBlockHeight,
-            firstUnenhancedHeight = firstUnEnhancedHeight
+            firstUnenhancedHeight = firstUnenhancedHeight
         )
 
         return true
@@ -1066,8 +1066,8 @@ class CompactBlockProcessor internal constructor(
          * or repository is empty
          */
         @VisibleForTesting
-        internal suspend fun getFirstUnEnhancedHeight(repository: DerivedDataRepository) =
-            repository.firstUnEnhancedHeight()
+        internal suspend fun getFirstUnenhancedHeight(repository: DerivedDataRepository) =
+            repository.firstUnenhancedHeight()
 
         /**
          * Get the height of the last block that was downloaded by this processor.
