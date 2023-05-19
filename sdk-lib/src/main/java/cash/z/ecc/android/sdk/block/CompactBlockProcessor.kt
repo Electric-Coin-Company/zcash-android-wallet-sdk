@@ -1125,8 +1125,9 @@ class CompactBlockProcessor internal constructor(
      * @param lastSyncRange the inclusive range to sync. This represents what we most recently
      * wanted to sync. In most cases, it will be an invalid range because we'd like to sync blocks
      * that we don't yet have.
-     * @param firstUnenhancedHeight the height in which the enhancing should start, or null in case of no previous
-     * transaction enhancing done yet
+     * @param firstUnenhancedHeight the height at which the enhancing should start. Use null if you have no
+     * preferences. The height will be calculated automatically for you to continue where it previously ended, or
+     * it'll be set to the sync start height in case of the first sync attempt.
      */
     private fun updateProgress(
         networkBlockHeight: BlockHeight? = _processorInfo.value.networkBlockHeight,
