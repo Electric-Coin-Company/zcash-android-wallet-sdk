@@ -21,6 +21,10 @@ internal class DbDerivedDataRepository(
         return derivedDataDb.blockTable.lastScannedHeight()
     }
 
+    override suspend fun firstUnenhancedHeight(): BlockHeight? {
+        return derivedDataDb.allTransactionView.firstUnenhancedHeight()
+    }
+
     override suspend fun firstScannedHeight(): BlockHeight {
         return derivedDataDb.blockTable.firstScannedHeight()
     }
