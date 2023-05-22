@@ -430,7 +430,7 @@ class CompactBlockProcessor internal constructor(
                 network,
                 max(
                     it?.value ?: 0,
-                    lowerBoundHeight.value - 1
+                    lowerBoundHeight.value
                 )
             )
         }
@@ -521,15 +521,10 @@ class CompactBlockProcessor internal constructor(
     }
 
     private suspend fun updateBirthdayHeight() {
-        @Suppress("TooGenericExceptionCaught")
-        try {
-            val betterBirthday = calculateBirthdayHeight()
-            if (betterBirthday > birthdayHeight) {
-                Twig.debug { "Better birthday found! Birthday height updated from $birthdayHeight to $betterBirthday" }
-                _birthdayHeight.value = betterBirthday
-            }
-        } catch (e: Throwable) {
-            Twig.debug(e) { "Warning: updating the birthday height failed" }
+        val betterBirthday = calculateBirthdayHeight()
+        if (betterBirthday > birthdayHeight) {
+            Twig.debug { "Better birthday found! Birthday height updated from $birthdayHeight to $betterBirthday" }
+            _birthdayHeight.value = betterBirthday
         }
     }
 
@@ -1164,7 +1159,7 @@ class CompactBlockProcessor internal constructor(
             originalCheckpoint
         } else {
             // tricky: subtract one because we delete ABOVE this block
-            // This could create an invalid height if if height was saplingActivationHeight
+            // This could create an invalid height if height was saplingActivationHeight
             val rewindHeight = BlockHeight(height.value - 1)
             backend.getNearestRewindHeight(rewindHeight)
         }
@@ -1345,27 +1340,17 @@ class CompactBlockProcessor internal constructor(
     }
 
     suspend fun calculateBirthdayHeight(): BlockHeight {
-        var oldestTransactionHeight: BlockHeight? = null
-        @Suppress("TooGenericExceptionCaught")
-        try {
-            val tempOldestTransactionHeight = repository.getOldestTransaction()?.minedHeight
-                ?: lowerBoundHeight
-            // to be safe adjust for reorgs (and generally a little cushion is good for privacy)
-            // so we round down to the nearest 100 and then subtract 100 to ensure that the result is always at least
-            // 100 blocks away
-            oldestTransactionHeight = BlockHeight.new(
-                network,
-                tempOldestTransactionHeight.value -
-                    tempOldestTransactionHeight.value.rem(MAX_REORG_SIZE) - MAX_REORG_SIZE.toLong()
-            )
-        } catch (t: Throwable) {
-            Twig.debug(t) { "failed to calculate birthday" }
-        }
-        return buildList<BlockHeight> {
-            add(lowerBoundHeight)
-            add(backend.network.saplingActivationHeight)
-            oldestTransactionHeight?.let { add(it) }
-        }.maxOf { it }
+        return repository.getOldestTransaction()?.minedHeight?.value?.let {
+            // To be safe adjust for reorgs (and generally a little cushion is good for privacy), so we round down to
+            // the nearest 100 and then subtract 100 to ensure that the result is always at least 100 blocks away
+            var oldestTransactionHeightValue = it
+            oldestTransactionHeightValue -= oldestTransactionHeightValue.rem(MAX_REORG_SIZE) - MAX_REORG_SIZE.toLong()
+            if (oldestTransactionHeightValue < lowerBoundHeight.value) {
+                lowerBoundHeight
+            } else {
+                BlockHeight.new(network, oldestTransactionHeightValue)
+            }
+        } ?: lowerBoundHeight
     }
 
     /**
