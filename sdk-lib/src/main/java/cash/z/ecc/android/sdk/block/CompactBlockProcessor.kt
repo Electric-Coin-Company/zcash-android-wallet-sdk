@@ -541,7 +541,7 @@ class CompactBlockProcessor internal constructor(
         if (failedUtxoFetches < 9) { // there are 3 attempts per block
             @Suppress("TooGenericExceptionCaught")
             try {
-                retryUpTo(3) {
+                retryUpTo(UTXO_FETCH_RETRIES) {
                     val tAddresses = backend.listTransparentReceivers(account)
 
                     downloader.lightWalletClient.fetchUtxos(
@@ -647,6 +647,16 @@ class CompactBlockProcessor internal constructor(
          * Default attempts at retrying.
          */
         internal const val RETRIES = 5
+
+        /**
+         * Transaction fetching default attempts at retrying.
+         */
+        internal const val TRANSACTION_FETCH_RETRIES = 1
+
+        /**
+         * UTXOs fetching default attempts at retrying.
+         */
+        internal const val UTXO_FETCH_RETRIES = 3
 
         /**
          * The theoretical maximum number of blocks in a reorg, due to other bottlenecks in the protocol design.
@@ -892,7 +902,7 @@ class CompactBlockProcessor internal constructor(
                 if (failedAttempts == 0) {
                     Twig.verbose { "Starting to download batch $batch" }
                 } else {
-                    Twig.verbose { "Retrying to download batch $batch after $failedAttempts failure(s)..." }
+                    Twig.warn { "Retrying to download batch $batch after $failedAttempts failure(s)..." }
                 }
 
                 downloadedBlocks = downloader.downloadBlockRange(batch.range)
@@ -985,7 +995,7 @@ class CompactBlockProcessor internal constructor(
                 }
 
                 newTxs.filter { it.minedHeight != null }.onEach { newTransaction ->
-                    val trEnhanceResult = enhance(newTransaction, rustBackend, downloader)
+                    val trEnhanceResult = enhanceTransaction(newTransaction, rustBackend, downloader)
                     if (trEnhanceResult is BlockProcessingResult.FailedEnhance) {
                         Twig.error { "Encountered transaction enhancing error: ${trEnhanceResult.error}" }
                         emit(trEnhanceResult)
@@ -998,53 +1008,86 @@ class CompactBlockProcessor internal constructor(
             emit(BlockProcessingResult.Success)
         }
 
-        private suspend fun enhance(
+        private suspend fun enhanceTransaction(
             transaction: DbTransactionOverview,
             backend: Backend,
             downloader: CompactBlockDownloader
         ): BlockProcessingResult {
-            return if (transaction.minedHeight != null) {
-                enhanceHelper(
+            Twig.debug { "Starting enhancing transaction (id:${transaction.id}  block:${transaction.minedHeight})" }
+            if (transaction.minedHeight == null) {
+                return BlockProcessingResult.Success
+            }
+
+            return try {
+                // Fetching transaction is done with retries to eliminate a bad network condition
+                Twig.verbose { "Fetching transaction (id:${transaction.id}  block:${transaction.minedHeight})" }
+                val transactionData = fetchTransaction(
                     id = transaction.id,
                     rawTransactionId = transaction.rawId.byteArray,
                     minedHeight = transaction.minedHeight,
-                    backend = backend,
                     downloader = downloader
                 )
-            } else {
+
+                // Decrypting and storing transaction is run just once, since we consider it more stable
+                Twig.verbose {
+                    "Decrypting and storing transaction " +
+                        "(id:${transaction.id}  block:${transaction.minedHeight})"
+                }
+                decryptTransaction(
+                    transactionData = transactionData,
+                    minedHeight = transaction.minedHeight,
+                    backend = backend
+                )
+
+                Twig.debug { "Done enhancing transaction (id:${transaction.id} block:${transaction.minedHeight})" }
                 BlockProcessingResult.Success
+            } catch (e: CompactBlockProcessorException.EnhanceTransactionError) {
+                BlockProcessingResult.FailedEnhance(e)
             }
         }
 
-        private suspend fun enhanceHelper(
+        @Throws(EnhanceTxDownloadError::class)
+        private suspend fun fetchTransaction(
             id: Long,
             rawTransactionId: ByteArray,
             minedHeight: BlockHeight,
-            backend: Backend,
             downloader: CompactBlockDownloader
-        ): BlockProcessingResult {
-            Twig.debug { "START: enhancing transaction (id:$id  block:$minedHeight)" }
-
-            val fetchResponse = downloader.fetchTransaction(rawTransactionId)
-            val enhancingResult = when (fetchResponse) {
-                is Response.Success -> {
-                    @Suppress("TooGenericExceptionCaught") // RuntimeException comes from the Rust layer
-                    try {
-                        Twig.debug { "Decrypting and storing transaction (id:$id  block:$minedHeight)" }
-                        backend.decryptAndStoreTransaction(fetchResponse.result.data)
-                        Twig.debug { "DONE: enhancing transaction (id:$id  block:$minedHeight)" }
-                        BlockProcessingResult.Success
-                    } catch (exception: RuntimeException) {
-                        BlockProcessingResult.FailedEnhance(EnhanceTxDecryptError(minedHeight, exception))
+        ): ByteArray {
+            var transactionDataResult: ByteArray? = null
+            retryUpTo(TRANSACTION_FETCH_RETRIES) { failedAttempts ->
+                if (failedAttempts == 0) {
+                    Twig.debug { "Starting to fetch transaction (id:$id, block:$minedHeight)" }
+                } else {
+                    Twig.warn {
+                        "Retrying to fetch transaction (id:$id, block:$minedHeight) after $failedAttempts " +
+                            "failure(s)..."
                     }
                 }
-                is Response.Failure -> {
-                    BlockProcessingResult.FailedEnhance(
-                        EnhanceTxDownloadError(minedHeight, fetchResponse.toThrowable())
-                    )
+                when (val response = downloader.fetchTransaction(rawTransactionId)) {
+                    is Response.Success -> {
+                        transactionDataResult = response.result.data
+                    }
+                    is Response.Failure -> {
+                        throw EnhanceTxDownloadError(minedHeight, response.toThrowable())
+                    }
                 }
             }
-            return enhancingResult
+            // Result is fetched or EnhanceTxDownloadError is thrown after all attempts failed at this point
+            return transactionDataResult!!
+        }
+
+        @Throws(EnhanceTxDecryptError::class)
+        private suspend fun decryptTransaction(
+            transactionData: ByteArray,
+            minedHeight: BlockHeight,
+            backend: Backend,
+        ) {
+            @Suppress("TooGenericExceptionCaught") // RuntimeException comes from the Rust layer
+            try {
+                backend.decryptAndStoreTransaction(transactionData)
+            } catch (exception: RuntimeException) {
+                throw EnhanceTxDecryptError(minedHeight, exception)
+            }
         }
 
         /**
