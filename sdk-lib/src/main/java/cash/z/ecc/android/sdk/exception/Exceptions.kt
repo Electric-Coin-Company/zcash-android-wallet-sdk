@@ -4,10 +4,7 @@ import cash.z.ecc.android.sdk.internal.SaplingParameters
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.ZcashNetwork
-import cash.z.wallet.sdk.internal.rpc.Service
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
-import io.grpc.Status
-import io.grpc.Status.Code.UNAVAILABLE
 
 /**
  * Marker for all custom exceptions from the SDK. Making it an interface would result in more typing
@@ -237,29 +234,6 @@ sealed class LightWalletException(message: String, cause: Throwable? = null) : S
                 " different chains, most likely because of a recent network upgrade (NU). Either" +
                 " update the SDK to match lightwalletd or use a lightwalletd that matches the SDK."
         )
-
-    open class ChangeServerException(message: String, cause: Throwable? = null) : SdkException(message, cause) {
-        class ChainInfoNotMatching(
-            val propertyNames: String,
-            val expectedInfo: Service.LightdInfo,
-            val actualInfo: Service.LightdInfo
-        ) : ChangeServerException(
-            "Server change error: the $propertyNames values did not match."
-        )
-        class StatusException(val status: Status, cause: Throwable? = null) : SdkException(status.toMessage(), cause) {
-            companion object {
-                private fun Status.toMessage(): String {
-                    return when (this.code) {
-                        UNAVAILABLE -> {
-                            "Error: the new server is unavailable. Verify that the host and port are correct. Failed " +
-                                "with $this"
-                        }
-                        else -> "Changing servers failed with status $this"
-                    }
-                }
-            }
-        }
-    }
 
     class DownloadBlockException(code: Int, description: String?, cause: Throwable) : SdkException(
         "Failed to download block with code: $code due to: ${description ?: "-"}",
