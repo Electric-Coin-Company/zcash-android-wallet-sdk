@@ -331,7 +331,7 @@ class RustBackend private constructor(
         script: ByteArray,
         value: Long,
         height: Long
-    ): Boolean = withContext(SdkDispatchers.DATABASE_IO) {
+    ) = withContext(SdkDispatchers.DATABASE_IO) {
         putUtxo(
             dataDbFile.absolutePath,
             tAddress,
@@ -600,7 +600,7 @@ class RustBackend private constructor(
             value: Long,
             height: Long,
             networkId: Int
-        ): Boolean
+        )
 
         @JvmStatic
         private external fun getVerifiedTransparentBalance(

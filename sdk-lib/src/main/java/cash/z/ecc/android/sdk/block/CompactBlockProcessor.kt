@@ -618,9 +618,6 @@ class CompactBlockProcessor internal constructor(
         Twig.debug { "Found UTXO at height ${utxo.height.toInt()} with ${utxo.valueZat} zatoshi" }
         @Suppress("TooGenericExceptionCaught")
         return try {
-            // TODO [#920]: Tweak RustBackend public APIs to have void return values.
-            // TODO [#920]: Thus, we don't need to check the boolean result of this call until fixed.
-            // TODO [#920]: https://github.com/zcash/zcash-android-wallet-sdk/issues/920
             backend.putUtxo(
                 utxo.address,
                 utxo.txid,

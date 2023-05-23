@@ -133,7 +133,7 @@ internal suspend fun Backend.putUtxo(
     script: ByteArray,
     value: Long,
     height: BlockHeight
-): Boolean = putUtxo(
+) = putUtxo(
     tAddress,
     txId,
     index,
