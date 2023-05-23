@@ -372,7 +372,7 @@ class SdkSynchronizer private constructor(
 
     suspend fun refreshTransparentBalance() {
         Twig.debug { "refreshing transparent balance" }
-        _transparentBalances.value = processor.getUtxoCacheBalance(getTransparentAddress())
+        _transparentBalances.value = processor.getUtxoCacheBalance(getTransparentAddress(Account.DEFAULT))
     }
 
     suspend fun isValidAddress(address: String): Boolean {
@@ -385,7 +385,7 @@ class SdkSynchronizer private constructor(
         // Triggering UTXOs fetch and transparent balance update at the beginning of the block sync right after the app
         // start, as it makes the transparent transactions appearance faster
         launch(CoroutineExceptionHandler(::onCriticalError)) {
-            refreshUtxos()
+            refreshUtxos(Account.DEFAULT)
             refreshTransparentBalance()
             refreshTransactions()
         }
@@ -487,7 +487,7 @@ class SdkSynchronizer private constructor(
 
         if (shouldRefresh) {
             Twig.debug { "Triggering utxo refresh since $reason!" }
-            refreshUtxos()
+            refreshUtxos(Account.DEFAULT)
 
             Twig.debug { "Triggering balance refresh since $reason!" }
             refreshAllBalances()
