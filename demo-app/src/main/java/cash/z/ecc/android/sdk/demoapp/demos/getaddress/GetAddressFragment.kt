@@ -11,6 +11,7 @@ import cash.z.ecc.android.sdk.demoapp.databinding.FragmentGetAddressBinding
 import cash.z.ecc.android.sdk.demoapp.ext.requireApplicationContext
 import cash.z.ecc.android.sdk.demoapp.util.ProvideAddressBenchmarkTrace
 import cash.z.ecc.android.sdk.demoapp.util.fromResources
+import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.UnifiedFullViewingKey
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.tool.DerivationTool
@@ -32,21 +33,21 @@ class GetAddressFragment : BaseDemoFragment<FragmentGetAddressBinding>() {
                     sharedViewModel.synchronizerFlow.filterNotNull().collect { synchronizer ->
                         binding.unifiedAddress.apply {
                             reportTraceEvent(ProvideAddressBenchmarkTrace.Event.UNIFIED_ADDRESS_START)
-                            val uaddress = synchronizer.getUnifiedAddress()
+                            val uaddress = synchronizer.getUnifiedAddress(Account.DEFAULT)
                             reportTraceEvent(ProvideAddressBenchmarkTrace.Event.UNIFIED_ADDRESS_END)
                             text = uaddress
                             setOnClickListener { copyToClipboard(uaddress) }
                         }
                         binding.saplingAddress.apply {
                             reportTraceEvent(ProvideAddressBenchmarkTrace.Event.SAPLING_ADDRESS_START)
-                            val sapling = synchronizer.getSaplingAddress()
+                            val sapling = synchronizer.getSaplingAddress(Account.DEFAULT)
                             reportTraceEvent(ProvideAddressBenchmarkTrace.Event.SAPLING_ADDRESS_END)
                             text = sapling
                             setOnClickListener { copyToClipboard(sapling) }
                         }
                         binding.transparentAddress.apply {
                             reportTraceEvent(ProvideAddressBenchmarkTrace.Event.TRANSPARENT_ADDRESS_START)
-                            val transparent = synchronizer.getTransparentAddress()
+                            val transparent = synchronizer.getTransparentAddress(Account.DEFAULT)
                             reportTraceEvent(ProvideAddressBenchmarkTrace.Event.TRANSPARENT_ADDRESS_END)
                             text = transparent
                             setOnClickListener { copyToClipboard(transparent) }

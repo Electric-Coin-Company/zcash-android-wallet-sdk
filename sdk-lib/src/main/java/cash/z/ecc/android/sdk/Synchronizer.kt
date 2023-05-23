@@ -132,32 +132,32 @@ interface Synchronizer {
     /**
      * Gets the current unified address for the given account.
      *
-     * @param accountId the optional accountId whose address is of interest. By default, the first
-     * account is used.
+     * @param account the account whose address is of interest. Use Account.DEFAULT to get a result for the first
+     * account.
      *
      * @return the current unified address for the given account.
      */
-    suspend fun getUnifiedAddress(account: Account = Account.DEFAULT): String
+    suspend fun getUnifiedAddress(account: Account): String
 
     /**
      * Gets the legacy Sapling address corresponding to the current unified address for the given account.
      *
-     * @param account the optional accountId whose address is of interest. By default, the first
-     * account is used.
+     * @param account the account whose address is of interest. Use Account.DEFAULT to get a result for the first
+     * account.
      *
      * @return a legacy Sapling address for the given account.
      */
-    suspend fun getSaplingAddress(account: Account = Account.DEFAULT): String
+    suspend fun getSaplingAddress(account: Account): String
 
     /**
      * Gets the legacy transparent address corresponding to the current unified address for the given account.
      *
-     * @param account the optional accountId whose address is of interest. By default, the first
-     * account is used.
+     * @param account the account whose address is of interest. Use Account.DEFAULT to get a result for the first
+     * account.
      *
      * @return a legacy transparent address for the given account.
      */
-    suspend fun getTransparentAddress(account: Account = Account.DEFAULT): String
+    suspend fun getTransparentAddress(account: Account): String
 
     /**
      * Sends zatoshi.
@@ -252,13 +252,14 @@ interface Synchronizer {
     /**
      * Download all UTXOs for the given account addresses and store any new ones in the database.
      *
-     * @param account The Account, for which all addresses blocks will be downloaded.
+     * @param account The Account, for which all addresses blocks will be downloaded. Use Account.DEFAULT to get a
+     * result for the first account.
      * @param since The BlockHeight, from which blocks will be downloaded.
      *
      * @return the number of utxos that were downloaded and added to the UTXO table.
      */
     suspend fun refreshUtxos(
-        account: Account = Account.DEFAULT,
+        account: Account,
         since: BlockHeight = network.saplingActivationHeight
     ): Int?
 

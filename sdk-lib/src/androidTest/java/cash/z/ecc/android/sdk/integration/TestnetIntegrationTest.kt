@@ -67,7 +67,7 @@ class TestnetIntegrationTest : ScopedTest() {
     @Test
     @Ignore("This test is broken")
     fun getAddress() = runBlocking {
-        assertEquals(address, synchronizer.getUnifiedAddress())
+        assertEquals(address, synchronizer.getUnifiedAddress(Account.DEFAULT))
     }
 
     // This is an extremely slow test; it is disabled so that we can get CI set up
