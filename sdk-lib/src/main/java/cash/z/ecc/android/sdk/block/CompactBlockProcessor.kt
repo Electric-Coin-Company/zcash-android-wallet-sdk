@@ -1082,11 +1082,10 @@ class CompactBlockProcessor internal constructor(
             minedHeight: BlockHeight,
             backend: Backend,
         ) {
-            @Suppress("TooGenericExceptionCaught") // RuntimeException comes from the Rust layer
-            try {
+            runCatching {
                 backend.decryptAndStoreTransaction(transactionData)
-            } catch (exception: RuntimeException) {
-                throw EnhanceTxDecryptError(minedHeight, exception)
+            }.onFailure {
+                throw EnhanceTxDecryptError(minedHeight, it)
             }
         }
 
