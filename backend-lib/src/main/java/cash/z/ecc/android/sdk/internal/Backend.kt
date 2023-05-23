@@ -77,7 +77,7 @@ interface Backend {
 
     suspend fun rewindToHeight(height: Long): Boolean
 
-    suspend fun scanBlocks(limit: Long?): Boolean
+    suspend fun scanBlocks(limit: Long?)
 
     suspend fun writeBlockMetadata(blockMetadata: List<JniBlockMeta>): Boolean
 

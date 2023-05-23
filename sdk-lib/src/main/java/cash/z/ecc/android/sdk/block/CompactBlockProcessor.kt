@@ -929,13 +929,16 @@ class CompactBlockProcessor internal constructor(
 
         @VisibleForTesting
         internal suspend fun scanBatchOfBlocks(batch: BlockBatch, backend: Backend): BlockProcessingResult {
-            val scanResult = backend.scanBlocks(batch.range.length())
-            return if (scanResult) {
+            return runCatching {
+                backend.scanBlocks(batch.range.length())
+            }.onSuccess {
                 Twig.verbose { "Successfully scanned batch $batch" }
-                BlockProcessingResult.Success
-            } else {
-                BlockProcessingResult.FailedScanBlocks(batch.range.start)
-            }
+            }.onFailure {
+                Twig.verbose { "Failed while scanning batch $batch with $it" }
+            }.fold(
+                onSuccess = { BlockProcessingResult.Success },
+                onFailure = { BlockProcessingResult.FailedScanBlocks(batch.range.start) }
+            )
         }
 
         @VisibleForTesting

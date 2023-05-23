@@ -266,7 +266,7 @@ class RustBackend private constructor(
             )
         }
 
-    override suspend fun scanBlocks(limit: Long?): Boolean {
+    override suspend fun scanBlocks(limit: Long?) {
         return withContext(SdkDispatchers.DATABASE_IO) {
             scanBlocks(
                 fsBlockDbRoot.absolutePath,
@@ -551,7 +551,7 @@ class RustBackend private constructor(
             dbDataPath: String,
             limit: Long,
             networkId: Int
-        ): Boolean
+        )
 
         @JvmStatic
         private external fun decryptAndStoreTransaction(
