@@ -111,13 +111,10 @@ protobuf {
 
 dependencies {
     implementation(libs.androidx.annotation)
+    implementation(libs.bundles.grpc)
     implementation(libs.kotlin.stdlib)
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.android)
-
-    // TODO [#1030]: Make sdk-lib gRPC objects free (and then make this `implementation`)
-    // TODO [#1030]: https://github.com/zcash/zcash-android-wallet-sdk/issues/1030
-    api(libs.bundles.grpc)
 
     // Tests
     testImplementation(libs.kotlin.reflect)
