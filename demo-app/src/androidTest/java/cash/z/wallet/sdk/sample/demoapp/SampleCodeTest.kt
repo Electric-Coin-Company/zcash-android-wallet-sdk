@@ -71,7 +71,7 @@ class SampleCodeTest {
     // Get Address
     @Test
     fun getAddress() = runBlocking {
-        val address = synchronizer.getUnifiedAddress()
+        val address = synchronizer.getUnifiedAddress(Account.DEFAULT)
         assertFalse(address.isBlank())
         log("Address: $address")
     }
