@@ -934,7 +934,7 @@ class CompactBlockProcessor internal constructor(
             }.onSuccess {
                 Twig.verbose { "Successfully scanned batch $batch" }
             }.onFailure {
-                Twig.verbose { "Failed while scanning batch $batch with $it" }
+                Twig.error { "Failed while scanning batch $batch with $it" }
             }.fold(
                 onSuccess = { BlockProcessingResult.Success },
                 onFailure = { BlockProcessingResult.FailedScanBlocks(batch.range.start) }
@@ -1241,10 +1241,18 @@ class CompactBlockProcessor internal constructor(
 
             if (null == lastSyncedHeight && targetHeight < lastLocalBlock) {
                 Twig.debug { "Rewinding because targetHeight is less than lastLocalBlock." }
-                backend.rewindToHeight(targetHeight)
+                runCatching {
+                    backend.rewindToHeight(targetHeight)
+                }.onFailure {
+                    Twig.error { "Rewinding to the targetHeight $targetHeight failed with $it" }
+                }
             } else if (null != lastSyncedHeight && targetHeight < lastSyncedHeight) {
                 Twig.debug { "Rewinding because targetHeight is less than lastSyncedHeight." }
-                backend.rewindToHeight(targetHeight)
+                runCatching {
+                    backend.rewindToHeight(targetHeight)
+                }.onFailure {
+                    Twig.error { "Rewinding to the targetHeight $targetHeight failed with $it" }
+                }
             } else {
                 Twig.debug {
                     "Not rewinding dataDb because the last synced height is $lastSyncedHeight and the" +

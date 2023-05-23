@@ -84,7 +84,7 @@ internal suspend fun Backend.getNearestRewindHeight(height: BlockHeight): BlockH
     getNearestRewindHeight(height.value)
 )
 
-internal suspend fun Backend.rewindToHeight(height: BlockHeight): Boolean = rewindToHeight(height.value)
+internal suspend fun Backend.rewindToHeight(height: BlockHeight) = rewindToHeight(height.value)
 
 internal suspend fun Backend.getLatestBlockHeight(): BlockHeight? = getLatestHeight()?.let {
     BlockHeight.new(

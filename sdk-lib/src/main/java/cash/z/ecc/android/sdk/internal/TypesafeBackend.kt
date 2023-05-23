@@ -32,7 +32,7 @@ internal interface TypesafeBackend {
 
     suspend fun getNearestRewindHeight(height: BlockHeight): BlockHeight
 
-    suspend fun rewindToHeight(height: BlockHeight): Boolean
+    suspend fun rewindToHeight(height: BlockHeight)
 
     suspend fun getLatestBlockHeight(): BlockHeight?
 

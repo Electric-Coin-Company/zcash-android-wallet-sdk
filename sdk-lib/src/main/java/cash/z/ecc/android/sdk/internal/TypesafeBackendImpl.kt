@@ -35,7 +35,7 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
     override suspend fun getNearestRewindHeight(height: BlockHeight): BlockHeight =
         backend.getNearestRewindHeight(height)
 
-    override suspend fun rewindToHeight(height: BlockHeight): Boolean = backend.rewindToHeight(height)
+    override suspend fun rewindToHeight(height: BlockHeight) = backend.rewindToHeight(height)
 
     override suspend fun getLatestBlockHeight(): BlockHeight? = backend.getLatestBlockHeight()
 

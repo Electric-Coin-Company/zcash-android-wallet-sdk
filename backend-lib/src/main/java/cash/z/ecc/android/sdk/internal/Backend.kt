@@ -2,6 +2,8 @@ package cash.z.ecc.android.sdk.internal
 
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.internal.model.JniUnifiedSpendingKey
+import java.lang.RuntimeException
+import kotlin.jvm.Throws
 
 /**
  * Contract defining the exposed capabilities of the Rust backend.
@@ -75,8 +77,16 @@ interface Backend {
 
     suspend fun getNearestRewindHeight(height: Long): Long
 
-    suspend fun rewindToHeight(height: Long): Boolean
+    /**
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    @Throws(RuntimeException::class)
+    suspend fun rewindToHeight(height: Long)
 
+    /**
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    @Throws(RuntimeException::class)
     suspend fun scanBlocks(limit: Long?)
 
     suspend fun writeBlockMetadata(blockMetadata: List<JniBlockMeta>): Boolean
@@ -99,7 +109,11 @@ interface Backend {
     suspend fun getVerifiedTransparentBalance(address: String): Long
     suspend fun getTotalTransparentBalance(address: String): Long
 
+    /**
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
     @Suppress("LongParameterList")
+    @Throws(RuntimeException::class)
     suspend fun putUtxo(
         tAddress: String,
         txId: ByteArray,

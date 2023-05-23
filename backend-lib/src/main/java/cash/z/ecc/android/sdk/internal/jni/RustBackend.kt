@@ -543,7 +543,7 @@ class RustBackend private constructor(
             dbDataPath: String,
             height: Long,
             networkId: Int
-        ): Boolean
+        )
 
         @JvmStatic
         private external fun scanBlocks(
