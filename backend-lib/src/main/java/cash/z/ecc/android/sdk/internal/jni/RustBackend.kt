@@ -506,7 +506,7 @@ class RustBackend private constructor(
         private external fun writeBlockMetadata(
             dbCachePath: String,
             blockMeta: Array<JniBlockMeta>
-        ): Boolean
+        )
 
         @JvmStatic
         private external fun getLatestHeight(dbCachePath: String): Long

@@ -65,7 +65,12 @@ internal class FileCompactBlockRepository(
      * Write block metadata to storage when the buffer is full or when we reached the current range end.
      */
     private suspend fun writeAndClearBuffer(metaDataBuffer: MutableList<JniBlockMeta>) {
-        backend.writeBlockMetadata(metaDataBuffer)
+        runCatching {
+            backend.writeBlockMetadata(metaDataBuffer)
+        }.onFailure {
+            Twig.error { "Failed to write block metadata with $it" }
+            // We should inform the caller about the operation failure as well
+        }
         metaDataBuffer.clear()
     }
 

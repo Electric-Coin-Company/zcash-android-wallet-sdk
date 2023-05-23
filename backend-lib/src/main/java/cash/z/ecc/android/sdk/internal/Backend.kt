@@ -89,7 +89,11 @@ interface Backend {
     @Throws(RuntimeException::class)
     suspend fun scanBlocks(limit: Long?)
 
-    suspend fun writeBlockMetadata(blockMetadata: List<JniBlockMeta>): Boolean
+    /**
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    @Throws(RuntimeException::class)
+    suspend fun writeBlockMetadata(blockMetadata: List<JniBlockMeta>)
 
     /**
      * @return The latest height in the CompactBlock cache metadata DB, or Null if no blocks have been cached.
