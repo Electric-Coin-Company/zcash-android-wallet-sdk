@@ -13,26 +13,12 @@ buildscript {
 plugins {
     id("com.github.ben-manes.versions")
     id("com.osacky.fulladle")
-    id("io.gitlab.arturbosch.detekt")
+    id("zcash-sdk.detekt-conventions")
     id("zcash-sdk.ktlint-conventions")
     id("zcash-sdk.rosetta-conventions")
 }
 
 tasks {
-    register("detektAll", io.gitlab.arturbosch.detekt.Detekt::class) {
-        parallel = true
-        setSource(files(projectDir))
-        include("**/*.kt")
-        include("**/*.kts")
-        exclude("**/resources/**")
-        exclude("**/build/**")
-        exclude("**/commonTest/**")
-        exclude("**/jvmTest/**")
-        exclude("**/androidTest/**")
-        config.setFrom(files("${rootProject.projectDir}/tools/detekt.yml"))
-        buildUponDefaultConfig = true
-    }
-
     withType<com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask> {
         gradleReleaseChannel = "current"
 
