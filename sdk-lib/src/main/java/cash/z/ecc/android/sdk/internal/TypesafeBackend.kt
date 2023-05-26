@@ -11,14 +11,14 @@ import cash.z.ecc.android.sdk.model.Zatoshi
 @Suppress("TooManyFunctions")
 internal interface TypesafeBackend {
 
-    suspend fun initAccountsTable(vararg keys: UnifiedFullViewingKey): Boolean
+    suspend fun initAccountsTable(vararg keys: UnifiedFullViewingKey)
 
     suspend fun initAccountsTable(
         seed: ByteArray,
         numberOfAccounts: Int
     ): List<UnifiedFullViewingKey>
 
-    suspend fun initBlocksTable(checkpoint: Checkpoint): Boolean
+    suspend fun initBlocksTable(checkpoint: Checkpoint)
 
     suspend fun getCurrentAddress(account: Account): String
 

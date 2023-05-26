@@ -37,15 +37,21 @@ interface Backend {
 
     /**
      * @param keys A list of UFVKs to initialize the accounts table with
+     * @throws RuntimeException as a common indicator of the operation failure
      */
-    suspend fun initAccountsTable(vararg keys: String): Boolean
+    @Throws(RuntimeException::class)
+    suspend fun initAccountsTable(vararg keys: String)
 
+    /**
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    @Throws(RuntimeException::class)
     suspend fun initBlocksTable(
         checkpointHeight: Long,
         checkpointHash: String,
         checkpointTime: Long,
         checkpointSaplingTree: String,
-    ): Boolean
+    )
 
     suspend fun initDataDb(seed: ByteArray?): Int
 

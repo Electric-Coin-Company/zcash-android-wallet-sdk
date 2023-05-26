@@ -81,7 +81,7 @@ class RustBackend private constructor(
     /**
      * @param keys A list of UFVKs to initialize the accounts table with
      */
-    override suspend fun initAccountsTable(vararg keys: String): Boolean {
+    override suspend fun initAccountsTable(vararg keys: String) {
         return withContext(SdkDispatchers.DATABASE_IO) {
             initAccountsTableWithKeys(
                 dataDbFile.absolutePath,
@@ -96,7 +96,7 @@ class RustBackend private constructor(
         checkpointHash: String,
         checkpointTime: Long,
         checkpointSaplingTree: String,
-    ): Boolean {
+    ) {
         return withContext(SdkDispatchers.DATABASE_IO) {
             initBlocksTable(
                 dataDbFile.absolutePath,
@@ -431,7 +431,7 @@ class RustBackend private constructor(
             dbDataPath: String,
             ufvks: Array<out String>,
             networkId: Int
-        ): Boolean
+        )
 
         @JvmStatic
         @Suppress("LongParameterList")
@@ -442,7 +442,7 @@ class RustBackend private constructor(
             time: Long,
             saplingTree: String,
             networkId: Int
-        ): Boolean
+        )
 
         @JvmStatic
         private external fun createAccount(dbDataPath: String, seed: ByteArray, networkId: Int): JniUnifiedSpendingKey
