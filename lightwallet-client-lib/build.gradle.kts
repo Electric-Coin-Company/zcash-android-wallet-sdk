@@ -33,6 +33,10 @@ android {
         consumerProguardFiles("proguard-consumer.txt")
     }
 
+    buildFeatures {
+        buildConfig = true
+    }
+
     buildTypes {
         getByName("debug").apply {
             isMinifyEnabled = false
