@@ -80,6 +80,15 @@ cargo {
 
     profile = "release"
     prebuiltToolchains = true
+
+    // As a workaround to the Gradle (starting from v7.4.1) and Rust Android Gradle plugin (starting from v0.9.3)
+    // incompatibility issue we need to add rust jni directory manually. See
+    // https://github.com/mozilla/rust-android-gradle/issues/118
+    android.sourceSets {
+        all {
+            jniLibs.srcDir("$buildDir/rustJniLibs/android")
+        }
+    }
 }
 
 dependencies {
