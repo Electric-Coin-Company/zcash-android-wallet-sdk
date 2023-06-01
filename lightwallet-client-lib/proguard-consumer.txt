@@ -6,6 +6,11 @@
   io.grpc.okhttp.OkHttpChannelBuilder transportExecutor(java.util.concurrent.Executor);
 }
 
+# https://github.com/grpc/grpc-java/issues/9611
+-keepclassmembers, allowoptimization class io.grpc.okhttp.OkHttpChannelProvider {
+    <init>();
+}
+
 # gRPC related - https://github.com/grpc/grpc-java/issues/6612
 -keep class * extends com.google.protobuf.GeneratedMessageLite { *; }
 
