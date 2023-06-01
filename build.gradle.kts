@@ -81,7 +81,7 @@ tasks {
 val unstableKeywords = listOf("alpha", "beta", "rc", "m", "ea", "build")
 
 fun isNonStable(version: String): Boolean {
-    val versionLowerCase = version.toLowerCase()
+    val versionLowerCase = version.lowercase()
 
     return unstableKeywords.any { versionLowerCase.contains(it) }
 }
@@ -89,10 +89,10 @@ fun isNonStable(version: String): Boolean {
 fladle {
     // Firebase Test Lab has min and max values that might differ from our project's
     // These are determined by `gcloud firebase test android models list`
-    @Suppress("MagicNumber", "PropertyName", "VariableNaming")
+    @Suppress("MagicNumber", "VariableNaming")
     val FIREBASE_TEST_LAB_MIN_API = 27 // Minimum for Pixel2.arm device
 
-    @Suppress("MagicNumber", "PropertyName", "VariableNaming")
+    @Suppress("MagicNumber", "VariableNaming")
     val FIREBASE_TEST_LAB_MAX_API = 33
 
     val minSdkVersion = run {

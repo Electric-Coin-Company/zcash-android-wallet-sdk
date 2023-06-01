@@ -59,7 +59,7 @@ pluginManager.withPlugin("com.android.library") {
 
     project.the<com.android.build.api.variant.LibraryAndroidComponentsExtension>().apply {
         onVariants { variant ->
-            if (variant.name.toLowerCase(Locale.US).contains("release")) {
+            if (variant.name.lowercase(Locale.US).contains("release")) {
                 variant.packaging.resources.excludes.addAll(
                     listOf(
                         "META-INF/ASL2.0",
@@ -147,7 +147,7 @@ fun com.android.build.gradle.BaseExtension.configureBaseExtension() {
 
         @Suppress("UnstableApiUsage")
         managedDevices {
-            @Suppress("MagicNumber", "PropertyName", "VariableNaming")
+            @Suppress("MagicNumber", "VariableNaming")
             val MANAGED_DEVICES_MIN_SDK = 27
 
             val testDeviceMinSdkVersion = project.properties["ANDROID_MIN_SDK_VERSION"]
