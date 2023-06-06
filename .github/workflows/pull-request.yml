@@ -61,7 +61,7 @@ jobs:
         run: echo "defined=true" >> $GITHUB_OUTPUT
 
   check_properties:
-    needs: prime_cache
+    needs: validate_gradle_wrapper
     runs-on: ubuntu-latest
     permissions:
       contents: read
