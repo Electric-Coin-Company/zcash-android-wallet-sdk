@@ -32,7 +32,6 @@ android {
             // We provide the extra benchmark build type for benchmarking. We still need to support debug
             // variants to be compatible with debug variants in other modules, although benchmarking does not allow
             // not minified build variants - benchmarking with the debug build variants will fail.
-            isMinifyEnabled = true
             isDebuggable = true
             signingConfig = signingConfigs.getByName("debug")
             matchingFallbacks += listOf("release")

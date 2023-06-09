@@ -13,11 +13,11 @@ private val maxTimeoutMillis = 5000L
  * @return True if the application is running under Rosetta.
  */
 fun isRosetta(): Boolean {
-    if (System.getProperty("os.name").toLowerCase(java.util.Locale.ROOT).startsWith("mac")) {
+    if (System.getProperty("os.name").lowercase(java.util.Locale.ROOT).startsWith("mac")) {
         // Counterintuitive, but running under Rosetta is reported as Intel64 to the JVM
-        if (!System.getProperty("os.arch").toLowerCase(java.util.Locale.ROOT).contains("aarch64")) {
+        if (!System.getProperty("os.arch").lowercase(java.util.Locale.ROOT).contains("aarch64")) {
             val outputValue = Runtime.getRuntime()
-                .exec("sysctl -in sysctl.proc_translated")
+                .exec(arrayOf("sysctl -in sysctl.proc_translated"))
                 .scanOutputLine()
                 ?.toIntOrNull()
 

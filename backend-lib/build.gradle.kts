@@ -80,6 +80,18 @@ cargo {
 
     profile = "release"
     prebuiltToolchains = true
+
+    // As a workaround to the Gradle (starting from v7.4.1) and Rust Android Gradle plugin (starting from v0.9.3)
+    // incompatibility issue we need to add rust jni directory manually. See
+    // https://github.com/mozilla/rust-android-gradle/issues/118
+    tasks.whenObjectAdded {
+        // This covers mergeDebugJniLibFolders, mergeReleaseJniLibFolders, etc.
+        if (name.contains("^merge.+JniLibFolders$".toRegex())) {
+            dependsOn("cargoBuild")
+            // Fix for mergeDebugJniLibFolders UP-TO-DATE
+            inputs.dir(buildDir.resolve("rustJniLibs/android"))
+        }
+    }
 }
 
 dependencies {

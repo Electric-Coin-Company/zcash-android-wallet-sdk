@@ -1,4 +1,0 @@
-# This is generated automatically by the Android Gradle plugin.
--dontwarn androidx.test.services.storage.internal.InternalTestStorage
--dontwarn com.google.errorprone.annotations.InlineMe
--dontwarn com.google.errorprone.annotations.MustBeClosed

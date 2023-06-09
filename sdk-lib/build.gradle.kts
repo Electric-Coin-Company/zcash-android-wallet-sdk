@@ -35,6 +35,10 @@ android {
         consumerProguardFiles("proguard-consumer.txt")
     }
 
+    buildFeatures {
+        buildConfig = true
+    }
+
     buildTypes {
         getByName("debug").apply {
             // test builds exceed the dex limit because they pull in large test libraries
