@@ -618,9 +618,6 @@ class CompactBlockProcessor internal constructor(
         Twig.debug { "Found UTXO at height ${utxo.height.toInt()} with ${utxo.valueZat} zatoshi" }
         @Suppress("TooGenericExceptionCaught")
         return try {
-            // TODO [#920]: Tweak RustBackend public APIs to have void return values.
-            // TODO [#920]: Thus, we don't need to check the boolean result of this call until fixed.
-            // TODO [#920]: https://github.com/zcash/zcash-android-wallet-sdk/issues/920
             backend.putUtxo(
                 utxo.address,
                 utxo.txid,
@@ -932,13 +929,16 @@ class CompactBlockProcessor internal constructor(
 
         @VisibleForTesting
         internal suspend fun scanBatchOfBlocks(batch: BlockBatch, backend: Backend): BlockProcessingResult {
-            val scanResult = backend.scanBlocks(batch.range.length())
-            return if (scanResult) {
+            return runCatching {
+                backend.scanBlocks(batch.range.length())
+            }.onSuccess {
                 Twig.verbose { "Successfully scanned batch $batch" }
-                BlockProcessingResult.Success
-            } else {
-                BlockProcessingResult.FailedScanBlocks(batch.range.start)
-            }
+            }.onFailure {
+                Twig.error { "Failed while scanning batch $batch with $it" }
+            }.fold(
+                onSuccess = { BlockProcessingResult.Success },
+                onFailure = { BlockProcessingResult.FailedScanBlocks(batch.range.start) }
+            )
         }
 
         @VisibleForTesting
@@ -1082,11 +1082,10 @@ class CompactBlockProcessor internal constructor(
             minedHeight: BlockHeight,
             backend: Backend,
         ) {
-            @Suppress("TooGenericExceptionCaught") // RuntimeException comes from the Rust layer
-            try {
+            runCatching {
                 backend.decryptAndStoreTransaction(transactionData)
-            } catch (exception: RuntimeException) {
-                throw EnhanceTxDecryptError(minedHeight, exception)
+            }.onFailure {
+                throw EnhanceTxDecryptError(minedHeight, it)
             }
         }
 
@@ -1242,10 +1241,18 @@ class CompactBlockProcessor internal constructor(
 
             if (null == lastSyncedHeight && targetHeight < lastLocalBlock) {
                 Twig.debug { "Rewinding because targetHeight is less than lastLocalBlock." }
-                backend.rewindToHeight(targetHeight)
+                runCatching {
+                    backend.rewindToHeight(targetHeight)
+                }.onFailure {
+                    Twig.error { "Rewinding to the targetHeight $targetHeight failed with $it" }
+                }
             } else if (null != lastSyncedHeight && targetHeight < lastSyncedHeight) {
                 Twig.debug { "Rewinding because targetHeight is less than lastSyncedHeight." }
-                backend.rewindToHeight(targetHeight)
+                runCatching {
+                    backend.rewindToHeight(targetHeight)
+                }.onFailure {
+                    Twig.error { "Rewinding to the targetHeight $targetHeight failed with $it" }
+                }
             } else {
                 Twig.debug {
                     "Not rewinding dataDb because the last synced height is $lastSyncedHeight and the" +

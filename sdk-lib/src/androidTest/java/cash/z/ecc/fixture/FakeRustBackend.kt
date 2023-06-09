@@ -9,12 +9,12 @@ internal class FakeRustBackend(
     val metadata: MutableList<JniBlockMeta>
 ) : Backend {
 
-    override suspend fun writeBlockMetadata(blockMetadata: List<JniBlockMeta>): Boolean =
+    override suspend fun writeBlockMetadata(blockMetadata: List<JniBlockMeta>) {
         metadata.addAll(blockMetadata)
+    }
 
-    override suspend fun rewindToHeight(height: Long): Boolean {
+    override suspend fun rewindToHeight(height: Long) {
         metadata.removeAll { it.height > height }
-        return true
     }
 
     override suspend fun getLatestHeight(): Long = metadata.maxOf { it.height }
@@ -37,7 +37,7 @@ internal class FakeRustBackend(
         script: ByteArray,
         value: Long,
         height: Long
-    ): Boolean {
+    ) {
         TODO("Not yet implemented")
     }
 
@@ -69,7 +69,7 @@ internal class FakeRustBackend(
     override suspend fun decryptAndStoreTransaction(tx: ByteArray) =
         error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 
-    override suspend fun initAccountsTable(vararg keys: String): Boolean {
+    override suspend fun initAccountsTable(vararg keys: String) {
         TODO("Not yet implemented")
     }
 
@@ -78,7 +78,7 @@ internal class FakeRustBackend(
         checkpointHash: String,
         checkpointTime: Long,
         checkpointSaplingTree: String
-    ): Boolean {
+    ) {
         TODO("Not yet implemented")
     }
 
@@ -133,6 +133,6 @@ internal class FakeRustBackend(
         TODO("Not yet implemented")
     }
 
-    override suspend fun scanBlocks(limit: Long?): Boolean =
+    override suspend fun scanBlocks(limit: Long?) =
         error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 }

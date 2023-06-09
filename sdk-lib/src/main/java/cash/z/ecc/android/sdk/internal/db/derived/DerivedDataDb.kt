@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.sqlite.db.SupportSQLiteDatabase
 import cash.z.ecc.android.sdk.internal.Backend
 import cash.z.ecc.android.sdk.internal.NoBackupContextWrapper
+import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.db.ReadOnlySupportSqliteOpenHelper
 import cash.z.ecc.android.sdk.internal.ext.tryWarn
 import cash.z.ecc.android.sdk.internal.initAccountsTable
@@ -52,20 +53,23 @@ internal class DerivedDataDb private constructor(
         ): DerivedDataDb {
             backend.initDataDb(seed)
 
-            // TODO [#681]: consider converting these to typed exceptions in the welding layer
-            // TODO [#681]: https://github.com/zcash/zcash-android-wallet-sdk/issues/681
-            tryWarn(
-                "Did not initialize the blocks table. It probably was already initialized.",
-                ifContains = "table is not empty"
-            ) {
-                backend.initBlocksTable(checkpoint)
-            }
-
-            tryWarn(
-                "Did not initialize the accounts table. It probably was already initialized.",
-                ifContains = "table is not empty"
-            ) {
-                backend.initAccountsTable(*viewingKeys.toTypedArray())
+            runCatching {
+                // TODO [#681]: consider converting these to typed exceptions in the welding layer
+                // TODO [#681]: https://github.com/zcash/zcash-android-wallet-sdk/issues/681
+                tryWarn(
+                    message = "Did not initialize the blocks table. It probably was already initialized.",
+                    ifContains = "table is not empty"
+                ) {
+                    backend.initBlocksTable(checkpoint)
+                }
+                tryWarn(
+                    message = "Did not initialize the accounts table. It probably was already initialized.",
+                    ifContains = "table is not empty"
+                ) {
+                    backend.initAccountsTable(*viewingKeys.toTypedArray())
+                }
+            }.onFailure {
+                Twig.error { "Failed to init derived data database with $it" }
             }
 
             val database = ReadOnlySupportSqliteOpenHelper.openExistingDatabaseAsReadOnly(

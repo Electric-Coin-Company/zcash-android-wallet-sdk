@@ -17,7 +17,7 @@ import kotlinx.coroutines.withContext
 internal val Backend.network: ZcashNetwork
     get() = ZcashNetwork.from(networkId)
 
-internal suspend fun Backend.initAccountsTable(vararg keys: UnifiedFullViewingKey): Boolean {
+internal suspend fun Backend.initAccountsTable(vararg keys: UnifiedFullViewingKey) {
     val ufvks = Array(keys.size) { keys[it].encoding }
 
     @Suppress("SpreadOperator")
@@ -31,7 +31,7 @@ internal suspend fun Backend.initAccountsTableTypesafe(
     return DerivationTool.getInstance().deriveUnifiedFullViewingKeys(seed, network, numberOfAccounts)
 }
 
-internal suspend fun Backend.initBlocksTable(checkpoint: Checkpoint): Boolean = initBlocksTable(
+internal suspend fun Backend.initBlocksTable(checkpoint: Checkpoint) = initBlocksTable(
     checkpoint.height.value,
     checkpoint.hash,
     checkpoint.epochSeconds,
@@ -84,7 +84,7 @@ internal suspend fun Backend.getNearestRewindHeight(height: BlockHeight): BlockH
     getNearestRewindHeight(height.value)
 )
 
-internal suspend fun Backend.rewindToHeight(height: BlockHeight): Boolean = rewindToHeight(height.value)
+internal suspend fun Backend.rewindToHeight(height: BlockHeight) = rewindToHeight(height.value)
 
 internal suspend fun Backend.getLatestBlockHeight(): BlockHeight? = getLatestHeight()?.let {
     BlockHeight.new(
@@ -133,7 +133,7 @@ internal suspend fun Backend.putUtxo(
     script: ByteArray,
     value: Long,
     height: BlockHeight
-): Boolean = putUtxo(
+) = putUtxo(
     tAddress,
     txId,
     index,

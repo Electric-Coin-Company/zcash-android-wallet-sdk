@@ -81,7 +81,7 @@ class RustBackend private constructor(
     /**
      * @param keys A list of UFVKs to initialize the accounts table with
      */
-    override suspend fun initAccountsTable(vararg keys: String): Boolean {
+    override suspend fun initAccountsTable(vararg keys: String) {
         return withContext(SdkDispatchers.DATABASE_IO) {
             initAccountsTableWithKeys(
                 dataDbFile.absolutePath,
@@ -96,7 +96,7 @@ class RustBackend private constructor(
         checkpointHash: String,
         checkpointTime: Long,
         checkpointSaplingTree: String,
-    ): Boolean {
+    ) {
         return withContext(SdkDispatchers.DATABASE_IO) {
             initBlocksTable(
                 dataDbFile.absolutePath,
@@ -266,7 +266,7 @@ class RustBackend private constructor(
             )
         }
 
-    override suspend fun scanBlocks(limit: Long?): Boolean {
+    override suspend fun scanBlocks(limit: Long?) {
         return withContext(SdkDispatchers.DATABASE_IO) {
             scanBlocks(
                 fsBlockDbRoot.absolutePath,
@@ -331,7 +331,7 @@ class RustBackend private constructor(
         script: ByteArray,
         value: Long,
         height: Long
-    ): Boolean = withContext(SdkDispatchers.DATABASE_IO) {
+    ) = withContext(SdkDispatchers.DATABASE_IO) {
         putUtxo(
             dataDbFile.absolutePath,
             tAddress,
@@ -431,7 +431,7 @@ class RustBackend private constructor(
             dbDataPath: String,
             ufvks: Array<out String>,
             networkId: Int
-        ): Boolean
+        )
 
         @JvmStatic
         @Suppress("LongParameterList")
@@ -442,7 +442,7 @@ class RustBackend private constructor(
             time: Long,
             saplingTree: String,
             networkId: Int
-        ): Boolean
+        )
 
         @JvmStatic
         private external fun createAccount(dbDataPath: String, seed: ByteArray, networkId: Int): JniUnifiedSpendingKey
@@ -506,7 +506,7 @@ class RustBackend private constructor(
         private external fun writeBlockMetadata(
             dbCachePath: String,
             blockMeta: Array<JniBlockMeta>
-        ): Boolean
+        )
 
         @JvmStatic
         private external fun getLatestHeight(dbCachePath: String): Long
@@ -543,7 +543,7 @@ class RustBackend private constructor(
             dbDataPath: String,
             height: Long,
             networkId: Int
-        ): Boolean
+        )
 
         @JvmStatic
         private external fun scanBlocks(
@@ -551,7 +551,7 @@ class RustBackend private constructor(
             dbDataPath: String,
             limit: Long,
             networkId: Int
-        ): Boolean
+        )
 
         @JvmStatic
         private external fun decryptAndStoreTransaction(
@@ -600,7 +600,7 @@ class RustBackend private constructor(
             value: Long,
             height: Long,
             networkId: Int
-        ): Boolean
+        )
 
         @JvmStatic
         private external fun getVerifiedTransparentBalance(

@@ -2,6 +2,8 @@ package cash.z.ecc.android.sdk.internal
 
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.internal.model.JniUnifiedSpendingKey
+import java.lang.RuntimeException
+import kotlin.jvm.Throws
 
 /**
  * Contract defining the exposed capabilities of the Rust backend.
@@ -9,8 +11,6 @@ import cash.z.ecc.android.sdk.internal.model.JniUnifiedSpendingKey
  * It is not documented because it is not intended to be used, directly.
  * Instead, use the synchronizer or one of its subcomponents.
  */
-// TODO [#920]: Tweak RustBackend public APIs to have void return values
-// TODO [#920]: https://github.com/zcash/zcash-android-wallet-sdk/issues/920
 @Suppress("TooManyFunctions")
 interface Backend {
 
@@ -37,15 +37,21 @@ interface Backend {
 
     /**
      * @param keys A list of UFVKs to initialize the accounts table with
+     * @throws RuntimeException as a common indicator of the operation failure
      */
-    suspend fun initAccountsTable(vararg keys: String): Boolean
+    @Throws(RuntimeException::class)
+    suspend fun initAccountsTable(vararg keys: String)
 
+    /**
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    @Throws(RuntimeException::class)
     suspend fun initBlocksTable(
         checkpointHeight: Long,
         checkpointHash: String,
         checkpointTime: Long,
         checkpointSaplingTree: String,
-    ): Boolean
+    )
 
     suspend fun initDataDb(seed: ByteArray?): Int
 
@@ -77,11 +83,23 @@ interface Backend {
 
     suspend fun getNearestRewindHeight(height: Long): Long
 
-    suspend fun rewindToHeight(height: Long): Boolean
+    /**
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    @Throws(RuntimeException::class)
+    suspend fun rewindToHeight(height: Long)
 
-    suspend fun scanBlocks(limit: Long?): Boolean
+    /**
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    @Throws(RuntimeException::class)
+    suspend fun scanBlocks(limit: Long?)
 
-    suspend fun writeBlockMetadata(blockMetadata: List<JniBlockMeta>): Boolean
+    /**
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    @Throws(RuntimeException::class)
+    suspend fun writeBlockMetadata(blockMetadata: List<JniBlockMeta>)
 
     /**
      * @return The latest height in the CompactBlock cache metadata DB, or Null if no blocks have been cached.
@@ -101,7 +119,11 @@ interface Backend {
     suspend fun getVerifiedTransparentBalance(address: String): Long
     suspend fun getTotalTransparentBalance(address: String): Long
 
+    /**
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
     @Suppress("LongParameterList")
+    @Throws(RuntimeException::class)
     suspend fun putUtxo(
         tAddress: String,
         txId: ByteArray,
@@ -109,5 +131,5 @@ interface Backend {
         script: ByteArray,
         value: Long,
         height: Long
-    ): Boolean
+    )
 }

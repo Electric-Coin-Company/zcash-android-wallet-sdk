@@ -11,7 +11,7 @@ import cash.z.ecc.android.sdk.model.Zatoshi
 // This class is currently unused, although the goal is to swap out usages of BackendExt for this throughout the SDK.
 @Suppress("TooManyFunctions")
 internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBackend {
-    override suspend fun initAccountsTable(vararg keys: UnifiedFullViewingKey): Boolean =
+    override suspend fun initAccountsTable(vararg keys: UnifiedFullViewingKey) =
         backend.initAccountsTable(*keys)
 
     override suspend fun initAccountsTable(
@@ -19,7 +19,7 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
         numberOfAccounts: Int
     ): List<UnifiedFullViewingKey> = backend.initAccountsTableTypesafe(seed, numberOfAccounts)
 
-    override suspend fun initBlocksTable(checkpoint: Checkpoint): Boolean = backend.initBlocksTable(checkpoint)
+    override suspend fun initBlocksTable(checkpoint: Checkpoint) = backend.initBlocksTable(checkpoint)
 
     override suspend fun getCurrentAddress(account: Account): String = getCurrentAddress(account)
 
@@ -35,7 +35,7 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
     override suspend fun getNearestRewindHeight(height: BlockHeight): BlockHeight =
         backend.getNearestRewindHeight(height)
 
-    override suspend fun rewindToHeight(height: BlockHeight): Boolean = backend.rewindToHeight(height)
+    override suspend fun rewindToHeight(height: BlockHeight) = backend.rewindToHeight(height)
 
     override suspend fun getLatestBlockHeight(): BlockHeight? = backend.getLatestBlockHeight()
 
