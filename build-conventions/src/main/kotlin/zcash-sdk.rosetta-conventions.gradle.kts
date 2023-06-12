@@ -17,9 +17,9 @@ fun isRosetta(): Boolean {
         // Counterintuitive, but running under Rosetta is reported as Intel64 to the JVM
         if (!System.getProperty("os.arch").lowercase(java.util.Locale.ROOT).contains("aarch64")) {
             val outputValue = Runtime.getRuntime()
-                .exec(arrayOf("sysctl -in sysctl.proc_translated"))
+                .exec(arrayOf("sysctl", "-in", "sysctl.proc_translated"))
                 .scanOutputLine()
-                ?.toIntOrNull()
+                .toIntOrNull()
 
             if (1 == outputValue) {
                 return true
@@ -30,7 +30,7 @@ fun isRosetta(): Boolean {
     return false
 }
 
-fun Process.scanOutputLine(): String? {
+fun Process.scanOutputLine(): String {
     var outputString = ""
 
     inputStream.use { inputStream ->
