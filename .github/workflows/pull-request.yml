@@ -71,7 +71,7 @@ jobs:
         uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9
       - name: Setup
         id: setup
-        timeout-minutes: 5
+        timeout-minutes: 10
         uses: ./.github/actions/setup
       - name: Check properties
         timeout-minutes: 4
