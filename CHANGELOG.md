@@ -1,9 +1,11 @@
 # Change Log
 
-## Unreleased
+## 1.18.0-beta01
 - Synchronizer's functions `getUnifiedAddress`, `getSaplingAddress`, `getTransparentAddress`, and `refreshUtxos` now 
   do not provide `Account.DEFAULT` value for the account argument. As accounts are not fully supported by the SDK 
   yet, the caller should explicitly set Account.DEFAULT as the account argument to keep the same behavior.   
+- Gradle 8.1.1
+- AGP 8.0.2
  
 ## 1.17.0-beta01
 - Transparent fund balances are now displayed almost immediately
