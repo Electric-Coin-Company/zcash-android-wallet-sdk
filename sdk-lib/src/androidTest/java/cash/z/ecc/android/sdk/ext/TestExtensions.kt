@@ -20,6 +20,7 @@ object BlockExplorer {
 }
 
 object Transactions {
+    @Suppress("MaxLineLength")
     val outbound = arrayOf(
         "https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/transactions/t-shielded-spend.txt",
         "https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/transactions/sent/c9e35e6ff444b071d63bf9bab6480409d6361760445c8a28d24179adb35c2495.txt",
@@ -32,6 +33,7 @@ object Transactions {
         "https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/transactions/sent/73c5edf8ffba774d99155121ccf07e67fbcf14284458f7e732751fea60d3bcbc.txt"
     )
 
+    @Suppress("MaxLineLength")
     val inbound = arrayOf(
         "https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/transactions/recv/8f064d23c66dc36e32445e5f3b50e0f32ac3ddb78cff21fb521eb6c19c07c99a.txt",
         "https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/transactions/recv/15a677b6770c5505fb47439361d3d3a7c21238ee1a6874fdedad18ae96850590.txt",

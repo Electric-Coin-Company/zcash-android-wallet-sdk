@@ -55,8 +55,8 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
         // verify that we are on the darkside
         try {
             initiate()
-
-            // In the future, we may want to have the SDK internally verify being on the darkside by matching the network type
+            // In the future, we may want to have the SDK internally verify being on the darkside by matching the
+            // network type
 
             // synchronizer.getServerInfo().apply {
             //     assertTrue(
@@ -263,6 +263,7 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
          * The chain starts at block 663150 and ends at block 663250
          */
         fun makeSimpleChain() {
+            @Suppress("MaxLineLength")
             darkside
                 .reset(BlockHeightUnsafe(DEFAULT_START_HEIGHT.value))
                 .stageBlocks("https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/tx-incoming/blocks.txt")
@@ -285,6 +286,7 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
         }
     }
 
+    @Suppress("MaxLineLength")
     companion object {
         /**
          * This is a special localhost value on the Android emulator, which allows it to contact

@@ -24,7 +24,10 @@ class PersistableWalletTest {
 
         assertEquals(1, jsonObject.getInt(PersistableWallet.KEY_VERSION))
         assertEquals(ZcashNetwork.Testnet.id, jsonObject.getInt(PersistableWallet.KEY_NETWORK_ID))
-        assertEquals(PersistableWalletFixture.SEED_PHRASE.joinToString(), jsonObject.getString(PersistableWallet.KEY_SEED_PHRASE))
+        assertEquals(
+            PersistableWalletFixture.SEED_PHRASE.joinToString(),
+            jsonObject.getString(PersistableWallet.KEY_SEED_PHRASE)
+        )
 
         // Birthday serialization is tested in a separate file
     }

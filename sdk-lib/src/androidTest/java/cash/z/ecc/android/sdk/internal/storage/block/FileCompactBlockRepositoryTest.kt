@@ -250,7 +250,9 @@ class FileCompactBlockRepositoryTest {
 
         val tempFile = block.createTemporaryFile(blocksDir)
 
-        val finalizedFile = File(tempFile.absolutePath.dropLast(FileCompactBlockRepository.TEMPORARY_FILENAME_SUFFIX.length))
+        val finalizedFile = File(
+            tempFile.absolutePath.dropLast(FileCompactBlockRepository.TEMPORARY_FILENAME_SUFFIX.length)
+        )
         assertFalse { finalizedFile.existsSuspend() }
 
         tempFile.finalizeFile()

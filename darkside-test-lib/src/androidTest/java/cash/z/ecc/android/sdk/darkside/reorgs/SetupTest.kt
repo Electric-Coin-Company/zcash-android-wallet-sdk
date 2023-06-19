@@ -38,7 +38,8 @@ class SetupTest : ScopedTest() {
     @Test
     @Ignore("This test is broken")
     fun tempTest() {
-        val phrase = "still champion voice habit trend flight survey between bitter process artefact blind carbon truly provide dizzy crush flush breeze blouse charge solid fish spread"
+        val phrase = "still champion voice habit trend flight survey between bitter process artefact blind" +
+            " carbon truly provide dizzy crush flush breeze blouse charge solid fish spread"
         val result = SimpleMnemonics().toSeed(phrase.toCharArray()).toHex()
         assertEquals("abc", result)
     }
@@ -54,6 +55,7 @@ class SetupTest : ScopedTest() {
     }
 
     companion object {
+        @Suppress("MaxLineLength")
         private const val blocksUrl = "https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/basic-reorg/before-reorg.txt"
         private const val firstBlock = 663150
         private const val lastBlock = 663200

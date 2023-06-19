@@ -1,3 +1,5 @@
+@file:Suppress("MaxLineLength")
+
 package cash.z.ecc.android.sdk.sample
 
 import androidx.test.filters.LargeTest
@@ -55,7 +57,11 @@ class TransparentRestoreSample {
         val tbalance = wallet.transparentBalance()
         val address = wallet.transparentAddress
 
-        Assert.assertTrue("Not enough funds to run sample. Expected some Zatoshi but found ${tbalance.available}. Try adding funds to $address", tbalance.available.value > 0)
+        Assert.assertTrue(
+            "Not enough funds to run sample. Expected some Zatoshi but found ${tbalance.available}. " +
+                "Try adding funds to $address",
+            tbalance.available.value > 0
+        )
 
 //        wallet.shieldFunds()
     }

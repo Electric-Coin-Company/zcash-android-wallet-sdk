@@ -18,7 +18,7 @@ style:
       - reason: 'Forbidden TODO todo marker in comment, please fix the problem or add the issue number (e.g. TODO [#123]).'
         value: 'TODO:(?! \[[^\]]\d+\])'
   MaxLineLength:
-    active: false
+    active: true
   NewLineAtEndOfFile:
     active: false
   UnusedPrivateMember:
@@ -28,7 +28,7 @@ style:
     ignoreAnnotated:
       - 'Preview'
   WildcardImport:
-    active: false
+    active: true
 
 Compose:
   ModifierMissing:

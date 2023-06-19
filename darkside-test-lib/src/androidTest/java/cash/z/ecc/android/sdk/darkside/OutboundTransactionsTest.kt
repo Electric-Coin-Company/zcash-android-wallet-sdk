@@ -1,3 +1,5 @@
+@file:Suppress("MaxLineLength")
+
 package cash.z.ecc.android.sdk.darkside // package cash.z.ecc.android.sdk.integration
 //
 // import cash.z.ecc.android.sdk.test.ScopedTest

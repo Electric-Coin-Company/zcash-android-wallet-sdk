@@ -1,3 +1,5 @@
+@file:Suppress("MaxLineLength")
+
 package cash.z.ecc.android.sdk.darkside
 
 // import cash.z.ecc.android.sdk.SdkSynchronizer

@@ -89,7 +89,11 @@ class ZecStringExtTest {
             assertTrue(it.matches("123${EN_US_SEPARATORS.decimal}456"))
             assertTrue(it.matches("123${EN_US_SEPARATORS.grouping}456${EN_US_SEPARATORS.decimal}"))
             assertTrue(it.matches("123${EN_US_SEPARATORS.grouping}456${EN_US_SEPARATORS.decimal}789"))
-            assertTrue(it.matches("1${EN_US_SEPARATORS.grouping}234${EN_US_SEPARATORS.grouping}567${EN_US_SEPARATORS.decimal}00"))
+            assertTrue(
+                it.matches(
+                    "1${EN_US_SEPARATORS.grouping}234${EN_US_SEPARATORS.grouping}567${EN_US_SEPARATORS.decimal}00"
+                )
+            )
         }
     }
 
@@ -152,17 +156,52 @@ class ZecStringExtTest {
     fun check_digits_between_grouping_separators_valid_test() {
         assertTrue(ZecStringExt.checkFor3Digits(EN_US_SEPARATORS, "123"))
         assertTrue(ZecStringExt.checkFor3Digits(EN_US_SEPARATORS, "1${EN_US_SEPARATORS.grouping}234"))
-        assertTrue(ZecStringExt.checkFor3Digits(EN_US_SEPARATORS, "1${EN_US_SEPARATORS.grouping}234${EN_US_SEPARATORS.grouping}"))
-        assertTrue(ZecStringExt.checkFor3Digits(EN_US_SEPARATORS, "1${EN_US_SEPARATORS.grouping}234${EN_US_SEPARATORS.grouping}5"))
-        assertTrue(ZecStringExt.checkFor3Digits(EN_US_SEPARATORS, "1${EN_US_SEPARATORS.grouping}234${EN_US_SEPARATORS.grouping}567${EN_US_SEPARATORS.grouping}8"))
+        assertTrue(
+            ZecStringExt.checkFor3Digits(
+                EN_US_SEPARATORS,
+                "1${EN_US_SEPARATORS.grouping}234${EN_US_SEPARATORS.grouping}"
+            )
+        )
+        assertTrue(
+            ZecStringExt.checkFor3Digits(
+                EN_US_SEPARATORS,
+                "1${EN_US_SEPARATORS.grouping}234${EN_US_SEPARATORS.grouping}5"
+            )
+        )
+        assertTrue(
+            ZecStringExt.checkFor3Digits(
+                EN_US_SEPARATORS,
+                "1${EN_US_SEPARATORS.grouping}234${EN_US_SEPARATORS.grouping}567${EN_US_SEPARATORS.grouping}8"
+            )
+        )
     }
 
     @Test
     @SmallTest
     fun check_digits_between_grouping_separators_invalid_test() {
-        assertFalse(ZecStringExt.checkFor3Digits(EN_US_SEPARATORS, "1${EN_US_SEPARATORS.grouping}1${EN_US_SEPARATORS.grouping}2"))
-        assertFalse(ZecStringExt.checkFor3Digits(EN_US_SEPARATORS, "1${EN_US_SEPARATORS.grouping}12${EN_US_SEPARATORS.grouping}3"))
-        assertFalse(ZecStringExt.checkFor3Digits(EN_US_SEPARATORS, "1${EN_US_SEPARATORS.grouping}1234${EN_US_SEPARATORS.grouping}"))
-        assertFalse(ZecStringExt.checkFor3Digits(EN_US_SEPARATORS, "1${EN_US_SEPARATORS.grouping}123${EN_US_SEPARATORS.grouping}4${EN_US_SEPARATORS.grouping}"))
+        assertFalse(
+            ZecStringExt.checkFor3Digits(
+                EN_US_SEPARATORS,
+                "1${EN_US_SEPARATORS.grouping}1${EN_US_SEPARATORS.grouping}2"
+            )
+        )
+        assertFalse(
+            ZecStringExt.checkFor3Digits(
+                EN_US_SEPARATORS,
+                "1${EN_US_SEPARATORS.grouping}12${EN_US_SEPARATORS.grouping}3"
+            )
+        )
+        assertFalse(
+            ZecStringExt.checkFor3Digits(
+                EN_US_SEPARATORS,
+                "1${EN_US_SEPARATORS.grouping}1234${EN_US_SEPARATORS.grouping}"
+            )
+        )
+        assertFalse(
+            ZecStringExt.checkFor3Digits(
+                EN_US_SEPARATORS,
+                "1${EN_US_SEPARATORS.grouping}123${EN_US_SEPARATORS.grouping}4${EN_US_SEPARATORS.grouping}"
+            )
+        )
     }
 }

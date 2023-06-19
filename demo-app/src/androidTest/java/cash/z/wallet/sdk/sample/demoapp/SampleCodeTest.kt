@@ -178,7 +178,11 @@ class SampleCodeTest {
         val amount = 0.123.convertZecToZatoshi()
         val address = "ztestsapling1tklsjr0wyw0d58f3p7wufvrj2cyfv6q6caumyueadq8qvqt8lda6v6tpx474rfru9y6u75u7qnw"
         val memo = "Test Transaction"
-        val spendingKey = DerivationTool.getInstance().deriveUnifiedSpendingKey(seed, ZcashNetwork.Mainnet, Account.DEFAULT)
+        val spendingKey = DerivationTool.getInstance().deriveUnifiedSpendingKey(
+            seed,
+            ZcashNetwork.Mainnet,
+            Account.DEFAULT
+        )
         synchronizer.sendToAddress(spendingKey, amount, address, memo)
     }
 

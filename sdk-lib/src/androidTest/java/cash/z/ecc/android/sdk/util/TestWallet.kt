@@ -148,7 +148,8 @@ class TestWallet(
         // TODO: [#902] Get the proper birthday values for test wallets
         // TODO: [#902] https://github.com/zcash/zcash-android-wallet-sdk/issues/902
         DEFAULT(
-            "column rhythm acoustic gym cost fit keen maze fence seed mail medal shrimp tell relief clip cannon foster soldier shallow refuse lunar parrot banana",
+            "column rhythm acoustic gym cost fit keen maze fence seed mail medal shrimp tell relief clip" +
+                " cannon foster soldier shallow refuse lunar parrot banana",
             BlockHeight.new(
                 ZcashNetwork.Testnet,
                 1_355_928
@@ -156,7 +157,8 @@ class TestWallet(
             BlockHeight.new(ZcashNetwork.Mainnet, 1_000_000)
         ),
         SAMPLE_WALLET(
-            "input frown warm senior anxiety abuse yard prefer churn reject people glimpse govern glory crumble swallow verb laptop switch trophy inform friend permit purpose",
+            "input frown warm senior anxiety abuse yard prefer churn reject people glimpse govern glory" +
+                " crumble swallow verb laptop switch trophy inform friend permit purpose",
             BlockHeight.new(
                 ZcashNetwork.Testnet,
                 1_330_190
@@ -164,7 +166,8 @@ class TestWallet(
             BlockHeight.new(ZcashNetwork.Mainnet, 1_000_000)
         ),
         DEV_WALLET(
-            "still champion voice habit trend flight survey between bitter process artefact blind carbon truly provide dizzy crush flush breeze blouse charge solid fish spread",
+            "still champion voice habit trend flight survey between bitter process artefact blind carbon" +
+                " truly provide dizzy crush flush breeze blouse charge solid fish spread",
             BlockHeight.new(
                 ZcashNetwork.Testnet,
                 1_000_000
@@ -172,7 +175,8 @@ class TestWallet(
             BlockHeight.new(ZcashNetwork.Mainnet, 991645)
         ),
         ALICE(
-            "quantum whisper lion route fury lunar pelican image job client hundred sauce chimney barely life cliff spirit admit weekend message recipe trumpet impact kitten",
+            "quantum whisper lion route fury lunar pelican image job client hundred sauce chimney barely" +
+                " life cliff spirit admit weekend message recipe trumpet impact kitten",
             BlockHeight.new(
                 ZcashNetwork.Testnet,
                 1_330_190
@@ -180,7 +184,8 @@ class TestWallet(
             BlockHeight.new(ZcashNetwork.Mainnet, 1_000_000)
         ),
         BOB(
-            "canvas wine sugar acquire garment spy tongue odor hole cage year habit bullet make label human unit option top calm neutral try vocal arena",
+            "canvas wine sugar acquire garment spy tongue odor hole cage year habit bullet make label human" +
+                " unit option top calm neutral try vocal arena",
             BlockHeight.new(
                 ZcashNetwork.Testnet,
                 1_330_190
