@@ -21,9 +21,9 @@ import cash.z.ecc.android.sdk.model.PersistableWallet
 import cash.z.ecc.android.sdk.model.SeedPhrase
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 
-@Preview
+@Preview(name = "Seed")
 @Composable
-fun ComposablePreview() {
+private fun ComposablePreview() {
     MaterialTheme {
         Seed(
             ZcashNetwork.Mainnet,
