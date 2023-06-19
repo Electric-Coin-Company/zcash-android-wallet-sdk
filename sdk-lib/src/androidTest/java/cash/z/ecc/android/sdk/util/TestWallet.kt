@@ -145,8 +145,8 @@ class TestWallet(
     }
 
     enum class Backups(val seedPhrase: String, val testnetBirthday: BlockHeight, val mainnetBirthday: BlockHeight) {
-        // TODO: [#902] Get the proper birthday values for test wallets
-        // TODO: [#902] https://github.com/zcash/zcash-android-wallet-sdk/issues/902
+        // TODO [#902]: Get the proper birthday values for test wallets
+        // TODO [#902]: https://github.com/zcash/zcash-android-wallet-sdk/issues/902
         DEFAULT(
             "column rhythm acoustic gym cost fit keen maze fence seed mail medal shrimp tell relief clip" +
                 " cannon foster soldier shallow refuse lunar parrot banana",

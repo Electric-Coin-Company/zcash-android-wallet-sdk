@@ -480,7 +480,7 @@ class CompactBlockProcessor internal constructor(
                     runCatching { info.blockHeightUnsafe.toBlockHeight(network) }.getOrNull()
 
                 if (null == serverBlockHeight) {
-                    // TODO Better signal network connection issue
+                    // Note: we could better signal network connection issue
                     CompactBlockProcessorException.BadBlockHeight(info.blockHeightUnsafe)
                 } else {
                     val clientBranch = "%x".format(
@@ -534,7 +534,7 @@ class CompactBlockProcessor internal constructor(
     internal suspend fun refreshUtxos(account: Account, startHeight: BlockHeight): Int {
         Twig.debug { "Checking for UTXOs above height $startHeight" }
         var count = 0
-        // TODO [683]: cleanup the way that we prevent this from running excessively
+        // TODO [#683]: cleanup the way that we prevent this from running excessively
         //       For now, try for about 3 blocks per app launch. If the service fails it is
         //       probably disabled on ligthtwalletd, so then stop trying until the next app launch.
         // TODO [#683]: https://github.com/zcash/zcash-android-wallet-sdk/issues/683
@@ -606,7 +606,7 @@ class CompactBlockProcessor internal constructor(
      * @return True in case of the UTXO processed successfully, false otherwise
      */
     internal suspend fun processUtxoResult(utxo: GetAddressUtxosReplyUnsafe): Boolean {
-        // TODO(str4d): We no longer clear UTXOs here, as rustBackend.putUtxo now uses an upsert instead of an insert.
+        // Note (str4d): We no longer clear UTXOs here, as rustBackend.putUtxo now uses an upsert instead of an insert.
         //  This means that now-spent UTXOs would previously have been deleted, but now are left in the database (like
         //  shielded notes). Due to the fact that the lightwalletd query only returns _current_ UTXOs, we don't learn
         //  about recently-spent UTXOs here, so the transparent balance does not get updated here. Instead, when a

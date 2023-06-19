@@ -29,7 +29,7 @@ data class FiatCurrency(val code: String) {
     init {
         require(code.length == 3) { "Fiat currency code must be 3 characters long." }
 
-        // TODO [#532] https://github.com/zcash/secant-android-wallet/issues/532
-        // Add another check to make sure the code is in the known ISO currency code list.
+        // TODO [#532]: Add another check to make sure the code is in the known ISO currency code list.
+        // TODO [#532]: https://github.com/zcash/secant-android-wallet/issues/532
     }
 }
