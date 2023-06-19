@@ -17,8 +17,6 @@ style:
         value: 'FIXME:'
       - reason: 'Forbidden TODO todo marker in comment, please fix the problem or add the issue number (e.g. TODO [#123]).'
         value: 'TODO:(?! \[[^\]]\d+\])'
-  MaxLineLength:
-    active: true
   NewLineAtEndOfFile:
     active: false
   UnusedPrivateMember:
@@ -27,8 +25,6 @@ style:
     excludes: [ '**/*.kts' ]
     ignoreAnnotated:
       - 'Preview'
-  WildcardImport:
-    active: true
 
 Compose:
   ModifierMissing:
