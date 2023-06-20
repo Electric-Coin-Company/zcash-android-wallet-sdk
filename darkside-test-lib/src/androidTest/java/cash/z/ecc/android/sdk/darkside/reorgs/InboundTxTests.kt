@@ -43,6 +43,7 @@ class InboundTxTests : ScopedTest() {
             .applyTipHeight(targetHeight)
     }
 
+    @Suppress("MaxLineLength")
     companion object {
         private const val blocksUrl = "https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/basic-reorg/before-reorg.txt"
         private const val tx663174 = "https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/transactions/recv/0821a89be7f2fc1311792c3fa1dd2171a8cdfb2effd98590cbd5ebcdcfcf491f.txt"

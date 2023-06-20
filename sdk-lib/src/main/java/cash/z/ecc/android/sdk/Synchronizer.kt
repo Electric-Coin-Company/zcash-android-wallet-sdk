@@ -186,7 +186,7 @@ interface Synchronizer {
 
     /**
      * Returns true when the given address is a valid z-addr. Invalid addresses will throw an
-     * exception. Valid z-addresses have these characteristics: //TODO copy info from related ZIP
+     * exception. See valid z-addresses characteristics in related ZIP.
      *
      * @param address the address to validate.
      *
@@ -198,7 +198,7 @@ interface Synchronizer {
 
     /**
      * Returns true when the given address is a valid t-addr. Invalid addresses will throw an
-     * exception. Valid t-addresses have these characteristics: //TODO copy info from related ZIP
+     * exception. See valid t-addresses characteristics in related ZIP.
      *
      * @param address the address to validate.
      *

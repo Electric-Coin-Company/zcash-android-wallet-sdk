@@ -10,7 +10,8 @@ class RustDerivationToolTest {
 
     companion object {
         private const val SEED_PHRASE =
-            "kitchen renew wide common vague fold vacuum tilt amazing pear square gossip jewel month tree shock scan alpha just spot fluid toilet view dinner"
+            "kitchen renew wide common vague fold vacuum tilt amazing pear square gossip jewel month tree shock scan" +
+                " alpha just spot fluid toilet view dinner"
     }
 
     @Test

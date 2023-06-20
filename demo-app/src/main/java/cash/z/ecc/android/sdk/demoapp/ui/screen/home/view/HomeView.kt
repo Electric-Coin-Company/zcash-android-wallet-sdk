@@ -31,9 +31,9 @@ import cash.z.ecc.android.sdk.demoapp.fixture.WalletSnapshotFixture
 import cash.z.ecc.android.sdk.demoapp.ui.common.DisableScreenTimeout
 import cash.z.ecc.android.sdk.demoapp.ui.screen.home.viewmodel.WalletSnapshot
 
-@Preview
+@Preview(name = "Home")
 @Composable
-fun ComposablePreviewHome() {
+private fun ComposablePreviewHome() {
     MaterialTheme {
         Home(
             WalletSnapshotFixture.new(),
@@ -48,7 +48,6 @@ fun ComposablePreviewHome() {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Suppress("LongParameterList")
 @Composable
 fun Home(

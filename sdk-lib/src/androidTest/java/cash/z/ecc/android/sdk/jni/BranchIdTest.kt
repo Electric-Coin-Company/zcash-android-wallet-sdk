@@ -32,19 +32,28 @@ class BranchIdTest internal constructor(
     fun testBranchId_Hex() {
         val branchId = rustBackend.getBranchIdForHeight(height)
         val clientBranch = "%x".format(branchId)
-        assertEquals("Invalid branch Id Hex value for $networkName at height $height on ${rustBackend.network.networkName}", branchHex, clientBranch)
+        assertEquals(
+            "Invalid branch Id Hex value for $networkName at height $height on ${rustBackend.network.networkName}",
+            branchHex,
+            clientBranch
+        )
     }
 
     @Test
     fun testBranchId_Numeric() {
         val actual = rustBackend.getBranchIdForHeight(height)
-        assertEquals("Invalid branch ID for $networkName at height $height on ${rustBackend.network.networkName}", branchId, actual)
+        assertEquals(
+            "Invalid branch ID for $networkName at height $height on ${rustBackend.network.networkName}",
+            branchId,
+            actual
+        )
     }
 
     companion object {
 
         @JvmStatic
         @Parameterized.Parameters
+        @Suppress("LongMethod")
         fun wallets(): List<Array<Any>> {
             // init values don't matter for this test because we're just checking branchIds, which
             // is an abnormal use of the SDK because this really should run at the rust level
@@ -70,16 +79,64 @@ class BranchIdTest internal constructor(
             }
             return listOf(
                 // Mainnet Cases
-                arrayOf("Sapling", BlockHeight.new(ZcashNetwork.Mainnet, 419_200), 1991772603L, "76b809bb", mainnetBackend),
-                arrayOf("Blossom", BlockHeight.new(ZcashNetwork.Mainnet, 653_600), 733220448L, "2bb40e60", mainnetBackend),
-                arrayOf("Heartwood", BlockHeight.new(ZcashNetwork.Mainnet, 903_000), 4122551051L, "f5b9230b", mainnetBackend),
-                arrayOf("Canopy", BlockHeight.new(ZcashNetwork.Mainnet, 1_046_400), 3925833126L, "e9ff75a6", mainnetBackend),
+                arrayOf(
+                    "Sapling",
+                    BlockHeight.new(ZcashNetwork.Mainnet, 419_200),
+                    1991772603L,
+                    "76b809bb",
+                    mainnetBackend
+                ),
+                arrayOf(
+                    "Blossom",
+                    BlockHeight.new(ZcashNetwork.Mainnet, 653_600),
+                    733220448L,
+                    "2bb40e60",
+                    mainnetBackend
+                ),
+                arrayOf(
+                    "Heartwood",
+                    BlockHeight.new(ZcashNetwork.Mainnet, 903_000),
+                    4122551051L,
+                    "f5b9230b",
+                    mainnetBackend
+                ),
+                arrayOf(
+                    "Canopy",
+                    BlockHeight.new(ZcashNetwork.Mainnet, 1_046_400),
+                    3925833126L,
+                    "e9ff75a6",
+                    mainnetBackend
+                ),
 
                 // Testnet Cases
-                arrayOf("Sapling", BlockHeight.new(ZcashNetwork.Testnet, 280_000), 1991772603L, "76b809bb", testnetBackend),
-                arrayOf("Blossom", BlockHeight.new(ZcashNetwork.Testnet, 584_000), 733220448L, "2bb40e60", testnetBackend),
-                arrayOf("Heartwood", BlockHeight.new(ZcashNetwork.Testnet, 903_800), 4122551051L, "f5b9230b", testnetBackend),
-                arrayOf("Canopy", BlockHeight.new(ZcashNetwork.Testnet, 1_028_500), 3925833126L, "e9ff75a6", testnetBackend)
+                arrayOf(
+                    "Sapling",
+                    BlockHeight.new(ZcashNetwork.Testnet, 280_000),
+                    1991772603L,
+                    "76b809bb",
+                    testnetBackend
+                ),
+                arrayOf(
+                    "Blossom",
+                    BlockHeight.new(ZcashNetwork.Testnet, 584_000),
+                    733220448L,
+                    "2bb40e60",
+                    testnetBackend
+                ),
+                arrayOf(
+                    "Heartwood",
+                    BlockHeight.new(ZcashNetwork.Testnet, 903_800),
+                    4122551051L,
+                    "f5b9230b",
+                    testnetBackend
+                ),
+                arrayOf(
+                    "Canopy",
+                    BlockHeight.new(ZcashNetwork.Testnet, 1_028_500),
+                    3925833126L,
+                    "e9ff75a6",
+                    testnetBackend
+                )
             )
         }
     }

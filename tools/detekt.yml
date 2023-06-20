@@ -13,20 +13,24 @@ style:
   ForbiddenComment:
     active: true
     comments:
-      - reason: 'Forbidden FIXME todo marker in comment, please fix the problem.'
-        value: 'FIXME:'
-      - reason: 'Forbidden TODO todo marker in comment, please fix the problem or add the issue number (e.g. TODO [#123]).'
-        value: 'TODO:(?! \[[^\]]\d+\])'
-  MaxLineLength:
-    active: false
+      - reason: 'Forbidden FIXME todo marker in comment, please fix the problem. Or include issue number prefix for 
+      FIXME comments, e.g. `FIXME [#123]: Fix this later`'
+        value: 'FIXME'
+      - reason: 'Forbidden STOPSHIP todo marker in comment, please address the problem before shipping the code. Or 
+      include issue number prefix for STOPSHIP comments, e.g. `STOPSHIP [#123]: Fix this later`'
+        value: 'STOPSHIP'
+      - reason: 'Forbidden TODO todo marker in comment, please do the changes. Or include issue number prefix for TODO 
+      comments, e.g. `TODO [#123]: Fix this later`'
+        value: 'TODO'
+    allowedPatterns: '[TODO|FIXME|STOPSHIP]+\s\[#\d+\]:\s.+'
   NewLineAtEndOfFile:
     active: false
   UnusedPrivateMember:
     active: true
     allowedNames: '(_|ignored|expected|serialVersionUID)'
     excludes: [ '**/*.kts' ]
-  WildcardImport:
-    active: false
+    ignoreAnnotated:
+      - 'Preview'
 
 Compose:
   ModifierMissing:
