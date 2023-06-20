@@ -70,7 +70,10 @@ import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
+import kotlin.time.DurationUnit
+import kotlin.time.toDuration
 
 /**
  * Responsible for processing the compact blocks that are received from the lightwallet server. This class encapsulates
@@ -1371,22 +1374,22 @@ class CompactBlockProcessor internal constructor(
     }
 
     /**
-     ￼* Poll on time boundaries. Per Issue #95, we want to avoid exposing computation time to a
+     * Poll on time boundaries. Per Issue #95, we want to avoid exposing computation time to a
      * network observer. Instead, we poll at regular time intervals that are large enough for all
      * computation to complete so no intervals are skipped. See 95 for more details.
      *
      * @param fastIntervalDesired currently not used but sometimes we want to poll quickly, such as
      * when we unexpectedly lose server connection or are waiting for an event to happen on the
      * chain. We can pass this desire along now and later figure out how to handle it, privately.
-     ￼*/
-    // TODO [#1048]: Consider using Kotlin Duration rather than Long in the calculatePollInterval
-    // TODO [#1048]: https://github.com/zcash/zcash-android-wallet-sdk/issues/1048
+     *
+     * @return the duration in milliseconds to the next poll attempt
+     */
     @Suppress("UNUSED_PARAMETER")
-    private fun calculatePollInterval(fastIntervalDesired: Boolean = false): Long {
+    private fun calculatePollInterval(fastIntervalDesired: Boolean = false): Duration {
         val interval = POLL_INTERVAL
         val now = System.currentTimeMillis()
         val deltaToNextInterval = interval - (now + interval).rem(interval)
-        return deltaToNextInterval
+        return deltaToNextInterval.toDuration(DurationUnit.MILLISECONDS)
     }
 
     suspend fun calculateBirthdayHeight(): BlockHeight {
