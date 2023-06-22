@@ -12,6 +12,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -21,24 +22,26 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.demoapp.R
 import cash.z.ecc.android.sdk.model.WalletAddresses
 import kotlinx.coroutines.flow.flow
 
-// @Preview
-// @Composable
-// fun ComposablePreview() {
-//     MaterialTheme {
-//         Addresses()
-//     }
-// }
+@Preview(name = "Addresses")
+@Composable
+private fun ComposablePreview() {
+    MaterialTheme {
+        // TODO [#1090]: Demo: Add Addresses and Transactions Compose Previews
+        // TODO [#1090]: https://github.com/zcash/zcash-android-wallet-sdk/issues/1090
+        // Addresses()
+    }
+}
 
 /**
  * @param copyToClipboard First string is a tag, the second string is the text to copy.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Addresses(
     synchronizer: Synchronizer,
