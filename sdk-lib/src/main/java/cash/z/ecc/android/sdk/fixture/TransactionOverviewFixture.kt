@@ -10,10 +10,10 @@ import cash.z.ecc.android.sdk.model.Zatoshi
 object TransactionOverviewFixture {
     const val ID: Long = 1
     val RAW_ID: FirstClassByteArray get() = FirstClassByteArray("rawId".toByteArray())
-    val MINED_HEIGHT: BlockHeight? = BlockHeight(1)
+    val MINED_HEIGHT: BlockHeight = BlockHeight(1)
     val EXPIRY_HEIGHT: BlockHeight? = null
     const val INDEX: Long = 2
-    val RAW: FirstClassByteArray? get() = FirstClassByteArray("raw".toByteArray())
+    val RAW: FirstClassByteArray get() = FirstClassByteArray("raw".toByteArray())
     const val IS_SENT_TRANSACTION: Boolean = false
 
     @Suppress("MagicNumber")
