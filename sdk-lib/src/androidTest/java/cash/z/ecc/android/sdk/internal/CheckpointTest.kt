@@ -1,6 +1,8 @@
 package cash.z.ecc.android.sdk.internal
 
 import androidx.test.filters.SmallTest
+import cash.z.ecc.android.sdk.fixture.CheckpointFixture
+import cash.z.ecc.android.sdk.fixture.toJson
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
 import cash.z.ecc.android.sdk.internal.model.ext.KEY_EPOCH_SECONDS
 import cash.z.ecc.android.sdk.internal.model.ext.KEY_HASH
@@ -9,8 +11,6 @@ import cash.z.ecc.android.sdk.internal.model.ext.KEY_TREE
 import cash.z.ecc.android.sdk.internal.model.ext.KEY_VERSION
 import cash.z.ecc.android.sdk.internal.model.ext.VERSION_1
 import cash.z.ecc.android.sdk.internal.model.ext.from
-import cash.z.ecc.fixture.CheckpointFixture
-import cash.z.ecc.fixture.toJson
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Test

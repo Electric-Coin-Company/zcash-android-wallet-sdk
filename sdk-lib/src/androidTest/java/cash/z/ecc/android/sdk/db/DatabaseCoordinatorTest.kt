@@ -79,7 +79,7 @@ class DatabaseCoordinatorTest {
 
     @Test
     @SmallTest
-    @OptIn(ExperimentalCoroutinesApi::class)
+    @Suppress("LongMethod")
     fun data_database_files_move_test() = runTest {
         val parentFile = File(
             DatabasePathFixture.new(
@@ -163,7 +163,6 @@ class DatabaseCoordinatorTest {
 
     @Test
     @SmallTest
-    @OptIn(ExperimentalCoroutinesApi::class)
     fun delete_data_database_files_test() = runTest {
         val parentFile = File(
             DatabasePathFixture.new(
@@ -204,7 +203,7 @@ class DatabaseCoordinatorTest {
      */
     @Test
     @SmallTest
-    @OptIn(ExperimentalCoroutinesApi::class)
+    @Suppress("LongMethod")
     fun delete_all_legacy_database_files_test() = runTest {
         // create older location legacy files
         val olderLegacyParentFile = File(
@@ -301,7 +300,6 @@ class DatabaseCoordinatorTest {
         }
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     @SmallTest
     fun data_db_path() = runTest {
@@ -315,7 +313,6 @@ class DatabaseCoordinatorTest {
         )
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     @SmallTest
     fun cache_path() = runTest {

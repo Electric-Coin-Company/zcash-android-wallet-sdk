@@ -1,9 +1,10 @@
-package cash.z.ecc.fixture
+package cash.z.ecc.android.sdk.fixture
 
 import cash.z.ecc.android.sdk.internal.Backend
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.internal.model.JniUnifiedSpendingKey
 
+@Suppress("TooManyFunctions")
 internal class FakeRustBackend(
     override val networkId: Int,
     val metadata: MutableList<JniBlockMeta>
@@ -82,8 +83,7 @@ internal class FakeRustBackend(
         TODO("Not yet implemented")
     }
 
-    override suspend fun initDataDb(seed: ByteArray?): Int =
-        error("Intentionally not implemented in mocked FakeRustBackend implementation.")
+    override suspend fun initDataDb(seed: ByteArray?): Int = 0
 
     override suspend fun createAccount(seed: ByteArray): JniUnifiedSpendingKey =
         error("Intentionally not implemented in mocked FakeRustBackend implementation.")

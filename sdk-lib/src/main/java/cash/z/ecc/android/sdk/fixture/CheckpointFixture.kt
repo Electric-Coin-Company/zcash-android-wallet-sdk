@@ -1,4 +1,4 @@
-package cash.z.ecc.fixture
+package cash.z.ecc.android.sdk.fixture
 
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
 import cash.z.ecc.android.sdk.internal.model.ext.KEY_EPOCH_SECONDS
@@ -15,6 +15,7 @@ object CheckpointFixture {
     val NETWORK = ZcashNetwork.Mainnet
 
     // These came from the mainnet 1500000.json file
+    @Suppress("MagicNumber")
     val HEIGHT = BlockHeight.new(ZcashNetwork.Mainnet, 1500000L)
     const val HASH = "00000000019e5b25a95c7607e7789eb326fddd69736970ebbe1c7d00247ef902"
     const val EPOCH_SECONDS = 1639913234L

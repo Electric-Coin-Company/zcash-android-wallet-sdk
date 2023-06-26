@@ -1,5 +1,6 @@
 package cash.z.ecc.android.sdk.internal.storage.block
 
+import cash.z.ecc.android.sdk.fixture.FakeRustBackendFixture
 import cash.z.ecc.android.sdk.internal.Backend
 import cash.z.ecc.android.sdk.internal.ext.deleteRecursivelySuspend
 import cash.z.ecc.android.sdk.internal.ext.existsSuspend
@@ -7,7 +8,6 @@ import cash.z.ecc.android.sdk.internal.ext.listSuspend
 import cash.z.ecc.android.sdk.internal.ext.mkdirsSuspend
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.ZcashNetwork
-import cash.z.ecc.fixture.FakeRustBackendFixture
 import cash.z.ecc.fixture.FilePathFixture
 import co.electriccoin.lightwallet.client.fixture.ListOfCompactBlocksFixture
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -59,7 +59,7 @@ class FileCompactBlockRepositoryTest {
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun getLatestHeightTest() = runTest {
-        val rustBackend = FakeRustBackendFixture().new()
+        val rustBackend = FakeRustBackendFixture.new()
         val blockRepository = getMockedFileCompactBlockRepository(rustBackend, FilePathFixture.newBlocksDir())
 
         val blocks = ListOfCompactBlocksFixture.newFlow()
@@ -73,7 +73,7 @@ class FileCompactBlockRepositoryTest {
     @Test
     fun findCompactBlockTest() = runTest {
         val network = ZcashNetwork.Testnet
-        val rustBackend = FakeRustBackendFixture().new()
+        val rustBackend = FakeRustBackendFixture.new()
         val blockRepository = getMockedFileCompactBlockRepository(rustBackend, FilePathFixture.newBlocksDir())
 
         val blocks = ListOfCompactBlocksFixture.newFlow()
@@ -102,7 +102,7 @@ class FileCompactBlockRepositoryTest {
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun writeBlocksTest() = runTest {
-        val rustBackend = FakeRustBackendFixture().new()
+        val rustBackend = FakeRustBackendFixture.new()
         val blockRepository = getMockedFileCompactBlockRepository(rustBackend, FilePathFixture.newBlocksDir())
 
         assertTrue { rustBackend.metadata.isEmpty() }
@@ -117,7 +117,7 @@ class FileCompactBlockRepositoryTest {
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun writeFewBlocksTest() = runTest {
-        val rustBackend = FakeRustBackendFixture().new()
+        val rustBackend = FakeRustBackendFixture.new()
         val blockRepository = getMockedFileCompactBlockRepository(rustBackend, FilePathFixture.newBlocksDir())
 
         assertTrue { rustBackend.metadata.isEmpty() }
@@ -137,7 +137,7 @@ class FileCompactBlockRepositoryTest {
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun writeBlocksAndCheckStorageTest() = runTest {
-        val rustBackend = FakeRustBackendFixture().new()
+        val rustBackend = FakeRustBackendFixture.new()
         val rootBlocksDirectory = FilePathFixture.newBlocksDir()
         val blockRepository = getMockedFileCompactBlockRepository(rustBackend, rootBlocksDirectory)
 
@@ -156,7 +156,7 @@ class FileCompactBlockRepositoryTest {
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun deleteCompactBlockFilesTest() = runTest {
-        val rustBackend = FakeRustBackendFixture().new()
+        val rustBackend = FakeRustBackendFixture.new()
         val blocksDirectory = FilePathFixture.newBlocksDir()
         val parentDirectory = blocksDirectory.parentFile!!
 
@@ -193,7 +193,7 @@ class FileCompactBlockRepositoryTest {
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun rewindToTest() = runTest {
-        val rustBackend = FakeRustBackendFixture().new()
+        val rustBackend = FakeRustBackendFixture.new()
         val blockRepository = getMockedFileCompactBlockRepository(rustBackend, FilePathFixture.newBlocksDir())
 
         val testedBlocksRange = ListOfCompactBlocksFixture.DEFAULT_FILE_BLOCK_RANGE
