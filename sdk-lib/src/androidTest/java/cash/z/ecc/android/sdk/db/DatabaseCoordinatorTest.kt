@@ -73,6 +73,7 @@ class DatabaseCoordinatorTest {
         }
     }
 
+    @Suppress("LongMethod")
     @Test
     @SmallTest
     fun data_database_files_move_test() = runTest {
@@ -196,6 +197,7 @@ class DatabaseCoordinatorTest {
      * Note that this situation is just hypothetical, as the legacy database files should be placed only on one of
      * the legacy locations, not both, but it is alright to test it together.
      */
+    @Suppress("LongMethod")
     @Test
     @SmallTest
     fun delete_all_legacy_database_files_test() = runTest {
