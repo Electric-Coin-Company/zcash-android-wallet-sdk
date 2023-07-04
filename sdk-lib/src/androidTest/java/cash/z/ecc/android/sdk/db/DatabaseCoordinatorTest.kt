@@ -8,7 +8,6 @@ import cash.z.ecc.android.sdk.test.getAppContext
 import cash.z.ecc.fixture.DatabaseCacheFilesRootFixture
 import cash.z.ecc.fixture.DatabaseNameFixture
 import cash.z.ecc.fixture.DatabasePathFixture
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -31,7 +30,6 @@ class DatabaseCoordinatorTest {
 
     @Test
     @SmallTest
-    @OptIn(ExperimentalCoroutinesApi::class)
     fun database_cache_root_directory_creation_test() = runTest {
         val parentDirectory = File(DatabasePathFixture.new())
         val destinationDirectory = DatabaseCacheFilesRootFixture.newCacheRoot()
@@ -47,7 +45,6 @@ class DatabaseCoordinatorTest {
 
     @Test
     @SmallTest
-    @OptIn(ExperimentalCoroutinesApi::class)
     fun database_data_file_creation_test() = runTest {
         val directory = File(DatabasePathFixture.new())
         val fileName = DatabaseNameFixture.newDb(name = DatabaseCoordinator.DB_DATA_NAME)
@@ -63,7 +60,6 @@ class DatabaseCoordinatorTest {
 
     @Test
     @SmallTest
-    @OptIn(ExperimentalCoroutinesApi::class)
     fun database_transactions_file_creation_test() = runTest {
         val directory = File(DatabasePathFixture.new())
         val fileName = DatabaseNameFixture.newDb(name = DatabaseCoordinator.DB_PENDING_TRANSACTIONS_NAME)
@@ -77,9 +73,9 @@ class DatabaseCoordinatorTest {
         }
     }
 
+    @Suppress("LongMethod")
     @Test
     @SmallTest
-    @OptIn(ExperimentalCoroutinesApi::class)
     fun data_database_files_move_test() = runTest {
         val parentFile = File(
             DatabasePathFixture.new(
@@ -163,7 +159,6 @@ class DatabaseCoordinatorTest {
 
     @Test
     @SmallTest
-    @OptIn(ExperimentalCoroutinesApi::class)
     fun delete_data_database_files_test() = runTest {
         val parentFile = File(
             DatabasePathFixture.new(
@@ -202,9 +197,9 @@ class DatabaseCoordinatorTest {
      * Note that this situation is just hypothetical, as the legacy database files should be placed only on one of
      * the legacy locations, not both, but it is alright to test it together.
      */
+    @Suppress("LongMethod")
     @Test
     @SmallTest
-    @OptIn(ExperimentalCoroutinesApi::class)
     fun delete_all_legacy_database_files_test() = runTest {
         // create older location legacy files
         val olderLegacyParentFile = File(
@@ -301,7 +296,6 @@ class DatabaseCoordinatorTest {
         }
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     @SmallTest
     fun data_db_path() = runTest {
@@ -315,7 +309,6 @@ class DatabaseCoordinatorTest {
         )
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     @SmallTest
     fun cache_path() = runTest {
