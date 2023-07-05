@@ -86,11 +86,16 @@ internal class AllTransactionView(
         val isSent = netValueLong < 0
 
         val expiryHeightLong = cursor.getLong(expiryHeightIndex)
+        val minedHeightLong = cursor.getLong(minedHeightColumnIndex)
 
         DbTransactionOverview(
             id = cursor.getLong(idColumnIndex),
             rawId = FirstClassByteArray(cursor.getBlob(rawTransactionIdIndex)),
-            minedHeight = BlockHeight.new(zcashNetwork, cursor.getLong(minedHeightColumnIndex)),
+            minedHeight = if (0L == minedHeightLong) {
+                null
+            } else {
+                BlockHeight.new(zcashNetwork, minedHeightLong)
+            },
             expiryHeight = if (0L == expiryHeightLong) {
                 null
             } else {
