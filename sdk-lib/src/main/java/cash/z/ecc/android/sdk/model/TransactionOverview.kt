@@ -73,8 +73,10 @@ enum class TransactionState {
             minedHeight: BlockHeight?,
             expiryHeight: BlockHeight?
         ): TransactionState {
-            return if (minedHeight != null && (latestBlockHeight.value - minedHeight.value) > MIN_CONFIRMATIONS) {
+            return if (minedHeight != null && (latestBlockHeight.value - minedHeight.value) >= MIN_CONFIRMATIONS) {
                 Confirmed
+            } else if (minedHeight != null && (latestBlockHeight.value - minedHeight.value) < MIN_CONFIRMATIONS) {
+                Pending
             } else if (minedHeight == null && ((expiryHeight?.value ?: Long.MAX_VALUE) < latestBlockHeight.value)) {
                 Pending
             } else {
