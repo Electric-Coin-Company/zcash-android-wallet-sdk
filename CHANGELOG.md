@@ -1,5 +1,15 @@
 # Change Log
 
+## 1.19.0-beta01
+### Changed
+- Adopted the latest Bip39 version 1.0.5
+
+### Fixed
+- `TransactionOverview` object returned with `SdkSynchronizer.transactions` now contains a correct `TransactionState.
+  Pending` in case of the transaction is mined,but not fully confirmed.
+- When the SDK internally works with a recently created transaction there was a moment in which could the transaction 
+  causes the SDK to crash, because of its invalid mined height. Fixed now.
+
 ## 1.18.0-beta01
 - Synchronizer's functions `getUnifiedAddress`, `getSaplingAddress`, `getTransparentAddress`, and `refreshUtxos` now 
   do not provide `Account.DEFAULT` value for the account argument. As accounts are not fully supported by the SDK 
