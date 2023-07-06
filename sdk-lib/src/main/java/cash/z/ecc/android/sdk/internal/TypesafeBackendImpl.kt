@@ -21,7 +21,7 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
 
     override suspend fun initBlocksTable(checkpoint: Checkpoint) = backend.initBlocksTable(checkpoint)
 
-    override suspend fun getCurrentAddress(account: Account): String = getCurrentAddress(account)
+    override suspend fun getCurrentAddress(account: Account): String = backend.getCurrentAddress(account)
 
     override suspend fun listTransparentReceivers(account: Account): List<String> =
         backend.listTransparentReceivers(account)

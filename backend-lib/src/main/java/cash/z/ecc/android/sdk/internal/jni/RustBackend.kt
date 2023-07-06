@@ -12,7 +12,7 @@ import java.io.File
 /**
  * Serves as the JNI boundary between the Kotlin and Rust layers. Functions in this class should
  * not be called directly by code outside of the SDK. Instead, one of the higher-level components
- * should be used such as Wallet.kt or CompactBlockProcessor.kt.
+ * should be used such as WalletCoordinator.kt or CompactBlockProcessor.kt.
  */
 @Suppress("TooManyFunctions")
 class RustBackend private constructor(
@@ -37,13 +37,11 @@ class RustBackend private constructor(
         var dataClearResult = true
         if (clearCache) {
             fsBlockDbRoot.deleteRecursivelySuspend().also { result ->
-                // Twig.debug { "Deletion of the cache files ${if (result) "succeeded" else "failed"}!" }
                 cacheClearResult = result
             }
         }
         if (clearDataDb) {
             dataDbFile.deleteSuspend().also { result ->
-                // Twig.debug { "Deletion of the data database ${if (result) "succeeded" else "failed"}!" }
                 dataClearResult = result
             }
         }
@@ -355,28 +353,6 @@ class RustBackend private constructor(
 
     override fun getBranchIdForHeight(height: Long): Long =
         branchIdForHeight(height, networkId = networkId)
-
-//    /**
-//     * This is a proof-of-concept for doing Local RPC, where we are effectively using the JNI
-//     * boundary as a grpc server. It is slightly inefficient in terms of both space and time but
-//     * given that it is all done locally, on the heap, it seems to be a worthwhile tradeoff because
-//     * it reduces the complexity and expands the capacity for the two layers to communicate.
-//     *
-//     * We're able to keep the "unsafe" byteArray functions private and wrap them in typeSafe
-//     * equivalents and, eventually, surface any parse errors (for now, errors are only logged).
-//     */
-//     override fun parseTransactionDataList(
-//         tdl: LocalRpcTypes.TransactionDataList
-//     ): LocalRpcTypes.TransparentTransactionList {
-//         return try {
-//             // serialize the list, send it over to rust and get back a serialized set of results that we parse out
-//             // and return
-//             return LocalRpcTypes.TransparentTransactionList.parseFrom(parseTransactionDataList(tdl.toByteArray()))
-//         } catch (t: Throwable) {
-//             twig("ERROR: failed to parse transaction data list due to: $t caused by: ${t.cause}")
-//             LocalRpcTypes.TransparentTransactionList.newBuilder().build()
-//         }
-//     }
 
     /**
      * Exposes all of the librustzcash functions along with helpers for loading the static library.
