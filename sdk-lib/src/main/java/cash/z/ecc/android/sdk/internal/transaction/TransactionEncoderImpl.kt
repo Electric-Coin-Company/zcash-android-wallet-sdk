@@ -2,15 +2,11 @@ package cash.z.ecc.android.sdk.internal.transaction
 
 import cash.z.ecc.android.sdk.exception.TransactionEncoderException
 import cash.z.ecc.android.sdk.ext.masked
-import cash.z.ecc.android.sdk.internal.Backend
 import cash.z.ecc.android.sdk.internal.SaplingParamTool
 import cash.z.ecc.android.sdk.internal.Twig
-import cash.z.ecc.android.sdk.internal.createToAddress
-import cash.z.ecc.android.sdk.internal.getBranchIdForHeight
+import cash.z.ecc.android.sdk.internal.TypesafeBackend
 import cash.z.ecc.android.sdk.internal.model.EncodedTransaction
-import cash.z.ecc.android.sdk.internal.network
 import cash.z.ecc.android.sdk.internal.repository.DerivedDataRepository
-import cash.z.ecc.android.sdk.internal.shieldToAddress
 import cash.z.ecc.android.sdk.model.TransactionRecipient
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.Zatoshi
@@ -25,7 +21,7 @@ import cash.z.ecc.android.sdk.model.Zatoshi
  * such as the raw bytes and raw txId.
  */
 internal class TransactionEncoderImpl(
-    private val backend: Backend,
+    private val backend: TypesafeBackend,
     private val saplingParamTool: SaplingParamTool,
     private val repository: DerivedDataRepository
 ) : TransactionEncoder {

@@ -15,9 +15,10 @@ import cash.z.ecc.android.sdk.exception.TransactionEncoderException
 import cash.z.ecc.android.sdk.exception.TransactionSubmitException
 import cash.z.ecc.android.sdk.ext.ConsensusBranchId
 import cash.z.ecc.android.sdk.ext.ZcashSdk
-import cash.z.ecc.android.sdk.internal.Backend
 import cash.z.ecc.android.sdk.internal.SaplingParamTool
 import cash.z.ecc.android.sdk.internal.Twig
+import cash.z.ecc.android.sdk.internal.TypesafeBackend
+import cash.z.ecc.android.sdk.internal.TypesafeBackendImpl
 import cash.z.ecc.android.sdk.internal.block.CompactBlockDownloader
 import cash.z.ecc.android.sdk.internal.db.DatabaseCoordinator
 import cash.z.ecc.android.sdk.internal.db.derived.DbDerivedDataRepository
@@ -94,7 +95,7 @@ class SdkSynchronizer private constructor(
     private val storage: DerivedDataRepository,
     private val txManager: OutboundTransactionManager,
     val processor: CompactBlockProcessor,
-    private val backend: Backend
+    private val backend: TypesafeBackend
 ) : CloseableSynchronizer {
 
     companion object {
@@ -120,7 +121,7 @@ class SdkSynchronizer private constructor(
             repository: DerivedDataRepository,
             txManager: OutboundTransactionManager,
             processor: CompactBlockProcessor,
-            backend: Backend
+            backend: TypesafeBackend
         ): CloseableSynchronizer {
             val synchronizerKey = SynchronizerKey(zcashNetwork, alias)
 
@@ -510,7 +511,7 @@ class SdkSynchronizer private constructor(
 
     // Not ready to be a public API; internal for testing only
     internal suspend fun createAccount(seed: ByteArray): UnifiedSpendingKey =
-        CompactBlockProcessor.createAccount(backend, seed)
+        backend.createAccountAndGetSpendingKey(seed)
 
     /**
      * Returns the current Unified Address for this account.
@@ -634,20 +635,22 @@ internal object DefaultSynchronizerFactory {
         alias: String,
         saplingParamTool: SaplingParamTool,
         coordinator: DatabaseCoordinator
-    ): Backend {
-        return RustBackend.new(
-            coordinator.fsBlockDbRoot(network, alias),
-            coordinator.dataDbFile(network, alias),
-            saplingOutputFile = saplingParamTool.outputParamsFile,
-            saplingSpendFile = saplingParamTool.spendParamsFile,
-            zcashNetworkId = network.id
+    ): TypesafeBackend {
+        return TypesafeBackendImpl(
+            RustBackend.new(
+                coordinator.fsBlockDbRoot(network, alias),
+                coordinator.dataDbFile(network, alias),
+                saplingOutputFile = saplingParamTool.outputParamsFile,
+                saplingSpendFile = saplingParamTool.spendParamsFile,
+                zcashNetworkId = network.id
+            )
         )
     }
 
     @Suppress("LongParameterList")
     internal suspend fun defaultDerivedDataRepository(
         context: Context,
-        rustBackend: Backend,
+        rustBackend: TypesafeBackend,
         databaseFile: File,
         zcashNetwork: ZcashNetwork,
         checkpoint: Checkpoint,
@@ -666,7 +669,10 @@ internal object DefaultSynchronizerFactory {
             )
         )
 
-    internal suspend fun defaultCompactBlockRepository(blockCacheRoot: File, backend: Backend): CompactBlockRepository =
+    internal suspend fun defaultCompactBlockRepository(
+        blockCacheRoot: File,
+        backend: TypesafeBackend
+    ): CompactBlockRepository =
         FileCompactBlockRepository.new(
             blockCacheRoot,
             backend
@@ -676,7 +682,7 @@ internal object DefaultSynchronizerFactory {
         LightWalletClient.new(context, lightWalletEndpoint)
 
     internal fun defaultEncoder(
-        backend: Backend,
+        backend: TypesafeBackend,
         saplingParamTool: SaplingParamTool,
         repository: DerivedDataRepository
     ): TransactionEncoder = TransactionEncoderImpl(backend, saplingParamTool, repository)
@@ -697,7 +703,7 @@ internal object DefaultSynchronizerFactory {
     }
 
     internal fun defaultProcessor(
-        backend: Backend,
+        backend: TypesafeBackend,
         downloader: CompactBlockDownloader,
         repository: DerivedDataRepository,
         birthdayHeight: BlockHeight

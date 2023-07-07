@@ -1,8 +1,8 @@
 package cash.z.ecc.android.sdk.internal.storage.block
 
 import androidx.annotation.VisibleForTesting
-import cash.z.ecc.android.sdk.internal.Backend
 import cash.z.ecc.android.sdk.internal.Twig
+import cash.z.ecc.android.sdk.internal.TypesafeBackend
 import cash.z.ecc.android.sdk.internal.ext.createNewFileSuspend
 import cash.z.ecc.android.sdk.internal.ext.deleteRecursivelySuspend
 import cash.z.ecc.android.sdk.internal.ext.deleteSuspend
@@ -13,11 +13,8 @@ import cash.z.ecc.android.sdk.internal.ext.mkdirsSuspend
 import cash.z.ecc.android.sdk.internal.ext.renameToSuspend
 import cash.z.ecc.android.sdk.internal.ext.toHexReversed
 import cash.z.ecc.android.sdk.internal.ext.writeBytesSuspend
-import cash.z.ecc.android.sdk.internal.findBlockMetadata
-import cash.z.ecc.android.sdk.internal.getLatestBlockHeight
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.internal.repository.CompactBlockRepository
-import cash.z.ecc.android.sdk.internal.rewindBlockMetadataToHeight
 import cash.z.ecc.android.sdk.model.BlockHeight
 import co.electriccoin.lightwallet.client.model.CompactBlockUnsafe
 import kotlinx.coroutines.flow.Flow
@@ -25,7 +22,7 @@ import java.io.File
 
 internal class FileCompactBlockRepository(
     private val blocksDirectory: File,
-    private val backend: Backend
+    private val backend: TypesafeBackend
 ) : CompactBlockRepository {
 
     override suspend fun getLatestHeight() = backend.getLatestBlockHeight()
@@ -139,7 +136,7 @@ internal class FileCompactBlockRepository(
          */
         suspend fun new(
             blockCacheRoot: File,
-            rustBackend: Backend
+            backend: TypesafeBackend
         ): FileCompactBlockRepository {
             // create and check cache directories
             val blocksDirectory = File(blockCacheRoot, BLOCKS_DOWNLOAD_DIRECTORY).also {
@@ -149,9 +146,9 @@ internal class FileCompactBlockRepository(
                 error("${blocksDirectory.path} directory does not exist and could not be created.")
             }
 
-            rustBackend.initBlockMetaDb()
+            backend.initBlockMetaDb()
 
-            return FileCompactBlockRepository(blocksDirectory, rustBackend)
+            return FileCompactBlockRepository(blocksDirectory, backend)
         }
     }
 }

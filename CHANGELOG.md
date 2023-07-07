@@ -1,5 +1,8 @@
 # Change Log
 
+## Unreleased
+- The SDK internally migrated from `BackendExt` rust backend extension functions to more type-safe `TypesafeBackend`.
+
 ## 1.19.0-beta01
 ### Changed
 - Adopted the latest Bip39 version 1.0.5
