@@ -70,4 +70,6 @@
     <string name="send_to_address">Destination address</string>
     <string name="send_memo">Memo</string>
     <string name="send_button">Send</string>
+
+    <string name="transactions_refresh">Refresh</string>
 </resources>

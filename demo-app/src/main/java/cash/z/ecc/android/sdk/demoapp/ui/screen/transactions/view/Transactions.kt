@@ -10,6 +10,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.outlined.Autorenew
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -25,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import cash.z.ecc.android.sdk.SdkSynchronizer
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.demoapp.R
 import cash.z.ecc.android.sdk.model.TransactionOverview
@@ -49,7 +51,14 @@ fun Transactions(
     onBack: () -> Unit
 ) {
     Scaffold(
-        topBar = { TransactionsTopAppBar(onBack) }
+        topBar = {
+            TransactionsTopAppBar(
+                onBack,
+                onRefresh = {
+                    (synchronizer as SdkSynchronizer).refreshTransactions()
+                }
+            )
+        }
     ) { paddingValues ->
         // TODO [#846]: Slow addresses providing
         // TODO [#846]: https://github.com/zcash/zcash-android-wallet-sdk/issues/846
@@ -70,7 +79,10 @@ fun Transactions(
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
-private fun TransactionsTopAppBar(onBack: () -> Unit) {
+private fun TransactionsTopAppBar(
+    onBack: () -> Unit,
+    onRefresh: () -> Unit
+) {
     TopAppBar(
         title = { Text(text = stringResource(id = R.string.menu_transactions)) },
         navigationIcon = {
@@ -80,6 +92,14 @@ private fun TransactionsTopAppBar(onBack: () -> Unit) {
                 Icon(
                     imageVector = Icons.Filled.ArrowBack,
                     contentDescription = null
+                )
+            }
+        },
+        actions = {
+            IconButton(onClick = onRefresh) {
+                Icon(
+                    imageVector = Icons.Outlined.Autorenew,
+                    contentDescription = stringResource(id = R.string.transactions_refresh)
                 )
             }
         }

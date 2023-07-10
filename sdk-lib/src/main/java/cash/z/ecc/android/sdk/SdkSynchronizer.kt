@@ -402,6 +402,13 @@ class SdkSynchronizer private constructor(
             processor.onProcessorErrorListener = ::onProcessorError
             processor.onSetupErrorListener = ::onSetupError
             processor.onChainErrorListener = ::onChainError
+
+            // Fixme: This is not a correct way on how to regularly poll for transactions!
+            processor.progress.onEach {
+                Twig.info { "Refreshing transactions…" }
+                refreshTransactions()
+            }.launchIn(this)
+
             processor.state.onEach {
                 when (it) {
                     is Synced -> {
