@@ -207,22 +207,6 @@ class RustBackend private constructor(
             )
         }
 
-    override suspend fun validateCombinedChainOrErrorHeight(limit: Long?) =
-        withContext(SdkDispatchers.DATABASE_IO) {
-            val validationResult = validateCombinedChain(
-                dbCachePath = fsBlockDbRoot.absolutePath,
-                dbDataPath = dataDbFile.absolutePath,
-                limit = limit ?: -1,
-                networkId = networkId
-            )
-
-            if (-1L == validationResult) {
-                null
-            } else {
-                validationResult
-            }
-        }
-
     override suspend fun getVerifiedTransparentBalance(address: String): Long =
         withContext(SdkDispatchers.DATABASE_IO) {
             getVerifiedTransparentBalance(
@@ -264,12 +248,22 @@ class RustBackend private constructor(
             )
         }
 
-    override suspend fun scanBlocks(limit: Long?) {
+    override suspend fun suggestScanRanges(): List<JniScanRange> {
+        return withContext(SdkDispatchers.DATABASE_IO) {
+            suggestScanRanges(
+                dataDbFile.absolutePath,
+                networkId = networkId
+            ).asList()
+        }
+    }
+
+    override suspend fun scanBlocks(fromHeight: Long, limit: Long) {
         return withContext(SdkDispatchers.DATABASE_IO) {
             scanBlocks(
                 fsBlockDbRoot.absolutePath,
                 dataDbFile.absolutePath,
-                limit ?: -1,
+                fromHeight,
+                limit,
                 networkId = networkId
             )
         }
@@ -500,14 +494,6 @@ class RustBackend private constructor(
         )
 
         @JvmStatic
-        private external fun validateCombinedChain(
-            dbCachePath: String,
-            dbDataPath: String,
-            limit: Long,
-            networkId: Int
-        ): Long
-
-        @JvmStatic
         private external fun getNearestRewindHeight(
             dbDataPath: String,
             height: Long,
@@ -522,9 +508,16 @@ class RustBackend private constructor(
         )
 
         @JvmStatic
+        private external fun suggestScanRanges(
+            dbDataPath: String,
+            networkId: Int
+        ): Array<JniScanRange>
+
+        @JvmStatic
         private external fun scanBlocks(
             dbCachePath: String,
             dbDataPath: String,
+            fromHeight: Long,
             limit: Long,
             networkId: Int
         )

@@ -2,6 +2,7 @@ package cash.z.ecc.android.sdk.internal
 
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
+import cash.z.ecc.android.sdk.internal.model.JniScanRange
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.UnifiedFullViewingKey
@@ -9,8 +10,6 @@ import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
-import java.lang.RuntimeException
-import kotlin.jvm.Throws
 
 @Suppress("TooManyFunctions")
 internal interface TypesafeBackend {
@@ -61,12 +60,6 @@ internal interface TypesafeBackend {
 
     suspend fun rewindBlockMetadataToHeight(height: BlockHeight)
 
-    /**
-     * @param limit The limit provides an efficient way how to restrict the portion of blocks, which will be validated.
-     * @return Null if successful. If an error occurs, the height will be the height where the error was detected.
-     */
-    suspend fun validateCombinedChainOrErrorBlockHeight(limit: Long?): BlockHeight?
-
     suspend fun getDownloadedUtxoBalance(address: String): WalletBalance
 
     @Suppress("LongParameterList")
@@ -89,7 +82,13 @@ internal interface TypesafeBackend {
      * @throws RuntimeException as a common indicator of the operation failure
      */
     @Throws(RuntimeException::class)
-    suspend fun scanBlocks(limit: Long?)
+    suspend fun scanBlocks(fromHeight: BlockHeight, limit: Long)
+
+    /**
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    @Throws(RuntimeException::class)
+    suspend fun suggestScanRanges(): List<JniScanRange>
 
     suspend fun decryptAndStoreTransaction(tx: ByteArray)
 

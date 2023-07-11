@@ -59,9 +59,6 @@ class BalancePrinterUtil {
 //        val lastDownloaded = downloader.getLastDownloadedHeight()
 //        val blockRange = (Math.max(birthday, lastDownloaded))..latestBlockHeight
 //        downloadNewBlocks(blockRange)
-//        val error = validateNewBlocks(blockRange)
-//        twig("validation completed with result $error")
-//        assertEquals(-1, error)
     }
 
     private suspend fun deleteDb(dbName: String) {
@@ -149,14 +146,5 @@ class BalancePrinterUtil {
 //                initialize()
 //            }
 //        }
-//    }
-
-//    private fun validateNewBlocks(range: IntRange?): Int {
-// //        val dummyWallet = initWallet("dummySeed")
-//        Twig.sprout("validating")
-//        twig("validating blocks in range $range")
-// //        val result = rustBackend.validateCombinedChain()
-//        Twig.clip("validating")
-//        return result
 //    }
 }
