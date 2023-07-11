@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
+use std::num::NonZeroU32;
 use std::panic;
 use std::path::Path;
 use std::ptr;
@@ -17,11 +18,12 @@ use tracing::{debug, error};
 use tracing_subscriber::prelude::*;
 use tracing_subscriber::reload;
 use zcash_address::{ToAddress, ZcashAddress};
+use zcash_client_backend::data_api::scanning::{ScanPriority, ScanRange};
 use zcash_client_backend::keys::{DecodingError, UnifiedSpendingKey};
 use zcash_client_backend::{
     address::{RecipientAddress, UnifiedAddress},
     data_api::{
-        chain::{self, scan_cached_blocks, validate_chain},
+        chain::scan_cached_blocks,
         wallet::{
             decrypt_and_store_transaction, input_selection::GreedyInputSelector,
             shield_transparent_funds, spend,
@@ -68,7 +70,7 @@ mod zip317 {
     pub(super) use zcash_primitives::transaction::fees::zip317::*;
 }
 
-const ANCHOR_OFFSET: u32 = 10;
+const ANCHOR_OFFSET: NonZeroU32 = unsafe { NonZeroU32::new_unchecked(10) };
 
 #[cfg(debug_assertions)]
 fn print_debug_state() {
@@ -84,7 +86,7 @@ fn wallet_db<P: Parameters>(
     env: &JNIEnv<'_>,
     params: P,
     db_data: JString<'_>,
-) -> Result<WalletDb<P>, failure::Error> {
+) -> Result<WalletDb<rusqlite::Connection, P>, failure::Error> {
     WalletDb::for_path(utils::java_string_to_rust(&env, db_data), params)
         .map_err(|e| format_err!("Error opening wallet database connection: {}", e))
 }
@@ -256,11 +258,10 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_cr
 ) -> jobject {
     let res = panic::catch_unwind(|| {
         let network = parse_network(network_id as u32)?;
-        let db_data = wallet_db(&env, network, db_data)?;
+        let mut db_data = wallet_db(&env, network, db_data)?;
         let seed = SecretVec::new(env.convert_byte_array(seed).unwrap());
 
-        let mut db_ops = db_data.get_update_ops()?;
-        let (account, usk) = db_ops
+        let (account, usk) = db_data
             .create_account(&seed)
             .map_err(|e| format_err!("Error while initializing accounts: {}", e))?;
 
@@ -283,7 +284,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_in
 ) -> jboolean {
     let res = panic::catch_unwind(|| {
         let network = parse_network(network_id as u32)?;
-        let db_data = wallet_db(&env, network, db_data)?;
+        let mut db_data = wallet_db(&env, network, db_data)?;
         // TODO: avoid all this unwrapping and also surface errors, better
         let count = env.get_array_length(ufvks_arr).unwrap();
         let ufvks = (0..count)
@@ -307,7 +308,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_in
             .map(|(i, res)| res.map(|ufvk| (AccountId::from(i as u32), ufvk)))
             .collect::<Result<HashMap<_,_>, _>>()?;
 
-        match init_accounts_table(&db_data, &ufvks) {
+        match init_accounts_table(&mut db_data, &ufvks) {
             Ok(()) => Ok(JNI_TRUE),
             Err(e) => Err(format_err!("Error while initializing accounts: {}", e)),
         }
@@ -485,7 +486,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_in
 ) -> jboolean {
     let res = panic::catch_unwind(|| {
         let network = parse_network(network_id as u32)?;
-        let db_data = wallet_db(&env, network, db_data)?;
+        let mut db_data = wallet_db(&env, network, db_data)?;
         let hash = {
             let mut hash = hex::decode(utils::java_string_to_rust(&env, hash_string)).unwrap();
             hash.reverse();
@@ -501,7 +502,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_in
 
         debug!("initializing blocks table with height {}", height);
         match init_blocks_table(
-            &db_data,
+            &mut db_data,
             (height as u32).try_into()?,
             hash,
             time,
@@ -725,14 +726,14 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_ge
         // reported to users does not drop temporarily in a way that they don't expect.
         // `getVerifiedBalance` requires `ANCHOR_OFFSET` confirmations, which means it
         // always shows a spendable balance.
-        let min_confirmations = 0;
+        let min_confirmations = NonZeroU32::new(1).unwrap();
 
         (&db_data)
             .get_target_and_anchor_heights(min_confirmations)
             .map_err(|e| format_err!("Error while fetching anchor height: {}", e))
             .and_then(|opt_anchor| {
                 opt_anchor
-                    .map(|(_, a)| a)
+                    .map(|(_, a)| a + 1)
                     .ok_or(format_err!("Anchor height not available; scan required."))
             })
             .and_then(|anchor| {
@@ -797,9 +798,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_ge
         let addr = utils::java_string_to_rust(&env, address);
         let taddr = TransparentAddress::decode(&network, &addr).unwrap();
 
-        // We select all transparent funds including unmined coins, as that is the same
-        // set of UTXOs we shield from.
-        let min_confirmations = 0;
+        let min_confirmations = NonZeroU32::new(1).unwrap();
 
         let amount = (&db_data)
             .get_target_and_anchor_heights(min_confirmations)
@@ -873,8 +872,9 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_ge
             .get_memo(NoteId::ReceivedNoteId(id_note))
             .map_err(|e| format_err!("An error occurred retrieving the memo, {}", e))
             .and_then(|memo| match memo {
-                Memo::Empty => Ok("".to_string()),
-                Memo::Text(memo) => Ok(memo.into()),
+                Some(Memo::Empty) => Ok("".to_string()),
+                Some(Memo::Text(memo)) => Ok(memo.into()),
+                None => Err(format_err!("Memo not available")),
                 _ => Err(format_err!("This memo does not contain UTF-8 text")),
             })?;
 
@@ -900,8 +900,9 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_ge
             .get_memo(NoteId::SentNoteId(id_note))
             .map_err(|e| format_err!("An error occurred retrieving the memo, {}", e))
             .and_then(|memo| match memo {
-                Memo::Empty => Ok("".to_string()),
-                Memo::Text(memo) => Ok(memo.into()),
+                Some(Memo::Empty) => Ok("".to_string()),
+                Some(Memo::Text(memo)) => Ok(memo.into()),
+                None => Err(format_err!("Memo not available")),
                 _ => Err(format_err!("This memo does not contain UTF-8 text")),
             })?;
 
@@ -1052,44 +1053,6 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_re
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_validateCombinedChain(
-    env: JNIEnv<'_>,
-    _: JClass<'_>,
-    db_cache: JString<'_>,
-    db_data: JString<'_>,
-    limit: jlong,
-    network_id: jint,
-) -> jlong {
-    let res = panic::catch_unwind(|| {
-        let network = parse_network(network_id as u32)?;
-        let block_db = block_db(&env, db_cache)?;
-        let db_data = wallet_db(&env, network, db_data)?;
-        let validate_limit = u32::try_from(limit).ok();
-
-        let validate_from = (&db_data)
-            .get_max_height_hash()
-            .map_err(|e| format_err!("Error while validating chain: {}", e))?;
-
-        let val_res = validate_chain(&block_db, validate_from, validate_limit);
-
-        if let Err(e) = val_res {
-            match e {
-                chain::error::Error::Chain(e) => {
-                    let upper_bound_u32 = u32::from(e.at_height());
-                    Ok(upper_bound_u32 as i64)
-                }
-                _ => Err(format_err!("Error while validating chain: {:?}", e)),
-            }
-        } else {
-            // All blocks are valid, so "highest invalid block height" is below genesis.
-            Ok(-1)
-        }
-    });
-
-    unwrap_exc_or(&env, res, 0) as jlong
-}
-
-#[no_mangle]
 pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getNearestRewindHeight(
     env: JNIEnv<'_>,
     _: JClass<'_>,
@@ -1135,8 +1098,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_re
 ) -> jboolean {
     let res = panic::catch_unwind(|| {
         let network = parse_network(network_id as u32)?;
-        let db_data = wallet_db(&env, network, db_data)?;
-        let mut db_data = db_data.get_update_ops()?;
+        let mut db_data = wallet_db(&env, network, db_data)?;
 
         let height = BlockHeight::try_from(height)?;
         db_data
@@ -1148,23 +1110,78 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_re
     unwrap_exc_or(&env, res, JNI_FALSE)
 }
 
+fn encode_scan_range<'a>(
+    env: &JNIEnv<'a>,
+    scan_range: ScanRange,
+) -> jni::errors::Result<JObject<'a>> {
+    let priority = match scan_range.priority() {
+        ScanPriority::Scanned => 10,
+        ScanPriority::Historic => 20,
+        ScanPriority::OpenAdjacent => 30,
+        ScanPriority::FoundNote => 40,
+        ScanPriority::ChainTip => 50,
+        ScanPriority::Verify => 60,
+    };
+    env.new_object(
+        "cash/z/ecc/android/sdk/internal/model/JniScanRange",
+        "(JJJ)V",
+        &[
+            JValue::Long(i64::from(u32::from(scan_range.block_range().start))),
+            JValue::Long(i64::from(u32::from(scan_range.block_range().end))),
+            JValue::Long(priority),
+        ],
+    )
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_suggestScanRanges(
+    env: JNIEnv<'_>,
+    _: JClass<'_>,
+    db_data: JString<'_>,
+    network_id: jint,
+) -> jobjectArray {
+    let res = panic::catch_unwind(|| {
+        let network = parse_network(network_id as u32)?;
+        let db_data = wallet_db(&env, network, db_data)?;
+
+        let ranges = db_data
+            .suggest_scan_ranges()
+            .map_err(|e| format_err!("Error while fetching suggested scan ranges: {}", e))?;
+
+        Ok(utils::rust_vec_to_java(
+            &env,
+            ranges,
+            "cash/z/ecc/android/sdk/internal/model/JniBlockMeta",
+            |env, scan_range| encode_scan_range(env, scan_range),
+            |env| {
+                encode_scan_range(
+                    env,
+                    ScanRange::from_parts((0.into())..(0.into()), ScanPriority::Scanned),
+                )
+            },
+        ))
+    });
+    unwrap_exc_or(&env, res, ptr::null_mut())
+}
+
 #[no_mangle]
 pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_scanBlocks(
     env: JNIEnv<'_>,
     _: JClass<'_>,
     db_cache: JString<'_>,
     db_data: JString<'_>,
+    from_height: jlong,
     limit: jlong,
     network_id: jint,
 ) -> jboolean {
     let res = panic::catch_unwind(|| {
         let network = parse_network(network_id as u32)?;
         let db_cache = block_db(&env, db_cache)?;
-        let db_data = wallet_db(&env, network, db_data)?;
-        let mut db_data = db_data.get_update_ops()?;
-        let limit = u32::try_from(limit).ok();
+        let mut db_data = wallet_db(&env, network, db_data)?;
+        let from_height = BlockHeight::try_from(from_height)?;
+        let limit = usize::try_from(limit)?;
 
-        match scan_cached_blocks(&network, &db_cache, &mut db_data, limit) {
+        match scan_cached_blocks(&network, &db_cache, &mut db_data, from_height, limit) {
             Ok(()) => Ok(JNI_TRUE),
             Err(e) => Err(format_err!(
                 "Rust error while scanning blocks (limit {:?}): {:?}",
@@ -1199,8 +1216,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_pu
         txid.copy_from_slice(&txid_bytes);
 
         let script_pubkey = Script(env.convert_byte_array(script).unwrap());
-        let db_data = wallet_db(&env, network, db_data)?;
-        let mut db_data = db_data.get_update_ops()?;
+        let mut db_data = wallet_db(&env, network, db_data)?;
         let addr = utils::java_string_to_rust(&env, address);
         let _address = TransparentAddress::decode(&network, &addr).unwrap();
 
@@ -1233,8 +1249,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_de
 ) -> jboolean {
     let res = panic::catch_unwind(|| {
         let network = parse_network(network_id as u32)?;
-        let db_data = wallet_db(&env, network, db_data)?;
-        let mut db_data = db_data.get_update_ops()?;
+        let mut db_data = wallet_db(&env, network, db_data)?;
         let tx_bytes = env.convert_byte_array(tx).unwrap();
         // The consensus branch ID passed in here does not matter:
         // - v4 and below cache it internally, but all we do with this transaction while
@@ -1292,8 +1307,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_cr
 ) -> jlong {
     let res = panic::catch_unwind(|| {
         let network = parse_network(network_id as u32)?;
-        let db_data = wallet_db(&env, network, db_data)?;
-        let mut db_data = db_data.get_update_ops()?;
+        let mut db_data = wallet_db(&env, network, db_data)?;
         let usk = decode_usk(&env, usk)?;
         let to = utils::java_string_to_rust(&env, to);
         let value =
@@ -1382,14 +1396,13 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_sh
 ) -> jlong {
     let res = panic::catch_unwind(|| {
         let network = parse_network(network_id as u32)?;
-        let db_data = wallet_db(&env, network, db_data)?;
-        let mut db_data = db_data.get_update_ops()?;
+        let mut db_data = wallet_db(&env, network, db_data)?;
         let usk = decode_usk(&env, usk)?;
         let memo_bytes = env.convert_byte_array(memo).unwrap();
         let spend_params = utils::java_string_to_rust(&env, spend_params);
         let output_params = utils::java_string_to_rust(&env, output_params);
 
-        let min_confirmations = 0;
+        let min_confirmations = NonZeroU32::new(1).unwrap();
 
         let account = db_data
             .get_account_for_ufvk(&usk.to_unified_full_viewing_key())?

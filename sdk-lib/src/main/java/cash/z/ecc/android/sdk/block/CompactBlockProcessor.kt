@@ -742,27 +742,12 @@ class CompactBlockProcessor internal constructor(
                         // Enrich batch model with fetched blocks. It's useful for later blocks deletion
                         downloadStageResult.batch.blocks = downloadStageResult.stageResult.downloadedBlocks
 
-                        // Run validation stage
+                        // Run scanning stage (which also validates the fetched blocks)
                         SyncStageResult(
                             downloadStageResult.batch,
-                            validateBatchOfBlocks(
-                                backend = backend,
-                                batch = downloadStageResult.batch
-                            )
-                        )
-                    }
-                }.map { validateResult ->
-                    Twig.debug { "Validation stage done with result: $validateResult" }
-
-                    if (validateResult.stageResult != BlockProcessingResult.Success) {
-                        validateResult
-                    } else {
-                        // Run scanning stage
-                        SyncStageResult(
-                            validateResult.batch,
                             scanBatchOfBlocks(
                                 backend = backend,
-                                batch = validateResult.batch
+                                batch = downloadStageResult.batch
                             )
                         )
                     }
@@ -905,23 +890,9 @@ class CompactBlockProcessor internal constructor(
         }
 
         @VisibleForTesting
-        internal suspend fun validateBatchOfBlocks(batch: BlockBatch, backend: TypesafeBackend): BlockProcessingResult {
-            Twig.verbose { "Starting to validate batch $batch" }
-
-            val result = backend.validateCombinedChainOrErrorBlockHeight(batch.range.length())
-
-            return if (null == result) {
-                Twig.verbose { "Successfully validated batch $batch" }
-                BlockProcessingResult.Success
-            } else {
-                BlockProcessingResult.FailedValidateBlocks(result)
-            }
-        }
-
-        @VisibleForTesting
         internal suspend fun scanBatchOfBlocks(batch: BlockBatch, backend: TypesafeBackend): BlockProcessingResult {
             return runCatching {
-                backend.scanBlocks(batch.range.length())
+                backend.scanBlocks(batch.range.start, batch.range.length())
             }.onSuccess {
                 Twig.verbose { "Successfully scanned batch $batch" }
             }.onFailure {
