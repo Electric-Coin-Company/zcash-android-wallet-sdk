@@ -1,6 +1,7 @@
 package cash.z.ecc.android.sdk.internal
 
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
+import cash.z.ecc.android.sdk.internal.model.JniScanRange
 import cash.z.ecc.android.sdk.internal.model.JniUnifiedSpendingKey
 import java.lang.RuntimeException
 import kotlin.jvm.Throws
@@ -101,7 +102,13 @@ interface Backend {
      * @throws RuntimeException as a common indicator of the operation failure
      */
     @Throws(RuntimeException::class)
-    suspend fun scanBlocks(limit: Long?)
+    suspend fun suggestScanRanges(): List<JniScanRange>
+
+    /**
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    @Throws(RuntimeException::class)
+    suspend fun scanBlocks(fromHeight: Long, limit: Long)
 
     /**
      * @throws RuntimeException as a common indicator of the operation failure
@@ -117,12 +124,6 @@ interface Backend {
     suspend fun findBlockMetadata(height: Long): JniBlockMeta?
 
     suspend fun rewindBlockMetadataToHeight(height: Long)
-
-    /**
-     * @param limit The limit provides an efficient way how to restrict the portion of blocks, which will be validated.
-     * @return Null if successful. If an error occurs, the height will be the blockheight where the error was detected.
-     */
-    suspend fun validateCombinedChainOrErrorHeight(limit: Long?): Long?
 
     suspend fun getVerifiedTransparentBalance(address: String): Long
     suspend fun getTotalTransparentBalance(address: String): Long
