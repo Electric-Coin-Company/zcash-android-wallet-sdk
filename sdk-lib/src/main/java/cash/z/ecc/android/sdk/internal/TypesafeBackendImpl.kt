@@ -2,6 +2,7 @@ package cash.z.ecc.android.sdk.internal
 
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
+import cash.z.ecc.android.sdk.internal.model.JniScanRange
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.UnifiedFullViewingKey
@@ -115,19 +116,6 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
         backend.rewindBlockMetadataToHeight(height.value)
     }
 
-    /**
-     * @param limit The limit provides an efficient way how to restrict the portion of blocks, which will be validated.
-     * @return Null if successful. If an error occurs, the height will be the height where the error was detected.
-     */
-    override suspend fun validateCombinedChainOrErrorBlockHeight(limit: Long?): BlockHeight? {
-        return backend.validateCombinedChainOrErrorHeight(limit)?.let {
-            BlockHeight.new(
-                ZcashNetwork.from(backend.networkId),
-                it
-            )
-        }
-    }
-
     override suspend fun getDownloadedUtxoBalance(address: String): WalletBalance {
         // Note this implementation is not ideal because it requires two database queries without a transaction, which
         // makes the data potentially inconsistent.  However the verified amount is queried first which makes this less
@@ -168,7 +156,9 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
 
     override suspend fun initDataDb(seed: ByteArray?): Int = backend.initDataDb(seed)
 
-    override suspend fun scanBlocks(limit: Long?) = backend.scanBlocks(limit)
+    override suspend fun scanBlocks(fromHeight: BlockHeight, limit: Long) = backend.scanBlocks(fromHeight.value, limit)
+
+    override suspend fun suggestScanRanges(): List<JniScanRange> = backend.suggestScanRanges()
 
     override suspend fun decryptAndStoreTransaction(tx: ByteArray) = backend.decryptAndStoreTransaction(tx)
 
