@@ -13,6 +13,8 @@ import co.electriccoin.lightwallet.client.model.LightWalletEndpointInfoUnsafe
 import co.electriccoin.lightwallet.client.model.RawTransactionUnsafe
 import co.electriccoin.lightwallet.client.model.Response
 import co.electriccoin.lightwallet.client.model.SendResponseUnsafe
+import co.electriccoin.lightwallet.client.model.ShieldedProtocolEnum
+import co.electriccoin.lightwallet.client.model.SubtreeRootUnsafe
 import com.google.protobuf.ByteString
 import io.grpc.CallOptions
 import io.grpc.Channel
@@ -48,7 +50,7 @@ internal class LightWalletClientImpl private constructor(
 
     override fun getBlockRange(heightRange: ClosedRange<BlockHeightUnsafe>): Flow<Response<CompactBlockUnsafe>> {
         require(!heightRange.isEmpty()) {
-            "${Constants.ILLEGAL_ARGUMENT_EXCEPTION_MESSAGE} range: $heightRange." // NON-NLS
+            "${Constants.ILLEGAL_ARGUMENT_EXCEPTION_MESSAGE_EMPTY} range: $heightRange." // NON-NLS
         }
 
         return try {
@@ -101,8 +103,8 @@ internal class LightWalletClientImpl private constructor(
 
     override suspend fun submitTransaction(spendTransaction: ByteArray): Response<SendResponseUnsafe> {
         require(spendTransaction.isNotEmpty()) {
-            "${Constants.ILLEGAL_ARGUMENT_EXCEPTION_MESSAGE} Failed to submit transaction because it was empty, so " +
-                "this request was ignored on the client-side." // NON-NLS
+            "${Constants.ILLEGAL_ARGUMENT_EXCEPTION_MESSAGE_EMPTY} Failed to submit transaction because it was empty," +
+                " so this request was ignored on the client-side." // NON-NLS
         }
 
         val request = Service.RawTransaction.newBuilder()
@@ -122,8 +124,8 @@ internal class LightWalletClientImpl private constructor(
 
     override suspend fun fetchTransaction(txId: ByteArray): Response<RawTransactionUnsafe> {
         require(txId.isNotEmpty()) {
-            "${Constants.ILLEGAL_ARGUMENT_EXCEPTION_MESSAGE} Failed to start fetching the transaction with null " +
-                "transaction ID, so this request was ignored on the client-side." // NON-NLS
+            "${Constants.ILLEGAL_ARGUMENT_EXCEPTION_MESSAGE_EMPTY} Failed to start fetching the transaction with" +
+                " null transaction ID, so this request was ignored on the client-side." // NON-NLS
         }
 
         val request = Service.TxFilter.newBuilder().setHash(ByteString.copyFrom(txId)).build()
@@ -144,7 +146,7 @@ internal class LightWalletClientImpl private constructor(
         startHeight: BlockHeightUnsafe
     ): Flow<Response<GetAddressUtxosReplyUnsafe>> {
         require(tAddresses.isNotEmpty() && tAddresses.all { it.isNotBlank() }) {
-            "${Constants.ILLEGAL_ARGUMENT_EXCEPTION_MESSAGE} array of addresses contains invalid item." // NON-NLS
+            "${Constants.ILLEGAL_ARGUMENT_EXCEPTION_MESSAGE_EMPTY} array of addresses contains invalid item." // NON-NLS
         }
 
         val getUtxosBuilder = Service.GetAddressUtxosArg.newBuilder()
@@ -176,7 +178,8 @@ internal class LightWalletClientImpl private constructor(
         blockHeightRange: ClosedRange<BlockHeightUnsafe>
     ): Flow<Response<RawTransactionUnsafe>> {
         require(!blockHeightRange.isEmpty() && tAddress.isNotBlank()) {
-            "${Constants.ILLEGAL_ARGUMENT_EXCEPTION_MESSAGE} range: $blockHeightRange, address: $tAddress." // NON-NLS
+            "${Constants.ILLEGAL_ARGUMENT_EXCEPTION_MESSAGE_EMPTY} range: $blockHeightRange, address: " +
+                "$tAddress." // NON-NLS
         }
 
         val request = Service.TransparentAddressBlockFilter.newBuilder()
@@ -193,6 +196,37 @@ internal class LightWalletClientImpl private constructor(
                 }.catch {
                     val failure: Response.Failure<RawTransactionUnsafe> =
                         GrpcStatusResolver.resolveFailureFromStatus(it)
+                    emit(failure)
+                }
+        } catch (e: StatusException) {
+            flowOf(GrpcStatusResolver.resolveFailureFromStatus(e))
+        }
+    }
+
+    override fun getSubtreeRoots(
+        startIndex: Int,
+        shieldedProtocol: ShieldedProtocolEnum,
+        maxEntries: Int
+    ): Flow<Response<SubtreeRootUnsafe>> {
+        require(startIndex >= 0 && maxEntries >= 0) {
+            "${Constants.ILLEGAL_ARGUMENT_EXCEPTION_MESSAGE_COMMON} startIndex: $startIndex, maxEntries: $maxEntries."
+        }
+
+        val getSubtreeRootsArgBuilder = Service.GetSubtreeRootsArg.newBuilder()
+        getSubtreeRootsArgBuilder.startIndex = startIndex
+        getSubtreeRootsArgBuilder.shieldedProtocol = shieldedProtocol.toProtocol()
+        getSubtreeRootsArgBuilder.maxEntries = maxEntries
+
+        val request = getSubtreeRootsArgBuilder.build()
+
+        return try {
+            requireChannel().createStub(streamingRequestTimeout)
+                .getSubtreeRoots(request)
+                .map {
+                    val response: Response<SubtreeRootUnsafe> = Response.Success(SubtreeRootUnsafe.new(it))
+                    response
+                }.catch {
+                    val failure: Response.Failure<SubtreeRootUnsafe> = GrpcStatusResolver.resolveFailureFromStatus(it)
                     emit(failure)
                 }
         } catch (e: StatusException) {
