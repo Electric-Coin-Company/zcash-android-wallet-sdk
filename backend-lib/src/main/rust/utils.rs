@@ -6,8 +6,6 @@ use jni::{
     JNIEnv,
 };
 
-use std::ops::Deref;
-
 pub(crate) mod exception;
 pub(crate) mod target_ndk;
 pub(crate) mod trace;
@@ -27,17 +25,17 @@ pub(crate) fn rust_vec_to_java<'a, T, U, V, F, G>(
 ) -> jobjectArray
 where
     U: Desc<'a, JClass<'a>>,
-    V: Deref<Target = JObject<'a>>,
+    V: Into<JObject<'a>>,
     F: Fn(&JNIEnv<'a>, T) -> JNIResult<V>,
     G: Fn(&JNIEnv<'a>) -> JNIResult<V>,
 {
     let jempty = empty_element(env).expect("Couldn't create Java string!");
     let jret = env
-        .new_object_array(data.len() as jsize, element_class, *jempty)
+        .new_object_array(data.len() as jsize, element_class, jempty.into())
         .expect("Couldn't create Java array!");
     for (i, elem) in data.into_iter().enumerate() {
         let jelem = element_map(env, elem).expect("Couldn't map element to Java!");
-        env.set_object_array_element(jret, i as jsize, *jelem)
+        env.set_object_array_element(jret, i as jsize, jelem.into())
             .expect("Couldn't set Java array element!");
     }
     jret
