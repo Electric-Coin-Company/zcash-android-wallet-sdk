@@ -2,6 +2,7 @@ package cash.z.ecc.fixture
 
 import cash.z.ecc.android.sdk.internal.Backend
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
+import cash.z.ecc.android.sdk.internal.model.JniScanRange
 import cash.z.ecc.android.sdk.internal.model.JniUnifiedSpendingKey
 
 internal class FakeRustBackend(
@@ -15,6 +16,10 @@ internal class FakeRustBackend(
 
     override suspend fun rewindToHeight(height: Long) {
         metadata.removeAll { it.height > height }
+    }
+
+    override suspend fun suggestScanRanges(): List<JniScanRange> {
+        TODO("Not yet implemented")
     }
 
     override suspend fun getLatestHeight(): Long = metadata.maxOf { it.height }

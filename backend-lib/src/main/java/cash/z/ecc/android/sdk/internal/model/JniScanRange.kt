@@ -1,7 +1,6 @@
 package cash.z.ecc.android.sdk.internal.model
 
 import androidx.annotation.Keep
-import co.electriccoin.lightwallet.client.model.CompactBlockUnsafe
 
 /**
  * Serves as cross layer (Kotlin, Rust) communication class.
@@ -30,7 +29,8 @@ class JniScanRange(
     companion object {
         private val UINT_RANGE = 0.toLong()..UInt.MAX_VALUE.toLong()
 
-        fun new(range: OpenEndRange<BlockHeight>, priority: Long): JniScanRange {
+        @OptIn(ExperimentalStdlibApi::class)
+        fun new(range: OpenEndRange<Long>, priority: Long): JniScanRange {
             return JniScanRange(
                 startHeight = range.start,
                 endHeight = range.endExclusive,
