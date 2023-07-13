@@ -434,8 +434,7 @@ class RustBackend private constructor(
         @JvmStatic
         private external fun listTransparentReceivers(dbDataPath: String, account: Int, networkId: Int): Array<String>
 
-        fun validateUnifiedSpendingKey(bytes: ByteArray) =
-            isValidSpendingKey(bytes)
+        fun validateUnifiedSpendingKey(bytes: ByteArray) = isValidSpendingKey(bytes)
 
         @JvmStatic
         private external fun isValidSpendingKey(bytes: ByteArray): Boolean

@@ -243,11 +243,6 @@ class CompactBlockProcessor internal constructor(
                         checkErrorResult(result.failedAtHeight)
                     }
 
-                    is BlockProcessingResult.FailedValidateBlocks -> {
-                        Twig.error { "Failed while validating blocks at height: ${result.failedAtHeight}" }
-                        checkErrorResult(result.failedAtHeight)
-                    }
-
                     is BlockProcessingResult.FailedScanBlocks -> {
                         Twig.error { "Failed while scanning blocks at height: ${result.failedAtHeight}" }
                         checkErrorResult(result.failedAtHeight)
@@ -366,7 +361,7 @@ class CompactBlockProcessor internal constructor(
         }
 
         if (syncResult != BlockProcessingResult.Success) {
-            // Remove persisted but not validated and scanned blocks in case of any failure
+            // Remove persisted but not scanned blocks in case of any failure
             val lastScannedHeight = getLastScannedHeight(repository)
             downloader.rewindToHeight(lastScannedHeight)
             deleteAllBlockFiles(
@@ -388,7 +383,6 @@ class CompactBlockProcessor internal constructor(
         object Reconnecting : BlockProcessingResult()
         data class FailedDownloadBlocks(val failedAtHeight: BlockHeight) : BlockProcessingResult()
         data class FailedScanBlocks(val failedAtHeight: BlockHeight) : BlockProcessingResult()
-        data class FailedValidateBlocks(val failedAtHeight: BlockHeight) : BlockProcessingResult()
         data class FailedDeleteBlocks(val failedAtHeight: BlockHeight) : BlockProcessingResult()
         data class FailedEnhance(val error: CompactBlockProcessorException.EnhanceTransactionError) :
             BlockProcessingResult()
@@ -413,8 +407,8 @@ class CompactBlockProcessor internal constructor(
             runCatching { networkBlockHeightUnsafe?.toBlockHeight(network) }.getOrNull()
         } ?: return false
 
-        // If we find out that we previously downloaded, but not validated and scanned persisted blocks, we need
-        // to rewind the blocks above the last scanned height first.
+        // If we find out that we previously downloaded, but not scanned persisted blocks, we need to rewind the
+        // blocks above the last scanned height first.
         val lastScannedHeight = getLastScannedHeight(repository)
         val lastDownloadedHeight = getLastDownloadedHeight(downloader).let {
             BlockHeight.new(
@@ -429,7 +423,7 @@ class CompactBlockProcessor internal constructor(
             Twig.verbose {
                 "Clearing blocks of last persisted batch within the last scanned height " +
                     "$lastScannedHeight and last download height $lastDownloadedHeight, as all these blocks " +
-                    "possibly haven't been validated and scanned in the previous blocks sync attempt."
+                    "possibly haven't been scanned in the previous blocks sync attempt."
             }
             downloader.rewindToHeight(lastScannedHeight)
             lastScannedHeight
@@ -653,9 +647,9 @@ class CompactBlockProcessor internal constructor(
 
         /**
          * Default size of batches of blocks to request from the compact block service. Then it's also used as a default
-         * size of batches of blocks to validate and scan via librustzcash. For scanning action applies this - the
-         * smaller this number the more granular information can be provided about scan state. Unfortunately, it may
-         * also lead to a lot of overhead during scanning.
+         * size of batches of blocks to scan via librustzcash. For scanning action applies this - the smaller this
+         * number the more granular information can be provided about scan state. Unfortunately, it may also lead to
+         * a lot of overhead during scanning.
          */
         internal const val SYNC_BATCH_SIZE = 10
 
@@ -1259,9 +1253,8 @@ class CompactBlockProcessor internal constructor(
                 if (null != lastSyncedHeight) {
                     val range = (targetHeight + 1)..lastSyncedHeight
                     Twig.debug {
-                        "We kept the cache blocks in place so we don't need to wait for the next " +
-                            "scheduled download to rescan. Instead we will rescan and validate blocks " +
-                            "${range.start}..${range.endInclusive}"
+                        "We kept the cache blocks in place so we don't need to wait for the next scheduled download " +
+                            "to rescan. Instead we will rescan blocks ${range.start}..${range.endInclusive}"
                     }
 
                     syncBlocksAndEnhanceTransactions(
@@ -1413,11 +1406,9 @@ class CompactBlockProcessor internal constructor(
          * block height available from the server is greater than what we have locally. We move out
          * of this state once our local height matches the server.
          *
-         * **Validating** is when the blocks that have been downloaded are actively being validated to
-         * ensure that there are no gaps and that every block is chain-sequential to the previous
-         * block, which determines whether a reorg has happened on our watch.
-         *
-         * **Scanning** is when the blocks that have been downloaded are actively being decrypted.
+         * **Scanning** is when the blocks that have been downloaded are actively being decrypted and validated to
+         * ensure that there are no gaps and that every block is chain-sequential to the previous block, which
+         * determines whether a reorg has happened on our watch.
          *
          * **Deleting** is when the temporary block files being removed from the persistence.
          *
@@ -1431,7 +1422,7 @@ class CompactBlockProcessor internal constructor(
 
         /**
          * [State] for when we are done with syncing the blocks, for now, i.e. all necessary stages done (download,
-         * validate, and scan).
+         * scan).
          */
         class Synced(val syncedRange: ClosedRange<BlockHeight>?) : IConnected, ISyncing, State()
 
