@@ -2,13 +2,11 @@ package cash.z.ecc.android.sdk.internal.db.derived
 
 import android.content.Context
 import androidx.sqlite.db.SupportSQLiteDatabase
-import cash.z.ecc.android.sdk.internal.Backend
 import cash.z.ecc.android.sdk.internal.NoBackupContextWrapper
 import cash.z.ecc.android.sdk.internal.Twig
+import cash.z.ecc.android.sdk.internal.TypesafeBackend
 import cash.z.ecc.android.sdk.internal.db.ReadOnlySupportSqliteOpenHelper
 import cash.z.ecc.android.sdk.internal.ext.tryWarn
-import cash.z.ecc.android.sdk.internal.initAccountsTable
-import cash.z.ecc.android.sdk.internal.initBlocksTable
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
 import cash.z.ecc.android.sdk.model.UnifiedFullViewingKey
 import cash.z.ecc.android.sdk.model.ZcashNetwork
@@ -44,7 +42,7 @@ internal class DerivedDataDb private constructor(
         @Suppress("LongParameterList", "SpreadOperator")
         suspend fun new(
             context: Context,
-            backend: Backend,
+            backend: TypesafeBackend,
             databaseFile: File,
             zcashNetwork: ZcashNetwork,
             checkpoint: Checkpoint,

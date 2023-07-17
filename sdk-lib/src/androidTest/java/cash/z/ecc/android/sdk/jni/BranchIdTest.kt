@@ -2,10 +2,9 @@ package cash.z.ecc.android.sdk.jni
 
 import cash.z.ecc.android.sdk.annotation.MaintainedTest
 import cash.z.ecc.android.sdk.annotation.TestPurpose
-import cash.z.ecc.android.sdk.internal.Backend
-import cash.z.ecc.android.sdk.internal.getBranchIdForHeight
+import cash.z.ecc.android.sdk.internal.TypesafeBackend
+import cash.z.ecc.android.sdk.internal.TypesafeBackendImpl
 import cash.z.ecc.android.sdk.internal.jni.RustBackend
-import cash.z.ecc.android.sdk.internal.network
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import kotlinx.coroutines.runBlocking
@@ -25,15 +24,15 @@ class BranchIdTest internal constructor(
     private val height: BlockHeight,
     private val branchId: Long,
     private val branchHex: String,
-    private val rustBackend: Backend
+    private val backend: TypesafeBackend
 ) {
 
     @Test
     fun testBranchId_Hex() {
-        val branchId = rustBackend.getBranchIdForHeight(height)
+        val branchId = backend.getBranchIdForHeight(height)
         val clientBranch = "%x".format(branchId)
         assertEquals(
-            "Invalid branch Id Hex value for $networkName at height $height on ${rustBackend.network.networkName}",
+            "Invalid branch Id Hex value for $networkName at height $height on ${backend.network.networkName}",
             branchHex,
             clientBranch
         )
@@ -41,9 +40,9 @@ class BranchIdTest internal constructor(
 
     @Test
     fun testBranchId_Numeric() {
-        val actual = rustBackend.getBranchIdForHeight(height)
+        val actual = backend.getBranchIdForHeight(height)
         assertEquals(
-            "Invalid branch ID for $networkName at height $height on ${rustBackend.network.networkName}",
+            "Invalid branch ID for $networkName at height $height on ${backend.network.networkName}",
             branchId,
             actual
         )
@@ -60,21 +59,25 @@ class BranchIdTest internal constructor(
             // However, due to quirks on certain devices, we created this test at the Android level,
             // as a sanity check
             val testnetBackend = runBlocking {
-                RustBackend.new(
-                    File(""),
-                    File(""),
-                    File(""),
-                    File(""),
-                    ZcashNetwork.Testnet.id,
+                TypesafeBackendImpl(
+                    RustBackend.new(
+                        File(""),
+                        File(""),
+                        File(""),
+                        File(""),
+                        ZcashNetwork.Testnet.id,
+                    )
                 )
             }
             val mainnetBackend = runBlocking {
-                RustBackend.new(
-                    File(""),
-                    File(""),
-                    File(""),
-                    File(""),
-                    ZcashNetwork.Mainnet.id,
+                TypesafeBackendImpl(
+                    RustBackend.new(
+                        File(""),
+                        File(""),
+                        File(""),
+                        File(""),
+                        ZcashNetwork.Mainnet.id,
+                    )
                 )
             }
             return listOf(

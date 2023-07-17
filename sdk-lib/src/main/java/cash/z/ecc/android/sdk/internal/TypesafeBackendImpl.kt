@@ -5,51 +5,185 @@ import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.UnifiedFullViewingKey
+import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
+import cash.z.ecc.android.sdk.model.ZcashNetwork
+import cash.z.ecc.android.sdk.tool.DerivationTool
+import kotlinx.coroutines.withContext
 
-// This class is currently unused, although the goal is to swap out usages of BackendExt for this throughout the SDK.
 @Suppress("TooManyFunctions")
 internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBackend {
-    override suspend fun initAccountsTable(vararg keys: UnifiedFullViewingKey) =
-        backend.initAccountsTable(*keys)
+
+    override val network: ZcashNetwork
+        get() = ZcashNetwork.from(backend.networkId)
+
+    override suspend fun initAccountsTable(vararg keys: UnifiedFullViewingKey) {
+        val ufvks = Array(keys.size) { keys[it].encoding }
+        @Suppress("SpreadOperator")
+        backend.initAccountsTable(*ufvks)
+    }
 
     override suspend fun initAccountsTable(
         seed: ByteArray,
         numberOfAccounts: Int
-    ): List<UnifiedFullViewingKey> = backend.initAccountsTableTypesafe(seed, numberOfAccounts)
+    ): List<UnifiedFullViewingKey> {
+        return DerivationTool.getInstance().deriveUnifiedFullViewingKeys(seed, network, numberOfAccounts)
+    }
 
-    override suspend fun initBlocksTable(checkpoint: Checkpoint) = backend.initBlocksTable(checkpoint)
+    override suspend fun initBlocksTable(checkpoint: Checkpoint) {
+        backend.initBlocksTable(
+            checkpoint.height.value,
+            checkpoint.hash,
+            checkpoint.epochSeconds,
+            checkpoint.tree
+        )
+    }
 
-    override suspend fun getCurrentAddress(account: Account): String = getCurrentAddress(account)
+    override suspend fun createAccountAndGetSpendingKey(seed: ByteArray): UnifiedSpendingKey {
+        return UnifiedSpendingKey(backend.createAccount(seed))
+    }
 
-    override suspend fun listTransparentReceivers(account: Account): List<String> =
-        backend.listTransparentReceivers(account)
+    @Suppress("LongParameterList")
+    override suspend fun createToAddress(
+        usk: UnifiedSpendingKey,
+        to: String,
+        value: Long,
+        memo: ByteArray?
+    ): Long = backend.createToAddress(
+        usk.account.value,
+        usk.copyBytes(),
+        to,
+        value,
+        memo
+    )
 
-    override suspend fun getBalance(account: Account): Zatoshi = backend.getBalance(account)
+    override suspend fun shieldToAddress(
+        usk: UnifiedSpendingKey,
+        memo: ByteArray?
+    ): Long = backend.shieldToAddress(
+        usk.account.value,
+        usk.copyBytes(),
+        memo
+    )
 
-    override fun getBranchIdForHeight(height: BlockHeight): Long = backend.getBranchIdForHeight(height.value)
+    override suspend fun getCurrentAddress(account: Account): String {
+        return backend.getCurrentAddress(account.value)
+    }
 
-    override suspend fun getVerifiedBalance(account: Account): Zatoshi = backend.getVerifiedBalance(account)
+    override suspend fun listTransparentReceivers(account: Account): List<String> {
+        return backend.listTransparentReceivers(account.value)
+    }
 
-    override suspend fun getNearestRewindHeight(height: BlockHeight): BlockHeight =
-        backend.getNearestRewindHeight(height)
+    override suspend fun getBalance(account: Account): Zatoshi {
+        return Zatoshi(backend.getBalance(account.value))
+    }
 
-    override suspend fun rewindToHeight(height: BlockHeight) = backend.rewindToHeight(height)
+    override fun getBranchIdForHeight(height: BlockHeight): Long {
+        return backend.getBranchIdForHeight(height.value)
+    }
 
-    override suspend fun getLatestBlockHeight(): BlockHeight? = backend.getLatestBlockHeight()
+    override suspend fun getVerifiedBalance(account: Account): Zatoshi {
+        return Zatoshi(backend.getVerifiedBalance(account.value))
+    }
 
-    override suspend fun findBlockMetadata(height: BlockHeight): JniBlockMeta? = backend.findBlockMetadata(height)
+    override suspend fun getNearestRewindHeight(height: BlockHeight): BlockHeight {
+        return BlockHeight.new(
+            ZcashNetwork.from(backend.networkId),
+            backend.getNearestRewindHeight(height.value)
+        )
+    }
 
-    override suspend fun rewindBlockMetadataToHeight(height: BlockHeight) = backend.rewindBlockMetadataToHeight(height)
+    override suspend fun rewindToHeight(height: BlockHeight) {
+        backend.rewindToHeight(height.value)
+    }
+
+    override suspend fun getLatestBlockHeight(): BlockHeight? {
+        return backend.getLatestHeight()?.let {
+            BlockHeight.new(
+                ZcashNetwork.from(backend.networkId),
+                it
+            )
+        }
+    }
+
+    override suspend fun findBlockMetadata(height: BlockHeight): JniBlockMeta? {
+        return backend.findBlockMetadata(height.value)
+    }
+
+    override suspend fun rewindBlockMetadataToHeight(height: BlockHeight) {
+        backend.rewindBlockMetadataToHeight(height.value)
+    }
 
     /**
      * @param limit The limit provides an efficient way how to restrict the portion of blocks, which will be validated.
      * @return Null if successful. If an error occurs, the height will be the height where the error was detected.
      */
-    override suspend fun validateCombinedChainOrErrorBlockHeight(limit: Long?): BlockHeight? =
-        backend.validateCombinedChainOrErrorBlockHeight(limit)
+    override suspend fun validateCombinedChainOrErrorBlockHeight(limit: Long?): BlockHeight? {
+        return backend.validateCombinedChainOrErrorHeight(limit)?.let {
+            BlockHeight.new(
+                ZcashNetwork.from(backend.networkId),
+                it
+            )
+        }
+    }
 
-    override suspend fun getDownloadedUtxoBalance(address: String): WalletBalance =
-        backend.getDownloadedUtxoBalance(address)
+    override suspend fun getDownloadedUtxoBalance(address: String): WalletBalance {
+        // Note this implementation is not ideal because it requires two database queries without a transaction, which
+        // makes the data potentially inconsistent.  However the verified amount is queried first which makes this less
+        // bad.
+        val verified = withContext(SdkDispatchers.DATABASE_IO) {
+            backend.getVerifiedTransparentBalance(address)
+        }
+        val total = withContext(SdkDispatchers.DATABASE_IO) {
+            backend.getTotalTransparentBalance(
+                address
+            )
+        }
+        return WalletBalance(Zatoshi(total), Zatoshi(verified))
+    }
+
+    @Suppress("LongParameterList")
+    override suspend fun putUtxo(
+        tAddress: String,
+        txId: ByteArray,
+        index: Int,
+        script: ByteArray,
+        value: Long,
+        height: BlockHeight
+    ) {
+        return backend.putUtxo(
+            tAddress,
+            txId,
+            index,
+            script,
+            value,
+            height.value
+        )
+    }
+
+    override suspend fun getSentMemoAsUtf8(idNote: Long) = backend.getSentMemoAsUtf8(idNote)
+
+    override suspend fun getReceivedMemoAsUtf8(idNote: Long): String? = backend.getReceivedMemoAsUtf8(idNote)
+
+    override suspend fun initDataDb(seed: ByteArray?): Int = backend.initDataDb(seed)
+
+    override suspend fun scanBlocks(limit: Long?) = backend.scanBlocks(limit)
+
+    override suspend fun decryptAndStoreTransaction(tx: ByteArray) = backend.decryptAndStoreTransaction(tx)
+
+    override fun getSaplingReceiver(ua: String): String? = backend.getSaplingReceiver(ua)
+
+    override fun getTransparentReceiver(ua: String): String? = backend.getTransparentReceiver(ua)
+
+    override suspend fun initBlockMetaDb(): Int = backend.initBlockMetaDb()
+
+    override suspend fun writeBlockMetadata(blockMetadata: List<JniBlockMeta>) =
+        backend.writeBlockMetadata(blockMetadata)
+
+    override fun isValidShieldedAddr(addr: String): Boolean = backend.isValidShieldedAddr(addr)
+
+    override fun isValidTransparentAddr(addr: String): Boolean = backend.isValidTransparentAddr(addr)
+
+    override fun isValidUnifiedAddr(addr: String): Boolean = backend.isValidUnifiedAddr(addr)
 }
