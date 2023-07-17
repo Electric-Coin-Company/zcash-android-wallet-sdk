@@ -2,7 +2,7 @@ package cash.z.ecc.android.sdk.internal
 
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
-import cash.z.ecc.android.sdk.internal.model.JniScanRange
+import cash.z.ecc.android.sdk.internal.model.ScanRange
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.UnifiedFullViewingKey
@@ -88,7 +88,7 @@ internal interface TypesafeBackend {
      * @throws RuntimeException as a common indicator of the operation failure
      */
     @Throws(RuntimeException::class)
-    suspend fun suggestScanRanges(): List<JniScanRange>
+    suspend fun suggestScanRanges(): List<ScanRange>
 
     suspend fun decryptAndStoreTransaction(tx: ByteArray)
 

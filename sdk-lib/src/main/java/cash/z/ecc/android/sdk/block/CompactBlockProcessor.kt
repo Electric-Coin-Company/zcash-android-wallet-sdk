@@ -886,7 +886,7 @@ class CompactBlockProcessor internal constructor(
         @VisibleForTesting
         internal suspend fun scanBatchOfBlocks(batch: BlockBatch, backend: TypesafeBackend): BlockProcessingResult {
             return runCatching {
-                backend.scanBlocks(batch.range.start.value, batch.range.length())
+                backend.scanBlocks(batch.range.start, batch.range.length())
             }.onSuccess {
                 Twig.verbose { "Successfully scanned batch $batch" }
             }.onFailure {
