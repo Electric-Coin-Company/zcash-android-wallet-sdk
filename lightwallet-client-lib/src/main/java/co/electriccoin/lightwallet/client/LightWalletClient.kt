@@ -11,6 +11,8 @@ import co.electriccoin.lightwallet.client.model.LightWalletEndpointInfoUnsafe
 import co.electriccoin.lightwallet.client.model.RawTransactionUnsafe
 import co.electriccoin.lightwallet.client.model.Response
 import co.electriccoin.lightwallet.client.model.SendResponseUnsafe
+import co.electriccoin.lightwallet.client.model.ShieldedProtocolEnum
+import co.electriccoin.lightwallet.client.model.SubtreeRootUnsafe
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -69,6 +71,23 @@ interface LightWalletClient {
         tAddress: String,
         blockHeightRange: ClosedRange<BlockHeightUnsafe>
     ): Flow<Response<RawTransactionUnsafe>>
+
+    /**
+     * Returns a stream of information about roots of subtrees of the Sapling and Orchard note commitment trees.
+     *
+     * @return a flow of information about roots of subtrees of the Sapling and Orchard note commitment trees.
+     *
+     * @param startIndex Index identifying where to start returning subtree roots
+     * @param shieldedProtocol Shielded protocol to return subtree roots for. See `ShieldedProtocolEnum` enum class.
+     * @param maxEntries Maximum number of entries to return, or 0 for all entries
+     *
+     * @throws IllegalArgumentException when empty argument provided
+     */
+    fun getSubtreeRoots(
+        startIndex: Int,
+        shieldedProtocol: ShieldedProtocolEnum,
+        maxEntries: Int
+    ): Flow<Response<SubtreeRootUnsafe>>
 
     /**
      * Reconnect to the same or a different server. This is useful when the connection is
