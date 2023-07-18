@@ -3,6 +3,7 @@ package cash.z.ecc.fixture
 import cash.z.ecc.android.sdk.internal.Backend
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.internal.model.JniScanRange
+import cash.z.ecc.android.sdk.internal.model.JniSubtreeRoot
 import cash.z.ecc.android.sdk.internal.model.JniUnifiedSpendingKey
 
 internal class FakeRustBackend(
@@ -16,6 +17,17 @@ internal class FakeRustBackend(
 
     override suspend fun rewindToHeight(height: Long) {
         metadata.removeAll { it.height > height }
+    }
+
+    override suspend fun putSaplingSubtreeRoots(
+        startIndex: Long,
+        roots: List<JniSubtreeRoot>,
+    ) {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun updateChainTip(height: Long) {
+        TODO("Not yet implemented")
     }
 
     override suspend fun suggestScanRanges(): List<JniScanRange> {

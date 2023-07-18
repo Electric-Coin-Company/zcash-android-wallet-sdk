@@ -6,6 +6,7 @@ import cash.z.ecc.android.sdk.internal.ext.deleteRecursivelySuspend
 import cash.z.ecc.android.sdk.internal.ext.deleteSuspend
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.internal.model.JniScanRange
+import cash.z.ecc.android.sdk.internal.model.JniSubtreeRoot
 import cash.z.ecc.android.sdk.internal.model.JniUnifiedSpendingKey
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -243,6 +244,27 @@ class RustBackend private constructor(
     override suspend fun rewindToHeight(height: Long) =
         withContext(SdkDispatchers.DATABASE_IO) {
             rewindToHeight(
+                dataDbFile.absolutePath,
+                height,
+                networkId = networkId
+            )
+        }
+
+    override suspend fun putSaplingSubtreeRoots(
+        startIndex: Long,
+        roots: List<JniSubtreeRoot>,
+    ) = withContext(SdkDispatchers.DATABASE_IO) {
+            putSaplingSubtreeRoots(
+                dataDbFile.absolutePath,
+                startIndex,
+                roots.toTypedArray(),
+                networkId = networkId
+            )
+        }
+
+    override suspend fun updateChainTip(height: Long) =
+        withContext(SdkDispatchers.DATABASE_IO) {
+            updateChainTip(
                 dataDbFile.absolutePath,
                 height,
                 networkId = networkId
@@ -502,6 +524,21 @@ class RustBackend private constructor(
 
         @JvmStatic
         private external fun rewindToHeight(
+            dbDataPath: String,
+            height: Long,
+            networkId: Int
+        )
+
+        @JvmStatic
+        private external fun putSaplingSubtreeRoots(
+            dbDataPath: String,
+            startIndex: Long,
+            roots: Array<JniSubtreeRoot>,
+            networkId: Int
+        )
+
+        @JvmStatic
+        private external fun updateChainTip(
             dbDataPath: String,
             height: Long,
             networkId: Int
