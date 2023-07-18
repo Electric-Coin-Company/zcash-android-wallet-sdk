@@ -1151,7 +1151,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_su
         Ok(utils::rust_vec_to_java(
             &env,
             ranges,
-            "cash/z/ecc/android/sdk/internal/model/JniBlockMeta",
+            "cash/z/ecc/android/sdk/internal/model/JniScanRange",
             |env, scan_range| encode_scan_range(env, scan_range),
             |env| {
                 encode_scan_range(
