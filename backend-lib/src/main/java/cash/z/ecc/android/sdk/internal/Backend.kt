@@ -2,6 +2,7 @@ package cash.z.ecc.android.sdk.internal
 
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.internal.model.JniScanRange
+import cash.z.ecc.android.sdk.internal.model.JniSubtreeRoot
 import cash.z.ecc.android.sdk.internal.model.JniUnifiedSpendingKey
 import java.lang.RuntimeException
 import kotlin.jvm.Throws
@@ -97,6 +98,21 @@ interface Backend {
      */
     @Throws(RuntimeException::class)
     suspend fun rewindToHeight(height: Long)
+
+    /**
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    @Throws(RuntimeException::class)
+    suspend fun putSaplingSubtreeRoots(
+        startIndex: Long,
+        roots: List<JniSubtreeRoot>,
+    )
+
+    /**
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    @Throws(RuntimeException::class)
+    suspend fun updateChainTip(height: Long)
 
     /**
      * @throws RuntimeException as a common indicator of the operation failure
