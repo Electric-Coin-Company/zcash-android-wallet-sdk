@@ -23,12 +23,12 @@ use zcash_client_backend::keys::{DecodingError, UnifiedSpendingKey};
 use zcash_client_backend::{
     address::{RecipientAddress, UnifiedAddress},
     data_api::{
-        chain::scan_cached_blocks,
+        chain::{scan_cached_blocks, CommitmentTreeRoot},
         wallet::{
             decrypt_and_store_transaction, input_selection::GreedyInputSelector,
             shield_transparent_funds, spend,
         },
-        WalletRead, WalletWrite,
+        WalletCommitmentTrees, WalletRead, WalletWrite,
     },
     encoding::AddressCodec,
     fees::DustOutputPolicy,
@@ -48,6 +48,8 @@ use zcash_primitives::{
     consensus::{BlockHeight, BranchId, Network, Parameters},
     legacy::{Script, TransparentAddress},
     memo::{Memo, MemoBytes},
+    merkle_tree::HashSer,
+    sapling,
     transaction::{
         components::{amount::NonNegativeAmount, Amount, OutPoint, TxOut},
         Transaction,
@@ -1105,6 +1107,89 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_re
             .truncate_to_height(height)
             .map(|_| 1)
             .map_err(|e| format_err!("Error while rewinding data DB to height {}: {}", height, e))
+    });
+
+    unwrap_exc_or(&env, res, JNI_FALSE)
+}
+
+fn decode_sapling_subtree_root(
+    env: &JNIEnv<'_>,
+    obj: JObject<'_>,
+) -> Result<CommitmentTreeRoot<sapling::Node>, failure::Error> {
+    let long_as_u32 = |name| -> Result<u32, failure::Error> {
+        Ok(u32::try_from(env.get_field(obj, name, "J")?.j()?)?)
+    };
+
+    fn byte_array(
+        env: &JNIEnv<'_>,
+        obj: JObject<'_>,
+        name: &str,
+    ) -> Result<Vec<u8>, failure::Error> {
+        let field = env.get_field(obj, name, "[B")?.l()?.into_raw();
+        Ok(env.convert_byte_array(field)?[..].try_into()?)
+    }
+
+    Ok(CommitmentTreeRoot::from_parts(
+        BlockHeight::from_u32(long_as_u32("completingBlockHeight")?),
+        sapling::Node::read(&byte_array(env, obj, "rootHash")?[..])?,
+    ))
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_putSaplingSubtreeRoots(
+    env: JNIEnv<'_>,
+    _: JClass<'_>,
+    db_data: JString<'_>,
+    start_index: jlong,
+    roots: jobjectArray,
+    network_id: jint,
+) -> jboolean {
+    let res = panic::catch_unwind(|| {
+        let network = parse_network(network_id as u32)?;
+        let mut db_data = wallet_db(&env, network, db_data)?;
+
+        let start_index = if start_index >= 0 {
+            start_index as u64
+        } else {
+            return Err(format_err!("Start index must be nonnegative."));
+        };
+        let roots = {
+            let count = env.get_array_length(roots).unwrap();
+            (0..count)
+                .map(|i| {
+                    env.get_object_array_element(roots, i)
+                        .map_err(|e| e.into())
+                        .and_then(|jobj| decode_sapling_subtree_root(&env, jobj))
+                })
+                .collect::<Result<Vec<_>, _>>()?
+        };
+
+        db_data
+            .put_sapling_subtree_roots(start_index, &roots)
+            .map(|()| JNI_TRUE)
+            .map_err(|e| format_err!("Error while storing Sapling subtree roots: {}", e))
+    });
+
+    unwrap_exc_or(&env, res, JNI_FALSE)
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_updateChainTip(
+    env: JNIEnv<'_>,
+    _: JClass<'_>,
+    db_data: JString<'_>,
+    height: jlong,
+    network_id: jint,
+) -> jboolean {
+    let res = panic::catch_unwind(|| {
+        let network = parse_network(network_id as u32)?;
+        let mut db_data = wallet_db(&env, network, db_data)?;
+        let height = BlockHeight::try_from(height)?;
+
+        db_data
+            .update_chain_tip(height)
+            .map(|()| JNI_TRUE)
+            .map_err(|e| format_err!("Error while updating chain tip to height {}: {}", height, e))
     });
 
     unwrap_exc_or(&env, res, JNI_FALSE)
