@@ -1,7 +1,8 @@
 package cash.z.ecc.android.sdk.internal.model
 
 import androidx.annotation.Keep
-import co.electriccoin.lightwallet.client.model.CompactBlockUnsafe
+import cash.z.ecc.android.sdk.internal.ext.isInUIntRange
+import co.electriccoin.lightwallet.client.model.SubtreeRootUnsafe
 
 /**
  * Serves as cross layer (Kotlin, Rust) communication class.
@@ -17,18 +18,16 @@ class JniSubtreeRoot(
     init {
         // We require some of the parameters below to be in the range of unsigned integer,
         // because of the Rust layer implementation.
-        require(UINT_RANGE.contains(completingBlockHeight)) {
-            "Height $completingBlockHeight is outside of allowed range $UINT_RANGE"
+        require(completingBlockHeight.isInUIntRange()) {
+            "Height $completingBlockHeight is outside of allowed UInt range"
         }
     }
 
     companion object {
-        private val UINT_RANGE = 0.toLong()..UInt.MAX_VALUE.toLong()
-
         fun new(subtreeRoot: SubtreeRootUnsafe): JniSubtreeRoot {
             return JniSubtreeRoot(
                 rootHash = subtreeRoot.rootHash,
-                completingBlockHeight = subtreeRoot.completingBlockHeight.toLong()
+                completingBlockHeight = subtreeRoot.completingBlockHeight.value
             )
         }
     }

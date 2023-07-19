@@ -1,6 +1,7 @@
 package cash.z.ecc.android.sdk.internal.model
 
 import androidx.annotation.Keep
+import cash.z.ecc.android.sdk.internal.ext.isInUIntRange
 
 /**
  * Serves as cross layer (Kotlin, Rust) communication class.
@@ -18,17 +19,15 @@ class JniScanRange(
     init {
         // We require some of the parameters below to be in the range of unsigned integer, because of the Rust layer
         // implementation.
-        require(UINT_RANGE.contains(startHeight)) {
-            "Height $startHeight is outside of allowed range $UINT_RANGE"
+        require(startHeight.isInUIntRange()) {
+            "Height $startHeight is outside of allowed UInt range"
         }
-        require(UINT_RANGE.contains(endHeight)) {
-            "Height $endHeight is outside of allowed range $UINT_RANGE"
+        require(endHeight.isInUIntRange()) {
+            "Height $endHeight is outside of allowed UInt range"
         }
     }
 
     companion object {
-        private val UINT_RANGE = 0.toLong()..UInt.MAX_VALUE.toLong()
-
         @OptIn(ExperimentalStdlibApi::class)
         fun new(range: OpenEndRange<Long>, priority: Long): JniScanRange {
             return JniScanRange(

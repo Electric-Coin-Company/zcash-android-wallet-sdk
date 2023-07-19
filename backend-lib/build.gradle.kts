@@ -104,6 +104,9 @@ dependencies {
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.android)
 
+    // Tests
+    testImplementation(libs.kotlin.test)
+
     androidTestImplementation(libs.androidx.multidex)
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.junit)
