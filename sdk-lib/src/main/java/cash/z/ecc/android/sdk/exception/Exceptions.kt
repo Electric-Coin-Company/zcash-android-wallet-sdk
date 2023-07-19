@@ -240,6 +240,11 @@ sealed class LightWalletException(message: String, cause: Throwable? = null) : S
         cause
     )
 
+    class GetSubtreeRootsException(code: Int, description: String?, cause: Throwable) : SdkException(
+        "Failed to get subtree roots with code: $code due to: ${description ?: "-"}",
+        cause
+    )
+
     class FetchUtxosException(code: Int, description: String?, cause: Throwable) : SdkException(
         "Failed to fetch UTXOs with code: $code due to: ${description ?: "-"}",
         cause
