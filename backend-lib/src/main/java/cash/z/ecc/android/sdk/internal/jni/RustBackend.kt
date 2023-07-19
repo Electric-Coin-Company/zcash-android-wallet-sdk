@@ -254,13 +254,13 @@ class RustBackend private constructor(
         startIndex: Long,
         roots: List<JniSubtreeRoot>,
     ) = withContext(SdkDispatchers.DATABASE_IO) {
-            putSaplingSubtreeRoots(
-                dataDbFile.absolutePath,
-                startIndex,
-                roots.toTypedArray(),
-                networkId = networkId
-            )
-        }
+        putSaplingSubtreeRoots(
+            dataDbFile.absolutePath,
+            startIndex,
+            roots.toTypedArray(),
+            networkId = networkId
+        )
+    }
 
     override suspend fun updateChainTip(height: Long) =
         withContext(SdkDispatchers.DATABASE_IO) {
