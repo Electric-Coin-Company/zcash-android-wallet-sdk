@@ -1,6 +1,7 @@
 package cash.z.ecc.android.sdk.internal.model
 
 import androidx.annotation.Keep
+import cash.z.ecc.android.sdk.internal.ext.isInUIntRange
 import co.electriccoin.lightwallet.client.model.CompactBlockUnsafe
 
 /**
@@ -23,20 +24,18 @@ class JniBlockMeta(
     init {
         // We require some of the parameters below to be in the range of unsigned integer, because of the Rust layer
         // implementation.
-        require(UINT_RANGE.contains(height)) {
-            "Height $height is outside of allowed range $UINT_RANGE"
+        require(height.isInUIntRange()) {
+            "Height $height is outside of allowed UInt range"
         }
-        require(UINT_RANGE.contains(saplingOutputsCount)) {
-            "SaplingOutputsCount $saplingOutputsCount is outside of allowed range $UINT_RANGE"
+        require(saplingOutputsCount.isInUIntRange()) {
+            "SaplingOutputsCount $saplingOutputsCount is outside of allowed UInt range"
         }
-        require(UINT_RANGE.contains(orchardOutputsCount)) {
-            "SaplingOutputsCount $orchardOutputsCount is outside of allowed range $UINT_RANGE"
+        require(orchardOutputsCount.isInUIntRange()) {
+            "SaplingOutputsCount $orchardOutputsCount is outside of allowed UInt range"
         }
     }
 
     companion object {
-        private val UINT_RANGE = 0.toLong()..UInt.MAX_VALUE.toLong()
-
         fun new(block: CompactBlockUnsafe): JniBlockMeta {
             return JniBlockMeta(
                 height = block.height,
