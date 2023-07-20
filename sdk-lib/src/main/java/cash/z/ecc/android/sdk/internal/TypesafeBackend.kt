@@ -3,6 +3,7 @@ package cash.z.ecc.android.sdk.internal
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.internal.model.ScanRange
+import cash.z.ecc.android.sdk.internal.model.SubtreeRoot
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.UnifiedFullViewingKey
@@ -77,6 +78,21 @@ internal interface TypesafeBackend {
     suspend fun getReceivedMemoAsUtf8(idNote: Long): String?
 
     suspend fun initDataDb(seed: ByteArray?): Int
+
+    /**
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    @Throws(RuntimeException::class)
+    suspend fun putSaplingSubtreeRoots(
+        startIndex: Long,
+        roots: List<SubtreeRoot>,
+    )
+
+    /**
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    @Throws(RuntimeException::class)
+    suspend fun updateChainTip(height: BlockHeight)
 
     /**
      * @throws RuntimeException as a common indicator of the operation failure
