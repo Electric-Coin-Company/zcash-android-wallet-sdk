@@ -24,6 +24,7 @@ import cash.z.ecc.android.sdk.internal.ext.toHexReversed
 import cash.z.ecc.android.sdk.internal.model.BlockBatch
 import cash.z.ecc.android.sdk.internal.model.DbTransactionOverview
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
+import cash.z.ecc.android.sdk.internal.model.SubtreeRoot
 import cash.z.ecc.android.sdk.internal.model.ext.from
 import cash.z.ecc.android.sdk.internal.model.ext.toBlockHeight
 import cash.z.ecc.android.sdk.internal.repository.DerivedDataRepository
@@ -38,6 +39,8 @@ import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.GetAddressUtxosReplyUnsafe
 import co.electriccoin.lightwallet.client.model.LightWalletEndpointInfoUnsafe
 import co.electriccoin.lightwallet.client.model.Response
+import co.electriccoin.lightwallet.client.model.ShieldedProtocolEnum
+import co.electriccoin.lightwallet.client.model.SubtreeRootUnsafe
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -51,6 +54,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.takeWhile
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.util.Locale
@@ -186,14 +190,26 @@ class CompactBlockProcessor internal constructor(
             lastKnownHeight = getLastScannedHeight(repository)
         )
 
-        Twig.debug { "setup verified. processor starting" }
+        // Download note commitment tree data from lightwalletd to decide if we communicate with linear
+        // or non-linear node
+        var subTreeRootList: List<SubtreeRoot>? = null
+        retryUpTo(GET_SUBTREE_ROOTS_RETRIES) {
+            subTreeRootList = getSubtreeRoots().map { SubtreeRoot.new(it, network) }
+            Twig.info { "Fetched SubTreeRoot list: $subTreeRootList" }
+        }
 
-        // using do/while makes it easier to execute exactly one loop which helps with testing this processor quickly
+        Twig.debug { "Setup verified. Processor starting..." }
+
+        // Using do/while makes it easier to execute exactly one loop which helps with testing this processor quickly
         // (because you can start and then immediately set isStopped=true to always get precisely one loop)
         do {
             retryWithBackoff(::onProcessorError, maxDelayMillis = MAX_BACKOFF_INTERVAL) {
                 val result = processingMutex.withLockLogged("processNewBlocks") {
-                    processNewBlocks()
+                    if (subTreeRootList.isNullOrEmpty()) {
+                        processNewBlocksInLinearOrder()
+                    } else {
+                        processNewBlocksInNonLinearOrder(subTreeRootList!!)
+                    }
                 }
                 // immediately process again after failures in order to download new blocks right away
                 when (result) {
@@ -296,13 +312,13 @@ class CompactBlockProcessor internal constructor(
         throw error
     }
 
-    private suspend fun processNewBlocks(): BlockProcessingResult {
-        Twig.debug { "Beginning to process new blocks (with lower bound: $lowerBoundHeight)..." }
+    private suspend fun processNewBlocksInLinearOrder(): BlockProcessingResult {
+        Twig.debug { "Beginning to process new blocks with Linear approach (with lower bound: $lowerBoundHeight)..." }
 
         return if (!updateRanges()) {
             Twig.debug { "Disconnection detected! Attempting to reconnect!" }
             setState(State.Disconnected)
-            downloader.lightWalletClient.reconnect()
+            downloader.reconnect()
             BlockProcessingResult.Reconnecting
         } else if (_processorInfo.value.lastSyncRange.isNullOrEmpty()) {
             setState(State.Synced(_processorInfo.value.lastSyncRange))
@@ -328,6 +344,57 @@ class CompactBlockProcessor internal constructor(
                 enhanceStartHeight = _processorInfo.value.firstUnenhancedHeight
             )
         }
+    }
+
+    @Throws(LightWalletException.GetSubtreeRootsException::class)
+    internal suspend fun getSubtreeRoots(): List<SubtreeRootUnsafe> {
+        Twig.debug { "Getting SubtreeRoots..." }
+
+        return downloader.getSubtreeRoots(
+            startIndex = 1,
+            maxEntries = 0,
+            shieldedProtocol = ShieldedProtocolEnum.SAPLING
+        ).onEach { response ->
+            when (response) {
+                is Response.Success -> {
+                    Twig.debug { "SubtreeRoots got successfully" }
+                }
+                is Response.Failure -> {
+                    Twig.error { "Getting SubtreeRoots failed with: ${response.toThrowable()}" }
+                    throw LightWalletException.GetSubtreeRootsException(
+                        response.code,
+                        response.description,
+                        response.toThrowable()
+                    )
+                }
+            }
+        }
+            .filterIsInstance<Response.Success<SubtreeRootUnsafe>>()
+            .map { response ->
+                response.result
+            }.toList()
+    }
+
+    private suspend fun processNewBlocksInNonLinearOrder(subTreeRootList: List<SubtreeRoot>): BlockProcessingResult {
+        Twig.debug {
+            "Beginning to process new blocks with DAG approach (with roots: $subTreeRootList, and lower " +
+                "bound: $lowerBoundHeight)..."
+        }
+
+        // 2) Pass the commitment tree data to the database.
+        // wallet_db.put_sapling_subtree_roots(0, &roots).unwrap();
+
+        // 3) Download chain tip metadata from lightwalletd
+        // let tip_height: BlockHeight = unimplemented!();
+        // Possibly call the modified updateRanges() to update just the latestBlockHeight field
+
+        // 4) Notify the wallet of the updated chain tip.
+        // wallet_db.update_chain_tip(tip_height).map_err(Error::Wallet)?;
+
+        // 5) Get the suggested scan ranges from the wallet database
+        // let mut scan_ranges = wallet_db.suggest_scan_ranges().map_err(Error::Wallet)?;
+
+        return BlockProcessingResult.NoBlocksToProcess
     }
 
     @Suppress("ReturnCount")
@@ -529,7 +596,7 @@ class CompactBlockProcessor internal constructor(
                 retryUpTo(UTXO_FETCH_RETRIES) {
                     val tAddresses = backend.listTransparentReceivers(account)
 
-                    downloader.lightWalletClient.fetchUtxos(
+                    downloader.fetchUtxos(
                         tAddresses,
                         BlockHeightUnsafe.from(startHeight)
                     ).onEach { response ->
@@ -639,6 +706,11 @@ class CompactBlockProcessor internal constructor(
          * UTXOs fetching default attempts at retrying.
          */
         internal const val UTXO_FETCH_RETRIES = 3
+
+        /**
+         * Get subtree roots default attempts at retrying.
+         */
+        internal const val GET_SUBTREE_ROOTS_RETRIES = 3
 
         /**
          * The theoretical maximum number of blocks in a reorg, due to other bottlenecks in the protocol design.
