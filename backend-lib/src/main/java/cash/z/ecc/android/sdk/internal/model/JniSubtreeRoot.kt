@@ -2,13 +2,13 @@ package cash.z.ecc.android.sdk.internal.model
 
 import androidx.annotation.Keep
 import cash.z.ecc.android.sdk.internal.ext.isInUIntRange
-import co.electriccoin.lightwallet.client.model.SubtreeRootUnsafe
 
 /**
  * Serves as cross layer (Kotlin, Rust) communication class.
  *
  * @param rootHash the subtree's root hash
- * @param completingBlockHeight the block height in which the subtree was completed - although it's type Long, it needs to be in UInt range
+ * @param completingBlockHeight the block height in which the subtree was completed - although it's type Long, it needs
+ * to be in UInt range
  */
 @Keep
 class JniSubtreeRoot(
@@ -24,10 +24,10 @@ class JniSubtreeRoot(
     }
 
     companion object {
-        fun new(subtreeRoot: SubtreeRootUnsafe): JniSubtreeRoot {
+        fun new(rootHash: ByteArray, completingBlockHeight: Long): JniSubtreeRoot {
             return JniSubtreeRoot(
-                rootHash = subtreeRoot.rootHash,
-                completingBlockHeight = subtreeRoot.completingBlockHeight.value
+                rootHash = rootHash,
+                completingBlockHeight = completingBlockHeight
             )
         }
     }
