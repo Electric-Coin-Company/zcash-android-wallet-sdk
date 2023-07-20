@@ -12,7 +12,7 @@ import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.CompactBlockUnsafe
 import co.electriccoin.lightwallet.client.model.LightWalletEndpointInfoUnsafe
 import co.electriccoin.lightwallet.client.model.Response
-import kotlinx.coroutines.Dispatchers
+import co.electriccoin.lightwallet.client.model.ShieldedProtocolEnum
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.map
@@ -31,8 +31,7 @@ import kotlinx.coroutines.withContext
  */
 open class CompactBlockDownloader private constructor(val compactBlockRepository: CompactBlockRepository) {
 
-    lateinit var lightWalletClient: LightWalletClient
-        private set
+    private lateinit var lightWalletClient: LightWalletClient
 
     constructor(
         lightWalletClient: LightWalletClient,
@@ -129,8 +128,18 @@ open class CompactBlockDownloader private constructor(val compactBlockRepository
      * Stop this downloader and cleanup any resources being used.
      */
     suspend fun stop() {
-        withContext(Dispatchers.IO) {
+        withContext(IO) {
             lightWalletClient.shutdown()
+        }
+    }
+
+    /**
+     * Reconnect to the same or a different server. This is useful when the connection is
+     * unrecoverable. That might be time to switch to a mirror or just reconnect.
+     */
+    suspend fun reconnect() {
+        withContext(IO) {
+            lightWalletClient.reconnect()
         }
     }
 
@@ -140,6 +149,34 @@ open class CompactBlockDownloader private constructor(val compactBlockRepository
      * @return the full transaction info.
      */
     suspend fun fetchTransaction(txId: ByteArray) = lightWalletClient.fetchTransaction(txId)
+
+    /**
+     * Fetch all UTXOs for the given addresses and from the given height.
+     *
+     * @return Flow of UTXOs for the given [tAddresses] from the [startHeight]
+     */
+    suspend fun fetchUtxos(
+        tAddresses: List<String>,
+        startHeight: BlockHeightUnsafe
+    ) = lightWalletClient.fetchUtxos(
+        tAddresses = tAddresses,
+        startHeight = startHeight
+    )
+
+    /**
+     * Returns a stream of information about roots of subtrees of the Sapling and Orchard note commitment trees.
+     *
+     * @return a flow of information about roots of subtrees of the Sapling and Orchard note commitment trees.
+     */
+    suspend fun getSubtreeRoots(
+        startIndex: Int,
+        shieldedProtocol: ShieldedProtocolEnum,
+        maxEntries: Int
+    ) = lightWalletClient.getSubtreeRoots(
+        startIndex = startIndex,
+        shieldedProtocol = shieldedProtocol,
+        maxEntries = maxEntries
+    )
 
     companion object {
         private const val GET_SERVER_INFO_RETRIES = 6
