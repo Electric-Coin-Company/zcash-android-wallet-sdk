@@ -19,6 +19,7 @@ import cash.z.ecc.android.sdk.internal.block.CompactBlockDownloader
 import cash.z.ecc.android.sdk.internal.ext.isNullOrEmpty
 import cash.z.ecc.android.sdk.internal.ext.length
 import cash.z.ecc.android.sdk.internal.ext.retryUpTo
+import cash.z.ecc.android.sdk.internal.ext.retryUpToAndContinue
 import cash.z.ecc.android.sdk.internal.ext.retryWithBackoff
 import cash.z.ecc.android.sdk.internal.ext.toHexReversed
 import cash.z.ecc.android.sdk.internal.model.BlockBatch
@@ -192,11 +193,8 @@ class CompactBlockProcessor internal constructor(
 
         // Download note commitment tree data from lightwalletd to decide if we communicate with linear
         // or non-linear node
-        var subTreeRootList: List<SubtreeRoot>? = null
-        retryUpTo(GET_SUBTREE_ROOTS_RETRIES) {
-            subTreeRootList = getSubtreeRoots().map { SubtreeRoot.new(it, network) }
-            Twig.info { "Fetched SubTreeRoot list: $subTreeRootList" }
-        }
+        val subTreeRootList = getSubtreeRoots(downloader, network)
+        Twig.info { "Fetched SubTreeRoot list: $subTreeRootList" }
 
         Twig.debug { "Setup verified. Processor starting..." }
 
@@ -208,7 +206,7 @@ class CompactBlockProcessor internal constructor(
                     if (subTreeRootList.isNullOrEmpty()) {
                         processNewBlocksInLinearOrder()
                     } else {
-                        processNewBlocksInNonLinearOrder(subTreeRootList!!)
+                        processNewBlocksInNonLinearOrder(subTreeRootList)
                     }
                 }
                 // immediately process again after failures in order to download new blocks right away
@@ -316,7 +314,7 @@ class CompactBlockProcessor internal constructor(
         Twig.debug { "Beginning to process new blocks with Linear approach (with lower bound: $lowerBoundHeight)..." }
 
         return if (!updateRanges()) {
-            Twig.debug { "Disconnection detected! Attempting to reconnect!" }
+            Twig.debug { "Disconnection detected. Attempting to reconnect." }
             setState(State.Disconnected)
             downloader.reconnect()
             BlockProcessingResult.Reconnecting
@@ -346,47 +344,31 @@ class CompactBlockProcessor internal constructor(
         }
     }
 
-    @Throws(LightWalletException.GetSubtreeRootsException::class)
-    internal suspend fun getSubtreeRoots(): List<SubtreeRootUnsafe> {
-        Twig.debug { "Getting SubtreeRoots..." }
-
-        return downloader.getSubtreeRoots(
-            startIndex = 1,
-            maxEntries = 0,
-            shieldedProtocol = ShieldedProtocolEnum.SAPLING
-        ).onEach { response ->
-            when (response) {
-                is Response.Success -> {
-                    Twig.debug { "SubtreeRoots got successfully" }
-                }
-                is Response.Failure -> {
-                    Twig.error { "Getting SubtreeRoots failed with: ${response.toThrowable()}" }
-                    throw LightWalletException.GetSubtreeRootsException(
-                        response.code,
-                        response.description,
-                        response.toThrowable()
-                    )
-                }
-            }
-        }
-            .filterIsInstance<Response.Success<SubtreeRootUnsafe>>()
-            .map { response ->
-                response.result
-            }.toList()
-    }
-
     private suspend fun processNewBlocksInNonLinearOrder(subTreeRootList: List<SubtreeRoot>): BlockProcessingResult {
         Twig.debug {
             "Beginning to process new blocks with DAG approach (with roots: $subTreeRootList, and lower " +
                 "bound: $lowerBoundHeight)..."
         }
 
-        // 2) Pass the commitment tree data to the database.
-        // wallet_db.put_sapling_subtree_roots(0, &roots).unwrap();
+        // Pass the commitment tree data to the database.
+        backend.putSaplingSubtreeRoots(
+            startIndex = 0,
+            roots = subTreeRootList
+        )
 
-        // 3) Download chain tip metadata from lightwalletd
-        // let tip_height: BlockHeight = unimplemented!();
-        // Possibly call the modified updateRanges() to update just the latestBlockHeight field
+        // Download chain tip metadata from lightwalletd
+        val chainTip = fetchLatestBlockHeight(
+            downloader = downloader,
+            network = network
+        ) ?: let {
+            Twig.debug { "Disconnection detected. Attempting to reconnect." }
+            setState(State.Disconnected)
+            downloader.reconnect()
+            return BlockProcessingResult.Reconnecting
+        }
+
+        // Note: print to suppress unused warning
+        Twig.debug { "${chainTip.value}" }
 
         // 4) Notify the wallet of the updated chain tip.
         // wallet_db.update_chain_tip(tip_height).map_err(Error::Wallet)?;
@@ -464,15 +446,7 @@ class CompactBlockProcessor internal constructor(
     private suspend fun updateRanges(): Boolean {
         // This fetches the latest height each time this method is called, which can be very inefficient
         // when downloading all of the blocks from the server
-        val networkBlockHeight = run {
-            val networkBlockHeightUnsafe =
-                when (val response = downloader.getLatestBlockHeight()) {
-                    is Response.Success -> response.result
-                    else -> null
-                }
-
-            runCatching { networkBlockHeightUnsafe?.toBlockHeight(network) }.getOrNull()
-        } ?: return false
+        val networkBlockHeight = fetchLatestBlockHeight(downloader, network) ?: return false
 
         // If we find out that we previously downloaded, but not scanned persisted blocks, we need to rewind the
         // blocks above the last scanned height first.
@@ -514,7 +488,9 @@ class CompactBlockProcessor internal constructor(
     /**
      * Confirm that the wallet data is properly setup for use.
      */
-    // Need to refactor this to be less ugly and more testable
+    // TODO [#1127]: Refactor CompactBlockProcessor.verifySetup
+    // TODO [#1127]: Need to refactor this to be less ugly and more testable
+    // TODO [#1127]: https://github.com/zcash/zcash-android-wallet-sdk/issues/1127
     @Suppress("NestedBlockDepth")
     private suspend fun verifySetup() {
         // verify that the data is initialized
@@ -708,6 +684,11 @@ class CompactBlockProcessor internal constructor(
         internal const val UTXO_FETCH_RETRIES = 3
 
         /**
+         * Latest block height fetching default attempts at retrying.
+         */
+        internal const val FETCH_LATEST_BLOCK_HEIGHT_RETRIES = 3
+
+        /**
          * Get subtree roots default attempts at retrying.
          */
         internal const val GET_SUBTREE_ROOTS_RETRIES = 3
@@ -735,6 +716,90 @@ class CompactBlockProcessor internal constructor(
          * from the reorg but smaller than the theoretical max reorg size of 100.
          */
         internal const val REWIND_DISTANCE = 10
+
+        /**
+         * This operation fetches and returns the latest block height (chain tip)
+         *
+         * @return Latest block height wrapped in BlockHeight object, or null in case of failure
+         */
+        @VisibleForTesting
+        internal suspend fun fetchLatestBlockHeight(
+            downloader: CompactBlockDownloader,
+            network: ZcashNetwork
+        ): BlockHeight? {
+            Twig.debug { "Fetching latest block height..." }
+
+            var latestBlockHeight: BlockHeight? = null
+
+            retryUpToAndContinue(FETCH_LATEST_BLOCK_HEIGHT_RETRIES) {
+                when (val response = downloader.getLatestBlockHeight()) {
+                    is Response.Success -> {
+                        Twig.debug { "Latest block height fetched successfully with value: ${response.result.value}" }
+                        latestBlockHeight = runCatching {
+                            response.result.toBlockHeight(network)
+                        }.getOrNull()
+                    }
+                    is Response.Failure -> {
+                        Twig.error { "Fetching latest block height failed with: ${response.toThrowable()}" }
+                        throw LightWalletException.GetLatestBlockHeightException(
+                            response.code,
+                            response.description,
+                            response.toThrowable()
+                        )
+                    }
+                }
+            }
+
+            return latestBlockHeight
+        }
+
+        /**
+         * This operation downloads note commitment tree data from the lightwalletd server to decide if we communicate
+         * with linear or non-linear node
+         *
+         * @return List of SubtreeRoot objects in case of the operation success, null otherwise
+         */
+        @VisibleForTesting
+        internal suspend fun getSubtreeRoots(
+            downloader: CompactBlockDownloader,
+            network: ZcashNetwork
+        ): List<SubtreeRoot>? {
+            Twig.debug { "Fetching SubtreeRoots..." }
+
+            var subTreeRootList: List<SubtreeRoot>? = null
+
+            retryUpToAndContinue(GET_SUBTREE_ROOTS_RETRIES) {
+                subTreeRootList = downloader.getSubtreeRoots(
+                    startIndex = 1,
+                    maxEntries = 0,
+                    shieldedProtocol = ShieldedProtocolEnum.SAPLING
+                ).onEach { response ->
+                    when (response) {
+                        is Response.Success -> {
+                            Twig.debug { "SubtreeRoots got successfully" }
+                        }
+                        is Response.Failure -> {
+                            Twig.error { "Fetching SubtreeRoots failed with: ${response.toThrowable()}" }
+                            throw LightWalletException.GetSubtreeRootsException(
+                                response.code,
+                                response.description,
+                                response.toThrowable()
+                            )
+                        }
+                    }
+                }
+                    .filterIsInstance<Response.Success<SubtreeRootUnsafe>>()
+                    .map { response ->
+                        response.result
+                    }
+                    .toList()
+                    .map {
+                        SubtreeRoot.new(it, network)
+                    }
+            }
+
+            return subTreeRootList
+        }
 
         /**
          * Requests, processes and persists all blocks from the given range.
