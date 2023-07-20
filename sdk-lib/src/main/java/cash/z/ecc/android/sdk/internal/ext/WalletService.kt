@@ -43,6 +43,35 @@ suspend inline fun retryUpTo(
 }
 
 /**
+ * Execute the given block and if it fails, retry up to [retries] more times. If none of the
+ * retries succeed, then leave the block execution unfinished and continue.
+ *
+ * @param retries the number of times to retry the block after the first attempt fails.
+ * @param initialDelayMillis the initial amount of time to wait before the first retry.
+ * @param block the code to execute, which will be wrapped in a try/catch and retried whenever an
+ * exception is thrown up to [retries] attempts.
+ */
+suspend inline fun retryUpToAndContinue(
+    retries: Int,
+    initialDelayMillis: Long = 500L,
+    block: (Int) -> Unit
+) {
+    var failedAttempts = 0
+    while (failedAttempts < retries) {
+        @Suppress("TooGenericExceptionCaught")
+        try {
+            block(failedAttempts)
+            return
+        } catch (t: Throwable) {
+            failedAttempts++
+            val duration = (initialDelayMillis.toDouble() * Math.pow(2.0, failedAttempts.toDouble() - 1)).toLong()
+            Twig.warn(t) { "Retrying ($failedAttempts/$retries) in ${duration}s..." }
+            delay(duration)
+        }
+    }
+}
+
+/**
  * Execute the given block and if it fails, retry with an exponential backoff.
  *
  * @param onErrorListener a callback that gets the first shot at processing any error and can veto

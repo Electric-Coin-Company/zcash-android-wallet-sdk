@@ -249,6 +249,11 @@ sealed class LightWalletException(message: String, cause: Throwable? = null) : S
         "Failed to fetch UTXOs with code: $code due to: ${description ?: "-"}",
         cause
     )
+
+    class GetLatestBlockHeightException(code: Int, description: String?, cause: Throwable) : SdkException(
+        "Failed to fetch latest block height with code: $code due to: ${description ?: "-"}",
+        cause
+    )
 }
 
 /**
