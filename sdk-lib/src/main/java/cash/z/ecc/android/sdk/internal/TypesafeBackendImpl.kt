@@ -2,7 +2,9 @@ package cash.z.ecc.android.sdk.internal
 
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
+import cash.z.ecc.android.sdk.internal.model.JniSubtreeRoot
 import cash.z.ecc.android.sdk.internal.model.ScanRange
+import cash.z.ecc.android.sdk.internal.model.SubtreeRoot
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.UnifiedFullViewingKey
@@ -155,6 +157,19 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
     override suspend fun getReceivedMemoAsUtf8(idNote: Long): String? = backend.getReceivedMemoAsUtf8(idNote)
 
     override suspend fun initDataDb(seed: ByteArray?): Int = backend.initDataDb(seed)
+
+    override suspend fun putSaplingSubtreeRoots(startIndex: Long, roots: List<SubtreeRoot>) =
+        backend.putSaplingSubtreeRoots(
+            startIndex = startIndex,
+            roots = roots.map {
+                JniSubtreeRoot.new(
+                    rootHash = it.rootHash,
+                    completingBlockHeight = it.completingBlockHeight.value
+                )
+            }
+        )
+
+    override suspend fun updateChainTip(height: BlockHeight) = backend.updateChainTip(height.value)
 
     override suspend fun scanBlocks(fromHeight: BlockHeight, limit: Long) = backend.scanBlocks(fromHeight.value, limit)
 
