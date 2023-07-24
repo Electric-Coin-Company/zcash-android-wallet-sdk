@@ -195,7 +195,7 @@ class CompactBlockProcessor internal constructor(
         // Download note commitment tree data from lightwalletd to decide if we communicate with linear
         // or non-linear node
         val subTreeRootList = getSubtreeRoots(downloader, network)
-        Twig.info { "Fetched SubTreeRoot list: $subTreeRootList" }
+        Twig.info { "Fetched SubTreeRoot list size: ${subTreeRootList?.size ?: 0}" }
 
         Twig.debug { "Setup verified. Processor starting..." }
 
