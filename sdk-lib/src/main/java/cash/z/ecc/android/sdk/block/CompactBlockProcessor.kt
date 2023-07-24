@@ -180,7 +180,7 @@ class CompactBlockProcessor internal constructor(
     /**
      * Download compact blocks, verify and scan them until [stop] is called.
      */
-    @Suppress("LongMethod")
+    @Suppress("LongMethod", "CyclomaticComplexMethod")
     suspend fun start() {
         verifySetup()
 
