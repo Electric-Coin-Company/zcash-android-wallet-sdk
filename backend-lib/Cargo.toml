@@ -44,11 +44,11 @@ libc = "0.2"
 incrementalmerkletree = { git = "https://github.com/zcash/incrementalmerkletree.git", rev = "bae25ad89c0c192bee625252d2d419bd56638e48" }
 shardtree = { git = "https://github.com/zcash/incrementalmerkletree.git", rev = "bae25ad89c0c192bee625252d2d419bd56638e48" }
 orchard = { git = "https://github.com/zcash/orchard.git", rev = "6ef89d5f154de2cf7b7dd87edb8d8c49158beebb" }
-zcash_address = { git = "https://github.com/zcash/librustzcash.git", rev = "f4221889feee34bbfb87238141ba867b973f317f" }
-zcash_client_backend = { git = "https://github.com/zcash/librustzcash.git", rev = "f4221889feee34bbfb87238141ba867b973f317f" }
-zcash_client_sqlite = { git = "https://github.com/zcash/librustzcash.git", rev = "f4221889feee34bbfb87238141ba867b973f317f" }
-zcash_primitives = { git = "https://github.com/zcash/librustzcash.git", rev = "f4221889feee34bbfb87238141ba867b973f317f" }
-zcash_proofs = { git = "https://github.com/zcash/librustzcash.git", rev = "f4221889feee34bbfb87238141ba867b973f317f" }
+zcash_address = { git = "https://github.com/zcash/librustzcash.git", rev = "46ca3202e47eabc48298add881d898878f510c87" }
+zcash_client_backend = { git = "https://github.com/zcash/librustzcash.git", rev = "46ca3202e47eabc48298add881d898878f510c87" }
+zcash_client_sqlite = { git = "https://github.com/zcash/librustzcash.git", rev = "46ca3202e47eabc48298add881d898878f510c87" }
+zcash_primitives = { git = "https://github.com/zcash/librustzcash.git", rev = "46ca3202e47eabc48298add881d898878f510c87" }
+zcash_proofs = { git = "https://github.com/zcash/librustzcash.git", rev = "46ca3202e47eabc48298add881d898878f510c87" }
 
 ## Uncomment this to test librustzcash changes locally
 #[patch.crates-io]
