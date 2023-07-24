@@ -354,6 +354,7 @@ class CompactBlockProcessor internal constructor(
         data class Failure(val exception: Throwable) : SuggestScanRangesResult()
     }
 
+    @Suppress("MagicNumber")
     internal enum class SuggestScanRangePriority(val priority: Long) {
         Scanned(10),
         Historic(20),
@@ -370,6 +371,7 @@ class CompactBlockProcessor internal constructor(
         }
     }
 
+    @Suppress("ReturnCount")
     private suspend fun processNewBlocksInNonLinearOrder(subTreeRootList: List<SubtreeRoot>): BlockProcessingResult {
         Twig.debug {
             "Beginning to process new blocks with DAG approach (with roots: $subTreeRootList, and lower " +
