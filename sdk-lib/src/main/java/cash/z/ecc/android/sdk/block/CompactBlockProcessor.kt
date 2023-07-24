@@ -25,6 +25,7 @@ import cash.z.ecc.android.sdk.internal.ext.toHexReversed
 import cash.z.ecc.android.sdk.internal.model.BlockBatch
 import cash.z.ecc.android.sdk.internal.model.DbTransactionOverview
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
+import cash.z.ecc.android.sdk.internal.model.ScanRange
 import cash.z.ecc.android.sdk.internal.model.SubtreeRoot
 import cash.z.ecc.android.sdk.internal.model.ext.from
 import cash.z.ecc.android.sdk.internal.model.ext.toBlockHeight
@@ -179,7 +180,7 @@ class CompactBlockProcessor internal constructor(
     /**
      * Download compact blocks, verify and scan them until [stop] is called.
      */
-    @Suppress("LongMethod")
+    @Suppress("LongMethod", "CyclomaticComplexMethod")
     suspend fun start() {
         verifySetup()
 
@@ -194,7 +195,7 @@ class CompactBlockProcessor internal constructor(
         // Download note commitment tree data from lightwalletd to decide if we communicate with linear
         // or non-linear node
         val subTreeRootList = getSubtreeRoots(downloader, network)
-        Twig.info { "Fetched SubTreeRoot list: $subTreeRootList" }
+        Twig.info { "Fetched SubTreeRoot list size: ${subTreeRootList?.size ?: 0}" }
 
         Twig.debug { "Setup verified. Processor starting..." }
 
@@ -221,6 +222,8 @@ class CompactBlockProcessor internal constructor(
                     }
 
                     BlockProcessingResult.NoBlocksToProcess -> {
+                        // TODO [#1129]: Refactor work with lastSyncRange and lastSyncedHeight
+                        // TODO [#1129]: https://github.com/zcash/zcash-android-wallet-sdk/issues/1129
                         val noWorkDone = _processorInfo.value.lastSyncRange?.isEmpty() ?: true
                         val summary = if (noWorkDone) {
                             "Nothing to process: no new blocks to sync"
@@ -344,6 +347,31 @@ class CompactBlockProcessor internal constructor(
         }
     }
 
+    internal sealed class SuggestScanRangesResult {
+        data class Success(val ranges: List<ScanRange>) : SuggestScanRangesResult()
+
+        // Fix it: consider failed at height parameter and more concrete exception type
+        data class Failure(val exception: Throwable) : SuggestScanRangesResult()
+    }
+
+    @Suppress("MagicNumber")
+    internal enum class SuggestScanRangePriority(val priority: Long) {
+        Scanned(10),
+        Historic(20),
+        OpenAdjacent(30),
+        FoundNote(40),
+        ChainTip(50),
+        Verify(60);
+
+        companion object {
+            fun fromPriority(priority: Long): SuggestScanRangePriority {
+                Twig.verbose { "Current suggested scan range priority: $priority" }
+                return values().firstOrNull { it.priority == priority } ?: Scanned
+            }
+        }
+    }
+
+    @Suppress("ReturnCount")
     private suspend fun processNewBlocksInNonLinearOrder(subTreeRootList: List<SubtreeRoot>): BlockProcessingResult {
         Twig.debug {
             "Beginning to process new blocks with DAG approach (with roots: $subTreeRootList, and lower " +
@@ -367,14 +395,98 @@ class CompactBlockProcessor internal constructor(
             return BlockProcessingResult.Reconnecting
         }
 
-        // Note: print to suppress unused warning
-        Twig.debug { "${chainTip.value}" }
+        // Notify the wallet of the updated chain tip.
+        backend.updateChainTip(chainTip)
 
-        // 4) Notify the wallet of the updated chain tip.
-        // wallet_db.update_chain_tip(tip_height).map_err(Error::Wallet)?;
+        // Get the suggested scan ranges from the wallet database
+        when (val suggestedRangesResult = suggestScanRanges(backend)) {
+            is SuggestScanRangesResult.Failure -> {
+                Twig.error { "Process suggested scan ranges failure: ${suggestedRangesResult.exception}" }
+                // Fix it: process failure
+            }
+            is SuggestScanRangesResult.Success -> {
+                Twig.debug { "Process suggested scan ranges result: ${suggestedRangesResult.ranges}" }
 
-        // 5) Get the suggested scan ranges from the wallet database
-        // let mut scan_ranges = wallet_db.suggest_scan_ranges().map_err(Error::Wallet)?;
+                if (suggestedRangesResult.ranges.isEmpty()) {
+                    // Nothing to sync - break out of the processing
+                    return BlockProcessingResult.NoBlocksToProcess
+                } else {
+                    val firstRangePriority = SuggestScanRangePriority.fromPriority(
+                        suggestedRangesResult.ranges[0].priority
+                    )
+                    when (firstRangePriority) {
+                        SuggestScanRangePriority.Verify -> {}
+                        SuggestScanRangePriority.ChainTip -> {}
+                        SuggestScanRangePriority.FoundNote -> {}
+                        SuggestScanRangePriority.OpenAdjacent -> {}
+                        SuggestScanRangePriority.Historic -> {}
+                        SuggestScanRangePriority.Scanned -> {}
+                    }
+                }
+            }
+        }
+
+        // Run the following loop until the wallet's view of the chain tip as of the previous wallet session is valid
+        // loop {
+        //      // If there is a range of blocks that needs to be verified, it will always be returned as
+        //      // the first element of the vector of suggested ranges.
+        //      match scan_ranges.first() {
+        //          Some(scan_range) if scan_range.priority() == ScanPriority::Verify => {
+        //              // Download the blocks in `scan_range` into the block source, overwriting any
+        //              // existing blocks in this range.
+        //              unimplemented!();
+        //
+        //              // Scan the downloaded blocks
+        //              let scan_result = scan_cached_blocks(
+        //                  &network,
+        //                  &block_source,
+        //                  &mut wallet_db,
+        //                  scan_range.block_range().start,
+        //                  scan_range.len()
+        //              );
+        //
+        //              // Check for scanning errors that indicate that the wallet's chain tip is out of
+        //              // sync with blockchain history.
+        //              match scan_result {
+        //                  Ok(_) => {
+        //                      // At this point, the cache and scanned data are locally consistent (though
+        //                      // not necessarily consistent with the latest chain tip - this would be
+        //                      // discovered the next time this codepath is executed after new blocks are
+        //                      // received) so we can break out of the loop.
+        //                      break;
+        //                  }
+        //                  Err(Error::Scan(err)) if err.is_continuity_error() => {
+        //                      // Pick a height to rewind to, which must be at least one block before
+        //                      // the height at which the error occurred, but may be an earlier height
+        //                      // determined based on heuristics such as the platform, available bandwidth,
+        //                      // size of recent CompactBlocks, etc.
+        //                      let rewind_height = err.at_height().saturating_sub(10);
+        //
+        //                      // Rewind to the chosen height.
+        //                      wallet_db.truncate_to_height(rewind_height).map_err(Error::Wallet)?;
+        //
+        //                      // Delete cached blocks from rewind_height onwards.
+        //                      //
+        //                      // This does imply that assumed-valid blocks will be re-downloaded, but it
+        //                      // is also possible that in the intervening time, a chain reorg has
+        //                      // occurred that orphaned some of those blocks.
+        //                      unimplemented!();
+        //                  }
+        //                  Err(other) => {
+        //                      // Handle or return other errors
+        //                  }
+        //              }
+        //
+        //              // Truncation will have updated the suggested scan ranges, so we now
+        //              // re_request
+        //              scan_ranges = wallet_db.suggest_scan_ranges().map_err(Error::Wallet)?;
+        //          }
+        //          _ => {
+        //              // Nothing to verify; break out of the loop
+        //              break;
+        //          }
+        //      }
+        // }
 
         return BlockProcessingResult.NoBlocksToProcess
     }
@@ -799,6 +911,20 @@ class CompactBlockProcessor internal constructor(
             }
 
             return subTreeRootList
+        }
+
+        @VisibleForTesting
+        internal suspend fun suggestScanRanges(backend: TypesafeBackend): SuggestScanRangesResult {
+            return runCatching {
+                backend.suggestScanRanges()
+            }.onSuccess { ranges ->
+                Twig.info { "Successfully got newly suggested ranges: $ranges" }
+            }.onFailure { exception ->
+                Twig.error { "Failed to get newly suggested ranges with: $exception" }
+            }.fold(
+                onSuccess = { SuggestScanRangesResult.Success(it) },
+                onFailure = { SuggestScanRangesResult.Failure(it) }
+            )
         }
 
         /**
@@ -1610,6 +1736,8 @@ class CompactBlockProcessor internal constructor(
      * @param firstUnenhancedHeight the height in which the enhancing should start, or null in case of no previous
      * transaction enhancing done yet
      */
+    // TODO [#1129]: Refactor work with lastSyncRange and lastSyncedHeight
+    // TODO [#1129]: https://github.com/zcash/zcash-android-wallet-sdk/issues/1129
     data class ProcessorInfo(
         val networkBlockHeight: BlockHeight?,
         val lastSyncedHeight: BlockHeight?,
