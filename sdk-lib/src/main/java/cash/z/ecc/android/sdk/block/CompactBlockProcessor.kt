@@ -232,7 +232,6 @@ class CompactBlockProcessor internal constructor(
                         }
                         delay(napTime)
                     }
-
                     BlockProcessingResult.NoBlocksToProcess -> {
                         // TODO [#1129]: Refactor work with lastSyncRange and lastSyncedHeight
                         // TODO [#1129]: https://github.com/zcash/zcash-android-wallet-sdk/issues/1129
@@ -250,47 +249,12 @@ class CompactBlockProcessor internal constructor(
                         }
                         delay(napTime)
                     }
-
-                    is BlockProcessingResult.FailedEnhance -> {
-                        Twig.error {
-                            "Failed while enhancing transaction details at height: ${result.error.height} +" +
-                                "with: ${result.error}"
-                        }
-                        checkErrorResult(result.error.height)
-                    }
-
-                    is BlockProcessingResult.FailedDeleteBlocks -> {
-                        Twig.error {
-                            "Failed to delete temporary blocks files from the device disk. It will be retried on the" +
-                                " next time, while downloading new blocks."
-                        }
-                        checkErrorResult(result.failedAtHeight)
-                    }
-
-                    is BlockProcessingResult.FailedDownloadBlocks -> {
-                        Twig.error { "Failed while downloading blocks at height: ${result.failedAtHeight}" }
-                        checkErrorResult(result.failedAtHeight)
-                    }
-
-                    is BlockProcessingResult.FailedScanBlocks -> {
-                        Twig.error { "Failed while scanning blocks at height: ${result.failedAtHeight}" }
-                        checkErrorResult(result.failedAtHeight)
-                    }
                     is BlockProcessingResult.SyncFailure -> {
                         Twig.error { "Failed while processing blocks at height: ${result.failedAtHeight}" }
                         checkErrorResult(result.failedAtHeight)
                     }
-
                     is BlockProcessingResult.Success -> {
                         // Do nothing.
-                    }
-
-                    is BlockProcessingResult.DownloadSuccess -> {
-                        // Do nothing. Syncing of blocks is in progress.
-                    }
-
-                    BlockProcessingResult.UpdateBirthday -> {
-                        // Do nothing. The birthday was just updated.
                     }
                 }
             }
@@ -490,7 +454,7 @@ class CompactBlockProcessor internal constructor(
                 lastKnownHeight = verifyRangeResult.scanRange.range.start
             )
 
-            var syncResult: BlockProcessingResult = BlockProcessingResult.Success
+            var syncingResult: SyncingResult = SyncingResult.AllSuccess
             runSyncingAndEnhancing(
                 backend = backend,
                 downloader = downloader,
@@ -503,15 +467,20 @@ class CompactBlockProcessor internal constructor(
                 _progress.value = syncProgress.percentage
                 updateProgress(lastSyncedHeight = syncProgress.lastSyncedHeight)
 
-                if (syncProgress.result == BlockProcessingResult.UpdateBirthday) {
-                    updateBirthdayHeight()
-                } else if (syncProgress.result != BlockProcessingResult.Success) {
-                    syncResult = syncProgress.result
-                    return@collect
+                when (syncProgress.resultState) {
+                    SyncingResult.UpdateBirthday -> {
+                        updateBirthdayHeight()
+                    }
+                    is SyncingResult.Failure -> {
+                        syncingResult = syncProgress.resultState
+                        return@collect
+                    } else -> {
+                        // Continue with processing
+                    }
                 }
             }
 
-            if (syncResult != BlockProcessingResult.Success) {
+            if (syncingResult != SyncingResult.AllSuccess) {
                 // Remove persisted but not scanned blocks in case of any failure
                 val lastScannedHeight = getLastScannedHeight(repository)
                 downloader.rewindToHeight(lastScannedHeight)
@@ -519,7 +488,7 @@ class CompactBlockProcessor internal constructor(
                     downloader = downloader,
                     lastKnownHeight = lastScannedHeight
                 )
-                return syncResult
+                return (syncingResult as SyncingResult.Failure).toBlockProcessingResult()
             }
 
             // Re-request suggested scan ranges
@@ -551,7 +520,7 @@ class CompactBlockProcessor internal constructor(
         _state.value = State.Syncing
 
         // Syncing last blocks and enhancing transactions
-        var syncResult: BlockProcessingResult = BlockProcessingResult.Success
+        var syncingResult: SyncingResult = SyncingResult.AllSuccess
         runSyncingAndEnhancing(
             backend = backend,
             downloader = downloader,
@@ -564,15 +533,20 @@ class CompactBlockProcessor internal constructor(
             _progress.value = syncProgress.percentage
             updateProgress(lastSyncedHeight = syncProgress.lastSyncedHeight)
 
-            if (syncProgress.result == BlockProcessingResult.UpdateBirthday) {
-                updateBirthdayHeight()
-            } else if (syncProgress.result != BlockProcessingResult.Success) {
-                syncResult = syncProgress.result
-                return@collect
+            when (syncProgress.resultState) {
+                SyncingResult.UpdateBirthday -> {
+                    updateBirthdayHeight()
+                }
+                is SyncingResult.Failure -> {
+                    syncingResult = syncProgress.resultState
+                    return@collect
+                } else -> {
+                    // Continue with processing
+                }
             }
         }
 
-        if (syncResult != BlockProcessingResult.Success) {
+        if (syncingResult != SyncingResult.AllSuccess) {
             // Remove persisted but not scanned blocks in case of any failure
             val lastScannedHeight = getLastScannedHeight(repository)
             downloader.rewindToHeight(lastScannedHeight)
@@ -580,26 +554,16 @@ class CompactBlockProcessor internal constructor(
                 downloader = downloader,
                 lastKnownHeight = lastScannedHeight
             )
-
-            return syncResult
+            return (syncingResult as SyncingResult.Failure).toBlockProcessingResult()
         }
 
         return BlockProcessingResult.Success
     }
 
-    // TODO [#1140]: Eliminate failure BlockProcessingResults
-    // TODO [#1140]: https://github.com/zcash/zcash-android-wallet-sdk/issues/1140
     sealed class BlockProcessingResult {
         object NoBlocksToProcess : BlockProcessingResult()
         object Success : BlockProcessingResult()
-        data class DownloadSuccess(val downloadedBlocks: List<JniBlockMeta>?) : BlockProcessingResult()
-        object UpdateBirthday : BlockProcessingResult()
         object Reconnecting : BlockProcessingResult()
-        data class FailedDownloadBlocks(val failedAtHeight: BlockHeight) : BlockProcessingResult()
-        data class FailedScanBlocks(val failedAtHeight: BlockHeight) : BlockProcessingResult()
-        data class FailedDeleteBlocks(val failedAtHeight: BlockHeight) : BlockProcessingResult()
-        data class FailedEnhance(val error: CompactBlockProcessorException.EnhanceTransactionError) :
-            BlockProcessingResult()
         data class SyncFailure(val failedAtHeight: BlockHeight, val error: Throwable) : BlockProcessingResult()
     }
 
@@ -1083,6 +1047,45 @@ class CompactBlockProcessor internal constructor(
             }
         }
 
+        @VisibleForTesting
+        internal sealed class SyncingResult {
+            object AllSuccess : SyncingResult()
+            data class DownloadSuccess(val downloadedBlocks: List<JniBlockMeta>?) : SyncingResult()
+            interface Failure {
+                val failedAtHeight: BlockHeight
+                val exception: CompactBlockProcessorException
+                fun toBlockProcessingResult(): BlockProcessingResult =
+                    BlockProcessingResult.SyncFailure(
+                        this.failedAtHeight,
+                        this.exception
+                    )
+            }
+            data class DownloadFailed(
+                override val failedAtHeight: BlockHeight,
+                override val exception: CompactBlockProcessorException
+            ) : Failure, SyncingResult()
+            object ScanSuccess : SyncingResult()
+            data class ScanFailed(
+                override val failedAtHeight: BlockHeight,
+                override val exception: CompactBlockProcessorException
+            ) : Failure, SyncingResult()
+            object DeleteSuccess : SyncingResult()
+            data class DeleteFailed(
+                override val failedAtHeight: BlockHeight,
+                override val exception: CompactBlockProcessorException
+            ) : Failure, SyncingResult()
+            object EnhanceSuccess : SyncingResult()
+            data class EnhanceFailed(
+                override val failedAtHeight: BlockHeight,
+                override val exception: CompactBlockProcessorException
+            ) : Failure, SyncingResult()
+            object UpdateBirthday : SyncingResult()
+            data class ContinuityError(
+                override val failedAtHeight: BlockHeight,
+                override val exception: CompactBlockProcessorException
+            ) : Failure, SyncingResult()
+        }
+
         /**
          * Requests, processes and persists all blocks from the given range.
          *
@@ -1115,7 +1118,7 @@ class CompactBlockProcessor internal constructor(
                     BatchSyncProgress(
                         percentage = PercentDecimal.ONE_HUNDRED_PERCENT,
                         lastSyncedHeight = getLastScannedHeight(repository),
-                        result = BlockProcessingResult.Success
+                        resultState = SyncingResult.AllSuccess
                     )
                 )
             } else {
@@ -1142,13 +1145,13 @@ class CompactBlockProcessor internal constructor(
                                 batch = it
                             )
                         } else {
-                            BlockProcessingResult.DownloadSuccess(null)
+                            SyncingResult.DownloadSuccess(null)
                         }
                     )
                 }.buffer(1).map { downloadStageResult ->
                     Twig.debug { "Download stage done with result: $downloadStageResult" }
 
-                    if (downloadStageResult.stageResult !is BlockProcessingResult.DownloadSuccess) {
+                    if (downloadStageResult.stageResult !is SyncingResult.DownloadSuccess) {
                         // In case of any failure, we just propagate the result
                         downloadStageResult
                     } else {
@@ -1167,7 +1170,7 @@ class CompactBlockProcessor internal constructor(
                 }.map { scanResult ->
                     Twig.debug { "Scan stage done with result: $scanResult" }
 
-                    if (scanResult.stageResult != BlockProcessingResult.Success) {
+                    if (scanResult.stageResult != SyncingResult.ScanSuccess) {
                         scanResult
                     } else {
                         // Run deletion stage
@@ -1182,11 +1185,17 @@ class CompactBlockProcessor internal constructor(
                 }.onEach { continuousResult ->
                     Twig.debug { "Deletion stage done with result: $continuousResult" }
 
+                    var resultState = if (continuousResult.stageResult == SyncingResult.DeleteSuccess) {
+                        SyncingResult.AllSuccess
+                    } else {
+                        continuousResult.stageResult
+                    }
+
                     emit(
                         BatchSyncProgress(
                             percentage = PercentDecimal(continuousResult.batch.order / batches.size.toFloat()),
                             lastSyncedHeight = getLastScannedHeight(repository),
-                            result = continuousResult.stageResult
+                            resultState = resultState
                         )
                     )
 
@@ -1196,7 +1205,7 @@ class CompactBlockProcessor internal constructor(
                     // Enhance is run in case of the range is on or over its limit, or in case of any failure
                     // state comes from the previous stages, or if the end of the sync range is reached
                     if (enhancingRange.length() >= ENHANCE_BATCH_SIZE ||
-                        continuousResult.stageResult != BlockProcessingResult.Success ||
+                        resultState != SyncingResult.AllSuccess ||
                         continuousResult.batch.order == batches.size.toLong()
                     ) {
                         // Copy the range for use and reset for the next iteration
@@ -1209,33 +1218,36 @@ class CompactBlockProcessor internal constructor(
                             downloader = downloader
                         ).collect { enhancingResult ->
                             Twig.debug { "Enhancing result: $enhancingResult" }
-                            // TODO [#1047]: CompactBlockProcessor: Consider a separate sub-stage result handling
-                            // TODO [#1047]: https://github.com/zcash/zcash-android-wallet-sdk/issues/1047
-                            when (enhancingResult) {
-                                is BlockProcessingResult.UpdateBirthday -> {
+                            resultState = when (enhancingResult) {
+                                is SyncingResult.UpdateBirthday -> {
                                     Twig.debug { "Birthday height update reporting" }
+                                    enhancingResult
                                 }
-                                is BlockProcessingResult.FailedEnhance -> {
+                                is SyncingResult.EnhanceFailed -> {
                                     Twig.error { "Enhancing failed for: $enhancingRange with $enhancingResult" }
+                                    enhancingResult
                                 }
                                 else -> {
-                                    // Transactions enhanced correctly
+                                    // Transactions enhanced correctly. Now we return common sync success state.
+                                    SyncingResult.AllSuccess
                                 }
                             }
                             emit(
                                 BatchSyncProgress(
                                     percentage = PercentDecimal(continuousResult.batch.order / batches.size.toFloat()),
                                     lastSyncedHeight = getLastScannedHeight(repository),
-                                    result = enhancingResult
+                                    resultState = resultState
                                 )
                             )
                         }
                     }
-
-                    Twig.debug { "All sync stages done for the batch: ${continuousResult.batch}" }
+                    Twig.debug {
+                        "All sync stages done for the batch: ${continuousResult.batch} with result state: " +
+                            "$resultState"
+                    }
                 }.takeWhile { batchProcessResult ->
-                    batchProcessResult.stageResult == BlockProcessingResult.Success ||
-                        batchProcessResult.stageResult == BlockProcessingResult.UpdateBirthday
+                    batchProcessResult.stageResult == SyncingResult.DeleteSuccess ||
+                        batchProcessResult.stageResult == SyncingResult.UpdateBirthday
                 }.collect()
             }
         }
@@ -1277,33 +1289,42 @@ class CompactBlockProcessor internal constructor(
          * @param batch the batch of blocks to download.
          */
         @VisibleForTesting
-        @Throws(CompactBlockProcessorException.FailedDownload::class)
-        @Suppress("MagicNumber")
         internal suspend fun downloadBatchOfBlocks(
             downloader: CompactBlockDownloader,
             batch: BlockBatch
-        ): BlockProcessingResult {
+        ): SyncingResult {
             var downloadedBlocks = listOf<JniBlockMeta>()
-            retryUpTo(RETRIES, { CompactBlockProcessorException.FailedDownload(it) }) { failedAttempts ->
+            var downloadException: CompactBlockProcessorException.FailedDownloadException? = null
+
+            retryUpToAndContinue(
+                retries = RETRIES,
+                exceptionWrapper = {
+                    downloadException = CompactBlockProcessorException.FailedDownloadException(it)
+                    downloadException!!
+                }
+            ) { failedAttempts ->
+                @Suppress("MagicNumber")
                 if (failedAttempts == 0) {
                     Twig.verbose { "Starting to download batch $batch" }
                 } else {
                     Twig.warn { "Retrying to download batch $batch after $failedAttempts failure(s)..." }
                 }
-
                 downloadedBlocks = downloader.downloadBlockRange(batch.range)
             }
             Twig.verbose { "Successfully downloaded batch: $batch of $downloadedBlocks blocks" }
 
             return if (downloadedBlocks.isNotEmpty()) {
-                BlockProcessingResult.DownloadSuccess(downloadedBlocks)
+                SyncingResult.DownloadSuccess(downloadedBlocks)
             } else {
-                BlockProcessingResult.FailedDownloadBlocks(batch.range.start)
+                SyncingResult.DownloadFailed(
+                    batch.range.start,
+                    downloadException ?: CompactBlockProcessorException.FailedDownloadException()
+                )
             }
         }
 
         @VisibleForTesting
-        internal suspend fun scanBatchOfBlocks(batch: BlockBatch, backend: TypesafeBackend): BlockProcessingResult {
+        internal suspend fun scanBatchOfBlocks(batch: BlockBatch, backend: TypesafeBackend): SyncingResult {
             return runCatching {
                 backend.scanBlocks(batch.range.start, batch.range.length())
             }.onSuccess {
@@ -1311,8 +1332,13 @@ class CompactBlockProcessor internal constructor(
             }.onFailure {
                 Twig.error { "Failed while scanning batch $batch with $it" }
             }.fold(
-                onSuccess = { BlockProcessingResult.Success },
-                onFailure = { BlockProcessingResult.FailedScanBlocks(batch.range.start) }
+                onSuccess = { SyncingResult.ScanSuccess },
+                onFailure = {
+                    SyncingResult.ScanFailed(
+                        batch.range.start,
+                        CompactBlockProcessorException.FailedScanException(it)
+                    )
+                }
             )
         }
 
@@ -1320,13 +1346,16 @@ class CompactBlockProcessor internal constructor(
         internal suspend fun deleteAllBlockFiles(
             downloader: CompactBlockDownloader,
             lastKnownHeight: BlockHeight
-        ): BlockProcessingResult {
+        ): SyncingResult {
             Twig.verbose { "Starting to delete all temporary block files" }
             return if (downloader.compactBlockRepository.deleteAllCompactBlockFiles()) {
                 Twig.verbose { "Successfully deleted all temporary block files" }
-                BlockProcessingResult.Success
+                SyncingResult.DeleteSuccess
             } else {
-                BlockProcessingResult.FailedDeleteBlocks(lastKnownHeight)
+                SyncingResult.DeleteFailed(
+                    lastKnownHeight,
+                    CompactBlockProcessorException.FailedDeleteException()
+                )
             }
         }
 
@@ -1334,18 +1363,21 @@ class CompactBlockProcessor internal constructor(
         internal suspend fun deleteFilesOfBatchOfBlocks(
             batch: BlockBatch,
             downloader: CompactBlockDownloader
-        ): BlockProcessingResult {
+        ): SyncingResult {
             Twig.verbose { "Starting to delete temporary block files from batch: $batch" }
 
             return batch.blocks?.let { blocks ->
                 val deleted = downloader.compactBlockRepository.deleteCompactBlockFiles(blocks)
                 if (deleted) {
                     Twig.verbose { "Successfully deleted all temporary batched block files" }
-                    BlockProcessingResult.Success
+                    SyncingResult.DeleteSuccess
                 } else {
-                    BlockProcessingResult.FailedDeleteBlocks(batch.range.start)
+                    SyncingResult.DeleteFailed(
+                        batch.range.start,
+                        CompactBlockProcessorException.FailedDeleteException()
+                    )
                 }
-            } ?: BlockProcessingResult.Success
+            } ?: SyncingResult.DeleteSuccess
         }
 
         @VisibleForTesting
@@ -1354,7 +1386,7 @@ class CompactBlockProcessor internal constructor(
             repository: DerivedDataRepository,
             backend: TypesafeBackend,
             downloader: CompactBlockDownloader
-        ): Flow<BlockProcessingResult> = flow {
+        ): Flow<SyncingResult> = flow {
             Twig.debug { "Enhancing transaction details for blocks $range" }
 
             val newTxs = repository.findNewTransactions(range)
@@ -1366,13 +1398,13 @@ class CompactBlockProcessor internal constructor(
                 // If the first transaction has been added
                 if (newTxs.size.toLong() == repository.getTransactionCount()) {
                     Twig.debug { "Encountered the first transaction. This changes the birthday height!" }
-                    emit(BlockProcessingResult.UpdateBirthday)
+                    emit(SyncingResult.UpdateBirthday)
                 }
 
                 newTxs.filter { it.minedHeight != null }.onEach { newTransaction ->
                     val trEnhanceResult = enhanceTransaction(newTransaction, backend, downloader)
-                    if (trEnhanceResult is BlockProcessingResult.FailedEnhance) {
-                        Twig.error { "Encountered transaction enhancing error: ${trEnhanceResult.error}" }
+                    if (trEnhanceResult is SyncingResult.EnhanceFailed) {
+                        Twig.error { "Encountered transaction enhancing error: ${trEnhanceResult.exception}" }
                         emit(trEnhanceResult)
                         // We intentionally do not terminate the batch enhancing here, just reporting it
                     }
@@ -1380,17 +1412,17 @@ class CompactBlockProcessor internal constructor(
             }
 
             Twig.debug { "Done enhancing transaction details" }
-            emit(BlockProcessingResult.Success)
+            emit(SyncingResult.EnhanceSuccess)
         }
 
         private suspend fun enhanceTransaction(
             transaction: DbTransactionOverview,
             backend: TypesafeBackend,
             downloader: CompactBlockDownloader
-        ): BlockProcessingResult {
+        ): SyncingResult {
             Twig.debug { "Starting enhancing transaction (id:${transaction.id}  block:${transaction.minedHeight})" }
             if (transaction.minedHeight == null) {
-                return BlockProcessingResult.Success
+                return SyncingResult.EnhanceSuccess
             }
 
             return try {
@@ -1415,9 +1447,12 @@ class CompactBlockProcessor internal constructor(
                 )
 
                 Twig.debug { "Done enhancing transaction (id:${transaction.id} block:${transaction.minedHeight})" }
-                BlockProcessingResult.Success
-            } catch (e: CompactBlockProcessorException.EnhanceTransactionError) {
-                BlockProcessingResult.FailedEnhance(e)
+                SyncingResult.EnhanceSuccess
+            } catch (exception: CompactBlockProcessorException.EnhanceTransactionError) {
+                SyncingResult.EnhanceFailed(
+                    transaction.minedHeight,
+                    exception
+                )
             }
         }
 
@@ -1868,7 +1903,7 @@ class CompactBlockProcessor internal constructor(
     internal data class BatchSyncProgress(
         val percentage: PercentDecimal,
         val lastSyncedHeight: BlockHeight?,
-        val result: BlockProcessingResult
+        val resultState: SyncingResult
     )
 
     /**
@@ -1876,7 +1911,7 @@ class CompactBlockProcessor internal constructor(
      */
     private data class SyncStageResult(
         val batch: BlockBatch,
-        val stageResult: BlockProcessingResult
+        val stageResult: SyncingResult
     )
 
     /**
