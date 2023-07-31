@@ -1,6 +1,5 @@
 package cash.z.ecc.android.sdk.demoapp.ui.screen.transactions.view
 
-import android.util.Log
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -27,6 +26,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.demoapp.R
+import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.model.TransactionOverview
 import cash.z.ecc.android.sdk.model.WalletAddresses
 import kotlinx.coroutines.flow.flow
@@ -107,10 +107,17 @@ private fun TransactionsMainContent(
                     val memos = synchronizer.getMemos(it)
                     queryScope.launch {
                         runCatching {
-                            Log.v("Zcash", "Transaction memos: ${memos.toList()}")
+                            memos.toList().run {
+                                Twig.debug {
+                                    "Transaction memos: count: $size, contains: " +
+                                        joinToString().ifEmpty {
+                                            "-"
+                                        }
+                                }
+                            }
                         }.onFailure {
                             // https://github.com/zcash/librustzcash/issues/834
-                            Log.e("Zcash", "Failed to get memos", it)
+                            Twig.error { "Failed to get memos with: $it" }
                         }
                     }
                 }) {
