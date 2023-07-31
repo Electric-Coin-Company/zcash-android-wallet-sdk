@@ -281,7 +281,13 @@ interface Synchronizer {
     suspend fun quickRewind()
 
     /**
-     * Returns a list of memos for a transaction.
+     * Returns a stream of memos for a transaction. It works for both received and sent transaction.
+     *
+     * Note that this function internally resolves any error which comes, logs it, and then transforms it to an empty
+     * string.
+     *
+     * @param transactionOverview For which the memos will be queried
+     * @return Flow of memo strings
      */
     fun getMemos(transactionOverview: TransactionOverview): Flow<String>
 

@@ -64,7 +64,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
@@ -316,15 +315,25 @@ class SdkSynchronizer private constructor(
 
     override fun getMemos(transactionOverview: TransactionOverview): Flow<String> {
         return storage.getNoteIds(transactionOverview.id).map {
-            when (transactionOverview.isSentTransaction) {
-                true -> {
-                    backend.getSentMemoAsUtf8(it)
+            runCatching {
+                when (transactionOverview.isSentTransaction) {
+                    true -> {
+                        backend.getSentMemoAsUtf8(it)
+                    }
+                    false -> {
+                        backend.getReceivedMemoAsUtf8(it)
+                    }
                 }
-                false -> {
-                    backend.getReceivedMemoAsUtf8(it)
-                }
-            }
-        }.filterNotNull()
+            }.onFailure {
+                // https://github.com/zcash/librustzcash/issues/834
+                Twig.error { "Failed to get memo with: $it" }
+            }.onSuccess {
+                Twig.debug { "Transaction memo queried: $it" }
+            }.fold(
+                onSuccess = { it ?: "" },
+                onFailure = { "" }
+            )
+        }
     }
 
     override fun getRecipients(transactionOverview: TransactionOverview): Flow<TransactionRecipient> {

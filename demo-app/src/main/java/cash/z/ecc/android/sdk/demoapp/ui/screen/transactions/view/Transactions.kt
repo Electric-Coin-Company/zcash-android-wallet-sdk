@@ -106,18 +106,10 @@ private fun TransactionsMainContent(
                 Button({
                     val memos = synchronizer.getMemos(it)
                     queryScope.launch {
-                        runCatching {
-                            memos.toList().run {
-                                Twig.debug {
-                                    "Transaction memos: count: $size, contains: " +
-                                        joinToString().ifEmpty {
-                                            "-"
-                                        }
-                                }
+                        memos.toList().run {
+                            Twig.debug {
+                                "Transaction memos: count: $size, contains: ${joinToString().ifEmpty { "-" }}"
                             }
-                        }.onFailure {
-                            // https://github.com/zcash/librustzcash/issues/834
-                            Twig.error { "Failed to get memos with: $it" }
                         }
                     }
                 }) {

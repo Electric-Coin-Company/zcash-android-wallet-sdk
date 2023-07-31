@@ -75,8 +75,16 @@ interface Backend {
 
     fun getBranchIdForHeight(height: Long): Long
 
+    /**
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    @Throws(RuntimeException::class)
     suspend fun getReceivedMemoAsUtf8(idNote: Long): String?
 
+    /**
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    @Throws(RuntimeException::class)
     suspend fun getSentMemoAsUtf8(idNote: Long): String?
 
     suspend fun getVerifiedBalance(account: Int): Long
