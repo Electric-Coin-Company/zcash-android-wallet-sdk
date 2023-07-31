@@ -502,7 +502,10 @@ class CompactBlockProcessor internal constructor(
                     verifyRangeResult = shouldVerifySuggestedScanRanges(suggestedRangesResult)
                 }
                 is SuggestScanRangesResult.Failure -> {
-                    Twig.error { "Process suggested scan ranges failure: ${suggestedRangesResult.exception}" }
+                    Twig.error {
+                        "Process suggested scan ranges failure: " +
+                            "${(suggestedRangesResult as SuggestScanRangesResult.Failure).exception}"
+                    }
                     return BlockProcessingResult.SyncFailure(
                         suggestedRangesResult.failedAtHeight,
                         suggestedRangesResult.exception
@@ -511,8 +514,67 @@ class CompactBlockProcessor internal constructor(
             }
         }
 
-        // Note: this will be replaced with a suitable result at the end
-        return BlockProcessingResult.NoBlocksToProcess
+        // Process the rest of ranges
+
+        // Get the suggested scan ranges from the wallet database
+        suggestedRangesResult = suggestScanRanges(
+            backend,
+            lastValidHeight
+        )
+        val scanRanges = when (suggestedRangesResult) {
+            is SuggestScanRangesResult.Success -> { suggestedRangesResult.ranges }
+            is SuggestScanRangesResult.Failure -> {
+                Twig.error { "Process suggested scan ranges failure: ${suggestedRangesResult.exception}" }
+                return BlockProcessingResult.SyncFailure(
+                    suggestedRangesResult.failedAtHeight,
+                    suggestedRangesResult.exception
+                )
+            }
+        }
+        scanRanges.forEach { scanRange ->
+            Twig.debug { "Start processing the range: $scanRange" }
+
+            // TODO [#1145]: Sync Historic range in reverse order
+            // TODO [#1145]: https://github.com/zcash/zcash-android-wallet-sdk/issues/1145
+            var syncingResult: SyncingResult = SyncingResult.AllSuccess
+            runSyncingAndEnhancing(
+                backend = backend,
+                downloader = downloader,
+                repository = repository,
+                network = network,
+                syncRange = scanRange.range.toClosedRange(),
+                withDownload = true,
+                enhanceStartHeight = firstUnenhancedHeight
+            ).collect { syncProgress ->
+                _progress.value = syncProgress.percentage
+                updateProgress(lastSyncedHeight = syncProgress.lastSyncedHeight)
+
+                when (syncProgress.resultState) {
+                    SyncingResult.UpdateBirthday -> {
+                        updateBirthdayHeight()
+                    }
+                    is SyncingResult.Failure -> {
+                        syncingResult = syncProgress.resultState
+                        return@collect
+                    } else -> {
+                        // Continue with processing
+                    }
+                }
+            }
+
+            if (syncingResult != SyncingResult.AllSuccess) {
+                // Remove persisted but not scanned blocks in case of any failure
+                val lastScannedHeight = getLastScannedHeight(repository)
+                downloader.rewindToHeight(lastScannedHeight)
+                deleteAllBlockFiles(
+                    downloader = downloader,
+                    lastKnownHeight = lastScannedHeight
+                )
+                return (syncingResult as SyncingResult.Failure).toBlockProcessingResult()
+            }
+        }
+
+        return BlockProcessingResult.Success
     }
 
     @Suppress("ReturnCount")
