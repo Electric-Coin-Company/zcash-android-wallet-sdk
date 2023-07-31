@@ -79,13 +79,6 @@ sealed class CompactBlockProcessorException(message: String, cause: Throwable? =
         null
     )
     class FailedReorgRepair(message: String) : CompactBlockProcessorException(message)
-    class FailedDownload(cause: Throwable? = null) : CompactBlockProcessorException(
-        "Error while downloading blocks. This most " +
-            "likely means the server is down or slow to respond. See logs for details.",
-        cause
-    )
-    class Disconnected(cause: Throwable? = null) :
-        CompactBlockProcessorException("Disconnected Error. Unable to download blocks due to ${cause?.message}", cause)
     object Uninitialized : CompactBlockProcessorException(
         "Cannot process blocks because the wallet has not been" +
             " initialized. Verify that the seed phrase was properly created or imported. If so, then this problem" +
@@ -93,6 +86,22 @@ sealed class CompactBlockProcessorException(message: String, cause: Throwable? =
     )
     object NoAccount : CompactBlockProcessorException(
         "Attempting to scan without an account. This is probably a setup error or a race condition."
+    )
+
+    class FailedDownloadException(cause: Throwable? = null) : CompactBlockProcessorException(
+        "Error while downloading blocks. This most likely means the server is down or slow to respond. " +
+            "See logs for details.",
+        cause
+    )
+    class FailedScanException(cause: Throwable? = null) : CompactBlockProcessorException(
+        "Error while scanning blocks. This most likely means a problem with locally persisted data. " +
+            "See logs for details.",
+        cause
+    )
+    class FailedDeleteException(cause: Throwable? = null) : CompactBlockProcessorException(
+        "Error while deleting block files. This most likely means the data are not persisted correctly." +
+            " See logs for details.",
+        cause
     )
 
     open class EnhanceTransactionError(
