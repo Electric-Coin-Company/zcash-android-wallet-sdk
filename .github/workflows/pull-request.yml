@@ -199,7 +199,7 @@ jobs:
         timeout-minutes: 30
         uses: ./.github/actions/setup
       - name: Build and test
-        timeout-minutes: 25
+        timeout-minutes: 30
         run: |
           ./gradlew test
       - name: Collect Artifacts
@@ -292,7 +292,7 @@ jobs:
         timeout-minutes: 30
         uses: ./.github/actions/setup
       - name: Build and test
-        timeout-minutes: 25
+        timeout-minutes: 30
         env:
           ORG_GRADLE_PROJECT_ZCASH_EMULATOR_WTF_API_KEY: ${{ secrets.EMULATOR_WTF_API_KEY }}
         run: |
