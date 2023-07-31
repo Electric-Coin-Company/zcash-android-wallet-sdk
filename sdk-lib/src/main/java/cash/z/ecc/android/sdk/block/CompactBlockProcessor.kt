@@ -17,6 +17,7 @@ import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.TypesafeBackend
 import cash.z.ecc.android.sdk.internal.block.CompactBlockDownloader
 import cash.z.ecc.android.sdk.internal.ext.isNullOrEmpty
+import cash.z.ecc.android.sdk.internal.ext.isScanContinuityError
 import cash.z.ecc.android.sdk.internal.ext.length
 import cash.z.ecc.android.sdk.internal.ext.retryUpTo
 import cash.z.ecc.android.sdk.internal.ext.retryUpToAndContinue
@@ -250,7 +251,10 @@ class CompactBlockProcessor internal constructor(
                         delay(napTime)
                     }
                     is BlockProcessingResult.SyncFailure -> {
-                        Twig.error { "Failed while processing blocks at height: ${result.failedAtHeight}" }
+                        Twig.error {
+                            "Failed while processing blocks at height: ${result.failedAtHeight} with: " +
+                                "${result.error}"
+                        }
                         checkErrorResult(result.failedAtHeight)
                     }
                     is BlockProcessingResult.Success -> {
@@ -1334,10 +1338,18 @@ class CompactBlockProcessor internal constructor(
             }.fold(
                 onSuccess = { SyncingResult.ScanSuccess },
                 onFailure = {
-                    SyncingResult.ScanFailed(
-                        batch.range.start,
-                        CompactBlockProcessorException.FailedScanException(it)
-                    )
+                    // Check if the error is continuity type
+                    if (it.isScanContinuityError()) {
+                        SyncingResult.ContinuityError(
+                            failedAtHeight = batch.range.start - 1, // To ensure we later rewind below the failed height
+                            exception = CompactBlockProcessorException.FailedScanException(it)
+                        )
+                    } else {
+                        SyncingResult.ScanFailed(
+                            failedAtHeight = batch.range.start,
+                            exception = CompactBlockProcessorException.FailedScanException(it)
+                        )
+                    }
                 }
             )
         }
@@ -1587,11 +1599,11 @@ class CompactBlockProcessor internal constructor(
     }
 
     private suspend fun handleChainError(errorHeight: BlockHeight) {
-        // TODO [#683]: consider an error object containing hash information
+        // TODO [#683]: Consider an error object containing hash information
         // TODO [#683]: https://github.com/zcash/zcash-android-wallet-sdk/issues/683
         printValidationErrorInfo(errorHeight)
         determineLowerBound(errorHeight).let { lowerBound ->
-            Twig.debug { "handling chain error at $errorHeight by rewinding to block $lowerBound" }
+            Twig.debug { "Handling chain error at $errorHeight by rewinding to block $lowerBound" }
             onChainErrorListener?.invoke(errorHeight, lowerBound)
             rewindToNearestHeight(lowerBound, true)
         }
