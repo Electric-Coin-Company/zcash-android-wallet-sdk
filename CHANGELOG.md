@@ -1,7 +1,11 @@
 # Change Log
 
 ## Unreleased
+
+## 1.20.0-beta01
 - The SDK internally migrated from `BackendExt` rust backend extension functions to more type-safe `TypesafeBackend`.
+- `Synchronizer.getMemos()` now internally handles expected `RuntimeException` from the rust layer and transforms it 
+  in an empty string.
 
 ## 1.19.0-beta01
 ### Changed
