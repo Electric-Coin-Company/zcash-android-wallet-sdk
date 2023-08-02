@@ -11,6 +11,9 @@ data class ZcashNetwork(
     val saplingActivationHeight: BlockHeight,
     val orchardActivationHeight: BlockHeight
 ) {
+    fun isMainnet() = id == ID_MAINNET
+
+    fun isTestnet() = id == ID_TESTNET
 
     @Suppress("MagicNumber")
     companion object {
