@@ -29,6 +29,7 @@ import cash.z.ecc.android.sdk.internal.model.DbTransactionOverview
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.internal.model.ScanRange
 import cash.z.ecc.android.sdk.internal.model.SubtreeRoot
+import cash.z.ecc.android.sdk.internal.model.SuggestScanRangePriority
 import cash.z.ecc.android.sdk.internal.model.ext.from
 import cash.z.ecc.android.sdk.internal.model.ext.toBlockHeight
 import cash.z.ecc.android.sdk.internal.repository.DerivedDataRepository
@@ -234,6 +235,7 @@ class CompactBlockProcessor internal constructor(
                         delay(napTime)
                     }
                     BlockProcessingResult.NoBlocksToProcess -> {
+                        setState(State.Synced(_processorInfo.value.lastSyncRange))
                         // TODO [#1129]: Refactor work with lastSyncRange and lastSyncedHeight
                         // TODO [#1129]: https://github.com/zcash/zcash-android-wallet-sdk/issues/1129
                         val noWorkDone = _processorInfo.value.lastSyncRange?.isEmpty() ?: true
@@ -304,9 +306,10 @@ class CompactBlockProcessor internal constructor(
             Twig.warn { "Disconnection detected. Attempting to reconnect." }
             BlockProcessingResult.Reconnecting
         } else if (_processorInfo.value.lastSyncRange.isNullOrEmpty()) {
-            setState(State.Synced(_processorInfo.value.lastSyncRange))
+            Twig.info { "No more blocks to process." }
             BlockProcessingResult.NoBlocksToProcess
         } else {
+            setState(State.Syncing)
             val syncRange = if (BenchmarkingExt.isBenchmarking()) {
                 // We inject a benchmark test blocks range at this point to process only a restricted range of
                 // blocks for a more reliable benchmark results.
@@ -347,23 +350,6 @@ class CompactBlockProcessor internal constructor(
     internal sealed class VerifySuggestedScanRange {
         data class ShouldVerify(val scanRange: ScanRange) : VerifySuggestedScanRange()
         object NoRangeToVerify : VerifySuggestedScanRange()
-    }
-
-    @Suppress("MagicNumber")
-    internal enum class SuggestScanRangePriority(val priority: Long) {
-        Scanned(10),
-        Historic(20),
-        OpenAdjacent(30),
-        FoundNote(40),
-        ChainTip(50),
-        Verify(60);
-
-        companion object {
-            fun fromPriority(priority: Long): SuggestScanRangePriority {
-                Twig.verbose { "Current suggested scan range priority: $priority" }
-                return values().firstOrNull { it.priority == priority } ?: Scanned
-            }
-        }
     }
 
     // TODO [#1137]: Refactor processNewBlocksInNonLinearOrder
@@ -423,6 +409,8 @@ class CompactBlockProcessor internal constructor(
                 return BlockProcessingResult.SyncFailure(result.failedAtHeight, result.exception)
             }
         }
+
+        setState(State.Syncing)
 
         // Get the suggested scan ranges from the wallet database
         var suggestedRangesResult = suggestScanRanges(
@@ -583,8 +571,6 @@ class CompactBlockProcessor internal constructor(
         withDownload: Boolean,
         enhanceStartHeight: BlockHeight?
     ): BlockProcessingResult {
-        _state.value = State.Syncing
-
         // Syncing last blocks and enhancing transactions
         var syncingResult: SyncingResult = SyncingResult.AllSuccess
         runSyncingAndEnhancing(
@@ -969,15 +955,22 @@ class CompactBlockProcessor internal constructor(
                     // TODO [#1133]: DAG: Set the correct getSubtreeRoots inputs
                     // TODO [#1133]: https://github.com/zcash/zcash-android-wallet-sdk/issues/1133
                     startIndex = 0,
-                    maxEntries = 65536,
+                    maxEntries = if (network.isTestnet()) {
+                        65536
+                    } else {
+                        0
+                    },
                     shieldedProtocol = ShieldedProtocolEnum.SAPLING
                 ).onEach { response ->
                     when (response) {
                         is Response.Success -> {
-                            Twig.debug { "SubtreeRoots got successfully" }
+                            Twig.verbose {
+                                "SubtreeRoot got successfully: it's completingHeight: ${response.result
+                                    .completingBlockHeight}"
+                            }
                         }
                         is Response.Failure -> {
-                            Twig.error { "Fetching SubtreeRoots failed with: ${response.toThrowable()}" }
+                            Twig.error { "Fetching SubtreeRoot failed with: ${response.toThrowable()}" }
                             throw LightWalletException.GetSubtreeRootsException(
                                 response.code,
                                 response.description,
@@ -1102,9 +1095,7 @@ class CompactBlockProcessor internal constructor(
             return if (suggestedRangesResult.ranges.isEmpty()) {
                 VerifySuggestedScanRange.NoRangeToVerify
             } else {
-                val firstRangePriority = SuggestScanRangePriority.fromPriority(
-                    suggestedRangesResult.ranges[0].priority
-                )
+                val firstRangePriority = suggestedRangesResult.ranges[0].getSuggestScanRangePriority()
                 if (firstRangePriority == SuggestScanRangePriority.Verify) {
                     VerifySuggestedScanRange.ShouldVerify(suggestedRangesResult.ranges[0])
                 } else {
@@ -1116,7 +1107,11 @@ class CompactBlockProcessor internal constructor(
         @VisibleForTesting
         internal sealed class SyncingResult {
             object AllSuccess : SyncingResult()
-            data class DownloadSuccess(val downloadedBlocks: List<JniBlockMeta>?) : SyncingResult()
+            data class DownloadSuccess(val downloadedBlocks: List<JniBlockMeta>?) : SyncingResult() {
+                override fun toString(): String {
+                    return "DownloadSuccess with ${downloadedBlocks?.size ?: "none"} blocks"
+                }
+            }
             interface Failure {
                 val failedAtHeight: BlockHeight
                 val exception: CompactBlockProcessorException
@@ -1188,7 +1183,7 @@ class CompactBlockProcessor internal constructor(
                     )
                 )
             } else {
-                Twig.debug { "Syncing blocks in range $syncRange" }
+                Twig.info { "Syncing blocks in range $syncRange" }
 
                 val batches = getBatchedBlockList(syncRange, network)
 
