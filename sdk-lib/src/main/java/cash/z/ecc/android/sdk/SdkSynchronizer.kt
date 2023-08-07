@@ -314,18 +314,10 @@ class SdkSynchronizer private constructor(
     }
 
     override fun getMemos(transactionOverview: TransactionOverview): Flow<String> {
-        return storage.getNoteIds(transactionOverview.id).map {
+        return storage.getSaplingOutputIndices(transactionOverview.id).map {
             runCatching {
-                when (transactionOverview.isSentTransaction) {
-                    true -> {
-                        backend.getSentMemoAsUtf8(it)
-                    }
-                    false -> {
-                        backend.getReceivedMemoAsUtf8(it)
-                    }
-                }
+                backend.getMemoAsUtf8(transactionOverview.rawId.byteArray, it)
             }.onFailure {
-                // https://github.com/zcash/librustzcash/issues/834
                 Twig.error { "Failed to get memo with: $it" }
             }.onSuccess {
                 Twig.debug { "Transaction memo queried: $it" }

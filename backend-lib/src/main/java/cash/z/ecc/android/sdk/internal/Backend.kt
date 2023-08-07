@@ -4,8 +4,6 @@ import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.internal.model.JniScanRange
 import cash.z.ecc.android.sdk.internal.model.JniSubtreeRoot
 import cash.z.ecc.android.sdk.internal.model.JniUnifiedSpendingKey
-import java.lang.RuntimeException
-import kotlin.jvm.Throws
 
 /**
  * Contract defining the exposed capabilities of the Rust backend.
@@ -27,13 +25,13 @@ interface Backend {
         to: String,
         value: Long,
         memo: ByteArray? = byteArrayOf()
-    ): Long
+    ): ByteArray
 
     suspend fun shieldToAddress(
         account: Int,
         unifiedSpendingKey: ByteArray,
         memo: ByteArray? = byteArrayOf()
-    ): Long
+    ): ByteArray
 
     suspend fun decryptAndStoreTransaction(tx: ByteArray)
 
@@ -80,14 +78,7 @@ interface Backend {
     /**
      * @throws RuntimeException as a common indicator of the operation failure
      */
-    @Throws(RuntimeException::class)
-    suspend fun getReceivedMemoAsUtf8(idNote: Long): String?
-
-    /**
-     * @throws RuntimeException as a common indicator of the operation failure
-     */
-    @Throws(RuntimeException::class)
-    suspend fun getSentMemoAsUtf8(idNote: Long): String?
+    suspend fun getMemoAsUtf8(txId: ByteArray, outputIndex: Int): String?
 
     suspend fun getVerifiedBalance(account: Int): Long
 

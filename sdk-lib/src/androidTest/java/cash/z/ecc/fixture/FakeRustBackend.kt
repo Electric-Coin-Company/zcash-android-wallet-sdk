@@ -72,11 +72,11 @@ internal class FakeRustBackend(
         to: String,
         value: Long,
         memo: ByteArray?
-    ): Long {
+    ): ByteArray {
         TODO("Not yet implemented")
     }
 
-    override suspend fun shieldToAddress(account: Int, unifiedSpendingKey: ByteArray, memo: ByteArray?): Long {
+    override suspend fun shieldToAddress(account: Int, unifiedSpendingKey: ByteArray, memo: ByteArray?): ByteArray {
         TODO("Not yet implemented")
     }
 
@@ -133,10 +133,7 @@ internal class FakeRustBackend(
         TODO("Not yet implemented")
     }
 
-    override suspend fun getReceivedMemoAsUtf8(idNote: Long): String? =
-        error("Intentionally not implemented in mocked FakeRustBackend implementation.")
-
-    override suspend fun getSentMemoAsUtf8(idNote: Long): String? =
+    override suspend fun getMemoAsUtf8(txId: ByteArray, outputIndex: Int): String? =
         error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 
     override suspend fun getVerifiedBalance(account: Int): Long {

@@ -18,7 +18,10 @@ use tracing::{debug, error};
 use tracing_subscriber::prelude::*;
 use tracing_subscriber::reload;
 use zcash_address::{ToAddress, ZcashAddress};
-use zcash_client_backend::data_api::scanning::{ScanPriority, ScanRange};
+use zcash_client_backend::data_api::{
+    scanning::{ScanPriority, ScanRange},
+    NoteId, ShieldedProtocol,
+};
 use zcash_client_backend::keys::{DecodingError, UnifiedSpendingKey};
 use zcash_client_backend::{
     address::{RecipientAddress, UnifiedAddress},
@@ -40,7 +43,7 @@ use zcash_client_sqlite::chain::init::init_blockmeta_db;
 use zcash_client_sqlite::{
     chain::BlockMeta,
     wallet::init::{init_accounts_table, init_blocks_table, init_wallet_db, WalletMigrationError},
-    FsBlockDb, NoteId, WalletDb,
+    FsBlockDb, WalletDb,
 };
 use zcash_primitives::consensus::Network::{MainNetwork, TestNetwork};
 use zcash_primitives::{
@@ -52,7 +55,7 @@ use zcash_primitives::{
     sapling,
     transaction::{
         components::{amount::NonNegativeAmount, Amount, OutPoint, TxOut},
-        Transaction,
+        Transaction, TxId,
     },
     zip32::{AccountId, DiversifierIndex},
 };
@@ -859,47 +862,24 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_ge
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getReceivedMemoAsUtf8(
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getMemoAsUtf8(
     env: JNIEnv<'_>,
     _: JClass<'_>,
     db_data: JString<'_>,
-    id_note: jlong,
+    txid_bytes: jbyteArray,
+    output_index: jint,
     network_id: jint,
 ) -> jstring {
     let res = panic::catch_unwind(|| {
         let network = parse_network(network_id as u32)?;
         let db_data = wallet_db(&env, network, db_data)?;
 
-        let memo = (&db_data)
-            .get_memo(NoteId::ReceivedNoteId(id_note))
-            .map_err(|e| format_err!("An error occurred retrieving the memo, {}", e))
-            .and_then(|memo| match memo {
-                Some(Memo::Empty) => Ok("".to_string()),
-                Some(Memo::Text(memo)) => Ok(memo.into()),
-                None => Err(format_err!("Memo not available")),
-                _ => Err(format_err!("This memo does not contain UTF-8 text")),
-            })?;
-
-        let output = env.new_string(memo).expect("Couldn't create Java string!");
-        Ok(output.into_raw())
-    });
-    unwrap_exc_or(&env, res, ptr::null_mut())
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getSentMemoAsUtf8(
-    env: JNIEnv<'_>,
-    _: JClass<'_>,
-    db_data: JString<'_>,
-    id_note: jlong,
-    network_id: jint,
-) -> jstring {
-    let res = panic::catch_unwind(|| {
-        let network = parse_network(network_id as u32)?;
-        let db_data = wallet_db(&env, network, db_data)?;
+        let txid_bytes = env.convert_byte_array(txid_bytes)?;
+        let txid = TxId::read(&txid_bytes[..])?;
+        let output_index = u16::try_from(output_index)?;
 
         let memo = (&db_data)
-            .get_memo(NoteId::SentNoteId(id_note))
+            .get_memo(NoteId::new(txid, ShieldedProtocol::Sapling, output_index))
             .map_err(|e| format_err!("An error occurred retrieving the memo, {}", e))
             .and_then(|memo| match memo {
                 Some(Memo::Empty) => Ok("".to_string()),
@@ -1389,7 +1369,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_cr
     output_params: JString<'_>,
     network_id: jint,
     use_zip317_fees: jboolean,
-) -> jlong {
+) -> jbyteArray {
     let res = panic::catch_unwind(|| {
         let network = parse_network(network_id as u32)?;
         let mut db_data = wallet_db(&env, network, db_data)?;
@@ -1433,7 +1413,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_cr
         }])
         .map_err(|e| format_err!("Error creating transaction request: {:?}", e))?;
 
-        zip317_helper(
+        let txid = zip317_helper(
             (&mut db_data, prover, request),
             use_zip317_fees,
             |(wallet_db, prover, request), input_selector| {
@@ -1462,9 +1442,11 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_cr
                 )
                 .map_err(|e| format_err!("Error while creating transaction: {}", e))
             },
-        )
+        )?;
+
+        utils::rust_bytes_to_java(&env, txid.as_ref())
     });
-    unwrap_exc_or(&env, res, -1)
+    unwrap_exc_or(&env, res, ptr::null_mut())
 }
 
 #[no_mangle]
@@ -1478,7 +1460,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_sh
     output_params: JString<'_>,
     network_id: jint,
     use_zip317_fees: jboolean,
-) -> jlong {
+) -> jbyteArray {
     let res = panic::catch_unwind(|| {
         let network = parse_network(network_id as u32)?;
         let mut db_data = wallet_db(&env, network, db_data)?;
@@ -1521,7 +1503,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_sh
 
         let shielding_threshold = NonNegativeAmount::from_u64(100000).unwrap();
 
-        zip317_helper(
+        let txid = zip317_helper(
             (&mut db_data, prover),
             use_zip317_fees,
             |(wallet_db, prover), input_selector| {
@@ -1552,9 +1534,11 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_sh
                 )
                 .map_err(|e| format_err!("Error while shielding transaction: {}", e))
             },
-        )
+        )?;
+
+        utils::rust_bytes_to_java(&env, txid.as_ref())
     });
-    unwrap_exc_or(&env, res, -1)
+    unwrap_exc_or(&env, res, ptr::null_mut())
 }
 
 #[no_mangle]
