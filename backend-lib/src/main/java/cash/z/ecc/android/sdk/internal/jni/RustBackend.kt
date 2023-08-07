@@ -156,20 +156,12 @@ class RustBackend private constructor(
         return longValue
     }
 
-    override suspend fun getReceivedMemoAsUtf8(idNote: Long) =
+    override suspend fun getMemoAsUtf8(txId: ByteArray, outputIndex: Int) =
         withContext(SdkDispatchers.DATABASE_IO) {
-            getReceivedMemoAsUtf8(
+            getMemoAsUtf8(
                 dataDbFile.absolutePath,
-                idNote,
-                networkId = networkId
-            )
-        }
-
-    override suspend fun getSentMemoAsUtf8(idNote: Long) =
-        withContext(SdkDispatchers.DATABASE_IO) {
-            getSentMemoAsUtf8(
-                dataDbFile.absolutePath,
-                idNote,
+                txId,
+                outputIndex,
                 networkId = networkId
             )
         }
@@ -307,7 +299,7 @@ class RustBackend private constructor(
         to: String,
         value: Long,
         memo: ByteArray?
-    ): Long = withContext(SdkDispatchers.DATABASE_IO) {
+    ): ByteArray = withContext(SdkDispatchers.DATABASE_IO) {
         createToAddress(
             dataDbFile.absolutePath,
             unifiedSpendingKey,
@@ -325,7 +317,7 @@ class RustBackend private constructor(
         account: Int,
         unifiedSpendingKey: ByteArray,
         memo: ByteArray?
-    ): Long {
+    ): ByteArray {
         return withContext(SdkDispatchers.DATABASE_IO) {
             shieldToAddress(
                 dataDbFile.absolutePath,
@@ -481,16 +473,10 @@ class RustBackend private constructor(
         ): Long
 
         @JvmStatic
-        private external fun getReceivedMemoAsUtf8(
+        private external fun getMemoAsUtf8(
             dbDataPath: String,
-            idNote: Long,
-            networkId: Int
-        ): String?
-
-        @JvmStatic
-        private external fun getSentMemoAsUtf8(
-            dbDataPath: String,
-            dNote: Long,
+            txId: ByteArray,
+            outputIndex: Int,
             networkId: Int
         ): String?
 
@@ -578,7 +564,7 @@ class RustBackend private constructor(
             outputParamsPath: String,
             networkId: Int,
             useZip317Fees: Boolean
-        ): Long
+        ): ByteArray
 
         @JvmStatic
         @Suppress("LongParameterList")
@@ -590,7 +576,7 @@ class RustBackend private constructor(
             outputParamsPath: String,
             networkId: Int,
             useZip317Fees: Boolean
-        ): Long
+        ): ByteArray
 
         @JvmStatic
         private external fun branchIdForHeight(height: Long, networkId: Int): Long
