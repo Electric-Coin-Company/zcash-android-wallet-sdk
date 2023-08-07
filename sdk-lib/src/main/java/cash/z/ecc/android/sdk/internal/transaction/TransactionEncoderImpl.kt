@@ -7,6 +7,7 @@ import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.TypesafeBackend
 import cash.z.ecc.android.sdk.internal.model.EncodedTransaction
 import cash.z.ecc.android.sdk.internal.repository.DerivedDataRepository
+import cash.z.ecc.android.sdk.model.FirstClassByteArray
 import cash.z.ecc.android.sdk.model.TransactionRecipient
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.Zatoshi
@@ -47,7 +48,7 @@ internal class TransactionEncoderImpl(
         require(recipient is TransactionRecipient.Address)
 
         val transactionId = createSpend(usk, amount, recipient.addressValue, memo)
-        return repository.findEncodedTransactionById(transactionId)
+        return repository.findEncodedTransactionByTxId(transactionId)
             ?: throw TransactionEncoderException.TransactionNotFoundException(transactionId)
     }
 
@@ -59,7 +60,7 @@ internal class TransactionEncoderImpl(
         require(recipient is TransactionRecipient.Account)
 
         val transactionId = createShieldingSpend(usk, memo)
-        return repository.findEncodedTransactionById(transactionId)
+        return repository.findEncodedTransactionByTxId(transactionId)
             ?: throw TransactionEncoderException.TransactionNotFoundException(transactionId)
     }
 
@@ -121,7 +122,7 @@ internal class TransactionEncoderImpl(
         amount: Zatoshi,
         toAddress: String,
         memo: ByteArray? = byteArrayOf()
-    ): Long {
+    ): FirstClassByteArray {
         Twig.debug {
             "creating transaction to spend $amount zatoshi to" +
                 " ${toAddress.masked()} with memo $memo"
@@ -148,7 +149,7 @@ internal class TransactionEncoderImpl(
     private suspend fun createShieldingSpend(
         usk: UnifiedSpendingKey,
         memo: ByteArray? = byteArrayOf()
-    ): Long {
+    ): FirstClassByteArray {
         @Suppress("TooGenericExceptionCaught")
         return try {
             saplingParamTool.ensureParams(saplingParamTool.properties.paramsDirectory)

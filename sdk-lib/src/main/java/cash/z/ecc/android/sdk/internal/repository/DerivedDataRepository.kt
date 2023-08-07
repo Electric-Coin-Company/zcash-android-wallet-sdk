@@ -3,6 +3,7 @@ package cash.z.ecc.android.sdk.internal.repository
 import cash.z.ecc.android.sdk.internal.model.DbTransactionOverview
 import cash.z.ecc.android.sdk.internal.model.EncodedTransaction
 import cash.z.ecc.android.sdk.model.BlockHeight
+import cash.z.ecc.android.sdk.model.FirstClassByteArray
 import cash.z.ecc.android.sdk.model.TransactionRecipient
 import kotlinx.coroutines.flow.Flow
 
@@ -46,7 +47,7 @@ internal interface DerivedDataRepository {
      *
      * @return the transaction or null when it cannot be found.
      */
-    suspend fun findEncodedTransactionById(txId: Long): EncodedTransaction?
+    suspend fun findEncodedTransactionByTxId(txId: FirstClassByteArray): EncodedTransaction?
 
     /**
      * Find all the newly scanned transactions in the given range, including transactions (like
@@ -105,7 +106,7 @@ internal interface DerivedDataRepository {
 
     val allTransactions: Flow<List<DbTransactionOverview>>
 
-    fun getNoteIds(transactionId: Long): Flow<Long>
+    fun getSaplingOutputIndices(transactionId: Long): Flow<Int>
 
     fun getRecipients(transactionId: Long): Flow<TransactionRecipient>
 

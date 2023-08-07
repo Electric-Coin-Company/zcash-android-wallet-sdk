@@ -35,7 +35,7 @@ internal class TxOutputsView(
         )
     }
 
-    fun getNoteIds(transactionId: Long) =
+    fun getSaplingOutputIndices(transactionId: Long) =
         sqliteDatabase.queryAndMap(
             table = TxOutputsViewDefinition.VIEW_NAME,
             columns = PROJECTION_ID,
@@ -43,9 +43,9 @@ internal class TxOutputsView(
             selectionArgs = arrayOf(transactionId),
             orderBy = ORDER_BY,
             cursorParser = {
-                val idColumnIndex = it.getColumnIndex(TxOutputsViewDefinition.COLUMN_INTEGER_TRANSACTION_ID)
+                val idColumnIndex = it.getColumnIndex(TxOutputsViewDefinition.COLUMN_INTEGER_OUTPUT_INDEX)
 
-                it.getLong(idColumnIndex)
+                it.getInt(idColumnIndex)
             }
         )
 
