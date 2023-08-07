@@ -6,6 +6,7 @@ import cash.z.ecc.android.sdk.internal.model.ScanRange
 import cash.z.ecc.android.sdk.internal.model.SubtreeRoot
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
+import cash.z.ecc.android.sdk.model.FirstClassByteArray
 import cash.z.ecc.android.sdk.model.UnifiedFullViewingKey
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.WalletBalance
@@ -34,12 +35,12 @@ internal interface TypesafeBackend {
         to: String,
         value: Long,
         memo: ByteArray? = byteArrayOf()
-    ): Long
+    ): FirstClassByteArray
 
     suspend fun shieldToAddress(
         usk: UnifiedSpendingKey,
         memo: ByteArray? = byteArrayOf()
-    ): Long
+    ): FirstClassByteArray
 
     suspend fun getCurrentAddress(account: Account): String
 
@@ -73,9 +74,7 @@ internal interface TypesafeBackend {
         height: BlockHeight
     )
 
-    suspend fun getSentMemoAsUtf8(idNote: Long): String?
-
-    suspend fun getReceivedMemoAsUtf8(idNote: Long): String?
+    suspend fun getMemoAsUtf8(txId: ByteArray, outputIndex: Int): String?
 
     suspend fun initDataDb(seed: ByteArray?): Int
 

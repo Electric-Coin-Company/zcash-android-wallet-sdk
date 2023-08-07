@@ -7,6 +7,7 @@ import cash.z.ecc.android.sdk.internal.model.ScanRange
 import cash.z.ecc.android.sdk.internal.model.SubtreeRoot
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
+import cash.z.ecc.android.sdk.model.FirstClassByteArray
 import cash.z.ecc.android.sdk.model.UnifiedFullViewingKey
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.WalletBalance
@@ -53,21 +54,25 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
         to: String,
         value: Long,
         memo: ByteArray?
-    ): Long = backend.createToAddress(
-        usk.account.value,
-        usk.copyBytes(),
-        to,
-        value,
-        memo
+    ): FirstClassByteArray = FirstClassByteArray(
+        backend.createToAddress(
+            usk.account.value,
+            usk.copyBytes(),
+            to,
+            value,
+            memo
+        )
     )
 
     override suspend fun shieldToAddress(
         usk: UnifiedSpendingKey,
         memo: ByteArray?
-    ): Long = backend.shieldToAddress(
-        usk.account.value,
-        usk.copyBytes(),
-        memo
+    ): FirstClassByteArray = FirstClassByteArray(
+        backend.shieldToAddress(
+            usk.account.value,
+            usk.copyBytes(),
+            memo
+        )
     )
 
     override suspend fun getCurrentAddress(account: Account): String {
@@ -152,9 +157,8 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
         )
     }
 
-    override suspend fun getSentMemoAsUtf8(idNote: Long) = backend.getSentMemoAsUtf8(idNote)
-
-    override suspend fun getReceivedMemoAsUtf8(idNote: Long): String? = backend.getReceivedMemoAsUtf8(idNote)
+    override suspend fun getMemoAsUtf8(txId: ByteArray, outputIndex: Int): String? =
+        backend.getMemoAsUtf8(txId, outputIndex)
 
     override suspend fun initDataDb(seed: ByteArray?): Int = backend.initDataDb(seed)
 
