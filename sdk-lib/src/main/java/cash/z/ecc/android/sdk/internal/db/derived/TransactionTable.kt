@@ -45,7 +45,7 @@ internal class TransactionTable(
         private val SELECTION_TRANSACTION_ID_AND_RAW_NOT_NULL = String.format(
             Locale.ROOT,
             "%s = ? AND %s IS NOT NULL", // $NON-NLS
-            TransactionTableDefinition.COLUMN_INTEGER_ID,
+            TransactionTableDefinition.COLUMN_BLOB_TRANSACTION_ID,
             TransactionTableDefinition.COLUMN_BLOB_RAW
         )
     }
@@ -66,18 +66,16 @@ internal class TransactionTable(
             cursorParser = { it.getLong(0) }
         ).first()
 
-    suspend fun findEncodedTransactionById(id: Long): EncodedTransaction? {
+    suspend fun findEncodedTransactionByTxId(txId: FirstClassByteArray): EncodedTransaction? {
         return sqliteDatabase.queryAndMap(
             table = TransactionTableDefinition.TABLE_NAME,
             columns = PROJECTION_ENCODED_TRANSACTION,
             selection = SELECTION_TRANSACTION_ID_AND_RAW_NOT_NULL,
-            selectionArgs = arrayOf(id)
+            selectionArgs = arrayOf(txId)
         ) {
-            val txIdIndex = it.getColumnIndexOrThrow(TransactionTableDefinition.COLUMN_BLOB_TRANSACTION_ID)
             val rawIndex = it.getColumnIndexOrThrow(TransactionTableDefinition.COLUMN_BLOB_RAW)
             val heightIndex = it.getColumnIndexOrThrow(TransactionTableDefinition.COLUMN_INTEGER_EXPIRY_HEIGHT)
 
-            val txid = it.getBlob(txIdIndex)
             val raw = it.getBlob(rawIndex)
             val expiryHeight = if (it.isNull(heightIndex)) {
                 null
@@ -86,7 +84,7 @@ internal class TransactionTable(
             }
 
             EncodedTransaction(
-                FirstClassByteArray(txid),
+                txId,
                 FirstClassByteArray(raw),
                 expiryHeight
             )

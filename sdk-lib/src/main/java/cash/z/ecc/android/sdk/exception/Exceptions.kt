@@ -3,6 +3,7 @@ package cash.z.ecc.android.sdk.exception
 import cash.z.ecc.android.sdk.internal.SaplingParameters
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
 import cash.z.ecc.android.sdk.model.BlockHeight
+import cash.z.ecc.android.sdk.model.FirstClassByteArray
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 
@@ -283,7 +284,7 @@ sealed class TransactionEncoderException(
     object MissingParamsException : TransactionEncoderException(
         "Cannot send funds due to missing spend or output params and attempting to download them failed."
     )
-    class TransactionNotFoundException(transactionId: Long) : TransactionEncoderException(
+    class TransactionNotFoundException(transactionId: FirstClassByteArray) : TransactionEncoderException(
         "Unable to find transactionId $transactionId in the repository. This means the wallet created a transaction " +
             "and then returned a row ID that does not actually exist. This is a scenario where the wallet should " +
             "have thrown an exception but failed to do so."

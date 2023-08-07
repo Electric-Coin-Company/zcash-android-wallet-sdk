@@ -1,8 +1,10 @@
+use core::slice;
+
 use jni::{
     descriptors::Desc,
     errors::Result as JNIResult,
     objects::{JClass, JObject, JString},
-    sys::{jobjectArray, jsize},
+    sys::{jbyteArray, jobjectArray, jsize},
     JNIEnv,
 };
 
@@ -14,6 +16,17 @@ pub(crate) fn java_string_to_rust(env: &JNIEnv<'_>, jstring: JString<'_>) -> Str
     env.get_string(jstring)
         .expect("Couldn't get Java string!")
         .into()
+}
+
+pub(crate) fn rust_bytes_to_java(
+    env: &JNIEnv<'_>,
+    data: &[u8],
+) -> Result<jbyteArray, failure::Error> {
+    // SAFETY: jbyte (i8) has the same size and alignment as u8.
+    let buf = unsafe { slice::from_raw_parts(data.as_ptr().cast(), data.len()) };
+    let jret = env.new_byte_array(data.len() as jsize)?;
+    env.set_byte_array_region(jret, 0, buf)?;
+    Ok(jret)
 }
 
 pub(crate) fn rust_vec_to_java<'a, T, U, V, F, G>(
