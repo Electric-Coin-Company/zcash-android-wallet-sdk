@@ -109,6 +109,10 @@ class SdkSynchronizer private constructor(
         private val mutex = Mutex()
 
         /**
+         * Convenience method to create new SdkSynchronizer instance.
+         *
+         * @return Synchronizer instance as CloseableSynchronizer
+         *
          * @throws IllegalStateException If multiple instances of synchronizer with the same network+alias are
          * active at the same time.  Call `close` to finish one synchronizer before starting another one with the same
          * network+alias.
@@ -708,12 +712,14 @@ internal object DefaultSynchronizerFactory {
         backend: TypesafeBackend,
         downloader: CompactBlockDownloader,
         repository: DerivedDataRepository,
-        birthdayHeight: BlockHeight
+        birthdayHeight: BlockHeight,
+        syncAlgorithm: CompactBlockProcessor.SyncAlgorithm
     ): CompactBlockProcessor = CompactBlockProcessor(
-        downloader,
-        repository,
-        backend,
-        birthdayHeight
+        downloader = downloader,
+        repository = repository,
+        backend = backend,
+        minimumHeight = birthdayHeight,
+        syncAlgorithm = syncAlgorithm
     )
 }
 
