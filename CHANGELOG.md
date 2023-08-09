@@ -1,6 +1,14 @@
 # Change Log
 
 ## Unreleased
+- `CompactBlockProcessor` now processes compact blocks from the lightwalletd server in a non-linear order. This 
+  feature shortens the time after which a wallet's spendable balance can be used.
+
+### Added
+- New `syncAlgorithm` parameter of `Synchronizer.new()` and `WalletCoordinator()` to select preferred 
+  `CompactBlockProcessor` block synchronizing algorithm. It can be of `CompactBlockProcessor.SyncAlgorithm.LINEAR` 
+  or `NON_LINEAR`. The LINEAR type is automatically used if the client app does not specify otherwise. Please note 
+  that the NON_LINEAR type is currently unstable and still under development.
 
 ### Changed
 - Updated dependencies:
