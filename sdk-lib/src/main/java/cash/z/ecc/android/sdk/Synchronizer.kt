@@ -398,20 +398,28 @@ interface Synchronizer {
          * Primary method that SDK clients will use to construct a synchronizer.
          *
          * @param zcashNetwork the network to use.
+         *
          * @param alias A string used to segregate multiple wallets in the filesystem.  This implies the string
          * should not contain characters unsuitable for the platform's filesystem.  The default value is
          * generally used unless an SDK client needs to support multiple wallets.
+         *
          * @param lightWalletEndpoint Server endpoint.  See [cash.z.ecc.android.sdk.model.defaultForNetwork]. If a
          * client wishes to change the server endpoint, the active synchronizer will need to be stopped and a new
          * instance created with a new value.
+         *
          * @param seed the wallet's seed phrase. This is required the first time a new wallet is set up. For
          * subsequent calls, seed is only needed if [InitializerException.SeedRequired] is thrown.
+         *
          * @param birthday Block height representing the "birthday" of the wallet.  When creating a new wallet, see
          * [BlockHeight.ofLatestCheckpoint].  When restoring an existing wallet, use block height that was first used
          * to create the wallet.  If that value is unknown, null is acceptable but will result in longer
          * sync times.  After sync completes, the birthday can be determined from [Synchronizer.latestBirthdayHeight].
+         *
+         * @param syncAlgorithm The CompactBlockProcess's type of block syncing algorithm
+         *
          * @throws InitializerException.SeedRequired Indicates clients need to call this method again, providing the
          * seed bytes.
+         *
          * @throws IllegalStateException If multiple instances of synchronizer with the same network+alias are
          * active at the same time.  Call `close` to finish one synchronizer before starting another one with the same
          * network+alias.
@@ -427,7 +435,8 @@ interface Synchronizer {
             alias: String = ZcashSdk.DEFAULT_ALIAS,
             lightWalletEndpoint: LightWalletEndpoint,
             seed: ByteArray?,
-            birthday: BlockHeight?
+            birthday: BlockHeight?,
+            syncAlgorithm: CompactBlockProcessor.SyncAlgorithm = CompactBlockProcessor.SyncAlgorithm.LINEAR
         ): CloseableSynchronizer {
             val applicationContext = context.applicationContext
 
@@ -482,20 +491,20 @@ interface Synchronizer {
                 service
             )
             val processor = DefaultSynchronizerFactory.defaultProcessor(
-                backend,
-                downloader,
-                repository,
-                birthday
-                    ?: zcashNetwork.saplingActivationHeight
+                backend = backend,
+                downloader = downloader,
+                repository = repository,
+                birthdayHeight = birthday ?: zcashNetwork.saplingActivationHeight,
+                syncAlgorithm = syncAlgorithm
             )
 
             return SdkSynchronizer.new(
-                zcashNetwork,
-                alias,
-                repository,
-                txManager,
-                processor,
-                backend
+                zcashNetwork = zcashNetwork,
+                alias = alias,
+                repository = repository,
+                txManager = txManager,
+                processor = processor,
+                backend = backend
             )
         }
 
@@ -513,9 +522,10 @@ interface Synchronizer {
             alias: String = ZcashSdk.DEFAULT_ALIAS,
             lightWalletEndpoint: LightWalletEndpoint,
             seed: ByteArray?,
-            birthday: BlockHeight?
+            birthday: BlockHeight?,
+            syncAlgorithm: CompactBlockProcessor.SyncAlgorithm = CompactBlockProcessor.SyncAlgorithm.LINEAR
         ): CloseableSynchronizer = runBlocking {
-            new(context, zcashNetwork, alias, lightWalletEndpoint, seed, birthday)
+            new(context, zcashNetwork, alias, lightWalletEndpoint, seed, birthday, syncAlgorithm)
         }
 
         /**

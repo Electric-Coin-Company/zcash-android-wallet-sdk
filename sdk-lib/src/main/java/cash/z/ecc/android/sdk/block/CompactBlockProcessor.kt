@@ -85,6 +85,8 @@ import kotlin.time.toDuration
  * reorgs as a backstop to make sure we do not rewind beyond sapling activation. It also is factored
  * in when considering initial range to download. In most cases, this should be the birthday height
  * of the current wallet--the height before which we do not need to scan for transactions.
+ *
+ * @property syncAlgorithm The type of block syncing algorithm which should be preferably used
  */
 @OpenForTesting
 @Suppress("TooManyFunctions", "LargeClass")
@@ -92,7 +94,8 @@ class CompactBlockProcessor internal constructor(
     val downloader: CompactBlockDownloader,
     private val repository: DerivedDataRepository,
     private val backend: TypesafeBackend,
-    minimumHeight: BlockHeight
+    minimumHeight: BlockHeight,
+    private val syncAlgorithm: SyncAlgorithm
 ) {
     /**
      * Callback for any non-trivial errors that occur while processing compact blocks.
@@ -196,8 +199,12 @@ class CompactBlockProcessor internal constructor(
         )
 
         // Download note commitment tree data from lightwalletd to decide if we communicate with linear
-        // or non-linear node
-        val subTreeRootList = getSubtreeRoots(downloader, network)
+        // or non-linear node. It depends on the syncAlgorithm property on the first place.
+        val subTreeRootList = if (syncAlgorithm == SyncAlgorithm.LINEAR) {
+            emptyList()
+        } else {
+            getSubtreeRoots(downloader, network)
+        }
         Twig.info { "Fetched SubTreeRoot list size: ${subTreeRootList?.size ?: 0}" }
 
         Twig.debug { "Setup verified. Processor starting..." }
@@ -205,7 +212,10 @@ class CompactBlockProcessor internal constructor(
         // Using do/while makes it easier to execute exactly one loop which helps with testing this processor quickly
         // (because you can start and then immediately set isStopped=true to always get precisely one loop)
         do {
-            retryWithBackoff(::onProcessorError, maxDelayMillis = MAX_BACKOFF_INTERVAL) {
+            retryWithBackoff(
+                onErrorListener = ::onProcessorError,
+                maxDelayMillis = MAX_BACKOFF_INTERVAL
+            ) {
                 val result = processingMutex.withLockLogged("processNewBlocks") {
                     if (subTreeRootList.isNullOrEmpty()) {
                         processNewBlocksInLinearOrder()
@@ -366,7 +376,7 @@ class CompactBlockProcessor internal constructor(
         firstUnenhancedHeight: BlockHeight?
     ): BlockProcessingResult {
         Twig.debug {
-            "Beginning to process new blocks with DAG approach (with roots: $subTreeRootList, and lower " +
+            "Beginning to process new blocks with Non-linear approach (with roots: $subTreeRootList, and lower " +
                 "bound: $lastValidHeight)..."
         }
 
@@ -952,7 +962,7 @@ class CompactBlockProcessor internal constructor(
 
             retryUpToAndContinue(GET_SUBTREE_ROOTS_RETRIES) {
                 subTreeRootList = downloader.getSubtreeRoots(
-                    // TODO [#1133]: DAG: Set the correct getSubtreeRoots inputs
+                    // TODO [#1133]: SbS: Set the correct getSubtreeRoots inputs
                     // TODO [#1133]: https://github.com/zcash/zcash-android-wallet-sdk/issues/1133
                     startIndex = 0,
                     maxEntries = if (network.isTestnet()) {
@@ -2042,6 +2052,11 @@ class CompactBlockProcessor internal constructor(
         val errorHeight: BlockHeight,
         val hash: String?
     )
+
+    enum class SyncAlgorithm {
+        LINEAR,
+        NON_LINEAR
+    }
 
     //
     // Helper Extensions
