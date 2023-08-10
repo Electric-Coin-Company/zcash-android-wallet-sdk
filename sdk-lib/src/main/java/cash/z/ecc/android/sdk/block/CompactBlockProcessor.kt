@@ -200,12 +200,12 @@ class CompactBlockProcessor internal constructor(
 
         // Download note commitment tree data from lightwalletd to decide if we communicate with linear
         // or non-linear node. It depends on the syncAlgorithm property on the first place.
-        val subTreeRootList = if (syncAlgorithm == SyncAlgorithm.LINEAR) {
-            emptyList()
+        var subTreeRootResult = if (syncAlgorithm == SyncAlgorithm.LINEAR) {
+            GetSubtreeRootsResult.UseLinear
         } else {
             getSubtreeRoots(downloader, network)
         }
-        Twig.info { "Fetched SubTreeRoot list size: ${subTreeRootList?.size ?: 0}" }
+        Twig.info { "Fetched SubTreeRoot result: $subTreeRootResult, with preferred sync algorithm: $syncAlgorithm" }
 
         Twig.debug { "Setup verified. Processor starting..." }
 
@@ -217,18 +217,32 @@ class CompactBlockProcessor internal constructor(
                 maxDelayMillis = MAX_BACKOFF_INTERVAL
             ) {
                 val result = processingMutex.withLockLogged("processNewBlocks") {
-                    if (subTreeRootList.isNullOrEmpty()) {
-                        processNewBlocksInLinearOrder()
-                    } else {
-                        processNewBlocksInNonLinearOrder(
-                            backend = backend,
-                            downloader = downloader,
-                            repository = repository,
-                            network = network,
-                            subTreeRootList = subTreeRootList,
-                            lastValidHeight = lowerBoundHeight,
-                            firstUnenhancedHeight = _processorInfo.value.firstUnenhancedHeight
-                        )
+                    when (subTreeRootResult) {
+                        is GetSubtreeRootsResult.UseNonLinear -> {
+                            processNewBlocksInNonLinearOrder(
+                                backend = backend,
+                                downloader = downloader,
+                                repository = repository,
+                                network = network,
+                                subTreeRootList = (subTreeRootResult as GetSubtreeRootsResult.UseNonLinear)
+                                    .subTreeRootList,
+                                lastValidHeight = lowerBoundHeight,
+                                firstUnenhancedHeight = _processorInfo.value.firstUnenhancedHeight
+                            )
+                        }
+                        GetSubtreeRootsResult.UseLinear -> {
+                            // Forced by syncAlgorithm parameter or caused by an empty response result
+                            processNewBlocksInLinearOrder()
+                        }
+                        is GetSubtreeRootsResult.OtherFailure -> {
+                            // Server possible replied with some kind of unsupported error
+                            processNewBlocksInLinearOrder()
+                        }
+                        GetSubtreeRootsResult.FailureConnection -> {
+                            // SubtreeRoot fetching retry
+                            subTreeRootResult = getSubtreeRoots(downloader, network)
+                            BlockProcessingResult.Reconnecting
+                        }
                     }
                 }
                 // immediately process again after failures in order to download new blocks right away
@@ -345,6 +359,13 @@ class CompactBlockProcessor internal constructor(
     internal sealed class SuggestScanRangesResult {
         data class Success(val ranges: List<ScanRange>) : SuggestScanRangesResult()
         data class Failure(val failedAtHeight: BlockHeight, val exception: Throwable) : SuggestScanRangesResult()
+    }
+
+    internal sealed class GetSubtreeRootsResult {
+        data class UseNonLinear(val subTreeRootList: List<SubtreeRoot>) : GetSubtreeRootsResult()
+        object UseLinear : GetSubtreeRootsResult()
+        object FailureConnection : GetSubtreeRootsResult()
+        data class OtherFailure(val exception: Throwable) : GetSubtreeRootsResult()
     }
 
     internal sealed class PutSaplingSubtreeRootsResult {
@@ -947,23 +968,21 @@ class CompactBlockProcessor internal constructor(
 
         /**
          * This operation downloads note commitment tree data from the lightwalletd server to decide if we communicate
-         * with linear or non-linear node
+         * with node which provides linear or non-linear synchronization mode.
          *
-         * @return List of SubtreeRoot objects in case of the operation success, null otherwise
+         * @return GetSubtreeRootsResult as a wrapper for the lightwalletd response result
          */
         @VisibleForTesting
         internal suspend fun getSubtreeRoots(
             downloader: CompactBlockDownloader,
             network: ZcashNetwork
-        ): List<SubtreeRoot>? {
+        ): GetSubtreeRootsResult {
             Twig.debug { "Fetching SubtreeRoots..." }
 
-            var subTreeRootList: List<SubtreeRoot>? = null
+            var result: GetSubtreeRootsResult = GetSubtreeRootsResult.UseLinear
 
             retryUpToAndContinue(GET_SUBTREE_ROOTS_RETRIES) {
-                subTreeRootList = downloader.getSubtreeRoots(
-                    // TODO [#1133]: SbS: Set the correct getSubtreeRoots inputs
-                    // TODO [#1133]: https://github.com/zcash/zcash-android-wallet-sdk/issues/1133
+                downloader.getSubtreeRoots(
                     startIndex = 0,
                     maxEntries = if (network.isTestnet()) {
                         65536
@@ -980,12 +999,22 @@ class CompactBlockProcessor internal constructor(
                             }
                         }
                         is Response.Failure -> {
-                            Twig.error { "Fetching SubtreeRoot failed with: ${response.toThrowable()}" }
-                            throw LightWalletException.GetSubtreeRootsException(
+                            val error = LightWalletException.GetSubtreeRootsException(
                                 response.code,
                                 response.description,
                                 response.toThrowable()
                             )
+                            if (response is Response.Failure.Server.Unavailable) {
+                                Twig.error {
+                                    "Fetching SubtreeRoot failed due to server communication problem with " +
+                                        "failure: ${response.toThrowable()}"
+                                }
+                                result = GetSubtreeRootsResult.FailureConnection
+                            } else {
+                                Twig.error { "Fetching SubtreeRoot failed with failure: ${response.toThrowable()}" }
+                                result = GetSubtreeRootsResult.OtherFailure(error)
+                            }
+                            throw error
                         }
                     }
                 }
@@ -996,10 +1025,15 @@ class CompactBlockProcessor internal constructor(
                     .toList()
                     .map {
                         SubtreeRoot.new(it, network)
+                    }.let {
+                        result = if (it.isEmpty()) {
+                            GetSubtreeRootsResult.UseLinear
+                        } else {
+                            GetSubtreeRootsResult.UseNonLinear(it)
+                        }
                     }
             }
-
-            return subTreeRootList
+            return result
         }
 
         /**
