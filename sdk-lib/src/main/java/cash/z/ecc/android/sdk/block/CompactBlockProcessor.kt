@@ -325,7 +325,7 @@ class CompactBlockProcessor internal constructor(
     private suspend fun processNewBlocksInLinearOrder(): BlockProcessingResult {
         Twig.debug { "Beginning to process new blocks with Linear approach (with lower bound: $lowerBoundHeight)..." }
 
-        return if (!updateRanges(null)) {
+        return if (!updateRange(null)) {
             Twig.warn { "Disconnection detected. Attempting to reconnect." }
             BlockProcessingResult.Reconnecting
         } else if (_processorInfo.value.overallSyncRange.isNullOrEmpty()) {
@@ -443,16 +443,14 @@ class CompactBlockProcessor internal constructor(
             }
         }
 
-        setState(State.Syncing)
-
         // Get the suggested scan ranges from the wallet database
         var suggestedRangesResult = suggestScanRanges(
             backend,
             lastValidHeight
         )
-        when (suggestedRangesResult) {
+        val updateRangeResult = when (suggestedRangesResult) {
             is SuggestScanRangesResult.Success -> {
-                updateRanges(suggestedRangesResult.ranges)
+                updateRange(suggestedRangesResult.ranges)
             }
             is SuggestScanRangesResult.Failure -> {
                 Twig.error {
@@ -465,6 +463,16 @@ class CompactBlockProcessor internal constructor(
                 )
             }
         }
+
+        if (!updateRangeResult) {
+            Twig.warn { "Disconnection detected. Attempting to reconnect." }
+            return BlockProcessingResult.Reconnecting
+        } else if (_processorInfo.value.overallSyncRange.isNullOrEmpty()) {
+            Twig.info { "No more blocks to process." }
+            return BlockProcessingResult.NoBlocksToProcess
+        }
+
+        setState(State.Syncing)
 
         // Parse and process ranges. If it recognizes a range with Priority.Verify, it runs the verification part.
         var verifyRangeResult = shouldVerifySuggestedScanRanges(suggestedRangesResult)
@@ -663,7 +671,7 @@ class CompactBlockProcessor internal constructor(
      * @return true when the update succeeds.
      */
     @OptIn(ExperimentalStdlibApi::class)
-    private suspend fun updateRanges(ranges: List<ScanRange>?): Boolean {
+    private suspend fun updateRange(ranges: List<ScanRange>?): Boolean {
         // This fetches the latest height each time this method is called, which can be very inefficient
         // when downloading all of the blocks from the server
         val networkBlockHeight = fetchLatestBlockHeight(downloader, network) ?: return false
@@ -699,7 +707,7 @@ class CompactBlockProcessor internal constructor(
         // when the SPEND_BEFORE_SYNC will use the one obtained from the rust layer
         val syncRange = if (ranges == null) {
             lastSyncedHeight + 1..networkBlockHeight
-        } else {
+        } else if (ranges.isNotEmpty()) {
             var resultRange = ranges[0].range.start..ranges[0].range.endExclusive
             ranges.forEach { nextRange ->
                 if (nextRange.range.start < resultRange.start) {
@@ -710,6 +718,10 @@ class CompactBlockProcessor internal constructor(
                 }
             }
             resultRange
+        } else {
+            // Empty ranges most likely means that the SbS is done and the Rust layer replied with an empty suggested
+            // ranges
+            null
         }
 
         setProcessorInfo(
@@ -2065,12 +2077,4 @@ private fun LightWalletEndpointInfoUnsafe.matchingNetwork(network: String): Bool
         }
     }
     return chainName.toId() == network.toId()
-}
-
-private fun max(a: BlockHeight?, b: BlockHeight) = if (null == a) {
-    b
-} else if (a.value > b.value) {
-    a
-} else {
-    b
 }
