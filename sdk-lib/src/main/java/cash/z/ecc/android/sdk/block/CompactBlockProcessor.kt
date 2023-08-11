@@ -66,7 +66,6 @@ import java.util.Locale
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.max
 import kotlin.math.min
-import kotlin.math.roundToInt
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 import kotlin.time.DurationUnit
@@ -139,7 +138,7 @@ class CompactBlockProcessor internal constructor(
 
     private val _state: MutableStateFlow<State> = MutableStateFlow(State.Initialized)
     private val _progress = MutableStateFlow(PercentDecimal.ZERO_PERCENT)
-    private val _processorInfo = MutableStateFlow(ProcessorInfo(null, null, null, null))
+    private val _processorInfo = MutableStateFlow(ProcessorInfo(null, null, null))
     private val _networkHeight = MutableStateFlow<BlockHeight?>(null)
     private val processingMutex = Mutex()
 
@@ -259,10 +258,10 @@ class CompactBlockProcessor internal constructor(
                         delay(napTime)
                     }
                     BlockProcessingResult.NoBlocksToProcess -> {
-                        setState(State.Synced(_processorInfo.value.lastSyncRange))
+                        setState(State.Synced(_processorInfo.value.overallSyncRange))
                         // TODO [#1129]: Refactor work with lastSyncRange and lastSyncedHeight
                         // TODO [#1129]: https://github.com/zcash/zcash-android-wallet-sdk/issues/1129
-                        val noWorkDone = _processorInfo.value.lastSyncRange?.isEmpty() ?: true
+                        val noWorkDone = _processorInfo.value.overallSyncRange?.isEmpty() ?: true
                         val summary = if (noWorkDone) {
                             "Nothing to process: no new blocks to sync"
                         } else {
@@ -326,10 +325,10 @@ class CompactBlockProcessor internal constructor(
     private suspend fun processNewBlocksInLinearOrder(): BlockProcessingResult {
         Twig.debug { "Beginning to process new blocks with Linear approach (with lower bound: $lowerBoundHeight)..." }
 
-        return if (!updateRanges()) {
+        return if (!updateRanges(null)) {
             Twig.warn { "Disconnection detected. Attempting to reconnect." }
             BlockProcessingResult.Reconnecting
-        } else if (_processorInfo.value.lastSyncRange.isNullOrEmpty()) {
+        } else if (_processorInfo.value.overallSyncRange.isNullOrEmpty()) {
             Twig.info { "No more blocks to process." }
             BlockProcessingResult.NoBlocksToProcess
         } else {
@@ -345,7 +344,7 @@ class CompactBlockProcessor internal constructor(
                 }
                 benchmarkBlockRange
             } else {
-                _processorInfo.value.lastSyncRange!!
+                _processorInfo.value.overallSyncRange!!
             }
 
             syncBlocksAndEnhanceTransactions(
@@ -452,7 +451,9 @@ class CompactBlockProcessor internal constructor(
             lastValidHeight
         )
         when (suggestedRangesResult) {
-            is SuggestScanRangesResult.Success -> { /* Lets continue to the next step */ }
+            is SuggestScanRangesResult.Success -> {
+                updateRanges(suggestedRangesResult.ranges)
+            }
             is SuggestScanRangesResult.Failure -> {
                 Twig.error {
                     "Process suggested scan ranges failure: " +
@@ -490,8 +491,7 @@ class CompactBlockProcessor internal constructor(
                 withDownload = true,
                 enhanceStartHeight = firstUnenhancedHeight
             ).collect { syncProgress ->
-                _progress.value = syncProgress.percentage
-                updateProgress(lastSyncedHeight = syncProgress.lastSyncedHeight)
+                setProgress(syncProgress.percentage)
 
                 when (syncProgress.resultState) {
                     SyncingResult.UpdateBirthday -> {
@@ -568,8 +568,7 @@ class CompactBlockProcessor internal constructor(
                 withDownload = true,
                 enhanceStartHeight = firstUnenhancedHeight
             ).collect { syncProgress ->
-                _progress.value = syncProgress.percentage
-                updateProgress(lastSyncedHeight = syncProgress.lastSyncedHeight)
+                setProgress(syncProgress.percentage)
 
                 when (syncProgress.resultState) {
                     SyncingResult.UpdateBirthday -> {
@@ -616,8 +615,7 @@ class CompactBlockProcessor internal constructor(
             withDownload = withDownload,
             enhanceStartHeight = enhanceStartHeight
         ).collect { syncProgress ->
-            _progress.value = syncProgress.percentage
-            updateProgress(lastSyncedHeight = syncProgress.lastSyncedHeight)
+            setProgress(syncProgress.percentage)
 
             when (syncProgress.resultState) {
                 SyncingResult.UpdateBirthday -> {
@@ -655,11 +653,17 @@ class CompactBlockProcessor internal constructor(
 
     /**
      * Gets the latest range info and then uses that initialInfo to update (and transmit)
-     * the scan/download ranges that require processing.
+     * the info that require processing. This function is universal and works for both [SyncAlgorithm.LINEAR] and
+     * [SyncAlgorithm.SPEND_BEFORE_SYNC] algorithms.
+     *
+     * @param ranges The ranges which we obtained from the rust layer to proceed in case of
+     * [SyncAlgorithm.SPEND_BEFORE_SYNC] algorithm, or null in case of [SyncAlgorithm.LINEAR] algorithm, as it will
+     * be computed.
      *
      * @return true when the update succeeds.
      */
-    private suspend fun updateRanges(): Boolean {
+    @OptIn(ExperimentalStdlibApi::class)
+    private suspend fun updateRanges(ranges: List<ScanRange>?): Boolean {
         // This fetches the latest height each time this method is called, which can be very inefficient
         // when downloading all of the blocks from the server
         val networkBlockHeight = fetchLatestBlockHeight(downloader, network) ?: return false
@@ -691,10 +695,26 @@ class CompactBlockProcessor internal constructor(
         // Get the first un-enhanced transaction from the repository
         val firstUnenhancedHeight = getFirstUnenhancedHeight(repository)
 
-        updateProgress(
+        // The sync range computation depends on the used sync algorithm. The LINEAR one will compute it by itself,
+        // when the SPEND_BEFORE_SYNC will use the one obtained from the rust layer
+        val syncRange = if (ranges == null) {
+            lastSyncedHeight + 1..networkBlockHeight
+        } else {
+            var resultRange = ranges[0].range.start..ranges[0].range.endExclusive
+            ranges.forEach { nextRange ->
+                if (nextRange.range.start < resultRange.start) {
+                    resultRange = nextRange.range.start..resultRange.endInclusive
+                }
+                if (nextRange.range.endExclusive > resultRange.endInclusive) {
+                    resultRange = resultRange.start..nextRange.range.endExclusive
+                }
+            }
+            resultRange
+        }
+
+        setProcessorInfo(
             networkBlockHeight = networkBlockHeight,
-            lastSyncedHeight = lastSyncedHeight,
-            lastSyncRange = lastSyncedHeight + 1..networkBlockHeight,
+            overallSyncRange = syncRange,
             firstUnenhancedHeight = firstUnenhancedHeight
         )
 
@@ -1678,28 +1698,40 @@ class CompactBlockProcessor internal constructor(
      *
      * @param networkBlockHeight the latest block available to lightwalletd that may or may not be
      * downloaded by this wallet yet.
-     * @param lastSyncedHeight the height up to which the wallet last synced. This determines
-     * where the next sync will begin.
-     * @param lastSyncRange the inclusive range to sync. This represents what we most recently
+     * @param overallSyncRange the inclusive range to sync. This represents what we most recently
      * wanted to sync. In most cases, it will be an invalid range because we'd like to sync blocks
      * that we don't yet have.
      * @param firstUnenhancedHeight the height at which the enhancing should start. Use null if you have no
      * preferences. The height will be calculated automatically for you to continue where it previously ended, or
      * it'll be set to the sync start height in case of the first sync attempt.
      */
-    private fun updateProgress(
+    private fun setProcessorInfo(
         networkBlockHeight: BlockHeight? = _processorInfo.value.networkBlockHeight,
-        lastSyncedHeight: BlockHeight? = _processorInfo.value.lastSyncedHeight,
-        lastSyncRange: ClosedRange<BlockHeight>? = _processorInfo.value.lastSyncRange,
+        overallSyncRange: ClosedRange<BlockHeight>? = _processorInfo.value.overallSyncRange,
         firstUnenhancedHeight: BlockHeight? = _processorInfo.value.firstUnenhancedHeight,
     ) {
         _networkHeight.value = networkBlockHeight
         _processorInfo.value = ProcessorInfo(
             networkBlockHeight = networkBlockHeight,
-            lastSyncedHeight = lastSyncedHeight,
-            lastSyncRange = lastSyncRange,
+            overallSyncRange = overallSyncRange,
             firstUnenhancedHeight = firstUnenhancedHeight
         )
+    }
+
+    /**
+     * Emit an instance of progress.
+     *
+     * @param progress the block syncing progress of type [PercentDecimal] in the range of [0, 1]
+     */
+    private fun setProgress(progress: PercentDecimal = _progress.value) {
+        _progress.value = progress
+    }
+
+    /**
+     * Transmits the given state for this processor.
+     */
+    private suspend fun setState(newState: State) {
+        _state.value = newState
     }
 
     private suspend fun handleChainError(errorHeight: BlockHeight) {
@@ -1732,7 +1764,7 @@ class CompactBlockProcessor internal constructor(
      * Rewind back at least two weeks worth of blocks.
      */
     suspend fun quickRewind() {
-        val height = max(_processorInfo.value.lastSyncedHeight, repository.lastScannedHeight())
+        val height = repository.lastScannedHeight()
         val blocksPer14Days = 14.days.inWholeMilliseconds / ZcashSdk.BLOCK_INTERVAL_MILLIS.toInt()
         val twoWeeksBack = BlockHeight.new(
             network,
@@ -1751,24 +1783,16 @@ class CompactBlockProcessor internal constructor(
         alsoClearBlockCache: Boolean = false
     ) {
         processingMutex.withLockLogged("rewindToHeight") {
-            val lastSyncedHeight = _processorInfo.value.lastSyncedHeight
             val lastLocalBlock = repository.lastScannedHeight()
             val targetHeight = getNearestRewindHeight(height)
 
             Twig.debug {
-                "Rewinding from $lastSyncedHeight to requested height: $height using target height: " +
-                    "$targetHeight with last local block: $lastLocalBlock"
+                "Rewinding to requested height: $height using target height: $targetHeight with last local block:" +
+                    " $lastLocalBlock"
             }
 
-            if (null == lastSyncedHeight && targetHeight < lastLocalBlock) {
+            if (targetHeight < lastLocalBlock) {
                 Twig.debug { "Rewinding because targetHeight is less than lastLocalBlock." }
-                runCatching {
-                    backend.rewindToHeight(targetHeight)
-                }.onFailure {
-                    Twig.error { "Rewinding to the targetHeight $targetHeight failed with $it" }
-                }
-            } else if (null != lastSyncedHeight && targetHeight < lastSyncedHeight) {
-                Twig.debug { "Rewinding because targetHeight is less than lastSyncedHeight." }
                 runCatching {
                     backend.rewindToHeight(targetHeight)
                 }.onFailure {
@@ -1776,13 +1800,10 @@ class CompactBlockProcessor internal constructor(
                 }
             } else {
                 Twig.debug {
-                    "Not rewinding dataDb because the last synced height is $lastSyncedHeight and the" +
-                        " last local block is $lastLocalBlock both of which are less than the target height of " +
-                        "$targetHeight"
+                    "Not rewinding dataDb because last local block is $lastLocalBlock which is less than the target " +
+                        "height of $targetHeight"
                 }
             }
-
-            val currentNetworkBlockHeight = _processorInfo.value.networkBlockHeight
 
             if (alsoClearBlockCache) {
                 Twig.debug {
@@ -1790,50 +1811,11 @@ class CompactBlockProcessor internal constructor(
                         "in the next scheduled scan"
                 }
                 downloader.rewindToHeight(targetHeight)
-                // communicate that the wallet is no longer synced because it might remain this way for 20+ second
-                // because we only download on 20s time boundaries so we can't trigger any immediate action
-                setState(State.Syncing)
-                if (null == currentNetworkBlockHeight) {
-                    updateProgress(
-                        lastSyncedHeight = targetHeight,
-                        lastSyncRange = null
-                    )
-                } else {
-                    updateProgress(
-                        lastSyncedHeight = targetHeight,
-                        lastSyncRange = (targetHeight + 1)..currentNetworkBlockHeight
-                    )
-                }
-                _progress.value = PercentDecimal.ZERO_PERCENT
-            } else {
-                if (null == currentNetworkBlockHeight) {
-                    updateProgress(
-                        lastSyncedHeight = targetHeight,
-                        lastSyncRange = null
-                    )
-                } else {
-                    updateProgress(
-                        lastSyncedHeight = targetHeight,
-                        lastSyncRange = (targetHeight + 1)..currentNetworkBlockHeight
-                    )
-                }
-
-                _progress.value = PercentDecimal.ZERO_PERCENT
-
-                if (null != lastSyncedHeight) {
-                    val range = (targetHeight + 1)..lastSyncedHeight
-                    Twig.debug {
-                        "We kept the cache blocks in place so we don't need to wait for the next scheduled download " +
-                            "to rescan. Instead we will rescan blocks ${range.start}..${range.endInclusive}"
-                    }
-
-                    syncBlocksAndEnhanceTransactions(
-                        syncRange = range,
-                        withDownload = false,
-                        enhanceStartHeight = null
-                    )
-                }
             }
+
+            setState(newState = State.Syncing)
+            setProgress(progress = PercentDecimal.ZERO_PERCENT)
+            setProcessorInfo(overallSyncRange = null)
         }
     }
 
@@ -1948,13 +1930,6 @@ class CompactBlockProcessor internal constructor(
         backend.getDownloadedUtxoBalance(address)
 
     /**
-     * Transmits the given state for this processor.
-     */
-    private suspend fun setState(newState: State) {
-        _state.value = newState
-    }
-
-    /**
      * Sealed class representing the various states of this processor.
      */
     sealed class State {
@@ -2035,55 +2010,17 @@ class CompactBlockProcessor internal constructor(
      *
      * @param networkBlockHeight the latest block available to lightwalletd that may or may not be
      * downloaded by this wallet yet.
-     * @param lastSyncedHeight the height up to which the wallet last synced. This determines
-     * where the next sync will begin.
-     * @param lastSyncRange inclusive range to sync. Meaning, if the range is 10..10,
+     * @param overallSyncRange inclusive range to sync. Meaning, if the range is 10..10,
      * then we will download exactly block 10. If the range is 11..10, then we want to download
      * block 11 but can't.
      * @param firstUnenhancedHeight the height in which the enhancing should start, or null in case of no previous
      * transaction enhancing done yet
      */
-    // TODO [#1129]: Refactor work with lastSyncRange and lastSyncedHeight
-    // TODO [#1129]: https://github.com/zcash/zcash-android-wallet-sdk/issues/1129
     data class ProcessorInfo(
         val networkBlockHeight: BlockHeight?,
-        val lastSyncedHeight: BlockHeight?,
-        val lastSyncRange: ClosedRange<BlockHeight>?,
+        val overallSyncRange: ClosedRange<BlockHeight>?,
         val firstUnenhancedHeight: BlockHeight?
-    ) {
-        /**
-         * Determines whether this instance is actively syncing compact blocks.
-         *
-         * @return true when there are more than zero blocks remaining to sync.
-         */
-        val isSyncing: Boolean
-            get() =
-                lastSyncedHeight != null &&
-                    lastSyncRange != null &&
-                    !lastSyncRange.isEmpty() &&
-                    lastSyncedHeight < lastSyncRange.endInclusive
-
-        /**
-         * The amount of sync progress from 0 to 100.
-         */
-        @Suppress("MagicNumber")
-        val syncProgress
-            get() = when {
-                lastSyncedHeight == null -> 0
-                lastSyncRange == null -> 100
-                lastSyncedHeight >= lastSyncRange.endInclusive -> 100
-                else -> {
-                    // when lastSyncedHeight == lastSyncedRange.first, we have synced one block, thus the offsets
-                    val blocksSynced =
-                        (lastSyncedHeight.value - lastSyncRange.start.value + 1).coerceAtLeast(0)
-                    // we sync the range inclusively so 100..100 is one block to sync, thus the offset
-                    val numberOfBlocks =
-                        lastSyncRange.endInclusive.value - lastSyncRange.start.value + 1
-                    // take the percentage then convert and round
-                    ((blocksSynced.toFloat() / numberOfBlocks) * 100.0f).coerceAtMost(100.0f).roundToInt()
-                }
-            }
-    }
+    )
 
     data class ValidationErrorInfo(
         val errorHeight: BlockHeight,

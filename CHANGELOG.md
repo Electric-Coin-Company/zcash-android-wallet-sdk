@@ -10,6 +10,14 @@
   or `SPEND_BEFORE_SYNC`. The LINEAR type is automatically used if the client app does not specify otherwise. Please 
   note that the SPEND_BEFORE_SYNC type is currently unstable and still under development.
 
+### Removed
+- `CompactBlockProcessor.ProcessorInfo.lastSyncHeight` which the SDK is no longer able to provide because of the new
+  **SpendBeforeSync** synchronization algorithm adoption. Use `CompactBlockProcessor.ProcessorInfo.overallSyncRange` 
+  which contains all blocks in case of `SpendBeforeSync` synchronization algorithm. No internal change was made in 
+  case of older Linear synchronization algorithm.
+- `CompactBlockProcessor.ProcessorInfo.isSyncing`. Use `Synchronizer.status` instead.
+- `CompactBlockProcessor.ProcessorInfo.syncProgress`. Use `Synchronizer.progress` instead.
+
 ## 1.20.0-beta01
 - The SDK internally migrated from `BackendExt` rust backend extension functions to more type-safe `TypesafeBackend`.
 - `Synchronizer.getMemos()` now internally handles expected `RuntimeException` from the rust layer and transforms it 
