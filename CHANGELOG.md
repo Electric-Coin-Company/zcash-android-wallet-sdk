@@ -17,6 +17,8 @@
   case of older Linear synchronization algorithm.
 - `CompactBlockProcessor.ProcessorInfo.isSyncing`. Use `Synchronizer.status` instead.
 - `CompactBlockProcessor.ProcessorInfo.syncProgress`. Use `Synchronizer.progress` instead.
+- `alsoClearBlockCache` parameter from rewind functions of `Synchronizer` and `CompactBlockProcessor` as it take no 
+  affect on the current rewind functionality result.
 
 ## 1.20.0-beta01
 - The SDK internally migrated from `BackendExt` rust backend extension functions to more type-safe `TypesafeBackend`.

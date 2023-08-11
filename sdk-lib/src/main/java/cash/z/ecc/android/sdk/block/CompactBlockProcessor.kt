@@ -1753,7 +1753,7 @@ class CompactBlockProcessor internal constructor(
         determineLowerBound(errorHeight).let { lowerBound ->
             Twig.debug { "Handling chain error at $errorHeight by rewinding to block $lowerBound" }
             onChainErrorListener?.invoke(errorHeight, lowerBound)
-            rewindToNearestHeight(lowerBound, true)
+            rewindToNearestHeight(lowerBound)
         }
     }
 
@@ -1782,18 +1782,11 @@ class CompactBlockProcessor internal constructor(
             network,
             (height.value - blocksPer14Days).coerceAtLeast(lowerBoundHeight.value)
         )
-        rewindToNearestHeight(twoWeeksBack, false)
+        rewindToNearestHeight(twoWeeksBack)
     }
 
-    /**
-     * @param alsoClearBlockCache when true, also clear the block cache which forces a redownload of
-     * blocks. Otherwise, the cached blocks will be used in the rescan, which in most cases, is fine.
-     */
     @Suppress("LongMethod")
-    suspend fun rewindToNearestHeight(
-        height: BlockHeight,
-        alsoClearBlockCache: Boolean = false
-    ) {
+    suspend fun rewindToNearestHeight(height: BlockHeight) {
         processingMutex.withLockLogged("rewindToHeight") {
             val lastLocalBlock = repository.lastScannedHeight()
             val targetHeight = getNearestRewindHeight(height)
@@ -1807,27 +1800,21 @@ class CompactBlockProcessor internal constructor(
                 Twig.debug { "Rewinding because targetHeight is less than lastLocalBlock." }
                 runCatching {
                     backend.rewindToHeight(targetHeight)
+                    downloader.rewindToHeight(targetHeight)
                 }.onFailure {
                     Twig.error { "Rewinding to the targetHeight $targetHeight failed with $it" }
+                }.onSuccess {
+                    Twig.info { "Rewind to $targetHeight was successful." }
+                    setState(newState = State.Syncing)
+                    setProgress(progress = PercentDecimal.ZERO_PERCENT)
+                    setProcessorInfo(overallSyncRange = null)
                 }
             } else {
-                Twig.debug {
+                Twig.info {
                     "Not rewinding dataDb because last local block is $lastLocalBlock which is less than the target " +
                         "height of $targetHeight"
                 }
             }
-
-            if (alsoClearBlockCache) {
-                Twig.debug {
-                    "Also clearing block cache back to $targetHeight. These rewound blocks will download " +
-                        "in the next scheduled scan"
-                }
-                downloader.rewindToHeight(targetHeight)
-            }
-
-            setState(newState = State.Syncing)
-            setProgress(progress = PercentDecimal.ZERO_PERCENT)
-            setProcessorInfo(overallSyncRange = null)
         }
     }
 
@@ -2045,6 +2032,7 @@ class CompactBlockProcessor internal constructor(
     enum class SyncAlgorithm {
         // Linear sync processes the un-synced blocks in a linear way up to the chain tip
         LINEAR,
+
         // Spend before Sync processes the un-synced blocks non-linearly, in prioritised ranges relevant to the stored
         // wallet. Note: This feature is in development (alpha version) so use carefully.
         SPEND_BEFORE_SYNC

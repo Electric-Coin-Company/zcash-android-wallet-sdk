@@ -132,7 +132,7 @@ class WalletCoordinator(
         synchronizerMutex.withLock {
             synchronizer.value?.let {
                 it.latestBirthdayHeight?.let { height ->
-                    it.rewindToNearestHeight(height, true)
+                    it.rewindToNearestHeight(height)
                     return true
                 }
             }
