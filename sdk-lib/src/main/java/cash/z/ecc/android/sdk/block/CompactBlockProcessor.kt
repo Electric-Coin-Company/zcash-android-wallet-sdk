@@ -199,7 +199,7 @@ class CompactBlockProcessor internal constructor(
         )
 
         // Download note commitment tree data from lightwalletd to decide if we communicate with linear
-        // or non-linear node. It depends on the syncAlgorithm property on the first place.
+        // or spend-before-sync node. It depends on the syncAlgorithm property on the first place.
         var subTreeRootResult = if (syncAlgorithm == SyncAlgorithm.LINEAR) {
             GetSubtreeRootsResult.UseLinear
         } else {
@@ -219,7 +219,7 @@ class CompactBlockProcessor internal constructor(
                 val result = processingMutex.withLockLogged("processNewBlocks") {
                     when (subTreeRootResult) {
                         is GetSubtreeRootsResult.UseNonLinear -> {
-                            processNewBlocksInNonLinearOrder(
+                            processNewBlocksInSbSOrder(
                                 backend = backend,
                                 downloader = downloader,
                                 repository = repository,
@@ -383,11 +383,14 @@ class CompactBlockProcessor internal constructor(
         object NoRangeToVerify : VerifySuggestedScanRange()
     }
 
-    // TODO [#1137]: Refactor processNewBlocksInNonLinearOrder
+    // TODO [#1137]: Refactor processNewBlocksInSbSOrder
     // TODO [#1137]: https://github.com/zcash/zcash-android-wallet-sdk/issues/1137
+    /**
+     * This function process the missing blocks in non-linear order with Spend-before-Sync algorithm.
+     */
     @OptIn(ExperimentalStdlibApi::class)
     @Suppress("ReturnCount", "LongMethod", "CyclomaticComplexMethod", "LongParameterList")
-    private suspend fun processNewBlocksInNonLinearOrder(
+    private suspend fun processNewBlocksInSbSOrder(
         backend: TypesafeBackend,
         downloader: CompactBlockDownloader,
         repository: DerivedDataRepository,
@@ -397,7 +400,7 @@ class CompactBlockProcessor internal constructor(
         firstUnenhancedHeight: BlockHeight?
     ): BlockProcessingResult {
         Twig.debug {
-            "Beginning to process new blocks with Non-linear approach (with roots: $subTreeRootList, and lower " +
+            "Beginning to process new blocks with Spend-before-Sync approach (with roots: $subTreeRootList, and lower" +
                 "bound: $lastValidHeight)..."
         }
 
@@ -968,7 +971,7 @@ class CompactBlockProcessor internal constructor(
 
         /**
          * This operation downloads note commitment tree data from the lightwalletd server to decide if we communicate
-         * with node which provides linear or non-linear synchronization mode.
+         * with linear or spend-before-sync node
          *
          * @return GetSubtreeRootsResult as a wrapper for the lightwalletd response result
          */
@@ -2087,9 +2090,15 @@ class CompactBlockProcessor internal constructor(
         val hash: String?
     )
 
+    /**
+     * Algorithm used to sync the SDK with the blockchain
+     */
     enum class SyncAlgorithm {
+        // Linear sync processes the un-synced blocks in a linear way up to the chain tip
         LINEAR,
-        NON_LINEAR
+        // Spend before Sync processes the un-synced blocks non-linearly, in prioritised ranges relevant to the stored
+        // wallet. Note: This feature is in development (alpha version) so use carefully.
+        SPEND_BEFORE_SYNC
     }
 
     //

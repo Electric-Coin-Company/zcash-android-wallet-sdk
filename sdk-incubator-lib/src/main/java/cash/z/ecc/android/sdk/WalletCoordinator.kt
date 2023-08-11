@@ -47,7 +47,7 @@ import java.util.UUID
 class WalletCoordinator(
     context: Context,
     val persistableWallet: Flow<PersistableWallet?>,
-    val syncAlgorithm: CompactBlockProcessor.SyncAlgorithm = CompactBlockProcessor.SyncAlgorithm.NON_LINEAR
+    val syncAlgorithm: CompactBlockProcessor.SyncAlgorithm = CompactBlockProcessor.SyncAlgorithm.SPEND_BEFORE_SYNC
 ) {
 
     private val applicationContext = context.applicationContext
