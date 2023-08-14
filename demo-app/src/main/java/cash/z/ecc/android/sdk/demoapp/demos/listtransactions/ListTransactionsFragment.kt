@@ -9,7 +9,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import cash.z.ecc.android.sdk.Synchronizer
-import cash.z.ecc.android.sdk.block.CompactBlockProcessor
 import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
 import cash.z.ecc.android.sdk.demoapp.R
 import cash.z.ecc.android.sdk.demoapp.databinding.FragmentListTransactionsBinding
@@ -60,12 +59,6 @@ class ListTransactionsFragment : BaseDemoFragment<FragmentListTransactionsBindin
                 launch {
                     sharedViewModel.synchronizerFlow
                         .filterNotNull()
-                        .flatMapLatest { it.processorInfo }
-                        .collect { onProcessorInfoUpdated(it) }
-                }
-                launch {
-                    sharedViewModel.synchronizerFlow
-                        .filterNotNull()
                         .flatMapLatest { it.transactions }
                         .collect { onTransactionsUpdated(it) }
                 }
@@ -76,10 +69,6 @@ class ListTransactionsFragment : BaseDemoFragment<FragmentListTransactionsBindin
     //
     // Change listeners
     //
-
-    private fun onProcessorInfoUpdated(info: CompactBlockProcessor.ProcessorInfo) {
-        if (info.isSyncing) binding.textInfo.text = "Syncing blocks...${info.syncProgress}%"
-    }
 
     @Suppress("MagicNumber")
     private fun onProgress(percent: PercentDecimal) {

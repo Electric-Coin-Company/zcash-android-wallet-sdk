@@ -106,7 +106,7 @@ class TestWallet(
     }
 
     suspend fun rewindToHeight(height: BlockHeight): TestWallet {
-        synchronizer.rewindToNearestHeight(height, false)
+        synchronizer.rewindToNearestHeight(height)
         return this
     }
 

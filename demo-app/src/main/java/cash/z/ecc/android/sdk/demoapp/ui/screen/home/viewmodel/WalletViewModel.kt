@@ -234,6 +234,18 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
     fun resetSdk() {
         walletCoordinator.resetSdk()
     }
+
+    /**
+     * This rewinds to the nearest height, i.e. 14 days back from the current chain tip.
+     */
+    fun rewind() {
+        val synchronizer = synchronizer.value
+        if (null != synchronizer) {
+            viewModelScope.launch {
+                synchronizer.quickRewind()
+            }
+        }
+    }
 }
 
 /**

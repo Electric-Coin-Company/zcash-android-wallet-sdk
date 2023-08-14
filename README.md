@@ -55,10 +55,10 @@ Note that we aim for the main branch of this repository to be stable and releasa
 1. Android Studio will warn about the Gradle checksum.  This is a [known issue](https://github.com/gradle/gradle/issues/9361) and can be safely ignored.
 
 ## Unstable Features
-### Non-linear compact blocks synchronization
-- CompactBlockProcessor now processes compact blocks from the lightwalletd server in a **non-linear** order. This
+### Spend-before-Sync compact blocks synchronization algorithm
+- CompactBlockProcessor now processes compact blocks from the lightwalletd server in a **spend-before-sync** order. This
 feature shortens the time after which a wallet's spendable balance can be used.
 - Use the new `syncAlgorithm` parameter of `Synchronizer.new()` or `WalletCoordinator()` to select preferred
   `CompactBlockProcessor` block synchronizing algorithm. It can be of `CompactBlockProcessor.SyncAlgorithm.LINEAR`
-  or `NON_LINEAR`. The LINEAR type is automatically used if the client app does not specify otherwise. Please note
-  that the NON_LINEAR type is currently unstable and still under development.
+  or `SPEND_BEFORE_SYNC`. The LINEAR type is automatically used if the client app does not specify otherwise. Please 
+  note that the SPEND_BEFORE_SYNC type is currently unstable and still under development.
