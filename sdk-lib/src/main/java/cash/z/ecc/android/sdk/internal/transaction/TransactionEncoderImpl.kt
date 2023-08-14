@@ -125,7 +125,7 @@ internal class TransactionEncoderImpl(
     ): FirstClassByteArray {
         Twig.debug {
             "creating transaction to spend $amount zatoshi to" +
-                " ${toAddress.masked()} with memo $memo"
+                " ${toAddress.masked()} with memo: ${memo?.contentToString()}"
         }
 
         @Suppress("TooGenericExceptionCaught")

@@ -43,7 +43,8 @@ private fun ComposablePreviewHome() {
             goAddressDetails = {},
             goTransactions = {},
             goTestnetFaucet = {},
-            resetSdk = {}
+            resetSdk = {},
+            rewind = {},
         )
     }
 }
@@ -59,9 +60,15 @@ fun Home(
     goTransactions: () -> Unit,
     goTestnetFaucet: () -> Unit,
     resetSdk: () -> Unit,
+    rewind: () -> Unit,
 ) {
     Scaffold(topBar = {
-        HomeTopAppBar(isTestnet, goTestnetFaucet, resetSdk)
+        HomeTopAppBar(
+            isTestnet,
+            goTestnetFaucet,
+            resetSdk,
+            rewind
+        )
     }) { paddingValues ->
         HomeMainContent(
             paddingValues = paddingValues,
@@ -79,7 +86,8 @@ fun Home(
 private fun HomeTopAppBar(
     isTestnet: Boolean,
     goTestnetFaucet: () -> Unit,
-    resetSdk: () -> Unit
+    resetSdk: () -> Unit,
+    rewind: () -> Unit
 ) {
     TopAppBar(
         title = { Text(text = stringResource(id = R.string.app_name)) },
@@ -87,7 +95,8 @@ private fun HomeTopAppBar(
             DebugMenu(
                 isTestnet,
                 goTestnetFaucet = goTestnetFaucet,
-                resetSdk = resetSdk
+                resetSdk = resetSdk,
+                rewind = rewind,
             )
         }
     )
@@ -97,7 +106,8 @@ private fun HomeTopAppBar(
 private fun DebugMenu(
     isTestnet: Boolean,
     goTestnetFaucet: () -> Unit,
-    resetSdk: () -> Unit
+    resetSdk: () -> Unit,
+    rewind: () -> Unit
 ) {
     var expanded by rememberSaveable { mutableStateOf(false) }
     IconButton(onClick = { expanded = true }) {
@@ -117,6 +127,14 @@ private fun DebugMenu(
                 }
             )
         }
+
+        DropdownMenuItem(
+            text = { Text("Quick Rewind") },
+            onClick = {
+                rewind()
+                expanded = false
+            }
+        )
         DropdownMenuItem(
             text = { Text("Reset SDK") },
             onClick = {
