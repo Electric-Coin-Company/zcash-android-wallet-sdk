@@ -62,7 +62,8 @@ internal fun ComposeActivity.Navigation() {
                         }
                     },
                     goTransactions = { navController.navigateJustOnce(TRANSACTIONS) },
-                    resetSdk = { walletViewModel.resetSdk() }
+                    resetSdk = { walletViewModel.resetSdk() },
+                    rewind = { walletViewModel.rewind() }
                 )
             }
         }
