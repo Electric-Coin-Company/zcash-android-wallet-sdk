@@ -9,7 +9,6 @@ import androidx.lifecycle.repeatOnLifecycle
 import cash.z.ecc.android.bip39.Mnemonics
 import cash.z.ecc.android.bip39.toSeed
 import cash.z.ecc.android.sdk.Synchronizer
-import cash.z.ecc.android.sdk.block.CompactBlockProcessor
 import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
 import cash.z.ecc.android.sdk.demoapp.databinding.FragmentGetBalanceBinding
 import cash.z.ecc.android.sdk.demoapp.ext.requireApplicationContext
@@ -88,12 +87,6 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
                         .filterNotNull()
                         .flatMapLatest { it.progress }
                         .collect { onProgress(it) }
-                }
-                launch {
-                    sharedViewModel.synchronizerFlow
-                        .filterNotNull()
-                        .flatMapLatest { it.processorInfo }
-                        .collect { onProcessorInfoUpdated(it) }
                 }
                 launch {
                     sharedViewModel.synchronizerFlow
@@ -178,10 +171,6 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
         if (percent.isLessThanHundredPercent()) {
             binding.textStatus.text = "Syncing blocks...${percent.toPercentage()}%"
         }
-    }
-
-    private fun onProcessorInfoUpdated(info: CompactBlockProcessor.ProcessorInfo) {
-        if (info.isSyncing) binding.textStatus.text = "Syncing blocks...${info.syncProgress}%"
     }
 }
 
