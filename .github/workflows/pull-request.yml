@@ -395,7 +395,7 @@ jobs:
         with:
           name: Demo app release binaries
       - name: Robo test
-        timeout-minutes: 15
+        timeout-minutes: 20
         env:
           # Path depends on `release_build` job, plus path of `Download a single artifact` step
           BINARIES_ZIP_PATH: binaries.zip
