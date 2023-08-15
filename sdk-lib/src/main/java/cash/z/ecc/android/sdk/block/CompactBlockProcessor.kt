@@ -22,7 +22,6 @@ import cash.z.ecc.android.sdk.internal.ext.length
 import cash.z.ecc.android.sdk.internal.ext.retryUpTo
 import cash.z.ecc.android.sdk.internal.ext.retryUpToAndContinue
 import cash.z.ecc.android.sdk.internal.ext.retryWithBackoff
-import cash.z.ecc.android.sdk.internal.ext.toClosedRange
 import cash.z.ecc.android.sdk.internal.ext.toHexReversed
 import cash.z.ecc.android.sdk.internal.model.BlockBatch
 import cash.z.ecc.android.sdk.internal.model.DbTransactionOverview
@@ -497,7 +496,7 @@ class CompactBlockProcessor internal constructor(
                 downloader = downloader,
                 repository = repository,
                 network = network,
-                syncRange = verifyRangeResult.scanRange.range.toClosedRange(),
+                syncRange = verifyRangeResult.scanRange.range,
                 withDownload = true,
                 enhanceStartHeight = firstUnenhancedHeight,
                 lastBatchOrder = lastBatchOrder
@@ -576,7 +575,7 @@ class CompactBlockProcessor internal constructor(
                 downloader = downloader,
                 repository = repository,
                 network = network,
-                syncRange = scanRange.range.toClosedRange(),
+                syncRange = scanRange.range,
                 withDownload = true,
                 enhanceStartHeight = firstUnenhancedHeight,
                 lastBatchOrder = lastBatchOrder
@@ -717,13 +716,13 @@ class CompactBlockProcessor internal constructor(
         val syncRange = if (ranges == null) {
             lastSyncedHeight + 1..networkBlockHeight
         } else if (ranges.isNotEmpty()) {
-            var resultRange = ranges[0].range.start..ranges[0].range.endExclusive
+            var resultRange = ranges[0].range.start..ranges[0].range.endInclusive
             ranges.forEach { nextRange ->
                 if (nextRange.range.start < resultRange.start) {
                     resultRange = nextRange.range.start..resultRange.endInclusive
                 }
-                if (nextRange.range.endExclusive > resultRange.endInclusive) {
-                    resultRange = resultRange.start..nextRange.range.endExclusive
+                if (nextRange.range.endInclusive > resultRange.endInclusive) {
+                    resultRange = resultRange.start..nextRange.range.endInclusive
                 }
             }
             resultRange
@@ -1144,7 +1143,7 @@ class CompactBlockProcessor internal constructor(
         }
 
         /**
-         * Get the suggested scan ranges from the wallet database.
+         * Get the suggested scan ranges from the wallet database via the rust layer.
          *
          * @param backend Typesafe Rust backend
          * @param lastValidHeight The height to which rewind in case of any trouble
