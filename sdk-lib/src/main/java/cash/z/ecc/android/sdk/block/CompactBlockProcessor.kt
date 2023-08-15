@@ -216,13 +216,13 @@ class CompactBlockProcessor internal constructor(
             ) {
                 val result = processingMutex.withLockLogged("processNewBlocks") {
                     when (subTreeRootResult) {
-                        is GetSubtreeRootsResult.UseNonLinear -> {
+                        is GetSubtreeRootsResult.UseSbS -> {
                             processNewBlocksInSbSOrder(
                                 backend = backend,
                                 downloader = downloader,
                                 repository = repository,
                                 network = network,
-                                subTreeRootList = (subTreeRootResult as GetSubtreeRootsResult.UseNonLinear)
+                                subTreeRootList = (subTreeRootResult as GetSubtreeRootsResult.UseSbS)
                                     .subTreeRootList,
                                 lastValidHeight = lowerBoundHeight,
                                 firstUnenhancedHeight = _processorInfo.value.firstUnenhancedHeight
@@ -360,7 +360,8 @@ class CompactBlockProcessor internal constructor(
     }
 
     internal sealed class GetSubtreeRootsResult {
-        data class UseNonLinear(val subTreeRootList: List<SubtreeRoot>) : GetSubtreeRootsResult()
+        // SbS: Spend-before-Sync
+        data class UseSbS(val subTreeRootList: List<SubtreeRoot>) : GetSubtreeRootsResult()
         object UseLinear : GetSubtreeRootsResult()
         object FailureConnection : GetSubtreeRootsResult()
         data class OtherFailure(val exception: Throwable) : GetSubtreeRootsResult()
@@ -1073,7 +1074,7 @@ class CompactBlockProcessor internal constructor(
                         result = if (it.isEmpty()) {
                             GetSubtreeRootsResult.UseLinear
                         } else {
-                            GetSubtreeRootsResult.UseNonLinear(it)
+                            GetSubtreeRootsResult.UseSbS(it)
                         }
                     }
             }
