@@ -472,7 +472,7 @@ class CompactBlockProcessor internal constructor(
         }
 
         setState(State.Syncing)
-        val allBatchCount = getBatchCount(_processorInfo.value.overallSyncRange!!).toFloat()
+        val allBatchCount = getBatchCount(suggestedRangesResult.ranges.map { it.range }).toFloat()
         var lastBatchOrder: Long = 0
 
         // Parse and process ranges. If it recognizes a range with Priority.Verify, it runs the verification part.
@@ -502,6 +502,7 @@ class CompactBlockProcessor internal constructor(
                 lastBatchOrder = lastBatchOrder
             ).collect { rangeSyncProgress ->
                 setProgress(PercentDecimal(rangeSyncProgress.overallOrder / allBatchCount))
+                // We need to update lastBatchOrder for the next ranges processing
                 lastBatchOrder = rangeSyncProgress.overallOrder
 
                 when (rangeSyncProgress.resultState) {
@@ -618,7 +619,7 @@ class CompactBlockProcessor internal constructor(
         enhanceStartHeight: BlockHeight?
     ): BlockProcessingResult {
         var syncingResult: SyncingResult = SyncingResult.AllSuccess
-        val allBatchCount = getBatchCount(syncRange).toFloat()
+        val allBatchCount = getBatchCount(listOf(syncRange)).toFloat()
 
         // Syncing last blocks and enhancing transactions
         runSyncingAndEnhancingOnRange(
@@ -1402,22 +1403,32 @@ class CompactBlockProcessor internal constructor(
         }
 
         /**
-         * Returns count of batches of blocks across all ranges.
+         * Returns count of batches of blocks across all ranges. It works the same when triggered from the Linear
+         * synchronization or from the SbS synchronization.
          *
-         * @param syncRange The overall range of all suggested ranges
+         * @param syncRanges List of ranges of all blocks to process
          *
          * @return Count of all batches for processing
          */
-        private fun getBatchCount(syncRange: ClosedRange<BlockHeight>): Long {
-            val missingBlockCount = syncRange.endInclusive.value - syncRange.start.value + 1
-            val batchCount = (
-                missingBlockCount / SYNC_BATCH_SIZE +
-                    (if (missingBlockCount.rem(SYNC_BATCH_SIZE) == 0L) 0 else 1)
-                )
-            Twig.debug {
-                "Found $missingBlockCount missing blocks, syncing in $batchCount batches of $SYNC_BATCH_SIZE..."
+        private fun getBatchCount(syncRanges: List<ClosedRange<BlockHeight>>): Long {
+            var allRangesBatchCount = 0L
+            var allMissingBlocksCount = 0L
+
+            syncRanges.forEach { range ->
+                val missingBlockCount = range.endInclusive.value - range.start.value + 1
+                val batchCount = (
+                    missingBlockCount / SYNC_BATCH_SIZE +
+                        (if (missingBlockCount.rem(SYNC_BATCH_SIZE) == 0L) 0 else 1)
+                    )
+                allMissingBlocksCount += missingBlockCount
+                allRangesBatchCount += batchCount
             }
-            return batchCount
+
+            Twig.debug {
+                "Found $allMissingBlocksCount missing blocks, syncing in $allRangesBatchCount batches of " +
+                    "$SYNC_BATCH_SIZE..."
+            }
+            return allRangesBatchCount
         }
 
         /**
@@ -1435,7 +1446,7 @@ class CompactBlockProcessor internal constructor(
             syncRange: ClosedRange<BlockHeight>,
             network: ZcashNetwork
         ): List<BlockBatch> {
-            val batchCount = getBatchCount(syncRange)
+            val batchCount = getBatchCount(listOf(syncRange))
             var start = syncRange.start
             return buildList {
                 for (index in 1..batchCount) {
