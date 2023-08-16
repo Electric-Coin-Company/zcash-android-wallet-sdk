@@ -8,6 +8,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.outlined.Autorenew
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -36,7 +37,8 @@ private fun ComposablePreview() {
             walletSnapshot = WalletSnapshotFixture.new(),
             sendState = SendState.None,
             onBack = {},
-            onShieldFunds = {}
+            onShieldFunds = {},
+            onRefresh = {}
         )
     }
 }
@@ -47,9 +49,13 @@ fun Balance(
     sendState: SendState,
     onShieldFunds: () -> Unit,
     onBack: () -> Unit,
+    onRefresh: () -> Unit
 ) {
     Scaffold(topBar = {
-        BalanceTopAppBar(onBack)
+        BalanceTopAppBar(
+            onBack,
+            onRefresh
+        )
     }) { paddingValues ->
 
         BalanceMainContent(
@@ -63,7 +69,10 @@ fun Balance(
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
-private fun BalanceTopAppBar(onBack: () -> Unit) {
+private fun BalanceTopAppBar(
+    onBack: () -> Unit,
+    onRefresh: () -> Unit
+) {
     TopAppBar(
         title = { Text(text = stringResource(id = R.string.menu_balance)) },
         navigationIcon = {
@@ -73,6 +82,14 @@ private fun BalanceTopAppBar(onBack: () -> Unit) {
                 Icon(
                     imageVector = Icons.Filled.ArrowBack,
                     contentDescription = null
+                )
+            }
+        },
+        actions = {
+            IconButton(onClick = onRefresh) {
+                Icon(
+                    imageVector = Icons.Outlined.Autorenew,
+                    contentDescription = stringResource(id = R.string.balances_refresh)
                 )
             }
         }

@@ -17,6 +17,7 @@ import androidx.navigation.NavOptionsBuilder
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import cash.z.ecc.android.sdk.SdkSynchronizer
 import cash.z.ecc.android.sdk.demoapp.NavigationTargets.BALANCE
 import cash.z.ecc.android.sdk.demoapp.NavigationTargets.HOME
 import cash.z.ecc.android.sdk.demoapp.NavigationTargets.SEND
@@ -67,10 +68,12 @@ internal fun ComposeActivity.Navigation() {
             }
         }
         composable(BALANCE) {
+            val synchronizer = walletViewModel.synchronizer.collectAsStateWithLifecycle().value
             val walletSnapshot = walletViewModel.walletSnapshot.collectAsStateWithLifecycle().value
-            if (null == walletSnapshot) {
+            if (null == synchronizer || null == walletSnapshot) {
                 // Display loading indicator
             } else {
+                val scope = rememberCoroutineScope()
                 Balance(
                     walletSnapshot,
                     onShieldFunds = { walletViewModel.shieldFunds() },
@@ -79,6 +82,11 @@ internal fun ComposeActivity.Navigation() {
                         walletViewModel.clearSendOrShieldState()
                         navController.popBackStackJustOnce(BALANCE)
                     },
+                    onRefresh = {
+                        scope.launch {
+                            (synchronizer as SdkSynchronizer).refreshAllBalances()
+                        }
+                    }
                 )
             }
         }
