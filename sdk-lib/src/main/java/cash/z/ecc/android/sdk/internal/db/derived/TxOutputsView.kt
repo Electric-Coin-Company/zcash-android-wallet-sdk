@@ -20,7 +20,7 @@ internal class TxOutputsView(
             TxOutputsViewDefinition.COLUMN_INTEGER_TRANSACTION_ID
         )
 
-        private val PROJECTION_ID = arrayOf(TxOutputsViewDefinition.COLUMN_INTEGER_TRANSACTION_ID)
+        private val PROJECTION_OUTPUT_INDEX = arrayOf(TxOutputsViewDefinition.COLUMN_INTEGER_OUTPUT_INDEX)
 
         private val PROJECTION_RECIPIENT = arrayOf(
             TxOutputsViewDefinition.COLUMN_STRING_TO_ADDRESS,
@@ -38,14 +38,14 @@ internal class TxOutputsView(
     fun getSaplingOutputIndices(transactionId: Long) =
         sqliteDatabase.queryAndMap(
             table = TxOutputsViewDefinition.VIEW_NAME,
-            columns = PROJECTION_ID,
+            columns = PROJECTION_OUTPUT_INDEX,
             selection = SELECT_BY_TRANSACTION_ID_AND_NOT_CHANGE,
             selectionArgs = arrayOf(transactionId),
             orderBy = ORDER_BY,
             cursorParser = {
-                val idColumnIndex = it.getColumnIndex(TxOutputsViewDefinition.COLUMN_INTEGER_OUTPUT_INDEX)
+                val idColumnOutputIndex = it.getColumnIndex(TxOutputsViewDefinition.COLUMN_INTEGER_OUTPUT_INDEX)
 
-                it.getInt(idColumnIndex)
+                it.getInt(idColumnOutputIndex)
             }
         )
 
