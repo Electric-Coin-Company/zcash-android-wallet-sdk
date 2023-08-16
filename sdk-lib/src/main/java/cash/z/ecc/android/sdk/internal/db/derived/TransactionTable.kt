@@ -71,7 +71,7 @@ internal class TransactionTable(
             table = TransactionTableDefinition.TABLE_NAME,
             columns = PROJECTION_ENCODED_TRANSACTION,
             selection = SELECTION_TRANSACTION_ID_AND_RAW_NOT_NULL,
-            selectionArgs = arrayOf(txId)
+            selectionArgs = arrayOf(txId.byteArray)
         ) {
             val rawIndex = it.getColumnIndexOrThrow(TransactionTableDefinition.COLUMN_BLOB_RAW)
             val heightIndex = it.getColumnIndexOrThrow(TransactionTableDefinition.COLUMN_INTEGER_EXPIRY_HEIGHT)
