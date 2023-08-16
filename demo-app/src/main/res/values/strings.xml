@@ -55,6 +55,7 @@
         <xliff:g id="ZEC balance" example="0.3">%1$s</xliff:g></string>
     <string name="balance_pending_amount_format">Pending:
         <xliff:g id="ZEC balance" example="0.3">%1$s</xliff:g></string>
+    <string name="balances_refresh">Refresh balances</string>
 
     <string name="send_amount">Amount</string>
 
@@ -70,4 +71,6 @@
     <string name="send_to_address">Destination address</string>
     <string name="send_memo">Memo</string>
     <string name="send_button">Send</string>
+
+    <string name="transactions_refresh">Refresh transactions</string>
 </resources>

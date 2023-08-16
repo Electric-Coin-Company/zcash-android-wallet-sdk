@@ -412,6 +412,7 @@ class SdkSynchronizer private constructor(
             processor.onProcessorErrorListener = ::onProcessorError
             processor.onSetupErrorListener = ::onSetupError
             processor.onChainErrorListener = ::onChainError
+
             processor.state.onEach {
                 when (it) {
                     is Synced -> {

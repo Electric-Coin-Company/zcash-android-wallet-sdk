@@ -97,7 +97,7 @@ class WalletCoordinator(
      * Note that this synchronizer is closed as soon as it stops being collected.  For UI use
      * cases, see [WalletViewModel].
      */
-    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    @OptIn(ExperimentalCoroutinesApi::class)
     val synchronizer: StateFlow<Synchronizer?> = synchronizerOrLockoutId
         .flatMapLatest {
             it
