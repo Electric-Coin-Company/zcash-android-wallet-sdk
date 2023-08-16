@@ -387,7 +387,6 @@ class CompactBlockProcessor internal constructor(
     /**
      * This function process the missing blocks in non-linear order with Spend-before-Sync algorithm.
      */
-    @OptIn(ExperimentalStdlibApi::class)
     @Suppress("ReturnCount", "LongMethod", "CyclomaticComplexMethod", "LongParameterList")
     private suspend fun processNewBlocksInSbSOrder(
         backend: TypesafeBackend,
