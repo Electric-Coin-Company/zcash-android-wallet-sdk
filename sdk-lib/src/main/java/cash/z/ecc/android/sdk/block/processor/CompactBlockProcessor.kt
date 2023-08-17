@@ -8,6 +8,7 @@ import cash.z.ecc.android.sdk.block.processor.model.GetSubtreeRootsResult
 import cash.z.ecc.android.sdk.block.processor.model.PutSaplingSubtreeRootsResult
 import cash.z.ecc.android.sdk.block.processor.model.SuggestScanRangesResult
 import cash.z.ecc.android.sdk.block.processor.model.SyncStageResult
+import cash.z.ecc.android.sdk.block.processor.model.SyncingResult
 import cash.z.ecc.android.sdk.block.processor.model.UpdateChainTipResult
 import cash.z.ecc.android.sdk.block.processor.model.VerifySuggestedScanRange
 import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException
@@ -1169,49 +1170,6 @@ class CompactBlockProcessor internal constructor(
                     VerifySuggestedScanRange.NoRangeToVerify
                 }
             }
-        }
-
-        @VisibleForTesting
-        internal sealed class SyncingResult {
-            object AllSuccess : SyncingResult()
-            data class DownloadSuccess(val downloadedBlocks: List<JniBlockMeta>?) : SyncingResult() {
-                override fun toString(): String {
-                    return "DownloadSuccess with ${downloadedBlocks?.size ?: "none"} blocks"
-                }
-            }
-            interface Failure {
-                val failedAtHeight: BlockHeight
-                val exception: CompactBlockProcessorException
-                fun toBlockProcessingResult(): BlockProcessingResult =
-                    BlockProcessingResult.SyncFailure(
-                        this.failedAtHeight,
-                        this.exception
-                    )
-            }
-            data class DownloadFailed(
-                override val failedAtHeight: BlockHeight,
-                override val exception: CompactBlockProcessorException
-            ) : Failure, SyncingResult()
-            object ScanSuccess : SyncingResult()
-            data class ScanFailed(
-                override val failedAtHeight: BlockHeight,
-                override val exception: CompactBlockProcessorException
-            ) : Failure, SyncingResult()
-            object DeleteSuccess : SyncingResult()
-            data class DeleteFailed(
-                override val failedAtHeight: BlockHeight,
-                override val exception: CompactBlockProcessorException
-            ) : Failure, SyncingResult()
-            object EnhanceSuccess : SyncingResult()
-            data class EnhanceFailed(
-                override val failedAtHeight: BlockHeight,
-                override val exception: CompactBlockProcessorException
-            ) : Failure, SyncingResult()
-            object UpdateBirthday : SyncingResult()
-            data class ContinuityError(
-                override val failedAtHeight: BlockHeight,
-                override val exception: CompactBlockProcessorException
-            ) : Failure, SyncingResult()
         }
 
         /**

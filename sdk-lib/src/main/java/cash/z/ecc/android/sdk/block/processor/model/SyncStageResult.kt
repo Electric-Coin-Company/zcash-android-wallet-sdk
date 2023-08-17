@@ -1,6 +1,5 @@
 package cash.z.ecc.android.sdk.block.processor.model
 
-import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor
 import cash.z.ecc.android.sdk.internal.model.BlockBatch
 
 /**
@@ -8,5 +7,5 @@ import cash.z.ecc.android.sdk.internal.model.BlockBatch
  */
 internal data class SyncStageResult(
     val batch: BlockBatch,
-    val stageResult: CompactBlockProcessor.Companion.SyncingResult
+    val stageResult: SyncingResult
 )
