@@ -20,6 +20,9 @@
 - `alsoClearBlockCache` parameter from rewind functions of `Synchronizer` and `CompactBlockProcessor` as it take no 
   affect on the current rewind functionality result.
 
+### Fixed
+- `Synchronizer.getMemos()` now correctly returns a flow of strings for sent and received transactions.
+
 ## 1.20.0-beta01
 - The SDK internally migrated from `BackendExt` rust backend extension functions to more type-safe `TypesafeBackend`.
 - `Synchronizer.getMemos()` now internally handles expected `RuntimeException` from the rust layer and transforms it 
