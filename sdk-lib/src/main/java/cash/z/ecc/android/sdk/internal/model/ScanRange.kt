@@ -1,7 +1,6 @@
 package cash.z.ecc.android.sdk.internal.model
 
 import cash.z.ecc.android.sdk.internal.Twig
-import cash.z.ecc.android.sdk.internal.ext.toClosedRange
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 
@@ -19,14 +18,13 @@ internal data class ScanRange(
 
     companion object {
         /**
-         *  Note that this function also transforms the suggested ranges from [OpenEndRange] to [ClosedRange] so the
-         *  rest of the logic can safely work with a unified range type.
+         *  Note that this function subtracts 1 from [JniScanRange.endHeight] as the rest of the logic works with
+         *  [ClosedRange] and the endHeight is exclusive.
          */
-        @OptIn(ExperimentalStdlibApi::class)
         fun new(jni: JniScanRange, zcashNetwork: ZcashNetwork): ScanRange {
             return ScanRange(
-                range = (BlockHeight.new(zcashNetwork, jni.startHeight)..<BlockHeight.new(zcashNetwork, jni.endHeight))
-                    .toClosedRange(),
+                range = BlockHeight.new(zcashNetwork, jni.startHeight)..
+                    (BlockHeight.new(zcashNetwork, jni.endHeight) - 1),
                 priority = jni.priority
             )
         }
