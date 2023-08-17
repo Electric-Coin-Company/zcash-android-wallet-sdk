@@ -8,5 +8,6 @@ import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor
 internal data class BatchSyncProgress(
     val inRangeOrder: Long = 0,
     val overallOrder: Long = 0,
-    val resultState: CompactBlockProcessor.Companion.SyncingResult = CompactBlockProcessor.Companion.SyncingResult.AllSuccess
+    val resultState: CompactBlockProcessor.Companion.SyncingResult =
+        CompactBlockProcessor.Companion.SyncingResult.AllSuccess
 )
