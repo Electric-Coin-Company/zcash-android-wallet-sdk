@@ -26,15 +26,4 @@ class JniScanRange(
             "Height $endHeight is outside of allowed UInt range"
         }
     }
-
-    companion object {
-        @OptIn(ExperimentalStdlibApi::class)
-        fun new(range: OpenEndRange<Long>, priority: Long): JniScanRange {
-            return JniScanRange(
-                startHeight = range.start,
-                endHeight = range.endExclusive,
-                priority = priority
-            )
-        }
-    }
 }
