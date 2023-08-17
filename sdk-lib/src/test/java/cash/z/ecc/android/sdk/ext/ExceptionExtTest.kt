@@ -1,8 +1,8 @@
 package cash.z.ecc.android.sdk.ext
 
+import cash.z.ecc.android.sdk.internal.ext.BLOCK_HEIGHT_DISCONTINUITY
 import cash.z.ecc.android.sdk.internal.ext.PREV_HASH_MISMATCH
 import cash.z.ecc.android.sdk.internal.ext.TREE_SIZE_MISMATCH
-import cash.z.ecc.android.sdk.internal.ext.BLOCK_HEIGHT_DISCONTINUITY
 import cash.z.ecc.android.sdk.internal.ext.isScanContinuityError
 import kotlin.test.Test
 import kotlin.test.assertFalse
