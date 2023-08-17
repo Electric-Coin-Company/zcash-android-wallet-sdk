@@ -1,6 +1,5 @@
 package cash.z.ecc.android.sdk.internal.model
 
-import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 
@@ -11,7 +10,6 @@ internal data class ScanRange(
     override fun toString() = "ScanRange(range=$range, priority=${getSuggestScanRangePriority()})"
 
     internal fun getSuggestScanRangePriority(): SuggestScanRangePriority {
-        Twig.verbose { "Current suggested scan range priority: $priority" }
         return SuggestScanRangePriority.values()
             .firstOrNull { it.priority == priority } ?: SuggestScanRangePriority.Scanned
     }
@@ -23,8 +21,7 @@ internal data class ScanRange(
          */
         fun new(jni: JniScanRange, zcashNetwork: ZcashNetwork): ScanRange {
             return ScanRange(
-                range = BlockHeight.new(zcashNetwork, jni.startHeight)..
-                    (BlockHeight.new(zcashNetwork, jni.endHeight) - 1),
+                range = BlockHeight.new(zcashNetwork, jni.startHeight)..(BlockHeight.new(zcashNetwork, jni.endHeight) - 1),
                 priority = jni.priority
             )
         }
