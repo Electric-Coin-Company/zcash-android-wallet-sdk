@@ -1,0 +1,51 @@
+package cash.z.ecc.android.sdk.block.processor.model
+
+import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor
+import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException
+import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
+import cash.z.ecc.android.sdk.model.BlockHeight
+
+/**
+ * Internal class for the overall synchronization process result reporting.
+ */
+internal sealed class SyncingResult {
+    object AllSuccess : SyncingResult()
+    data class DownloadSuccess(val downloadedBlocks: List<JniBlockMeta>?) : SyncingResult() {
+        override fun toString(): String {
+            return "DownloadSuccess with ${downloadedBlocks?.size ?: "none"} blocks"
+        }
+    }
+    interface Failure {
+        val failedAtHeight: BlockHeight
+        val exception: CompactBlockProcessorException
+        fun toBlockProcessingResult(): CompactBlockProcessor.BlockProcessingResult =
+            CompactBlockProcessor.BlockProcessingResult.SyncFailure(
+                this.failedAtHeight,
+                this.exception
+            )
+    }
+    data class DownloadFailed(
+        override val failedAtHeight: BlockHeight,
+        override val exception: CompactBlockProcessorException
+    ) : Failure, SyncingResult()
+    object ScanSuccess : SyncingResult()
+    data class ScanFailed(
+        override val failedAtHeight: BlockHeight,
+        override val exception: CompactBlockProcessorException
+    ) : Failure, SyncingResult()
+    object DeleteSuccess : SyncingResult()
+    data class DeleteFailed(
+        override val failedAtHeight: BlockHeight,
+        override val exception: CompactBlockProcessorException
+    ) : Failure, SyncingResult()
+    object EnhanceSuccess : SyncingResult()
+    data class EnhanceFailed(
+        override val failedAtHeight: BlockHeight,
+        override val exception: CompactBlockProcessorException
+    ) : Failure, SyncingResult()
+    object UpdateBirthday : SyncingResult()
+    data class ContinuityError(
+        override val failedAtHeight: BlockHeight,
+        override val exception: CompactBlockProcessorException
+    ) : Failure, SyncingResult()
+}
