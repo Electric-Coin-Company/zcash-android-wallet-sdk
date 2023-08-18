@@ -1,8 +1,16 @@
-package cash.z.ecc.android.sdk.block
+package cash.z.ecc.android.sdk.block.processor
 
 import androidx.annotation.VisibleForTesting
 import cash.z.ecc.android.sdk.BuildConfig
 import cash.z.ecc.android.sdk.annotation.OpenForTesting
+import cash.z.ecc.android.sdk.block.processor.model.BatchSyncProgress
+import cash.z.ecc.android.sdk.block.processor.model.GetSubtreeRootsResult
+import cash.z.ecc.android.sdk.block.processor.model.PutSaplingSubtreeRootsResult
+import cash.z.ecc.android.sdk.block.processor.model.SuggestScanRangesResult
+import cash.z.ecc.android.sdk.block.processor.model.SyncStageResult
+import cash.z.ecc.android.sdk.block.processor.model.SyncingResult
+import cash.z.ecc.android.sdk.block.processor.model.UpdateChainTipResult
+import cash.z.ecc.android.sdk.block.processor.model.VerifySuggestedScanRange
 import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException
 import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException.EnhanceTransactionError.EnhanceTxDecryptError
 import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException.EnhanceTransactionError.EnhanceTxDownloadError
@@ -258,8 +266,6 @@ class CompactBlockProcessor internal constructor(
                     }
                     BlockProcessingResult.NoBlocksToProcess -> {
                         setState(State.Synced(_processorInfo.value.overallSyncRange))
-                        // TODO [#1129]: Refactor work with lastSyncRange and lastSyncedHeight
-                        // TODO [#1129]: https://github.com/zcash/zcash-android-wallet-sdk/issues/1129
                         val noWorkDone = _processorInfo.value.overallSyncRange?.isEmpty() ?: true
                         val summary = if (noWorkDone) {
                             "Nothing to process: no new blocks to sync"
@@ -352,34 +358,6 @@ class CompactBlockProcessor internal constructor(
                 enhanceStartHeight = _processorInfo.value.firstUnenhancedHeight
             )
         }
-    }
-
-    internal sealed class SuggestScanRangesResult {
-        data class Success(val ranges: List<ScanRange>) : SuggestScanRangesResult()
-        data class Failure(val failedAtHeight: BlockHeight, val exception: Throwable) : SuggestScanRangesResult()
-    }
-
-    internal sealed class GetSubtreeRootsResult {
-        // SbS: Spend-before-Sync
-        data class UseSbS(val subTreeRootList: List<SubtreeRoot>) : GetSubtreeRootsResult()
-        object UseLinear : GetSubtreeRootsResult()
-        object FailureConnection : GetSubtreeRootsResult()
-        data class OtherFailure(val exception: Throwable) : GetSubtreeRootsResult()
-    }
-
-    internal sealed class PutSaplingSubtreeRootsResult {
-        object Success : PutSaplingSubtreeRootsResult()
-        data class Failure(val failedAtHeight: BlockHeight, val exception: Throwable) : PutSaplingSubtreeRootsResult()
-    }
-
-    internal sealed class UpdateChainTipResult {
-        data class Success(val height: BlockHeight) : UpdateChainTipResult()
-        data class Failure(val failedAtHeight: BlockHeight, val exception: Throwable) : UpdateChainTipResult()
-    }
-
-    internal sealed class VerifySuggestedScanRange {
-        data class ShouldVerify(val scanRange: ScanRange) : VerifySuggestedScanRange()
-        object NoRangeToVerify : VerifySuggestedScanRange()
     }
 
     // TODO [#1137]: Refactor processNewBlocksInSbSOrder
@@ -1192,49 +1170,6 @@ class CompactBlockProcessor internal constructor(
             }
         }
 
-        @VisibleForTesting
-        internal sealed class SyncingResult {
-            object AllSuccess : SyncingResult()
-            data class DownloadSuccess(val downloadedBlocks: List<JniBlockMeta>?) : SyncingResult() {
-                override fun toString(): String {
-                    return "DownloadSuccess with ${downloadedBlocks?.size ?: "none"} blocks"
-                }
-            }
-            interface Failure {
-                val failedAtHeight: BlockHeight
-                val exception: CompactBlockProcessorException
-                fun toBlockProcessingResult(): BlockProcessingResult =
-                    BlockProcessingResult.SyncFailure(
-                        this.failedAtHeight,
-                        this.exception
-                    )
-            }
-            data class DownloadFailed(
-                override val failedAtHeight: BlockHeight,
-                override val exception: CompactBlockProcessorException
-            ) : Failure, SyncingResult()
-            object ScanSuccess : SyncingResult()
-            data class ScanFailed(
-                override val failedAtHeight: BlockHeight,
-                override val exception: CompactBlockProcessorException
-            ) : Failure, SyncingResult()
-            object DeleteSuccess : SyncingResult()
-            data class DeleteFailed(
-                override val failedAtHeight: BlockHeight,
-                override val exception: CompactBlockProcessorException
-            ) : Failure, SyncingResult()
-            object EnhanceSuccess : SyncingResult()
-            data class EnhanceFailed(
-                override val failedAtHeight: BlockHeight,
-                override val exception: CompactBlockProcessorException
-            ) : Failure, SyncingResult()
-            object UpdateBirthday : SyncingResult()
-            data class ContinuityError(
-                override val failedAtHeight: BlockHeight,
-                override val exception: CompactBlockProcessorException
-            ) : Failure, SyncingResult()
-        }
-
         /**
          * Requests, processes and persists all blocks from the given range.
          *
@@ -2033,23 +1968,6 @@ class CompactBlockProcessor internal constructor(
          */
         object Initialized : State()
     }
-
-    /**
-     * Progress model class for sharing the whole batch sync progress out of the sync process.
-     */
-    internal data class BatchSyncProgress(
-        val inRangeOrder: Long = 0,
-        val overallOrder: Long = 0,
-        val resultState: SyncingResult = SyncingResult.AllSuccess
-    )
-
-    /**
-     * Progress model class for sharing particular sync stage result internally in the sync process.
-     */
-    private data class SyncStageResult(
-        val batch: BlockBatch,
-        val stageResult: SyncingResult
-    )
 
     /**
      * Data class for holding detailed information about the processor.
