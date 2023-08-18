@@ -21,7 +21,8 @@ internal data class ScanRange(
          */
         fun new(jni: JniScanRange, zcashNetwork: ZcashNetwork): ScanRange {
             return ScanRange(
-                range = BlockHeight.new(zcashNetwork, jni.startHeight)..(BlockHeight.new(zcashNetwork, jni.endHeight) - 1),
+                range =
+                BlockHeight.new(zcashNetwork, jni.startHeight)..(BlockHeight.new(zcashNetwork, jni.endHeight) - 1),
                 priority = jni.priority
             )
         }
