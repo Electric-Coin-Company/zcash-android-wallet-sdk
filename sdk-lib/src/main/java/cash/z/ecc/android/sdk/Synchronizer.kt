@@ -1,7 +1,7 @@
 package cash.z.ecc.android.sdk
 
 import android.content.Context
-import cash.z.ecc.android.sdk.block.CompactBlockProcessor
+import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor
 import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.internal.Derivation
 import cash.z.ecc.android.sdk.internal.SaplingParamTool

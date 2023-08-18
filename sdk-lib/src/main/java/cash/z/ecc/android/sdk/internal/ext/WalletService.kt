@@ -1,10 +1,8 @@
 package cash.z.ecc.android.sdk.internal.ext
 
-import android.content.Context
 import cash.z.ecc.android.sdk.ext.ZcashSdk.MAX_BACKOFF_INTERVAL
 import cash.z.ecc.android.sdk.internal.Twig
 import kotlinx.coroutines.delay
-import java.io.File
 import kotlin.math.pow
 import kotlin.random.Random
 
@@ -119,13 +117,4 @@ suspend inline fun retryWithBackoff(
             delay(duration)
         }
     }
-}
-
-/**
- * Return true if the given database already exists.
- *
- * @return true when the given database exists in the given context.
- */
-internal fun dbExists(appContext: Context, dbFileName: String): Boolean {
-    return File(appContext.getDatabasePath(dbFileName).absolutePath).exists()
 }
