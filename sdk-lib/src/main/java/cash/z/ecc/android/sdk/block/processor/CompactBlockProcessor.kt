@@ -266,8 +266,6 @@ class CompactBlockProcessor internal constructor(
                     }
                     BlockProcessingResult.NoBlocksToProcess -> {
                         setState(State.Synced(_processorInfo.value.overallSyncRange))
-                        // TODO [#1129]: Refactor work with lastSyncRange and lastSyncedHeight
-                        // TODO [#1129]: https://github.com/zcash/zcash-android-wallet-sdk/issues/1129
                         val noWorkDone = _processorInfo.value.overallSyncRange?.isEmpty() ?: true
                         val summary = if (noWorkDone) {
                             "Nothing to process: no new blocks to sync"
