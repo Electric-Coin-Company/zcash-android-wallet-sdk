@@ -395,11 +395,10 @@ class SdkSynchronizer private constructor(
     private fun CoroutineScope.onReady() {
         Twig.debug { "Starting synchronizer…" }
 
-        // Triggering UTXOs fetch and transparent balance update at the beginning of the block sync right after the app
-        // start, as it makes the transparent transactions appearance faster
+        // Triggering UTXOs and transactions fetching at the beginning of the block synchronization right after the
+        //  app starts makes the transparent transactions appear faster.
         launch(CoroutineExceptionHandler(::onCriticalError)) {
             refreshUtxos(Account.DEFAULT)
-            refreshTransparentBalance()
             refreshTransactions()
         }
 
