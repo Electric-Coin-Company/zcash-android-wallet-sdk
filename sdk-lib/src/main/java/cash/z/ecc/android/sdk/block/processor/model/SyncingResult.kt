@@ -9,11 +9,12 @@ import cash.z.ecc.android.sdk.model.BlockHeight
  * Internal class for the overall synchronization process result reporting.
  */
 internal sealed class SyncingResult {
+    override fun toString(): String = this::class.java.simpleName
+
     object AllSuccess : SyncingResult()
+    object RestartSynchronization : SyncingResult()
     data class DownloadSuccess(val downloadedBlocks: List<JniBlockMeta>?) : SyncingResult() {
-        override fun toString(): String {
-            return "DownloadSuccess with ${downloadedBlocks?.size ?: "none"} blocks"
-        }
+        override fun toString() = "${this::class.java.simpleName} with ${downloadedBlocks?.size ?: "none"} blocks"
     }
     interface Failure {
         val failedAtHeight: BlockHeight

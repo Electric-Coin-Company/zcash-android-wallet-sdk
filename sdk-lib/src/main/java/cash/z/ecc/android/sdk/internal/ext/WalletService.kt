@@ -17,7 +17,7 @@ import kotlin.random.Random
  * @param block the code to execute, which will be wrapped in a try/catch and retried whenever an
  * exception is thrown up to [retries] attempts.
  */
-suspend inline fun retryUpTo(
+suspend inline fun retryUpToAndThrow(
     retries: Int,
     exceptionWrapper: (Throwable) -> Throwable = { it },
     initialDelayMillis: Long = 500L,
