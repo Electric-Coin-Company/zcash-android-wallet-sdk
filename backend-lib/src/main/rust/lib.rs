@@ -1180,6 +1180,7 @@ fn encode_scan_range<'a>(
     scan_range: ScanRange,
 ) -> jni::errors::Result<JObject<'a>> {
     let priority = match scan_range.priority() {
+        ScanPriority::Ignored => 0,
         ScanPriority::Scanned => 10,
         ScanPriority::Historic => 20,
         ScanPriority::OpenAdjacent => 30,
