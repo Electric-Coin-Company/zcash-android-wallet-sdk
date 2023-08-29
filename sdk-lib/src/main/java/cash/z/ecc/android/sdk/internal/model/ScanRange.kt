@@ -31,6 +31,7 @@ internal data class ScanRange(
 
 @Suppress("MagicNumber")
 internal enum class SuggestScanRangePriority(val priority: Long) {
+    Ignored(0),
     Scanned(10),
     Historic(20),
     OpenAdjacent(30),
