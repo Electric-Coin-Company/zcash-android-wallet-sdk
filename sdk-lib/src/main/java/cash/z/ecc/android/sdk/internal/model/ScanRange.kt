@@ -11,7 +11,7 @@ internal data class ScanRange(
 
     internal fun getSuggestScanRangePriority(): SuggestScanRangePriority {
         return SuggestScanRangePriority.values()
-            .firstOrNull { it.priority == priority } ?: SuggestScanRangePriority.Scanned
+            .firstOrNull { it.priority == priority } ?: SuggestScanRangePriority.Ignored
     }
 
     companion object {
