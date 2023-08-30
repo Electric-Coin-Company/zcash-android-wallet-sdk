@@ -1,6 +1,7 @@
 # Change Log
 
 ## Unreleased
+- Gradle 8.3
 
 ## 1.20.0-beta01
 - The SDK internally migrated from `BackendExt` rust backend extension functions to more type-safe `TypesafeBackend`.
