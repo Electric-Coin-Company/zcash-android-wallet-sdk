@@ -561,8 +561,9 @@ class CompactBlockProcessor internal constructor(
                         if (shouldRefreshPreparation(
                                 lastPreparationTime,
                                 currentTimeMillis,
-                                SBS_SYNCHRONIZATION_RESTART_TIMEOUT)
-                            ) {
+                                SBS_SYNCHRONIZATION_RESTART_TIMEOUT
+                            )
+                        ) {
                             SyncingResult.RestartSynchronization
                         } else {
                             // Continue with processing
