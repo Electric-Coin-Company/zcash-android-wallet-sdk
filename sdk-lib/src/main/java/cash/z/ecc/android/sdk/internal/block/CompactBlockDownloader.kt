@@ -2,7 +2,7 @@ package cash.z.ecc.android.sdk.internal.block
 
 import cash.z.ecc.android.sdk.exception.LightWalletException
 import cash.z.ecc.android.sdk.internal.Twig
-import cash.z.ecc.android.sdk.internal.ext.retryUpTo
+import cash.z.ecc.android.sdk.internal.ext.retryUpToAndThrow
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.internal.model.ext.from
 import cash.z.ecc.android.sdk.internal.repository.CompactBlockRepository
@@ -111,7 +111,7 @@ open class CompactBlockDownloader private constructor(val compactBlockRepository
         compactBlockRepository.getLatestHeight()
 
     suspend fun getServerInfo(): LightWalletEndpointInfoUnsafe? = withContext(IO) {
-        retryUpTo(GET_SERVER_INFO_RETRIES) {
+        retryUpToAndThrow(GET_SERVER_INFO_RETRIES) {
             when (val response = lightWalletClient.getServerInfo()) {
                 is Response.Success -> return@withContext response.result
                 else -> {
