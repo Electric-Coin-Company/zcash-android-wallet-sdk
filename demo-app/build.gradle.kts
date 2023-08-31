@@ -174,7 +174,8 @@ fladle {
 
             debugApk.set(
                 project.provider {
-                    "${buildDir}/outputs/apk/zcashmainnet/release/demo-app-zcashmainnet-release.apk"
+                    "${layout.buildDirectory.get().asFile}" +
+                        "/outputs/apk/zcashmainnet/release/demo-app-zcashmainnet-release.apk"
                 }
             )
 

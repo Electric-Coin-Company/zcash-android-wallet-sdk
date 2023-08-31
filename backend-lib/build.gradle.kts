@@ -89,7 +89,7 @@ cargo {
         if (name.contains("^merge.+JniLibFolders$".toRegex())) {
             dependsOn("cargoBuild")
             // Fix for mergeDebugJniLibFolders UP-TO-DATE
-            inputs.dir(buildDir.resolve("rustJniLibs/android"))
+            inputs.dir(layout.buildDirectory.dir("rustJniLibs/android").get().asFile)
         }
     }
 }
