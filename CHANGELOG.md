@@ -1,7 +1,14 @@
 # Change Log
 
 ## Unreleased
-- Gradle 8.3
+
+### Changed
+- Updated dependencies:
+   - Gradle 8.3
+   - AGP 8.1.1
+   - Kotlin 1.9.10
+   - Compose
+   - etc.
 
 ## 1.20.0-beta01
 - The SDK internally migrated from `BackendExt` rust backend extension functions to more type-safe `TypesafeBackend`.

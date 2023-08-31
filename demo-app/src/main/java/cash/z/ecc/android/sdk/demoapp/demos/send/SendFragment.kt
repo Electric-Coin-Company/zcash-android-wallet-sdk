@@ -2,7 +2,6 @@ package cash.z.ecc.android.sdk.demoapp.demos.send
 
 import android.os.Bundle
 import android.view.LayoutInflater
-import android.view.Menu
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
@@ -13,7 +12,6 @@ import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor
 import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
 import cash.z.ecc.android.sdk.demoapp.DemoConstants
-import cash.z.ecc.android.sdk.demoapp.R
 import cash.z.ecc.android.sdk.demoapp.databinding.FragmentSendBinding
 import cash.z.ecc.android.sdk.demoapp.util.mainActivity
 import cash.z.ecc.android.sdk.ext.convertZatoshiToZecString
@@ -193,7 +191,6 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setHasOptionsMenu(true)
     }
 
     override fun onCreateView(
@@ -209,12 +206,6 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
         super.onViewCreated(view, savedInstanceState)
         initSendUi()
         monitorChanges()
-    }
-
-    override fun onPrepareOptionsMenu(menu: Menu) {
-        super.onPrepareOptionsMenu(menu)
-        // We rather hide options menu actions while actively using the Synchronizer
-        menu.setGroupVisible(R.id.main_menu_group, false)
     }
 
     //
