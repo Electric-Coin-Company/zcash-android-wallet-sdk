@@ -2,7 +2,6 @@ package cash.z.ecc.android.sdk.demoapp.demos.listtransactions
 
 import android.os.Bundle
 import android.view.LayoutInflater
-import android.view.Menu
 import android.view.View
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -11,7 +10,6 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.block.CompactBlockProcessor
 import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
-import cash.z.ecc.android.sdk.demoapp.R
 import cash.z.ecc.android.sdk.demoapp.databinding.FragmentListTransactionsBinding
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.model.PercentDecimal
@@ -122,19 +120,12 @@ class ListTransactionsFragment : BaseDemoFragment<FragmentListTransactionsBindin
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setHasOptionsMenu(true)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         initTransactionUI()
         monitorChanges()
-    }
-
-    override fun onPrepareOptionsMenu(menu: Menu) {
-        super.onPrepareOptionsMenu(menu)
-        // We rather hide options menu actions while actively using the Synchronizer
-        menu.setGroupVisible(R.id.main_menu_group, false)
     }
 
     //
