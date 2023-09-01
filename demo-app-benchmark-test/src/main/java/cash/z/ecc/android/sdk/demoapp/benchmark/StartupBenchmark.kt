@@ -80,7 +80,7 @@ class StartupBenchmark : UiTestPrerequisites() {
             TraceSectionMetric(ADDRESS_SCREEN_SECTION, TraceSectionMetric.Mode.First, false),
             TraceSectionMetric(UNIFIED_ADDRESS_SECTION, TraceSectionMetric.Mode.First, false),
             TraceSectionMetric(SAPLING_ADDRESS_SECTION, TraceSectionMetric.Mode.First, false),
-            TraceSectionMetric( TRANSPARENT_ADDRESS_SECTION, TraceSectionMetric.Mode.First, false)
+            TraceSectionMetric(TRANSPARENT_ADDRESS_SECTION, TraceSectionMetric.Mode.First, false)
         ),
         compilationMode = CompilationMode.Full(),
         startupMode = StartupMode.COLD,
