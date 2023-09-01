@@ -7,6 +7,7 @@
    - Gradle 8.3
    - AGP 8.1.1
    - Kotlin 1.9.10
+   - Coroutines 1.7.3
    - Compose
    - AndroidX
    - gRPC/Protobuf
