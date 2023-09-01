@@ -8,6 +8,7 @@
    - AGP 8.1.1
    - Kotlin 1.9.10
    - Compose
+   - AndroidX
    - etc.
 
 ## 1.20.0-beta01

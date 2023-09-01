@@ -57,11 +57,11 @@ class SyncBlockchainBenchmark : UiTestPrerequisites() {
     fun tracesSyncBlockchain() = benchmarkRule.measureRepeated(
         packageName = APP_TARGET_PACKAGE_NAME,
         metrics = listOf(
-            TraceSectionMetric(sectionName = BALANCE_SCREEN_SECTION, mode = TraceSectionMetric.Mode.First),
-            TraceSectionMetric(sectionName = BLOCKCHAIN_SYNC_SECTION, mode = TraceSectionMetric.Mode.First),
-            TraceSectionMetric(sectionName = DOWNLOAD_SECTION, mode = TraceSectionMetric.Mode.First),
-            TraceSectionMetric(sectionName = VALIDATION_SECTION, mode = TraceSectionMetric.Mode.First),
-            TraceSectionMetric(sectionName = SCAN_SECTION, mode = TraceSectionMetric.Mode.First)
+            TraceSectionMetric(BALANCE_SCREEN_SECTION, TraceSectionMetric.Mode.First, false),
+            TraceSectionMetric(BLOCKCHAIN_SYNC_SECTION, TraceSectionMetric.Mode.First, false),
+            TraceSectionMetric(DOWNLOAD_SECTION, TraceSectionMetric.Mode.First, false),
+            TraceSectionMetric(VALIDATION_SECTION, TraceSectionMetric.Mode.First, false),
+            TraceSectionMetric(SCAN_SECTION, TraceSectionMetric.Mode.First, false)
         ),
         compilationMode = CompilationMode.Full(),
         startupMode = StartupMode.COLD,

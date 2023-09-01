@@ -77,10 +77,10 @@ class StartupBenchmark : UiTestPrerequisites() {
     fun tracesSdkStartup() = benchmarkRule.measureRepeated(
         packageName = APP_TARGET_PACKAGE_NAME,
         metrics = listOf(
-            TraceSectionMetric(sectionName = ADDRESS_SCREEN_SECTION, mode = TraceSectionMetric.Mode.First),
-            TraceSectionMetric(sectionName = UNIFIED_ADDRESS_SECTION, mode = TraceSectionMetric.Mode.First),
-            TraceSectionMetric(sectionName = SAPLING_ADDRESS_SECTION, mode = TraceSectionMetric.Mode.First),
-            TraceSectionMetric(sectionName = TRANSPARENT_ADDRESS_SECTION, mode = TraceSectionMetric.Mode.First)
+            TraceSectionMetric(ADDRESS_SCREEN_SECTION, TraceSectionMetric.Mode.First, false),
+            TraceSectionMetric(UNIFIED_ADDRESS_SECTION, TraceSectionMetric.Mode.First, false),
+            TraceSectionMetric(SAPLING_ADDRESS_SECTION, TraceSectionMetric.Mode.First, false),
+            TraceSectionMetric(TRANSPARENT_ADDRESS_SECTION, TraceSectionMetric.Mode.First, false)
         ),
         compilationMode = CompilationMode.Full(),
         startupMode = StartupMode.COLD,
