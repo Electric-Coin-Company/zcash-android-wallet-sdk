@@ -9,6 +9,7 @@
    - Kotlin 1.9.10
    - Compose
    - AndroidX
+   - gRPC/Protobuf
    - etc.
 
 ## 1.20.0-beta01
