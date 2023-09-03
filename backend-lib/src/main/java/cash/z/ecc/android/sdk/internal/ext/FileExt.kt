@@ -1,4 +1,4 @@
-@file:Suppress("ktlint:filename", "TooManyFunctions")
+@file:Suppress("ktlint:standard:filename", "TooManyFunctions")
 
 package cash.z.ecc.android.sdk.internal.ext
 
