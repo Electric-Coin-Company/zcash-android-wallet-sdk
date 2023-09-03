@@ -50,6 +50,7 @@ captures/
 .idea/vcs.xml
 .idea/workspace.xml
 .idea/protoeditor.xml
+.idea/appInsightsSettings.xml
 *.iml
 
 # Keystore files
