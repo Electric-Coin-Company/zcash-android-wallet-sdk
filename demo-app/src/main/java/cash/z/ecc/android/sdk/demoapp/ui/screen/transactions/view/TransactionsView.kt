@@ -31,6 +31,8 @@ import cash.z.ecc.android.sdk.demoapp.R
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.model.TransactionOverview
 import cash.z.ecc.android.sdk.model.WalletAddresses
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.toPersistentList
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
@@ -41,7 +43,7 @@ private fun ComposablePreview() {
     MaterialTheme {
         // TODO [#1090]: Demo: Add Addresses and Transactions Compose Previews
         // TODO [#1090]: https://github.com/zcash/zcash-android-wallet-sdk/issues/1090
-        // Transactions()
+        // TransactionsView()
     }
 }
 
@@ -72,6 +74,7 @@ fun Transactions(
                 paddingValues = paddingValues,
                 synchronizer,
                 synchronizer.transactions.collectAsStateWithLifecycle(initialValue = emptyList()).value
+                    .toPersistentList()
             )
         }
     }
@@ -110,7 +113,7 @@ private fun TransactionsTopAppBar(
 private fun TransactionsMainContent(
     paddingValues: PaddingValues,
     synchronizer: Synchronizer,
-    transactions: List<TransactionOverview>
+    transactions: ImmutableList<TransactionOverview>
 ) {
     val queryScope = rememberCoroutineScope()
     Column(
@@ -127,7 +130,7 @@ private fun TransactionsMainContent(
                     val memos = synchronizer.getMemos(it)
                     queryScope.launch {
                         memos.toList().run {
-                            Twig.debug {
+                            Twig.info {
                                 "Transaction memos: count: $size, contains: ${joinToString().ifEmpty { "-" }}"
                             }
                         }

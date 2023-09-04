@@ -137,6 +137,7 @@ dependencies {
 
     implementation(libs.bundles.grpc)
     implementation(libs.kotlinx.datetime)
+    implementation(libs.kotlinx.immutable)
 }
 
 fladle {
