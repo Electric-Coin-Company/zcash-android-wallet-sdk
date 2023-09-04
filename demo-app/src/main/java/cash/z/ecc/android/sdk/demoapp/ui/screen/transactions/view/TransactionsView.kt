@@ -31,6 +31,8 @@ import cash.z.ecc.android.sdk.demoapp.R
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.model.TransactionOverview
 import cash.z.ecc.android.sdk.model.WalletAddresses
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.toPersistentList
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
@@ -72,6 +74,7 @@ fun Transactions(
                 paddingValues = paddingValues,
                 synchronizer,
                 synchronizer.transactions.collectAsStateWithLifecycle(initialValue = emptyList()).value
+                    .toPersistentList()
             )
         }
     }
@@ -110,7 +113,7 @@ private fun TransactionsTopAppBar(
 private fun TransactionsMainContent(
     paddingValues: PaddingValues,
     synchronizer: Synchronizer,
-    transactions: List<TransactionOverview>
+    transactions: ImmutableList<TransactionOverview>
 ) {
     val queryScope = rememberCoroutineScope()
     Column(
