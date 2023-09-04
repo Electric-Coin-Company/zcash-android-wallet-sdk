@@ -41,7 +41,7 @@ private fun ComposablePreview() {
     MaterialTheme {
         // TODO [#1090]: Demo: Add Addresses and Transactions Compose Previews
         // TODO [#1090]: https://github.com/zcash/zcash-android-wallet-sdk/issues/1090
-        // Transactions()
+        // TransactionsView()
     }
 }
 
@@ -127,7 +127,7 @@ private fun TransactionsMainContent(
                     val memos = synchronizer.getMemos(it)
                     queryScope.launch {
                         memos.toList().run {
-                            Twig.debug {
+                            Twig.info {
                                 "Transaction memos: count: $size, contains: ${joinToString().ifEmpty { "-" }}"
                             }
                         }
