@@ -475,6 +475,11 @@ class CompactBlockProcessor internal constructor(
                     SyncingResult.UpdateBirthday -> {
                         updateBirthdayHeight()
                     }
+                    SyncingResult.EnhanceSuccess -> {
+                        Twig.info { "Triggering transaction refresh now" }
+                        // Invalidate transaction data
+                        refreshTransactions(transactionStorage = repository)
+                    }
                     is SyncingResult.Failure -> {
                         syncingResult = rangeSyncProgress.resultState
                         return@collect
@@ -553,6 +558,12 @@ class CompactBlockProcessor internal constructor(
                         updateBirthdayHeight()
                         SyncingResult.AllSuccess
                     }
+                    SyncingResult.EnhanceSuccess -> {
+                        Twig.info { "Triggering transaction refresh now" }
+                        // Invalidate transaction data and return the common batch syncing success result to the caller
+                        refreshTransactions(transactionStorage = repository)
+                        SyncingResult.AllSuccess
+                    }
                     is SyncingResult.Failure -> {
                         rangeSyncProgress.resultState
                     } else -> {
@@ -596,6 +607,13 @@ class CompactBlockProcessor internal constructor(
             }
         }
         return BlockProcessingResult.Success
+    }
+
+    /**
+     * This invalidates transaction storage to trigger data refreshing for its subscribers.
+     */
+    private fun refreshTransactions(transactionStorage: DerivedDataRepository) {
+        transactionStorage.invalidate()
     }
 
     @Suppress("ReturnCount")
@@ -700,6 +718,11 @@ class CompactBlockProcessor internal constructor(
             when (rangeSyncProgress.resultState) {
                 SyncingResult.UpdateBirthday -> {
                     updateBirthdayHeight()
+                }
+                SyncingResult.EnhanceSuccess -> {
+                    Twig.info { "Triggering transaction refresh now" }
+                    // Invalidate transaction data
+                    refreshTransactions(transactionStorage = repository)
                 }
                 is SyncingResult.Failure -> {
                     syncingResult = rangeSyncProgress.resultState
@@ -1418,8 +1441,8 @@ class CompactBlockProcessor internal constructor(
                                     enhancingResult
                                 }
                                 else -> {
-                                    // Transactions enhanced correctly. Now we return common sync success state.
-                                    SyncingResult.AllSuccess
+                                    // Transactions enhanced correctly. Let's continue with block processing.
+                                    enhancingResult
                                 }
                             }
                             emit(
