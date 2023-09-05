@@ -149,6 +149,12 @@ class CompactBlockProcessor internal constructor(
     private val _progress = MutableStateFlow(PercentDecimal.ZERO_PERCENT)
     private val _processorInfo = MutableStateFlow(ProcessorInfo(null, null, null))
     private val _networkHeight = MutableStateFlow<BlockHeight?>(null)
+
+    // pools
+    internal val saplingBalances = MutableStateFlow<WalletBalance?>(null)
+    internal val orchardBalances = MutableStateFlow<WalletBalance?>(null)
+    internal val transparentBalances = MutableStateFlow<WalletBalance?>(null)
+
     private val processingMutex = Mutex()
 
     /**
@@ -470,6 +476,7 @@ class CompactBlockProcessor internal constructor(
                 lastBatchOrder = min(rangeSyncProgress.overallOrder, allBatchCountLocal)
 
                 setProgress(PercentDecimal(lastBatchOrder / allBatchCountLocal.toFloat()))
+                checkAllBalances()
 
                 when (rangeSyncProgress.resultState) {
                     SyncingResult.UpdateBirthday -> {
@@ -478,7 +485,7 @@ class CompactBlockProcessor internal constructor(
                     SyncingResult.EnhanceSuccess -> {
                         Twig.info { "Triggering transaction refresh now" }
                         // Invalidate transaction data
-                        refreshTransactions(transactionStorage = repository)
+                        checkTransactions(transactionStorage = repository)
                     }
                     is SyncingResult.Failure -> {
                         syncingResult = rangeSyncProgress.resultState
@@ -552,6 +559,7 @@ class CompactBlockProcessor internal constructor(
                 lastBatchOrder = min(rangeSyncProgress.overallOrder, allBatchCountLocal)
 
                 setProgress(PercentDecimal(lastBatchOrder / allBatchCountLocal.toFloat()))
+                checkAllBalances()
 
                 when (rangeSyncProgress.resultState) {
                     SyncingResult.UpdateBirthday -> {
@@ -561,7 +569,7 @@ class CompactBlockProcessor internal constructor(
                     SyncingResult.EnhanceSuccess -> {
                         Twig.info { "Triggering transaction refresh now" }
                         // Invalidate transaction data and return the common batch syncing success result to the caller
-                        refreshTransactions(transactionStorage = repository)
+                        checkTransactions(transactionStorage = repository)
                         SyncingResult.AllSuccess
                     }
                     is SyncingResult.Failure -> {
@@ -607,13 +615,6 @@ class CompactBlockProcessor internal constructor(
             }
         }
         return BlockProcessingResult.Success
-    }
-
-    /**
-     * This invalidates transaction storage to trigger data refreshing for its subscribers.
-     */
-    private fun refreshTransactions(transactionStorage: DerivedDataRepository) {
-        transactionStorage.invalidate()
     }
 
     @Suppress("ReturnCount")
@@ -714,6 +715,7 @@ class CompactBlockProcessor internal constructor(
             lastBatchOrder = 0
         ).collect { rangeSyncProgress ->
             setProgress(PercentDecimal(rangeSyncProgress.overallOrder / allBatchCount.toFloat()))
+            checkAllBalances()
 
             when (rangeSyncProgress.resultState) {
                 SyncingResult.UpdateBirthday -> {
@@ -722,7 +724,7 @@ class CompactBlockProcessor internal constructor(
                 SyncingResult.EnhanceSuccess -> {
                     Twig.info { "Triggering transaction refresh now" }
                     // Invalidate transaction data
-                    refreshTransactions(transactionStorage = repository)
+                    checkTransactions(transactionStorage = repository)
                 }
                 is SyncingResult.Failure -> {
                     syncingResult = rangeSyncProgress.resultState
@@ -745,6 +747,42 @@ class CompactBlockProcessor internal constructor(
         }
 
         return BlockProcessingResult.Success
+    }
+
+    /**
+     * This invalidates transaction storage to trigger data refreshing for its subscribers.
+     */
+    private fun checkTransactions(transactionStorage: DerivedDataRepository) {
+        transactionStorage.invalidate()
+    }
+
+    /**
+     * Calculate the latest balances, based on the blocks that have been scanned and transmit this
+     * information into the related internal flows. Note that the Orchard balance is not supported.
+     */
+    internal suspend fun checkAllBalances() {
+        checkSaplingBalance()
+        checkTransparentBalance()
+        // TODO [#682]: refresh orchard balance
+        // TODO [#682]: https://github.com/zcash/zcash-android-wallet-sdk/issues/682
+    }
+
+    /**
+     * Calculate the latest Sapling balance, based on the blocks that have been scanned and transmit this
+     * information into the internal [saplingBalances] flow.
+     */
+    internal suspend fun checkSaplingBalance() {
+        Twig.debug { "Checking Sapling balance" }
+        saplingBalances.value = getBalanceInfo(Account.DEFAULT)
+    }
+
+    /**
+     * Calculate the latest Transparent balance, based on the blocks that have been scanned and transmit this
+     * information into the internal [transparentBalances] flow.
+     */
+    internal suspend fun checkTransparentBalance() {
+        Twig.debug { "Checking Transparent balance" }
+        transparentBalances.value = getUtxoCacheBalance(getTransparentAddress(backend, Account.DEFAULT))
     }
 
     sealed class BlockProcessingResult {
