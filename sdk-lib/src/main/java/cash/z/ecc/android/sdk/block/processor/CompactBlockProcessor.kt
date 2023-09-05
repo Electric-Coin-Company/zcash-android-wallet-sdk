@@ -1047,7 +1047,7 @@ class CompactBlockProcessor internal constructor(
          * number the more granular information can be provided about scan state. Unfortunately, it may also lead to
          * a lot of overhead during scanning.
          */
-        internal const val SYNC_BATCH_SIZE = 10
+        internal const val SYNC_BATCH_SIZE = 100
 
         /**
          * Default size of batch of blocks for running the transaction enhancing.
