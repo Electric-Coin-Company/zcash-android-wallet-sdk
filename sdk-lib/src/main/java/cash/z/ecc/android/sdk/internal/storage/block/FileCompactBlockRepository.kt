@@ -25,7 +25,7 @@ internal class FileCompactBlockRepository(
     private val backend: TypesafeBackend
 ) : CompactBlockRepository {
 
-    override suspend fun getLatestHeight() = backend.getLatestBlockHeight()
+    override suspend fun getLatestHeight() = backend.getLatestCacheHeight()
 
     override suspend fun findCompactBlock(height: BlockHeight) = backend.findBlockMetadata(height)
 

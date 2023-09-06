@@ -150,9 +150,9 @@ class RustBackend private constructor(
             )
         }
 
-    override suspend fun getLatestHeight() =
+    override suspend fun getLatestCacheHeight() =
         withContext(SdkDispatchers.DATABASE_IO) {
-            val height = getLatestHeight(fsBlockDbRoot.absolutePath)
+            val height = getLatestCacheHeight(fsBlockDbRoot.absolutePath)
 
             if (-1L == height) {
                 null
@@ -237,6 +237,34 @@ class RustBackend private constructor(
                 height,
                 networkId = networkId
             )
+        }
+
+    override suspend fun getFullyScannedHeight() =
+        withContext(SdkDispatchers.DATABASE_IO) {
+            val height = getFullyScannedHeight(
+                dataDbFile.absolutePath,
+                networkId = networkId
+            )
+
+            if (-1L == height) {
+                null
+            } else {
+                height
+            }
+        }
+
+    override suspend fun getMaxScannedHeight() =
+        withContext(SdkDispatchers.DATABASE_IO) {
+            val height = getMaxScannedHeight(
+                dataDbFile.absolutePath,
+                networkId = networkId
+            )
+
+            if (-1L == height) {
+                null
+            } else {
+                height
+            }
         }
 
     override suspend fun getScanProgress(): JniScanProgress? =
@@ -459,7 +487,7 @@ class RustBackend private constructor(
         )
 
         @JvmStatic
-        private external fun getLatestHeight(dbCachePath: String): Long
+        private external fun getLatestCacheHeight(dbCachePath: String): Long
 
         @JvmStatic
         private external fun findBlockMetadata(
@@ -501,6 +529,18 @@ class RustBackend private constructor(
             height: Long,
             networkId: Int
         )
+
+        @JvmStatic
+        private external fun getFullyScannedHeight(
+            dbDataPath: String,
+            networkId: Int
+        ): Long
+
+        @JvmStatic
+        private external fun getMaxScannedHeight(
+            dbDataPath: String,
+            networkId: Int
+        ): Long
 
         @JvmStatic
         private external fun getScanProgress(

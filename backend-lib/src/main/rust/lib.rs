@@ -891,7 +891,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_wr
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getLatestHeight(
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getLatestCacheHeight(
     env: JNIEnv<'_>,
     _: JClass<'_>,
     fsblockdb_root: JString<'_>,
@@ -1097,6 +1097,54 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_up
     });
 
     unwrap_exc_or(&env, res, JNI_FALSE)
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getFullyScannedHeight(
+    env: JNIEnv<'_>,
+    _: JClass<'_>,
+    db_data: JString<'_>,
+    network_id: jint,
+) -> jlong {
+    let res = panic::catch_unwind(|| {
+        let network = parse_network(network_id as u32)?;
+        let db_data = wallet_db(&env, network, db_data)?;
+
+        match db_data.block_fully_scanned() {
+            Ok(Some(metadata)) => Ok(i64::from(u32::from(metadata.block_height()))),
+            // Use -1 to return null across the FFI.
+            Ok(None) => Ok(-1),
+            Err(e) => Err(format_err!(
+                "Failed to read block metadata from WalletDb: {:?}",
+                e
+            )),
+        }
+    });
+    unwrap_exc_or(&env, res, -1)
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getMaxScannedHeight(
+    env: JNIEnv<'_>,
+    _: JClass<'_>,
+    db_data: JString<'_>,
+    network_id: jint,
+) -> jlong {
+    let res = panic::catch_unwind(|| {
+        let network = parse_network(network_id as u32)?;
+        let db_data = wallet_db(&env, network, db_data)?;
+
+        match db_data.block_max_scanned() {
+            Ok(Some(metadata)) => Ok(i64::from(u32::from(metadata.block_height()))),
+            // Use -1 to return null across the FFI.
+            Ok(None) => Ok(-1),
+            Err(e) => Err(format_err!(
+                "Failed to read block metadata from WalletDb: {:?}",
+                e
+            )),
+        }
+    });
+    unwrap_exc_or(&env, res, -1)
 }
 
 fn encode_scan_progress(env: &JNIEnv<'_>, progress: Ratio<u64>) -> Result<jobject, failure::Error> {
