@@ -176,18 +176,14 @@ class SdkSynchronizer private constructor(
         }
     }
 
-    // pools
-    private val _orchardBalances = MutableStateFlow<WalletBalance?>(null)
-    private val _saplingBalances = MutableStateFlow<WalletBalance?>(null)
-    private val _transparentBalances = MutableStateFlow<WalletBalance?>(null)
-
     private val _status = MutableStateFlow<Synchronizer.Status>(DISCONNECTED)
 
     var coroutineScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
-    override val orchardBalances = _orchardBalances.asStateFlow()
-    override val saplingBalances = _saplingBalances.asStateFlow()
-    override val transparentBalances = _transparentBalances.asStateFlow()
+    override val orchardBalances = processor.orchardBalances.asStateFlow()
+    override val saplingBalances = processor.saplingBalances.asStateFlow()
+    override val transparentBalances = processor.transparentBalances.asStateFlow()
+
     override val transactions
         get() = combine(processor.networkHeight, storage.allTransactions) { networkHeight, allTransactions ->
             val latestBlockHeight = networkHeight ?: storage.lastScannedHeight()
@@ -362,35 +358,41 @@ class SdkSynchronizer private constructor(
         storage.invalidate()
     }
 
-    //
-    // Private API
-    //
-
     /**
-     * Calculate the latest balance, based on the blocks that have been scanned and transmit this
-     * information into the flow of [balances].
+     * Calculate the latest balance based on the blocks that have been scanned and transmit this information into the
+     * [transparentBalances] and [saplingBalances] flow. The [orchardBalances] flow is still not filled with proper data
+     * because of the current limited Orchard support.
      */
     suspend fun refreshAllBalances() {
-        refreshSaplingBalance()
-        refreshTransparentBalance()
+        processor.checkAllBalances()
         // TODO [#682]: refresh orchard balance
         // TODO [#682]: https://github.com/zcash/zcash-android-wallet-sdk/issues/682
         Twig.warn { "Warning: Orchard balance does not yet refresh. Only some of the plumbing is in place." }
     }
 
+    /**
+     * Calculate the latest Sapling balance based on the blocks that have been scanned and transmit this information
+     * into the [saplingBalances] flow.
+     */
     suspend fun refreshSaplingBalance() {
-        Twig.debug { "refreshing sapling balance" }
-        _saplingBalances.value = processor.getBalanceInfo(Account.DEFAULT)
+        processor.checkSaplingBalance()
     }
 
+    /**
+     * Calculate the latest Transparent balance based on the blocks that have been scanned and transmit this information
+     * into the [saplingBalances] flow.
+     */
     suspend fun refreshTransparentBalance() {
-        Twig.debug { "refreshing transparent balance" }
-        _transparentBalances.value = processor.getUtxoCacheBalance(getTransparentAddress(Account.DEFAULT))
+        processor.checkTransparentBalance()
     }
 
     suspend fun isValidAddress(address: String): Boolean {
         return !validateAddress(address).isNotValid
     }
+
+    //
+    // Private API
+    //
 
     private fun CoroutineScope.onReady() {
         Twig.debug { "Starting synchronizer…" }
