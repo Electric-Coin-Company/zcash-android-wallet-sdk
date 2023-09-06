@@ -51,7 +51,7 @@ internal interface TypesafeBackend {
 
     suspend fun rewindToHeight(height: BlockHeight)
 
-    suspend fun getLatestBlockHeight(): BlockHeight?
+    suspend fun getLatestCacheHeight(): BlockHeight?
 
     suspend fun findBlockMetadata(height: BlockHeight): JniBlockMeta?
 
@@ -87,6 +87,29 @@ internal interface TypesafeBackend {
      */
     @Throws(RuntimeException::class)
     suspend fun updateChainTip(height: BlockHeight)
+
+    /**
+     * Returns the height to which the wallet has been fully scanned.
+     *
+     * This is the height for which the wallet has fully trial-decrypted this and all
+     * preceding blocks above the wallet's birthday height.
+     *
+     * @return The height to which the wallet has been fully scanned, or Null if no blocks have been scanned.
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    suspend fun getFullyScannedHeight(): BlockHeight?
+
+    /**
+     * Returns the maximum height that the wallet has scanned.
+     *
+     * If the wallet is fully synced, this will be equivalent to `getFullyScannedHeight`;
+     * otherwise the maximal scanned height is likely to be greater than the fully scanned
+     * height due to the fact that out-of-order scanning can leave gaps.
+     *
+     * @return The maximum height that the wallet has scanned, or Null if no blocks have been scanned.
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    suspend fun getMaxScannedHeight(): BlockHeight?
 
     /**
      * @throws RuntimeException as a common indicator of the operation failure

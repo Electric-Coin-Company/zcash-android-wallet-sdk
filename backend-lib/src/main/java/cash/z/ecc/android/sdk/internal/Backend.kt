@@ -102,6 +102,29 @@ interface Backend {
     suspend fun updateChainTip(height: Long)
 
     /**
+     * Returns the height to which the wallet has been fully scanned.
+     *
+     * This is the height for which the wallet has fully trial-decrypted this and all
+     * preceding blocks above the wallet's birthday height.
+     *
+     * @return The height to which the wallet has been fully scanned, or Null if no blocks have been scanned.
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    suspend fun getFullyScannedHeight(): Long?
+
+    /**
+     * Returns the maximum height that the wallet has scanned.
+     *
+     * If the wallet is fully synced, this will be equivalent to `getFullyScannedHeight`;
+     * otherwise the maximal scanned height is likely to be greater than the fully scanned
+     * height due to the fact that out-of-order scanning can leave gaps.
+     *
+     * @return The maximum height that the wallet has scanned, or Null if no blocks have been scanned.
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    suspend fun getMaxScannedHeight(): Long?
+
+    /**
      * @throws RuntimeException as a common indicator of the operation failure
      */
     @Throws(RuntimeException::class)
@@ -128,7 +151,7 @@ interface Backend {
     /**
      * @return The latest height in the CompactBlock cache metadata DB, or Null if no blocks have been cached.
      */
-    suspend fun getLatestHeight(): Long?
+    suspend fun getLatestCacheHeight(): Long?
 
     suspend fun findBlockMetadata(height: Long): JniBlockMeta?
 

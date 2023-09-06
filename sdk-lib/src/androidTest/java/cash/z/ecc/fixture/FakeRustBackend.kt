@@ -31,6 +31,14 @@ internal class FakeRustBackend(
         TODO("Not yet implemented")
     }
 
+    override suspend fun getFullyScannedHeight(): Long? {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun getMaxScannedHeight(): Long? {
+        TODO("Not yet implemented")
+    }
+
     override suspend fun getScanProgress(): JniScanProgress {
         TODO("Not yet implemented")
     }
@@ -39,7 +47,7 @@ internal class FakeRustBackend(
         TODO("Not yet implemented")
     }
 
-    override suspend fun getLatestHeight(): Long = metadata.maxOf { it.height }
+    override suspend fun getLatestCacheHeight(): Long = metadata.maxOf { it.height }
 
     override suspend fun getVerifiedTransparentBalance(address: String): Long {
         TODO("Not yet implemented")

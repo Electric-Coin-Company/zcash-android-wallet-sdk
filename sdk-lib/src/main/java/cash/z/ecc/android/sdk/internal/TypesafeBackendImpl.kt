@@ -93,8 +93,8 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
         backend.rewindToHeight(height.value)
     }
 
-    override suspend fun getLatestBlockHeight(): BlockHeight? {
-        return backend.getLatestHeight()?.let {
+    override suspend fun getLatestCacheHeight(): BlockHeight? {
+        return backend.getLatestCacheHeight()?.let {
             BlockHeight.new(
                 ZcashNetwork.from(backend.networkId),
                 it
@@ -161,6 +161,24 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
         )
 
     override suspend fun updateChainTip(height: BlockHeight) = backend.updateChainTip(height.value)
+
+    override suspend fun getFullyScannedHeight(): BlockHeight? {
+        return backend.getFullyScannedHeight()?.let {
+            BlockHeight.new(
+                ZcashNetwork.from(backend.networkId),
+                it
+            )
+        }
+    }
+
+    override suspend fun getMaxScannedHeight(): BlockHeight? {
+        return backend.getMaxScannedHeight()?.let {
+            BlockHeight.new(
+                ZcashNetwork.from(backend.networkId),
+                it
+            )
+        }
+    }
 
     override suspend fun scanBlocks(fromHeight: BlockHeight, limit: Long) = backend.scanBlocks(fromHeight.value, limit)
 
