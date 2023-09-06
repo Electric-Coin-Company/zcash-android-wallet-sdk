@@ -515,8 +515,12 @@ class SdkSynchronizer private constructor(
     //
 
     // Not ready to be a public API; internal for testing only
-    internal suspend fun createAccount(seed: ByteArray): UnifiedSpendingKey =
-        backend.createAccountAndGetSpendingKey(seed)
+    internal suspend fun createAccount(
+        seed: ByteArray,
+        checkpoint: Checkpoint,
+        recoverUntil: BlockHeight?
+    ): UnifiedSpendingKey =
+        backend.createAccountAndGetSpendingKey(seed, checkpoint, recoverUntil)
 
     /**
      * Returns the current Unified Address for this account.
@@ -660,7 +664,7 @@ internal object DefaultSynchronizerFactory {
         zcashNetwork: ZcashNetwork,
         checkpoint: Checkpoint,
         seed: ByteArray?,
-        viewingKeys: List<UnifiedFullViewingKey>
+        numberOfAccounts: Int
     ): DerivedDataRepository =
         DbDerivedDataRepository(
             DerivedDataDb.new(
@@ -670,7 +674,7 @@ internal object DefaultSynchronizerFactory {
                 zcashNetwork,
                 checkpoint,
                 seed,
-                viewingKeys
+                numberOfAccounts
             )
         )
 

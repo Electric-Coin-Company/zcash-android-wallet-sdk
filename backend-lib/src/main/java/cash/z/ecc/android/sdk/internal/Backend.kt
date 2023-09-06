@@ -1,6 +1,7 @@
 package cash.z.ecc.android.sdk.internal
 
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
+import cash.z.ecc.android.sdk.internal.model.JniScanProgress
 import cash.z.ecc.android.sdk.internal.model.JniScanRange
 import cash.z.ecc.android.sdk.internal.model.JniSubtreeRoot
 import cash.z.ecc.android.sdk.internal.model.JniUnifiedSpendingKey
@@ -35,27 +36,9 @@ interface Backend {
 
     suspend fun decryptAndStoreTransaction(tx: ByteArray)
 
-    /**
-     * @param keys A list of UFVKs to initialize the accounts table with
-     * @throws RuntimeException as a common indicator of the operation failure
-     */
-    @Throws(RuntimeException::class)
-    suspend fun initAccountsTable(vararg keys: String)
-
-    /**
-     * @throws RuntimeException as a common indicator of the operation failure
-     */
-    @Throws(RuntimeException::class)
-    suspend fun initBlocksTable(
-        checkpointHeight: Long,
-        checkpointHash: String,
-        checkpointTime: Long,
-        checkpointSaplingTree: String,
-    )
-
     suspend fun initDataDb(seed: ByteArray?): Int
 
-    suspend fun createAccount(seed: ByteArray): JniUnifiedSpendingKey
+    suspend fun createAccount(seed: ByteArray, treeState: ByteArray, recoverUntil: Long?): JniUnifiedSpendingKey
 
     fun isValidShieldedAddr(addr: String): Boolean
 
@@ -104,6 +87,12 @@ interface Backend {
      */
     @Throws(RuntimeException::class)
     suspend fun updateChainTip(height: Long)
+
+    /**
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    @Throws(RuntimeException::class)
+    suspend fun getScanProgress(): JniScanProgress?
 
     /**
      * @throws RuntimeException as a common indicator of the operation failure

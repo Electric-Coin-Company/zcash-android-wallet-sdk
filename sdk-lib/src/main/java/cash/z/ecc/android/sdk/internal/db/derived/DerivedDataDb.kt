@@ -47,27 +47,15 @@ internal class DerivedDataDb private constructor(
             zcashNetwork: ZcashNetwork,
             checkpoint: Checkpoint,
             seed: ByteArray?,
-            viewingKeys: List<UnifiedFullViewingKey>
+            numberOfAccounts: Int
         ): DerivedDataDb {
             backend.initDataDb(seed)
 
-            runCatching {
-                // TODO [#681]: consider converting these to typed exceptions in the welding layer
-                // TODO [#681]: https://github.com/zcash/zcash-android-wallet-sdk/issues/681
-                tryWarn(
-                    message = "Did not initialize the blocks table. It probably was already initialized.",
-                    ifContains = "table is not empty"
-                ) {
-                    backend.initBlocksTable(checkpoint)
+            // If a seed is provided, fill in the accounts.
+            seed?.let {
+                for (i in 1..numberOfAccounts) {
+                    backend.createAccountAndGetSpendingKey(it, checkpoint, null)
                 }
-                tryWarn(
-                    message = "Did not initialize the accounts table. It probably was already initialized.",
-                    ifContains = "table is not empty"
-                ) {
-                    backend.initAccountsTable(*viewingKeys.toTypedArray())
-                }
-            }.onFailure {
-                Twig.error { "Failed to init derived data database with $it" }
             }
 
             val database = ReadOnlySupportSqliteOpenHelper.openExistingDatabaseAsReadOnly(
