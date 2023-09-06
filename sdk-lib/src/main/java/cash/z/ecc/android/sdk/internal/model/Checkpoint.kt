@@ -1,7 +1,7 @@
 package cash.z.ecc.android.sdk.internal.model
 
+import cash.z.ecc.android.sdk.internal.ext.isInUIntRange
 import cash.z.ecc.android.sdk.model.BlockHeight
-import cash.z.wallet.sdk.internal.rpc.Service.TreeState
 import co.electriccoin.lightwallet.client.model.TreeStateUnsafe
 
 /**
@@ -21,8 +21,9 @@ internal data class Checkpoint(
     val tree: String
 ) {
     fun treeState(): TreeStateUnsafe {
-        // TODO: epochSeconds should be a Uint32, and for some reason the generated
-        //  Protobuf type Service.TreeState uses Int for this.
+        require(epochSeconds.isInUIntRange()) {
+            "epochSeconds $epochSeconds is outside of allowed UInt range"
+        }
         return TreeStateUnsafe.fromParts(height.value, hash, epochSeconds.toInt(), tree)
     }
 

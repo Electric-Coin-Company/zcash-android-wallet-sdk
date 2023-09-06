@@ -6,9 +6,8 @@ import cash.z.ecc.android.sdk.internal.NoBackupContextWrapper
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.TypesafeBackend
 import cash.z.ecc.android.sdk.internal.db.ReadOnlySupportSqliteOpenHelper
-import cash.z.ecc.android.sdk.internal.ext.tryWarn
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
-import cash.z.ecc.android.sdk.model.UnifiedFullViewingKey
+import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -39,7 +38,7 @@ internal class DerivedDataDb private constructor(
         // SqliteOpenHelper is happy
         private const val DATABASE_VERSION = 8
 
-        @Suppress("LongParameterList", "SpreadOperator")
+        @Suppress("LongParameterList")
         suspend fun new(
             context: Context,
             backend: TypesafeBackend,
@@ -47,16 +46,10 @@ internal class DerivedDataDb private constructor(
             zcashNetwork: ZcashNetwork,
             checkpoint: Checkpoint,
             seed: ByteArray?,
-            numberOfAccounts: Int
+            numberOfAccounts: Int,
+            recoverUntil: BlockHeight?
         ): DerivedDataDb {
             backend.initDataDb(seed)
-
-            // If a seed is provided, fill in the accounts.
-            seed?.let {
-                for (i in 1..numberOfAccounts) {
-                    backend.createAccountAndGetSpendingKey(it, checkpoint, null)
-                }
-            }
 
             val database = ReadOnlySupportSqliteOpenHelper.openExistingDatabaseAsReadOnly(
                 NoBackupContextWrapper(
@@ -67,7 +60,25 @@ internal class DerivedDataDb private constructor(
                 DATABASE_VERSION
             )
 
-            return DerivedDataDb(zcashNetwork, database)
+            val dataDb = DerivedDataDb(zcashNetwork, database)
+
+            // If a seed is provided, fill in the accounts.
+            seed?.let { checkedSeed ->
+                // toInt() should be safe because we expect very few accounts
+                val missingAccounts = numberOfAccounts - dataDb.accountTable.count().toInt()
+                require(missingAccounts >= 0) {
+                    "Unexpected number of accounts: $missingAccounts"
+                }
+                repeat(missingAccounts) {
+                    runCatching {
+                        backend.createAccountAndGetSpendingKey(checkedSeed, checkpoint, recoverUntil)
+                    }.onFailure {
+                        Twig.error(it) { "Create account failed." }
+                    }
+                }
+            }
+
+            return dataDb
         }
     }
 }

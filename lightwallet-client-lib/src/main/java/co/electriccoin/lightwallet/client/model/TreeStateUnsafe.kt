@@ -22,7 +22,7 @@ class TreeStateUnsafe(
                 .setTime(time)
                 .setSaplingTree(tree)
                 .build()
-            return TreeStateUnsafe.new(treeState)
+            return new(treeState)
         }
     }
 }

@@ -16,7 +16,6 @@ import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.tool.CheckpointTool
-import cash.z.ecc.android.sdk.tool.DerivationTool
 import cash.z.ecc.android.sdk.type.AddressType
 import cash.z.ecc.android.sdk.type.ConsensusMatchType
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
@@ -483,7 +482,8 @@ interface Synchronizer {
                 zcashNetwork,
                 loadedCheckpoint,
                 seed,
-                Derivation.DEFAULT_NUMBER_OF_ACCOUNTS
+                Derivation.DEFAULT_NUMBER_OF_ACCOUNTS,
+                Derivation.DEFAULT_RECOVERY_UNTIL_HEIGHT,
             )
 
             val service = DefaultSynchronizerFactory.defaultService(applicationContext, lightWalletEndpoint)

@@ -2058,18 +2058,20 @@ class CompactBlockProcessor internal constructor(
      * @param account the account to check for balance info.
      *
      * @return an instance of WalletBalance containing information about available and total funds.
+     *
+     * @throws RustLayerException.BalanceException if any error occurs while getting the balances via the Rust layer
      */
     suspend fun getBalanceInfo(account: Account): WalletBalance {
-        @Suppress("TooGenericExceptionCaught")
-        return try {
+        return runCatching {
             val balanceTotal = backend.getBalance(account)
-            Twig.debug { "found total balance: $balanceTotal" }
+            Twig.info { "Found total balance: $balanceTotal" }
             val balanceAvailable = backend.getVerifiedBalance(account)
-            Twig.debug { "found available balance: $balanceAvailable" }
+            Twig.info { "Found available balance: $balanceAvailable" }
             WalletBalance(balanceTotal, balanceAvailable)
-        } catch (t: Throwable) {
-            Twig.debug { "failed to get balance due to $t" }
-            throw RustLayerException.BalanceException(t)
+        }.onFailure {
+            Twig.error(it) { "Failed to get balance due to ${it.localizedMessage}" }
+        }.getOrElse {
+            throw RustLayerException.BalanceException(it)
         }
     }
 
