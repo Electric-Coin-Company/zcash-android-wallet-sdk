@@ -5,6 +5,7 @@ import cash.z.ecc.android.sdk.internal.SdkDispatchers
 import cash.z.ecc.android.sdk.internal.ext.deleteRecursivelySuspend
 import cash.z.ecc.android.sdk.internal.ext.deleteSuspend
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
+import cash.z.ecc.android.sdk.internal.model.JniScanProgress
 import cash.z.ecc.android.sdk.internal.model.JniScanRange
 import cash.z.ecc.android.sdk.internal.model.JniSubtreeRoot
 import cash.z.ecc.android.sdk.internal.model.JniUnifiedSpendingKey
@@ -68,42 +69,17 @@ class RustBackend private constructor(
         )
     }
 
-    override suspend fun createAccount(seed: ByteArray): JniUnifiedSpendingKey {
+    override suspend fun createAccount(
+        seed: ByteArray,
+        treeState: ByteArray,
+        recoverUntil: Long?
+    ): JniUnifiedSpendingKey {
         return withContext(SdkDispatchers.DATABASE_IO) {
             createAccount(
                 dataDbFile.absolutePath,
                 seed,
-                networkId = networkId
-            )
-        }
-    }
-
-    /**
-     * @param keys A list of UFVKs to initialize the accounts table with
-     */
-    override suspend fun initAccountsTable(vararg keys: String) {
-        return withContext(SdkDispatchers.DATABASE_IO) {
-            initAccountsTableWithKeys(
-                dataDbFile.absolutePath,
-                keys,
-                networkId = networkId
-            )
-        }
-    }
-
-    override suspend fun initBlocksTable(
-        checkpointHeight: Long,
-        checkpointHash: String,
-        checkpointTime: Long,
-        checkpointSaplingTree: String,
-    ) {
-        return withContext(SdkDispatchers.DATABASE_IO) {
-            initBlocksTable(
-                dataDbFile.absolutePath,
-                checkpointHeight,
-                checkpointHash,
-                checkpointTime,
-                checkpointSaplingTree,
+                treeState,
+                recoverUntil ?: -1,
                 networkId = networkId
             )
         }
@@ -263,6 +239,14 @@ class RustBackend private constructor(
             )
         }
 
+    override suspend fun getScanProgress(): JniScanProgress =
+        withContext(SdkDispatchers.DATABASE_IO) {
+            getScanProgress(
+                dataDbFile.absolutePath,
+                networkId = networkId
+            )
+        }
+
     override suspend fun suggestScanRanges(): List<JniScanRange> {
         return withContext(SdkDispatchers.DATABASE_IO) {
             suggestScanRanges(
@@ -412,25 +396,13 @@ class RustBackend private constructor(
         private external fun initDataDb(dbDataPath: String, seed: ByteArray?, networkId: Int): Int
 
         @JvmStatic
-        private external fun initAccountsTableWithKeys(
+        private external fun createAccount(
             dbDataPath: String,
-            ufvks: Array<out String>,
+            seed: ByteArray,
+            treeState: ByteArray,
+            recoverUntil: Long,
             networkId: Int
-        )
-
-        @JvmStatic
-        @Suppress("LongParameterList")
-        private external fun initBlocksTable(
-            dbDataPath: String,
-            height: Long,
-            hash: String,
-            time: Long,
-            saplingTree: String,
-            networkId: Int
-        )
-
-        @JvmStatic
-        private external fun createAccount(dbDataPath: String, seed: ByteArray, networkId: Int): JniUnifiedSpendingKey
+        ): JniUnifiedSpendingKey
 
         @JvmStatic
         private external fun getCurrentAddress(
@@ -529,6 +501,12 @@ class RustBackend private constructor(
             height: Long,
             networkId: Int
         )
+
+        @JvmStatic
+        private external fun getScanProgress(
+            dbDataPath: String,
+            networkId: Int
+        ): JniScanProgress
 
         @JvmStatic
         private external fun suggestScanRanges(

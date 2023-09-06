@@ -476,14 +476,6 @@ interface Synchronizer {
                 DefaultSynchronizerFactory
                     .defaultCompactBlockRepository(coordinator.fsBlockDbRoot(zcashNetwork, alias), backend)
 
-            val viewingKeys = seed?.let {
-                DerivationTool.getInstance().deriveUnifiedFullViewingKeys(
-                    seed,
-                    zcashNetwork,
-                    Derivation.DEFAULT_NUMBER_OF_ACCOUNTS
-                ).toList()
-            } ?: emptyList()
-
             val repository = DefaultSynchronizerFactory.defaultDerivedDataRepository(
                 applicationContext,
                 backend,
@@ -491,7 +483,7 @@ interface Synchronizer {
                 zcashNetwork,
                 loadedCheckpoint,
                 seed,
-                viewingKeys
+                Derivation.DEFAULT_NUMBER_OF_ACCOUNTS
             )
 
             val service = DefaultSynchronizerFactory.defaultService(applicationContext, lightWalletEndpoint)

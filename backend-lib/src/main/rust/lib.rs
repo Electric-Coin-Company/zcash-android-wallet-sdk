@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
 use std::num::NonZeroU32;
 use std::panic;
@@ -12,6 +11,7 @@ use jni::{
     sys::{jboolean, jbyteArray, jint, jlong, jobject, jobjectArray, jstring, JNI_FALSE, JNI_TRUE},
     JNIEnv,
 };
+use prost::Message;
 use schemer::MigratorError;
 use secrecy::{ExposeSecret, SecretVec};
 use tracing::{debug, error};
@@ -20,7 +20,7 @@ use tracing_subscriber::reload;
 use zcash_address::{ToAddress, ZcashAddress};
 use zcash_client_backend::data_api::{
     scanning::{ScanPriority, ScanRange},
-    NoteId, ShieldedProtocol,
+    AccountBirthday, NoteId, Ratio, ShieldedProtocol,
 };
 use zcash_client_backend::keys::{DecodingError, UnifiedSpendingKey};
 use zcash_client_backend::{
@@ -36,13 +36,14 @@ use zcash_client_backend::{
     encoding::AddressCodec,
     fees::DustOutputPolicy,
     keys::{Era, UnifiedFullViewingKey},
+    proto::service::TreeState,
     wallet::{OvkPolicy, WalletTransparentOutput},
     zip321::{Payment, TransactionRequest},
 };
 use zcash_client_sqlite::chain::init::init_blockmeta_db;
 use zcash_client_sqlite::{
     chain::BlockMeta,
-    wallet::init::{init_accounts_table, init_blocks_table, init_wallet_db, WalletMigrationError},
+    wallet::init::{init_wallet_db, WalletMigrationError},
     FsBlockDb, WalletDb,
 };
 use zcash_primitives::consensus::Network::{MainNetwork, TestNetwork};
@@ -75,7 +76,8 @@ mod zip317 {
     pub(super) use zcash_primitives::transaction::fees::zip317::*;
 }
 
-const ANCHOR_OFFSET: NonZeroU32 = unsafe { NonZeroU32::new_unchecked(10) };
+const ANCHOR_OFFSET_U32: u32 = 10;
+const ANCHOR_OFFSET: NonZeroU32 = unsafe { NonZeroU32::new_unchecked(ANCHOR_OFFSET_U32) };
 
 #[cfg(debug_assertions)]
 fn print_debug_state() {
@@ -259,66 +261,37 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_cr
     _: JClass<'_>,
     db_data: JString<'_>,
     seed: jbyteArray,
+    treestate: jbyteArray,
+    recover_until: jlong,
     network_id: jint,
 ) -> jobject {
+    use zcash_client_backend::data_api::BirthdayError;
+
     let res = panic::catch_unwind(|| {
         let network = parse_network(network_id as u32)?;
         let mut db_data = wallet_db(&env, network, db_data)?;
         let seed = SecretVec::new(env.convert_byte_array(seed).unwrap());
+        let treestate = TreeState::decode(&env.convert_byte_array(treestate).unwrap()[..])
+            .map_err(|e| format_err!("Invalid TreeState: {}", e))?;
+        let recover_until = recover_until.try_into().ok();
+
+        let birthday =
+            AccountBirthday::from_treestate(treestate, recover_until).map_err(|e| match e {
+                BirthdayError::HeightInvalid(e) => {
+                    format_err!("Invalid TreeState: Invalid height: {}", e)
+                }
+                BirthdayError::Decode(e) => {
+                    format_err!("Invalid TreeState: Invalid frontier encoding: {}", e)
+                }
+            })?;
 
         let (account, usk) = db_data
-            .create_account(&seed)
+            .create_account(&seed, birthday)
             .map_err(|e| format_err!("Error while initializing accounts: {}", e))?;
 
         encode_usk(&env, account, usk)
     });
     unwrap_exc_or(&env, res, ptr::null_mut())
-}
-
-/// Initialises the data database with the given set of unified full viewing keys.
-///
-/// This should only be used in special cases for implementing wallet recovery; prefer
-/// `RustBackend.createAccount` for normal account creation purposes.
-#[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_initAccountsTableWithKeys(
-    env: JNIEnv<'_>,
-    _: JClass<'_>,
-    db_data: JString<'_>,
-    ufvks_arr: jobjectArray,
-    network_id: jint,
-) -> jboolean {
-    let res = panic::catch_unwind(|| {
-        let network = parse_network(network_id as u32)?;
-        let mut db_data = wallet_db(&env, network, db_data)?;
-        // TODO: avoid all this unwrapping and also surface errors, better
-        let count = env.get_array_length(ufvks_arr).unwrap();
-        let ufvks = (0..count)
-            .map(|i| env.get_object_array_element(ufvks_arr, i))
-            .map(|jstr| utils::java_string_to_rust(&env, jstr.unwrap().into()))
-            .map(|ufvkstr| {
-                UnifiedFullViewingKey::decode(&network, &ufvkstr).map_err(|e| {
-                    if e.starts_with("UFVK is for network") {
-                            let (network_name, other) = if network == TestNetwork {
-                                ("testnet", "mainnet")
-                            } else {
-                                ("mainnet", "testnet")
-                            };
-                            format_err!("Error: Wrong network! Unable to decode viewing key for {}. Check whether this is a key for {}.", network_name, other)
-                    } else {
-                        format_err!("Invalid Unified Full Viewing Key: {}", e)
-                    }
-                })
-            })
-            .enumerate() // TODO: Pass account IDs across the FFI.
-            .map(|(i, res)| res.map(|ufvk| (AccountId::from(i as u32), ufvk)))
-            .collect::<Result<HashMap<_,_>, _>>()?;
-
-        match init_accounts_table(&mut db_data, &ufvks) {
-            Ok(()) => Ok(JNI_TRUE),
-            Err(e) => Err(format_err!("Error while initializing accounts: {}", e)),
-        }
-    });
-    unwrap_exc_or(&env, res, JNI_FALSE)
 }
 
 /// Derives and returns a unified spending key from the given seed for the given account ID.
@@ -476,48 +449,6 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustDerivation
         Ok(output.into_raw())
     });
     unwrap_exc_or(&env, res, ptr::null_mut())
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_initBlocksTable(
-    env: JNIEnv<'_>,
-    _: JClass<'_>,
-    db_data: JString<'_>,
-    height: jlong,
-    hash_string: JString<'_>,
-    time: jlong,
-    sapling_tree_string: JString<'_>,
-    network_id: jint,
-) -> jboolean {
-    let res = panic::catch_unwind(|| {
-        let network = parse_network(network_id as u32)?;
-        let mut db_data = wallet_db(&env, network, db_data)?;
-        let hash = {
-            let mut hash = hex::decode(utils::java_string_to_rust(&env, hash_string)).unwrap();
-            hash.reverse();
-            BlockHash::from_slice(&hash)
-        };
-        let time = if time >= 0 && time <= jlong::from(u32::max_value()) {
-            time as u32
-        } else {
-            return Err(format_err!("time argument must fit in a u32"));
-        };
-        let sapling_tree =
-            hex::decode(utils::java_string_to_rust(&env, sapling_tree_string)).unwrap();
-
-        debug!("initializing blocks table with height {}", height);
-        match init_blocks_table(
-            &mut db_data,
-            (height as u32).try_into()?,
-            hash,
-            time,
-            &sapling_tree,
-        ) {
-            Ok(()) => Ok(JNI_TRUE),
-            Err(e) => Err(format_err!("Error while initializing blocks table: {}", e)),
-        }
-    });
-    unwrap_exc_or(&env, res, JNI_FALSE)
 }
 
 #[no_mangle]
@@ -726,27 +657,20 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_ge
         let db_data = wallet_db(&env, network, db_data)?;
         let account = AccountId::from(u32::try_from(accountj)?);
 
-        // We query the unverified balance including unmined transactions. Shielded notes
-        // in unmined transactions are never spendable, but this ensures that the balance
-        // reported to users does not drop temporarily in a way that they don't expect.
-        // `getVerifiedBalance` requires `ANCHOR_OFFSET` confirmations, which means it
-        // always shows a spendable balance.
-        let min_confirmations = NonZeroU32::new(1).unwrap();
-
-        (&db_data)
-            .get_target_and_anchor_heights(min_confirmations)
-            .map_err(|e| format_err!("Error while fetching anchor height: {}", e))
-            .and_then(|opt_anchor| {
-                opt_anchor
-                    .map(|(_, a)| a + 1)
-                    .ok_or(format_err!("Anchor height not available; scan required."))
-            })
-            .and_then(|anchor| {
-                (&db_data)
-                    .get_balance_at(account, anchor)
-                    .map_err(|e| format_err!("Error while fetching verified balance: {}", e))
-            })
-            .map(|amount| amount.into())
+        if let Some(wallet_summary) = db_data
+            .get_wallet_summary(0)
+            .map_err(|e| format_err!("Error while fetching balance: {}", e))?
+        {
+            wallet_summary
+                .account_balances()
+                .get(&account)
+                .ok_or_else(|| format_err!("Unknown account"))
+                .map(|balances| Amount::from(balances.sapling_balance.total()).into())
+        } else {
+            // `None` means that the caller has not yet called `updateChainTip` on a
+            // brand-new wallet, so we can assume the balance is zero.
+            Ok(0)
+        }
     });
     unwrap_exc_or(&env, res, -1)
 }
@@ -842,20 +766,20 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_ge
         let db_data = wallet_db(&env, network, db_data)?;
         let account = AccountId::from(u32::try_from(account)?);
 
-        (&db_data)
-            .get_target_and_anchor_heights(ANCHOR_OFFSET)
-            .map_err(|e| format_err!("Error while fetching anchor height: {}", e))
-            .and_then(|opt_anchor| {
-                opt_anchor
-                    .map(|(_, a)| a)
-                    .ok_or(format_err!("Anchor height not available; scan required."))
-            })
-            .and_then(|anchor| {
-                (&db_data)
-                    .get_balance_at(account, anchor)
-                    .map_err(|e| format_err!("Error while fetching verified balance: {}", e))
-            })
-            .map(|amount| amount.into())
+        if let Some(wallet_summary) = db_data
+            .get_wallet_summary(ANCHOR_OFFSET_U32)
+            .map_err(|e| format_err!("Error while fetching verified balance: {}", e))?
+        {
+            wallet_summary
+                .account_balances()
+                .get(&account)
+                .ok_or_else(|| format_err!("Unknown account"))
+                .map(|balances| Amount::from(balances.sapling_balance.spendable_value).into())
+        } else {
+            // `None` means that the caller has not yet called `updateChainTip` on a
+            // brand-new wallet, so we can assume the balance is zero.
+            Ok(0)
+        }
     });
 
     unwrap_exc_or(&env, res, -1)
@@ -1173,6 +1097,41 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_up
     });
 
     unwrap_exc_or(&env, res, JNI_FALSE)
+}
+
+fn encode_scan_progress(env: &JNIEnv<'_>, progress: Ratio<u64>) -> Result<jobject, failure::Error> {
+    let output = env.new_object(
+        "cash/z/ecc/android/sdk/internal/model/JniScanProgress",
+        "(JJ)V",
+        &[
+            JValue::Long(*progress.numerator() as i64),
+            JValue::Long(*progress.denominator() as i64),
+        ],
+    )?;
+    Ok(output.into_raw())
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getScanProgress(
+    env: JNIEnv<'_>,
+    _: JClass<'_>,
+    db_data: JString<'_>,
+    network_id: jint,
+) -> jobject {
+    let res = panic::catch_unwind(|| {
+        let network = parse_network(network_id as u32)?;
+        let db_data = wallet_db(&env, network, db_data)?;
+
+        match db_data
+            .get_wallet_summary(0)
+            .map_err(|e| format_err!("Error while fetching scan progress: {}", e))?
+            .and_then(|wallet_summary| wallet_summary.scan_progress())
+        {
+            Some(progress) => encode_scan_progress(&env, progress),
+            None => Ok(ptr::null_mut()),
+        }
+    });
+    unwrap_exc_or(&env, res, ptr::null_mut())
 }
 
 fn encode_scan_range<'a>(

@@ -2,6 +2,7 @@ package cash.z.ecc.android.sdk.internal
 
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
+import cash.z.ecc.android.sdk.internal.model.ScanProgress
 import cash.z.ecc.android.sdk.internal.model.ScanRange
 import cash.z.ecc.android.sdk.internal.model.SubtreeRoot
 import cash.z.ecc.android.sdk.model.Account
@@ -18,16 +19,11 @@ internal interface TypesafeBackend {
 
     val network: ZcashNetwork
 
-    suspend fun initAccountsTable(vararg keys: UnifiedFullViewingKey)
-
-    suspend fun initAccountsTable(
+    suspend fun createAccountAndGetSpendingKey(
         seed: ByteArray,
-        numberOfAccounts: Int
-    ): List<UnifiedFullViewingKey>
-
-    suspend fun initBlocksTable(checkpoint: Checkpoint)
-
-    suspend fun createAccountAndGetSpendingKey(seed: ByteArray): UnifiedSpendingKey
+        checkpoint: Checkpoint,
+        recoverUntil: BlockHeight?
+    ): UnifiedSpendingKey
 
     @Suppress("LongParameterList")
     suspend fun createToAddress(
@@ -98,6 +94,12 @@ internal interface TypesafeBackend {
      */
     @Throws(RuntimeException::class)
     suspend fun scanBlocks(fromHeight: BlockHeight, limit: Long)
+
+    /**
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    @Throws(RuntimeException::class)
+    suspend fun getScanProgress(): ScanProgress?
 
     /**
      * @throws RuntimeException as a common indicator of the operation failure

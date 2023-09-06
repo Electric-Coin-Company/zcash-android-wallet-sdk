@@ -16,6 +16,7 @@ hdwallet = "0.3.1"
 hdwallet-bitcoin = "0.3"
 hex = "0.4"
 jni = { version = "0.20", default-features = false }
+prost = "0.11"
 rusqlite = "0.29"
 schemer = "0.2"
 secp256k1 = "0.21"
@@ -44,11 +45,11 @@ libc = "0.2"
 incrementalmerkletree = { git = "https://github.com/zcash/incrementalmerkletree.git", rev = "da97e6c399c5acddedad2c1730dbb7ee55499a2f" }
 shardtree = { git = "https://github.com/zcash/incrementalmerkletree.git", rev = "da97e6c399c5acddedad2c1730dbb7ee55499a2f" }
 orchard = { git = "https://github.com/zcash/orchard.git", rev = "6ef89d5f154de2cf7b7dd87edb8d8c49158beebb" }
-zcash_address = { git = "https://github.com/zcash/librustzcash.git", rev = "b580c42bdc9cb0d0fb06a3975783be1bb34395e8" }
-zcash_client_backend = { git = "https://github.com/zcash/librustzcash.git", rev = "b580c42bdc9cb0d0fb06a3975783be1bb34395e8" }
-zcash_client_sqlite = { git = "https://github.com/zcash/librustzcash.git", rev = "b580c42bdc9cb0d0fb06a3975783be1bb34395e8" }
-zcash_primitives = { git = "https://github.com/zcash/librustzcash.git", rev = "b580c42bdc9cb0d0fb06a3975783be1bb34395e8" }
-zcash_proofs = { git = "https://github.com/zcash/librustzcash.git", rev = "b580c42bdc9cb0d0fb06a3975783be1bb34395e8" }
+zcash_address = { git = "https://github.com/zcash/librustzcash.git", rev = "b4772e948d1b5153a8bf13d29ae10259eb930f53" }
+zcash_client_backend = { git = "https://github.com/zcash/librustzcash.git", rev = "b4772e948d1b5153a8bf13d29ae10259eb930f53" }
+zcash_client_sqlite = { git = "https://github.com/zcash/librustzcash.git", rev = "b4772e948d1b5153a8bf13d29ae10259eb930f53" }
+zcash_primitives = { git = "https://github.com/zcash/librustzcash.git", rev = "b4772e948d1b5153a8bf13d29ae10259eb930f53" }
+zcash_proofs = { git = "https://github.com/zcash/librustzcash.git", rev = "b4772e948d1b5153a8bf13d29ae10259eb930f53" }
 
 ## Uncomment this to test librustzcash changes locally
 #[patch.crates-io]

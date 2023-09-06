@@ -30,6 +30,10 @@ internal class FakeRustBackend(
         TODO("Not yet implemented")
     }
 
+    override suspend fun getScanProgress(): JniScanProgress {
+        TODO("Not yet implemented")
+    }
+
     override suspend fun suggestScanRanges(): List<JniScanRange> {
         TODO("Not yet implemented")
     }
@@ -83,23 +87,14 @@ internal class FakeRustBackend(
     override suspend fun decryptAndStoreTransaction(tx: ByteArray) =
         error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 
-    override suspend fun initAccountsTable(vararg keys: String) {
-        TODO("Not yet implemented")
-    }
-
-    override suspend fun initBlocksTable(
-        checkpointHeight: Long,
-        checkpointHash: String,
-        checkpointTime: Long,
-        checkpointSaplingTree: String
-    ) {
-        TODO("Not yet implemented")
-    }
-
     override suspend fun initDataDb(seed: ByteArray?): Int =
         error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 
-    override suspend fun createAccount(seed: ByteArray): JniUnifiedSpendingKey =
+    override suspend fun createAccount(
+        seed: ByteArray,
+        treeState: ByteArray,
+        recoverUntil: Long?
+    ): JniUnifiedSpendingKey =
         error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 
     override fun isValidShieldedAddr(addr: String): Boolean =

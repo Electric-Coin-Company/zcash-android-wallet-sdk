@@ -3,6 +3,7 @@ package cash.z.ecc.android.sdk.internal
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.internal.model.JniSubtreeRoot
+import cash.z.ecc.android.sdk.internal.model.ScanProgress
 import cash.z.ecc.android.sdk.internal.model.ScanRange
 import cash.z.ecc.android.sdk.internal.model.SubtreeRoot
 import cash.z.ecc.android.sdk.model.Account
@@ -22,30 +23,18 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
     override val network: ZcashNetwork
         get() = ZcashNetwork.from(backend.networkId)
 
-    override suspend fun initAccountsTable(vararg keys: UnifiedFullViewingKey) {
-        val ufvks = Array(keys.size) { keys[it].encoding }
-        @Suppress("SpreadOperator")
-        backend.initAccountsTable(*ufvks)
-    }
-
-    override suspend fun initAccountsTable(
+    override suspend fun createAccountAndGetSpendingKey(
         seed: ByteArray,
-        numberOfAccounts: Int
-    ): List<UnifiedFullViewingKey> {
-        return DerivationTool.getInstance().deriveUnifiedFullViewingKeys(seed, network, numberOfAccounts)
-    }
-
-    override suspend fun initBlocksTable(checkpoint: Checkpoint) {
-        backend.initBlocksTable(
-            checkpoint.height.value,
-            checkpoint.hash,
-            checkpoint.epochSeconds,
-            checkpoint.tree
+        checkpoint: Checkpoint,
+        recoverUntil: BlockHeight?
+    ): UnifiedSpendingKey {
+        return UnifiedSpendingKey(
+            backend.createAccount(
+                seed,
+                checkpoint.treeState().encoded,
+                recoverUntil?.value
+            )
         )
-    }
-
-    override suspend fun createAccountAndGetSpendingKey(seed: ByteArray): UnifiedSpendingKey {
-        return UnifiedSpendingKey(backend.createAccount(seed))
     }
 
     @Suppress("LongParameterList")
@@ -176,6 +165,10 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
     override suspend fun updateChainTip(height: BlockHeight) = backend.updateChainTip(height.value)
 
     override suspend fun scanBlocks(fromHeight: BlockHeight, limit: Long) = backend.scanBlocks(fromHeight.value, limit)
+
+    override suspend fun getScanProgress(): ScanProgress? = backend.getScanProgress()?.let { jniScanProgress ->
+        ScanProgress.new(jniScanProgress)
+    }
 
     override suspend fun suggestScanRanges(): List<ScanRange> = backend.suggestScanRanges().map { jniScanRange ->
         ScanRange.new(
