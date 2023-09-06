@@ -3,6 +3,8 @@
 ## Unreleased
 - `CompactBlockProcessor` now processes compact blocks from the lightwalletd server with spend-before-sync algorithm 
   (i.e. non-linear order). This feature shortens the time after which a wallet's spendable balance can be used.
+- The block synchronization mechanism is about one-third faster thanks to the optimized 
+`CompactBlockProcessor.SYNC_BATCH_SIZE`. Issue **#1206**.
 
 ### Added
 - New `syncAlgorithm` parameter of `Synchronizer.new()` and `WalletCoordinator()` to select preferred 
