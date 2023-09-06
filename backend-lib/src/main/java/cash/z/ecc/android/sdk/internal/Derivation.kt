@@ -40,5 +40,6 @@ interface Derivation {
 
     companion object {
         const val DEFAULT_NUMBER_OF_ACCOUNTS = 1
+        val DEFAULT_RECOVERY_UNTIL_HEIGHT = null
     }
 }

@@ -239,7 +239,7 @@ class RustBackend private constructor(
             )
         }
 
-    override suspend fun getScanProgress(): JniScanProgress =
+    override suspend fun getScanProgress(): JniScanProgress? =
         withContext(SdkDispatchers.DATABASE_IO) {
             getScanProgress(
                 dataDbFile.absolutePath,
@@ -506,7 +506,7 @@ class RustBackend private constructor(
         private external fun getScanProgress(
             dbDataPath: String,
             networkId: Int
-        ): JniScanProgress
+        ): JniScanProgress?
 
         @JvmStatic
         private external fun suggestScanRanges(

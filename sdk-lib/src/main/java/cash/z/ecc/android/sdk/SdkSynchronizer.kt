@@ -40,7 +40,6 @@ import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.PercentDecimal
 import cash.z.ecc.android.sdk.model.TransactionOverview
 import cash.z.ecc.android.sdk.model.TransactionRecipient
-import cash.z.ecc.android.sdk.model.UnifiedFullViewingKey
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
@@ -521,8 +520,13 @@ class SdkSynchronizer private constructor(
         seed: ByteArray,
         checkpoint: Checkpoint,
         recoverUntil: BlockHeight?
-    ): UnifiedSpendingKey =
-        backend.createAccountAndGetSpendingKey(seed, checkpoint, recoverUntil)
+    ): UnifiedSpendingKey? {
+        return runCatching {
+            backend.createAccountAndGetSpendingKey(seed, checkpoint, recoverUntil)
+        }.onFailure {
+            Twig.error(it) { "Create account failed." }
+        }.getOrNull()
+    }
 
     /**
      * Returns the current Unified Address for this account.
@@ -666,7 +670,8 @@ internal object DefaultSynchronizerFactory {
         zcashNetwork: ZcashNetwork,
         checkpoint: Checkpoint,
         seed: ByteArray?,
-        numberOfAccounts: Int
+        numberOfAccounts: Int,
+        recoverUntil: BlockHeight?
     ): DerivedDataRepository =
         DbDerivedDataRepository(
             DerivedDataDb.new(
@@ -676,7 +681,8 @@ internal object DefaultSynchronizerFactory {
                 zcashNetwork,
                 checkpoint,
                 seed,
-                numberOfAccounts
+                numberOfAccounts,
+                recoverUntil
             )
         )
 

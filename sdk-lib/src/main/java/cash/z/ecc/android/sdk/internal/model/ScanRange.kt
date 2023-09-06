@@ -10,7 +10,7 @@ internal data class ScanRange(
     override fun toString() = "ScanRange(range=$range, priority=${getSuggestScanRangePriority()})"
 
     internal fun getSuggestScanRangePriority(): SuggestScanRangePriority {
-        return SuggestScanRangePriority.values()
+        return SuggestScanRangePriority.entries
             .firstOrNull { it.priority == priority } ?: SuggestScanRangePriority.Ignored
     }
 

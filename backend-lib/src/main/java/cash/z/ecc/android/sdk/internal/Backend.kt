@@ -38,6 +38,10 @@ interface Backend {
 
     suspend fun initDataDb(seed: ByteArray?): Int
 
+    /**
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    @Throws(RuntimeException::class)
     suspend fun createAccount(seed: ByteArray, treeState: ByteArray, recoverUntil: Long?): JniUnifiedSpendingKey
 
     fun isValidShieldedAddr(addr: String): Boolean
@@ -54,6 +58,10 @@ interface Backend {
 
     suspend fun listTransparentReceivers(account: Int): List<String>
 
+    /**
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    @Throws(RuntimeException::class)
     suspend fun getBalance(account: Int): Long
 
     fun getBranchIdForHeight(height: Long): Long
@@ -61,8 +69,13 @@ interface Backend {
     /**
      * @throws RuntimeException as a common indicator of the operation failure
      */
+    @Throws(RuntimeException::class)
     suspend fun getMemoAsUtf8(txId: ByteArray, outputIndex: Int): String?
 
+    /**
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    @Throws(RuntimeException::class)
     suspend fun getVerifiedBalance(account: Int): Long
 
     suspend fun getNearestRewindHeight(height: Long): Long
