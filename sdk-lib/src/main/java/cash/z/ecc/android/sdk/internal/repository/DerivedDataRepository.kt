@@ -14,31 +14,12 @@ import kotlinx.coroutines.flow.Flow
 internal interface DerivedDataRepository {
 
     /**
-     * The last height scanned by this repository.
-     *
-     * @return the last height scanned by this repository.
-     */
-    suspend fun lastScannedHeight(): BlockHeight
-
-    /**
      * The height of the first transaction that hasn't been enhanced yet.
      *
      * @return the height of the first un-enhanced transaction in the repository, or null in case of all transaction
      * enhanced or no entry found
      */
     suspend fun firstUnenhancedHeight(): BlockHeight?
-
-    /**
-     * The height of the first block in this repository. This is typically the checkpoint that was
-     * used to initialize this wallet. If we overwrite this block, it breaks our ability to spend
-     * funds.
-     */
-    suspend fun firstScannedHeight(): BlockHeight
-
-    /**
-     * @return true when this repository has been initialized and seeded with the initial checkpoint.
-     */
-    suspend fun isInitialized(): Boolean
 
     /**
      * Find the encoded transaction associated with the given id.
@@ -75,11 +56,6 @@ internal interface DerivedDataRepository {
     suspend fun findMinedHeight(rawTransactionId: ByteArray): BlockHeight?
 
     suspend fun findMatchingTransactionId(rawTransactionId: ByteArray): Long?
-
-    // TODO [#681]: begin converting these into Data Access API. For now, just collect the desired
-    //  operations and iterate/refactor, later
-    // TODO [#681]: https://github.com/zcash/zcash-android-wallet-sdk/issues/681
-    suspend fun findBlockHash(height: BlockHeight): ByteArray?
 
     suspend fun getTransactionCount(): Long
 

@@ -98,8 +98,8 @@ internal class TransactionEncoderImpl(
         backend.isValidUnifiedAddr(address)
 
     override suspend fun getConsensusBranchId(): Long {
-        val height = repository.lastScannedHeight()
-        if (height < backend.network.saplingActivationHeight) {
+        val height = backend.getMaxScannedHeight()
+        if (height == null || height < backend.network.saplingActivationHeight) {
             throw TransactionEncoderException.IncompleteScanException(height)
         }
         return backend.getBranchIdForHeight(height)

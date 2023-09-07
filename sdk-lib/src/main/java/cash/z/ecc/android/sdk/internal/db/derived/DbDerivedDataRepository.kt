@@ -18,20 +18,8 @@ internal class DbDerivedDataRepository(
 ) : DerivedDataRepository {
     private val invalidatingFlow = MutableStateFlow(UUID.randomUUID())
 
-    override suspend fun lastScannedHeight(): BlockHeight {
-        return derivedDataDb.blockTable.lastScannedHeight()
-    }
-
     override suspend fun firstUnenhancedHeight(): BlockHeight? {
         return derivedDataDb.allTransactionView.firstUnenhancedHeight()
-    }
-
-    override suspend fun firstScannedHeight(): BlockHeight {
-        return derivedDataDb.blockTable.firstScannedHeight()
-    }
-
-    override suspend fun isInitialized(): Boolean {
-        return derivedDataDb.blockTable.count() > 0
     }
 
     override suspend fun findEncodedTransactionByTxId(txId: FirstClassByteArray): EncodedTransaction? {
@@ -48,8 +36,6 @@ internal class DbDerivedDataRepository(
 
     override suspend fun findMatchingTransactionId(rawTransactionId: ByteArray) = derivedDataDb.transactionTable
         .findDatabaseId(rawTransactionId)
-
-    override suspend fun findBlockHash(height: BlockHeight) = derivedDataDb.blockTable.findBlockHash(height)
 
     override suspend fun getTransactionCount() = derivedDataDb.transactionTable.count()
 

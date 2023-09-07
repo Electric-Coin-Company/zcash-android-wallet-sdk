@@ -17,7 +17,7 @@ internal sealed class SyncingResult {
         override fun toString() = "${this::class.java.simpleName} with ${downloadedBlocks?.size ?: "none"} blocks"
     }
     interface Failure {
-        val failedAtHeight: BlockHeight
+        val failedAtHeight: BlockHeight?
         val exception: CompactBlockProcessorException
         fun toBlockProcessingResult(): CompactBlockProcessor.BlockProcessingResult =
             CompactBlockProcessor.BlockProcessingResult.SyncFailure(
@@ -36,7 +36,7 @@ internal sealed class SyncingResult {
     ) : Failure, SyncingResult()
     object DeleteSuccess : SyncingResult()
     data class DeleteFailed(
-        override val failedAtHeight: BlockHeight,
+        override val failedAtHeight: BlockHeight?,
         override val exception: CompactBlockProcessorException
     ) : Failure, SyncingResult()
     object EnhanceSuccess : SyncingResult()

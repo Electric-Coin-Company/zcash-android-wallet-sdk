@@ -33,7 +33,7 @@ data class TransactionOverview internal constructor(
     companion object {
         internal fun new(
             dbTransactionOverview: DbTransactionOverview,
-            latestBlockHeight: BlockHeight
+            latestBlockHeight: BlockHeight?
         ): TransactionOverview {
             return TransactionOverview(
                 dbTransactionOverview.id,
@@ -69,11 +69,13 @@ enum class TransactionState {
 
         private const val MIN_CONFIRMATIONS = 10
         internal fun new(
-            latestBlockHeight: BlockHeight,
+            latestBlockHeight: BlockHeight?,
             minedHeight: BlockHeight?,
             expiryHeight: BlockHeight?
         ): TransactionState {
-            return if (minedHeight != null && (latestBlockHeight.value - minedHeight.value) >= MIN_CONFIRMATIONS) {
+            return if (latestBlockHeight == null) {
+                Pending
+            } else if (minedHeight != null && (latestBlockHeight.value - minedHeight.value) >= MIN_CONFIRMATIONS) {
                 Confirmed
             } else if (minedHeight != null && (latestBlockHeight.value - minedHeight.value) < MIN_CONFIRMATIONS) {
                 Pending

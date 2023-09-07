@@ -14,7 +14,11 @@
 - `CompactBlockProcessor.ProcessorInfo.isSyncing`. Use `Synchronizer.status` instead.
 - `CompactBlockProcessor.ProcessorInfo.syncProgress`. Use `Synchronizer.progress` instead.
 - `alsoClearBlockCache` parameter from rewind functions of `Synchronizer` and `CompactBlockProcessor` as it take no 
-  affect on the current rewind functionality result.
+  effect on the current rewind functionality result.
+- Internally, we removed access to the shared block table from the Kotlin layer, which resulted in eliminating these 
+  APIs:
+  - `SdkSynchornizer.findBlockHash()`
+  - `SdkSynchornizer.findBlockHashAsHex()`
 
 ### Changed
 - Updated dependencies:
@@ -26,6 +30,8 @@
    - AndroidX
    - gRPC/Protobuf
    - etc.
+- `CompactBlockProcessor.quickRewind()` and `CompactBlockProcessor.rewindToNearestHeight()` now might fail due to 
+  internal changes in getting scanned height. Thus, these functions return `Boolean` results.
 
 ### Fixed
 - `Synchronizer.getMemos()` now correctly returns a flow of strings for sent and received transactions. Issue **#1154**.

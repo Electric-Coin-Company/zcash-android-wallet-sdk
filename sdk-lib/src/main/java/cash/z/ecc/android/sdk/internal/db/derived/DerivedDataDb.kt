@@ -2,6 +2,7 @@ package cash.z.ecc.android.sdk.internal.db.derived
 
 import android.content.Context
 import androidx.sqlite.db.SupportSQLiteDatabase
+import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException
 import cash.z.ecc.android.sdk.internal.NoBackupContextWrapper
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.TypesafeBackend
@@ -18,8 +19,6 @@ internal class DerivedDataDb private constructor(
     private val sqliteDatabase: SupportSQLiteDatabase
 ) {
     val accountTable = AccountTable(sqliteDatabase)
-
-    val blockTable = BlockTable(zcashNetwork, sqliteDatabase)
 
     val transactionTable = TransactionTable(zcashNetwork, sqliteDatabase)
 
@@ -49,7 +48,14 @@ internal class DerivedDataDb private constructor(
             numberOfAccounts: Int,
             recoverUntil: BlockHeight?
         ): DerivedDataDb {
-            backend.initDataDb(seed)
+            runCatching {
+                val result = backend.initDataDb(seed)
+                if (result < 0) {
+                    throw CompactBlockProcessorException.Uninitialized()
+                }
+            }.onFailure {
+                throw CompactBlockProcessorException.Uninitialized(it)
+            }
 
             val database = ReadOnlySupportSqliteOpenHelper.openExistingDatabaseAsReadOnly(
                 NoBackupContextWrapper(
