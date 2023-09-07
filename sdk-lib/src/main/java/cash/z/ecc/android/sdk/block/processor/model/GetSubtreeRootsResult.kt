@@ -6,9 +6,8 @@ import cash.z.ecc.android.sdk.internal.model.SubtreeRoot
  * Internal class for get subtree roots action result.
  */
 internal sealed class GetSubtreeRootsResult {
-    // SbS: Spend-before-Sync
-    data class UseSbS(val subTreeRootList: List<SubtreeRoot>) : GetSubtreeRootsResult()
-    object UseLinear : GetSubtreeRootsResult()
-    object FailureConnection : GetSubtreeRootsResult()
+    data class SpendBeforeSync(val subTreeRootList: List<SubtreeRoot>) : GetSubtreeRootsResult()
+    data object Linear : GetSubtreeRootsResult()
+    data object FailureConnection : GetSubtreeRootsResult()
     data class OtherFailure(val exception: Throwable) : GetSubtreeRootsResult()
 }

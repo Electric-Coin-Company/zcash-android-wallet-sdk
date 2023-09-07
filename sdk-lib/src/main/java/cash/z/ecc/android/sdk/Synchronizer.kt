@@ -162,7 +162,7 @@ interface Synchronizer {
      * Sends zatoshi.
      *
      * @param usk the unified spending key associated with the notes that will be spent.
-     * @param zatoshi the amount of zatoshi to send.
+     * @param amount the amount of zatoshi to send.
      * @param toAddress the recipient's address.
      * @param memo the optional memo to include as part of the transaction.
      *
@@ -425,8 +425,6 @@ interface Synchronizer {
          * to create the wallet.  If that value is unknown, null is acceptable but will result in longer
          * sync times.  After sync completes, the birthday can be determined from [Synchronizer.latestBirthdayHeight].
          *
-         * @param syncAlgorithm The CompactBlockProcess's type of block syncing algorithm
-         *
          * @throws InitializerException.SeedRequired Indicates clients need to call this method again, providing the
          * seed bytes.
          *
@@ -445,8 +443,7 @@ interface Synchronizer {
             alias: String = ZcashSdk.DEFAULT_ALIAS,
             lightWalletEndpoint: LightWalletEndpoint,
             seed: ByteArray?,
-            birthday: BlockHeight?,
-            syncAlgorithm: CompactBlockProcessor.SyncAlgorithm = CompactBlockProcessor.SyncAlgorithm.LINEAR
+            birthday: BlockHeight?
         ): CloseableSynchronizer {
             val applicationContext = context.applicationContext
 
@@ -497,8 +494,7 @@ interface Synchronizer {
                 backend = backend,
                 downloader = downloader,
                 repository = repository,
-                birthdayHeight = birthday ?: zcashNetwork.saplingActivationHeight,
-                syncAlgorithm = syncAlgorithm
+                birthdayHeight = birthday ?: zcashNetwork.saplingActivationHeight
             )
 
             return SdkSynchronizer.new(
@@ -525,10 +521,9 @@ interface Synchronizer {
             alias: String = ZcashSdk.DEFAULT_ALIAS,
             lightWalletEndpoint: LightWalletEndpoint,
             seed: ByteArray?,
-            birthday: BlockHeight?,
-            syncAlgorithm: CompactBlockProcessor.SyncAlgorithm = CompactBlockProcessor.SyncAlgorithm.LINEAR
+            birthday: BlockHeight?
         ): CloseableSynchronizer = runBlocking {
-            new(context, zcashNetwork, alias, lightWalletEndpoint, seed, birthday, syncAlgorithm)
+            new(context, zcashNetwork, alias, lightWalletEndpoint, seed, birthday)
         }
 
         /**

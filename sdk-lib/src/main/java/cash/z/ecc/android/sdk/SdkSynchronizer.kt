@@ -723,14 +723,12 @@ internal object DefaultSynchronizerFactory {
         backend: TypesafeBackend,
         downloader: CompactBlockDownloader,
         repository: DerivedDataRepository,
-        birthdayHeight: BlockHeight,
-        syncAlgorithm: CompactBlockProcessor.SyncAlgorithm
+        birthdayHeight: BlockHeight
     ): CompactBlockProcessor = CompactBlockProcessor(
         downloader = downloader,
         repository = repository,
         backend = backend,
-        minimumHeight = birthdayHeight,
-        syncAlgorithm = syncAlgorithm
+        minimumHeight = birthdayHeight
     )
 }
 
