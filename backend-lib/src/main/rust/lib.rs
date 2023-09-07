@@ -661,11 +661,11 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_ge
             .get_wallet_summary(0)
             .map_err(|e| format_err!("Error while fetching balance: {}", e))?
         {
-            wallet_summary
+            Ok(wallet_summary
                 .account_balances()
                 .get(&account)
-                .ok_or_else(|| format_err!("Unknown account"))
                 .map(|balances| Amount::from(balances.sapling_balance.total()).into())
+                .unwrap_or(0))
         } else {
             // `None` means that the caller has not yet called `updateChainTip` on a
             // brand-new wallet, so we can assume the balance is zero.
@@ -770,11 +770,11 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_ge
             .get_wallet_summary(ANCHOR_OFFSET_U32)
             .map_err(|e| format_err!("Error while fetching verified balance: {}", e))?
         {
-            wallet_summary
+            Ok(wallet_summary
                 .account_balances()
                 .get(&account)
-                .ok_or_else(|| format_err!("Unknown account"))
                 .map(|balances| Amount::from(balances.sapling_balance.spendable_value).into())
+                .unwrap_or(0))
         } else {
             // `None` means that the caller has not yet called `updateChainTip` on a
             // brand-new wallet, so we can assume the balance is zero.
