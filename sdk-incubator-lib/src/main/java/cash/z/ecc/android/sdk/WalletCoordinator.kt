@@ -1,7 +1,6 @@
 package cash.z.ecc.android.sdk
 
 import android.content.Context
-import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor
 import cash.z.ecc.android.sdk.ext.onFirst
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.model.PersistableWallet
@@ -34,8 +33,6 @@ import java.util.UUID
 
 /**
  * @param persistableWallet flow of the user's stored wallet.  Null indicates that no wallet has been stored.
- *
- * @param syncAlgorithm The CompactBlockProcess's type of block syncing algorithm
  */
 /*
  * One area where this class needs to change before it can be moved out of the incubator is that we need to be able to
@@ -46,8 +43,7 @@ import java.util.UUID
  */
 class WalletCoordinator(
     context: Context,
-    val persistableWallet: Flow<PersistableWallet?>,
-    val syncAlgorithm: CompactBlockProcessor.SyncAlgorithm = CompactBlockProcessor.SyncAlgorithm.LINEAR
+    val persistableWallet: Flow<PersistableWallet?>
 ) {
 
     private val applicationContext = context.applicationContext
@@ -83,8 +79,7 @@ class WalletCoordinator(
                         zcashNetwork = persistableWallet.network,
                         lightWalletEndpoint = LightWalletEndpoint.defaultForNetwork(persistableWallet.network),
                         birthday = persistableWallet.birthday,
-                        seed = persistableWallet.seedPhrase.toByteArray(),
-                        syncAlgorithm = syncAlgorithm
+                        seed = persistableWallet.seedPhrase.toByteArray()
                     )
 
                     trySend(InternalSynchronizerStatus.Available(closeableSynchronizer))

@@ -46,8 +46,6 @@ import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.PercentDecimal
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.ZcashNetwork
-import co.electriccoin.lightwallet.client.ext.BenchmarkingExt
-import co.electriccoin.lightwallet.client.fixture.BenchmarkingBlockRangeFixture
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.GetAddressUtxosReplyUnsafe
 import co.electriccoin.lightwallet.client.model.LightWalletEndpointInfoUnsafe
@@ -93,8 +91,6 @@ import kotlin.time.toDuration
  * reorgs as a backstop to make sure we do not rewind beyond sapling activation. It also is factored
  * in when considering initial range to download. In most cases, this should be the birthday height
  * of the current wallet--the height before which we do not need to scan for transactions.
- *
- * @property syncAlgorithm The type of block syncing algorithm which should be preferably used
  */
 @OpenForTesting
 @Suppress("TooManyFunctions", "LargeClass")
@@ -102,8 +98,7 @@ class CompactBlockProcessor internal constructor(
     val downloader: CompactBlockDownloader,
     private val repository: DerivedDataRepository,
     private val backend: TypesafeBackend,
-    minimumHeight: BlockHeight,
-    private val syncAlgorithm: SyncAlgorithm
+    minimumHeight: BlockHeight
 ) {
     /**
      * Callback for any non-trivial errors that occur while processing compact blocks.
@@ -160,14 +155,14 @@ class CompactBlockProcessor internal constructor(
     /**
      * The synchronization-related variable that holds the all batch count computed in the first initial synchronization
      * loop. It is supposed to keep the same value across the synchronization refreshes with [runSbSSyncingPreparation]
-     * as happens in [SyncAlgorithm.SPEND_BEFORE_SYNC] synchronization function.
+     * as happens in spend-before-sync synchronization function.
      */
     private var allBatchCount: Long = 0
 
     /**
      * Another synchronization-related variable that holds the order of a currently processing batch of blocks. It
      * is supposed to preserve its value across the synchronization refreshes with [runSbSSyncingPreparation] as
-     * happens in [SyncAlgorithm.SPEND_BEFORE_SYNC] synchronization function.
+     * happens in spend-before-sync synchronization function.
      */
     private var lastBatchOrder: Long = 0
 
@@ -227,13 +222,9 @@ class CompactBlockProcessor internal constructor(
         )
 
         // Download note commitment tree data from lightwalletd to decide if we communicate with linear
-        // or spend-before-sync node. It depends on the syncAlgorithm property on the first place.
-        var subTreeRootResult = if (syncAlgorithm == SyncAlgorithm.LINEAR) {
-            GetSubtreeRootsResult.UseLinear
-        } else {
-            getSubtreeRoots(downloader, network)
-        }
-        Twig.info { "Fetched SubTreeRoot result: $subTreeRootResult, with preferred sync algorithm: $syncAlgorithm" }
+        // or spend-before-sync node.
+        var subTreeRootResult = getSubtreeRoots(downloader, network)
+        Twig.info { "Fetched SubTreeRoot result: $subTreeRootResult" }
 
         Twig.debug { "Setup verified. Processor starting..." }
 
@@ -246,13 +237,13 @@ class CompactBlockProcessor internal constructor(
             ) {
                 val result = processingMutex.withLockLogged("processNewBlocks") {
                     when (subTreeRootResult) {
-                        is GetSubtreeRootsResult.UseSbS -> {
+                        is GetSubtreeRootsResult.SpendBeforeSync -> {
                             // Pass the commitment tree data to the database
                             when (
                                 val result = putSaplingSubtreeRoots(
                                     backend = backend,
                                     startIndex = 0,
-                                    subTreeRootList = (subTreeRootResult as GetSubtreeRootsResult.UseSbS)
+                                    subTreeRootList = (subTreeRootResult as GetSubtreeRootsResult.SpendBeforeSync)
                                         .subTreeRootList,
                                     lastValidHeight = lowerBoundHeight
                                 )
@@ -273,13 +264,30 @@ class CompactBlockProcessor internal constructor(
                                 firstUnenhancedHeight = _processorInfo.value.firstUnenhancedHeight
                             )
                         }
-                        GetSubtreeRootsResult.UseLinear -> {
-                            // Forced by syncAlgorithm parameter or caused by an empty response result
-                            processNewBlocksInLinearOrder()
+                        GetSubtreeRootsResult.Linear -> {
+                            // This is caused by an empty response result. Although the spend-before-sync
+                            // synchronization algorithm is not supported, we can get the entire block range as we
+                            // previously did for the linear sync type.
+                            processNewBlocksInSbSOrder(
+                                backend = backend,
+                                downloader = downloader,
+                                repository = repository,
+                                network = network,
+                                lastValidHeight = lowerBoundHeight,
+                                firstUnenhancedHeight = _processorInfo.value.firstUnenhancedHeight
+                            )
                         }
                         is GetSubtreeRootsResult.OtherFailure -> {
-                            // Server possible replied with some kind of unsupported error
-                            processNewBlocksInLinearOrder()
+                            // The server possibly replied with some unsupported error. We still approach
+                            // spend-before-sync synchronization.
+                            processNewBlocksInSbSOrder(
+                                backend = backend,
+                                downloader = downloader,
+                                repository = repository,
+                                network = network,
+                                lastValidHeight = lowerBoundHeight,
+                                firstUnenhancedHeight = _processorInfo.value.firstUnenhancedHeight
+                            )
                         }
                         GetSubtreeRootsResult.FailureConnection -> {
                             // SubtreeRoot fetching retry
@@ -367,39 +375,6 @@ class CompactBlockProcessor internal constructor(
         stop()
         Twig.debug { "${error.message}" }
         throw error
-    }
-
-    private suspend fun processNewBlocksInLinearOrder(): BlockProcessingResult {
-        Twig.info { "Beginning to process new blocks with Linear approach (with lower bound: $lowerBoundHeight)..." }
-
-        return if (!updateRange(null)) {
-            Twig.warn { "Disconnection detected. Attempting to reconnect." }
-            BlockProcessingResult.Reconnecting
-        } else if (_processorInfo.value.overallSyncRange.isNullOrEmpty()) {
-            Twig.info { "No more blocks to process." }
-            BlockProcessingResult.NoBlocksToProcess
-        } else {
-            setState(State.Syncing)
-            val syncRange = if (BenchmarkingExt.isBenchmarking()) {
-                // We inject a benchmark test blocks range at this point to process only a restricted range of
-                // blocks for a more reliable benchmark results.
-                val benchmarkBlockRange = BenchmarkingBlockRangeFixture.new().let {
-                    // Convert range of Longs to range of BlockHeights
-                    BlockHeight.new(ZcashNetwork.Mainnet, it.start)..(
-                        BlockHeight.new(ZcashNetwork.Mainnet, it.endInclusive)
-                        )
-                }
-                benchmarkBlockRange
-            } else {
-                _processorInfo.value.overallSyncRange!!
-            }
-
-            syncBlocksAndEnhanceTransactionsLinearly(
-                syncRange = syncRange,
-                withDownload = true,
-                enhanceStartHeight = _processorInfo.value.firstUnenhancedHeight
-            )
-        }
     }
 
     // TODO [#1137]: Refactor processNewBlocksInSbSOrder
@@ -580,7 +555,7 @@ class CompactBlockProcessor internal constructor(
                         if (shouldRefreshPreparation(
                                 lastPreparationTime,
                                 currentTimeMillis,
-                                SBS_SYNCHRONIZATION_RESTART_TIMEOUT
+                                SYNCHRONIZATION_RESTART_TIMEOUT
                             )
                         ) {
                             SyncingResult.RestartSynchronization
@@ -651,6 +626,9 @@ class CompactBlockProcessor internal constructor(
             }
         }
 
+        // TODO [#1211]: Re-enable block synchronization benchmark test
+        // TODO [#1211]: https://github.com/zcash/zcash-android-wallet-sdk/issues/1211
+
         // Get the suggested scan ranges from the wallet database
         val suggestedRangesResult = suggestScanRanges(
             backend,
@@ -692,61 +670,6 @@ class CompactBlockProcessor internal constructor(
             allBatchCount = allBatchCount,
             lastBatchOrder = lastBatchOrder
         )
-    }
-
-    @Suppress("ReturnCount")
-    private suspend fun syncBlocksAndEnhanceTransactionsLinearly(
-        syncRange: ClosedRange<BlockHeight>,
-        withDownload: Boolean,
-        enhanceStartHeight: BlockHeight?
-    ): BlockProcessingResult {
-        var syncingResult: SyncingResult = SyncingResult.AllSuccess
-        allBatchCount = getBatchCount(listOf(syncRange))
-
-        // Syncing last blocks and enhancing transactions
-        runSyncingAndEnhancingOnRange(
-            backend = backend,
-            downloader = downloader,
-            repository = repository,
-            network = network,
-            syncRange = syncRange,
-            withDownload = withDownload,
-            enhanceStartHeight = enhanceStartHeight,
-            lastBatchOrder = 0
-        ).collect { rangeSyncProgress ->
-            setProgress(PercentDecimal(rangeSyncProgress.overallOrder / allBatchCount.toFloat()))
-            checkAllBalances()
-
-            when (rangeSyncProgress.resultState) {
-                SyncingResult.UpdateBirthday -> {
-                    updateBirthdayHeight()
-                }
-                SyncingResult.EnhanceSuccess -> {
-                    Twig.info { "Triggering transaction refresh now" }
-                    // Invalidate transaction data
-                    checkTransactions(transactionStorage = repository)
-                }
-                is SyncingResult.Failure -> {
-                    syncingResult = rangeSyncProgress.resultState
-                    return@collect
-                } else -> {
-                    // Continue with processing
-                }
-            }
-        }
-
-        if (syncingResult != SyncingResult.AllSuccess) {
-            // Remove persisted but not scanned blocks in case of any failure
-            val lastScannedHeight = getLastScannedHeight(repository)
-            downloader.rewindToHeight(lastScannedHeight)
-            deleteAllBlockFiles(
-                downloader = downloader,
-                lastKnownHeight = lastScannedHeight
-            )
-            return (syncingResult as SyncingResult.Failure).toBlockProcessingResult()
-        }
-
-        return BlockProcessingResult.Success
     }
 
     /**
@@ -795,52 +718,22 @@ class CompactBlockProcessor internal constructor(
 
     /**
      * Gets the latest range info and then uses that initialInfo to update (and transmit)
-     * the info that require processing. This function is universal and works for both [SyncAlgorithm.LINEAR] and
-     * [SyncAlgorithm.SPEND_BEFORE_SYNC] algorithms.
+     * the info that require processing.
      *
-     * @param ranges The ranges which we obtained from the rust layer to proceed in case of
-     * [SyncAlgorithm.SPEND_BEFORE_SYNC] algorithm, or null in case of [SyncAlgorithm.LINEAR] algorithm, as it will
-     * be computed.
+     * @param ranges The ranges which we obtained from the rust layer to proceed
      *
      * @return true when the update succeeds.
      */
-    private suspend fun updateRange(ranges: List<ScanRange>?): Boolean {
+    private suspend fun updateRange(ranges: List<ScanRange>): Boolean {
         // This fetches the latest height each time this method is called, which can be very inefficient
         // when downloading all of the blocks from the server
         val networkBlockHeight = fetchLatestBlockHeight(downloader, network) ?: return false
 
-        // If we find out that we previously downloaded, but not scanned persisted blocks, we need to rewind the
-        // blocks above the last scanned height first.
-        val lastScannedHeight = getLastScannedHeight(repository)
-        val lastDownloadedHeight = getLastDownloadedHeight(downloader).let {
-            BlockHeight.new(
-                network,
-                max(
-                    it?.value ?: 0,
-                    lowerBoundHeight.value
-                )
-            )
-        }
-        val lastSyncedHeight = if (lastDownloadedHeight.value - lastScannedHeight.value > 0) {
-            Twig.verbose {
-                "Clearing blocks of last persisted batch within the last scanned height " +
-                    "$lastScannedHeight and last download height $lastDownloadedHeight, as all these blocks " +
-                    "possibly haven't been scanned in the previous blocks sync attempt."
-            }
-            downloader.rewindToHeight(lastScannedHeight)
-            lastScannedHeight
-        } else {
-            lastDownloadedHeight
-        }
-
         // Get the first un-enhanced transaction from the repository
         val firstUnenhancedHeight = getFirstUnenhancedHeight(repository)
 
-        // The sync range computation depends on the used sync algorithm. The LINEAR one will compute it by itself,
-        // when the SPEND_BEFORE_SYNC will use the one obtained from the rust layer
-        val syncRange = if (ranges == null) {
-            lastSyncedHeight + 1..networkBlockHeight
-        } else if (ranges.isNotEmpty()) {
+        // The overall sync range computation
+        val syncRange = if (ranges.isNotEmpty()) {
             var resultRange = ranges[0].range.start..ranges[0].range.endInclusive
             ranges.forEach { nextRange ->
                 if (nextRange.range.start < resultRange.start) {
@@ -852,7 +745,7 @@ class CompactBlockProcessor internal constructor(
             }
             resultRange
         } else {
-            // Empty ranges most likely means that the SbS is done and the Rust layer replied with an empty suggested
+            // Empty ranges most likely means that the sync is done and the Rust layer replied with an empty suggested
             // ranges
             null
         }
@@ -1099,10 +992,9 @@ class CompactBlockProcessor internal constructor(
         internal const val REWIND_DISTANCE = 10
 
         /**
-         * Limit millis value for restarting currently running block synchronization that runs under the
-         * [SyncAlgorithm.SPEND_BEFORE_SYNC] synchronization.
+         * Limit millis value for restarting currently running block synchronization.
          */
-        internal val SBS_SYNCHRONIZATION_RESTART_TIMEOUT = 10.minutes.inWholeMilliseconds
+        internal val SYNCHRONIZATION_RESTART_TIMEOUT = 10.minutes.inWholeMilliseconds
 
         /**
          * Check for the next restart of the block synchronization preparation phase. This function is only SbS
@@ -1165,7 +1057,7 @@ class CompactBlockProcessor internal constructor(
         ): GetSubtreeRootsResult {
             Twig.debug { "Fetching SubtreeRoots..." }
 
-            var result: GetSubtreeRootsResult = GetSubtreeRootsResult.UseLinear
+            var result: GetSubtreeRootsResult = GetSubtreeRootsResult.Linear
 
             retryUpToAndContinue(GET_SUBTREE_ROOTS_RETRIES) {
                 downloader.getSubtreeRoots(
@@ -1213,9 +1105,9 @@ class CompactBlockProcessor internal constructor(
                         SubtreeRoot.new(it, network)
                     }.let {
                         result = if (it.isEmpty()) {
-                            GetSubtreeRootsResult.UseLinear
+                            GetSubtreeRootsResult.Linear
                         } else {
-                            GetSubtreeRootsResult.UseSbS(it)
+                            GetSubtreeRootsResult.SpendBeforeSync(it)
                         }
                     }
             }
@@ -1336,8 +1228,6 @@ class CompactBlockProcessor internal constructor(
 
         /**
          * Requests, processes and persists all blocks from the given range.
-         *
-         * Works the same for both [SyncAlgorithm.LINEAR] and [SyncAlgorithm.SPEND_BEFORE_SYNC] algorithms.
          *
          * @param backend the Rust backend component
          * @param downloader the compact block downloader component
@@ -2158,18 +2048,6 @@ class CompactBlockProcessor internal constructor(
         val errorHeight: BlockHeight,
         val hash: String?
     )
-
-    /**
-     * Algorithm used to sync the SDK with the blockchain
-     */
-    enum class SyncAlgorithm {
-        // Linear sync processes the un-synced blocks in a linear way up to the chain tip
-        LINEAR,
-
-        // Spend before Sync processes the un-synced blocks non-linearly, in prioritised ranges relevant to the stored
-        // wallet. Note: This feature is in development (alpha version) so use carefully.
-        SPEND_BEFORE_SYNC
-    }
 
     //
     // Helper Extensions
