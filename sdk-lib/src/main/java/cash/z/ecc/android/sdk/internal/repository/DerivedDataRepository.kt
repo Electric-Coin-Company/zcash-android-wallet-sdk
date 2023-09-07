@@ -29,13 +29,6 @@ internal interface DerivedDataRepository {
     suspend fun firstUnenhancedHeight(): BlockHeight?
 
     /**
-     * The height of the first block in this repository. This is typically the checkpoint that was
-     * used to initialize this wallet. If we overwrite this block, it breaks our ability to spend
-     * funds.
-     */
-    suspend fun firstScannedHeight(): BlockHeight
-
-    /**
      * Find the encoded transaction associated with the given id.
      *
      * @param txId the id of the transaction to find.

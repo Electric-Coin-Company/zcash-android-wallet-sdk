@@ -11,14 +11,6 @@ import java.util.Locale
 internal class BlockTable(private val zcashNetwork: ZcashNetwork, private val sqliteDatabase: SupportSQLiteDatabase) {
     companion object {
 
-        private val SELECTION_MIN_HEIGHT = arrayOf(
-            String.format(
-                Locale.ROOT,
-                "MIN(%s)", // $NON-NLS
-                BlockTableDefinition.COLUMN_LONG_HEIGHT
-            )
-        )
-
         private val SELECTION_MAX_HEIGHT = arrayOf(
             String.format(
                 Locale.ROOT,
@@ -36,16 +28,6 @@ internal class BlockTable(private val zcashNetwork: ZcashNetwork, private val sq
         private val PROJECTION_HASH = arrayOf(BlockTableDefinition.COLUMN_BLOB_HASH)
     }
 
-    suspend fun firstScannedHeight(): BlockHeight {
-        // Note that we assume the Rust layer will add the birthday height as the first block
-        val heightLong =
-            sqliteDatabase.queryAndMap(
-                table = BlockTableDefinition.TABLE_NAME,
-                columns = SELECTION_MIN_HEIGHT,
-                cursorParser = { it.getLong(0) }
-            ).first()
-
-        return BlockHeight.new(zcashNetwork, heightLong)
     }
 
     suspend fun lastScannedHeight(): BlockHeight {

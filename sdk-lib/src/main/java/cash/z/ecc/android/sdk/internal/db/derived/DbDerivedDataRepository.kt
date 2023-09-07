@@ -26,10 +26,6 @@ internal class DbDerivedDataRepository(
         return derivedDataDb.allTransactionView.firstUnenhancedHeight()
     }
 
-    override suspend fun firstScannedHeight(): BlockHeight {
-        return derivedDataDb.blockTable.firstScannedHeight()
-    }
-
     override suspend fun findEncodedTransactionByTxId(txId: FirstClassByteArray): EncodedTransaction? {
         return derivedDataDb.transactionTable.findEncodedTransactionByTxId(txId)
     }
