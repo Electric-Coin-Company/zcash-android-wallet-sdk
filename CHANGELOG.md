@@ -6,12 +6,6 @@
 - The block synchronization mechanism is about one-third faster thanks to the optimized 
 `CompactBlockProcessor.SYNC_BATCH_SIZE`. Issue **#1206**.
 
-### Added
-- New `syncAlgorithm` parameter of `Synchronizer.new()` and `WalletCoordinator()` to select preferred 
-  `CompactBlockProcessor` block synchronizing algorithm. It can be of `CompactBlockProcessor.SyncAlgorithm.LINEAR` 
-  or `SPEND_BEFORE_SYNC`. The LINEAR type is automatically used if the client app does not specify otherwise. Please 
-  note that the SPEND_BEFORE_SYNC type is currently unstable and still under development.
-
 ### Removed
 - `CompactBlockProcessor.ProcessorInfo.lastSyncHeight` which the SDK is no longer able to provide because of the new
   **SpendBeforeSync** synchronization algorithm adoption. Use `CompactBlockProcessor.ProcessorInfo.overallSyncRange` 

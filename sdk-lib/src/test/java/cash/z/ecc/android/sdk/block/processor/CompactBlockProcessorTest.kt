@@ -10,9 +10,9 @@ class CompactBlockProcessorTest {
     fun should_refresh_preparation_test() {
         assertTrue {
             CompactBlockProcessor.shouldRefreshPreparation(
-                lastPreparationTime = CompactBlockProcessor.SBS_SYNCHRONIZATION_RESTART_TIMEOUT,
-                currentTimeMillis = CompactBlockProcessor.SBS_SYNCHRONIZATION_RESTART_TIMEOUT * 2,
-                limitTime = CompactBlockProcessor.SBS_SYNCHRONIZATION_RESTART_TIMEOUT
+                lastPreparationTime = CompactBlockProcessor.SYNCHRONIZATION_RESTART_TIMEOUT,
+                currentTimeMillis = CompactBlockProcessor.SYNCHRONIZATION_RESTART_TIMEOUT * 2,
+                limitTime = CompactBlockProcessor.SYNCHRONIZATION_RESTART_TIMEOUT
             )
         }
     }
@@ -21,9 +21,9 @@ class CompactBlockProcessorTest {
     fun should_not_refresh_preparation_test() {
         assertFalse {
             CompactBlockProcessor.shouldRefreshPreparation(
-                lastPreparationTime = CompactBlockProcessor.SBS_SYNCHRONIZATION_RESTART_TIMEOUT,
-                currentTimeMillis = CompactBlockProcessor.SBS_SYNCHRONIZATION_RESTART_TIMEOUT,
-                limitTime = CompactBlockProcessor.SBS_SYNCHRONIZATION_RESTART_TIMEOUT
+                lastPreparationTime = CompactBlockProcessor.SYNCHRONIZATION_RESTART_TIMEOUT,
+                currentTimeMillis = CompactBlockProcessor.SYNCHRONIZATION_RESTART_TIMEOUT,
+                limitTime = CompactBlockProcessor.SYNCHRONIZATION_RESTART_TIMEOUT
             )
         }
     }

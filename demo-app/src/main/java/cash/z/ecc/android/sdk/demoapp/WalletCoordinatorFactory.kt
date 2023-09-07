@@ -2,7 +2,6 @@ package cash.z.ecc.android.sdk.demoapp
 
 import android.content.Context
 import cash.z.ecc.android.sdk.WalletCoordinator
-import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor
 import cash.z.ecc.android.sdk.demoapp.preference.EncryptedPreferenceKeys
 import cash.z.ecc.android.sdk.demoapp.preference.EncryptedPreferenceSingleton
 import cash.z.ecc.android.sdk.demoapp.util.LazyWithArgument
@@ -23,8 +22,7 @@ private val lazy = LazyWithArgument<Context, WalletCoordinator> {
 
     WalletCoordinator(
         context = it,
-        persistableWallet = persistableWalletFlow,
-        syncAlgorithm = CompactBlockProcessor.SyncAlgorithm.SPEND_BEFORE_SYNC
+        persistableWallet = persistableWalletFlow
     )
 }
 
