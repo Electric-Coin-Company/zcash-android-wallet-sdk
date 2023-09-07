@@ -33,16 +33,8 @@ internal class BlockTable(private val zcashNetwork: ZcashNetwork, private val sq
             BlockTableDefinition.COLUMN_LONG_HEIGHT
         )
 
-        private val PROJECTION_COUNT = arrayOf("COUNT(*)") // $NON-NLS
-
         private val PROJECTION_HASH = arrayOf(BlockTableDefinition.COLUMN_BLOB_HASH)
     }
-
-    suspend fun count() = sqliteDatabase.queryAndMap(
-        BlockTableDefinition.TABLE_NAME,
-        columns = PROJECTION_COUNT,
-        cursorParser = { it.getLong(0) }
-    ).first()
 
     suspend fun firstScannedHeight(): BlockHeight {
         // Note that we assume the Rust layer will add the birthday height as the first block

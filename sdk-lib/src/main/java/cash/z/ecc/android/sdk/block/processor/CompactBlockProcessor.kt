@@ -767,10 +767,7 @@ class CompactBlockProcessor internal constructor(
     // TODO [#1127]: https://github.com/zcash/zcash-android-wallet-sdk/issues/1127
     @Suppress("NestedBlockDepth")
     private suspend fun verifySetup() {
-        // verify that the data is initialized
-        val error = if (!repository.isInitialized()) {
-            CompactBlockProcessorException.Uninitialized
-        } else if (repository.getAccountCount() == 0) {
+        val error = if (repository.getAccountCount() == 0) {
             CompactBlockProcessorException.NoAccount
         } else {
             // verify that the server is correct

@@ -36,6 +36,17 @@ interface Backend {
 
     suspend fun decryptAndStoreTransaction(tx: ByteArray)
 
+    /**
+     * Sets up the internal structure of the data database.
+     *
+     * If `seed` is `null`, database migrations will be attempted without it.
+     *
+     * @return 0 if successful, 1 if the seed must be provided in order to execute the requested migrations, or -1
+     * otherwise.
+     *
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    @Throws(RuntimeException::class)
     suspend fun initDataDb(seed: ByteArray?): Int
 
     /**

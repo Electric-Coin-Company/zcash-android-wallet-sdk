@@ -30,10 +30,6 @@ internal class DbDerivedDataRepository(
         return derivedDataDb.blockTable.firstScannedHeight()
     }
 
-    override suspend fun isInitialized(): Boolean {
-        return derivedDataDb.blockTable.count() > 0
-    }
-
     override suspend fun findEncodedTransactionByTxId(txId: FirstClassByteArray): EncodedTransaction? {
         return derivedDataDb.transactionTable.findEncodedTransactionByTxId(txId)
     }

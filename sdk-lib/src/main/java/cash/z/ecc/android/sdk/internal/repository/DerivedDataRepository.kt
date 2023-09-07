@@ -36,11 +36,6 @@ internal interface DerivedDataRepository {
     suspend fun firstScannedHeight(): BlockHeight
 
     /**
-     * @return true when this repository has been initialized and seeded with the initial checkpoint.
-     */
-    suspend fun isInitialized(): Boolean
-
-    /**
      * Find the encoded transaction associated with the given id.
      *
      * @param txId the id of the transaction to find.
