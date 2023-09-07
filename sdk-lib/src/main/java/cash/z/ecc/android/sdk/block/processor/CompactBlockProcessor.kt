@@ -5,6 +5,7 @@ import cash.z.ecc.android.sdk.BuildConfig
 import cash.z.ecc.android.sdk.annotation.OpenForTesting
 import cash.z.ecc.android.sdk.block.processor.model.BatchSyncProgress
 import cash.z.ecc.android.sdk.block.processor.model.GetMaxScannedHeightResult
+import cash.z.ecc.android.sdk.block.processor.model.GetScanProgressResult
 import cash.z.ecc.android.sdk.block.processor.model.GetSubtreeRootsResult
 import cash.z.ecc.android.sdk.block.processor.model.PutSaplingSubtreeRootsResult
 import cash.z.ecc.android.sdk.block.processor.model.SbSPreparationResult
@@ -454,7 +455,20 @@ class CompactBlockProcessor internal constructor(
                 //  be over the precomputed all-batch count in case of inter-syncing failure.
                 lastBatchOrder = min(rangeSyncProgress.overallOrder, allBatchCountLocal)
 
-                setProgress(PercentDecimal(lastBatchOrder / allBatchCountLocal.toFloat()))
+                // TODO [#1219]: Remove calculated sync progress leftovers
+                // TODO [#1219]: https://github.com/zcash/zcash-android-wallet-sdk/issues/1219
+                Twig.info {
+                    "Progress calculated: " +
+                        "${PercentDecimal(lastBatchOrder / allBatchCountLocal.toFloat()).decimal}"
+                }
+                when (val result = getScanProgress(backend)) {
+                    is GetScanProgressResult.Success -> {
+                        val resultProgress = result.toPercentDecimal()
+                        Twig.info { "Progress from rust: ${resultProgress.decimal}" }
+                        setProgress(resultProgress)
+                    }
+                    else -> { /* Do not report the progress in case of any error */ }
+                }
                 checkAllBalances()
 
                 when (rangeSyncProgress.resultState) {
@@ -542,7 +556,20 @@ class CompactBlockProcessor internal constructor(
                 //  be over the precomputed all-batch count in case of inter-syncing failure.
                 lastBatchOrder = min(rangeSyncProgress.overallOrder, allBatchCountLocal)
 
-                setProgress(PercentDecimal(lastBatchOrder / allBatchCountLocal.toFloat()))
+                // TODO [#1219]: Remove calculated sync progress leftovers
+                // TODO [#1219]: https://github.com/zcash/zcash-android-wallet-sdk/issues/1219
+                Twig.info {
+                    "Progress calculated: " +
+                        "${PercentDecimal(lastBatchOrder / allBatchCountLocal.toFloat()).decimal}"
+                }
+                when (val result = getScanProgress(backend)) {
+                    is GetScanProgressResult.Success -> {
+                        val resultProgress = result.toPercentDecimal()
+                        Twig.info { "Progress from rust: ${resultProgress.decimal}" }
+                        setProgress(resultProgress)
+                    }
+                    else -> { /* Do not report the progress in case of any error */ }
+                }
                 checkAllBalances()
 
                 when (rangeSyncProgress.resultState) {
@@ -1235,6 +1262,33 @@ class CompactBlockProcessor internal constructor(
                     VerifySuggestedScanRange.NoRangeToVerify
                 }
             }
+        }
+
+        /**
+         * Get the current block scanning progress.
+         *
+         * @return the last scanning progress calculated by the Rust layer and wrapped in [GetScanProgressResult]
+         */
+        @VisibleForTesting
+        internal suspend fun getScanProgress(backend: TypesafeBackend): GetScanProgressResult {
+            return runCatching {
+                backend.getScanProgress()
+            }.onSuccess {
+                Twig.verbose { "Successfully called getScanProgress with result: $it" }
+            }.onFailure {
+                Twig.error { "Failed to call getScanProgress with result: $it" }
+            }.fold(
+                onSuccess = {
+                    if (it == null) {
+                        GetScanProgressResult.None
+                    } else {
+                        GetScanProgressResult.Success(it)
+                    }
+                },
+                onFailure = {
+                    GetScanProgressResult.Failure(it)
+                }
+            )
         }
 
         /**
