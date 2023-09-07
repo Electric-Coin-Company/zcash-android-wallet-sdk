@@ -30,6 +30,8 @@
    - AndroidX
    - gRPC/Protobuf
    - etc.
+- `CompactBlockProcessor.quickRewind()` and `CompactBlockProcessor.rewindToNearestHeight()` now might fail due to 
+  internal changes in getting scanned height. Thus, these functions return `Boolean` results.
 
 ### Fixed
 - `Synchronizer.getMemos()` now correctly returns a flow of strings for sent and received transactions. Issue **#1154**.

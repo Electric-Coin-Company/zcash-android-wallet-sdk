@@ -18,10 +18,6 @@ internal class DbDerivedDataRepository(
 ) : DerivedDataRepository {
     private val invalidatingFlow = MutableStateFlow(UUID.randomUUID())
 
-    override suspend fun lastScannedHeight(): BlockHeight {
-        return derivedDataDb.blockTable.lastScannedHeight()
-    }
-
     override suspend fun firstUnenhancedHeight(): BlockHeight? {
         return derivedDataDb.allTransactionView.firstUnenhancedHeight()
     }

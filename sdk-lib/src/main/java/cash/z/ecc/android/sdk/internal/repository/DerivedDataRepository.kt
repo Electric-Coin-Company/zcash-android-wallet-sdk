@@ -14,13 +14,6 @@ import kotlinx.coroutines.flow.Flow
 internal interface DerivedDataRepository {
 
     /**
-     * The last height scanned by this repository.
-     *
-     * @return the last height scanned by this repository.
-     */
-    suspend fun lastScannedHeight(): BlockHeight
-
-    /**
      * The height of the first transaction that hasn't been enhanced yet.
      *
      * @return the height of the first un-enhanced transaction in the repository, or null in case of all transaction

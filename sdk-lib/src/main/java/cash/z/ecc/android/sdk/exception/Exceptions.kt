@@ -295,7 +295,7 @@ sealed class TransactionEncoderException(
             " with id $transactionId, does not have any raw data. This is a scenario where the wallet should have " +
             "thrown an exception but failed to do so."
     )
-    class IncompleteScanException(lastScannedHeight: BlockHeight) : TransactionEncoderException(
+    class IncompleteScanException(lastScannedHeight: BlockHeight?) : TransactionEncoderException(
         "Cannot" +
             " create spending transaction because scanning is incomplete. We must scan up to the" +
             " latest height to know which consensus rules to apply. However, the last scanned" +

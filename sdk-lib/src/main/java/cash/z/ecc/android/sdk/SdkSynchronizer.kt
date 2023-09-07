@@ -184,7 +184,7 @@ class SdkSynchronizer private constructor(
 
     override val transactions
         get() = combine(processor.networkHeight, storage.allTransactions) { networkHeight, allTransactions ->
-            val latestBlockHeight = networkHeight ?: storage.lastScannedHeight()
+            val latestBlockHeight = networkHeight ?: backend.getMaxScannedHeight()
             allTransactions.map { TransactionOverview.new(it, latestBlockHeight) }
         }
 
