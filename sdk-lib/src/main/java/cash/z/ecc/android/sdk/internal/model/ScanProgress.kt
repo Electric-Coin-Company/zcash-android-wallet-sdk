@@ -4,7 +4,7 @@ internal data class ScanProgress(
     val numerator: Long,
     val denominator: Long
 ) {
-    override fun toString() = "ScanProgress($numerator / $denominator)"
+    override fun toString() = "ScanProgress($numerator/$denominator) -> ${numerator / (denominator.toFloat())}"
 
     companion object {
         fun new(jni: JniScanProgress): ScanProgress {

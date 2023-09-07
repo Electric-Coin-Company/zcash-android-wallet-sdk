@@ -14,7 +14,21 @@
 - `CompactBlockProcessor.ProcessorInfo.isSyncing`. Use `Synchronizer.status` instead.
 - `CompactBlockProcessor.ProcessorInfo.syncProgress`. Use `Synchronizer.progress` instead.
 - `alsoClearBlockCache` parameter from rewind functions of `Synchronizer` and `CompactBlockProcessor` as it take no 
-  affect on the current rewind functionality result.
+  effect on the current rewind functionality result.
+- Internally, we removed access to the shared block table from the Kotlin layer, which resulted in eliminating these 
+  APIs:
+  - `SdkSynchornizer.findBlockHash()`
+  - `SdkSynchornizer.findBlockHashAsHex()`
+
+### Changed
+- `CompactBlockProcessor.quickRewind()` and `CompactBlockProcessor.rewindToNearestHeight()` now might fail due to
+  internal changes in getting scanned height. Thus, these functions return `Boolean` results.
+
+### Fixed
+- `Synchronizer.getMemos()` now correctly returns a flow of strings for sent and received transactions. Issue **#1154**.
+- `CompactBlockProcessor` now triggers transaction polling while block synchronization is in progress as expected.
+  Clients will be notified briefly after every new transaction is discovered via `Synchronizer.transactions` API.
+  Issue **#1170**.
 
 ## 1.21.0-beta01
 Note: This is the last _1.x_ version release. The upcoming version _2.0_ brings the **Spend-before-Sync** feature,
@@ -31,12 +45,6 @@ which speeds up discovering the wallet's spendable balance.
    - gRPC/Protobuf
    - etc.
 - Checkpoints
-
-### Fixed
-- `Synchronizer.getMemos()` now correctly returns a flow of strings for sent and received transactions. Issue **#1154**.
-- `CompactBlockProcessor` now triggers transaction polling while block synchronization is in progress as expected.
-  Clients will be notified briefly after every new transaction is discovered via `Synchronizer.transactions` API. 
-  Issue **#1170**.
 
 ## 1.20.0-beta01
 - The SDK internally migrated from `BackendExt` rust backend extension functions to more type-safe `TypesafeBackend`.

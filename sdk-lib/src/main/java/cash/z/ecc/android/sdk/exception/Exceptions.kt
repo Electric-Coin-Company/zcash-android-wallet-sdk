@@ -80,10 +80,11 @@ sealed class CompactBlockProcessorException(message: String, cause: Throwable? =
         null
     )
     class FailedReorgRepair(message: String) : CompactBlockProcessorException(message)
-    object Uninitialized : CompactBlockProcessorException(
+    class Uninitialized(cause: Throwable? = null) : CompactBlockProcessorException(
         "Cannot process blocks because the wallet has not been" +
             " initialized. Verify that the seed phrase was properly created or imported. If so, then this problem" +
-            " can be fixed by re-importing the wallet."
+            " can be fixed by re-importing the wallet.",
+        cause
     )
     object NoAccount : CompactBlockProcessorException(
         "Attempting to scan without an account. This is probably a setup error or a race condition."
@@ -294,7 +295,7 @@ sealed class TransactionEncoderException(
             " with id $transactionId, does not have any raw data. This is a scenario where the wallet should have " +
             "thrown an exception but failed to do so."
     )
-    class IncompleteScanException(lastScannedHeight: BlockHeight) : TransactionEncoderException(
+    class IncompleteScanException(lastScannedHeight: BlockHeight?) : TransactionEncoderException(
         "Cannot" +
             " create spending transaction because scanning is incomplete. We must scan up to the" +
             " latest height to know which consensus rules to apply. However, the last scanned" +

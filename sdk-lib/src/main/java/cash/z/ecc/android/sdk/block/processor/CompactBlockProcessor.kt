@@ -4,6 +4,7 @@ import androidx.annotation.VisibleForTesting
 import cash.z.ecc.android.sdk.BuildConfig
 import cash.z.ecc.android.sdk.annotation.OpenForTesting
 import cash.z.ecc.android.sdk.block.processor.model.BatchSyncProgress
+import cash.z.ecc.android.sdk.block.processor.model.GetMaxScannedHeightResult
 import cash.z.ecc.android.sdk.block.processor.model.GetSubtreeRootsResult
 import cash.z.ecc.android.sdk.block.processor.model.PutSaplingSubtreeRootsResult
 import cash.z.ecc.android.sdk.block.processor.model.SbSPreparationResult
@@ -218,7 +219,10 @@ class CompactBlockProcessor internal constructor(
         // Clear any undeleted left over block files from previous sync attempts
         deleteAllBlockFiles(
             downloader = downloader,
-            lastKnownHeight = getLastScannedHeight(repository)
+            lastKnownHeight = when (val result = getMaxScannedHeight(backend)) {
+                is GetMaxScannedHeightResult.Success -> result.height
+                else -> null
+            }
         )
 
         // Download note commitment tree data from lightwalletd to decide if we communicate with linear
@@ -347,7 +351,7 @@ class CompactBlockProcessor internal constructor(
         stop()
     }
 
-    suspend fun checkErrorResult(failedHeight: BlockHeight) {
+    suspend fun checkErrorResult(failedHeight: BlockHeight?) {
         if (consecutiveChainErrors.get() >= RETRIES) {
             val errorMessage = "ERROR: unable to resolve reorg at height $failedHeight after " +
                 "${consecutiveChainErrors.get()} correction attempts!"
@@ -476,8 +480,13 @@ class CompactBlockProcessor internal constructor(
                     // Continue with processing the rest of the ranges
                 } else -> {
                     // An error came - remove persisted but not scanned blocks
-                    val lastScannedHeight = getLastScannedHeight(repository)
-                    downloader.rewindToHeight(lastScannedHeight)
+                    val lastScannedHeight = when (val result = getMaxScannedHeight(backend)) {
+                        is GetMaxScannedHeightResult.Success -> result.height
+                        else -> null
+                    }
+                    lastScannedHeight?.let {
+                        downloader.rewindToHeight(lastScannedHeight)
+                    }
                     deleteAllBlockFiles(
                         downloader = downloader,
                         lastKnownHeight = lastScannedHeight
@@ -579,8 +588,13 @@ class CompactBlockProcessor internal constructor(
                     return BlockProcessingResult.RestartSynchronization
                 } else -> {
                     // An error came - remove persisted but not scanned blocks
-                    val lastScannedHeight = getLastScannedHeight(repository)
-                    downloader.rewindToHeight(lastScannedHeight)
+                    val lastScannedHeight = when (val result = getMaxScannedHeight(backend)) {
+                        is GetMaxScannedHeightResult.Success -> result.height
+                        else -> null
+                    }
+                    lastScannedHeight?.let {
+                        downloader.rewindToHeight(lastScannedHeight)
+                    }
                     deleteAllBlockFiles(
                         downloader = downloader,
                         lastKnownHeight = lastScannedHeight
@@ -713,7 +727,7 @@ class CompactBlockProcessor internal constructor(
         object Success : BlockProcessingResult()
         object Reconnecting : BlockProcessingResult()
         object RestartSynchronization : BlockProcessingResult()
-        data class SyncFailure(val failedAtHeight: BlockHeight, val error: Throwable) : BlockProcessingResult()
+        data class SyncFailure(val failedAtHeight: BlockHeight?, val error: Throwable) : BlockProcessingResult()
     }
 
     /**
@@ -767,10 +781,7 @@ class CompactBlockProcessor internal constructor(
     // TODO [#1127]: https://github.com/zcash/zcash-android-wallet-sdk/issues/1127
     @Suppress("NestedBlockDepth")
     private suspend fun verifySetup() {
-        // verify that the data is initialized
-        val error = if (!repository.isInitialized()) {
-            CompactBlockProcessorException.Uninitialized
-        } else if (repository.getAccountCount() == 0) {
+        val error = if (repository.getAccountCount() == 0) {
             CompactBlockProcessorException.NoAccount
         } else {
             // verify that the server is correct
@@ -1531,7 +1542,7 @@ class CompactBlockProcessor internal constructor(
         @VisibleForTesting
         internal suspend fun deleteAllBlockFiles(
             downloader: CompactBlockDownloader,
-            lastKnownHeight: BlockHeight
+            lastKnownHeight: BlockHeight?
         ): SyncingResult {
             Twig.verbose { "Starting to delete all temporary block files" }
             return if (downloader.compactBlockRepository.deleteAllCompactBlockFiles()) {
@@ -1691,8 +1702,26 @@ class CompactBlockProcessor internal constructor(
          * @return the last scanned height reported by the repository.
          */
         @VisibleForTesting
-        internal suspend fun getLastScannedHeight(repository: DerivedDataRepository) =
-            repository.lastScannedHeight()
+        internal suspend fun getMaxScannedHeight(backend: TypesafeBackend): GetMaxScannedHeightResult {
+            return runCatching {
+                backend.getMaxScannedHeight()
+            }.onSuccess {
+                Twig.verbose { "Successfully called getMaxScannedHeight with result: $it" }
+            }.onFailure {
+                Twig.error { "Failed to call getMaxScannedHeight with result: $it" }
+            }.fold(
+                onSuccess = {
+                    if (it == null) {
+                        GetMaxScannedHeightResult.None
+                    } else {
+                        GetMaxScannedHeightResult.Success(it)
+                    }
+                },
+                onFailure = {
+                    GetMaxScannedHeightResult.Failure(it)
+                }
+            )
+        }
 
         /**
          * Get the height of the first un-enhanced transaction detail from the repository.
@@ -1784,14 +1813,14 @@ class CompactBlockProcessor internal constructor(
         _state.value = newState
     }
 
-    private suspend fun handleChainError(errorHeight: BlockHeight) {
-        // TODO [#683]: Consider an error object containing hash information
-        // TODO [#683]: https://github.com/zcash/zcash-android-wallet-sdk/issues/683
+    private suspend fun handleChainError(errorHeight: BlockHeight?) {
         printValidationErrorInfo(errorHeight)
-        determineLowerBound(errorHeight).let { lowerBound ->
-            Twig.debug { "Handling chain error at $errorHeight by rewinding to block $lowerBound" }
-            onChainErrorListener?.invoke(errorHeight, lowerBound)
-            rewindToNearestHeight(lowerBound)
+        errorHeight?.let {
+            determineLowerBound(errorHeight).let { lowerBound ->
+                Twig.debug { "Handling chain error at $errorHeight by rewinding to block $lowerBound" }
+                onChainErrorListener?.invoke(errorHeight, lowerBound)
+                rewindToNearestHeight(lowerBound)
+            }
         }
     }
 
@@ -1813,20 +1842,26 @@ class CompactBlockProcessor internal constructor(
     /**
      * Rewind back at least two weeks worth of blocks.
      */
-    suspend fun quickRewind() {
-        val height = repository.lastScannedHeight()
+    suspend fun quickRewind(): Boolean {
+        val height = when (val result = getMaxScannedHeight(backend)) {
+            is GetMaxScannedHeightResult.Success -> result.height
+            else -> return false
+        }
         val blocksPer14Days = 14.days.inWholeMilliseconds / ZcashSdk.BLOCK_INTERVAL_MILLIS.toInt()
         val twoWeeksBack = BlockHeight.new(
             network,
             (height.value - blocksPer14Days).coerceAtLeast(lowerBoundHeight.value)
         )
-        rewindToNearestHeight(twoWeeksBack)
+        return rewindToNearestHeight(twoWeeksBack)
     }
 
     @Suppress("LongMethod")
-    suspend fun rewindToNearestHeight(height: BlockHeight) {
+    suspend fun rewindToNearestHeight(height: BlockHeight): Boolean {
         processingMutex.withLockLogged("rewindToHeight") {
-            val lastLocalBlock = repository.lastScannedHeight()
+            val lastLocalBlock = when (val result = getMaxScannedHeight(backend)) {
+                is GetMaxScannedHeightResult.Success -> result.height
+                else -> return false
+            }
             val targetHeight = getNearestRewindHeight(height)
 
             Twig.debug {
@@ -1854,38 +1889,35 @@ class CompactBlockProcessor internal constructor(
                 }
             }
         }
+        return true
     }
 
     /** insightful function for debugging these critical errors */
-    private suspend fun printValidationErrorInfo(errorHeight: BlockHeight, count: Int = 11) {
+    private suspend fun printValidationErrorInfo(errorHeight: BlockHeight?, count: Int = 11) {
         // Note: blocks are public information so it's okay to print them but, still, let's not unless we're
         // debugging something
         if (!BuildConfig.DEBUG) {
             return
         }
 
-        var errorInfo = fetchValidationErrorInfo(errorHeight)
-        Twig.debug { "validation failed at block ${errorInfo.errorHeight} with hash: ${errorInfo.hash}" }
+        if (errorHeight == null) {
+            Twig.debug { "Validation failed at unspecified block height" }
+            return
+        }
 
-        errorInfo = fetchValidationErrorInfo(errorHeight + 1)
-        Twig.debug { "the next block is ${errorInfo.errorHeight} with hash: ${errorInfo.hash}" }
+        var errorInfo = ValidationErrorInfo(errorHeight)
+        Twig.debug { "Validation failed at block ${errorInfo.errorHeight}" }
+
+        errorInfo = ValidationErrorInfo(errorHeight + 1)
+        Twig.debug { "The next block is ${errorInfo.errorHeight}" }
 
         Twig.debug { "=================== BLOCKS [$errorHeight..${errorHeight.value + count - 1}]: START ========" }
         repeat(count) { i ->
             val height = errorHeight + i
             val block = downloader.compactBlockRepository.findCompactBlock(height)
-            // sometimes the initial block was inserted via checkpoint and will not appear in the cache. We can get
-            // the hash another way.
-            val checkedHash = block?.hash ?: repository.findBlockHash(height)
-            Twig.debug { "block: $height\thash=${checkedHash?.toHexReversed()}" }
+            Twig.debug { "block: $height\thash=${block?.hash?.toHexReversed()}" }
         }
         Twig.debug { "=================== BLOCKS [$errorHeight..${errorHeight.value + count - 1}]: END ========" }
-    }
-
-    private suspend fun fetchValidationErrorInfo(errorHeight: BlockHeight): ValidationErrorInfo {
-        val hash = repository.findBlockHash(errorHeight + 1)?.toHexReversed()
-
-        return ValidationErrorInfo(errorHeight, hash)
     }
 
     /**
@@ -2045,8 +2077,7 @@ class CompactBlockProcessor internal constructor(
     )
 
     data class ValidationErrorInfo(
-        val errorHeight: BlockHeight,
-        val hash: String?
+        val errorHeight: BlockHeight
     )
 
     //
