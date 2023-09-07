@@ -20,8 +20,6 @@ internal class DerivedDataDb private constructor(
 ) {
     val accountTable = AccountTable(sqliteDatabase)
 
-    val blockTable = BlockTable(zcashNetwork, sqliteDatabase)
-
     val transactionTable = TransactionTable(zcashNetwork, sqliteDatabase)
 
     val allTransactionView = AllTransactionView(zcashNetwork, sqliteDatabase)
