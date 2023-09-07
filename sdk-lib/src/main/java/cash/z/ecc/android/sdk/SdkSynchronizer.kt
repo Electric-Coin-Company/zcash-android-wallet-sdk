@@ -24,7 +24,6 @@ import cash.z.ecc.android.sdk.internal.db.DatabaseCoordinator
 import cash.z.ecc.android.sdk.internal.db.derived.DbDerivedDataRepository
 import cash.z.ecc.android.sdk.internal.db.derived.DerivedDataDb
 import cash.z.ecc.android.sdk.internal.ext.isNullOrEmpty
-import cash.z.ecc.android.sdk.internal.ext.toHexReversed
 import cash.z.ecc.android.sdk.internal.ext.tryNull
 import cash.z.ecc.android.sdk.internal.jni.RustBackend
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
@@ -340,14 +339,6 @@ class SdkSynchronizer private constructor(
     // TODO [#682]: turn this section into the data access API. For now, just aggregate all the things that we want
     //  to do with the underlying data
     // TODO [#682]: https://github.com/zcash/zcash-android-wallet-sdk/issues/682
-
-    suspend fun findBlockHash(height: BlockHeight): ByteArray? {
-        return storage.findBlockHash(height)
-    }
-
-    suspend fun findBlockHashAsHex(height: BlockHeight): String? {
-        return findBlockHash(height)?.toHexReversed()
-    }
 
     suspend fun getTransactionCount(): Int {
         return storage.getTransactionCount().toInt()

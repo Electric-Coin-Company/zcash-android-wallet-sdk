@@ -64,11 +64,6 @@ internal interface DerivedDataRepository {
 
     suspend fun findMatchingTransactionId(rawTransactionId: ByteArray): Long?
 
-    // TODO [#681]: begin converting these into Data Access API. For now, just collect the desired
-    //  operations and iterate/refactor, later
-    // TODO [#681]: https://github.com/zcash/zcash-android-wallet-sdk/issues/681
-    suspend fun findBlockHash(height: BlockHeight): ByteArray?
-
     suspend fun getTransactionCount(): Long
 
     /**

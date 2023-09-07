@@ -41,8 +41,6 @@ internal class DbDerivedDataRepository(
     override suspend fun findMatchingTransactionId(rawTransactionId: ByteArray) = derivedDataDb.transactionTable
         .findDatabaseId(rawTransactionId)
 
-    override suspend fun findBlockHash(height: BlockHeight) = derivedDataDb.blockTable.findBlockHash(height)
-
     override suspend fun getTransactionCount() = derivedDataDb.transactionTable.count()
 
     override fun invalidate() {

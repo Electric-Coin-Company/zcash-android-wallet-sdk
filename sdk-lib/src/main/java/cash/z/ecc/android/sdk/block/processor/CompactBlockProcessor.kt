@@ -1861,28 +1861,19 @@ class CompactBlockProcessor internal constructor(
             return
         }
 
-        var errorInfo = fetchValidationErrorInfo(errorHeight)
-        Twig.debug { "validation failed at block ${errorInfo.errorHeight} with hash: ${errorInfo.hash}" }
+        var errorInfo = ValidationErrorInfo(errorHeight)
+        Twig.debug { "Validation failed at block ${errorInfo.errorHeight}" }
 
-        errorInfo = fetchValidationErrorInfo(errorHeight + 1)
-        Twig.debug { "the next block is ${errorInfo.errorHeight} with hash: ${errorInfo.hash}" }
+        errorInfo = ValidationErrorInfo(errorHeight + 1)
+        Twig.debug { "The next block is ${errorInfo.errorHeight}" }
 
         Twig.debug { "=================== BLOCKS [$errorHeight..${errorHeight.value + count - 1}]: START ========" }
         repeat(count) { i ->
             val height = errorHeight + i
             val block = downloader.compactBlockRepository.findCompactBlock(height)
-            // sometimes the initial block was inserted via checkpoint and will not appear in the cache. We can get
-            // the hash another way.
-            val checkedHash = block?.hash ?: repository.findBlockHash(height)
-            Twig.debug { "block: $height\thash=${checkedHash?.toHexReversed()}" }
+            Twig.debug { "block: $height\thash=${block?.hash?.toHexReversed()}" }
         }
         Twig.debug { "=================== BLOCKS [$errorHeight..${errorHeight.value + count - 1}]: END ========" }
-    }
-
-    private suspend fun fetchValidationErrorInfo(errorHeight: BlockHeight): ValidationErrorInfo {
-        val hash = repository.findBlockHash(errorHeight + 1)?.toHexReversed()
-
-        return ValidationErrorInfo(errorHeight, hash)
     }
 
     /**
@@ -2042,8 +2033,7 @@ class CompactBlockProcessor internal constructor(
     )
 
     data class ValidationErrorInfo(
-        val errorHeight: BlockHeight,
-        val hash: String?
+        val errorHeight: BlockHeight
     )
 
     //

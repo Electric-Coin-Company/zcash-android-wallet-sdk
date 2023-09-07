@@ -5,7 +5,6 @@ import cash.z.ecc.android.sdk.internal.db.queryAndMap
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.firstOrNull
 import java.util.Locale
 
 internal class BlockTable(private val zcashNetwork: ZcashNetwork, private val sqliteDatabase: SupportSQLiteDatabase) {
@@ -18,16 +17,6 @@ internal class BlockTable(private val zcashNetwork: ZcashNetwork, private val sq
                 BlockTableDefinition.COLUMN_LONG_HEIGHT
             )
         )
-
-        private val SELECTION_BLOCK_HEIGHT = String.format(
-            Locale.ROOT,
-            "%s = ?", // $NON-NLS
-            BlockTableDefinition.COLUMN_LONG_HEIGHT
-        )
-
-        private val PROJECTION_HASH = arrayOf(BlockTableDefinition.COLUMN_BLOB_HASH)
-    }
-
     }
 
     suspend fun lastScannedHeight(): BlockHeight {
@@ -41,22 +30,10 @@ internal class BlockTable(private val zcashNetwork: ZcashNetwork, private val sq
 
         return BlockHeight.new(zcashNetwork, heightLong)
     }
-
-    suspend fun findBlockHash(blockHeight: BlockHeight): ByteArray? {
-        return sqliteDatabase.queryAndMap(
-            table = BlockTableDefinition.TABLE_NAME,
-            columns = PROJECTION_HASH,
-            selection = SELECTION_BLOCK_HEIGHT,
-            selectionArgs = arrayOf(blockHeight.value),
-            cursorParser = { it.getBlob(0) }
-        ).firstOrNull()
-    }
 }
 
 internal object BlockTableDefinition {
     const val TABLE_NAME = "blocks" // $NON-NLS
 
     const val COLUMN_LONG_HEIGHT = "height" // $NON-NLS
-
-    const val COLUMN_BLOB_HASH = "hash" // $NON-NLS
 }
