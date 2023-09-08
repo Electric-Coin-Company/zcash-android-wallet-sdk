@@ -20,9 +20,7 @@ internal sealed class SbSPreparationResult {
     }
     data class Success(
         val suggestedRangesResult: SuggestScanRangesResult,
-        val verifyRangeResult: VerifySuggestedScanRange,
-        val allBatchCount: Long,
-        val lastBatchOrder: Long
+        val verifyRangeResult: VerifySuggestedScanRange
     ) : SbSPreparationResult()
     object NoMoreBlocksToProcess : SbSPreparationResult()
 }

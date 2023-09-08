@@ -155,20 +155,6 @@ class CompactBlockProcessor internal constructor(
     private val processingMutex = Mutex()
 
     /**
-     * The synchronization-related variable that holds the all batch count computed in the first initial synchronization
-     * loop. It is supposed to keep the same value across the synchronization refreshes with [runSbSSyncingPreparation]
-     * as happens in spend-before-sync synchronization function.
-     */
-    private var allBatchCount: Long = 0
-
-    /**
-     * Another synchronization-related variable that holds the order of a currently processing batch of blocks. It
-     * is supposed to preserve its value across the synchronization refreshes with [runSbSSyncingPreparation] as
-     * happens in spend-before-sync synchronization function.
-     */
-    private var lastBatchOrder: Long = 0
-
-    /**
      * Flow of birthday heights. The birthday is essentially the first block that the wallet cares
      * about. Any prior block can be ignored. This is not a fixed value because the height is
      * influenced by the first transaction, which isn't always known. So we start with an estimation
@@ -428,7 +414,6 @@ class CompactBlockProcessor internal constructor(
 
         var verifyRangeResult = preparationResult.verifyRangeResult
         var suggestedRangesResult = preparationResult.suggestedRangesResult
-        val allBatchCountLocal = preparationResult.allBatchCount
         val lastPreparationTime = System.currentTimeMillis()
 
         // Running synchronization for the [ScanRange.SuggestScanRangePriority.Verify] range
@@ -450,19 +435,9 @@ class CompactBlockProcessor internal constructor(
                 network = network,
                 syncRange = verifyRangeResult.scanRange.range,
                 withDownload = true,
-                enhanceStartHeight = firstUnenhancedHeight,
-                lastBatchOrder = lastBatchOrder
+                enhanceStartHeight = firstUnenhancedHeight
             ).collect { rangeSyncProgress ->
-                // We need to update lastBatchOrder for the processing of the following range. It can occasionally
-                //  be over the precomputed all-batch count in case of inter-syncing failure.
-                lastBatchOrder = min(rangeSyncProgress.overallOrder, allBatchCountLocal)
-
-                // TODO [#1219]: Remove calculated sync progress leftovers
-                // TODO [#1219]: https://github.com/zcash/zcash-android-wallet-sdk/issues/1219
-                Twig.info {
-                    "Progress calculated: " +
-                        "${PercentDecimal(lastBatchOrder / allBatchCountLocal.toFloat()).decimal}"
-                }
+                // Update sync progress
                 when (val result = getScanProgress(backend)) {
                     is GetScanProgressResult.Success -> {
                         val resultProgress = result.toPercentDecimal()
@@ -551,19 +526,9 @@ class CompactBlockProcessor internal constructor(
                 network = network,
                 syncRange = scanRange.range,
                 withDownload = true,
-                enhanceStartHeight = firstUnenhancedHeight,
-                lastBatchOrder = lastBatchOrder
+                enhanceStartHeight = firstUnenhancedHeight
             ).map { rangeSyncProgress ->
-                // We need to update lastBatchOrder for the processing of the following range. It can occasionally
-                //  be over the precomputed all-batch count in case of inter-syncing failure.
-                lastBatchOrder = min(rangeSyncProgress.overallOrder, allBatchCountLocal)
-
-                // TODO [#1219]: Remove calculated sync progress leftovers
-                // TODO [#1219]: https://github.com/zcash/zcash-android-wallet-sdk/issues/1219
-                Twig.info {
-                    "Progress calculated: " +
-                        "${PercentDecimal(lastBatchOrder / allBatchCountLocal.toFloat()).decimal}"
-                }
+                // Update sync progress
                 when (val result = getScanProgress(backend)) {
                     is GetScanProgressResult.Success -> {
                         val resultProgress = result.toPercentDecimal()
@@ -699,8 +664,6 @@ class CompactBlockProcessor internal constructor(
         }
 
         setState(State.Syncing)
-        allBatchCount = max(allBatchCount, getBatchCount(suggestedRangesResult.ranges.map { it.range }))
-        lastBatchOrder = max(lastBatchOrder, 0)
 
         // Parse and process ranges. If it recognizes a range with Priority.Verify, it runs the verification part.
         val verifyRangeResult = shouldVerifySuggestedScanRanges(suggestedRangesResult)
@@ -709,9 +672,7 @@ class CompactBlockProcessor internal constructor(
 
         return SbSPreparationResult.Success(
             suggestedRangesResult = suggestedRangesResult,
-            verifyRangeResult = verifyRangeResult,
-            allBatchCount = allBatchCount,
-            lastBatchOrder = lastBatchOrder
+            verifyRangeResult = verifyRangeResult
         )
     }
 
@@ -1322,8 +1283,7 @@ class CompactBlockProcessor internal constructor(
             network: ZcashNetwork,
             syncRange: ClosedRange<BlockHeight>,
             withDownload: Boolean,
-            enhanceStartHeight: BlockHeight?,
-            lastBatchOrder: Long
+            enhanceStartHeight: BlockHeight?
         ): Flow<BatchSyncProgress> = flow {
             if (syncRange.isEmpty()) {
                 Twig.debug { "No blocks to sync" }
@@ -1335,7 +1295,7 @@ class CompactBlockProcessor internal constructor(
             } else {
                 Twig.info { "Syncing blocks in range $syncRange" }
 
-                val batches = getBatchedBlockList(lastBatchOrder, syncRange, network)
+                val batches = getBatchedBlockList(syncRange, network)
 
                 // Check for the last enhanced height and eventually set is as the beginning of the next enhancing range
                 var enhancingRange = if (enhanceStartHeight != null) {
@@ -1404,8 +1364,7 @@ class CompactBlockProcessor internal constructor(
 
                     emit(
                         BatchSyncProgress(
-                            inRangeOrder = continuousResult.batch.inRangeOrder,
-                            overallOrder = continuousResult.batch.crossRangesOrder,
+                            order = continuousResult.batch.order,
                             resultState = resultState
                         )
                     )
@@ -1417,7 +1376,7 @@ class CompactBlockProcessor internal constructor(
                     // state comes from the previous stages, or if the end of the sync range is reached
                     if (enhancingRange.length() >= ENHANCE_BATCH_SIZE ||
                         resultState != SyncingResult.AllSuccess ||
-                        continuousResult.batch.inRangeOrder == batches.size.toLong()
+                        continuousResult.batch.order == batches.size.toLong()
                     ) {
                         // Copy the range for use and reset for the next iteration
                         val currentEnhancingRange = enhancingRange
@@ -1445,15 +1404,14 @@ class CompactBlockProcessor internal constructor(
                             }
                             emit(
                                 BatchSyncProgress(
-                                    inRangeOrder = continuousResult.batch.inRangeOrder,
-                                    overallOrder = continuousResult.batch.crossRangesOrder,
+                                    order = continuousResult.batch.order,
                                     resultState = resultState
                                 )
                             )
                         }
                     }
                     Twig.info {
-                        "All sync stages done for the batch ${continuousResult.batch.inRangeOrder}/${batches.size}:" +
+                        "All sync stages done for the batch ${continuousResult.batch.order}/${batches.size}:" +
                             " ${continuousResult.batch} with result state: $resultState"
                     }
                 }.takeWhile { batchProcessResult ->
@@ -1496,14 +1454,12 @@ class CompactBlockProcessor internal constructor(
          * Prepare list of all [BlockBatch] internal objects to be processed during a range of
          * blocks processing
          *
-         * @param lastBatchOrder The index of the last previously processed batch
          * @param syncRange Current range to be processed
          * @param network The network we are operating on
          *
          * @return List of [BlockBatch] to for synchronization
          */
         private fun getBatchedBlockList(
-            lastBatchOrder: Long,
             syncRange: ClosedRange<BlockHeight>,
             network: ZcashNetwork
         ): List<BlockBatch> {
@@ -1521,8 +1477,7 @@ class CompactBlockProcessor internal constructor(
 
                     add(
                         BlockBatch(
-                            inRangeOrder = index,
-                            crossRangesOrder = lastBatchOrder + index,
+                            order = index,
                             range = start..end
                         )
                     )
