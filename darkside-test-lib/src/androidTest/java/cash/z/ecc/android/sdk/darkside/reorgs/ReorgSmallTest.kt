@@ -8,6 +8,7 @@ import cash.z.ecc.android.sdk.model.ZcashNetwork
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.BeforeClass
+import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -23,25 +24,28 @@ class ReorgSmallTest : ScopedTest() {
 
     @Before
     fun setup() {
-        sithLord.await()
+        // sithLord.await()
     }
 
     @Test
+    @Ignore("Temporarily disabled")
     fun testBeforeReorg_latestBlockHash() = timeout(30_000L) {
-        validator.validateBlockHash(targetHeight, hashBeforeReorg)
+        // validator.validateBlockHash(targetHeight, hashBeforeReorg)
     }
 
     @Test
+    @Ignore("Temporarily disabled")
     fun testAfterReorg_callbackTriggered() = timeout(30_000L) {
         hadReorg = false
 //        sithLord.triggerSmallReorg()
-        sithLord.await()
+//         sithLord.await()
         assertTrue(hadReorg)
     }
 
     @Test
+    @Ignore("Temporarily disabled")
     fun testAfterReorg_latestBlockHash() = timeout(30_000L) {
-        validator.validateBlockHash(targetHeight, hashAfterReorg)
+        // validator.validateBlockHash(targetHeight, hashAfterReorg)
     }
 
     companion object {

@@ -22,6 +22,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 
+// TODO [#1224]: Refactor and re-enable disabled darkside tests
+// TODO [#1224]: https://github.com/zcash/zcash-android-wallet-sdk/issues/1224
 class DarksideTestCoordinator(val wallet: TestWallet) {
     constructor(
         alias: String = "DarksideTestCoordinator",
@@ -95,6 +97,7 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
      * Waits for, at most, the given amount of time for the synchronizer to download and scan blocks
      * and reach a 'SYNCED' status.
      */
+    /*
     fun await(timeout: Long = 60_000L, targetHeight: BlockHeight? = null) = runBlocking {
         ScopedTest.timeoutWith(this, timeout) {
             synchronizer.status.map { status ->
@@ -110,6 +113,7 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
             }.filter { it == Synchronizer.Status.SYNCED }.first()
         }
     }
+    */
 
 //    /**
 //     * Send a transaction and wait until it has been fully created and successfully submitted, which
@@ -135,13 +139,6 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
 
     inner class DarksideTestValidator {
 
-        fun validateHasBlock(height: BlockHeight) {
-            runBlocking {
-                assertTrue(synchronizer.findBlockHashAsHex(height) != null)
-                assertTrue(synchronizer.findBlockHash(height)?.size ?: 0 > 0)
-            }
-        }
-
         fun validateLatestHeight(height: BlockHeight) = runBlocking<Unit> {
             val info = synchronizer.processorInfo.first()
             val networkBlockHeight = info.networkBlockHeight
@@ -152,6 +149,7 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
             )
         }
 
+        /*
         fun validateMinHeightSynced(minHeight: BlockHeight) = runBlocking<Unit> {
             val info = synchronizer.processorInfo.first()
             val lastSyncedHeight = info.lastSyncedHeight
@@ -177,6 +175,7 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
             val hash = runBlocking { synchronizer.findBlockHashAsHex(height) }
             assertEquals(expectedHash, hash)
         }
+         */
 
         fun onReorg(callback: (errorHeight: BlockHeight, rewindHeight: BlockHeight) -> Unit) {
             synchronizer.onChainErrorHandler = callback
