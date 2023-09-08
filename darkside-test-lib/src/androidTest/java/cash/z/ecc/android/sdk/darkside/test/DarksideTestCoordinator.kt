@@ -2,7 +2,6 @@ package cash.z.ecc.android.sdk.darkside.test
 
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.platform.app.InstrumentationRegistry
-import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.Darkside
@@ -13,13 +12,10 @@ import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
 import io.grpc.StatusRuntimeException
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 
 // TODO [#1224]: Refactor and re-enable disabled darkside tests
@@ -113,7 +109,7 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
             }.filter { it == Synchronizer.Status.SYNCED }.first()
         }
     }
-    */
+     */
 
 //    /**
 //     * Send a transaction and wait until it has been fully created and successfully submitted, which
