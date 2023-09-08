@@ -340,6 +340,8 @@ class CompactBlockProcessor internal constructor(
                             "Failed while processing blocks at height: ${result.failedAtHeight} with: " +
                                 "${result.error}"
                         }
+                        // TODO [#1222]: Enrich BlockProcessingResult.SyncFailure with root cause
+                        // TODO [#1222]: https://github.com/zcash/zcash-android-wallet-sdk/issues/1222
                         checkErrorResult(result.failedAtHeight)
                     }
                     is BlockProcessingResult.Success -> {
@@ -754,6 +756,9 @@ class CompactBlockProcessor internal constructor(
         object Success : BlockProcessingResult()
         object Reconnecting : BlockProcessingResult()
         object RestartSynchronization : BlockProcessingResult()
+
+        // TODO [#1222]: Enrich BlockProcessingResult.SyncFailure with root cause
+        // TODO [#1222]: https://github.com/zcash/zcash-android-wallet-sdk/issues/1222
         data class SyncFailure(val failedAtHeight: BlockHeight?, val error: Throwable) : BlockProcessingResult()
     }
 

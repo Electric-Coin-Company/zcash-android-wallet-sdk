@@ -4,6 +4,7 @@ import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.Synchronizer.Status.SYNCED
+import cash.z.ecc.android.sdk.WalletInitMode
 import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.ext.onFirst
 import cash.z.ecc.android.sdk.internal.Twig
@@ -141,7 +142,9 @@ class TestnetIntegrationTest : ScopedTest() {
                 lightWalletEndpoint =
                 lightWalletEndpoint,
                 seed = seed,
-                birthday = BlockHeight.new(ZcashNetwork.Testnet, birthdayHeight)
+                birthday = BlockHeight.new(ZcashNetwork.Testnet, birthdayHeight),
+                // Using existing wallet init mode as simplification for the test
+                walletInitMode = WalletInitMode.ExistingWallet
             )
         }
     }
