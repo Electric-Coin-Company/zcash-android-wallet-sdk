@@ -79,7 +79,8 @@ class WalletCoordinator(
                         zcashNetwork = persistableWallet.network,
                         lightWalletEndpoint = LightWalletEndpoint.defaultForNetwork(persistableWallet.network),
                         birthday = persistableWallet.birthday,
-                        seed = persistableWallet.seedPhrase.toByteArray()
+                        seed = persistableWallet.seedPhrase.toByteArray(),
+                        walletInitMode = PersistableWallet.walletInitMode,
                     )
 
                     trySend(InternalSynchronizerStatus.Available(closeableSynchronizer))

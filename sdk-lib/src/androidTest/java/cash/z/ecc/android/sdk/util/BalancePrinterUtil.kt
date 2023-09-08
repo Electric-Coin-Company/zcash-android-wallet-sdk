@@ -3,6 +3,7 @@ package cash.z.ecc.android.sdk.util
 import androidx.test.platform.app.InstrumentationRegistry
 import cash.z.ecc.android.sdk.CloseableSynchronizer
 import cash.z.ecc.android.sdk.Synchronizer
+import cash.z.ecc.android.sdk.WalletInitMode
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.ext.deleteSuspend
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
@@ -96,7 +97,9 @@ class BalancePrinterUtil {
                     lightWalletEndpoint = LightWalletEndpoint
                         .defaultForNetwork(network),
                     seed = seed,
-                    birthday = birthdayHeight
+                    birthday = birthdayHeight,
+                    // Using existing wallet init mode as simplification for the test
+                    walletInitMode = WalletInitMode.ExistingWallet
                 )
 
 //            deleteDb(dataDbPath)

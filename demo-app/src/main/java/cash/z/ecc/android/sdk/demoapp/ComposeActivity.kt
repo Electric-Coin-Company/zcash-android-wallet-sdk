@@ -40,7 +40,7 @@ class ComposeActivity : ComponentActivity() {
             }
             SecretState.None -> {
                 Seed(
-                    ZcashNetwork.fromResources(applicationContext),
+                    zcashNetwork = ZcashNetwork.fromResources(applicationContext),
                     onExistingWallet = { walletViewModel.persistExistingWallet(it) },
                     onNewWallet = { walletViewModel.persistNewWallet() }
                 )

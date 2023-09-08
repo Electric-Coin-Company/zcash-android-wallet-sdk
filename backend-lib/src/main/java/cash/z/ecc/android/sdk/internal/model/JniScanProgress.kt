@@ -23,5 +23,8 @@ class JniScanProgress(
         require(numerator.toFloat().div(denominator) >= 0f) {
             "Result of ${numerator.toFloat()}/$denominator is outside of allowed range"
         }
+        require(numerator.toFloat().div(denominator) <= 1f) {
+            "Result of ${numerator.toFloat()}/$denominator is outside of allowed range"
+        }
     }
 }
