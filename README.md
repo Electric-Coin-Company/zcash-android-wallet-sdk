@@ -56,5 +56,6 @@ Note that we aim for the main branch of this repository to be stable and releasa
 
 ## Unstable Features
 ### Spend-before-Sync compact blocks synchronization algorithm
-- CompactBlockProcessor now processes compact blocks from the lightwalletd server in the **spend-before-sync** order. This
-feature shortens the time after which a wallet's spendable balance can be used. Please note that this new block synchronization algorithm is still under development.
+`CompactBlockProcessor` now processes compact blocks from the lightwalletd server in non-linear order with the 
+**Spend-before-Sync** algorithm. This feature speeds up discovering the wallet's spendable balance. Please note that 
+this new block synchronization algorithm is still under development.
