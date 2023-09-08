@@ -1,6 +1,8 @@
 # Change Log
 
-## Unreleased
+## 1.21.0-beta01
+Note: This is the last _1.x_ version release. The upcoming version _2.0_ brings the **Spend-before-Sync** feature, 
+which speeds up discovering the wallet's spendable balance.  
 
 ### Changed
 - Updated dependencies:
@@ -12,6 +14,7 @@
    - AndroidX
    - gRPC/Protobuf
    - etc.
+- Checkpoints
 
 ## 1.20.0-beta01
 - The SDK internally migrated from `BackendExt` rust backend extension functions to more type-safe `TypesafeBackend`.
