@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import cash.z.ecc.android.bip39.Mnemonics
 import cash.z.ecc.android.bip39.toSeed
 import cash.z.ecc.android.sdk.Synchronizer
+import cash.z.ecc.android.sdk.WalletInitMode
 import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.ext.onFirst
 import cash.z.ecc.android.sdk.internal.Twig
@@ -82,6 +83,8 @@ class SharedViewModel(application: Application) : AndroidViewModel(application) 
                     } else {
                         birthdayHeight.value
                     },
+                    // We use restore mode as this is always initialization with an older seed
+                    walletInitMode = WalletInitMode.RestoreWallet,
                     alias = OLD_UI_SYNCHRONIZER_ALIAS
                 )
 

@@ -2,6 +2,7 @@ package cash.z.wallet.sdk.sample.demoapp
 
 import androidx.test.platform.app.InstrumentationRegistry
 import cash.z.ecc.android.sdk.Synchronizer
+import cash.z.ecc.android.sdk.WalletInitMode
 import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.ext.convertZecToZatoshi
 import cash.z.ecc.android.sdk.ext.toHex
@@ -202,7 +203,9 @@ class SampleCodeTest {
                 network,
                 lightWalletEndpoint = LightWalletEndpoint.defaultForNetwork(network),
                 seed = seed,
-                birthday = null
+                birthday = null,
+                // Using existing wallet init mode as simplification for the test
+                walletInitMode = WalletInitMode.ExistingWallet
             )
         }
 

@@ -4,6 +4,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import cash.z.ecc.android.sdk.CloseableSynchronizer
 import cash.z.ecc.android.sdk.SdkSynchronizer
 import cash.z.ecc.android.sdk.Synchronizer
+import cash.z.ecc.android.sdk.WalletInitMode
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.model.defaultForNetwork
@@ -72,7 +73,9 @@ class DataDbScannerUtil {
             birthday = BlockHeight.new(
                 ZcashNetwork.Mainnet,
                 birthdayHeight
-            )
+            ),
+            // Using existing wallet init mode as simplification for the test
+            walletInitMode = WalletInitMode.ExistingWallet
         )
 
         println("sync!")

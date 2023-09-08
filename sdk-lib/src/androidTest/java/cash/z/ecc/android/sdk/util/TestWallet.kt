@@ -5,6 +5,7 @@ import cash.z.ecc.android.bip39.Mnemonics
 import cash.z.ecc.android.bip39.toSeed
 import cash.z.ecc.android.sdk.SdkSynchronizer
 import cash.z.ecc.android.sdk.Synchronizer
+import cash.z.ecc.android.sdk.WalletInitMode
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.deriveUnifiedSpendingKey
 import cash.z.ecc.android.sdk.internal.jni.RustDerivationTool
@@ -66,7 +67,9 @@ class TestWallet(
         alias,
         lightWalletEndpoint = endpoint,
         seed = seed,
-        startHeight
+        startHeight,
+        // Using existing wallet init mode as simplification for the test
+        walletInitMode = WalletInitMode.ExistingWallet
     ) as SdkSynchronizer
 
     val available get() = synchronizer.saplingBalances.value?.available

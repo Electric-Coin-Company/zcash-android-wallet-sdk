@@ -5,7 +5,9 @@ import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor
 import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.internal.Derivation
 import cash.z.ecc.android.sdk.internal.SaplingParamTool
+import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.db.DatabaseCoordinator
+import cash.z.ecc.android.sdk.internal.model.ext.toBlockHeight
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.PercentDecimal
@@ -19,6 +21,7 @@ import cash.z.ecc.android.sdk.tool.CheckpointTool
 import cash.z.ecc.android.sdk.type.AddressType
 import cash.z.ecc.android.sdk.type.ConsensusMatchType
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
+import co.electriccoin.lightwallet.client.model.Response
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.runBlocking
@@ -425,6 +428,12 @@ interface Synchronizer {
          * to create the wallet.  If that value is unknown, null is acceptable but will result in longer
          * sync times.  After sync completes, the birthday can be determined from [Synchronizer.latestBirthdayHeight].
          *
+         * @param walletInitMode a required parameter with one of [WalletInitMode] values. Use
+         * [WalletInitMode.NewWallet] when starting synchronizer for a newly created wallet. Or use
+         * [WalletInitMode.RestoreWallet] when restoring an existing wallet that was created at some point in the
+         * past. Or use the last [WalletInitMode.ExistingWallet] type for a wallet which is already initialized
+         * and needs follow-up block synchronization.
+         *
          * @throws InitializerException.SeedRequired Indicates clients need to call this method again, providing the
          * seed bytes.
          *
@@ -443,7 +452,8 @@ interface Synchronizer {
             alias: String = ZcashSdk.DEFAULT_ALIAS,
             lightWalletEndpoint: LightWalletEndpoint,
             seed: ByteArray?,
-            birthday: BlockHeight?
+            birthday: BlockHeight?,
+            walletInitMode: WalletInitMode
         ): CloseableSynchronizer {
             val applicationContext = context.applicationContext
 
@@ -472,20 +482,39 @@ interface Synchronizer {
                 DefaultSynchronizerFactory
                     .defaultCompactBlockRepository(coordinator.fsBlockDbRoot(zcashNetwork, alias), backend)
 
+            val service = DefaultSynchronizerFactory.defaultService(applicationContext, lightWalletEndpoint)
+            val downloader = DefaultSynchronizerFactory.defaultDownloader(service, blockStore)
+
+            val chainTip = when (walletInitMode) {
+                is WalletInitMode.RestoreWallet -> {
+                    when (val response = downloader.getLatestBlockHeight()) {
+                        is Response.Success -> {
+                            Twig.info { "Chain tip for recovery until param fetched: ${response.result.value}" }
+                            runCatching { response.result.toBlockHeight(zcashNetwork) }.getOrNull()
+                        }
+                        is Response.Failure -> {
+                            Twig.error { "Chain tip fetch for recovery until failed with: ${response.toThrowable()}" }
+                            null
+                        }
+                    }
+                }
+                else -> {
+                    null
+                }
+            }
+
             val repository = DefaultSynchronizerFactory.defaultDerivedDataRepository(
-                applicationContext,
-                backend,
-                coordinator.dataDbFile(zcashNetwork, alias),
-                zcashNetwork,
-                loadedCheckpoint,
-                seed,
-                Derivation.DEFAULT_NUMBER_OF_ACCOUNTS,
-                Derivation.DEFAULT_RECOVERY_UNTIL_HEIGHT,
+                context = applicationContext,
+                rustBackend = backend,
+                databaseFile = coordinator.dataDbFile(zcashNetwork, alias),
+                zcashNetwork = zcashNetwork,
+                checkpoint = loadedCheckpoint,
+                seed = seed,
+                numberOfAccounts = Derivation.DEFAULT_NUMBER_OF_ACCOUNTS,
+                recoverUntil = chainTip,
             )
 
-            val service = DefaultSynchronizerFactory.defaultService(applicationContext, lightWalletEndpoint)
             val encoder = DefaultSynchronizerFactory.defaultEncoder(backend, saplingParamTool, repository)
-            val downloader = DefaultSynchronizerFactory.defaultDownloader(service, blockStore)
             val txManager = DefaultSynchronizerFactory.defaultTxManager(
                 encoder,
                 service
@@ -521,9 +550,10 @@ interface Synchronizer {
             alias: String = ZcashSdk.DEFAULT_ALIAS,
             lightWalletEndpoint: LightWalletEndpoint,
             seed: ByteArray?,
-            birthday: BlockHeight?
+            birthday: BlockHeight?,
+            walletInitMode: WalletInitMode
         ): CloseableSynchronizer = runBlocking {
-            new(context, zcashNetwork, alias, lightWalletEndpoint, seed, birthday)
+            new(context, zcashNetwork, alias, lightWalletEndpoint, seed, birthday, walletInitMode)
         }
 
         /**
@@ -546,6 +576,23 @@ interface Synchronizer {
             alias: String = ZcashSdk.DEFAULT_ALIAS
         ): Boolean = SdkSynchronizer.erase(appContext, network, alias)
     }
+}
+
+/**
+ * Sealed class describing wallet initialization mode.
+ *
+ * Use [NewWallet] type if the seed was just created as part of a
+ * new wallet initialization.
+ *
+ * Use [RestoreWallet] type if an existed wallet is initialized
+ * from a restored seed with older birthday height.
+ *
+ * Use [ExistingWallet] type if the wallet is already initialized.
+ */
+sealed class WalletInitMode {
+    data object NewWallet : WalletInitMode()
+    data object RestoreWallet : WalletInitMode()
+    data object ExistingWallet : WalletInitMode()
 }
 
 interface CloseableSynchronizer : Synchronizer, Closeable

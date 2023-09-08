@@ -3,6 +3,7 @@ package cash.z.ecc.android.sdk.model
 import android.app.Application
 import cash.z.ecc.android.bip39.Mnemonics
 import cash.z.ecc.android.bip39.toEntropy
+import cash.z.ecc.android.sdk.WalletInitMode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
@@ -41,6 +42,10 @@ data class PersistableWallet(
         internal const val KEY_BIRTHDAY = "birthday"
         internal const val KEY_SEED_PHRASE = "seed_phrase"
 
+        // Note: This is not the ideal way to hold such a value. But we also want to avoid persisting the wallet
+        // initialization mode with the persistable wallet.
+        var walletInitMode: WalletInitMode = WalletInitMode.ExistingWallet
+
         fun from(jsonObject: JSONObject): PersistableWallet {
             when (val version = jsonObject.getInt(KEY_VERSION)) {
                 VERSION_1 -> {
@@ -56,7 +61,11 @@ data class PersistableWallet(
                     }
                     val seedPhrase = jsonObject.getString(KEY_SEED_PHRASE)
 
-                    return PersistableWallet(network, birthday, SeedPhrase.new(seedPhrase))
+                    return PersistableWallet(
+                        network = network,
+                        birthday = birthday,
+                        seedPhrase = SeedPhrase.new(seedPhrase)
+                    )
                 }
                 else -> {
                     throw IllegalArgumentException("Unsupported version $version")
@@ -72,7 +81,11 @@ data class PersistableWallet(
 
             val seedPhrase = newSeedPhrase()
 
-            return PersistableWallet(zcashNetwork, birthday, seedPhrase)
+            return PersistableWallet(
+                zcashNetwork,
+                birthday,
+                seedPhrase
+            )
         }
     }
 }
