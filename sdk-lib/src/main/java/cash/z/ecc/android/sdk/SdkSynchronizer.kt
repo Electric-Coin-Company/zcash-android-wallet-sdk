@@ -509,11 +509,15 @@ class SdkSynchronizer private constructor(
     // Not ready to be a public API; internal for testing only
     internal suspend fun createAccount(
         seed: ByteArray,
-        checkpoint: Checkpoint,
+        treeState: ByteArray,
         recoverUntil: BlockHeight?
     ): UnifiedSpendingKey? {
         return runCatching {
-            backend.createAccountAndGetSpendingKey(seed, checkpoint, recoverUntil)
+            backend.createAccountAndGetSpendingKey(
+                seed = seed,
+                treeState = treeState,
+                recoverUntil = recoverUntil
+            )
         }.onFailure {
             Twig.error(it) { "Create account failed." }
         }.getOrNull()

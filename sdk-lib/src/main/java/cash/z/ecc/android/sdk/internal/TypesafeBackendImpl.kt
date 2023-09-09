@@ -1,6 +1,5 @@
 package cash.z.ecc.android.sdk.internal
 
-import cash.z.ecc.android.sdk.internal.model.Checkpoint
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.internal.model.JniSubtreeRoot
 import cash.z.ecc.android.sdk.internal.model.ScanProgress
@@ -23,14 +22,14 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
 
     override suspend fun createAccountAndGetSpendingKey(
         seed: ByteArray,
-        checkpoint: Checkpoint,
+        treeState: ByteArray,
         recoverUntil: BlockHeight?
     ): UnifiedSpendingKey {
         return UnifiedSpendingKey(
             backend.createAccount(
-                seed,
-                checkpoint.treeState().encoded,
-                recoverUntil?.value
+                seed = seed,
+                treeState = treeState,
+                recoverUntil = recoverUntil?.value
             )
         )
     }

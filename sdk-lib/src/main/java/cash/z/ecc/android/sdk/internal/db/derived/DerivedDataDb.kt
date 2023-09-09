@@ -77,7 +77,11 @@ internal class DerivedDataDb private constructor(
                 }
                 repeat(missingAccounts) {
                     runCatching {
-                        backend.createAccountAndGetSpendingKey(checkedSeed, checkpoint, recoverUntil)
+                        backend.createAccountAndGetSpendingKey(
+                            seed = checkedSeed,
+                            treeState = checkpoint.treeState().encoded,
+                            recoverUntil = recoverUntil
+                        )
                     }.onFailure {
                         Twig.error(it) { "Create account failed." }
                     }

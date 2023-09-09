@@ -1,6 +1,5 @@
 package cash.z.ecc.android.sdk.internal
 
-import cash.z.ecc.android.sdk.internal.model.Checkpoint
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.internal.model.ScanProgress
 import cash.z.ecc.android.sdk.internal.model.ScanRange
@@ -20,7 +19,7 @@ internal interface TypesafeBackend {
 
     suspend fun createAccountAndGetSpendingKey(
         seed: ByteArray,
-        checkpoint: Checkpoint,
+        treeState: ByteArray,
         recoverUntil: BlockHeight?
     ): UnifiedSpendingKey
 
