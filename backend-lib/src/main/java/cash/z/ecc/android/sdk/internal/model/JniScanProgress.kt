@@ -17,10 +17,8 @@ class JniScanProgress(
         require(numerator >= 0L) {
             "Numerator $numerator is outside of allowed range [0, Long.MAX_VALUE]"
         }
-        // Note that we allow the denominator to be 0 because of the internal rust implementation, and we treat this
-        //  special case as 0 progress ratio in the receiver [ScanProgress] class.
-        require(denominator >= 0L) {
-            "Denominator $denominator is outside of allowed range [0, Long.MAX_VALUE]"
+        require(denominator >= 1L) {
+            "Denominator $denominator is outside of allowed range [1, Long.MAX_VALUE]"
         }
         require(numerator.toFloat().div(denominator) >= 0f) {
             "Result of ${numerator.toFloat()}/$denominator is outside of allowed range"
