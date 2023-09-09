@@ -54,7 +54,7 @@ data class BlockHeight internal constructor(val value: Long) : Comparable<BlockH
             "Cannot subtract negative value $other to BlockHeight"
         }
 
-        return BlockHeight(value + other)
+        return BlockHeight(value - other)
     }
 
     companion object {

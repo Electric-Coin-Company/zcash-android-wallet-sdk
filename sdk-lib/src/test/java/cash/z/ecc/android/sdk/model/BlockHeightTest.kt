@@ -83,11 +83,17 @@ class BlockHeightTest {
 
     @Test
     fun subtraction_of_long_succeeds() {
-        assertEquals(419_323L, (ZcashNetwork.Mainnet.saplingActivationHeight - 123L).value)
+        assertEquals(
+            ZcashNetwork.Mainnet.saplingActivationHeight.value,
+            (BlockHeight(419_323L) - 123L).value
+        )
     }
 
     @Test
     fun subtraction_of_int_succeeds() {
-        assertEquals(419_323, (ZcashNetwork.Mainnet.saplingActivationHeight + 123).value)
+        assertEquals(
+            ZcashNetwork.Mainnet.saplingActivationHeight.value,
+            (BlockHeight(419_323) - 123).value
+        )
     }
 }
