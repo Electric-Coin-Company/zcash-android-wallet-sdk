@@ -7,9 +7,8 @@ import cash.z.ecc.android.sdk.model.PercentDecimal
  * Internal class for sharing get scan progress action result.
  */
 internal sealed class GetScanProgressResult {
-    data class Success(val progress: ScanProgress) : GetScanProgressResult() {
-        fun toPercentDecimal() =
-            PercentDecimal(progress.numerator / progress.denominator.toFloat())
+    data class Success(val scanProgress: ScanProgress) : GetScanProgressResult() {
+        fun toPercentDecimal() = PercentDecimal(scanProgress.getSafeRation())
     }
 
     data object None : GetScanProgressResult()
