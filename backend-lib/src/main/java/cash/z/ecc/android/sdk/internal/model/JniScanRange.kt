@@ -25,5 +25,8 @@ class JniScanRange(
         require(endHeight.isInUIntRange()) {
             "Height $endHeight is outside of allowed UInt range"
         }
+        require(endHeight >= startHeight) {
+            "End height $endHeight must be greater than start height $startHeight."
+        }
     }
 }
