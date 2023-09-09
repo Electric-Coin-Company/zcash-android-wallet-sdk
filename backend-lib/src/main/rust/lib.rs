@@ -1173,7 +1173,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_ge
         match db_data
             .get_wallet_summary(0)
             .map_err(|e| format_err!("Error while fetching scan progress: {}", e))?
-            .and_then(|summary| summary.scan_progress().filter(|r| r.denominator() > 0))
+            .and_then(|summary| summary.scan_progress().filter(|r| r.denominator() > &0))
         {
             Some(progress) => encode_scan_progress(&env, progress),
             None => Ok(ptr::null_mut()),
