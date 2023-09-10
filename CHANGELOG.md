@@ -17,8 +17,8 @@
   effect on the current rewind functionality result.
 - Internally, we removed access to the shared block table from the Kotlin layer, which resulted in eliminating these 
   APIs:
-  - `SdkSynchornizer.findBlockHash()`
-  - `SdkSynchornizer.findBlockHashAsHex()`
+  - `SdkSynchronizer.findBlockHash()`
+  - `SdkSynchronizer.findBlockHashAsHex()`
 
 ### Changed
 - `CompactBlockProcessor.quickRewind()` and `CompactBlockProcessor.rewindToNearestHeight()` now might fail due to
