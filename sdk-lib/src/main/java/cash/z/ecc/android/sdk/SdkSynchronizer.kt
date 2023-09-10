@@ -626,18 +626,22 @@ class SdkSynchronizer private constructor(
     override suspend fun validateConsensusBranch(): ConsensusMatchType {
         val serverBranchId = tryNull { processor.downloader.getServerInfo()?.consensusBranchId }
 
-        val currentChainTip = when (val response =
-            processor.downloader.getLatestBlockHeight()) {
-                is Response.Success -> {
-                    Twig.info { "Chain tip for validate consensus branch action fetched: ${response.result.value}" }
-                    runCatching { response.result.toBlockHeight(network) }.getOrNull()
-                }
-                is Response.Failure -> {
-                    Twig.error { "Chain tip fetch failed for validate consensus branch action with:" +
-                        " ${response.toThrowable()}" }
-                    null
-                }
+        val currentChainTip = when (
+            val response =
+                processor.downloader.getLatestBlockHeight()
+        ) {
+            is Response.Success -> {
+                Twig.info { "Chain tip for validate consensus branch action fetched: ${response.result.value}" }
+                runCatching { response.result.toBlockHeight(network) }.getOrNull()
             }
+            is Response.Failure -> {
+                Twig.error {
+                    "Chain tip fetch failed for validate consensus branch action with:" +
+                        " ${response.toThrowable()}"
+                }
+                null
+            }
+        }
 
         val sdkBranchId = currentChainTip?.let {
             tryNull {
