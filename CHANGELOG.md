@@ -13,8 +13,8 @@
   case of older Linear synchronization algorithm.
 - `CompactBlockProcessor.ProcessorInfo.isSyncing`. Use `Synchronizer.status` instead.
 - `CompactBlockProcessor.ProcessorInfo.syncProgress`. Use `Synchronizer.progress` instead.
-- `alsoClearBlockCache` parameter from rewind functions of `Synchronizer` and `CompactBlockProcessor` as it take no 
-  effect on the current rewind functionality result.
+- `alsoClearBlockCache` parameter from rewind functions of `Synchronizer` and `CompactBlockProcessor`, as it has no 
+  effect on the current behaviour of these functions.
 - Internally, we removed access to the shared block table from the Kotlin layer, which resulted in eliminating these 
   APIs:
   - `SdkSynchronizer.findBlockHash()`
