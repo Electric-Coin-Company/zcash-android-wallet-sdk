@@ -66,7 +66,7 @@ suspend inline fun retryUpToAndContinue(
             return
         } catch (t: Throwable) {
             failedAttempts++
-            if (failedAttempts > retries) {
+            if (failedAttempts == retries) {
                 exceptionWrapper(t)
             }
             val duration = (initialDelayMillis.toDouble() * 2.0.pow(failedAttempts.toDouble() - 1)).toLong()
