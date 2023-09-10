@@ -29,7 +29,7 @@
 ### Fixed
 - `Synchronizer.getMemos()` now correctly returns a flow of strings for sent and received transactions. Issue **#1154**.
 - `CompactBlockProcessor` now triggers transaction polling while block synchronization is in progress as expected.
-  Clients will be notified briefly after every new transaction is discovered via `Synchronizer.transactions` API.
+  Clients will be notified shortly after every new transaction is discovered via `Synchronizer.transactions` API.
   Issue **#1170**.
 
 ## 1.21.0-beta01
