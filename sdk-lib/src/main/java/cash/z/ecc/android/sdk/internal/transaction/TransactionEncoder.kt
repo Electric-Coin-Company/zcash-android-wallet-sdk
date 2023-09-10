@@ -1,6 +1,7 @@
 package cash.z.ecc.android.sdk.internal.transaction
 
 import cash.z.ecc.android.sdk.internal.model.EncodedTransaction
+import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.TransactionRecipient
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.Zatoshi
@@ -69,6 +70,10 @@ internal interface TransactionEncoder {
 
     /**
      * Return the consensus branch that the encoder is using when making transactions.
+     *
+     * @param height the height at which we want to get the consensus branch
+     *
+     * @return id of consensus branch
      */
-    suspend fun getConsensusBranchId(): Long
+    suspend fun getConsensusBranchId(height: BlockHeight): Long
 }
