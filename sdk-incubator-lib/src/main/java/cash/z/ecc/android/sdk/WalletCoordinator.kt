@@ -80,7 +80,7 @@ class WalletCoordinator(
                         lightWalletEndpoint = LightWalletEndpoint.defaultForNetwork(persistableWallet.network),
                         birthday = persistableWallet.birthday,
                         seed = persistableWallet.seedPhrase.toByteArray(),
-                        walletInitMode = PersistableWallet.walletInitMode,
+                        walletInitMode = persistableWallet.walletInitMode,
                     )
 
                     trySend(InternalSynchronizerStatus.Available(closeableSynchronizer))

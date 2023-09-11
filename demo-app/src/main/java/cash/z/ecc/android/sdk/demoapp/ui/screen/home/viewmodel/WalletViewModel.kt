@@ -141,10 +141,13 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
      */
     fun persistNewWallet() {
         val application = getApplication<Application>()
-        PersistableWallet.walletInitMode = WalletInitMode.NewWallet
 
         viewModelScope.launch {
-            val newWallet = PersistableWallet.new(application, ZcashNetwork.fromResources(application))
+            val newWallet = PersistableWallet.new(
+                application,
+                ZcashNetwork.fromResources(application),
+                WalletInitMode.NewWallet
+            )
             persistWallet(newWallet)
         }
     }
@@ -154,7 +157,6 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
      * to see the side effects.  This would be used for a user restoring a wallet from a backup.
      */
     fun persistExistingWallet(persistableWallet: PersistableWallet) {
-        PersistableWallet.walletInitMode = WalletInitMode.RestoreWallet
         persistWallet(persistableWallet)
     }
 

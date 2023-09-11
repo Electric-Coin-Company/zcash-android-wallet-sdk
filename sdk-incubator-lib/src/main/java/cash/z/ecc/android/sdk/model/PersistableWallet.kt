@@ -14,8 +14,12 @@ import org.json.JSONObject
 data class PersistableWallet(
     val network: ZcashNetwork,
     val birthday: BlockHeight?,
-    val seedPhrase: SeedPhrase
+    val seedPhrase: SeedPhrase,
+    val walletInitMode: WalletInitMode
 ) {
+    init {
+        _walletInitMode = walletInitMode
+    }
 
     /**
      * @return Wallet serialized to JSON format, suitable for long-term encrypted storage.
@@ -44,7 +48,7 @@ data class PersistableWallet(
 
         // Note: This is not the ideal way to hold such a value. But we also want to avoid persisting the wallet
         // initialization mode with the persistable wallet.
-        var walletInitMode: WalletInitMode = WalletInitMode.ExistingWallet
+        private var _walletInitMode: WalletInitMode = WalletInitMode.ExistingWallet
 
         fun from(jsonObject: JSONObject): PersistableWallet {
             when (val version = jsonObject.getInt(KEY_VERSION)) {
@@ -64,7 +68,8 @@ data class PersistableWallet(
                     return PersistableWallet(
                         network = network,
                         birthday = birthday,
-                        seedPhrase = SeedPhrase.new(seedPhrase)
+                        seedPhrase = SeedPhrase.new(seedPhrase),
+                        walletInitMode = _walletInitMode
                     )
                 }
                 else -> {
@@ -76,7 +81,11 @@ data class PersistableWallet(
         /**
          * @return A new PersistableWallet with a random seed phrase.
          */
-        suspend fun new(application: Application, zcashNetwork: ZcashNetwork): PersistableWallet {
+        suspend fun new(
+            application: Application,
+            zcashNetwork: ZcashNetwork,
+            walletInitMode: WalletInitMode
+        ): PersistableWallet {
             val birthday = BlockHeight.ofLatestCheckpoint(application, zcashNetwork)
 
             val seedPhrase = newSeedPhrase()
@@ -84,7 +93,8 @@ data class PersistableWallet(
             return PersistableWallet(
                 zcashNetwork,
                 birthday,
-                seedPhrase
+                seedPhrase,
+                walletInitMode
             )
         }
     }

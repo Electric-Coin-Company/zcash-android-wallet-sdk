@@ -23,8 +23,8 @@
 ### Changed
 - `CompactBlockProcessor.quickRewind()` and `CompactBlockProcessor.rewindToNearestHeight()` now might fail due to
   internal changes in getting scanned height. Thus, these functions return `Boolean` results.
-- `Synchronizer.new()` requires a new `walletInitMode` parameter of type `WalletInitMode`, which describes wallet
-  initialization mode. See related function and sealed class documentation.
+- `Synchronizer.new()` and `PersistableWallet` APIs require a new `walletInitMode` parameter of type `WalletInitMode`, 
+  which describes wallet initialization mode. See related function and sealed class documentation.
 
 ### Fixed
 - `Synchronizer.getMemos()` now correctly returns a flow of strings for sent and received transactions. Issue **#1154**.
