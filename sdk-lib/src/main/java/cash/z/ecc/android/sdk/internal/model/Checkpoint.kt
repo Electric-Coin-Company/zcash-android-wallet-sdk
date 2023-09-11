@@ -20,11 +20,11 @@ internal data class Checkpoint(
     // Note: this field does NOT match the name of the JSON, so will break with field-based JSON parsing
     val tree: String
 ) {
-    fun treeState(): TreeStateUnsafe {
+    fun treeState(): TreeState {
         require(epochSeconds.isInUIntRange()) {
             "epochSeconds $epochSeconds is outside of allowed UInt range"
         }
-        return TreeStateUnsafe.fromParts(height.value, hash, epochSeconds.toInt(), tree)
+        return TreeState.fromParts(height.value, hash, epochSeconds.toInt(), tree)
     }
 
     internal companion object

@@ -27,6 +27,7 @@ import cash.z.ecc.android.sdk.internal.ext.isNullOrEmpty
 import cash.z.ecc.android.sdk.internal.ext.tryNull
 import cash.z.ecc.android.sdk.internal.jni.RustBackend
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
+import cash.z.ecc.android.sdk.internal.model.TreeState
 import cash.z.ecc.android.sdk.internal.model.ext.toBlockHeight
 import cash.z.ecc.android.sdk.internal.repository.CompactBlockRepository
 import cash.z.ecc.android.sdk.internal.repository.DerivedDataRepository
@@ -511,7 +512,7 @@ class SdkSynchronizer private constructor(
     // Not ready to be a public API; internal for testing only
     internal suspend fun createAccount(
         seed: ByteArray,
-        treeState: ByteArray,
+        treeState: TreeState,
         recoverUntil: BlockHeight?
     ): UnifiedSpendingKey? {
         return runCatching {

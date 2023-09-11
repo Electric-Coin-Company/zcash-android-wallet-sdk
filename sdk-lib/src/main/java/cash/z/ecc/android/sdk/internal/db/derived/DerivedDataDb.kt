@@ -79,7 +79,7 @@ internal class DerivedDataDb private constructor(
                     runCatching {
                         backend.createAccountAndGetSpendingKey(
                             seed = checkedSeed,
-                            treeState = checkpoint.treeState().encoded,
+                            treeState = checkpoint.treeState(),
                             recoverUntil = recoverUntil
                         )
                     }.onFailure {
