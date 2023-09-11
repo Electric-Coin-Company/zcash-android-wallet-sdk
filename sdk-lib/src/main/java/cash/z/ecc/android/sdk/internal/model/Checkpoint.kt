@@ -2,7 +2,6 @@ package cash.z.ecc.android.sdk.internal.model
 
 import cash.z.ecc.android.sdk.internal.ext.isInUIntRange
 import cash.z.ecc.android.sdk.model.BlockHeight
-import co.electriccoin.lightwallet.client.model.TreeStateUnsafe
 
 /**
  * Represents a checkpoint, which is used to speed sync times.
