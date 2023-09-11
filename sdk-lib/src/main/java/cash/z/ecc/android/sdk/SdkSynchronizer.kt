@@ -27,6 +27,7 @@ import cash.z.ecc.android.sdk.internal.ext.isNullOrEmpty
 import cash.z.ecc.android.sdk.internal.ext.tryNull
 import cash.z.ecc.android.sdk.internal.jni.RustBackend
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
+import cash.z.ecc.android.sdk.internal.model.ext.toBlockHeight
 import cash.z.ecc.android.sdk.internal.repository.CompactBlockRepository
 import cash.z.ecc.android.sdk.internal.repository.DerivedDataRepository
 import cash.z.ecc.android.sdk.internal.storage.block.FileCompactBlockRepository
@@ -50,6 +51,7 @@ import cash.z.ecc.android.sdk.type.AddressType.Unified
 import cash.z.ecc.android.sdk.type.ConsensusMatchType
 import co.electriccoin.lightwallet.client.LightWalletClient
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
+import co.electriccoin.lightwallet.client.model.Response
 import co.electriccoin.lightwallet.client.new
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
@@ -623,9 +625,30 @@ class SdkSynchronizer private constructor(
 
     override suspend fun validateConsensusBranch(): ConsensusMatchType {
         val serverBranchId = tryNull { processor.downloader.getServerInfo()?.consensusBranchId }
-        val sdkBranchId = tryNull {
-            (txManager as OutboundTransactionManagerImpl).encoder.getConsensusBranchId()
+
+        val currentChainTip = when (
+            val response =
+                processor.downloader.getLatestBlockHeight()
+        ) {
+            is Response.Success -> {
+                Twig.info { "Chain tip for validate consensus branch action fetched: ${response.result.value}" }
+                runCatching { response.result.toBlockHeight(network) }.getOrNull()
+            }
+            is Response.Failure -> {
+                Twig.error {
+                    "Chain tip fetch failed for validate consensus branch action with:" +
+                        " ${response.toThrowable()}"
+                }
+                null
+            }
         }
+
+        val sdkBranchId = currentChainTip?.let {
+            tryNull {
+                (txManager as OutboundTransactionManagerImpl).encoder.getConsensusBranchId(currentChainTip)
+            }
+        }
+
         return ConsensusMatchType(
             sdkBranchId?.let { ConsensusBranchId.fromId(it) },
             serverBranchId?.let { ConsensusBranchId.fromHex(it) }

@@ -7,6 +7,7 @@ import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.TypesafeBackend
 import cash.z.ecc.android.sdk.internal.model.EncodedTransaction
 import cash.z.ecc.android.sdk.internal.repository.DerivedDataRepository
+import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.FirstClassByteArray
 import cash.z.ecc.android.sdk.model.TransactionRecipient
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
@@ -97,9 +98,17 @@ internal class TransactionEncoderImpl(
     override suspend fun isValidUnifiedAddress(address: String): Boolean =
         backend.isValidUnifiedAddr(address)
 
-    override suspend fun getConsensusBranchId(): Long {
-        val height = backend.getMaxScannedHeight()
-        if (height == null || height < backend.network.saplingActivationHeight) {
+    /**
+     * Return the consensus branch that the encoder is using when making transactions.
+     *
+     * @param height the height at which we want to get the consensus branch
+     *
+     * @return id of consensus branch
+     *
+     * @throws TransactionEncoderException.IncompleteScanException if the [height] is less than activation height
+     */
+    override suspend fun getConsensusBranchId(height: BlockHeight): Long {
+        if (height < backend.network.saplingActivationHeight) {
             throw TransactionEncoderException.IncompleteScanException(height)
         }
         return backend.getBranchIdForHeight(height)
