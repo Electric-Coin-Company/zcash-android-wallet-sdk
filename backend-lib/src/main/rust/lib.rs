@@ -734,7 +734,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_ge
             .map_err(|e| format_err!("Error while fetching anchor height: {}", e))
             .and_then(|opt_anchor| {
                 opt_anchor
-                    .map(|(_, a)| a)
+                    .map(|(target, _)| target) // Include unconfirmed funds.
                     .ok_or(format_err!("Anchor height not available; scan required."))
             })
             .and_then(|anchor| {
@@ -1488,7 +1488,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_sh
             .map_err(|e| format_err!("Error while fetching anchor height: {}", e))
             .and_then(|opt_anchor| {
                 opt_anchor
-                    .map(|(_, a)| a)
+                    .map(|(target, _)| target) // Include unconfirmed funds.
                     .ok_or(format_err!("Anchor height not available; scan required."))
             })
             .and_then(|anchor| {
