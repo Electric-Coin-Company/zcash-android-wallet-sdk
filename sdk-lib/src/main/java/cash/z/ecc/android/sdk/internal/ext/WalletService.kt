@@ -68,6 +68,7 @@ suspend inline fun retryUpToAndContinue(
             failedAttempts++
             if (failedAttempts == retries) {
                 exceptionWrapper(t)
+                return
             }
             val duration = (initialDelayMillis.toDouble() * 2.0.pow(failedAttempts.toDouble() - 1)).toLong()
             Twig.warn(t) { "Retrying ($failedAttempts/$retries) in ${duration}s..." }
