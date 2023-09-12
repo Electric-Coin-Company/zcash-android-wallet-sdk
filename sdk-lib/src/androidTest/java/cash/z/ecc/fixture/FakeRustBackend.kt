@@ -2,6 +2,9 @@ package cash.z.ecc.fixture
 
 import cash.z.ecc.android.sdk.internal.Backend
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
+import cash.z.ecc.android.sdk.internal.model.JniScanProgress
+import cash.z.ecc.android.sdk.internal.model.JniScanRange
+import cash.z.ecc.android.sdk.internal.model.JniSubtreeRoot
 import cash.z.ecc.android.sdk.internal.model.JniUnifiedSpendingKey
 
 internal class FakeRustBackend(
@@ -17,10 +20,34 @@ internal class FakeRustBackend(
         metadata.removeAll { it.height > height }
     }
 
-    override suspend fun getLatestHeight(): Long = metadata.maxOf { it.height }
-    override suspend fun validateCombinedChainOrErrorHeight(limit: Long?): Long? {
+    override suspend fun putSaplingSubtreeRoots(
+        startIndex: Long,
+        roots: List<JniSubtreeRoot>,
+    ) {
         TODO("Not yet implemented")
     }
+
+    override suspend fun updateChainTip(height: Long) {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun getFullyScannedHeight(): Long? {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun getMaxScannedHeight(): Long? {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun getScanProgress(): JniScanProgress {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun suggestScanRanges(): List<JniScanRange> {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun getLatestCacheHeight(): Long = metadata.maxOf { it.height }
 
     override suspend fun getVerifiedTransparentBalance(address: String): Long {
         TODO("Not yet implemented")
@@ -58,34 +85,25 @@ internal class FakeRustBackend(
         to: String,
         value: Long,
         memo: ByteArray?
-    ): Long {
+    ): ByteArray {
         TODO("Not yet implemented")
     }
 
-    override suspend fun shieldToAddress(account: Int, unifiedSpendingKey: ByteArray, memo: ByteArray?): Long {
+    override suspend fun shieldToAddress(account: Int, unifiedSpendingKey: ByteArray, memo: ByteArray?): ByteArray {
         TODO("Not yet implemented")
     }
 
     override suspend fun decryptAndStoreTransaction(tx: ByteArray) =
         error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 
-    override suspend fun initAccountsTable(vararg keys: String) {
-        TODO("Not yet implemented")
-    }
-
-    override suspend fun initBlocksTable(
-        checkpointHeight: Long,
-        checkpointHash: String,
-        checkpointTime: Long,
-        checkpointSaplingTree: String
-    ) {
-        TODO("Not yet implemented")
-    }
-
     override suspend fun initDataDb(seed: ByteArray?): Int =
         error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 
-    override suspend fun createAccount(seed: ByteArray): JniUnifiedSpendingKey =
+    override suspend fun createAccount(
+        seed: ByteArray,
+        treeState: ByteArray,
+        recoverUntil: Long?
+    ): JniUnifiedSpendingKey =
         error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 
     override fun isValidShieldedAddr(addr: String): Boolean =
@@ -119,10 +137,7 @@ internal class FakeRustBackend(
         TODO("Not yet implemented")
     }
 
-    override suspend fun getReceivedMemoAsUtf8(idNote: Long): String? =
-        error("Intentionally not implemented in mocked FakeRustBackend implementation.")
-
-    override suspend fun getSentMemoAsUtf8(idNote: Long): String? =
+    override suspend fun getMemoAsUtf8(txId: ByteArray, outputIndex: Int): String? =
         error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 
     override suspend fun getVerifiedBalance(account: Int): Long {
@@ -133,6 +148,6 @@ internal class FakeRustBackend(
         TODO("Not yet implemented")
     }
 
-    override suspend fun scanBlocks(limit: Long?) =
+    override suspend fun scanBlocks(fromHeight: Long, limit: Long) =
         error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 }

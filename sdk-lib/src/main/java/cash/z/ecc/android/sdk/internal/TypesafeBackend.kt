@@ -1,32 +1,28 @@
 package cash.z.ecc.android.sdk.internal
 
-import cash.z.ecc.android.sdk.internal.model.Checkpoint
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
+import cash.z.ecc.android.sdk.internal.model.ScanProgress
+import cash.z.ecc.android.sdk.internal.model.ScanRange
+import cash.z.ecc.android.sdk.internal.model.SubtreeRoot
+import cash.z.ecc.android.sdk.internal.model.TreeState
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
-import cash.z.ecc.android.sdk.model.UnifiedFullViewingKey
+import cash.z.ecc.android.sdk.model.FirstClassByteArray
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
-import java.lang.RuntimeException
-import kotlin.jvm.Throws
 
 @Suppress("TooManyFunctions")
 internal interface TypesafeBackend {
 
     val network: ZcashNetwork
 
-    suspend fun initAccountsTable(vararg keys: UnifiedFullViewingKey)
-
-    suspend fun initAccountsTable(
+    suspend fun createAccountAndGetSpendingKey(
         seed: ByteArray,
-        numberOfAccounts: Int
-    ): List<UnifiedFullViewingKey>
-
-    suspend fun initBlocksTable(checkpoint: Checkpoint)
-
-    suspend fun createAccountAndGetSpendingKey(seed: ByteArray): UnifiedSpendingKey
+        treeState: TreeState,
+        recoverUntil: BlockHeight?
+    ): UnifiedSpendingKey
 
     @Suppress("LongParameterList")
     suspend fun createToAddress(
@@ -34,12 +30,12 @@ internal interface TypesafeBackend {
         to: String,
         value: Long,
         memo: ByteArray? = byteArrayOf()
-    ): Long
+    ): FirstClassByteArray
 
     suspend fun shieldToAddress(
         usk: UnifiedSpendingKey,
         memo: ByteArray? = byteArrayOf()
-    ): Long
+    ): FirstClassByteArray
 
     suspend fun getCurrentAddress(account: Account): String
 
@@ -55,17 +51,11 @@ internal interface TypesafeBackend {
 
     suspend fun rewindToHeight(height: BlockHeight)
 
-    suspend fun getLatestBlockHeight(): BlockHeight?
+    suspend fun getLatestCacheHeight(): BlockHeight?
 
     suspend fun findBlockMetadata(height: BlockHeight): JniBlockMeta?
 
     suspend fun rewindBlockMetadataToHeight(height: BlockHeight)
-
-    /**
-     * @param limit The limit provides an efficient way how to restrict the portion of blocks, which will be validated.
-     * @return Null if successful. If an error occurs, the height will be the height where the error was detected.
-     */
-    suspend fun validateCombinedChainOrErrorBlockHeight(limit: Long?): BlockHeight?
 
     suspend fun getDownloadedUtxoBalance(address: String): WalletBalance
 
@@ -79,9 +69,7 @@ internal interface TypesafeBackend {
         height: BlockHeight
     )
 
-    suspend fun getSentMemoAsUtf8(idNote: Long): String?
-
-    suspend fun getReceivedMemoAsUtf8(idNote: Long): String?
+    suspend fun getMemoAsUtf8(txId: ByteArray, outputIndex: Int): String?
 
     suspend fun initDataDb(seed: ByteArray?): Int
 
@@ -89,7 +77,57 @@ internal interface TypesafeBackend {
      * @throws RuntimeException as a common indicator of the operation failure
      */
     @Throws(RuntimeException::class)
-    suspend fun scanBlocks(limit: Long?)
+    suspend fun putSaplingSubtreeRoots(
+        startIndex: Long,
+        roots: List<SubtreeRoot>,
+    )
+
+    /**
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    @Throws(RuntimeException::class)
+    suspend fun updateChainTip(height: BlockHeight)
+
+    /**
+     * Returns the height to which the wallet has been fully scanned.
+     *
+     * This is the height for which the wallet has fully trial-decrypted this and all
+     * preceding blocks above the wallet's birthday height.
+     *
+     * @return The height to which the wallet has been fully scanned, or Null if no blocks have been scanned.
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    suspend fun getFullyScannedHeight(): BlockHeight?
+
+    /**
+     * Returns the maximum height that the wallet has scanned.
+     *
+     * If the wallet is fully synced, this will be equivalent to `getFullyScannedHeight`;
+     * otherwise the maximal scanned height is likely to be greater than the fully scanned
+     * height due to the fact that out-of-order scanning can leave gaps.
+     *
+     * @return The maximum height that the wallet has scanned, or Null if no blocks have been scanned.
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    suspend fun getMaxScannedHeight(): BlockHeight?
+
+    /**
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    @Throws(RuntimeException::class)
+    suspend fun scanBlocks(fromHeight: BlockHeight, limit: Long)
+
+    /**
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    @Throws(RuntimeException::class)
+    suspend fun getScanProgress(): ScanProgress?
+
+    /**
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    @Throws(RuntimeException::class)
+    suspend fun suggestScanRanges(): List<ScanRange>
 
     suspend fun decryptAndStoreTransaction(tx: ByteArray)
 

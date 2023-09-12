@@ -5,12 +5,12 @@ import cash.z.ecc.android.sdk.Synchronizer.Status.DISCONNECTED
 import cash.z.ecc.android.sdk.Synchronizer.Status.STOPPED
 import cash.z.ecc.android.sdk.Synchronizer.Status.SYNCED
 import cash.z.ecc.android.sdk.Synchronizer.Status.SYNCING
-import cash.z.ecc.android.sdk.block.CompactBlockProcessor
-import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Disconnected
-import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Initialized
-import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Stopped
-import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Synced
-import cash.z.ecc.android.sdk.block.CompactBlockProcessor.State.Syncing
+import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor
+import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor.State.Disconnected
+import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor.State.Initialized
+import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor.State.Stopped
+import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor.State.Synced
+import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor.State.Syncing
 import cash.z.ecc.android.sdk.exception.TransactionEncoderException
 import cash.z.ecc.android.sdk.exception.TransactionSubmitException
 import cash.z.ecc.android.sdk.ext.ConsensusBranchId
@@ -24,10 +24,11 @@ import cash.z.ecc.android.sdk.internal.db.DatabaseCoordinator
 import cash.z.ecc.android.sdk.internal.db.derived.DbDerivedDataRepository
 import cash.z.ecc.android.sdk.internal.db.derived.DerivedDataDb
 import cash.z.ecc.android.sdk.internal.ext.isNullOrEmpty
-import cash.z.ecc.android.sdk.internal.ext.toHexReversed
 import cash.z.ecc.android.sdk.internal.ext.tryNull
 import cash.z.ecc.android.sdk.internal.jni.RustBackend
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
+import cash.z.ecc.android.sdk.internal.model.TreeState
+import cash.z.ecc.android.sdk.internal.model.ext.toBlockHeight
 import cash.z.ecc.android.sdk.internal.repository.CompactBlockRepository
 import cash.z.ecc.android.sdk.internal.repository.DerivedDataRepository
 import cash.z.ecc.android.sdk.internal.storage.block.FileCompactBlockRepository
@@ -40,7 +41,6 @@ import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.PercentDecimal
 import cash.z.ecc.android.sdk.model.TransactionOverview
 import cash.z.ecc.android.sdk.model.TransactionRecipient
-import cash.z.ecc.android.sdk.model.UnifiedFullViewingKey
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
@@ -52,6 +52,7 @@ import cash.z.ecc.android.sdk.type.AddressType.Unified
 import cash.z.ecc.android.sdk.type.ConsensusMatchType
 import co.electriccoin.lightwallet.client.LightWalletClient
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
+import co.electriccoin.lightwallet.client.model.Response
 import co.electriccoin.lightwallet.client.new
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
@@ -109,6 +110,10 @@ class SdkSynchronizer private constructor(
         private val mutex = Mutex()
 
         /**
+         * Convenience method to create new SdkSynchronizer instance.
+         *
+         * @return Synchronizer instance as CloseableSynchronizer
+         *
          * @throws IllegalStateException If multiple instances of synchronizer with the same network+alias are
          * active at the same time.  Call `close` to finish one synchronizer before starting another one with the same
          * network+alias.
@@ -172,21 +177,17 @@ class SdkSynchronizer private constructor(
         }
     }
 
-    // pools
-    private val _orchardBalances = MutableStateFlow<WalletBalance?>(null)
-    private val _saplingBalances = MutableStateFlow<WalletBalance?>(null)
-    private val _transparentBalances = MutableStateFlow<WalletBalance?>(null)
-
     private val _status = MutableStateFlow<Synchronizer.Status>(DISCONNECTED)
 
     var coroutineScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
-    override val orchardBalances = _orchardBalances.asStateFlow()
-    override val saplingBalances = _saplingBalances.asStateFlow()
-    override val transparentBalances = _transparentBalances.asStateFlow()
+    override val orchardBalances = processor.orchardBalances.asStateFlow()
+    override val saplingBalances = processor.saplingBalances.asStateFlow()
+    override val transparentBalances = processor.transparentBalances.asStateFlow()
+
     override val transactions
         get() = combine(processor.networkHeight, storage.allTransactions) { networkHeight, allTransactions ->
-            val latestBlockHeight = networkHeight ?: storage.lastScannedHeight()
+            val latestBlockHeight = networkHeight ?: backend.getMaxScannedHeight()
             allTransactions.map { TransactionOverview.new(it, latestBlockHeight) }
         }
 
@@ -305,8 +306,8 @@ class SdkSynchronizer private constructor(
     override suspend fun getNearestRewindHeight(height: BlockHeight): BlockHeight =
         processor.getNearestRewindHeight(height)
 
-    override suspend fun rewindToNearestHeight(height: BlockHeight, alsoClearBlockCache: Boolean) {
-        processor.rewindToNearestHeight(height, alsoClearBlockCache)
+    override suspend fun rewindToNearestHeight(height: BlockHeight) {
+        processor.rewindToNearestHeight(height)
     }
 
     override suspend fun quickRewind() {
@@ -314,18 +315,10 @@ class SdkSynchronizer private constructor(
     }
 
     override fun getMemos(transactionOverview: TransactionOverview): Flow<String> {
-        return storage.getNoteIds(transactionOverview.id).map {
+        return storage.getSaplingOutputIndices(transactionOverview.id).map {
             runCatching {
-                when (transactionOverview.isSentTransaction) {
-                    true -> {
-                        backend.getSentMemoAsUtf8(it)
-                    }
-                    false -> {
-                        backend.getReceivedMemoAsUtf8(it)
-                    }
-                }
+                backend.getMemoAsUtf8(transactionOverview.rawId.byteArray, it)
             }.onFailure {
-                // https://github.com/zcash/librustzcash/issues/834
                 Twig.error { "Failed to get memo with: $it" }
             }.onSuccess {
                 Twig.debug { "Transaction memo queried: $it" }
@@ -350,14 +343,6 @@ class SdkSynchronizer private constructor(
     //  to do with the underlying data
     // TODO [#682]: https://github.com/zcash/zcash-android-wallet-sdk/issues/682
 
-    suspend fun findBlockHash(height: BlockHeight): ByteArray? {
-        return storage.findBlockHash(height)
-    }
-
-    suspend fun findBlockHashAsHex(height: BlockHeight): String? {
-        return findBlockHash(height)?.toHexReversed()
-    }
-
     suspend fun getTransactionCount(): Int {
         return storage.getTransactionCount().toInt()
     }
@@ -366,44 +351,49 @@ class SdkSynchronizer private constructor(
         storage.invalidate()
     }
 
-    //
-    // Private API
-    //
-
     /**
-     * Calculate the latest balance, based on the blocks that have been scanned and transmit this
-     * information into the flow of [balances].
+     * Calculate the latest balance based on the blocks that have been scanned and transmit this information into the
+     * [transparentBalances] and [saplingBalances] flow. The [orchardBalances] flow is still not filled with proper data
+     * because of the current limited Orchard support.
      */
     suspend fun refreshAllBalances() {
-        refreshSaplingBalance()
-        refreshTransparentBalance()
+        processor.checkAllBalances()
         // TODO [#682]: refresh orchard balance
         // TODO [#682]: https://github.com/zcash/zcash-android-wallet-sdk/issues/682
         Twig.warn { "Warning: Orchard balance does not yet refresh. Only some of the plumbing is in place." }
     }
 
+    /**
+     * Calculate the latest Sapling balance based on the blocks that have been scanned and transmit this information
+     * into the [saplingBalances] flow.
+     */
     suspend fun refreshSaplingBalance() {
-        Twig.debug { "refreshing sapling balance" }
-        _saplingBalances.value = processor.getBalanceInfo(Account.DEFAULT)
+        processor.checkSaplingBalance()
     }
 
+    /**
+     * Calculate the latest Transparent balance based on the blocks that have been scanned and transmit this information
+     * into the [saplingBalances] flow.
+     */
     suspend fun refreshTransparentBalance() {
-        Twig.debug { "refreshing transparent balance" }
-        _transparentBalances.value = processor.getUtxoCacheBalance(getTransparentAddress(Account.DEFAULT))
+        processor.checkTransparentBalance()
     }
 
     suspend fun isValidAddress(address: String): Boolean {
         return !validateAddress(address).isNotValid
     }
 
+    //
+    // Private API
+    //
+
     private fun CoroutineScope.onReady() {
         Twig.debug { "Starting synchronizer…" }
 
-        // Triggering UTXOs fetch and transparent balance update at the beginning of the block sync right after the app
-        // start, as it makes the transparent transactions appearance faster
+        // Triggering UTXOs and transactions fetching at the beginning of the block synchronization right after the
+        //  app starts makes the transparent transactions appear faster.
         launch(CoroutineExceptionHandler(::onCriticalError)) {
             refreshUtxos(Account.DEFAULT)
-            refreshTransparentBalance()
             refreshTransactions()
         }
 
@@ -520,8 +510,21 @@ class SdkSynchronizer private constructor(
     //
 
     // Not ready to be a public API; internal for testing only
-    internal suspend fun createAccount(seed: ByteArray): UnifiedSpendingKey =
-        backend.createAccountAndGetSpendingKey(seed)
+    internal suspend fun createAccount(
+        seed: ByteArray,
+        treeState: TreeState,
+        recoverUntil: BlockHeight?
+    ): UnifiedSpendingKey? {
+        return runCatching {
+            backend.createAccountAndGetSpendingKey(
+                seed = seed,
+                treeState = treeState,
+                recoverUntil = recoverUntil
+            )
+        }.onFailure {
+            Twig.error(it) { "Create account failed." }
+        }.getOrNull()
+    }
 
     /**
      * Returns the current Unified Address for this account.
@@ -623,9 +626,30 @@ class SdkSynchronizer private constructor(
 
     override suspend fun validateConsensusBranch(): ConsensusMatchType {
         val serverBranchId = tryNull { processor.downloader.getServerInfo()?.consensusBranchId }
-        val sdkBranchId = tryNull {
-            (txManager as OutboundTransactionManagerImpl).encoder.getConsensusBranchId()
+
+        val currentChainTip = when (
+            val response =
+                processor.downloader.getLatestBlockHeight()
+        ) {
+            is Response.Success -> {
+                Twig.info { "Chain tip for validate consensus branch action fetched: ${response.result.value}" }
+                runCatching { response.result.toBlockHeight(network) }.getOrNull()
+            }
+            is Response.Failure -> {
+                Twig.error {
+                    "Chain tip fetch failed for validate consensus branch action with:" +
+                        " ${response.toThrowable()}"
+                }
+                null
+            }
         }
+
+        val sdkBranchId = currentChainTip?.let {
+            tryNull {
+                (txManager as OutboundTransactionManagerImpl).encoder.getConsensusBranchId(currentChainTip)
+            }
+        }
+
         return ConsensusMatchType(
             sdkBranchId?.let { ConsensusBranchId.fromId(it) },
             serverBranchId?.let { ConsensusBranchId.fromHex(it) }
@@ -665,7 +689,8 @@ internal object DefaultSynchronizerFactory {
         zcashNetwork: ZcashNetwork,
         checkpoint: Checkpoint,
         seed: ByteArray?,
-        viewingKeys: List<UnifiedFullViewingKey>
+        numberOfAccounts: Int,
+        recoverUntil: BlockHeight?
     ): DerivedDataRepository =
         DbDerivedDataRepository(
             DerivedDataDb.new(
@@ -675,7 +700,8 @@ internal object DefaultSynchronizerFactory {
                 zcashNetwork,
                 checkpoint,
                 seed,
-                viewingKeys
+                numberOfAccounts,
+                recoverUntil
             )
         )
 
@@ -718,10 +744,10 @@ internal object DefaultSynchronizerFactory {
         repository: DerivedDataRepository,
         birthdayHeight: BlockHeight
     ): CompactBlockProcessor = CompactBlockProcessor(
-        downloader,
-        repository,
-        backend,
-        birthdayHeight
+        downloader = downloader,
+        repository = repository,
+        backend = backend,
+        minimumHeight = birthdayHeight
     )
 }
 

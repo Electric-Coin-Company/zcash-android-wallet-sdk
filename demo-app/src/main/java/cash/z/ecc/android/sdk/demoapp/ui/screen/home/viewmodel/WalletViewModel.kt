@@ -7,7 +7,8 @@ import cash.z.ecc.android.bip39.Mnemonics
 import cash.z.ecc.android.bip39.toSeed
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.WalletCoordinator
-import cash.z.ecc.android.sdk.block.CompactBlockProcessor
+import cash.z.ecc.android.sdk.WalletInitMode
+import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor
 import cash.z.ecc.android.sdk.demoapp.getInstance
 import cash.z.ecc.android.sdk.demoapp.preference.EncryptedPreferenceKeys
 import cash.z.ecc.android.sdk.demoapp.preference.EncryptedPreferenceSingleton
@@ -48,7 +49,6 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlin.time.Duration.Companion.seconds
-import kotlin.time.ExperimentalTime
 
 // To make this more multiplatform compatible, we need to remove the dependency on Context
 // for loading the preferences.
@@ -101,7 +101,7 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
             null
         )
 
-    @OptIn(ExperimentalCoroutinesApi::class, ExperimentalTime::class)
+    @OptIn(ExperimentalCoroutinesApi::class)
     val walletSnapshot: StateFlow<WalletSnapshot?> = synchronizer
         .flatMapLatest {
             if (null == it) {
@@ -143,8 +143,12 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
         val application = getApplication<Application>()
 
         viewModelScope.launch {
-            val newWallet = PersistableWallet.new(application, ZcashNetwork.fromResources(application))
-            persistExistingWallet(newWallet)
+            val newWallet = PersistableWallet.new(
+                application,
+                ZcashNetwork.fromResources(application),
+                WalletInitMode.NewWallet
+            )
+            persistWallet(newWallet)
         }
     }
 
@@ -153,6 +157,13 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
      * to see the side effects.  This would be used for a user restoring a wallet from a backup.
      */
     fun persistExistingWallet(persistableWallet: PersistableWallet) {
+        persistWallet(persistableWallet)
+    }
+
+    /**
+     * Persists a wallet asynchronously.  Clients observe [secretState] to see the side effects.
+     */
+    private fun persistWallet(persistableWallet: PersistableWallet) {
         val application = getApplication<Application>()
 
         viewModelScope.launch {
@@ -233,6 +244,18 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
      */
     fun resetSdk() {
         walletCoordinator.resetSdk()
+    }
+
+    /**
+     * This rewinds to the nearest height, i.e. 14 days back from the current chain tip.
+     */
+    fun rewind() {
+        val synchronizer = synchronizer.value
+        if (null != synchronizer) {
+            viewModelScope.launch {
+                synchronizer.quickRewind()
+            }
+        }
     }
 }
 

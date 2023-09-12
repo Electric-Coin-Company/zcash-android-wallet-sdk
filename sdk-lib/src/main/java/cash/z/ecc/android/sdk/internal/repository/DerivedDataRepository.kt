@@ -3,6 +3,7 @@ package cash.z.ecc.android.sdk.internal.repository
 import cash.z.ecc.android.sdk.internal.model.DbTransactionOverview
 import cash.z.ecc.android.sdk.internal.model.EncodedTransaction
 import cash.z.ecc.android.sdk.model.BlockHeight
+import cash.z.ecc.android.sdk.model.FirstClassByteArray
 import cash.z.ecc.android.sdk.model.TransactionRecipient
 import kotlinx.coroutines.flow.Flow
 
@@ -13,13 +14,6 @@ import kotlinx.coroutines.flow.Flow
 internal interface DerivedDataRepository {
 
     /**
-     * The last height scanned by this repository.
-     *
-     * @return the last height scanned by this repository.
-     */
-    suspend fun lastScannedHeight(): BlockHeight
-
-    /**
      * The height of the first transaction that hasn't been enhanced yet.
      *
      * @return the height of the first un-enhanced transaction in the repository, or null in case of all transaction
@@ -28,25 +22,13 @@ internal interface DerivedDataRepository {
     suspend fun firstUnenhancedHeight(): BlockHeight?
 
     /**
-     * The height of the first block in this repository. This is typically the checkpoint that was
-     * used to initialize this wallet. If we overwrite this block, it breaks our ability to spend
-     * funds.
-     */
-    suspend fun firstScannedHeight(): BlockHeight
-
-    /**
-     * @return true when this repository has been initialized and seeded with the initial checkpoint.
-     */
-    suspend fun isInitialized(): Boolean
-
-    /**
      * Find the encoded transaction associated with the given id.
      *
      * @param txId the id of the transaction to find.
      *
      * @return the transaction or null when it cannot be found.
      */
-    suspend fun findEncodedTransactionById(txId: Long): EncodedTransaction?
+    suspend fun findEncodedTransactionByTxId(txId: FirstClassByteArray): EncodedTransaction?
 
     /**
      * Find all the newly scanned transactions in the given range, including transactions (like
@@ -75,11 +57,6 @@ internal interface DerivedDataRepository {
 
     suspend fun findMatchingTransactionId(rawTransactionId: ByteArray): Long?
 
-    // TODO [#681]: begin converting these into Data Access API. For now, just collect the desired
-    //  operations and iterate/refactor, later
-    // TODO [#681]: https://github.com/zcash/zcash-android-wallet-sdk/issues/681
-    suspend fun findBlockHash(height: BlockHeight): ByteArray?
-
     suspend fun getTransactionCount(): Long
 
     /**
@@ -105,7 +82,7 @@ internal interface DerivedDataRepository {
 
     val allTransactions: Flow<List<DbTransactionOverview>>
 
-    fun getNoteIds(transactionId: Long): Flow<Long>
+    fun getSaplingOutputIndices(transactionId: Long): Flow<Int>
 
     fun getRecipients(transactionId: Long): Flow<TransactionRecipient>
 

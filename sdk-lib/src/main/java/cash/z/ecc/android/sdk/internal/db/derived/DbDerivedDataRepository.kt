@@ -4,6 +4,7 @@ import cash.z.ecc.android.sdk.internal.model.DbTransactionOverview
 import cash.z.ecc.android.sdk.internal.model.EncodedTransaction
 import cash.z.ecc.android.sdk.internal.repository.DerivedDataRepository
 import cash.z.ecc.android.sdk.model.BlockHeight
+import cash.z.ecc.android.sdk.model.FirstClassByteArray
 import cash.z.ecc.android.sdk.model.TransactionRecipient
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,24 +18,12 @@ internal class DbDerivedDataRepository(
 ) : DerivedDataRepository {
     private val invalidatingFlow = MutableStateFlow(UUID.randomUUID())
 
-    override suspend fun lastScannedHeight(): BlockHeight {
-        return derivedDataDb.blockTable.lastScannedHeight()
-    }
-
     override suspend fun firstUnenhancedHeight(): BlockHeight? {
         return derivedDataDb.allTransactionView.firstUnenhancedHeight()
     }
 
-    override suspend fun firstScannedHeight(): BlockHeight {
-        return derivedDataDb.blockTable.firstScannedHeight()
-    }
-
-    override suspend fun isInitialized(): Boolean {
-        return derivedDataDb.blockTable.count() > 0
-    }
-
-    override suspend fun findEncodedTransactionById(txId: Long): EncodedTransaction? {
-        return derivedDataDb.transactionTable.findEncodedTransactionById(txId)
+    override suspend fun findEncodedTransactionByTxId(txId: FirstClassByteArray): EncodedTransaction? {
+        return derivedDataDb.transactionTable.findEncodedTransactionByTxId(txId)
     }
 
     override suspend fun findNewTransactions(blockHeightRange: ClosedRange<BlockHeight>): List<DbTransactionOverview> =
@@ -47,8 +36,6 @@ internal class DbDerivedDataRepository(
 
     override suspend fun findMatchingTransactionId(rawTransactionId: ByteArray) = derivedDataDb.transactionTable
         .findDatabaseId(rawTransactionId)
-
-    override suspend fun findBlockHash(height: BlockHeight) = derivedDataDb.blockTable.findBlockHash(height)
 
     override suspend fun getTransactionCount() = derivedDataDb.transactionTable.count()
 
@@ -63,7 +50,8 @@ internal class DbDerivedDataRepository(
     override val allTransactions: Flow<List<DbTransactionOverview>>
         get() = invalidatingFlow.map { derivedDataDb.allTransactionView.getAllTransactions().toList() }
 
-    override fun getNoteIds(transactionId: Long) = derivedDataDb.txOutputsView.getNoteIds(transactionId)
+    override fun getSaplingOutputIndices(transactionId: Long) =
+        derivedDataDb.txOutputsView.getSaplingOutputIndices(transactionId)
 
     override fun getRecipients(transactionId: Long): Flow<TransactionRecipient> {
         return derivedDataDb.txOutputsView.getRecipients(transactionId)

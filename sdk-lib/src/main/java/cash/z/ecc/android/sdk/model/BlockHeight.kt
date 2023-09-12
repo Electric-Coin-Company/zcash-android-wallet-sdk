@@ -39,6 +39,24 @@ data class BlockHeight internal constructor(val value: Long) : Comparable<BlockH
         return BlockHeight(value + other)
     }
 
+    operator fun minus(other: BlockHeight) = BlockHeight(value - other.value)
+
+    operator fun minus(other: Int): BlockHeight {
+        require(other >= 0) {
+            "Cannot subtract negative value $other to BlockHeight"
+        }
+
+        return BlockHeight(value - other.toLong())
+    }
+
+    operator fun minus(other: Long): BlockHeight {
+        require(other >= 0) {
+            "Cannot subtract negative value $other to BlockHeight"
+        }
+
+        return BlockHeight(value - other)
+    }
+
     companion object {
         private val UINT_RANGE = 0.toLong()..UInt.MAX_VALUE.toLong()
 

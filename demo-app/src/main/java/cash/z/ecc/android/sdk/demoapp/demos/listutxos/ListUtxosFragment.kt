@@ -10,7 +10,6 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import cash.z.ecc.android.sdk.SdkSynchronizer
 import cash.z.ecc.android.sdk.Synchronizer
-import cash.z.ecc.android.sdk.block.CompactBlockProcessor
 import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
 import cash.z.ecc.android.sdk.demoapp.databinding.FragmentListUtxosBinding
 import cash.z.ecc.android.sdk.demoapp.ext.requireApplicationContext
@@ -176,12 +175,6 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
                 launch {
                     sharedViewModel.synchronizerFlow
                         .filterNotNull()
-                        .flatMapLatest { it.processorInfo }
-                        .collect { onProcessorInfoUpdated(it) }
-                }
-                launch {
-                    sharedViewModel.synchronizerFlow
-                        .filterNotNull()
                         .flatMapLatest { it.transactions }
                         .collect { onTransactionsUpdated(it) }
                 }
@@ -196,10 +189,6 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
                 }
             }
         }
-    }
-
-    private fun onProcessorInfoUpdated(info: CompactBlockProcessor.ProcessorInfo) {
-        if (info.isSyncing) binding.textStatus.text = "Syncing blocks...${info.syncProgress}%"
     }
 
     @Suppress("MagicNumber")

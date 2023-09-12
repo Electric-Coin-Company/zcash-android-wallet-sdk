@@ -20,7 +20,10 @@ private val lazy = LazyWithArgument<Context, WalletCoordinator> {
         emitAll(EncryptedPreferenceKeys.PERSISTABLE_WALLET.observe(encryptedPreferenceProvider))
     }
 
-    WalletCoordinator(it, persistableWalletFlow)
+    WalletCoordinator(
+        context = it,
+        persistableWallet = persistableWalletFlow
+    )
 }
 
 fun WalletCoordinator.Companion.getInstance(context: Context) = lazy.getInstance(context)

@@ -15,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import cash.z.ecc.android.sdk.WalletInitMode
 import cash.z.ecc.android.sdk.demoapp.R
 import cash.z.ecc.android.sdk.fixture.WalletFixture
 import cash.z.ecc.android.sdk.model.PersistableWallet
@@ -76,7 +77,8 @@ private fun ConfigureSeedMainContent(
                 val newWallet = PersistableWallet(
                     zcashNetwork,
                     WalletFixture.Alice.getBirthday(zcashNetwork),
-                    SeedPhrase.new(WalletFixture.Alice.seedPhrase)
+                    SeedPhrase.new(WalletFixture.Alice.seedPhrase),
+                    WalletInitMode.RestoreWallet
                 )
                 onExistingWallet(newWallet)
             }
@@ -88,7 +90,8 @@ private fun ConfigureSeedMainContent(
                 val newWallet = PersistableWallet(
                     zcashNetwork,
                     WalletFixture.Ben.getBirthday(zcashNetwork),
-                    SeedPhrase.new(WalletFixture.Ben.seedPhrase)
+                    SeedPhrase.new(WalletFixture.Ben.seedPhrase),
+                    WalletInitMode.RestoreWallet
                 )
                 onExistingWallet(newWallet)
             }

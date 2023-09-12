@@ -53,3 +53,9 @@ Note that we aim for the main branch of this repository to be stable and releasa
 1. Intel-based machines may have trouble building in Android Studio.  The workaround is to add the following line to `~/.gradle/gradle.properties`: `ZCASH_IS_DEPENDENCY_LOCKING_ENABLED=false`
 1. During builds, a warning will be printed that says "Unable to detect AGP versions for included builds. All projects in the build should use the same AGP version."  This can be safely ignored.  The version under build-conventions is the same as the version used elsewhere in the application.
 1. Android Studio will warn about the Gradle checksum.  This is a [known issue](https://github.com/gradle/gradle/issues/9361) and can be safely ignored.
+
+## Unstable Features
+### Spend-before-Sync compact blocks synchronization algorithm
+`CompactBlockProcessor` now processes compact blocks from the lightwalletd server in non-linear order with the 
+**Spend-before-Sync** algorithm. This feature speeds up discovering the wallet's spendable balance. Please note that 
+this new block synchronization algorithm is still under development.

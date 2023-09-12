@@ -1,5 +1,6 @@
 package cash.z.ecc.android.sdk.internal.model
 
+import cash.z.ecc.android.sdk.internal.ext.isInUIntRange
 import cash.z.ecc.android.sdk.model.BlockHeight
 
 /**
@@ -18,5 +19,12 @@ internal data class Checkpoint(
     // Note: this field does NOT match the name of the JSON, so will break with field-based JSON parsing
     val tree: String
 ) {
+    fun treeState(): TreeState {
+        require(epochSeconds.isInUIntRange()) {
+            "epochSeconds $epochSeconds is outside of allowed UInt range"
+        }
+        return TreeState.fromParts(height.value, hash, epochSeconds.toInt(), tree)
+    }
+
     internal companion object
 }

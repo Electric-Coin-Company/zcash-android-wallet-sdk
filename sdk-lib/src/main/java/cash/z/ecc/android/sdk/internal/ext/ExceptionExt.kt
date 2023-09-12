@@ -44,3 +44,30 @@ internal inline fun <R> tryWarn(
         }
     }
 }
+
+// Note: Do NOT change these texts as they match the ones from ScanError in
+// librustzcash/zcash_client_backend/src/scanning.rs
+internal const val PREV_HASH_MISMATCH = "The parent hash of proposed block does not correspond to the block hash at " +
+    "height" // $NON-NLS
+internal const val BLOCK_HEIGHT_DISCONTINUITY = "Block height discontinuity at height" // $NON-NLS
+internal const val TREE_SIZE_MISMATCH = "note commitment tree size provided by a compact block did not match the " +
+    "expected size at height" // $NON-NLS
+
+/**
+ * Check whether this error is the result of a failed continuity while scanning new blocks in the Rust layer.
+ *
+ * @return true in case of the check match, false otherwise
+ */
+internal fun Throwable.isScanContinuityError(): Boolean {
+    val errorMessages = listOf(
+        PREV_HASH_MISMATCH,
+        BLOCK_HEIGHT_DISCONTINUITY,
+        TREE_SIZE_MISMATCH
+    )
+    errorMessages.forEach { errMessage ->
+        if (this.message?.lowercase()?.contains(errMessage.lowercase()) == true) {
+            return true
+        }
+    }
+    return false
+}

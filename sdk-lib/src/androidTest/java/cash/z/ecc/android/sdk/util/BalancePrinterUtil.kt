@@ -3,6 +3,7 @@ package cash.z.ecc.android.sdk.util
 import androidx.test.platform.app.InstrumentationRegistry
 import cash.z.ecc.android.sdk.CloseableSynchronizer
 import cash.z.ecc.android.sdk.Synchronizer
+import cash.z.ecc.android.sdk.WalletInitMode
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.ext.deleteSuspend
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
@@ -59,9 +60,6 @@ class BalancePrinterUtil {
 //        val lastDownloaded = downloader.getLastDownloadedHeight()
 //        val blockRange = (Math.max(birthday, lastDownloaded))..latestBlockHeight
 //        downloadNewBlocks(blockRange)
-//        val error = validateNewBlocks(blockRange)
-//        twig("validation completed with result $error")
-//        assertEquals(-1, error)
     }
 
     private suspend fun deleteDb(dbName: String) {
@@ -99,7 +97,9 @@ class BalancePrinterUtil {
                     lightWalletEndpoint = LightWalletEndpoint
                         .defaultForNetwork(network),
                     seed = seed,
-                    birthday = birthdayHeight
+                    birthday = birthdayHeight,
+                    // Using existing wallet init mode as simplification for the test
+                    walletInitMode = WalletInitMode.ExistingWallet
                 )
 
 //            deleteDb(dataDbPath)
@@ -149,14 +149,5 @@ class BalancePrinterUtil {
 //                initialize()
 //            }
 //        }
-//    }
-
-//    private fun validateNewBlocks(range: IntRange?): Int {
-// //        val dummyWallet = initWallet("dummySeed")
-//        Twig.sprout("validating")
-//        twig("validating blocks in range $range")
-// //        val result = rustBackend.validateCombinedChain()
-//        Twig.clip("validating")
-//        return result
 //    }
 }

@@ -1,15 +1,18 @@
 package cash.z.ecc.android.sdk.internal
 
-import cash.z.ecc.android.sdk.internal.model.Checkpoint
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
+import cash.z.ecc.android.sdk.internal.model.JniSubtreeRoot
+import cash.z.ecc.android.sdk.internal.model.ScanProgress
+import cash.z.ecc.android.sdk.internal.model.ScanRange
+import cash.z.ecc.android.sdk.internal.model.SubtreeRoot
+import cash.z.ecc.android.sdk.internal.model.TreeState
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
-import cash.z.ecc.android.sdk.model.UnifiedFullViewingKey
+import cash.z.ecc.android.sdk.model.FirstClassByteArray
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
-import cash.z.ecc.android.sdk.tool.DerivationTool
 import kotlinx.coroutines.withContext
 
 @Suppress("TooManyFunctions")
@@ -18,30 +21,18 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
     override val network: ZcashNetwork
         get() = ZcashNetwork.from(backend.networkId)
 
-    override suspend fun initAccountsTable(vararg keys: UnifiedFullViewingKey) {
-        val ufvks = Array(keys.size) { keys[it].encoding }
-        @Suppress("SpreadOperator")
-        backend.initAccountsTable(*ufvks)
-    }
-
-    override suspend fun initAccountsTable(
+    override suspend fun createAccountAndGetSpendingKey(
         seed: ByteArray,
-        numberOfAccounts: Int
-    ): List<UnifiedFullViewingKey> {
-        return DerivationTool.getInstance().deriveUnifiedFullViewingKeys(seed, network, numberOfAccounts)
-    }
-
-    override suspend fun initBlocksTable(checkpoint: Checkpoint) {
-        backend.initBlocksTable(
-            checkpoint.height.value,
-            checkpoint.hash,
-            checkpoint.epochSeconds,
-            checkpoint.tree
+        treeState: TreeState,
+        recoverUntil: BlockHeight?
+    ): UnifiedSpendingKey {
+        return UnifiedSpendingKey(
+            backend.createAccount(
+                seed = seed,
+                treeState = treeState.encoded,
+                recoverUntil = recoverUntil?.value
+            )
         )
-    }
-
-    override suspend fun createAccountAndGetSpendingKey(seed: ByteArray): UnifiedSpendingKey {
-        return UnifiedSpendingKey(backend.createAccount(seed))
     }
 
     @Suppress("LongParameterList")
@@ -50,21 +41,25 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
         to: String,
         value: Long,
         memo: ByteArray?
-    ): Long = backend.createToAddress(
-        usk.account.value,
-        usk.copyBytes(),
-        to,
-        value,
-        memo
+    ): FirstClassByteArray = FirstClassByteArray(
+        backend.createToAddress(
+            usk.account.value,
+            usk.copyBytes(),
+            to,
+            value,
+            memo
+        )
     )
 
     override suspend fun shieldToAddress(
         usk: UnifiedSpendingKey,
         memo: ByteArray?
-    ): Long = backend.shieldToAddress(
-        usk.account.value,
-        usk.copyBytes(),
-        memo
+    ): FirstClassByteArray = FirstClassByteArray(
+        backend.shieldToAddress(
+            usk.account.value,
+            usk.copyBytes(),
+            memo
+        )
     )
 
     override suspend fun getCurrentAddress(account: Account): String {
@@ -98,8 +93,8 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
         backend.rewindToHeight(height.value)
     }
 
-    override suspend fun getLatestBlockHeight(): BlockHeight? {
-        return backend.getLatestHeight()?.let {
+    override suspend fun getLatestCacheHeight(): BlockHeight? {
+        return backend.getLatestCacheHeight()?.let {
             BlockHeight.new(
                 ZcashNetwork.from(backend.networkId),
                 it
@@ -113,19 +108,6 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
 
     override suspend fun rewindBlockMetadataToHeight(height: BlockHeight) {
         backend.rewindBlockMetadataToHeight(height.value)
-    }
-
-    /**
-     * @param limit The limit provides an efficient way how to restrict the portion of blocks, which will be validated.
-     * @return Null if successful. If an error occurs, the height will be the height where the error was detected.
-     */
-    override suspend fun validateCombinedChainOrErrorBlockHeight(limit: Long?): BlockHeight? {
-        return backend.validateCombinedChainOrErrorHeight(limit)?.let {
-            BlockHeight.new(
-                ZcashNetwork.from(backend.networkId),
-                it
-            )
-        }
     }
 
     override suspend fun getDownloadedUtxoBalance(address: String): WalletBalance {
@@ -162,13 +144,54 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
         )
     }
 
-    override suspend fun getSentMemoAsUtf8(idNote: Long) = backend.getSentMemoAsUtf8(idNote)
-
-    override suspend fun getReceivedMemoAsUtf8(idNote: Long): String? = backend.getReceivedMemoAsUtf8(idNote)
+    override suspend fun getMemoAsUtf8(txId: ByteArray, outputIndex: Int): String? =
+        backend.getMemoAsUtf8(txId, outputIndex)
 
     override suspend fun initDataDb(seed: ByteArray?): Int = backend.initDataDb(seed)
 
-    override suspend fun scanBlocks(limit: Long?) = backend.scanBlocks(limit)
+    override suspend fun putSaplingSubtreeRoots(startIndex: Long, roots: List<SubtreeRoot>) =
+        backend.putSaplingSubtreeRoots(
+            startIndex = startIndex,
+            roots = roots.map {
+                JniSubtreeRoot.new(
+                    rootHash = it.rootHash,
+                    completingBlockHeight = it.completingBlockHeight.value
+                )
+            }
+        )
+
+    override suspend fun updateChainTip(height: BlockHeight) = backend.updateChainTip(height.value)
+
+    override suspend fun getFullyScannedHeight(): BlockHeight? {
+        return backend.getFullyScannedHeight()?.let {
+            BlockHeight.new(
+                ZcashNetwork.from(backend.networkId),
+                it
+            )
+        }
+    }
+
+    override suspend fun getMaxScannedHeight(): BlockHeight? {
+        return backend.getMaxScannedHeight()?.let {
+            BlockHeight.new(
+                ZcashNetwork.from(backend.networkId),
+                it
+            )
+        }
+    }
+
+    override suspend fun scanBlocks(fromHeight: BlockHeight, limit: Long) = backend.scanBlocks(fromHeight.value, limit)
+
+    override suspend fun getScanProgress(): ScanProgress? = backend.getScanProgress()?.let { jniScanProgress ->
+        ScanProgress.new(jniScanProgress)
+    }
+
+    override suspend fun suggestScanRanges(): List<ScanRange> = backend.suggestScanRanges().map { jniScanRange ->
+        ScanRange.new(
+            jniScanRange,
+            network
+        )
+    }
 
     override suspend fun decryptAndStoreTransaction(tx: ByteArray) = backend.decryptAndStoreTransaction(tx)
 

@@ -9,7 +9,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import cash.z.ecc.android.sdk.Synchronizer
-import cash.z.ecc.android.sdk.block.CompactBlockProcessor
 import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
 import cash.z.ecc.android.sdk.demoapp.DemoConstants
 import cash.z.ecc.android.sdk.demoapp.databinding.FragmentSendBinding
@@ -96,12 +95,6 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
                 launch {
                     sharedViewModel.synchronizerFlow
                         .filterNotNull()
-                        .flatMapLatest { it.processorInfo }
-                        .collect { onProcessorInfoUpdated(it) }
-                }
-                launch {
-                    sharedViewModel.synchronizerFlow
-                        .filterNotNull()
                         .flatMapLatest { it.saplingBalances }
                         .collect { onBalance(it) }
                 }
@@ -131,10 +124,6 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
         } else {
             binding.textBalance.visibility = View.VISIBLE
         }
-    }
-
-    private fun onProcessorInfoUpdated(info: CompactBlockProcessor.ProcessorInfo) {
-        if (info.isSyncing) binding.textStatus.text = "Syncing blocks...${info.syncProgress}%"
     }
 
     @Suppress("MagicNumber")

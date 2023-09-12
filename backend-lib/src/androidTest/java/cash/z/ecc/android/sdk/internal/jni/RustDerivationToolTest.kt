@@ -1,7 +1,6 @@
 package cash.z.ecc.android.sdk.internal.jni
 
 import cash.z.ecc.android.bip39.Mnemonics
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import kotlin.test.assertContentEquals
@@ -15,7 +14,6 @@ class RustDerivationToolTest {
     }
 
     @Test
-    @OptIn(ExperimentalCoroutinesApi::class)
     fun create_spending_key_does_not_mutate_passed_bytes() = runTest {
         val bytesOne = Mnemonics.MnemonicCode(SEED_PHRASE).toEntropy()
         val bytesTwo = Mnemonics.MnemonicCode(SEED_PHRASE).toEntropy()

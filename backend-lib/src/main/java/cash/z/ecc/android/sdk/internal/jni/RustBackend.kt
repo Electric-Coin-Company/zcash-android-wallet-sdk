@@ -5,6 +5,9 @@ import cash.z.ecc.android.sdk.internal.SdkDispatchers
 import cash.z.ecc.android.sdk.internal.ext.deleteRecursivelySuspend
 import cash.z.ecc.android.sdk.internal.ext.deleteSuspend
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
+import cash.z.ecc.android.sdk.internal.model.JniScanProgress
+import cash.z.ecc.android.sdk.internal.model.JniScanRange
+import cash.z.ecc.android.sdk.internal.model.JniSubtreeRoot
 import cash.z.ecc.android.sdk.internal.model.JniUnifiedSpendingKey
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -66,42 +69,17 @@ class RustBackend private constructor(
         )
     }
 
-    override suspend fun createAccount(seed: ByteArray): JniUnifiedSpendingKey {
+    override suspend fun createAccount(
+        seed: ByteArray,
+        treeState: ByteArray,
+        recoverUntil: Long?
+    ): JniUnifiedSpendingKey {
         return withContext(SdkDispatchers.DATABASE_IO) {
             createAccount(
                 dataDbFile.absolutePath,
                 seed,
-                networkId = networkId
-            )
-        }
-    }
-
-    /**
-     * @param keys A list of UFVKs to initialize the accounts table with
-     */
-    override suspend fun initAccountsTable(vararg keys: String) {
-        return withContext(SdkDispatchers.DATABASE_IO) {
-            initAccountsTableWithKeys(
-                dataDbFile.absolutePath,
-                keys,
-                networkId = networkId
-            )
-        }
-    }
-
-    override suspend fun initBlocksTable(
-        checkpointHeight: Long,
-        checkpointHash: String,
-        checkpointTime: Long,
-        checkpointSaplingTree: String,
-    ) {
-        return withContext(SdkDispatchers.DATABASE_IO) {
-            initBlocksTable(
-                dataDbFile.absolutePath,
-                checkpointHeight,
-                checkpointHash,
-                checkpointTime,
-                checkpointSaplingTree,
+                treeState,
+                recoverUntil ?: -1,
                 networkId = networkId
             )
         }
@@ -154,20 +132,12 @@ class RustBackend private constructor(
         return longValue
     }
 
-    override suspend fun getReceivedMemoAsUtf8(idNote: Long) =
+    override suspend fun getMemoAsUtf8(txId: ByteArray, outputIndex: Int) =
         withContext(SdkDispatchers.DATABASE_IO) {
-            getReceivedMemoAsUtf8(
+            getMemoAsUtf8(
                 dataDbFile.absolutePath,
-                idNote,
-                networkId = networkId
-            )
-        }
-
-    override suspend fun getSentMemoAsUtf8(idNote: Long) =
-        withContext(SdkDispatchers.DATABASE_IO) {
-            getSentMemoAsUtf8(
-                dataDbFile.absolutePath,
-                idNote,
+                txId,
+                outputIndex,
                 networkId = networkId
             )
         }
@@ -180,9 +150,9 @@ class RustBackend private constructor(
             )
         }
 
-    override suspend fun getLatestHeight() =
+    override suspend fun getLatestCacheHeight() =
         withContext(SdkDispatchers.DATABASE_IO) {
-            val height = getLatestHeight(fsBlockDbRoot.absolutePath)
+            val height = getLatestCacheHeight(fsBlockDbRoot.absolutePath)
 
             if (-1L == height) {
                 null
@@ -205,22 +175,6 @@ class RustBackend private constructor(
                 fsBlockDbRoot.absolutePath,
                 height
             )
-        }
-
-    override suspend fun validateCombinedChainOrErrorHeight(limit: Long?) =
-        withContext(SdkDispatchers.DATABASE_IO) {
-            val validationResult = validateCombinedChain(
-                dbCachePath = fsBlockDbRoot.absolutePath,
-                dbDataPath = dataDbFile.absolutePath,
-                limit = limit ?: -1,
-                networkId = networkId
-            )
-
-            if (-1L == validationResult) {
-                null
-            } else {
-                validationResult
-            }
         }
 
     override suspend fun getVerifiedTransparentBalance(address: String): Long =
@@ -264,12 +218,79 @@ class RustBackend private constructor(
             )
         }
 
-    override suspend fun scanBlocks(limit: Long?) {
+    override suspend fun putSaplingSubtreeRoots(
+        startIndex: Long,
+        roots: List<JniSubtreeRoot>,
+    ) = withContext(SdkDispatchers.DATABASE_IO) {
+        putSaplingSubtreeRoots(
+            dataDbFile.absolutePath,
+            startIndex,
+            roots.toTypedArray(),
+            networkId = networkId
+        )
+    }
+
+    override suspend fun updateChainTip(height: Long) =
+        withContext(SdkDispatchers.DATABASE_IO) {
+            updateChainTip(
+                dataDbFile.absolutePath,
+                height,
+                networkId = networkId
+            )
+        }
+
+    override suspend fun getFullyScannedHeight() =
+        withContext(SdkDispatchers.DATABASE_IO) {
+            val height = getFullyScannedHeight(
+                dataDbFile.absolutePath,
+                networkId = networkId
+            )
+
+            if (-1L == height) {
+                null
+            } else {
+                height
+            }
+        }
+
+    override suspend fun getMaxScannedHeight() =
+        withContext(SdkDispatchers.DATABASE_IO) {
+            val height = getMaxScannedHeight(
+                dataDbFile.absolutePath,
+                networkId = networkId
+            )
+
+            if (-1L == height) {
+                null
+            } else {
+                height
+            }
+        }
+
+    override suspend fun getScanProgress(): JniScanProgress? =
+        withContext(SdkDispatchers.DATABASE_IO) {
+            getScanProgress(
+                dataDbFile.absolutePath,
+                networkId = networkId
+            )
+        }
+
+    override suspend fun suggestScanRanges(): List<JniScanRange> {
+        return withContext(SdkDispatchers.DATABASE_IO) {
+            suggestScanRanges(
+                dataDbFile.absolutePath,
+                networkId = networkId
+            ).asList()
+        }
+    }
+
+    override suspend fun scanBlocks(fromHeight: Long, limit: Long) {
         return withContext(SdkDispatchers.DATABASE_IO) {
             scanBlocks(
                 fsBlockDbRoot.absolutePath,
                 dataDbFile.absolutePath,
-                limit ?: -1,
+                fromHeight,
+                limit,
                 networkId = networkId
             )
         }
@@ -290,7 +311,7 @@ class RustBackend private constructor(
         to: String,
         value: Long,
         memo: ByteArray?
-    ): Long = withContext(SdkDispatchers.DATABASE_IO) {
+    ): ByteArray = withContext(SdkDispatchers.DATABASE_IO) {
         createToAddress(
             dataDbFile.absolutePath,
             unifiedSpendingKey,
@@ -308,7 +329,7 @@ class RustBackend private constructor(
         account: Int,
         unifiedSpendingKey: ByteArray,
         memo: ByteArray?
-    ): Long {
+    ): ByteArray {
         return withContext(SdkDispatchers.DATABASE_IO) {
             shieldToAddress(
                 dataDbFile.absolutePath,
@@ -403,25 +424,13 @@ class RustBackend private constructor(
         private external fun initDataDb(dbDataPath: String, seed: ByteArray?, networkId: Int): Int
 
         @JvmStatic
-        private external fun initAccountsTableWithKeys(
+        private external fun createAccount(
             dbDataPath: String,
-            ufvks: Array<out String>,
+            seed: ByteArray,
+            treeState: ByteArray,
+            recoverUntil: Long,
             networkId: Int
-        )
-
-        @JvmStatic
-        @Suppress("LongParameterList")
-        private external fun initBlocksTable(
-            dbDataPath: String,
-            height: Long,
-            hash: String,
-            time: Long,
-            saplingTree: String,
-            networkId: Int
-        )
-
-        @JvmStatic
-        private external fun createAccount(dbDataPath: String, seed: ByteArray, networkId: Int): JniUnifiedSpendingKey
+        ): JniUnifiedSpendingKey
 
         @JvmStatic
         private external fun getCurrentAddress(
@@ -439,8 +448,7 @@ class RustBackend private constructor(
         @JvmStatic
         private external fun listTransparentReceivers(dbDataPath: String, account: Int, networkId: Int): Array<String>
 
-        fun validateUnifiedSpendingKey(bytes: ByteArray) =
-            isValidSpendingKey(bytes)
+        fun validateUnifiedSpendingKey(bytes: ByteArray) = isValidSpendingKey(bytes)
 
         @JvmStatic
         private external fun isValidSpendingKey(bytes: ByteArray): Boolean
@@ -465,16 +473,10 @@ class RustBackend private constructor(
         ): Long
 
         @JvmStatic
-        private external fun getReceivedMemoAsUtf8(
+        private external fun getMemoAsUtf8(
             dbDataPath: String,
-            idNote: Long,
-            networkId: Int
-        ): String?
-
-        @JvmStatic
-        private external fun getSentMemoAsUtf8(
-            dbDataPath: String,
-            dNote: Long,
+            txId: ByteArray,
+            outputIndex: Int,
             networkId: Int
         ): String?
 
@@ -485,7 +487,7 @@ class RustBackend private constructor(
         )
 
         @JvmStatic
-        private external fun getLatestHeight(dbCachePath: String): Long
+        private external fun getLatestCacheHeight(dbCachePath: String): Long
 
         @JvmStatic
         private external fun findBlockMetadata(
@@ -498,14 +500,6 @@ class RustBackend private constructor(
             dbCachePath: String,
             height: Long
         )
-
-        @JvmStatic
-        private external fun validateCombinedChain(
-            dbCachePath: String,
-            dbDataPath: String,
-            limit: Long,
-            networkId: Int
-        ): Long
 
         @JvmStatic
         private external fun getNearestRewindHeight(
@@ -522,9 +516,49 @@ class RustBackend private constructor(
         )
 
         @JvmStatic
+        private external fun putSaplingSubtreeRoots(
+            dbDataPath: String,
+            startIndex: Long,
+            roots: Array<JniSubtreeRoot>,
+            networkId: Int
+        )
+
+        @JvmStatic
+        private external fun updateChainTip(
+            dbDataPath: String,
+            height: Long,
+            networkId: Int
+        )
+
+        @JvmStatic
+        private external fun getFullyScannedHeight(
+            dbDataPath: String,
+            networkId: Int
+        ): Long
+
+        @JvmStatic
+        private external fun getMaxScannedHeight(
+            dbDataPath: String,
+            networkId: Int
+        ): Long
+
+        @JvmStatic
+        private external fun getScanProgress(
+            dbDataPath: String,
+            networkId: Int
+        ): JniScanProgress?
+
+        @JvmStatic
+        private external fun suggestScanRanges(
+            dbDataPath: String,
+            networkId: Int
+        ): Array<JniScanRange>
+
+        @JvmStatic
         private external fun scanBlocks(
             dbCachePath: String,
             dbDataPath: String,
+            fromHeight: Long,
             limit: Long,
             networkId: Int
         )
@@ -548,7 +582,7 @@ class RustBackend private constructor(
             outputParamsPath: String,
             networkId: Int,
             useZip317Fees: Boolean
-        ): Long
+        ): ByteArray
 
         @JvmStatic
         @Suppress("LongParameterList")
@@ -560,7 +594,7 @@ class RustBackend private constructor(
             outputParamsPath: String,
             networkId: Int,
             useZip317Fees: Boolean
-        ): Long
+        ): ByteArray
 
         @JvmStatic
         private external fun branchIdForHeight(height: Long, networkId: Int): Long

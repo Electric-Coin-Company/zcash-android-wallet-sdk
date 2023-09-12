@@ -2,13 +2,13 @@ package cash.z.ecc.android.sdk.internal.db.derived
 
 import android.content.Context
 import androidx.sqlite.db.SupportSQLiteDatabase
+import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException
 import cash.z.ecc.android.sdk.internal.NoBackupContextWrapper
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.TypesafeBackend
 import cash.z.ecc.android.sdk.internal.db.ReadOnlySupportSqliteOpenHelper
-import cash.z.ecc.android.sdk.internal.ext.tryWarn
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
-import cash.z.ecc.android.sdk.model.UnifiedFullViewingKey
+import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -19,8 +19,6 @@ internal class DerivedDataDb private constructor(
     private val sqliteDatabase: SupportSQLiteDatabase
 ) {
     val accountTable = AccountTable(sqliteDatabase)
-
-    val blockTable = BlockTable(zcashNetwork, sqliteDatabase)
 
     val transactionTable = TransactionTable(zcashNetwork, sqliteDatabase)
 
@@ -39,7 +37,7 @@ internal class DerivedDataDb private constructor(
         // SqliteOpenHelper is happy
         private const val DATABASE_VERSION = 8
 
-        @Suppress("LongParameterList", "SpreadOperator")
+        @Suppress("LongParameterList")
         suspend fun new(
             context: Context,
             backend: TypesafeBackend,
@@ -47,27 +45,16 @@ internal class DerivedDataDb private constructor(
             zcashNetwork: ZcashNetwork,
             checkpoint: Checkpoint,
             seed: ByteArray?,
-            viewingKeys: List<UnifiedFullViewingKey>
+            numberOfAccounts: Int,
+            recoverUntil: BlockHeight?
         ): DerivedDataDb {
-            backend.initDataDb(seed)
-
             runCatching {
-                // TODO [#681]: consider converting these to typed exceptions in the welding layer
-                // TODO [#681]: https://github.com/zcash/zcash-android-wallet-sdk/issues/681
-                tryWarn(
-                    message = "Did not initialize the blocks table. It probably was already initialized.",
-                    ifContains = "table is not empty"
-                ) {
-                    backend.initBlocksTable(checkpoint)
-                }
-                tryWarn(
-                    message = "Did not initialize the accounts table. It probably was already initialized.",
-                    ifContains = "table is not empty"
-                ) {
-                    backend.initAccountsTable(*viewingKeys.toTypedArray())
+                val result = backend.initDataDb(seed)
+                if (result < 0) {
+                    throw CompactBlockProcessorException.Uninitialized()
                 }
             }.onFailure {
-                Twig.error { "Failed to init derived data database with $it" }
+                throw CompactBlockProcessorException.Uninitialized(it)
             }
 
             val database = ReadOnlySupportSqliteOpenHelper.openExistingDatabaseAsReadOnly(
@@ -79,7 +66,29 @@ internal class DerivedDataDb private constructor(
                 DATABASE_VERSION
             )
 
-            return DerivedDataDb(zcashNetwork, database)
+            val dataDb = DerivedDataDb(zcashNetwork, database)
+
+            // If a seed is provided, fill in the accounts.
+            seed?.let { checkedSeed ->
+                // toInt() should be safe because we expect very few accounts
+                val missingAccounts = numberOfAccounts - dataDb.accountTable.count().toInt()
+                require(missingAccounts >= 0) {
+                    "Unexpected number of accounts: $missingAccounts"
+                }
+                repeat(missingAccounts) {
+                    runCatching {
+                        backend.createAccountAndGetSpendingKey(
+                            seed = checkedSeed,
+                            treeState = checkpoint.treeState(),
+                            recoverUntil = recoverUntil
+                        )
+                    }.onFailure {
+                        Twig.error(it) { "Create account failed." }
+                    }
+                }
+            }
+
+            return dataDb
         }
     }
 }

@@ -1,7 +1,7 @@
 package cash.z.ecc.android.sdk.demoapp.fixture
 
 import cash.z.ecc.android.sdk.Synchronizer
-import cash.z.ecc.android.sdk.block.CompactBlockProcessor
+import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor
 import cash.z.ecc.android.sdk.demoapp.ui.screen.home.viewmodel.SynchronizerError
 import cash.z.ecc.android.sdk.demoapp.ui.screen.home.viewmodel.WalletSnapshot
 import cash.z.ecc.android.sdk.model.PercentDecimal
@@ -22,7 +22,6 @@ object WalletSnapshotFixture {
     fun new(
         status: Synchronizer.Status = STATUS,
         processorInfo: CompactBlockProcessor.ProcessorInfo = CompactBlockProcessor.ProcessorInfo(
-            null,
             null,
             null,
             null

@@ -80,6 +80,7 @@ class WalletCoordinator(
                         lightWalletEndpoint = LightWalletEndpoint.defaultForNetwork(persistableWallet.network),
                         birthday = persistableWallet.birthday,
                         seed = persistableWallet.seedPhrase.toByteArray(),
+                        walletInitMode = persistableWallet.walletInitMode,
                     )
 
                     trySend(InternalSynchronizerStatus.Available(closeableSynchronizer))
@@ -127,7 +128,7 @@ class WalletCoordinator(
         synchronizerMutex.withLock {
             synchronizer.value?.let {
                 it.latestBirthdayHeight?.let { height ->
-                    it.rewindToNearestHeight(height, true)
+                    it.rewindToNearestHeight(height)
                     return true
                 }
             }

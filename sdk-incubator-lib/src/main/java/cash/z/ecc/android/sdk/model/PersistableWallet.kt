@@ -3,6 +3,7 @@ package cash.z.ecc.android.sdk.model
 import android.app.Application
 import cash.z.ecc.android.bip39.Mnemonics
 import cash.z.ecc.android.bip39.toEntropy
+import cash.z.ecc.android.sdk.WalletInitMode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
@@ -13,8 +14,12 @@ import org.json.JSONObject
 data class PersistableWallet(
     val network: ZcashNetwork,
     val birthday: BlockHeight?,
-    val seedPhrase: SeedPhrase
+    val seedPhrase: SeedPhrase,
+    val walletInitMode: WalletInitMode
 ) {
+    init {
+        _walletInitMode = walletInitMode
+    }
 
     /**
      * @return Wallet serialized to JSON format, suitable for long-term encrypted storage.
@@ -41,6 +46,10 @@ data class PersistableWallet(
         internal const val KEY_BIRTHDAY = "birthday"
         internal const val KEY_SEED_PHRASE = "seed_phrase"
 
+        // Note: This is not the ideal way to hold such a value. But we also want to avoid persisting the wallet
+        // initialization mode with the persistable wallet.
+        private var _walletInitMode: WalletInitMode = WalletInitMode.ExistingWallet
+
         fun from(jsonObject: JSONObject): PersistableWallet {
             when (val version = jsonObject.getInt(KEY_VERSION)) {
                 VERSION_1 -> {
@@ -56,7 +65,12 @@ data class PersistableWallet(
                     }
                     val seedPhrase = jsonObject.getString(KEY_SEED_PHRASE)
 
-                    return PersistableWallet(network, birthday, SeedPhrase.new(seedPhrase))
+                    return PersistableWallet(
+                        network = network,
+                        birthday = birthday,
+                        seedPhrase = SeedPhrase.new(seedPhrase),
+                        walletInitMode = _walletInitMode
+                    )
                 }
                 else -> {
                     throw IllegalArgumentException("Unsupported version $version")
@@ -67,12 +81,21 @@ data class PersistableWallet(
         /**
          * @return A new PersistableWallet with a random seed phrase.
          */
-        suspend fun new(application: Application, zcashNetwork: ZcashNetwork): PersistableWallet {
+        suspend fun new(
+            application: Application,
+            zcashNetwork: ZcashNetwork,
+            walletInitMode: WalletInitMode
+        ): PersistableWallet {
             val birthday = BlockHeight.ofLatestCheckpoint(application, zcashNetwork)
 
             val seedPhrase = newSeedPhrase()
 
-            return PersistableWallet(zcashNetwork, birthday, seedPhrase)
+            return PersistableWallet(
+                zcashNetwork,
+                birthday,
+                seedPhrase,
+                walletInitMode
+            )
         }
     }
 }
