@@ -5,6 +5,8 @@ import androidx.annotation.Keep
 /**
  * Serves as cross layer (Kotlin, Rust) communication class.
  *
+ * @throws IllegalArgumentException unless (numerator is nonnegative, denominator is
+ *         positive, and the represented ratio is in the range 0.0 to 1.0 inclusive).
  * @param numerator the numerator of the progress ratio
  * @param denominator the denominator of the progress ratio
  */
