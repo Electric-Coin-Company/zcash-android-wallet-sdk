@@ -1,38 +1,58 @@
-# Change Log
+# Changelog
+All notable changes to this library will be documented in this file.
 
-## Unreleased
-- `CompactBlockProcessor` now processes compact blocks from the lightwalletd server with **Spend-before-Sync** algorithm 
-  (i.e. non-linear order). This feature shortens the time after which a wallet's spendable balance can be used.
-- The block synchronization mechanism is about one-third faster thanks to the optimized 
-`CompactBlockProcessor.SYNC_BATCH_SIZE`. Issue **#1206**.
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+## [2.0.0-rc.1] - 2023-09-12
+
+### Notable Changes
+
+- `CompactBlockProcessor` now processes compact blocks from the lightwalletd
+  server using the **Spend-before-Sync** algorithm, which allows scanning of
+  wallet blocks to be performed in arbitrary order and optimized to make it
+  possible to spend received notes without waiting for synchronization to be
+  complete. This feature shortens the time until a wallet's spendable balance
+  can be used.
+- The block synchronization mechanism is additionally about one-third faster
+  thanks to an optimized `CompactBlockProcessor.SYNC_BATCH_SIZE` (issue **#1206**).
 
 ### Removed
-- `CompactBlockProcessor.ProcessorInfo.lastSyncHeight` which the SDK is no longer able to provide because of the new
-  **SpendBeforeSync** synchronization algorithm adoption. Use `CompactBlockProcessor.ProcessorInfo.overallSyncRange` 
-  which contains all blocks in case of `SpendBeforeSync` synchronization algorithm. No internal change was made in 
-  case of older Linear synchronization algorithm.
+- `CompactBlockProcessor.ProcessorInfo.lastSyncHeight` no longer had a
+  well-defined meaning after implementation of the **SpendBeforeSync**
+  synchronization algorithm and has been removed.
+  `CompactBlockProcessor.ProcessorInfo.overallSyncRange` provides related
+  information.
 - `CompactBlockProcessor.ProcessorInfo.isSyncing`. Use `Synchronizer.status` instead.
 - `CompactBlockProcessor.ProcessorInfo.syncProgress`. Use `Synchronizer.progress` instead.
-- `alsoClearBlockCache` parameter from rewind functions of `Synchronizer` and `CompactBlockProcessor`, as it has no 
-  effect on the current behaviour of these functions.
-- Internally, we removed access to the shared block table from the Kotlin layer, which resulted in eliminating these 
-  APIs:
+- `alsoClearBlockCache` parameter from rewind functions of `Synchronizer` and
+  `CompactBlockProcessor`, as it has no effect on the current behaviour of
+  these functions.
+- Internally, we removed access to the shared block table from the Kotlin
+  layer, which resulted in eliminating these APIs:
   - `SdkSynchronizer.findBlockHash()`
   - `SdkSynchronizer.findBlockHashAsHex()`
 
 ### Changed
-- `CompactBlockProcessor.quickRewind()` and `CompactBlockProcessor.rewindToNearestHeight()` now might fail due to
-  internal changes in getting scanned height. Thus, these functions return `Boolean` results.
-- `Synchronizer.new()` and `PersistableWallet` APIs require a new `walletInitMode` parameter of type `WalletInitMode`, 
-  which describes wallet initialization mode. See related function and sealed class documentation.
+- `CompactBlockProcessor.quickRewind()` and `CompactBlockProcessor.rewindToNearestHeight()`
+  now might fail due to internal changes in getting scanned height. Thus, these
+  functions now return `Boolean` results.
+- `Synchronizer.new()` and `PersistableWallet` APIs require a new
+  `walletInitMode` parameter of type `WalletInitMode`, which describes wallet
+  initialization mode. See related function and sealed class documentation.
 
 ### Fixed
-- `Synchronizer.getMemos()` now correctly returns a flow of strings for sent and received transactions. Issue **#1154**.
-- `CompactBlockProcessor` now triggers transaction polling while block synchronization is in progress as expected.
-  Clients will be notified shortly after every new transaction is discovered via `Synchronizer.transactions` API.
-  Issue **#1170**.
+- `Synchronizer.getMemos()` now correctly returns a flow of strings for sent
+  and received transactions. Issue **#1154**.
+- `CompactBlockProcessor` now triggers transaction polling while block
+  synchronization is in progress as expected. Clients will be notified shortly
+  after every new transaction is discovered via `Synchronizer.transactions`
+  API. Issue **#1170**.
 
-## 1.21.0-beta01
+## [1.21.0-beta01]
+
 Note: This is the last _1.x_ version release. The upcoming version _2.0_ brings the **Spend-before-Sync** feature,
 which speeds up discovering the wallet's spendable balance.
 
@@ -50,7 +70,7 @@ which speeds up discovering the wallet's spendable balance.
 
 ## 1.20.0-beta01
 - The SDK internally migrated from `BackendExt` rust backend extension functions to more type-safe `TypesafeBackend`.
-- `Synchronizer.getMemos()` now internally handles expected `RuntimeException` from the rust layer and transforms it 
+- `Synchronizer.getMemos()` now internally handles expected `RuntimeException` from the rust layer and transforms it
   in an empty string.
 
 ## 1.19.0-beta01
@@ -60,16 +80,16 @@ which speeds up discovering the wallet's spendable balance.
 ### Fixed
 - `TransactionOverview` object returned with `SdkSynchronizer.transactions` now contains a correct `TransactionState.
   Pending` in case of the transaction is mined,but not fully confirmed.
-- When the SDK internally works with a recently created transaction there was a moment in which could the transaction 
+- When the SDK internally works with a recently created transaction there was a moment in which could the transaction
   causes the SDK to crash, because of its invalid mined height. Fixed now.
 
 ## 1.18.0-beta01
-- Synchronizer's functions `getUnifiedAddress`, `getSaplingAddress`, `getTransparentAddress`, and `refreshUtxos` now 
-  do not provide `Account.DEFAULT` value for the account argument. As accounts are not fully supported by the SDK 
-  yet, the caller should explicitly set Account.DEFAULT as the account argument to keep the same behavior.   
+- Synchronizer's functions `getUnifiedAddress`, `getSaplingAddress`, `getTransparentAddress`, and `refreshUtxos` now
+  do not provide `Account.DEFAULT` value for the account argument. As accounts are not fully supported by the SDK
+  yet, the caller should explicitly set Account.DEFAULT as the account argument to keep the same behavior.
 - Gradle 8.1.1
 - AGP 8.0.2
- 
+
 ## 1.17.0-beta01
 - Transparent fund balances are now displayed almost immediately
 - Synchronization of shielded balances and transaction history is about 30% faster
@@ -78,7 +98,7 @@ which speeds up discovering the wallet's spendable balance.
 - `Synchronizer.progress` now returns `Flow<PercentDecimal>` instead of `Flow<Int>`. PercentDecimal is a type-safe model. Use `PercentDecimal.toPercentage()` to get a number within 0-100% scale.
 - `Synchronizer.clearedTransactions` has been renamed to `Synchronizer.transactions` and includes sent, received, and pending transactions.  Synchronizer APIs for listing sent, received, and pending transactions have been removed.  Clients can determine whether a transaction is sent, received, or pending by filtering the `TransactionOverview` objects returned by `Synchronizer.transactions`
 - `Synchronizer.send()` and `shieldFunds()` are now `suspend` functions with `Long` return values representing the ID of the newly created transaction.  Errors are reported by thrown exceptions.
- - `DerivationTool` is now an interface, rather than an `object`, which makes it easier to inject alternative implementations into tests.  To adapt to the new API, replace calls to `DerivationTool.methodName()` with `DerivationTool.getInstance().methodName()`.  
+ - `DerivationTool` is now an interface, rather than an `object`, which makes it easier to inject alternative implementations into tests.  To adapt to the new API, replace calls to `DerivationTool.methodName()` with `DerivationTool.getInstance().methodName()`.
  - `DerivationTool` methods are no longer suspending, which should make it easier to call them in various situations.  Obtaining a `DerivationTool` instance via `DerivationTool.getInstance()` frontloads the need for a suspending call.
  - `DerivationTool.deriveUnifiedFullViewingKeys()` no longer has a default argument for `numberOfAccounts`.  Clients should now pass `DerivationTool.DEFAULT_NUMBER_OF_ACCOUNTS` as the value. Note that the SDK does not currently have proper support for multiple accounts.
  - The SDK's internals for connecting with librustzcash have been refactored to a separate Gradle module `backend-lib` (and therefore a separate artifact) which is a transitive dependency of the Zcash Android SDK.  SDK consumers that use Gradle dependency locks may notice this difference, but otherwise it should be mostly an invisible change.
@@ -91,7 +111,7 @@ which speeds up discovering the wallet's spendable balance.
 ## 1.15.0-beta01
 ### Changed
 - A new package `sdk-incubator-lib` is now available as a public API.  This package contains experimental APIs that may be promoted to the SDK in the future.  The APIs in this package are not guaranteed to be stable, and may change at any time.
-- `Synchronizer.refreshUtxos` now takes `Account` type as first parameter instead of transparent address of type 
+- `Synchronizer.refreshUtxos` now takes `Account` type as first parameter instead of transparent address of type
     `String`, and thus it downloads all UTXOs for the given account addresses. The Account object provides a default `0` index Account with `Account.DEFAULT`.
 
 ## 1.14.0-beta01
@@ -100,11 +120,11 @@ which speeds up discovering the wallet's spendable balance.
 
 ## 1.13.0-beta01
 ### Changed
-- The SDK's internal networking has been refactored to a separate Gradle module `lightwallet-client-lib` (and 
+- The SDK's internal networking has been refactored to a separate Gradle module `lightwallet-client-lib` (and
   therefore a separate artifact) which is a transitive dependency of the Zcash Android SDK.
     - The `z.cash.ecc.android.sdk.model.LightWalletEndpoint` class has been moved to `co.electriccoin.lightwallet.client.model.LightWalletEndpoint`
     - The new networking module now provides a `LightWalletClient` for asynchronous calls.
-    - Most unary calls respond with the new `Response` class and its subclasses. Streaming calls will be updated 
+    - Most unary calls respond with the new `Response` class and its subclasses. Streaming calls will be updated
       with the Response class later.
     - SDK clients should avoid using generated GRPC objects, as these are an internal implementation detail and are in process of being removed from the public API.  Any clients using GRPC objects will find these have been repackaged from `cash.z.wallet.sdk.rpc` to `cash.z.wallet.sdk.internal.rpc` to signal they are not a public API.
 
@@ -161,7 +181,7 @@ which speeds up discovering the wallet's spendable balance.
   - `Synchronizer.sendToAddress()` and `Synchronizer.shieldFunds()` return flows that can now be collected multiple times.  Prior versions of the SDK had a bug that could submit transactions multiple times if the flow was collected more than once.
 - Updated dependencies:
   - Kotlin 1.7.21
-  - AndroidX  
+  - AndroidX
   - etc.
 - Updated checkpoints
 
@@ -186,14 +206,14 @@ which speeds up discovering the wallet's spendable balance.
   - `DerivationTool.deriveTransparentSecretKey` (use `DerivationTool.deriveUnifiedSpendingKey` instead).
   - `DerivationTool.deriveShieldedAddress`
   - `DerivationTool.deriveUnifiedViewingKeys` (use `DerivationTool.deriveUnifiedFullViewingKey` instead)
-  - `DerivationTool.validateUnifiedViewingKey` 
+  - `DerivationTool.validateUnifiedViewingKey`
 
 ## Version 1.9.0-beta05
 - The minimum version of Android supported is now API 21
 - Fixed R8/ProGuard consumer rule, which eliminates a runtime crash for minified apps
 
 ## Version 1.9.0-beta04
-- The SDK now stores sapling param files in `no_backup/co.electricoin.zcash` folder instead of the `cache/params` 
+- The SDK now stores sapling param files in `no_backup/co.electricoin.zcash` folder instead of the `cache/params`
   folder. Besides that, `SaplingParamTool` also does validation of downloaded sapling param file hash and size.
 **No action required from client app**.
 
@@ -209,7 +229,7 @@ which speeds up discovering the wallet's spendable balance.
  - Updated checkpoints
 
 ## Version 1.8.0-beta01
-- Enabled automated unit tests run on the CI server 
+- Enabled automated unit tests run on the CI server
 - Added `BlockHeight` typesafe object to represent block heights
 - Significantly reduced memory usage, fixing potential OutOfMemoryError during block download
 - Kotlin 1.7.10
