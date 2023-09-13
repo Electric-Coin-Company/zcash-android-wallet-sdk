@@ -62,7 +62,7 @@ jobs:
         uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac
       - name: Setup
         id: setup
-        timeout-minutes: 40
+        timeout-minutes: 50
         uses: ./.github/actions/setup
       # While not strictly necessary, this sanity checks the build before attempting to upload.
       # This adds minimal additional build time, since most of the work is cached and re-used
@@ -94,7 +94,7 @@ jobs:
       - name: Upload Artifacts
         if: ${{ always() }}
         uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32
-        timeout-minutes: 3
+        timeout-minutes: 10
         with:
           name: Snapshot binaries
           path: ~/artifacts
