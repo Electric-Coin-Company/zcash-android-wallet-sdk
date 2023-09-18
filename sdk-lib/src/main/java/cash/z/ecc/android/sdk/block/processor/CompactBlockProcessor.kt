@@ -1431,10 +1431,7 @@ class CompactBlockProcessor internal constructor(
 
             syncRanges.forEach { range ->
                 val missingBlockCount = range.endInclusive.value - range.start.value + 1
-                val batchCount = (
-                    missingBlockCount / SYNC_BATCH_SIZE +
-                        (if (missingBlockCount.rem(SYNC_BATCH_SIZE) == 0L) 0 else 1)
-                    )
+                val batchCount = (missingBlockCount + SYNC_BATCH_SIZE - 1) / SYNC_BATCH_SIZE
                 allMissingBlocksCount += missingBlockCount
                 allRangesBatchCount += batchCount
             }
