@@ -5,6 +5,8 @@ import cash.z.ecc.android.sdk.internal.ext.isNotEmpty
 import cash.z.ecc.android.sdk.internal.ext.length
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import kotlin.test.Test
+import kotlin.test.assertFailsWith
+import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 class ScanRangeTest {
@@ -15,6 +17,23 @@ class ScanRangeTest {
         )
         assertTrue {
             scanRange.getSuggestScanRangePriority() == SuggestScanRangePriority.Verify
+        }
+    }
+
+    @Test
+    fun priority_attribute_within_constraints() {
+        val instance = ScanRangeFixture.new(
+            priority = SuggestScanRangePriority.Verify.priority
+        )
+        assertIs<ScanRange>(instance)
+    }
+
+    @Test
+    fun priority_attribute_not_in_constraints() {
+        assertFailsWith(IllegalArgumentException::class) {
+            ScanRangeFixture.new(
+                priority = Long.MIN_VALUE
+            )
         }
     }
 

@@ -10,8 +10,13 @@ internal data class ScanRange(
     override fun toString() = "ScanRange(range=$range, priority=${getSuggestScanRangePriority()})"
 
     internal fun getSuggestScanRangePriority(): SuggestScanRangePriority {
-        return SuggestScanRangePriority.entries
-            .firstOrNull { it.priority == priority } ?: SuggestScanRangePriority.Ignored
+        return SuggestScanRangePriority.entries.first { it.priority == priority }
+    }
+
+    init {
+        require(SuggestScanRangePriority.entries.map { it.priority }.contains(priority)) {
+            "Unsupported priority $priority used"
+        }
     }
 
     companion object {
