@@ -22,7 +22,8 @@ pub(crate) fn rust_bytes_to_java(
     env: &JNIEnv<'_>,
     data: &[u8],
 ) -> Result<jbyteArray, failure::Error> {
-    // SAFETY: jbyte (i8) has the same size and alignment as u8.
+    // SAFETY: jbyte (i8) has the same size and alignment as u8, and a well-defined
+    // twos-complement representation with no "trap representations".
     let buf = unsafe { slice::from_raw_parts(data.as_ptr().cast(), data.len()) };
     let jret = env.new_byte_array(data.len() as jsize)?;
     env.set_byte_array_region(jret, 0, buf)?;

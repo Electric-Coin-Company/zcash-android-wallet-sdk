@@ -43,7 +43,7 @@ data class BlockHeight internal constructor(val value: Long) : Comparable<BlockH
 
     operator fun minus(other: Int): BlockHeight {
         require(other >= 0) {
-            "Cannot subtract negative value $other to BlockHeight"
+            "Cannot subtract negative value $other from BlockHeight"
         }
 
         return BlockHeight(value - other.toLong())
@@ -51,7 +51,7 @@ data class BlockHeight internal constructor(val value: Long) : Comparable<BlockH
 
     operator fun minus(other: Long): BlockHeight {
         require(other >= 0) {
-            "Cannot subtract negative value $other to BlockHeight"
+            "Cannot subtract negative value $other from BlockHeight"
         }
 
         return BlockHeight(value - other)

@@ -46,8 +46,8 @@ suspend inline fun retryUpToAndThrow(
  * retries succeed, then leave the block execution unfinished and continue.
  *
  * @param retries the number of times to retry the block after the first attempt fails.
- * @param exceptionWrapper a function that can wrap the final failure to add more useful information
- *  * or context. Default behavior is to just return the final exception.
+ * @param exceptionWrapper a function that can wrap the final failure to add more useful information or context.
+ * Default behavior is to just return the final exception.
  * @param initialDelayMillis the initial amount of time to wait before the first retry.
  * @param block the code to execute, which will be wrapped in a try/catch and retried whenever an
  * exception is thrown up to [retries] attempts.

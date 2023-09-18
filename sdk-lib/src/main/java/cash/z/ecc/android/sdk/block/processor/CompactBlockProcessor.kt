@@ -203,7 +203,8 @@ class CompactBlockProcessor internal constructor(
 
         updateBirthdayHeight()
 
-        // Clear any undeleted left over block files from previous sync attempts
+        // Clear any undeleted left over block files from previous sync attempts.
+        // lastKnownHeight is only used for error reporting.
         deleteAllBlockFiles(
             downloader = downloader,
             lastKnownHeight = when (val result = getMaxScannedHeight(backend)) {
@@ -240,7 +241,7 @@ class CompactBlockProcessor internal constructor(
                                 )
                             ) {
                                 PutSaplingSubtreeRootsResult.Success -> {
-                                    // Lets continue with the next step
+                                    // Let's continue with the next step
                                 }
                                 is PutSaplingSubtreeRootsResult.Failure -> {
                                     BlockProcessingResult.SyncFailure(result.failedAtHeight, result.exception)
@@ -255,22 +256,10 @@ class CompactBlockProcessor internal constructor(
                                 firstUnenhancedHeight = _processorInfo.value.firstUnenhancedHeight
                             )
                         }
-                        GetSubtreeRootsResult.Linear -> {
-                            // This is caused by an empty response result. Although the spend-before-sync
-                            // synchronization algorithm is not supported, we can get the entire block range as we
-                            // previously did for the linear sync type.
-                            processNewBlocksInSbSOrder(
-                                backend = backend,
-                                downloader = downloader,
-                                repository = repository,
-                                network = network,
-                                lastValidHeight = lowerBoundHeight,
-                                firstUnenhancedHeight = _processorInfo.value.firstUnenhancedHeight
-                            )
-                        }
-                        is GetSubtreeRootsResult.OtherFailure -> {
-                            // The server possibly replied with some unsupported error. We still approach
-                            // spend-before-sync synchronization.
+                        is GetSubtreeRootsResult.OtherFailure, GetSubtreeRootsResult.Linear -> {
+                            // This is caused by an empty response result or another unsupported error.
+                            // Although the spend-before-sync synchronization algorithm is not supported, we can get
+                            // the entire block range as we previously did for the linear sync type.
                             processNewBlocksInSbSOrder(
                                 backend = backend,
                                 downloader = downloader,
@@ -625,7 +614,7 @@ class CompactBlockProcessor internal constructor(
                     lastValidHeight = lastValidHeight
                 )
         ) {
-            is UpdateChainTipResult.Success -> { /* Lets continue to the next step */ }
+            is UpdateChainTipResult.Success -> { /* Let's continue to the next step */ }
             is UpdateChainTipResult.Failure -> {
                 return SbSPreparationResult.ProcessFailure(
                     result.failedAtHeight,
@@ -900,8 +889,7 @@ class CompactBlockProcessor internal constructor(
             }
         } else {
             Twig.debug {
-                "Warning: gave up on fetching UTXOs for this session. It seems to unavailable on " +
-                    "lightwalletd."
+                "Warning: gave up on fetching UTXOs for this session. It is unavailable on lightwalletd."
             }
         }
 
@@ -978,9 +966,9 @@ class CompactBlockProcessor internal constructor(
 
         /**
          * Default size of batches of blocks to request from the compact block service. Then it's also used as a default
-         * size of batches of blocks to scan via librustzcash. For scanning action applies this - the smaller this
-         * number the more granular information can be provided about scan state. Unfortunately, it may also lead to
-         * a lot of overhead during scanning.
+         * size of batches of blocks to scan via librustzcash. The smaller the batch size for scanning, the more
+         * granular information can be provided about scan state. Unfortunately, small batches may also lead to a lot
+         * of overhead during scanning.
          */
         internal const val SYNC_BATCH_SIZE = 100
 
@@ -996,7 +984,7 @@ class CompactBlockProcessor internal constructor(
         internal const val REWIND_DISTANCE = 10
 
         /**
-         * Limit millis value for restarting currently running block synchronization.
+         * Timeout in milliseconds for restarting the currently running block synchronization.
          */
         internal val SYNCHRONIZATION_RESTART_TIMEOUT = 10.minutes.inWholeMilliseconds
 
@@ -1049,8 +1037,8 @@ class CompactBlockProcessor internal constructor(
         }
 
         /**
-         * This operation downloads note commitment tree data from the lightwalletd server to decide if we communicate
-         * with linear or spend-before-sync node
+         * This operation downloads note commitment tree data from the lightwalletd server, to decide whether or not
+         * the lightwalletd and its backing node support spend-before-sync.
          *
          * @return GetSubtreeRootsResult as a wrapper for the lightwalletd response result
          */
@@ -1072,7 +1060,7 @@ class CompactBlockProcessor internal constructor(
                     when (response) {
                         is Response.Success -> {
                             Twig.verbose {
-                                "SubtreeRoot got successfully: it's completingHeight: ${response.result
+                                "SubtreeRoot fetched successfully: its completingHeight is: ${response.result
                                     .completingBlockHeight}"
                             }
                         }
@@ -1368,8 +1356,8 @@ class CompactBlockProcessor internal constructor(
                     // Increment and compare the range for triggering the enhancing
                     enhancingRange = enhancingRange.start..continuousResult.batch.range.endInclusive
 
-                    // Enhancing is run in case of the range is on or over its limit, or in case of any failure
-                    // state comes from the previous stages, or if the end of the sync range is reached
+                    // Enhancing is run when the range is on or over its limit, or there is any failure
+                    // from previous stages, or if the end of the sync range is reached.
                     if (enhancingRange.length() >= ENHANCE_BATCH_SIZE ||
                         resultState != SyncingResult.AllSuccess ||
                         continuousResult.batch.order == batches.size.toLong()
@@ -1450,7 +1438,7 @@ class CompactBlockProcessor internal constructor(
          * @param syncRange Current range to be processed
          * @param network The network we are operating on
          *
-         * @return List of [BlockBatch] to for synchronization
+         * @return List of [BlockBatch] to prepare for synchronization
          */
         private fun getBatchedBlockList(
             syncRange: ClosedRange<BlockHeight>,
@@ -1499,7 +1487,6 @@ class CompactBlockProcessor internal constructor(
                     downloadException!!
                 }
             ) { failedAttempts ->
-                @Suppress("MagicNumber")
                 if (failedAttempts == 0) {
                     Twig.verbose { "Starting to download batch $batch" }
                 } else {
@@ -1780,7 +1767,8 @@ class CompactBlockProcessor internal constructor(
     }
 
     /**
-     * Emit an instance of processorInfo, corresponding to the provided data.
+     * Sets new values of ProcessorInfo and network height corresponding to the provided data for this
+     * [CompactBlockProcessor].
      *
      * @param networkBlockHeight the latest block available to lightwalletd that may or may not be
      * downloaded by this wallet yet.
@@ -1805,7 +1793,7 @@ class CompactBlockProcessor internal constructor(
     }
 
     /**
-     * Emit an instance of progress.
+     * Sets the progress for this [CompactBlockProcessor].
      *
      * @param progress the block syncing progress of type [PercentDecimal] in the range of [0, 1]
      */
@@ -1814,7 +1802,7 @@ class CompactBlockProcessor internal constructor(
     }
 
     /**
-     * Transmits the given state for this processor.
+     * Sets the state of this [CompactBlockProcessor].
      */
     private suspend fun setState(newState: State) {
         _state.value = newState
@@ -1847,7 +1835,7 @@ class CompactBlockProcessor internal constructor(
     }
 
     /**
-     * Rewind back at least two weeks worth of blocks.
+     * Rewind back two weeks worth of blocks. The final amount of rewinded blocks depends on [rewindToNearestHeight].
      */
     suspend fun quickRewind(): Boolean {
         val height = when (val result = getMaxScannedHeight(backend)) {
