@@ -1149,6 +1149,9 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_ge
 
 /// Returns a `JniScanProgress` object, provided that numerator is nonnegative, denominator
 /// is positive, and the represented ratio is in the range 0.0 to 1.0 inclusive.
+///
+/// If these conditions are not met, this fails and leaves an `IllegalArgumentException`
+/// pending.
 fn encode_scan_progress(env: &JNIEnv<'_>, progress: Ratio<u64>) -> Result<jobject, failure::Error> {
     let output = env.new_object(
         "cash/z/ecc/android/sdk/internal/model/JniScanProgress",

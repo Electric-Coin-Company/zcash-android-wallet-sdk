@@ -9,7 +9,7 @@ class ScanProgressTest {
     fun get_valid_ratio_test() {
         val scanProgress = ScanProgressFixture.new()
         assertEquals(
-            scanProgress.getSafeRation(),
+            scanProgress.getSafeRatio(),
             ScanProgressFixture.DEFAULT_NUMERATOR.toFloat().div(ScanProgressFixture.DEFAULT_DENOMINATOR)
         )
     }
@@ -19,6 +19,6 @@ class ScanProgressTest {
         val scanProgress = ScanProgressFixture.new(
             denominator = 0
         )
-        assertEquals(0f, scanProgress.getSafeRation())
+        assertEquals(0f, scanProgress.getSafeRatio())
     }
 }
