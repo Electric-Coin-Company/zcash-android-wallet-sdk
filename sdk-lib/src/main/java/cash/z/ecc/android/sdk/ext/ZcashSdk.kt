@@ -28,6 +28,12 @@ object ZcashSdk {
     const val EXPIRY_OFFSET = 20
 
     /**
+     * A short amount of time, in milliseconds, to poll for new blocks used typically when a block synchronization error
+     * occurs.
+     */
+    const val POLL_INTERVAL_SHORT = 5_000L
+
+    /**
      * Default amount of time, in milliseconds, to poll for new blocks. Typically, this should be about half the average
      * block time.
      */
