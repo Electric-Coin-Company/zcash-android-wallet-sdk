@@ -1066,11 +1066,7 @@ class CompactBlockProcessor internal constructor(
             retryUpToAndContinue(GET_SUBTREE_ROOTS_RETRIES) {
                 downloader.getSubtreeRoots(
                     startIndex = 0,
-                    maxEntries = if (network.isTestnet()) {
-                        65536
-                    } else {
-                        0
-                    },
+                    maxEntries = 0,
                     shieldedProtocol = ShieldedProtocolEnum.SAPLING
                 ).onEach { response ->
                     when (response) {
