@@ -409,13 +409,6 @@ class CompactBlockProcessor internal constructor(
         while (verifyRangeResult is VerifySuggestedScanRange.ShouldVerify) {
             Twig.info { "Starting verification of range: $verifyRangeResult" }
 
-            // Remove existing blocks as they'll be re-downloaded
-            downloader.rewindToHeight(verifyRangeResult.scanRange.range.start)
-            deleteAllBlockFiles(
-                downloader = downloader,
-                lastKnownHeight = verifyRangeResult.scanRange.range.start
-            )
-
             var syncingResult: SyncingResult = SyncingResult.AllSuccess
             runSyncingAndEnhancingOnRange(
                 backend = backend,
