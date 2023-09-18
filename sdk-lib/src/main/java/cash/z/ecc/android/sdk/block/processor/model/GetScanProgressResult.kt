@@ -8,7 +8,7 @@ import cash.z.ecc.android.sdk.model.PercentDecimal
  */
 internal sealed class GetScanProgressResult {
     data class Success(val scanProgress: ScanProgress) : GetScanProgressResult() {
-        fun toPercentDecimal() = PercentDecimal(scanProgress.getSafeRation())
+        fun toPercentDecimal() = PercentDecimal(scanProgress.getSafeRatio())
     }
 
     data object None : GetScanProgressResult()
