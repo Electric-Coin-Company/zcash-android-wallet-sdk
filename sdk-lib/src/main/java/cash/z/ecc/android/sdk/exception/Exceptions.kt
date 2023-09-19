@@ -7,6 +7,8 @@ import cash.z.ecc.android.sdk.model.FirstClassByteArray
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 
+// TODO [#1248]: Clean up unused exceptions
+// TODO [#1248]: https://github.com/zcash/zcash-android-wallet-sdk/issues/1248
 /**
  * Marker for all custom exceptions from the SDK. Making it an interface would result in more typing
  * so it's a supertype, instead.
@@ -88,6 +90,11 @@ sealed class CompactBlockProcessorException(message: String, cause: Throwable? =
     )
     object NoAccount : CompactBlockProcessorException(
         "Attempting to scan without an account. This is probably a setup error or a race condition."
+    )
+
+    class FailedSynchronizationException(message: String, cause: Throwable) : CompactBlockProcessorException(
+        "Common error while running the block synchronization. This is typically caused by a failed underlying " +
+            "synchronization operation. See failure description: $message OR the root cause: $cause"
     )
 
     class FailedDownloadException(cause: Throwable? = null) : CompactBlockProcessorException(

@@ -24,6 +24,7 @@ import cash.z.ecc.android.sdk.exception.RustLayerException
 import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.ext.ZcashSdk.MAX_BACKOFF_INTERVAL
 import cash.z.ecc.android.sdk.ext.ZcashSdk.POLL_INTERVAL
+import cash.z.ecc.android.sdk.ext.ZcashSdk.POLL_INTERVAL_SHORT
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.TypesafeBackend
 import cash.z.ecc.android.sdk.internal.block.CompactBlockDownloader
@@ -130,6 +131,8 @@ class CompactBlockProcessor internal constructor(
 
     private val consecutiveChainErrors = AtomicInteger(0)
 
+    private val consecutiveBlockProcessingErrors = AtomicInteger(0)
+
     /**
      * The zcash network that is being processed. Either Testnet or Mainnet.
      */
@@ -220,6 +223,9 @@ class CompactBlockProcessor internal constructor(
 
         Twig.debug { "Setup verified. Processor starting..." }
 
+        // Reset all error counters at the beginning of the new block synchronization cycle
+        resetErrorCounters()
+
         // Using do/while makes it easier to execute exactly one loop which helps with testing this processor quickly
         // (because you can start and then immediately set isStopped=true to always get precisely one loop)
         do {
@@ -292,6 +298,9 @@ class CompactBlockProcessor internal constructor(
                     }
                     BlockProcessingResult.RestartSynchronization -> {
                         Twig.info { "Planned restarting of block synchronization..." }
+
+                        resetErrorCounters()
+
                         // No nap time set to immediately continue with refreshed block synchronization
                     }
                     BlockProcessingResult.NoBlocksToProcess -> {
@@ -302,42 +311,71 @@ class CompactBlockProcessor internal constructor(
                         } else {
                             "Done processing blocks"
                         }
-                        consecutiveChainErrors.set(0)
+
+                        resetErrorCounters()
+
                         val napTime = calculatePollInterval()
-                        Twig.debug {
+                        Twig.info {
                             "$summary Sleeping for ${napTime}ms " +
                                 "(latest height: ${_processorInfo.value.networkBlockHeight})."
                         }
                         delay(napTime)
+                    }
+                    is BlockProcessingResult.ContinuityError -> {
+                        Twig.error {
+                            "Failed while processing blocks at height: ${result.failedAtHeight} with continuity " +
+                                "error: ${result.error}"
+                        }
+                        // No nap time set to immediately continue with the following block synchronization attempt
                     }
                     is BlockProcessingResult.SyncFailure -> {
                         Twig.error {
                             "Failed while processing blocks at height: ${result.failedAtHeight} with: " +
                                 "${result.error}"
                         }
-                        // TODO [#1222]: Enrich BlockProcessingResult.SyncFailure with root cause
-                        // TODO [#1222]: https://github.com/zcash/zcash-android-wallet-sdk/issues/1222
-                        checkErrorResult(result.failedAtHeight)
+                        val failed = checkErrorAndFail(result.failedAtHeight, result.error)
+                        if (!failed) {
+                            val napTime = calculatePollInterval(true)
+                            Twig.info {
+                                "Sleeping for ${napTime}ms (latest height: ${_processorInfo.value.networkBlockHeight})."
+                            }
+                            delay(napTime)
+                        }
                     }
                     is BlockProcessingResult.Success -> {
-                        // Do nothing.
+                        resetErrorCounters()
                     }
                 }
             }
         } while (_state.value !is State.Stopped)
-        Twig.debug { "processor complete" }
+        Twig.info { "Processor complete" }
         stop()
     }
 
-    suspend fun checkErrorResult(failedHeight: BlockHeight?) {
-        if (consecutiveChainErrors.get() >= RETRIES) {
-            val errorMessage = "ERROR: unable to resolve reorg at height $failedHeight after " +
-                "${consecutiveChainErrors.get()} correction attempts!"
-            fail(CompactBlockProcessorException.FailedReorgRepair(errorMessage))
-        } else {
-            handleChainError(failedHeight)
+    private fun resetErrorCounters() {
+        consecutiveBlockProcessingErrors.set(0)
+        consecutiveChainErrors.set(0)
+    }
+
+    /**
+     * Checks the block synchronization retry attempts and fails with throwing the [failCause] error once [RETRIES]
+     * count is reached.
+     *
+     * @param failedHeight The height at which the block processing failed
+     * @param failCause The cause of the failure to be part of thrown exception
+     *
+     * @return `True` when the retry limit reached and the error thrown, false when error counter increment and no
+     * error thrown yet
+     */
+    suspend fun checkErrorAndFail(failedHeight: BlockHeight?, failCause: Throwable): Boolean {
+        if (consecutiveBlockProcessingErrors.get() >= RETRIES) {
+            val errorMessage = "ERROR: unable to resolve the error at height $failedHeight after " +
+                "${consecutiveBlockProcessingErrors.get()} correction attempts!"
+            fail(CompactBlockProcessorException.FailedSynchronizationException(errorMessage, failCause))
+            return true
         }
-        consecutiveChainErrors.getAndIncrement()
+        consecutiveBlockProcessingErrors.getAndIncrement()
+        return false
     }
 
     /**
@@ -355,7 +393,7 @@ class CompactBlockProcessor internal constructor(
      */
     private suspend fun fail(error: Throwable) {
         stop()
-        Twig.debug { "${error.message}" }
+        Twig.error { "${error.message}" }
         throw error
     }
 
@@ -409,13 +447,6 @@ class CompactBlockProcessor internal constructor(
         while (verifyRangeResult is VerifySuggestedScanRange.ShouldVerify) {
             Twig.info { "Starting verification of range: $verifyRangeResult" }
 
-            // Remove existing blocks as they'll be re-downloaded
-            downloader.rewindToHeight(verifyRangeResult.scanRange.range.start)
-            deleteAllBlockFiles(
-                downloader = downloader,
-                lastKnownHeight = verifyRangeResult.scanRange.range.start
-            )
-
             var syncingResult: SyncingResult = SyncingResult.AllSuccess
             runSyncingAndEnhancingOnRange(
                 backend = backend,
@@ -458,20 +489,24 @@ class CompactBlockProcessor internal constructor(
             when (syncingResult) {
                 is SyncingResult.AllSuccess -> {
                     // Continue with processing the rest of the ranges
-                } else -> {
-                    // An error came - remove persisted but not scanned blocks
-                    val lastScannedHeight = when (val result = getMaxScannedHeight(backend)) {
-                        is GetMaxScannedHeightResult.Success -> result.height
-                        else -> null
-                    }
-                    lastScannedHeight?.let {
-                        downloader.rewindToHeight(lastScannedHeight)
-                    }
+                }
+                is SyncingResult.ContinuityError -> {
+                    val failedHeight = (syncingResult as SyncingResult.ContinuityError).failedAtHeight
+                    handleChainError(failedHeight)
+                    // This step is independent of the rewind action as it only removes temporary persisted block files
+                    // from the device storage. The files will be re-downloaded in the following synchronization cycle.
                     deleteAllBlockFiles(
                         downloader = downloader,
-                        lastKnownHeight = lastScannedHeight
+                        lastKnownHeight = failedHeight
                     )
+                    return (syncingResult as SyncingResult.ContinuityError).toBlockProcessingResult()
+                }
+                is SyncingResult.Failure -> {
+                    // Other failure types
                     return (syncingResult as SyncingResult.Failure).toBlockProcessingResult()
+                }
+                else -> {
+                    // The rest types of result are not expected here
                 }
             }
 
@@ -569,20 +604,24 @@ class CompactBlockProcessor internal constructor(
                 is SyncingResult.RestartSynchronization -> {
                     // Restarting the synchronization process
                     return BlockProcessingResult.RestartSynchronization
-                } else -> {
-                    // An error came - remove persisted but not scanned blocks
-                    val lastScannedHeight = when (val result = getMaxScannedHeight(backend)) {
-                        is GetMaxScannedHeightResult.Success -> result.height
-                        else -> null
-                    }
-                    lastScannedHeight?.let {
-                        downloader.rewindToHeight(lastScannedHeight)
-                    }
+                }
+                is SyncingResult.ContinuityError -> {
+                    val failedHeight = (syncingResult as SyncingResult.ContinuityError).failedAtHeight
+                    handleChainError(failedHeight)
+                    // This step is independent of the rewind action as it only removes temporary persisted block files
+                    // from the device storage. The files will be re-downloaded in the following synchronization cycle.
                     deleteAllBlockFiles(
                         downloader = downloader,
-                        lastKnownHeight = lastScannedHeight
+                        lastKnownHeight = failedHeight
                     )
+                    return (syncingResult as SyncingResult.ContinuityError).toBlockProcessingResult()
+                }
+                is SyncingResult.Failure -> {
+                    // Other failure types
                     return (syncingResult as SyncingResult.Failure).toBlockProcessingResult()
+                }
+                else -> {
+                    // The rest types of result are not expected here
                 }
             }
         }
@@ -706,10 +745,8 @@ class CompactBlockProcessor internal constructor(
         object Success : BlockProcessingResult()
         object Reconnecting : BlockProcessingResult()
         object RestartSynchronization : BlockProcessingResult()
-
-        // TODO [#1222]: Enrich BlockProcessingResult.SyncFailure with root cause
-        // TODO [#1222]: https://github.com/zcash/zcash-android-wallet-sdk/issues/1222
         data class SyncFailure(val failedAtHeight: BlockHeight?, val error: Throwable) : BlockProcessingResult()
+        data class ContinuityError(val failedAtHeight: BlockHeight?, val error: Throwable) : BlockProcessingResult()
     }
 
     /**
@@ -1926,10 +1963,11 @@ class CompactBlockProcessor internal constructor(
     }
 
     private fun determineLowerBound(errorHeight: BlockHeight): BlockHeight {
-        val offset = min(MAX_REORG_SIZE, REWIND_DISTANCE * (consecutiveChainErrors.get() + 1))
+        val errorCount = consecutiveChainErrors.incrementAndGet()
+        val offset = min(MAX_REORG_SIZE, REWIND_DISTANCE * errorCount)
         return BlockHeight(max(errorHeight.value - offset, lowerBoundHeight.value)).also {
             Twig.debug {
-                "offset = min($MAX_REORG_SIZE, $REWIND_DISTANCE * (${consecutiveChainErrors.get() + 1})) = " +
+                "offset = min($MAX_REORG_SIZE, $REWIND_DISTANCE * $errorCount) = " +
                     "$offset"
             }
             Twig.debug { "lowerBound = max($errorHeight - $offset, $lowerBoundHeight) = $it" }
@@ -1941,15 +1979,16 @@ class CompactBlockProcessor internal constructor(
      * network observer. Instead, we poll at regular time intervals that are large enough for all
      * computation to complete so no intervals are skipped. See 95 for more details.
      *
-     * @param fastIntervalDesired currently not used but sometimes we want to poll quickly, such as
-     * when we unexpectedly lose server connection or are waiting for an event to happen on the
-     * chain. We can pass this desire along now and later figure out how to handle it, privately.
+     * @param fastIntervalDesired set if the short poll interval should be used
      *
      * @return the duration in milliseconds to the next poll attempt
      */
-    @Suppress("UNUSED_PARAMETER")
     private fun calculatePollInterval(fastIntervalDesired: Boolean = false): Duration {
-        val interval = POLL_INTERVAL
+        val interval = if (fastIntervalDesired) {
+            POLL_INTERVAL_SHORT
+        } else {
+            POLL_INTERVAL
+        }
         val now = System.currentTimeMillis()
         val deltaToNextInterval = interval - (now + interval).rem(interval)
         return deltaToNextInterval.toDuration(DurationUnit.MILLISECONDS)

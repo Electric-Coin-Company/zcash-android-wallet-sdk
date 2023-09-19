@@ -48,5 +48,11 @@ internal sealed class SyncingResult {
     data class ContinuityError(
         override val failedAtHeight: BlockHeight,
         override val exception: CompactBlockProcessorException
-    ) : Failure, SyncingResult()
+    ) : Failure, SyncingResult() {
+        override fun toBlockProcessingResult(): CompactBlockProcessor.BlockProcessingResult =
+            CompactBlockProcessor.BlockProcessingResult.ContinuityError(
+                this.failedAtHeight,
+                this.exception
+            )
+    }
 }
