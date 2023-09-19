@@ -315,7 +315,7 @@ class SdkSynchronizer private constructor(
     }
 
     override fun getMemos(transactionOverview: TransactionOverview): Flow<String> {
-        return storage.getSaplingOutputIndices(transactionOverview.id).map {
+        return storage.getSaplingOutputIndices(transactionOverview.rawId).map {
             runCatching {
                 backend.getMemoAsUtf8(transactionOverview.rawId.byteArray, it)
             }.onFailure {
@@ -332,7 +332,7 @@ class SdkSynchronizer private constructor(
     override fun getRecipients(transactionOverview: TransactionOverview): Flow<TransactionRecipient> {
         require(transactionOverview.isSentTransaction) { "Recipients can only be queried for sent transactions" }
 
-        return storage.getRecipients(transactionOverview.id)
+        return storage.getRecipients(transactionOverview.rawId)
     }
 
     //

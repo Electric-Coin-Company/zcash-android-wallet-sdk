@@ -50,10 +50,10 @@ internal class DbDerivedDataRepository(
     override val allTransactions: Flow<List<DbTransactionOverview>>
         get() = invalidatingFlow.map { derivedDataDb.allTransactionView.getAllTransactions().toList() }
 
-    override fun getSaplingOutputIndices(transactionId: Long) =
+    override fun getSaplingOutputIndices(transactionId: FirstClassByteArray) =
         derivedDataDb.txOutputsView.getSaplingOutputIndices(transactionId)
 
-    override fun getRecipients(transactionId: Long): Flow<TransactionRecipient> {
+    override fun getRecipients(transactionId: FirstClassByteArray): Flow<TransactionRecipient> {
         return derivedDataDb.txOutputsView.getRecipients(transactionId)
     }
 

@@ -5,6 +5,7 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import cash.z.ecc.android.sdk.demoapp.R
 import cash.z.ecc.android.sdk.ext.convertZatoshiToZecString
+import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.TransactionOverview
 import cash.z.ecc.android.sdk.model.Zatoshi
 import java.text.SimpleDateFormat
@@ -20,16 +21,16 @@ class UtxoViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
 
     @Suppress("MagicNumber")
     fun bindTo(transaction: TransactionOverview) {
-        bindToHelper(transaction.netValue, transaction.blockTimeEpochSeconds)
+        bindToHelper(transaction.netValue, transaction.minedHeight, transaction.blockTimeEpochSeconds)
     }
 
     @Suppress("MagicNumber")
-    private fun bindToHelper(amount: Zatoshi, time: Long) {
+    private fun bindToHelper(amount: Zatoshi, minedHeight: BlockHeight?, time: Long?) {
         amountText.text = amount.convertZatoshiToZecString()
-        timeText.text = if (time == 0L) {
-            "Pending"
-        } else {
-            formatter.format(time * 1000L)
-        }
+        timeText.text = minedHeight?.let {
+            time?.let {
+                formatter.format(it * 1000L)
+            } ?: "Unknown"
+        } ?: "Pending"
     }
 }

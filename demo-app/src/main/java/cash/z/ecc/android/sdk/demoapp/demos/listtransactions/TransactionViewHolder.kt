@@ -7,6 +7,7 @@ import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import cash.z.ecc.android.sdk.demoapp.R
 import cash.z.ecc.android.sdk.ext.convertZatoshiToZecString
+import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.TransactionOverview
 import cash.z.ecc.android.sdk.model.Zatoshi
 import java.text.SimpleDateFormat
@@ -23,18 +24,22 @@ class TransactionViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) 
 
     @Suppress("MagicNumber")
     fun bindTo(transaction: TransactionOverview) {
-        bindTo(!transaction.isSentTransaction, transaction.blockTimeEpochSeconds, transaction.netValue)
+        bindTo(
+            !transaction.isSentTransaction,
+            transaction.minedHeight,
+            transaction.blockTimeEpochSeconds,
+            transaction.netValue
+        )
     }
 
     @Suppress("MagicNumber")
-    fun bindTo(isInbound: Boolean, time: Long, value: Zatoshi) {
+    fun bindTo(isInbound: Boolean, minedHeight: BlockHeight?, time: Long?, value: Zatoshi) {
         amountText.text = value.convertZatoshiToZecString()
-        timeText.text =
-            if (time == 0L) {
-                "Pending"
-            } else {
-                formatter.format(time * 1000L)
-            }
+        timeText.text = minedHeight?.let {
+            time?.let {
+                formatter.format(it * 1000L)
+            } ?: "Unknown"
+        } ?: "Pending"
 
         icon.rotation = if (isInbound) 0f else 180f
         icon.rotation = if (isInbound) 0f else 180f

@@ -12,20 +12,19 @@ import cash.z.ecc.android.sdk.internal.model.DbTransactionOverview
  * last synced block exceeds the [expiryHeight].
  */
 data class TransactionOverview internal constructor(
-    val id: Long,
     val rawId: FirstClassByteArray,
     val minedHeight: BlockHeight?,
     val expiryHeight: BlockHeight?,
-    val index: Long,
+    val index: Long?,
     val raw: FirstClassByteArray?,
     val isSentTransaction: Boolean,
     val netValue: Zatoshi,
-    val feePaid: Zatoshi,
+    val feePaid: Zatoshi?,
     val isChange: Boolean,
     val receivedNoteCount: Int,
     val sentNoteCount: Int,
     val memoCount: Int,
-    val blockTimeEpochSeconds: Long,
+    val blockTimeEpochSeconds: Long?,
     val transactionState: TransactionState
 ) {
     override fun toString() = "TransactionOverview"
@@ -36,7 +35,6 @@ data class TransactionOverview internal constructor(
             latestBlockHeight: BlockHeight?
         ): TransactionOverview {
             return TransactionOverview(
-                dbTransactionOverview.id,
                 dbTransactionOverview.rawId,
                 dbTransactionOverview.minedHeight,
                 dbTransactionOverview.expiryHeight,

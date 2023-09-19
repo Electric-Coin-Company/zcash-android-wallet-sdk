@@ -28,7 +28,6 @@ object TransactionOverviewFixture {
 
     @Suppress("LongParameterList")
     fun new(
-        id: Long = ID,
         rawId: FirstClassByteArray = RAW_ID,
         minedHeight: BlockHeight? = MINED_HEIGHT,
         expiryHeight: BlockHeight? = EXPIRY_HEIGHT,
@@ -44,7 +43,6 @@ object TransactionOverviewFixture {
         blockTimeEpochSeconds: Long = BLOCK_TIME_EPOCH_SECONDS,
         transactionState: TransactionState = STATE
     ) = TransactionOverview(
-        id,
         rawId,
         minedHeight,
         expiryHeight,

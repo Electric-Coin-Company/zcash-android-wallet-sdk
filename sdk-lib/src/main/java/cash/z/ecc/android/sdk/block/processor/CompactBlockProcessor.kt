@@ -1648,16 +1648,22 @@ class CompactBlockProcessor internal constructor(
             backend: TypesafeBackend,
             downloader: CompactBlockDownloader
         ): SyncingResult {
-            Twig.debug { "Starting enhancing transaction (id:${transaction.id}  block:${transaction.minedHeight})" }
+            Twig.debug {
+                "Starting enhancing transaction (txid:${transaction.txIdString()}  block:${transaction
+                    .minedHeight})"
+            }
             if (transaction.minedHeight == null) {
                 return SyncingResult.EnhanceSuccess
             }
 
             return try {
                 // Fetching transaction is done with retries to eliminate a bad network condition
-                Twig.verbose { "Fetching transaction (id:${transaction.id}  block:${transaction.minedHeight})" }
+                Twig.verbose {
+                    "Fetching transaction (txid:${transaction.txIdString()}  block:${transaction
+                        .minedHeight})"
+                }
                 val transactionData = fetchTransaction(
-                    id = transaction.id,
+                    transactionId = transaction.txIdString(),
                     rawTransactionId = transaction.rawId.byteArray,
                     minedHeight = transaction.minedHeight,
                     downloader = downloader
@@ -1666,7 +1672,7 @@ class CompactBlockProcessor internal constructor(
                 // Decrypting and storing transaction is run just once, since we consider it more stable
                 Twig.verbose {
                     "Decrypting and storing transaction " +
-                        "(id:${transaction.id}  block:${transaction.minedHeight})"
+                        "(txid:${transaction.txIdString()}  block:${transaction.minedHeight})"
                 }
                 decryptTransaction(
                     transactionData = transactionData,
@@ -1674,7 +1680,10 @@ class CompactBlockProcessor internal constructor(
                     backend = backend
                 )
 
-                Twig.debug { "Done enhancing transaction (id:${transaction.id} block:${transaction.minedHeight})" }
+                Twig.debug {
+                    "Done enhancing transaction (txid:${transaction.txIdString()} block:${transaction
+                        .minedHeight})"
+                }
                 SyncingResult.EnhanceSuccess
             } catch (exception: CompactBlockProcessorException.EnhanceTransactionError) {
                 SyncingResult.EnhanceFailed(
@@ -1686,7 +1695,7 @@ class CompactBlockProcessor internal constructor(
 
         @Throws(EnhanceTxDownloadError::class)
         private suspend fun fetchTransaction(
-            id: Long,
+            transactionId: String,
             rawTransactionId: ByteArray,
             minedHeight: BlockHeight,
             downloader: CompactBlockDownloader
@@ -1694,11 +1703,11 @@ class CompactBlockProcessor internal constructor(
             var transactionDataResult: ByteArray? = null
             retryUpToAndThrow(TRANSACTION_FETCH_RETRIES) { failedAttempts ->
                 if (failedAttempts == 0) {
-                    Twig.debug { "Starting to fetch transaction (id:$id, block:$minedHeight)" }
+                    Twig.debug { "Starting to fetch transaction (txid:$transactionId, block:$minedHeight)" }
                 } else {
                     Twig.warn {
-                        "Retrying to fetch transaction (id:$id, block:$minedHeight) after $failedAttempts " +
-                            "failure(s)..."
+                        "Retrying to fetch transaction (txid:$transactionId, block:$minedHeight) after" +
+                            " $failedAttempts failure(s)..."
                     }
                 }
                 when (val response = downloader.fetchTransaction(rawTransactionId)) {
