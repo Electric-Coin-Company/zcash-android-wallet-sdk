@@ -71,17 +71,29 @@ enum class TransactionState {
             minedHeight: BlockHeight?,
             expiryHeight: BlockHeight?
         ): TransactionState {
-            return if (latestBlockHeight == null) {
-                Pending
-            } else if (minedHeight != null && (latestBlockHeight.value - minedHeight.value) >= MIN_CONFIRMATIONS) {
-                Confirmed
-            } else if (minedHeight != null && (latestBlockHeight.value - minedHeight.value) < MIN_CONFIRMATIONS) {
-                Pending
-            } else if (minedHeight == null && ((expiryHeight?.value ?: Long.MAX_VALUE) < latestBlockHeight.value)) {
-                Pending
-            } else {
-                Expired
-            }
+            return latestBlockHeight?.let { chainTip ->
+                minedHeight?.let { minedHeight ->
+                    // A transaction mined in the latest block has 1 confirmation.
+                    if ((chainTip + 1 - minedHeight) >= MIN_CONFIRMATIONS) {
+                        Confirmed
+                    } else {
+                        Pending
+                    }
+                } ?: expiryHeight?.let { expiryHeight ->
+                    // Expiry height is the last height at which a transaction can be mined.
+                    // If the chain tip is greater than or equal to the expiry height, the
+                    // transaction can never be mined. A value of 0 disables expiry.
+                    if (expiryHeight.value == 0L || expiryHeight > chainTip) {
+                        Pending
+                    } else {
+                        Expired
+                    }
+                }
+                // Base case: either we don't know the latest block height (unlikely if we
+                // know about transactions), or the transaction is both unmined and has an
+                // unknown expiry height (because we haven't seen the full transaction).
+                // Treat these as Pending because the status will change as we sync.
+            } ?: Pending
         }
     }
 }
