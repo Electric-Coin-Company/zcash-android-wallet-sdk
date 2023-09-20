@@ -65,3 +65,12 @@ testnet = []
 name = "zcashwalletsdk"
 path = "src/main/rust/lib.rs"
 crate-type = ["staticlib", "cdylib"]
+
+[patch.crates-io]
+zcash_address = { git = "https://github.com/zcash/librustzcash", rev = "b69d80f25d583ae9084b29c1a94ee451954997ab" }
+zcash_encoding = { git = "https://github.com/zcash/librustzcash", rev = "b69d80f25d583ae9084b29c1a94ee451954997ab" }
+zcash_client_backend = { git = "https://github.com/zcash/librustzcash", rev = "b69d80f25d583ae9084b29c1a94ee451954997ab" }
+zcash_client_sqlite = { git = "https://github.com/zcash/librustzcash", rev = "b69d80f25d583ae9084b29c1a94ee451954997ab" }
+zcash_primitives = { git = "https://github.com/zcash/librustzcash", rev = "b69d80f25d583ae9084b29c1a94ee451954997ab" }
+zcash_proofs = { git = "https://github.com/zcash/librustzcash", rev = "b69d80f25d583ae9084b29c1a94ee451954997ab" }
+
