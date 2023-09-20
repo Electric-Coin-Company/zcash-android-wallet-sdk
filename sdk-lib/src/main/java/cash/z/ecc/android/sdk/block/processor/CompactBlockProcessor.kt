@@ -1701,6 +1701,8 @@ class CompactBlockProcessor internal constructor(
             }
         }
 
+        // TODO [#1254]: CompactblockProcessor.fetchTransaction pass txId twice
+        // TODO [#1254]: https://github.com/zcash/zcash-android-wallet-sdk/issues/1254
         @Throws(EnhanceTxDownloadError::class)
         private suspend fun fetchTransaction(
             transactionId: String,
