@@ -125,6 +125,8 @@ private fun TransactionsMainContent(
                 .fillMaxWidth()
                 .fillMaxHeight()
         ) {
+            // TODO [#1253]: Let demo-app transaction item show current transaction state
+            // TODO [#1253]: https://github.com/zcash/zcash-android-wallet-sdk/issues/1253
             items(transactions) { tx ->
                 Button({
                     val memos = synchronizer.getMemos(tx)
