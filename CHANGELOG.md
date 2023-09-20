@@ -6,6 +6,8 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0-rc.2] - 2023-09-20
+
 ### Changed
 - Some of the `TransactionOverview` class parameters changed:
   - `id` was removed
