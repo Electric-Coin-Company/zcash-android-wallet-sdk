@@ -125,9 +125,11 @@ private fun TransactionsMainContent(
                 .fillMaxWidth()
                 .fillMaxHeight()
         ) {
-            items(transactions) {
+            // TODO [#1253]: Let demo-app transaction item show current transaction state
+            // TODO [#1253]: https://github.com/zcash/zcash-android-wallet-sdk/issues/1253
+            items(transactions) { tx ->
                 Button({
-                    val memos = synchronizer.getMemos(it)
+                    val memos = synchronizer.getMemos(tx)
                     queryScope.launch {
                         memos.toList().run {
                             Twig.info {
@@ -136,11 +138,13 @@ private fun TransactionsMainContent(
                         }
                     }
                 }) {
-                    val time = kotlinx.datetime.Instant.fromEpochSeconds(it.blockTimeEpochSeconds)
-                    val value = if (it.isSentTransaction) {
-                        -it.netValue.value
+                    val time = tx.minedHeight?.let {
+                        tx.blockTimeEpochSeconds?.let { kotlinx.datetime.Instant.fromEpochSeconds(it) } ?: "Unknown"
+                    } ?: "Pending"
+                    val value = if (tx.isSentTransaction) {
+                        -tx.netValue.value
                     } else {
-                        it.netValue.value
+                        tx.netValue.value
                     }
                     Text("$time, $value")
                 }

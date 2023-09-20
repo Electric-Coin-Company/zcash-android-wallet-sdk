@@ -1,5 +1,7 @@
 package cash.z.ecc.android.sdk.model
 
+import cash.z.ecc.android.sdk.ext.toHex
+
 class FirstClassByteArray(val byteArray: ByteArray) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -7,10 +9,12 @@ class FirstClassByteArray(val byteArray: ByteArray) {
 
         other as FirstClassByteArray
 
-        if (!byteArray.contentEquals(other.byteArray)) return false
-
-        return true
+        return byteArray.contentEquals(other.byteArray)
     }
 
     override fun hashCode() = byteArray.contentHashCode()
+
+    override fun toString(): String {
+        return "FirstClassByteArray(${byteArray.toHex()})"
+    }
 }

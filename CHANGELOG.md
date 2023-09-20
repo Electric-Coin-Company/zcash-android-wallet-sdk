@@ -6,6 +6,18 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Some of the `TransactionOverview` class parameters changed:
+  - `id` was removed
+  - `index` is nullable
+  - `feePaid` is nullable
+  - `blockTimeEpochSeconds` is nullable
+
+### Removed
+- Block heights are absolute, not relative. Thus, these two operations above the `BlockHeight` object were removed:
+  - `plus(other: BlockHeight): BlockHeight`
+  - `minus(other: BlockHeight): BlockHeight`
+
 ## [2.0.0-rc.1] - 2023-09-12
 
 ### Notable Changes

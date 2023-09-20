@@ -82,9 +82,9 @@ internal interface DerivedDataRepository {
 
     val allTransactions: Flow<List<DbTransactionOverview>>
 
-    fun getSaplingOutputIndices(transactionId: Long): Flow<Int>
+    fun getSaplingOutputIndices(transactionId: FirstClassByteArray): Flow<Int>
 
-    fun getRecipients(transactionId: Long): Flow<TransactionRecipient>
+    fun getRecipients(transactionId: FirstClassByteArray): Flow<TransactionRecipient>
 
     suspend fun close()
 }

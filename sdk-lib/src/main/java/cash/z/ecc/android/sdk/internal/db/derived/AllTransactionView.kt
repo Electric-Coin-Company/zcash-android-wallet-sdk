@@ -1,8 +1,9 @@
 package cash.z.ecc.android.sdk.internal.db.derived
 
+import androidx.core.database.getBlobOrNull
+import androidx.core.database.getLongOrNull
 import androidx.sqlite.db.SupportSQLiteDatabase
 import cash.z.ecc.android.sdk.internal.db.CursorParser
-import cash.z.ecc.android.sdk.internal.db.optBlobOrThrow
 import cash.z.ecc.android.sdk.internal.db.queryAndMap
 import cash.z.ecc.android.sdk.internal.model.DbTransactionOverview
 import cash.z.ecc.android.sdk.model.BlockHeight
@@ -34,7 +35,7 @@ internal class AllTransactionView(
             Locale.ROOT,
             "%s DESC, %s DESC", // $NON-NLS
             COLUMN_SORT_HEIGHT,
-            AllTransactionViewDefinition.COLUMN_INTEGER_ID
+            AllTransactionViewDefinition.COLUMN_INTEGER_TRANSACTION_INDEX
         )
 
         private val ORDER_BY_MINED_HEIGHT = String.format(
@@ -62,7 +63,6 @@ internal class AllTransactionView(
     }
 
     private val cursorParser: CursorParser<DbTransactionOverview> = CursorParser { cursor ->
-        val idColumnIndex = cursor.getColumnIndex(AllTransactionViewDefinition.COLUMN_INTEGER_ID)
         val minedHeightColumnIndex =
             cursor.getColumnIndex(AllTransactionViewDefinition.COLUMN_INTEGER_MINED_HEIGHT)
         val transactionIndexColumnIndex = cursor.getColumnIndex(
@@ -85,32 +85,29 @@ internal class AllTransactionView(
         val netValueLong = cursor.getLong(netValueIndex)
         val isSent = netValueLong < 0
 
-        val expiryHeightLong = cursor.getLong(expiryHeightIndex)
-        val minedHeightLong = cursor.getLong(minedHeightColumnIndex)
-
         DbTransactionOverview(
-            id = cursor.getLong(idColumnIndex),
             rawId = FirstClassByteArray(cursor.getBlob(rawTransactionIdIndex)),
-            minedHeight = if (0L == minedHeightLong) {
-                null
-            } else {
-                BlockHeight.new(zcashNetwork, minedHeightLong)
+            minedHeight = cursor.getLongOrNull(minedHeightColumnIndex)?.let {
+                BlockHeight.new(zcashNetwork, it)
             },
-            expiryHeight = if (0L == expiryHeightLong) {
-                null
-            } else {
-                BlockHeight.new(zcashNetwork, expiryHeightLong)
+            expiryHeight = cursor.getLongOrNull(expiryHeightIndex)?.let {
+                // TODO [#1251]: Separate "no expiry height" from "expiry height unknown".
+                if (0L == it) {
+                    null
+                } else {
+                    BlockHeight.new(zcashNetwork, it)
+                }
             },
-            index = cursor.getLong(transactionIndexColumnIndex),
-            raw = cursor.optBlobOrThrow(rawIndex)?.let { FirstClassByteArray(it) },
+            index = cursor.getLongOrNull(transactionIndexColumnIndex),
+            raw = cursor.getBlobOrNull(rawIndex)?.let { FirstClassByteArray(it) },
             isSentTransaction = isSent,
             netValue = Zatoshi(netValueLong.absoluteValue),
-            feePaid = Zatoshi(cursor.getLong(feePaidIndex)),
+            feePaid = cursor.getLongOrNull(feePaidIndex)?.let { Zatoshi(it) },
             isChange = cursor.getInt(isChangeIndex) != 0,
             receivedNoteCount = cursor.getInt(receivedNoteCountIndex),
             sentNoteCount = cursor.getInt(sentNoteCountIndex),
             memoCount = cursor.getInt(memoCountIndex),
-            blockTimeEpochSeconds = cursor.getLong(blockTimeIndex)
+            blockTimeEpochSeconds = cursor.getLongOrNull(blockTimeIndex)
         )
     }
 
@@ -168,8 +165,6 @@ internal class AllTransactionView(
 
 internal object AllTransactionViewDefinition {
     const val VIEW_NAME = "v_transactions" // $NON-NLS
-
-    const val COLUMN_INTEGER_ID = "id_tx" // $NON-NLS
 
     const val COLUMN_INTEGER_MINED_HEIGHT = "mined_height" // $NON-NLS
 

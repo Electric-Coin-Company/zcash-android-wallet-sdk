@@ -456,7 +456,7 @@ class CompactBlockProcessor internal constructor(
                 syncRange = verifyRangeResult.scanRange.range,
                 withDownload = true,
                 enhanceStartHeight = firstUnenhancedHeight
-            ).collect { rangeSyncProgress ->
+            ).collect { batchSyncProgress ->
                 // Update sync progress
                 when (val result = getScanProgress(backend)) {
                     is GetScanProgressResult.Success -> {
@@ -468,7 +468,7 @@ class CompactBlockProcessor internal constructor(
                 }
                 checkAllBalances()
 
-                when (rangeSyncProgress.resultState) {
+                when (batchSyncProgress.resultState) {
                     SyncingResult.UpdateBirthday -> {
                         updateBirthdayHeight()
                     }
@@ -476,9 +476,12 @@ class CompactBlockProcessor internal constructor(
                         Twig.info { "Triggering transaction refresh now" }
                         // Invalidate transaction data
                         checkTransactions(transactionStorage = repository)
+                        batchSyncProgress.range?.start?.let {
+                            refreshUtxos(account = Account.DEFAULT, startHeight = it)
+                        }
                     }
                     is SyncingResult.Failure -> {
-                        syncingResult = rangeSyncProgress.resultState
+                        syncingResult = batchSyncProgress.resultState
                         return@collect
                     } else -> {
                         // Continue with processing
@@ -551,7 +554,7 @@ class CompactBlockProcessor internal constructor(
                 syncRange = scanRange.range,
                 withDownload = true,
                 enhanceStartHeight = firstUnenhancedHeight
-            ).map { rangeSyncProgress ->
+            ).map { batchSyncProgress ->
                 // Update sync progress
                 when (val result = getScanProgress(backend)) {
                     is GetScanProgressResult.Success -> {
@@ -563,7 +566,7 @@ class CompactBlockProcessor internal constructor(
                 }
                 checkAllBalances()
 
-                when (rangeSyncProgress.resultState) {
+                when (batchSyncProgress.resultState) {
                     SyncingResult.UpdateBirthday -> {
                         updateBirthdayHeight()
                         SyncingResult.AllSuccess
@@ -572,10 +575,13 @@ class CompactBlockProcessor internal constructor(
                         Twig.info { "Triggering transaction refresh now" }
                         // Invalidate transaction data and return the common batch syncing success result to the caller
                         checkTransactions(transactionStorage = repository)
+                        batchSyncProgress.range?.start?.let {
+                            refreshUtxos(account = Account.DEFAULT, startHeight = it)
+                        }
                         SyncingResult.AllSuccess
                     }
                     is SyncingResult.Failure -> {
-                        rangeSyncProgress.resultState
+                        batchSyncProgress.resultState
                     } else -> {
                         // First, check the time and refresh the prepare phase inputs, if needed
                         val currentTimeMillis = System.currentTimeMillis()
@@ -1386,6 +1392,7 @@ class CompactBlockProcessor internal constructor(
                     emit(
                         BatchSyncProgress(
                             order = continuousResult.batch.order,
+                            range = continuousResult.batch.range,
                             resultState = resultState
                         )
                     )
@@ -1426,6 +1433,7 @@ class CompactBlockProcessor internal constructor(
                             emit(
                                 BatchSyncProgress(
                                     order = continuousResult.batch.order,
+                                    range = continuousResult.batch.range,
                                     resultState = resultState
                                 )
                             )
@@ -1648,16 +1656,22 @@ class CompactBlockProcessor internal constructor(
             backend: TypesafeBackend,
             downloader: CompactBlockDownloader
         ): SyncingResult {
-            Twig.debug { "Starting enhancing transaction (id:${transaction.id}  block:${transaction.minedHeight})" }
+            Twig.debug {
+                "Starting enhancing transaction (txid:${transaction.txIdString()}  block:${transaction
+                    .minedHeight})"
+            }
             if (transaction.minedHeight == null) {
                 return SyncingResult.EnhanceSuccess
             }
 
             return try {
                 // Fetching transaction is done with retries to eliminate a bad network condition
-                Twig.verbose { "Fetching transaction (id:${transaction.id}  block:${transaction.minedHeight})" }
+                Twig.verbose {
+                    "Fetching transaction (txid:${transaction.txIdString()}  block:${transaction
+                        .minedHeight})"
+                }
                 val transactionData = fetchTransaction(
-                    id = transaction.id,
+                    transactionId = transaction.txIdString(),
                     rawTransactionId = transaction.rawId.byteArray,
                     minedHeight = transaction.minedHeight,
                     downloader = downloader
@@ -1666,7 +1680,7 @@ class CompactBlockProcessor internal constructor(
                 // Decrypting and storing transaction is run just once, since we consider it more stable
                 Twig.verbose {
                     "Decrypting and storing transaction " +
-                        "(id:${transaction.id}  block:${transaction.minedHeight})"
+                        "(txid:${transaction.txIdString()}  block:${transaction.minedHeight})"
                 }
                 decryptTransaction(
                     transactionData = transactionData,
@@ -1674,7 +1688,10 @@ class CompactBlockProcessor internal constructor(
                     backend = backend
                 )
 
-                Twig.debug { "Done enhancing transaction (id:${transaction.id} block:${transaction.minedHeight})" }
+                Twig.debug {
+                    "Done enhancing transaction (txid:${transaction.txIdString()} block:${transaction
+                        .minedHeight})"
+                }
                 SyncingResult.EnhanceSuccess
             } catch (exception: CompactBlockProcessorException.EnhanceTransactionError) {
                 SyncingResult.EnhanceFailed(
@@ -1684,9 +1701,11 @@ class CompactBlockProcessor internal constructor(
             }
         }
 
+        // TODO [#1254]: CompactblockProcessor.fetchTransaction pass txId twice
+        // TODO [#1254]: https://github.com/zcash/zcash-android-wallet-sdk/issues/1254
         @Throws(EnhanceTxDownloadError::class)
         private suspend fun fetchTransaction(
-            id: Long,
+            transactionId: String,
             rawTransactionId: ByteArray,
             minedHeight: BlockHeight,
             downloader: CompactBlockDownloader
@@ -1694,11 +1713,11 @@ class CompactBlockProcessor internal constructor(
             var transactionDataResult: ByteArray? = null
             retryUpToAndThrow(TRANSACTION_FETCH_RETRIES) { failedAttempts ->
                 if (failedAttempts == 0) {
-                    Twig.debug { "Starting to fetch transaction (id:$id, block:$minedHeight)" }
+                    Twig.debug { "Starting to fetch transaction (txid:$transactionId, block:$minedHeight)" }
                 } else {
                     Twig.warn {
-                        "Retrying to fetch transaction (id:$id, block:$minedHeight) after $failedAttempts " +
-                            "failure(s)..."
+                        "Retrying to fetch transaction (txid:$transactionId, block:$minedHeight) after" +
+                            " $failedAttempts failure(s)..."
                     }
                 }
                 when (val response = downloader.fetchTransaction(rawTransactionId)) {

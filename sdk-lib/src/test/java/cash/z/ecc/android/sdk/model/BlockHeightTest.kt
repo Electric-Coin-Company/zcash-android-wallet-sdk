@@ -38,14 +38,6 @@ class BlockHeightTest {
     }
 
     @Test
-    fun addition_of_blockheight_succeeds() {
-        val one = BlockHeight.new(ZcashNetwork.Mainnet, ZcashNetwork.Mainnet.saplingActivationHeight.value)
-        val two = BlockHeight.new(ZcashNetwork.Mainnet, ZcashNetwork.Mainnet.saplingActivationHeight.value + 123)
-
-        assertEquals(838523L, (one + two).value)
-    }
-
-    @Test
     fun addition_of_int_succeeds() {
         assertEquals(419323L, (ZcashNetwork.Mainnet.saplingActivationHeight + 123).value)
     }
@@ -78,7 +70,7 @@ class BlockHeightTest {
         )
         val two = BlockHeight.new(ZcashNetwork.Mainnet, ZcashNetwork.Mainnet.saplingActivationHeight.value)
 
-        assertEquals(ZcashNetwork.Mainnet.saplingActivationHeight.value, (one - two).value)
+        assertEquals(ZcashNetwork.Mainnet.saplingActivationHeight.value, one - two)
     }
 
     @Test

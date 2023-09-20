@@ -3,6 +3,7 @@ package cash.z.ecc.android.sdk.internal.db.derived
 import androidx.sqlite.db.SupportSQLiteDatabase
 import cash.z.ecc.android.sdk.internal.db.queryAndMap
 import cash.z.ecc.android.sdk.model.Account
+import cash.z.ecc.android.sdk.model.FirstClassByteArray
 import cash.z.ecc.android.sdk.model.TransactionRecipient
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import java.util.Locale
@@ -17,7 +18,7 @@ internal class TxOutputsView(
         private val ORDER_BY = String.format(
             Locale.ROOT,
             "%s ASC", // $NON-NLS
-            TxOutputsViewDefinition.COLUMN_INTEGER_TRANSACTION_ID
+            TxOutputsViewDefinition.COLUMN_BLOB_TRANSACTION_ID
         )
 
         private val PROJECTION_OUTPUT_INDEX = arrayOf(TxOutputsViewDefinition.COLUMN_INTEGER_OUTPUT_INDEX)
@@ -30,17 +31,17 @@ internal class TxOutputsView(
         private val SELECT_BY_TRANSACTION_ID_AND_NOT_CHANGE = String.format(
             Locale.ROOT,
             "%s = ? AND %s == 0", // $NON-NLS
-            TxOutputsViewDefinition.COLUMN_INTEGER_TRANSACTION_ID,
+            TxOutputsViewDefinition.COLUMN_BLOB_TRANSACTION_ID,
             TxOutputsViewDefinition.COLUMN_INTEGER_IS_CHANGE
         )
     }
 
-    fun getSaplingOutputIndices(transactionId: Long) =
+    fun getSaplingOutputIndices(transactionId: FirstClassByteArray) =
         sqliteDatabase.queryAndMap(
             table = TxOutputsViewDefinition.VIEW_NAME,
             columns = PROJECTION_OUTPUT_INDEX,
             selection = SELECT_BY_TRANSACTION_ID_AND_NOT_CHANGE,
-            selectionArgs = arrayOf(transactionId),
+            selectionArgs = arrayOf(transactionId.byteArray),
             orderBy = ORDER_BY,
             cursorParser = {
                 val idColumnOutputIndex = it.getColumnIndex(TxOutputsViewDefinition.COLUMN_INTEGER_OUTPUT_INDEX)
@@ -49,12 +50,12 @@ internal class TxOutputsView(
             }
         )
 
-    fun getRecipients(transactionId: Long) =
+    fun getRecipients(transactionId: FirstClassByteArray) =
         sqliteDatabase.queryAndMap(
             table = TxOutputsViewDefinition.VIEW_NAME,
             columns = PROJECTION_RECIPIENT,
             selection = SELECT_BY_TRANSACTION_ID_AND_NOT_CHANGE,
-            selectionArgs = arrayOf(transactionId),
+            selectionArgs = arrayOf(transactionId.byteArray),
             orderBy = ORDER_BY,
             cursorParser = {
                 val toAccountIndex = it.getColumnIndex(TxOutputsViewDefinition.COLUMN_INTEGER_TO_ACCOUNT)
@@ -72,7 +73,7 @@ internal class TxOutputsView(
 internal object TxOutputsViewDefinition {
     const val VIEW_NAME = "v_tx_outputs" // $NON-NLS
 
-    const val COLUMN_INTEGER_TRANSACTION_ID = "id_tx" // $NON-NLS
+    const val COLUMN_BLOB_TRANSACTION_ID = "txid" // $NON-NLS
 
     const val COLUMN_INTEGER_OUTPUT_POOL = "output_pool" // $NON-NLS
 
