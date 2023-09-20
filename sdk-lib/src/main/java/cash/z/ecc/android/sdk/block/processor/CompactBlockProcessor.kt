@@ -456,7 +456,7 @@ class CompactBlockProcessor internal constructor(
                 syncRange = verifyRangeResult.scanRange.range,
                 withDownload = true,
                 enhanceStartHeight = firstUnenhancedHeight
-            ).collect { rangeSyncProgress ->
+            ).collect { batchSyncProgress ->
                 // Update sync progress
                 when (val result = getScanProgress(backend)) {
                     is GetScanProgressResult.Success -> {
@@ -468,7 +468,7 @@ class CompactBlockProcessor internal constructor(
                 }
                 checkAllBalances()
 
-                when (rangeSyncProgress.resultState) {
+                when (batchSyncProgress.resultState) {
                     SyncingResult.UpdateBirthday -> {
                         updateBirthdayHeight()
                     }
@@ -476,9 +476,12 @@ class CompactBlockProcessor internal constructor(
                         Twig.info { "Triggering transaction refresh now" }
                         // Invalidate transaction data
                         checkTransactions(transactionStorage = repository)
+                        batchSyncProgress.range?.start?.let {
+                            refreshUtxos(account = Account.DEFAULT, startHeight = it)
+                        }
                     }
                     is SyncingResult.Failure -> {
-                        syncingResult = rangeSyncProgress.resultState
+                        syncingResult = batchSyncProgress.resultState
                         return@collect
                     } else -> {
                         // Continue with processing
@@ -551,7 +554,7 @@ class CompactBlockProcessor internal constructor(
                 syncRange = scanRange.range,
                 withDownload = true,
                 enhanceStartHeight = firstUnenhancedHeight
-            ).map { rangeSyncProgress ->
+            ).map { batchSyncProgress ->
                 // Update sync progress
                 when (val result = getScanProgress(backend)) {
                     is GetScanProgressResult.Success -> {
@@ -563,7 +566,7 @@ class CompactBlockProcessor internal constructor(
                 }
                 checkAllBalances()
 
-                when (rangeSyncProgress.resultState) {
+                when (batchSyncProgress.resultState) {
                     SyncingResult.UpdateBirthday -> {
                         updateBirthdayHeight()
                         SyncingResult.AllSuccess
@@ -572,10 +575,13 @@ class CompactBlockProcessor internal constructor(
                         Twig.info { "Triggering transaction refresh now" }
                         // Invalidate transaction data and return the common batch syncing success result to the caller
                         checkTransactions(transactionStorage = repository)
+                        batchSyncProgress.range?.start?.let {
+                            refreshUtxos(account = Account.DEFAULT, startHeight = it)
+                        }
                         SyncingResult.AllSuccess
                     }
                     is SyncingResult.Failure -> {
-                        rangeSyncProgress.resultState
+                        batchSyncProgress.resultState
                     } else -> {
                         // First, check the time and refresh the prepare phase inputs, if needed
                         val currentTimeMillis = System.currentTimeMillis()
@@ -1386,6 +1392,7 @@ class CompactBlockProcessor internal constructor(
                     emit(
                         BatchSyncProgress(
                             order = continuousResult.batch.order,
+                            range = continuousResult.batch.range,
                             resultState = resultState
                         )
                     )
@@ -1426,6 +1433,7 @@ class CompactBlockProcessor internal constructor(
                             emit(
                                 BatchSyncProgress(
                                     order = continuousResult.batch.order,
+                                    range = continuousResult.batch.range,
                                     resultState = resultState
                                 )
                             )
