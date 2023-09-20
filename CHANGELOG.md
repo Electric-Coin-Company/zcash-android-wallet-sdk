@@ -6,6 +6,13 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Some of the `TransactionOverview` class parameters changed:
+  - `id` was removed
+  - `index` is nullable
+  - `feePaid` is nullable
+  - `blockTimeEpochSeconds` is nullable
+
 ## [2.0.0-rc.1] - 2023-09-12
 
 ### Notable Changes
