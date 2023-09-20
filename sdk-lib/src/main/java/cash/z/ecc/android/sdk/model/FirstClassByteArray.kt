@@ -9,14 +9,12 @@ class FirstClassByteArray(val byteArray: ByteArray) {
 
         other as FirstClassByteArray
 
-        if (!byteArray.contentEquals(other.byteArray)) return false
-
-        return true
+        return byteArray.contentEquals(other.byteArray)
     }
 
     override fun hashCode() = byteArray.contentHashCode()
 
     override fun toString(): String {
-        return "FirstClassByteArray(%s)".format(byteArray.toHex())
+        return "FirstClassByteArray(${byteArray.toHex()})"
     }
 }
