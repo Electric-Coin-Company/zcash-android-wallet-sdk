@@ -6,6 +6,12 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0-rc.3] - 2023-09-21
+
+### Fixed
+The Kotlin layer of the SDK now correctly matches the Rust layer `PrevHashMismatch` exception with `ContinuityError` 
+and triggers rewind action. 
+
 ## [2.0.0-rc.2] - 2023-09-20
 
 ### Changed
