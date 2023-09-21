@@ -289,6 +289,8 @@ class CompactBlockProcessor internal constructor(
                         setState(State.Disconnected)
                         downloader.reconnect()
 
+                        // TODO [#1252]: Duplicated code in CompactBlockProcessor
+                        // TODO [#1252]: https://github.com/zcash/zcash-android-wallet-sdk/issues/1252
                         val napTime = calculatePollInterval(true)
                         Twig.debug {
                             "Unable to process new blocks because we are disconnected! Attempting to " +
@@ -514,6 +516,7 @@ class CompactBlockProcessor internal constructor(
                 }
                 else -> {
                     // The rest types of result are not expected here
+                    Twig.info { "Unexpected syncing result: $syncingResult" }
                 }
             }
 
@@ -635,6 +638,7 @@ class CompactBlockProcessor internal constructor(
                 }
                 else -> {
                     // The rest types of result are not expected here
+                    Twig.info { "Unexpected syncing result: $syncingResult" }
                 }
             }
         }
