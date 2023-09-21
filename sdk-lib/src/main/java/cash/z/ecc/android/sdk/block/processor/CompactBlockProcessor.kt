@@ -326,6 +326,7 @@ class CompactBlockProcessor internal constructor(
                             "Failed while processing blocks at height: ${result.failedAtHeight} with continuity " +
                                 "error: ${result.error}"
                         }
+                        handleChainError(result.failedAtHeight)
                         // No nap time set to immediately continue with the following block synchronization attempt
                     }
                     is BlockProcessingResult.SyncFailure -> {
@@ -495,7 +496,10 @@ class CompactBlockProcessor internal constructor(
                 }
                 is SyncingResult.ContinuityError -> {
                     val failedHeight = (syncingResult as SyncingResult.ContinuityError).failedAtHeight
-                    handleChainError(failedHeight)
+                    Twig.warn {
+                        "Continuity error occurred at height: $failedHeight. Starting to resolve it with " +
+                            "rewind action."
+                    }
                     // This step is independent of the rewind action as it only removes temporary persisted block files
                     // from the device storage. The files will be re-downloaded in the following synchronization cycle.
                     deleteAllBlockFiles(
@@ -613,7 +617,10 @@ class CompactBlockProcessor internal constructor(
                 }
                 is SyncingResult.ContinuityError -> {
                     val failedHeight = (syncingResult as SyncingResult.ContinuityError).failedAtHeight
-                    handleChainError(failedHeight)
+                    Twig.warn {
+                        "Continuity error occurred at height: $failedHeight. Starting to resolve it with " +
+                            "rewind action."
+                    }
                     // This step is independent of the rewind action as it only removes temporary persisted block files
                     // from the device storage. The files will be re-downloaded in the following synchronization cycle.
                     deleteAllBlockFiles(
@@ -1868,7 +1875,7 @@ class CompactBlockProcessor internal constructor(
         printValidationErrorInfo(errorHeight)
         errorHeight?.let {
             determineLowerBound(errorHeight).let { lowerBound ->
-                Twig.debug { "Handling chain error at $errorHeight by rewinding to block $lowerBound" }
+                Twig.warn { "Handling chain error at $errorHeight by rewinding to block $lowerBound" }
                 onChainErrorListener?.invoke(errorHeight, lowerBound)
                 rewindToNearestHeight(lowerBound)
             }

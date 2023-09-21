@@ -1262,7 +1262,7 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_sc
         match scan_cached_blocks(&network, &db_cache, &mut db_data, from_height, limit) {
             Ok(()) => Ok(JNI_TRUE),
             Err(e) => Err(format_err!(
-                "Rust error while scanning blocks (limit {:?}): {:?}",
+                "Rust error while scanning blocks (limit {:?}): {}",
                 limit,
                 e
             )),
