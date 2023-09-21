@@ -289,6 +289,8 @@ class CompactBlockProcessor internal constructor(
                         setState(State.Disconnected)
                         downloader.reconnect()
 
+                        // TODO [#1252]: Duplicated code in CompactBlockProcessor
+                        // TODO [#1252]: https://github.com/zcash/zcash-android-wallet-sdk/issues/1252
                         val napTime = calculatePollInterval(true)
                         Twig.debug {
                             "Unable to process new blocks because we are disconnected! Attempting to " +
@@ -326,6 +328,7 @@ class CompactBlockProcessor internal constructor(
                             "Failed while processing blocks at height: ${result.failedAtHeight} with continuity " +
                                 "error: ${result.error}"
                         }
+                        handleChainError(result.failedAtHeight)
                         // No nap time set to immediately continue with the following block synchronization attempt
                     }
                     is BlockProcessingResult.SyncFailure -> {
@@ -495,7 +498,10 @@ class CompactBlockProcessor internal constructor(
                 }
                 is SyncingResult.ContinuityError -> {
                     val failedHeight = (syncingResult as SyncingResult.ContinuityError).failedAtHeight
-                    handleChainError(failedHeight)
+                    Twig.warn {
+                        "Continuity error occurred at height: $failedHeight. Starting to resolve it with " +
+                            "rewind action."
+                    }
                     // This step is independent of the rewind action as it only removes temporary persisted block files
                     // from the device storage. The files will be re-downloaded in the following synchronization cycle.
                     deleteAllBlockFiles(
@@ -510,6 +516,7 @@ class CompactBlockProcessor internal constructor(
                 }
                 else -> {
                     // The rest types of result are not expected here
+                    Twig.info { "Unexpected syncing result: $syncingResult" }
                 }
             }
 
@@ -613,7 +620,10 @@ class CompactBlockProcessor internal constructor(
                 }
                 is SyncingResult.ContinuityError -> {
                     val failedHeight = (syncingResult as SyncingResult.ContinuityError).failedAtHeight
-                    handleChainError(failedHeight)
+                    Twig.warn {
+                        "Continuity error occurred at height: $failedHeight. Starting to resolve it with " +
+                            "rewind action."
+                    }
                     // This step is independent of the rewind action as it only removes temporary persisted block files
                     // from the device storage. The files will be re-downloaded in the following synchronization cycle.
                     deleteAllBlockFiles(
@@ -628,6 +638,7 @@ class CompactBlockProcessor internal constructor(
                 }
                 else -> {
                     // The rest types of result are not expected here
+                    Twig.info { "Unexpected syncing result: $syncingResult" }
                 }
             }
         }
@@ -1868,7 +1879,7 @@ class CompactBlockProcessor internal constructor(
         printValidationErrorInfo(errorHeight)
         errorHeight?.let {
             determineLowerBound(errorHeight).let { lowerBound ->
-                Twig.debug { "Handling chain error at $errorHeight by rewinding to block $lowerBound" }
+                Twig.warn { "Handling chain error at $errorHeight by rewinding to block $lowerBound" }
                 onChainErrorListener?.invoke(errorHeight, lowerBound)
                 rewindToNearestHeight(lowerBound)
             }
