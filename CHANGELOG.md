@@ -6,6 +6,12 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0-rc.4] - 2023-09-22
+
+### Fixed
+Transparent balance is now correctly updated after a shielding transaction is
+created, instead of only once the transaction is mined.
+
 ## [2.0.0-rc.3] - 2023-09-21
 
 ### Fixed
