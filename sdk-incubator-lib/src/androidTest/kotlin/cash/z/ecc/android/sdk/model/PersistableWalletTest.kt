@@ -33,8 +33,13 @@ class PersistableWalletTest {
         )
         assertEquals(PersistableWalletFixture.ENDPOINT.host, jsonObject.getString(PersistableWallet.KEY_ENDPOINT_HOST))
         assertEquals(PersistableWalletFixture.ENDPOINT.port, jsonObject.getInt(PersistableWallet.KEY_ENDPOINT_PORT))
-        assertEquals(PersistableWalletFixture.ENDPOINT.isSecure, jsonObject.getBoolean(PersistableWallet
-            .KEY_ENDPOINT_IS_SECURE))
+        assertEquals(
+            PersistableWalletFixture.ENDPOINT.isSecure,
+            jsonObject.getBoolean(
+                PersistableWallet
+                    .KEY_ENDPOINT_IS_SECURE
+            )
+        )
 
         // Birthday serialization is tested in a separate file
     }
