@@ -77,7 +77,7 @@ class WalletCoordinator(
                     val closeableSynchronizer = Synchronizer.new(
                         context = context,
                         zcashNetwork = persistableWallet.network,
-                        lightWalletEndpoint = LightWalletEndpoint.defaultForNetwork(persistableWallet.network),
+                        lightWalletEndpoint = persistableWallet.endpoint,
                         birthday = persistableWallet.birthday,
                         seed = persistableWallet.seedPhrase.toByteArray(),
                         walletInitMode = persistableWallet.walletInitMode,

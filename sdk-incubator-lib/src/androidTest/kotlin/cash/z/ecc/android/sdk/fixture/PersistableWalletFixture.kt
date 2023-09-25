@@ -4,11 +4,15 @@ import cash.z.ecc.android.sdk.WalletInitMode
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.PersistableWallet
 import cash.z.ecc.android.sdk.model.SeedPhrase
+import cash.z.ecc.android.sdk.model.Testnet
 import cash.z.ecc.android.sdk.model.ZcashNetwork
+import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
 
 object PersistableWalletFixture {
 
     val NETWORK = ZcashNetwork.Testnet
+
+    val ENDPOINT = LightWalletEndpoint.Testnet
 
     // These came from the mainnet 1500000.json file
     @Suppress("MagicNumber")
@@ -20,8 +24,9 @@ object PersistableWalletFixture {
 
     fun new(
         network: ZcashNetwork = NETWORK,
+        endpoint: LightWalletEndpoint = ENDPOINT,
         birthday: BlockHeight = BIRTHDAY,
         seedPhrase: SeedPhrase = SEED_PHRASE,
         walletInitMode: WalletInitMode = WALLET_INIT_MODE
-    ) = PersistableWallet(network, birthday, seedPhrase, walletInitMode)
+    ) = PersistableWallet(network, endpoint, birthday, seedPhrase, walletInitMode)
 }
