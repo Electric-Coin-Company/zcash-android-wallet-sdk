@@ -41,6 +41,13 @@ tracing-subscriber = "0.3"
 dlopen2 = "0.6"
 libc = "0.2"
 
+[patch.crates-io]
+zcash_address = { git = "https://github.com/zcash/librustzcash", rev = "9d4863b762c0eab4fbb867217707d325c7296018" }
+zcash_client_backend = { git = "https://github.com/zcash/librustzcash", rev = "9d4863b762c0eab4fbb867217707d325c7296018" }
+zcash_client_sqlite = { git = "https://github.com/zcash/librustzcash", rev = "9d4863b762c0eab4fbb867217707d325c7296018" }
+zcash_primitives = { git = "https://github.com/zcash/librustzcash", rev = "9d4863b762c0eab4fbb867217707d325c7296018" }
+zcash_proofs = { git = "https://github.com/zcash/librustzcash", rev = "9d4863b762c0eab4fbb867217707d325c7296018" }
+
 ## Uncomment this to test librustzcash changes locally
 #[patch.crates-io]
 #zcash_address = { path = '../../clones/librustzcash/components/zcash_address' }
