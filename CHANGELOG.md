@@ -6,6 +6,11 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- `PersistableWallet` API provides a new `endpoint` parameter of type `LightWalletEndpoint`, which could be used for 
+  the Lightwalletd server customization. The new parameter is part of PersistableWallet persistence. The SDK handles 
+  the persistence migration internally.
+
 ## [2.0.0] - 2023-09-25
 
 ## [2.0.0-rc.4] - 2023-09-22
