@@ -7,6 +7,7 @@ import cash.z.ecc.android.sdk.WalletInitMode
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.jetbrains.annotations.VisibleForTesting
 import org.json.JSONObject
 
 /**
@@ -77,7 +78,7 @@ data class PersistableWallet(
             // From version 2
             val endpoint: LightWalletEndpoint
 
-            when (val version = jsonObject.getInt(KEY_VERSION)) {
+            when (val version = getVersion(jsonObject)) {
                 VERSION_1 -> {
                     endpoint = LightWalletEndpoint.defaultForNetwork(network)
                 }
@@ -98,6 +99,9 @@ data class PersistableWallet(
             )
         }
 
+        internal fun getVersion(jsonObject: JSONObject): Int {
+            return jsonObject.getInt(KEY_VERSION)
+        }
         internal fun getSeedPhrase(jsonObject: JSONObject): String {
             return jsonObject.getString(KEY_SEED_PHRASE)
         }
@@ -150,6 +154,32 @@ data class PersistableWallet(
                 seedPhrase,
                 walletInitMode
             )
+        }
+
+        /**
+         * Note: this function is internal and allowed only for testing purposes.
+         *
+         * @return Wallet serialized to JSON format, suitable for long-term encrypted storage.
+         */
+        @VisibleForTesting
+        internal fun toCustomJson(
+            version: Int,
+            network: ZcashNetwork,
+            endpoint: LightWalletEndpoint?,
+            birthday: BlockHeight?,
+            seed: SeedPhrase
+        ) = JSONObject().apply {
+            put(KEY_VERSION, version)
+            put(KEY_NETWORK_ID, network.id)
+            endpoint?.let {
+                put(KEY_ENDPOINT_HOST, it.host)
+                put(KEY_ENDPOINT_PORT, it.port)
+                put(KEY_ENDPOINT_IS_SECURE, it.isSecure)
+            }
+            birthday?.let {
+                put(KEY_BIRTHDAY, it.value)
+            }
+            put(KEY_SEED_PHRASE, seed.joinToString())
         }
     }
 }

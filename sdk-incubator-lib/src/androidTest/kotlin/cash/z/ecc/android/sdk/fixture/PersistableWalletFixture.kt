@@ -29,4 +29,12 @@ object PersistableWalletFixture {
         seedPhrase: SeedPhrase = SEED_PHRASE,
         walletInitMode: WalletInitMode = WALLET_INIT_MODE
     ) = PersistableWallet(network, endpoint, birthday, seedPhrase, walletInitMode)
+
+    fun persistVersionOne() = PersistableWallet.toCustomJson(
+        version = PersistableWallet.VERSION_1,
+        network = NETWORK,
+        endpoint = null,
+        birthday = BIRTHDAY,
+        seed = SEED_PHRASE
+    )
 }

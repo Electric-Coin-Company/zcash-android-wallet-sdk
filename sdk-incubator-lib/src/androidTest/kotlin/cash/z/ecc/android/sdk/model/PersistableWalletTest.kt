@@ -4,10 +4,11 @@ import androidx.test.filters.SmallTest
 import cash.z.ecc.android.sdk.count
 import cash.z.ecc.android.sdk.fixture.PersistableWalletFixture
 import cash.z.ecc.android.sdk.fixture.SeedPhraseFixture
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
-import org.junit.Test
+import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class PersistableWalletTest {
     @Test
@@ -108,6 +109,23 @@ class PersistableWalletTest {
         assertEquals(
             PersistableWalletFixture.ENDPOINT.isSecure,
             PersistableWallet.getEndpoint(json).isSecure
+        )
+    }
+
+    @Test
+    @SmallTest
+    fun version_1_2_migration_test() {
+        val json = PersistableWalletFixture.persistVersionOne()
+        assertEquals(
+            PersistableWallet.VERSION_1,
+            PersistableWallet.getVersion(json)
+        )
+
+        // Wallet version one deserialized by code supporting version two
+        val persistableWallet = PersistableWallet.from(json)
+        assertEquals(
+            LightWalletEndpoint.defaultForNetwork(persistableWallet.network),
+            persistableWallet.endpoint
         )
     }
 }
