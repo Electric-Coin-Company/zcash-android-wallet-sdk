@@ -343,10 +343,7 @@ jobs:
           ORG_GRADLE_PROJECT_ZCASH_RELEASE_KEY_ALIAS: androiddebugkey
           ORG_GRADLE_PROJECT_ZCASH_RELEASE_KEY_ALIAS_PASSWORD: android
         run: |
-          # Due to issues with the Rust integration, building the release APK requires running the task twice to 
-          # ensure the native libraries are bundled in the APK 
-          ./gradlew assembleRelease
-          ./gradlew assembleRelease
+           ./gradlew assembleRelease
       - name: Collect Artifacts
         timeout-minutes: 1
         env:
