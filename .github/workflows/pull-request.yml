@@ -336,17 +336,14 @@ jobs:
         run: |
           keytool -genkey -v -keystore $SIGNING_KEY_PATH -keypass android -storepass android -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 100000 -dname "CN=, OU=, O=Test, L=, S=, C=" -noprompt
       - name: Build
-        timeout-minutes: 35
+        timeout-minutes: 45
         env:
           ORG_GRADLE_PROJECT_ZCASH_RELEASE_KEYSTORE_PATH: ${{ format('{0}/release.jks', env.home) }}
           ORG_GRADLE_PROJECT_ZCASH_RELEASE_KEYSTORE_PASSWORD: android
           ORG_GRADLE_PROJECT_ZCASH_RELEASE_KEY_ALIAS: androiddebugkey
           ORG_GRADLE_PROJECT_ZCASH_RELEASE_KEY_ALIAS_PASSWORD: android
         run: |
-          # Due to issues with the Rust integration, building the release APK requires running the task twice to 
-          # ensure the native libraries are bundled in the APK 
-          ./gradlew assembleRelease
-          ./gradlew assembleRelease
+           ./gradlew assembleRelease
       - name: Collect Artifacts
         timeout-minutes: 1
         env:
