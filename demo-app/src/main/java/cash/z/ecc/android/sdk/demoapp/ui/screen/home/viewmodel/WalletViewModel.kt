@@ -25,8 +25,10 @@ import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.model.ZecSend
+import cash.z.ecc.android.sdk.model.defaultForNetwork
 import cash.z.ecc.android.sdk.model.send
 import cash.z.ecc.android.sdk.tool.DerivationTool
+import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.awaitClose
@@ -143,10 +145,12 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
         val application = getApplication<Application>()
 
         viewModelScope.launch {
+            val network = ZcashNetwork.fromResources(application)
             val newWallet = PersistableWallet.new(
-                application,
-                ZcashNetwork.fromResources(application),
-                WalletInitMode.NewWallet
+                application = application,
+                zcashNetwork = network,
+                endpoint = LightWalletEndpoint.defaultForNetwork(network),
+                walletInitMode = WalletInitMode.NewWallet
             )
             persistWallet(newWallet)
         }

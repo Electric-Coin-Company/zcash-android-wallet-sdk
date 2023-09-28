@@ -4,10 +4,11 @@ import androidx.test.filters.SmallTest
 import cash.z.ecc.android.sdk.count
 import cash.z.ecc.android.sdk.fixture.PersistableWalletFixture
 import cash.z.ecc.android.sdk.fixture.SeedPhraseFixture
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
-import org.junit.Test
+import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class PersistableWalletTest {
     @Test
@@ -16,17 +17,29 @@ class PersistableWalletTest {
         val persistableWallet = PersistableWalletFixture.new()
 
         val jsonObject = persistableWallet.toJson()
-        assertEquals(4, jsonObject.keys().count())
+        assertEquals(7, jsonObject.keys().count())
         assertTrue(jsonObject.has(PersistableWallet.KEY_VERSION))
         assertTrue(jsonObject.has(PersistableWallet.KEY_NETWORK_ID))
+        assertTrue(jsonObject.has(PersistableWallet.KEY_ENDPOINT_HOST))
+        assertTrue(jsonObject.has(PersistableWallet.KEY_ENDPOINT_PORT))
+        assertTrue(jsonObject.has(PersistableWallet.KEY_ENDPOINT_IS_SECURE))
         assertTrue(jsonObject.has(PersistableWallet.KEY_SEED_PHRASE))
         assertTrue(jsonObject.has(PersistableWallet.KEY_BIRTHDAY))
 
-        assertEquals(1, jsonObject.getInt(PersistableWallet.KEY_VERSION))
+        assertEquals(PersistableWallet.VERSION_2, jsonObject.getInt(PersistableWallet.KEY_VERSION))
         assertEquals(ZcashNetwork.Testnet.id, jsonObject.getInt(PersistableWallet.KEY_NETWORK_ID))
         assertEquals(
             PersistableWalletFixture.SEED_PHRASE.joinToString(),
             jsonObject.getString(PersistableWallet.KEY_SEED_PHRASE)
+        )
+        assertEquals(PersistableWalletFixture.ENDPOINT.host, jsonObject.getString(PersistableWallet.KEY_ENDPOINT_HOST))
+        assertEquals(PersistableWalletFixture.ENDPOINT.port, jsonObject.getInt(PersistableWallet.KEY_ENDPOINT_PORT))
+        assertEquals(
+            PersistableWalletFixture.ENDPOINT.isSecure,
+            jsonObject.getBoolean(
+                PersistableWallet
+                    .KEY_ENDPOINT_IS_SECURE
+            )
         )
 
         // Birthday serialization is tested in a separate file
@@ -49,5 +62,70 @@ class PersistableWalletTest {
         val actual = PersistableWalletFixture.new().toString()
 
         assertFalse(actual.contains(SeedPhraseFixture.SEED_PHRASE))
+    }
+
+    @Test
+    @SmallTest
+    fun get_seed_phrase_test() {
+        val json = PersistableWalletFixture.new().toJson()
+        assertEquals(
+            PersistableWalletFixture.SEED_PHRASE.joinToString(),
+            PersistableWallet.getSeedPhrase(json)
+        )
+    }
+
+    @Test
+    @SmallTest
+    fun get_birthday_test() {
+        val json = PersistableWalletFixture.new().toJson()
+        assertEquals(
+            PersistableWalletFixture.SEED_PHRASE.joinToString(),
+            PersistableWallet.getSeedPhrase(json)
+        )
+    }
+
+    @Test
+    @SmallTest
+    fun get_network_test() {
+        val json = PersistableWalletFixture.new().toJson()
+        assertEquals(
+            PersistableWalletFixture.BIRTHDAY.value,
+            PersistableWallet.getBirthday(json, PersistableWalletFixture.NETWORK)!!.value
+        )
+    }
+
+    @Test
+    @SmallTest
+    fun get_endpoint_test() {
+        val json = PersistableWalletFixture.new().toJson()
+        assertEquals(
+            PersistableWalletFixture.ENDPOINT.host,
+            PersistableWallet.getEndpoint(json).host
+        )
+        assertEquals(
+            PersistableWalletFixture.ENDPOINT.port,
+            PersistableWallet.getEndpoint(json).port
+        )
+        assertEquals(
+            PersistableWalletFixture.ENDPOINT.isSecure,
+            PersistableWallet.getEndpoint(json).isSecure
+        )
+    }
+
+    @Test
+    @SmallTest
+    fun version_1_2_migration_test() {
+        val json = PersistableWalletFixture.persistVersionOne()
+        assertEquals(
+            PersistableWallet.VERSION_1,
+            PersistableWallet.getVersion(json)
+        )
+
+        // Wallet version one deserialized by code supporting version two
+        val persistableWallet = PersistableWallet.from(json)
+        assertEquals(
+            LightWalletEndpoint.defaultForNetwork(persistableWallet.network),
+            persistableWallet.endpoint
+        )
     }
 }

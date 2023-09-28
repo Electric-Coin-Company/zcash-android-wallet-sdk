@@ -21,6 +21,8 @@ import cash.z.ecc.android.sdk.fixture.WalletFixture
 import cash.z.ecc.android.sdk.model.PersistableWallet
 import cash.z.ecc.android.sdk.model.SeedPhrase
 import cash.z.ecc.android.sdk.model.ZcashNetwork
+import cash.z.ecc.android.sdk.model.defaultForNetwork
+import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
 
 @Preview(name = "Seed")
 @Composable
@@ -75,10 +77,11 @@ private fun ConfigureSeedMainContent(
         Button(
             onClick = {
                 val newWallet = PersistableWallet(
-                    zcashNetwork,
-                    WalletFixture.Alice.getBirthday(zcashNetwork),
-                    SeedPhrase.new(WalletFixture.Alice.seedPhrase),
-                    WalletInitMode.RestoreWallet
+                    network = zcashNetwork,
+                    endpoint = LightWalletEndpoint.defaultForNetwork(zcashNetwork),
+                    birthday = WalletFixture.Alice.getBirthday(zcashNetwork),
+                    seedPhrase = SeedPhrase.new(WalletFixture.Alice.seedPhrase),
+                    walletInitMode = WalletInitMode.RestoreWallet
                 )
                 onExistingWallet(newWallet)
             }
@@ -88,10 +91,11 @@ private fun ConfigureSeedMainContent(
         Button(
             onClick = {
                 val newWallet = PersistableWallet(
-                    zcashNetwork,
-                    WalletFixture.Ben.getBirthday(zcashNetwork),
-                    SeedPhrase.new(WalletFixture.Ben.seedPhrase),
-                    WalletInitMode.RestoreWallet
+                    network = zcashNetwork,
+                    endpoint = LightWalletEndpoint.defaultForNetwork(zcashNetwork),
+                    birthday = WalletFixture.Ben.getBirthday(zcashNetwork),
+                    seedPhrase = SeedPhrase.new(WalletFixture.Ben.seedPhrase),
+                    walletInitMode = WalletInitMode.RestoreWallet
                 )
                 onExistingWallet(newWallet)
             }
