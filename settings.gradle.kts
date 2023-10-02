@@ -56,6 +56,16 @@ dependencyResolutionManagement {
 
         google()
         mavenCentral()
+        maven("https://oss.sonatype.org/content/repositories/snapshots") {
+            mavenContent {
+                snapshotsOnly()
+            }
+            if (isRepoRestrictionEnabled) {
+                content {
+                    includeGroup("cash.z.ecc.android")
+                }
+            }
+        }
         maven("https://jitpack.io")
         maven("https://maven.pkg.jetbrains.space/public/p/kotlinx-html/maven")
         maven("https://maven.emulator.wtf/releases/") {

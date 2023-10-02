@@ -11,8 +11,9 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the Lightwalletd server customization. The new parameter is part of PersistableWallet persistence. The SDK handles 
   the persistence migration internally.
 - The **1_000** Zatoshi fee proposed in ZIP-313 is deprecated now, so the minimum is **10_000** Zatoshi, defined in 
-  ZIP-317—the ZcashSdk.MINERS_FEE now returns the correct value as described above. Note that the actual fee is 
+  ZIP-317—the `ZcashSdk.MINERS_FEE` now returns the correct value as described above. Note that the actual fee is 
   handled in a rust layer.
+- Adopted the latest Bip39 library v1.0.6
 
 ## [2.0.0] - 2023-09-25
 
