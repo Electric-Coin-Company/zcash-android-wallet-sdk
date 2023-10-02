@@ -154,6 +154,8 @@ private fun BalanceMainContent(
             )
         )
 
+        // TODO [#776]: Support variable fees
+        // TODO [#776]: https://github.com/zcash/zcash-android-wallet-sdk/issues/776
         // This check will not be correct with variable fees
         if (walletSnapshot.transparentBalance.available > ZcashSdk.MINERS_FEE) {
             // Note this implementation does not guard against multiple clicks

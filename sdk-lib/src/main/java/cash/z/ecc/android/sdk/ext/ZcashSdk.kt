@@ -14,7 +14,7 @@ object ZcashSdk {
     /**
      * Miner's fee in zatoshi.
      */
-    val MINERS_FEE = Zatoshi(1_000L)
+    val MINERS_FEE = Zatoshi(10_000L)
 
     /**
      * The maximum length of a memo.
