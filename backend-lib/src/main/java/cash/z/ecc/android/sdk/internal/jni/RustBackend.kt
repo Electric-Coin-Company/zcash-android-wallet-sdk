@@ -5,10 +5,10 @@ import cash.z.ecc.android.sdk.internal.SdkDispatchers
 import cash.z.ecc.android.sdk.internal.ext.deleteRecursivelySuspend
 import cash.z.ecc.android.sdk.internal.ext.deleteSuspend
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
-import cash.z.ecc.android.sdk.internal.model.JniScanProgress
 import cash.z.ecc.android.sdk.internal.model.JniScanRange
 import cash.z.ecc.android.sdk.internal.model.JniSubtreeRoot
 import cash.z.ecc.android.sdk.internal.model.JniUnifiedSpendingKey
+import cash.z.ecc.android.sdk.internal.model.JniWalletSummary
 import kotlinx.coroutines.withContext
 import java.io.File
 
@@ -106,30 +106,6 @@ class RustBackend private constructor(
                 networkId = networkId
             ).asList()
         }
-    }
-
-    override suspend fun getBalance(account: Int): Long {
-        val longValue = withContext(SdkDispatchers.DATABASE_IO) {
-            getBalance(
-                dataDbFile.absolutePath,
-                account,
-                networkId = networkId
-            )
-        }
-
-        return longValue
-    }
-
-    override suspend fun getVerifiedBalance(account: Int): Long {
-        val longValue = withContext(SdkDispatchers.DATABASE_IO) {
-            getVerifiedBalance(
-                dbDataPath = dataDbFile.absolutePath,
-                account = account,
-                networkId = networkId
-            )
-        }
-
-        return longValue
     }
 
     override suspend fun getMemoAsUtf8(txId: ByteArray, outputIndex: Int) =
@@ -267,9 +243,9 @@ class RustBackend private constructor(
             }
         }
 
-    override suspend fun getScanProgress(): JniScanProgress? =
+    override suspend fun getWalletSummary(): JniWalletSummary? =
         withContext(SdkDispatchers.DATABASE_IO) {
-            getScanProgress(
+            getWalletSummary(
                 dataDbFile.absolutePath,
                 networkId = networkId
             )
@@ -463,16 +439,6 @@ class RustBackend private constructor(
         private external fun isValidUnifiedAddress(addr: String, networkId: Int): Boolean
 
         @JvmStatic
-        private external fun getBalance(dbDataPath: String, account: Int, networkId: Int): Long
-
-        @JvmStatic
-        private external fun getVerifiedBalance(
-            dbDataPath: String,
-            account: Int,
-            networkId: Int
-        ): Long
-
-        @JvmStatic
         private external fun getMemoAsUtf8(
             dbDataPath: String,
             txId: ByteArray,
@@ -543,10 +509,10 @@ class RustBackend private constructor(
         ): Long
 
         @JvmStatic
-        private external fun getScanProgress(
+        private external fun getWalletSummary(
             dbDataPath: String,
             networkId: Int
-        ): JniScanProgress?
+        ): JniWalletSummary?
 
         @JvmStatic
         private external fun suggestScanRanges(

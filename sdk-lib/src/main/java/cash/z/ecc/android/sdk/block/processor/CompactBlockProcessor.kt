@@ -5,8 +5,8 @@ import cash.z.ecc.android.sdk.BuildConfig
 import cash.z.ecc.android.sdk.annotation.OpenForTesting
 import cash.z.ecc.android.sdk.block.processor.model.BatchSyncProgress
 import cash.z.ecc.android.sdk.block.processor.model.GetMaxScannedHeightResult
-import cash.z.ecc.android.sdk.block.processor.model.GetScanProgressResult
 import cash.z.ecc.android.sdk.block.processor.model.GetSubtreeRootsResult
+import cash.z.ecc.android.sdk.block.processor.model.GetWalletSummaryResult
 import cash.z.ecc.android.sdk.block.processor.model.PutSaplingSubtreeRootsResult
 import cash.z.ecc.android.sdk.block.processor.model.SbSPreparationResult
 import cash.z.ecc.android.sdk.block.processor.model.SuggestScanRangesResult
@@ -41,6 +41,7 @@ import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.internal.model.ScanRange
 import cash.z.ecc.android.sdk.internal.model.SubtreeRoot
 import cash.z.ecc.android.sdk.internal.model.SuggestScanRangePriority
+import cash.z.ecc.android.sdk.internal.model.WalletSummary
 import cash.z.ecc.android.sdk.internal.model.ext.from
 import cash.z.ecc.android.sdk.internal.model.ext.toBlockHeight
 import cash.z.ecc.android.sdk.internal.repository.DerivedDataRepository
@@ -48,6 +49,7 @@ import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.PercentDecimal
 import cash.z.ecc.android.sdk.model.WalletBalance
+import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.GetAddressUtxosReplyUnsafe
@@ -460,16 +462,16 @@ class CompactBlockProcessor internal constructor(
                 withDownload = true,
                 enhanceStartHeight = firstUnenhancedHeight
             ).collect { batchSyncProgress ->
-                // Update sync progress
-                when (val result = getScanProgress(backend)) {
-                    is GetScanProgressResult.Success -> {
-                        val resultProgress = result.toPercentDecimal()
+                // Update sync progress and wallet balance
+                when (val result = getWalletSummary(backend)) {
+                    is GetWalletSummaryResult.Success -> {
+                        val resultProgress = result.scanProgressPercentDecimal()
                         Twig.info { "Progress from rust: ${resultProgress.decimal}" }
                         setProgress(resultProgress)
+                        updateAllBalances(result.walletSummary)
                     }
                     else -> { /* Do not report the progress in case of any error */ }
                 }
-                checkAllBalances()
 
                 when (batchSyncProgress.resultState) {
                     SyncingResult.UpdateBirthday -> {
@@ -562,16 +564,16 @@ class CompactBlockProcessor internal constructor(
                 withDownload = true,
                 enhanceStartHeight = firstUnenhancedHeight
             ).map { batchSyncProgress ->
-                // Update sync progress
-                when (val result = getScanProgress(backend)) {
-                    is GetScanProgressResult.Success -> {
-                        val resultProgress = result.toPercentDecimal()
+                // Update sync progress and wallet balance
+                when (val result = getWalletSummary(backend)) {
+                    is GetWalletSummaryResult.Success -> {
+                        val resultProgress = result.scanProgressPercentDecimal()
                         Twig.info { "Progress from rust: ${resultProgress.decimal}" }
                         setProgress(resultProgress)
+                        updateAllBalances(result.walletSummary)
                     }
                     else -> { /* Do not report the progress in case of any error */ }
                 }
-                checkAllBalances()
 
                 when (batchSyncProgress.resultState) {
                     SyncingResult.UpdateBirthday -> {
@@ -755,6 +757,20 @@ class CompactBlockProcessor internal constructor(
     internal suspend fun checkTransparentBalance() {
         Twig.debug { "Checking Transparent balance" }
         transparentBalances.value = getUtxoCacheBalance(getTransparentAddress(backend, Account.DEFAULT))
+    }
+
+    /**
+     * Update the latest balances using the given wallet summary, and transmit this information
+     * into the related internal flows. Note that the Orchard balance is not supported.
+     */
+    internal suspend fun updateAllBalances(summary: WalletSummary) {
+        summary.accountBalances[Account.DEFAULT]?.let {
+            Twig.debug { "Updating Sapling balance" }
+            saplingBalances.value = it.sapling
+            // TODO [#682]: refresh orchard balance
+            // TODO [#682]: https://github.com/zcash/zcash-android-wallet-sdk/issues/682
+        }
+        checkTransparentBalance()
     }
 
     sealed class BlockProcessingResult {
@@ -1269,28 +1285,28 @@ class CompactBlockProcessor internal constructor(
         }
 
         /**
-         * Get the current block scanning progress.
+         * Get the current wallet summary.
          *
-         * @return the last scanning progress calculated by the Rust layer and wrapped in [GetScanProgressResult]
+         * @return the latest wallet summary calculated by the Rust layer and wrapped in [GetWalletSummaryResult]
          */
         @VisibleForTesting
-        internal suspend fun getScanProgress(backend: TypesafeBackend): GetScanProgressResult {
+        internal suspend fun getWalletSummary(backend: TypesafeBackend): GetWalletSummaryResult {
             return runCatching {
-                backend.getScanProgress()
+                backend.getWalletSummary()
             }.onSuccess {
-                Twig.verbose { "Successfully called getScanProgress with result: $it" }
+                Twig.verbose { "Successfully called getWalletSummary with result: $it" }
             }.onFailure {
-                Twig.error { "Failed to call getScanProgress with result: $it" }
+                Twig.error { "Failed to call getWalletSummary with result: $it" }
             }.fold(
                 onSuccess = {
                     if (it == null) {
-                        GetScanProgressResult.None
+                        GetWalletSummaryResult.None
                     } else {
-                        GetScanProgressResult.Success(it)
+                        GetWalletSummaryResult.Success(it)
                     }
                 },
                 onFailure = {
-                    GetScanProgressResult.Failure(it)
+                    GetWalletSummaryResult.Failure(it)
                 }
             )
         }
@@ -2049,11 +2065,17 @@ class CompactBlockProcessor internal constructor(
      */
     suspend fun getBalanceInfo(account: Account): WalletBalance {
         return runCatching {
-            val balanceTotal = backend.getBalance(account)
-            Twig.info { "Found total balance: $balanceTotal" }
-            val balanceAvailable = backend.getVerifiedBalance(account)
-            Twig.info { "Found available balance: $balanceAvailable" }
-            WalletBalance(balanceTotal, balanceAvailable)
+            val walletSummary = backend.getWalletSummary()
+            val accountBalance = walletSummary?.accountBalances?.get(account)
+            // `None` means that the caller has not yet called `updateChainTip` on a
+            // brand-new wallet, so we can assume the balance is zero.
+            val saplingBalance = accountBalance?.sapling ?: WalletBalance(
+                Zatoshi(0),
+                Zatoshi(0)
+            )
+            Twig.info { "Found total balance: ${saplingBalance.total}" }
+            Twig.info { "Found available balance: ${saplingBalance.available}" }
+            saplingBalance
         }.onFailure {
             Twig.error(it) { "Failed to get balance due to ${it.localizedMessage}" }
         }.getOrElse {

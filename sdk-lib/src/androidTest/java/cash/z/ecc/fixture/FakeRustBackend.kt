@@ -2,10 +2,10 @@ package cash.z.ecc.fixture
 
 import cash.z.ecc.android.sdk.internal.Backend
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
-import cash.z.ecc.android.sdk.internal.model.JniScanProgress
 import cash.z.ecc.android.sdk.internal.model.JniScanRange
 import cash.z.ecc.android.sdk.internal.model.JniSubtreeRoot
 import cash.z.ecc.android.sdk.internal.model.JniUnifiedSpendingKey
+import cash.z.ecc.android.sdk.internal.model.JniWalletSummary
 
 internal class FakeRustBackend(
     override val networkId: Int,
@@ -39,7 +39,7 @@ internal class FakeRustBackend(
         TODO("Not yet implemented")
     }
 
-    override suspend fun getScanProgress(): JniScanProgress {
+    override suspend fun getWalletSummary(): JniWalletSummary {
         TODO("Not yet implemented")
     }
 
@@ -129,20 +129,12 @@ internal class FakeRustBackend(
         TODO("Not yet implemented")
     }
 
-    override suspend fun getBalance(account: Int): Long {
-        TODO("Not yet implemented")
-    }
-
     override fun getBranchIdForHeight(height: Long): Long {
         TODO("Not yet implemented")
     }
 
     override suspend fun getMemoAsUtf8(txId: ByteArray, outputIndex: Int): String? =
         error("Intentionally not implemented in mocked FakeRustBackend implementation.")
-
-    override suspend fun getVerifiedBalance(account: Int): Long {
-        TODO("Not yet implemented")
-    }
 
     override suspend fun getNearestRewindHeight(height: Long): Long {
         TODO("Not yet implemented")

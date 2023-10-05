@@ -18,10 +18,10 @@ internal data class ScanProgress(
     }
 
     companion object {
-        fun new(jni: JniScanProgress): ScanProgress {
+        fun new(jni: JniWalletSummary): ScanProgress {
             return ScanProgress(
-                numerator = jni.numerator,
-                denominator = jni.denominator
+                numerator = jni.progressNumerator,
+                denominator = jni.progressDenominator
             )
         }
     }

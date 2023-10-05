@@ -1,10 +1,10 @@
 package cash.z.ecc.android.sdk.internal
 
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
-import cash.z.ecc.android.sdk.internal.model.JniScanProgress
 import cash.z.ecc.android.sdk.internal.model.JniScanRange
 import cash.z.ecc.android.sdk.internal.model.JniSubtreeRoot
 import cash.z.ecc.android.sdk.internal.model.JniUnifiedSpendingKey
+import cash.z.ecc.android.sdk.internal.model.JniWalletSummary
 
 /**
  * Contract defining the exposed capabilities of the Rust backend.
@@ -69,12 +69,6 @@ interface Backend {
 
     suspend fun listTransparentReceivers(account: Int): List<String>
 
-    /**
-     * @throws RuntimeException as a common indicator of the operation failure
-     */
-    @Throws(RuntimeException::class)
-    suspend fun getBalance(account: Int): Long
-
     fun getBranchIdForHeight(height: Long): Long
 
     /**
@@ -82,12 +76,6 @@ interface Backend {
      */
     @Throws(RuntimeException::class)
     suspend fun getMemoAsUtf8(txId: ByteArray, outputIndex: Int): String?
-
-    /**
-     * @throws RuntimeException as a common indicator of the operation failure
-     */
-    @Throws(RuntimeException::class)
-    suspend fun getVerifiedBalance(account: Int): Long
 
     suspend fun getNearestRewindHeight(height: Long): Long
 
@@ -139,7 +127,7 @@ interface Backend {
      * @throws RuntimeException as a common indicator of the operation failure
      */
     @Throws(RuntimeException::class)
-    suspend fun getScanProgress(): JniScanProgress?
+    suspend fun getWalletSummary(): JniWalletSummary?
 
     /**
      * @throws RuntimeException as a common indicator of the operation failure

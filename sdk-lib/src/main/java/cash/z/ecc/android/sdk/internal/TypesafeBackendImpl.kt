@@ -2,10 +2,10 @@ package cash.z.ecc.android.sdk.internal
 
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.internal.model.JniSubtreeRoot
-import cash.z.ecc.android.sdk.internal.model.ScanProgress
 import cash.z.ecc.android.sdk.internal.model.ScanRange
 import cash.z.ecc.android.sdk.internal.model.SubtreeRoot
 import cash.z.ecc.android.sdk.internal.model.TreeState
+import cash.z.ecc.android.sdk.internal.model.WalletSummary
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.FirstClassByteArray
@@ -70,16 +70,8 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
         return backend.listTransparentReceivers(account.value)
     }
 
-    override suspend fun getBalance(account: Account): Zatoshi {
-        return Zatoshi(backend.getBalance(account.value))
-    }
-
     override fun getBranchIdForHeight(height: BlockHeight): Long {
         return backend.getBranchIdForHeight(height.value)
-    }
-
-    override suspend fun getVerifiedBalance(account: Account): Zatoshi {
-        return Zatoshi(backend.getVerifiedBalance(account.value))
     }
 
     override suspend fun getNearestRewindHeight(height: BlockHeight): BlockHeight {
@@ -182,8 +174,8 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
 
     override suspend fun scanBlocks(fromHeight: BlockHeight, limit: Long) = backend.scanBlocks(fromHeight.value, limit)
 
-    override suspend fun getScanProgress(): ScanProgress? = backend.getScanProgress()?.let { jniScanProgress ->
-        ScanProgress.new(jniScanProgress)
+    override suspend fun getWalletSummary(): WalletSummary? = backend.getWalletSummary()?.let { jniWalletSummary ->
+        WalletSummary.new(jniWalletSummary)
     }
 
     override suspend fun suggestScanRanges(): List<ScanRange> = backend.suggestScanRanges().map { jniScanRange ->
