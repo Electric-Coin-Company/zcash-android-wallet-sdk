@@ -470,7 +470,7 @@ class CompactBlockProcessor internal constructor(
                         setProgress(resultProgress)
                         updateAllBalances(result.walletSummary)
                     }
-                    else -> { /* Do not report the progress in case of any error */ }
+                    else -> { /* Do not report the progress and balances in case of any error */ }
                 }
 
                 when (batchSyncProgress.resultState) {
@@ -572,7 +572,7 @@ class CompactBlockProcessor internal constructor(
                         setProgress(resultProgress)
                         updateAllBalances(result.walletSummary)
                     }
-                    else -> { /* Do not report the progress in case of any error */ }
+                    else -> { /* Do not report the progress and balances in case of any error */ }
                 }
 
                 when (batchSyncProgress.resultState) {
@@ -2070,8 +2070,8 @@ class CompactBlockProcessor internal constructor(
             // `None` means that the caller has not yet called `updateChainTip` on a
             // brand-new wallet, so we can assume the balance is zero.
             val saplingBalance = accountBalance?.sapling ?: WalletBalance(
-                Zatoshi(0),
-                Zatoshi(0)
+                total = Zatoshi(0L),
+                available = Zatoshi(0L)
             )
             Twig.info { "Found total balance: ${saplingBalance.total}" }
             Twig.info { "Found available balance: ${saplingBalance.available}" }
