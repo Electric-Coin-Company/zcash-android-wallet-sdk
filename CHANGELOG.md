@@ -6,6 +6,16 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.2] - 2023-10-20
+
+### Fixed
+- Incorrect note deduplication in the `v_transactions` database view: This is a fix in the Rust layer. The amount 
+  sent in the transaction was incorrectly reported even though the actual amount was correctly sent. Now, clients 
+  should see the amount they expect to see.
+
+### Changed
+- Checkpoints update
+
 ## [2.0.1] - 2023-10-02
 
 ### Changed
