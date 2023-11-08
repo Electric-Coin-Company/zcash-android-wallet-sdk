@@ -6,6 +6,14 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `Synchronizer.getExistingDataDbFilePath` public API to check and provide file path to the existing data database 
+  file or throws [InitializeException.MissingDatabaseException] if the database doesn't exist yet. See #1292.
+
+### Changed
+- `CompactBlockProcessor` switched internally from balance and progress FFIs to wallet summary FFI APIs. This change 
+  brings a block synchronization speed up. No action is required on the client side. See #1282.
+
 ## [2.0.2] - 2023-10-20
 
 ### Fixed
