@@ -11,6 +11,7 @@ import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor.State.Initia
 import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor.State.Stopped
 import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor.State.Synced
 import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor.State.Syncing
+import cash.z.ecc.android.sdk.exception.InitializeException
 import cash.z.ecc.android.sdk.exception.TransactionEncoderException
 import cash.z.ecc.android.sdk.exception.TransactionSubmitException
 import cash.z.ecc.android.sdk.ext.ConsensusBranchId
@@ -23,6 +24,7 @@ import cash.z.ecc.android.sdk.internal.block.CompactBlockDownloader
 import cash.z.ecc.android.sdk.internal.db.DatabaseCoordinator
 import cash.z.ecc.android.sdk.internal.db.derived.DbDerivedDataRepository
 import cash.z.ecc.android.sdk.internal.db.derived.DerivedDataDb
+import cash.z.ecc.android.sdk.internal.ext.existsSuspend
 import cash.z.ecc.android.sdk.internal.ext.isNullOrEmpty
 import cash.z.ecc.android.sdk.internal.ext.tryNull
 import cash.z.ecc.android.sdk.internal.jni.RustBackend
@@ -654,6 +656,23 @@ class SdkSynchronizer private constructor(
             sdkBranchId?.let { ConsensusBranchId.fromId(it) },
             serverBranchId?.let { ConsensusBranchId.fromHex(it) }
         )
+    }
+
+    @Throws(InitializeException.MissingDatabaseException::class)
+    override suspend fun getExistingDataDbFilePath(
+        context: Context,
+        network: ZcashNetwork,
+        alias: String
+    ): String {
+        return DatabaseCoordinator.getInstance(context).dataDbFile(
+            network = network,
+            alias = alias
+        ).run {
+            if (!existsSuspend()) {
+                throw InitializeException.MissingDatabaseException(network, alias)
+            }
+            absolutePath
+        }
     }
 }
 

@@ -2,6 +2,7 @@ package cash.z.ecc.android.sdk
 
 import android.content.Context
 import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor
+import cash.z.ecc.android.sdk.exception.InitializeException
 import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.internal.Derivation
 import cash.z.ecc.android.sdk.internal.SaplingParamTool
@@ -308,6 +309,24 @@ interface Synchronizer {
      * Returns a list of recipients for a transaction.
      */
     fun getRecipients(transactionOverview: TransactionOverview): Flow<TransactionRecipient>
+
+    /**
+     * Checks and provides file path to the existing data database file for the given input parameters or throws
+     * [InitializeException.MissingDatabaseException] if the database does not exist yet.
+     *
+     * Note that it's the caller's responsibility to provide a [network] and [alias] to an existing database. Otherwise
+     * [InitializeException.MissingDatabaseException] is thrown.
+     *
+     * @return Path to the already created data database file, or null in case none exists yet
+     * @throws [InitializeException.MissingDatabaseException] When the requested database for the given inputs
+     * does not exist yet.
+     */
+    @Throws(InitializeException.MissingDatabaseException::class)
+    suspend fun getExistingDataDbFilePath(
+        context: Context,
+        network: ZcashNetwork,
+        alias: String = ZcashSdk.DEFAULT_ALIAS
+    ): String
 
     //
     // Error Handling
