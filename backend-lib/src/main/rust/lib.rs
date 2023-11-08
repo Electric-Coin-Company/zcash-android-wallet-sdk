@@ -20,7 +20,7 @@ use tracing_subscriber::reload;
 use zcash_address::{ToAddress, ZcashAddress};
 use zcash_client_backend::data_api::{
     scanning::{ScanPriority, ScanRange},
-    AccountBirthday, NoteId, Ratio, ShieldedProtocol,
+    AccountBalance, AccountBirthday, NoteId, ShieldedProtocol, WalletSummary,
 };
 use zcash_client_backend::keys::{DecodingError, UnifiedSpendingKey};
 use zcash_client_backend::{
@@ -645,37 +645,6 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_is
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getBalance(
-    env: JNIEnv<'_>,
-    _: JClass<'_>,
-    db_data: JString<'_>,
-    accountj: jint,
-    network_id: jint,
-) -> jlong {
-    let res = panic::catch_unwind(|| {
-        let network = parse_network(network_id as u32)?;
-        let db_data = wallet_db(&env, network, db_data)?;
-        let account = AccountId::from(u32::try_from(accountj)?);
-
-        if let Some(wallet_summary) = db_data
-            .get_wallet_summary(0)
-            .map_err(|e| format_err!("Error while fetching balance: {}", e))?
-        {
-            wallet_summary
-                .account_balances()
-                .get(&account)
-                .ok_or_else(|| format_err!("Unknown account"))
-                .map(|balances| Amount::from(balances.sapling_balance.total()).into())
-        } else {
-            // `None` means that the caller has not yet called `updateChainTip` on a
-            // brand-new wallet, so we can assume the balance is zero.
-            Ok(0)
-        }
-    });
-    unwrap_exc_or(&env, res, -1)
-}
-
-#[no_mangle]
 pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getVerifiedTransparentBalance(
     env: JNIEnv<'_>,
     _: JClass<'_>,
@@ -748,38 +717,6 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_ge
             .ok_or_else(|| format_err!("Balance overflowed MAX_MONEY"))?;
 
         Ok(amount.into())
-    });
-
-    unwrap_exc_or(&env, res, -1)
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getVerifiedBalance(
-    env: JNIEnv<'_>,
-    _: JClass<'_>,
-    db_data: JString<'_>,
-    account: jint,
-    network_id: jint,
-) -> jlong {
-    let res = panic::catch_unwind(|| {
-        let network = parse_network(network_id as u32)?;
-        let db_data = wallet_db(&env, network, db_data)?;
-        let account = AccountId::from(u32::try_from(account)?);
-
-        if let Some(wallet_summary) = db_data
-            .get_wallet_summary(ANCHOR_OFFSET_U32)
-            .map_err(|e| format_err!("Error while fetching verified balance: {}", e))?
-        {
-            wallet_summary
-                .account_balances()
-                .get(&account)
-                .ok_or_else(|| format_err!("Unknown account"))
-                .map(|balances| Amount::from(balances.sapling_balance.spendable_value).into())
-        } else {
-            // `None` means that the caller has not yet called `updateChainTip` on a
-            // brand-new wallet, so we can assume the balance is zero.
-            Ok(0)
-        }
     });
 
     unwrap_exc_or(&env, res, -1)
@@ -1147,25 +1084,64 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_ge
     unwrap_exc_or(&env, res, -1)
 }
 
-/// Returns a `JniScanProgress` object, provided that numerator is nonnegative, denominator
-/// is positive, and the represented ratio is in the range 0.0 to 1.0 inclusive.
+const JNI_ACCOUNT_BALANCE: &str = "cash/z/ecc/android/sdk/internal/model/JniAccountBalance";
+
+fn encode_account_balance<'a>(
+    env: &JNIEnv<'a>,
+    account: &AccountId,
+    balance: &AccountBalance,
+) -> jni::errors::Result<JObject<'a>> {
+    let sapling_total_balance = Amount::from(balance.sapling_balance.total());
+    let sapling_verified_balance = Amount::from(balance.sapling_balance.spendable_value);
+
+    env.new_object(
+        JNI_ACCOUNT_BALANCE,
+        "(IJJ)V",
+        &[
+            JValue::Int(u32::from(*account) as i32),
+            JValue::Long(sapling_total_balance.into()),
+            JValue::Long(sapling_verified_balance.into()),
+        ],
+    )
+}
+
+/// Returns a `JniWalletSummary` object, provided that `progress_numerator` is
+/// nonnegative, `progress_denominator` is positive, and the represented ratio is in the
+/// range 0.0 to 1.0 inclusive.
 ///
 /// If these conditions are not met, this fails and leaves an `IllegalArgumentException`
 /// pending.
-fn encode_scan_progress(env: &JNIEnv<'_>, progress: Ratio<u64>) -> Result<jobject, failure::Error> {
+fn encode_wallet_summary(
+    env: &JNIEnv<'_>,
+    summary: WalletSummary,
+) -> Result<jobject, failure::Error> {
+    let account_balances = utils::rust_vec_to_java(
+        &env,
+        summary.account_balances().into_iter().collect(),
+        JNI_ACCOUNT_BALANCE,
+        |env, (account, balance)| encode_account_balance(env, account, balance),
+        |env| encode_account_balance(env, &AccountId::from(0), &AccountBalance::ZERO),
+    );
+
+    let (progress_numerator, progress_denominator) = summary
+        .scan_progress()
+        .map(|progress| (*progress.numerator(), *progress.denominator()))
+        .unwrap_or((0, 1));
+
     let output = env.new_object(
-        "cash/z/ecc/android/sdk/internal/model/JniScanProgress",
-        "(JJ)V",
+        "cash/z/ecc/android/sdk/internal/model/JniWalletSummary",
+        &format!("([L{};JJ)V", JNI_ACCOUNT_BALANCE),
         &[
-            JValue::Long(*progress.numerator() as i64),
-            JValue::Long(*progress.denominator() as i64),
+            JValue::Object(unsafe { JObject::from_raw(account_balances) }),
+            JValue::Long(progress_numerator as i64),
+            JValue::Long(progress_denominator as i64),
         ],
     )?;
     Ok(output.into_raw())
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getScanProgress(
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getWalletSummary(
     env: JNIEnv<'_>,
     _: JClass<'_>,
     db_data: JString<'_>,
@@ -1176,11 +1152,15 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_ge
         let db_data = wallet_db(&env, network, db_data)?;
 
         match db_data
-            .get_wallet_summary(0)
+            .get_wallet_summary(ANCHOR_OFFSET_U32)
             .map_err(|e| format_err!("Error while fetching scan progress: {}", e))?
-            .and_then(|summary| summary.scan_progress().filter(|r| r.denominator() > &0))
-        {
-            Some(progress) => encode_scan_progress(&env, progress),
+            .filter(|summary| {
+                summary
+                    .scan_progress()
+                    .map(|r| r.denominator() > &0)
+                    .unwrap_or(false)
+            }) {
+            Some(summary) => encode_wallet_summary(&env, summary),
             None => Ok(ptr::null_mut()),
         }
     });

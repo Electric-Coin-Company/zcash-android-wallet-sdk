@@ -1,16 +1,15 @@
 package cash.z.ecc.android.sdk.internal
 
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
-import cash.z.ecc.android.sdk.internal.model.ScanProgress
 import cash.z.ecc.android.sdk.internal.model.ScanRange
 import cash.z.ecc.android.sdk.internal.model.SubtreeRoot
 import cash.z.ecc.android.sdk.internal.model.TreeState
+import cash.z.ecc.android.sdk.internal.model.WalletSummary
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.FirstClassByteArray
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.WalletBalance
-import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 
 @Suppress("TooManyFunctions")
@@ -41,11 +40,7 @@ internal interface TypesafeBackend {
 
     suspend fun listTransparentReceivers(account: Account): List<String>
 
-    suspend fun getBalance(account: Account): Zatoshi
-
     fun getBranchIdForHeight(height: BlockHeight): Long
-
-    suspend fun getVerifiedBalance(account: Account): Zatoshi
 
     suspend fun getNearestRewindHeight(height: BlockHeight): BlockHeight
 
@@ -121,7 +116,7 @@ internal interface TypesafeBackend {
      * @throws RuntimeException as a common indicator of the operation failure
      */
     @Throws(RuntimeException::class)
-    suspend fun getScanProgress(): ScanProgress?
+    suspend fun getWalletSummary(): WalletSummary?
 
     /**
      * @throws RuntimeException as a common indicator of the operation failure
