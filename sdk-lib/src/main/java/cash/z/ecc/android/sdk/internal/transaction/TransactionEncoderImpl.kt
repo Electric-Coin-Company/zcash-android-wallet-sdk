@@ -18,7 +18,7 @@ import cash.z.ecc.android.sdk.model.Zatoshi
  * behaving like a stateless API so that callers can request [createTransaction] and receive a
  * result, even though there are intermediate database interactions.
  *
- * @property rustBackend the instance of RustBackendWelding to use for creating and validating.
+ * @property backend the instance of RustBackendWelding to use for creating and validating.
  * @property repository the repository that stores information about the transactions being created
  * such as the raw bytes and raw txId.
  */
@@ -35,7 +35,7 @@ internal class TransactionEncoderImpl(
      *
      * @param usk the unified spending key associated with the notes that will be spent.
      * @param amount the amount of zatoshi to send.
-     * @param toAddress the recipient's address.
+     * @param recipient the recipient's address.
      * @param memo the optional memo to include as part of the transaction.
      *
      * @return the successfully encoded transaction or an exception
