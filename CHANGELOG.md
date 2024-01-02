@@ -8,6 +8,8 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Gradle 8.5
+- Kotlin 1.9.21
+- Other dependency update
 
 ## [2.0.3] - 2023-11-08
 
