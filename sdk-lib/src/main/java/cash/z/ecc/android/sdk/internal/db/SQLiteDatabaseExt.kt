@@ -33,19 +33,21 @@ internal fun <T> SQLiteDatabase.queryAndMap(
 ) = flow<T> {
     // TODO [#703]: Support blobs for argument binding
     // TODO [#703]: https://github.com/zcash/zcash-android-wallet-sdk/issues/703
-    val mappedSelectionArgs = selectionArgs?.onEach {
-        require(it !is ByteArray) {
-            "ByteArray is not supported"
-        }
-    }?.map { it.toString() }?.toTypedArray()
+    val mappedSelectionArgs =
+        selectionArgs?.onEach {
+            require(it !is ByteArray) {
+                "ByteArray is not supported"
+            }
+        }?.map { it.toString() }?.toTypedArray()
 
     // Counterintuitive but correct. When using the comma syntax, offset comes first.
     // When using the keyword syntax, "LIMIT 1 OFFSET 2" then the offset comes second.
-    val limitAndOffset = if (null == offset) {
-        limit
-    } else {
-        String.format(Locale.ROOT, "%s,%s", offset, limit) // NON-NLS
-    }
+    val limitAndOffset =
+        if (null == offset) {
+            limit
+        } else {
+            String.format(Locale.ROOT, "%s,%s", offset, limit) // NON-NLS
+        }
 
     query(
         table,
@@ -84,23 +86,24 @@ internal fun <T> SupportSQLiteDatabase.queryAndMap(
     coroutineContext: CoroutineContext = Dispatchers.IO,
     cursorParser: CursorParser<T>
 ) = flow<T> {
-    val qb = SupportSQLiteQueryBuilder.builder(table).apply {
-        columns(columns)
-        selection(selection, selectionArgs)
-        having(having)
-        groupBy(groupBy)
-        orderBy(orderBy)
+    val qb =
+        SupportSQLiteQueryBuilder.builder(table).apply {
+            columns(columns)
+            selection(selection, selectionArgs)
+            having(having)
+            groupBy(groupBy)
+            orderBy(orderBy)
 
-        if (null != limit) {
-            // Counterintuitive but correct. When using the comma syntax, offset comes first.
-            // When using the keyword syntax, "LIMIT 1 OFFSET 2" then the offset comes second.
-            if (null == offset) {
-                limit(limit)
-            } else {
-                limit(String.format(Locale.ROOT, "%s,%s", offset, limit)) // NON-NLS
+            if (null != limit) {
+                // Counterintuitive but correct. When using the comma syntax, offset comes first.
+                // When using the keyword syntax, "LIMIT 1 OFFSET 2" then the offset comes second.
+                if (null == offset) {
+                    limit(limit)
+                } else {
+                    limit(String.format(Locale.ROOT, "%s,%s", offset, limit)) // NON-NLS
+                }
             }
         }
-    }
 
     query(qb.create()).use {
         it.moveToPosition(-1)

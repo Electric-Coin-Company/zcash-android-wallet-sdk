@@ -30,7 +30,10 @@ import kotlinx.coroutines.launch
  * flow2.collectWith(scope, ::collectingFunction2)
  * ```
  */
-fun <T> Flow<T>.collectWith(scope: CoroutineScope, block: (T) -> Unit) {
+fun <T> Flow<T>.collectWith(
+    scope: CoroutineScope,
+    block: (T) -> Unit
+) {
     scope.launch {
         collect {
             block(it)
@@ -44,7 +47,10 @@ fun <T> Flow<T>.collectWith(scope: CoroutineScope, block: (T) -> Unit) {
  */
 // Unused in the SDK but is used by the wallet app
 @Suppress("unused")
-fun <T, S> Flow<T>.onFirstWith(scope: CoroutineScope, block: suspend (T) -> S) {
+fun <T, S> Flow<T>.onFirstWith(
+    scope: CoroutineScope,
+    block: suspend (T) -> S
+) {
     scope.launch {
         onEach {
             block(it)

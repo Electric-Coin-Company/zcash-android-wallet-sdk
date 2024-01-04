@@ -12,16 +12,17 @@ import kotlinx.coroutines.runBlocking
 import java.io.File
 
 object SaplingParamsFixture {
-
-    internal val DESTINATION_DIRECTORY_LEGACY: File = File(
-        getAppContext().cacheDir,
-        SaplingParamTool.SAPLING_PARAMS_LEGACY_SUBDIRECTORY
-    )
+    internal val DESTINATION_DIRECTORY_LEGACY: File =
+        File(
+            getAppContext().cacheDir,
+            SaplingParamTool.SAPLING_PARAMS_LEGACY_SUBDIRECTORY
+        )
 
     internal val DESTINATION_DIRECTORY: File
-        get() = runBlocking {
-            Files.getZcashNoBackupSubdirectory(getAppContext())
-        }
+        get() =
+            runBlocking {
+                Files.getZcashNoBackupSubdirectory(getAppContext())
+            }
 
     internal const val SPEND_FILE_NAME = SaplingParamTool.SPEND_PARAM_FILE_NAME
     internal const val SPEND_FILE_MAX_SIZE = SaplingParamTool.SPEND_PARAM_FILE_MAX_BYTES_SIZE

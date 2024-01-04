@@ -10,6 +10,7 @@ import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 
 // TODO [#1248]: Clean up unused exceptions
 // TODO [#1248]: https://github.com/zcash/zcash-android-wallet-sdk/issues/1248
+
 /**
  * Marker for all custom exceptions from the SDK. Making it an interface would result in more typing
  * so it's a supertype, instead.
@@ -37,6 +38,7 @@ sealed class RepositoryException(message: String, cause: Throwable? = null) : Sd
         "The channel is closed. Note that once a repository has stopped it " +
             "cannot be restarted. Verify that the repository is not being restarted."
     )
+
     object Unprepared : RepositoryException(
         "Unprepared repository: Data cannot be accessed before the repository is prepared." +
             " Ensure that things have been properly initialized. If you see this error it most" +
@@ -56,6 +58,7 @@ sealed class SynchronizerException(message: String, cause: Throwable? = null) : 
         "This synchronizer was already started. Multiple calls to start are not" +
             "allowed and once a synchronizer has stopped it cannot be restarted."
     )
+
     object NotYetStarted : SynchronizerException(
         "The synchronizer has not yet started. Verify that" +
             " start has been called prior to this operation and that the coroutineScope is not" +
@@ -71,10 +74,12 @@ sealed class CompactBlockProcessorException(message: String, cause: Throwable? =
         "No data db file found at path $path. Verify " +
             "that the data DB has been initialized via `rustBackend.initDataDb(path)`"
     )
+
     open class ConfigurationException(
         message: String,
         cause: Throwable?
     ) : CompactBlockProcessorException(message, cause)
+
     class FileInsteadOfPath(fileName: String) : ConfigurationException(
         "Invalid Path: the given path appears to be a" +
             " file name instead of a path: $fileName. The RustBackend expects the absolutePath to the database rather" +
@@ -82,13 +87,16 @@ sealed class CompactBlockProcessorException(message: String, cause: Throwable? =
             " So pass in context.getDatabasePath(dbFileName).absolutePath instead of just dbFileName alone.",
         null
     )
+
     class FailedReorgRepair(message: String) : CompactBlockProcessorException(message)
+
     class Uninitialized(cause: Throwable? = null) : CompactBlockProcessorException(
         "Cannot process blocks because the wallet has not been" +
             " initialized. Verify that the seed phrase was properly created or imported. If so, then this problem" +
             " can be fixed by re-importing the wallet.",
         cause
     )
+
     object NoAccount : CompactBlockProcessorException(
         "Attempting to scan without an account. This is probably a setup error or a race condition."
     )
@@ -103,11 +111,13 @@ sealed class CompactBlockProcessorException(message: String, cause: Throwable? =
             "See logs for details.",
         cause
     )
+
     class FailedScanException(cause: Throwable? = null) : CompactBlockProcessorException(
         "Error while scanning blocks. This most likely means a problem with locally persisted data. " +
             "See logs for details.",
         cause
     )
+
     class FailedDeleteException(cause: Throwable? = null) : CompactBlockProcessorException(
         "Error while deleting block files. This most likely means the data are not persisted correctly." +
             " See logs for details.",
@@ -123,18 +133,19 @@ sealed class CompactBlockProcessorException(message: String, cause: Throwable? =
             height: BlockHeight,
             cause: Throwable
         ) : EnhanceTransactionError(
-            "Error while attempting to download a transaction to enhance",
-            height,
-            cause
-        )
+                "Error while attempting to download a transaction to enhance",
+                height,
+                cause
+            )
+
         class EnhanceTxDecryptError(
             height: BlockHeight,
             cause: Throwable
         ) : EnhanceTransactionError(
-            "Error while attempting to decrypt and store a transaction to enhance",
-            height,
-            cause
-        )
+                "Error while attempting to decrypt and store a transaction to enhance",
+                height,
+                cause
+            )
     }
 
     class MismatchedNetwork(clientNetwork: String?, serverNetwork: String?) : CompactBlockProcessorException(
@@ -147,9 +158,10 @@ sealed class CompactBlockProcessorException(message: String, cause: Throwable? =
         serverBranch: String?,
         networkName: String?
     ) : CompactBlockProcessorException(
-        "Incompatible server: this client expects a server following consensus branch $clientBranch on $networkName " +
-            "but it was $serverBranch! Try updating the client or switching servers."
-    )
+            "Incompatible server: this client expects a server following consensus branch $clientBranch on $networkName " +
+                "but it was $serverBranch! Try updating the client or switching servers."
+        )
+
     class BadBlockHeight(serverBlockHeight: BlockHeightUnsafe) : CompactBlockProcessorException(
         "The server returned a block height of $serverBlockHeight which is not valid."
     )
@@ -162,21 +174,24 @@ sealed class BirthdayException(message: String, cause: Throwable? = null) : SdkE
     class MissingBirthdayFilesException(directory: String) : BirthdayException(
         "Cannot initialize wallet because no birthday files were found in the $directory directory."
     )
+
     class ExactBirthdayNotFoundException internal constructor(
         birthday: BlockHeight,
         nearestMatch: Checkpoint? = null
     ) : BirthdayException(
-        "Unable to find birthday that exactly matches $birthday.${
-            if (nearestMatch != null) {
-                " An exact match was request but the nearest match found was ${nearestMatch.height}."
-            } else {
-                ""
-            }
-        }"
-    )
+            "Unable to find birthday that exactly matches $birthday.${
+                if (nearestMatch != null) {
+                    " An exact match was request but the nearest match found was ${nearestMatch.height}."
+                } else {
+                    ""
+                }
+            }"
+        )
+
     class BirthdayFileNotFoundException(directory: String, height: BlockHeight?) : BirthdayException(
         "Unable to find birthday file for $height verify that $directory/$height.json exists."
     )
+
     class MalformattedBirthdayFilesException(directory: String, file: String, cause: Throwable?) : BirthdayException(
         "Failed to parse file $directory/$file verify that it is formatted as #####.json, " +
             "where the first portion is an Int representing the height of the tree contained in the file",
@@ -192,24 +207,29 @@ sealed class InitializeException(message: String, cause: Throwable? = null) : Sd
         "A pending database migration requires the wallet's seed. Call this initialization " +
             "method again with the seed."
     )
+
     class FalseStart(cause: Throwable?) : InitializeException("Failed to initialize accounts due to: $cause", cause)
+
     class AlreadyInitializedException(cause: Throwable, dbPath: String) : InitializeException(
         "Failed to initialize the blocks table" +
             " because it already exists in $dbPath",
         cause
     )
+
     object MissingBirthdayException : InitializeException(
         "Expected a birthday for this wallet but failed to find one. This usually means that " +
             "wallet setup did not happen correctly. A workaround might be to interpret the " +
             "birthday,  based on the contents of the wallet data but it is probably better " +
             "not to mask this error because the root issue should be addressed."
     )
+
     object MissingViewingKeyException : InitializeException(
         "Expected a unified viewingKey for this wallet but failed to find one. This usually means" +
             " that wallet setup happened incorrectly. A workaround might be to derive the" +
             " unified viewingKey from the seed or seedPhrase, if they exist, but it is probably" +
             " better not to mask this error because the root issue should be addressed."
     )
+
     class MissingAddressException(description: String, cause: Throwable? = null) : InitializeException(
         "Expected a $description address for this wallet but failed to find one. This usually" +
             " means that wallet setup happened incorrectly. If this problem persists, a" +
@@ -218,6 +238,7 @@ sealed class InitializeException(message: String, cause: Throwable? = null) : Sd
             " this happened so that the root issue can be uncovered and corrected." +
             if (cause != null) "\nCaused by: $cause" else ""
     )
+
     object DatabasePathException :
         InitializeException(
             "Critical failure to locate path for storing databases. Perhaps this device prevents" +
@@ -229,9 +250,9 @@ sealed class InitializeException(message: String, cause: Throwable? = null) : Sd
         val network: ZcashNetwork,
         val alias: String
     ) : InitializeException(
-        "The requested database file with network: $network and alias: $alias does not exist yet. Create and " +
-            "initialize it using functions from ${DatabaseCoordinator::class.simpleName} first."
-    )
+            "The requested database file with network: $network and alias: $alias does not exist yet. Create and " +
+                "initialize it using functions from ${DatabaseCoordinator::class.simpleName} first."
+        )
 
     class InvalidBirthdayHeightException(birthday: BlockHeight?, network: ZcashNetwork) : InitializeException(
         "Invalid birthday height of ${birthday?.value}. The birthday height must be at least the height of" +
@@ -253,6 +274,7 @@ sealed class LightWalletException(message: String, cause: Throwable? = null) : S
             " resource value for 'R.bool.lightwalletd_allow_very_insecure_connections' is true" +
             " because this choice should be explicit."
     )
+
     class ConsensusBranchException(sdkBranch: String, lwdBranch: String) :
         LightWalletException(
             "Error: the lightwalletd server is using a consensus branch" +
@@ -294,23 +316,28 @@ sealed class TransactionEncoderException(
         internal val parameters: SaplingParameters,
         message: String
     ) : TransactionEncoderException("Failed to fetch params: $parameters, due to: $message")
+
     class ValidateParamsException internal constructor(
         internal val parameters: SaplingParameters,
         message: String
     ) : TransactionEncoderException("Failed to validate fetched params: $parameters, due to:$message")
+
     object MissingParamsException : TransactionEncoderException(
         "Cannot send funds due to missing spend or output params and attempting to download them failed."
     )
+
     class TransactionNotFoundException(transactionId: FirstClassByteArray) : TransactionEncoderException(
         "Unable to find transactionId $transactionId in the repository. This means the wallet created a transaction " +
             "and then returned a row ID that does not actually exist. This is a scenario where the wallet should " +
             "have thrown an exception but failed to do so."
     )
+
     class TransactionNotEncodedException(transactionId: Long) : TransactionEncoderException(
         "The transaction returned by the wallet," +
             " with id $transactionId, does not have any raw data. This is a scenario where the wallet should have " +
             "thrown an exception but failed to do so."
     )
+
     class IncompleteScanException(lastScannedHeight: BlockHeight?) : TransactionEncoderException(
         "Cannot" +
             " create spending transaction because scanning is incomplete. We must scan up to the" +

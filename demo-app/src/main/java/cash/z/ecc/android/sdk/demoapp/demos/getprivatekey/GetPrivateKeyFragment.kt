@@ -24,7 +24,6 @@ import kotlinx.coroutines.launch
  * HomeFragment.
  */
 class GetPrivateKeyFragment : BaseDemoFragment<FragmentGetPrivateKeyBinding>() {
-
     private lateinit var seedPhrase: String
     private lateinit var seed: ByteArray
 
@@ -47,17 +46,19 @@ class GetPrivateKeyFragment : BaseDemoFragment<FragmentGetPrivateKeyBinding>() {
         lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 @Suppress("MagicNumber")
-                val spendingKey = DerivationTool.getInstance().deriveUnifiedSpendingKey(
-                    seed,
-                    ZcashNetwork.fromResources(requireApplicationContext()),
-                    Account(5)
-                )
+                val spendingKey =
+                    DerivationTool.getInstance().deriveUnifiedSpendingKey(
+                        seed,
+                        ZcashNetwork.fromResources(requireApplicationContext()),
+                        Account(5)
+                    )
 
                 // derive the key that allows you to view but not spend transactions
-                val viewingKey = DerivationTool.getInstance().deriveUnifiedFullViewingKey(
-                    spendingKey,
-                    ZcashNetwork.fromResources(requireApplicationContext())
-                )
+                val viewingKey =
+                    DerivationTool.getInstance().deriveUnifiedFullViewingKey(
+                        spendingKey,
+                        ZcashNetwork.fromResources(requireApplicationContext())
+                    )
 
                 // display the keys in the UI
                 binding.textInfo.setText("Spending Key:\n$spendingKey\n\nViewing Key:\n$viewingKey")
@@ -79,7 +80,10 @@ class GetPrivateKeyFragment : BaseDemoFragment<FragmentGetPrivateKeyBinding>() {
         return view
     }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?
+    ) {
         super.onViewCreated(view, savedInstanceState)
         displayKeys()
     }

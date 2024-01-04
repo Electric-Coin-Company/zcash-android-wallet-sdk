@@ -57,14 +57,15 @@ internal class DerivedDataDb private constructor(
                 throw CompactBlockProcessorException.Uninitialized(it)
             }
 
-            val database = ReadOnlySupportSqliteOpenHelper.openExistingDatabaseAsReadOnly(
-                NoBackupContextWrapper(
-                    context,
-                    databaseFile.parentFile!!
-                ),
-                databaseFile,
-                DATABASE_VERSION
-            )
+            val database =
+                ReadOnlySupportSqliteOpenHelper.openExistingDatabaseAsReadOnly(
+                    NoBackupContextWrapper(
+                        context,
+                        databaseFile.parentFile!!
+                    ),
+                    databaseFile,
+                    DATABASE_VERSION
+                )
 
             val dataDb = DerivedDataDb(zcashNetwork, database)
 

@@ -5,7 +5,6 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class ZcashNetworkTest {
-
     @Test
     fun is_mainnet_succeed_test() {
         assertTrue { ZcashNetwork.Mainnet.isMainnet() }

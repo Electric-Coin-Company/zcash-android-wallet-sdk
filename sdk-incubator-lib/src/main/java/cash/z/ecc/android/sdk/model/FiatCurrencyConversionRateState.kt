@@ -16,10 +16,10 @@ sealed class FiatCurrencyConversionRateState {
      * @param formattedFiatValue A fiat value formatted as a localized string.  E.g. $1.00.
      */
     data class Stale(val formattedFiatValue: String) : FiatCurrencyConversionRateState()
+
     object Unavailable : FiatCurrencyConversionRateState()
 
     companion object {
-
         /**
          * Cutoff negative age.  Some users may intentionally set their clock forward 10 minutes
          * because they're always late to things.  This allows the app to mostly work for those users,

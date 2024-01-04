@@ -13,9 +13,10 @@ internal object SdkExecutors {
      * We don't expect things to break, but we don't have the WAL enabled for SQLite so this
      * is a simple solution.
      */
-    val DATABASE_IO = Executors.newSingleThreadExecutor {
-        Thread(it, "zc-io").apply { isDaemon = true }
-    }
+    val DATABASE_IO =
+        Executors.newSingleThreadExecutor {
+            Thread(it, "zc-io").apply { isDaemon = true }
+        }
 }
 
 object SdkDispatchers {

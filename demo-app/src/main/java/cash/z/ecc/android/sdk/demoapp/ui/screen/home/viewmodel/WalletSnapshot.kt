@@ -19,8 +19,9 @@ data class WalletSnapshot(
     // TODO [#776]: Support variable fees
     // TODO [#776]: https://github.com/zcash/zcash-android-wallet-sdk/issues/776
     // Note: the wallet is effectively empty if it cannot cover the miner's fee
-    val hasFunds = saplingBalance.available.value >
-        (ZcashSdk.MINERS_FEE.value.toDouble() / Zatoshi.ZATOSHI_PER_ZEC) // 0.0001
+    val hasFunds =
+        saplingBalance.available.value >
+            (ZcashSdk.MINERS_FEE.value.toDouble() / Zatoshi.ZATOSHI_PER_ZEC) // 0.0001
     val hasSaplingBalance = saplingBalance.total.value > 0
 
     val isSendEnabled: Boolean get() = status == Synchronizer.Status.SYNCED && hasFunds

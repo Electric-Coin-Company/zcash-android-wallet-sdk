@@ -24,7 +24,6 @@ class DarksideApi private constructor(
     private val channel: ManagedChannel,
     private val singleRequestTimeout: Duration = 10.seconds
 ) {
-
     companion object {
         internal fun new(
             channelFactory: ChannelFactory,
@@ -50,11 +49,15 @@ class DarksideApi private constructor(
             }
     }
 
-    fun stageBlocks(url: String) = apply {
-        createStub().stageBlocks(url.toUrl())
-    }
+    fun stageBlocks(url: String) =
+        apply {
+            createStub().stageBlocks(url.toUrl())
+        }
 
-    fun stageTransactions(url: String, targetHeight: BlockHeightUnsafe) = apply {
+    fun stageTransactions(
+        url: String,
+        targetHeight: BlockHeightUnsafe
+    ) = apply {
         createStub().stageTransactions(
             DarksideTransactionsURL.newBuilder().setHeight(targetHeight.value.toInt()).setUrl(url).build()
         )
@@ -71,7 +74,10 @@ class DarksideApi private constructor(
         )
     }
 
-    fun stageTransactions(txs: Iterator<Service.RawTransaction>?, tipHeight: BlockHeightUnsafe) {
+    fun stageTransactions(
+        txs: Iterator<Service.RawTransaction>?,
+        tipHeight: BlockHeightUnsafe
+    ) {
         if (txs == null) {
             return
         }
@@ -147,6 +153,7 @@ class DarksideApi private constructor(
 
         var completed = false
         var error: Throwable? = null
+
         override fun onNext(value: Service.Empty?) {
             // No implementation
         }
@@ -171,8 +178,7 @@ class DarksideApi private constructor(
     }
 }
 
-private fun BlockHeightUnsafe.toHeight() =
-    Darkside.DarksideHeight.newBuilder().setHeight(this.value.toInt()).build()
+private fun BlockHeightUnsafe.toHeight() = Darkside.DarksideHeight.newBuilder().setHeight(this.value.toInt()).build()
 
 fun DarksideApi.Companion.new(
     context: Context,

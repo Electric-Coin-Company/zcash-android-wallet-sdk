@@ -14,7 +14,6 @@ import org.junit.Test
 
 @ExperimentalCoroutinesApi
 class AddressGeneratorUtil {
-
     private val mnemonics = SimpleMnemonics()
 
     @Test
@@ -27,15 +26,16 @@ class AddressGeneratorUtil {
     }
 
     @Test
-    fun generateAddresses() = runBlocking {
-        readFileLinesInFlow("/utils/seeds.txt")
-            .map { seedPhrase ->
-                mnemonics.toSeed(seedPhrase.toCharArray())
-            }.map { seed ->
-                RustDerivationTool.new().deriveUnifiedAddress(seed, ZcashNetwork.Mainnet, Account.DEFAULT)
-            }.collect { address ->
-                println("xrxrx2\t$address")
-                assertTrue(address.startsWith("u1"))
-            }
-    }
+    fun generateAddresses() =
+        runBlocking {
+            readFileLinesInFlow("/utils/seeds.txt")
+                .map { seedPhrase ->
+                    mnemonics.toSeed(seedPhrase.toCharArray())
+                }.map { seed ->
+                    RustDerivationTool.new().deriveUnifiedAddress(seed, ZcashNetwork.Mainnet, Account.DEFAULT)
+                }.collect { address ->
+                    println("xrxrx2\t$address")
+                    assertTrue(address.startsWith("u1"))
+                }
+        }
 }

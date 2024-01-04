@@ -8,6 +8,7 @@ import cash.z.ecc.android.sdk.model.BlockHeight
  */
 internal sealed class SbSPreparationResult {
     object ConnectionFailure : SbSPreparationResult()
+
     data class ProcessFailure(
         val failedAtHeight: BlockHeight,
         val exception: Throwable
@@ -18,9 +19,11 @@ internal sealed class SbSPreparationResult {
                 this.exception
             )
     }
+
     data class Success(
         val suggestedRangesResult: SuggestScanRangesResult,
         val verifyRangeResult: VerifySuggestedScanRange
     ) : SbSPreparationResult()
+
     object NoMoreBlocksToProcess : SbSPreparationResult()
 }

@@ -11,12 +11,9 @@ import kotlinx.coroutines.flow.asFlow
  */
 @VisibleForTesting(otherwise = VisibleForTesting.PACKAGE_PRIVATE)
 object ListOfCompactBlocksFixture {
-
     val DEFAULT_FILE_BLOCK_RANGE = FileBlockRangeFixture.new()
 
-    fun newSequence(
-        blocksHeightRange: ClosedRange<BlockHeightUnsafe> = DEFAULT_FILE_BLOCK_RANGE
-    ): Sequence<CompactBlockUnsafe> {
+    fun newSequence(blocksHeightRange: ClosedRange<BlockHeightUnsafe> = DEFAULT_FILE_BLOCK_RANGE): Sequence<CompactBlockUnsafe> {
         val blocks = mutableListOf<CompactBlockUnsafe>()
 
         for (blockHeight in blocksHeightRange.start.value..blocksHeightRange.endInclusive.value) {
@@ -28,9 +25,7 @@ object ListOfCompactBlocksFixture {
         return blocks.asSequence()
     }
 
-    fun newFlow(
-        blocksHeightRange: ClosedRange<BlockHeightUnsafe> = DEFAULT_FILE_BLOCK_RANGE
-    ): Flow<CompactBlockUnsafe> {
+    fun newFlow(blocksHeightRange: ClosedRange<BlockHeightUnsafe> = DEFAULT_FILE_BLOCK_RANGE): Flow<CompactBlockUnsafe> {
         return newSequence(blocksHeightRange).asFlow()
     }
 }

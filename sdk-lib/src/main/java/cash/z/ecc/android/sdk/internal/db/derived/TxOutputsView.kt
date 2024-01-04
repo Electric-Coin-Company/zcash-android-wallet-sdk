@@ -14,26 +14,28 @@ internal class TxOutputsView(
     private val sqliteDatabase: SupportSQLiteDatabase
 ) {
     companion object {
-
-        private val ORDER_BY = String.format(
-            Locale.ROOT,
-            "%s ASC", // $NON-NLS
-            TxOutputsViewDefinition.COLUMN_BLOB_TRANSACTION_ID
-        )
+        private val ORDER_BY =
+            String.format(
+                Locale.ROOT,
+                "%s ASC", // $NON-NLS
+                TxOutputsViewDefinition.COLUMN_BLOB_TRANSACTION_ID
+            )
 
         private val PROJECTION_OUTPUT_INDEX = arrayOf(TxOutputsViewDefinition.COLUMN_INTEGER_OUTPUT_INDEX)
 
-        private val PROJECTION_RECIPIENT = arrayOf(
-            TxOutputsViewDefinition.COLUMN_STRING_TO_ADDRESS,
-            TxOutputsViewDefinition.COLUMN_INTEGER_TO_ACCOUNT
-        )
+        private val PROJECTION_RECIPIENT =
+            arrayOf(
+                TxOutputsViewDefinition.COLUMN_STRING_TO_ADDRESS,
+                TxOutputsViewDefinition.COLUMN_INTEGER_TO_ACCOUNT
+            )
 
-        private val SELECT_BY_TRANSACTION_ID_AND_NOT_CHANGE = String.format(
-            Locale.ROOT,
-            "%s = ? AND %s == 0", // $NON-NLS
-            TxOutputsViewDefinition.COLUMN_BLOB_TRANSACTION_ID,
-            TxOutputsViewDefinition.COLUMN_INTEGER_IS_CHANGE
-        )
+        private val SELECT_BY_TRANSACTION_ID_AND_NOT_CHANGE =
+            String.format(
+                Locale.ROOT,
+                "%s = ? AND %s == 0", // $NON-NLS
+                TxOutputsViewDefinition.COLUMN_BLOB_TRANSACTION_ID,
+                TxOutputsViewDefinition.COLUMN_INTEGER_IS_CHANGE
+            )
     }
 
     fun getSaplingOutputIndices(transactionId: FirstClassByteArray) =

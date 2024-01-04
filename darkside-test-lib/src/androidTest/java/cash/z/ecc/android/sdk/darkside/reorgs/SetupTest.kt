@@ -12,8 +12,7 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class SetupTest : ScopedTest() {
-
-//    @Test
+    //    @Test
 //    fun testFirstBlockExists() {
 //        validator.validateHasBlock(
 //            firstBlock
@@ -38,8 +37,9 @@ class SetupTest : ScopedTest() {
     @Test
     @Ignore("This test is broken")
     fun tempTest() {
-        val phrase = "still champion voice habit trend flight survey between bitter process artefact blind" +
-            " carbon truly provide dizzy crush flush breeze blouse charge solid fish spread"
+        val phrase =
+            "still champion voice habit trend flight survey between bitter process artefact blind" +
+                " carbon truly provide dizzy crush flush breeze blouse charge solid fish spread"
         val result = SimpleMnemonics().toSeed(phrase.toCharArray()).toHex()
         assertEquals("abc", result)
     }

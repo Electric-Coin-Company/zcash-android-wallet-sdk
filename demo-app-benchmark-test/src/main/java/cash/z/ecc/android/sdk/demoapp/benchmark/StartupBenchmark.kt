@@ -33,7 +33,6 @@ import kotlin.time.Duration.Companion.seconds
 // TODO [#809]: Enable macrobenchmark on CI
 // TODO [#809]: https://github.com/zcash/zcash-android-wallet-sdk/issues/809
 class StartupBenchmark : UiTestPrerequisites() {
-
     companion object {
         private const val APP_TARGET_PACKAGE_NAME = "cash.z.ecc.android.sdk.demoapp.mainnet" // NON-NLS
         private const val APP_TARGET_ACTIVITY_NAME = "cash.z.ecc.android.sdk.demoapp.MainActivity" // NON-NLS
@@ -55,18 +54,19 @@ class StartupBenchmark : UiTestPrerequisites() {
      * This test starts the Demo-app on Home screen and measures its metrics.
      */
     @Test
-    fun appStartup() = benchmarkRule.measureRepeated(
-        packageName = APP_TARGET_PACKAGE_NAME,
-        metrics = listOf(StartupTimingMetric()),
-        iterations = 5,
-        startupMode = StartupMode.COLD,
-        setupBlock = {
-            // Press home button before each run to ensure the starting activity isn't visible
-            pressHome()
+    fun appStartup() =
+        benchmarkRule.measureRepeated(
+            packageName = APP_TARGET_PACKAGE_NAME,
+            metrics = listOf(StartupTimingMetric()),
+            iterations = 5,
+            startupMode = StartupMode.COLD,
+            setupBlock = {
+                // Press home button before each run to ensure the starting activity isn't visible
+                pressHome()
+            }
+        ) {
+            startLegacyActivityAndWait()
         }
-    ) {
-        startLegacyActivityAndWait()
-    }
 
     /**
      * Advanced trace events startup test, which starts the Demo-app on the Home screen and then navigates to the
@@ -74,24 +74,26 @@ class StartupBenchmark : UiTestPrerequisites() {
      */
     @Test
     @OptIn(ExperimentalMetricApi::class)
-    fun tracesSdkStartup() = benchmarkRule.measureRepeated(
-        packageName = APP_TARGET_PACKAGE_NAME,
-        metrics = listOf(
-            TraceSectionMetric(ADDRESS_SCREEN_SECTION, TraceSectionMetric.Mode.First, false),
-            TraceSectionMetric(UNIFIED_ADDRESS_SECTION, TraceSectionMetric.Mode.First, false),
-            TraceSectionMetric(SAPLING_ADDRESS_SECTION, TraceSectionMetric.Mode.First, false),
-            TraceSectionMetric(TRANSPARENT_ADDRESS_SECTION, TraceSectionMetric.Mode.First, false)
-        ),
-        compilationMode = CompilationMode.Full(),
-        startupMode = StartupMode.COLD,
-        iterations = 5,
-        measureBlock = {
-            startLegacyActivityAndWait()
-            gotoAddressScreen()
-            waitForAddressScreen()
-            closeAddressScreen()
-        }
-    )
+    fun tracesSdkStartup() =
+        benchmarkRule.measureRepeated(
+            packageName = APP_TARGET_PACKAGE_NAME,
+            metrics =
+                listOf(
+                    TraceSectionMetric(ADDRESS_SCREEN_SECTION, TraceSectionMetric.Mode.First, false),
+                    TraceSectionMetric(UNIFIED_ADDRESS_SECTION, TraceSectionMetric.Mode.First, false),
+                    TraceSectionMetric(SAPLING_ADDRESS_SECTION, TraceSectionMetric.Mode.First, false),
+                    TraceSectionMetric(TRANSPARENT_ADDRESS_SECTION, TraceSectionMetric.Mode.First, false)
+                ),
+            compilationMode = CompilationMode.Full(),
+            startupMode = StartupMode.COLD,
+            iterations = 5,
+            measureBlock = {
+                startLegacyActivityAndWait()
+                gotoAddressScreen()
+                waitForAddressScreen()
+                closeAddressScreen()
+            }
+        )
 
     private fun MacrobenchmarkScope.closeAddressScreen() {
         // To close the Address screen and disconnect from SDK Synchronizer
@@ -109,7 +111,10 @@ class StartupBenchmark : UiTestPrerequisites() {
         }
     }
 
-    private fun MacrobenchmarkScope.waitForAddressAppear(addressPattern: Pattern, timeout: Duration): Boolean {
+    private fun MacrobenchmarkScope.waitForAddressAppear(
+        addressPattern: Pattern,
+        timeout: Duration
+    ): Boolean {
         return device.waitFor(Until.hasObject(By.text(addressPattern)), timeout)
     }
 
@@ -125,9 +130,10 @@ class StartupBenchmark : UiTestPrerequisites() {
     }
 
     private fun MacrobenchmarkScope.startLegacyActivityAndWait() {
-        val intent = Intent(Intent.ACTION_MAIN).apply {
-            component = ComponentName(APP_TARGET_PACKAGE_NAME, APP_TARGET_ACTIVITY_NAME)
-        }
+        val intent =
+            Intent(Intent.ACTION_MAIN).apply {
+                component = ComponentName(APP_TARGET_PACKAGE_NAME, APP_TARGET_ACTIVITY_NAME)
+            }
 
         startActivityAndWait(intent)
     }

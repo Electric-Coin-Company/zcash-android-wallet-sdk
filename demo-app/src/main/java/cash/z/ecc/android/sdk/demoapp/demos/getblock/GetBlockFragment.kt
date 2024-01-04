@@ -13,7 +13,6 @@ import cash.z.ecc.android.sdk.demoapp.util.mainActivity
  * the response.
  */
 class GetBlockFragment : BaseDemoFragment<FragmentGetBlockBinding>() {
-
     // TODO [#973]: Eliminate old UI demo-app
     // TODO [#973]: https://github.com/zcash/zcash-android-wallet-sdk/issues/973
     /*
@@ -78,7 +77,10 @@ class GetBlockFragment : BaseDemoFragment<FragmentGetBlockBinding>() {
     // Android Lifecycle overrides
     //
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?
+    ) {
         super.onViewCreated(view, savedInstanceState)
         binding.buttonApply.setOnClickListener(::onApply)
         binding.buttonPrevious.setOnClickListener {
@@ -93,6 +95,5 @@ class GetBlockFragment : BaseDemoFragment<FragmentGetBlockBinding>() {
     // Base Fragment overrides
     //
 
-    override fun inflateBinding(layoutInflater: LayoutInflater): FragmentGetBlockBinding =
-        FragmentGetBlockBinding.inflate(layoutInflater)
+    override fun inflateBinding(layoutInflater: LayoutInflater): FragmentGetBlockBinding = FragmentGetBlockBinding.inflate(layoutInflater)
 }

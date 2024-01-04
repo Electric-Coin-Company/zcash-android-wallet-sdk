@@ -27,7 +27,6 @@ internal class TransactionEncoderImpl(
     private val saplingParamTool: SaplingParamTool,
     private val repository: DerivedDataRepository
 ) : TransactionEncoder {
-
     /**
      * Creates a transaction, throwing an exception whenever things are missing. When the provided
      * wallet implementation doesn't throw an exception, we wrap the issue into a descriptive
@@ -73,8 +72,7 @@ internal class TransactionEncoderImpl(
      *
      * @return true when the given address is a valid z-addr
      */
-    override suspend fun isValidShieldedAddress(address: String): Boolean =
-        backend.isValidShieldedAddr(address)
+    override suspend fun isValidShieldedAddress(address: String): Boolean = backend.isValidShieldedAddr(address)
 
     /**
      * Utility function to help with validation. This is not called during [createTransaction]
@@ -84,8 +82,7 @@ internal class TransactionEncoderImpl(
      *
      * @return true when the given address is a valid t-addr
      */
-    override suspend fun isValidTransparentAddress(address: String): Boolean =
-        backend.isValidTransparentAddr(address)
+    override suspend fun isValidTransparentAddress(address: String): Boolean = backend.isValidTransparentAddr(address)
 
     /**
      * Utility function to help with validation. This is not called during [createTransaction]
@@ -95,8 +92,7 @@ internal class TransactionEncoderImpl(
      *
      * @return true when the given address is a valid ZIP 316 Unified Address
      */
-    override suspend fun isValidUnifiedAddress(address: String): Boolean =
-        backend.isValidUnifiedAddr(address)
+    override suspend fun isValidUnifiedAddress(address: String): Boolean = backend.isValidUnifiedAddr(address)
 
     /**
      * Return the consensus branch that the encoder is using when making transactions.

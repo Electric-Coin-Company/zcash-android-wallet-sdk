@@ -4,7 +4,6 @@ import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 
 internal class FakeRustBackendFixture {
-
     private val DEFAULT_NETWORK = ZcashNetwork.Testnet
 
     fun new(

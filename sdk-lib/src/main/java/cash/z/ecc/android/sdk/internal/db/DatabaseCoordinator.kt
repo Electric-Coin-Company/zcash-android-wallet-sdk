@@ -25,7 +25,6 @@ import java.io.File
  */
 @Suppress("TooManyFunctions")
 internal class DatabaseCoordinator private constructor(context: Context) {
-
     /*
      * This implementation is thread-safe but is not multi-process safe.
      *
@@ -81,11 +80,12 @@ internal class DatabaseCoordinator private constructor(context: Context) {
         // First we deal with the legacy Cache database files (rollback included) on both older and newer path. In
         // case of deletion failure caused by any reason, we try it on the next time again.
         val legacyDbFilesDeleted = deleteLegacyCacheDbFiles(network, alias)
-        val result = if (legacyDbFilesDeleted) {
-            "are successfully deleted"
-        } else {
-            "failed to be deleted. Will be retried it on the next time"
-        }
+        val result =
+            if (legacyDbFilesDeleted) {
+                "are successfully deleted"
+            } else {
+                "failed to be deleted. Will be retried it on the next time"
+            }
         Twig.debug { "Legacy Cache database files $result." }
 
         return newDatabaseFilePointer(
@@ -109,13 +109,14 @@ internal class DatabaseCoordinator private constructor(context: Context) {
         network: ZcashNetwork,
         alias: String
     ): File {
-        val dbLocationsPair = prepareDbFiles(
-            applicationContext,
-            network,
-            alias,
-            DB_DATA_NAME_LEGACY,
-            DB_DATA_NAME
-        )
+        val dbLocationsPair =
+            prepareDbFiles(
+                applicationContext,
+                network,
+                alias,
+                DB_DATA_NAME_LEGACY,
+                DB_DATA_NAME
+            )
 
         createFileMutex.withLock {
             return checkAndMoveDatabaseFiles(
@@ -140,18 +141,20 @@ internal class DatabaseCoordinator private constructor(context: Context) {
         network: ZcashNetwork,
         alias: String
     ): File {
-        val legacyLocationDbFile = newDatabaseFilePointer(
-            null,
-            null,
-            DB_PENDING_TRANSACTIONS_NAME_LEGACY,
-            getDatabaseParentDir(applicationContext)
-        )
-        val preferredLocationDbFile = newDatabaseFilePointer(
-            network,
-            alias,
-            DB_PENDING_TRANSACTIONS_NAME,
-            Files.getZcashNoBackupSubdirectory(applicationContext)
-        )
+        val legacyLocationDbFile =
+            newDatabaseFilePointer(
+                null,
+                null,
+                DB_PENDING_TRANSACTIONS_NAME_LEGACY,
+                getDatabaseParentDir(applicationContext)
+            )
+        val preferredLocationDbFile =
+            newDatabaseFilePointer(
+                network,
+                alias,
+                DB_PENDING_TRANSACTIONS_NAME,
+                Files.getZcashNoBackupSubdirectory(applicationContext)
+            )
 
         createFileMutex.withLock {
             return checkAndMoveDatabaseFiles(
@@ -217,13 +220,14 @@ internal class DatabaseCoordinator private constructor(context: Context) {
         network: ZcashNetwork,
         alias: String
     ): Boolean {
-        val legacyDatabaseLocationPair = prepareDbFiles(
-            applicationContext,
-            network,
-            alias,
-            DB_CACHE_OLDER_NAME_LEGACY,
-            DB_CACHE_NEWER_NAME_LEGACY
-        )
+        val legacyDatabaseLocationPair =
+            prepareDbFiles(
+                applicationContext,
+                network,
+                alias,
+                DB_CACHE_OLDER_NAME_LEGACY,
+                DB_CACHE_NEWER_NAME_LEGACY
+            )
 
         var olderLegacyCacheDbDeleted = true
         var newerLegacyCacheDbDeleted = true
@@ -257,24 +261,27 @@ internal class DatabaseCoordinator private constructor(context: Context) {
         // Here we change the alias to be lowercase and underscored only if we work with the default
         // Zcash alias, otherwise we need to keep an SDK caller alias the same to avoid the database
         // files move breakage.
-        val aliasLegacy = if (ZcashSdk.DEFAULT_ALIAS == alias) {
-            ALIAS_LEGACY
-        } else {
-            alias
-        }
+        val aliasLegacy =
+            if (ZcashSdk.DEFAULT_ALIAS == alias) {
+                ALIAS_LEGACY
+            } else {
+                alias
+            }
 
-        val legacyLocationDbFile = newDatabaseFilePointer(
-            network,
-            aliasLegacy,
-            databaseNameLegacy,
-            getDatabaseParentDir(appContext)
-        )
-        val preferredLocationDbFile = newDatabaseFilePointer(
-            network,
-            alias,
-            databaseName,
-            Files.getZcashNoBackupSubdirectory(appContext)
-        )
+        val legacyLocationDbFile =
+            newDatabaseFilePointer(
+                network,
+                aliasLegacy,
+                databaseNameLegacy,
+                getDatabaseParentDir(appContext)
+            )
+        val preferredLocationDbFile =
+            newDatabaseFilePointer(
+                network,
+                alias,
+                databaseName,
+                Files.getZcashNoBackupSubdirectory(appContext)
+            )
 
         return Pair(
             legacyLocationDbFile,
@@ -324,14 +331,16 @@ internal class DatabaseCoordinator private constructor(context: Context) {
         legacyLocationDbFile: File,
         preferredLocationDbFile: File
     ): Boolean {
-        val filesToBeRenamed = mutableListOf<Pair<File, File>>().apply {
-            add(Pair(legacyLocationDbFile, preferredLocationDbFile))
-        }
+        val filesToBeRenamed =
+            mutableListOf<Pair<File, File>>().apply {
+                add(Pair(legacyLocationDbFile, preferredLocationDbFile))
+            }
 
         // add journal database file, if exists
-        val journalSuffixedDbFile = File(
-            "${legacyLocationDbFile.absolutePath}-$DATABASE_FILE_JOURNAL_SUFFIX"
-        )
+        val journalSuffixedDbFile =
+            File(
+                "${legacyLocationDbFile.absolutePath}-$DATABASE_FILE_JOURNAL_SUFFIX"
+            )
         if (journalSuffixedDbFile.existsSuspend()) {
             filesToBeRenamed.add(
                 Pair(
@@ -344,9 +353,10 @@ internal class DatabaseCoordinator private constructor(context: Context) {
         }
 
         // add wal database file, if exists
-        val walSuffixedDbFile = File(
-            "${legacyLocationDbFile.absolutePath}-$DATABASE_FILE_WAL_SUFFIX"
-        )
+        val walSuffixedDbFile =
+            File(
+                "${legacyLocationDbFile.absolutePath}-$DATABASE_FILE_WAL_SUFFIX"
+            )
         if (walSuffixedDbFile.existsSuspend()) {
             filesToBeRenamed.add(
                 Pair(
@@ -394,13 +404,14 @@ internal class DatabaseCoordinator private constructor(context: Context) {
         dbFileName: String,
         parentDir: File
     ): File {
-        val aliasPrefix = if (alias == null) {
-            ""
-        } else if (alias.endsWith('_')) {
-            alias
-        } else {
-            "${alias}_"
-        }
+        val aliasPrefix =
+            if (alias == null) {
+                ""
+            } else if (alias.endsWith('_')) {
+                alias
+            } else {
+                "${alias}_"
+            }
 
         val networkPrefix = network?.networkName ?: ""
 

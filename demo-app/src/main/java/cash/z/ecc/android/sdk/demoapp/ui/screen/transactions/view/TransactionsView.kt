@@ -64,11 +64,12 @@ fun Transactions(
     ) { paddingValues ->
         // TODO [#846]: Slow addresses providing
         // TODO [#846]: https://github.com/zcash/zcash-android-wallet-sdk/issues/846
-        val walletAddresses = flow {
-            emit(WalletAddresses.new(synchronizer))
-        }.collectAsState(
-            initial = null
-        ).value
+        val walletAddresses =
+            flow {
+                emit(WalletAddresses.new(synchronizer))
+            }.collectAsState(
+                initial = null
+            ).value
         if (null != walletAddresses) {
             TransactionsMainContent(
                 paddingValues = paddingValues,
@@ -138,14 +139,16 @@ private fun TransactionsMainContent(
                         }
                     }
                 }) {
-                    val time = tx.minedHeight?.let {
-                        tx.blockTimeEpochSeconds?.let { kotlinx.datetime.Instant.fromEpochSeconds(it) } ?: "Unknown"
-                    } ?: "Pending"
-                    val value = if (tx.isSentTransaction) {
-                        -tx.netValue.value
-                    } else {
-                        tx.netValue.value
-                    }
+                    val time =
+                        tx.minedHeight?.let {
+                            tx.blockTimeEpochSeconds?.let { kotlinx.datetime.Instant.fromEpochSeconds(it) } ?: "Unknown"
+                        } ?: "Pending"
+                    val value =
+                        if (tx.isSentTransaction) {
+                            -tx.netValue.value
+                        } else {
+                            tx.netValue.value
+                        }
                     Text("$time, $value")
                 }
             }

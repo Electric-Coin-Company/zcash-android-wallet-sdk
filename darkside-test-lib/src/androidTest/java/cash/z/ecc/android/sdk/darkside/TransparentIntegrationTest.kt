@@ -15,9 +15,10 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class TransparentIntegrationTest : DarksideTest() {
     @Before
-    fun setup() = runOnce {
-        // sithLord.await()
-    }
+    fun setup() =
+        runOnce {
+            // sithLord.await()
+        }
 
     @Test
     @Ignore("This test is broken")

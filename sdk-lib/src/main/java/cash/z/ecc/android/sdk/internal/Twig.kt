@@ -44,7 +44,10 @@ object Twig {
 
     // JVMStatic is to simplify ProGuard/R8 rules for stripping this
     @JvmStatic
-    fun verbose(throwable: Throwable, message: () -> String) {
+    fun verbose(
+        throwable: Throwable,
+        message: () -> String
+    ) {
         Log.v(tag, formatMessage(message), throwable)
     }
 
@@ -56,7 +59,10 @@ object Twig {
 
     // JVMStatic is to simplify ProGuard/R8 rules for stripping this
     @JvmStatic
-    fun debug(throwable: Throwable, message: () -> String) {
+    fun debug(
+        throwable: Throwable,
+        message: () -> String
+    ) {
         Log.d(tag, formatMessage(message), throwable)
     }
 
@@ -68,7 +74,10 @@ object Twig {
 
     // JVMStatic is to simplify ProGuard/R8 rules for stripping this
     @JvmStatic
-    fun info(throwable: Throwable, message: () -> String) {
+    fun info(
+        throwable: Throwable,
+        message: () -> String
+    ) {
         Log.i(tag, formatMessage(message), throwable)
     }
 
@@ -80,7 +89,10 @@ object Twig {
 
     // JVMStatic is to simplify ProGuard/R8 rules for stripping this
     @JvmStatic
-    fun warn(throwable: Throwable, message: () -> String) {
+    fun warn(
+        throwable: Throwable,
+        message: () -> String
+    ) {
         Log.w(tag, formatMessage(message), throwable)
     }
 
@@ -92,7 +104,10 @@ object Twig {
 
     // JVMStatic is to simplify ProGuard/R8 rules for stripping this
     @JvmStatic
-    fun error(throwable: Throwable, message: () -> String) {
+    fun error(
+        throwable: Throwable,
+        message: () -> String
+    ) {
         Log.e(tag, formatMessage(message), throwable)
     }
 
@@ -104,7 +119,9 @@ object Twig {
     @JvmStatic
     fun assertLoggingStripped() {
         @Suppress("MaxLineLength")
-        throw AssertionError("Logging was not disabled by ProGuard or R8.  Logging should be disabled in release builds to reduce risk of sensitive information being leaked.") // $NON-NLS-1$
+        throw AssertionError(
+            "Logging was not disabled by ProGuard or R8.  Logging should be disabled in release builds to reduce risk of sensitive information being leaked."
+        ) // $NON-NLS-1$
     }
 
     private const val CALL_DEPTH = 4

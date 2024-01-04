@@ -6,15 +6,15 @@ import kotlinx.coroutines.flow.first
 
 internal class AccountTable(private val sqliteDatabase: SupportSQLiteDatabase) {
     companion object {
-
         private val PROJECTION_COUNT = arrayOf("COUNT(*)") // $NON-NLS
     }
 
-    suspend fun count() = sqliteDatabase.queryAndMap(
-        AccountTableDefinition.TABLE_NAME,
-        columns = PROJECTION_COUNT,
-        cursorParser = { it.getLong(0) }
-    ).first()
+    suspend fun count() =
+        sqliteDatabase.queryAndMap(
+            AccountTableDefinition.TABLE_NAME,
+            columns = PROJECTION_COUNT,
+            cursorParser = { it.getLong(0) }
+        ).first()
 }
 
 internal object AccountTableDefinition {

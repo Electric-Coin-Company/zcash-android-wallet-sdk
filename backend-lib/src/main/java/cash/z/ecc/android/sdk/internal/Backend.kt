@@ -14,7 +14,6 @@ import cash.z.ecc.android.sdk.internal.model.JniWalletSummary
  */
 @Suppress("TooManyFunctions")
 interface Backend {
-
     val networkId: Int
 
     suspend fun initBlockMetaDb(): Int
@@ -53,7 +52,11 @@ interface Backend {
      * @throws RuntimeException as a common indicator of the operation failure
      */
     @Throws(RuntimeException::class)
-    suspend fun createAccount(seed: ByteArray, treeState: ByteArray, recoverUntil: Long?): JniUnifiedSpendingKey
+    suspend fun createAccount(
+        seed: ByteArray,
+        treeState: ByteArray,
+        recoverUntil: Long?
+    ): JniUnifiedSpendingKey
 
     fun isValidShieldedAddr(addr: String): Boolean
 
@@ -75,7 +78,10 @@ interface Backend {
      * @throws RuntimeException as a common indicator of the operation failure
      */
     @Throws(RuntimeException::class)
-    suspend fun getMemoAsUtf8(txId: ByteArray, outputIndex: Int): String?
+    suspend fun getMemoAsUtf8(
+        txId: ByteArray,
+        outputIndex: Int
+    ): String?
 
     suspend fun getNearestRewindHeight(height: Long): Long
 
@@ -139,7 +145,10 @@ interface Backend {
      * @throws RuntimeException as a common indicator of the operation failure
      */
     @Throws(RuntimeException::class)
-    suspend fun scanBlocks(fromHeight: Long, limit: Long)
+    suspend fun scanBlocks(
+        fromHeight: Long,
+        limit: Long
+    )
 
     /**
      * @throws RuntimeException as a common indicator of the operation failure
@@ -157,6 +166,7 @@ interface Backend {
     suspend fun rewindBlockMetadataToHeight(height: Long)
 
     suspend fun getVerifiedTransparentBalance(address: String): Long
+
     suspend fun getTotalTransparentBalance(address: String): Long
 
     /**

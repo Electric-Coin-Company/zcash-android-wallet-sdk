@@ -40,17 +40,17 @@ import kotlin.time.Duration.Companion.seconds
  * Shared mutable state for the demo
  */
 class SharedViewModel(application: Application) : AndroidViewModel(application) {
-
     private val _seedPhrase = MutableStateFlow(DemoConstants.INITIAL_SEED_WORDS)
 
-    private val _blockHeight = MutableStateFlow<BlockHeight?>(
-        runBlocking {
-            BlockHeight.ofLatestCheckpoint(
-                getApplication(),
-                ZcashNetwork.fromResources(application)
-            )
-        }
-    )
+    private val _blockHeight =
+        MutableStateFlow<BlockHeight?>(
+            runBlocking {
+                BlockHeight.ofLatestCheckpoint(
+                    getApplication(),
+                    ZcashNetwork.fromResources(application)
+                )
+            }
+        )
 
     // publicly, this is read-only
     val seedPhrase: StateFlow<String> get() = _seedPhrase
@@ -63,51 +63,55 @@ class SharedViewModel(application: Application) : AndroidViewModel(application) 
     private val lockoutIdFlow = MutableStateFlow<UUID?>(null)
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    private val synchronizerOrLockout: Flow<InternalSynchronizerStatus> = lockoutIdFlow.flatMapLatest { lockoutId ->
-        if (null != lockoutId) {
-            flowOf(InternalSynchronizerStatus.Lockout(lockoutId))
-        } else {
-            callbackFlow<InternalSynchronizerStatus> {
-                // Use a BIP-39 library to convert a seed phrase into a byte array. Most wallets already
-                // have the seed stored
-                val seedBytes = Mnemonics.MnemonicCode(seedPhrase.value).toSeed()
+    private val synchronizerOrLockout: Flow<InternalSynchronizerStatus> =
+        lockoutIdFlow.flatMapLatest { lockoutId ->
+            if (null != lockoutId) {
+                flowOf(InternalSynchronizerStatus.Lockout(lockoutId))
+            } else {
+                callbackFlow<InternalSynchronizerStatus> {
+                    // Use a BIP-39 library to convert a seed phrase into a byte array. Most wallets already
+                    // have the seed stored
+                    val seedBytes = Mnemonics.MnemonicCode(seedPhrase.value).toSeed()
 
-                val network = ZcashNetwork.fromResources(application)
-                val synchronizer = Synchronizer.new(
-                    application,
-                    network,
-                    lightWalletEndpoint = LightWalletEndpoint.defaultForNetwork(network),
-                    seed = seedBytes,
-                    birthday = if (BenchmarkingExt.isBenchmarking()) {
-                        BlockHeight.new(ZcashNetwork.Mainnet, BenchmarkingBlockRangeFixture.new().start)
-                    } else {
-                        birthdayHeight.value
-                    },
-                    // We use restore mode as this is always initialization with an older seed
-                    walletInitMode = WalletInitMode.RestoreWallet,
-                    alias = OLD_UI_SYNCHRONIZER_ALIAS
-                )
+                    val network = ZcashNetwork.fromResources(application)
+                    val synchronizer =
+                        Synchronizer.new(
+                            application,
+                            network,
+                            lightWalletEndpoint = LightWalletEndpoint.defaultForNetwork(network),
+                            seed = seedBytes,
+                            birthday =
+                                if (BenchmarkingExt.isBenchmarking()) {
+                                    BlockHeight.new(ZcashNetwork.Mainnet, BenchmarkingBlockRangeFixture.new().start)
+                                } else {
+                                    birthdayHeight.value
+                                },
+                            // We use restore mode as this is always initialization with an older seed
+                            walletInitMode = WalletInitMode.RestoreWallet,
+                            alias = OLD_UI_SYNCHRONIZER_ALIAS
+                        )
 
-                send(InternalSynchronizerStatus.Available(synchronizer))
-                awaitClose {
-                    synchronizer.close()
+                    send(InternalSynchronizerStatus.Available(synchronizer))
+                    awaitClose {
+                        synchronizer.close()
+                    }
                 }
             }
         }
-    }
 
     // Note that seed and birthday shouldn't be changed once a synchronizer is first collected
-    val synchronizerFlow: StateFlow<Synchronizer?> = synchronizerOrLockout.map {
-        when (it) {
-            is InternalSynchronizerStatus.Available -> it.synchronizer
-            is InternalSynchronizerStatus.Lockout -> null
-        }
-    }.stateIn(
-        viewModelScope,
-        SharingStarted.WhileSubscribed(DEFAULT_ANDROID_STATE_TIMEOUT.inWholeMilliseconds, 0),
-        initialValue =
-        null
-    )
+    val synchronizerFlow: StateFlow<Synchronizer?> =
+        synchronizerOrLockout.map {
+            when (it) {
+                is InternalSynchronizerStatus.Available -> it.synchronizer
+                is InternalSynchronizerStatus.Lockout -> null
+            }
+        }.stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(DEFAULT_ANDROID_STATE_TIMEOUT.inWholeMilliseconds, 0),
+            initialValue =
+            null
+        )
 
     fun updateSeedPhrase(newPhrase: String?): Boolean {
         return if (isValidSeedPhrase(newPhrase)) {
@@ -128,11 +132,12 @@ class SharedViewModel(application: Application) : AndroidViewModel(application) 
                     .filterIsInstance<InternalSynchronizerStatus.Lockout>()
                     .filter { it.id == lockoutId }
                     .onFirst {
-                        val didDelete = Synchronizer.erase(
-                            appContext = getApplication(),
-                            network = ZcashNetwork.fromResources(getApplication()),
-                            alias = OLD_UI_SYNCHRONIZER_ALIAS
-                        )
+                        val didDelete =
+                            Synchronizer.erase(
+                                appContext = getApplication(),
+                                network = ZcashNetwork.fromResources(getApplication()),
+                                alias = OLD_UI_SYNCHRONIZER_ALIAS
+                            )
                         Twig.debug { "SDK erase result: $didDelete" }
                     }
 
@@ -162,6 +167,7 @@ class SharedViewModel(application: Application) : AndroidViewModel(application) 
 
     private sealed class InternalSynchronizerStatus {
         class Available(val synchronizer: Synchronizer) : InternalSynchronizerStatus()
+
         class Lockout(val id: UUID) : InternalSynchronizerStatus()
     }
 

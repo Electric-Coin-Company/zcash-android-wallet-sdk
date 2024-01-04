@@ -10,7 +10,6 @@ import cash.z.ecc.android.sdk.model.Zatoshi
  */
 @Suppress("MagicNumber")
 object ZcashSdk {
-
     /**
      * Miner's fee in zatoshi.
      */

@@ -24,7 +24,6 @@ class JniUnifiedSpendingKey(
      */
     val bytes: ByteArray
 ) {
-
     // Override to prevent leaking key to logs
     override fun toString() = "JniUnifiedSpendingKey(account=$account, bytes=***)"
 

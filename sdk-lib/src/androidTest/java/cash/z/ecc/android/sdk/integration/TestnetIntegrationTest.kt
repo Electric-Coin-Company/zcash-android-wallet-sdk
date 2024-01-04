@@ -35,76 +35,82 @@ import org.junit.Test
 import java.util.concurrent.CountDownLatch
 
 class TestnetIntegrationTest : ScopedTest() {
-
     var stopWatch = CountDownLatch(1)
     val saplingActivation = synchronizer.network.saplingActivationHeight
 
     @Test
     @Ignore("This test is broken")
-    fun testLatestBlockTest() = runTest {
-        val service = LightWalletClient.new(
-            context,
-            lightWalletEndpoint
-        )
-        val height = service.getLatestBlockHeight()
-        assertTrue(height is Response.Success<BlockHeightUnsafe>)
-        assertTrue((height as Response.Success<BlockHeightUnsafe>).result.value > saplingActivation.value)
-    }
+    fun testLatestBlockTest() =
+        runTest {
+            val service =
+                LightWalletClient.new(
+                    context,
+                    lightWalletEndpoint
+                )
+            val height = service.getLatestBlockHeight()
+            assertTrue(height is Response.Success<BlockHeightUnsafe>)
+            assertTrue((height as Response.Success<BlockHeightUnsafe>).result.value > saplingActivation.value)
+        }
 
     @Test
     fun testLoadBirthday() {
-        val (height) = runBlocking {
-            CheckpointTool.loadNearest(
-                context,
-                synchronizer.network,
-                saplingActivation + 1
-            )
-        }
+        val (height) =
+            runBlocking {
+                CheckpointTool.loadNearest(
+                    context,
+                    synchronizer.network,
+                    saplingActivation + 1
+                )
+            }
         assertEquals(saplingActivation, height)
     }
 
     @Test
     @Ignore("This test is broken")
-    fun getAddress() = runBlocking {
-        assertEquals(address, synchronizer.getUnifiedAddress(Account.DEFAULT))
-    }
+    fun getAddress() =
+        runBlocking {
+            assertEquals(address, synchronizer.getUnifiedAddress(Account.DEFAULT))
+        }
 
     // This is an extremely slow test; it is disabled so that we can get CI set up
     @Test
     @LargeTest
     @Ignore("This test is extremely slow")
-    fun testBalance() = runBlocking {
-        var availableBalance: Zatoshi? = null
-        synchronizer.saplingBalances.onFirst {
-            availableBalance = it?.available
-        }
+    fun testBalance() =
+        runBlocking {
+            var availableBalance: Zatoshi? = null
+            synchronizer.saplingBalances.onFirst {
+                availableBalance = it?.available
+            }
 
-        synchronizer.status.filter { it == SYNCED }.onFirst {
-            delay(100)
-        }
+            synchronizer.status.filter { it == SYNCED }.onFirst {
+                delay(100)
+            }
 
-        assertTrue(
-            availableBalance!!.value > 0
-        )
-    }
+            assertTrue(
+                availableBalance!!.value > 0
+            )
+        }
 
     @Test
     @Ignore("This test is broken")
-    fun testSpend() = runBlocking {
-        var success = false
-        synchronizer.saplingBalances.filterNotNull().onEach {
-            success = sendFunds()
-        }.first()
-        log("asserting $success")
-        assertTrue(success)
-    }
+    fun testSpend() =
+        runBlocking {
+            var success = false
+            synchronizer.saplingBalances.filterNotNull().onEach {
+                success = sendFunds()
+            }.first()
+            log("asserting $success")
+            assertTrue(success)
+        }
 
     private suspend fun sendFunds(): Boolean {
-        val spendingKey = DerivationTool.getInstance().deriveUnifiedSpendingKey(
-            seed,
-            synchronizer.network,
-            Account.DEFAULT
-        )
+        val spendingKey =
+            DerivationTool.getInstance().deriveUnifiedSpendingKey(
+                seed,
+                synchronizer.network,
+                Account.DEFAULT
+            )
         log("sending to address")
         synchronizer.sendToAddress(
             spendingKey,
@@ -120,12 +126,12 @@ class TestnetIntegrationTest : ScopedTest() {
     }
 
     companion object {
-
         val lightWalletEndpoint = LightWalletEndpoint("lightwalletd.testnet.z.cash", 9087, true)
         private const val birthdayHeight = 963150L
         private const val targetHeight = 663250
-        private const val seedPhrase = "still champion voice habit trend flight survey between bitter process" +
-            " artefact blind carbon truly provide dizzy crush flush breeze blouse charge solid fish spread"
+        private const val seedPhrase =
+            "still champion voice habit trend flight survey between bitter process" +
+                " artefact blind carbon truly provide dizzy crush flush breeze blouse charge solid fish spread"
         val seed = "cash.z.ecc.android.sdk.integration.IntegrationTest.seed.value.64bytes".toByteArray()
         val address = "zs1m30y59wxut4zk9w24d6ujrdnfnl42hpy0ugvhgyhr8s0guszutqhdj05c7j472dndjstulph74m"
         val toAddress = "zs1vp7kvlqr4n9gpehztr76lcn6skkss9p8keqs3nv8avkdtjrcctrvmk9a7u494kluv756jeee5k0"
@@ -136,16 +142,17 @@ class TestnetIntegrationTest : ScopedTest() {
         @JvmStatic
         @BeforeClass
         fun startUp() {
-            synchronizer = Synchronizer.newBlocking(
-                context,
-                ZcashNetwork.Testnet,
-                lightWalletEndpoint =
-                lightWalletEndpoint,
-                seed = seed,
-                birthday = BlockHeight.new(ZcashNetwork.Testnet, birthdayHeight),
-                // Using existing wallet init mode as simplification for the test
-                walletInitMode = WalletInitMode.ExistingWallet
-            )
+            synchronizer =
+                Synchronizer.newBlocking(
+                    context,
+                    ZcashNetwork.Testnet,
+                    lightWalletEndpoint =
+                    lightWalletEndpoint,
+                    seed = seed,
+                    birthday = BlockHeight.new(ZcashNetwork.Testnet, birthdayHeight),
+                    // Using existing wallet init mode as simplification for the test
+                    walletInitMode = WalletInitMode.ExistingWallet
+                )
         }
     }
 }

@@ -12,7 +12,6 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class ReorgSmallTest : ScopedTest() {
-
     /*
     private val targetHeight = BlockHeight.new(
         ZcashNetwork.Mainnet,
@@ -29,27 +28,29 @@ class ReorgSmallTest : ScopedTest() {
 
     @Test
     @Ignore("Temporarily disabled")
-    fun testBeforeReorg_latestBlockHash() = timeout(30_000L) {
-        // validator.validateBlockHash(targetHeight, hashBeforeReorg)
-    }
+    fun testBeforeReorg_latestBlockHash() =
+        timeout(30_000L) {
+            // validator.validateBlockHash(targetHeight, hashBeforeReorg)
+        }
 
     @Test
     @Ignore("Temporarily disabled")
-    fun testAfterReorg_callbackTriggered() = timeout(30_000L) {
-        hadReorg = false
+    fun testAfterReorg_callbackTriggered() =
+        timeout(30_000L) {
+            hadReorg = false
 //        sithLord.triggerSmallReorg()
 //         sithLord.await()
-        assertTrue(hadReorg)
-    }
+            assertTrue(hadReorg)
+        }
 
     @Test
     @Ignore("Temporarily disabled")
-    fun testAfterReorg_latestBlockHash() = timeout(30_000L) {
-        // validator.validateBlockHash(targetHeight, hashAfterReorg)
-    }
+    fun testAfterReorg_latestBlockHash() =
+        timeout(30_000L) {
+            // validator.validateBlockHash(targetHeight, hashAfterReorg)
+        }
 
     companion object {
-
         private val sithLord = DarksideTestCoordinator()
         private val validator = sithLord.validator
         private var hadReorg = false

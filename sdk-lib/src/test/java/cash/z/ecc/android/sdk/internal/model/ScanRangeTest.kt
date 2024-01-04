@@ -12,9 +12,10 @@ import kotlin.test.assertTrue
 class ScanRangeTest {
     @Test
     fun get_suggest_scan_range_priority_test() {
-        val scanRange = ScanRangeFixture.new(
-            priority = SuggestScanRangePriority.Verify.priority
-        )
+        val scanRange =
+            ScanRangeFixture.new(
+                priority = SuggestScanRangePriority.Verify.priority
+            )
         assertTrue {
             scanRange.getSuggestScanRangePriority() == SuggestScanRangePriority.Verify
         }
@@ -22,9 +23,10 @@ class ScanRangeTest {
 
     @Test
     fun priority_attribute_within_constraints() {
-        val instance = ScanRangeFixture.new(
-            priority = SuggestScanRangePriority.Verify.priority
-        )
+        val instance =
+            ScanRangeFixture.new(
+                priority = SuggestScanRangePriority.Verify.priority
+            )
         assertIs<ScanRange>(instance)
     }
 
@@ -39,9 +41,10 @@ class ScanRangeTest {
 
     @Test
     fun scan_range_boundaries_test() {
-        val scanRange = ScanRangeFixture.new(
-            range = ZcashNetwork.Testnet.saplingActivationHeight..ZcashNetwork.Testnet.saplingActivationHeight + 9
-        )
+        val scanRange =
+            ScanRangeFixture.new(
+                range = ZcashNetwork.Testnet.saplingActivationHeight..ZcashNetwork.Testnet.saplingActivationHeight + 9
+            )
         assertTrue { scanRange.range.isNotEmpty() }
         assertTrue { scanRange.range.length() == 10L }
     }

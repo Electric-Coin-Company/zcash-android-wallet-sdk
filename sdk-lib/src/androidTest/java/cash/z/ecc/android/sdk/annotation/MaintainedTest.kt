@@ -1,7 +1,6 @@
 package cash.z.ecc.android.sdk.annotation
 
 enum class TestPurpose {
-
     /**
      * These tests are explicitly designed to preserve behavior that we do not want to lose after
      * major upgrades or refactors. It is acceptable for these test to run long and require

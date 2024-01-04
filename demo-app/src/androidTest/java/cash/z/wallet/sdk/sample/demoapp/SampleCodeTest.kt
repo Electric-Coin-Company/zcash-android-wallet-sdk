@@ -37,7 +37,6 @@ import org.junit.Test
  * https://github.com/EdgeApp/eosjs-node-cli/blob/paul/cleanup/app.js
  */
 class SampleCodeTest {
-
     // ///////////////////////////////////////////////////
     // Seed derivation
     @Ignore("This test is not implemented")
@@ -71,11 +70,12 @@ class SampleCodeTest {
     // ///////////////////////////////////////////////////
     // Get Address
     @Test
-    fun getAddress() = runBlocking {
-        val address = synchronizer.getUnifiedAddress(Account.DEFAULT)
-        assertFalse(address.isBlank())
-        log("Address: $address")
-    }
+    fun getAddress() =
+        runBlocking {
+            val address = synchronizer.getUnifiedAddress(Account.DEFAULT)
+            assertFalse(address.isBlank())
+            log("Address: $address")
+        }
 
     // ///////////////////////////////////////////////////
     // Derive address from Extended Full Viewing Key
@@ -87,61 +87,64 @@ class SampleCodeTest {
     // Query latest block height
     @Test
     @OptIn(ExperimentalCoroutinesApi::class)
-    fun getLatestBlockHeightTest() = runTest {
-        // Test the result, only if there is no server communication problem.
-        runCatching {
-            LightWalletClient.new(context, lightwalletdHost).getLatestBlockHeight()
-        }.onFailure {
-            Twig.debug(it) { "Failed to retrieve data" }
-        }.onSuccess {
-            assertTrue(it is Response.Success<BlockHeightUnsafe>)
-            Twig.debug { "Latest Block: ${(it as Response.Success<BlockHeightUnsafe>).result}" }
+    fun getLatestBlockHeightTest() =
+        runTest {
+            // Test the result, only if there is no server communication problem.
+            runCatching {
+                LightWalletClient.new(context, lightwalletdHost).getLatestBlockHeight()
+            }.onFailure {
+                Twig.debug(it) { "Failed to retrieve data" }
+            }.onSuccess {
+                assertTrue(it is Response.Success<BlockHeightUnsafe>)
+                Twig.debug { "Latest Block: ${(it as Response.Success<BlockHeightUnsafe>).result}" }
+            }
         }
-    }
 
     // ///////////////////////////////////////////////////
     // Download compact block range
     @Test
     @OptIn(ExperimentalCoroutinesApi::class)
-    fun getBlockRange() = runTest {
-        val blockRange = BlockHeightUnsafe(
-            BlockHeight.new(
-                ZcashNetwork.Mainnet,
-                500_000
-            ).value
-        )..BlockHeightUnsafe(
-            (
-                BlockHeight.new(
-                    ZcashNetwork.Mainnet,
-                    500_009
-                ).value
+    fun getBlockRange() =
+        runTest {
+            val blockRange =
+                BlockHeightUnsafe(
+                    BlockHeight.new(
+                        ZcashNetwork.Mainnet,
+                        500_000
+                    ).value
+                )..BlockHeightUnsafe(
+                    (
+                        BlockHeight.new(
+                            ZcashNetwork.Mainnet,
+                            500_009
+                        ).value
+                    )
                 )
-        )
 
-        val lightWalletClient = LightWalletClient.new(context, lightwalletdHost)
+            val lightWalletClient = LightWalletClient.new(context, lightwalletdHost)
 
-        // Test the result, only if there is no server communication problem.
-        runCatching {
-            lightWalletClient.getBlockRange(blockRange)
-        }.onFailure {
-            Twig.debug(it) { "Failed to retrieve data" }
-        }.onSuccess {
-            it.onEach { response ->
-                assert(response is Response.Success) { "Server communication failed." }
-            }
-                .filterIsInstance<Response.Success<CompactBlockUnsafe>>()
-                .map { response ->
-                    response.result
-                }.toList()
-                .also { blocks ->
-                    assertEquals(blockRange.endInclusive.value - blockRange.start.value, blocks.count())
-
-                    blocks.forEachIndexed { i, block ->
-                        log("Block #$i:    height:${block.height}   hash:${block.hash.toHex()}")
-                    }
+            // Test the result, only if there is no server communication problem.
+            runCatching {
+                lightWalletClient.getBlockRange(blockRange)
+            }.onFailure {
+                Twig.debug(it) { "Failed to retrieve data" }
+            }.onSuccess {
+                it.onEach { response ->
+                    assert(response is Response.Success) { "Server communication failed." }
                 }
+                    .filterIsInstance<Response.Success<CompactBlockUnsafe>>()
+                    .map { response ->
+                        response.result
+                    }.toList()
+                    .also { blocks ->
+                        assertEquals(blockRange.endInclusive.value - blockRange.start.value, blocks.count())
+
+                        blocks.forEachIndexed { i, block ->
+                            log("Block #$i:    height:${block.height}   hash:${block.hash.toHex()}")
+                        }
+                    }
+            }
         }
-    }
 
     // ///////////////////////////////////////////////////
     // Query account outgoing transactions
@@ -175,17 +178,19 @@ class SampleCodeTest {
     // ///////////////////////////////////////////////////
     // Create a signed transaction (with memo) and broadcast
     @Test
-    fun submitTransaction() = runBlocking {
-        val amount = 0.123.convertZecToZatoshi()
-        val address = "ztestsapling1tklsjr0wyw0d58f3p7wufvrj2cyfv6q6caumyueadq8qvqt8lda6v6tpx474rfru9y6u75u7qnw"
-        val memo = "Test Transaction"
-        val spendingKey = DerivationTool.getInstance().deriveUnifiedSpendingKey(
-            seed,
-            ZcashNetwork.Mainnet,
-            Account.DEFAULT
-        )
-        synchronizer.sendToAddress(spendingKey, amount, address, memo)
-    }
+    fun submitTransaction() =
+        runBlocking {
+            val amount = 0.123.convertZecToZatoshi()
+            val address = "ztestsapling1tklsjr0wyw0d58f3p7wufvrj2cyfv6q6caumyueadq8qvqt8lda6v6tpx474rfru9y6u75u7qnw"
+            val memo = "Test Transaction"
+            val spendingKey =
+                DerivationTool.getInstance().deriveUnifiedSpendingKey(
+                    seed,
+                    ZcashNetwork.Mainnet,
+                    Account.DEFAULT
+                )
+            synchronizer.sendToAddress(spendingKey, amount, address, memo)
+        }
 
     // /////////////////////////////////////////////////////
     // Utility Functions
@@ -196,18 +201,19 @@ class SampleCodeTest {
         private val lightwalletdHost = LightWalletEndpoint.Mainnet
 
         private val context = InstrumentationRegistry.getInstrumentation().targetContext
-        private val synchronizer: Synchronizer = run {
-            val network = ZcashNetwork.fromResources(context)
-            Synchronizer.newBlocking(
-                context,
-                network,
-                lightWalletEndpoint = LightWalletEndpoint.defaultForNetwork(network),
-                seed = seed,
-                birthday = null,
-                // Using existing wallet init mode as simplification for the test
-                walletInitMode = WalletInitMode.ExistingWallet
-            )
-        }
+        private val synchronizer: Synchronizer =
+            run {
+                val network = ZcashNetwork.fromResources(context)
+                Synchronizer.newBlocking(
+                    context,
+                    network,
+                    lightWalletEndpoint = LightWalletEndpoint.defaultForNetwork(network),
+                    seed = seed,
+                    birthday = null,
+                    // Using existing wallet init mode as simplification for the test
+                    walletInitMode = WalletInitMode.ExistingWallet
+                )
+            }
 
         fun log(message: String?) = Twig.debug { message ?: "null" }
     }

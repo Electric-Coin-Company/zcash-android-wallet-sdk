@@ -24,7 +24,6 @@ internal class FileCompactBlockRepository(
     private val blocksDirectory: File,
     private val backend: TypesafeBackend
 ) : CompactBlockRepository {
-
     override suspend fun getLatestHeight() = backend.getLatestCacheHeight()
 
     override suspend fun findCompactBlock(height: BlockHeight) = backend.findBlockMetadata(height)
@@ -78,11 +77,12 @@ internal class FileCompactBlockRepository(
 
         if (blocksDirectory.existsSuspend()) {
             blocksDirectory.listFilesSuspend()?.forEach {
-                val result = if (it.isDirectorySuspend()) {
-                    it.deleteRecursivelySuspend()
-                } else {
-                    it.deleteSuspend()
-                }
+                val result =
+                    if (it.isDirectorySuspend()) {
+                        it.deleteRecursivelySuspend()
+                    } else {
+                        it.deleteSuspend()
+                    }
                 if (!result) {
                     return false
                 }
@@ -139,9 +139,10 @@ internal class FileCompactBlockRepository(
             backend: TypesafeBackend
         ): FileCompactBlockRepository {
             // create and check cache directories
-            val blocksDirectory = File(blockCacheRoot, BLOCKS_DOWNLOAD_DIRECTORY).also {
-                it.mkdirsSuspend()
-            }
+            val blocksDirectory =
+                File(blockCacheRoot, BLOCKS_DOWNLOAD_DIRECTORY).also {
+                    it.mkdirsSuspend()
+                }
             if (!blocksDirectory.existsSuspend()) {
                 error("${blocksDirectory.path} directory does not exist and could not be created.")
             }

@@ -12,6 +12,8 @@ object WalletAddressFixture {
     const val TRANSPARENT_ADDRESS_STRING = "t1QZMTZaU1EwXppCLL5dR6U9y2M4ph3CSPK"
 
     suspend fun unified() = WalletAddress.Unified.new(UNIFIED_ADDRESS_STRING)
+
     suspend fun sapling() = WalletAddress.Sapling.new(SAPLING_ADDRESS_STRING)
+
     suspend fun transparent() = WalletAddress.Transparent.new(TRANSPARENT_ADDRESS_STRING)
 }

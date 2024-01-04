@@ -14,7 +14,6 @@ class GetAddressUtxosReplyUnsafe(
     val height: Long
 ) {
     companion object {
-
         fun new(getAddressUtxosReply: Service.GetAddressUtxosReply): GetAddressUtxosReplyUnsafe {
             return GetAddressUtxosReplyUnsafe(
                 address = getAddressUtxosReply.address,

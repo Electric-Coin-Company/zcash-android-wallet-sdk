@@ -26,7 +26,6 @@ import org.junit.Test
  */
 @ExperimentalCoroutinesApi
 class BalancePrinterUtil {
-
     private val network = ZcashNetwork.Mainnet
     private val downloadBatchSize = 9_000
     private val birthdayHeight = BlockHeight.new(network, 523240)
@@ -54,13 +53,14 @@ class BalancePrinterUtil {
         birthday = runBlocking { CheckpointTool.loadNearest(context, network, birthdayHeight) }
     }
 
-    private fun cacheBlocks() = runBlocking {
+    private fun cacheBlocks() =
+        runBlocking {
 //        twig("downloading compact blocks...")
 //        val latestBlockHeight = downloader.getLatestBlockHeight()
 //        val lastDownloaded = downloader.getLastDownloadedHeight()
 //        val blockRange = (Math.max(birthday, lastDownloaded))..latestBlockHeight
 //        downloadNewBlocks(blockRange)
-    }
+        }
 
     private suspend fun deleteDb(dbName: String) {
         context.getDatabasePath(dbName).absoluteFile.deleteSuspend()
@@ -68,13 +68,14 @@ class BalancePrinterUtil {
 
     @Test
     @Ignore("This test is broken")
-    fun printBalances() = runBlocking {
-        readFileLinesInFlow("/utils/seeds.txt")
-            .map { seedPhrase ->
-                Twig.debug { "checking balance for: $seedPhrase" }
-                mnemonics.toSeed(seedPhrase.toCharArray())
-            }.collect { seed ->
-                // TODO: clear the dataDb but leave the cacheDb
+    fun printBalances() =
+        runBlocking {
+            readFileLinesInFlow("/utils/seeds.txt")
+                .map { seedPhrase ->
+                    Twig.debug { "checking balance for: $seedPhrase" }
+                    mnemonics.toSeed(seedPhrase.toCharArray())
+                }.collect { seed ->
+                    // TODO: clear the dataDb but leave the cacheDb
 
                 /*
             what I need to do right now
@@ -90,17 +91,19 @@ class BalancePrinterUtil {
                 - I might need to consider how state is impacting this design
                     - can we be more stateless and thereby improve the flexibility of this code?!!!
                  */
-                synchronizer?.close()
-                synchronizer = Synchronizer.new(
-                    context,
-                    network,
-                    lightWalletEndpoint = LightWalletEndpoint
-                        .defaultForNetwork(network),
-                    seed = seed,
-                    birthday = birthdayHeight,
-                    // Using existing wallet init mode as simplification for the test
-                    walletInitMode = WalletInitMode.ExistingWallet
-                )
+                    synchronizer?.close()
+                    synchronizer =
+                        Synchronizer.new(
+                            context,
+                            network,
+                            lightWalletEndpoint =
+                                LightWalletEndpoint
+                                    .defaultForNetwork(network),
+                            seed = seed,
+                            birthday = birthdayHeight,
+                            // Using existing wallet init mode as simplification for the test
+                            walletInitMode = WalletInitMode.ExistingWallet
+                        )
 
 //            deleteDb(dataDbPath)
 //            initWallet(seed)
@@ -113,8 +116,8 @@ class BalancePrinterUtil {
 //            twig("found available: $available")
 //            twig("xrxrx2\t$seed\t$total\t$available")
 //            println("xrxrx2\t$seed\t$total\t$available")
-            }
-    }
+                }
+        }
 
 //    @Test
 //    fun printBalances() = runBlocking {

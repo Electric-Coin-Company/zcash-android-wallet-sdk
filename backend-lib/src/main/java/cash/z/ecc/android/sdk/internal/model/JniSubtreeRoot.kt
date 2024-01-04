@@ -24,7 +24,10 @@ class JniSubtreeRoot(
     }
 
     companion object {
-        fun new(rootHash: ByteArray, completingBlockHeight: Long): JniSubtreeRoot {
+        fun new(
+            rootHash: ByteArray,
+            completingBlockHeight: Long
+        ): JniSubtreeRoot {
             return JniSubtreeRoot(
                 rootHash = rootHash,
                 completingBlockHeight = completingBlockHeight

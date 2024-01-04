@@ -11,6 +11,7 @@ open class DarksideTest : ScopedTest() {
             ranOnce = true
         }
     }
+
     companion object {
         private var ranOnce = false
     }

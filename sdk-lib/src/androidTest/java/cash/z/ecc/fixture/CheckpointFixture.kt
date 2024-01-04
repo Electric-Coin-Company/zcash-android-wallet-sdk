@@ -30,10 +30,11 @@ object CheckpointFixture {
     ) = Checkpoint(height = height, hash = hash, epochSeconds = time, tree = tree)
 }
 
-internal fun Checkpoint.toJson() = JSONObject().apply {
-    put(Checkpoint.KEY_VERSION, Checkpoint.VERSION_1)
-    put(Checkpoint.KEY_HEIGHT, height.value)
-    put(Checkpoint.KEY_HASH, hash)
-    put(Checkpoint.KEY_EPOCH_SECONDS, epochSeconds)
-    put(Checkpoint.KEY_TREE, tree)
-}.toString()
+internal fun Checkpoint.toJson() =
+    JSONObject().apply {
+        put(Checkpoint.KEY_VERSION, Checkpoint.VERSION_1)
+        put(Checkpoint.KEY_HEIGHT, height.value)
+        put(Checkpoint.KEY_HASH, hash)
+        put(Checkpoint.KEY_EPOCH_SECONDS, epochSeconds)
+        put(Checkpoint.KEY_TREE, tree)
+    }.toString()

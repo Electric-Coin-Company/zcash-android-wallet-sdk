@@ -21,26 +21,28 @@ import org.junit.runners.Parameterized
 @RunWith(Parameterized::class)
 @SmallTest
 class TransparentTest(val expected: Expected, val network: ZcashNetwork) {
-
     @Test
-    fun deriveUnifiedFullViewingKeysFromSeedTest() = runBlocking {
-        val ufvks = RustDerivationTool.new().deriveUnifiedFullViewingKeysTypesafe(
-            SEED,
-            network = network,
-            numberOfAccounts =
-            Derivation.DEFAULT_NUMBER_OF_ACCOUNTS
-        )
-        assertEquals(1, ufvks.size)
-        val ufvk = ufvks.first()
-        assertEquals(expected.uAddr, RustDerivationTool.new().deriveUnifiedAddress(ufvk.encoding, network = network))
-        // TODO: If we need this, change DerivationTool to derive from the UFVK instead of the public key.
-        // assertEquals(expected.tAddr, DerivationTool.deriveTransparentAddressFromPublicKey(ufvk.encoding,
-        //     network = network))
-    }
+    fun deriveUnifiedFullViewingKeysFromSeedTest() =
+        runBlocking {
+            val ufvks =
+                RustDerivationTool.new().deriveUnifiedFullViewingKeysTypesafe(
+                    SEED,
+                    network = network,
+                    numberOfAccounts =
+                        Derivation.DEFAULT_NUMBER_OF_ACCOUNTS
+                )
+            assertEquals(1, ufvks.size)
+            val ufvk = ufvks.first()
+            assertEquals(expected.uAddr, RustDerivationTool.new().deriveUnifiedAddress(ufvk.encoding, network = network))
+            // TODO: If we need this, change DerivationTool to derive from the UFVK instead of the public key.
+            // assertEquals(expected.tAddr, DerivationTool.deriveTransparentAddressFromPublicKey(ufvk.encoding,
+            //     network = network))
+        }
 
     companion object {
-        const val PHRASE = "deputy visa gentle among clean scout farm drive comfort patch skin salt ranch cool ramp" +
-            " warrior drink narrow normal lunch behind salt deal person"
+        const val PHRASE =
+            "deputy visa gentle among clean scout farm drive comfort patch skin salt ranch cool ramp" +
+                " warrior drink narrow normal lunch behind salt deal person"
         val MNEMONIC = MnemonicCode(PHRASE)
         val SEED = MNEMONIC.toSeed()
 
@@ -71,10 +73,11 @@ class TransparentTest(val expected: Expected, val network: ZcashNetwork) {
 
         @JvmStatic
         @Parameterized.Parameters
-        fun data() = listOf(
-            arrayOf(ExpectedTestnet, ZcashNetwork.Testnet),
-            arrayOf(ExpectedMainnet, ZcashNetwork.Mainnet)
-        )
+        fun data() =
+            listOf(
+                arrayOf(ExpectedTestnet, ZcashNetwork.Testnet),
+                arrayOf(ExpectedMainnet, ZcashNetwork.Mainnet)
+            )
     }
 
     interface Expected {

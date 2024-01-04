@@ -11,7 +11,6 @@ import cash.z.ecc.android.sdk.demoapp.databinding.FragmentGetLatestHeightBinding
  * instance.
  */
 class GetLatestHeightFragment : BaseDemoFragment<FragmentGetLatestHeightBinding>() {
-
     // TODO [#973]: Eliminate old UI demo-app
     // TODO [#973]: https://github.com/zcash/zcash-android-wallet-sdk/issues/973
     private fun displayLatestHeight() {

@@ -20,7 +20,6 @@ internal class NoBackupContextWrapper(
     context: Context,
     private val parentDir: File
 ) : ContextWrapper(context.applicationContext) {
-
     /**
      * Overriding this function gives us ability to control the result database file location.
      *

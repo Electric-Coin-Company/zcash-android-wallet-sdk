@@ -9,7 +9,6 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class ExceptionExtTest {
-
     @Test
     fun is_scan_continuity_error() {
         assertTrue { RuntimeException(PREV_HASH_MISMATCH).isScanContinuityError() }

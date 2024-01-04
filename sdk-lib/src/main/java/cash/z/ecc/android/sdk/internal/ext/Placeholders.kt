@@ -10,12 +10,18 @@ import kotlin.reflect.KProperty
 
 @Deprecated(message = InsecureWarning.message)
 class SampleSpendingKeyProvider(private val seedValue: String) : ReadWriteProperty<Any?, String> {
-
-    override fun setValue(thisRef: Any?, property: KProperty<*>, value: String) {
+    override fun setValue(
+        thisRef: Any?,
+        property: KProperty<*>,
+        value: String
+    ) {
         Twig.debug { "Set value called on property: $property, with value: $value." }
     }
 
-    override fun getValue(thisRef: Any?, property: KProperty<*>): String {
+    override fun getValue(
+        thisRef: Any?,
+        property: KProperty<*>
+    ): String {
         // dynamically generating keys, based on seed is out of scope for this sample
         if (seedValue != "dummyseed") {
             error("This sample provider only supports the dummy seed")
@@ -29,7 +35,11 @@ class SampleSpendingKeyProvider(private val seedValue: String) : ReadWriteProper
 @Deprecated(message = InsecureWarning.message)
 class SampleSeedProvider(val seed: ByteArray) : ReadOnlyProperty<Any?, ByteArray> {
     constructor(seedValue: String) : this(seedValue.toByteArray())
-    override fun getValue(thisRef: Any?, property: KProperty<*>): ByteArray {
+
+    override fun getValue(
+        thisRef: Any?,
+        property: KProperty<*>
+    ): ByteArray {
         return seed
     }
 }
@@ -37,7 +47,11 @@ class SampleSeedProvider(val seed: ByteArray) : ReadOnlyProperty<Any?, ByteArray
 @Deprecated(message = InsecureWarning.message)
 class BlockingSeedProvider(val seed: ByteArray, val delay: Long = 5000L) : ReadOnlyProperty<Any?, ByteArray> {
     constructor(seedValue: String, delayMillis: Long = 5000L) : this(seedValue.toByteArray(), delayMillis)
-    override fun getValue(thisRef: Any?, property: KProperty<*>): ByteArray {
+
+    override fun getValue(
+        thisRef: Any?,
+        property: KProperty<*>
+    ): ByteArray {
         Thread.sleep(delay)
         return seed
     }
@@ -45,23 +59,37 @@ class BlockingSeedProvider(val seed: ByteArray, val delay: Long = 5000L) : ReadO
 
 @Deprecated(message = InsecureWarning.message)
 class SimpleProvider<T>(var value: T) : ReadWriteProperty<Any?, T> {
-    override fun getValue(thisRef: Any?, property: KProperty<*>): T {
+    override fun getValue(
+        thisRef: Any?,
+        property: KProperty<*>
+    ): T {
         return value
     }
 
-    override fun setValue(thisRef: Any?, property: KProperty<*>, value: T) {
+    override fun setValue(
+        thisRef: Any?,
+        property: KProperty<*>,
+        value: T
+    ) {
         this.value = value
     }
 }
 
 @Deprecated(message = InsecureWarning.message)
 class BlockingProvider<T>(var value: T, val delay: Long = 5000L) : ReadWriteProperty<Any?, T> {
-    override fun getValue(thisRef: Any?, property: KProperty<*>): T {
+    override fun getValue(
+        thisRef: Any?,
+        property: KProperty<*>
+    ): T {
         Thread.sleep(delay)
         return value
     }
 
-    override fun setValue(thisRef: Any?, property: KProperty<*>, value: T) {
+    override fun setValue(
+        thisRef: Any?,
+        property: KProperty<*>,
+        value: T
+    ) {
         Thread.sleep(delay)
         this.value = value
     }
@@ -97,6 +125,7 @@ class SeedGenerator {
 }
 
 internal object InsecureWarning {
-    const val message = "Do not use this because it is insecure and only intended for test code and samples. " +
-        "Instead, use the Android Keystore system or a 3rd party library that leverages it."
+    const val message =
+        "Do not use this because it is insecure and only intended for test code and samples. " +
+            "Instead, use the Android Keystore system or a 3rd party library that leverages it."
 }

@@ -5,7 +5,6 @@ import org.junit.Test
 import kotlin.test.assertTrue
 
 class PercentDecimalTest {
-
     @Test(expected = IllegalArgumentException::class)
     @SmallTest
     fun require_greater_than_zero() {

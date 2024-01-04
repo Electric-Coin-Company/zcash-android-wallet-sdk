@@ -11,7 +11,6 @@ import kotlinx.coroutines.withContext
 import java.io.File
 
 object ReadOnlySupportSqliteOpenHelper {
-
     /**
      * Opens a database that has already been initialized by something else.
      *
@@ -26,15 +25,17 @@ object ReadOnlySupportSqliteOpenHelper {
         databaseVersion: Int
     ): SupportSQLiteDatabase {
         return withContext(Dispatchers.IO) {
-            val contextWrapper = NoBackupContextWrapper(
-                context,
-                file.parentFile ?: throw InitializeException.DatabasePathException
-            )
-            val config = SupportSQLiteOpenHelper.Configuration.builder(contextWrapper)
-                .apply {
-                    name(file.name)
-                    callback(ReadOnlyCallback(databaseVersion))
-                }.build()
+            val contextWrapper =
+                NoBackupContextWrapper(
+                    context,
+                    file.parentFile ?: throw InitializeException.DatabasePathException
+                )
+            val config =
+                SupportSQLiteOpenHelper.Configuration.builder(contextWrapper)
+                    .apply {
+                        name(file.name)
+                        callback(ReadOnlyCallback(databaseVersion))
+                    }.build()
 
             FrameworkSQLiteOpenHelperFactory().create(config).readableDatabase
         }
@@ -46,7 +47,11 @@ private class ReadOnlyCallback(version: Int) : SupportSQLiteOpenHelper.Callback(
         error("Database ${db.path} should be created by Rust libraries")
     }
 
-    override fun onUpgrade(db: SupportSQLiteDatabase, oldVersion: Int, newVersion: Int) {
+    override fun onUpgrade(
+        db: SupportSQLiteDatabase,
+        oldVersion: Int,
+        newVersion: Int
+    ) {
         error("Database ${db.path} should be upgraded by Rust libraries")
     }
 }

@@ -6,7 +6,6 @@ import kotlin.test.Ignore
 import kotlin.test.Test
 
 class ChannelFactoryTest {
-
     private val channelFactory = AndroidChannelFactory(getAppContext())
 
     @Test

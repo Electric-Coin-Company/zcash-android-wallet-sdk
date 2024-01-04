@@ -18,11 +18,12 @@ import kotlinx.coroutines.launch
  */
 @Suppress("TooManyFunctions")
 class HomeFragment : BaseDemoFragment<FragmentHomeBinding>() {
+    override fun inflateBinding(layoutInflater: LayoutInflater) = FragmentHomeBinding.inflate(layoutInflater)
 
-    override fun inflateBinding(layoutInflater: LayoutInflater) =
-        FragmentHomeBinding.inflate(layoutInflater)
-
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?
+    ) {
         super.onViewCreated(view, savedInstanceState)
         binding.textSeedPhrase.setOnClickListener(::onEditSeedPhrase)
         binding.buttonPaste.setOnClickListener(::onPasteSeedPhrase)

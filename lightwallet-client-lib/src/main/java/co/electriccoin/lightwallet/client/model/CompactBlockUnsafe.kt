@@ -20,7 +20,6 @@ class CompactBlockUnsafe(
     val compactBlockBytes: ByteArray
 ) {
     companion object {
-
         fun new(compactBlock: CompactBlock): CompactBlockUnsafe {
             val outputCounts = getOutputsCounts(compactBlock.vtxList)
             return CompactBlockUnsafe(

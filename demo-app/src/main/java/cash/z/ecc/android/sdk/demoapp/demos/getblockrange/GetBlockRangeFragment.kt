@@ -19,7 +19,6 @@ import kotlin.math.max
  * block ranges for instance, to find the block with the most shielded transactions in a range.
  */
 class GetBlockRangeFragment : BaseDemoFragment<FragmentGetBlockRangeBinding>() {
-
     // TODO [#973]: Eliminate old UI demo-app
     // TODO [#973]: https://github.com/zcash/zcash-android-wallet-sdk/issues/973
     @Suppress("MaxLineLength", "MagicNumber", "UNUSED_PARAMETER")
@@ -75,16 +74,18 @@ class GetBlockRangeFragment : BaseDemoFragment<FragmentGetBlockRangeBinding>() {
 
     private fun onApply(unused: View) {
         val network = ZcashNetwork.fromResources(requireApplicationContext())
-        val start = max(
-            binding.textStartHeight.text.toString().toLongOrNull()
-                ?: network.saplingActivationHeight.value,
-            network.saplingActivationHeight.value
-        )
-        val end = max(
-            binding.textEndHeight.text.toString().toLongOrNull()
-                ?: network.saplingActivationHeight.value,
-            network.saplingActivationHeight.value
-        )
+        val start =
+            max(
+                binding.textStartHeight.text.toString().toLongOrNull()
+                    ?: network.saplingActivationHeight.value,
+                network.saplingActivationHeight.value
+            )
+        val end =
+            max(
+                binding.textEndHeight.text.toString().toLongOrNull()
+                    ?: network.saplingActivationHeight.value,
+                network.saplingActivationHeight.value
+            )
         if (start <= end) {
             @Suppress("TooGenericExceptionCaught")
             try {
@@ -122,7 +123,10 @@ class GetBlockRangeFragment : BaseDemoFragment<FragmentGetBlockRangeBinding>() {
     // Android Lifecycle overrides
     //
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?
+    ) {
         super.onViewCreated(view, savedInstanceState)
         binding.buttonApply.setOnClickListener(::onApply)
     }

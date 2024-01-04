@@ -10,7 +10,6 @@ import org.junit.Test
 import java.io.File
 
 class NoBackupContextWrapperTest {
-
     private val databaseParentDir = File(DatabasePathFixture.new())
     private val noBackupContextWrapper = NoBackupContextWrapper(getAppContext(), databaseParentDir)
 

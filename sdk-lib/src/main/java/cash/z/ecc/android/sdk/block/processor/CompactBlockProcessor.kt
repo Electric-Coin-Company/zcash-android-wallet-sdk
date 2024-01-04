@@ -140,12 +140,13 @@ class CompactBlockProcessor internal constructor(
      */
     val network = backend.network
 
-    private val lowerBoundHeight: BlockHeight = BlockHeight(
-        max(
-            network.saplingActivationHeight.value,
-            minimumHeight.value - MAX_REORG_SIZE
+    private val lowerBoundHeight: BlockHeight =
+        BlockHeight(
+            max(
+                network.saplingActivationHeight.value,
+                minimumHeight.value - MAX_REORG_SIZE
+            )
         )
-    )
 
     private val _state: MutableStateFlow<State> = MutableStateFlow(State.Initialized)
     private val _progress = MutableStateFlow(PercentDecimal.ZERO_PERCENT)
@@ -212,10 +213,11 @@ class CompactBlockProcessor internal constructor(
         // lastKnownHeight is only used for error reporting.
         deleteAllBlockFiles(
             downloader = downloader,
-            lastKnownHeight = when (val result = getMaxScannedHeight(backend)) {
-                is GetMaxScannedHeightResult.Success -> result.height
-                else -> null
-            }
+            lastKnownHeight =
+                when (val result = getMaxScannedHeight(backend)) {
+                    is GetMaxScannedHeightResult.Success -> result.height
+                    else -> null
+                }
         )
 
         // Download note commitment tree data from lightwalletd to decide if we communicate with linear
@@ -235,55 +237,58 @@ class CompactBlockProcessor internal constructor(
                 onErrorListener = ::onProcessorError,
                 maxDelayMillis = MAX_BACKOFF_INTERVAL
             ) {
-                val result = processingMutex.withLockLogged("processNewBlocks") {
-                    when (subTreeRootResult) {
-                        is GetSubtreeRootsResult.SpendBeforeSync -> {
-                            // Pass the commitment tree data to the database
-                            when (
-                                val result = putSaplingSubtreeRoots(
+                val result =
+                    processingMutex.withLockLogged("processNewBlocks") {
+                        when (subTreeRootResult) {
+                            is GetSubtreeRootsResult.SpendBeforeSync -> {
+                                // Pass the commitment tree data to the database
+                                when (
+                                    val result =
+                                        putSaplingSubtreeRoots(
+                                            backend = backend,
+                                            startIndex = 0,
+                                            subTreeRootList =
+                                                (subTreeRootResult as GetSubtreeRootsResult.SpendBeforeSync)
+                                                    .subTreeRootList,
+                                            lastValidHeight = lowerBoundHeight
+                                        )
+                                ) {
+                                    PutSaplingSubtreeRootsResult.Success -> {
+                                        // Let's continue with the next step
+                                    }
+                                    is PutSaplingSubtreeRootsResult.Failure -> {
+                                        BlockProcessingResult.SyncFailure(result.failedAtHeight, result.exception)
+                                    }
+                                }
+                                processNewBlocksInSbSOrder(
                                     backend = backend,
-                                    startIndex = 0,
-                                    subTreeRootList = (subTreeRootResult as GetSubtreeRootsResult.SpendBeforeSync)
-                                        .subTreeRootList,
-                                    lastValidHeight = lowerBoundHeight
+                                    downloader = downloader,
+                                    repository = repository,
+                                    network = network,
+                                    lastValidHeight = lowerBoundHeight,
+                                    firstUnenhancedHeight = _processorInfo.value.firstUnenhancedHeight
                                 )
-                            ) {
-                                PutSaplingSubtreeRootsResult.Success -> {
-                                    // Let's continue with the next step
-                                }
-                                is PutSaplingSubtreeRootsResult.Failure -> {
-                                    BlockProcessingResult.SyncFailure(result.failedAtHeight, result.exception)
-                                }
                             }
-                            processNewBlocksInSbSOrder(
-                                backend = backend,
-                                downloader = downloader,
-                                repository = repository,
-                                network = network,
-                                lastValidHeight = lowerBoundHeight,
-                                firstUnenhancedHeight = _processorInfo.value.firstUnenhancedHeight
-                            )
-                        }
-                        is GetSubtreeRootsResult.OtherFailure, GetSubtreeRootsResult.Linear -> {
-                            // This is caused by an empty response result or another unsupported error.
-                            // Although the spend-before-sync synchronization algorithm is not supported, we can get
-                            // the entire block range as we previously did for the linear sync type.
-                            processNewBlocksInSbSOrder(
-                                backend = backend,
-                                downloader = downloader,
-                                repository = repository,
-                                network = network,
-                                lastValidHeight = lowerBoundHeight,
-                                firstUnenhancedHeight = _processorInfo.value.firstUnenhancedHeight
-                            )
-                        }
-                        GetSubtreeRootsResult.FailureConnection -> {
-                            // SubtreeRoot fetching retry
-                            subTreeRootResult = getSubtreeRoots(downloader, network)
-                            BlockProcessingResult.Reconnecting
+                            is GetSubtreeRootsResult.OtherFailure, GetSubtreeRootsResult.Linear -> {
+                                // This is caused by an empty response result or another unsupported error.
+                                // Although the spend-before-sync synchronization algorithm is not supported, we can get
+                                // the entire block range as we previously did for the linear sync type.
+                                processNewBlocksInSbSOrder(
+                                    backend = backend,
+                                    downloader = downloader,
+                                    repository = repository,
+                                    network = network,
+                                    lastValidHeight = lowerBoundHeight,
+                                    firstUnenhancedHeight = _processorInfo.value.firstUnenhancedHeight
+                                )
+                            }
+                            GetSubtreeRootsResult.FailureConnection -> {
+                                // SubtreeRoot fetching retry
+                                subTreeRootResult = getSubtreeRoots(downloader, network)
+                                BlockProcessingResult.Reconnecting
+                            }
                         }
                     }
-                }
 
                 // Immediately process again after failures in order to download new blocks right away
                 when (result) {
@@ -310,11 +315,12 @@ class CompactBlockProcessor internal constructor(
                     BlockProcessingResult.NoBlocksToProcess -> {
                         setState(State.Synced(_processorInfo.value.overallSyncRange))
                         val noWorkDone = _processorInfo.value.overallSyncRange?.isEmpty() ?: true
-                        val summary = if (noWorkDone) {
-                            "Nothing to process: no new blocks to sync"
-                        } else {
-                            "Done processing blocks"
-                        }
+                        val summary =
+                            if (noWorkDone) {
+                                "Nothing to process: no new blocks to sync"
+                            } else {
+                                "Done processing blocks"
+                            }
 
                         resetErrorCounters()
 
@@ -372,10 +378,14 @@ class CompactBlockProcessor internal constructor(
      * @return `True` when the retry limit reached and the error thrown, false when error counter increment and no
      * error thrown yet
      */
-    suspend fun checkErrorAndFail(failedHeight: BlockHeight?, failCause: Throwable): Boolean {
+    suspend fun checkErrorAndFail(
+        failedHeight: BlockHeight?,
+        failCause: Throwable
+    ): Boolean {
         if (consecutiveBlockProcessingErrors.get() >= RETRIES) {
-            val errorMessage = "ERROR: unable to resolve the error at height $failedHeight after " +
-                "${consecutiveBlockProcessingErrors.get()} correction attempts!"
+            val errorMessage =
+                "ERROR: unable to resolve the error at height $failedHeight after " +
+                    "${consecutiveBlockProcessingErrors.get()} correction attempts!"
             fail(CompactBlockProcessorException.FailedSynchronizationException(errorMessage, failCause))
             return true
         }
@@ -404,6 +414,7 @@ class CompactBlockProcessor internal constructor(
 
     // TODO [#1137]: Refactor processNewBlocksInSbSOrder
     // TODO [#1137]: https://github.com/zcash/zcash-android-wallet-sdk/issues/1137
+
     /**
      * This function process the missing blocks in non-linear order with Spend-before-Sync algorithm.
      */
@@ -422,12 +433,13 @@ class CompactBlockProcessor internal constructor(
 
         // This step covers these operations fetchLatestBlockHeight, updateChainTip, suggestScanRanges, updateRange,
         // and shouldVerifySuggestedScanRanges
-        val preparationResult = runSbSSyncingPreparation(
-            backend = backend,
-            downloader = downloader,
-            network = network,
-            lastValidHeight = lastValidHeight
-        )
+        val preparationResult =
+            runSbSSyncingPreparation(
+                backend = backend,
+                downloader = downloader,
+                network = network,
+                lastValidHeight = lastValidHeight
+            )
         when (preparationResult) {
             is SbSPreparationResult.ProcessFailure -> {
                 return preparationResult.toBlockProcessingResult()
@@ -539,16 +551,19 @@ class CompactBlockProcessor internal constructor(
         }
 
         // Process the rest of ranges
-        val scanRanges = when (suggestedRangesResult) {
-            is SuggestScanRangesResult.Success -> { suggestedRangesResult.ranges }
-            is SuggestScanRangesResult.Failure -> {
-                Twig.error { "Process suggested scan ranges failure: ${suggestedRangesResult.exception}" }
-                return BlockProcessingResult.SyncFailure(
-                    suggestedRangesResult.failedAtHeight,
-                    suggestedRangesResult.exception
-                )
+        val scanRanges =
+            when (suggestedRangesResult) {
+                is SuggestScanRangesResult.Success -> {
+                    suggestedRangesResult.ranges
+                }
+                is SuggestScanRangesResult.Failure -> {
+                    Twig.error { "Process suggested scan ranges failure: ${suggestedRangesResult.exception}" }
+                    return BlockProcessingResult.SyncFailure(
+                        suggestedRangesResult.failedAtHeight,
+                        suggestedRangesResult.exception
+                    )
+                }
             }
-        }
         scanRanges.forEach { scanRange ->
             Twig.debug { "Start processing the range: $scanRange" }
 
@@ -655,13 +670,14 @@ class CompactBlockProcessor internal constructor(
         lastValidHeight: BlockHeight
     ): SbSPreparationResult {
         // Download chain tip metadata from lightwalletd
-        val chainTip = fetchLatestBlockHeight(
-            downloader = downloader,
-            network = network
-        ) ?: let {
-            Twig.warn { "Disconnection detected. Attempting to reconnect." }
-            return SbSPreparationResult.ConnectionFailure
-        }
+        val chainTip =
+            fetchLatestBlockHeight(
+                downloader = downloader,
+                network = network
+            ) ?: let {
+                Twig.warn { "Disconnection detected. Attempting to reconnect." }
+                return SbSPreparationResult.ConnectionFailure
+            }
 
         // Notify the underlying rust layer about the updated chain tip
         when (
@@ -685,22 +701,24 @@ class CompactBlockProcessor internal constructor(
         // TODO [#1211]: https://github.com/zcash/zcash-android-wallet-sdk/issues/1211
 
         // Get the suggested scan ranges from the wallet database
-        val suggestedRangesResult = suggestScanRanges(
-            backend,
-            lastValidHeight
-        )
-        val updateRangeResult = when (suggestedRangesResult) {
-            is SuggestScanRangesResult.Success -> {
-                updateRange(suggestedRangesResult.ranges)
+        val suggestedRangesResult =
+            suggestScanRanges(
+                backend,
+                lastValidHeight
+            )
+        val updateRangeResult =
+            when (suggestedRangesResult) {
+                is SuggestScanRangesResult.Success -> {
+                    updateRange(suggestedRangesResult.ranges)
+                }
+                is SuggestScanRangesResult.Failure -> {
+                    Twig.error { "Process suggested scan ranges failure: ${suggestedRangesResult.exception}" }
+                    return SbSPreparationResult.ProcessFailure(
+                        suggestedRangesResult.failedAtHeight,
+                        suggestedRangesResult.exception
+                    )
+                }
             }
-            is SuggestScanRangesResult.Failure -> {
-                Twig.error { "Process suggested scan ranges failure: ${suggestedRangesResult.exception}" }
-                return SbSPreparationResult.ProcessFailure(
-                    suggestedRangesResult.failedAtHeight,
-                    suggestedRangesResult.exception
-                )
-            }
-        }
 
         if (!updateRangeResult) {
             Twig.warn { "Disconnection detected. Attempting to reconnect." }
@@ -775,10 +793,15 @@ class CompactBlockProcessor internal constructor(
 
     sealed class BlockProcessingResult {
         object NoBlocksToProcess : BlockProcessingResult()
+
         object Success : BlockProcessingResult()
+
         object Reconnecting : BlockProcessingResult()
+
         object RestartSynchronization : BlockProcessingResult()
+
         data class SyncFailure(val failedAtHeight: BlockHeight?, val error: Throwable) : BlockProcessingResult()
+
         data class ContinuityError(val failedAtHeight: BlockHeight?, val error: Throwable) : BlockProcessingResult()
     }
 
@@ -799,22 +822,23 @@ class CompactBlockProcessor internal constructor(
         val firstUnenhancedHeight = getFirstUnenhancedHeight(repository)
 
         // The overall sync range computation
-        val syncRange = if (ranges.isNotEmpty()) {
-            var resultRange = ranges[0].range.start..ranges[0].range.endInclusive
-            ranges.forEach { nextRange ->
-                if (nextRange.range.start < resultRange.start) {
-                    resultRange = nextRange.range.start..resultRange.endInclusive
+        val syncRange =
+            if (ranges.isNotEmpty()) {
+                var resultRange = ranges[0].range.start..ranges[0].range.endInclusive
+                ranges.forEach { nextRange ->
+                    if (nextRange.range.start < resultRange.start) {
+                        resultRange = nextRange.range.start..resultRange.endInclusive
+                    }
+                    if (nextRange.range.endInclusive > resultRange.endInclusive) {
+                        resultRange = resultRange.start..nextRange.range.endInclusive
+                    }
                 }
-                if (nextRange.range.endInclusive > resultRange.endInclusive) {
-                    resultRange = resultRange.start..nextRange.range.endInclusive
-                }
+                resultRange
+            } else {
+                // Empty ranges most likely means that the sync is done and the Rust layer replied with an empty suggested
+                // ranges
+                null
             }
-            resultRange
-        } else {
-            // Empty ranges most likely means that the sync is done and the Rust layer replied with an empty suggested
-            // ranges
-            null
-        }
 
         setProcessorInfo(
             networkBlockHeight = networkBlockHeight,
@@ -833,43 +857,45 @@ class CompactBlockProcessor internal constructor(
     // TODO [#1127]: https://github.com/zcash/zcash-android-wallet-sdk/issues/1127
     @Suppress("NestedBlockDepth")
     private suspend fun verifySetup() {
-        val error = if (repository.getAccountCount() == 0) {
-            CompactBlockProcessorException.NoAccount
-        } else {
-            // verify that the server is correct
+        val error =
+            if (repository.getAccountCount() == 0) {
+                CompactBlockProcessorException.NoAccount
+            } else {
+                // verify that the server is correct
 
-            // How do we handle network connection issues?
+                // How do we handle network connection issues?
 
-            downloader.getServerInfo()?.let { info ->
-                val serverBlockHeight =
-                    runCatching { info.blockHeightUnsafe.toBlockHeight(network) }.getOrNull()
+                downloader.getServerInfo()?.let { info ->
+                    val serverBlockHeight =
+                        runCatching { info.blockHeightUnsafe.toBlockHeight(network) }.getOrNull()
 
-                if (null == serverBlockHeight) {
-                    // Note: we could better signal network connection issue
-                    CompactBlockProcessorException.BadBlockHeight(info.blockHeightUnsafe)
-                } else {
-                    val clientBranch = "%x".format(
-                        Locale.ROOT,
-                        backend.getBranchIdForHeight(serverBlockHeight)
-                    )
-                    val network = backend.network.networkName
-
-                    if (!clientBranch.equals(info.consensusBranchId, true)) {
-                        MismatchedNetwork(
-                            clientNetwork = network,
-                            serverNetwork = info.chainName
-                        )
-                    } else if (!info.matchingNetwork(network)) {
-                        MismatchedNetwork(
-                            clientNetwork = network,
-                            serverNetwork = info.chainName
-                        )
+                    if (null == serverBlockHeight) {
+                        // Note: we could better signal network connection issue
+                        CompactBlockProcessorException.BadBlockHeight(info.blockHeightUnsafe)
                     } else {
-                        null
+                        val clientBranch =
+                            "%x".format(
+                                Locale.ROOT,
+                                backend.getBranchIdForHeight(serverBlockHeight)
+                            )
+                        val network = backend.network.networkName
+
+                        if (!clientBranch.equals(info.consensusBranchId, true)) {
+                            MismatchedNetwork(
+                                clientNetwork = network,
+                                serverNetwork = info.chainName
+                            )
+                        } else if (!info.matchingNetwork(network)) {
+                            MismatchedNetwork(
+                                clientNetwork = network,
+                                serverNetwork = info.chainName
+                            )
+                        } else {
+                            null
+                        }
                     }
                 }
             }
-        }
 
         if (error != null) {
             Twig.debug { "Validating setup prior to scanning . . . ISSUE FOUND! - ${error.javaClass.simpleName}" }
@@ -896,7 +922,10 @@ class CompactBlockProcessor internal constructor(
     var failedUtxoFetches = 0
 
     @Suppress("MagicNumber", "LongMethod")
-    internal suspend fun refreshUtxos(account: Account, startHeight: BlockHeight): Int {
+    internal suspend fun refreshUtxos(
+        account: Account,
+        startHeight: BlockHeight
+    ): Int {
         Twig.debug { "Checking for UTXOs above height $startHeight" }
         var count = 0
         // TODO [#683]: cleanup the way that we prevent this from running excessively
@@ -1088,9 +1117,10 @@ class CompactBlockProcessor internal constructor(
                 when (val response = downloader.getLatestBlockHeight()) {
                     is Response.Success -> {
                         Twig.debug { "Latest block height fetched successfully with value: ${response.result.value}" }
-                        latestBlockHeight = runCatching {
-                            response.result.toBlockHeight(network)
-                        }.getOrNull()
+                        latestBlockHeight =
+                            runCatching {
+                                response.result.toBlockHeight(network)
+                            }.getOrNull()
                     }
                     is Response.Failure -> {
                         Twig.error { "Fetching latest block height failed with: ${response.toThrowable()}" }
@@ -1135,11 +1165,12 @@ class CompactBlockProcessor internal constructor(
                             }
                         }
                         is Response.Failure -> {
-                            val error = LightWalletException.GetSubtreeRootsException(
-                                response.code,
-                                response.description,
-                                response.toThrowable()
-                            )
+                            val error =
+                                LightWalletException.GetSubtreeRootsException(
+                                    response.code,
+                                    response.description,
+                                    response.toThrowable()
+                                )
                             if (response is Response.Failure.Server.Unavailable) {
                                 Twig.error {
                                     "Fetching SubtreeRoot failed due to server communication problem with " +
@@ -1162,11 +1193,12 @@ class CompactBlockProcessor internal constructor(
                     .map {
                         SubtreeRoot.new(it, network)
                     }.let {
-                        result = if (it.isEmpty()) {
-                            GetSubtreeRootsResult.Linear
-                        } else {
-                            GetSubtreeRootsResult.SpendBeforeSync(it)
-                        }
+                        result =
+                            if (it.isEmpty()) {
+                                GetSubtreeRootsResult.Linear
+                            } else {
+                                GetSubtreeRootsResult.SpendBeforeSync(it)
+                            }
                     }
             }
             return result
@@ -1267,9 +1299,7 @@ class CompactBlockProcessor internal constructor(
          * @return VerifySuggestedScanRange
          */
         @VisibleForTesting
-        internal fun shouldVerifySuggestedScanRanges(
-            suggestedRangesResult: SuggestScanRangesResult.Success
-        ): VerifySuggestedScanRange {
+        internal fun shouldVerifySuggestedScanRanges(suggestedRangesResult: SuggestScanRangesResult.Success): VerifySuggestedScanRange {
             Twig.debug { "Check for Priority.Verify scan range result: ${suggestedRangesResult.ranges}" }
 
             return if (suggestedRangesResult.ranges.isEmpty()) {
@@ -1338,144 +1368,149 @@ class CompactBlockProcessor internal constructor(
             syncRange: ClosedRange<BlockHeight>,
             withDownload: Boolean,
             enhanceStartHeight: BlockHeight?
-        ): Flow<BatchSyncProgress> = flow {
-            if (syncRange.isEmpty()) {
-                Twig.debug { "No blocks to sync" }
-                emit(
-                    BatchSyncProgress(
-                        resultState = SyncingResult.AllSuccess
-                    )
-                )
-            } else {
-                Twig.info { "Syncing blocks in range $syncRange" }
-
-                val batches = getBatchedBlockList(syncRange, network)
-
-                // Check for the last enhanced height and eventually set is as the beginning of the next enhancing range
-                var enhancingRange = if (enhanceStartHeight != null) {
-                    BlockHeight(min(syncRange.start.value, enhanceStartHeight.value))..syncRange.start
-                } else {
-                    syncRange.start..syncRange.start
-                }
-
-                batches.asFlow().map {
-                    Twig.debug { "Syncing process starts for batch: $it" }
-
-                    // Run downloading stage
-                    SyncStageResult(
-                        batch = it,
-                        stageResult = if (withDownload) {
-                            downloadBatchOfBlocks(
-                                downloader = downloader,
-                                batch = it
-                            )
-                        } else {
-                            SyncingResult.DownloadSuccess(null)
-                        }
-                    )
-                }.buffer(1).map { downloadStageResult ->
-                    Twig.debug { "Download stage done with result: $downloadStageResult" }
-
-                    if (downloadStageResult.stageResult !is SyncingResult.DownloadSuccess) {
-                        // In case of any failure, we just propagate the result
-                        downloadStageResult
-                    } else {
-                        // Enrich batch model with fetched blocks. It's useful for later blocks deletion
-                        downloadStageResult.batch.blocks = downloadStageResult.stageResult.downloadedBlocks
-
-                        // Run scanning stage (which also validates the fetched blocks)
-                        SyncStageResult(
-                            downloadStageResult.batch,
-                            scanBatchOfBlocks(
-                                backend = backend,
-                                batch = downloadStageResult.batch
-                            )
-                        )
-                    }
-                }.map { scanResult ->
-                    Twig.debug { "Scan stage done with result: $scanResult" }
-
-                    if (scanResult.stageResult != SyncingResult.ScanSuccess) {
-                        scanResult
-                    } else {
-                        // Run deletion stage
-                        SyncStageResult(
-                            scanResult.batch,
-                            deleteFilesOfBatchOfBlocks(
-                                downloader = downloader,
-                                batch = scanResult.batch
-                            )
-                        )
-                    }
-                }.onEach { continuousResult ->
-                    Twig.debug { "Deletion stage done with result: $continuousResult" }
-
-                    var resultState = if (continuousResult.stageResult == SyncingResult.DeleteSuccess) {
-                        SyncingResult.AllSuccess
-                    } else {
-                        continuousResult.stageResult
-                    }
-
+        ): Flow<BatchSyncProgress> =
+            flow {
+                if (syncRange.isEmpty()) {
+                    Twig.debug { "No blocks to sync" }
                     emit(
                         BatchSyncProgress(
-                            order = continuousResult.batch.order,
-                            range = continuousResult.batch.range,
-                            resultState = resultState
+                            resultState = SyncingResult.AllSuccess
                         )
                     )
+                } else {
+                    Twig.info { "Syncing blocks in range $syncRange" }
 
-                    // Increment and compare the range for triggering the enhancing
-                    enhancingRange = enhancingRange.start..continuousResult.batch.range.endInclusive
+                    val batches = getBatchedBlockList(syncRange, network)
 
-                    // Enhancing is run when the range is on or over its limit, or there is any failure
-                    // from previous stages, or if the end of the sync range is reached.
-                    if (enhancingRange.length() >= ENHANCE_BATCH_SIZE ||
-                        resultState != SyncingResult.AllSuccess ||
-                        continuousResult.batch.order == batches.size.toLong()
-                    ) {
-                        // Copy the range for use and reset for the next iteration
-                        val currentEnhancingRange = enhancingRange
-                        enhancingRange = enhancingRange.endInclusive..enhancingRange.endInclusive
-                        enhanceTransactionDetails(
-                            range = currentEnhancingRange,
-                            repository = repository,
-                            backend = backend,
-                            downloader = downloader
-                        ).collect { enhancingResult ->
-                            Twig.info { "Enhancing result: $enhancingResult" }
-                            resultState = when (enhancingResult) {
-                                is SyncingResult.UpdateBirthday -> {
-                                    Twig.info { "Birthday height update reporting" }
-                                    enhancingResult
+                    // Check for the last enhanced height and eventually set is as the beginning of the next enhancing range
+                    var enhancingRange =
+                        if (enhanceStartHeight != null) {
+                            BlockHeight(min(syncRange.start.value, enhanceStartHeight.value))..syncRange.start
+                        } else {
+                            syncRange.start..syncRange.start
+                        }
+
+                    batches.asFlow().map {
+                        Twig.debug { "Syncing process starts for batch: $it" }
+
+                        // Run downloading stage
+                        SyncStageResult(
+                            batch = it,
+                            stageResult =
+                                if (withDownload) {
+                                    downloadBatchOfBlocks(
+                                        downloader = downloader,
+                                        batch = it
+                                    )
+                                } else {
+                                    SyncingResult.DownloadSuccess(null)
                                 }
-                                is SyncingResult.EnhanceFailed -> {
-                                    Twig.error { "Enhancing failed for: $enhancingRange with $enhancingResult" }
-                                    enhancingResult
-                                }
-                                else -> {
-                                    // Transactions enhanced correctly. Let's continue with block processing.
-                                    enhancingResult
-                                }
-                            }
-                            emit(
-                                BatchSyncProgress(
-                                    order = continuousResult.batch.order,
-                                    range = continuousResult.batch.range,
-                                    resultState = resultState
+                        )
+                    }.buffer(1).map { downloadStageResult ->
+                        Twig.debug { "Download stage done with result: $downloadStageResult" }
+
+                        if (downloadStageResult.stageResult !is SyncingResult.DownloadSuccess) {
+                            // In case of any failure, we just propagate the result
+                            downloadStageResult
+                        } else {
+                            // Enrich batch model with fetched blocks. It's useful for later blocks deletion
+                            downloadStageResult.batch.blocks = downloadStageResult.stageResult.downloadedBlocks
+
+                            // Run scanning stage (which also validates the fetched blocks)
+                            SyncStageResult(
+                                downloadStageResult.batch,
+                                scanBatchOfBlocks(
+                                    backend = backend,
+                                    batch = downloadStageResult.batch
                                 )
                             )
                         }
-                    }
-                    Twig.info {
-                        "All sync stages done for the batch ${continuousResult.batch.order}/${batches.size}:" +
-                            " ${continuousResult.batch} with result state: $resultState"
-                    }
-                }.takeWhile { batchProcessResult ->
-                    batchProcessResult.stageResult == SyncingResult.DeleteSuccess ||
-                        batchProcessResult.stageResult == SyncingResult.UpdateBirthday
-                }.collect()
+                    }.map { scanResult ->
+                        Twig.debug { "Scan stage done with result: $scanResult" }
+
+                        if (scanResult.stageResult != SyncingResult.ScanSuccess) {
+                            scanResult
+                        } else {
+                            // Run deletion stage
+                            SyncStageResult(
+                                scanResult.batch,
+                                deleteFilesOfBatchOfBlocks(
+                                    downloader = downloader,
+                                    batch = scanResult.batch
+                                )
+                            )
+                        }
+                    }.onEach { continuousResult ->
+                        Twig.debug { "Deletion stage done with result: $continuousResult" }
+
+                        var resultState =
+                            if (continuousResult.stageResult == SyncingResult.DeleteSuccess) {
+                                SyncingResult.AllSuccess
+                            } else {
+                                continuousResult.stageResult
+                            }
+
+                        emit(
+                            BatchSyncProgress(
+                                order = continuousResult.batch.order,
+                                range = continuousResult.batch.range,
+                                resultState = resultState
+                            )
+                        )
+
+                        // Increment and compare the range for triggering the enhancing
+                        enhancingRange = enhancingRange.start..continuousResult.batch.range.endInclusive
+
+                        // Enhancing is run when the range is on or over its limit, or there is any failure
+                        // from previous stages, or if the end of the sync range is reached.
+                        if (enhancingRange.length() >= ENHANCE_BATCH_SIZE ||
+                            resultState != SyncingResult.AllSuccess ||
+                            continuousResult.batch.order == batches.size.toLong()
+                        ) {
+                            // Copy the range for use and reset for the next iteration
+                            val currentEnhancingRange = enhancingRange
+                            enhancingRange = enhancingRange.endInclusive..enhancingRange.endInclusive
+                            enhanceTransactionDetails(
+                                range = currentEnhancingRange,
+                                repository = repository,
+                                backend = backend,
+                                downloader = downloader
+                            ).collect { enhancingResult ->
+                                Twig.info { "Enhancing result: $enhancingResult" }
+                                resultState =
+                                    when (enhancingResult) {
+                                        is SyncingResult.UpdateBirthday -> {
+                                            Twig.info { "Birthday height update reporting" }
+                                            enhancingResult
+                                        }
+                                        is SyncingResult.EnhanceFailed -> {
+                                            Twig.error { "Enhancing failed for: $enhancingRange with $enhancingResult" }
+                                            enhancingResult
+                                        }
+                                        else -> {
+                                            // Transactions enhanced correctly. Let's continue with block processing.
+                                            enhancingResult
+                                        }
+                                    }
+                                emit(
+                                    BatchSyncProgress(
+                                        order = continuousResult.batch.order,
+                                        range = continuousResult.batch.range,
+                                        resultState = resultState
+                                    )
+                                )
+                            }
+                        }
+                        Twig.info {
+                            "All sync stages done for the batch ${continuousResult.batch.order}/${batches.size}:" +
+                                " ${continuousResult.batch} with result state: $resultState"
+                        }
+                    }.takeWhile { batchProcessResult ->
+                        batchProcessResult.stageResult == SyncingResult.DeleteSuccess ||
+                            batchProcessResult.stageResult == SyncingResult.UpdateBirthday
+                    }.collect()
+                }
             }
-        }
 
         /**
          * Returns count of batches of blocks across all ranges. It works the same when triggered from the Linear
@@ -1520,13 +1555,14 @@ class CompactBlockProcessor internal constructor(
             var start = syncRange.start
             return buildList {
                 for (index in 1..batchCount) {
-                    val end = BlockHeight.new(
-                        network,
-                        min(
-                            (syncRange.start.value + (index * SYNC_BATCH_SIZE)) - 1,
-                            syncRange.endInclusive.value
-                        )
-                    ) // subtract 1 on the first value because the range is inclusive
+                    val end =
+                        BlockHeight.new(
+                            network,
+                            min(
+                                (syncRange.start.value + (index * SYNC_BATCH_SIZE)) - 1,
+                                syncRange.endInclusive.value
+                            )
+                        ) // subtract 1 on the first value because the range is inclusive
 
                     add(
                         BlockBatch(
@@ -1579,7 +1615,10 @@ class CompactBlockProcessor internal constructor(
         }
 
         @VisibleForTesting
-        internal suspend fun scanBatchOfBlocks(batch: BlockBatch, backend: TypesafeBackend): SyncingResult {
+        internal suspend fun scanBatchOfBlocks(
+            batch: BlockBatch,
+            backend: TypesafeBackend
+        ): SyncingResult {
             return runCatching {
                 backend.scanBlocks(batch.range.start, batch.range.length())
             }.onSuccess {
@@ -1649,34 +1688,35 @@ class CompactBlockProcessor internal constructor(
             repository: DerivedDataRepository,
             backend: TypesafeBackend,
             downloader: CompactBlockDownloader
-        ): Flow<SyncingResult> = flow {
-            Twig.debug { "Enhancing transaction details for blocks $range" }
+        ): Flow<SyncingResult> =
+            flow {
+                Twig.debug { "Enhancing transaction details for blocks $range" }
 
-            val newTxs = repository.findNewTransactions(range)
-            if (newTxs.isEmpty()) {
-                Twig.debug { "No new transactions found in $range" }
-            } else {
-                Twig.debug { "Enhancing ${newTxs.size} transaction(s)!" }
+                val newTxs = repository.findNewTransactions(range)
+                if (newTxs.isEmpty()) {
+                    Twig.debug { "No new transactions found in $range" }
+                } else {
+                    Twig.debug { "Enhancing ${newTxs.size} transaction(s)!" }
 
-                // If the first transaction has been added
-                if (newTxs.size.toLong() == repository.getTransactionCount()) {
-                    Twig.debug { "Encountered the first transaction. This changes the birthday height!" }
-                    emit(SyncingResult.UpdateBirthday)
-                }
+                    // If the first transaction has been added
+                    if (newTxs.size.toLong() == repository.getTransactionCount()) {
+                        Twig.debug { "Encountered the first transaction. This changes the birthday height!" }
+                        emit(SyncingResult.UpdateBirthday)
+                    }
 
-                newTxs.filter { it.minedHeight != null }.onEach { newTransaction ->
-                    val trEnhanceResult = enhanceTransaction(newTransaction, backend, downloader)
-                    if (trEnhanceResult is SyncingResult.EnhanceFailed) {
-                        Twig.error { "Encountered transaction enhancing error: ${trEnhanceResult.exception}" }
-                        emit(trEnhanceResult)
-                        // We intentionally do not terminate the batch enhancing here, just reporting it
+                    newTxs.filter { it.minedHeight != null }.onEach { newTransaction ->
+                        val trEnhanceResult = enhanceTransaction(newTransaction, backend, downloader)
+                        if (trEnhanceResult is SyncingResult.EnhanceFailed) {
+                            Twig.error { "Encountered transaction enhancing error: ${trEnhanceResult.exception}" }
+                            emit(trEnhanceResult)
+                            // We intentionally do not terminate the batch enhancing here, just reporting it
+                        }
                     }
                 }
-            }
 
-            Twig.debug { "Done enhancing transaction details" }
-            emit(SyncingResult.EnhanceSuccess)
-        }
+                Twig.debug { "Done enhancing transaction details" }
+                emit(SyncingResult.EnhanceSuccess)
+            }
 
         private suspend fun enhanceTransaction(
             transaction: DbTransactionOverview,
@@ -1697,12 +1737,13 @@ class CompactBlockProcessor internal constructor(
                     "Fetching transaction (txid:${transaction.txIdString()}  block:${transaction
                         .minedHeight})"
                 }
-                val transactionData = fetchTransaction(
-                    transactionId = transaction.txIdString(),
-                    rawTransactionId = transaction.rawId.byteArray,
-                    minedHeight = transaction.minedHeight,
-                    downloader = downloader
-                )
+                val transactionData =
+                    fetchTransaction(
+                        transactionId = transaction.txIdString(),
+                        rawTransactionId = transaction.rawId.byteArray,
+                        minedHeight = transaction.minedHeight,
+                        downloader = downloader
+                    )
 
                 // Decrypting and storing transaction is run just once, since we consider it more stable
                 Twig.verbose {
@@ -1807,46 +1848,50 @@ class CompactBlockProcessor internal constructor(
          * or repository is empty
          */
         @VisibleForTesting
-        internal suspend fun getFirstUnenhancedHeight(repository: DerivedDataRepository) =
-            repository.firstUnenhancedHeight()
+        internal suspend fun getFirstUnenhancedHeight(repository: DerivedDataRepository) = repository.firstUnenhancedHeight()
 
         /**
          * Get the height of the last block that was downloaded by this processor.
          *
          * @return the last downloaded height reported by the downloader.
          */
-        internal suspend fun getLastDownloadedHeight(downloader: CompactBlockDownloader) =
-            downloader.getLastDownloadedHeight()
+        internal suspend fun getLastDownloadedHeight(downloader: CompactBlockDownloader) = downloader.getLastDownloadedHeight()
 
         /**
          * Get the current unified address for the given wallet account.
          *
          * @return the current unified address of this account.
          */
-        internal suspend fun getCurrentAddress(backend: TypesafeBackend, account: Account) =
-            backend.getCurrentAddress(account)
+        internal suspend fun getCurrentAddress(
+            backend: TypesafeBackend,
+            account: Account
+        ) = backend.getCurrentAddress(account)
 
         /**
          * Get the legacy Sapling address corresponding to the current unified address for the given wallet account.
          *
          * @return a Sapling address.
          */
-        internal suspend fun getLegacySaplingAddress(backend: TypesafeBackend, account: Account) =
-            backend.getSaplingReceiver(
-                backend.getCurrentAddress(account)
-            )
-                ?: throw InitializeException.MissingAddressException("legacy Sapling")
+        internal suspend fun getLegacySaplingAddress(
+            backend: TypesafeBackend,
+            account: Account
+        ) = backend.getSaplingReceiver(
+            backend.getCurrentAddress(account)
+        )
+            ?: throw InitializeException.MissingAddressException("legacy Sapling")
 
         /**
          * Get the legacy transparent address corresponding to the current unified address for the given wallet account.
          *
          * @return a transparent address.
          */
-        internal suspend fun getTransparentAddress(backend: TypesafeBackend, account: Account) =
-            backend.getTransparentReceiver(
-                backend.getCurrentAddress(account)
-            )
-                ?: throw InitializeException.MissingAddressException("legacy transparent")
+        internal suspend fun getTransparentAddress(
+            backend: TypesafeBackend,
+            account: Account
+        ) = backend.getTransparentReceiver(
+            backend.getCurrentAddress(account)
+        )
+            ?: throw InitializeException.MissingAddressException("legacy transparent")
     }
 
     /**
@@ -1868,11 +1913,12 @@ class CompactBlockProcessor internal constructor(
         firstUnenhancedHeight: BlockHeight? = _processorInfo.value.firstUnenhancedHeight,
     ) {
         _networkHeight.value = networkBlockHeight
-        _processorInfo.value = ProcessorInfo(
-            networkBlockHeight = networkBlockHeight,
-            overallSyncRange = overallSyncRange,
-            firstUnenhancedHeight = firstUnenhancedHeight
-        )
+        _processorInfo.value =
+            ProcessorInfo(
+                networkBlockHeight = networkBlockHeight,
+                overallSyncRange = overallSyncRange,
+                firstUnenhancedHeight = firstUnenhancedHeight
+            )
     }
 
     /**
@@ -1921,25 +1967,28 @@ class CompactBlockProcessor internal constructor(
      * Rewind back two weeks worth of blocks. The final amount of rewinded blocks depends on [rewindToNearestHeight].
      */
     suspend fun quickRewind(): Boolean {
-        val height = when (val result = getMaxScannedHeight(backend)) {
-            is GetMaxScannedHeightResult.Success -> result.height
-            else -> return false
-        }
+        val height =
+            when (val result = getMaxScannedHeight(backend)) {
+                is GetMaxScannedHeightResult.Success -> result.height
+                else -> return false
+            }
         val blocksPer14Days = 14.days.inWholeMilliseconds / ZcashSdk.BLOCK_INTERVAL_MILLIS.toInt()
-        val twoWeeksBack = BlockHeight.new(
-            network,
-            (height.value - blocksPer14Days).coerceAtLeast(lowerBoundHeight.value)
-        )
+        val twoWeeksBack =
+            BlockHeight.new(
+                network,
+                (height.value - blocksPer14Days).coerceAtLeast(lowerBoundHeight.value)
+            )
         return rewindToNearestHeight(twoWeeksBack)
     }
 
     @Suppress("LongMethod")
     suspend fun rewindToNearestHeight(height: BlockHeight): Boolean {
         processingMutex.withLockLogged("rewindToHeight") {
-            val lastLocalBlock = when (val result = getMaxScannedHeight(backend)) {
-                is GetMaxScannedHeightResult.Success -> result.height
-                else -> return false
-            }
+            val lastLocalBlock =
+                when (val result = getMaxScannedHeight(backend)) {
+                    is GetMaxScannedHeightResult.Success -> result.height
+                    else -> return false
+                }
             val targetHeight = getNearestRewindHeight(height)
 
             Twig.debug {
@@ -1971,7 +2020,10 @@ class CompactBlockProcessor internal constructor(
     }
 
     /** insightful function for debugging these critical errors */
-    private suspend fun printValidationErrorInfo(errorHeight: BlockHeight?, count: Int = 11) {
+    private suspend fun printValidationErrorInfo(
+        errorHeight: BlockHeight?,
+        count: Int = 11
+    ) {
         // Note: blocks are public information so it's okay to print them but, still, let's not unless we're
         // debugging something
         if (!BuildConfig.DEBUG) {
@@ -2030,11 +2082,12 @@ class CompactBlockProcessor internal constructor(
      * @return the duration in milliseconds to the next poll attempt
      */
     private fun calculatePollInterval(fastIntervalDesired: Boolean = false): Duration {
-        val interval = if (fastIntervalDesired) {
-            POLL_INTERVAL_SHORT
-        } else {
-            POLL_INTERVAL
-        }
+        val interval =
+            if (fastIntervalDesired) {
+                POLL_INTERVAL_SHORT
+            } else {
+                POLL_INTERVAL
+            }
         val now = System.currentTimeMillis()
         val deltaToNextInterval = interval - (now + interval).rem(interval)
         return deltaToNextInterval.toDuration(DurationUnit.MILLISECONDS)
@@ -2069,10 +2122,11 @@ class CompactBlockProcessor internal constructor(
             val accountBalance = walletSummary?.accountBalances?.get(account)
             // `None` means that the caller has not yet called `updateChainTip` on a
             // brand-new wallet, so we can assume the balance is zero.
-            val saplingBalance = accountBalance?.sapling ?: WalletBalance(
-                total = Zatoshi(0L),
-                available = Zatoshi(0L)
-            )
+            val saplingBalance =
+                accountBalance?.sapling ?: WalletBalance(
+                    total = Zatoshi(0L),
+                    available = Zatoshi(0L)
+                )
             Twig.info { "Found total balance: ${saplingBalance.total}" }
             Twig.info { "Found available balance: ${saplingBalance.available}" }
             saplingBalance
@@ -2083,8 +2137,7 @@ class CompactBlockProcessor internal constructor(
         }
     }
 
-    suspend fun getUtxoCacheBalance(address: String): WalletBalance =
-        backend.getDownloadedUtxoBalance(address)
+    suspend fun getUtxoCacheBalance(address: String): WalletBalance = backend.getDownloadedUtxoBalance(address)
 
     /**
      * Sealed class representing the various states of this processor.
@@ -2173,7 +2226,10 @@ class CompactBlockProcessor internal constructor(
     /**
      * Log the mutex in great detail just in case we need it for troubleshooting deadlock.
      */
-    private suspend inline fun <T> Mutex.withLockLogged(name: String, block: () -> T): T {
+    private suspend inline fun <T> Mutex.withLockLogged(
+        name: String,
+        block: () -> T
+    ): T {
         Twig.debug { "$name MUTEX: acquiring lock..." }
         this.withLock {
             Twig.debug { "$name MUTEX: ...lock acquired!" }
@@ -2185,12 +2241,13 @@ class CompactBlockProcessor internal constructor(
 }
 
 private fun LightWalletEndpointInfoUnsafe.matchingNetwork(network: String): Boolean {
-    fun String.toId() = lowercase(Locale.ROOT).run {
-        when {
-            contains("main") -> "mainnet"
-            contains("test") -> "testnet"
-            else -> this
+    fun String.toId() =
+        lowercase(Locale.ROOT).run {
+            when {
+                contains("main") -> "mainnet"
+                contains("test") -> "testnet"
+                else -> this
+            }
         }
-    }
     return chainName.toId() == network.toId()
 }

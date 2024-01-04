@@ -34,7 +34,6 @@ import kotlinx.coroutines.launch
  */
 @Suppress("TooManyFunctions")
 class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
-
     private lateinit var amountInput: TextView
     private lateinit var addressInput: TextView
 
@@ -67,12 +66,14 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
     //
 
     private fun initSendUi() {
-        amountInput = binding.inputAmount.apply {
-            setText(DemoConstants.SEND_AMOUNT.toZecString())
-        }
-        addressInput = binding.inputAddress.apply {
-            setText(DemoConstants.TO_ADDRESS)
-        }
+        amountInput =
+            binding.inputAmount.apply {
+                setText(DemoConstants.SEND_AMOUNT.toZecString())
+            }
+        addressInput =
+            binding.inputAddress.apply {
+                setText(DemoConstants.TO_ADDRESS)
+            }
         binding.buttonSend.setOnClickListener(::onSend)
     }
 
@@ -130,10 +131,11 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
     private fun onBalance(balance: WalletBalance?) {
         this.balance = balance
         if (!isSyncing) {
-            binding.textBalance.text = """
+            binding.textBalance.text =
+                """
                 Available balance: ${balance?.available.convertZatoshiToZecString(12)}
                 Total balance: ${balance?.total.convertZatoshiToZecString(12)}
-            """.trimIndent()
+                """.trimIndent()
         }
     }
 
@@ -191,7 +193,10 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
         return view
     }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?
+    ) {
         super.onViewCreated(view, savedInstanceState)
         initSendUi()
         monitorChanges()
@@ -201,6 +206,5 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
     // BaseDemoFragment overrides
     //
 
-    override fun inflateBinding(layoutInflater: LayoutInflater): FragmentSendBinding =
-        FragmentSendBinding.inflate(layoutInflater)
+    override fun inflateBinding(layoutInflater: LayoutInflater): FragmentSendBinding = FragmentSendBinding.inflate(layoutInflater)
 }

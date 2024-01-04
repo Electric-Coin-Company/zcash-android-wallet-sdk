@@ -20,102 +20,112 @@ internal class AllTransactionView(
     private val sqliteDatabase: SupportSQLiteDatabase
 ) {
     companion object {
-
         private const val COLUMN_SORT_HEIGHT = "sort_height" // $NON-NLS
 
         private const val QUERY_LIMIT = "1" // $NON-NLS
 
-        private val COLUMNS = arrayOf(
-            "*", // $NON-NLS
-            @Suppress("MaxLineLength")
-            "IFNULL(${AllTransactionViewDefinition.COLUMN_INTEGER_MINED_HEIGHT}, ${UInt.MAX_VALUE}) AS $COLUMN_SORT_HEIGHT" // $NON-NLS
-        )
+        private val COLUMNS =
+            arrayOf(
+                "*", // $NON-NLS
+                @Suppress("MaxLineLength")
+                "IFNULL(${AllTransactionViewDefinition.COLUMN_INTEGER_MINED_HEIGHT}, ${UInt.MAX_VALUE}) AS $COLUMN_SORT_HEIGHT" // $NON-NLS
+            )
 
-        private val ORDER_BY = String.format(
-            Locale.ROOT,
-            "%s DESC, %s DESC", // $NON-NLS
-            COLUMN_SORT_HEIGHT,
-            AllTransactionViewDefinition.COLUMN_INTEGER_TRANSACTION_INDEX
-        )
+        private val ORDER_BY =
+            String.format(
+                Locale.ROOT,
+                "%s DESC, %s DESC", // $NON-NLS
+                COLUMN_SORT_HEIGHT,
+                AllTransactionViewDefinition.COLUMN_INTEGER_TRANSACTION_INDEX
+            )
 
-        private val ORDER_BY_MINED_HEIGHT = String.format(
-            Locale.ROOT,
-            "%s ASC", // $NON-NLS
-            AllTransactionViewDefinition.COLUMN_INTEGER_MINED_HEIGHT
-        )
+        private val ORDER_BY_MINED_HEIGHT =
+            String.format(
+                Locale.ROOT,
+                "%s ASC", // $NON-NLS
+                AllTransactionViewDefinition.COLUMN_INTEGER_MINED_HEIGHT
+            )
 
-        private val SELECTION_BLOCK_RANGE = String.format(
-            Locale.ROOT,
-            "%s >= ? AND %s <= ?", // $NON-NLS
-            AllTransactionViewDefinition.COLUMN_INTEGER_MINED_HEIGHT,
-            AllTransactionViewDefinition.COLUMN_INTEGER_MINED_HEIGHT
-        )
+        private val SELECTION_BLOCK_RANGE =
+            String.format(
+                Locale.ROOT,
+                "%s >= ? AND %s <= ?", // $NON-NLS
+                AllTransactionViewDefinition.COLUMN_INTEGER_MINED_HEIGHT,
+                AllTransactionViewDefinition.COLUMN_INTEGER_MINED_HEIGHT
+            )
 
-        private val SELECTION_RAW_IS_NULL = String.format(
-            Locale.ROOT,
-            "%s IS NULL", // $NON-NLS
-            AllTransactionViewDefinition.COLUMN_BLOB_RAW
-        )
+        private val SELECTION_RAW_IS_NULL =
+            String.format(
+                Locale.ROOT,
+                "%s IS NULL", // $NON-NLS
+                AllTransactionViewDefinition.COLUMN_BLOB_RAW
+            )
 
         private val PROJECTION_COUNT = arrayOf("COUNT(*)") // $NON-NLS
 
         private val PROJECTION_MINED_HEIGHT = arrayOf(AllTransactionViewDefinition.COLUMN_INTEGER_MINED_HEIGHT)
     }
 
-    private val cursorParser: CursorParser<DbTransactionOverview> = CursorParser { cursor ->
-        val minedHeightColumnIndex =
-            cursor.getColumnIndex(AllTransactionViewDefinition.COLUMN_INTEGER_MINED_HEIGHT)
-        val transactionIndexColumnIndex = cursor.getColumnIndex(
-            AllTransactionViewDefinition.COLUMN_INTEGER_TRANSACTION_INDEX
-        )
-        val rawTransactionIdIndex =
-            cursor.getColumnIndex(AllTransactionViewDefinition.COLUMN_BLOB_RAW_TRANSACTION_ID)
-        val expiryHeightIndex = cursor.getColumnIndex(AllTransactionViewDefinition.COLUMN_INTEGER_EXPIRY_HEIGHT)
-        val rawIndex = cursor.getColumnIndex(AllTransactionViewDefinition.COLUMN_BLOB_RAW)
-        val netValueIndex = cursor.getColumnIndex(AllTransactionViewDefinition.COLUMN_LONG_ACCOUNT_BALANCE_DELTA)
-        val feePaidIndex = cursor.getColumnIndex(AllTransactionViewDefinition.COLUMN_LONG_FEE_PAID)
-        val isChangeIndex = cursor.getColumnIndex(AllTransactionViewDefinition.COLUMN_BOOLEAN_IS_CHANGE)
-        val receivedNoteCountIndex = cursor.getColumnIndex(
-            AllTransactionViewDefinition.COLUMN_INTEGER_RECEIVED_NOTE_COUNT
-        )
-        val sentNoteCountIndex = cursor.getColumnIndex(AllTransactionViewDefinition.COLUMN_INTEGER_SENT_NOTE_COUNT)
-        val memoCountIndex = cursor.getColumnIndex(AllTransactionViewDefinition.COLUMN_INTEGER_MEMO_COUNT)
-        val blockTimeIndex = cursor.getColumnIndex(AllTransactionViewDefinition.COLUMN_INTEGER_BLOCK_TIME)
+    private val cursorParser: CursorParser<DbTransactionOverview> =
+        CursorParser { cursor ->
+            val minedHeightColumnIndex =
+                cursor.getColumnIndex(AllTransactionViewDefinition.COLUMN_INTEGER_MINED_HEIGHT)
+            val transactionIndexColumnIndex =
+                cursor.getColumnIndex(
+                    AllTransactionViewDefinition.COLUMN_INTEGER_TRANSACTION_INDEX
+                )
+            val rawTransactionIdIndex =
+                cursor.getColumnIndex(AllTransactionViewDefinition.COLUMN_BLOB_RAW_TRANSACTION_ID)
+            val expiryHeightIndex = cursor.getColumnIndex(AllTransactionViewDefinition.COLUMN_INTEGER_EXPIRY_HEIGHT)
+            val rawIndex = cursor.getColumnIndex(AllTransactionViewDefinition.COLUMN_BLOB_RAW)
+            val netValueIndex = cursor.getColumnIndex(AllTransactionViewDefinition.COLUMN_LONG_ACCOUNT_BALANCE_DELTA)
+            val feePaidIndex = cursor.getColumnIndex(AllTransactionViewDefinition.COLUMN_LONG_FEE_PAID)
+            val isChangeIndex = cursor.getColumnIndex(AllTransactionViewDefinition.COLUMN_BOOLEAN_IS_CHANGE)
+            val receivedNoteCountIndex =
+                cursor.getColumnIndex(
+                    AllTransactionViewDefinition.COLUMN_INTEGER_RECEIVED_NOTE_COUNT
+                )
+            val sentNoteCountIndex = cursor.getColumnIndex(AllTransactionViewDefinition.COLUMN_INTEGER_SENT_NOTE_COUNT)
+            val memoCountIndex = cursor.getColumnIndex(AllTransactionViewDefinition.COLUMN_INTEGER_MEMO_COUNT)
+            val blockTimeIndex = cursor.getColumnIndex(AllTransactionViewDefinition.COLUMN_INTEGER_BLOCK_TIME)
 
-        val netValueLong = cursor.getLong(netValueIndex)
-        val isSent = netValueLong < 0
+            val netValueLong = cursor.getLong(netValueIndex)
+            val isSent = netValueLong < 0
 
-        DbTransactionOverview(
-            rawId = FirstClassByteArray(cursor.getBlob(rawTransactionIdIndex)),
-            minedHeight = cursor.getLongOrNull(minedHeightColumnIndex)?.let {
-                BlockHeight.new(zcashNetwork, it)
-            },
-            expiryHeight = cursor.getLongOrNull(expiryHeightIndex)?.let {
-                // TODO [#1251]: Separate "no expiry height" from "expiry height unknown".
-                if (0L == it) {
-                    null
-                } else {
-                    BlockHeight.new(zcashNetwork, it)
-                }
-            },
-            index = cursor.getLongOrNull(transactionIndexColumnIndex),
-            raw = cursor.getBlobOrNull(rawIndex)?.let { FirstClassByteArray(it) },
-            isSentTransaction = isSent,
-            netValue = Zatoshi(netValueLong.absoluteValue),
-            feePaid = cursor.getLongOrNull(feePaidIndex)?.let { Zatoshi(it) },
-            isChange = cursor.getInt(isChangeIndex) != 0,
-            receivedNoteCount = cursor.getInt(receivedNoteCountIndex),
-            sentNoteCount = cursor.getInt(sentNoteCountIndex),
-            memoCount = cursor.getInt(memoCountIndex),
-            blockTimeEpochSeconds = cursor.getLongOrNull(blockTimeIndex)
-        )
-    }
+            DbTransactionOverview(
+                rawId = FirstClassByteArray(cursor.getBlob(rawTransactionIdIndex)),
+                minedHeight =
+                    cursor.getLongOrNull(minedHeightColumnIndex)?.let {
+                        BlockHeight.new(zcashNetwork, it)
+                    },
+                expiryHeight =
+                    cursor.getLongOrNull(expiryHeightIndex)?.let {
+                        // TODO [#1251]: Separate "no expiry height" from "expiry height unknown".
+                        if (0L == it) {
+                            null
+                        } else {
+                            BlockHeight.new(zcashNetwork, it)
+                        }
+                    },
+                index = cursor.getLongOrNull(transactionIndexColumnIndex),
+                raw = cursor.getBlobOrNull(rawIndex)?.let { FirstClassByteArray(it) },
+                isSentTransaction = isSent,
+                netValue = Zatoshi(netValueLong.absoluteValue),
+                feePaid = cursor.getLongOrNull(feePaidIndex)?.let { Zatoshi(it) },
+                isChange = cursor.getInt(isChangeIndex) != 0,
+                receivedNoteCount = cursor.getInt(receivedNoteCountIndex),
+                sentNoteCount = cursor.getInt(sentNoteCountIndex),
+                memoCount = cursor.getInt(memoCountIndex),
+                blockTimeEpochSeconds = cursor.getLongOrNull(blockTimeIndex)
+            )
+        }
 
-    suspend fun count() = sqliteDatabase.queryAndMap(
-        AllTransactionViewDefinition.VIEW_NAME,
-        columns = PROJECTION_COUNT,
-        cursorParser = { it.getLong(0) }
-    ).first()
+    suspend fun count() =
+        sqliteDatabase.queryAndMap(
+            AllTransactionViewDefinition.VIEW_NAME,
+            columns = PROJECTION_COUNT,
+            cursorParser = { it.getLong(0) }
+        ).first()
 
     fun getAllTransactions() =
         sqliteDatabase.queryAndMap(

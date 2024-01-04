@@ -21,7 +21,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 abstract class BaseDemoFragment<T : ViewBinding> : Fragment() {
-
     /**
      * Since the lightwalletClient is not a component that apps typically use, directly, we provide
      * this from one place. Everything that can be done with the service can/should be done with the
@@ -83,7 +82,10 @@ abstract class BaseDemoFragment<T : ViewBinding> : Fragment() {
     /**
      * Convenience function to the given text to the clipboard.
      */
-    open fun copyToClipboard(text: String, description: String = "Copied to clipboard!") {
+    open fun copyToClipboard(
+        text: String,
+        description: String = "Copied to clipboard!"
+    ) {
         (activity?.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager)
             .setPrimaryClip(ClipData.newPlainText("DemoAppClip", text))
         toast(description)

@@ -18,10 +18,11 @@ class SubtreeRootUnsafe(
     val completingBlockHeight: BlockHeightUnsafe
 ) {
     companion object {
-        fun new(subtreeRoot: SubtreeRoot) = SubtreeRootUnsafe(
-            rootHash = subtreeRoot.rootHash.toByteArray(),
-            completingBlockHash = subtreeRoot.completingBlockHash.toByteArray(),
-            completingBlockHeight = BlockHeightUnsafe(subtreeRoot.completingBlockHeight),
-        )
+        fun new(subtreeRoot: SubtreeRoot) =
+            SubtreeRootUnsafe(
+                rootHash = subtreeRoot.rootHash.toByteArray(),
+                completingBlockHash = subtreeRoot.completingBlockHash.toByteArray(),
+                completingBlockHeight = BlockHeightUnsafe(subtreeRoot.completingBlockHeight),
+            )
     }
 }

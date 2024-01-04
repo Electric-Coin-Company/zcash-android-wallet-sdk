@@ -11,21 +11,21 @@ import java.text.ParseException
 import java.util.Locale
 
 object ZecString {
-
-    fun allowedCharacters(monetarySeparators: MonetarySeparators) = buildSet<Char> {
-        add('0')
-        add('1')
-        add('2')
-        add('3')
-        add('4')
-        add('5')
-        add('6')
-        add('7')
-        add('8')
-        add('9')
-        add(monetarySeparators.decimal)
-        add(monetarySeparators.grouping)
-    }
+    fun allowedCharacters(monetarySeparators: MonetarySeparators) =
+        buildSet<Char> {
+            add('0')
+            add('1')
+            add('2')
+            add('3')
+            add('4')
+            add('5')
+            add('6')
+            add('7')
+            add('8')
+            add('9')
+            add(monetarySeparators.decimal)
+            add(monetarySeparators.grouping)
+        }
 }
 
 data class MonetarySeparators(val grouping: Char, val decimal: Char) {
@@ -62,6 +62,7 @@ fun Zatoshi.toZecString() = convertZatoshiToZecString(DECIMALS, DECIMALS)
  * separator characters based on the user's current Locale.  This should avoid unexpected surprises
  * while also localizing the separator format.
  */
+
 /**
  * @return [zecString] parsed into Zatoshi or null if parsing failed.
  */
@@ -75,26 +76,29 @@ fun Zatoshi.Companion.fromZecString(
         return null
     }
 
-    val symbols = DecimalFormatSymbols.getInstance(Locale.US).apply {
-        this.groupingSeparator = monetarySeparators.grouping
-        this.decimalSeparator = monetarySeparators.decimal
-    }
+    val symbols =
+        DecimalFormatSymbols.getInstance(Locale.US).apply {
+            this.groupingSeparator = monetarySeparators.grouping
+            this.decimalSeparator = monetarySeparators.decimal
+        }
     val localizedPattern = "#${monetarySeparators.grouping}##0${monetarySeparators.decimal}0#"
 
     // TODO [#321]: https://github.com/zcash/secant-android-wallet/issues/321
-    val decimalFormat = DecimalFormat(localizedPattern, symbols).apply {
-        isParseBigDecimal = true
-        roundingMode = RoundingMode.HALF_EVEN // aka Bankers rounding
-    }
+    val decimalFormat =
+        DecimalFormat(localizedPattern, symbols).apply {
+            isParseBigDecimal = true
+            roundingMode = RoundingMode.HALF_EVEN // aka Bankers rounding
+        }
 
     // TODO [#343]: https://github.com/zcash/secant-android-wallet/issues/343
-    val bigDecimal = try {
-        decimalFormat.parse(zecString) as BigDecimal
-    } catch (e: NumberFormatException) {
-        null
-    } catch (e: ParseException) {
-        null
-    }
+    val bigDecimal =
+        try {
+            decimalFormat.parse(zecString) as BigDecimal
+        } catch (e: NumberFormatException) {
+            null
+        } catch (e: ParseException) {
+            null
+        }
 
     @Suppress("SwallowedException")
     return try {

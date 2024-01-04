@@ -7,5 +7,6 @@ import cash.z.ecc.android.sdk.internal.model.ScanRange
  */
 internal sealed class VerifySuggestedScanRange {
     data class ShouldVerify(val scanRange: ScanRange) : VerifySuggestedScanRange()
+
     object NoRangeToVerify : VerifySuggestedScanRange()
 }

@@ -47,14 +47,11 @@ sealed class TransactionRecipient {
 // fun PendingTransaction.isSameTxId(other: PendingTransaction) =
 //     rawTransactionId == other.rawTransactionId
 
-internal fun PendingTransaction.hasRawTransactionId() =
-    rawTransactionId?.byteArray?.isEmpty() == false
+internal fun PendingTransaction.hasRawTransactionId() = rawTransactionId?.byteArray?.isEmpty() == false
 
-fun PendingTransaction.isCreating() =
-    raw.byteArray.isNotEmpty() && submitAttempts <= 0 && !isFailedSubmit() && !isFailedEncoding()
+fun PendingTransaction.isCreating() = raw.byteArray.isNotEmpty() && submitAttempts <= 0 && !isFailedSubmit() && !isFailedEncoding()
 
-fun PendingTransaction.isCreated() =
-    raw.byteArray.isNotEmpty() && submitAttempts <= 0 && !isFailedSubmit() && !isFailedEncoding()
+fun PendingTransaction.isCreated() = raw.byteArray.isNotEmpty() && submitAttempts <= 0 && !isFailedSubmit() && !isFailedEncoding()
 
 fun PendingTransaction.isFailedEncoding() = raw.byteArray.isEmpty() && encodeAttempts > 0
 

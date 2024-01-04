@@ -227,20 +227,20 @@ private fun SendMainContent(
 
         Button(
             onClick = {
-                val zecSendValidation = ZecSendExt.new(
-                    context,
-                    recipientAddressString,
-                    amountZecString,
-                    memoString,
-                    monetarySeparators
-                )
+                val zecSendValidation =
+                    ZecSendExt.new(
+                        context,
+                        recipientAddressString,
+                        amountZecString,
+                        memoString,
+                        monetarySeparators
+                    )
 
                 when (zecSendValidation) {
                     is ZecSendExt.ZecSendValidation.Valid -> onSend(zecSendValidation.zecSend)
                     is ZecSendExt.ZecSendValidation.Invalid -> validation = zecSendValidation.validationErrors
                 }
             },
-
             // Needs actual validation
             enabled = amountZecString.isNotBlank() && recipientAddressString.isNotBlank()
         ) {

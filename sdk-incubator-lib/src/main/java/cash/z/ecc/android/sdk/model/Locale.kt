@@ -15,17 +15,19 @@ fun Locale.toJavaLocale(): java.util.Locale {
 }
 
 fun java.util.Locale.toKotlinLocale(): Locale {
-    val resultCountry = if (country.isNullOrEmpty()) {
-        null
-    } else {
-        country
-    }
+    val resultCountry =
+        if (country.isNullOrEmpty()) {
+            null
+        } else {
+            country
+        }
 
-    val resultVariant = if (variant.isNullOrEmpty()) {
-        null
-    } else {
-        variant
-    }
+    val resultVariant =
+        if (variant.isNullOrEmpty()) {
+            null
+        } else {
+            variant
+        }
 
     return Locale(language, resultCountry, resultVariant)
 }

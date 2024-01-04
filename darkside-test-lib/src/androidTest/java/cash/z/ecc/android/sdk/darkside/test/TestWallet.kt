@@ -48,9 +48,10 @@ class TestWallet(
         alias = alias
     )
 
-    val walletScope = CoroutineScope(
-        SupervisorJob() + newFixedThreadPoolContext(3, this.javaClass.simpleName)
-    )
+    val walletScope =
+        CoroutineScope(
+            SupervisorJob() + newFixedThreadPoolContext(3, this.javaClass.simpleName)
+        )
 
     // Although runBlocking isn't great, this usage is OK because this is only used within the
     // automated tests
@@ -60,16 +61,17 @@ class TestWallet(
     private val seed: ByteArray = Mnemonics.MnemonicCode(seedPhrase).toSeed()
     private val shieldedSpendingKey =
         runBlocking { DerivationTool.getInstance().deriveUnifiedSpendingKey(seed, network = network, account) }
-    val synchronizer: SdkSynchronizer = Synchronizer.newBlocking(
-        context,
-        network,
-        alias,
-        endpoint,
-        seed,
-        startHeight,
-        // Using existing wallet init mode as simplification for the test
-        walletInitMode = WalletInitMode.ExistingWallet
-    ) as SdkSynchronizer
+    val synchronizer: SdkSynchronizer =
+        Synchronizer.newBlocking(
+            context,
+            network,
+            alias,
+            endpoint,
+            seed,
+            startHeight,
+            // Using existing wallet init mode as simplification for the test
+            walletInitMode = WalletInitMode.ExistingWallet
+        ) as SdkSynchronizer
 
     val available get() = synchronizer.saplingBalances.value?.available
     val unifiedAddress =
@@ -85,12 +87,13 @@ class TestWallet(
     }
 
     suspend fun sync(timeout: Long = -1): TestWallet {
-        val killSwitch = walletScope.launch {
-            if (timeout > 0) {
-                delay(timeout)
-                throw TimeoutException("Failed to sync wallet within ${timeout}ms")
+        val killSwitch =
+            walletScope.launch {
+                if (timeout > 0) {
+                    delay(timeout)
+                    throw TimeoutException("Failed to sync wallet within ${timeout}ms")
+                }
             }
-        }
 
         // block until synced
         synchronizer.status.first { it == Synchronizer.Status.SYNCED }

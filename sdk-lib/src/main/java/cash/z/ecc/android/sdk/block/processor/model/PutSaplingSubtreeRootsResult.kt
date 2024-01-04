@@ -7,5 +7,6 @@ import cash.z.ecc.android.sdk.model.BlockHeight
  */
 internal sealed class PutSaplingSubtreeRootsResult {
     object Success : PutSaplingSubtreeRootsResult()
+
     data class Failure(val failedAtHeight: BlockHeight, val exception: Throwable) : PutSaplingSubtreeRootsResult()
 }

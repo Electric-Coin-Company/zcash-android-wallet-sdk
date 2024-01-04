@@ -64,8 +64,8 @@ enum class TransactionState {
     Expired;
 
     companion object {
-
         private const val MIN_CONFIRMATIONS = 10
+
         internal fun new(
             latestBlockHeight: BlockHeight?,
             minedHeight: BlockHeight?,

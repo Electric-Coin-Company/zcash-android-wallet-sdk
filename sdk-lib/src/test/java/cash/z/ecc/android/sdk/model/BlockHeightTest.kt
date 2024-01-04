@@ -63,11 +63,12 @@ class BlockHeightTest {
 
     @Test
     fun subtraction_of_block_height_succeeds() {
-        val one = BlockHeight.new(
-            ZcashNetwork.Mainnet,
-            ZcashNetwork.Mainnet.saplingActivationHeight.value +
-                ZcashNetwork.Mainnet.saplingActivationHeight.value
-        )
+        val one =
+            BlockHeight.new(
+                ZcashNetwork.Mainnet,
+                ZcashNetwork.Mainnet.saplingActivationHeight.value +
+                    ZcashNetwork.Mainnet.saplingActivationHeight.value
+            )
         val two = BlockHeight.new(ZcashNetwork.Mainnet, ZcashNetwork.Mainnet.saplingActivationHeight.value)
 
         assertEquals(ZcashNetwork.Mainnet.saplingActivationHeight.value, one - two)

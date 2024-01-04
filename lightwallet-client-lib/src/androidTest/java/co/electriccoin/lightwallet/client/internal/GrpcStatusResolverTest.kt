@@ -10,7 +10,6 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class GrpcStatusResolverTest {
-
     @Test
     @SmallTest
     fun resolve_explicitly_caught_server_error_test() {

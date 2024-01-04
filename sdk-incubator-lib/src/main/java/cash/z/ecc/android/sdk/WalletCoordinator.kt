@@ -43,7 +43,6 @@ class WalletCoordinator(
     context: Context,
     val persistableWallet: Flow<PersistableWallet?>
 ) {
-
     private val applicationContext = context.applicationContext
 
     /*
@@ -60,35 +59,39 @@ class WalletCoordinator(
 
     private sealed class InternalSynchronizerStatus {
         object NoWallet : InternalSynchronizerStatus()
+
         class Available(val synchronizer: Synchronizer) : InternalSynchronizerStatus()
+
         class Lockout(val id: UUID) : InternalSynchronizerStatus()
     }
 
-    private val synchronizerOrLockoutId: Flow<Flow<InternalSynchronizerStatus>> = persistableWallet
-        .combine(synchronizerLockoutId) { persistableWallet: PersistableWallet?, lockoutId: UUID? ->
-            if (null != lockoutId) { // this one needs to come first
-                flowOf(InternalSynchronizerStatus.Lockout(lockoutId))
-            } else if (null == persistableWallet) {
-                flowOf(InternalSynchronizerStatus.NoWallet)
-            } else {
-                callbackFlow<InternalSynchronizerStatus.Available> {
-                    val closeableSynchronizer = Synchronizer.new(
-                        context = context,
-                        zcashNetwork = persistableWallet.network,
-                        lightWalletEndpoint = persistableWallet.endpoint,
-                        birthday = persistableWallet.birthday,
-                        seed = persistableWallet.seedPhrase.toByteArray(),
-                        walletInitMode = persistableWallet.walletInitMode,
-                    )
+    private val synchronizerOrLockoutId: Flow<Flow<InternalSynchronizerStatus>> =
+        persistableWallet
+            .combine(synchronizerLockoutId) { persistableWallet: PersistableWallet?, lockoutId: UUID? ->
+                if (null != lockoutId) { // this one needs to come first
+                    flowOf(InternalSynchronizerStatus.Lockout(lockoutId))
+                } else if (null == persistableWallet) {
+                    flowOf(InternalSynchronizerStatus.NoWallet)
+                } else {
+                    callbackFlow<InternalSynchronizerStatus.Available> {
+                        val closeableSynchronizer =
+                            Synchronizer.new(
+                                context = context,
+                                zcashNetwork = persistableWallet.network,
+                                lightWalletEndpoint = persistableWallet.endpoint,
+                                birthday = persistableWallet.birthday,
+                                seed = persistableWallet.seedPhrase.toByteArray(),
+                                walletInitMode = persistableWallet.walletInitMode,
+                            )
 
-                    trySend(InternalSynchronizerStatus.Available(closeableSynchronizer))
-                    awaitClose {
-                        Twig.info { "Closing flow and stopping synchronizer" }
-                        closeableSynchronizer.close()
+                        trySend(InternalSynchronizerStatus.Available(closeableSynchronizer))
+                        awaitClose {
+                            Twig.info { "Closing flow and stopping synchronizer" }
+                            closeableSynchronizer.close()
+                        }
                     }
                 }
             }
-        }
 
     /**
      * Synchronizer for the Zcash SDK. Emits null until a wallet secret is persisted.
@@ -97,22 +100,23 @@ class WalletCoordinator(
      * cases, see [WalletViewModel].
      */
     @OptIn(ExperimentalCoroutinesApi::class)
-    val synchronizer: StateFlow<Synchronizer?> = synchronizerOrLockoutId
-        .flatMapLatest {
-            it
-        }
-        .map {
-            when (it) {
-                is InternalSynchronizerStatus.Available -> it.synchronizer
-                is InternalSynchronizerStatus.Lockout -> null
-                InternalSynchronizerStatus.NoWallet -> null
+    val synchronizer: StateFlow<Synchronizer?> =
+        synchronizerOrLockoutId
+            .flatMapLatest {
+                it
             }
-        }
-        .stateIn(
-            walletScope,
-            SharingStarted.WhileSubscribed(),
-            null
-        )
+            .map {
+                when (it) {
+                    is InternalSynchronizerStatus.Available -> it.synchronizer
+                    is InternalSynchronizerStatus.Lockout -> null
+                    InternalSynchronizerStatus.NoWallet -> null
+                }
+            }
+            .stateIn(
+                walletScope,
+                SharingStarted.WhileSubscribed(),
+                null
+            )
 
     /**
      * Rescans the blockchain.
@@ -154,10 +158,11 @@ class WalletCoordinator(
                         .filter { it.id == lockoutId }
                         .onFirst {
                             synchronizerMutex.withLock {
-                                val didDelete = Synchronizer.erase(
-                                    appContext = applicationContext,
-                                    network = zcashNetwork
-                                )
+                                val didDelete =
+                                    Synchronizer.erase(
+                                        appContext = applicationContext,
+                                        network = zcashNetwork
+                                    )
                                 Twig.info { "SDK erase result: $didDelete" }
                             }
                         }

@@ -34,7 +34,6 @@ import kotlinx.coroutines.launch
  */
 @Suppress("TooManyFunctions")
 class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
-
     override fun inflateBinding(layoutInflater: LayoutInflater): FragmentGetBalanceBinding =
         FragmentGetBalanceBinding.inflate(layoutInflater)
 
@@ -48,7 +47,10 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
         reportTraceEvent(SyncBlockchainBenchmarkTrace.Event.BALANCE_SCREEN_END)
     }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?
+    ) {
         super.onViewCreated(view, savedInstanceState)
 
         val seedPhrase = sharedViewModel.seedPhrase.value
@@ -110,25 +112,19 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
         }
     }
 
-    private fun onOrchardBalance(
-        orchardBalance: WalletBalance?
-    ) {
+    private fun onOrchardBalance(orchardBalance: WalletBalance?) {
         binding.orchardBalance.apply {
             text = orchardBalance.humanString()
         }
     }
 
-    private fun onSaplingBalance(
-        saplingBalance: WalletBalance?
-    ) {
+    private fun onSaplingBalance(saplingBalance: WalletBalance?) {
         binding.saplingBalance.apply {
             text = saplingBalance.humanString()
         }
     }
 
-    private fun onTransparentBalance(
-        transparentBalance: WalletBalance?
-    ) {
+    private fun onTransparentBalance(transparentBalance: WalletBalance?) {
         binding.transparentBalance.apply {
             text = transparentBalance.humanString()
         }
@@ -136,26 +132,28 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
         binding.shield.apply {
             // TODO [#776]: Support variable fees
             // TODO [#776]: https://github.com/zcash/zcash-android-wallet-sdk/issues/776
-            visibility = if ((transparentBalance?.available ?: Zatoshi(0)) > ZcashSdk.MINERS_FEE) {
-                View.VISIBLE
-            } else {
-                View.GONE
-            }
+            visibility =
+                if ((transparentBalance?.available ?: Zatoshi(0)) > ZcashSdk.MINERS_FEE) {
+                    View.VISIBLE
+                } else {
+                    View.GONE
+                }
         }
     }
 
     private fun onStatus(status: Synchronizer.Status) {
         Twig.debug { "Synchronizer status: $status" }
         // report benchmark event
-        val traceEvents = when (status) {
-            Synchronizer.Status.SYNCING -> {
-                SyncBlockchainBenchmarkTrace.Event.BLOCKCHAIN_SYNC_START
+        val traceEvents =
+            when (status) {
+                Synchronizer.Status.SYNCING -> {
+                    SyncBlockchainBenchmarkTrace.Event.BLOCKCHAIN_SYNC_START
+                }
+                Synchronizer.Status.SYNCED -> {
+                    SyncBlockchainBenchmarkTrace.Event.BLOCKCHAIN_SYNC_END
+                }
+                else -> null
             }
-            Synchronizer.Status.SYNCED -> {
-                SyncBlockchainBenchmarkTrace.Event.BLOCKCHAIN_SYNC_END
-            }
-            else -> null
-        }
         traceEvents?.let { reportTraceEvent(it) }
 
         binding.textStatus.text = "Status: $status"
@@ -175,12 +173,13 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
 }
 
 @Suppress("MagicNumber")
-private fun WalletBalance?.humanString() = if (null == this) {
-    "Calculating balance"
-} else {
-    """
-                Pending balance: ${pending.convertZatoshiToZecString(12)}
-                Available balance: ${available.convertZatoshiToZecString(12)}
-                Total balance: ${total.convertZatoshiToZecString(12)}
-    """.trimIndent()
-}
+private fun WalletBalance?.humanString() =
+    if (null == this) {
+        "Calculating balance"
+    } else {
+        """
+        Pending balance: ${pending.convertZatoshiToZecString(12)}
+        Available balance: ${available.convertZatoshiToZecString(12)}
+        Total balance: ${total.convertZatoshiToZecString(12)}
+        """.trimIndent()
+    }

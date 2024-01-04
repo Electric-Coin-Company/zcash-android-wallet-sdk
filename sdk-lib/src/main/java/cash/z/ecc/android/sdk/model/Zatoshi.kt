@@ -14,6 +14,7 @@ data class Zatoshi(val value: Long) : Comparable<Zatoshi> {
     }
 
     operator fun plus(other: Zatoshi) = Zatoshi(value + other.value)
+
     operator fun minus(other: Zatoshi) = Zatoshi(value - other.value)
 
     override fun compareTo(other: Zatoshi) = value.compareTo(other.value)

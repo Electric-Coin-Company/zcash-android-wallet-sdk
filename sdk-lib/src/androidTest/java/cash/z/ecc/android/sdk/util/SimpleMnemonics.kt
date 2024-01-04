@@ -10,11 +10,18 @@ import java.util.Locale
 
 class SimpleMnemonics : MnemonicPlugin {
     override fun fullWordList(languageCode: String) = Mnemonics.getCachedWords(Locale.ENGLISH.language)
+
     override fun nextEntropy(): ByteArray = WordCount.COUNT_24.toEntropy()
+
     override fun nextMnemonic(): CharArray = MnemonicCode(WordCount.COUNT_24).chars
+
     override fun nextMnemonic(seed: ByteArray): CharArray = MnemonicCode(seed).chars
+
     override fun nextMnemonicList(): List<CharArray> = MnemonicCode(WordCount.COUNT_24).words
+
     override fun nextMnemonicList(seed: ByteArray): List<CharArray> = MnemonicCode(seed).words
+
     override fun toSeed(mnemonic: CharArray): ByteArray = MnemonicCode(mnemonic).toSeed()
+
     override fun toWordList(mnemonic: CharArray): List<CharArray> = MnemonicCode(mnemonic).words
 }

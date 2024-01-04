@@ -46,15 +46,17 @@ class ZatoshiExtTest {
     @SmallTest
     fun rounded_zatoshi_to_fiat_conversion_test() {
         val roundedZatoshi = ZatoshiFixture.new(100_000_000L)
-        val roundedCurrencyConversion = CurrencyConversionFixture.new(
-            priceOfZec = 100.0
-        )
+        val roundedCurrencyConversion =
+            CurrencyConversionFixture.new(
+                priceOfZec = 100.0
+            )
 
-        val fiatString = roundedZatoshi.toFiatString(
-            roundedCurrencyConversion,
-            LocaleFixture.new(),
-            EN_US_SEPARATORS
-        )
+        val fiatString =
+            roundedZatoshi.toFiatString(
+                roundedCurrencyConversion,
+                LocaleFixture.new(),
+                EN_US_SEPARATORS
+            )
 
         fiatString.also {
             assertNotNull(it)

@@ -7,14 +7,15 @@ import java.nio.ByteBuffer
  * Used for getting single mocked compact block for processing and persisting purposes.
  */
 internal object SingleCompactBlockFixture {
-
     internal const val DEFAULT_HEIGHT = 500_000L
     internal const val DEFAULT_TIME = 0
     internal const val DEFAULT_SAPLING_OUTPUT_COUNT = 1u
     internal const val DEFAULT_ORCHARD_OUTPUT_COUNT = 2u
     internal const val DEFAULT_HASH = DEFAULT_HEIGHT
     internal const val DEFAULT_BLOCK_BYTES = DEFAULT_HEIGHT
+
     internal fun heightToFixtureData(height: Long) = BytesConversionHelper.longToBytes(height)
+
     internal fun fixtureDataToHeight(byteArray: ByteArray) = BytesConversionHelper.bytesToLong(byteArray)
 
     @Suppress("LongParameterList")

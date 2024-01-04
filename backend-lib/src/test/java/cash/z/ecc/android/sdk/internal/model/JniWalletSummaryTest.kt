@@ -8,11 +8,12 @@ import kotlin.test.assertIs
 class JniWalletSummaryTest {
     @Test
     fun both_attribute_within_constraints() {
-        val instance = JniWalletSummary(
-            accountBalances = arrayOf(JniAccountBalanceFixture.new()),
-            progressNumerator = 1L,
-            progressDenominator = 100L
-        )
+        val instance =
+            JniWalletSummary(
+                accountBalances = arrayOf(JniAccountBalanceFixture.new()),
+                progressNumerator = 1L,
+                progressDenominator = 100L
+            )
         assertIs<JniWalletSummary>(instance)
     }
 

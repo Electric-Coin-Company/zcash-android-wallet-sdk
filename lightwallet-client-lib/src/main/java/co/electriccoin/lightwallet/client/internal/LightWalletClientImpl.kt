@@ -45,7 +45,6 @@ internal class LightWalletClientImpl private constructor(
     private val singleRequestTimeout: Duration = 10.seconds,
     private val streamingRequestTimeout: Duration = 90.seconds
 ) : LightWalletClient {
-
     private var channel = channelFactory.newChannel(lightWalletEndpoint)
 
     override fun getBlockRange(heightRange: ClosedRange<BlockHeightUnsafe>): Flow<Response<CompactBlockUnsafe>> {
@@ -75,8 +74,9 @@ internal class LightWalletClientImpl private constructor(
                 // for a more reliable benchmark results.
                 Response.Success(BlockHeightUnsafe(BenchmarkingBlockRangeFixture.new().endInclusive))
             } else {
-                val response = requireChannel().createStub(singleRequestTimeout)
-                    .getLatestBlock(Service.ChainSpec.newBuilder().build())
+                val response =
+                    requireChannel().createStub(singleRequestTimeout)
+                        .getLatestBlock(Service.ChainSpec.newBuilder().build())
 
                 val blockHeight = BlockHeightUnsafe(response.height)
 
@@ -90,8 +90,9 @@ internal class LightWalletClientImpl private constructor(
     @Suppress("SwallowedException")
     override suspend fun getServerInfo(): Response<LightWalletEndpointInfoUnsafe> {
         return try {
-            val lightdInfo = requireChannel().createStub(singleRequestTimeout)
-                .getLightdInfo(Service.Empty.newBuilder().build())
+            val lightdInfo =
+                requireChannel().createStub(singleRequestTimeout)
+                    .getLightdInfo(Service.Empty.newBuilder().build())
 
             val lightwalletEndpointInfo = LightWalletEndpointInfoUnsafe.new(lightdInfo)
 
@@ -107,9 +108,10 @@ internal class LightWalletClientImpl private constructor(
                 " so this request was ignored on the client-side." // NON-NLS
         }
 
-        val request = Service.RawTransaction.newBuilder()
-            .setData(ByteString.copyFrom(spendTransaction))
-            .build()
+        val request =
+            Service.RawTransaction.newBuilder()
+                .setData(ByteString.copyFrom(spendTransaction))
+                .build()
 
         return try {
             val response = requireChannel().createStub().sendTransaction(request)
@@ -182,10 +184,11 @@ internal class LightWalletClientImpl private constructor(
                 "$tAddress." // NON-NLS
         }
 
-        val request = Service.TransparentAddressBlockFilter.newBuilder()
-            .setAddress(tAddress)
-            .setRange(blockHeightRange.toBlockRange())
-            .build()
+        val request =
+            Service.TransparentAddressBlockFilter.newBuilder()
+                .setAddress(tAddress)
+                .setRange(blockHeightRange.toBlockRange())
+                .build()
 
         return try {
             requireChannel().createStub(streamingRequestTimeout)
@@ -247,11 +250,13 @@ internal class LightWalletClientImpl private constructor(
     // consider making it thread safe.
     private var stateCount = 0
     private var state: ConnectivityState? = null
+
     private fun requireChannel(): ManagedChannel {
-        state = channel.getState(false).let { new ->
-            if (state == new) stateCount++ else stateCount = 0
-            new
-        }
+        state =
+            channel.getState(false).let { new ->
+                if (state == new) stateCount++ else stateCount = 0
+                new
+            }
         channel.resetConnectBackoff()
         return channel
     }
@@ -270,8 +275,7 @@ private fun Channel.createStub(timeoutSec: Duration = 60.seconds) =
     CompactTxStreamerGrpcKt.CompactTxStreamerCoroutineStub(this, CallOptions.DEFAULT)
         .withDeadlineAfter(timeoutSec.inWholeSeconds, TimeUnit.SECONDS)
 
-private fun BlockHeightUnsafe.toBlockHeight(): Service.BlockID =
-    Service.BlockID.newBuilder().setHeight(value).build()
+private fun BlockHeightUnsafe.toBlockHeight(): Service.BlockID = Service.BlockID.newBuilder().setHeight(value).build()
 
 private fun ClosedRange<BlockHeightUnsafe>.toBlockRange(): Service.BlockRange =
     Service.BlockRange.newBuilder()

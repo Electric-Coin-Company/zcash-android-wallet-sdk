@@ -23,7 +23,6 @@ class UtxoAdapter : ListAdapter<TransactionOverview, UtxoViewHolder>(
         ) = oldItem == newItem
     }
 ) {
-
     override fun onCreateViewHolder(
         parent: ViewGroup,
         viewType: Int

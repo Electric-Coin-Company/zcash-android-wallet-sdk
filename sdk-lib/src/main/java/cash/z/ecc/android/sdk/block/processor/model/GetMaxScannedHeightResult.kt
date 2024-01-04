@@ -7,6 +7,8 @@ import cash.z.ecc.android.sdk.model.BlockHeight
  */
 internal sealed class GetMaxScannedHeightResult {
     data class Success(val height: BlockHeight) : GetMaxScannedHeightResult()
+
     data object None : GetMaxScannedHeightResult()
+
     data class Failure(val exception: Throwable) : GetMaxScannedHeightResult()
 }

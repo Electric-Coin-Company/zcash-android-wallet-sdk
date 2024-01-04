@@ -49,8 +49,7 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
 
     private val isSynced get() = status == Synchronizer.Status.SYNCED
 
-    override fun inflateBinding(layoutInflater: LayoutInflater): FragmentListUtxosBinding =
-        FragmentListUtxosBinding.inflate(layoutInflater)
+    override fun inflateBinding(layoutInflater: LayoutInflater): FragmentListUtxosBinding = FragmentListUtxosBinding.inflate(layoutInflater)
 
     private fun initUi() {
         binding.inputAddress.setText(address)
@@ -131,7 +130,10 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
 
     // private val now get() = System.currentTimeMillis()
 
-    private fun updateStatus(message: String, append: Boolean = true) {
+    private fun updateStatus(
+        message: String,
+        append: Boolean = true
+    ) {
         if (append) {
             binding.textStatus.text = "${binding.textStatus.text} $message"
         } else {
@@ -140,7 +142,10 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
         Twig.debug { message }
     }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?
+    ) {
         super.onViewCreated(view, savedInstanceState)
         initUi()
         monitorStatus()

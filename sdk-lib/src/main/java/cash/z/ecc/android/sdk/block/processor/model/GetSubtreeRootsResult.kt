@@ -7,7 +7,10 @@ import cash.z.ecc.android.sdk.internal.model.SubtreeRoot
  */
 internal sealed class GetSubtreeRootsResult {
     data class SpendBeforeSync(val subTreeRootList: List<SubtreeRoot>) : GetSubtreeRootsResult()
+
     data object Linear : GetSubtreeRootsResult()
+
     data object FailureConnection : GetSubtreeRootsResult()
+
     data class OtherFailure(val exception: Throwable) : GetSubtreeRootsResult()
 }

@@ -11,7 +11,6 @@ internal class FakeRustBackend(
     override val networkId: Int,
     val metadata: MutableList<JniBlockMeta>
 ) : Backend {
-
     override suspend fun writeBlockMetadata(blockMetadata: List<JniBlockMeta>) {
         metadata.addAll(blockMetadata)
     }
@@ -76,8 +75,7 @@ internal class FakeRustBackend(
         metadata.removeAll { it.height > height }
     }
 
-    override suspend fun initBlockMetaDb(): Int =
-        error("Intentionally not implemented in mocked FakeRustBackend implementation.")
+    override suspend fun initBlockMetaDb(): Int = error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 
     override suspend fun createToAddress(
         account: Int,
@@ -89,7 +87,11 @@ internal class FakeRustBackend(
         TODO("Not yet implemented")
     }
 
-    override suspend fun shieldToAddress(account: Int, unifiedSpendingKey: ByteArray, memo: ByteArray?): ByteArray {
+    override suspend fun shieldToAddress(
+        account: Int,
+        unifiedSpendingKey: ByteArray,
+        memo: ByteArray?
+    ): ByteArray {
         TODO("Not yet implemented")
     }
 
@@ -103,8 +105,7 @@ internal class FakeRustBackend(
         seed: ByteArray,
         treeState: ByteArray,
         recoverUntil: Long?
-    ): JniUnifiedSpendingKey =
-        error("Intentionally not implemented in mocked FakeRustBackend implementation.")
+    ): JniUnifiedSpendingKey = error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 
     override fun isValidShieldedAddr(addr: String): Boolean =
         error("Intentionally not implemented in mocked FakeRustBackend implementation.")
@@ -122,8 +123,7 @@ internal class FakeRustBackend(
     override fun getTransparentReceiver(ua: String): String? =
         error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 
-    override fun getSaplingReceiver(ua: String): String? =
-        error("Intentionally not implemented in mocked FakeRustBackend implementation.")
+    override fun getSaplingReceiver(ua: String): String? = error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 
     override suspend fun listTransparentReceivers(account: Int): List<String> {
         TODO("Not yet implemented")
@@ -133,13 +133,17 @@ internal class FakeRustBackend(
         TODO("Not yet implemented")
     }
 
-    override suspend fun getMemoAsUtf8(txId: ByteArray, outputIndex: Int): String? =
-        error("Intentionally not implemented in mocked FakeRustBackend implementation.")
+    override suspend fun getMemoAsUtf8(
+        txId: ByteArray,
+        outputIndex: Int
+    ): String? = error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 
     override suspend fun getNearestRewindHeight(height: Long): Long {
         TODO("Not yet implemented")
     }
 
-    override suspend fun scanBlocks(fromHeight: Long, limit: Long) =
-        error("Intentionally not implemented in mocked FakeRustBackend implementation.")
+    override suspend fun scanBlocks(
+        fromHeight: Long,
+        limit: Long
+    ) = error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 }

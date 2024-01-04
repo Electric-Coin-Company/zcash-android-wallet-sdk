@@ -4,19 +4,16 @@ import cash.z.ecc.android.sdk.internal.Derivation
 import cash.z.ecc.android.sdk.internal.model.JniUnifiedSpendingKey
 
 class RustDerivationTool private constructor() : Derivation {
-
     override fun deriveUnifiedFullViewingKeys(
         seed: ByteArray,
         networkId: Int,
         numberOfAccounts: Int
-    ): Array<String> =
-        deriveUnifiedFullViewingKeysFromSeed(seed, numberOfAccounts, networkId = networkId)
+    ): Array<String> = deriveUnifiedFullViewingKeysFromSeed(seed, numberOfAccounts, networkId = networkId)
 
     override fun deriveUnifiedFullViewingKey(
         usk: JniUnifiedSpendingKey,
         networkId: Int
-    ): String =
-        deriveUnifiedFullViewingKey(usk.bytes, networkId = networkId)
+    ): String = deriveUnifiedFullViewingKey(usk.bytes, networkId = networkId)
 
     override fun deriveUnifiedSpendingKey(
         seed: ByteArray,
@@ -24,8 +21,11 @@ class RustDerivationTool private constructor() : Derivation {
         accountIndex: Int
     ): JniUnifiedSpendingKey = deriveSpendingKey(seed, accountIndex, networkId = networkId)
 
-    override fun deriveUnifiedAddress(seed: ByteArray, networkId: Int, accountIndex: Int): String =
-        deriveUnifiedAddressFromSeed(seed, accountIndex = accountIndex, networkId = networkId)
+    override fun deriveUnifiedAddress(
+        seed: ByteArray,
+        networkId: Int,
+        accountIndex: Int
+    ): String = deriveUnifiedAddressFromSeed(seed, accountIndex = accountIndex, networkId = networkId)
 
     /**
      * Given a Unified Full Viewing Key string, return the associated Unified Address.
@@ -38,8 +38,7 @@ class RustDerivationTool private constructor() : Derivation {
     override fun deriveUnifiedAddress(
         viewingKey: String,
         networkId: Int
-    ): String =
-        deriveUnifiedAddressFromViewingKey(viewingKey, networkId = networkId)
+    ): String = deriveUnifiedAddressFromViewingKey(viewingKey, networkId = networkId)
 
     companion object {
         suspend fun new(): Derivation {
@@ -63,7 +62,10 @@ class RustDerivationTool private constructor() : Derivation {
         ): Array<String>
 
         @JvmStatic
-        private external fun deriveUnifiedFullViewingKey(usk: ByteArray, networkId: Int): String
+        private external fun deriveUnifiedFullViewingKey(
+            usk: ByteArray,
+            networkId: Int
+        ): String
 
         @JvmStatic
         private external fun deriveUnifiedAddressFromSeed(
@@ -73,6 +75,9 @@ class RustDerivationTool private constructor() : Derivation {
         ): String
 
         @JvmStatic
-        private external fun deriveUnifiedAddressFromViewingKey(key: String, networkId: Int): String
+        private external fun deriveUnifiedAddressFromViewingKey(
+            key: String,
+            networkId: Int
+        ): String
     }
 }

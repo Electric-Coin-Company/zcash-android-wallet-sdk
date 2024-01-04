@@ -9,10 +9,11 @@ internal data class AccountBalance(
     companion object {
         fun new(jni: JniAccountBalance): AccountBalance {
             return AccountBalance(
-                sapling = WalletBalance(
-                    Zatoshi(jni.saplingTotalBalance),
-                    Zatoshi(jni.saplingVerifiedBalance)
-                )
+                sapling =
+                    WalletBalance(
+                        Zatoshi(jni.saplingTotalBalance),
+                        Zatoshi(jni.saplingVerifiedBalance)
+                    )
             )
         }
     }
