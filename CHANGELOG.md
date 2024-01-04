@@ -6,6 +6,9 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `TransactionOverview.txIdString()` to provide a readable transaction ID to SDK-consuming apps
+
 ### Changed
 - Gradle 8.5
 - Kotlin 1.9.21
