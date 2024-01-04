@@ -17,18 +17,20 @@ class FiatCurrencyConversionRateStateTest {
     fun future_near() {
         val zatoshi = ZatoshiFixture.new()
 
-        val frozenClock = FrozenClock(
-            CurrencyConversionFixture.TIMESTAMP - FiatCurrencyConversionRateState.FUTURE_CUTOFF_AGE_INCLUSIVE
-        )
+        val frozenClock =
+            FrozenClock(
+                CurrencyConversionFixture.TIMESTAMP - FiatCurrencyConversionRateState.FUTURE_CUTOFF_AGE_INCLUSIVE
+            )
 
         val currencyConversion = CurrencyConversionFixture.new()
 
-        val result = zatoshi.toFiatCurrencyState(
-            currencyConversion,
-            LocaleFixture.new(),
-            MonetarySeparatorsFixture.new(),
-            frozenClock
-        )
+        val result =
+            zatoshi.toFiatCurrencyState(
+                currencyConversion,
+                LocaleFixture.new(),
+                MonetarySeparatorsFixture.new(),
+                frozenClock
+            )
 
         assertIs<FiatCurrencyConversionRateState.Current>(result)
     }
@@ -38,20 +40,22 @@ class FiatCurrencyConversionRateStateTest {
     fun future_far() {
         val zatoshi = ZatoshiFixture.new()
 
-        val frozenClock = FrozenClock(
-            CurrencyConversionFixture.TIMESTAMP -
-                FiatCurrencyConversionRateState.FUTURE_CUTOFF_AGE_INCLUSIVE -
-                1.seconds
-        )
+        val frozenClock =
+            FrozenClock(
+                CurrencyConversionFixture.TIMESTAMP -
+                    FiatCurrencyConversionRateState.FUTURE_CUTOFF_AGE_INCLUSIVE -
+                    1.seconds
+            )
 
         val currencyConversion = CurrencyConversionFixture.new()
 
-        val result = zatoshi.toFiatCurrencyState(
-            currencyConversion,
-            LocaleFixture.new(),
-            MonetarySeparatorsFixture.new(),
-            frozenClock
-        )
+        val result =
+            zatoshi.toFiatCurrencyState(
+                currencyConversion,
+                LocaleFixture.new(),
+                MonetarySeparatorsFixture.new(),
+                frozenClock
+            )
 
         assertIs<FiatCurrencyConversionRateState.Unavailable>(result)
     }
@@ -63,16 +67,18 @@ class FiatCurrencyConversionRateStateTest {
 
         val frozenClock = FrozenClock(CurrencyConversionFixture.TIMESTAMP)
 
-        val currencyConversion = CurrencyConversionFixture.new(
-            timestamp = CurrencyConversionFixture.TIMESTAMP - 1.seconds
-        )
+        val currencyConversion =
+            CurrencyConversionFixture.new(
+                timestamp = CurrencyConversionFixture.TIMESTAMP - 1.seconds
+            )
 
-        val result = zatoshi.toFiatCurrencyState(
-            currencyConversion,
-            LocaleFixture.new(),
-            MonetarySeparatorsFixture.new(),
-            frozenClock
-        )
+        val result =
+            zatoshi.toFiatCurrencyState(
+                currencyConversion,
+                LocaleFixture.new(),
+                MonetarySeparatorsFixture.new(),
+                frozenClock
+            )
 
         assertIs<FiatCurrencyConversionRateState.Current>(result)
     }
@@ -84,18 +90,21 @@ class FiatCurrencyConversionRateStateTest {
 
         val frozenClock = FrozenClock(CurrencyConversionFixture.TIMESTAMP)
 
-        val currencyConversion = CurrencyConversionFixture.new(
-            timestamp = CurrencyConversionFixture.TIMESTAMP -
-                FiatCurrencyConversionRateState.CURRENT_CUTOFF_AGE_INCLUSIVE -
-                1.seconds
-        )
+        val currencyConversion =
+            CurrencyConversionFixture.new(
+                timestamp =
+                    CurrencyConversionFixture.TIMESTAMP -
+                        FiatCurrencyConversionRateState.CURRENT_CUTOFF_AGE_INCLUSIVE -
+                        1.seconds
+            )
 
-        val result = zatoshi.toFiatCurrencyState(
-            currencyConversion,
-            LocaleFixture.new(),
-            MonetarySeparatorsFixture.new(),
-            frozenClock
-        )
+        val result =
+            zatoshi.toFiatCurrencyState(
+                currencyConversion,
+                LocaleFixture.new(),
+                MonetarySeparatorsFixture.new(),
+                frozenClock
+            )
 
         assertIs<FiatCurrencyConversionRateState.Stale>(result)
     }
@@ -107,18 +116,21 @@ class FiatCurrencyConversionRateStateTest {
 
         val frozenClock = FrozenClock(CurrencyConversionFixture.TIMESTAMP)
 
-        val currencyConversion = CurrencyConversionFixture.new(
-            timestamp = CurrencyConversionFixture.TIMESTAMP -
-                FiatCurrencyConversionRateState.STALE_CUTOFF_AGE_INCLUSIVE -
-                1.seconds
-        )
+        val currencyConversion =
+            CurrencyConversionFixture.new(
+                timestamp =
+                    CurrencyConversionFixture.TIMESTAMP -
+                        FiatCurrencyConversionRateState.STALE_CUTOFF_AGE_INCLUSIVE -
+                        1.seconds
+            )
 
-        val result = zatoshi.toFiatCurrencyState(
-            currencyConversion,
-            LocaleFixture.new(),
-            MonetarySeparatorsFixture.new(),
-            frozenClock
-        )
+        val result =
+            zatoshi.toFiatCurrencyState(
+                currencyConversion,
+                LocaleFixture.new(),
+                MonetarySeparatorsFixture.new(),
+                frozenClock
+            )
 
         assertIs<FiatCurrencyConversionRateState.Unavailable>(result)
     }
@@ -128,11 +140,12 @@ class FiatCurrencyConversionRateStateTest {
     fun null_conversion_rate() {
         val zatoshi = ZatoshiFixture.new()
 
-        val result = zatoshi.toFiatCurrencyState(
-            null,
-            LocaleFixture.new(),
-            MonetarySeparatorsFixture.new()
-        )
+        val result =
+            zatoshi.toFiatCurrencyState(
+                null,
+                LocaleFixture.new(),
+                MonetarySeparatorsFixture.new()
+            )
 
         assertIs<FiatCurrencyConversionRateState.Unavailable>(result)
     }

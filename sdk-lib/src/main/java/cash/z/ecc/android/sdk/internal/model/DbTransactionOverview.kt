@@ -21,6 +21,7 @@ internal data class DbTransactionOverview internal constructor(
     val blockTimeEpochSeconds: Long?
 ) {
     override fun toString() = "DbTransactionOverview"
+
     fun txIdString(): String {
         return rawId.byteArray.toHexReversed()
     }

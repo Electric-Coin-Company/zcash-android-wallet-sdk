@@ -32,7 +32,10 @@ internal data class SubtreeRoot(
     }
 
     companion object {
-        fun new(unsafe: SubtreeRootUnsafe, zcashNetwork: ZcashNetwork): SubtreeRoot {
+        fun new(
+            unsafe: SubtreeRootUnsafe,
+            zcashNetwork: ZcashNetwork
+        ): SubtreeRoot {
             return SubtreeRoot(
                 rootHash = unsafe.rootHash,
                 completingBlockHash = unsafe.completingBlockHash,

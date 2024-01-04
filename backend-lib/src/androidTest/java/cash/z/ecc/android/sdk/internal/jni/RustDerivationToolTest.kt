@@ -6,7 +6,6 @@ import org.junit.Test
 import kotlin.test.assertContentEquals
 
 class RustDerivationToolTest {
-
     companion object {
         private const val SEED_PHRASE =
             "kitchen renew wide common vague fold vacuum tilt amazing pear square gossip jewel month tree shock scan" +
@@ -14,12 +13,13 @@ class RustDerivationToolTest {
     }
 
     @Test
-    fun create_spending_key_does_not_mutate_passed_bytes() = runTest {
-        val bytesOne = Mnemonics.MnemonicCode(SEED_PHRASE).toEntropy()
-        val bytesTwo = Mnemonics.MnemonicCode(SEED_PHRASE).toEntropy()
+    fun create_spending_key_does_not_mutate_passed_bytes() =
+        runTest {
+            val bytesOne = Mnemonics.MnemonicCode(SEED_PHRASE).toEntropy()
+            val bytesTwo = Mnemonics.MnemonicCode(SEED_PHRASE).toEntropy()
 
-        RustDerivationTool.new().deriveUnifiedSpendingKey(bytesOne, networkId = 1, accountIndex = 0)
+            RustDerivationTool.new().deriveUnifiedSpendingKey(bytesOne, networkId = 1, accountIndex = 0)
 
-        assertContentEquals(bytesTwo, bytesOne)
-    }
+            assertContentEquals(bytesTwo, bytesOne)
+        }
 }

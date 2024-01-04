@@ -63,14 +63,15 @@ class MainActivity :
         val navController = findNavController(R.id.nav_host_fragment)
         // Passing each menu ID as a set of Ids because each
         // menu should be considered as top level destinations.
-        appBarConfiguration = AppBarConfiguration(
-            setOf(
-                R.id.nav_home, R.id.nav_address, R.id.nav_balance, R.id.nav_block, R.id.nav_private_key,
-                R.id.nav_latest_height, R.id.nav_block_range,
-                R.id.nav_transactions, R.id.nav_utxos, R.id.nav_send
-            ),
-            drawerLayout
-        )
+        appBarConfiguration =
+            AppBarConfiguration(
+                setOf(
+                    R.id.nav_home, R.id.nav_address, R.id.nav_balance, R.id.nav_block, R.id.nav_private_key,
+                    R.id.nav_latest_height, R.id.nav_block_range,
+                    R.id.nav_transactions, R.id.nav_utxos, R.id.nav_send
+                ),
+                drawerLayout
+            )
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)
         drawerLayout.addDrawerListener(this)
@@ -127,10 +128,11 @@ class MainActivity :
             lightwalletClient?.shutdown()
         }
         val network = ZcashNetwork.fromResources(applicationContext)
-        lightwalletClient = LightWalletClient.new(
-            applicationContext,
-            LightWalletEndpoint.defaultForNetwork(network)
-        )
+        lightwalletClient =
+            LightWalletClient.new(
+                applicationContext,
+                LightWalletEndpoint.defaultForNetwork(network)
+            )
     }
 
     private fun onFabClicked() {
@@ -162,7 +164,10 @@ class MainActivity :
     }
 
     @Suppress("EmptyFunctionBlock")
-    override fun onDrawerSlide(drawerView: View, slideOffset: Float) {
+    override fun onDrawerSlide(
+        drawerView: View,
+        slideOffset: Float
+    ) {
     }
 
     override fun onDrawerOpened(drawerView: View) {
@@ -176,9 +181,10 @@ class MainActivity :
 
 private fun newBrowserIntent(url: String): Intent {
     val uri = Uri.parse(url)
-    val intent = Intent(Intent.ACTION_VIEW, uri).apply {
-        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-    }
+    val intent =
+        Intent(Intent.ACTION_VIEW, uri).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
 
     return intent
 }

@@ -36,7 +36,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 @Composable
-@Suppress("LongMethod")
+@Suppress("LongMethod", "ktlint:standard:function-naming")
 internal fun ComposeActivity.Navigation() {
     val navController = rememberNavController()
 
@@ -187,10 +187,11 @@ private fun copyToClipboard(
 ) {
     val clipboardManager = context.getSystemService(ClipboardManager::class.java)
 
-    val data = ClipData.newPlainText(
-        tag,
-        textToCopy
-    )
+    val data =
+        ClipData.newPlainText(
+            tag,
+            textToCopy
+        )
     clipboardManager.setPrimaryClip(data)
 
     // Notify users with Snackbar only on Android level 32 and lower, as 33 and higher notifies users by its own system
@@ -207,9 +208,10 @@ private fun copyToClipboard(
 
 private fun newBrowserIntent(url: String): Intent {
     val uri = Uri.parse(url)
-    val intent = Intent(Intent.ACTION_VIEW, uri).apply {
-        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-    }
+    val intent =
+        Intent(Intent.ACTION_VIEW, uri).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
 
     return intent
 }

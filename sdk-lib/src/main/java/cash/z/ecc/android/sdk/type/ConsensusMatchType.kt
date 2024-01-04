@@ -18,24 +18,25 @@ class ConsensusMatchType(val sdkBranch: ConsensusBranchId?, val serverBranch: Co
     val isSdkNewer = hasBoth && sdkBranch!!.ordinal > serverBranch!!.ordinal
 
     val errorMessage
-        get() = when {
-            isValid -> null
-            hasNeither ->
-                "Our branch is unknown and the server branch is unknown. Verify" +
-                    " that they are both using the latest consensus branch ID."
-            hasServerBranch ->
-                "The server is on $serverBranch but our branch is unknown." +
-                    " Verify that we are fully synced."
-            hasSdkBranch ->
-                "We are on $sdkBranch but the server branch is unknown. Verify" +
-                    " the network connection."
-            else -> {
-                val newerBranch = if (isServerNewer) serverBranch else sdkBranch
-                val olderBranch = if (isSdkNewer) serverBranch else sdkBranch
-                val newerDevice = if (isServerNewer) "the server has" else "we have"
-                val olderDevice = if (isSdkNewer) "the server has" else "we have"
-                "Incompatible consensus: $newerDevice upgraded to $newerBranch but" +
-                    " $olderDevice $olderBranch."
+        get() =
+            when {
+                isValid -> null
+                hasNeither ->
+                    "Our branch is unknown and the server branch is unknown. Verify" +
+                        " that they are both using the latest consensus branch ID."
+                hasServerBranch ->
+                    "The server is on $serverBranch but our branch is unknown." +
+                        " Verify that we are fully synced."
+                hasSdkBranch ->
+                    "We are on $sdkBranch but the server branch is unknown. Verify" +
+                        " the network connection."
+                else -> {
+                    val newerBranch = if (isServerNewer) serverBranch else sdkBranch
+                    val olderBranch = if (isSdkNewer) serverBranch else sdkBranch
+                    val newerDevice = if (isServerNewer) "the server has" else "we have"
+                    val olderDevice = if (isSdkNewer) "the server has" else "we have"
+                    "Incompatible consensus: $newerDevice upgraded to $newerBranch but" +
+                        " $olderDevice $olderBranch."
+                }
             }
-        }
 }

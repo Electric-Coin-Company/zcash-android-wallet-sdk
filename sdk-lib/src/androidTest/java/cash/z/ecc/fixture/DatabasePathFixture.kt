@@ -12,18 +12,20 @@ import java.io.File
  * Provides a unified way for getting fixture directories on the database root path for test purposes.
  */
 object DatabasePathFixture {
-    val NO_BACKUP_DIR_PATH: String = runBlocking {
-        getAppContext().getNoBackupFilesDirSuspend().absolutePath
-    }
-    val DATABASE_DIR_PATH: String = runBlocking {
-        getAppContext().getDatabasePathSuspend("temporary.db").parentFile.let { parentFile ->
-            assert(parentFile != null) { "Failed to create database folder." }
-            parentFile!!.mkdirs()
-
-            assert(parentFile.existsSuspend()) { "Failed to check database folder." }
-            parentFile.absolutePath
+    val NO_BACKUP_DIR_PATH: String =
+        runBlocking {
+            getAppContext().getNoBackupFilesDirSuspend().absolutePath
         }
-    }
+    val DATABASE_DIR_PATH: String =
+        runBlocking {
+            getAppContext().getDatabasePathSuspend("temporary.db").parentFile.let { parentFile ->
+                assert(parentFile != null) { "Failed to create database folder." }
+                parentFile!!.mkdirs()
+
+                assert(parentFile.existsSuspend()) { "Failed to check database folder." }
+                parentFile.absolutePath
+            }
+        }
     const val INTERNAL_DATABASE_PATH = Files.NO_BACKUP_SUBDIRECTORY
 
     internal fun new(

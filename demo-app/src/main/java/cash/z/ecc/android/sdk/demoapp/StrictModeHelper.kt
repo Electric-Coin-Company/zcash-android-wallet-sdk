@@ -5,7 +5,6 @@ import android.os.StrictMode
 import cash.z.ecc.android.sdk.demoapp.util.AndroidApiVersion
 
 object StrictModeHelper {
-
     fun enableStrictMode() {
         configureStrictMode()
     }

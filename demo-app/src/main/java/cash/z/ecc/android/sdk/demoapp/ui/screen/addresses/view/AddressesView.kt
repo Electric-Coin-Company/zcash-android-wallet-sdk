@@ -31,6 +31,7 @@ import kotlinx.coroutines.flow.flow
 
 @Preview(name = "Addresses")
 @Composable
+@Suppress("ktlint:standard:function-naming")
 private fun ComposablePreview() {
     MaterialTheme {
         // TODO [#1090]: Demo: Add Addresses and Transactions Compose Previews
@@ -43,6 +44,7 @@ private fun ComposablePreview() {
  * @param copyToClipboard First string is a tag, the second string is the text to copy.
  */
 @Composable
+@Suppress("ktlint:standard:function-naming")
 fun Addresses(
     synchronizer: Synchronizer,
     copyToClipboard: (String, String) -> Unit,
@@ -55,11 +57,12 @@ fun Addresses(
     ) { paddingValues ->
         // TODO [#846]: Slow addresses providing
         // TODO [#846]: https://github.com/zcash/zcash-android-wallet-sdk/issues/846
-        val walletAddresses = flow {
-            emit(WalletAddresses.new(synchronizer))
-        }.collectAsState(
-            initial = null
-        ).value
+        val walletAddresses =
+            flow {
+                emit(WalletAddresses.new(synchronizer))
+            }.collectAsState(
+                initial = null
+            ).value
         if (null != walletAddresses) {
             AddressesMainContent(
                 paddingValues = paddingValues,
@@ -72,6 +75,7 @@ fun Addresses(
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
+@Suppress("ktlint:standard:function-naming")
 private fun AddressesTopAppBar(onBack: () -> Unit) {
     TopAppBar(
         title = { Text(text = stringResource(id = R.string.menu_address)) },
@@ -89,6 +93,7 @@ private fun AddressesTopAppBar(onBack: () -> Unit) {
 }
 
 @Composable
+@Suppress("ktlint:standard:function-naming")
 private fun AddressesMainContent(
     paddingValues: PaddingValues,
     addresses: WalletAddresses,

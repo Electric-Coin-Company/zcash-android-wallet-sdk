@@ -12,17 +12,20 @@ data class WalletAddresses(
 
     companion object {
         suspend fun new(synchronizer: Synchronizer): WalletAddresses {
-            val unified = WalletAddress.Unified.new(
-                synchronizer.getUnifiedAddress(Account.DEFAULT)
-            )
+            val unified =
+                WalletAddress.Unified.new(
+                    synchronizer.getUnifiedAddress(Account.DEFAULT)
+                )
 
-            val saplingAddress = WalletAddress.Sapling.new(
-                synchronizer.getSaplingAddress(Account.DEFAULT)
-            )
+            val saplingAddress =
+                WalletAddress.Sapling.new(
+                    synchronizer.getSaplingAddress(Account.DEFAULT)
+                )
 
-            val transparentAddress = WalletAddress.Transparent.new(
-                synchronizer.getTransparentAddress(Account.DEFAULT)
-            )
+            val transparentAddress =
+                WalletAddress.Transparent.new(
+                    synchronizer.getTransparentAddress(Account.DEFAULT)
+                )
 
             return WalletAddresses(
                 unified = unified,

@@ -7,13 +7,14 @@ import kotlin.test.assertIs
 class JniBlockMetaTest {
     @Test
     fun attributes_within_constraints() {
-        val instance = JniBlockMeta(
-            height = UInt.MAX_VALUE.toLong(),
-            hash = byteArrayOf(),
-            time = 0L,
-            saplingOutputsCount = UInt.MIN_VALUE.toLong(),
-            orchardOutputsCount = UInt.MIN_VALUE.toLong()
-        )
+        val instance =
+            JniBlockMeta(
+                height = UInt.MAX_VALUE.toLong(),
+                hash = byteArrayOf(),
+                time = 0L,
+                saplingOutputsCount = UInt.MIN_VALUE.toLong(),
+                orchardOutputsCount = UInt.MIN_VALUE.toLong()
+            )
         assertIs<JniBlockMeta>(instance)
     }
 

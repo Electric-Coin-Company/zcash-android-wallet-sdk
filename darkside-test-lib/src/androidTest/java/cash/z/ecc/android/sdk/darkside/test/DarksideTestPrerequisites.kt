@@ -39,15 +39,16 @@ open class DarksideTestPrerequisites {
          * ApplicationInfo object (`BuildInfo` is useless for libraries.)
          */
         private fun isDebuggable(context: Context): Boolean {
-            val packageInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                context.packageManager.getPackageInfo(
-                    context.packageName,
-                    PackageManager.PackageInfoFlags.of(0L)
-                )
-            } else {
-                @Suppress("Deprecation")
-                context.packageManager.getPackageInfo(context.packageName, 0)
-            }
+            val packageInfo =
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    context.packageManager.getPackageInfo(
+                        context.packageName,
+                        PackageManager.PackageInfoFlags.of(0L)
+                    )
+                } else {
+                    @Suppress("Deprecation")
+                    context.packageManager.getPackageInfo(context.packageName, 0)
+                }
 
             // Normally shouldn't be null, but could be with a MockContext
             return packageInfo.applicationInfo?.let {

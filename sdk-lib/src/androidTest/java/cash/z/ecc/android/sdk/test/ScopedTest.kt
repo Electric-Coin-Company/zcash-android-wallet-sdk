@@ -26,21 +26,27 @@ open class ScopedTest(val defaultTimeout: Long = 2000L) {
 
     @Before
     fun start() {
-        testScope = CoroutineScope(
-            Job(classScope.coroutineContext[Job]!!) + newFixedThreadPoolContext(
-                5,
-                this.javaClass.simpleName
+        testScope =
+            CoroutineScope(
+                Job(classScope.coroutineContext[Job]!!) +
+                    newFixedThreadPoolContext(
+                        5,
+                        this.javaClass.simpleName
+                    )
             )
-        )
     }
 
     @After
-    fun end() = runBlocking<Unit> {
-        testScope.cancel()
-        testScope.coroutineContext[Job]?.join()
-    }
+    fun end() =
+        runBlocking<Unit> {
+            testScope.cancel()
+            testScope.coroutineContext[Job]?.join()
+        }
 
-    fun timeout(duration: Long, block: suspend () -> Unit) = timeoutWith(testScope, duration, block)
+    fun timeout(
+        duration: Long,
+        block: suspend () -> Unit
+    ) = timeoutWith(testScope, duration, block)
 
     companion object {
         @JvmStatic
@@ -49,20 +55,26 @@ open class ScopedTest(val defaultTimeout: Long = 2000L) {
         @BeforeClass
         @JvmStatic
         fun createScope() {
-            classScope = CoroutineScope(
-                SupervisorJob() + newFixedThreadPoolContext(2, this::class.java.simpleName)
-            )
+            classScope =
+                CoroutineScope(
+                    SupervisorJob() + newFixedThreadPoolContext(2, this::class.java.simpleName)
+                )
         }
 
         @AfterClass
         @JvmStatic
-        fun destroyScope() = runBlocking<Unit> {
-            classScope.cancel()
-            classScope.coroutineContext[Job]?.join()
-        }
+        fun destroyScope() =
+            runBlocking<Unit> {
+                classScope.cancel()
+                classScope.coroutineContext[Job]?.join()
+            }
 
         @JvmStatic
-        fun timeoutWith(scope: CoroutineScope, duration: Long, block: suspend () -> Unit) {
+        fun timeoutWith(
+            scope: CoroutineScope,
+            duration: Long,
+            block: suspend () -> Unit
+        ) {
             scope.launch {
                 delay(duration)
                 val message = "ERROR: Test timed out after ${duration}ms"

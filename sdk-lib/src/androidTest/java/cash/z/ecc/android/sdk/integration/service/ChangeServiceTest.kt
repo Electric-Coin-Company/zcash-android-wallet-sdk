@@ -30,7 +30,6 @@ import kotlin.test.Ignore
 @RunWith(AndroidJUnit4::class)
 @SmallTest
 class ChangeServiceTest : ScopedTest() {
-
     val network = ZcashNetwork.Mainnet
     val lightWalletEndpoint = LightWalletEndpoint.Mainnet
     private val eccEndpoint = LightWalletEndpoint("lightwalletd.electriccoin.co", 9087, true)
@@ -63,19 +62,21 @@ class ChangeServiceTest : ScopedTest() {
     @Test
     @OptIn(ExperimentalCoroutinesApi::class)
     @Ignore
-    fun testSanityCheck() = runTest {
-        // Test the result, only if there is no server communication problem.
-        runCatching {
-            service.getLatestBlockHeight()
-        }.onFailure {
-            Twig.debug(it) { "Failed to retrieve data" }
-        }.onSuccess {
-            assertTrue(it is Response.Success<BlockHeightUnsafe>)
+    fun testSanityCheck() =
+        runTest {
+            // Test the result, only if there is no server communication problem.
+            runCatching {
+                service.getLatestBlockHeight()
+            }.onFailure {
+                Twig.debug(it) { "Failed to retrieve data" }
+            }.onSuccess {
+                assertTrue(it is Response.Success<BlockHeightUnsafe>)
 
-            assertTrue(
-                (it as Response.Success<BlockHeightUnsafe>).result.value > network.saplingActivationHeight
-                    .value
-            )
+                assertTrue(
+                    (it as Response.Success<BlockHeightUnsafe>).result.value >
+                        network.saplingActivationHeight
+                            .value
+                )
+            }
         }
-    }
 }

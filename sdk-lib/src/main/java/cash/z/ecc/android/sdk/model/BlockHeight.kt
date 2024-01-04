@@ -9,8 +9,7 @@ import cash.z.ecc.android.sdk.tool.CheckpointTool
  * New instances are constructed using the [new] factory method.
  *
  * @param value The block height.  Must be in range of a UInt32.
- */
-/*
+ *
  * For easier compatibility with Java clients, this class represents the height value as a Long with
  * assertions to ensure that it is a 32-bit unsigned integer.
  */
@@ -63,7 +62,10 @@ data class BlockHeight internal constructor(val value: Long) : Comparable<BlockH
          * @param blockHeight The block height.  Must be in range of a UInt32 AND must be greater than the network's
          * sapling activation height.
          */
-        fun new(zcashNetwork: ZcashNetwork, blockHeight: Long): BlockHeight {
+        fun new(
+            zcashNetwork: ZcashNetwork,
+            blockHeight: Long
+        ): BlockHeight {
             require(blockHeight >= zcashNetwork.saplingActivationHeight.value) {
                 "Height $blockHeight is below sapling activation height ${zcashNetwork.saplingActivationHeight}"
             }
@@ -77,7 +79,10 @@ data class BlockHeight internal constructor(val value: Long) : Comparable<BlockH
          * @param zcashNetwork Network to use for the block height.
          * @return The block height of the newest checkpoint known by the SDK.
          */
-        suspend fun ofLatestCheckpoint(context: Context, zcashNetwork: ZcashNetwork): BlockHeight {
+        suspend fun ofLatestCheckpoint(
+            context: Context,
+            zcashNetwork: ZcashNetwork
+        ): BlockHeight {
             return CheckpointTool.loadNearest(context, zcashNetwork, null).height
         }
     }

@@ -33,6 +33,7 @@ import cash.z.ecc.android.sdk.demoapp.ui.screen.home.viewmodel.WalletSnapshot
 
 @Preview(name = "Home")
 @Composable
+@Suppress("ktlint:standard:function-naming")
 private fun ComposablePreviewHome() {
     MaterialTheme {
         Home(
@@ -49,8 +50,8 @@ private fun ComposablePreviewHome() {
     }
 }
 
-@Suppress("LongParameterList")
 @Composable
+@Suppress("LongParameterList", "ktlint:standard:function-naming")
 fun Home(
     walletSnapshot: WalletSnapshot,
     isTestnet: Boolean,
@@ -83,6 +84,7 @@ fun Home(
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
+@Suppress("ktlint:standard:function-naming")
 private fun HomeTopAppBar(
     isTestnet: Boolean,
     goTestnetFaucet: () -> Unit,
@@ -103,6 +105,7 @@ private fun HomeTopAppBar(
 }
 
 @Composable
+@Suppress("ktlint:standard:function-naming")
 private fun DebugMenu(
     isTestnet: Boolean,
     goTestnetFaucet: () -> Unit,
@@ -146,7 +149,7 @@ private fun DebugMenu(
 }
 
 @Composable
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "ktlint:standard:function-naming")
 private fun HomeMainContent(
     paddingValues: PaddingValues,
     walletSnapshot: WalletSnapshot,

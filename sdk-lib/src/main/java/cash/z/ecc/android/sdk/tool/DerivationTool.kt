@@ -10,7 +10,6 @@ import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 
 interface DerivationTool {
-
     /**
      * Given a seed and a number of accounts, return the associated Unified Full Viewing Keys.
      *
@@ -64,7 +63,11 @@ interface DerivationTool {
      *
      * @return the address that corresponds to the seed and account index.
      */
-    suspend fun deriveUnifiedAddress(seed: ByteArray, network: ZcashNetwork, account: Account): String
+    suspend fun deriveUnifiedAddress(
+        seed: ByteArray,
+        network: ZcashNetwork,
+        account: Account
+    ): String
 
     /**
      * Given a Unified Full Viewing Key string, return the associated Unified Address.
@@ -82,9 +85,11 @@ interface DerivationTool {
     companion object {
         const val DEFAULT_NUMBER_OF_ACCOUNTS = Derivation.DEFAULT_NUMBER_OF_ACCOUNTS
 
-        private val instance = SuspendingLazy<Unit, DerivationTool> {
-            TypesafeDerivationToolImpl(RustDerivationTool.new())
-        }
+        private val instance =
+            SuspendingLazy<Unit, DerivationTool> {
+                TypesafeDerivationToolImpl(RustDerivationTool.new())
+            }
+
         suspend fun getInstance() = instance.getInstance(Unit)
     }
 }

@@ -13,16 +13,17 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
 class ZecStringTest {
-
     companion object {
         private val EN_US_MONETARY_SEPARATORS = MonetarySeparatorsFixture.new()
-        private val context = run {
-            val applicationContext = ApplicationProvider.getApplicationContext<Context>()
-            val enUsConfiguration = Configuration(applicationContext.resources.configuration).apply {
-                setLocale(Locale.US)
+        private val context =
+            run {
+                val applicationContext = ApplicationProvider.getApplicationContext<Context>()
+                val enUsConfiguration =
+                    Configuration(applicationContext.resources.configuration).apply {
+                        setLocale(Locale.US)
+                    }
+                applicationContext.createConfigurationContext(enUsConfiguration)
             }
-            applicationContext.createConfigurationContext(enUsConfiguration)
-        }
     }
 
     @Test

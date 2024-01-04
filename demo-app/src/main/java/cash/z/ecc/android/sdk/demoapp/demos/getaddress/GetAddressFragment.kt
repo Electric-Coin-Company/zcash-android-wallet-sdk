@@ -23,7 +23,6 @@ import kotlinx.coroutines.launch
  * that is used, update the `DemoConfig.seedWords` value.
  */
 class GetAddressFragment : BaseDemoFragment<FragmentGetAddressBinding>() {
-
     private lateinit var viewingKey: UnifiedFullViewingKey
 
     private fun displayAddress() {
@@ -67,7 +66,10 @@ class GetAddressFragment : BaseDemoFragment<FragmentGetAddressBinding>() {
         reportTraceEvent(ProvideAddressBenchmarkTrace.Event.ADDRESS_SCREEN_START)
     }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?
+    ) {
         super.onViewCreated(view, savedInstanceState)
 
         displayAddress()

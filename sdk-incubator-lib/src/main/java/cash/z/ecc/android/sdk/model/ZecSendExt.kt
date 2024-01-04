@@ -4,7 +4,6 @@ import android.content.Context
 import kotlinx.coroutines.runBlocking
 
 object ZecSendExt {
-
     fun new(
         context: Context,
         destinationString: String,
@@ -18,13 +17,14 @@ object ZecSendExt {
         val amount = Zatoshi.fromZecString(context, zecString, monetarySeparators)
         val memo = Memo(memoString)
 
-        val validationErrors = buildSet {
-            if (null == amount) {
-                add(ZecSendValidation.Invalid.ValidationError.INVALID_AMOUNT)
-            }
+        val validationErrors =
+            buildSet {
+                if (null == amount) {
+                    add(ZecSendValidation.Invalid.ValidationError.INVALID_AMOUNT)
+                }
 
-            // TODO [#342]: https://github.com/zcash/zcash-android-wallet-sdk/issues/342
-        }
+                // TODO [#342]: https://github.com/zcash/zcash-android-wallet-sdk/issues/342
+            }
 
         return if (validationErrors.isEmpty()) {
             ZecSendValidation.Valid(ZecSend(destination, amount!!, memo))
@@ -35,6 +35,7 @@ object ZecSendExt {
 
     sealed class ZecSendValidation {
         data class Valid(val zecSend: ZecSend) : ZecSendValidation()
+
         data class Invalid(val validationErrors: Set<ValidationError>) : ZecSendValidation() {
             enum class ValidationError {
                 INVALID_ADDRESS,

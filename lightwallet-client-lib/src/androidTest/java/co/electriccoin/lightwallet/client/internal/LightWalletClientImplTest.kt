@@ -6,7 +6,6 @@ import kotlin.test.Ignore
 import kotlin.test.Test
 
 class LightWalletClientImplTest {
-
     private val channelFactory = AndroidChannelFactory(getAppContext())
 
     @Test

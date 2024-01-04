@@ -13,7 +13,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class AssetTest {
-
     @Test
     @SmallTest
     fun validate_mainnet_assets() {
@@ -55,7 +54,10 @@ class AssetTest {
         }
     }
 
-    private fun assertFileContents(network: ZcashNetwork, files: Array<String>?) {
+    private fun assertFileContents(
+        network: ZcashNetwork,
+        files: Array<String>?
+    ) {
         files?.map { filename ->
             val filePath = "${CheckpointTool.checkpointDirectory(network)}/$filename"
             ApplicationProvider.getApplicationContext<Context>().assets.open(filePath)
@@ -74,11 +76,12 @@ class AssetTest {
             assertTrue(jsonObject.has("time"))
             assertTrue(jsonObject.has("saplingTree"))
 
-            val expectedNetworkName = when (network) {
-                ZcashNetwork.Mainnet -> "main"
-                ZcashNetwork.Testnet -> "test"
-                else -> IllegalArgumentException("Unsupported network $network")
-            }
+            val expectedNetworkName =
+                when (network) {
+                    ZcashNetwork.Mainnet -> "main"
+                    ZcashNetwork.Testnet -> "test"
+                    else -> IllegalArgumentException("Unsupported network $network")
+                }
             assertEquals("File: ${it.filename}", expectedNetworkName, jsonObject.getString("network"))
 
             assertEquals(
@@ -94,11 +97,12 @@ class AssetTest {
     private data class JsonFile(val jsonObject: JSONObject, val filename: String)
 
     companion object {
-        fun listAssets(network: ZcashNetwork): Array<String>? = runBlocking {
-            CheckpointTool.listCheckpointDirectoryContents(
-                ApplicationProvider.getApplicationContext(),
-                CheckpointTool.checkpointDirectory(network)
-            )
-        }
+        fun listAssets(network: ZcashNetwork): Array<String>? =
+            runBlocking {
+                CheckpointTool.listCheckpointDirectoryContents(
+                    ApplicationProvider.getApplicationContext(),
+                    CheckpointTool.checkpointDirectory(network)
+                )
+            }
     }
 }

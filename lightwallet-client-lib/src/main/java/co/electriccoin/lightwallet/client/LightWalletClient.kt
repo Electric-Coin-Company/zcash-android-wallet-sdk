@@ -19,7 +19,6 @@ import kotlinx.coroutines.flow.Flow
  * Client for interacting with lightwalletd.
  */
 interface LightWalletClient {
-
     /**
      * @return the full transaction info.
      */
@@ -116,5 +115,4 @@ interface LightWalletClient {
 fun LightWalletClient.Companion.new(
     context: Context,
     lightWalletEndpoint: LightWalletEndpoint
-): LightWalletClient =
-    LightWalletClientImpl.new(AndroidChannelFactory(context), lightWalletEndpoint)
+): LightWalletClient = LightWalletClientImpl.new(AndroidChannelFactory(context), lightWalletEndpoint)

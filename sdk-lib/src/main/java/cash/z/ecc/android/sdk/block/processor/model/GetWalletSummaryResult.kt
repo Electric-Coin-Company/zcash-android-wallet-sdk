@@ -12,5 +12,6 @@ internal sealed class GetWalletSummaryResult {
     }
 
     data object None : GetWalletSummaryResult()
+
     data class Failure(val exception: Throwable) : GetWalletSummaryResult()
 }

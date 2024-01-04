@@ -25,7 +25,11 @@ class UtxoViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
     }
 
     @Suppress("MagicNumber")
-    private fun bindToHelper(amount: Zatoshi, minedHeight: BlockHeight?, time: Long?) {
+    private fun bindToHelper(
+        amount: Zatoshi,
+        minedHeight: BlockHeight?,
+        time: Long?
+    ) {
         amountText.text = amount.convertZatoshiToZecString()
         timeText.text = minedHeight?.let {
             time?.let {

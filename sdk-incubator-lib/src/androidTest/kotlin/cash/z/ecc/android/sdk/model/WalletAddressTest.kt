@@ -9,10 +9,11 @@ import kotlin.test.assertEquals
 class WalletAddressTest {
     @Test
     @ExperimentalCoroutinesApi
-    fun unified_equals_different_instance() = runTest {
-        val one = WalletAddressFixture.unified()
-        val two = WalletAddressFixture.unified()
+    fun unified_equals_different_instance() =
+        runTest {
+            val one = WalletAddressFixture.unified()
+            val two = WalletAddressFixture.unified()
 
-        assertEquals(one, two)
-    }
+            assertEquals(one, two)
+        }
 }

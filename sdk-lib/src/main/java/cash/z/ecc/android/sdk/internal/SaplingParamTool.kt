@@ -21,7 +21,6 @@ import java.nio.channels.Channels
 import kotlin.time.Duration.Companion.milliseconds
 
 internal class SaplingParamTool(val properties: SaplingParamToolProperties) {
-
     val spendParamsFile: File
         get() = File(properties.paramsDirectory, SPEND_PARAM_FILE_NAME)
 
@@ -84,24 +83,26 @@ internal class SaplingParamTool(val properties: SaplingParamToolProperties) {
          */
         internal suspend fun new(context: Context): SaplingParamTool {
             val paramsDirectory = Files.getZcashNoBackupSubdirectory(context)
-            val toolProperties = SaplingParamToolProperties(
-                paramsDirectory = paramsDirectory,
-                paramsLegacyDirectory = File(context.getCacheDirSuspend(), SAPLING_PARAMS_LEGACY_SUBDIRECTORY),
-                saplingParams = listOf(
-                    SaplingParameters(
-                        paramsDirectory,
-                        SPEND_PARAM_FILE_NAME,
-                        SPEND_PARAM_FILE_MAX_BYTES_SIZE,
-                        SPEND_PARAM_FILE_SHA1_HASH
-                    ),
-                    SaplingParameters(
-                        paramsDirectory,
-                        OUTPUT_PARAM_FILE_NAME,
-                        OUTPUT_PARAM_FILE_MAX_BYTES_SIZE,
-                        OUTPUT_PARAM_FILE_SHA1_HASH
-                    )
+            val toolProperties =
+                SaplingParamToolProperties(
+                    paramsDirectory = paramsDirectory,
+                    paramsLegacyDirectory = File(context.getCacheDirSuspend(), SAPLING_PARAMS_LEGACY_SUBDIRECTORY),
+                    saplingParams =
+                        listOf(
+                            SaplingParameters(
+                                paramsDirectory,
+                                SPEND_PARAM_FILE_NAME,
+                                SPEND_PARAM_FILE_MAX_BYTES_SIZE,
+                                SPEND_PARAM_FILE_SHA1_HASH
+                            ),
+                            SaplingParameters(
+                                paramsDirectory,
+                                OUTPUT_PARAM_FILE_NAME,
+                                OUTPUT_PARAM_FILE_MAX_BYTES_SIZE,
+                                OUTPUT_PARAM_FILE_SHA1_HASH
+                            )
+                        )
                 )
-            )
             return SaplingParamTool(toolProperties)
         }
 
@@ -153,7 +154,10 @@ internal class SaplingParamTool(val properties: SaplingParamToolProperties) {
          *
          * @return true in case of hashes are the same, false otherwise
          */
-        private suspend fun isFileHashValid(parametersFile: File, fileHash: String): Boolean {
+        private suspend fun isFileHashValid(
+            parametersFile: File,
+            fileHash: String
+        ): Boolean {
             return try {
                 fileHash == parametersFile.getSha1Hash()
             } catch (e: IOException) {
@@ -250,10 +254,11 @@ internal class SaplingParamTool(val properties: SaplingParamToolProperties) {
     )
     internal suspend fun fetchParams(paramsToFetch: SaplingParameters) {
         val url = URL("$CLOUD_PARAM_DIR_URL/${paramsToFetch.fileName}")
-        val temporaryFile = File(
-            paramsToFetch.destinationDirectory,
-            "$TEMPORARY_FILE_NAME_PREFIX${paramsToFetch.fileName}"
-        )
+        val temporaryFile =
+            File(
+                paramsToFetch.destinationDirectory,
+                "$TEMPORARY_FILE_NAME_PREFIX${paramsToFetch.fileName}"
+            )
 
         withContext(Dispatchers.IO) {
             runCatching {
@@ -280,10 +285,11 @@ internal class SaplingParamTool(val properties: SaplingParamToolProperties) {
                 // IOException - If some other I/O error occurs
                 finalizeAndReportError(
                     temporaryFile,
-                    exception = TransactionEncoderException.FetchParamsException(
-                        paramsToFetch,
-                        "Error while fetching ${paramsToFetch.fileName}, caused by $exception."
-                    )
+                    exception =
+                        TransactionEncoderException.FetchParamsException(
+                            paramsToFetch,
+                            "Error while fetching ${paramsToFetch.fileName}, caused by $exception."
+                        )
                 )
             }.onSuccess {
                 Twig.debug {
@@ -293,10 +299,11 @@ internal class SaplingParamTool(val properties: SaplingParamToolProperties) {
                 if (!isFileHashValid(temporaryFile, paramsToFetch.fileHash)) {
                     finalizeAndReportError(
                         temporaryFile,
-                        exception = TransactionEncoderException.ValidateParamsException(
-                            paramsToFetch,
-                            "Failed while validating fetched param file: ${paramsToFetch.fileName}."
-                        )
+                        exception =
+                            TransactionEncoderException.ValidateParamsException(
+                                paramsToFetch,
+                                "Failed while validating fetched param file: ${paramsToFetch.fileName}."
+                            )
                     )
                 }
                 val resultFile = File(paramsToFetch.destinationDirectory, paramsToFetch.fileName)
@@ -304,10 +311,11 @@ internal class SaplingParamTool(val properties: SaplingParamToolProperties) {
                     finalizeAndReportError(
                         temporaryFile,
                         resultFile,
-                        exception = TransactionEncoderException.ValidateParamsException(
-                            paramsToFetch,
-                            "Failed while renaming result param file: ${paramsToFetch.fileName}."
-                        )
+                        exception =
+                            TransactionEncoderException.ValidateParamsException(
+                                paramsToFetch,
+                                "Failed while renaming result param file: ${paramsToFetch.fileName}."
+                            )
                     )
                 }
             }
@@ -315,7 +323,10 @@ internal class SaplingParamTool(val properties: SaplingParamToolProperties) {
     }
 
     @Throws(TransactionEncoderException.FetchParamsException::class)
-    private suspend fun finalizeAndReportError(vararg files: File, exception: TransactionEncoderException) {
+    private suspend fun finalizeAndReportError(
+        vararg files: File,
+        exception: TransactionEncoderException
+    ) {
         files.forEach {
             it.deleteSuspend()
         }

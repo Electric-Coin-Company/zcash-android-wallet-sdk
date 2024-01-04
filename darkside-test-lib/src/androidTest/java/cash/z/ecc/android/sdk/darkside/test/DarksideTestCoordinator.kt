@@ -49,28 +49,29 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
     /**
      * Setup dependencies, including the synchronizer and the darkside API connection
      */
-    fun enterTheDarkside(): DarksideTestCoordinator = runBlocking {
-        // verify that we are on the darkside
-        try {
-            initiate()
-            // In the future, we may want to have the SDK internally verify being on the darkside by matching the
-            // network type
+    fun enterTheDarkside(): DarksideTestCoordinator =
+        runBlocking {
+            // verify that we are on the darkside
+            try {
+                initiate()
+                // In the future, we may want to have the SDK internally verify being on the darkside by matching the
+                // network type
 
-            // synchronizer.getServerInfo().apply {
-            //     assertTrue(
-            //         "Error: not on the darkside",
-            //         vendor.contains("dark", true)
-            //             or chainName.contains("dark", true)
-            //     )
-            // }
-        } catch (error: StatusRuntimeException) {
-            Assert.fail(
-                "Error while fetching server status. Testing cannot begin due to:" +
-                    " ${error.message} Caused by: ${error.cause} Verify that the server is running!"
-            )
+                // synchronizer.getServerInfo().apply {
+                //     assertTrue(
+                //         "Error: not on the darkside",
+                //         vendor.contains("dark", true)
+                //             or chainName.contains("dark", true)
+                //     )
+                // }
+            } catch (error: StatusRuntimeException) {
+                Assert.fail(
+                    "Error while fetching server status. Testing cannot begin due to:" +
+                        " ${error.message} Caused by: ${error.cause} Verify that the server is running!"
+                )
+            }
+            this@DarksideTestCoordinator
         }
-        this@DarksideTestCoordinator
-    }
 
     /**
      * Setup the synchronizer and darksidewalletd with their initial state
@@ -80,7 +81,7 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
         darkside.reset(BlockHeightUnsafe(wallet.network.saplingActivationHeight.value))
     }
 
-//    fun triggerSmallReorg() {
+    //    fun triggerSmallReorg() {
 //        darkside.setBlocksUrl(smallReorg)
 //    }
 //
@@ -89,6 +90,7 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
 //    }
 
     // redo this as a call to wallet but add delay time to wallet join() function
+
     /**
      * Waits for, at most, the given amount of time for the synchronizer to download and scan blocks
      * and reach a 'SYNCED' status.
@@ -125,25 +127,27 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
 //        wallet.send(toAddress, memo, zatoshi, fromAccountIndex)
 //    }
 
-    fun stall(delay: Long = 5000L) = runBlocking {
-        delay(delay)
-    }
+    @Suppress("ktlint:standard:no-consecutive-comments")
+    fun stall(delay: Long = 5000L) =
+        runBlocking {
+            delay(delay)
+        }
 
 //
 // Validation
 //
 
     inner class DarksideTestValidator {
-
-        fun validateLatestHeight(height: BlockHeight) = runBlocking<Unit> {
-            val info = synchronizer.processorInfo.first()
-            val networkBlockHeight = info.networkBlockHeight
-            assertTrue(
-                "Expected latestHeight of $height but the server last reported a height of" +
-                    " $networkBlockHeight! Full details: $info",
-                networkBlockHeight == height
-            )
-        }
+        fun validateLatestHeight(height: BlockHeight) =
+            runBlocking<Unit> {
+                val info = synchronizer.processorInfo.first()
+                val networkBlockHeight = info.networkBlockHeight
+                assertTrue(
+                    "Expected latestHeight of $height but the server last reported a height of" +
+                        " $networkBlockHeight! Full details: $info",
+                    networkBlockHeight == height
+                )
+            }
 
         /*
         fun validateMinHeightSynced(minHeight: BlockHeight) = runBlocking<Unit> {
@@ -182,7 +186,10 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
             assertEquals("Expected $count transactions but found $txCount instead!", count, txCount)
         }
 
-        fun validateMinBalance(available: Long = -1, total: Long = -1) {
+        fun validateMinBalance(
+            available: Long = -1,
+            total: Long = -1
+        ) {
             val balance = synchronizer.saplingBalances.value
             if (available > 0) {
                 assertTrue(
@@ -198,7 +205,11 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
             }
         }
 
-        suspend fun validateBalance(available: Long = -1, total: Long = -1, account: Account) {
+        suspend fun validateBalance(
+            available: Long = -1,
+            total: Long = -1,
+            account: Account
+        ) {
             val balance = synchronizer.processor.getBalanceInfo(account)
             if (available > 0) {
                 assertEquals("invalid available balance", available, balance.available)
@@ -224,33 +235,47 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
             blocksUrl: String,
             startHeight: BlockHeight = DEFAULT_START_HEIGHT,
             tipHeight: BlockHeight = startHeight + 100
-        ): DarksideChainMaker = apply {
-            darkside
-                .reset(BlockHeightUnsafe(startHeight.value))
-                .stageBlocks(blocksUrl)
-            applyTipHeight(tipHeight)
-        }
-
-        fun stageTransaction(url: String, targetHeight: BlockHeight): DarksideChainMaker = apply {
-            darkside.stageTransactions(url, BlockHeightUnsafe(targetHeight.value))
-        }
-
-        fun stageTransactions(targetHeight: BlockHeight, vararg urls: String): DarksideChainMaker = apply {
-            urls.forEach {
-                darkside.stageTransactions(it, BlockHeightUnsafe(targetHeight.value))
+        ): DarksideChainMaker =
+            apply {
+                darkside
+                    .reset(BlockHeightUnsafe(startHeight.value))
+                    .stageBlocks(blocksUrl)
+                applyTipHeight(tipHeight)
             }
-        }
 
-        fun stageEmptyBlocks(startHeight: BlockHeight, count: Int = 10): DarksideChainMaker = apply {
-            darkside.stageEmptyBlocks(BlockHeightUnsafe(startHeight.value), count)
-        }
+        fun stageTransaction(
+            url: String,
+            targetHeight: BlockHeight
+        ): DarksideChainMaker =
+            apply {
+                darkside.stageTransactions(url, BlockHeightUnsafe(targetHeight.value))
+            }
+
+        fun stageTransactions(
+            targetHeight: BlockHeight,
+            vararg urls: String
+        ): DarksideChainMaker =
+            apply {
+                urls.forEach {
+                    darkside.stageTransactions(it, BlockHeightUnsafe(targetHeight.value))
+                }
+            }
+
+        fun stageEmptyBlocks(
+            startHeight: BlockHeight,
+            count: Int = 10
+        ): DarksideChainMaker =
+            apply {
+                darkside.stageEmptyBlocks(BlockHeightUnsafe(startHeight.value), count)
+            }
 
         fun stageEmptyBlock() = stageEmptyBlocks(lastTipHeight!! + 1, 1)
 
-        fun applyTipHeight(tipHeight: BlockHeight): DarksideChainMaker = apply {
-            darkside.applyBlocks(BlockHeightUnsafe(tipHeight.value))
-            lastTipHeight = tipHeight
-        }
+        fun applyTipHeight(tipHeight: BlockHeight): DarksideChainMaker =
+            apply {
+                darkside.applyBlocks(BlockHeightUnsafe(tipHeight.value))
+                lastTipHeight = tipHeight
+            }
 
         /**
          * Creates a chain with 100 blocks and a transaction in the middle.
@@ -281,7 +306,7 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
         }
     }
 
-    @Suppress("MaxLineLength")
+    @Suppress("MaxLineLength", "UnusedPrivateProperty")
     companion object {
         /**
          * This is a special localhost value on the Android emulator, which allows it to contact
@@ -290,14 +315,15 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
         const val COMPUTER_LOCALHOST = "10.0.2.2"
 
         // Block URLS
-        private const val beforeReorg =
+        private const val BEFORE_REORG =
             "https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/basic-reorg/before-reorg.txt"
-        private const val smallReorg =
+        private const val SMALL_REORG =
             "https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/basic-reorg/after-small-reorg.txt"
-        private const val largeReorg =
+        private const val LARGE_REORG =
             "https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/basic-reorg/after-large-reorg.txt"
         private val DEFAULT_START_HEIGHT = BlockHeight.new(ZcashNetwork.Mainnet, 663150)
         private const val DEFAULT_SEED_PHRASE =
-            "still champion voice habit trend flight survey between bitter process artefact blind carbon truly provide dizzy crush flush breeze blouse charge solid fish spread"
+            "still champion voice habit trend flight survey between bitter process artefact blind carbon truly" +
+                " provide dizzy crush flush breeze blouse charge solid fish spread"
     }
 }

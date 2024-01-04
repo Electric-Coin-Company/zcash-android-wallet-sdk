@@ -26,7 +26,6 @@ class BranchIdTest internal constructor(
     private val branchHex: String,
     private val backend: TypesafeBackend
 ) {
-
     @Test
     fun testBranchId_Hex() {
         val branchId = backend.getBranchIdForHeight(height)
@@ -49,7 +48,6 @@ class BranchIdTest internal constructor(
     }
 
     companion object {
-
         @JvmStatic
         @Parameterized.Parameters
         @Suppress("LongMethod")
@@ -58,28 +56,30 @@ class BranchIdTest internal constructor(
             // is an abnormal use of the SDK because this really should run at the rust level
             // However, due to quirks on certain devices, we created this test at the Android level,
             // as a sanity check
-            val testnetBackend = runBlocking {
-                TypesafeBackendImpl(
-                    RustBackend.new(
-                        File(""),
-                        File(""),
-                        File(""),
-                        File(""),
-                        ZcashNetwork.Testnet.id,
+            val testnetBackend =
+                runBlocking {
+                    TypesafeBackendImpl(
+                        RustBackend.new(
+                            File(""),
+                            File(""),
+                            File(""),
+                            File(""),
+                            ZcashNetwork.Testnet.id,
+                        )
                     )
-                )
-            }
-            val mainnetBackend = runBlocking {
-                TypesafeBackendImpl(
-                    RustBackend.new(
-                        File(""),
-                        File(""),
-                        File(""),
-                        File(""),
-                        ZcashNetwork.Mainnet.id,
+                }
+            val mainnetBackend =
+                runBlocking {
+                    TypesafeBackendImpl(
+                        RustBackend.new(
+                            File(""),
+                            File(""),
+                            File(""),
+                            File(""),
+                            ZcashNetwork.Mainnet.id,
+                        )
                     )
-                )
-            }
+                }
             return listOf(
                 // Mainnet Cases
                 arrayOf(
@@ -110,7 +110,6 @@ class BranchIdTest internal constructor(
                     "e9ff75a6",
                     mainnetBackend
                 ),
-
                 // Testnet Cases
                 arrayOf(
                     "Sapling",

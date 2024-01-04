@@ -26,19 +26,24 @@ fun Derivation.deriveUnifiedSpendingKey(
 fun Derivation.deriveUnifiedFullViewingKey(
     usk: UnifiedSpendingKey,
     network: ZcashNetwork
-): UnifiedFullViewingKey = UnifiedFullViewingKey(
-    deriveUnifiedFullViewingKey(
-        JniUnifiedSpendingKey(
-            usk.account.value,
-            usk.copyBytes()
-        ),
-        network.id
+): UnifiedFullViewingKey =
+    UnifiedFullViewingKey(
+        deriveUnifiedFullViewingKey(
+            JniUnifiedSpendingKey(
+                usk.account.value,
+                usk.copyBytes()
+            ),
+            network.id
+        )
     )
-)
 
 fun Derivation.deriveUnifiedFullViewingKeysTypesafe(
     seed: ByteArray,
     network: ZcashNetwork,
     numberOfAccounts: Int
 ): List<UnifiedFullViewingKey> =
-    deriveUnifiedFullViewingKeys(seed, network.id, numberOfAccounts).map { UnifiedFullViewingKey(it) }
+    deriveUnifiedFullViewingKeys(
+        seed,
+        network.id,
+        numberOfAccounts
+    ).map { UnifiedFullViewingKey(it) }

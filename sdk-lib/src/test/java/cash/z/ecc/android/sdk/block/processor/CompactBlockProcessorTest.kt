@@ -5,7 +5,6 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class CompactBlockProcessorTest {
-
     @Test
     fun should_refresh_preparation_test() {
         assertTrue {

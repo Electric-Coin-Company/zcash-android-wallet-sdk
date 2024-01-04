@@ -5,7 +5,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class BlockRangeFixtureTest {
-
     @Test
     @SmallTest
     fun compare_default_values() {

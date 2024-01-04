@@ -31,14 +31,15 @@ class CheckpointToolTest {
         val directory = "co.electriccoin.zcash/checkpoint/goodnet"
 
         val context = ApplicationProvider.getApplicationContext<Context>()
-        val birthday = runBlocking {
-            CheckpointTool.getFirstValidWalletBirthday(
-                context,
-                ZcashNetwork.Mainnet,
-                directory,
-                listOf("1300000.json", "1290000.json")
-            )
-        }
+        val birthday =
+            runBlocking {
+                CheckpointTool.getFirstValidWalletBirthday(
+                    context,
+                    ZcashNetwork.Mainnet,
+                    directory,
+                    listOf("1300000.json", "1290000.json")
+                )
+            }
         assertEquals(1300000, birthday.height.value)
     }
 
@@ -51,14 +52,15 @@ class CheckpointToolTest {
 
         val directory = "co.electriccoin.zcash/checkpoint/badnet"
         val context = ApplicationProvider.getApplicationContext<Context>()
-        val birthday = runBlocking {
-            CheckpointTool.getFirstValidWalletBirthday(
-                context,
-                ZcashNetwork.Mainnet,
-                directory,
-                listOf("1300000.json", "1290000.json")
-            )
-        }
+        val birthday =
+            runBlocking {
+                CheckpointTool.getFirstValidWalletBirthday(
+                    context,
+                    ZcashNetwork.Mainnet,
+                    directory,
+                    listOf("1300000.json", "1290000.json")
+                )
+            }
         assertEquals(1290000, birthday.height.value)
     }
 }

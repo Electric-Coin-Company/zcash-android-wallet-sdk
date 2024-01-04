@@ -7,10 +7,11 @@ import kotlin.test.assertIs
 class JniSubtreeRootTest {
     @Test
     fun attributes_within_constraints() {
-        val instance = JniSubtreeRoot(
-            rootHash = byteArrayOf(),
-            completingBlockHeight = UInt.MAX_VALUE.toLong()
-        )
+        val instance =
+            JniSubtreeRoot(
+                rootHash = byteArrayOf(),
+                completingBlockHeight = UInt.MAX_VALUE.toLong()
+            )
         assertIs<JniSubtreeRoot>(instance)
     }
 

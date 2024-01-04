@@ -45,14 +45,13 @@ fun Zatoshi.toFiatString(
     currencyConversion: CurrencyConversion,
     locale: Locale,
     monetarySeparators: MonetarySeparators
-) =
-    convertZatoshiToZecDecimal()
-        .convertZecDecimalToFiatDecimal(BigDecimal(currencyConversion.priceOfZec))
-        .convertFiatDecimalToFiatString(
-            Currency.getInstance(currencyConversion.fiatCurrency.code),
-            locale.toJavaLocale(),
-            monetarySeparators
-        )
+) = convertZatoshiToZecDecimal()
+    .convertZecDecimalToFiatDecimal(BigDecimal(currencyConversion.priceOfZec))
+    .convertFiatDecimalToFiatString(
+        Currency.getInstance(currencyConversion.fiatCurrency.code),
+        locale.toJavaLocale(),
+        monetarySeparators
+    )
 
 private fun Zatoshi.convertZatoshiToZecDecimal(): BigDecimal {
     return BigDecimal(value, MathContext.DECIMAL128).divide(

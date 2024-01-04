@@ -12,9 +12,9 @@ import org.junit.Test
  * Samples related to shielding funds.
  */
 class ShieldFundsSample {
-
-    val SEED_PHRASE = "still champion voice habit trend flight survey between bitter process artefact blind carbon" +
-        " truly provide dizzy crush flush breeze blouse charge solid fish spread"
+    val seedPhrase =
+        "still champion voice habit trend flight survey between bitter process artefact blind carbon" +
+            " truly provide dizzy crush flush breeze blouse charge solid fish spread"
     // "deputy visa gentle among clean scout farm drive comfort patch skin salt ranch cool ramp warrior drink narrow
     // normal lunch behind salt deal person"
 
@@ -27,12 +27,13 @@ class ShieldFundsSample {
      */
     @Test
     @Ignore("This test is broken")
-    fun constructT2Z() = runBlocking {
-        val wallet = TestWallet(TestWallet.Backups.DEV_WALLET, ZcashNetwork.Mainnet)
+    fun constructT2Z() =
+        runBlocking {
+            val wallet = TestWallet(TestWallet.Backups.DEV_WALLET, ZcashNetwork.Mainnet)
 
-        Assert.assertEquals("foo", "${wallet.unifiedAddress} ${wallet.transparentAddress}")
+            Assert.assertEquals("foo", "${wallet.unifiedAddress} ${wallet.transparentAddress}")
 //        wallet.shieldFunds()
 
-        Assert.assertEquals(Zatoshi(5), wallet.synchronizer.saplingBalances.value?.available)
-    }
+            Assert.assertEquals(Zatoshi(5), wallet.synchronizer.saplingBalances.value?.available)
+        }
 }

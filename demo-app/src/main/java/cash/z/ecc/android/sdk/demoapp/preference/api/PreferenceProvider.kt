@@ -4,10 +4,12 @@ import cash.z.ecc.android.sdk.demoapp.preference.model.entry.Key
 import kotlinx.coroutines.flow.Flow
 
 interface PreferenceProvider {
-
     suspend fun hasKey(key: Key): Boolean
 
-    suspend fun putString(key: Key, value: String?)
+    suspend fun putString(
+        key: Key,
+        value: String?
+    )
 
     suspend fun getString(key: Key): String?
 

@@ -25,7 +25,6 @@ class RustBackend private constructor(
     private val saplingSpendFile: File,
     private val saplingOutputFile: File,
 ) : Backend {
-
     /**
      * This function deletes the data database file and the cache directory (compact blocks files) if set by input
      * parameters.
@@ -35,7 +34,10 @@ class RustBackend private constructor(
      *
      * @return false in case of any required and failed deletion, true otherwise.
      */
-    suspend fun clear(clearCache: Boolean = true, clearDataDb: Boolean = true): Boolean {
+    suspend fun clear(
+        clearCache: Boolean = true,
+        clearDataDb: Boolean = true
+    ): Boolean {
         var cacheClearResult = true
         var dataClearResult = true
         if (clearCache) {
@@ -55,19 +57,21 @@ class RustBackend private constructor(
     // Wrapper Functions
     //
 
-    override suspend fun initBlockMetaDb() = withContext(SdkDispatchers.DATABASE_IO) {
-        initBlockMetaDb(
-            fsBlockDbRoot.absolutePath,
-        )
-    }
+    override suspend fun initBlockMetaDb() =
+        withContext(SdkDispatchers.DATABASE_IO) {
+            initBlockMetaDb(
+                fsBlockDbRoot.absolutePath,
+            )
+        }
 
-    override suspend fun initDataDb(seed: ByteArray?) = withContext(SdkDispatchers.DATABASE_IO) {
-        initDataDb(
-            dataDbFile.absolutePath,
-            seed,
-            networkId = networkId
-        )
-    }
+    override suspend fun initDataDb(seed: ByteArray?) =
+        withContext(SdkDispatchers.DATABASE_IO) {
+            initDataDb(
+                dataDbFile.absolutePath,
+                seed,
+                networkId = networkId
+            )
+        }
 
     override suspend fun createAccount(
         seed: ByteArray,
@@ -108,15 +112,17 @@ class RustBackend private constructor(
         }
     }
 
-    override suspend fun getMemoAsUtf8(txId: ByteArray, outputIndex: Int) =
-        withContext(SdkDispatchers.DATABASE_IO) {
-            getMemoAsUtf8(
-                dataDbFile.absolutePath,
-                txId,
-                outputIndex,
-                networkId = networkId
-            )
-        }
+    override suspend fun getMemoAsUtf8(
+        txId: ByteArray,
+        outputIndex: Int
+    ) = withContext(SdkDispatchers.DATABASE_IO) {
+        getMemoAsUtf8(
+            dataDbFile.absolutePath,
+            txId,
+            outputIndex,
+            networkId = networkId
+        )
+    }
 
     override suspend fun writeBlockMetadata(blockMetadata: List<JniBlockMeta>) =
         withContext(SdkDispatchers.DATABASE_IO) {
@@ -217,10 +223,11 @@ class RustBackend private constructor(
 
     override suspend fun getFullyScannedHeight() =
         withContext(SdkDispatchers.DATABASE_IO) {
-            val height = getFullyScannedHeight(
-                dataDbFile.absolutePath,
-                networkId = networkId
-            )
+            val height =
+                getFullyScannedHeight(
+                    dataDbFile.absolutePath,
+                    networkId = networkId
+                )
 
             if (-1L == height) {
                 null
@@ -231,10 +238,11 @@ class RustBackend private constructor(
 
     override suspend fun getMaxScannedHeight() =
         withContext(SdkDispatchers.DATABASE_IO) {
-            val height = getMaxScannedHeight(
-                dataDbFile.absolutePath,
-                networkId = networkId
-            )
+            val height =
+                getMaxScannedHeight(
+                    dataDbFile.absolutePath,
+                    networkId = networkId
+                )
 
             if (-1L == height) {
                 null
@@ -260,7 +268,10 @@ class RustBackend private constructor(
         }
     }
 
-    override suspend fun scanBlocks(fromHeight: Long, limit: Long) {
+    override suspend fun scanBlocks(
+        fromHeight: Long,
+        limit: Long
+    ) {
         return withContext(SdkDispatchers.DATABASE_IO) {
             scanBlocks(
                 fsBlockDbRoot.absolutePath,
@@ -287,19 +298,20 @@ class RustBackend private constructor(
         to: String,
         value: Long,
         memo: ByteArray?
-    ): ByteArray = withContext(SdkDispatchers.DATABASE_IO) {
-        createToAddress(
-            dataDbFile.absolutePath,
-            unifiedSpendingKey,
-            to,
-            value,
-            memo ?: ByteArray(0),
-            spendParamsPath = saplingSpendFile.absolutePath,
-            outputParamsPath = saplingOutputFile.absolutePath,
-            networkId = networkId,
-            useZip317Fees = IS_USE_ZIP_317_FEES
-        )
-    }
+    ): ByteArray =
+        withContext(SdkDispatchers.DATABASE_IO) {
+            createToAddress(
+                dataDbFile.absolutePath,
+                unifiedSpendingKey,
+                to,
+                value,
+                memo ?: ByteArray(0),
+                spendParamsPath = saplingSpendFile.absolutePath,
+                outputParamsPath = saplingOutputFile.absolutePath,
+                networkId = networkId,
+                useZip317Fees = IS_USE_ZIP_317_FEES
+            )
+        }
 
     override suspend fun shieldToAddress(
         account: Int,
@@ -339,17 +351,13 @@ class RustBackend private constructor(
         )
     }
 
-    override fun isValidShieldedAddr(addr: String) =
-        isValidShieldedAddress(addr, networkId = networkId)
+    override fun isValidShieldedAddr(addr: String) = isValidShieldedAddress(addr, networkId = networkId)
 
-    override fun isValidTransparentAddr(addr: String) =
-        isValidTransparentAddress(addr, networkId = networkId)
+    override fun isValidTransparentAddr(addr: String) = isValidTransparentAddress(addr, networkId = networkId)
 
-    override fun isValidUnifiedAddr(addr: String) =
-        isValidUnifiedAddress(addr, networkId = networkId)
+    override fun isValidUnifiedAddr(addr: String) = isValidUnifiedAddress(addr, networkId = networkId)
 
-    override fun getBranchIdForHeight(height: Long): Long =
-        branchIdForHeight(height, networkId = networkId)
+    override fun getBranchIdForHeight(height: Long): Long = branchIdForHeight(height, networkId = networkId)
 
     /**
      * Exposes all of the librustzcash functions along with helpers for loading the static library.
@@ -397,7 +405,11 @@ class RustBackend private constructor(
         private external fun initBlockMetaDb(fsBlockDbRoot: String): Int
 
         @JvmStatic
-        private external fun initDataDb(dbDataPath: String, seed: ByteArray?, networkId: Int): Int
+        private external fun initDataDb(
+            dbDataPath: String,
+            seed: ByteArray?,
+            networkId: Int
+        ): Int
 
         @JvmStatic
         private external fun createAccount(
@@ -422,7 +434,11 @@ class RustBackend private constructor(
         private external fun getSaplingReceiverForUnifiedAddress(ua: String): String?
 
         @JvmStatic
-        private external fun listTransparentReceivers(dbDataPath: String, account: Int, networkId: Int): Array<String>
+        private external fun listTransparentReceivers(
+            dbDataPath: String,
+            account: Int,
+            networkId: Int
+        ): Array<String>
 
         fun validateUnifiedSpendingKey(bytes: ByteArray) = isValidSpendingKey(bytes)
 
@@ -430,13 +446,22 @@ class RustBackend private constructor(
         private external fun isValidSpendingKey(bytes: ByteArray): Boolean
 
         @JvmStatic
-        private external fun isValidShieldedAddress(addr: String, networkId: Int): Boolean
+        private external fun isValidShieldedAddress(
+            addr: String,
+            networkId: Int
+        ): Boolean
 
         @JvmStatic
-        private external fun isValidTransparentAddress(addr: String, networkId: Int): Boolean
+        private external fun isValidTransparentAddress(
+            addr: String,
+            networkId: Int
+        ): Boolean
 
         @JvmStatic
-        private external fun isValidUnifiedAddress(addr: String, networkId: Int): Boolean
+        private external fun isValidUnifiedAddress(
+            addr: String,
+            networkId: Int
+        ): Boolean
 
         @JvmStatic
         private external fun getMemoAsUtf8(
@@ -563,7 +588,10 @@ class RustBackend private constructor(
         ): ByteArray
 
         @JvmStatic
-        private external fun branchIdForHeight(height: Long, networkId: Int): Long
+        private external fun branchIdForHeight(
+            height: Long,
+            networkId: Int
+        ): Long
 
         @JvmStatic
         @Suppress("LongParameterList")

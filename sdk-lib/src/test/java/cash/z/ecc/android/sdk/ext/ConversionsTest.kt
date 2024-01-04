@@ -7,7 +7,6 @@ import java.math.MathContext
 import kotlin.test.assertEquals
 
 class ConversionsTest {
-
     @Test
     fun `default right padding is 6`() {
         assertEquals(1.13.toZec(6), Zatoshi(113000000L).convertZatoshiToZec())

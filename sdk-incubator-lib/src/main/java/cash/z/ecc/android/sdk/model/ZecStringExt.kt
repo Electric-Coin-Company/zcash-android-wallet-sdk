@@ -4,7 +4,6 @@ import android.content.Context
 import cash.z.ecc.android.sdk.incubator.R
 
 object ZecStringExt {
-
     private const val DIGITS_BETWEEN_GROUP_SEPARATORS = 3
 
     /**
@@ -23,7 +22,11 @@ object ZecStringExt {
      *
      * @return true in case of validation success, false otherwise
      */
-    fun filterContinuous(context: Context, separators: MonetarySeparators, zecString: String): Boolean {
+    fun filterContinuous(
+        context: Context,
+        separators: MonetarySeparators,
+        zecString: String
+    ): Boolean {
         if (!context.getString(
                 R.string.co_electriccoin_zcash_zec_amount_regex_continuous_filter,
                 separators.grouping,
@@ -43,7 +46,10 @@ object ZecStringExt {
      *
      * @return true in case of validation success, false otherwise
      */
-    fun checkFor3Digits(separators: MonetarySeparators, zecString: String): Boolean {
+    fun checkFor3Digits(
+        separators: MonetarySeparators,
+        zecString: String
+    ): Boolean {
         if (zecString.count { it == separators.grouping } >= 2) {
             val groups = zecString.split(separators.grouping)
             for (i in 1 until (groups.size - 1)) {
@@ -72,7 +78,11 @@ object ZecStringExt {
      *
      * @return true in case of validation success, false otherwise
      */
-    fun filterConfirm(context: Context, separators: MonetarySeparators, zecString: String): Boolean {
+    fun filterConfirm(
+        context: Context,
+        separators: MonetarySeparators,
+        zecString: String
+    ): Boolean {
         if (zecString.isBlank() ||
             zecString == separators.grouping.toString() ||
             zecString == separators.decimal.toString()
@@ -86,6 +96,6 @@ object ZecStringExt {
                 separators.grouping,
                 separators.decimal
             ).toRegex().matches(zecString) && checkFor3Digits(separators, zecString)
-            )
+        )
     }
 }

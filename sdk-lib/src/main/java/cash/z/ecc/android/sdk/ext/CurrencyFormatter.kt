@@ -22,21 +22,23 @@ import java.util.Locale
 // TODO [#678]: provide a dynamic way to configure this globally for the SDK
 //  For now, just make these vars so at least they could be modified in one place
 // TODO [#678]: https://github.com/zcash/zcash-android-wallet-sdk/issues/678
-@Suppress("MagicNumber")
+@Suppress("MagicNumber", "ktlint:standard:property-naming")
 object Conversions {
     var ONE_ZEC_IN_ZATOSHI = BigDecimal(Zatoshi.ZATOSHI_PER_ZEC, MathContext.DECIMAL128)
-    var ZEC_FORMATTER = NumberFormat.getInstance(Locale.getDefault()).apply {
-        roundingMode = RoundingMode.HALF_EVEN
-        maximumFractionDigits = 6
-        minimumFractionDigits = 0
-        minimumIntegerDigits = 1
-    }
-    var USD_FORMATTER = NumberFormat.getInstance(Locale.getDefault()).apply {
-        roundingMode = RoundingMode.HALF_EVEN
-        maximumFractionDigits = 2
-        minimumFractionDigits = 2
-        minimumIntegerDigits = 1
-    }
+    var ZEC_FORMATTER =
+        NumberFormat.getInstance(Locale.getDefault()).apply {
+            roundingMode = RoundingMode.HALF_EVEN
+            maximumFractionDigits = 6
+            minimumFractionDigits = 0
+            minimumIntegerDigits = 1
+        }
+    var USD_FORMATTER =
+        NumberFormat.getInstance(Locale.getDefault()).apply {
+            roundingMode = RoundingMode.HALF_EVEN
+            maximumFractionDigits = 2
+            minimumFractionDigits = 2
+            minimumIntegerDigits = 1
+        }
 }
 
 /**
@@ -144,7 +146,10 @@ fun BigDecimal?.toUsdString(
  *
  * @return a currency formatter, appropriate for the default locale.
  */
-fun currencyFormatter(maxDecimals: Int, minDecimals: Int): NumberFormat {
+fun currencyFormatter(
+    maxDecimals: Int,
+    minDecimals: Int
+): NumberFormat {
     return NumberFormat.getInstance(Locale.getDefault()).apply {
         roundingMode = ZEC_FORMATTER.roundingMode
         maximumFractionDigits = maxDecimals
@@ -313,7 +318,10 @@ fun BigDecimal?.convertUsdToZec(zecPrice: BigDecimal): BigDecimal {
  * @return this BigDecimal value converted from one currency into the other, based on the given
  * price.
  */
-fun BigDecimal.convertCurrency(zecPrice: BigDecimal, isUsd: Boolean): BigDecimal {
+fun BigDecimal.convertCurrency(
+    zecPrice: BigDecimal,
+    isUsd: Boolean
+): BigDecimal {
     return if (isUsd) {
         this.convertUsdToZec(zecPrice)
     } else {
@@ -330,14 +338,15 @@ fun String?.safelyConvertToBigDecimal(): BigDecimal? {
     if (this.isNullOrEmpty()) {
         return BigDecimal.ZERO
     }
-    val result = try {
-        // ignore commas and whitespace
-        val sanitizedInput = this.filter { it.isDigit() or (it == '.') }
-        BigDecimal.ZERO.max(BigDecimal(sanitizedInput, MathContext.DECIMAL128))
-    } catch (nfe: NumberFormatException) {
-        Twig.debug(nfe) { "Exception while converting String to BigDecimal" }
-        null
-    }
+    val result =
+        try {
+            // ignore commas and whitespace
+            val sanitizedInput = this.filter { it.isDigit() or (it == '.') }
+            BigDecimal.ZERO.max(BigDecimal(sanitizedInput, MathContext.DECIMAL128))
+        } catch (nfe: NumberFormatException) {
+            Twig.debug(nfe) { "Exception while converting String to BigDecimal" }
+            null
+        }
     return result
 }
 
@@ -350,8 +359,10 @@ fun String?.safelyConvertToBigDecimal(): BigDecimal? {
  * @return the abbreviated string unless the string is too short, in which case the original string
  * is returned.
  */
-fun String.toAbbreviatedAddress(startLength: Int = 8, endLength: Int = 8) =
-    if (length > startLength + endLength) "${take(startLength)}…${takeLast(endLength)}" else this
+fun String.toAbbreviatedAddress(
+    startLength: Int = 8,
+    endLength: Int = 8
+) = if (length > startLength + endLength) "${take(startLength)}…${takeLast(endLength)}" else this
 
 /**
  * Masks the current string for use in logs. If this string appears to be an address, the last

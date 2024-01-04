@@ -20,8 +20,7 @@ import org.junit.Test
  * the same data.
  */
 class TransparentRestoreSample {
-
-    val TX_VALUE = Zatoshi(ZcashSdk.MINERS_FEE.value / 2)
+    val txValue = Zatoshi(ZcashSdk.MINERS_FEE.value / 2)
 
 //    val walletA = SimpleWallet(SEED_PHRASE, "WalletA")
 
@@ -36,71 +35,78 @@ class TransparentRestoreSample {
 //        DerivationTool.deriveTransparentAddress(Mnemonics.MnemonicCode(RANDOM_PHRASE).toSeed(), Testnet)
 
     //    @Test
-    fun sendZ2Texternal() = runBlocking {
-        val extWallet = TestWallet(TestWallet.Backups.ALICE, alias = "WalletE")
-        extWallet.sync()
+    fun sendZ2Texternal() =
+        runBlocking {
+            val extWallet = TestWallet(TestWallet.Backups.ALICE, alias = "WalletE")
+            extWallet.sync()
 //        extWallet.send(542, walletSandbox.transparentAddress, "External funds memo is lost, though")
-        delay(1000)
-    }
+            delay(1000)
+        }
 
     //    @Test
-    fun sendZ2T() = runBlocking {
+    fun sendZ2T() =
+        runBlocking {
 //        walletSandbox.sync()
 //        walletZ2T.send(543, externalTransparentAddress, "External funds memo is lost, though")
-        delay(1000)
-    }
+            delay(1000)
+        }
 
 //    @Test
-    fun autoShield() = runBlocking<Unit> {
-        val wallet = TestWallet(TestWallet.Backups.SAMPLE_WALLET, alias = "WalletC")
-        wallet.sync()
-        val tbalance = wallet.transparentBalance()
-        val address = wallet.transparentAddress
+    fun autoShield() =
+        runBlocking<Unit> {
+            val wallet = TestWallet(TestWallet.Backups.SAMPLE_WALLET, alias = "WalletC")
+            wallet.sync()
+            val tbalance = wallet.transparentBalance()
+            val address = wallet.transparentAddress
 
-        Assert.assertTrue(
-            "Not enough funds to run sample. Expected some Zatoshi but found ${tbalance.available}. " +
-                "Try adding funds to $address",
-            tbalance.available.value > 0
-        )
+            Assert.assertTrue(
+                "Not enough funds to run sample. Expected some Zatoshi but found ${tbalance.available}. " +
+                    "Try adding funds to $address",
+                tbalance.available.value > 0
+            )
 
 //        wallet.shieldFunds()
-    }
+        }
 
 //    @Test
-    fun cli() = runBlocking<Unit> {
+    fun cli() =
+        runBlocking<Unit> {
 //        val wallet = SimpleWallet(SEED_PHRASE, "WalletCli")
 //        wallet.sync()
 //        wallet.rewindToHeight(1343500).join(45_000)
-        val wallet = TestWallet(TestWallet.Backups.SAMPLE_WALLET, alias = "WalletC")
+            val wallet = TestWallet(TestWallet.Backups.SAMPLE_WALLET, alias = "WalletC")
 //        wallet.sync().rewindToHeight(1339178).join(10000)
-        wallet.sync().rewindToHeight(BlockHeight.new(ZcashNetwork.Testnet, 1339178)).send(
-            "ztestsapling17zazsl8rryl8kjaqxnr2r29rw9d9a2mud37ugapm0s8gmyv0ue43h9lqwmhdsp3nu9dazeqfs6l",
-            "is send broken?"
-        ).join(5)
-    }
+            wallet.sync().rewindToHeight(BlockHeight.new(ZcashNetwork.Testnet, 1339178)).send(
+                "ztestsapling17zazsl8rryl8kjaqxnr2r29rw9d9a2mud37ugapm0s8gmyv0ue43h9lqwmhdsp3nu9dazeqfs6l",
+                "is send broken?"
+            ).join(5)
+        }
 
     // This test is extremely slow and doesn't assert anything, so the benefit of this test is unclear
     // It is disabled to allow moving forward with configuring CI.
     @Test
     @LargeTest
     @Ignore("This test is extremely slow")
-    fun kris() = runBlocking<Unit> {
-        val wallet0 = TestWallet(
-            TestWallet.Backups.SAMPLE_WALLET.seedPhrase,
-            "tmpabc",
-            ZcashNetwork.Testnet,
-            startHeight = BlockHeight.new(
-                ZcashNetwork.Testnet,
-                1330190
-            )
-        )
+    fun kris() =
+        runBlocking<Unit> {
+            val wallet0 =
+                TestWallet(
+                    TestWallet.Backups.SAMPLE_WALLET.seedPhrase,
+                    "tmpabc",
+                    ZcashNetwork.Testnet,
+                    startHeight =
+                        BlockHeight.new(
+                            ZcashNetwork.Testnet,
+                            1330190
+                        )
+                )
 //        val wallet1 = SimpleWallet(WALLET0_PHRASE, "Wallet1")
 
-        wallet0.sync() // .shieldFunds()
+            wallet0.sync() // .shieldFunds()
 //            .send(amount = 1543L, memo = "")
-            .join()
+                .join()
 //        wallet1.sync().join(5_000L)
-    }
+        }
 
     /*
 
@@ -113,36 +119,40 @@ class TransparentRestoreSample {
     /**
      * Sanity check that the wallet has enough funds for the test
      */
-//    @Test
-    fun hasFunds() = runBlocking<Unit> {
-        val walletSandbox = TestWallet(
-            TestWallet.Backups.SAMPLE_WALLET.seedPhrase,
-            "WalletC",
-            ZcashNetwork.Testnet,
-            startHeight = BlockHeight.new(
-                ZcashNetwork.Testnet,
-                1330190
-            )
-        )
-        //        val job = walletA.walletScope.launch {
-        //            walletA.sync()
-        //        }
-        walletSandbox.sync()
-        //        job.join()
-        delay(500)
+    @Test
+    @Ignore("Was disabled by its author")
+    fun hasFunds() =
+        runBlocking<Unit> {
+            val walletSandbox =
+                TestWallet(
+                    TestWallet.Backups.SAMPLE_WALLET.seedPhrase,
+                    "WalletC",
+                    ZcashNetwork.Testnet,
+                    startHeight =
+                        BlockHeight.new(
+                            ZcashNetwork.Testnet,
+                            1330190
+                        )
+                )
+            //        val job = walletA.walletScope.launch {
+            //            walletA.sync()
+            //        }
+            walletSandbox.sync()
+            //        job.join()
+            delay(500)
 
-        //        val value = walletA.available
-        //        val address = walletA.shieldedAddress
-        //        Assert.assertTrue("Not enough funds to run sample. Expected at least $TX_VALUE Zatoshi but found $value. Try adding funds to $address", value >= TX_VALUE)
+            //        val value = walletA.available
+            //        val address = walletA.shieldedAddress
+            //        Assert.assertTrue("Not enough funds to run sample. Expected at least $TX_VALUE Zatoshi but found $value. Try adding funds to $address", value >= TX_VALUE)
 
-        // send z->t
-        //        walletA.send(TX_VALUE, walletA.transparentAddress, "${TransparentRestoreSample::class.java.simpleName} z->t")
+            // send z->t
+            //        walletA.send(TX_VALUE, walletA.transparentAddress, "${TransparentRestoreSample::class.java.simpleName} z->t")
 
-        walletSandbox.rewindToHeight(BlockHeight.new(ZcashNetwork.Testnet, 1339178))
-        delay(500)
-        //        walletB.sync()
-        // rewind database B to height then rescan
-    }
+            walletSandbox.rewindToHeight(BlockHeight.new(ZcashNetwork.Testnet, 1339178))
+            delay(500)
+            //        walletB.sync()
+            // rewind database B to height then rescan
+        }
 
 //    // when startHeight is null, it will use the latest checkpoint
 //    class SimpleWallet(

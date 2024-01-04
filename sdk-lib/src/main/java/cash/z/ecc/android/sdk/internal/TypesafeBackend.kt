@@ -14,7 +14,6 @@ import cash.z.ecc.android.sdk.model.ZcashNetwork
 
 @Suppress("TooManyFunctions")
 internal interface TypesafeBackend {
-
     val network: ZcashNetwork
 
     suspend fun createAccountAndGetSpendingKey(
@@ -64,7 +63,10 @@ internal interface TypesafeBackend {
         height: BlockHeight
     )
 
-    suspend fun getMemoAsUtf8(txId: ByteArray, outputIndex: Int): String?
+    suspend fun getMemoAsUtf8(
+        txId: ByteArray,
+        outputIndex: Int
+    ): String?
 
     suspend fun initDataDb(seed: ByteArray?): Int
 
@@ -110,7 +112,10 @@ internal interface TypesafeBackend {
      * @throws RuntimeException as a common indicator of the operation failure
      */
     @Throws(RuntimeException::class)
-    suspend fun scanBlocks(fromHeight: BlockHeight, limit: Long)
+    suspend fun scanBlocks(
+        fromHeight: BlockHeight,
+        limit: Long
+    )
 
     /**
      * @throws RuntimeException as a common indicator of the operation failure

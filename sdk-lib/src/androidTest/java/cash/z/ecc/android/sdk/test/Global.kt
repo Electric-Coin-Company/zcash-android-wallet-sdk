@@ -12,14 +12,19 @@ import kotlin.test.assertNotNull
 
 fun getAppContext(): Context = ApplicationProvider.getApplicationContext()
 
-fun getStringResource(@StringRes resId: Int) = getAppContext().getString(resId)
+fun getStringResource(
+    @StringRes resId: Int
+) = getAppContext().getString(resId)
 
-fun getStringResourceWithArgs(@StringRes resId: Int, vararg formatArgs: String) =
-    getAppContext().getString(resId, *formatArgs)
+fun getStringResourceWithArgs(
+    @StringRes resId: Int,
+    vararg formatArgs: String
+) = getAppContext().getString(resId, *formatArgs)
 
-fun readFileLinesInFlow(filePathName: String) = flow<String> {
-    val testFile = javaClass.getResourceAsStream(filePathName)
-    assertNotNull(testFile, "Test file read failure.")
+fun readFileLinesInFlow(filePathName: String) =
+    flow<String> {
+        val testFile = javaClass.getResourceAsStream(filePathName)
+        assertNotNull(testFile, "Test file read failure.")
 
-    emitAll(testFile.bufferedReader().lineSequence().asFlow())
-}.flowOn(Dispatchers.IO)
+        emitAll(testFile.bufferedReader().lineSequence().asFlow())
+    }.flowOn(Dispatchers.IO)

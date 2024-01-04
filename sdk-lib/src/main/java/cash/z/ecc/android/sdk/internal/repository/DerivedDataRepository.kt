@@ -12,7 +12,6 @@ import kotlinx.coroutines.flow.Flow
  */
 @Suppress("TooManyFunctions")
 internal interface DerivedDataRepository {
-
     /**
      * The height of the first transaction that hasn't been enhanced yet.
      *

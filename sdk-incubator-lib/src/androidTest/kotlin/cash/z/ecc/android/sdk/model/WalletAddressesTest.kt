@@ -11,11 +11,12 @@ import org.junit.Test
 class WalletAddressesTest {
     @Test
     @SmallTest
-    fun security() = runTest {
-        val walletAddresses = WalletAddressesFixture.new()
-        val actual = WalletAddressesFixture.new().toString()
-        assertFalse(actual.contains(walletAddresses.sapling.address))
-        assertFalse(actual.contains(walletAddresses.transparent.address))
-        assertFalse(actual.contains(walletAddresses.unified.address))
-    }
+    fun security() =
+        runTest {
+            val walletAddresses = WalletAddressesFixture.new()
+            val actual = WalletAddressesFixture.new().toString()
+            assertFalse(actual.contains(walletAddresses.sapling.address))
+            assertFalse(actual.contains(walletAddresses.transparent.address))
+            assertFalse(actual.contains(walletAddresses.unified.address))
+        }
 }

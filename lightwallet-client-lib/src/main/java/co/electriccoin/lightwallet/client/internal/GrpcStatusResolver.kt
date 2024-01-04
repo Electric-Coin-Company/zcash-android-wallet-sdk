@@ -8,7 +8,6 @@ import io.grpc.Status
  * This class provides conversion from GRPC Status to our predefined Server or Client error classes.
  */
 object GrpcStatusResolver : ApiStatusResolver {
-
     override fun <T> resolveFailureFromStatus(throwable: Throwable): Response.Failure<T> {
         val status = Status.fromThrowable(throwable)
         Log.w(Constants.LOG_TAG, "Networking error: ${status.code}: ${status.description}")

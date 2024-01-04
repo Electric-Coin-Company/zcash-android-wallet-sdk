@@ -29,6 +29,7 @@ class ScreenTimeout {
 val LocalScreenTimeout = compositionLocalOf { ScreenTimeout() }
 
 @Composable
+@Suppress("ktlint:standard:function-naming")
 fun DisableScreenTimeout() {
     val screenTimeout = LocalScreenTimeout.current
     DisposableEffect(screenTimeout) {

@@ -16,13 +16,14 @@ internal class TransactionTable(
     private val zcashNetwork: ZcashNetwork,
     private val sqliteDatabase: SupportSQLiteDatabase
 ) {
-
     companion object {
-        private val SELECTION_BLOCK_IS_NULL = String.format(
-            Locale.ROOT,
-            "%s IS NULL", // $NON-NLS
-            TransactionTableDefinition.COLUMN_INTEGER_BLOCK
-        )
+        private val SELECTION_BLOCK_IS_NULL =
+            String.format(
+                Locale.ROOT,
+                // $NON-NLS
+                "%s IS NULL",
+                TransactionTableDefinition.COLUMN_INTEGER_BLOCK
+            )
 
         private val PROJECTION_COUNT = arrayOf("COUNT(*)") // $NON-NLS
 
@@ -30,33 +31,39 @@ internal class TransactionTable(
 
         private val PROJECTION_PRIMARY_KEY_ID = arrayOf(TransactionTableDefinition.COLUMN_INTEGER_ID)
 
-        private val PROJECTION_ENCODED_TRANSACTION = arrayOf(
-            TransactionTableDefinition.COLUMN_BLOB_TRANSACTION_ID,
-            TransactionTableDefinition.COLUMN_BLOB_RAW,
-            TransactionTableDefinition.COLUMN_INTEGER_EXPIRY_HEIGHT
-        )
+        private val PROJECTION_ENCODED_TRANSACTION =
+            arrayOf(
+                TransactionTableDefinition.COLUMN_BLOB_TRANSACTION_ID,
+                TransactionTableDefinition.COLUMN_BLOB_RAW,
+                TransactionTableDefinition.COLUMN_INTEGER_EXPIRY_HEIGHT
+            )
 
-        private val SELECTION_RAW_TRANSACTION_ID = String.format(
-            Locale.ROOT,
-            "%s = ?", // $NON-NLS
-            TransactionTableDefinition.COLUMN_BLOB_TRANSACTION_ID
-        )
+        private val SELECTION_RAW_TRANSACTION_ID =
+            String.format(
+                Locale.ROOT,
+                // $NON-NLS
+                "%s = ?",
+                TransactionTableDefinition.COLUMN_BLOB_TRANSACTION_ID
+            )
 
-        private val SELECTION_TRANSACTION_ID_AND_RAW_NOT_NULL = String.format(
-            Locale.ROOT,
-            "%s = ? AND %s IS NOT NULL", // $NON-NLS
-            TransactionTableDefinition.COLUMN_BLOB_TRANSACTION_ID,
-            TransactionTableDefinition.COLUMN_BLOB_RAW
-        )
+        private val SELECTION_TRANSACTION_ID_AND_RAW_NOT_NULL =
+            String.format(
+                Locale.ROOT,
+                // $NON-NLS
+                "%s = ? AND %s IS NOT NULL",
+                TransactionTableDefinition.COLUMN_BLOB_TRANSACTION_ID,
+                TransactionTableDefinition.COLUMN_BLOB_RAW
+            )
     }
 
-    suspend fun count() = withContext(Dispatchers.IO) {
-        sqliteDatabase.queryAndMap(
-            table = TransactionTableDefinition.TABLE_NAME,
-            columns = PROJECTION_COUNT,
-            cursorParser = { it.getLong(0) }
-        ).first()
-    }
+    suspend fun count() =
+        withContext(Dispatchers.IO) {
+            sqliteDatabase.queryAndMap(
+                table = TransactionTableDefinition.TABLE_NAME,
+                columns = PROJECTION_COUNT,
+                cursorParser = { it.getLong(0) }
+            ).first()
+        }
 
     suspend fun countUnmined() =
         sqliteDatabase.queryAndMap(
@@ -77,11 +84,12 @@ internal class TransactionTable(
             val heightIndex = it.getColumnIndexOrThrow(TransactionTableDefinition.COLUMN_INTEGER_EXPIRY_HEIGHT)
 
             val raw = it.getBlob(rawIndex)
-            val expiryHeight = if (it.isNull(heightIndex)) {
-                null
-            } else {
-                BlockHeight.new(zcashNetwork, it.getLong(heightIndex))
-            }
+            val expiryHeight =
+                if (it.isNull(heightIndex)) {
+                    null
+                } else {
+                    BlockHeight.new(zcashNetwork, it.getLong(heightIndex))
+                }
 
             EncodedTransaction(
                 txId,

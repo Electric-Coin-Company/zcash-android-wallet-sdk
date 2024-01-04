@@ -8,7 +8,10 @@ data class CompactBlock internal constructor(
     val data: FirstClassByteArray
 ) {
     companion object {
-        fun new(height: BlockHeight, data: FirstClassByteArray): CompactBlock {
+        fun new(
+            height: BlockHeight,
+            data: FirstClassByteArray
+        ): CompactBlock {
             // on this place we should validate input values from "unsafe" model version
 
             return CompactBlock(height, data)

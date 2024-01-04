@@ -7,7 +7,6 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class BenchmarkingExtTest {
-
     @Test
     @SmallTest
     fun check_build_config() {

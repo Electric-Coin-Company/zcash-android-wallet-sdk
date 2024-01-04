@@ -39,6 +39,7 @@ import kotlinx.coroutines.launch
 
 @Preview(name = "Transactions")
 @Composable
+@Suppress("ktlint:standard:function-naming")
 private fun ComposablePreview() {
     MaterialTheme {
         // TODO [#1090]: Demo: Add Addresses and Transactions Compose Previews
@@ -48,6 +49,7 @@ private fun ComposablePreview() {
 }
 
 @Composable
+@Suppress("ktlint:standard:function-naming")
 fun Transactions(
     synchronizer: Synchronizer,
     onBack: () -> Unit
@@ -64,11 +66,12 @@ fun Transactions(
     ) { paddingValues ->
         // TODO [#846]: Slow addresses providing
         // TODO [#846]: https://github.com/zcash/zcash-android-wallet-sdk/issues/846
-        val walletAddresses = flow {
-            emit(WalletAddresses.new(synchronizer))
-        }.collectAsState(
-            initial = null
-        ).value
+        val walletAddresses =
+            flow {
+                emit(WalletAddresses.new(synchronizer))
+            }.collectAsState(
+                initial = null
+            ).value
         if (null != walletAddresses) {
             TransactionsMainContent(
                 paddingValues = paddingValues,
@@ -82,6 +85,7 @@ fun Transactions(
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
+@Suppress("ktlint:standard:function-naming")
 private fun TransactionsTopAppBar(
     onBack: () -> Unit,
     onRefresh: () -> Unit
@@ -110,6 +114,7 @@ private fun TransactionsTopAppBar(
 }
 
 @Composable
+@Suppress("ktlint:standard:function-naming")
 private fun TransactionsMainContent(
     paddingValues: PaddingValues,
     synchronizer: Synchronizer,
@@ -138,14 +143,16 @@ private fun TransactionsMainContent(
                         }
                     }
                 }) {
-                    val time = tx.minedHeight?.let {
-                        tx.blockTimeEpochSeconds?.let { kotlinx.datetime.Instant.fromEpochSeconds(it) } ?: "Unknown"
-                    } ?: "Pending"
-                    val value = if (tx.isSentTransaction) {
-                        -tx.netValue.value
-                    } else {
-                        tx.netValue.value
-                    }
+                    val time =
+                        tx.minedHeight?.let {
+                            tx.blockTimeEpochSeconds?.let { kotlinx.datetime.Instant.fromEpochSeconds(it) } ?: "Unknown"
+                        } ?: "Pending"
+                    val value =
+                        if (tx.isSentTransaction) {
+                            -tx.netValue.value
+                        } else {
+                            tx.netValue.value
+                        }
                     Text("$time, $value")
                 }
             }

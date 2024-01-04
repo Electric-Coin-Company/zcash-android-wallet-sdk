@@ -23,10 +23,11 @@ value class PercentDecimal(val decimal: Float) {
         val ZERO_PERCENT = PercentDecimal(MIN)
         val ONE_HUNDRED_PERCENT = PercentDecimal(MAX)
 
-        fun newLenient(decimal: Float) = PercentDecimal(
-            decimal
-                .coerceAtLeast(MIN)
-                .coerceAtMost(MAX)
-        )
+        fun newLenient(decimal: Float) =
+            PercentDecimal(
+                decimal
+                    .coerceAtLeast(MIN)
+                    .coerceAtMost(MAX)
+            )
     }
 }

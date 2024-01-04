@@ -66,68 +66,74 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
     /**
      * Synchronizer that is retained long enough to survive configuration changes.
      */
-    val synchronizer = walletCoordinator.synchronizer.stateIn(
-        viewModelScope,
-        SharingStarted.WhileSubscribed(ANDROID_STATE_FLOW_TIMEOUT),
-        null
-    )
-
-    val secretState: StateFlow<SecretState> = walletCoordinator.persistableWallet
-        .map { persistableWallet ->
-            if (null == persistableWallet) {
-                SecretState.None
-            } else {
-                SecretState.Ready(persistableWallet)
-            }
-        }.stateIn(
-            viewModelScope,
-            SharingStarted.WhileSubscribed(ANDROID_STATE_FLOW_TIMEOUT),
-            SecretState.Loading
-        )
-
-    val spendingKey = secretState
-        .filterIsInstance<SecretState.Ready>()
-        .map { it.persistableWallet }
-        .map {
-            val bip39Seed = withContext(Dispatchers.IO) {
-                Mnemonics.MnemonicCode(it.seedPhrase.joinToString()).toSeed()
-            }
-            DerivationTool.getInstance().deriveUnifiedSpendingKey(
-                seed = bip39Seed,
-                network = it.network,
-                account = Account.DEFAULT
-            )
-        }.stateIn(
+    val synchronizer =
+        walletCoordinator.synchronizer.stateIn(
             viewModelScope,
             SharingStarted.WhileSubscribed(ANDROID_STATE_FLOW_TIMEOUT),
             null
         )
+
+    val secretState: StateFlow<SecretState> =
+        walletCoordinator.persistableWallet
+            .map { persistableWallet ->
+                if (null == persistableWallet) {
+                    SecretState.None
+                } else {
+                    SecretState.Ready(persistableWallet)
+                }
+            }.stateIn(
+                viewModelScope,
+                SharingStarted.WhileSubscribed(ANDROID_STATE_FLOW_TIMEOUT),
+                SecretState.Loading
+            )
+
+    val spendingKey =
+        secretState
+            .filterIsInstance<SecretState.Ready>()
+            .map { it.persistableWallet }
+            .map {
+                val bip39Seed =
+                    withContext(Dispatchers.IO) {
+                        Mnemonics.MnemonicCode(it.seedPhrase.joinToString()).toSeed()
+                    }
+                DerivationTool.getInstance().deriveUnifiedSpendingKey(
+                    seed = bip39Seed,
+                    network = it.network,
+                    account = Account.DEFAULT
+                )
+            }.stateIn(
+                viewModelScope,
+                SharingStarted.WhileSubscribed(ANDROID_STATE_FLOW_TIMEOUT),
+                null
+            )
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    val walletSnapshot: StateFlow<WalletSnapshot?> = synchronizer
-        .flatMapLatest {
-            if (null == it) {
-                flowOf(null)
-            } else {
-                it.toWalletSnapshot()
+    val walletSnapshot: StateFlow<WalletSnapshot?> =
+        synchronizer
+            .flatMapLatest {
+                if (null == it) {
+                    flowOf(null)
+                } else {
+                    it.toWalletSnapshot()
+                }
             }
-        }
-        .throttle(1.seconds)
-        .stateIn(
-            viewModelScope,
-            SharingStarted.WhileSubscribed(ANDROID_STATE_FLOW_TIMEOUT),
-            null
-        )
+            .throttle(1.seconds)
+            .stateIn(
+                viewModelScope,
+                SharingStarted.WhileSubscribed(ANDROID_STATE_FLOW_TIMEOUT),
+                null
+            )
 
-    val addresses: StateFlow<WalletAddresses?> = synchronizer
-        .filterNotNull()
-        .map {
-            WalletAddresses.new(it)
-        }.stateIn(
-            viewModelScope,
-            SharingStarted.WhileSubscribed(ANDROID_STATE_FLOW_TIMEOUT),
-            null
-        )
+    val addresses: StateFlow<WalletAddresses?> =
+        synchronizer
+            .filterNotNull()
+            .map {
+                WalletAddresses.new(it)
+            }.stateIn(
+                viewModelScope,
+                SharingStarted.WhileSubscribed(ANDROID_STATE_FLOW_TIMEOUT),
+                null
+            )
 
     private val mutableSendState = MutableStateFlow<SendState>(SendState.None)
 
@@ -136,8 +142,7 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
     /**
      * Creates a wallet asynchronously and then persists it.  Clients observe
      * [secretState] to see the side effects.  This would be used for a user creating a new wallet.
-     */
-    /*
+     *
      * Although waiting for the wallet to be written and then read back is slower, it is probably
      * safer because it 1. guarantees the wallet is written to disk and 2. has a single source of truth.
      */
@@ -146,12 +151,13 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
 
         viewModelScope.launch {
             val network = ZcashNetwork.fromResources(application)
-            val newWallet = PersistableWallet.new(
-                application = application,
-                zcashNetwork = network,
-                endpoint = LightWalletEndpoint.defaultForNetwork(network),
-                walletInitMode = WalletInitMode.NewWallet
-            )
+            val newWallet =
+                PersistableWallet.new(
+                    application = application,
+                    zcashNetwork = network,
+                    endpoint = LightWalletEndpoint.defaultForNetwork(network),
+                    walletInitMode = WalletInitMode.NewWallet
+                )
             persistWallet(newWallet)
         }
     }
@@ -268,7 +274,9 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
  */
 sealed class SecretState {
     object Loading : SecretState()
+
     object None : SecretState()
+
     class Ready(val persistableWallet: PersistableWallet) : SecretState()
 }
 
@@ -276,22 +284,27 @@ sealed class SendState {
     object None : SendState() {
         override fun toString(): String = "None"
     }
+
     object Sending : SendState() {
         override fun toString(): String = "Sending"
     }
+
     class Sent(val localTxId: Long) : SendState() {
         override fun toString(): String = "Sent"
     }
+
     class Error(val error: Throwable) : SendState() {
         override fun toString(): String = "Error ${error.message}"
     }
 }
 
+// TODO [#529]: Localize Synchronizer Errors
+// TODO [#529]: https://github.com/zcash/secant-android-wallet/issues/529
+
 /**
  * Represents all kind of Synchronizer errors
  */
-// TODO [#529]: Localize Synchronizer Errors
-// TODO [#529]: https://github.com/zcash/secant-android-wallet/issues/529
+
 sealed class SynchronizerError {
     abstract fun getCauseMessage(): String?
 
@@ -316,51 +329,59 @@ sealed class SynchronizerError {
     }
 }
 
-private fun Synchronizer.toCommonError(): Flow<SynchronizerError?> = callbackFlow {
-    // just for initial default value emit
-    trySend(null)
+private fun Synchronizer.toCommonError(): Flow<SynchronizerError?> =
+    callbackFlow {
+        // just for initial default value emit
+        trySend(null)
 
-    onCriticalErrorHandler = {
-        Twig.error { "WALLET - Error Critical: $it" }
-        trySend(SynchronizerError.Critical(it))
-        false
-    }
-    onProcessorErrorHandler = {
-        Twig.error { "WALLET - Error Processor: $it" }
-        trySend(SynchronizerError.Processor(it))
-        false
-    }
-    onSubmissionErrorHandler = {
-        Twig.error { "WALLET - Error Submission: $it" }
-        trySend(SynchronizerError.Submission(it))
-        false
-    }
-    onSetupErrorHandler = {
-        Twig.error { "WALLET - Error Setup: $it" }
-        trySend(SynchronizerError.Setup(it))
-        false
-    }
-    onChainErrorHandler = { x, y ->
-        Twig.error { "WALLET - Error Chain: $x, $y" }
-        trySend(SynchronizerError.Chain(x, y))
-    }
+        onCriticalErrorHandler = {
+            Twig.error { "WALLET - Error Critical: $it" }
+            trySend(SynchronizerError.Critical(it))
+            false
+        }
+        onProcessorErrorHandler = {
+            Twig.error { "WALLET - Error Processor: $it" }
+            trySend(SynchronizerError.Processor(it))
+            false
+        }
+        onSubmissionErrorHandler = {
+            Twig.error { "WALLET - Error Submission: $it" }
+            trySend(SynchronizerError.Submission(it))
+            false
+        }
+        onSetupErrorHandler = {
+            Twig.error { "WALLET - Error Setup: $it" }
+            trySend(SynchronizerError.Setup(it))
+            false
+        }
+        onChainErrorHandler = { x, y ->
+            Twig.error { "WALLET - Error Chain: $x, $y" }
+            trySend(SynchronizerError.Chain(x, y))
+        }
 
-    awaitClose {
-        // nothing to close here
+        awaitClose {
+            // nothing to close here
+        }
     }
-}
 
 // No good way around needing magic numbers for the indices
 @Suppress("MagicNumber")
 private fun Synchronizer.toWalletSnapshot() =
     combine(
-        status, // 0
-        processorInfo, // 1
-        orchardBalances, // 2
-        saplingBalances, // 3
-        transparentBalances, // 4
-        progress, // 5
-        toCommonError() // 6
+        // 0
+        status,
+        // 1
+        processorInfo,
+        // 2
+        orchardBalances,
+        // 3
+        saplingBalances,
+        // 4
+        transparentBalances,
+        // 5
+        progress,
+        // 6
+        toCommonError()
     ) { flows ->
         val orchardBalance = flows[2] as WalletBalance?
         val saplingBalance = flows[3] as WalletBalance?

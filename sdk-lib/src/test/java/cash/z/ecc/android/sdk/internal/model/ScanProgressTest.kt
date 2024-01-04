@@ -16,9 +16,10 @@ class ScanProgressTest {
 
     @Test
     fun get_fallback_ratio_test() {
-        val scanProgress = ScanProgressFixture.new(
-            denominator = 0
-        )
+        val scanProgress =
+            ScanProgressFixture.new(
+                denominator = 0
+            )
         assertEquals(0f, scanProgress.getSafeRatio())
     }
 }

@@ -4,7 +4,6 @@ import androidx.multidex.MultiDexApplication
 import cash.z.ecc.android.sdk.internal.Twig
 
 class App : MultiDexApplication() {
-
     override fun onCreate() {
         super.onCreate()
 

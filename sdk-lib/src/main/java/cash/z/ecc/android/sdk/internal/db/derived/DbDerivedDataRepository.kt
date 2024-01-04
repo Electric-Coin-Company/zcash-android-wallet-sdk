@@ -31,11 +31,13 @@ internal class DbDerivedDataRepository(
 
     override suspend fun getOldestTransaction() = derivedDataDb.allTransactionView.getOldestTransaction()
 
-    override suspend fun findMinedHeight(rawTransactionId: ByteArray) = derivedDataDb.transactionTable
-        .findMinedHeight(rawTransactionId)
+    override suspend fun findMinedHeight(rawTransactionId: ByteArray) =
+        derivedDataDb.transactionTable
+            .findMinedHeight(rawTransactionId)
 
-    override suspend fun findMatchingTransactionId(rawTransactionId: ByteArray) = derivedDataDb.transactionTable
-        .findDatabaseId(rawTransactionId)
+    override suspend fun findMatchingTransactionId(rawTransactionId: ByteArray) =
+        derivedDataDb.transactionTable
+            .findDatabaseId(rawTransactionId)
 
     override suspend fun getTransactionCount() = derivedDataDb.transactionTable.count()
 
@@ -43,9 +45,10 @@ internal class DbDerivedDataRepository(
         invalidatingFlow.value = UUID.randomUUID()
     }
 
-    override suspend fun getAccountCount() = derivedDataDb.accountTable.count()
-        // toInt() should be safe because we expect very few accounts
-        .toInt()
+    override suspend fun getAccountCount() =
+        derivedDataDb.accountTable.count()
+            // toInt() should be safe because we expect very few accounts
+            .toInt()
 
     override val allTransactions: Flow<List<DbTransactionOverview>>
         get() = invalidatingFlow.map { derivedDataDb.allTransactionView.getAllTransactions().toList() }

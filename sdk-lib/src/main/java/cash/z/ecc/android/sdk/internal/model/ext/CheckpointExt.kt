@@ -20,8 +20,10 @@ internal val Checkpoint.Companion.KEY_EPOCH_SECONDS
 internal val Checkpoint.Companion.KEY_TREE
     get() = "saplingTree"
 
-internal fun Checkpoint.Companion.from(zcashNetwork: ZcashNetwork, jsonString: String) =
-    from(zcashNetwork, JSONObject(jsonString))
+internal fun Checkpoint.Companion.from(
+    zcashNetwork: ZcashNetwork,
+    jsonString: String
+) = from(zcashNetwork, JSONObject(jsonString))
 
 private fun Checkpoint.Companion.from(
     zcashNetwork: ZcashNetwork,
@@ -29,10 +31,11 @@ private fun Checkpoint.Companion.from(
 ): Checkpoint {
     when (val version = jsonObject.optInt(Checkpoint.KEY_VERSION, Checkpoint.VERSION_1)) {
         Checkpoint.VERSION_1 -> {
-            val height = run {
-                val heightLong = jsonObject.getLong(Checkpoint.KEY_HEIGHT)
-                BlockHeight.new(zcashNetwork, heightLong)
-            }
+            val height =
+                run {
+                    val heightLong = jsonObject.getLong(Checkpoint.KEY_HEIGHT)
+                    BlockHeight.new(zcashNetwork, heightLong)
+                }
             val hash = jsonObject.getString(Checkpoint.KEY_HASH)
             val epochSeconds = jsonObject.getLong(Checkpoint.KEY_EPOCH_SECONDS)
             val tree = jsonObject.getString(Checkpoint.KEY_TREE)

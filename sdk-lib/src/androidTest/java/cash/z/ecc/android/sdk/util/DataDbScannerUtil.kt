@@ -47,7 +47,8 @@ class DataDbScannerUtil {
 //        cacheBlocks()
     }
 
-    private fun cacheBlocks() = runBlocking {
+    private fun cacheBlocks() =
+        runBlocking {
 //        val latestBlockHeight = downloader.getLatestBlockHeight()
 //        val lastDownloaded = downloader.getLastDownloadedHeight()
 //        val blockRange = (Math.max(birthday, lastDownloaded))..latestBlockHeight
@@ -55,7 +56,7 @@ class DataDbScannerUtil {
 //        val error = validateNewBlocks(blockRange)
 //        twig("validation completed with result $error")
 //        assertEquals(-1, error)
-    }
+        }
 
     private fun deleteDb(dbName: String) {
         context.getDatabasePath(dbName).absoluteFile.delete()
@@ -64,19 +65,22 @@ class DataDbScannerUtil {
     @Test
     @Ignore("This test is broken")
     fun scanExistingDb() {
-        synchronizer = Synchronizer.newBlocking(
-            context,
-            ZcashNetwork.Mainnet,
-            lightWalletEndpoint = LightWalletEndpoint
-                .defaultForNetwork(ZcashNetwork.Mainnet),
-            seed = byteArrayOf(),
-            birthday = BlockHeight.new(
+        synchronizer =
+            Synchronizer.newBlocking(
+                context,
                 ZcashNetwork.Mainnet,
-                birthdayHeight
-            ),
-            // Using existing wallet init mode as simplification for the test
-            walletInitMode = WalletInitMode.ExistingWallet
-        )
+                lightWalletEndpoint =
+                    LightWalletEndpoint
+                        .defaultForNetwork(ZcashNetwork.Mainnet),
+                seed = byteArrayOf(),
+                birthday =
+                    BlockHeight.new(
+                        ZcashNetwork.Mainnet,
+                        birthdayHeight
+                    ),
+                // Using existing wallet init mode as simplification for the test
+                walletInitMode = WalletInitMode.ExistingWallet
+            )
 
         println("sync!")
         val scope = (synchronizer as SdkSynchronizer).coroutineScope

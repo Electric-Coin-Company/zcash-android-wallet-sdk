@@ -6,7 +6,6 @@ import androidx.annotation.VisibleForTesting
  * Used for getting mocked blocks range for benchmarking purposes.
  */
 object BenchmarkingBlockRangeFixture {
-
     // Be aware that changing these bounds values in a broader range may result in a timeout reached in
     // SyncBlockchainBenchmark. So if changing these, don't forget to align also the test timeout in
     // waitForBalanceScreen() appropriately.

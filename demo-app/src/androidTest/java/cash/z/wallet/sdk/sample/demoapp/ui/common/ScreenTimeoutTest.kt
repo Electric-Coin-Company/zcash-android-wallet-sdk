@@ -27,18 +27,18 @@ class ScreenTimeoutTest : UiTestPrerequisites() {
 
     @Test
     @MediumTest
-    fun acquireAndReleaseScreenTimeout() = runTest {
-        val testSetup = TestSetup(composeTestRule)
+    fun acquireAndReleaseScreenTimeout() =
+        runTest {
+            val testSetup = TestSetup(composeTestRule)
 
-        assertEquals(1, testSetup.getScreenTimeoutCount())
+            assertEquals(1, testSetup.getScreenTimeoutCount())
 
-        testSetup.mutableScreenTimeoutFlag.update { false }
-        composeTestRule.awaitIdle()
-        assertEquals(0, testSetup.getScreenTimeoutCount())
-    }
+            testSetup.mutableScreenTimeoutFlag.update { false }
+            composeTestRule.awaitIdle()
+            assertEquals(0, testSetup.getScreenTimeoutCount())
+        }
 
     private class TestSetup(composeTestRule: ComposeContentTestRule) {
-
         val mutableScreenTimeoutFlag = MutableStateFlow(true)
 
         private val screenTimeout = ScreenTimeout()
@@ -58,6 +58,7 @@ class ScreenTimeoutTest : UiTestPrerequisites() {
         }
 
         @Composable
+        @Suppress("ktlint:standard:function-naming")
         private fun TestView(disableScreenTimeout: Boolean) {
             if (disableScreenTimeout) {
                 DisableScreenTimeout()

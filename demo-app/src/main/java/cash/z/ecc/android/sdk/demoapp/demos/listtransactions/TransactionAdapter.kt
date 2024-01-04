@@ -23,7 +23,6 @@ class TransactionAdapter : ListAdapter<TransactionOverview, TransactionViewHolde
         ) = oldItem == newItem
     }
 ) {
-
     override fun onCreateViewHolder(
         parent: ViewGroup,
         viewType: Int

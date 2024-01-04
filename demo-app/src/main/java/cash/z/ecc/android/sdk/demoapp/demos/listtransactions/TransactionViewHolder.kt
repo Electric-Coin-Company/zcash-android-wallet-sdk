@@ -33,7 +33,12 @@ class TransactionViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) 
     }
 
     @Suppress("MagicNumber")
-    fun bindTo(isInbound: Boolean, minedHeight: BlockHeight?, time: Long?, value: Zatoshi) {
+    fun bindTo(
+        isInbound: Boolean,
+        minedHeight: BlockHeight?,
+        time: Long?,
+        value: Zatoshi
+    ) {
         amountText.text = value.convertZatoshiToZecString()
         timeText.text = minedHeight?.let {
             time?.let {

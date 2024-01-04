@@ -23,24 +23,27 @@ data class ZcashNetwork(
         // You may notice there are extra checkpoints bundled in the SDK that match the
         // sapling/orchard activation heights.
 
-        val Testnet = ZcashNetwork(
-            ID_TESTNET,
-            "testnet",
-            saplingActivationHeight = BlockHeight(280_000),
-            orchardActivationHeight = BlockHeight(1_842_420)
-        )
+        val Testnet =
+            ZcashNetwork(
+                ID_TESTNET,
+                "testnet",
+                saplingActivationHeight = BlockHeight(280_000),
+                orchardActivationHeight = BlockHeight(1_842_420)
+            )
 
-        val Mainnet = ZcashNetwork(
-            ID_MAINNET,
-            "mainnet",
-            saplingActivationHeight = BlockHeight(419_200),
-            orchardActivationHeight = BlockHeight(1_687_104)
-        )
+        val Mainnet =
+            ZcashNetwork(
+                ID_MAINNET,
+                "mainnet",
+                saplingActivationHeight = BlockHeight(419_200),
+                orchardActivationHeight = BlockHeight(1_687_104)
+            )
 
-        fun from(id: Int) = when (id) {
-            0 -> Testnet
-            1 -> Mainnet
-            else -> throw IllegalArgumentException("Unknown network id: $id")
-        }
+        fun from(id: Int) =
+            when (id) {
+                0 -> Testnet
+                1 -> Mainnet
+                else -> throw IllegalArgumentException("Unknown network id: $id")
+            }
     }
 }

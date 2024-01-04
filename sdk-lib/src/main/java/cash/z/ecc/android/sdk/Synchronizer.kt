@@ -1,6 +1,9 @@
 package cash.z.ecc.android.sdk
 
 import android.content.Context
+import cash.z.ecc.android.sdk.WalletInitMode.ExistingWallet
+import cash.z.ecc.android.sdk.WalletInitMode.NewWallet
+import cash.z.ecc.android.sdk.WalletInitMode.RestoreWallet
 import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor
 import cash.z.ecc.android.sdk.exception.InitializeException
 import cash.z.ecc.android.sdk.ext.ZcashSdk
@@ -30,7 +33,6 @@ import java.io.Closeable
 
 @Suppress("TooManyFunctions")
 interface Synchronizer {
-
     // Status
 
     /**
@@ -105,6 +107,7 @@ interface Synchronizer {
     // Operations
     //
 
+    @Suppress("ktlint:standard:no-consecutive-comments")
     /**
      * Adds the next available account-level spend authority, given the current set of
      * [ZIP 316](https://zips.z.cash/zip-0316) account identifiers known, to the wallet
@@ -128,9 +131,10 @@ interface Synchronizer {
      *
      * @return the newly created ZIP 316 account identifier, along with the binary
      * encoding of the `UnifiedSpendingKey` for the newly created account.
-     */
-    // This is not yet ready to be a public API
-    // suspend fun createAccount(seed: ByteArray): UnifiedSpendingKey
+     *
+     * This is not yet ready to be a public API!
+     * suspend fun createAccount(seed: ByteArray): UnifiedSpendingKey
+     **/
 
     /**
      * Gets the current unified address for the given account.
@@ -425,7 +429,6 @@ interface Synchronizer {
     }
 
     companion object {
-
         /**
          * Primary method that SDK clients will use to construct a synchronizer.
          *
@@ -459,8 +462,7 @@ interface Synchronizer {
          * @throws IllegalStateException If multiple instances of synchronizer with the same network+alias are
          * active at the same time.  Call `close` to finish one synchronizer before starting another one with the same
          * network+alias.
-         */
-        /*
+         *
          * If customized initialization is required (e.g. for dependency injection or testing), see
          * [DefaultSynchronizerFactory].
          */
@@ -480,22 +482,24 @@ interface Synchronizer {
 
             val saplingParamTool = SaplingParamTool.new(applicationContext)
 
-            val loadedCheckpoint = CheckpointTool.loadNearest(
-                applicationContext,
-                zcashNetwork,
-                birthday ?: zcashNetwork.saplingActivationHeight
-            )
+            val loadedCheckpoint =
+                CheckpointTool.loadNearest(
+                    applicationContext,
+                    zcashNetwork,
+                    birthday ?: zcashNetwork.saplingActivationHeight
+                )
 
             val coordinator = DatabaseCoordinator.getInstance(context)
             // The pending transaction database no longer exists, so we can delete the file
             coordinator.deletePendingTransactionDatabase(zcashNetwork, alias)
 
-            val backend = DefaultSynchronizerFactory.defaultBackend(
-                zcashNetwork,
-                alias,
-                saplingParamTool,
-                coordinator
-            )
+            val backend =
+                DefaultSynchronizerFactory.defaultBackend(
+                    zcashNetwork,
+                    alias,
+                    saplingParamTool,
+                    coordinator
+                )
 
             val blockStore =
                 DefaultSynchronizerFactory
@@ -504,46 +508,52 @@ interface Synchronizer {
             val service = DefaultSynchronizerFactory.defaultService(applicationContext, lightWalletEndpoint)
             val downloader = DefaultSynchronizerFactory.defaultDownloader(service, blockStore)
 
-            val chainTip = when (walletInitMode) {
-                is WalletInitMode.RestoreWallet -> {
-                    when (val response = downloader.getLatestBlockHeight()) {
-                        is Response.Success -> {
-                            Twig.info { "Chain tip for recovery until param fetched: ${response.result.value}" }
-                            runCatching { response.result.toBlockHeight(zcashNetwork) }.getOrNull()
-                        }
-                        is Response.Failure -> {
-                            Twig.error { "Chain tip fetch for recovery until failed with: ${response.toThrowable()}" }
-                            null
+            val chainTip =
+                when (walletInitMode) {
+                    is WalletInitMode.RestoreWallet -> {
+                        when (val response = downloader.getLatestBlockHeight()) {
+                            is Response.Success -> {
+                                Twig.info { "Chain tip for recovery until param fetched: ${response.result.value}" }
+                                runCatching { response.result.toBlockHeight(zcashNetwork) }.getOrNull()
+                            }
+                            is Response.Failure -> {
+                                Twig.error {
+                                    "Chain tip fetch for recovery until failed with: ${response.toThrowable()}"
+                                }
+                                null
+                            }
                         }
                     }
+                    else -> {
+                        null
+                    }
                 }
-                else -> {
-                    null
-                }
-            }
 
-            val repository = DefaultSynchronizerFactory.defaultDerivedDataRepository(
-                context = applicationContext,
-                rustBackend = backend,
-                databaseFile = coordinator.dataDbFile(zcashNetwork, alias),
-                zcashNetwork = zcashNetwork,
-                checkpoint = loadedCheckpoint,
-                seed = seed,
-                numberOfAccounts = Derivation.DEFAULT_NUMBER_OF_ACCOUNTS,
-                recoverUntil = chainTip,
-            )
+            val repository =
+                DefaultSynchronizerFactory.defaultDerivedDataRepository(
+                    context = applicationContext,
+                    rustBackend = backend,
+                    databaseFile = coordinator.dataDbFile(zcashNetwork, alias),
+                    zcashNetwork = zcashNetwork,
+                    checkpoint = loadedCheckpoint,
+                    seed = seed,
+                    numberOfAccounts = Derivation.DEFAULT_NUMBER_OF_ACCOUNTS,
+                    recoverUntil = chainTip,
+                )
 
             val encoder = DefaultSynchronizerFactory.defaultEncoder(backend, saplingParamTool, repository)
-            val txManager = DefaultSynchronizerFactory.defaultTxManager(
-                encoder,
-                service
-            )
-            val processor = DefaultSynchronizerFactory.defaultProcessor(
-                backend = backend,
-                downloader = downloader,
-                repository = repository,
-                birthdayHeight = birthday ?: zcashNetwork.saplingActivationHeight
-            )
+            val txManager =
+                DefaultSynchronizerFactory.defaultTxManager(
+                    encoder,
+                    service
+                )
+            val processor =
+                DefaultSynchronizerFactory.defaultProcessor(
+                    backend = backend,
+                    downloader = downloader,
+                    repository = repository,
+                    birthdayHeight = birthday ?: zcashNetwork.saplingActivationHeight
+                )
 
             return SdkSynchronizer.new(
                 zcashNetwork = zcashNetwork,
@@ -571,9 +581,10 @@ interface Synchronizer {
             seed: ByteArray?,
             birthday: BlockHeight?,
             walletInitMode: WalletInitMode
-        ): CloseableSynchronizer = runBlocking {
-            new(context, zcashNetwork, alias, lightWalletEndpoint, seed, birthday, walletInitMode)
-        }
+        ): CloseableSynchronizer =
+            runBlocking {
+                new(context, zcashNetwork, alias, lightWalletEndpoint, seed, birthday, walletInitMode)
+            }
 
         /**
          * Delete the databases associated with this wallet. This removes all compact blocks and
@@ -610,7 +621,9 @@ interface Synchronizer {
  */
 sealed class WalletInitMode {
     data object NewWallet : WalletInitMode()
+
     data object RestoreWallet : WalletInitMode()
+
     data object ExistingWallet : WalletInitMode()
 }
 

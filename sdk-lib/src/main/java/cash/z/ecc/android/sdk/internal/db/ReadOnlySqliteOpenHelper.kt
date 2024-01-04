@@ -11,12 +11,15 @@ internal class ReadOnlySqliteOpenHelper(
     name: String,
     version: Int
 ) : SQLiteOpenHelper(context, name, null, version) {
-
     override fun onCreate(db: SQLiteDatabase?) {
         error("Database should be created by Rust libraries")
     }
 
-    override fun onUpgrade(db: SQLiteDatabase?, oldVersion: Int, newVersion: Int) {
+    override fun onUpgrade(
+        db: SQLiteDatabase?,
+        oldVersion: Int,
+        newVersion: Int
+    ) {
         error("Database should be upgraded by Rust libraries")
     }
 

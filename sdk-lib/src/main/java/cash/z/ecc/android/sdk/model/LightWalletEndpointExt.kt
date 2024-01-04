@@ -25,22 +25,25 @@ private const val COMPUTER_LOCALHOST = "10.0.2.2"
 private const val DEFAULT_PORT = 9067
 
 val LightWalletEndpoint.Companion.Mainnet
-    get() = LightWalletEndpoint(
-        "mainnet.lightwalletd.com",
-        DEFAULT_PORT,
-        isSecure = true
-    )
+    get() =
+        LightWalletEndpoint(
+            "mainnet.lightwalletd.com",
+            DEFAULT_PORT,
+            isSecure = true
+        )
 
 val LightWalletEndpoint.Companion.Testnet
-    get() = LightWalletEndpoint(
-        "lightwalletd.testnet.electriccoin.co",
-        DEFAULT_PORT,
-        isSecure = true
-    )
+    get() =
+        LightWalletEndpoint(
+            "lightwalletd.testnet.electriccoin.co",
+            DEFAULT_PORT,
+            isSecure = true
+        )
 
 val LightWalletEndpoint.Companion.Darkside
-    get() = LightWalletEndpoint(
-        COMPUTER_LOCALHOST,
-        DEFAULT_PORT,
-        isSecure = false
-    )
+    get() =
+        LightWalletEndpoint(
+            COMPUTER_LOCALHOST,
+            DEFAULT_PORT,
+            isSecure = false
+        )

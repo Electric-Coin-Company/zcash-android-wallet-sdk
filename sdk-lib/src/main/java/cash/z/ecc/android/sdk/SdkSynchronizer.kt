@@ -99,10 +99,10 @@ class SdkSynchronizer private constructor(
     val processor: CompactBlockProcessor,
     private val backend: TypesafeBackend
 ) : CloseableSynchronizer {
-
     companion object {
         private sealed class InstanceState {
             object Active : InstanceState()
+
             data class ShuttingDown(val job: Job) : InstanceState()
         }
 
@@ -188,10 +188,11 @@ class SdkSynchronizer private constructor(
     override val transparentBalances = processor.transparentBalances.asStateFlow()
 
     override val transactions
-        get() = combine(processor.networkHeight, storage.allTransactions) { networkHeight, allTransactions ->
-            val latestBlockHeight = networkHeight ?: backend.getMaxScannedHeight()
-            allTransactions.map { TransactionOverview.new(it, latestBlockHeight) }
-        }
+        get() =
+            combine(processor.networkHeight, storage.allTransactions) { networkHeight, allTransactions ->
+                val latestBlockHeight = networkHeight ?: backend.getMaxScannedHeight()
+                allTransactions.map { TransactionOverview.new(it, latestBlockHeight) }
+            }
 
     override val network: ZcashNetwork get() = processor.network
 
@@ -289,10 +290,11 @@ class SdkSynchronizer private constructor(
         // Note that stopping will continue asynchronously.  Race conditions with starting a new synchronizer are
         // avoided with a delay during startup.
 
-        val shutdownJob = coroutineScope.launch {
-            Twig.debug { "Stopping synchronizer $synchronizerKey…" }
-            processor.stop()
-        }
+        val shutdownJob =
+            coroutineScope.launch {
+                Twig.debug { "Stopping synchronizer $synchronizerKey…" }
+                processor.stop()
+            }
 
         instances[synchronizerKey] = InstanceState.ShuttingDown(shutdownJob)
 
@@ -306,7 +308,9 @@ class SdkSynchronizer private constructor(
     }
 
     override suspend fun getNearestRewindHeight(height: BlockHeight): BlockHeight =
-        processor.getNearestRewindHeight(height)
+        processor.getNearestRewindHeight(
+            height
+        )
 
     override suspend fun rewindToNearestHeight(height: BlockHeight) {
         processor.rewindToNearestHeight(height)
@@ -427,7 +431,10 @@ class SdkSynchronizer private constructor(
     }
 
     @Suppress("UNUSED_PARAMETER")
-    private fun onCriticalError(unused: CoroutineContext?, error: Throwable) {
+    private fun onCriticalError(
+        unused: CoroutineContext?,
+        error: Throwable
+    ) {
         Twig.error(error) { "Critical error occurred" }
 
         if (onCriticalErrorHandler == null) {
@@ -471,7 +478,10 @@ class SdkSynchronizer private constructor(
         return onSetupErrorHandler?.invoke(error) == true
     }
 
-    private fun onChainError(errorHeight: BlockHeight, rewindHeight: BlockHeight) {
+    private fun onChainError(
+        errorHeight: BlockHeight,
+        rewindHeight: BlockHeight
+    ) {
         Twig.debug { "Chain error detected at height: $errorHeight. Rewinding to: $rewindHeight" }
         if (onChainErrorHandler == null) {
             Twig.debug {
@@ -486,7 +496,10 @@ class SdkSynchronizer private constructor(
     /**
      * @param elapsedMillis the amount of time that passed since the last scan
      */
-    private suspend fun onScanComplete(scannedRange: ClosedRange<BlockHeight>?, elapsedMillis: Long) {
+    private suspend fun onScanComplete(
+        scannedRange: ClosedRange<BlockHeight>?,
+        elapsedMillis: Long
+    ) {
         // We don't need to update anything if there have been no blocks
         // refresh anyway if:
         // - if it's the first time we finished scanning
@@ -532,19 +545,28 @@ class SdkSynchronizer private constructor(
      * Returns the current Unified Address for this account.
      */
     override suspend fun getUnifiedAddress(account: Account): String =
-        CompactBlockProcessor.getCurrentAddress(backend, account)
+        CompactBlockProcessor.getCurrentAddress(
+            backend,
+            account
+        )
 
     /**
      * Returns the legacy Sapling address corresponding to the current Unified Address for this account.
      */
     override suspend fun getSaplingAddress(account: Account): String =
-        CompactBlockProcessor.getLegacySaplingAddress(backend, account)
+        CompactBlockProcessor.getLegacySaplingAddress(
+            backend,
+            account
+        )
 
     /**
      * Returns the legacy transparent address corresponding to the current Unified Address for this account.
      */
     override suspend fun getTransparentAddress(account: Account): String =
-        CompactBlockProcessor.getTransparentAddress(backend, account)
+        CompactBlockProcessor.getTransparentAddress(
+            backend,
+            account
+        )
 
     @Throws(TransactionEncoderException::class, TransactionSubmitException::class)
     override suspend fun sendToAddress(
@@ -553,13 +575,14 @@ class SdkSynchronizer private constructor(
         toAddress: String,
         memo: String
     ): Long {
-        val encodedTx = txManager.encode(
-            usk,
-            amount,
-            TransactionRecipient.Address(toAddress),
-            memo,
-            usk.account
-        )
+        val encodedTx =
+            txManager.encode(
+                usk,
+                amount,
+                TransactionRecipient.Address(toAddress),
+                memo,
+                usk.account
+            )
 
         if (txManager.submit(encodedTx)) {
             return storage.findMatchingTransactionId(encodedTx.txId.byteArray)!!
@@ -577,13 +600,14 @@ class SdkSynchronizer private constructor(
         val tAddr = CompactBlockProcessor.getTransparentAddress(backend, usk.account)
         val tBalance = processor.getUtxoCacheBalance(tAddr)
 
-        val encodedTx = txManager.encode(
-            usk,
-            tBalance.available,
-            TransactionRecipient.Account(usk.account),
-            memo,
-            usk.account
-        )
+        val encodedTx =
+            txManager.encode(
+                usk,
+                tBalance.available,
+                TransactionRecipient.Account(usk.account),
+                memo,
+                usk.account
+            )
 
         if (txManager.submit(encodedTx)) {
             return storage.findMatchingTransactionId(encodedTx.txId.byteArray)!!
@@ -592,7 +616,10 @@ class SdkSynchronizer private constructor(
         }
     }
 
-    override suspend fun refreshUtxos(account: Account, since: BlockHeight): Int {
+    override suspend fun refreshUtxos(
+        account: Account,
+        since: BlockHeight
+    ): Int {
         return processor.refreshUtxos(account, since)
     }
 
@@ -600,14 +627,11 @@ class SdkSynchronizer private constructor(
         return processor.getUtxoCacheBalance(tAddr)
     }
 
-    override suspend fun isValidShieldedAddr(address: String) =
-        txManager.isValidShieldedAddress(address)
+    override suspend fun isValidShieldedAddr(address: String) = txManager.isValidShieldedAddress(address)
 
-    override suspend fun isValidTransparentAddr(address: String) =
-        txManager.isValidTransparentAddress(address)
+    override suspend fun isValidTransparentAddr(address: String) = txManager.isValidTransparentAddress(address)
 
-    override suspend fun isValidUnifiedAddr(address: String) =
-        txManager.isValidUnifiedAddress(address)
+    override suspend fun isValidUnifiedAddr(address: String) = txManager.isValidUnifiedAddress(address)
 
     override suspend fun validateAddress(address: String): AddressType {
         @Suppress("TooGenericExceptionCaught")
@@ -621,7 +645,9 @@ class SdkSynchronizer private constructor(
             } else {
                 AddressType.Invalid("Not a Zcash address")
             }
-        } catch (@Suppress("TooGenericExceptionCaught") error: Throwable) {
+        } catch (
+            @Suppress("TooGenericExceptionCaught") error: Throwable
+        ) {
             AddressType.Invalid(error.message ?: "Invalid")
         }
     }
@@ -629,28 +655,30 @@ class SdkSynchronizer private constructor(
     override suspend fun validateConsensusBranch(): ConsensusMatchType {
         val serverBranchId = tryNull { processor.downloader.getServerInfo()?.consensusBranchId }
 
-        val currentChainTip = when (
-            val response =
-                processor.downloader.getLatestBlockHeight()
-        ) {
-            is Response.Success -> {
-                Twig.info { "Chain tip for validate consensus branch action fetched: ${response.result.value}" }
-                runCatching { response.result.toBlockHeight(network) }.getOrNull()
-            }
-            is Response.Failure -> {
-                Twig.error {
-                    "Chain tip fetch failed for validate consensus branch action with:" +
-                        " ${response.toThrowable()}"
+        val currentChainTip =
+            when (
+                val response =
+                    processor.downloader.getLatestBlockHeight()
+            ) {
+                is Response.Success -> {
+                    Twig.info { "Chain tip for validate consensus branch action fetched: ${response.result.value}" }
+                    runCatching { response.result.toBlockHeight(network) }.getOrNull()
                 }
-                null
+                is Response.Failure -> {
+                    Twig.error {
+                        "Chain tip fetch failed for validate consensus branch action with:" +
+                            " ${response.toThrowable()}"
+                    }
+                    null
+                }
             }
-        }
 
-        val sdkBranchId = currentChainTip?.let {
-            tryNull {
-                (txManager as OutboundTransactionManagerImpl).encoder.getConsensusBranchId(currentChainTip)
+        val sdkBranchId =
+            currentChainTip?.let {
+                tryNull {
+                    (txManager as OutboundTransactionManagerImpl).encoder.getConsensusBranchId(currentChainTip)
+                }
             }
-        }
 
         return ConsensusMatchType(
             sdkBranchId?.let { ConsensusBranchId.fromId(it) },
@@ -682,7 +710,6 @@ class SdkSynchronizer private constructor(
  * See the helper methods for generating default values.
  */
 internal object DefaultSynchronizerFactory {
-
     internal suspend fun defaultBackend(
         network: ZcashNetwork,
         alias: String,
@@ -733,8 +760,10 @@ internal object DefaultSynchronizerFactory {
             backend
         )
 
-    fun defaultService(context: Context, lightWalletEndpoint: LightWalletEndpoint): LightWalletClient =
-        LightWalletClient.new(context, lightWalletEndpoint)
+    fun defaultService(
+        context: Context,
+        lightWalletEndpoint: LightWalletEndpoint
+    ): LightWalletClient = LightWalletClient.new(context, lightWalletEndpoint)
 
     internal fun defaultEncoder(
         backend: TypesafeBackend,
@@ -762,12 +791,13 @@ internal object DefaultSynchronizerFactory {
         downloader: CompactBlockDownloader,
         repository: DerivedDataRepository,
         birthdayHeight: BlockHeight
-    ): CompactBlockProcessor = CompactBlockProcessor(
-        downloader = downloader,
-        repository = repository,
-        backend = backend,
-        minimumHeight = birthdayHeight
-    )
+    ): CompactBlockProcessor =
+        CompactBlockProcessor(
+            downloader = downloader,
+            repository = repository,
+            backend = backend,
+            minimumHeight = birthdayHeight
+        )
 }
 
 internal data class SynchronizerKey(val zcashNetwork: ZcashNetwork, val alias: String)

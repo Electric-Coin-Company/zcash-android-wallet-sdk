@@ -7,11 +7,12 @@ import kotlin.test.assertIs
 class JniScanRangeTest {
     @Test
     fun attributes_within_constraints() {
-        val instance = JniScanRange(
-            startHeight = UInt.MIN_VALUE.toLong(),
-            endHeight = UInt.MAX_VALUE.toLong(),
-            priority = 10
-        )
+        val instance =
+            JniScanRange(
+                startHeight = UInt.MIN_VALUE.toLong(),
+                endHeight = UInt.MAX_VALUE.toLong(),
+                priority = 10
+            )
         assertIs<JniScanRange>(instance)
     }
 

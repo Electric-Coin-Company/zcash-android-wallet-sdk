@@ -31,25 +31,27 @@ data class PersistableWallet(
     val walletInitMode: WalletInitMode
 ) {
     init {
-        _walletInitMode = walletInitMode
+        walletInitModeHolder = walletInitMode
     }
 
     /**
      * @return Wallet serialized to JSON format, suitable for long-term encrypted storage.
-     */
-    // Note: We're using a hand-crafted serializer so that we're less likely to have accidental
-    // breakage from reflection or annotation based methods, and so that we can carefully manage versioning.
-    fun toJson() = JSONObject().apply {
-        put(KEY_VERSION, VERSION_2)
-        put(KEY_NETWORK_ID, network.id)
-        put(KEY_ENDPOINT_HOST, endpoint.host)
-        put(KEY_ENDPOINT_PORT, endpoint.port)
-        put(KEY_ENDPOINT_IS_SECURE, endpoint.isSecure)
-        birthday?.let {
-            put(KEY_BIRTHDAY, it.value)
+     *
+     * Note: We're using a hand-crafted serializer so that we're less likely to have accidental
+     * breakage from reflection or annotation based methods, and so that we can carefully manage versioning.
+     **/
+    fun toJson() =
+        JSONObject().apply {
+            put(KEY_VERSION, VERSION_2)
+            put(KEY_NETWORK_ID, network.id)
+            put(KEY_ENDPOINT_HOST, endpoint.host)
+            put(KEY_ENDPOINT_PORT, endpoint.port)
+            put(KEY_ENDPOINT_IS_SECURE, endpoint.isSecure)
+            birthday?.let {
+                put(KEY_BIRTHDAY, it.value)
+            }
+            put(KEY_SEED_PHRASE, seedPhrase.joinToString())
         }
-        put(KEY_SEED_PHRASE, seedPhrase.joinToString())
-    }
 
     // For security, intentionally override the toString method to reduce risk of accidentally logging secrets
     override fun toString() = "PersistableWallet"
@@ -68,7 +70,7 @@ data class PersistableWallet(
 
         // Note: [walletInitMode] is excluded from the serialization to avoid persisting the wallet initialization mode
         // with the persistable wallet.
-        private var _walletInitMode: WalletInitMode = WalletInitMode.ExistingWallet
+        private var walletInitModeHolder: WalletInitMode = WalletInitMode.ExistingWallet
 
         fun from(jsonObject: JSONObject): PersistableWallet {
             // Common parameters
@@ -95,21 +97,27 @@ data class PersistableWallet(
                 endpoint = endpoint,
                 birthday = birthday,
                 seedPhrase = SeedPhrase.new(seedPhrase),
-                walletInitMode = _walletInitMode
+                walletInitMode = walletInitModeHolder
             )
         }
 
         internal fun getVersion(jsonObject: JSONObject): Int {
             return jsonObject.getInt(KEY_VERSION)
         }
+
         internal fun getSeedPhrase(jsonObject: JSONObject): String {
             return jsonObject.getString(KEY_SEED_PHRASE)
         }
+
         internal fun getNetwork(jsonObject: JSONObject): ZcashNetwork {
             val networkId = jsonObject.getInt(KEY_NETWORK_ID)
             return ZcashNetwork.from(networkId)
         }
-        internal fun getBirthday(jsonObject: JSONObject, network: ZcashNetwork): BlockHeight? {
+
+        internal fun getBirthday(
+            jsonObject: JSONObject,
+            network: ZcashNetwork
+        ): BlockHeight? {
             return if (jsonObject.has(KEY_BIRTHDAY)) {
                 val birthdayBlockHeightLong = jsonObject.getLong(KEY_BIRTHDAY)
                 BlockHeight.new(network, birthdayBlockHeightLong)
@@ -117,6 +125,7 @@ data class PersistableWallet(
                 null
             }
         }
+
         internal fun getEndpoint(jsonObject: JSONObject): LightWalletEndpoint {
             return jsonObject.run {
                 val host = getString(KEY_ENDPOINT_HOST)
@@ -185,8 +194,9 @@ data class PersistableWallet(
 }
 
 // Using IO context because of https://github.com/zcash/kotlin-bip39/issues/13
-private suspend fun newMnemonic() = withContext(Dispatchers.IO) {
-    Mnemonics.MnemonicCode(cash.z.ecc.android.bip39.Mnemonics.WordCount.COUNT_24.toEntropy()).words
-}
+private suspend fun newMnemonic() =
+    withContext(Dispatchers.IO) {
+        Mnemonics.MnemonicCode(cash.z.ecc.android.bip39.Mnemonics.WordCount.COUNT_24.toEntropy()).words
+    }
 
 private suspend fun newSeedPhrase() = SeedPhrase(newMnemonic().map { it.concatToString() })

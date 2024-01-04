@@ -46,6 +46,7 @@ internal class NativeLibraryLoader(private val libraryName: String) {
     }
 }
 
-private suspend fun loadLibrarySuspend(libraryName: String) = withContext(Dispatchers.IO) {
-    System.loadLibrary(libraryName)
-}
+private suspend fun loadLibrarySuspend(libraryName: String) =
+    withContext(Dispatchers.IO) {
+        System.loadLibrary(libraryName)
+    }

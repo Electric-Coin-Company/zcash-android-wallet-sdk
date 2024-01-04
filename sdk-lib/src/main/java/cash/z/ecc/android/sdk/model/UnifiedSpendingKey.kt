@@ -14,7 +14,6 @@ import cash.z.ecc.android.sdk.internal.model.JniUnifiedSpendingKey
  */
 class UnifiedSpendingKey private constructor(
     val account: Account,
-
     /**
      * The binary encoding of the [ZIP 316](https://zips.z.cash/zip-0316) Unified Spending
      * Key for [account].
@@ -25,7 +24,6 @@ class UnifiedSpendingKey private constructor(
      */
     private val bytes: FirstClassByteArray
 ) {
-
     internal constructor(uskJni: JniUnifiedSpendingKey) : this(
         Account(uskJni.account),
         FirstClassByteArray(uskJni.bytes.copyOf())
@@ -63,7 +61,6 @@ class UnifiedSpendingKey private constructor(
     }
 
     companion object {
-
         /**
          * This method may fail if the [bytes] no longer represent a valid key.  A key could become invalid due to
          * network upgrades or other internal changes.  If a non-successful result is returned, clients are expected
@@ -71,7 +68,10 @@ class UnifiedSpendingKey private constructor(
          *
          * @return A validated UnifiedSpendingKey.
          */
-        suspend fun new(account: Account, bytes: ByteArray): Result<UnifiedSpendingKey> {
+        suspend fun new(
+            account: Account,
+            bytes: ByteArray
+        ): Result<UnifiedSpendingKey> {
             val bytesCopy = bytes.copyOf()
             RustBackend.loadLibrary()
             return runCatching {

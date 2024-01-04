@@ -14,7 +14,6 @@ internal class OutboundTransactionManagerImpl(
     internal val encoder: TransactionEncoder,
     private val service: LightWalletClient
 ) : OutboundTransactionManager {
-
     override suspend fun encode(
         usk: UnifiedSpendingKey,
         amount: Zatoshi,
@@ -59,27 +58,24 @@ internal class OutboundTransactionManagerImpl(
         }
     }
 
-    override suspend fun isValidShieldedAddress(address: String) =
-        encoder.isValidShieldedAddress(address)
+    override suspend fun isValidShieldedAddress(address: String) = encoder.isValidShieldedAddress(address)
 
-    override suspend fun isValidTransparentAddress(address: String) =
-        encoder.isValidTransparentAddress(address)
+    override suspend fun isValidTransparentAddress(address: String) = encoder.isValidTransparentAddress(address)
 
-    override suspend fun isValidUnifiedAddress(address: String) =
-        encoder.isValidUnifiedAddress(address)
+    override suspend fun isValidUnifiedAddress(address: String) = encoder.isValidUnifiedAddress(address)
 
     //
     // Helper functions
     //
 
     companion object {
-
         fun new(
             encoder: TransactionEncoder,
             lightWalletClient: LightWalletClient,
-        ): OutboundTransactionManager = OutboundTransactionManagerImpl(
-            encoder,
-            lightWalletClient
-        )
+        ): OutboundTransactionManager =
+            OutboundTransactionManagerImpl(
+                encoder,
+                lightWalletClient
+            )
     }
 }

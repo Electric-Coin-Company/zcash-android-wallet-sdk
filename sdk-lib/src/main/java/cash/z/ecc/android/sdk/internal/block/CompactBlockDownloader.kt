@@ -30,7 +30,6 @@ import kotlinx.coroutines.withContext
  * @property compactBlockStore responsible for persisting the compact blocks that are received
  */
 open class CompactBlockDownloader private constructor(val compactBlockRepository: CompactBlockRepository) {
-
     private lateinit var lightWalletClient: LightWalletClient
 
     constructor(
@@ -52,34 +51,35 @@ open class CompactBlockDownloader private constructor(val compactBlockRepository
      */
     @Throws(LightWalletException.DownloadBlockException::class)
     suspend fun downloadBlockRange(heightRange: ClosedRange<BlockHeight>): List<JniBlockMeta> {
-        val filteredFlow = lightWalletClient.getBlockRange(
-            BlockHeightUnsafe.from(heightRange.start)..BlockHeightUnsafe.from(heightRange.endInclusive)
-        ).onEach { response ->
-            when (response) {
-                is Response.Success -> {
-                    Twig.verbose { "Downloading block at height: ${response.result.height} succeeded." }
-                }
-                is Response.Failure -> {
-                    Twig.warn { "Downloading blocks in range: $heightRange failed with: ${response.description}." }
-                    throw LightWalletException.DownloadBlockException(
-                        response.code,
-                        response.description,
-                        response.toThrowable()
-                    )
-                }
-            }
-        }
-            .filterIsInstance<Response.Success<CompactBlockUnsafe>>()
-            .map { response ->
-                response.result
-            }
-            .onCompletion {
-                if (it != null) {
-                    Twig.warn { "Blocks in range $heightRange failed to download with: $it" }
-                } else {
-                    Twig.verbose { "All blocks in range $heightRange downloaded successfully" }
+        val filteredFlow =
+            lightWalletClient.getBlockRange(
+                BlockHeightUnsafe.from(heightRange.start)..BlockHeightUnsafe.from(heightRange.endInclusive)
+            ).onEach { response ->
+                when (response) {
+                    is Response.Success -> {
+                        Twig.verbose { "Downloading block at height: ${response.result.height} succeeded." }
+                    }
+                    is Response.Failure -> {
+                        Twig.warn { "Downloading blocks in range: $heightRange failed with: ${response.description}." }
+                        throw LightWalletException.DownloadBlockException(
+                            response.code,
+                            response.description,
+                            response.toThrowable()
+                        )
+                    }
                 }
             }
+                .filterIsInstance<Response.Success<CompactBlockUnsafe>>()
+                .map { response ->
+                    response.result
+                }
+                .onCompletion {
+                    if (it != null) {
+                        Twig.warn { "Blocks in range $heightRange failed to download with: $it" }
+                    } else {
+                        Twig.verbose { "All blocks in range $heightRange downloaded successfully" }
+                    }
+                }
 
         return compactBlockRepository.write(filteredFlow)
     }
@@ -107,22 +107,22 @@ open class CompactBlockDownloader private constructor(val compactBlockRepository
      *
      * @return the latest block height that has been persisted.
      */
-    suspend fun getLastDownloadedHeight() =
-        compactBlockRepository.getLatestHeight()
+    suspend fun getLastDownloadedHeight() = compactBlockRepository.getLatestHeight()
 
-    suspend fun getServerInfo(): LightWalletEndpointInfoUnsafe? = withContext(IO) {
-        retryUpToAndThrow(GET_SERVER_INFO_RETRIES) {
-            when (val response = lightWalletClient.getServerInfo()) {
-                is Response.Success -> return@withContext response.result
-                else -> {
-                    lightWalletClient.reconnect()
-                    Twig.warn { "WARNING: reconnecting to server in response to failure (retry #${it + 1})" }
+    suspend fun getServerInfo(): LightWalletEndpointInfoUnsafe? =
+        withContext(IO) {
+            retryUpToAndThrow(GET_SERVER_INFO_RETRIES) {
+                when (val response = lightWalletClient.getServerInfo()) {
+                    is Response.Success -> return@withContext response.result
+                    else -> {
+                        lightWalletClient.reconnect()
+                        Twig.warn { "WARNING: reconnecting to server in response to failure (retry #${it + 1})" }
+                    }
                 }
             }
-        }
 
-        null
-    }
+            null
+        }
 
     /**
      * Stop this downloader and cleanup any resources being used.

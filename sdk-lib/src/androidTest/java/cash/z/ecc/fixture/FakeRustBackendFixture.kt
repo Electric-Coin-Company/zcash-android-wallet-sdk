@@ -4,11 +4,10 @@ import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 
 internal class FakeRustBackendFixture {
-
-    private val DEFAULT_NETWORK = ZcashNetwork.Testnet
+    private val defaultNetwork = ZcashNetwork.Testnet
 
     fun new(
-        network: ZcashNetwork = DEFAULT_NETWORK,
+        network: ZcashNetwork = defaultNetwork,
         metadata: MutableList<JniBlockMeta> = mutableListOf()
     ) = FakeRustBackend(
         networkId = network.id,

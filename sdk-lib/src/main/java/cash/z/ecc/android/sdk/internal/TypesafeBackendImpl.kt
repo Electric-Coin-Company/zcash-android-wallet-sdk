@@ -17,7 +17,6 @@ import kotlinx.coroutines.withContext
 
 @Suppress("TooManyFunctions")
 internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBackend {
-
     override val network: ZcashNetwork
         get() = ZcashNetwork.from(backend.networkId)
 
@@ -41,26 +40,28 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
         to: String,
         value: Long,
         memo: ByteArray?
-    ): FirstClassByteArray = FirstClassByteArray(
-        backend.createToAddress(
-            usk.account.value,
-            usk.copyBytes(),
-            to,
-            value,
-            memo
+    ): FirstClassByteArray =
+        FirstClassByteArray(
+            backend.createToAddress(
+                usk.account.value,
+                usk.copyBytes(),
+                to,
+                value,
+                memo
+            )
         )
-    )
 
     override suspend fun shieldToAddress(
         usk: UnifiedSpendingKey,
         memo: ByteArray?
-    ): FirstClassByteArray = FirstClassByteArray(
-        backend.shieldToAddress(
-            usk.account.value,
-            usk.copyBytes(),
-            memo
+    ): FirstClassByteArray =
+        FirstClassByteArray(
+            backend.shieldToAddress(
+                usk.account.value,
+                usk.copyBytes(),
+                memo
+            )
         )
-    )
 
     override suspend fun getCurrentAddress(account: Account): String {
         return backend.getCurrentAddress(account.value)
@@ -106,14 +107,16 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
         // Note this implementation is not ideal because it requires two database queries without a transaction, which
         // makes the data potentially inconsistent.  However the verified amount is queried first which makes this less
         // bad.
-        val verified = withContext(SdkDispatchers.DATABASE_IO) {
-            backend.getVerifiedTransparentBalance(address)
-        }
-        val total = withContext(SdkDispatchers.DATABASE_IO) {
-            backend.getTotalTransparentBalance(
-                address
-            )
-        }
+        val verified =
+            withContext(SdkDispatchers.DATABASE_IO) {
+                backend.getVerifiedTransparentBalance(address)
+            }
+        val total =
+            withContext(SdkDispatchers.DATABASE_IO) {
+                backend.getTotalTransparentBalance(
+                    address
+                )
+            }
         return WalletBalance(Zatoshi(total), Zatoshi(verified))
     }
 
@@ -136,21 +139,26 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
         )
     }
 
-    override suspend fun getMemoAsUtf8(txId: ByteArray, outputIndex: Int): String? =
-        backend.getMemoAsUtf8(txId, outputIndex)
+    override suspend fun getMemoAsUtf8(
+        txId: ByteArray,
+        outputIndex: Int
+    ): String? = backend.getMemoAsUtf8(txId, outputIndex)
 
     override suspend fun initDataDb(seed: ByteArray?): Int = backend.initDataDb(seed)
 
-    override suspend fun putSaplingSubtreeRoots(startIndex: Long, roots: List<SubtreeRoot>) =
-        backend.putSaplingSubtreeRoots(
-            startIndex = startIndex,
-            roots = roots.map {
+    override suspend fun putSaplingSubtreeRoots(
+        startIndex: Long,
+        roots: List<SubtreeRoot>
+    ) = backend.putSaplingSubtreeRoots(
+        startIndex = startIndex,
+        roots =
+            roots.map {
                 JniSubtreeRoot.new(
                     rootHash = it.rootHash,
                     completingBlockHeight = it.completingBlockHeight.value
                 )
             }
-        )
+    )
 
     override suspend fun updateChainTip(height: BlockHeight) = backend.updateChainTip(height.value)
 
@@ -172,18 +180,23 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
         }
     }
 
-    override suspend fun scanBlocks(fromHeight: BlockHeight, limit: Long) = backend.scanBlocks(fromHeight.value, limit)
+    override suspend fun scanBlocks(
+        fromHeight: BlockHeight,
+        limit: Long
+    ) = backend.scanBlocks(fromHeight.value, limit)
 
-    override suspend fun getWalletSummary(): WalletSummary? = backend.getWalletSummary()?.let { jniWalletSummary ->
-        WalletSummary.new(jniWalletSummary)
-    }
+    override suspend fun getWalletSummary(): WalletSummary? =
+        backend.getWalletSummary()?.let { jniWalletSummary ->
+            WalletSummary.new(jniWalletSummary)
+        }
 
-    override suspend fun suggestScanRanges(): List<ScanRange> = backend.suggestScanRanges().map { jniScanRange ->
-        ScanRange.new(
-            jniScanRange,
-            network
-        )
-    }
+    override suspend fun suggestScanRanges(): List<ScanRange> =
+        backend.suggestScanRanges().map { jniScanRange ->
+            ScanRange.new(
+                jniScanRange,
+                network
+            )
+        }
 
     override suspend fun decryptAndStoreTransaction(tx: ByteArray) = backend.decryptAndStoreTransaction(tx)
 
@@ -194,7 +207,9 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
     override suspend fun initBlockMetaDb(): Int = backend.initBlockMetaDb()
 
     override suspend fun writeBlockMetadata(blockMetadata: List<JniBlockMeta>) =
-        backend.writeBlockMetadata(blockMetadata)
+        backend.writeBlockMetadata(
+            blockMetadata
+        )
 
     override fun isValidShieldedAddr(addr: String): Boolean = backend.isValidShieldedAddr(addr)
 

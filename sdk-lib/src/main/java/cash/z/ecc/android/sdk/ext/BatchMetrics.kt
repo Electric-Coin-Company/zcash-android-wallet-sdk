@@ -14,10 +14,14 @@ class BatchMetrics(
     private var batchStartTime = 0L
     private var batchEndTime = 0L
     private var rangeSize = range.endInclusive.value - range.start.value + 1
+
     private fun now() = System.currentTimeMillis()
 
     @Suppress("MagicNumber")
-    private fun ips(blocks: Long, time: Long) = 1000.0f * blocks / time
+    private fun ips(
+        blocks: Long,
+        time: Long
+    ) = 1000.0f * blocks / time
 
     val isComplete get() = completedBatches * batchSize >= rangeSize
     val isBatchComplete get() = batchEndTime > batchStartTime
@@ -32,6 +36,7 @@ class BatchMetrics(
         batchStartTime = now()
         if (rangeStartTime == 0L) rangeStartTime = batchStartTime
     }
+
     fun endBatch() {
         completedBatches++
         batchEndTime = now()

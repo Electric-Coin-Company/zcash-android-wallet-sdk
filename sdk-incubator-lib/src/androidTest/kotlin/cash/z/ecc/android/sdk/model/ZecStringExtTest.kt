@@ -10,7 +10,6 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class ZecStringExtTest {
-
     companion object {
         private val EN_US_SEPARATORS = MonetarySeparatorsFixture.new()
     }
@@ -38,13 +37,14 @@ class ZecStringExtTest {
     @Test
     @SmallTest
     fun check_continuous_regex_validity() {
-        val regexString = getStringResourceWithArgs(
-            R.string.co_electriccoin_zcash_zec_amount_regex_continuous_filter,
-            arrayOf(
-                EN_US_SEPARATORS.grouping,
-                EN_US_SEPARATORS.decimal
+        val regexString =
+            getStringResourceWithArgs(
+                R.string.co_electriccoin_zcash_zec_amount_regex_continuous_filter,
+                arrayOf(
+                    EN_US_SEPARATORS.grouping,
+                    EN_US_SEPARATORS.decimal
+                )
             )
-        )
         assertNotNull(regexString)
 
         val regexAmountChecker = regexString.toRegex()
@@ -58,13 +58,14 @@ class ZecStringExtTest {
     @Test
     @SmallTest
     fun check_confirm_regex_validity() {
-        val regexString = getStringResourceWithArgs(
-            R.string.co_electriccoin_zcash_zec_amount_regex_confirm_filter,
-            arrayOf(
-                EN_US_SEPARATORS.grouping,
-                EN_US_SEPARATORS.decimal
+        val regexString =
+            getStringResourceWithArgs(
+                R.string.co_electriccoin_zcash_zec_amount_regex_confirm_filter,
+                arrayOf(
+                    EN_US_SEPARATORS.grouping,
+                    EN_US_SEPARATORS.decimal
+                )
             )
-        )
         assertNotNull(regexString)
 
         val regexAmountChecker = regexString.toRegex()

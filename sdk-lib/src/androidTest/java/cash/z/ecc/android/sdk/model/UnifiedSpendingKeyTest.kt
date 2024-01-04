@@ -12,40 +12,43 @@ class UnifiedSpendingKeyTest {
     @Test
     @SmallTest
     @OptIn(ExperimentalCoroutinesApi::class)
-    fun factory_copies_bytes() = runTest {
-        val spendingKey = WalletFixture.getUnifiedSpendingKey()
-        val expected = spendingKey.copyBytes().copyOf()
+    fun factory_copies_bytes() =
+        runTest {
+            val spendingKey = WalletFixture.getUnifiedSpendingKey()
+            val expected = spendingKey.copyBytes().copyOf()
 
-        val bytes = spendingKey.copyBytes()
-        val newSpendingKey = UnifiedSpendingKey.new(spendingKey.account, bytes)
-        bytes.clear()
+            val bytes = spendingKey.copyBytes()
+            val newSpendingKey = UnifiedSpendingKey.new(spendingKey.account, bytes)
+            bytes.clear()
 
-        assertContentEquals(expected, newSpendingKey.getOrThrow().copyBytes())
-    }
-
-    @Test
-    @SmallTest
-    @OptIn(ExperimentalCoroutinesApi::class)
-    fun get_copies_bytes() = runTest {
-        val spendingKey = WalletFixture.getUnifiedSpendingKey()
-
-        val expected = spendingKey.copyBytes()
-        val newSpendingKey = UnifiedSpendingKey.new(spendingKey.account, expected)
-
-        newSpendingKey.getOrThrow().copyBytes().clear()
-
-        assertContentEquals(expected, newSpendingKey.getOrThrow().copyBytes())
-    }
+            assertContentEquals(expected, newSpendingKey.getOrThrow().copyBytes())
+        }
 
     @Test
     @SmallTest
     @OptIn(ExperimentalCoroutinesApi::class)
-    fun toString_does_not_leak() = runTest {
-        assertEquals(
-            "UnifiedSpendingKey(account=Account(value=0))",
-            WalletFixture.getUnifiedSpendingKey().toString()
-        )
-    }
+    fun get_copies_bytes() =
+        runTest {
+            val spendingKey = WalletFixture.getUnifiedSpendingKey()
+
+            val expected = spendingKey.copyBytes()
+            val newSpendingKey = UnifiedSpendingKey.new(spendingKey.account, expected)
+
+            newSpendingKey.getOrThrow().copyBytes().clear()
+
+            assertContentEquals(expected, newSpendingKey.getOrThrow().copyBytes())
+        }
+
+    @Test
+    @SmallTest
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun toString_does_not_leak() =
+        runTest {
+            assertEquals(
+                "UnifiedSpendingKey(account=Account(value=0))",
+                WalletFixture.getUnifiedSpendingKey().toString()
+            )
+        }
 }
 
 private fun ByteArray.clear() {

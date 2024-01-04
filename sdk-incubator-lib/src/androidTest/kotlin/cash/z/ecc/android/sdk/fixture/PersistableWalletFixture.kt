@@ -9,7 +9,6 @@ import cash.z.ecc.android.sdk.model.ZcashNetwork
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
 
 object PersistableWalletFixture {
-
     val NETWORK = ZcashNetwork.Testnet
 
     val ENDPOINT = LightWalletEndpoint.Testnet
@@ -30,11 +29,12 @@ object PersistableWalletFixture {
         walletInitMode: WalletInitMode = WALLET_INIT_MODE
     ) = PersistableWallet(network, endpoint, birthday, seedPhrase, walletInitMode)
 
-    fun persistVersionOne() = PersistableWallet.toCustomJson(
-        version = PersistableWallet.VERSION_1,
-        network = NETWORK,
-        endpoint = null,
-        birthday = BIRTHDAY,
-        seed = SEED_PHRASE
-    )
+    fun persistVersionOne() =
+        PersistableWallet.toCustomJson(
+            version = PersistableWallet.VERSION_1,
+            network = NETWORK,
+            endpoint = null,
+            birthday = BIRTHDAY,
+            seed = SEED_PHRASE
+        )
 }

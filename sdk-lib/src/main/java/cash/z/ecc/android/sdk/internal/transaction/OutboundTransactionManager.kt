@@ -13,7 +13,6 @@ import cash.z.ecc.android.sdk.model.Zatoshi
  */
 @Suppress("TooManyFunctions")
 internal interface OutboundTransactionManager {
-
     /**
      * Encode the pending transaction using the given spending key. This is a local operation that
      * produces a raw transaction to submit to lightwalletd.

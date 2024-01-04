@@ -18,7 +18,6 @@ import java.util.Locale
  * Tool for loading checkpoints for the wallet, based on the height at which the wallet was born.
  */
 internal object CheckpointTool {
-
     // Behavior change implemented as a fix for issue #270.  Temporarily adding a boolean
     // that allows the change to be rolled back quickly if needed, although long-term
     // this flag should be removed.
@@ -43,22 +42,27 @@ internal object CheckpointTool {
      * Useful for when an exact checkpoint is needed, like for SAPLING_ACTIVATION_HEIGHT. In
      * most cases, loading the nearest checkpoint is preferred for privacy reasons.
      */
-    suspend fun loadExact(context: Context, network: ZcashNetwork, birthday: BlockHeight) =
-        loadNearest(context, network, birthday).also {
-            if (it.height != birthday) {
-                throw BirthdayException.ExactBirthdayNotFoundException(
-                    birthday,
-                    it
-                )
-            }
+    suspend fun loadExact(
+        context: Context,
+        network: ZcashNetwork,
+        birthday: BlockHeight
+    ) = loadNearest(context, network, birthday).also {
+        if (it.height != birthday) {
+            throw BirthdayException.ExactBirthdayNotFoundException(
+                birthday,
+                it
+            )
         }
+    }
 
     // Converting this to suspending will then propagate
     @Throws(IOException::class)
-    internal suspend fun listCheckpointDirectoryContents(context: Context, directory: String) =
-        withContext(Dispatchers.IO) {
-            context.assets.list(directory)
-        }
+    internal suspend fun listCheckpointDirectoryContents(
+        context: Context,
+        directory: String
+    ) = withContext(Dispatchers.IO) {
+        context.assets.list(directory)
+    }
 
     /**
      * Returns the directory within the assets folder where birthday data
@@ -68,8 +72,10 @@ internal object CheckpointTool {
     internal fun checkpointDirectory(network: ZcashNetwork) =
         "co.electriccoin.zcash/checkpoint/${network.networkName.lowercase(Locale.ROOT)}"
 
-    internal fun checkpointHeightFromFilename(zcashNetwork: ZcashNetwork, fileName: String) =
-        BlockHeight.new(zcashNetwork, fileName.split('.').first().toLong())
+    internal fun checkpointHeightFromFilename(
+        zcashNetwork: ZcashNetwork,
+        fileName: String
+    ) = BlockHeight.new(zcashNetwork, fileName.split('.').first().toLong())
 
     private fun Array<String>.sortDescending(zcashNetwork: ZcashNetwork) =
         apply { sortByDescending { checkpointHeightFromFilename(zcashNetwork, it).value } }
@@ -109,11 +115,12 @@ internal object CheckpointTool {
             throw BirthdayException.MissingBirthdayFilesException(directory)
         }
 
-        val filteredTreeFiles = unfilteredTreeFiles
-            .sortDescending(network)
-            .filter { filename ->
-                birthday?.let { checkpointHeightFromFilename(network, filename) <= it } ?: true
-            }
+        val filteredTreeFiles =
+            unfilteredTreeFiles
+                .sortDescending(network)
+                .filter { filename ->
+                    birthday?.let { checkpointHeightFromFilename(network, filename) <= it } ?: true
+                }
 
         if (filteredTreeFiles.isEmpty()) {
             throw BirthdayException.BirthdayFileNotFoundException(
@@ -140,23 +147,25 @@ internal object CheckpointTool {
         treeFiles.forEach { treefile ->
             @Suppress("TooGenericExceptionCaught")
             try {
-                val jsonString = withContext(Dispatchers.IO) {
-                    context.assets.open("$directory/$treefile").use { inputStream ->
-                        inputStream.reader().use { inputStreamReader ->
-                            BufferedReader(inputStreamReader).use { bufferedReader ->
-                                bufferedReader.readText()
+                val jsonString =
+                    withContext(Dispatchers.IO) {
+                        context.assets.open("$directory/$treefile").use { inputStream ->
+                            inputStream.reader().use { inputStreamReader ->
+                                BufferedReader(inputStreamReader).use { bufferedReader ->
+                                    bufferedReader.readText()
+                                }
                             }
                         }
                     }
-                }
 
                 return Checkpoint.from(network, jsonString)
             } catch (t: Throwable) {
-                val exception = BirthdayException.MalformattedBirthdayFilesException(
-                    directory,
-                    treefile,
-                    t
-                )
+                val exception =
+                    BirthdayException.MalformattedBirthdayFilesException(
+                        directory,
+                        treefile,
+                        t
+                    )
                 lastException = exception
 
                 if (IS_FALLBACK_ON_FAILURE) {

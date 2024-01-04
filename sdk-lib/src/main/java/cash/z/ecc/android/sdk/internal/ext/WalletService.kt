@@ -108,8 +108,9 @@ suspend inline fun retryWithBackoff(
 
             sequence++
             // initialDelay^(sequence/4) + jitter
-            var duration = initialDelayMillis.toDouble().pow((sequence.toDouble() / 4.0)).toLong() +
-                Random.nextLong(1000L)
+            var duration =
+                initialDelayMillis.toDouble().pow((sequence.toDouble() / 4.0)).toLong() +
+                    Random.nextLong(1000L)
             if (duration > maxDelayMillis) {
                 duration = maxDelayMillis - Random.nextLong(1000L) // include jitter but don't exceed max delay
                 sequence /= 2
