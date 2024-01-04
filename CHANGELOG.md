@@ -6,6 +6,9 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Gradle 8.5
+
 ## [2.0.3] - 2023-11-08
 
 ### Added
