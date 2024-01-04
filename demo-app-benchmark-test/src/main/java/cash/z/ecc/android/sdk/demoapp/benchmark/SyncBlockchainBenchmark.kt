@@ -18,6 +18,9 @@ import org.junit.Test
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
+// TODO [#809]: Enable macrobenchmark on CI
+// TODO [#809]: https://github.com/zcash/zcash-android-wallet-sdk/issues/809
+
 /**
  * This benchmark class provides measurements and captured custom traces for investigating SDK syncing mechanisms
  * with restricted blockchain range. It always resets the SDK before the next sync iteration. It uses UIAutomator to
@@ -29,9 +32,6 @@ import kotlin.time.Duration.Companion.seconds
  * We ideally run this on a physical device with Android SDK level 29, at least, as profiling is provided by this
  * version and later on.
  */
-
-// TODO [#809]: Enable macrobenchmark on CI
-// TODO [#809]: https://github.com/zcash/zcash-android-wallet-sdk/issues/809
 class SyncBlockchainBenchmark : UiTestPrerequisites() {
     companion object {
         private const val APP_TARGET_PACKAGE_NAME = "cash.z.ecc.android.sdk.demoapp.mainnet" // NON-NLS

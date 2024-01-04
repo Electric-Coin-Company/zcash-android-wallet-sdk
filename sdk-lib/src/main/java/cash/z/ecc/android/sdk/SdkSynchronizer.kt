@@ -307,7 +307,10 @@ class SdkSynchronizer private constructor(
         }
     }
 
-    override suspend fun getNearestRewindHeight(height: BlockHeight): BlockHeight = processor.getNearestRewindHeight(height)
+    override suspend fun getNearestRewindHeight(height: BlockHeight): BlockHeight =
+        processor.getNearestRewindHeight(
+            height
+        )
 
     override suspend fun rewindToNearestHeight(height: BlockHeight) {
         processor.rewindToNearestHeight(height)
@@ -541,17 +544,29 @@ class SdkSynchronizer private constructor(
     /**
      * Returns the current Unified Address for this account.
      */
-    override suspend fun getUnifiedAddress(account: Account): String = CompactBlockProcessor.getCurrentAddress(backend, account)
+    override suspend fun getUnifiedAddress(account: Account): String =
+        CompactBlockProcessor.getCurrentAddress(
+            backend,
+            account
+        )
 
     /**
      * Returns the legacy Sapling address corresponding to the current Unified Address for this account.
      */
-    override suspend fun getSaplingAddress(account: Account): String = CompactBlockProcessor.getLegacySaplingAddress(backend, account)
+    override suspend fun getSaplingAddress(account: Account): String =
+        CompactBlockProcessor.getLegacySaplingAddress(
+            backend,
+            account
+        )
 
     /**
      * Returns the legacy transparent address corresponding to the current Unified Address for this account.
      */
-    override suspend fun getTransparentAddress(account: Account): String = CompactBlockProcessor.getTransparentAddress(backend, account)
+    override suspend fun getTransparentAddress(account: Account): String =
+        CompactBlockProcessor.getTransparentAddress(
+            backend,
+            account
+        )
 
     @Throws(TransactionEncoderException::class, TransactionSubmitException::class)
     override suspend fun sendToAddress(

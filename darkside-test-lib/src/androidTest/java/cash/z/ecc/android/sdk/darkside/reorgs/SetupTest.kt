@@ -54,12 +54,12 @@ class SetupTest : ScopedTest() {
         assertEquals("a", "${ent.toHex()}|${String(phrase)}")
     }
 
+    @Suppress("MaxLineLength", "UnusedPrivateProperty", "ktlint:standard:max-line-length")
     companion object {
-        @Suppress("MaxLineLength")
-        private const val blocksUrl = "https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/basic-reorg/before-reorg.txt"
-        private const val firstBlock = 663150
-        private const val lastBlock = 663200
-        private const val lastBlockHash = "2fc7b4682f5ba6ba6f86e170b40f0aa9302e1d3becb2a6ee0db611ff87835e4a"
+        private const val BLOCKS_URL = "https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/basic-reorg/before-reorg.txt"
+        private const val FIRST_BLOCK = 663150
+        private const val LAST_BLOCK = 663200
+        private const val LAST_BLOCK_HASH = "2fc7b4682f5ba6ba6f86e170b40f0aa9302e1d3becb2a6ee0db611ff87835e4a"
         private val sithLord = DarksideTestCoordinator()
         private val validator = sithLord.validator
 

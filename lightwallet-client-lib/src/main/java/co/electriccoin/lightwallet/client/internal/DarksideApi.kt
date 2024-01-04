@@ -37,7 +37,8 @@ class DarksideApi private constructor(
 
     fun reset(
         saplingActivationHeight: BlockHeightUnsafe,
-        branchId: String = "e9ff75a6", // Canopy,
+        // Canopy
+        branchId: String = "e9ff75a6",
         chainName: String = "darksidemainnet"
     ) = apply {
         Darkside.DarksideMetaState.newBuilder()

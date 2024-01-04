@@ -9,8 +9,7 @@ import cash.z.ecc.android.sdk.tool.CheckpointTool
  * New instances are constructed using the [new] factory method.
  *
  * @param value The block height.  Must be in range of a UInt32.
- */
-/*
+ *
  * For easier compatibility with Java clients, this class represents the height value as a Long with
  * assertions to ensure that it is a 32-bit unsigned integer.
  */

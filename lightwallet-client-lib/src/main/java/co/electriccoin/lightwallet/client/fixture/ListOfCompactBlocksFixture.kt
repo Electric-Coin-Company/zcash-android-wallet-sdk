@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.asFlow
 object ListOfCompactBlocksFixture {
     val DEFAULT_FILE_BLOCK_RANGE = FileBlockRangeFixture.new()
 
+    @Suppress("MaxLineLength")
     fun newSequence(blocksHeightRange: ClosedRange<BlockHeightUnsafe> = DEFAULT_FILE_BLOCK_RANGE): Sequence<CompactBlockUnsafe> {
         val blocks = mutableListOf<CompactBlockUnsafe>()
 
@@ -25,6 +26,7 @@ object ListOfCompactBlocksFixture {
         return blocks.asSequence()
     }
 
+    @Suppress("MaxLineLength")
     fun newFlow(blocksHeightRange: ClosedRange<BlockHeightUnsafe> = DEFAULT_FILE_BLOCK_RANGE): Flow<CompactBlockUnsafe> {
         return newSequence(blocksHeightRange).asFlow()
     }

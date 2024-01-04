@@ -10,8 +10,7 @@ import kotlinx.coroutines.flow.map
  * multiple parts of the code can fetch the same preference without duplication or accidental
  * variation in default value.  Clients define the key and default value together, rather than just
  * the key.
- */
-/*
+ *
  * API note: the default value is not available through the public interface in order to prevent
  * clients from accidentally using the default value instead of the preference value.
  *

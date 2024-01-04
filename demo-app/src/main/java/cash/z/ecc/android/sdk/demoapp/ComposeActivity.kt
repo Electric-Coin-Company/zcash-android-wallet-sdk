@@ -33,6 +33,7 @@ class ComposeActivity : ComponentActivity() {
     }
 
     @Composable
+    @Suppress("ktlint:standard:function-naming")
     private fun MainContent() {
         when (walletViewModel.secretState.collectAsStateWithLifecycle().value) {
             SecretState.Loading -> {

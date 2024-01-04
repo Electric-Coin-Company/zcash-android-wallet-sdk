@@ -9,6 +9,7 @@ import cash.z.ecc.android.sdk.ext.collectWith
 import kotlinx.coroutines.flow.map
 
 @Composable
+@Suppress("ktlint:standard:function-naming")
 fun ComponentActivity.BindCompLocalProvider(content: @Composable () -> Unit) {
     val screenTimeout = ScreenTimeout()
     observeScreenTimeoutFlag(screenTimeout)

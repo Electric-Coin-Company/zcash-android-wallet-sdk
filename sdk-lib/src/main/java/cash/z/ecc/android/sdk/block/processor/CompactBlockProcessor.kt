@@ -835,8 +835,8 @@ class CompactBlockProcessor internal constructor(
                 }
                 resultRange
             } else {
-                // Empty ranges most likely means that the sync is done and the Rust layer replied with an empty suggested
-                // ranges
+                // Empty ranges most likely means that the sync is done and the Rust layer replied with an empty
+                // suggested ranges
                 null
             }
 
@@ -849,12 +849,13 @@ class CompactBlockProcessor internal constructor(
         return true
     }
 
-    /**
-     * Confirm that the wallet data is properly setup for use.
-     */
     // TODO [#1127]: Refactor CompactBlockProcessor.verifySetup
     // TODO [#1127]: Need to refactor this to be less ugly and more testable
     // TODO [#1127]: https://github.com/zcash/zcash-android-wallet-sdk/issues/1127
+
+    /**
+     * Confirm that the wallet data is properly setup for use.
+     */
     @Suppress("NestedBlockDepth")
     private suspend fun verifySetup() {
         val error =
@@ -1299,6 +1300,7 @@ class CompactBlockProcessor internal constructor(
          * @return VerifySuggestedScanRange
          */
         @VisibleForTesting
+        @Suppress("MaxLineLength")
         internal fun shouldVerifySuggestedScanRanges(suggestedRangesResult: SuggestScanRangesResult.Success): VerifySuggestedScanRange {
             Twig.debug { "Check for Priority.Verify scan range result: ${suggestedRangesResult.ranges}" }
 
@@ -1382,7 +1384,8 @@ class CompactBlockProcessor internal constructor(
 
                     val batches = getBatchedBlockList(syncRange, network)
 
-                    // Check for the last enhanced height and eventually set is as the beginning of the next enhancing range
+                    // Check for the last enhanced height and eventually set is as the beginning of the next
+                    // enhancing range
                     var enhancingRange =
                         if (enhanceStartHeight != null) {
                             BlockHeight(min(syncRange.start.value, enhanceStartHeight.value))..syncRange.start
@@ -1631,7 +1634,8 @@ class CompactBlockProcessor internal constructor(
                     // Check if the error is continuity type
                     if (it.isScanContinuityError()) {
                         SyncingResult.ContinuityError(
-                            failedAtHeight = batch.range.start - 1, // To ensure we later rewind below the failed height
+                            // To ensure we later rewind below the failed height
+                            failedAtHeight = batch.range.start - 1,
                             exception = CompactBlockProcessorException.FailedScanException(it)
                         )
                     } else {
@@ -1848,6 +1852,7 @@ class CompactBlockProcessor internal constructor(
          * or repository is empty
          */
         @VisibleForTesting
+        @Suppress("MaxLineLength")
         internal suspend fun getFirstUnenhancedHeight(repository: DerivedDataRepository) = repository.firstUnenhancedHeight()
 
         /**
@@ -1855,6 +1860,7 @@ class CompactBlockProcessor internal constructor(
          *
          * @return the last downloaded height reported by the downloader.
          */
+        @Suppress("MaxLineLength")
         internal suspend fun getLastDownloadedHeight(downloader: CompactBlockDownloader) = downloader.getLastDownloadedHeight()
 
         /**

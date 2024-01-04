@@ -22,6 +22,7 @@ class TransactionCounterUtil {
     fun testBlockSize() {
         val sizes = mutableMapOf<Int, Int>()
 
+        @Suppress("ktlint:standard:multiline-expression-wrapping")
         lightWalletClient.getBlockRange(
             BlockHeightUnsafe.from(
                 BlockHeight.new(
@@ -58,6 +59,7 @@ class TransactionCounterUtil {
         var totalOutputs = 0
         var totalTxs = 0
 
+        @Suppress("ktlint:standard:multiline-expression-wrapping")
         lightWalletClient.getBlockRange(
             BlockHeightUnsafe.from(
                 BlockHeight.new(

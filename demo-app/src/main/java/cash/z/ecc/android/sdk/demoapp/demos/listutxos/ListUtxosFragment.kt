@@ -49,6 +49,7 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
 
     private val isSynced get() = status == Synchronizer.Status.SYNCED
 
+    @Suppress("MaxLineLength")
     override fun inflateBinding(layoutInflater: LayoutInflater): FragmentListUtxosBinding = FragmentListUtxosBinding.inflate(layoutInflater)
 
     private fun initUi() {

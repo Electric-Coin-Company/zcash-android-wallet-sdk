@@ -206,7 +206,10 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
 
     override suspend fun initBlockMetaDb(): Int = backend.initBlockMetaDb()
 
-    override suspend fun writeBlockMetadata(blockMetadata: List<JniBlockMeta>) = backend.writeBlockMetadata(blockMetadata)
+    override suspend fun writeBlockMetadata(blockMetadata: List<JniBlockMeta>) =
+        backend.writeBlockMetadata(
+            blockMetadata
+        )
 
     override fun isValidShieldedAddr(addr: String): Boolean = backend.isValidShieldedAddr(addr)
 

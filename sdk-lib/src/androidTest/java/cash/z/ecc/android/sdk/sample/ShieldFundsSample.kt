@@ -12,7 +12,7 @@ import org.junit.Test
  * Samples related to shielding funds.
  */
 class ShieldFundsSample {
-    val SEED_PHRASE =
+    val seedPhrase =
         "still champion voice habit trend flight survey between bitter process artefact blind carbon" +
             " truly provide dizzy crush flush breeze blouse charge solid fish spread"
     // "deputy visa gentle among clean scout farm drive comfort patch skin salt ranch cool ramp warrior drink narrow

@@ -31,6 +31,7 @@ import cash.z.ecc.android.sdk.model.toZecString
 
 @Preview(name = "Balance")
 @Composable
+@Suppress("ktlint:standard:function-naming")
 private fun ComposablePreview() {
     MaterialTheme {
         Balance(
@@ -44,6 +45,7 @@ private fun ComposablePreview() {
 }
 
 @Composable
+@Suppress("ktlint:standard:function-naming")
 fun Balance(
     walletSnapshot: WalletSnapshot,
     sendState: SendState,
@@ -69,6 +71,7 @@ fun Balance(
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
+@Suppress("ktlint:standard:function-naming")
 private fun BalanceTopAppBar(
     onBack: () -> Unit,
     onRefresh: () -> Unit
@@ -97,6 +100,7 @@ private fun BalanceTopAppBar(
 }
 
 @Composable
+@Suppress("ktlint:standard:function-naming")
 private fun BalanceMainContent(
     paddingValues: PaddingValues,
     walletSnapshot: WalletSnapshot,

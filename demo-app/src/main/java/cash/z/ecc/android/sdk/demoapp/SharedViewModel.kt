@@ -42,7 +42,7 @@ import kotlin.time.Duration.Companion.seconds
 class SharedViewModel(application: Application) : AndroidViewModel(application) {
     private val _seedPhrase = MutableStateFlow(DemoConstants.INITIAL_SEED_WORDS)
 
-    private val _blockHeight =
+    private val _birthdayHeight =
         MutableStateFlow<BlockHeight?>(
             runBlocking {
                 BlockHeight.ofLatestCheckpoint(
@@ -56,7 +56,7 @@ class SharedViewModel(application: Application) : AndroidViewModel(application) 
     val seedPhrase: StateFlow<String> get() = _seedPhrase
 
     // publicly, this is read-only
-    val birthdayHeight: StateFlow<BlockHeight?> get() = _blockHeight
+    val birthdayHeight: StateFlow<BlockHeight?> get() = _birthdayHeight
 
     private val lockoutMutex = Mutex()
 

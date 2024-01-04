@@ -26,15 +26,18 @@ internal class AllTransactionView(
 
         private val COLUMNS =
             arrayOf(
-                "*", // $NON-NLS
+                // $NON-NLS
+                "*",
                 @Suppress("MaxLineLength")
-                "IFNULL(${AllTransactionViewDefinition.COLUMN_INTEGER_MINED_HEIGHT}, ${UInt.MAX_VALUE}) AS $COLUMN_SORT_HEIGHT" // $NON-NLS
+                // $NON-NLS
+                "IFNULL(${AllTransactionViewDefinition.COLUMN_INTEGER_MINED_HEIGHT}, ${UInt.MAX_VALUE}) AS $COLUMN_SORT_HEIGHT"
             )
 
         private val ORDER_BY =
             String.format(
                 Locale.ROOT,
-                "%s DESC, %s DESC", // $NON-NLS
+                // $NON-NLS
+                "%s DESC, %s DESC",
                 COLUMN_SORT_HEIGHT,
                 AllTransactionViewDefinition.COLUMN_INTEGER_TRANSACTION_INDEX
             )
@@ -42,14 +45,16 @@ internal class AllTransactionView(
         private val ORDER_BY_MINED_HEIGHT =
             String.format(
                 Locale.ROOT,
-                "%s ASC", // $NON-NLS
+                // $NON-NLS
+                "%s ASC",
                 AllTransactionViewDefinition.COLUMN_INTEGER_MINED_HEIGHT
             )
 
         private val SELECTION_BLOCK_RANGE =
             String.format(
                 Locale.ROOT,
-                "%s >= ? AND %s <= ?", // $NON-NLS
+                // $NON-NLS
+                "%s >= ? AND %s <= ?",
                 AllTransactionViewDefinition.COLUMN_INTEGER_MINED_HEIGHT,
                 AllTransactionViewDefinition.COLUMN_INTEGER_MINED_HEIGHT
             )
@@ -57,7 +62,8 @@ internal class AllTransactionView(
         private val SELECTION_RAW_IS_NULL =
             String.format(
                 Locale.ROOT,
-                "%s IS NULL", // $NON-NLS
+                // $NON-NLS
+                "%s IS NULL",
                 AllTransactionViewDefinition.COLUMN_BLOB_RAW
             )
 

@@ -31,14 +31,15 @@ data class PersistableWallet(
     val walletInitMode: WalletInitMode
 ) {
     init {
-        _walletInitMode = walletInitMode
+        walletInitModeHolder = walletInitMode
     }
 
     /**
      * @return Wallet serialized to JSON format, suitable for long-term encrypted storage.
-     */
-    // Note: We're using a hand-crafted serializer so that we're less likely to have accidental
-    // breakage from reflection or annotation based methods, and so that we can carefully manage versioning.
+     *
+     * Note: We're using a hand-crafted serializer so that we're less likely to have accidental
+     * breakage from reflection or annotation based methods, and so that we can carefully manage versioning.
+     **/
     fun toJson() =
         JSONObject().apply {
             put(KEY_VERSION, VERSION_2)
@@ -69,7 +70,7 @@ data class PersistableWallet(
 
         // Note: [walletInitMode] is excluded from the serialization to avoid persisting the wallet initialization mode
         // with the persistable wallet.
-        private var _walletInitMode: WalletInitMode = WalletInitMode.ExistingWallet
+        private var walletInitModeHolder: WalletInitMode = WalletInitMode.ExistingWallet
 
         fun from(jsonObject: JSONObject): PersistableWallet {
             // Common parameters
@@ -96,7 +97,7 @@ data class PersistableWallet(
                 endpoint = endpoint,
                 birthday = birthday,
                 seedPhrase = SeedPhrase.new(seedPhrase),
-                walletInitMode = _walletInitMode
+                walletInitMode = walletInitModeHolder
             )
         }
 

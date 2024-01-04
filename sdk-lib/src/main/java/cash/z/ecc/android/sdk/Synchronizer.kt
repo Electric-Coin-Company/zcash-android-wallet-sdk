@@ -1,6 +1,9 @@
 package cash.z.ecc.android.sdk
 
 import android.content.Context
+import cash.z.ecc.android.sdk.WalletInitMode.ExistingWallet
+import cash.z.ecc.android.sdk.WalletInitMode.NewWallet
+import cash.z.ecc.android.sdk.WalletInitMode.RestoreWallet
 import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor
 import cash.z.ecc.android.sdk.exception.InitializeException
 import cash.z.ecc.android.sdk.ext.ZcashSdk
@@ -104,6 +107,7 @@ interface Synchronizer {
     // Operations
     //
 
+    @Suppress("ktlint:standard:no-consecutive-comments")
     /**
      * Adds the next available account-level spend authority, given the current set of
      * [ZIP 316](https://zips.z.cash/zip-0316) account identifiers known, to the wallet
@@ -127,9 +131,10 @@ interface Synchronizer {
      *
      * @return the newly created ZIP 316 account identifier, along with the binary
      * encoding of the `UnifiedSpendingKey` for the newly created account.
-     */
-    // This is not yet ready to be a public API
-    // suspend fun createAccount(seed: ByteArray): UnifiedSpendingKey
+     *
+     * This is not yet ready to be a public API!
+     * suspend fun createAccount(seed: ByteArray): UnifiedSpendingKey
+     **/
 
     /**
      * Gets the current unified address for the given account.
@@ -457,8 +462,7 @@ interface Synchronizer {
          * @throws IllegalStateException If multiple instances of synchronizer with the same network+alias are
          * active at the same time.  Call `close` to finish one synchronizer before starting another one with the same
          * network+alias.
-         */
-        /*
+         *
          * If customized initialization is required (e.g. for dependency injection or testing), see
          * [DefaultSynchronizerFactory].
          */
@@ -513,7 +517,9 @@ interface Synchronizer {
                                 runCatching { response.result.toBlockHeight(zcashNetwork) }.getOrNull()
                             }
                             is Response.Failure -> {
-                                Twig.error { "Chain tip fetch for recovery until failed with: ${response.toThrowable()}" }
+                                Twig.error {
+                                    "Chain tip fetch for recovery until failed with: ${response.toThrowable()}"
+                                }
                                 null
                             }
                         }

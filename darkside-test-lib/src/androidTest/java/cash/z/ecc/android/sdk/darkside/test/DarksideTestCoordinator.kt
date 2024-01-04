@@ -81,7 +81,7 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
         darkside.reset(BlockHeightUnsafe(wallet.network.saplingActivationHeight.value))
     }
 
-//    fun triggerSmallReorg() {
+    //    fun triggerSmallReorg() {
 //        darkside.setBlocksUrl(smallReorg)
 //    }
 //
@@ -127,6 +127,7 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
 //        wallet.send(toAddress, memo, zatoshi, fromAccountIndex)
 //    }
 
+    @Suppress("ktlint:standard:no-consecutive-comments")
     fun stall(delay: Long = 5000L) =
         runBlocking {
             delay(delay)
@@ -305,7 +306,7 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
         }
     }
 
-    @Suppress("MaxLineLength")
+    @Suppress("MaxLineLength", "UnusedPrivateProperty")
     companion object {
         /**
          * This is a special localhost value on the Android emulator, which allows it to contact
@@ -314,14 +315,15 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
         const val COMPUTER_LOCALHOST = "10.0.2.2"
 
         // Block URLS
-        private const val beforeReorg =
+        private const val BEFORE_REORG =
             "https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/basic-reorg/before-reorg.txt"
-        private const val smallReorg =
+        private const val SMALL_REORG =
             "https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/basic-reorg/after-small-reorg.txt"
-        private const val largeReorg =
+        private const val LARGE_REORG =
             "https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/basic-reorg/after-large-reorg.txt"
         private val DEFAULT_START_HEIGHT = BlockHeight.new(ZcashNetwork.Mainnet, 663150)
         private const val DEFAULT_SEED_PHRASE =
-            "still champion voice habit trend flight survey between bitter process artefact blind carbon truly provide dizzy crush flush breeze blouse charge solid fish spread"
+            "still champion voice habit trend flight survey between bitter process artefact blind carbon truly" +
+                " provide dizzy crush flush breeze blouse charge solid fish spread"
     }
 }

@@ -49,8 +49,10 @@ sealed class TransactionRecipient {
 
 internal fun PendingTransaction.hasRawTransactionId() = rawTransactionId?.byteArray?.isEmpty() == false
 
+@Suppress("MaxLineLength")
 fun PendingTransaction.isCreating() = raw.byteArray.isNotEmpty() && submitAttempts <= 0 && !isFailedSubmit() && !isFailedEncoding()
 
+@Suppress("MaxLineLength")
 fun PendingTransaction.isCreated() = raw.byteArray.isNotEmpty() && submitAttempts <= 0 && !isFailedSubmit() && !isFailedEncoding()
 
 fun PendingTransaction.isFailedEncoding() = raw.byteArray.isEmpty() && encodeAttempts > 0

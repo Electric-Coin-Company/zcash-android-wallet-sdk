@@ -52,6 +52,7 @@ import cash.z.ecc.android.sdk.model.toZecString
 
 @Preview(name = "Send")
 @Composable
+@Suppress("ktlint:standard:function-naming")
 private fun ComposablePreview() {
     MaterialTheme {
         Send(
@@ -64,6 +65,7 @@ private fun ComposablePreview() {
 }
 
 @Composable
+@Suppress("ktlint:standard:function-naming")
 fun Send(
     walletSnapshot: WalletSnapshot,
     sendState: SendState,
@@ -84,6 +86,7 @@ fun Send(
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
+@Suppress("ktlint:standard:function-naming")
 private fun SendTopAppBar(onBack: () -> Unit) {
     TopAppBar(
         title = { Text(text = stringResource(id = R.string.menu_send)) },
@@ -101,7 +104,7 @@ private fun SendTopAppBar(onBack: () -> Unit) {
 }
 
 @Composable
-@Suppress("LongMethod")
+@Suppress("LongMethod", "ktlint:standard:function-naming")
 private fun SendMainContent(
     paddingValues: PaddingValues,
     walletSnapshot: WalletSnapshot,

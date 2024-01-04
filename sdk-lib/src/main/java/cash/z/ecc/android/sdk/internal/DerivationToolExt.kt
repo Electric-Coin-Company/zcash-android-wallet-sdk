@@ -41,4 +41,9 @@ fun Derivation.deriveUnifiedFullViewingKeysTypesafe(
     seed: ByteArray,
     network: ZcashNetwork,
     numberOfAccounts: Int
-): List<UnifiedFullViewingKey> = deriveUnifiedFullViewingKeys(seed, network.id, numberOfAccounts).map { UnifiedFullViewingKey(it) }
+): List<UnifiedFullViewingKey> =
+    deriveUnifiedFullViewingKeys(
+        seed,
+        network.id,
+        numberOfAccounts
+    ).map { UnifiedFullViewingKey(it) }

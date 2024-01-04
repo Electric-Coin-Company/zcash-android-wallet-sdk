@@ -17,7 +17,8 @@ internal class TxOutputsView(
         private val ORDER_BY =
             String.format(
                 Locale.ROOT,
-                "%s ASC", // $NON-NLS
+                // $NON-NLS
+                "%s ASC",
                 TxOutputsViewDefinition.COLUMN_BLOB_TRANSACTION_ID
             )
 
@@ -32,7 +33,8 @@ internal class TxOutputsView(
         private val SELECT_BY_TRANSACTION_ID_AND_NOT_CHANGE =
             String.format(
                 Locale.ROOT,
-                "%s = ? AND %s == 0", // $NON-NLS
+                // $NON-NLS
+                "%s = ? AND %s == 0",
                 TxOutputsViewDefinition.COLUMN_BLOB_TRANSACTION_ID,
                 TxOutputsViewDefinition.COLUMN_INTEGER_IS_CHANGE
             )

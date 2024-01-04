@@ -103,9 +103,9 @@ class SampleCodeTest {
     // ///////////////////////////////////////////////////
     // Download compact block range
     @Test
-    @OptIn(ExperimentalCoroutinesApi::class)
     fun getBlockRange() =
         runTest {
+            @Suppress("ktlint:standard:multiline-expression-wrapping")
             val blockRange =
                 BlockHeightUnsafe(
                     BlockHeight.new(

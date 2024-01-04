@@ -25,8 +25,7 @@ import java.util.concurrent.Executors
  * For a given preference file, it is expected that only a single instance is constructed and that
  * this instance lives for the lifetime of the application. Constructing multiple instances will
  * potentially corrupt preference data and will leak resources.
- */
-/*
+ *
  * Implementation note: EncryptedSharedPreferences are not thread-safe, so this implementation
  * confines them to a single background thread.
  */

@@ -36,7 +36,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 @Composable
-@Suppress("LongMethod")
+@Suppress("LongMethod", "ktlint:standard:function-naming")
 internal fun ComposeActivity.Navigation() {
     val navController = rememberNavController()
 

@@ -20,7 +20,7 @@ import org.junit.Test
  * the same data.
  */
 class TransparentRestoreSample {
-    val TX_VALUE = Zatoshi(ZcashSdk.MINERS_FEE.value / 2)
+    val txValue = Zatoshi(ZcashSdk.MINERS_FEE.value / 2)
 
 //    val walletA = SimpleWallet(SEED_PHRASE, "WalletA")
 
@@ -119,7 +119,8 @@ class TransparentRestoreSample {
     /**
      * Sanity check that the wallet has enough funds for the test
      */
-//    @Test
+    @Test
+    @Ignore("Was disabled by its author")
     fun hasFunds() =
         runBlocking<Unit> {
             val walletSandbox =

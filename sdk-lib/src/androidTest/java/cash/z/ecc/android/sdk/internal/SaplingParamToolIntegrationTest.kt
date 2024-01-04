@@ -263,7 +263,8 @@ class SaplingParamToolIntegrationTest {
                     SaplingParamsFixture.DESTINATION_DIRECTORY,
                     SaplingParamsFixture.OUTPUT_FILE_NAME,
                     SaplingParamsFixture.OUTPUT_FILE_MAX_SIZE,
-                    SaplingParamsFixture.SPEND_FILE_HASH // will cause the ValidateParamsException
+                    // Will cause the ValidateParamsException
+                    SaplingParamsFixture.SPEND_FILE_HASH
                 )
 
             val exception =
@@ -278,7 +279,8 @@ class SaplingParamToolIntegrationTest {
                     destinationDirectoryPath = exception.parameters.destinationDirectory,
                     fileName = exception.parameters.fileName,
                     fileMaxSize = exception.parameters.fileMaxSizeBytes,
-                    fileHash = SaplingParamsFixture.OUTPUT_FILE_HASH // fixed file hash
+                    // Fixed file hash
+                    fileHash = SaplingParamsFixture.OUTPUT_FILE_HASH
                 )
 
             // re-try with fixed parameters

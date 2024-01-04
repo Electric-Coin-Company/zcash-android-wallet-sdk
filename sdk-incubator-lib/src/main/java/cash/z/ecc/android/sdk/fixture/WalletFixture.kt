@@ -29,7 +29,9 @@ sealed class WalletFixture {
     @Suppress("MaxLineLength")
     object Ben : WalletFixture() {
         override val seedPhrase: String
-            get() = "kitchen renew wide common vague fold vacuum tilt amazing pear square gossip jewel month tree shock scan alpha just spot fluid toilet view dinner"
+            get() =
+                "kitchen renew wide common vague fold vacuum tilt amazing pear square gossip jewel month tree" +
+                    " shock scan alpha just spot fluid toilet view dinner"
 
         // These birthdays were the latest checkpoint at the time this was implemented
         // Moving these forward will improve testing time, while leaving old transactions behind
@@ -39,14 +41,13 @@ sealed class WalletFixture {
                 ZcashNetwork.ID_TESTNET -> {
                     BlockHeight.new(zcashNetwork, 2170000L)
                 }
-
                 ZcashNetwork.ID_MAINNET -> {
                     BlockHeight.new(zcashNetwork, 1935000L)
                 }
-
                 else -> error("Unknown network $zcashNetwork")
             }
 
+        @Suppress("ktlint:standard:max-line-length")
         override fun getAddresses(zcashNetwork: ZcashNetwork) =
             when (zcashNetwork.id) {
                 ZcashNetwork.ID_TESTNET -> {
@@ -58,7 +59,6 @@ sealed class WalletFixture {
                         transparent = "tmP3uLtGx5GPddkq8a6ddmXhqJJ3vy6tpTE"
                     )
                 }
-
                 ZcashNetwork.ID_MAINNET -> {
                     Addresses(
                         unified =
@@ -68,7 +68,6 @@ sealed class WalletFixture {
                         transparent = "t1JP7PHu72xHztsZiwH6cye4yvC9Prb3EvQ"
                     )
                 }
-
                 else -> error("Unknown network $zcashNetwork")
             }
     }
@@ -76,7 +75,9 @@ sealed class WalletFixture {
     @Suppress("MaxLineLength")
     object Alice : WalletFixture() {
         override val seedPhrase: String
-            get() = "wish puppy smile loan doll curve hole maze file ginger hair nose key relax knife witness cannon grab despair throw review deal slush frame"
+            get() =
+                "wish puppy smile loan doll curve hole maze file ginger hair nose key relax knife witness cannon" +
+                    " grab despair throw review deal slush frame"
 
         // These birthdays were the latest checkpoint at the time this was implemented
         // Moving these forward will improve testing time, while leaving old transactions behind
@@ -86,14 +87,13 @@ sealed class WalletFixture {
                 ZcashNetwork.ID_TESTNET -> {
                     BlockHeight.new(zcashNetwork, 2170000L)
                 }
-
                 ZcashNetwork.ID_MAINNET -> {
                     BlockHeight.new(zcashNetwork, 1935000L)
                 }
-
                 else -> error("Unknown network $zcashNetwork")
             }
 
+        @Suppress("ktlint:standard:max-line-length")
         override fun getAddresses(zcashNetwork: ZcashNetwork) =
             when (zcashNetwork.id) {
                 ZcashNetwork.ID_TESTNET -> {
@@ -105,7 +105,6 @@ sealed class WalletFixture {
                         transparent = "tmCxJG72RWN66xwPtNgu4iKHpyysGrc7rEg"
                     )
                 }
-
                 ZcashNetwork.ID_MAINNET -> {
                     Addresses(
                         unified =
@@ -115,7 +114,6 @@ sealed class WalletFixture {
                         transparent = "t1duiEGg7b39nfQee3XaTY4f5McqfyJKhBi"
                     )
                 }
-
                 else -> error("Unknown network $zcashNetwork")
             }
     }

@@ -75,7 +75,10 @@ internal class FakeRustBackend(
         metadata.removeAll { it.height > height }
     }
 
-    override suspend fun initBlockMetaDb(): Int = error("Intentionally not implemented in mocked FakeRustBackend implementation.")
+    override suspend fun initBlockMetaDb(): Int =
+        error(
+            "Intentionally not implemented in mocked FakeRustBackend implementation."
+        )
 
     override suspend fun createToAddress(
         account: Int,
@@ -123,7 +126,10 @@ internal class FakeRustBackend(
     override fun getTransparentReceiver(ua: String): String? =
         error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 
-    override fun getSaplingReceiver(ua: String): String? = error("Intentionally not implemented in mocked FakeRustBackend implementation.")
+    override fun getSaplingReceiver(ua: String): String? =
+        error(
+            "Intentionally not implemented in mocked FakeRustBackend implementation."
+        )
 
     override suspend fun listTransparentReceivers(account: Int): List<String> {
         TODO("Not yet implemented")

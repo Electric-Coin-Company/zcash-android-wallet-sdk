@@ -39,6 +39,7 @@ import kotlinx.coroutines.launch
 
 @Preview(name = "Transactions")
 @Composable
+@Suppress("ktlint:standard:function-naming")
 private fun ComposablePreview() {
     MaterialTheme {
         // TODO [#1090]: Demo: Add Addresses and Transactions Compose Previews
@@ -48,6 +49,7 @@ private fun ComposablePreview() {
 }
 
 @Composable
+@Suppress("ktlint:standard:function-naming")
 fun Transactions(
     synchronizer: Synchronizer,
     onBack: () -> Unit
@@ -83,6 +85,7 @@ fun Transactions(
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
+@Suppress("ktlint:standard:function-naming")
 private fun TransactionsTopAppBar(
     onBack: () -> Unit,
     onRefresh: () -> Unit
@@ -111,6 +114,7 @@ private fun TransactionsTopAppBar(
 }
 
 @Composable
+@Suppress("ktlint:standard:function-naming")
 private fun TransactionsMainContent(
     paddingValues: PaddingValues,
     synchronizer: Synchronizer,

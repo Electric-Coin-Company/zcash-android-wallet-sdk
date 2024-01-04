@@ -20,7 +20,8 @@ internal class TransactionTable(
         private val SELECTION_BLOCK_IS_NULL =
             String.format(
                 Locale.ROOT,
-                "%s IS NULL", // $NON-NLS
+                // $NON-NLS
+                "%s IS NULL",
                 TransactionTableDefinition.COLUMN_INTEGER_BLOCK
             )
 
@@ -40,14 +41,16 @@ internal class TransactionTable(
         private val SELECTION_RAW_TRANSACTION_ID =
             String.format(
                 Locale.ROOT,
-                "%s = ?", // $NON-NLS
+                // $NON-NLS
+                "%s = ?",
                 TransactionTableDefinition.COLUMN_BLOB_TRANSACTION_ID
             )
 
         private val SELECTION_TRANSACTION_ID_AND_RAW_NOT_NULL =
             String.format(
                 Locale.ROOT,
-                "%s = ? AND %s IS NOT NULL", // $NON-NLS
+                // $NON-NLS
+                "%s = ? AND %s IS NOT NULL",
                 TransactionTableDefinition.COLUMN_BLOB_TRANSACTION_ID,
                 TransactionTableDefinition.COLUMN_BLOB_RAW
             )

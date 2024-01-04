@@ -13,7 +13,7 @@ sealed class Response<T> {
         /**
          * Use this function to convert Failure into Throwable object.
          */
-        fun toThrowable() = Throwable("Communication failure with details: $code${description?.let{": $it"} ?: "."}") // NON-NLS
+        fun toThrowable() = Throwable("Communication failure with details: $code${description?.let{": $it"} ?: "."}")
 
         /**
          * The client was not able to communicate with the server.

@@ -31,8 +31,7 @@ import java.util.UUID
 
 /**
  * @param persistableWallet flow of the user's stored wallet.  Null indicates that no wallet has been stored.
- */
-/*
+ *
  * One area where this class needs to change before it can be moved out of the incubator is that we need to be able to
  * start synchronization without necessarily decrypting the wallet.
  *

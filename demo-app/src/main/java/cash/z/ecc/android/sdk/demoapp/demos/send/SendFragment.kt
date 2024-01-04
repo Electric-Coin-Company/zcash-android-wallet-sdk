@@ -205,6 +205,6 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
     //
     // BaseDemoFragment overrides
     //
-
+    @Suppress("MaxLineLength")
     override fun inflateBinding(layoutInflater: LayoutInflater): FragmentSendBinding = FragmentSendBinding.inflate(layoutInflater)
 }

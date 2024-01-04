@@ -58,6 +58,7 @@ class ScreenTimeoutTest : UiTestPrerequisites() {
         }
 
         @Composable
+        @Suppress("ktlint:standard:function-naming")
         private fun TestView(disableScreenTimeout: Boolean) {
             if (disableScreenTimeout) {
                 DisableScreenTimeout()

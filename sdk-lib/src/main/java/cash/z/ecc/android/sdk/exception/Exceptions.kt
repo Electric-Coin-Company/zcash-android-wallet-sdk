@@ -158,8 +158,8 @@ sealed class CompactBlockProcessorException(message: String, cause: Throwable? =
         serverBranch: String?,
         networkName: String?
     ) : CompactBlockProcessorException(
-            "Incompatible server: this client expects a server following consensus branch $clientBranch on $networkName " +
-                "but it was $serverBranch! Try updating the client or switching servers."
+            "Incompatible server: this client expects a server following consensus branch $clientBranch" +
+                " on $networkName but it was $serverBranch! Try updating the client or switching servers."
         )
 
     class BadBlockHeight(serverBlockHeight: BlockHeightUnsafe) : CompactBlockProcessorException(

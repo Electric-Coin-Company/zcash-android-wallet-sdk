@@ -44,8 +44,9 @@ fun <T> Flow<T>.collectWith(
 /**
  * Utility for performing the given action on the first emission of a flow and running that action
  * in the given scope.
+ *
+ * Unused in the SDK but is used by the wallet app
  */
-// Unused in the SDK but is used by the wallet app
 @Suppress("unused")
 fun <T, S> Flow<T>.onFirstWith(
     scope: CoroutineScope,

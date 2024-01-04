@@ -20,6 +20,9 @@ import java.util.regex.Pattern
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
+// TODO [#809]: Enable macrobenchmark on CI
+// TODO [#809]: https://github.com/zcash/zcash-android-wallet-sdk/issues/809
+
 /**
  * Purpose of this class is to provide a basic startup measurements, and captured system traces for investigating the
  * app's performance. It navigates to the device's home screen, and launches the default activity.
@@ -29,9 +32,6 @@ import kotlin.time.Duration.Companion.seconds
  * We ideally run this against a physical device with Android SDK level 29, at least, as profiling is provided by this
  * version and later on.
  */
-
-// TODO [#809]: Enable macrobenchmark on CI
-// TODO [#809]: https://github.com/zcash/zcash-android-wallet-sdk/issues/809
 class StartupBenchmark : UiTestPrerequisites() {
     companion object {
         private const val APP_TARGET_PACKAGE_NAME = "cash.z.ecc.android.sdk.demoapp.mainnet" // NON-NLS

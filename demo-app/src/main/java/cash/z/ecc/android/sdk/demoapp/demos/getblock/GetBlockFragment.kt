@@ -7,14 +7,15 @@ import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
 import cash.z.ecc.android.sdk.demoapp.databinding.FragmentGetBlockBinding
 import cash.z.ecc.android.sdk.demoapp.util.mainActivity
 
+// TODO [#973]: Eliminate old UI demo-app
+// TODO [#973]: https://github.com/zcash/zcash-android-wallet-sdk/issues/973
+
 /**
  * Retrieves a compact block from the lightwalletd server and displays basic information about it.
  * This demonstrates the basic ability to connect to the server, request a compact block and parse
  * the response.
  */
 class GetBlockFragment : BaseDemoFragment<FragmentGetBlockBinding>() {
-    // TODO [#973]: Eliminate old UI demo-app
-    // TODO [#973]: https://github.com/zcash/zcash-android-wallet-sdk/issues/973
     /*
     var coroutineScope: CoroutineScope = CoroutineScope(Dispatchers.Main)
 
@@ -94,6 +95,6 @@ class GetBlockFragment : BaseDemoFragment<FragmentGetBlockBinding>() {
     //
     // Base Fragment overrides
     //
-
+    @Suppress("MaxLineLength")
     override fun inflateBinding(layoutInflater: LayoutInflater): FragmentGetBlockBinding = FragmentGetBlockBinding.inflate(layoutInflater)
 }

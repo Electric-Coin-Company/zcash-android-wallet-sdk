@@ -114,14 +114,17 @@ object Twig {
     /**
      * Can be called in a release build to test that `assumenosideeffects` ProGuard rules have been
      * properly processed to strip out logging messages.
+     *
+     * JVMStatic is to simplify ProGuard/R8 rules for stripping this
      */
-    // JVMStatic is to simplify ProGuard/R8 rules for stripping this
     @JvmStatic
     fun assertLoggingStripped() {
         @Suppress("MaxLineLength")
+        // $NON-NLS-1$
         throw AssertionError(
-            "Logging was not disabled by ProGuard or R8.  Logging should be disabled in release builds to reduce risk of sensitive information being leaked."
-        ) // $NON-NLS-1$
+            "Logging was not disabled by ProGuard or R8.  Logging should be disabled in release builds" +
+                " to reduce risk of sensitive information being leaked."
+        )
     }
 
     private const val CALL_DEPTH = 4

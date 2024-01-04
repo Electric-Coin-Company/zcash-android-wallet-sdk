@@ -142,8 +142,7 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
     /**
      * Creates a wallet asynchronously and then persists it.  Clients observe
      * [secretState] to see the side effects.  This would be used for a user creating a new wallet.
-     */
-    /*
+     *
      * Although waiting for the wallet to be written and then read back is slower, it is probably
      * safer because it 1. guarantees the wallet is written to disk and 2. has a single source of truth.
      */
@@ -299,11 +298,13 @@ sealed class SendState {
     }
 }
 
+// TODO [#529]: Localize Synchronizer Errors
+// TODO [#529]: https://github.com/zcash/secant-android-wallet/issues/529
+
 /**
  * Represents all kind of Synchronizer errors
  */
-// TODO [#529]: Localize Synchronizer Errors
-// TODO [#529]: https://github.com/zcash/secant-android-wallet/issues/529
+
 sealed class SynchronizerError {
     abstract fun getCauseMessage(): String?
 
@@ -367,13 +368,20 @@ private fun Synchronizer.toCommonError(): Flow<SynchronizerError?> =
 @Suppress("MagicNumber")
 private fun Synchronizer.toWalletSnapshot() =
     combine(
-        status, // 0
-        processorInfo, // 1
-        orchardBalances, // 2
-        saplingBalances, // 3
-        transparentBalances, // 4
-        progress, // 5
-        toCommonError() // 6
+        // 0
+        status,
+        // 1
+        processorInfo,
+        // 2
+        orchardBalances,
+        // 3
+        saplingBalances,
+        // 4
+        transparentBalances,
+        // 5
+        progress,
+        // 6
+        toCommonError()
     ) { flows ->
         val orchardBalance = flows[2] as WalletBalance?
         val saplingBalance = flows[3] as WalletBalance?

@@ -125,11 +125,12 @@ class TestnetIntegrationTest : ScopedTest() {
         Twig.debug { "\n---\n[TESTLOG]: $message\n---\n" }
     }
 
+    @Suppress("UnusedPrivateProperty")
     companion object {
         val lightWalletEndpoint = LightWalletEndpoint("lightwalletd.testnet.z.cash", 9087, true)
-        private const val birthdayHeight = 963150L
-        private const val targetHeight = 663250
-        private const val seedPhrase =
+        private const val BIRTHDAY_HEIGHT = 963150L
+        private const val TARGET_HEIGHT = 663250
+        private const val SEED_PHRASE =
             "still champion voice habit trend flight survey between bitter process" +
                 " artefact blind carbon truly provide dizzy crush flush breeze blouse charge solid fish spread"
         val seed = "cash.z.ecc.android.sdk.integration.IntegrationTest.seed.value.64bytes".toByteArray()
@@ -149,7 +150,7 @@ class TestnetIntegrationTest : ScopedTest() {
                     lightWalletEndpoint =
                     lightWalletEndpoint,
                     seed = seed,
-                    birthday = BlockHeight.new(ZcashNetwork.Testnet, birthdayHeight),
+                    birthday = BlockHeight.new(ZcashNetwork.Testnet, BIRTHDAY_HEIGHT),
                     // Using existing wallet init mode as simplification for the test
                     walletInitMode = WalletInitMode.ExistingWallet
                 )

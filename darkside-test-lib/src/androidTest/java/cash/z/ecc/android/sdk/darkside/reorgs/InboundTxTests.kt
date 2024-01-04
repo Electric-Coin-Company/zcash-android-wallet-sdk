@@ -34,7 +34,7 @@ class InboundTxTests : ScopedTest() {
     @Ignore("Temporarily disabled")
     fun testTxCountAfter() {
         // add 2 transactions to block 663188 and 'mine' that block
-        addTransactions(targetTxBlock, tx663174, tx663188)
+        addTransactions(targetTxBlock, TX_663174, TX_663188)
         // sithLord.await(timeout = 30_000L, targetHeight = targetTxBlock)
         validator.validateTxCount(2)
     }
@@ -50,12 +50,12 @@ class InboundTxTests : ScopedTest() {
             .applyTipHeight(targetHeight)
     }
 
-    @Suppress("MaxLineLength")
+    @Suppress("MaxLineLength", "UnusedPrivateProperty", "ktlint:standard:max-line-length")
     companion object {
-        private const val blocksUrl = "https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/basic-reorg/before-reorg.txt"
-        private const val tx663174 = "https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/transactions/recv/0821a89be7f2fc1311792c3fa1dd2171a8cdfb2effd98590cbd5ebcdcfcf491f.txt"
-        private const val tx663188 = "https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/transactions/recv/15a677b6770c5505fb47439361d3d3a7c21238ee1a6874fdedad18ae96850590.txt"
-        private const val txIndexReorg = "https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/tx-index-reorg/t1.txt"
+        private const val BLOCKS_URL = "https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/basic-reorg/before-reorg.txt"
+        private const val TX_663174 = "https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/transactions/recv/0821a89be7f2fc1311792c3fa1dd2171a8cdfb2effd98590cbd5ebcdcfcf491f.txt"
+        private const val TX_663188 = "https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/transactions/recv/15a677b6770c5505fb47439361d3d3a7c21238ee1a6874fdedad18ae96850590.txt"
+        private const val TX_INDEX_REORG = "https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/tx-index-reorg/t1.txt"
         private val txSend =
             arrayOf(
                 "https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/transactions/t-shielded-spend.txt",
@@ -85,7 +85,7 @@ class InboundTxTests : ScopedTest() {
 
         private val firstBlock = BlockHeight.new(ZcashNetwork.Mainnet, 663150L)
         private val targetTxBlock = BlockHeight.new(ZcashNetwork.Mainnet, 663188L)
-        private const val lastBlockHash = "2fc7b4682f5ba6ba6f86e170b40f0aa9302e1d3becb2a6ee0db611ff87835e4a"
+        private const val LAST_BLOCK_HASH = "2fc7b4682f5ba6ba6f86e170b40f0aa9302e1d3becb2a6ee0db611ff87835e4a"
         private val sithLord = DarksideTestCoordinator()
         private val validator = sithLord.validator
         private val chainMaker = sithLord.chainMaker
@@ -96,7 +96,7 @@ class InboundTxTests : ScopedTest() {
             sithLord.enterTheDarkside()
 
             chainMaker
-                .resetBlocks(blocksUrl, startHeight = firstBlock, tipHeight = targetTxBlock)
+                .resetBlocks(BLOCKS_URL, startHeight = firstBlock, tipHeight = targetTxBlock)
                 .stageEmptyBlocks(firstBlock + 1, 100)
                 .applyTipHeight(BlockHeight.new(ZcashNetwork.Mainnet, targetTxBlock.value - 1))
 
