@@ -13,7 +13,10 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Gradle 8.5
 - Kotlin 1.9.21
 - Other dependency update
-
+- CheckpointTool now implements interface `CheckpointProvider`.
+- `CheckpointProvider` can injected to `SDKSynchronizer` internal methods `buildNew` and `buildNewBlocking` in tests
+- `DarksideCheckpointProvider` implements `CheckpointProvider` to provide TreeState 663150. 
+- `Checkpoint` is now `@VisibleForTesting`
 ## [2.0.3] - 2023-11-08
 
 ### Added

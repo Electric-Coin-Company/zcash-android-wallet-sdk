@@ -6,6 +6,7 @@ import cash.z.ecc.android.bip39.toSeed
 import cash.z.ecc.android.sdk.SdkSynchronizer
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.WalletInitMode
+import cash.z.ecc.android.sdk.internal.model.DarksideCheckpointProvider
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
@@ -62,13 +63,14 @@ class TestWallet(
     private val shieldedSpendingKey =
         runBlocking { DerivationTool.getInstance().deriveUnifiedSpendingKey(seed, network = network, account) }
     val synchronizer: SdkSynchronizer =
-        Synchronizer.newBlocking(
+        Synchronizer.buildNewBlocking(
             context,
             network,
             alias,
             endpoint,
             seed,
             startHeight,
+            cash.z.ecc.android.sdk.internal.model.DarksideCheckpointProvider(),
             // Using existing wallet init mode as simplification for the test
             walletInitMode = WalletInitMode.ExistingWallet
         ) as SdkSynchronizer

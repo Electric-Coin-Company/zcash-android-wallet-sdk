@@ -17,7 +17,7 @@ import java.util.Locale
 /**
  * Tool for loading checkpoints for the wallet, based on the height at which the wallet was born.
  */
-internal object CheckpointTool {
+internal object CheckpointTool: CheckpointProvider {
     // Behavior change implemented as a fix for issue #270.  Temporarily adding a boolean
     // that allows the change to be rolled back quickly if needed, although long-term
     // this flag should be removed.
@@ -28,7 +28,7 @@ internal object CheckpointTool {
      * Load the nearest checkpoint to the given birthday height. If null is given, then this
      * will load the most recent checkpoint available.
      */
-    suspend fun loadNearest(
+    override suspend fun loadNearest(
         context: Context,
         network: ZcashNetwork,
         birthdayHeight: BlockHeight?
@@ -42,7 +42,7 @@ internal object CheckpointTool {
      * Useful for when an exact checkpoint is needed, like for SAPLING_ACTIVATION_HEIGHT. In
      * most cases, loading the nearest checkpoint is preferred for privacy reasons.
      */
-    suspend fun loadExact(
+    override suspend fun loadExact(
         context: Context,
         network: ZcashNetwork,
         birthday: BlockHeight
