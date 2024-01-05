@@ -1,5 +1,6 @@
 package cash.z.ecc.android.sdk.model
 
+import cash.z.ecc.android.sdk.internal.ext.toHexReversed
 import cash.z.ecc.android.sdk.internal.model.DbTransactionOverview
 
 /**
@@ -28,6 +29,11 @@ data class TransactionOverview internal constructor(
     val transactionState: TransactionState
 ) {
     override fun toString() = "TransactionOverview"
+
+    /**
+     * @return Transaction ID in String obtained from `rawId`
+     */
+    fun txIdString() = rawId.byteArray.toHexReversed()
 
     companion object {
         internal fun new(
