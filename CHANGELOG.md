@@ -14,6 +14,10 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Kotlin 1.9.21
 - Other dependency update
 
+### Removed
+- Several internally unused exceptions from `Exceptions.kt`
+
+
 ## [2.0.3] - 2023-11-08
 
 ### Added
