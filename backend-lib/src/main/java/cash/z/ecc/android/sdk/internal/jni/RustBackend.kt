@@ -376,7 +376,7 @@ class RustBackend private constructor(
      */
     companion object {
         internal val rustLibraryLoader = NativeLibraryLoader("zcashwalletsdk")
-        private const val IS_USE_ZIP_317_FEES = false
+        private const val IS_USE_ZIP_317_FEES = true
 
         suspend fun loadLibrary() {
             rustLibraryLoader.load {
