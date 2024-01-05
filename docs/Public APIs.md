@@ -7,9 +7,9 @@ The SDK has a variety of public APIs that should be kept stable for SDK consumer
     1. Navigate to the root of the SDK checkout
     1. Run the Gradle task `./gradlew publishToMavenLocal`
 1. Modify the wallet app to build against the new SDK
-    1. Check out the [Zcash Android Wallet](https://github.com/zcash/zcash-android-wallet)
+    1. Check out the [Zashi Android Wallet](https://github.com/Electric-Coin-Company/zashi-android)
     1. Modify settings.gradle to additionally include `mavenLocal()` in the `dependencyResolutionManagement` block
-    1. Modify [Dependencies.kt](https://github.com/zcash/zcash-android-wallet/blob/master/buildSrc/src/main/java/cash/z/ecc/android/Dependencies.kt) to use the new SDK version defined in the first step
+    1. Modify the wallet dependency to use the new SDK version defined in the first step
 1. Navigate to the root of the wallet app checkout
 1. Build the wallet app and unit tests with the task `./gradlew assembleAndroidTest`
 1. Verify the build completes successfully
@@ -24,8 +24,8 @@ The SDK has a variety of public APIs that should be kept stable for SDK consumer
     1. Navigate to the root of the SDK checkout
     1. Run the Gradle task `./gradlew publishToMavenLocal`
 1. Modify the wallet app to build against the new SDK
-    1. Check out the [Zcash Android Wallet](https://github.com/zcash/zcash-android-wallet)
+    1. Check out the [Zashi Android Wallet](https://github.com/Electric-Coin-Company/zashi-android)
     1. Modify settings.gradle to additionally include `mavenLocal()` in the `dependencyResolutionManagement` block
-    1. Modify [Dependencies.kt](https://github.com/zcash/zcash-android-wallet/blob/master/buildSrc/src/main/java/cash/z/ecc/android/Dependencies.kt) to use the new SDK version defined in the first step
+    1. Modify the wallet dependency to use the new SDK version defined in the first step
 1. Install the wallet app using the new SDK
 1. Verify that the wallet behaves correctly (it should not act as if it is starting fresh; user data persisted by the old version of the SDK should still be present after SDK upgrade)
