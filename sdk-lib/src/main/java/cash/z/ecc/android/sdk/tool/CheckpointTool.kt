@@ -28,7 +28,7 @@ internal object CheckpointTool: CheckpointProvider {
      * Load the nearest checkpoint to the given birthday height. If null is given, then this
      * will load the most recent checkpoint available.
      */
-    suspend fun loadNearest(
+    override suspend fun loadNearest(
         context: Context,
         network: ZcashNetwork,
         birthdayHeight: BlockHeight?
@@ -42,7 +42,7 @@ internal object CheckpointTool: CheckpointProvider {
      * Useful for when an exact checkpoint is needed, like for SAPLING_ACTIVATION_HEIGHT. In
      * most cases, loading the nearest checkpoint is preferred for privacy reasons.
      */
-    suspend fun loadExact(
+    override suspend fun loadExact(
         context: Context,
         network: ZcashNetwork,
         birthday: BlockHeight
