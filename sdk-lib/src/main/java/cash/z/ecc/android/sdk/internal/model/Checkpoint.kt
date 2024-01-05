@@ -2,6 +2,7 @@ package cash.z.ecc.android.sdk.internal.model
 
 import cash.z.ecc.android.sdk.internal.ext.isInUIntRange
 import cash.z.ecc.android.sdk.model.BlockHeight
+import org.jetbrains.annotations.VisibleForTesting
 
 /**
  * Represents a checkpoint, which is used to speed sync times.
@@ -11,6 +12,7 @@ import cash.z.ecc.android.sdk.model.BlockHeight
  * @param epochSeconds the time of the block at [height].
  * @param tree the sapling tree corresponding to [height].
  */
+@VisibleForTesting
 internal data class Checkpoint(
     val height: BlockHeight,
     val hash: String,

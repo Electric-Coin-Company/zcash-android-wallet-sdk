@@ -21,6 +21,7 @@ import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
+import cash.z.ecc.android.sdk.tool.CheckpointProvider
 import cash.z.ecc.android.sdk.tool.CheckpointTool
 import cash.z.ecc.android.sdk.type.AddressType
 import cash.z.ecc.android.sdk.type.ConsensusMatchType
@@ -429,6 +430,7 @@ interface Synchronizer {
     }
 
     companion object {
+
         /**
          * Primary method that SDK clients will use to construct a synchronizer.
          *
@@ -476,6 +478,66 @@ interface Synchronizer {
             birthday: BlockHeight?,
             walletInitMode: WalletInitMode
         ): CloseableSynchronizer {
+            return buildNew(
+                context,
+                zcashNetwork,
+                alias,
+                lightWalletEndpoint,
+                seed,
+                birthday,
+                CheckpointProvider.fromLocalAssets(),
+                walletInitMode
+            )
+        }
+
+        /**
+         * An internal method method that SDK tests and implementations will use to construct a synchronizer.
+         *
+         * @param zcashNetwork the network to use.
+         *
+         * @param alias A string used to segregate multiple wallets in the filesystem.  This implies the string
+         * should not contain characters unsuitable for the platform's filesystem.  The default value is
+         * generally used unless an SDK client needs to support multiple wallets.
+         *
+         * @param lightWalletEndpoint Server endpoint.  See [cash.z.ecc.android.sdk.model.defaultForNetwork]. If a
+         * client wishes to change the server endpoint, the active synchronizer will need to be stopped and a new
+         * instance created with a new value.
+         *
+         * @param seed the wallet's seed phrase. This is required the first time a new wallet is set up. For
+         * subsequent calls, seed is only needed if [InitializerException.SeedRequired] is thrown.
+         *
+         * @param birthday Block height representing the "birthday" of the wallet.  When creating a new wallet, see
+         * [BlockHeight.ofLatestCheckpoint].  When restoring an existing wallet, use block height that was first used
+         * to create the wallet.  If that value is unknown, null is acceptable but will result in longer
+         * sync times.  After sync completes, the birthday can be determined from [Synchronizer.latestBirthdayHeight].
+         *
+         * @param walletInitMode a required parameter with one of [WalletInitMode] values. Use
+         * [WalletInitMode.NewWallet] when starting synchronizer for a newly created wallet. Or use
+         * [WalletInitMode.RestoreWallet] when restoring an existing wallet that was created at some point in the
+         * past. Or use the last [WalletInitMode.ExistingWallet] type for a wallet which is already initialized
+         * and needs follow-up block synchronization.
+         *
+         * @throws InitializerException.SeedRequired Indicates clients need to call this method again, providing the
+         * seed bytes.
+         *
+         * @throws IllegalStateException If multiple instances of synchronizer with the same network+alias are
+         * active at the same time.  Call `close` to finish one synchronizer before starting another one with the same
+         * network+alias.
+         *
+         * If customized initialization is required (e.g. for dependency injection or testing), see
+         * [DefaultSynchronizerFactory].
+         */
+        @Suppress("LongParameterList", "LongMethod")
+        internal suspend fun buildNew(
+            context: Context,
+            zcashNetwork: ZcashNetwork,
+            alias: String = ZcashSdk.DEFAULT_ALIAS,
+            lightWalletEndpoint: LightWalletEndpoint,
+            seed: ByteArray?,
+            birthday: BlockHeight?,
+            checkpointProvider: CheckpointProvider = CheckpointProvider.fromLocalAssets(),
+            walletInitMode: WalletInitMode
+        ): CloseableSynchronizer {
             val applicationContext = context.applicationContext
 
             validateAlias(alias)
@@ -483,7 +545,7 @@ interface Synchronizer {
             val saplingParamTool = SaplingParamTool.new(applicationContext)
 
             val loadedCheckpoint =
-                CheckpointTool.loadNearest(
+                checkpointProvider.loadNearest(
                     applicationContext,
                     zcashNetwork,
                     birthday ?: zcashNetwork.saplingActivationHeight
@@ -583,7 +645,38 @@ interface Synchronizer {
             walletInitMode: WalletInitMode
         ): CloseableSynchronizer =
             runBlocking {
-                new(context, zcashNetwork, alias, lightWalletEndpoint, seed, birthday, walletInitMode)
+                buildNew(
+                    context,
+                    zcashNetwork,
+                    alias,
+                    lightWalletEndpoint,
+                    seed,
+                    birthday,
+                    CheckpointProvider.fromLocalAssets(),
+                    walletInitMode
+                )
+            }
+
+        /**
+         * Effectively the same as [new] although designed to be a blocking call with better
+         * interoperability with Java clients.
+         *
+         * This is a blocking call, so it should not be called from the main thread.
+         */
+        @Suppress("LongParameterList")
+        internal fun buildNewBlocking(
+            context: Context,
+            zcashNetwork: ZcashNetwork,
+            alias: String = ZcashSdk.DEFAULT_ALIAS,
+            lightWalletEndpoint: LightWalletEndpoint,
+            seed: ByteArray?,
+            birthday: BlockHeight?,
+            checkpointProvider: CheckpointProvider = CheckpointProvider.fromLocalAssets(),
+            walletInitMode: WalletInitMode
+        ): CloseableSynchronizer =
+            runBlocking {
+                buildNew(context, zcashNetwork, alias, lightWalletEndpoint, seed, birthday, checkpointProvider,
+                    walletInitMode)
             }
 
         /**

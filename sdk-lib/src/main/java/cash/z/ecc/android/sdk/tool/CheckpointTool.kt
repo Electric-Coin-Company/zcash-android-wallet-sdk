@@ -17,7 +17,7 @@ import java.util.Locale
 /**
  * Tool for loading checkpoints for the wallet, based on the height at which the wallet was born.
  */
-internal object CheckpointTool {
+internal object CheckpointTool: CheckpointProvider {
     // Behavior change implemented as a fix for issue #270.  Temporarily adding a boolean
     // that allows the change to be rolled back quickly if needed, although long-term
     // this flag should be removed.
