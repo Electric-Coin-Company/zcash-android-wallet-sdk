@@ -1,3 +1,5 @@
+@file:Suppress("UnusedPrivateMember")
+
 package cash.z.ecc.android.sdk.exception
 
 import cash.z.ecc.android.sdk.internal.SaplingParameters
@@ -7,9 +9,6 @@ import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.FirstClassByteArray
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
-
-// TODO [#1248]: Clean up unused exceptions
-// TODO [#1248]: https://github.com/zcash/zcash-android-wallet-sdk/issues/1248
 
 /**
  * Marker for all custom exceptions from the SDK. Making it an interface would result in more typing
@@ -27,42 +26,6 @@ sealed class RustLayerException(message: String, cause: Throwable? = null) : Sdk
             "JNI. This might mean that the database has been corrupted and needs to be rebuilt. Verify that " +
             "blocks are not missing or have not been scanned out of order.",
         cause
-    )
-}
-
-/**
- * User-facing exceptions thrown by the transaction repository.
- */
-sealed class RepositoryException(message: String, cause: Throwable? = null) : SdkException(message, cause) {
-    object FalseStart : RepositoryException(
-        "The channel is closed. Note that once a repository has stopped it " +
-            "cannot be restarted. Verify that the repository is not being restarted."
-    )
-
-    object Unprepared : RepositoryException(
-        "Unprepared repository: Data cannot be accessed before the repository is prepared." +
-            " Ensure that things have been properly initialized. If you see this error it most" +
-            " likely means that you are accessing transactions or other data before starting the" +
-            " Synchronizer. Previously, this was a silent bug that would cause problems later." +
-            " Mostly, during database migrations. Now, we catch this early and explicitly prevent" +
-            " it from happening."
-    )
-}
-
-/**
- * High-level exceptions thrown by the synchronizer, which do not fall within the umbrella of a
- * child component.
- */
-sealed class SynchronizerException(message: String, cause: Throwable? = null) : SdkException(message, cause) {
-    object FalseStart : SynchronizerException(
-        "This synchronizer was already started. Multiple calls to start are not" +
-            "allowed and once a synchronizer has stopped it cannot be restarted."
-    )
-
-    object NotYetStarted : SynchronizerException(
-        "The synchronizer has not yet started. Verify that" +
-            " start has been called prior to this operation and that the coroutineScope is not" +
-            " being accessed before it is initialized."
     )
 }
 
@@ -97,9 +60,11 @@ sealed class CompactBlockProcessorException(message: String, cause: Throwable? =
         cause
     )
 
-    object NoAccount : CompactBlockProcessorException(
+    data object NoAccount : CompactBlockProcessorException(
         "Attempting to scan without an account. This is probably a setup error or a race condition."
-    )
+    ) {
+        private fun readResolve(): Any = NoAccount
+    }
 
     class FailedSynchronizationException(message: String, cause: Throwable) : CompactBlockProcessorException(
         "Common error while running the block synchronization. This is typically caused by a failed underlying " +
@@ -153,15 +118,6 @@ sealed class CompactBlockProcessorException(message: String, cause: Throwable? =
             "updating the client or switching servers."
     )
 
-    class MismatchedBranch(
-        clientBranch: String?,
-        serverBranch: String?,
-        networkName: String?
-    ) : CompactBlockProcessorException(
-            "Incompatible server: this client expects a server following consensus branch $clientBranch" +
-                " on $networkName but it was $serverBranch! Try updating the client or switching servers."
-        )
-
     class BadBlockHeight(serverBlockHeight: BlockHeightUnsafe) : CompactBlockProcessorException(
         "The server returned a block height of $serverBlockHeight which is not valid."
     )
@@ -203,10 +159,12 @@ sealed class BirthdayException(message: String, cause: Throwable? = null) : SdkE
  * Exceptions thrown by the initializer.
  */
 sealed class InitializeException(message: String, cause: Throwable? = null) : SdkException(message, cause) {
-    object SeedRequired : InitializeException(
+    data object SeedRequired : InitializeException(
         "A pending database migration requires the wallet's seed. Call this initialization " +
             "method again with the seed."
-    )
+    ) {
+        private fun readResolve(): Any = SeedRequired
+    }
 
     class FalseStart(cause: Throwable?) : InitializeException("Failed to initialize accounts due to: $cause", cause)
 
@@ -216,19 +174,23 @@ sealed class InitializeException(message: String, cause: Throwable? = null) : Sd
         cause
     )
 
-    object MissingBirthdayException : InitializeException(
+    data object MissingBirthdayException : InitializeException(
         "Expected a birthday for this wallet but failed to find one. This usually means that " +
             "wallet setup did not happen correctly. A workaround might be to interpret the " +
             "birthday,  based on the contents of the wallet data but it is probably better " +
             "not to mask this error because the root issue should be addressed."
-    )
+    ) {
+        private fun readResolve(): Any = MissingBirthdayException
+    }
 
     object MissingViewingKeyException : InitializeException(
         "Expected a unified viewingKey for this wallet but failed to find one. This usually means" +
             " that wallet setup happened incorrectly. A workaround might be to derive the" +
             " unified viewingKey from the seed or seedPhrase, if they exist, but it is probably" +
             " better not to mask this error because the root issue should be addressed."
-    )
+    ) {
+        private fun readResolve(): Any = MissingViewingKeyException
+    }
 
     class MissingAddressException(description: String, cause: Throwable? = null) : InitializeException(
         "Expected a $description address for this wallet but failed to find one. This usually" +
@@ -239,12 +201,14 @@ sealed class InitializeException(message: String, cause: Throwable? = null) : Sd
             if (cause != null) "\nCaused by: $cause" else ""
     )
 
-    object DatabasePathException :
+    data object DatabasePathException :
         InitializeException(
             "Critical failure to locate path for storing databases. Perhaps this device prevents" +
                 " apps from storing data? We cannot initialize the wallet unless we can store" +
                 " data."
-        )
+        ) {
+        private fun readResolve(): Any = DatabasePathException
+    }
 
     data class MissingDatabaseException(
         val network: ZcashNetwork,
@@ -259,31 +223,17 @@ sealed class InitializeException(message: String, cause: Throwable? = null) : Sd
             " Sapling activation on ${network.networkName} (${network.saplingActivationHeight})."
     )
 
-    object MissingDefaultBirthdayException : InitializeException(
+    data object MissingDefaultBirthdayException : InitializeException(
         "The birthday height is missing and it is unclear which value to use as a default."
-    )
+    ) {
+        private fun readResolve(): Any = MissingDefaultBirthdayException
+    }
 }
 
 /**
  * Exceptions thrown while interacting with lightwalletd.
  */
 sealed class LightWalletException(message: String, cause: Throwable? = null) : SdkException(message, cause) {
-    object InsecureConnection : LightWalletException(
-        "Error: attempted to connect to lightwalletd" +
-            " with an insecure connection! Plaintext connections are only allowed when the" +
-            " resource value for 'R.bool.lightwalletd_allow_very_insecure_connections' is true" +
-            " because this choice should be explicit."
-    )
-
-    class ConsensusBranchException(sdkBranch: String, lwdBranch: String) :
-        LightWalletException(
-            "Error: the lightwalletd server is using a consensus branch" +
-                " (branch: $lwdBranch) that does not match the transactions being created" +
-                " (branch: $sdkBranch). This probably means the SDK and Server are on two" +
-                " different chains, most likely because of a recent network upgrade (NU). Either" +
-                " update the SDK to match lightwalletd or use a lightwalletd that matches the SDK."
-        )
-
     class DownloadBlockException(code: Int, description: String?, cause: Throwable) : SdkException(
         "Failed to download block with code: $code due to: ${description ?: "-"}",
         cause
@@ -322,9 +272,11 @@ sealed class TransactionEncoderException(
         message: String
     ) : TransactionEncoderException("Failed to validate fetched params: $parameters, due to:$message")
 
-    object MissingParamsException : TransactionEncoderException(
+    data object MissingParamsException : TransactionEncoderException(
         "Cannot send funds due to missing spend or output params and attempting to download them failed."
-    )
+    ) {
+        private fun readResolve(): Any = MissingParamsException
+    }
 
     class TransactionNotFoundException(transactionId: FirstClassByteArray) : TransactionEncoderException(
         "Unable to find transactionId $transactionId in the repository. This means the wallet created a transaction " +
