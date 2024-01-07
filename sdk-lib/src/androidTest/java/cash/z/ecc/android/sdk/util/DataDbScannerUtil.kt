@@ -5,10 +5,9 @@ import cash.z.ecc.android.sdk.CloseableSynchronizer
 import cash.z.ecc.android.sdk.SdkSynchronizer
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.WalletInitMode
+import cash.z.ecc.android.sdk.fixture.LightWalletEndpointFixture
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.ZcashNetwork
-import cash.z.ecc.android.sdk.model.defaultForNetwork
-import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -69,9 +68,7 @@ class DataDbScannerUtil {
             Synchronizer.newBlocking(
                 context,
                 ZcashNetwork.Mainnet,
-                lightWalletEndpoint =
-                    LightWalletEndpoint
-                        .defaultForNetwork(ZcashNetwork.Mainnet),
+                lightWalletEndpoint = LightWalletEndpointFixture.newEndpointForNetwork(ZcashNetwork.Mainnet),
                 seed = byteArrayOf(),
                 birthday =
                     BlockHeight.new(

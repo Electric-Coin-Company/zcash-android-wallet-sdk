@@ -6,12 +6,12 @@ import cash.z.ecc.android.bip39.toSeed
 import cash.z.ecc.android.sdk.SdkSynchronizer
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.WalletInitMode
+import cash.z.ecc.android.sdk.fixture.LightWalletEndpointFixture
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.deriveUnifiedSpendingKey
 import cash.z.ecc.android.sdk.internal.jni.RustDerivationTool
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
-import cash.z.ecc.android.sdk.model.Testnet
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
@@ -35,7 +35,7 @@ class TestWallet(
     val seedPhrase: String,
     val alias: String = "TestWallet",
     val network: ZcashNetwork = ZcashNetwork.Testnet,
-    val endpoint: LightWalletEndpoint = LightWalletEndpoint.Testnet,
+    val endpoint: LightWalletEndpoint = LightWalletEndpointFixture.newEndpointForNetwork(ZcashNetwork.Testnet),
     startHeight: BlockHeight? = null
 ) {
     constructor(

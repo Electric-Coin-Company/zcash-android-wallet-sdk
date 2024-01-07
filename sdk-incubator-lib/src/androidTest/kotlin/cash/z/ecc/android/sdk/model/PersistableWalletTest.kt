@@ -124,8 +124,20 @@ class PersistableWalletTest {
         // Wallet version one deserialized by code supporting version two
         val persistableWallet = PersistableWallet.from(json)
         assertEquals(
-            LightWalletEndpoint.defaultForNetwork(persistableWallet.network),
+            getLightWalletEndpointForNetwork(persistableWallet.network),
             persistableWallet.endpoint
         )
+    }
+
+    @Test
+    @SmallTest
+    fun requireSecureMainnet() {
+        assertTrue(LightWalletEndpoint.Mainnet.isSecure)
+    }
+
+    @Test
+    @SmallTest
+    fun requireSecureTestnet() {
+        assertTrue(LightWalletEndpoint.Testnet.isSecure)
     }
 }

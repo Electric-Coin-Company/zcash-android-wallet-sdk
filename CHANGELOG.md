@@ -9,6 +9,11 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - `TransactionOverview.txIdString()` to provide a readable transaction ID to SDK-consuming apps
 
+### Removed
+- `LightWalletEndpointExt` and its functions and variables were removed from the SDK's public APIs entirely. It's 
+  preserved only for testing and wallet Demo app purposes. The calling wallet app should provide its own 
+  `LightWalletEndpoint` instance within `PersistableWallet` or `SdkSynchornizer` APIs.
+
 ### Changed
 - Gradle 8.5
 - Kotlin 1.9.21
