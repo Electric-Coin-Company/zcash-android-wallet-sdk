@@ -1,3 +1,5 @@
+@file:Suppress("UnusedPrivateMember")
+
 package cash.z.ecc.android.sdk.exception
 
 import cash.z.ecc.android.sdk.internal.SaplingParameters
