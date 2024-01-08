@@ -6,6 +6,8 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.4] - 2024-01-08
+
 ### Added
 - `TransactionOverview.txIdString()` to provide a readable transaction ID to SDK-consuming apps
 - `MonetarySeparators.current(locale: Locale? = null)` now accepts `Locale` on input to force separators locale. If 
@@ -20,10 +22,10 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Gradle 8.5
 - Kotlin 1.9.21
 - Other dependency update
+- Checkpoints update
 
 ### Removed
 - Several internally unused exceptions from `Exceptions.kt`
-
 
 ## [2.0.3] - 2023-11-08
 
