@@ -72,7 +72,7 @@ internal class TransactionEncoderImpl(
      *
      * @return true when the given address is a valid z-addr
      */
-    override suspend fun isValidShieldedAddress(address: String): Boolean = backend.isValidShieldedAddr(address)
+    override suspend fun isValidShieldedAddress(address: String): Boolean = backend.isValidSaplingAddr(address)
 
     /**
      * Utility function to help with validation. This is not called during [createTransaction]

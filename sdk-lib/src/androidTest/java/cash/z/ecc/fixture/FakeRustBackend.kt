@@ -110,7 +110,7 @@ internal class FakeRustBackend(
         recoverUntil: Long?
     ): JniUnifiedSpendingKey = error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 
-    override fun isValidShieldedAddr(addr: String): Boolean =
+    override fun isValidSaplingAddr(addr: String): Boolean =
         error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 
     override fun isValidTransparentAddr(addr: String): Boolean =

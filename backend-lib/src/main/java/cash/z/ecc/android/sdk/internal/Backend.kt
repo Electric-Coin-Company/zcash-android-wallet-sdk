@@ -58,7 +58,7 @@ interface Backend {
         recoverUntil: Long?
     ): JniUnifiedSpendingKey
 
-    fun isValidShieldedAddr(addr: String): Boolean
+    fun isValidSaplingAddr(addr: String): Boolean
 
     fun isValidTransparentAddr(addr: String): Boolean
 
