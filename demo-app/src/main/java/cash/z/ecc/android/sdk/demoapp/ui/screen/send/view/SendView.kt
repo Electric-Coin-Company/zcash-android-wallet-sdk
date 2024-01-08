@@ -49,6 +49,7 @@ import cash.z.ecc.android.sdk.model.ZecSendExt
 import cash.z.ecc.android.sdk.model.ZecString
 import cash.z.ecc.android.sdk.model.ZecStringExt
 import cash.z.ecc.android.sdk.model.toZecString
+import java.util.Locale
 
 @Preview(name = "Send")
 @Composable
@@ -112,7 +113,7 @@ private fun SendMainContent(
     onSend: (ZecSend) -> Unit
 ) {
     val context = LocalContext.current
-    val monetarySeparators = MonetarySeparators.current()
+    val monetarySeparators = MonetarySeparators.current(locale = Locale.US)
     val allowedCharacters = ZecString.allowedCharacters(monetarySeparators)
 
     var amountZecString by rememberSaveable {
