@@ -8,6 +8,7 @@ import cash.z.ecc.android.sdk.internal.model.WalletSummary
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.FirstClassByteArray
+import cash.z.ecc.android.sdk.model.Proposal
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.ZcashNetwork
@@ -23,16 +24,21 @@ internal interface TypesafeBackend {
     ): UnifiedSpendingKey
 
     @Suppress("LongParameterList")
-    suspend fun createToAddress(
+    suspend fun proposeTransfer(
         usk: UnifiedSpendingKey,
         to: String,
         value: Long,
         memo: ByteArray? = byteArrayOf()
-    ): FirstClassByteArray
+    ): Proposal
 
-    suspend fun shieldToAddress(
+    suspend fun proposeShielding(
         usk: UnifiedSpendingKey,
         memo: ByteArray? = byteArrayOf()
+    ): Proposal
+
+    suspend fun createProposedTransaction(
+        proposal: Proposal,
+        usk: UnifiedSpendingKey
     ): FirstClassByteArray
 
     suspend fun getCurrentAddress(account: Account): String

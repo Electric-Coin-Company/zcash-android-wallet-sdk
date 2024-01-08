@@ -5,6 +5,7 @@ import cash.z.ecc.android.sdk.internal.model.JniScanRange
 import cash.z.ecc.android.sdk.internal.model.JniSubtreeRoot
 import cash.z.ecc.android.sdk.internal.model.JniUnifiedSpendingKey
 import cash.z.ecc.android.sdk.internal.model.JniWalletSummary
+import cash.z.ecc.android.sdk.internal.model.ProposalUnsafe
 
 /**
  * Contract defining the exposed capabilities of the Rust backend.
@@ -19,18 +20,21 @@ interface Backend {
     suspend fun initBlockMetaDb(): Int
 
     @Suppress("LongParameterList")
-    suspend fun createToAddress(
+    suspend fun proposeTransfer(
         account: Int,
-        unifiedSpendingKey: ByteArray,
         to: String,
         value: Long,
         memo: ByteArray? = byteArrayOf()
-    ): ByteArray
+    ): ProposalUnsafe
 
-    suspend fun shieldToAddress(
+    suspend fun proposeShielding(
         account: Int,
-        unifiedSpendingKey: ByteArray,
         memo: ByteArray? = byteArrayOf()
+    ): ProposalUnsafe
+
+    suspend fun createProposedTransaction(
+        proposal: ProposalUnsafe,
+        unifiedSpendingKey: ByteArray
     ): ByteArray
 
     suspend fun decryptAndStoreTransaction(tx: ByteArray)
