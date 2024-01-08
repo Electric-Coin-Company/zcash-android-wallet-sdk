@@ -9,6 +9,7 @@ import cash.z.ecc.android.sdk.internal.model.WalletSummary
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.FirstClassByteArray
+import cash.z.ecc.android.sdk.model.Proposal
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
@@ -35,31 +36,40 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
     }
 
     @Suppress("LongParameterList")
-    override suspend fun createToAddress(
+    override suspend fun proposeTransfer(
         usk: UnifiedSpendingKey,
         to: String,
         value: Long,
         memo: ByteArray?
-    ): FirstClassByteArray =
-        FirstClassByteArray(
-            backend.createToAddress(
+    ): Proposal =
+        Proposal.fromUnsafe(
+            backend.proposeTransfer(
                 usk.account.value,
-                usk.copyBytes(),
                 to,
                 value,
                 memo
             )
         )
 
-    override suspend fun shieldToAddress(
+    override suspend fun proposeShielding(
         usk: UnifiedSpendingKey,
         memo: ByteArray?
+    ): Proposal =
+        Proposal.fromUnsafe(
+            backend.proposeShielding(
+                usk.account.value,
+                memo
+            )
+        )
+
+    override suspend fun createProposedTransaction(
+        proposal: Proposal,
+        usk: UnifiedSpendingKey
     ): FirstClassByteArray =
         FirstClassByteArray(
-            backend.shieldToAddress(
-                usk.account.value,
-                usk.copyBytes(),
-                memo
+            backend.createProposedTransaction(
+                proposal.toUnsafe(),
+                usk.copyBytes()
             )
         )
 

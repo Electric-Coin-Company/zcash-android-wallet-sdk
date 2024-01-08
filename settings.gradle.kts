@@ -231,6 +231,14 @@ dependencyResolutionManagement {
             )
 
             bundle(
+                "protobuf",
+                listOf(
+                    "grpc-kotlin",
+                    "grpc-protobuf",
+                )
+            )
+
+            bundle(
                 "androidx-compose-core",
                 listOf(
                     "androidx-compose-compiler",

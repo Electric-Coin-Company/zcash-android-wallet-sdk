@@ -137,12 +137,16 @@ internal class TransactionEncoderImpl(
         return try {
             saplingParamTool.ensureParams(saplingParamTool.properties.paramsDirectory)
             Twig.debug { "params exist! attempting to send..." }
-            backend.createToAddress(
-                usk,
-                toAddress,
-                amount.value,
-                memo
-            )
+            // TODO [#1359]: Expose the proposal in a way that enables querying its fee.
+            // TODO [#1359]: https://github.com/Electric-Coin-Company/zcash-android-wallet-sdk/issues/1359
+            val proposal =
+                backend.proposeTransfer(
+                    usk,
+                    toAddress,
+                    amount.value,
+                    memo
+                )
+            backend.createProposedTransaction(proposal, usk)
         } catch (t: Throwable) {
             Twig.debug(t) { "Caught exception while creating transaction." }
             throw t
@@ -159,10 +163,10 @@ internal class TransactionEncoderImpl(
         return try {
             saplingParamTool.ensureParams(saplingParamTool.properties.paramsDirectory)
             Twig.debug { "params exist! attempting to shield..." }
-            backend.shieldToAddress(
-                usk,
-                memo
-            )
+            // TODO [#1359]: Expose the proposal in a way that enables querying its fee.
+            // TODO [#1359]: https://github.com/Electric-Coin-Company/zcash-android-wallet-sdk/issues/1359
+            val proposal = backend.proposeShielding(usk, memo)
+            backend.createProposedTransaction(proposal, usk)
         } catch (t: Throwable) {
             // TODO [#680]: if this error matches: Insufficient balance (have 0, need 1000 including fee)
             //  then consider custom error that says no UTXOs existed to shield
