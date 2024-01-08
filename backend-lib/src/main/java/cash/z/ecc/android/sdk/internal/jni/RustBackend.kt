@@ -351,7 +351,7 @@ class RustBackend private constructor(
         )
     }
 
-    override fun isValidShieldedAddr(addr: String) = isValidShieldedAddress(addr, networkId = networkId)
+    override fun isValidSaplingAddr(addr: String) = isValidSaplingAddress(addr, networkId = networkId)
 
     override fun isValidTransparentAddr(addr: String) = isValidTransparentAddress(addr, networkId = networkId)
 
@@ -446,7 +446,7 @@ class RustBackend private constructor(
         private external fun isValidSpendingKey(bytes: ByteArray): Boolean
 
         @JvmStatic
-        private external fun isValidShieldedAddress(
+        private external fun isValidSaplingAddress(
             addr: String,
             networkId: Int
         ): Boolean
