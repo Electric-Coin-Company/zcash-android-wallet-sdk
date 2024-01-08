@@ -6,6 +6,7 @@ import cash.z.ecc.android.sdk.internal.model.JniScanRange
 import cash.z.ecc.android.sdk.internal.model.JniSubtreeRoot
 import cash.z.ecc.android.sdk.internal.model.JniUnifiedSpendingKey
 import cash.z.ecc.android.sdk.internal.model.JniWalletSummary
+import cash.z.ecc.android.sdk.internal.model.ProposalUnsafe
 
 internal class FakeRustBackend(
     override val networkId: Int,
@@ -80,20 +81,25 @@ internal class FakeRustBackend(
             "Intentionally not implemented in mocked FakeRustBackend implementation."
         )
 
-    override suspend fun createToAddress(
+    override suspend fun proposeTransfer(
         account: Int,
-        unifiedSpendingKey: ByteArray,
         to: String,
         value: Long,
         memo: ByteArray?
-    ): ByteArray {
+    ): ProposalUnsafe {
         TODO("Not yet implemented")
     }
 
-    override suspend fun shieldToAddress(
+    override suspend fun proposeShielding(
         account: Int,
-        unifiedSpendingKey: ByteArray,
         memo: ByteArray?
+    ): ProposalUnsafe {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun createProposedTransaction(
+        proposal: ProposalUnsafe,
+        unifiedSpendingKey: ByteArray
     ): ByteArray {
         TODO("Not yet implemented")
     }

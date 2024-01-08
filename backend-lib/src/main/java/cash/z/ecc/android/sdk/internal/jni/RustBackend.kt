@@ -9,6 +9,7 @@ import cash.z.ecc.android.sdk.internal.model.JniScanRange
 import cash.z.ecc.android.sdk.internal.model.JniSubtreeRoot
 import cash.z.ecc.android.sdk.internal.model.JniUnifiedSpendingKey
 import cash.z.ecc.android.sdk.internal.model.JniWalletSummary
+import cash.z.ecc.android.sdk.internal.model.ProposalUnsafe
 import kotlinx.coroutines.withContext
 import java.io.File
 
@@ -292,44 +293,57 @@ class RustBackend private constructor(
             )
         }
 
-    override suspend fun createToAddress(
+    override suspend fun proposeTransfer(
         account: Int,
-        unifiedSpendingKey: ByteArray,
         to: String,
         value: Long,
         memo: ByteArray?
-    ): ByteArray =
+    ): ProposalUnsafe =
         withContext(SdkDispatchers.DATABASE_IO) {
-            createToAddress(
-                dataDbFile.absolutePath,
-                unifiedSpendingKey,
-                to,
-                value,
-                memo ?: ByteArray(0),
-                spendParamsPath = saplingSpendFile.absolutePath,
-                outputParamsPath = saplingOutputFile.absolutePath,
-                networkId = networkId,
-                useZip317Fees = IS_USE_ZIP_317_FEES
+            ProposalUnsafe.parse(
+                proposeTransfer(
+                    dataDbFile.absolutePath,
+                    account,
+                    to,
+                    value,
+                    memo ?: ByteArray(0),
+                    networkId = networkId,
+                    useZip317Fees = IS_USE_ZIP_317_FEES
+                )
             )
         }
 
-    override suspend fun shieldToAddress(
+    override suspend fun proposeShielding(
         account: Int,
-        unifiedSpendingKey: ByteArray,
         memo: ByteArray?
-    ): ByteArray {
+    ): ProposalUnsafe {
         return withContext(SdkDispatchers.DATABASE_IO) {
-            shieldToAddress(
-                dataDbFile.absolutePath,
-                unifiedSpendingKey,
-                memo ?: ByteArray(0),
-                spendParamsPath = saplingSpendFile.absolutePath,
-                outputParamsPath = saplingOutputFile.absolutePath,
-                networkId = networkId,
-                useZip317Fees = IS_USE_ZIP_317_FEES
+            ProposalUnsafe.parse(
+                proposeShielding(
+                    dataDbFile.absolutePath,
+                    account,
+                    memo ?: ByteArray(0),
+                    networkId = networkId,
+                    useZip317Fees = IS_USE_ZIP_317_FEES
+                )
             )
         }
     }
+
+    override suspend fun createProposedTransaction(
+        proposal: ProposalUnsafe,
+        unifiedSpendingKey: ByteArray
+    ): ByteArray =
+        withContext(SdkDispatchers.DATABASE_IO) {
+            createProposedTransaction(
+                dataDbFile.absolutePath,
+                proposal.toByteArray(),
+                unifiedSpendingKey,
+                spendParamsPath = saplingSpendFile.absolutePath,
+                outputParamsPath = saplingOutputFile.absolutePath,
+                networkId = networkId
+            )
+        }
 
     override suspend fun putUtxo(
         tAddress: String,
@@ -563,28 +577,35 @@ class RustBackend private constructor(
 
         @JvmStatic
         @Suppress("LongParameterList")
-        private external fun createToAddress(
+        private external fun proposeTransfer(
             dbDataPath: String,
-            usk: ByteArray,
+            account: Int,
             to: String,
             value: Long,
             memo: ByteArray,
-            spendParamsPath: String,
-            outputParamsPath: String,
             networkId: Int,
             useZip317Fees: Boolean
         ): ByteArray
 
         @JvmStatic
         @Suppress("LongParameterList")
-        private external fun shieldToAddress(
+        private external fun proposeShielding(
             dbDataPath: String,
-            usk: ByteArray,
+            account: Int,
             memo: ByteArray,
-            spendParamsPath: String,
-            outputParamsPath: String,
             networkId: Int,
             useZip317Fees: Boolean
+        ): ByteArray
+
+        @JvmStatic
+        @Suppress("LongParameterList")
+        private external fun createProposedTransaction(
+            dbDataPath: String,
+            proposal: ByteArray,
+            usk: ByteArray,
+            spendParamsPath: String,
+            outputParamsPath: String,
+            networkId: Int
         ): ByteArray
 
         @JvmStatic

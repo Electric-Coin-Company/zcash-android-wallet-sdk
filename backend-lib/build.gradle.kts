@@ -1,3 +1,6 @@
+import com.google.protobuf.gradle.id
+import com.google.protobuf.gradle.proto
+
 plugins {
     id("com.android.library")
     id("org.jetbrains.kotlin.android")
@@ -5,6 +8,7 @@ plugins {
 
     id("org.jetbrains.dokka")
     id("org.mozilla.rust-android-gradle.rust-android")
+    id("com.google.protobuf")
 
     id("wtf.emulator.gradle")
     id("zcash-sdk.emulator-wtf-conventions")
@@ -56,6 +60,10 @@ android {
         }
     }
 
+    sourceSets.getByName("main") {
+        proto { srcDir("src/main/proto") }
+    }
+
     lint {
         baseline = File("lint-baseline.xml")
     }
@@ -94,10 +102,36 @@ cargo {
     }
 }
 
+protobuf {
+    protoc {
+        artifact = libs.protoc.compiler.get().asCoordinateString()
+    }
+    plugins {
+        id("java") {
+            artifact = libs.protoc.gen.java.get().asCoordinateString()
+        }
+    }
+    generateProtoTasks {
+        all().forEach {
+            it.plugins {
+                id("java") {
+                    option("lite")
+                }
+            }
+            it.builtins {
+                id("kotlin") {
+                    option("lite")
+                }
+            }
+        }
+    }
+}
+
 dependencies {
     api(projects.lightwalletClientLib)
 
     implementation(libs.androidx.annotation)
+    implementation(libs.bundles.protobuf)
 
     // Kotlin
     implementation(libs.kotlin.stdlib)
@@ -119,6 +153,12 @@ dependencies {
 }
 
 tasks {
+    getByName("preBuild").dependsOn(create("bugfixTask") {
+        doFirst {
+            mkdir("build/extracted-include-protos/main")
+        }
+    })
+
     /*
      * The Mozilla Rust Gradle plugin caches the native build data under the "target" directory,
      * which does not normally get deleted during a clean. The following task and dependency solves

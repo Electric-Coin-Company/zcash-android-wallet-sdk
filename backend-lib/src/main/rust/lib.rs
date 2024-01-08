@@ -1,4 +1,4 @@
-use std::convert::{TryFrom, TryInto};
+use std::convert::{Infallible, TryFrom, TryInto};
 use std::num::NonZeroU32;
 use std::panic;
 use std::path::Path;
@@ -24,8 +24,8 @@ use zcash_client_backend::{
         chain::{scan_cached_blocks, CommitmentTreeRoot},
         scanning::{ScanPriority, ScanRange},
         wallet::{
-            decrypt_and_store_transaction, input_selection::GreedyInputSelector,
-            shield_transparent_funds, spend,
+            create_proposed_transaction, decrypt_and_store_transaction,
+            input_selection::GreedyInputSelector, propose_shielding, propose_transfer,
         },
         AccountBalance, AccountBirthday, InputSource, WalletCommitmentTrees, WalletRead,
         WalletSummary, WalletWrite,
@@ -33,7 +33,7 @@ use zcash_client_backend::{
     encoding::AddressCodec,
     fees::{standard::SingleOutputChangeStrategy, DustOutputPolicy},
     keys::{DecodingError, Era, UnifiedAddressRequest, UnifiedFullViewingKey, UnifiedSpendingKey},
-    proto::service::TreeState,
+    proto::{proposal::Proposal, service::TreeState},
     wallet::{NoteId, OvkPolicy, WalletTransparentOutput},
     zip321::{Payment, TransactionRequest},
     ShieldedProtocol,
@@ -1370,29 +1370,25 @@ fn zip317_helper<DbT>(
 }
 
 #[no_mangle]
-pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_createToAddress<'local>(
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeTransfer<'local>(
     mut env: JNIEnv<'local>,
     _: JClass<'local>,
     db_data: JString<'local>,
-    usk: JByteArray<'local>,
+    account: jint,
     to: JString<'local>,
     value: jlong,
     memo: JByteArray<'local>,
-    spend_params: JString<'local>,
-    output_params: JString<'local>,
     network_id: jint,
     use_zip317_fees: jboolean,
 ) -> jbyteArray {
     let res = catch_unwind(&mut env, |env| {
         let network = parse_network(network_id as u32)?;
         let mut db_data = wallet_db(env, network, db_data)?;
-        let usk = decode_usk(&env, usk)?;
+        let account = account_id_from_jint(account)?;
         let to = utils::java_string_to_rust(env, &to);
         let value = NonNegativeAmount::from_nonnegative_i64(value)
             .map_err(|()| format_err!("Invalid amount, out of range"))?;
         let memo_bytes = env.convert_byte_array(memo).unwrap();
-        let spend_params = utils::java_string_to_rust(env, &spend_params);
-        let output_params = utils::java_string_to_rust(env, &output_params);
 
         let to = match Address::decode(&network, &to) {
             Some(to) => to,
@@ -1413,8 +1409,6 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_createToA
 
         let input_selector = zip317_helper(None, use_zip317_fees);
 
-        let prover = LocalTxProver::new(Path::new(&spend_params), Path::new(&output_params));
-
         let request = TransactionRequest::new(vec![Payment {
             recipient_address: to,
             amount: value,
@@ -1425,50 +1419,46 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_createToA
         }])
         .map_err(|e| format_err!("Error creating transaction request: {:?}", e))?;
 
-        let txid = spend(
+        let proposal = propose_transfer::<_, _, _, Infallible>(
             &mut db_data,
             &network,
-            &prover,
-            &prover,
+            account,
             &input_selector,
-            &usk,
             request,
-            OvkPolicy::Sender,
             ANCHOR_OFFSET,
         )
-        .map_err(|e| format_err!("Error while creating transaction: {}", e))?;
+        .map_err(|e| format_err!("Error creating transaction proposal: {}", e))?;
 
-        utils::rust_bytes_to_java(&env, txid.as_ref()).map(|arr| arr.into_raw())
+        utils::rust_bytes_to_java(
+            &env,
+            Proposal::from_standard_proposal(&network, &proposal)
+                .expect("transaction request should not be empty")
+                .encode_to_vec()
+                .as_ref(),
+        )
+        .map(|arr| arr.into_raw())
     });
     unwrap_exc_or(&mut env, res, ptr::null_mut())
 }
 
 #[no_mangle]
-pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_shieldToAddress<'local>(
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeShielding<'local>(
     mut env: JNIEnv<'local>,
     _: JClass<'local>,
     db_data: JString<'local>,
-    usk: JByteArray<'local>,
+    account: jint,
     memo: JByteArray<'local>,
-    spend_params: JString<'local>,
-    output_params: JString<'local>,
     network_id: jint,
     use_zip317_fees: jboolean,
 ) -> jbyteArray {
     let res = catch_unwind(&mut env, |env| {
         let network = parse_network(network_id as u32)?;
         let mut db_data = wallet_db(env, network, db_data)?;
-        let usk = decode_usk(&env, usk)?;
+        let account = account_id_from_jint(account)?;
         let memo_bytes = env.convert_byte_array(memo).unwrap();
-        let spend_params = utils::java_string_to_rust(env, &spend_params);
-        let output_params = utils::java_string_to_rust(env, &output_params);
 
         let min_confirmations = 0;
         let min_confirmations_for_heights = NonZeroU32::new(1).unwrap();
-
-        let account = db_data
-            .get_account_for_ufvk(&usk.to_unified_full_viewing_key())?
-            .ok_or_else(|| format_err!("Spending key not recognized."))?;
 
         let from_addrs: Vec<TransparentAddress> = db_data
             .get_target_and_anchor_heights(min_confirmations_for_heights)
@@ -1496,22 +1486,66 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_shieldToA
 
         let input_selector = zip317_helper(Some(MemoBytes::from(&memo)), use_zip317_fees);
 
-        let prover = LocalTxProver::new(Path::new(&spend_params), Path::new(&output_params));
-
         let shielding_threshold = NonNegativeAmount::from_u64(100000).unwrap();
 
-        let txid = shield_transparent_funds(
+        let proposal = propose_shielding::<_, _, _, Infallible>(
             &mut db_data,
             &network,
-            &prover,
-            &prover,
             &input_selector,
             shielding_threshold,
-            &usk,
             &from_addrs,
             min_confirmations,
         )
         .map_err(|e| format_err!("Error while shielding transaction: {}", e))?;
+
+        utils::rust_bytes_to_java(
+            &env,
+            Proposal::from_standard_proposal(&network, &proposal)
+                .expect("transaction request should not be empty")
+                .encode_to_vec()
+                .as_ref(),
+        )
+        .map(|arr| arr.into_raw())
+    });
+    unwrap_exc_or(&mut env, res, ptr::null_mut())
+}
+
+#[no_mangle]
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_createProposedTransaction<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _: JClass<'local>,
+    db_data: JString<'local>,
+    proposal: JByteArray<'local>,
+    usk: JByteArray<'local>,
+    spend_params: JString<'local>,
+    output_params: JString<'local>,
+    network_id: jint,
+) -> jbyteArray {
+    let res = catch_unwind(&mut env, |env| {
+        let network = parse_network(network_id as u32)?;
+        let mut db_data = wallet_db(env, network, db_data)?;
+        let usk = decode_usk(&env, usk)?;
+        let spend_params = utils::java_string_to_rust(env, &spend_params);
+        let output_params = utils::java_string_to_rust(env, &output_params);
+
+        let prover = LocalTxProver::new(Path::new(&spend_params), Path::new(&output_params));
+
+        let proposal = Proposal::decode(&env.convert_byte_array(proposal)?[..])
+            .map_err(|e| format_err!("Invalid proposal: {}", e))?
+            .try_into_standard_proposal(&network, &db_data)?;
+
+        let txid = create_proposed_transaction::<_, _, Infallible, _, _>(
+            &mut db_data,
+            &network,
+            &prover,
+            &prover,
+            &usk,
+            OvkPolicy::Sender,
+            &proposal,
+        )
+        .map_err(|e| format_err!("Error while creating transaction: {}", e))?;
 
         utils::rust_bytes_to_java(&env, txid.as_ref()).map(|arr| arr.into_raw())
     });
