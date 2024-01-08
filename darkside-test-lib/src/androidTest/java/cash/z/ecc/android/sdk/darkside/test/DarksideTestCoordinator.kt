@@ -2,9 +2,9 @@ package cash.z.ecc.android.sdk.darkside.test
 
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.platform.app.InstrumentationRegistry
+import cash.z.ecc.android.sdk.ext.Darkside
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
-import cash.z.ecc.android.sdk.model.Darkside
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import co.electriccoin.lightwallet.client.internal.DarksideApi
 import co.electriccoin.lightwallet.client.internal.new

@@ -14,7 +14,7 @@ import org.json.JSONObject
  * Represents everything needed to save and restore a wallet.
  *
  * @param network the network in which the wallet operates
- * @param endpoint the endpoint with witch the wallet communicates
+ * @param endpoint the endpoint with which the wallet communicates
  * @param birthday the birthday of the wallet
  * @param seedPhrase the seed phrase of the wallet
  * @param walletInitMode required parameter with one of [WalletInitMode] values. Use [WalletInitMode.NewWallet] when
@@ -25,7 +25,7 @@ import org.json.JSONObject
  */
 data class PersistableWallet(
     val network: ZcashNetwork,
-    val endpoint: LightWalletEndpoint = LightWalletEndpoint.defaultForNetwork(network),
+    val endpoint: LightWalletEndpoint,
     val birthday: BlockHeight?,
     val seedPhrase: SeedPhrase,
     val walletInitMode: WalletInitMode
@@ -82,7 +82,7 @@ data class PersistableWallet(
 
             when (val version = getVersion(jsonObject)) {
                 VERSION_1 -> {
-                    endpoint = LightWalletEndpoint.defaultForNetwork(network)
+                    endpoint = getLightWalletEndpointForNetwork(network)
                 }
                 VERSION_2 -> {
                     endpoint = getEndpoint(jsonObject)
@@ -139,7 +139,7 @@ data class PersistableWallet(
          * @return A new PersistableWallet with a random seed phrase.
          *
          * @param zcashNetwork the network in which the wallet operates
-         * @param endpoint the endpoint with witch the wallet communicates
+         * @param endpoint the endpoint with which the wallet communicates
          * @param walletInitMode required parameter with one of [WalletInitMode] values. Use [WalletInitMode.NewWallet]
          * when starting synchronizer for a newly created wallet. Or use [WalletInitMode.RestoreWallet] when
          * restoring an existing wallet that was created at some point in the past. Or use the last [WalletInitMode
@@ -149,7 +149,7 @@ data class PersistableWallet(
         suspend fun new(
             application: Application,
             zcashNetwork: ZcashNetwork,
-            endpoint: LightWalletEndpoint = LightWalletEndpoint.defaultForNetwork(zcashNetwork),
+            endpoint: LightWalletEndpoint,
             walletInitMode: WalletInitMode
         ): PersistableWallet {
             val birthday = BlockHeight.ofLatestCheckpoint(application, zcashNetwork)
@@ -200,3 +200,33 @@ private suspend fun newMnemonic() =
     }
 
 private suspend fun newSeedPhrase() = SeedPhrase(newMnemonic().map { it.concatToString() })
+
+/*
+ * The following functions and variables are package private only and preserved to support backward compatibility for
+ * [PersistableWallet] and testing purposes.
+ */
+internal fun getLightWalletEndpointForNetwork(zcashNetwork: ZcashNetwork): LightWalletEndpoint {
+    return when (zcashNetwork.id) {
+        ZcashNetwork.Mainnet.id -> LightWalletEndpoint.Mainnet
+        ZcashNetwork.Testnet.id -> LightWalletEndpoint.Testnet
+        else -> error("Unknown network id: ${zcashNetwork.id}")
+    }
+}
+
+private const val DEFAULT_PORT = 9067
+
+internal val LightWalletEndpoint.Companion.Mainnet
+    get() =
+        LightWalletEndpoint(
+            "mainnet.lightwalletd.com",
+            DEFAULT_PORT,
+            isSecure = true
+        )
+
+internal val LightWalletEndpoint.Companion.Testnet
+    get() =
+        LightWalletEndpoint(
+            "lightwalletd.testnet.electriccoin.co",
+            DEFAULT_PORT,
+            isSecure = true
+        )

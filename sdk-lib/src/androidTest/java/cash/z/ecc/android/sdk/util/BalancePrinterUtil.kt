@@ -4,15 +4,14 @@ import androidx.test.platform.app.InstrumentationRegistry
 import cash.z.ecc.android.sdk.CloseableSynchronizer
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.WalletInitMode
+import cash.z.ecc.android.sdk.fixture.LightWalletEndpointFixture
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.ext.deleteSuspend
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.ZcashNetwork
-import cash.z.ecc.android.sdk.model.defaultForNetwork
 import cash.z.ecc.android.sdk.test.readFileLinesInFlow
 import cash.z.ecc.android.sdk.tool.CheckpointTool
-import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.runBlocking
@@ -96,9 +95,7 @@ class BalancePrinterUtil {
                         Synchronizer.new(
                             context,
                             network,
-                            lightWalletEndpoint =
-                                LightWalletEndpoint
-                                    .defaultForNetwork(network),
+                            lightWalletEndpoint = LightWalletEndpointFixture.newEndpointForNetwork(network),
                             seed = seed,
                             birthday = birthdayHeight,
                             // Using existing wallet init mode as simplification for the test

@@ -7,7 +7,6 @@ import cash.z.ecc.android.sdk.annotation.TestPurpose
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.block.CompactBlockDownloader
 import cash.z.ecc.android.sdk.internal.repository.CompactBlockRepository
-import cash.z.ecc.android.sdk.model.Mainnet
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.test.ScopedTest
 import co.electriccoin.lightwallet.client.LightWalletClient
@@ -15,7 +14,6 @@ import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
 import co.electriccoin.lightwallet.client.model.Response
 import co.electriccoin.lightwallet.client.new
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertTrue
@@ -31,7 +29,7 @@ import kotlin.test.Ignore
 @SmallTest
 class ChangeServiceTest : ScopedTest() {
     val network = ZcashNetwork.Mainnet
-    val lightWalletEndpoint = LightWalletEndpoint.Mainnet
+    val lightWalletEndpoint = LightWalletEndpoint("mainnet.lightwalletd.com", 9067, true)
     private val eccEndpoint = LightWalletEndpoint("lightwalletd.electriccoin.co", 9087, true)
 
     @Mock
@@ -60,8 +58,7 @@ class ChangeServiceTest : ScopedTest() {
     }
 
     @Test
-    @OptIn(ExperimentalCoroutinesApi::class)
-    @Ignore
+    @Ignore("Disabled as not working currently")
     fun testSanityCheck() =
         runTest {
             // Test the result, only if there is no server communication problem.
