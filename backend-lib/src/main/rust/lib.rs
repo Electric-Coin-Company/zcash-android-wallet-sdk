@@ -31,7 +31,7 @@ use zcash_client_backend::{
         WalletSummary, WalletWrite,
     },
     encoding::AddressCodec,
-    fees::DustOutputPolicy,
+    fees::{standard::SingleOutputChangeStrategy, DustOutputPolicy},
     keys::{DecodingError, Era, UnifiedAddressRequest, UnifiedFullViewingKey, UnifiedSpendingKey},
     proto::service::TreeState,
     wallet::{NoteId, OvkPolicy, WalletTransparentOutput},
@@ -55,6 +55,7 @@ use zcash_primitives::{
     merkle_tree::HashSer,
     transaction::{
         components::{amount::NonNegativeAmount, Amount, OutPoint, TxOut},
+        fees::StandardFeeRule,
         Transaction, TxId,
     },
     zip32::{AccountId, DiversifierIndex},
@@ -64,16 +65,6 @@ use zcash_proofs::prover::LocalTxProver;
 use crate::utils::exception::unwrap_exc_or;
 
 mod utils;
-
-// Combine imports into common namespaces.
-mod fixed {
-    pub(super) use zcash_client_backend::fees::fixed::*;
-    pub(super) use zcash_primitives::transaction::fees::fixed::*;
-}
-mod zip317 {
-    pub(super) use zcash_client_backend::fees::zip317::*;
-    pub(super) use zcash_primitives::transaction::fees::zip317::*;
-}
 
 const ANCHOR_OFFSET_U32: u32 = 10;
 const ANCHOR_OFFSET: NonZeroU32 = unsafe { NonZeroU32::new_unchecked(ANCHOR_OFFSET_U32) };
@@ -1326,31 +1317,20 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_de
     unwrap_exc_or(&env, res, JNI_FALSE)
 }
 
-fn zip317_helper<Ctx, DbT, R>(
-    context: Ctx,
+fn zip317_helper<DbT>(
     change_memo: Option<MemoBytes>,
     use_zip317_fees: jboolean,
-    enabled: impl FnOnce(Ctx, GreedyInputSelector<DbT, zip317::SingleOutputChangeStrategy>) -> R,
-    disabled: impl FnOnce(Ctx, GreedyInputSelector<DbT, fixed::SingleOutputChangeStrategy>) -> R,
-) -> R {
-    if use_zip317_fees == JNI_TRUE {
-        let input_selector = GreedyInputSelector::new(
-            zip317::SingleOutputChangeStrategy::new(zip317::FeeRule::standard(), change_memo),
-            DustOutputPolicy::default(),
-        );
-
-        enabled(context, input_selector)
+) -> GreedyInputSelector<DbT, SingleOutputChangeStrategy> {
+    let fee_rule = if use_zip317_fees == JNI_TRUE {
+        StandardFeeRule::Zip317
     } else {
-        let input_selector = GreedyInputSelector::new(
-            fixed::SingleOutputChangeStrategy::new(
-                fixed::FeeRule::non_standard(zip317::MINIMUM_FEE),
-                change_memo,
-            ),
-            DustOutputPolicy::default(),
-        );
-
-        disabled(context, input_selector)
-    }
+        #[allow(deprecated)]
+        StandardFeeRule::PreZip313
+    };
+    GreedyInputSelector::new(
+        SingleOutputChangeStrategy::new(fee_rule, change_memo),
+        DustOutputPolicy::default(),
+    )
 }
 
 #[no_mangle]
@@ -1395,6 +1375,8 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_cr
             Address::Transparent(_) => None,
         };
 
+        let input_selector = zip317_helper(None, use_zip317_fees);
+
         let prover = LocalTxProver::new(Path::new(&spend_params), Path::new(&output_params));
 
         let request = TransactionRequest::new(vec![Payment {
@@ -1407,39 +1389,18 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_cr
         }])
         .map_err(|e| format_err!("Error creating transaction request: {:?}", e))?;
 
-        let txid = zip317_helper(
-            (&mut db_data, prover, request),
-            None,
-            use_zip317_fees,
-            |(wallet_db, prover, request), input_selector| {
-                spend(
-                    wallet_db,
-                    &network,
-                    &prover,
-                    &prover,
-                    &input_selector,
-                    &usk,
-                    request,
-                    OvkPolicy::Sender,
-                    ANCHOR_OFFSET,
-                )
-                .map_err(|e| format_err!("Error while creating transaction: {}", e))
-            },
-            |(wallet_db, prover, request), input_selector| {
-                spend(
-                    wallet_db,
-                    &network,
-                    &prover,
-                    &prover,
-                    &input_selector,
-                    &usk,
-                    request,
-                    OvkPolicy::Sender,
-                    ANCHOR_OFFSET,
-                )
-                .map_err(|e| format_err!("Error while creating transaction: {}", e))
-            },
-        )?;
+        let txid = spend(
+            &mut db_data,
+            &network,
+            &prover,
+            &prover,
+            &input_selector,
+            &usk,
+            request,
+            OvkPolicy::Sender,
+            ANCHOR_OFFSET,
+        )
+        .map_err(|e| format_err!("Error while creating transaction: {}", e))?;
 
         utils::rust_bytes_to_java(&env, txid.as_ref())
     });
@@ -1497,43 +1458,24 @@ pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_sh
 
         let memo = Memo::from_bytes(&memo_bytes).unwrap();
 
+        let input_selector = zip317_helper(Some(MemoBytes::from(&memo)), use_zip317_fees);
+
         let prover = LocalTxProver::new(Path::new(&spend_params), Path::new(&output_params));
 
         let shielding_threshold = NonNegativeAmount::from_u64(100000).unwrap();
 
-        let txid = zip317_helper(
-            (&mut db_data, prover),
-            Some(MemoBytes::from(&memo)),
-            use_zip317_fees,
-            |(wallet_db, prover), input_selector| {
-                shield_transparent_funds(
-                    wallet_db,
-                    &network,
-                    &prover,
-                    &prover,
-                    &input_selector,
-                    shielding_threshold,
-                    &usk,
-                    &from_addrs,
-                    min_confirmations,
-                )
-                .map_err(|e| format_err!("Error while shielding transaction: {}", e))
-            },
-            |(wallet_db, prover), input_selector| {
-                shield_transparent_funds(
-                    wallet_db,
-                    &network,
-                    &prover,
-                    &prover,
-                    &input_selector,
-                    shielding_threshold,
-                    &usk,
-                    &from_addrs,
-                    min_confirmations,
-                )
-                .map_err(|e| format_err!("Error while shielding transaction: {}", e))
-            },
-        )?;
+        let txid = shield_transparent_funds(
+            &mut db_data,
+            &network,
+            &prover,
+            &prover,
+            &input_selector,
+            shielding_threshold,
+            &usk,
+            &from_addrs,
+            min_confirmations,
+        )
+        .map_err(|e| format_err!("Error while shielding transaction: {}", e))?;
 
         utils::rust_bytes_to_java(&env, txid.as_ref())
     });
