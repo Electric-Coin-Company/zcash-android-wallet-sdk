@@ -211,7 +211,7 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
             blockMetadata
         )
 
-    override fun isValidShieldedAddr(addr: String): Boolean = backend.isValidShieldedAddr(addr)
+    override fun isValidSaplingAddr(addr: String): Boolean = backend.isValidSaplingAddr(addr)
 
     override fun isValidTransparentAddr(addr: String): Boolean = backend.isValidTransparentAddr(addr)
 

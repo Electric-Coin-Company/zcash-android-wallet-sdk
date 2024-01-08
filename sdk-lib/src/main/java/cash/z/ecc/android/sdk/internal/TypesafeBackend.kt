@@ -143,7 +143,7 @@ internal interface TypesafeBackend {
     @Throws(RuntimeException::class)
     suspend fun writeBlockMetadata(blockMetadata: List<JniBlockMeta>)
 
-    fun isValidShieldedAddr(addr: String): Boolean
+    fun isValidSaplingAddr(addr: String): Boolean
 
     fun isValidTransparentAddr(addr: String): Boolean
 
