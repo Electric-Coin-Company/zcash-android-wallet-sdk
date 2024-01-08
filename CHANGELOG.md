@@ -8,6 +8,8 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - `TransactionOverview.txIdString()` to provide a readable transaction ID to SDK-consuming apps
+- `MonetarySeparators.current(locale: Locale? = null)` now accepts `Locale` on input to force separators locale. If 
+  no value is provided, the default one is used. 
 
 ### Removed
 - `LightWalletEndpointExt` and its functions and variables were removed from the SDK's public APIs entirely. It's 

@@ -35,11 +35,17 @@ data class MonetarySeparators(val grouping: Char, val decimal: Char) {
 
     companion object {
         /**
+         * @param locale Preferred Locale for the returned monetary separators. If Locale is not provided, the
+         * default one will be used.
+         *
          * @return The current localized monetary separators.  Do not cache this value, as it
          * can change if the system Locale changes.
          */
-        fun current(): MonetarySeparators {
-            val decimalFormatSymbols = DecimalFormatSymbols.getInstance()
+        fun current(locale: Locale? = null): MonetarySeparators {
+            val decimalFormatSymbols =
+                locale?.let {
+                    DecimalFormatSymbols.getInstance(locale)
+                } ?: DecimalFormatSymbols.getInstance()
 
             return MonetarySeparators(
                 decimalFormatSymbols.groupingSeparator,
@@ -83,7 +89,6 @@ fun Zatoshi.Companion.fromZecString(
         }
     val localizedPattern = "#${monetarySeparators.grouping}##0${monetarySeparators.decimal}0#"
 
-    // TODO [#321]: https://github.com/zcash/secant-android-wallet/issues/321
     val decimalFormat =
         DecimalFormat(localizedPattern, symbols).apply {
             isParseBigDecimal = true
