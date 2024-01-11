@@ -18,7 +18,7 @@ runs:
         ANDROID_ROOT=/usr/local/lib/android
         ANDROID_SDK_ROOT=${ANDROID_ROOT}/sdk
         SDKMANAGER=${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager
-        echo "y" | $SDKMANAGER "ndk;22.1.7171670"
+        echo "y" | $SDKMANAGER "ndk;26.1.10909125"
     - name: Setup Rust
       shell: bash
       run: |
