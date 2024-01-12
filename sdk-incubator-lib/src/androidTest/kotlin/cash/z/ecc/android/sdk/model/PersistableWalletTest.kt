@@ -27,7 +27,7 @@ class PersistableWalletTest {
         assertTrue(jsonObject.has(PersistableWallet.KEY_BIRTHDAY))
 
         assertEquals(PersistableWallet.VERSION_2, jsonObject.getInt(PersistableWallet.KEY_VERSION))
-        assertEquals(ZcashNetwork.Testnet.id, jsonObject.getInt(PersistableWallet.KEY_NETWORK_ID))
+        assertEquals(ZcashNetwork.Mainnet.id, jsonObject.getInt(PersistableWallet.KEY_NETWORK_ID))
         assertEquals(
             PersistableWalletFixture.SEED_PHRASE.joinToString(),
             jsonObject.getString(PersistableWallet.KEY_SEED_PHRASE)

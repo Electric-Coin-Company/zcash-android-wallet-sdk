@@ -2,16 +2,16 @@ package cash.z.ecc.android.sdk.fixture
 
 import cash.z.ecc.android.sdk.WalletInitMode
 import cash.z.ecc.android.sdk.model.BlockHeight
+import cash.z.ecc.android.sdk.model.Mainnet
 import cash.z.ecc.android.sdk.model.PersistableWallet
 import cash.z.ecc.android.sdk.model.SeedPhrase
-import cash.z.ecc.android.sdk.model.Testnet
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
 
 object PersistableWalletFixture {
-    val NETWORK = ZcashNetwork.Testnet
+    val NETWORK = ZcashNetwork.Mainnet
 
-    val ENDPOINT = LightWalletEndpoint.Testnet
+    val ENDPOINT = LightWalletEndpoint.Mainnet
 
     // These came from the mainnet 1500000.json file
     @Suppress("MagicNumber")

@@ -6,6 +6,9 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- `WalletAddressFixture` fixture properties have been updated
+
 ## [2.0.4] - 2024-01-08
 
 ### Added
