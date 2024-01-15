@@ -4,12 +4,10 @@ import cash.z.ecc.android.sdk.model.WalletAddress
 
 object WalletAddressFixture {
     // These fixture values are derived from the secret defined in PersistableWalletFixture
-
-    const val UNIFIED_ADDRESS_STRING = "Unified GitHub Issue #161"
-
-    @Suppress("MaxLineLength")
-    const val SAPLING_ADDRESS_STRING = "zs1hf72k87gev2qnvg9228vn2xt97adfelju2hm2ap4xwrxkau5dz56mvkeseer3u8283wmy7skt4u"
-    const val TRANSPARENT_ADDRESS_STRING = "t1QZMTZaU1EwXppCLL5dR6U9y2M4ph3CSPK"
+    @Suppress("MaxLineLength", "ktlint:standard:max-line-length")
+    const val UNIFIED_ADDRESS_STRING = "u1l9f0l4348negsncgr9pxd9d3qaxagmqv3lnexcplmufpq7muffvfaue6ksevfvd7wrz7xrvn95rc5zjtn7ugkmgh5rnxswmcj30y0pw52pn0zjvy38rn2esfgve64rj5pcmazxgpyuj"
+    const val SAPLING_ADDRESS_STRING = "zs1vp7kvlqr4n9gpehztr76lcn6skkss9p8keqs3nv8avkdtjrcctrvmk9a7u494kluv756jeee5k0"
+    const val TRANSPARENT_ADDRESS_STRING = "t1dRJRY7GmyeykJnMH38mdQoaZtFhn1QmGz"
 
     suspend fun unified() = WalletAddress.Unified.new(UNIFIED_ADDRESS_STRING)
 
