@@ -1,7 +1,7 @@
 package cash.z.ecc.android.sdk.internal.model
 
-import cash.z.wallet.sdk.ffi.ProposalOuterClass.FeeRule
-import cash.z.wallet.sdk.ffi.ProposalOuterClass.Proposal
+import cash.z.wallet.sdk.internal.ffi.ProposalOuterClass.FeeRule
+import cash.z.wallet.sdk.internal.ffi.ProposalOuterClass.Proposal
 
 /**
  * A transaction proposal created by the Rust backend in response to a Kotlin request.
