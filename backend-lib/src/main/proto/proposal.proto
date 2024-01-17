@@ -4,6 +4,7 @@
 
 syntax = "proto3";
 package cash.z.wallet.sdk.ffi;
+option java_package = "cash.z.wallet.sdk.internal.ffi";
 
 // A data structure that describes the inputs to be consumed and outputs to
 // be produced in a proposed transaction.
