@@ -295,15 +295,10 @@ class CompactBlockProcessor internal constructor(
                     BlockProcessingResult.Reconnecting -> {
                         setState(State.Disconnected)
                         downloader.reconnect()
-
-                        // TODO [#1252]: Duplicated code in CompactBlockProcessor
-                        // TODO [#1252]: https://github.com/zcash/zcash-android-wallet-sdk/issues/1252
-                        val napTime = calculatePollInterval(true)
-                        Twig.debug {
-                            "Unable to process new blocks because we are disconnected! Attempting to " +
-                                "reconnect in ${napTime}ms"
-                        }
-                        delay(napTime)
+                        takeANap(
+                            "Unable to process new blocks because we are disconnected! Attempting to reconnect.",
+                            true
+                        )
                     }
                     BlockProcessingResult.RestartSynchronization -> {
                         Twig.info { "Planned restarting of block synchronization..." }
@@ -323,13 +318,7 @@ class CompactBlockProcessor internal constructor(
                             }
 
                         resetErrorCounters()
-
-                        val napTime = calculatePollInterval()
-                        Twig.info {
-                            "$summary Sleeping for ${napTime}ms " +
-                                "(latest height: ${_processorInfo.value.networkBlockHeight})."
-                        }
-                        delay(napTime)
+                        takeANap(summary, false)
                     }
                     is BlockProcessingResult.ContinuityError -> {
                         Twig.error {
@@ -346,11 +335,7 @@ class CompactBlockProcessor internal constructor(
                         }
                         val failed = checkErrorAndFail(result.failedAtHeight, result.error)
                         if (!failed) {
-                            val napTime = calculatePollInterval(true)
-                            Twig.info {
-                                "Sleeping for ${napTime}ms (latest height: ${_processorInfo.value.networkBlockHeight})."
-                            }
-                            delay(napTime)
+                            takeANap("", true)
                         }
                     }
                     is BlockProcessingResult.Success -> {
@@ -2097,6 +2082,18 @@ class CompactBlockProcessor internal constructor(
         val now = System.currentTimeMillis()
         val deltaToNextInterval = interval - (now + interval).rem(interval)
         return deltaToNextInterval.toDuration(DurationUnit.MILLISECONDS)
+    }
+
+    private suspend fun takeANap(
+        summary: String,
+        fastIntervalDesired: Boolean
+    ) {
+        val napTime = calculatePollInterval(fastIntervalDesired)
+        Twig.info {
+            "$summary Sleeping for ${napTime}ms " +
+                "(latest height: ${_processorInfo.value.networkBlockHeight})."
+        }
+        delay(napTime)
     }
 
     suspend fun calculateBirthdayHeight(): BlockHeight {
