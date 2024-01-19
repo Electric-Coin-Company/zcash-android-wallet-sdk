@@ -22,7 +22,7 @@ type ExceptionResult<T> = thread::Result<Result<T, Error>>;
 
 // Returns value or "throws" exception. `error_val` is returned, because exception will be thrown
 // at the Java side. So this function should be used only for the `panic::catch_unwind` result.
-pub fn unwrap_exc_or<T>(env: &JNIEnv, res: ExceptionResult<T>, error_val: T) -> T {
+pub fn unwrap_exc_or<T>(env: &mut JNIEnv, res: ExceptionResult<T>, error_val: T) -> T {
     match res {
         Ok(val) => {
             match val {
@@ -52,7 +52,7 @@ pub fn unwrap_exc_or<T>(env: &JNIEnv, res: ExceptionResult<T>, error_val: T) -> 
 
 // Calls a corresponding `JNIEnv` method, so exception will be thrown when execution returns to
 // the Java side.
-fn throw(env: &JNIEnv, description: &str) {
+fn throw(env: &mut JNIEnv, description: &str) {
     // We cannot throw exception from this function, so errors should be written in log instead.
     let exception = match env.find_class("java/lang/RuntimeException") {
         Ok(val) => val,

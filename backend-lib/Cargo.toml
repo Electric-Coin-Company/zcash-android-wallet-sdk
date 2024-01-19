@@ -15,7 +15,7 @@ failure = "0.1"
 hdwallet = "0.4"
 hdwallet-bitcoin = "0.4"
 hex = "0.4"
-jni = { version = "0.20", default-features = false }
+jni = { version = "0.21", default-features = false }
 prost = "0.12"
 rusqlite = "0.29"
 sapling = { package = "sapling-crypto", version = "0.0", default-features = false }
