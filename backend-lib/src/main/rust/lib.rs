@@ -305,6 +305,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustDerivationTool_de
     network_id: jint,
 ) -> jobject {
     let res = catch_unwind(&mut env, |env| {
+        let _span = tracing::info_span!("RustDerivationTool.deriveSpendingKey").entered();
         let network = parse_network(network_id as u32)?;
         let seed = SecretVec::new(env.convert_byte_array(seed).unwrap());
         let account = account_id_from_jint(account)?;
@@ -328,6 +329,8 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustDerivationTool_de
     network_id: jint,
 ) -> jobjectArray {
     let res = catch_unwind(&mut env, |env| {
+        let _span = tracing::info_span!("RustDerivationTool.deriveUnifiedFullViewingKeysFromSeed")
+            .entered();
         let network = parse_network(network_id as u32)?;
         let seed = env.convert_byte_array(seed).unwrap();
         let accounts = if accounts > 0 {
@@ -371,6 +374,8 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustDerivationTool_de
     network_id: jint,
 ) -> jstring {
     let res = panic::catch_unwind(|| {
+        let _span =
+            tracing::info_span!("RustDerivationTool.deriveUnifiedAddressFromSeed").entered();
         let network = parse_network(network_id as u32)?;
         let seed = env.convert_byte_array(seed).unwrap();
         let account_id = account_id_from_jint(account_index)?;
@@ -401,6 +406,8 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustDerivationTool_de
     network_id: jint,
 ) -> jstring {
     let res = catch_unwind(&mut env, |env| {
+        let _span =
+            tracing::info_span!("RustDerivationTool.deriveUnifiedAddressFromViewingKey").entered();
         let network = parse_network(network_id as u32)?;
         let ufvk_string = utils::java_string_to_rust(env, &ufvk_string);
         let ufvk = match UnifiedFullViewingKey::decode(&network, &ufvk_string) {
@@ -435,6 +442,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustDerivationTool_de
     network_id: jint,
 ) -> jstring {
     let res = panic::catch_unwind(|| {
+        let _span = tracing::info_span!("RustDerivationTool.deriveUnifiedFullViewingKey").entered();
         let usk = decode_usk(&env, usk)?;
         let network = parse_network(network_id as u32)?;
 
@@ -458,6 +466,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getCurren
     network_id: jint,
 ) -> jstring {
     let res = catch_unwind(&mut env, |env| {
+        let _span = tracing::info_span!("RustBackend.getCurrentAddress").entered();
         let network = parse_network(network_id as u32)?;
         let db_data = wallet_db(env, network, db_data)?;
         let account = account_id_from_jint(account)?;
@@ -502,6 +511,8 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getTransp
     ua: JString<'local>,
 ) -> jstring {
     let res = catch_unwind(&mut env, |env| {
+        let _span =
+            tracing::info_span!("RustBackend.getTransparentReceiverForUnifiedAddress").entered();
         let ua_str = utils::java_string_to_rust(env, &ua);
 
         let (network, ua) = match ZcashAddress::try_from_encoded(&ua_str) {
@@ -544,6 +555,8 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getSaplin
     ua: JString<'local>,
 ) -> jstring {
     let res = catch_unwind(&mut env, |env| {
+        let _span =
+            tracing::info_span!("RustBackend.getSaplingReceiverForUnifiedAddress").entered();
         let ua_str = utils::java_string_to_rust(env, &ua);
 
         let (network, ua) = match ZcashAddress::try_from_encoded(&ua_str) {
@@ -576,6 +589,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_isValidSp
     usk: JByteArray<'local>,
 ) -> jboolean {
     let res = panic::catch_unwind(|| {
+        let _span = tracing::info_span!("RustBackend.isValidSpendingKey").entered();
         let _usk = decode_usk(&env, usk)?;
         Ok(JNI_TRUE)
     });
@@ -592,6 +606,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_isValidSa
     network_id: jint,
 ) -> jboolean {
     let res = catch_unwind(&mut env, |env| {
+        let _span = tracing::info_span!("RustBackend.isValidSaplingAddress").entered();
         let network = parse_network(network_id as u32)?;
         let addr = utils::java_string_to_rust(env, &addr);
 
@@ -616,6 +631,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_isValidTr
     network_id: jint,
 ) -> jboolean {
     let res = catch_unwind(&mut env, |env| {
+        let _span = tracing::info_span!("RustBackend.isValidTransparentAddress").entered();
         let network = parse_network(network_id as u32)?;
         let addr = utils::java_string_to_rust(env, &addr);
 
@@ -640,6 +656,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_isValidUn
     network_id: jint,
 ) -> jboolean {
     let res = catch_unwind(&mut env, |env| {
+        let _span = tracing::info_span!("RustBackend.isValidUnifiedAddress").entered();
         let network = parse_network(network_id as u32)?;
         let addr = utils::java_string_to_rust(env, &addr);
 
@@ -665,6 +682,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getVerifi
     network_id: jint,
 ) -> jlong {
     let res = catch_unwind(&mut env, |env| {
+        let _span = tracing::info_span!("RustBackend.getVerifiedTransparentBalance").entered();
         let network = parse_network(network_id as u32)?;
         let db_data = wallet_db(env, network, db_data)?;
         let addr = utils::java_string_to_rust(env, &address);
@@ -705,6 +723,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getTotalT
     network_id: jint,
 ) -> jlong {
     let res = catch_unwind(&mut env, |env| {
+        let _span = tracing::info_span!("RustBackend.getTotalTransparentBalance").entered();
         let network = parse_network(network_id as u32)?;
         let db_data = wallet_db(env, network, db_data)?;
         let addr = utils::java_string_to_rust(env, &address);
@@ -746,6 +765,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getMemoAs
     network_id: jint,
 ) -> jstring {
     let res = catch_unwind(&mut env, |env| {
+        let _span = tracing::info_span!("RustBackend.getMemoAsUtf8").entered();
         let network = parse_network(network_id as u32)?;
         let db_data = wallet_db(env, network, db_data)?;
 
@@ -818,6 +838,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_writeBloc
     block_meta: JObjectArray<'local>,
 ) -> jboolean {
     let res = catch_unwind(&mut env, |env| {
+        let _span = tracing::info_span!("RustBackend.writeBlockMetadata").entered();
         let block_db = block_db(env, db_cache)?;
 
         let block_meta = {
@@ -853,6 +874,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getLatest
     fsblockdb_root: JString<'local>,
 ) -> jlong {
     let res = catch_unwind(&mut env, |env| {
+        let _span = tracing::info_span!("RustBackend.getLatestCacheHeight").entered();
         let block_db = block_db(env, fsblockdb_root)?;
 
         match block_db.get_max_cached_height() {
@@ -876,6 +898,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_findBlock
     height: jlong,
 ) -> jobject {
     let res = catch_unwind(&mut env, |env| {
+        let _span = tracing::info_span!("RustBackend.findBlockMetadata").entered();
         let block_db = block_db(env, fsblockdb_root)?;
         let height = BlockHeight::try_from(height)?;
 
@@ -901,6 +924,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_rewindBlo
     height: jlong,
 ) {
     let res = catch_unwind(&mut env, |env| {
+        let _span = tracing::info_span!("RustBackend.rewindBlockMetadataToHeight").entered();
         let block_db = block_db(env, fsblockdb_root)?;
         let height = BlockHeight::try_from(height)?;
 
@@ -928,6 +952,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getNeares
 ) -> jlong {
     #[allow(deprecated)]
     let res = catch_unwind(&mut env, |env| {
+        let _span = tracing::info_span!("RustBackend.getNearestRewindHeight").entered();
         if height < 100 {
             Ok(height)
         } else {
@@ -963,6 +988,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_rewindToH
     network_id: jint,
 ) -> jboolean {
     let res = catch_unwind(&mut env, |env| {
+        let _span = tracing::info_span!("RustBackend.rewindToHeight").entered();
         let network = parse_network(network_id as u32)?;
         let mut db_data = wallet_db(env, network, db_data)?;
 
@@ -1007,6 +1033,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_putSaplin
     network_id: jint,
 ) -> jboolean {
     let res = catch_unwind(&mut env, |env| {
+        let _span = tracing::info_span!("RustBackend.putSaplingSubtreeRoots").entered();
         let network = parse_network(network_id as u32)?;
         let mut db_data = wallet_db(env, network, db_data)?;
 
@@ -1046,6 +1073,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_updateCha
     network_id: jint,
 ) -> jboolean {
     let res = catch_unwind(&mut env, |env| {
+        let _span = tracing::info_span!("RustBackend.updateChainTip").entered();
         let network = parse_network(network_id as u32)?;
         let mut db_data = wallet_db(env, network, db_data)?;
         let height = BlockHeight::try_from(height)?;
@@ -1069,6 +1097,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getFullyS
     network_id: jint,
 ) -> jlong {
     let res = catch_unwind(&mut env, |env| {
+        let _span = tracing::info_span!("RustBackend.getFullyScannedHeight").entered();
         let network = parse_network(network_id as u32)?;
         let db_data = wallet_db(env, network, db_data)?;
 
@@ -1095,6 +1124,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getMaxSca
     network_id: jint,
 ) -> jlong {
     let res = catch_unwind(&mut env, |env| {
+        let _span = tracing::info_span!("RustBackend.getMaxScannedHeight").entered();
         let network = parse_network(network_id as u32)?;
         let db_data = wallet_db(env, network, db_data)?;
 
@@ -1185,6 +1215,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getWallet
     network_id: jint,
 ) -> jobject {
     let res = catch_unwind(&mut env, |env| {
+        let _span = tracing::info_span!("RustBackend.getWalletSummary").entered();
         let network = parse_network(network_id as u32)?;
         let db_data = wallet_db(env, network, db_data)?;
 
@@ -1236,6 +1267,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_suggestSc
     network_id: jint,
 ) -> jobjectArray {
     let res = catch_unwind(&mut env, |env| {
+        let _span = tracing::info_span!("RustBackend.suggestScanRanges").entered();
         let network = parse_network(network_id as u32)?;
         let db_data = wallet_db(env, network, db_data)?;
 
@@ -1288,6 +1320,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_scanBlock
     network_id: jint,
 ) -> jobject {
     let res = catch_unwind(&mut env, |env| {
+        let _span = tracing::info_span!("RustBackend.scanBlocks").entered();
         let network = parse_network(network_id as u32)?;
         let db_cache = block_db(env, db_cache)?;
         let mut db_data = wallet_db(env, network, db_data)?;
@@ -1323,6 +1356,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_putUtxo<'
     debug!("preparing to store UTXO in db_data");
     #[allow(deprecated)]
     let res = catch_unwind(&mut env, |env| {
+        let _span = tracing::info_span!("RustBackend.putUtxo").entered();
         let network = parse_network(network_id as u32)?;
         let txid_bytes = env.convert_byte_array(txid_bytes).unwrap();
         let mut txid = [0u8; 32];
@@ -1364,6 +1398,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_decryptAn
     network_id: jint,
 ) -> jboolean {
     let res = catch_unwind(&mut env, |env| {
+        let _span = tracing::info_span!("RustBackend.decryptAndStoreTransaction").entered();
         let network = parse_network(network_id as u32)?;
         let mut db_data = wallet_db(env, network, db_data)?;
         let tx_bytes = env.convert_byte_array(tx).unwrap();
@@ -1413,6 +1448,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeTr
     use_zip317_fees: jboolean,
 ) -> jbyteArray {
     let res = catch_unwind(&mut env, |env| {
+        let _span = tracing::info_span!("RustBackend.proposeTransfer").entered();
         let network = parse_network(network_id as u32)?;
         let mut db_data = wallet_db(env, network, db_data)?;
         let account = account_id_from_jint(account)?;
@@ -1483,6 +1519,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeSh
     use_zip317_fees: jboolean,
 ) -> jbyteArray {
     let res = catch_unwind(&mut env, |env| {
+        let _span = tracing::info_span!("RustBackend.proposeShielding").entered();
         let network = parse_network(network_id as u32)?;
         let mut db_data = wallet_db(env, network, db_data)?;
         let account = account_id_from_jint(account)?;
@@ -1555,6 +1592,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_createPro
     network_id: jint,
 ) -> jbyteArray {
     let res = catch_unwind(&mut env, |env| {
+        let _span = tracing::info_span!("RustBackend.createProposedTransaction").entered();
         let network = parse_network(network_id as u32)?;
         let mut db_data = wallet_db(env, network, db_data)?;
         let usk = decode_usk(&env, usk)?;
@@ -1591,6 +1629,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_branchIdF
     network_id: jint,
 ) -> jlong {
     let res = panic::catch_unwind(|| {
+        let _span = tracing::info_span!("RustBackend.branchIdForHeight").entered();
         let network = parse_network(network_id as u32)?;
         let branch: BranchId = BranchId::for_height(&network, BlockHeight::from(height as u32));
         let branch_id: u32 = u32::from(branch);
@@ -1639,6 +1678,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_listTrans
     network_id: jint,
 ) -> jobjectArray {
     let res = catch_unwind(&mut env, |env| {
+        let _span = tracing::info_span!("RustBackend.listTransparentReceivers").entered();
         let network = parse_network(network_id as u32)?;
         let zcash_network = network
             .address_network()
