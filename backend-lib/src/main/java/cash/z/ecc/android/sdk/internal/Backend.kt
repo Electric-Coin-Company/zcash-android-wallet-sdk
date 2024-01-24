@@ -2,6 +2,7 @@ package cash.z.ecc.android.sdk.internal
 
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.internal.model.JniScanRange
+import cash.z.ecc.android.sdk.internal.model.JniScanSummary
 import cash.z.ecc.android.sdk.internal.model.JniSubtreeRoot
 import cash.z.ecc.android.sdk.internal.model.JniUnifiedSpendingKey
 import cash.z.ecc.android.sdk.internal.model.JniWalletSummary
@@ -152,7 +153,7 @@ interface Backend {
     suspend fun scanBlocks(
         fromHeight: Long,
         limit: Long
-    )
+    ): JniScanSummary
 
     /**
      * @throws RuntimeException as a common indicator of the operation failure
