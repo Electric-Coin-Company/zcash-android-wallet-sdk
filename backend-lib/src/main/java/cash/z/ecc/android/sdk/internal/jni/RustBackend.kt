@@ -6,6 +6,7 @@ import cash.z.ecc.android.sdk.internal.ext.deleteRecursivelySuspend
 import cash.z.ecc.android.sdk.internal.ext.deleteSuspend
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.internal.model.JniScanRange
+import cash.z.ecc.android.sdk.internal.model.JniScanSummary
 import cash.z.ecc.android.sdk.internal.model.JniSubtreeRoot
 import cash.z.ecc.android.sdk.internal.model.JniUnifiedSpendingKey
 import cash.z.ecc.android.sdk.internal.model.JniWalletSummary
@@ -272,7 +273,7 @@ class RustBackend private constructor(
     override suspend fun scanBlocks(
         fromHeight: Long,
         limit: Long
-    ) {
+    ): JniScanSummary {
         return withContext(SdkDispatchers.DATABASE_IO) {
             scanBlocks(
                 fsBlockDbRoot.absolutePath,
@@ -566,7 +567,7 @@ class RustBackend private constructor(
             fromHeight: Long,
             limit: Long,
             networkId: Int
-        )
+        ): JniScanSummary
 
         @JvmStatic
         private external fun decryptAndStoreTransaction(

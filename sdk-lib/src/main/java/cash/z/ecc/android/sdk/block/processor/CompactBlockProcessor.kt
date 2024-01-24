@@ -1346,7 +1346,7 @@ class CompactBlockProcessor internal constructor(
          * @return Flow of [BatchSyncProgress] sync and enhancement results
          */
         @VisibleForTesting
-        @Suppress("LongParameterList", "LongMethod")
+        @Suppress("CyclomaticComplexMethod", "LongParameterList", "LongMethod")
         internal suspend fun runSyncingAndEnhancingOnRange(
             backend: TypesafeBackend,
             downloader: CompactBlockDownloader,
@@ -1416,17 +1416,25 @@ class CompactBlockProcessor internal constructor(
                     }.map { scanResult ->
                         Twig.debug { "Scan stage done with result: $scanResult" }
 
-                        if (scanResult.stageResult != SyncingResult.ScanSuccess) {
-                            scanResult
-                        } else {
-                            // Run deletion stage
-                            SyncStageResult(
-                                scanResult.batch,
-                                deleteFilesOfBatchOfBlocks(
-                                    downloader = downloader,
-                                    batch = scanResult.batch
+                        when (scanResult.stageResult) {
+                            is SyncingResult.ScanSuccess -> {
+                                // TODO [#1369]: Use the scan summary to trigger balance updates.
+                                // TODO [#1369]: https://github.com/Electric-Coin-Company/zcash-android-wallet-sdk/issues/1369
+                                val scannedRange = scanResult.stageResult.summary.scannedRange
+                                assert(scanResult.batch.range.start <= scannedRange.start)
+                                assert(scannedRange.endInclusive <= scanResult.batch.range.endInclusive)
+
+                                // Run deletion stage
+                                SyncStageResult(
+                                    scanResult.batch,
+                                    deleteFilesOfBatchOfBlocks(
+                                        downloader = downloader,
+                                        batch = scanResult.batch
+                                    )
                                 )
-                            )
+                            } else -> {
+                                scanResult
+                            }
                         }
                     }.onEach { continuousResult ->
                         Twig.debug { "Deletion stage done with result: $continuousResult" }
@@ -1614,7 +1622,7 @@ class CompactBlockProcessor internal constructor(
             }.onFailure {
                 Twig.error { "Failed while scanning batch $batch with $it" }
             }.fold(
-                onSuccess = { SyncingResult.ScanSuccess },
+                onSuccess = { SyncingResult.ScanSuccess(it) },
                 onFailure = {
                     // Check if the error is continuity type
                     if (it.isScanContinuityError()) {

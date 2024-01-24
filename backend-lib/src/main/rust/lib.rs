@@ -21,7 +21,7 @@ use zcash_address::{ToAddress, ZcashAddress};
 use zcash_client_backend::{
     address::{Address, UnifiedAddress},
     data_api::{
-        chain::{scan_cached_blocks, CommitmentTreeRoot},
+        chain::{scan_cached_blocks, CommitmentTreeRoot, ScanSummary},
         scanning::{ScanPriority, ScanRange},
         wallet::{
             create_proposed_transaction, decrypt_and_store_transaction,
@@ -1245,6 +1245,23 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_suggestSc
     unwrap_exc_or(&mut env, res, ptr::null_mut())
 }
 
+fn encode_scan_summary<'a>(
+    env: &mut JNIEnv<'a>,
+    scan_summary: ScanSummary,
+) -> Result<JObject<'a>, failure::Error> {
+    let scanned_range = scan_summary.scanned_range();
+    Ok(env.new_object(
+        "cash/z/ecc/android/sdk/internal/model/JniScanSummary",
+        "(JJJJ)V",
+        &[
+            i64::from(u32::from(scanned_range.start)).into(),
+            i64::from(u32::from(scanned_range.end)).into(),
+            i64::try_from(scan_summary.spent_sapling_note_count())?.into(),
+            i64::try_from(scan_summary.received_sapling_note_count())?.into(),
+        ],
+    )?)
+}
+
 #[no_mangle]
 pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_scanBlocks<'local>(
     mut env: JNIEnv<'local>,
@@ -1254,7 +1271,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_scanBlock
     from_height: jlong,
     limit: jlong,
     network_id: jint,
-) -> jboolean {
+) -> jobject {
     let res = catch_unwind(&mut env, |env| {
         let network = parse_network(network_id as u32)?;
         let db_cache = block_db(env, db_cache)?;
@@ -1263,8 +1280,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_scanBlock
         let limit = usize::try_from(limit)?;
 
         match scan_cached_blocks(&network, &db_cache, &mut db_data, from_height, limit) {
-            // TODO: Return ScanSummary.
-            Ok(_) => Ok(JNI_TRUE),
+            Ok(scan_summary) => Ok(encode_scan_summary(env, scan_summary)?.into_raw()),
             Err(e) => Err(format_err!(
                 "Rust error while scanning blocks (limit {:?}): {}",
                 limit,
@@ -1272,7 +1288,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_scanBlock
             )),
         }
     });
-    unwrap_exc_or(&mut env, res, JNI_FALSE)
+    unwrap_exc_or(&mut env, res, ptr::null_mut())
 }
 
 #[no_mangle]
