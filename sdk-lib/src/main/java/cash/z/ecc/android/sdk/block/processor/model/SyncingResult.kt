@@ -3,6 +3,7 @@ package cash.z.ecc.android.sdk.block.processor.model
 import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor
 import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
+import cash.z.ecc.android.sdk.internal.model.ScanSummary
 import cash.z.ecc.android.sdk.model.BlockHeight
 
 /**
@@ -35,7 +36,9 @@ internal sealed class SyncingResult {
         override val exception: CompactBlockProcessorException
     ) : Failure, SyncingResult()
 
-    object ScanSuccess : SyncingResult()
+    data class ScanSuccess(
+        val summary: ScanSummary
+    ) : SyncingResult()
 
     data class ScanFailed(
         override val failedAtHeight: BlockHeight,
