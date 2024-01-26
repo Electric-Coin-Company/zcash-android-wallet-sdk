@@ -1,10 +1,14 @@
 package cash.z.ecc.android.sdk.internal.model
 
 import cash.z.ecc.android.sdk.model.Account
+import cash.z.ecc.android.sdk.model.BlockHeight
 
 internal data class WalletSummary(
     val accountBalances: Map<Account, AccountBalance>,
-    val scanProgress: ScanProgress
+    val chainTipHeight: BlockHeight,
+    val fullyScannedHeight: BlockHeight,
+    val scanProgress: ScanProgress,
+    val nextSaplingSubtreeIndex: Long
 ) {
     companion object {
         fun new(jni: JniWalletSummary): WalletSummary {
@@ -13,7 +17,10 @@ internal data class WalletSummary(
                     jni.accountBalances.associateBy({ Account(it.account) }, {
                         AccountBalance.new(it)
                     }),
-                scanProgress = ScanProgress.new(jni)
+                chainTipHeight = BlockHeight(jni.chainTipHeight),
+                fullyScannedHeight = BlockHeight(jni.fullyScannedHeight),
+                scanProgress = ScanProgress.new(jni),
+                nextSaplingSubtreeIndex = jni.nextSaplingSubtreeIndex
             )
         }
     }
