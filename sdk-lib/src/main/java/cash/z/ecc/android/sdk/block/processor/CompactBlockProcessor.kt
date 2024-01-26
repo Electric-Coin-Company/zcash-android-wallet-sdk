@@ -20,7 +20,6 @@ import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException.EnhanceTr
 import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException.MismatchedNetwork
 import cash.z.ecc.android.sdk.exception.InitializeException
 import cash.z.ecc.android.sdk.exception.LightWalletException
-import cash.z.ecc.android.sdk.exception.RustLayerException
 import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.ext.ZcashSdk.MAX_BACKOFF_INTERVAL
 import cash.z.ecc.android.sdk.ext.ZcashSdk.POLL_INTERVAL
@@ -49,7 +48,6 @@ import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.PercentDecimal
 import cash.z.ecc.android.sdk.model.WalletBalance
-import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.GetAddressUtxosReplyUnsafe
@@ -460,15 +458,7 @@ class CompactBlockProcessor internal constructor(
                 enhanceStartHeight = firstUnenhancedHeight
             ).collect { batchSyncProgress ->
                 // Update sync progress and wallet balance
-                when (val result = getWalletSummary(backend)) {
-                    is GetWalletSummaryResult.Success -> {
-                        val resultProgress = result.scanProgressPercentDecimal()
-                        Twig.info { "Progress from rust: ${resultProgress.decimal}" }
-                        setProgress(resultProgress)
-                        updateAllBalances(result.walletSummary)
-                    }
-                    else -> { /* Do not report the progress and balances in case of any error */ }
-                }
+                refreshWalletSummary()
 
                 when (batchSyncProgress.resultState) {
                     SyncingResult.UpdateBirthday -> {
@@ -565,15 +555,7 @@ class CompactBlockProcessor internal constructor(
                 enhanceStartHeight = firstUnenhancedHeight
             ).map { batchSyncProgress ->
                 // Update sync progress and wallet balance
-                when (val result = getWalletSummary(backend)) {
-                    is GetWalletSummaryResult.Success -> {
-                        val resultProgress = result.scanProgressPercentDecimal()
-                        Twig.info { "Progress from rust: ${resultProgress.decimal}" }
-                        setProgress(resultProgress)
-                        updateAllBalances(result.walletSummary)
-                    }
-                    else -> { /* Do not report the progress and balances in case of any error */ }
-                }
+                refreshWalletSummary()
 
                 when (batchSyncProgress.resultState) {
                     SyncingResult.UpdateBirthday -> {
@@ -734,26 +716,6 @@ class CompactBlockProcessor internal constructor(
     }
 
     /**
-     * Calculate the latest balances, based on the blocks that have been scanned and transmit this
-     * information into the related internal flows. Note that the Orchard balance is not supported.
-     */
-    internal suspend fun checkAllBalances() {
-        checkSaplingBalance()
-        checkTransparentBalance()
-        // TODO [#682]: refresh orchard balance
-        // TODO [#682]: https://github.com/zcash/zcash-android-wallet-sdk/issues/682
-    }
-
-    /**
-     * Calculate the latest Sapling balance, based on the blocks that have been scanned and transmit this
-     * information into the internal [saplingBalances] flow.
-     */
-    internal suspend fun checkSaplingBalance() {
-        Twig.debug { "Checking Sapling balance" }
-        saplingBalances.value = getBalanceInfo(Account.DEFAULT)
-    }
-
-    /**
      * Calculate the latest Transparent balance, based on the blocks that have been scanned and transmit this
      * information into the internal [transparentBalances] flow.
      */
@@ -774,6 +736,22 @@ class CompactBlockProcessor internal constructor(
             // TODO [#682]: https://github.com/zcash/zcash-android-wallet-sdk/issues/682
         }
         checkTransparentBalance()
+    }
+
+    /**
+     * Refreshes the SDK's wallet summary from the Rust backend, and transmits this information
+     * into the related internal flows. Note that the Orchard balance is not yet supported.
+     */
+    internal suspend fun refreshWalletSummary() {
+        when (val result = getWalletSummary(backend)) {
+            is GetWalletSummaryResult.Success -> {
+                val resultProgress = result.scanProgressPercentDecimal()
+                Twig.info { "Progress from rust: ${resultProgress.decimal}" }
+                setProgress(resultProgress)
+                updateAllBalances(result.walletSummary)
+            }
+            else -> { /* Do not report the progress and balances in case of any error */ }
+        }
     }
 
     sealed class BlockProcessingResult {
@@ -2116,36 +2094,6 @@ class CompactBlockProcessor internal constructor(
                 BlockHeight.new(network, oldestTransactionHeightValue)
             }
         } ?: lowerBoundHeight
-    }
-
-    /**
-     * Calculates the latest balance info.
-     *
-     * @param account the account to check for balance info.
-     *
-     * @return an instance of WalletBalance containing information about available and total funds.
-     *
-     * @throws RustLayerException.BalanceException if any error occurs while getting the balances via the Rust layer
-     */
-    suspend fun getBalanceInfo(account: Account): WalletBalance {
-        return runCatching {
-            val walletSummary = backend.getWalletSummary()
-            val accountBalance = walletSummary?.accountBalances?.get(account)
-            // `None` means that the caller has not yet called `updateChainTip` on a
-            // brand-new wallet, so we can assume the balance is zero.
-            val saplingBalance =
-                accountBalance?.sapling ?: WalletBalance(
-                    total = Zatoshi(0L),
-                    available = Zatoshi(0L)
-                )
-            Twig.info { "Found total balance: ${saplingBalance.total}" }
-            Twig.info { "Found available balance: ${saplingBalance.available}" }
-            saplingBalance
-        }.onFailure {
-            Twig.error(it) { "Failed to get balance due to ${it.localizedMessage}" }
-        }.getOrElse {
-            throw RustLayerException.BalanceException(it)
-        }
     }
 
     suspend fun getUtxoCacheBalance(address: String): WalletBalance = backend.getDownloadedUtxoBalance(address)
