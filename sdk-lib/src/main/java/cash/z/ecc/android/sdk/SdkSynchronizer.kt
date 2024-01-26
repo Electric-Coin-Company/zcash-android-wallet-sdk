@@ -363,26 +363,10 @@ class SdkSynchronizer private constructor(
      * because of the current limited Orchard support.
      */
     suspend fun refreshAllBalances() {
-        processor.checkAllBalances()
+        processor.refreshWalletSummary()
         // TODO [#682]: refresh orchard balance
         // TODO [#682]: https://github.com/zcash/zcash-android-wallet-sdk/issues/682
         Twig.warn { "Warning: Orchard balance does not yet refresh. Only some of the plumbing is in place." }
-    }
-
-    /**
-     * Calculate the latest Sapling balance based on the blocks that have been scanned and transmit this information
-     * into the [saplingBalances] flow.
-     */
-    suspend fun refreshSaplingBalance() {
-        processor.checkSaplingBalance()
-    }
-
-    /**
-     * Calculate the latest Transparent balance based on the blocks that have been scanned and transmit this information
-     * into the [saplingBalances] flow.
-     */
-    suspend fun refreshTransparentBalance() {
-        processor.checkTransparentBalance()
     }
 
     suspend fun isValidAddress(address: String): Boolean {
