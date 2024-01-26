@@ -1117,13 +1117,21 @@ fn encode_account_balance<'a>(
     let sapling_total_balance = Amount::from(balance.sapling_balance().total());
     let sapling_verified_balance = Amount::from(balance.sapling_balance().spendable_value());
 
+    let orchard_total_balance = Amount::from(balance.orchard_balance().total());
+    let orchard_verified_balance = Amount::from(balance.orchard_balance().spendable_value());
+
+    let unshielded = Amount::from(balance.unshielded());
+
     env.new_object(
         JNI_ACCOUNT_BALANCE,
-        "(IJJ)V",
+        "(IJJJJJ)V",
         &[
             JValue::Int(u32::from(*account) as i32),
             JValue::Long(sapling_total_balance.into()),
             JValue::Long(sapling_verified_balance.into()),
+            JValue::Long(orchard_total_balance.into()),
+            JValue::Long(orchard_verified_balance.into()),
+            JValue::Long(unshielded.into()),
         ],
     )
 }
@@ -1153,11 +1161,14 @@ fn encode_wallet_summary<'a>(
 
     env.new_object(
         "cash/z/ecc/android/sdk/internal/model/JniWalletSummary",
-        &format!("([L{};JJ)V", JNI_ACCOUNT_BALANCE),
+        &format!("([L{};JJJJJ)V", JNI_ACCOUNT_BALANCE),
         &[
             (&account_balances).into(),
+            JValue::Long(i64::from(u32::from(summary.chain_tip_height()))),
+            JValue::Long(i64::from(u32::from(summary.fully_scanned_height()))),
             JValue::Long(progress_numerator as i64),
             JValue::Long(progress_denominator as i64),
+            JValue::Long(summary.next_sapling_subtree_index() as i64),
         ],
     )
 }
