@@ -4,7 +4,9 @@ import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
 
 internal data class AccountBalance(
-    val sapling: WalletBalance
+    val sapling: WalletBalance,
+    val orchard: WalletBalance,
+    val unshielded: Zatoshi
 ) {
     companion object {
         fun new(jni: JniAccountBalance): AccountBalance {
@@ -13,7 +15,13 @@ internal data class AccountBalance(
                     WalletBalance(
                         Zatoshi(jni.saplingTotalBalance),
                         Zatoshi(jni.saplingVerifiedBalance)
-                    )
+                    ),
+                orchard =
+                    WalletBalance(
+                        Zatoshi(jni.orchardTotalBalance),
+                        Zatoshi(jni.orchardVerifiedBalance)
+                    ),
+                unshielded = Zatoshi(jni.unshieldedBalance)
             )
         }
     }
