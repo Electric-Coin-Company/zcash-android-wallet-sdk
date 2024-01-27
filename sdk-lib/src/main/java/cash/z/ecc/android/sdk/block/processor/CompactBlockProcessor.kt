@@ -34,6 +34,7 @@ import cash.z.ecc.android.sdk.internal.ext.retryUpToAndContinue
 import cash.z.ecc.android.sdk.internal.ext.retryUpToAndThrow
 import cash.z.ecc.android.sdk.internal.ext.retryWithBackoff
 import cash.z.ecc.android.sdk.internal.ext.toHexReversed
+import cash.z.ecc.android.sdk.internal.metrics.TraceScope
 import cash.z.ecc.android.sdk.internal.model.BlockBatch
 import cash.z.ecc.android.sdk.internal.model.DbTransactionOverview
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
@@ -203,6 +204,8 @@ class CompactBlockProcessor internal constructor(
      */
     @Suppress("LongMethod", "CyclomaticComplexMethod")
     suspend fun start() {
+        val traceScope = TraceScope("CompactBlockProcessor.start")
+
         val startIndex = refreshWalletSummary()
 
         verifySetup()
@@ -242,6 +245,7 @@ class CompactBlockProcessor internal constructor(
                         when (subTreeRootResult) {
                             is GetSubtreeRootsResult.SpendBeforeSync -> {
                                 // Pass the commitment tree data to the database
+                                val putScope = TraceScope("CompactBlockProcessor.putSaplingSubtreeRoots")
                                 when (
                                     val result =
                                         putSaplingSubtreeRoots(
@@ -260,6 +264,7 @@ class CompactBlockProcessor internal constructor(
                                         BlockProcessingResult.SyncFailure(result.failedAtHeight, result.exception)
                                     }
                                 }
+                                putScope.end()
                                 processNewBlocksInSbSOrder(
                                     backend = backend,
                                     downloader = downloader,
@@ -344,6 +349,7 @@ class CompactBlockProcessor internal constructor(
                 }
             }
         } while (_state.value !is State.Stopped)
+        traceScope.end()
         Twig.info { "Processor complete" }
         stop()
     }
@@ -415,6 +421,7 @@ class CompactBlockProcessor internal constructor(
         Twig.info {
             "Beginning to process new blocks with Spend-before-Sync approach with lower bound: $lastValidHeight)..."
         }
+        val traceScope = TraceScope("CompactBlockProcessor.processNewBlocksInSbSOrder")
 
         // This step covers these operations fetchLatestBlockHeight, updateChainTip, suggestScanRanges, updateRange,
         // and shouldVerifySuggestedScanRanges
@@ -628,6 +635,7 @@ class CompactBlockProcessor internal constructor(
                 }
             }
         }
+        traceScope.end()
         return BlockProcessingResult.Success
     }
 
@@ -1081,6 +1089,7 @@ class CompactBlockProcessor internal constructor(
             network: ZcashNetwork
         ): BlockHeight? {
             Twig.debug { "Fetching latest block height..." }
+            val traceScope = TraceScope("CompactBlockProcessor.fetchLatestBlockHeight")
 
             var latestBlockHeight: BlockHeight? = null
 
@@ -1095,6 +1104,7 @@ class CompactBlockProcessor internal constructor(
                     }
                     is Response.Failure -> {
                         Twig.error { "Fetching latest block height failed with: ${response.toThrowable()}" }
+                        traceScope.end()
                         throw LightWalletException.GetLatestBlockHeightException(
                             response.code,
                             response.description,
@@ -1104,6 +1114,7 @@ class CompactBlockProcessor internal constructor(
                 }
             }
 
+            traceScope.end()
             return latestBlockHeight
         }
 
@@ -1120,6 +1131,7 @@ class CompactBlockProcessor internal constructor(
             startIndex: UInt
         ): GetSubtreeRootsResult {
             Twig.debug { "Fetching SubtreeRoots..." }
+            val traceScope = TraceScope("CompactBlockProcessor.getSubtreeRoots")
 
             var result: GetSubtreeRootsResult = GetSubtreeRootsResult.Linear
 
@@ -1153,6 +1165,7 @@ class CompactBlockProcessor internal constructor(
                                 Twig.error { "Fetching SubtreeRoot failed with failure: ${response.toThrowable()}" }
                                 result = GetSubtreeRootsResult.OtherFailure(error)
                             }
+                            traceScope.end()
                             throw error
                         }
                     }
@@ -1173,6 +1186,8 @@ class CompactBlockProcessor internal constructor(
                             }
                     }
             }
+
+            traceScope.end()
             return result
         }
 
@@ -1225,7 +1240,8 @@ class CompactBlockProcessor internal constructor(
             chainTip: BlockHeight,
             lastValidHeight: BlockHeight
         ): UpdateChainTipResult {
-            return runCatching {
+            val traceScope = TraceScope("CompactBlockProcessor.updateChainTip")
+            var result = runCatching {
                 backend.updateChainTip(chainTip)
             }
                 .onSuccess {
@@ -1237,6 +1253,8 @@ class CompactBlockProcessor internal constructor(
                     onSuccess = { UpdateChainTipResult.Success(chainTip) },
                     onFailure = { UpdateChainTipResult.Failure(lastValidHeight, it) }
                 )
+            traceScope.end()
+            return result
         }
 
         /**
@@ -1251,7 +1269,8 @@ class CompactBlockProcessor internal constructor(
             backend: TypesafeBackend,
             lastValidHeight: BlockHeight
         ): SuggestScanRangesResult {
-            return runCatching {
+            val traceScope = TraceScope("CompactBlockProcessor.suggestScanRanges")
+            var result = runCatching {
                 backend.suggestScanRanges()
             }.onSuccess { ranges ->
                 Twig.info { "Successfully got newly suggested ranges: $ranges" }
@@ -1261,6 +1280,8 @@ class CompactBlockProcessor internal constructor(
                 onSuccess = { SuggestScanRangesResult.Success(it) },
                 onFailure = { SuggestScanRangesResult.Failure(lastValidHeight, it) }
             )
+            traceScope.end()
+            return result
         }
 
         /**
@@ -1567,6 +1588,7 @@ class CompactBlockProcessor internal constructor(
             downloader: CompactBlockDownloader,
             batch: BlockBatch
         ): SyncingResult {
+            val traceScope = TraceScope("CompactBlockProcessor.downloadBatchOfBlocks")
             var downloadedBlocks = listOf<JniBlockMeta>()
             var downloadException: CompactBlockProcessorException.FailedDownloadException? = null
 
@@ -1584,6 +1606,7 @@ class CompactBlockProcessor internal constructor(
                 }
                 downloadedBlocks = downloader.downloadBlockRange(batch.range)
             }
+            traceScope.end()
             Twig.verbose { "Successfully downloaded batch: $batch of $downloadedBlocks blocks" }
 
             return if (downloadedBlocks.isNotEmpty()) {
@@ -1601,7 +1624,8 @@ class CompactBlockProcessor internal constructor(
             batch: BlockBatch,
             backend: TypesafeBackend
         ): SyncingResult {
-            return runCatching {
+            val traceScope = TraceScope("CompactBlockProcessor.scanBatchOfBlocks")
+            var result = runCatching {
                 backend.scanBlocks(batch.range.start, batch.range.length())
             }.onSuccess {
                 Twig.verbose { "Successfully scanned batch $batch" }
@@ -1625,6 +1649,8 @@ class CompactBlockProcessor internal constructor(
                     }
                 }
             )
+            traceScope.end()
+            return result
         }
 
         @VisibleForTesting
@@ -1633,7 +1659,8 @@ class CompactBlockProcessor internal constructor(
             lastKnownHeight: BlockHeight?
         ): SyncingResult {
             Twig.verbose { "Starting to delete all temporary block files" }
-            return if (downloader.compactBlockRepository.deleteAllCompactBlockFiles()) {
+            val traceScope = TraceScope("CompactBlockProcessor.deleteAllBlockFiles")
+            var result = if (downloader.compactBlockRepository.deleteAllCompactBlockFiles()) {
                 Twig.verbose { "Successfully deleted all temporary block files" }
                 SyncingResult.DeleteSuccess
             } else {
@@ -1642,6 +1669,8 @@ class CompactBlockProcessor internal constructor(
                     CompactBlockProcessorException.FailedDeleteException()
                 )
             }
+            traceScope.end()
+            return result
         }
 
         @VisibleForTesting
@@ -1650,8 +1679,9 @@ class CompactBlockProcessor internal constructor(
             downloader: CompactBlockDownloader
         ): SyncingResult {
             Twig.verbose { "Starting to delete temporary block files from batch: $batch" }
+            val traceScope = TraceScope("CompactBlockProcessor.deleteFilesOfBatchOfBlocks")
 
-            return batch.blocks?.let { blocks ->
+            var result = batch.blocks?.let { blocks ->
                 val deleted = downloader.compactBlockRepository.deleteCompactBlockFiles(blocks)
                 if (deleted) {
                     Twig.verbose { "Successfully deleted all temporary batched block files" }
@@ -1663,6 +1693,8 @@ class CompactBlockProcessor internal constructor(
                     )
                 }
             } ?: SyncingResult.DeleteSuccess
+            traceScope.end()
+            return result
         }
 
         @VisibleForTesting
@@ -1714,7 +1746,8 @@ class CompactBlockProcessor internal constructor(
                 return SyncingResult.EnhanceSuccess
             }
 
-            return try {
+            val traceScope = TraceScope("CompactBlockProcessor.enhanceTransaction")
+            var result = try {
                 // Fetching transaction is done with retries to eliminate a bad network condition
                 Twig.verbose {
                     "Fetching transaction (txid:${transaction.txIdString()}  block:${transaction
@@ -1750,6 +1783,8 @@ class CompactBlockProcessor internal constructor(
                     exception
                 )
             }
+            traceScope.end()
+            return result
         }
 
         // TODO [#1254]: CompactblockProcessor.fetchTransaction pass txId twice
@@ -1761,6 +1796,7 @@ class CompactBlockProcessor internal constructor(
             minedHeight: BlockHeight,
             downloader: CompactBlockDownloader
         ): ByteArray {
+            val traceScope = TraceScope("CompactBlockProcessor.fetchTransaction")
             var transactionDataResult: ByteArray? = null
             retryUpToAndThrow(TRANSACTION_FETCH_RETRIES) { failedAttempts ->
                 if (failedAttempts == 0) {
@@ -1780,6 +1816,7 @@ class CompactBlockProcessor internal constructor(
                     }
                 }
             }
+            traceScope.end()
             // Result is fetched or EnhanceTxDownloadError is thrown after all attempts failed at this point
             return transactionDataResult!!
         }
@@ -1790,11 +1827,14 @@ class CompactBlockProcessor internal constructor(
             minedHeight: BlockHeight,
             backend: TypesafeBackend,
         ) {
+            val traceScope = TraceScope("CompactBlockProcessor.decryptTransaction")
             runCatching {
                 backend.decryptAndStoreTransaction(transactionData)
             }.onFailure {
+                traceScope.end()
                 throw EnhanceTxDecryptError(minedHeight, it)
             }
+            traceScope.end()
         }
 
         /**
