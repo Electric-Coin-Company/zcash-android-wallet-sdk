@@ -158,10 +158,10 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
     override suspend fun initDataDb(seed: ByteArray?): Int = backend.initDataDb(seed)
 
     override suspend fun putSaplingSubtreeRoots(
-        startIndex: Long,
+        startIndex: UInt,
         roots: List<SubtreeRoot>
     ) = backend.putSaplingSubtreeRoots(
-        startIndex = startIndex,
+        startIndex = startIndex.toLong(),
         roots =
             roots.map {
                 JniSubtreeRoot.new(

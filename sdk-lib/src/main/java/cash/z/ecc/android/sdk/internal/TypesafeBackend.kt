@@ -82,7 +82,7 @@ internal interface TypesafeBackend {
      */
     @Throws(RuntimeException::class)
     suspend fun putSaplingSubtreeRoots(
-        startIndex: Long,
+        startIndex: UInt,
         roots: List<SubtreeRoot>,
     )
 

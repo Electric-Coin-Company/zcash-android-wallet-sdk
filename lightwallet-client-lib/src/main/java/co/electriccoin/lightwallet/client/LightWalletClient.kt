@@ -83,9 +83,9 @@ interface LightWalletClient {
      * @throws IllegalArgumentException when empty argument provided
      */
     fun getSubtreeRoots(
-        startIndex: Int,
+        startIndex: UInt,
         shieldedProtocol: ShieldedProtocolEnum,
-        maxEntries: Int
+        maxEntries: UInt
     ): Flow<Response<SubtreeRootUnsafe>>
 
     /**
