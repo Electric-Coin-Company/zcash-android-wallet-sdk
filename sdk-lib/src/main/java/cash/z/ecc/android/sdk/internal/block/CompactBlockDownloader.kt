@@ -169,9 +169,9 @@ open class CompactBlockDownloader private constructor(val compactBlockRepository
      * @return a flow of information about roots of subtrees of the Sapling and Orchard note commitment trees.
      */
     suspend fun getSubtreeRoots(
-        startIndex: Int,
+        startIndex: UInt,
         shieldedProtocol: ShieldedProtocolEnum,
-        maxEntries: Int
+        maxEntries: UInt
     ) = lightWalletClient.getSubtreeRoots(
         startIndex = startIndex,
         shieldedProtocol = shieldedProtocol,
