@@ -203,6 +203,8 @@ class CompactBlockProcessor internal constructor(
      */
     @Suppress("LongMethod", "CyclomaticComplexMethod")
     suspend fun start() {
+        val startIndex = refreshWalletSummary()
+
         verifySetup()
 
         updateBirthdayHeight()
@@ -220,7 +222,7 @@ class CompactBlockProcessor internal constructor(
 
         // Download note commitment tree data from lightwalletd to decide if we communicate with linear
         // or spend-before-sync node.
-        var subTreeRootResult = getSubtreeRoots(downloader, network)
+        var subTreeRootResult = getSubtreeRoots(downloader, network, startIndex)
         Twig.info { "Fetched SubTreeRoot result: $subTreeRootResult" }
 
         Twig.debug { "Setup verified. Processor starting..." }
@@ -244,7 +246,7 @@ class CompactBlockProcessor internal constructor(
                                     val result =
                                         putSaplingSubtreeRoots(
                                             backend = backend,
-                                            startIndex = 0,
+                                            startIndex = startIndex,
                                             subTreeRootList =
                                                 (subTreeRootResult as GetSubtreeRootsResult.SpendBeforeSync)
                                                     .subTreeRootList,
@@ -282,7 +284,7 @@ class CompactBlockProcessor internal constructor(
                             }
                             GetSubtreeRootsResult.FailureConnection -> {
                                 // SubtreeRoot fetching retry
-                                subTreeRootResult = getSubtreeRoots(downloader, network)
+                                subTreeRootResult = getSubtreeRoots(downloader, network, startIndex)
                                 BlockProcessingResult.Reconnecting
                             }
                         }
@@ -739,16 +741,23 @@ class CompactBlockProcessor internal constructor(
     /**
      * Refreshes the SDK's wallet summary from the Rust backend, and transmits this information
      * into the related internal flows. Note that the Orchard balance is not yet supported.
+     *
+     * @return the next subtree index to fetch.
      */
-    internal suspend fun refreshWalletSummary() {
+    internal suspend fun refreshWalletSummary(): UInt {
         when (val result = getWalletSummary(backend)) {
             is GetWalletSummaryResult.Success -> {
                 val resultProgress = result.scanProgressPercentDecimal()
                 Twig.info { "Progress from rust: ${resultProgress.decimal}" }
                 setProgress(resultProgress)
                 updateAllBalances(result.walletSummary)
+                return result.walletSummary.nextSaplingSubtreeIndex
             }
-            else -> { /* Do not report the progress and balances in case of any error */ }
+            else -> {
+                // Do not report the progress and balances in case of any error, and
+                // tell the caller to fetch all subtree roots.
+                return UInt.MIN_VALUE
+            }
         }
     }
 
@@ -1107,7 +1116,8 @@ class CompactBlockProcessor internal constructor(
         @VisibleForTesting
         internal suspend fun getSubtreeRoots(
             downloader: CompactBlockDownloader,
-            network: ZcashNetwork
+            network: ZcashNetwork,
+            startIndex: UInt
         ): GetSubtreeRootsResult {
             Twig.debug { "Fetching SubtreeRoots..." }
 
@@ -1115,7 +1125,7 @@ class CompactBlockProcessor internal constructor(
 
             retryUpToAndContinue(GET_SUBTREE_ROOTS_RETRIES) {
                 downloader.getSubtreeRoots(
-                    startIndex = UInt.MIN_VALUE,
+                    startIndex,
                     maxEntries = UInt.MIN_VALUE,
                     shieldedProtocol = ShieldedProtocolEnum.SAPLING
                 ).onEach { response ->
@@ -1159,7 +1169,7 @@ class CompactBlockProcessor internal constructor(
                             if (it.isEmpty()) {
                                 GetSubtreeRootsResult.Linear
                             } else {
-                                GetSubtreeRootsResult.SpendBeforeSync(it)
+                                GetSubtreeRootsResult.SpendBeforeSync(startIndex, it)
                             }
                     }
             }
