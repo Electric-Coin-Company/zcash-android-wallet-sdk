@@ -46,8 +46,8 @@ class JniWalletSummary(
         require(progressNumerator.toFloat().div(progressDenominator) <= 1f) {
             "Result of ${progressNumerator.toFloat()}/$progressDenominator is outside of allowed range"
         }
-        require(nextSaplingSubtreeIndex >= 0L) {
-            "Numerator $nextSaplingSubtreeIndex is outside of allowed range [0, Long.MAX_VALUE]"
+        require(nextSaplingSubtreeIndex.isInUIntRange()) {
+            "Height $nextSaplingSubtreeIndex is outside of allowed UInt range"
         }
     }
 }

@@ -1115,8 +1115,8 @@ class CompactBlockProcessor internal constructor(
 
             retryUpToAndContinue(GET_SUBTREE_ROOTS_RETRIES) {
                 downloader.getSubtreeRoots(
-                    startIndex = 0,
-                    maxEntries = 0,
+                    startIndex = UInt.MIN_VALUE,
+                    maxEntries = UInt.MIN_VALUE,
                     shieldedProtocol = ShieldedProtocolEnum.SAPLING
                 ).onEach { response ->
                     when (response) {
@@ -1177,7 +1177,7 @@ class CompactBlockProcessor internal constructor(
         @VisibleForTesting
         internal suspend fun putSaplingSubtreeRoots(
             backend: TypesafeBackend,
-            startIndex: Long = 0,
+            startIndex: UInt,
             subTreeRootList: List<SubtreeRoot>,
             lastValidHeight: BlockHeight
         ): PutSaplingSubtreeRootsResult {

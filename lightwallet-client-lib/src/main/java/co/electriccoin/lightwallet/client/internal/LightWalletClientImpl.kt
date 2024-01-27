@@ -207,18 +207,14 @@ internal class LightWalletClientImpl private constructor(
     }
 
     override fun getSubtreeRoots(
-        startIndex: Int,
+        startIndex: UInt,
         shieldedProtocol: ShieldedProtocolEnum,
-        maxEntries: Int
+        maxEntries: UInt
     ): Flow<Response<SubtreeRootUnsafe>> {
-        require(startIndex >= 0 && maxEntries >= 0) {
-            "${Constants.ILLEGAL_ARGUMENT_EXCEPTION_MESSAGE_COMMON} startIndex: $startIndex, maxEntries: $maxEntries."
-        }
-
         val getSubtreeRootsArgBuilder = Service.GetSubtreeRootsArg.newBuilder()
-        getSubtreeRootsArgBuilder.startIndex = startIndex
+        getSubtreeRootsArgBuilder.startIndex = startIndex.toInt()
         getSubtreeRootsArgBuilder.shieldedProtocol = shieldedProtocol.toProtocol()
-        getSubtreeRootsArgBuilder.maxEntries = maxEntries
+        getSubtreeRootsArgBuilder.maxEntries = maxEntries.toInt()
 
         val request = getSubtreeRootsArgBuilder.build()
 
