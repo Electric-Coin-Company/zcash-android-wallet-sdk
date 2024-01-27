@@ -716,15 +716,6 @@ class CompactBlockProcessor internal constructor(
     }
 
     /**
-     * Calculate the latest Transparent balance, based on the blocks that have been scanned and transmit this
-     * information into the internal [transparentBalances] flow.
-     */
-    internal suspend fun checkTransparentBalance() {
-        Twig.debug { "Checking Transparent balance" }
-        transparentBalances.value = getUtxoCacheBalance(getTransparentAddress(backend, Account.DEFAULT))
-    }
-
-    /**
      * Update the latest balances using the given wallet summary, and transmit this information
      * into the related internal flows. Note that the Orchard balance is not supported.
      */
@@ -732,10 +723,17 @@ class CompactBlockProcessor internal constructor(
         summary.accountBalances[Account.DEFAULT]?.let {
             Twig.debug { "Updating Sapling balance" }
             saplingBalances.value = it.sapling
-            // TODO [#682]: refresh orchard balance
+            // TODO [#682]: Uncomment this once we have Orchard support.
             // TODO [#682]: https://github.com/zcash/zcash-android-wallet-sdk/issues/682
+            // orchardBalances.value = it.orchard
+            // We only allow stored transparent balance to be shielded, and we do so with
+            // a zero-conf transaction, so treat all unshielded balance as available.
+            transparentBalances.value =
+                WalletBalance(
+                    it.unshielded,
+                    it.unshielded
+                )
         }
-        checkTransparentBalance()
     }
 
     /**
