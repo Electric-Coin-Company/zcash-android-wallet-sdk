@@ -69,6 +69,10 @@ mod utils;
 const ANCHOR_OFFSET_U32: u32 = 10;
 const ANCHOR_OFFSET: NonZeroU32 = unsafe { NonZeroU32::new_unchecked(ANCHOR_OFFSET_U32) };
 
+// Do not generate Orchard receivers until we support receiving Orchard funds.
+const DEFAULT_ADDRESS_REQUEST: UnifiedAddressRequest =
+    UnifiedAddressRequest::unsafe_new(false, true, true);
+
 #[cfg(debug_assertions)]
 fn print_debug_state() {
     debug!("WARNING! Debugging enabled! This will likely slow things down 10X!");
@@ -376,7 +380,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustDerivationTool_de
             .map(|usk| usk.to_unified_full_viewing_key())?;
 
         let (ua, _) = ufvk
-            .find_address(DiversifierIndex::new(), UnifiedAddressRequest::DEFAULT)
+            .find_address(DiversifierIndex::new(), DEFAULT_ADDRESS_REQUEST)
             .expect("At least one Unified Address should be derivable");
         let address_str = ua.encode(&network);
         let output = env
@@ -411,7 +415,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustDerivationTool_de
 
         // Derive the default Unified Address (containing the default Sapling payment
         // address that older SDKs used).
-        let (ua, _) = ufvk.default_address();
+        let (ua, _) = ufvk.default_address(DEFAULT_ADDRESS_REQUEST);
         let address_str = ua.encode(&network);
         let output = env
             .new_string(address_str)
