@@ -6,8 +6,28 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `cash.z.ecc.android.sdk.model.Proposal` (currently unused in the public API).
+- System tracing to `CompactBlockProcessor` and the Rust backend.
+
 ### Changed
+- Migrated to NDK 26.1.10909125 and Rust 1.75.0.
+- The wallet balances are now updated immediately upon synchronizer start.
+- Existing wallets will now only fetch the most recent subtree roots, improving
+  synchronizer startup times.
+- Performance of block scanning and `SdkSynchronizer.refreshAllBalances` has
+  been improved.
 - `WalletAddressFixture` fixture properties have been updated
+
+### Fixed
+- The transparent wallet balance `StateFlow` now shows the total transparent
+  balance in the wallet, instead of the balance of the default address. It also
+  now treats all zero-conf balance as available.
+
+### Removed
+- `SdkSynchronizer.refreshSaplingBalance` and
+  `SdkSynchronizer.refreshTransparentBalance`
+  (use `SdkSynchronizer.refreshAllBalances` instead).
 
 ## [2.0.4] - 2024-01-08
 
