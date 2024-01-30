@@ -6,6 +6,8 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.5] - 2024-01-30
+
 ### Added
 - `cash.z.ecc.android.sdk.model.Proposal` (currently unused in the public API).
 - System tracing to `CompactBlockProcessor` and the Rust backend.
