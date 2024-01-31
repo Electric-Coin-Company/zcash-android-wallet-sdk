@@ -23,6 +23,7 @@ import androidx.annotation.Keep
  * @throws IllegalArgumentException if the values are inconsistent.
  */
 @Keep
+@Suppress("LongParameterList")
 class JniAccountBalance(
     val account: Int,
     val saplingVerifiedBalance: Long,
@@ -32,4 +33,32 @@ class JniAccountBalance(
     val orchardChangePending: Long,
     val orchardValuePending: Long,
     val unshieldedBalance: Long,
-) {}
+) {
+    init {
+        require(saplingVerifiedBalance >= MIN_INCLUSIVE) {
+            "Sapling verified balance $saplingVerifiedBalance must by equal or above $MIN_INCLUSIVE"
+        }
+        require(saplingChangePending >= MIN_INCLUSIVE) {
+            "Sapling change pending $saplingChangePending must by equal or above $MIN_INCLUSIVE"
+        }
+        require(saplingValuePending >= MIN_INCLUSIVE) {
+            "Sapling value pending $saplingValuePending must by equal or above $MIN_INCLUSIVE"
+        }
+        require(orchardVerifiedBalance >= MIN_INCLUSIVE) {
+            "Orchard verified balance $orchardVerifiedBalance must by equal or above $MIN_INCLUSIVE"
+        }
+        require(orchardChangePending >= MIN_INCLUSIVE) {
+            "Orchard change pending $orchardChangePending must by equal or above $MIN_INCLUSIVE"
+        }
+        require(orchardValuePending >= MIN_INCLUSIVE) {
+            "Orchard value pending $orchardValuePending must by equal or above $MIN_INCLUSIVE"
+        }
+        require(unshieldedBalance >= MIN_INCLUSIVE) {
+            "Unshielded balance $unshieldedBalance must by equal or above $MIN_INCLUSIVE"
+        }
+    }
+
+    companion object {
+        const val MIN_INCLUSIVE = 0
+    }
+}
