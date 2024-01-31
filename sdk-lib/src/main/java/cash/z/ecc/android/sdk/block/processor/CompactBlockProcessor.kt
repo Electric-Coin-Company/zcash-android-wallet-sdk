@@ -1241,18 +1241,19 @@ class CompactBlockProcessor internal constructor(
             lastValidHeight: BlockHeight
         ): UpdateChainTipResult {
             val traceScope = TraceScope("CompactBlockProcessor.updateChainTip")
-            var result = runCatching {
-                backend.updateChainTip(chainTip)
-            }
-                .onSuccess {
-                    Twig.info { "Chain tip updated successfully with height: $chainTip" }
+            var result =
+                runCatching {
+                    backend.updateChainTip(chainTip)
                 }
-                .onFailure {
-                    Twig.info { "Chain tip update failed with: $it" }
-                }.fold(
-                    onSuccess = { UpdateChainTipResult.Success(chainTip) },
-                    onFailure = { UpdateChainTipResult.Failure(lastValidHeight, it) }
-                )
+                    .onSuccess {
+                        Twig.info { "Chain tip updated successfully with height: $chainTip" }
+                    }
+                    .onFailure {
+                        Twig.info { "Chain tip update failed with: $it" }
+                    }.fold(
+                        onSuccess = { UpdateChainTipResult.Success(chainTip) },
+                        onFailure = { UpdateChainTipResult.Failure(lastValidHeight, it) }
+                    )
             traceScope.end()
             return result
         }
@@ -1270,16 +1271,17 @@ class CompactBlockProcessor internal constructor(
             lastValidHeight: BlockHeight
         ): SuggestScanRangesResult {
             val traceScope = TraceScope("CompactBlockProcessor.suggestScanRanges")
-            var result = runCatching {
-                backend.suggestScanRanges()
-            }.onSuccess { ranges ->
-                Twig.info { "Successfully got newly suggested ranges: $ranges" }
-            }.onFailure { exception ->
-                Twig.error { "Failed to get newly suggested ranges with: $exception" }
-            }.fold(
-                onSuccess = { SuggestScanRangesResult.Success(it) },
-                onFailure = { SuggestScanRangesResult.Failure(lastValidHeight, it) }
-            )
+            var result =
+                runCatching {
+                    backend.suggestScanRanges()
+                }.onSuccess { ranges ->
+                    Twig.info { "Successfully got newly suggested ranges: $ranges" }
+                }.onFailure { exception ->
+                    Twig.error { "Failed to get newly suggested ranges with: $exception" }
+                }.fold(
+                    onSuccess = { SuggestScanRangesResult.Success(it) },
+                    onFailure = { SuggestScanRangesResult.Failure(lastValidHeight, it) }
+                )
             traceScope.end()
             return result
         }
@@ -1625,30 +1627,31 @@ class CompactBlockProcessor internal constructor(
             backend: TypesafeBackend
         ): SyncingResult {
             val traceScope = TraceScope("CompactBlockProcessor.scanBatchOfBlocks")
-            var result = runCatching {
-                backend.scanBlocks(batch.range.start, batch.range.length())
-            }.onSuccess {
-                Twig.verbose { "Successfully scanned batch $batch" }
-            }.onFailure {
-                Twig.error { "Failed while scanning batch $batch with $it" }
-            }.fold(
-                onSuccess = { SyncingResult.ScanSuccess(it) },
-                onFailure = {
-                    // Check if the error is continuity type
-                    if (it.isScanContinuityError()) {
-                        SyncingResult.ContinuityError(
-                            // To ensure we later rewind below the failed height
-                            failedAtHeight = batch.range.start - 1,
-                            exception = CompactBlockProcessorException.FailedScanException(it)
-                        )
-                    } else {
-                        SyncingResult.ScanFailed(
-                            failedAtHeight = batch.range.start,
-                            exception = CompactBlockProcessorException.FailedScanException(it)
-                        )
+            var result =
+                runCatching {
+                    backend.scanBlocks(batch.range.start, batch.range.length())
+                }.onSuccess {
+                    Twig.verbose { "Successfully scanned batch $batch" }
+                }.onFailure {
+                    Twig.error { "Failed while scanning batch $batch with $it" }
+                }.fold(
+                    onSuccess = { SyncingResult.ScanSuccess(it) },
+                    onFailure = {
+                        // Check if the error is continuity type
+                        if (it.isScanContinuityError()) {
+                            SyncingResult.ContinuityError(
+                                // To ensure we later rewind below the failed height
+                                failedAtHeight = batch.range.start - 1,
+                                exception = CompactBlockProcessorException.FailedScanException(it)
+                            )
+                        } else {
+                            SyncingResult.ScanFailed(
+                                failedAtHeight = batch.range.start,
+                                exception = CompactBlockProcessorException.FailedScanException(it)
+                            )
+                        }
                     }
-                }
-            )
+                )
             traceScope.end()
             return result
         }
@@ -1660,15 +1663,16 @@ class CompactBlockProcessor internal constructor(
         ): SyncingResult {
             Twig.verbose { "Starting to delete all temporary block files" }
             val traceScope = TraceScope("CompactBlockProcessor.deleteAllBlockFiles")
-            var result = if (downloader.compactBlockRepository.deleteAllCompactBlockFiles()) {
-                Twig.verbose { "Successfully deleted all temporary block files" }
-                SyncingResult.DeleteSuccess
-            } else {
-                SyncingResult.DeleteFailed(
-                    lastKnownHeight,
-                    CompactBlockProcessorException.FailedDeleteException()
-                )
-            }
+            var result =
+                if (downloader.compactBlockRepository.deleteAllCompactBlockFiles()) {
+                    Twig.verbose { "Successfully deleted all temporary block files" }
+                    SyncingResult.DeleteSuccess
+                } else {
+                    SyncingResult.DeleteFailed(
+                        lastKnownHeight,
+                        CompactBlockProcessorException.FailedDeleteException()
+                    )
+                }
             traceScope.end()
             return result
         }
@@ -1681,18 +1685,19 @@ class CompactBlockProcessor internal constructor(
             Twig.verbose { "Starting to delete temporary block files from batch: $batch" }
             val traceScope = TraceScope("CompactBlockProcessor.deleteFilesOfBatchOfBlocks")
 
-            var result = batch.blocks?.let { blocks ->
-                val deleted = downloader.compactBlockRepository.deleteCompactBlockFiles(blocks)
-                if (deleted) {
-                    Twig.verbose { "Successfully deleted all temporary batched block files" }
-                    SyncingResult.DeleteSuccess
-                } else {
-                    SyncingResult.DeleteFailed(
-                        batch.range.start,
-                        CompactBlockProcessorException.FailedDeleteException()
-                    )
-                }
-            } ?: SyncingResult.DeleteSuccess
+            var result =
+                batch.blocks?.let { blocks ->
+                    val deleted = downloader.compactBlockRepository.deleteCompactBlockFiles(blocks)
+                    if (deleted) {
+                        Twig.verbose { "Successfully deleted all temporary batched block files" }
+                        SyncingResult.DeleteSuccess
+                    } else {
+                        SyncingResult.DeleteFailed(
+                            batch.range.start,
+                            CompactBlockProcessorException.FailedDeleteException()
+                        )
+                    }
+                } ?: SyncingResult.DeleteSuccess
             traceScope.end()
             return result
         }
@@ -1747,42 +1752,43 @@ class CompactBlockProcessor internal constructor(
             }
 
             val traceScope = TraceScope("CompactBlockProcessor.enhanceTransaction")
-            var result = try {
-                // Fetching transaction is done with retries to eliminate a bad network condition
-                Twig.verbose {
-                    "Fetching transaction (txid:${transaction.txIdString()}  block:${transaction
-                        .minedHeight})"
-                }
-                val transactionData =
-                    fetchTransaction(
-                        transactionId = transaction.txIdString(),
-                        rawTransactionId = transaction.rawId.byteArray,
+            var result =
+                try {
+                    // Fetching transaction is done with retries to eliminate a bad network condition
+                    Twig.verbose {
+                        "Fetching transaction (txid:${transaction.txIdString()}  block:${transaction
+                            .minedHeight})"
+                    }
+                    val transactionData =
+                        fetchTransaction(
+                            transactionId = transaction.txIdString(),
+                            rawTransactionId = transaction.rawId.byteArray,
+                            minedHeight = transaction.minedHeight,
+                            downloader = downloader
+                        )
+
+                    // Decrypting and storing transaction is run just once, since we consider it more stable
+                    Twig.verbose {
+                        "Decrypting and storing transaction " +
+                            "(txid:${transaction.txIdString()}  block:${transaction.minedHeight})"
+                    }
+                    decryptTransaction(
+                        transactionData = transactionData,
                         minedHeight = transaction.minedHeight,
-                        downloader = downloader
+                        backend = backend
                     )
 
-                // Decrypting and storing transaction is run just once, since we consider it more stable
-                Twig.verbose {
-                    "Decrypting and storing transaction " +
-                        "(txid:${transaction.txIdString()}  block:${transaction.minedHeight})"
+                    Twig.debug {
+                        "Done enhancing transaction (txid:${transaction.txIdString()} block:${transaction
+                            .minedHeight})"
+                    }
+                    SyncingResult.EnhanceSuccess
+                } catch (exception: CompactBlockProcessorException.EnhanceTransactionError) {
+                    SyncingResult.EnhanceFailed(
+                        transaction.minedHeight,
+                        exception
+                    )
                 }
-                decryptTransaction(
-                    transactionData = transactionData,
-                    minedHeight = transaction.minedHeight,
-                    backend = backend
-                )
-
-                Twig.debug {
-                    "Done enhancing transaction (txid:${transaction.txIdString()} block:${transaction
-                        .minedHeight})"
-                }
-                SyncingResult.EnhanceSuccess
-            } catch (exception: CompactBlockProcessorException.EnhanceTransactionError) {
-                SyncingResult.EnhanceFailed(
-                    transaction.minedHeight,
-                    exception
-                )
-            }
             traceScope.end()
             return result
         }
