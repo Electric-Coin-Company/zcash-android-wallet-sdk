@@ -1241,7 +1241,7 @@ class CompactBlockProcessor internal constructor(
             lastValidHeight: BlockHeight
         ): UpdateChainTipResult {
             val traceScope = TraceScope("CompactBlockProcessor.updateChainTip")
-            var result =
+            val result =
                 runCatching {
                     backend.updateChainTip(chainTip)
                 }
@@ -1271,7 +1271,7 @@ class CompactBlockProcessor internal constructor(
             lastValidHeight: BlockHeight
         ): SuggestScanRangesResult {
             val traceScope = TraceScope("CompactBlockProcessor.suggestScanRanges")
-            var result =
+            val result =
                 runCatching {
                     backend.suggestScanRanges()
                 }.onSuccess { ranges ->
@@ -1349,9 +1349,7 @@ class CompactBlockProcessor internal constructor(
          * processed existing blocks
          * @param enhanceStartHeight the height in which the enhancing should start, or null in case of no previous
          * transaction enhancing done yet
-         * @param lastBatchOrder is the order of the last processed batch. It comes from a previous range processing
-         * and is necessary for calculating cross ranges batch order of currently processing batches.
-
+         *
          * @return Flow of [BatchSyncProgress] sync and enhancement results
          */
         @VisibleForTesting
@@ -1378,7 +1376,7 @@ class CompactBlockProcessor internal constructor(
 
                     val batches = getBatchedBlockList(syncRange, network)
 
-                    // Check for the last enhanced height and eventually set is as the beginning of the next
+                    // Check for the last enhanced height and eventually set it as the beginning of the next
                     // enhancing range
                     var enhancingRange =
                         if (enhanceStartHeight != null) {
@@ -1627,7 +1625,7 @@ class CompactBlockProcessor internal constructor(
             backend: TypesafeBackend
         ): SyncingResult {
             val traceScope = TraceScope("CompactBlockProcessor.scanBatchOfBlocks")
-            var result =
+            val result =
                 runCatching {
                     backend.scanBlocks(batch.range.start, batch.range.length())
                 }.onSuccess {
@@ -1663,7 +1661,7 @@ class CompactBlockProcessor internal constructor(
         ): SyncingResult {
             Twig.verbose { "Starting to delete all temporary block files" }
             val traceScope = TraceScope("CompactBlockProcessor.deleteAllBlockFiles")
-            var result =
+            val result =
                 if (downloader.compactBlockRepository.deleteAllCompactBlockFiles()) {
                     Twig.verbose { "Successfully deleted all temporary block files" }
                     SyncingResult.DeleteSuccess
@@ -1685,7 +1683,7 @@ class CompactBlockProcessor internal constructor(
             Twig.verbose { "Starting to delete temporary block files from batch: $batch" }
             val traceScope = TraceScope("CompactBlockProcessor.deleteFilesOfBatchOfBlocks")
 
-            var result =
+            val result =
                 batch.blocks?.let { blocks ->
                     val deleted = downloader.compactBlockRepository.deleteCompactBlockFiles(blocks)
                     if (deleted) {
@@ -1752,7 +1750,7 @@ class CompactBlockProcessor internal constructor(
             }
 
             val traceScope = TraceScope("CompactBlockProcessor.enhanceTransaction")
-            var result =
+            val result =
                 try {
                     // Fetching transaction is done with retries to eliminate a bad network condition
                     Twig.verbose {
