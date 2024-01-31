@@ -1499,7 +1499,6 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeTr
         utils::rust_bytes_to_java(
             &env,
             Proposal::from_standard_proposal(&network, &proposal)
-                .expect("transaction request should not be empty")
                 .encode_to_vec()
                 .as_ref(),
         )
@@ -1569,7 +1568,6 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeSh
         utils::rust_bytes_to_java(
             &env,
             Proposal::from_standard_proposal(&network, &proposal)
-                .expect("transaction request should not be empty")
                 .encode_to_vec()
                 .as_ref(),
         )

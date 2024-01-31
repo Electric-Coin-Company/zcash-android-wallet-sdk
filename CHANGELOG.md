@@ -6,6 +6,10 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- In 2.0.5, `Synchronizer.shieldFunds` always returned an error due to a crash
+  on the Rust side. This release fixes the underlying bug.
+
 ## [2.0.5] - 2024-01-30
 
 ### Added
