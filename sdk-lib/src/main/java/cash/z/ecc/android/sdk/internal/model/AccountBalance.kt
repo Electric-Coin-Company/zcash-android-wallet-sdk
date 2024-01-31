@@ -13,12 +13,12 @@ internal data class AccountBalance(
             return AccountBalance(
                 sapling =
                     WalletBalance(
-                        Zatoshi(jni.saplingTotalBalance),
+                        Zatoshi(jni.saplingVerifiedBalance + jni.saplingChangePending + jni.saplingValuePending),
                         Zatoshi(jni.saplingVerifiedBalance)
                     ),
                 orchard =
                     WalletBalance(
-                        Zatoshi(jni.orchardTotalBalance),
+                        Zatoshi(jni.orchardVerifiedBalance + jni.orchardChangePending + jni.orchardValuePending),
                         Zatoshi(jni.orchardVerifiedBalance)
                     ),
                 unshielded = Zatoshi(jni.unshieldedBalance)
