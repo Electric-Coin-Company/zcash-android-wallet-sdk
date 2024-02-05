@@ -82,7 +82,7 @@ class TestWallet(
     val birthdayHeight get() = synchronizer.latestBirthdayHeight
     val networkName get() = synchronizer.network.networkName
 
-    suspend fun transparentBalance(): WalletBalance {
+    suspend fun transparentBalance(): Zatoshi {
         synchronizer.refreshUtxos(account, synchronizer.latestBirthdayHeight)
         return synchronizer.getTransparentBalance(transparentAddress)
     }
@@ -122,9 +122,9 @@ class TestWallet(
         }
 
         synchronizer.getTransparentBalance(transparentAddress).let { walletBalance ->
-            Twig.debug { "FOUND utxo balance of total: ${walletBalance.total}  available: ${walletBalance.available}" }
+            Twig.debug { "FOUND utxo balance of total: $walletBalance" }
 
-            if (walletBalance.available.value > 0L) {
+            if (walletBalance.value > 0L) {
                 synchronizer.shieldFunds(spendingKey)
             }
         }

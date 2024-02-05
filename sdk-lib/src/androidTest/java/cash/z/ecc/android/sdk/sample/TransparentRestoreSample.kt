@@ -60,9 +60,9 @@ class TransparentRestoreSample {
             val address = wallet.transparentAddress
 
             Assert.assertTrue(
-                "Not enough funds to run sample. Expected some Zatoshi but found ${tbalance.available}. " +
+                "Not enough funds to run sample. Expected some Zatoshi but found $tbalance. " +
                     "Try adding funds to $address",
-                tbalance.available.value > 0
+                tbalance.value > 0
             )
 
 //        wallet.shieldFunds()

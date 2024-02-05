@@ -114,21 +114,12 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
         backend.rewindBlockMetadataToHeight(height.value)
     }
 
-    override suspend fun getDownloadedUtxoBalance(address: String): WalletBalance {
-        // Note this implementation is not ideal because it requires two database queries without a transaction, which
-        // makes the data potentially inconsistent.  However the verified amount is queried first which makes this less
-        // bad.
+    override suspend fun getDownloadedUtxoBalance(address: String): Zatoshi {
         val verified =
             withContext(SdkDispatchers.DATABASE_IO) {
                 backend.getVerifiedTransparentBalance(address)
             }
-        val total =
-            withContext(SdkDispatchers.DATABASE_IO) {
-                backend.getTotalTransparentBalance(
-                    address
-                )
-            }
-        return WalletBalance(Zatoshi(total), Zatoshi(verified))
+        return Zatoshi(verified)
     }
 
     @Suppress("LongParameterList")

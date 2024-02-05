@@ -105,7 +105,7 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
                 launch {
                     sharedViewModel.synchronizerFlow
                         .filterNotNull()
-                        .flatMapLatest { it.transparentBalances }
+                        .flatMapLatest { it.transparentBalance }
                         .collect { onTransparentBalance(it) }
                 }
             }
@@ -124,7 +124,7 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
         }
     }
 
-    private fun onTransparentBalance(transparentBalance: WalletBalance?) {
+    private fun onTransparentBalance(transparentBalance: Zatoshi?) {
         binding.transparentBalance.apply {
             text = transparentBalance.humanString()
         }
@@ -133,7 +133,7 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
             // TODO [#776]: Support variable fees
             // TODO [#776]: https://github.com/zcash/zcash-android-wallet-sdk/issues/776
             visibility =
-                if ((transparentBalance?.available ?: Zatoshi(0)) > ZcashSdk.MINERS_FEE) {
+                if ((transparentBalance ?: Zatoshi(0)) > ZcashSdk.MINERS_FEE) {
                     View.VISIBLE
                 } else {
                     View.GONE
@@ -160,7 +160,7 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
         sharedViewModel.synchronizerFlow.value?.let { synchronizer ->
             onOrchardBalance(synchronizer.orchardBalances.value)
             onSaplingBalance(synchronizer.saplingBalances.value)
-            onTransparentBalance(synchronizer.transparentBalances.value)
+            onTransparentBalance(synchronizer.transparentBalance.value)
         }
     }
 
@@ -181,5 +181,15 @@ private fun WalletBalance?.humanString() =
         Pending balance: ${pending.convertZatoshiToZecString(12)}
         Available balance: ${available.convertZatoshiToZecString(12)}
         Total balance: ${total.convertZatoshiToZecString(12)}
+        """.trimIndent()
+    }
+
+@Suppress("MagicNumber")
+private fun Zatoshi?.humanString() =
+    if (null == this) {
+        "Calculating balance"
+    } else {
+        """
+        Balance: ${convertZatoshiToZecString(12)}
         """.trimIndent()
     }

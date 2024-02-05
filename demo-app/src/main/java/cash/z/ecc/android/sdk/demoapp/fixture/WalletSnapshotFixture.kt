@@ -12,9 +12,9 @@ import cash.z.ecc.android.sdk.model.Zatoshi
 object WalletSnapshotFixture {
     val STATUS = Synchronizer.Status.SYNCED
     val PROGRESS = PercentDecimal.ZERO_PERCENT
-    val TRANSPARENT_BALANCE: WalletBalance = WalletBalance(Zatoshi(8), Zatoshi(1))
-    val ORCHARD_BALANCE: WalletBalance = WalletBalance(Zatoshi(5), Zatoshi(2))
-    val SAPLING_BALANCE: WalletBalance = WalletBalance(Zatoshi(4), Zatoshi(4))
+    val TRANSPARENT_BALANCE: Zatoshi = Zatoshi(8)
+    val ORCHARD_BALANCE: WalletBalance = WalletBalance(Zatoshi(5), Zatoshi(2), Zatoshi(1))
+    val SAPLING_BALANCE: WalletBalance = WalletBalance(Zatoshi(4), Zatoshi(4), Zatoshi(2))
 
     // Should fill in with non-empty values for better example values in tests and UI previews
     @Suppress("LongParameterList")
@@ -28,7 +28,7 @@ object WalletSnapshotFixture {
             ),
         orchardBalance: WalletBalance = ORCHARD_BALANCE,
         saplingBalance: WalletBalance = SAPLING_BALANCE,
-        transparentBalance: WalletBalance = TRANSPARENT_BALANCE,
+        transparentBalance: Zatoshi = TRANSPARENT_BALANCE,
         progress: PercentDecimal = PROGRESS,
         synchronizerError: SynchronizerError? = null
     ) = WalletSnapshot(

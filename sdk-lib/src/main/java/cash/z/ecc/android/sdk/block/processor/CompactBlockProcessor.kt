@@ -49,6 +49,7 @@ import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.PercentDecimal
 import cash.z.ecc.android.sdk.model.WalletBalance
+import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.GetAddressUtxosReplyUnsafe
@@ -155,7 +156,7 @@ class CompactBlockProcessor internal constructor(
     // pools
     internal val saplingBalances = MutableStateFlow<WalletBalance?>(null)
     internal val orchardBalances = MutableStateFlow<WalletBalance?>(null)
-    internal val transparentBalances = MutableStateFlow<WalletBalance?>(null)
+    internal val transparentBalance = MutableStateFlow<Zatoshi?>(null)
 
     private val processingMutex = Mutex()
 
@@ -738,11 +739,7 @@ class CompactBlockProcessor internal constructor(
             // orchardBalances.value = it.orchard
             // We only allow stored transparent balance to be shielded, and we do so with
             // a zero-conf transaction, so treat all unshielded balance as available.
-            transparentBalances.value =
-                WalletBalance(
-                    it.unshielded,
-                    it.unshielded
-                )
+            transparentBalance.value = it.unshielded
         }
     }
 
@@ -2148,7 +2145,7 @@ class CompactBlockProcessor internal constructor(
         } ?: lowerBoundHeight
     }
 
-    suspend fun getUtxoCacheBalance(address: String): WalletBalance = backend.getDownloadedUtxoBalance(address)
+    suspend fun getUtxoCacheBalance(address: String): Zatoshi = backend.getDownloadedUtxoBalance(address)
 
     /**
      * Sealed class representing the various states of this processor.

@@ -148,20 +148,14 @@ private fun BalanceMainContent(
         Text(
             stringResource(
                 id = R.string.balance_available_amount_format,
-                walletSnapshot.transparentBalance.available.toZecString()
-            )
-        )
-        Text(
-            stringResource(
-                id = R.string.balance_pending_amount_format,
-                walletSnapshot.transparentBalance.pending.toZecString()
+                walletSnapshot.transparentBalance.toZecString()
             )
         )
 
         // TODO [#776]: Support variable fees
         // TODO [#776]: https://github.com/zcash/zcash-android-wallet-sdk/issues/776
         // This check will not be correct with variable fees
-        if (walletSnapshot.transparentBalance.available > ZcashSdk.MINERS_FEE) {
+        if (walletSnapshot.transparentBalance > ZcashSdk.MINERS_FEE) {
             // Note this implementation does not guard against multiple clicks
             Button(onClick = onShieldFunds) {
                 Text(stringResource(id = R.string.action_shield))

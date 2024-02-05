@@ -12,7 +12,7 @@ data class WalletSnapshot(
     val processorInfo: CompactBlockProcessor.ProcessorInfo,
     val orchardBalance: WalletBalance,
     val saplingBalance: WalletBalance,
-    val transparentBalance: WalletBalance,
+    val transparentBalance: Zatoshi,
     val progress: PercentDecimal,
     val synchronizerError: SynchronizerError?
 ) {
@@ -27,7 +27,7 @@ data class WalletSnapshot(
     val isSendEnabled: Boolean get() = status == Synchronizer.Status.SYNCED && hasFunds
 }
 
-fun WalletSnapshot.totalBalance() = orchardBalance.total + saplingBalance.total + transparentBalance.total
+fun WalletSnapshot.totalBalance() = orchardBalance.total + saplingBalance.total + transparentBalance
 
 // Note that considering both to be spendable is subject to change.
 // The user experience could be confusing, and in the future we might prefer to ask users
