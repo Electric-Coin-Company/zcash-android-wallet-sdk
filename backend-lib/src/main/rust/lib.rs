@@ -1148,23 +1148,31 @@ fn encode_account_balance<'a>(
     account: &AccountId,
     balance: &AccountBalance,
 ) -> jni::errors::Result<JObject<'a>> {
-    let sapling_total_balance = Amount::from(balance.sapling_balance().total());
     let sapling_verified_balance = Amount::from(balance.sapling_balance().spendable_value());
+    let sapling_change_pending =
+        Amount::from(balance.sapling_balance().change_pending_confirmation());
+    let sapling_value_pending =
+        Amount::from(balance.sapling_balance().value_pending_spendability());
 
-    let orchard_total_balance = Amount::from(balance.orchard_balance().total());
     let orchard_verified_balance = Amount::from(balance.orchard_balance().spendable_value());
+    let orchard_change_pending =
+        Amount::from(balance.orchard_balance().change_pending_confirmation());
+    let orchard_value_pending =
+        Amount::from(balance.orchard_balance().value_pending_spendability());
 
     let unshielded = Amount::from(balance.unshielded());
 
     env.new_object(
         JNI_ACCOUNT_BALANCE,
-        "(IJJJJJ)V",
+        "(IJJJJJJJ)V",
         &[
             JValue::Int(u32::from(*account) as i32),
-            JValue::Long(sapling_total_balance.into()),
             JValue::Long(sapling_verified_balance.into()),
-            JValue::Long(orchard_total_balance.into()),
+            JValue::Long(sapling_change_pending.into()),
+            JValue::Long(sapling_value_pending.into()),
             JValue::Long(orchard_verified_balance.into()),
+            JValue::Long(orchard_change_pending.into()),
+            JValue::Long(orchard_value_pending.into()),
             JValue::Long(unshielded.into()),
         ],
     )

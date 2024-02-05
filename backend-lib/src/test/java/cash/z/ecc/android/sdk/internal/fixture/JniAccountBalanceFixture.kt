@@ -4,26 +4,32 @@ import cash.z.ecc.android.sdk.internal.model.JniAccountBalance
 
 object JniAccountBalanceFixture {
     const val ACCOUNT_ID: Int = 0
-    const val SAPLING_TOTAL_BALANCE: Long = 0L
     const val SAPLING_VERIFIED_BALANCE: Long = 0L
-    const val ORCHARD_TOTAL_BALANCE: Long = 0L
+    const val SAPLING_CHANGE_PENDING: Long = 0L
+    const val SAPLING_VALUE_PENDING: Long = 0L
     const val ORCHARD_VERIFIED_BALANCE: Long = 0L
+    const val ORCHARD_CHANGE_PENDING: Long = 0L
+    const val ORCHARD_VALUE_PENDING: Long = 0L
     const val UNSHIELDED_BALANCE: Long = 0L
 
     @Suppress("LongParameterList")
     fun new(
         account: Int = ACCOUNT_ID,
-        saplingTotalBalance: Long = SAPLING_TOTAL_BALANCE,
         saplingVerifiedBalance: Long = SAPLING_VERIFIED_BALANCE,
-        orchardTotalBalance: Long = ORCHARD_TOTAL_BALANCE,
+        saplingChangePending: Long = SAPLING_CHANGE_PENDING,
+        saplingValuePending: Long = SAPLING_VALUE_PENDING,
         orchardVerifiedBalance: Long = ORCHARD_VERIFIED_BALANCE,
+        orchardChangePending: Long = ORCHARD_CHANGE_PENDING,
+        orchardValuePending: Long = ORCHARD_VALUE_PENDING,
         unshieldedBalance: Long = UNSHIELDED_BALANCE,
     ) = JniAccountBalance(
         account = account,
-        saplingTotalBalance = saplingTotalBalance,
         saplingVerifiedBalance = saplingVerifiedBalance,
-        orchardTotalBalance = orchardTotalBalance,
+        saplingChangePending = saplingChangePending,
+        saplingValuePending = saplingValuePending,
         orchardVerifiedBalance = orchardVerifiedBalance,
-        unshieldedBalance = unshieldedBalance
+        orchardChangePending = orchardChangePending,
+        orchardValuePending = orchardValuePending,
+        unshieldedBalance = unshieldedBalance,
     )
 }
