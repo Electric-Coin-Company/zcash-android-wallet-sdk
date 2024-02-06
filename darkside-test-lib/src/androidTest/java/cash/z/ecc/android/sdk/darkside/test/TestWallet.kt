@@ -10,7 +10,6 @@ import cash.z.ecc.android.sdk.ext.Darkside
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
-import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.tool.DerivationTool
