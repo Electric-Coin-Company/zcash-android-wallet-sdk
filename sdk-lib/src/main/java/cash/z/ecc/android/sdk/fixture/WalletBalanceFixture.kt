@@ -3,10 +3,11 @@ package cash.z.ecc.android.sdk.fixture
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
 
+@Suppress("MagicNumber")
 object WalletBalanceFixture {
-    val AVAILABLE: Long = 8L
-    val CHANGE_PENDING: Long = 4
-    val VALUE_PENDING: Long = 4
+    const val AVAILABLE: Long = 8L
+    const val CHANGE_PENDING: Long = 4
+    const val VALUE_PENDING: Long = 4
 
     fun new(
         available: Zatoshi = Zatoshi(AVAILABLE),
