@@ -24,7 +24,7 @@ data class WalletBalance(
     val total = available + changePending + valuePending
 
     /**
-     * The current pending balance is calculated as a distract of [total] and [available] balances.
+     * The current pending balance is calculated as the difference between [total] and [available] balances.
      */
     val pending = total - available
 }
