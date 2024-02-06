@@ -161,15 +161,6 @@ class RustBackend private constructor(
             )
         }
 
-    override suspend fun getVerifiedTransparentBalance(address: String): Long =
-        withContext(SdkDispatchers.DATABASE_IO) {
-            getVerifiedTransparentBalance(
-                dataDbFile.absolutePath,
-                address,
-                networkId = networkId
-            )
-        }
-
     override suspend fun getTotalTransparentBalance(address: String): Long =
         withContext(SdkDispatchers.DATABASE_IO) {
             getTotalTransparentBalance(
@@ -627,13 +618,6 @@ class RustBackend private constructor(
             height: Long,
             networkId: Int
         )
-
-        @JvmStatic
-        private external fun getVerifiedTransparentBalance(
-            pathDataDb: String,
-            taddr: String,
-            networkId: Int
-        ): Long
 
         @JvmStatic
         private external fun getTotalTransparentBalance(

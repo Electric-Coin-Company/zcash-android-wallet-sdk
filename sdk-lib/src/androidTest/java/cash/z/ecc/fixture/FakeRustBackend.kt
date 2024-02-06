@@ -49,10 +49,6 @@ internal class FakeRustBackend(
 
     override suspend fun getLatestCacheHeight(): Long = metadata.maxOf { it.height }
 
-    override suspend fun getVerifiedTransparentBalance(address: String): Long {
-        TODO("Not yet implemented")
-    }
-
     override suspend fun getTotalTransparentBalance(address: String): Long {
         TODO("Not yet implemented")
     }

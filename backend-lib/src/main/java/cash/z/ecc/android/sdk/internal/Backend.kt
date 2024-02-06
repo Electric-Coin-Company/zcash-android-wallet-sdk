@@ -170,8 +170,6 @@ interface Backend {
 
     suspend fun rewindBlockMetadataToHeight(height: Long)
 
-    suspend fun getVerifiedTransparentBalance(address: String): Long
-
     suspend fun getTotalTransparentBalance(address: String): Long
 
     /**

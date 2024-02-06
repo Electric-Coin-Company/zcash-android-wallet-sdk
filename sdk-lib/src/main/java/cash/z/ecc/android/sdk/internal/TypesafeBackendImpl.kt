@@ -116,7 +116,7 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
     override suspend fun getDownloadedUtxoBalance(address: String): Zatoshi {
         val verified =
             withContext(SdkDispatchers.DATABASE_IO) {
-                backend.getVerifiedTransparentBalance(address)
+                backend.getTotalTransparentBalance(address)
             }
         return Zatoshi(verified)
     }
