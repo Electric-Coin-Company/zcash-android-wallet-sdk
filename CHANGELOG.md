@@ -6,6 +6,16 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- `WalletBalance` now contains new fields `changePending` and `valuePending`. Fields `total` and `pending` are 
+  still provided. See more in the class documentation 
+  `sdk-lib/src/main/java/cash/z/ecc/android/sdk/model/WalletBalance.kt`
+- `Synchronizer.transparentBalances: WalletBalance` to `Synchronizer.transparentBalance: Zatoshi`
+- `WalletSnapshot.transparentBalance: WalletBalance` to `WalletSnapshot.transparentBalance: Zatoshi` 
+
+### Added
+- `WalletBalanceFixture` class with mock values that are supposed to be used only for testing purposes 
+
 ## [2.0.6] - 2024-01-30
 
 ### Fixed
