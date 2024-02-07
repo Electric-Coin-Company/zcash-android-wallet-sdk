@@ -114,11 +114,11 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
     }
 
     override suspend fun getDownloadedUtxoBalance(address: String): Zatoshi {
-        val verified =
+        val total =
             withContext(SdkDispatchers.DATABASE_IO) {
                 backend.getTotalTransparentBalance(address)
             }
-        return Zatoshi(verified)
+        return Zatoshi(total)
     }
 
     @Suppress("LongParameterList")
