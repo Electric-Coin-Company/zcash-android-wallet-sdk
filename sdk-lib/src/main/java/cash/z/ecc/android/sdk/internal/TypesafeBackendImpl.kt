@@ -12,7 +12,6 @@ import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.FirstClassByteArray
 import cash.z.ecc.android.sdk.model.Proposal
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
-import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import kotlinx.coroutines.withContext
@@ -114,21 +113,12 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
         backend.rewindBlockMetadataToHeight(height.value)
     }
 
-    override suspend fun getDownloadedUtxoBalance(address: String): WalletBalance {
-        // Note this implementation is not ideal because it requires two database queries without a transaction, which
-        // makes the data potentially inconsistent.  However the verified amount is queried first which makes this less
-        // bad.
-        val verified =
-            withContext(SdkDispatchers.DATABASE_IO) {
-                backend.getVerifiedTransparentBalance(address)
-            }
+    override suspend fun getDownloadedUtxoBalance(address: String): Zatoshi {
         val total =
             withContext(SdkDispatchers.DATABASE_IO) {
-                backend.getTotalTransparentBalance(
-                    address
-                )
+                backend.getTotalTransparentBalance(address)
             }
-        return WalletBalance(Zatoshi(total), Zatoshi(verified))
+        return Zatoshi(total)
     }
 
     @Suppress("LongParameterList")

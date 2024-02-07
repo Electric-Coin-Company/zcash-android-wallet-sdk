@@ -44,7 +44,6 @@ import cash.z.ecc.android.sdk.model.PercentDecimal
 import cash.z.ecc.android.sdk.model.TransactionOverview
 import cash.z.ecc.android.sdk.model.TransactionRecipient
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
-import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.type.AddressType
@@ -185,7 +184,7 @@ class SdkSynchronizer private constructor(
 
     override val orchardBalances = processor.orchardBalances.asStateFlow()
     override val saplingBalances = processor.saplingBalances.asStateFlow()
-    override val transparentBalances = processor.transparentBalances.asStateFlow()
+    override val transparentBalance = processor.transparentBalance.asStateFlow()
 
     override val transactions
         get() =
@@ -359,7 +358,7 @@ class SdkSynchronizer private constructor(
 
     /**
      * Calculate the latest balance based on the blocks that have been scanned and transmit this information into the
-     * [transparentBalances] and [saplingBalances] flow. The [orchardBalances] flow is still not filled with proper data
+     * [transparentBalance] and [saplingBalances] flow. The [orchardBalances] flow is still not filled with proper data
      * because of the current limited Orchard support.
      */
     suspend fun refreshAllBalances() {
@@ -587,7 +586,7 @@ class SdkSynchronizer private constructor(
         val encodedTx =
             txManager.encode(
                 usk,
-                tBalance.available,
+                tBalance,
                 TransactionRecipient.Account(usk.account),
                 memo,
                 usk.account
@@ -607,7 +606,7 @@ class SdkSynchronizer private constructor(
         return processor.refreshUtxos(account, since)
     }
 
-    override suspend fun getTransparentBalance(tAddr: String): WalletBalance {
+    override suspend fun getTransparentBalance(tAddr: String): Zatoshi {
         return processor.getUtxoCacheBalance(tAddr)
     }
 

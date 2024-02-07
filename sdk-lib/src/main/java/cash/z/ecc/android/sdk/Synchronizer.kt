@@ -69,19 +69,19 @@ interface Synchronizer {
     val networkHeight: StateFlow<BlockHeight?>
 
     /**
-     * A stream of balance values for the orchard pool. Includes the available and total balance.
+     * A stream of balance values for the orchard pool.
      */
     val orchardBalances: StateFlow<WalletBalance?>
 
     /**
-     * A stream of balance values for the sapling pool. Includes the available and total balance.
+     * A stream of balance values for the sapling pool.
      */
     val saplingBalances: StateFlow<WalletBalance?>
 
     /**
-     * A stream of balance values for the transparent pool. Includes the available and total balance.
+     * A stream of a balance for the transparent pool.
      */
-    val transparentBalances: StateFlow<WalletBalance?>
+    val transparentBalance: StateFlow<Zatoshi?>
 
     /**
      * A flow of all the transactions that are on the blockchain.
@@ -273,7 +273,7 @@ interface Synchronizer {
     /**
      * Returns the balance that the wallet knows about. This should be called after [refreshUtxos].
      */
-    suspend fun getTransparentBalance(tAddr: String): WalletBalance
+    suspend fun getTransparentBalance(tAddr: String): Zatoshi
 
     /**
      * Returns the safest height to which we can rewind, given a desire to rewind to the height

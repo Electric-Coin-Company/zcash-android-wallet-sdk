@@ -672,47 +672,6 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_isValidUn
 }
 
 #[no_mangle]
-pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getVerifiedTransparentBalance<
-    'local,
->(
-    mut env: JNIEnv<'local>,
-    _: JClass<'local>,
-    db_data: JString<'local>,
-    address: JString<'local>,
-    network_id: jint,
-) -> jlong {
-    let res = catch_unwind(&mut env, |env| {
-        let _span = tracing::info_span!("RustBackend.getVerifiedTransparentBalance").entered();
-        let network = parse_network(network_id as u32)?;
-        let db_data = wallet_db(env, network, db_data)?;
-        let addr = utils::java_string_to_rust(env, &address);
-        let taddr = TransparentAddress::decode(&network, &addr).unwrap();
-
-        let amount = (&db_data)
-            .get_target_and_anchor_heights(ANCHOR_OFFSET)
-            .map_err(|e| format_err!("Error while fetching anchor height: {}", e))
-            .and_then(|opt_anchor| {
-                opt_anchor
-                    .map(|(_, a)| a)
-                    .ok_or(format_err!("Anchor height not available; scan required."))
-            })
-            .and_then(|anchor| {
-                (&db_data)
-                    .get_unspent_transparent_outputs(&taddr, anchor, &[])
-                    .map_err(|e| format_err!("Error while fetching verified balance: {}", e))
-            })?
-            .iter()
-            .map(|utxo| utxo.txout().value)
-            .sum::<Option<NonNegativeAmount>>()
-            .ok_or_else(|| format_err!("Balance overflowed MAX_MONEY."))?;
-
-        Ok(Amount::from(amount).into())
-    });
-
-    unwrap_exc_or(&mut env, res, -1)
-}
-
-#[no_mangle]
 pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getTotalTransparentBalance<
     'local,
 >(
