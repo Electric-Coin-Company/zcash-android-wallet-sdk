@@ -20,6 +20,13 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Memo.MAX_MEMO_LENGTH_BYTES` is now available in public API
 
 ### Added
+- APIs that enable constructing a proposal for transferring or shielding funds,
+  and then creating transactions from a proposal. The intermediate proposal can
+  be used to determine the required fee, before committing to producing
+  transactions.
+  - `Synchronizer.proposeTransfer`
+  - `Synchronizer.proposeShielding`
+  - `Synchronizer.createProposedTransactions`
 - `WalletBalanceFixture` class with mock values that are supposed to be used only for testing purposes 
 - `Memo.countLength(memoString: String)` to count memo length in bytes
 - `PersistableWallet.toSafeString` is a safe alternative for the regular [toString] function that prints only 

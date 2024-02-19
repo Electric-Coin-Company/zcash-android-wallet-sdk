@@ -26,14 +26,14 @@ internal interface TypesafeBackend {
 
     @Suppress("LongParameterList")
     suspend fun proposeTransfer(
-        usk: UnifiedSpendingKey,
+        account: Account,
         to: String,
         value: Long,
         memo: ByteArray? = byteArrayOf()
     ): Proposal
 
     suspend fun proposeShielding(
-        usk: UnifiedSpendingKey,
+        account: Account,
         memo: ByteArray? = byteArrayOf()
     ): Proposal
 

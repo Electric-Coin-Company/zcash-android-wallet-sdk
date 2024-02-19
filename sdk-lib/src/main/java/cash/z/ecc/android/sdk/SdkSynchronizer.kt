@@ -42,8 +42,10 @@ import cash.z.ecc.android.sdk.internal.transaction.TransactionEncoderImpl
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.PercentDecimal
+import cash.z.ecc.android.sdk.model.Proposal
 import cash.z.ecc.android.sdk.model.TransactionOverview
 import cash.z.ecc.android.sdk.model.TransactionRecipient
+import cash.z.ecc.android.sdk.model.TransactionSubmitResult
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
@@ -68,6 +70,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
@@ -555,6 +558,46 @@ class SdkSynchronizer private constructor(
             account
         )
 
+    @Throws(TransactionEncoderException::class)
+    override suspend fun proposeTransfer(
+        account: Account,
+        recipient: String,
+        amount: Zatoshi,
+        memo: String
+    ): Proposal = txManager.proposeTransfer(account, recipient, amount, memo)
+
+    @Throws(TransactionEncoderException::class)
+    override suspend fun proposeShielding(
+        account: Account,
+        memo: String
+    ): Proposal = txManager.proposeShielding(account, memo)
+
+    @Throws(TransactionEncoderException::class)
+    override suspend fun createProposedTransactions(
+        proposal: Proposal,
+        usk: UnifiedSpendingKey
+    ): Flow<TransactionSubmitResult> {
+        val transactions = txManager.createProposedTransactions(proposal, usk)
+
+        return flow {
+            var submitFailed = false
+            for (transaction in transactions) {
+                if (submitFailed) {
+                    emit(TransactionSubmitResult.NotAttempted(transaction.txId))
+                } else {
+                    val submitResult = txManager.submit(transaction)
+                    when (submitResult) {
+                        is TransactionSubmitResult.Success -> {}
+                        else -> {
+                            submitFailed = true
+                        }
+                    }
+                    emit(submitResult)
+                }
+            }
+        }
+    }
+
     @Throws(TransactionEncoderException::class, TransactionSubmitException::class)
     override suspend fun sendToAddress(
         usk: UnifiedSpendingKey,
@@ -571,10 +614,13 @@ class SdkSynchronizer private constructor(
                 usk.account
             )
 
-        if (txManager.submit(encodedTx)) {
-            return storage.findMatchingTransactionId(encodedTx.txId.byteArray)!!
-        } else {
-            throw TransactionSubmitException()
+        when (txManager.submit(encodedTx)) {
+            is TransactionSubmitResult.Success -> {
+                return storage.findMatchingTransactionId(encodedTx.txId.byteArray)!!
+            }
+            else -> {
+                throw TransactionSubmitException()
+            }
         }
     }
 
@@ -596,10 +642,13 @@ class SdkSynchronizer private constructor(
                 usk.account
             )
 
-        if (txManager.submit(encodedTx)) {
-            return storage.findMatchingTransactionId(encodedTx.txId.byteArray)!!
-        } else {
-            throw TransactionSubmitException()
+        when (txManager.submit(encodedTx)) {
+            is TransactionSubmitResult.Success -> {
+                return storage.findMatchingTransactionId(encodedTx.txId.byteArray)!!
+            }
+            else -> {
+                throw TransactionSubmitException()
+            }
         }
     }
 

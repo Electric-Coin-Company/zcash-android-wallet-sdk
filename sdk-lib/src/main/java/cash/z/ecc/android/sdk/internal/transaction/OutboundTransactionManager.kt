@@ -2,7 +2,9 @@ package cash.z.ecc.android.sdk.internal.transaction
 
 import cash.z.ecc.android.sdk.internal.model.EncodedTransaction
 import cash.z.ecc.android.sdk.model.Account
+import cash.z.ecc.android.sdk.model.Proposal
 import cash.z.ecc.android.sdk.model.TransactionRecipient
+import cash.z.ecc.android.sdk.model.TransactionSubmitResult
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.Zatoshi
 
@@ -34,6 +36,48 @@ internal interface OutboundTransactionManager {
     ): EncodedTransaction
 
     /**
+     * Creates a proposal for transferring funds to the given recipient.
+     *
+     * @param account the account from which to transfer funds.
+     * @param recipient the recipient's address.
+     * @param amount the amount of zatoshi to send.
+     * @param memo the optional memo to include as part of the proposal's transactions.
+     *
+     * @return the proposal or an exception
+     */
+    suspend fun proposeTransfer(
+        account: Account,
+        recipient: String,
+        amount: Zatoshi,
+        memo: String
+    ): Proposal
+
+    /**
+     * Creates a proposal for shielding any transparent funds received by the given account.
+     *
+     * @param account the account for which to shield funds.
+     * @param memo the optional memo to include as part of the proposal's transactions.
+     */
+    suspend fun proposeShielding(
+        account: Account,
+        memo: String
+    ): Proposal
+
+    /**
+     * Creates the transactions in the given proposal.
+     *
+     * @param proposal the proposal for which to create transactions.
+     * @param usk the unified spending key associated with the account for which the
+     *            proposal was created.
+     *
+     * @return the successfully encoded transactions or an exception
+     */
+    suspend fun createProposedTransactions(
+        proposal: Proposal,
+        usk: UnifiedSpendingKey
+    ): List<EncodedTransaction>
+
+    /**
      * Submits the transaction represented by [encodedTransaction] to lightwalletd to broadcast to the
      * network and, hopefully, include in the next block.
      *
@@ -41,7 +85,7 @@ internal interface OutboundTransactionManager {
      * to lightwalletd.
      * @return true if the transaction was successfully submitted to lightwalletd.
      */
-    suspend fun submit(encodedTransaction: EncodedTransaction): Boolean
+    suspend fun submit(encodedTransaction: EncodedTransaction): TransactionSubmitResult
 
     /**
      * Return true when the given address is a valid t-addr.

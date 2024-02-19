@@ -15,8 +15,10 @@ import cash.z.ecc.android.sdk.internal.model.ext.toBlockHeight
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.PercentDecimal
+import cash.z.ecc.android.sdk.model.Proposal
 import cash.z.ecc.android.sdk.model.TransactionOverview
 import cash.z.ecc.android.sdk.model.TransactionRecipient
+import cash.z.ecc.android.sdk.model.TransactionSubmitResult
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
@@ -166,6 +168,50 @@ interface Synchronizer {
      * @return a legacy transparent address for the given account.
      */
     suspend fun getTransparentAddress(account: Account): String
+
+    /**
+     * Creates a proposal for transferring funds to the given recipient.
+     *
+     * @param account the account from which to transfer funds.
+     * @param recipient the recipient's address.
+     * @param amount the amount of zatoshi to send.
+     * @param memo the optional memo to include as part of the proposal's transactions.
+     *
+     * @return the proposal or an exception
+     */
+    suspend fun proposeTransfer(
+        account: Account,
+        recipient: String,
+        amount: Zatoshi,
+        memo: String = ""
+    ): Proposal
+
+    /**
+     * Creates a proposal for shielding any transparent funds received by the given account.
+     *
+     * @param account the account for which to shield funds.
+     * @param memo the optional memo to include as part of the proposal's transactions.
+     */
+    suspend fun proposeShielding(
+        account: Account,
+        memo: String = ZcashSdk.DEFAULT_SHIELD_FUNDS_MEMO_PREFIX
+    ): Proposal
+
+    /**
+     * Creates the transactions in the given proposal.
+     *
+     * @param proposal the proposal for which to create transactions.
+     * @param usk the unified spending key associated with the account for which the
+     *            proposal was created.
+     *
+     * @return a flow of result objects for the transactions that were created as part of
+     *         the proposal, indicating whether they were submitted to the network or if
+     *         an error occurred.
+     */
+    suspend fun createProposedTransactions(
+        proposal: Proposal,
+        usk: UnifiedSpendingKey
+    ): Flow<TransactionSubmitResult>
 
     /**
      * Sends zatoshi.
