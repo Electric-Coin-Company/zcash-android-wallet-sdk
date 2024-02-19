@@ -6,6 +6,11 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- `Synchronizer.sendToAddress` and `Synchronizer.shieldFunds` now throw an
+  exception if the created transaction successfully reaches `lightwalletd` but
+  fails to reach its backing full node's mempool.
+
 ### Changed
 - `WalletBalance` now contains new fields `changePending` and `valuePending`. Fields `total` and `pending` are 
   still provided. See more in the class documentation 

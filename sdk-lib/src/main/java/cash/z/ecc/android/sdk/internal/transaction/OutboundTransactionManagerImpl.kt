@@ -1,6 +1,7 @@
 package cash.z.ecc.android.sdk.internal.transaction
 
 import cash.z.ecc.android.sdk.internal.Twig
+import cash.z.ecc.android.sdk.internal.ext.toHexReversed
 import cash.z.ecc.android.sdk.internal.model.EncodedTransaction
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.TransactionRecipient
@@ -43,13 +44,21 @@ internal class OutboundTransactionManagerImpl(
     override suspend fun submit(encodedTransaction: EncodedTransaction): Boolean {
         return when (val response = service.submitTransaction(encodedTransaction.raw.byteArray)) {
             is Response.Success -> {
-                Twig.debug { "SUCCESS: submit transaction completed with response: ${response.result}" }
-                true
+                if (response.result.code == 0) {
+                    Twig.debug { "SUCCESS: submit transaction completed" }
+                    true
+                } else {
+                    Twig.debug {
+                        "FAILURE! submit transaction ${encodedTransaction.txId.byteArray.toHexReversed()} " +
+                            "completed with response: ${response.result.code}: ${response.result.message}"
+                    }
+                    false
+                }
             }
 
             is Response.Failure -> {
                 Twig.debug {
-                    "FAILURE! submit transaction completed with response: ${response.code}: ${
+                    "FAILURE! submit transaction failed with gRPC response: ${response.code}: ${
                         response.description
                     }"
                 }
