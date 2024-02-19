@@ -145,12 +145,17 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
         val amount = amountInput.text.toString().toDouble().convertZecToZatoshi()
         val toAddress = addressInput.text.toString().trim()
         lifecycleScope.launch {
-            sharedViewModel.synchronizerFlow.value?.sendToAddress(
-                spendingKey,
-                amount,
-                toAddress,
-                "Funds from Demo App"
-            )
+            sharedViewModel.synchronizerFlow.value?.let { synchronizer ->
+                synchronizer.createProposedTransactions(
+                    synchronizer.proposeTransfer(
+                        spendingKey.account,
+                        toAddress,
+                        amount,
+                        "Funds from Demo App"
+                    ),
+                    spendingKey
+                )
+            }
         }
 
         mainActivity()?.hideKeyboard()

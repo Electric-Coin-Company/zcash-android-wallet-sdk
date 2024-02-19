@@ -105,7 +105,15 @@ class TestWallet(
         memo: String = "",
         amount: Zatoshi = Zatoshi(500L)
     ): TestWallet {
-        synchronizer.sendToAddress(shieldedSpendingKey, amount, address, memo)
+        synchronizer.createProposedTransactions(
+            synchronizer.proposeTransfer(
+                shieldedSpendingKey.account,
+                address,
+                amount,
+                memo
+            ),
+            shieldedSpendingKey
+        )
         return this
     }
 
@@ -121,7 +129,10 @@ class TestWallet(
 
         synchronizer.getTransparentBalance(transparentAddress).let { walletBalance ->
             if (walletBalance.value > 0L) {
-                synchronizer.shieldFunds(shieldedSpendingKey)
+                synchronizer.createProposedTransactions(
+                    synchronizer.proposeShielding(shieldedSpendingKey.account),
+                    shieldedSpendingKey
+                )
             }
         }
 

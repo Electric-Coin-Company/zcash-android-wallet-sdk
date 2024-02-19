@@ -106,7 +106,15 @@ class TestWallet(
         memo: String = "",
         amount: Zatoshi = Zatoshi(500L)
     ): TestWallet {
-        synchronizer.sendToAddress(spendingKey, amount, address, memo)
+        synchronizer.createProposedTransactions(
+            synchronizer.proposeTransfer(
+                spendingKey.account,
+                address,
+                amount,
+                memo
+            ),
+            spendingKey
+        )
         return this
     }
 
@@ -124,7 +132,7 @@ class TestWallet(
             Twig.debug { "FOUND utxo balance of total: $walletBalance" }
 
             if (walletBalance.value > 0L) {
-                synchronizer.shieldFunds(spendingKey)
+                synchronizer.createProposedTransactions(synchronizer.proposeShielding(spendingKey.account), spendingKey)
             }
         }
 

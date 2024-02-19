@@ -16,8 +16,11 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   still provided. See more in the class documentation 
   `sdk-lib/src/main/java/cash/z/ecc/android/sdk/model/WalletBalance.kt`
 - `Synchronizer.transparentBalances: WalletBalance` to `Synchronizer.transparentBalance: Zatoshi`
-- `WalletSnapshot.transparentBalance: WalletBalance` to `WalletSnapshot.transparentBalance: Zatoshi` 
+- `WalletSnapshot.transparentBalance: WalletBalance` to `WalletSnapshot.transparentBalance: Zatoshi`
 - `Memo.MAX_MEMO_LENGTH_BYTES` is now available in public API
+- `Synchronizer.sendToAddress` and `Synchronizer.shieldFunds` have been
+  deprecated, and will be removed in 2.1.0 (which will create multiple
+  transactions at once for some recipients).
 
 ### Added
 - APIs that enable constructing a proposal for transferring or shielding funds,

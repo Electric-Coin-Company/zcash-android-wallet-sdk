@@ -226,6 +226,13 @@ interface Synchronizer {
      * useful for updating the UI without needing to poll. Of course, polling is always an option
      * for any wallet that wants to ignore this return value.
      */
+    @Deprecated(
+        message = "Upcoming SDK 2.1 will create multiple transactions at once for some recipients.",
+        replaceWith =
+            ReplaceWith(
+                "createProposedTransactions(proposeTransfer(usk.account, toAddress, amount, memo), usk)"
+            )
+    )
     suspend fun sendToAddress(
         usk: UnifiedSpendingKey,
         amount: Zatoshi,
@@ -233,6 +240,13 @@ interface Synchronizer {
         memo: String = ""
     ): Long
 
+    @Deprecated(
+        message = "Upcoming SDK 2.1 will create multiple transactions at once for some recipients.",
+        replaceWith =
+            ReplaceWith(
+                "createProposedTransactions(proposeShielding(usk.account, memo), usk)"
+            )
+    )
     suspend fun shieldFunds(
         usk: UnifiedSpendingKey,
         memo: String = ZcashSdk.DEFAULT_SHIELD_FUNDS_MEMO_PREFIX

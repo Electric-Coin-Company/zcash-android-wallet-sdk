@@ -60,13 +60,18 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
         binding.shield.apply {
             setOnClickListener {
                 lifecycleScope.launch {
-                    sharedViewModel.synchronizerFlow.value?.shieldFunds(
+                    val usk =
                         DerivationTool.getInstance().deriveUnifiedSpendingKey(
                             seed,
                             network,
                             Account.DEFAULT
                         )
-                    )
+                    sharedViewModel.synchronizerFlow.value?.let { synchronizer ->
+                        synchronizer.createProposedTransactions(
+                            synchronizer.proposeShielding(usk.account),
+                            usk
+                        )
+                    }
                 }
             }
         }

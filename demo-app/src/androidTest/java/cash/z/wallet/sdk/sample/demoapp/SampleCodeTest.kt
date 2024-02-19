@@ -189,7 +189,15 @@ class SampleCodeTest {
                     ZcashNetwork.Mainnet,
                     Account.DEFAULT
                 )
-            synchronizer.sendToAddress(spendingKey, amount, address, memo)
+            synchronizer.createProposedTransactions(
+                synchronizer.proposeTransfer(
+                    spendingKey.account,
+                    address,
+                    amount,
+                    memo
+                ),
+                spendingKey
+            )
         }
 
     // /////////////////////////////////////////////////////
