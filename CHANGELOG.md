@@ -12,9 +12,11 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `sdk-lib/src/main/java/cash/z/ecc/android/sdk/model/WalletBalance.kt`
 - `Synchronizer.transparentBalances: WalletBalance` to `Synchronizer.transparentBalance: Zatoshi`
 - `WalletSnapshot.transparentBalance: WalletBalance` to `WalletSnapshot.transparentBalance: Zatoshi` 
+- `Memo.MAX_MEMO_LENGTH_BYTES` is now available in public API
 
 ### Added
 - `WalletBalanceFixture` class with mock values that are supposed to be used only for testing purposes 
+- `Memo.countLength(memoString: String)` to count memo length in bytes
 
 ## [2.0.6] - 2024-01-30
 

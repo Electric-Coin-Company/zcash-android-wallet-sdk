@@ -23,6 +23,7 @@ object ZecSendExt {
                     add(ZecSendValidation.Invalid.ValidationError.INVALID_AMOUNT)
                 }
 
+                // TODO [#342]: Verify Addresses without Synchronizer
                 // TODO [#342]: https://github.com/zcash/zcash-android-wallet-sdk/issues/342
             }
 

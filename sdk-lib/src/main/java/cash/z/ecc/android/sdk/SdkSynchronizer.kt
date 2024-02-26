@@ -616,9 +616,8 @@ class SdkSynchronizer private constructor(
 
     override suspend fun isValidUnifiedAddr(address: String) = txManager.isValidUnifiedAddress(address)
 
-    override suspend fun validateAddress(address: String): AddressType {
-        @Suppress("TooGenericExceptionCaught")
-        return try {
+    override suspend fun validateAddress(address: String): AddressType =
+        runCatching {
             if (isValidShieldedAddr(address)) {
                 Shielded
             } else if (isValidTransparentAddr(address)) {
@@ -628,12 +627,9 @@ class SdkSynchronizer private constructor(
             } else {
                 AddressType.Invalid("Not a Zcash address")
             }
-        } catch (
-            @Suppress("TooGenericExceptionCaught") error: Throwable
-        ) {
+        }.getOrElse { error ->
             AddressType.Invalid(error.message ?: "Invalid")
         }
-    }
 
     override suspend fun validateConsensusBranch(): ConsensusMatchType {
         val serverBranchId = tryNull { processor.downloader.getServerInfo()?.consensusBranchId }
