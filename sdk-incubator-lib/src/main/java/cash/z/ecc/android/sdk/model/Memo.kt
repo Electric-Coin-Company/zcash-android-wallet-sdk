@@ -17,8 +17,10 @@ value class Memo(val value: String) {
          *
          * https://zips.z.cash/zip-0321
          */
-        private const val MAX_MEMO_LENGTH_BYTES = 512
+        const val MAX_MEMO_LENGTH_BYTES = 512
 
-        fun isWithinMaxLength(memoString: String) = memoString.sizeInUtf8Bytes() <= MAX_MEMO_LENGTH_BYTES
+        fun countLength(memoString: String): Int = memoString.sizeInUtf8Bytes()
+
+        fun isWithinMaxLength(memoString: String) = countLength(memoString) <= MAX_MEMO_LENGTH_BYTES
     }
 }
