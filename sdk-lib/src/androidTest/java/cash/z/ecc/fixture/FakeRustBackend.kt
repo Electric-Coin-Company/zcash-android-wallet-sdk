@@ -88,6 +88,7 @@ internal class FakeRustBackend(
 
     override suspend fun proposeShielding(
         account: Int,
+        shieldingThreshold: Long,
         memo: ByteArray?
     ): ProposalUnsafe {
         TODO("Not yet implemented")

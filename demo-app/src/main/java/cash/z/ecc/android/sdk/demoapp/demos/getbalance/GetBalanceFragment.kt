@@ -47,6 +47,7 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
         reportTraceEvent(SyncBlockchainBenchmarkTrace.Event.BALANCE_SCREEN_END)
     }
 
+    @Suppress("MagicNumber")
     override fun onViewCreated(
         view: View,
         savedInstanceState: Bundle?
@@ -68,7 +69,7 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
                         )
                     sharedViewModel.synchronizerFlow.value?.let { synchronizer ->
                         synchronizer.createProposedTransactions(
-                            synchronizer.proposeShielding(usk.account),
+                            synchronizer.proposeShielding(usk.account, Zatoshi(100000)),
                             usk
                         )
                     }

@@ -53,11 +53,13 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
 
     override suspend fun proposeShielding(
         account: Account,
+        shieldingThreshold: Long,
         memo: ByteArray?
     ): Proposal =
         Proposal.fromUnsafe(
             backend.proposeShielding(
                 account.value,
+                shieldingThreshold,
                 memo
             )
         )

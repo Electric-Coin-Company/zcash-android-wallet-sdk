@@ -569,8 +569,9 @@ class SdkSynchronizer private constructor(
     @Throws(TransactionEncoderException::class)
     override suspend fun proposeShielding(
         account: Account,
+        shieldingThreshold: Zatoshi,
         memo: String
-    ): Proposal = txManager.proposeShielding(account, memo)
+    ): Proposal = txManager.proposeShielding(account, shieldingThreshold, memo)
 
     @Throws(TransactionEncoderException::class)
     override suspend fun createProposedTransactions(
@@ -635,7 +636,7 @@ class SdkSynchronizer private constructor(
         message = "Upcoming SDK 2.1 will create multiple transactions at once for some recipients.",
         replaceWith =
             ReplaceWith(
-                "createProposedTransactions(proposeShielding(usk.account, memo), usk)"
+                "createProposedTransactions(proposeShielding(usk.account, shieldingThreshold, memo), usk)"
             )
     )
     @Throws(TransactionEncoderException::class, TransactionSubmitException::class)

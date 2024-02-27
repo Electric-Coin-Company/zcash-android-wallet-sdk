@@ -190,10 +190,13 @@ interface Synchronizer {
      * Creates a proposal for shielding any transparent funds received by the given account.
      *
      * @param account the account for which to shield funds.
+     * @param shieldingThreshold the minimum transparent balance required before a
+     *                           proposal will be created.
      * @param memo the optional memo to include as part of the proposal's transactions.
      */
     suspend fun proposeShielding(
         account: Account,
+        shieldingThreshold: Zatoshi,
         memo: String = ZcashSdk.DEFAULT_SHIELD_FUNDS_MEMO_PREFIX
     ): Proposal
 
@@ -244,7 +247,7 @@ interface Synchronizer {
         message = "Upcoming SDK 2.1 will create multiple transactions at once for some recipients.",
         replaceWith =
             ReplaceWith(
-                "createProposedTransactions(proposeShielding(usk.account, memo), usk)"
+                "createProposedTransactions(proposeShielding(usk.account, shieldingThreshold, memo), usk)"
             )
     )
     suspend fun shieldFunds(

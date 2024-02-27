@@ -34,6 +34,7 @@ internal interface TypesafeBackend {
 
     suspend fun proposeShielding(
         account: Account,
+        shieldingThreshold: Long,
         memo: ByteArray? = byteArrayOf()
     ): Proposal
 

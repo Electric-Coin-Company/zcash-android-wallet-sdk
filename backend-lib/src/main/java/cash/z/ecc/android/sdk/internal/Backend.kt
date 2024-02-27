@@ -30,6 +30,7 @@ interface Backend {
 
     suspend fun proposeShielding(
         account: Int,
+        shieldingThreshold: Long,
         memo: ByteArray? = byteArrayOf()
     ): ProposalUnsafe
 

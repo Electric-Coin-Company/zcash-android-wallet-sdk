@@ -56,10 +56,13 @@ internal interface OutboundTransactionManager {
      * Creates a proposal for shielding any transparent funds received by the given account.
      *
      * @param account the account for which to shield funds.
+     * @param shieldingThreshold the minimum transparent balance required before a
+     *                           proposal will be created.
      * @param memo the optional memo to include as part of the proposal's transactions.
      */
     suspend fun proposeShielding(
         account: Account,
+        shieldingThreshold: Zatoshi,
         memo: String
     ): Proposal
 

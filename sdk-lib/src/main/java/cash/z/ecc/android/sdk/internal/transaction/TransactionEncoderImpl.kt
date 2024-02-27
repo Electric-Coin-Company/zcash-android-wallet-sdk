@@ -96,11 +96,12 @@ internal class TransactionEncoderImpl(
 
     override suspend fun proposeShielding(
         account: Account,
+        shieldingThreshold: Zatoshi,
         memo: ByteArray?
     ): Proposal {
         @Suppress("TooGenericExceptionCaught")
         return try {
-            backend.proposeShielding(account, memo)
+            backend.proposeShielding(account, shieldingThreshold.value, memo)
         } catch (t: Throwable) {
             // TODO [#680]: if this error matches: Insufficient balance (have 0, need 1000 including fee)
             //  then consider custom error that says no UTXOs existed to shield
@@ -229,6 +230,7 @@ internal class TransactionEncoderImpl(
         }
     }
 
+    @Suppress("MagicNumber")
     private suspend fun createShieldingSpend(
         usk: UnifiedSpendingKey,
         memo: ByteArray? = byteArrayOf()
@@ -237,7 +239,7 @@ internal class TransactionEncoderImpl(
         return try {
             saplingParamTool.ensureParams(saplingParamTool.properties.paramsDirectory)
             Twig.debug { "params exist! attempting to shield..." }
-            val proposal = backend.proposeShielding(usk.account, memo)
+            val proposal = backend.proposeShielding(usk.account, 100000, memo)
             backend.createProposedTransaction(proposal, usk)
         } catch (t: Throwable) {
             // TODO [#680]: if this error matches: Insufficient balance (have 0, need 1000 including fee)

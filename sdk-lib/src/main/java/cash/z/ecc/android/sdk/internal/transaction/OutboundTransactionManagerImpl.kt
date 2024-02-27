@@ -52,8 +52,9 @@ internal class OutboundTransactionManagerImpl(
 
     override suspend fun proposeShielding(
         account: Account,
+        shieldingThreshold: Zatoshi,
         memo: String
-    ): Proposal = encoder.proposeShielding(account, memo.toByteArray())
+    ): Proposal = encoder.proposeShielding(account, shieldingThreshold, memo.toByteArray())
 
     override suspend fun createProposedTransactions(
         proposal: Proposal,

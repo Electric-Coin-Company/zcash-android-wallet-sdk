@@ -1480,6 +1480,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeSh
     _: JClass<'local>,
     db_data: JString<'local>,
     account: jint,
+    shielding_threshold: jlong,
     memo: JByteArray<'local>,
     network_id: jint,
     use_zip317_fees: jboolean,
@@ -1489,6 +1490,8 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeSh
         let network = parse_network(network_id as u32)?;
         let mut db_data = wallet_db(env, network, db_data)?;
         let account = account_id_from_jint(account)?;
+        let shielding_threshold = NonNegativeAmount::from_nonnegative_i64(shielding_threshold)
+            .map_err(|()| format_err!("Invalid shielding threshold, out of range"))?;
         let memo_bytes = env.convert_byte_array(memo).unwrap();
 
         let min_confirmations = 0;
@@ -1519,8 +1522,6 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeSh
         let memo = Memo::from_bytes(&memo_bytes).unwrap();
 
         let input_selector = zip317_helper(Some(MemoBytes::from(&memo)), use_zip317_fees);
-
-        let shielding_threshold = NonNegativeAmount::from_u64(100000).unwrap();
 
         let proposal = propose_shielding::<_, _, _, Infallible>(
             &mut db_data,

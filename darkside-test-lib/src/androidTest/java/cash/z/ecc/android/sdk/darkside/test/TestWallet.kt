@@ -130,7 +130,7 @@ class TestWallet(
         synchronizer.getTransparentBalance(transparentAddress).let { walletBalance ->
             if (walletBalance.value > 0L) {
                 synchronizer.createProposedTransactions(
-                    synchronizer.proposeShielding(shieldedSpendingKey.account),
+                    synchronizer.proposeShielding(shieldedSpendingKey.account, Zatoshi(100000)),
                     shieldedSpendingKey
                 )
             }

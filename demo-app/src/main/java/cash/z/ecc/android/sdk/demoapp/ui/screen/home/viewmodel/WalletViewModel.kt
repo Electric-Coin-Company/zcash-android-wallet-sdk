@@ -217,6 +217,7 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
      *
      * Observe the result via [sendState].
      */
+    @Suppress("MagicNumber")
     fun shieldFunds() {
         if (sendState.value is SendState.Sending) {
             return
@@ -230,7 +231,7 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
                 val spendingKey = spendingKey.filterNotNull().first()
                 kotlin.runCatching {
                     synchronizer.createProposedTransactions(
-                        synchronizer.proposeShielding(spendingKey.account),
+                        synchronizer.proposeShielding(spendingKey.account, Zatoshi(100000)),
                         spendingKey
                     )
                 }

@@ -307,6 +307,7 @@ class RustBackend private constructor(
 
     override suspend fun proposeShielding(
         account: Int,
+        shieldingThreshold: Long,
         memo: ByteArray?
     ): ProposalUnsafe {
         return withContext(SdkDispatchers.DATABASE_IO) {
@@ -314,6 +315,7 @@ class RustBackend private constructor(
                 proposeShielding(
                     dataDbFile.absolutePath,
                     account,
+                    shieldingThreshold,
                     memo ?: ByteArray(0),
                     networkId = networkId,
                     useZip317Fees = IS_USE_ZIP_317_FEES
@@ -584,6 +586,7 @@ class RustBackend private constructor(
         private external fun proposeShielding(
             dbDataPath: String,
             account: Int,
+            shieldingThreshold: Long,
             memo: ByteArray,
             networkId: Int,
             useZip317Fees: Boolean
