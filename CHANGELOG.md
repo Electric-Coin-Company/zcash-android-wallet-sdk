@@ -29,6 +29,7 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   transactions.
   - `Synchronizer.proposeTransfer`
   - `Synchronizer.proposeShielding`
+  - `Synchronizer.proposeFulfillingPaymentUri`
   - `Synchronizer.createProposedTransactions`
 - `WalletBalanceFixture` class with mock values that are supposed to be used only for testing purposes 
 - `Memo.countLength(memoString: String)` to count memo length in bytes

@@ -41,6 +41,19 @@ internal interface TransactionEncoder {
     ): EncodedTransaction
 
     /**
+     * Creates a proposal for transferring from a valid ZIP-321 Payment URI string
+     *
+     * @param account the account from which to transfer funds.
+     * @param uri a valid ZIP-321 Payment URI string
+     *
+     * @return the proposal or an exception
+     */
+    suspend fun proposeTransferFromUri(
+        account: Account,
+        uri: String
+    ): Proposal
+
+    /**
      * Creates a proposal for transferring funds to the given recipient.
      *
      * @param account the account from which to transfer funds.

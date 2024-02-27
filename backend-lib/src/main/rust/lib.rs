@@ -1403,6 +1403,49 @@ fn zip317_helper<DbT>(
 }
 
 #[no_mangle]
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeTransferFromUri<'local>(
+    mut env: JNIEnv<'local>,
+    _: JClass<'local>,
+    db_data: JString<'local>,
+    account: jint,
+    payment_uri: JString<'local>,
+    network_id: jint,
+    use_zip317_fees: jboolean,
+) -> jbyteArray {
+    let res = catch_unwind(&mut env, |env| {
+        let _span = tracing::info_span!("RustBackend.proposeTransfer").entered();
+        let network = parse_network(network_id as u32)?;
+        let mut db_data = wallet_db(env, network, db_data)?;
+        let account = account_id_from_jint(account)?;
+        let payment_uri = utils::java_string_to_rust(env, &payment_uri);
+
+        let input_selector = zip317_helper(None, use_zip317_fees);
+
+        let request = TransactionRequest::from_uri(&network, &payment_uri)
+        .map_err(|e| format_err!("Error creating transaction request: {:?}", e))?;
+
+        let proposal = propose_transfer::<_, _, _, Infallible>(
+            &mut db_data,
+            &network,
+            account,
+            &input_selector,
+            request,
+            ANCHOR_OFFSET,
+        )
+        .map_err(|e| format_err!("Error creating transaction proposal: {}", e))?;
+
+        utils::rust_bytes_to_java(
+            &env,
+            Proposal::from_standard_proposal(&network, &proposal)
+                .encode_to_vec()
+                .as_ref(),
+        )
+        .map(|arr| arr.into_raw())
+    });
+    unwrap_exc_or(&mut env, res, ptr::null_mut())
+}
+
+#[no_mangle]
 pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeTransfer<'local>(
     mut env: JNIEnv<'local>,
     _: JClass<'local>,
