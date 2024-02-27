@@ -317,6 +317,21 @@ class RustBackend private constructor(
         )
     }
 
+    override suspend fun proposeTransferFromUri(
+        account: Int,
+        uri: String
+    ): ProposalUnsafe =
+        withContext(SdkDispatchers.DATABASE_IO) {
+            ProposalUnsafe.parse(
+                proposeTransferFromUri(
+                    dataDbFile.absolutePath,
+                    account,
+                    uri,
+                    networkId = networkId,
+                )
+            )
+        }
+
     override suspend fun proposeTransfer(
         account: Int,
         to: String,
@@ -332,7 +347,6 @@ class RustBackend private constructor(
                     value,
                     memo,
                     networkId = networkId,
-                    useZip317Fees = IS_USE_ZIP_317_FEES
                 )
             )
         }
@@ -351,7 +365,6 @@ class RustBackend private constructor(
                 memo,
                 transparentReceiver,
                 networkId = networkId,
-                useZip317Fees = IS_USE_ZIP_317_FEES
             )?.let {
                 ProposalUnsafe.parse(
                     it
@@ -422,7 +435,6 @@ class RustBackend private constructor(
      */
     companion object {
         internal val rustLibraryLoader = NativeLibraryLoader("zcashwalletsdk")
-        private const val IS_USE_ZIP_317_FEES = true
 
         private val rustLogging: RustLogging = RustLogging.Off
 
@@ -660,6 +672,14 @@ class RustBackend private constructor(
         )
 
         @JvmStatic
+        private external fun proposeTransferFromUri(
+            dbDataPath: String,
+            account: Int,
+            uri: String,
+            networkId: Int,
+        ): ByteArray
+
+        @JvmStatic
         @Suppress("LongParameterList")
         private external fun proposeTransfer(
             dbDataPath: String,
@@ -668,7 +688,6 @@ class RustBackend private constructor(
             value: Long,
             memo: ByteArray?,
             networkId: Int,
-            useZip317Fees: Boolean
         ): ByteArray
 
         @JvmStatic
@@ -680,7 +699,6 @@ class RustBackend private constructor(
             memo: ByteArray?,
             transparentReceiver: String?,
             networkId: Int,
-            useZip317Fees: Boolean
         ): ByteArray?
 
         @JvmStatic

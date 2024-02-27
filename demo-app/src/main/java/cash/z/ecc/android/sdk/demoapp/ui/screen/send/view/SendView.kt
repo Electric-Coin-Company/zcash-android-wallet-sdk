@@ -17,6 +17,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -63,8 +64,10 @@ private fun ComposablePreview() {
             sendState = SendState.None,
             onSend = {},
             onGetProposal = {},
+            onGetProposalFromUri = {},
             onBack = {},
-            sendTransactionProposal = null
+            sendTransactionProposal = null,
+            sendTransactionProposalFromUri = null
         )
     }
 }
@@ -76,8 +79,10 @@ fun Send(
     sendState: SendState,
     onSend: (ZecSend) -> Unit,
     onGetProposal: (ZecSend) -> Unit,
+    onGetProposalFromUri: (String) -> Unit,
     onBack: () -> Unit,
     sendTransactionProposal: Proposal?,
+    sendTransactionProposalFromUri: Proposal?,
 ) {
     Scaffold(topBar = {
         SendTopAppBar(onBack)
@@ -88,7 +93,9 @@ fun Send(
             sendState = sendState,
             onSend = onSend,
             onGetProposal = onGetProposal,
-            sendTransactionProposal = sendTransactionProposal
+            onGetProposalFromUri = onGetProposalFromUri,
+            sendTransactionProposal = sendTransactionProposal,
+            sendTransactionProposalFromUri = sendTransactionProposalFromUri
         )
     }
 }
@@ -120,7 +127,9 @@ private fun SendMainContent(
     sendState: SendState,
     onSend: (ZecSend) -> Unit,
     onGetProposal: (ZecSend) -> Unit,
+    onGetProposalFromUri: (String) -> Unit,
     sendTransactionProposal: Proposal?,
+    sendTransactionProposalFromUri: Proposal?,
 ) {
     val context = LocalContext.current
     val monetarySeparators = MonetarySeparators.current(locale = Locale.US)
@@ -133,6 +142,8 @@ private fun SendMainContent(
         mutableStateOf("")
     }
     var memoString by rememberSaveable { mutableStateOf("") }
+
+    var zip321String by rememberSaveable { mutableStateOf("") }
 
     var validation by rememberSaveable {
         mutableStateOf<Set<ZecSendExt.ZecSendValidation.Invalid.ValidationError>>(emptySet())
@@ -288,6 +299,50 @@ private fun SendMainContent(
         ) {
             Text(stringResource(id = R.string.send_button))
         }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        HorizontalDivider()
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // ZIP 321 URI examples for Alice's addresses:
+        //
+        // A valid payment request for a payment of 1 ZEC to a single shielded Sapling address, with a
+        // base64url-encoded memo and a message for display by the wallet:
+        // zcash:zs15tzaulx5weua5c7l47l4pku2pw9fzwvvnsp4y80jdpul0y3nwn5zp7tmkcclqaca3mdjqjkl7hx?amount=0.0001
+        // &memo=VGhpcyBpcyBhIHNpbXBsZSBtZW1vLg&message=Thank%20you%20for%20your%20purchase
+        //
+        // A valid payment request with one transparent and one shielded Sapling recipient address, with a
+        // base64url-encoded Unicode memo for the shielded recipient:
+        // zcash:?address=t1duiEGg7b39nfQee3XaTY4f5McqfyJKhBi&amount=0.0001
+        // &address.1=zs15tzaulx5weua5c7l47l4pku2pw9fzwvvnsp4y80jdpul0y3nwn5zp7tmkcclqaca3mdjqjkl7hx
+        // &amount.1=0.0002&memo.1=VGhpcyBpcyBhIHVuaWNvZGUgbWVtbyDinKjwn6aE8J-PhvCfjok
+
+        TextField(
+            value = zip321String,
+            onValueChange = { zip321String = it },
+            label = { Text(stringResource(id = R.string.send_zip_321_uri)) }
+        )
+
+        if (sendTransactionProposalFromUri != null) {
+            Text(stringResource(id = R.string.send_proposal_status, sendTransactionProposalFromUri.toPrettyString()))
+        }
+
+        Button(
+            onClick = {
+                onGetProposalFromUri(zip321String)
+            },
+            enabled = zip321String.isNotBlank()
+        ) {
+            Text(stringResource(id = R.string.send_proposal_from_uri_button))
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        HorizontalDivider()
+
+        Spacer(modifier = Modifier.height(16.dp))
 
         Text(stringResource(id = R.string.send_status, sendState.toString()))
     }

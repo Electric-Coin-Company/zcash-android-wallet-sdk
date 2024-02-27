@@ -28,6 +28,15 @@ interface Backend {
         memo: ByteArray? = null
     ): ProposalUnsafe
 
+    /**
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    @Throws(RuntimeException::class)
+    suspend fun proposeTransferFromUri(
+        account: Int,
+        uri: String
+    ): ProposalUnsafe
+
     suspend fun proposeShielding(
         account: Int,
         shieldingThreshold: Long,

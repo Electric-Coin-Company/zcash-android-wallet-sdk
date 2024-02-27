@@ -1700,18 +1700,54 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_setTransa
 
 fn zip317_helper<DbT>(
     change_memo: Option<MemoBytes>,
-    use_zip317_fees: jboolean,
 ) -> GreedyInputSelector<DbT, SingleOutputChangeStrategy> {
-    let fee_rule = if use_zip317_fees == JNI_TRUE {
-        StandardFeeRule::Zip317
-    } else {
-        #[allow(deprecated)]
-        StandardFeeRule::PreZip313
-    };
     GreedyInputSelector::new(
-        SingleOutputChangeStrategy::new(fee_rule, change_memo, ShieldedProtocol::Orchard),
+        SingleOutputChangeStrategy::new(StandardFeeRule::Zip317, change_memo, ShieldedProtocol::Orchard),
         DustOutputPolicy::default(),
     )
+}
+
+#[no_mangle]
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeTransferFromUri<'local>(
+    mut env: JNIEnv<'local>,
+    _: JClass<'local>,
+    db_data: JString<'local>,
+    account: jint,
+    payment_uri: JString<'local>,
+    network_id: jint,
+) -> jbyteArray {
+    let res = catch_unwind(&mut env, |env| {
+        let _span = tracing::info_span!("RustBackend.proposeTransfer").entered();
+        let network = parse_network(network_id as u32)?;
+        let mut db_data = wallet_db(env, network, db_data)?;
+        let account = account_id_from_jni(&db_data, account)?;
+        let payment_uri = utils::java_string_to_rust(env, &payment_uri);
+
+        // Always use ZIP 317 fees
+        let input_selector = zip317_helper(None);
+
+        let request = TransactionRequest::from_uri(&payment_uri)
+        .map_err(|e| anyhow!("Error creating transaction request: {:?}", e))?;
+
+        let proposal = propose_transfer::<_, _, _, Infallible>(
+            &mut db_data,
+            &network,
+            account,
+            &input_selector,
+            request,
+            ANCHOR_OFFSET,
+        )
+        .map_err(|e| anyhow!("Error creating transaction proposal: {}", e))?;
+
+        Ok(utils::rust_bytes_to_java(
+            env,
+            Proposal::from_standard_proposal(&proposal)
+                .encode_to_vec()
+                .as_ref(),
+        )?
+        .into_raw())
+    });
+    unwrap_exc_or(&mut env, res, ptr::null_mut())
 }
 
 #[no_mangle]
@@ -1724,7 +1760,6 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeTr
     value: jlong,
     memo: JByteArray<'local>,
     network_id: jint,
-    use_zip317_fees: jboolean,
 ) -> jbyteArray {
     let res = catch_unwind(&mut env, |env| {
         let _span = tracing::info_span!("RustBackend.proposeTransfer").entered();
@@ -1747,7 +1782,8 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeTr
                 .map_err(|e| anyhow!("Invalid MemoBytes: {}", e))?
         };
 
-        let input_selector = zip317_helper(None, use_zip317_fees);
+        // Always use ZIP 317 fees
+        let input_selector = zip317_helper(None);
 
         let request =
             TransactionRequest::new(vec![Payment::new(to, value, memo, None, None, vec![])
@@ -1787,7 +1823,6 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeSh
     memo: JByteArray<'local>,
     transparent_receiver: JString<'local>,
     network_id: jint,
-    use_zip317_fees: jboolean,
 ) -> jbyteArray {
     let res = catch_unwind(&mut env, |env| {
         let _span = tracing::info_span!("RustBackend.proposeShielding").entered();
@@ -1867,7 +1902,8 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeSh
                 .map_err(|e| anyhow!("Invalid MemoBytes: {}", e))?
         };
 
-        let input_selector = zip317_helper(memo, use_zip317_fees);
+        // Always use ZIP 317 fees
+        let input_selector = zip317_helper(memo);
 
         let proposal = propose_shielding::<_, _, _, Infallible>(
             &mut db_data,
