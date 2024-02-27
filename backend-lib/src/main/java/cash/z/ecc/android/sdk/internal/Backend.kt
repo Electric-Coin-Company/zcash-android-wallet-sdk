@@ -28,6 +28,11 @@ interface Backend {
         memo: ByteArray? = byteArrayOf()
     ): ProposalUnsafe
 
+    suspend fun proposeTransferFromUri(
+        account: Int,
+        uri: String
+    ): ProposalUnsafe
+
     suspend fun proposeShielding(
         account: Int,
         shieldingThreshold: Long,

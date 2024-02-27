@@ -43,6 +43,18 @@ internal class OutboundTransactionManagerImpl(
         }
     }
 
+    /**
+     * Creates a proposal for transferring funds from a ZIP-321 compliant payment URI
+     *
+     * @param account the account from which to transfer funds.
+     * @param uri a ZIP-321 compliant payment URI
+     *
+     * @return the proposal or an exception
+     */
+    override suspend fun proposeTransferFromUri(
+        account: Account,
+        uri: String
+    ): Proposal = encoder.proposeTransferFromUri(account, uri)
     override suspend fun proposeTransfer(
         account: Account,
         recipient: String,

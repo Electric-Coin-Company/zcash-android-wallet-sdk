@@ -559,6 +559,19 @@ class SdkSynchronizer private constructor(
             account
         )
 
+    /**
+     * Creates a proposal for fulfilling a payment ZIP-321 URI
+     *
+     * @param account the account from which to transfer funds.
+     * @param uri a ZIP-321 compliant payment URI String
+     *
+     * @return the proposal or an exception
+     */
+    @Throws(TransactionEncoderException::class)
+    override suspend fun proposeFulfillingPaymentUri(
+        account: Account,
+        uri: String
+    ): Proposal = txManager.proposeTransferFromUri(account, uri)
     @Throws(TransactionEncoderException::class)
     override suspend fun proposeTransfer(
         account: Account,

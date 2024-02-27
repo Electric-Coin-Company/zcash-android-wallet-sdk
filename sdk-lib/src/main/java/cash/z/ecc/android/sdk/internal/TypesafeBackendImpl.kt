@@ -35,6 +35,17 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
         )
     }
 
+    override suspend fun proposeTransferFromUri(
+        account: Account,
+        uri: String
+    ): Proposal =
+        Proposal.fromUnsafe(
+            backend.proposeTransferFromUri(
+                account.value,
+                uri
+            )
+        )
+
     @Suppress("LongParameterList")
     override suspend fun proposeTransfer(
         account: Account,
