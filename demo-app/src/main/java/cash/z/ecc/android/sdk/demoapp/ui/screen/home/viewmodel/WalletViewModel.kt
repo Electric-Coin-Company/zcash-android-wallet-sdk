@@ -230,12 +230,14 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
             viewModelScope.launch {
                 val spendingKey = spendingKey.filterNotNull().first()
                 kotlin.runCatching {
-                    synchronizer.createProposedTransactions(
-                        synchronizer.proposeShielding(spendingKey.account, Zatoshi(100000)),
-                        spendingKey
-                    )
+                    synchronizer.proposeShielding(spendingKey.account, Zatoshi(100000))?.let {
+                        synchronizer.createProposedTransactions(
+                            it,
+                            spendingKey
+                        )
+                    }
                 }
-                    .onSuccess { mutableSendState.value = SendState.Sent(it.toList()) }
+                    .onSuccess { it?.let { mutableSendState.value = SendState.Sent(it.toList()) } }
                     .onFailure { mutableSendState.value = SendState.Error(it) }
             }
         } else {

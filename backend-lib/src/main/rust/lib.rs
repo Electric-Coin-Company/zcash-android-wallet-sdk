@@ -1482,6 +1482,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeSh
     account: jint,
     shielding_threshold: jlong,
     memo: JByteArray<'local>,
+    transparent_receiver: JString<'local>,
     network_id: jint,
     use_zip317_fees: jboolean,
 ) -> jbyteArray {
@@ -1494,10 +1495,36 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeSh
             .map_err(|()| format_err!("Invalid shielding threshold, out of range"))?;
         let memo_bytes = env.convert_byte_array(memo).unwrap();
 
+        let transparent_receiver =
+            match utils::java_nullable_string_to_rust(env, &transparent_receiver) {
+                None => Ok(None),
+                Some(addr) => match Address::decode(&network, &addr) {
+                    None => Err(format_err!("Transparent receiver is for the wrong network")),
+                    Some(addr) => match addr {
+                        Address::Sapling(_) | Address::Unified(_) => Err(format_err!(
+                            "Transparent receiver is not a transparent address"
+                        )),
+                        Address::Transparent(addr) => {
+                            if db_data
+                                .get_transparent_receivers(account)?
+                                .contains_key(&addr)
+                            {
+                                Ok(Some(addr))
+                            } else {
+                                Err(format_err!(
+                                    "Transparent receiver does not belong to account {}",
+                                    u32::from(account),
+                                ))
+                            }
+                        }
+                    },
+                },
+            }?;
+
         let min_confirmations = 0;
         let min_confirmations_for_heights = NonZeroU32::new(1).unwrap();
 
-        let from_addrs: Vec<TransparentAddress> = db_data
+        let account_receivers = db_data
             .get_target_and_anchor_heights(min_confirmations_for_heights)
             .map_err(|e| format_err!("Error while fetching anchor height: {}", e))
             .and_then(|opt_anchor| {
@@ -1515,9 +1542,23 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeSh
                             e
                         )
                     })
-            })?
-            .into_keys()
-            .collect();
+            })?;
+
+        let from_addrs = if let Some((addr, _)) = transparent_receiver.map_or_else(||
+            if account_receivers.len() > 1 {
+                Err(format_err!(
+                    "Account has more than one transparent receiver with funds to shield; this is not yet supported by the SDK. Provide a specific transparent receiver to shield funds from."
+                ))
+            } else {
+                Ok(account_receivers.iter().next().map(|(a, v)| (*a, *v)))
+            },
+            |addr| Ok(account_receivers.get(&addr).map(|value| (addr, *value)))
+        )?.filter(|(_, value)| *value >= shielding_threshold.into()) {
+            [addr]
+        } else {
+            // There are no transparent funds to shield; don't create a proposal.
+            return Ok(ptr::null_mut());
+        };
 
         let memo = Memo::from_bytes(&memo_bytes).unwrap();
 

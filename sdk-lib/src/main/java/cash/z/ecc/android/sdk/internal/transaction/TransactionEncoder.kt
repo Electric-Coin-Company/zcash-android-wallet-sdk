@@ -64,12 +64,23 @@ internal interface TransactionEncoder {
      * @param shieldingThreshold the minimum transparent balance required before a
      *                           proposal will be created.
      * @param memo the optional memo to include as part of the proposal's transactions.
+     * @param transparentReceiver a specific transparent receiver within the account that
+     *                            should be the source of transparent funds. Default is
+     *                            null which will select whichever of the account's
+     *                            transparent receivers has funds to shield.
+     *
+     * @return the proposal, or null if the transparent balance that would be shielded is
+     *         zero or below `shieldingThreshold`.
+     *
+     * @throws Exception if `transparentReceiver` is null and there are transparent funds
+     *         in more than one of the account's transparent receivers.
      */
     suspend fun proposeShielding(
         account: Account,
         shieldingThreshold: Zatoshi,
-        memo: ByteArray? = byteArrayOf()
-    ): Proposal
+        memo: ByteArray? = byteArrayOf(),
+        transparentReceiver: String? = null
+    ): Proposal?
 
     /**
      * Creates the transactions in the given proposal.

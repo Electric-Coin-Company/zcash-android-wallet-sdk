@@ -132,10 +132,12 @@ class TestWallet(
             Twig.debug { "FOUND utxo balance of total: $walletBalance" }
 
             if (walletBalance.value > 0L) {
-                synchronizer.createProposedTransactions(
-                    synchronizer.proposeShielding(spendingKey.account, Zatoshi(100000)),
-                    spendingKey
-                )
+                synchronizer.proposeShielding(spendingKey.account, Zatoshi(100000))?.let {
+                    synchronizer.createProposedTransactions(
+                        it,
+                        spendingKey
+                    )
+                }
             }
         }
 

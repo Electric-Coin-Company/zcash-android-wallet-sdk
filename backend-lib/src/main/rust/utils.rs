@@ -38,6 +38,10 @@ pub(crate) fn java_string_to_rust(env: &mut JNIEnv, jstring: &JString) -> String
         .into()
 }
 
+pub(crate) fn java_nullable_string_to_rust(env: &mut JNIEnv, jstring: &JString) -> Option<String> {
+    (!jstring.is_null()).then(|| java_string_to_rust(env, jstring))
+}
+
 pub(crate) fn rust_bytes_to_java<'a>(
     env: &JNIEnv<'a>,
     data: &[u8],

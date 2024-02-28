@@ -308,19 +308,23 @@ class RustBackend private constructor(
     override suspend fun proposeShielding(
         account: Int,
         shieldingThreshold: Long,
-        memo: ByteArray?
-    ): ProposalUnsafe {
+        memo: ByteArray?,
+        transparentReceiver: String?
+    ): ProposalUnsafe? {
         return withContext(SdkDispatchers.DATABASE_IO) {
-            ProposalUnsafe.parse(
-                proposeShielding(
-                    dataDbFile.absolutePath,
-                    account,
-                    shieldingThreshold,
-                    memo ?: ByteArray(0),
-                    networkId = networkId,
-                    useZip317Fees = IS_USE_ZIP_317_FEES
+            proposeShielding(
+                dataDbFile.absolutePath,
+                account,
+                shieldingThreshold,
+                memo ?: ByteArray(0),
+                transparentReceiver,
+                networkId = networkId,
+                useZip317Fees = IS_USE_ZIP_317_FEES
+            )?.let {
+                ProposalUnsafe.parse(
+                    it
                 )
-            )
+            }
         }
     }
 
@@ -588,9 +592,10 @@ class RustBackend private constructor(
             account: Int,
             shieldingThreshold: Long,
             memo: ByteArray,
+            transparentReceiver: String?,
             networkId: Int,
             useZip317Fees: Boolean
-        ): ByteArray
+        ): ByteArray?
 
         @JvmStatic
         @Suppress("LongParameterList")

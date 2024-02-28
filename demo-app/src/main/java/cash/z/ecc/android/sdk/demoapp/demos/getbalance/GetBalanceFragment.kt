@@ -68,10 +68,12 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
                             Account.DEFAULT
                         )
                     sharedViewModel.synchronizerFlow.value?.let { synchronizer ->
-                        synchronizer.createProposedTransactions(
-                            synchronizer.proposeShielding(usk.account, Zatoshi(100000)),
-                            usk
-                        )
+                        synchronizer.proposeShielding(usk.account, Zatoshi(100000))?.let { it1 ->
+                            synchronizer.createProposedTransactions(
+                                it1,
+                                usk
+                            )
+                        }
                     }
                 }
             }

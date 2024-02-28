@@ -1,5 +1,6 @@
 package cash.z.ecc.android.sdk.internal.transaction
 
+import cash.z.ecc.android.sdk.exception.SdkException
 import cash.z.ecc.android.sdk.exception.TransactionEncoderException
 import cash.z.ecc.android.sdk.ext.masked
 import cash.z.ecc.android.sdk.internal.SaplingParamTool
@@ -97,11 +98,12 @@ internal class TransactionEncoderImpl(
     override suspend fun proposeShielding(
         account: Account,
         shieldingThreshold: Zatoshi,
-        memo: ByteArray?
-    ): Proposal {
+        memo: ByteArray?,
+        transparentReceiver: String?
+    ): Proposal? {
         @Suppress("TooGenericExceptionCaught")
         return try {
-            backend.proposeShielding(account, shieldingThreshold.value, memo)
+            backend.proposeShielding(account, shieldingThreshold.value, memo, transparentReceiver)
         } catch (t: Throwable) {
             // TODO [#680]: if this error matches: Insufficient balance (have 0, need 1000 including fee)
             //  then consider custom error that says no UTXOs existed to shield
@@ -239,7 +241,9 @@ internal class TransactionEncoderImpl(
         return try {
             saplingParamTool.ensureParams(saplingParamTool.properties.paramsDirectory)
             Twig.debug { "params exist! attempting to shield..." }
-            val proposal = backend.proposeShielding(usk.account, 100000, memo)
+            val proposal =
+                backend.proposeShielding(usk.account, 100000, memo)
+                    ?: throw SdkException("Insufficient balance (have 0, need 100000 including fee)", null)
             backend.createProposedTransaction(proposal, usk)
         } catch (t: Throwable) {
             // TODO [#680]: if this error matches: Insufficient balance (have 0, need 1000 including fee)

@@ -31,8 +31,9 @@ interface Backend {
     suspend fun proposeShielding(
         account: Int,
         shieldingThreshold: Long,
-        memo: ByteArray? = byteArrayOf()
-    ): ProposalUnsafe
+        memo: ByteArray? = byteArrayOf(),
+        transparentReceiver: String? = null
+    ): ProposalUnsafe?
 
     suspend fun createProposedTransaction(
         proposal: ProposalUnsafe,
