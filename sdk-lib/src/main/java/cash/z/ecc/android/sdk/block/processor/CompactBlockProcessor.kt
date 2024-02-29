@@ -17,6 +17,7 @@ import cash.z.ecc.android.sdk.block.processor.model.VerifySuggestedScanRange
 import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException
 import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException.EnhanceTransactionError.EnhanceTxDecryptError
 import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException.EnhanceTransactionError.EnhanceTxDownloadError
+import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException.MismatchedConsensusBranch
 import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException.MismatchedNetwork
 import cash.z.ecc.android.sdk.exception.InitializeException
 import cash.z.ecc.android.sdk.exception.LightWalletException
@@ -53,7 +54,6 @@ import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.GetAddressUtxosReplyUnsafe
-import co.electriccoin.lightwallet.client.model.LightWalletEndpointInfoUnsafe
 import co.electriccoin.lightwallet.client.model.Response
 import co.electriccoin.lightwallet.client.model.ShieldedProtocolEnum
 import co.electriccoin.lightwallet.client.model.SubtreeRootUnsafe
@@ -849,17 +849,17 @@ class CompactBlockProcessor internal constructor(
                         // Note: we could better signal network connection issue
                         CompactBlockProcessorException.BadBlockHeight(info.blockHeightUnsafe)
                     } else {
-                        val clientBranch =
+                        val clientBranchId =
                             "%x".format(
                                 Locale.ROOT,
                                 backend.getBranchIdForHeight(serverBlockHeight)
                             )
                         val network = backend.network.networkName
 
-                        if (!clientBranch.equals(info.consensusBranchId, true)) {
-                            MismatchedNetwork(
-                                clientNetwork = network,
-                                serverNetwork = info.chainName
+                        if (!clientBranchId.equals(info.consensusBranchId, true)) {
+                            MismatchedConsensusBranch(
+                                clientBranchId = clientBranchId,
+                                serverBranchId = info.consensusBranchId
                             )
                         } else if (!info.matchingNetwork(network)) {
                             MismatchedNetwork(
@@ -2246,16 +2246,4 @@ class CompactBlockProcessor internal constructor(
             }
         }
     }
-}
-
-private fun LightWalletEndpointInfoUnsafe.matchingNetwork(network: String): Boolean {
-    fun String.toId() =
-        lowercase(Locale.ROOT).run {
-            when {
-                contains("main") -> "mainnet"
-                contains("test") -> "testnet"
-                else -> this
-            }
-        }
-    return chainName.toId() == network.toId()
 }

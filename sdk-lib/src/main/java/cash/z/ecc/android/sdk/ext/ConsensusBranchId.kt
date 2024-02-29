@@ -22,12 +22,12 @@ enum class ConsensusBranchId(val displayName: String, val id: Long, val hexId: S
     override fun toString(): String = displayName
 
     companion object {
-        fun fromName(name: String): ConsensusBranchId? = values().firstOrNull { it.displayName.equals(name, true) }
+        fun fromName(name: String): ConsensusBranchId? = entries.firstOrNull { it.displayName.equals(name, true) }
 
-        fun fromId(id: Long): ConsensusBranchId? = values().firstOrNull { it.id == id }
+        fun fromId(id: Long): ConsensusBranchId? = entries.firstOrNull { it.id == id }
 
         fun fromHex(hex: String): ConsensusBranchId? =
-            values().firstOrNull { branch ->
+            entries.firstOrNull { branch ->
                 hex.lowercase(Locale.US).replace("_", "").replaceFirst("0x", "").let { sanitized ->
                     branch.hexId.equals(sanitized, true)
                 }

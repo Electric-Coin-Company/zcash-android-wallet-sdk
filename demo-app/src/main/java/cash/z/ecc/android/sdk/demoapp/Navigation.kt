@@ -5,12 +5,17 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.activity.viewModels
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.NavOptionsBuilder
@@ -21,22 +26,27 @@ import cash.z.ecc.android.sdk.SdkSynchronizer
 import cash.z.ecc.android.sdk.demoapp.NavigationTargets.BALANCE
 import cash.z.ecc.android.sdk.demoapp.NavigationTargets.HOME
 import cash.z.ecc.android.sdk.demoapp.NavigationTargets.SEND
+import cash.z.ecc.android.sdk.demoapp.NavigationTargets.SERVER
 import cash.z.ecc.android.sdk.demoapp.NavigationTargets.TRANSACTIONS
 import cash.z.ecc.android.sdk.demoapp.NavigationTargets.WALLET_ADDRESS_DETAILS
 import cash.z.ecc.android.sdk.demoapp.ui.screen.addresses.view.Addresses
 import cash.z.ecc.android.sdk.demoapp.ui.screen.balance.view.Balance
 import cash.z.ecc.android.sdk.demoapp.ui.screen.home.view.Home
+import cash.z.ecc.android.sdk.demoapp.ui.screen.home.viewmodel.SecretState
 import cash.z.ecc.android.sdk.demoapp.ui.screen.home.viewmodel.WalletViewModel
 import cash.z.ecc.android.sdk.demoapp.ui.screen.send.view.Send
+import cash.z.ecc.android.sdk.demoapp.ui.screen.server.view.Server
 import cash.z.ecc.android.sdk.demoapp.ui.screen.transactions.view.Transactions
 import cash.z.ecc.android.sdk.demoapp.util.AndroidApiVersion
 import cash.z.ecc.android.sdk.demoapp.util.fromResources
+import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.model.ZcashNetwork
+import cash.z.ecc.android.sdk.type.ServerValidation
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 @Composable
-@Suppress("LongMethod", "ktlint:standard:function-naming")
+@Suppress("LongMethod", "CyclomaticComplexMethod", "ktlint:standard:function-naming")
 internal fun ComposeActivity.Navigation() {
     val navController = rememberNavController()
 
@@ -63,6 +73,7 @@ internal fun ComposeActivity.Navigation() {
                         }
                     },
                     goTransactions = { navController.navigateJustOnce(TRANSACTIONS) },
+                    goServer = { navController.navigateJustOnce(SERVER) },
                     resetSdk = { walletViewModel.resetSdk() },
                     rewind = { walletViewModel.rewind() }
                 )
@@ -133,6 +144,76 @@ internal fun ComposeActivity.Navigation() {
                         walletViewModel.clearSendOrShieldState()
                         navController.popBackStackJustOnce(SEND)
                     }
+                )
+            }
+        }
+        composable(SERVER) {
+            val secretState = walletViewModel.secretState.collectAsStateWithLifecycle().value
+
+            val synchronizer = walletViewModel.synchronizer.collectAsStateWithLifecycle().value
+
+            Twig.info { "Current secrets state: $secretState" }
+
+            if (synchronizer == null || secretState !is SecretState.Ready) {
+                // Display loading indicator
+            } else {
+                val wallet = secretState.persistableWallet
+
+                Twig.info { "Current persisted wallet: ${wallet.toSafeString()}" }
+
+                val scope = rememberCoroutineScope()
+
+                var validationResult: ServerValidation by remember { mutableStateOf(ServerValidation.Valid) }
+
+                val onBack = {
+                    if (validationResult !is ServerValidation.Running) {
+                        navController.popBackStackJustOnce(SERVER)
+                    }
+                }
+
+                BackHandler { onBack() }
+
+                Server(
+                    buildInNetwork = ZcashNetwork.fromResources(application),
+                    onBack = onBack,
+                    onServerChange = { newEndpoint ->
+                        scope.launch {
+                            validationResult = ServerValidation.Running
+                            validationResult = synchronizer.validateServerEndpoint(application, newEndpoint)
+
+                            Twig.info { "Validation result: $validationResult" }
+
+                            when (validationResult) {
+                                ServerValidation.Valid -> {
+                                    walletViewModel.closeSynchronizer()
+
+                                    val newWallet =
+                                        wallet.copy(
+                                            endpoint = newEndpoint
+                                        )
+
+                                    Twig.info { "New wallet: ${newWallet.toSafeString()}" }
+
+                                    walletViewModel.persistExistingWallet(newWallet)
+
+                                    Toast.makeText(
+                                        applicationContext,
+                                        "Server saved",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                                is ServerValidation.InValid -> {
+                                    Twig.error { "Failed to validate the new endpoint: $newEndpoint" }
+                                }
+                                else -> {
+                                    // Should not happen
+                                    Twig.info { "Server validation state: $validationResult" }
+                                }
+                            }
+                        }
+                    },
+                    validationResult = validationResult,
+                    wallet = wallet,
                 )
             }
         }
@@ -224,6 +305,8 @@ object NavigationTargets {
     const val WALLET_ADDRESS_DETAILS = "wallet_address_details" // NON-NLS
 
     const val SEND = "send" // NON-NLS
+
+    const val SERVER = "server" // NON-NLS
 
     const val TRANSACTIONS = "transactions" // NON-NLS
 }

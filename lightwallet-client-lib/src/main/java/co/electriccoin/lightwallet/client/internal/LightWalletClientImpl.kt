@@ -42,8 +42,8 @@ import kotlin.time.Duration.Companion.seconds
 internal class LightWalletClientImpl private constructor(
     private val channelFactory: ChannelFactory,
     private val lightWalletEndpoint: LightWalletEndpoint,
-    private val singleRequestTimeout: Duration = 10.seconds,
-    private val streamingRequestTimeout: Duration = 90.seconds
+    private val singleRequestTimeout: Duration,
+    private val streamingRequestTimeout: Duration
 ) : LightWalletClient {
     private var channel = channelFactory.newChannel(lightWalletEndpoint)
 
@@ -260,9 +260,16 @@ internal class LightWalletClientImpl private constructor(
     companion object {
         fun new(
             channelFactory: ChannelFactory,
-            lightWalletEndpoint: LightWalletEndpoint
+            lightWalletEndpoint: LightWalletEndpoint,
+            singleRequestTimeout: Duration = 10.seconds,
+            streamingRequestTimeout: Duration = 90.seconds
         ): LightWalletClientImpl {
-            return LightWalletClientImpl(channelFactory, lightWalletEndpoint)
+            return LightWalletClientImpl(
+                channelFactory = channelFactory,
+                lightWalletEndpoint = lightWalletEndpoint,
+                singleRequestTimeout = singleRequestTimeout,
+                streamingRequestTimeout = streamingRequestTimeout
+            )
         }
     }
 }

@@ -14,6 +14,8 @@ import co.electriccoin.lightwallet.client.model.SendResponseUnsafe
 import co.electriccoin.lightwallet.client.model.ShieldedProtocolEnum
 import co.electriccoin.lightwallet.client.model.SubtreeRootUnsafe
 import kotlinx.coroutines.flow.Flow
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * Client for interacting with lightwalletd.
@@ -114,5 +116,13 @@ interface LightWalletClient {
  */
 fun LightWalletClient.Companion.new(
     context: Context,
-    lightWalletEndpoint: LightWalletEndpoint
-): LightWalletClient = LightWalletClientImpl.new(AndroidChannelFactory(context), lightWalletEndpoint)
+    lightWalletEndpoint: LightWalletEndpoint,
+    singleRequestTimeout: Duration = 10.seconds,
+    streamingRequestTimeout: Duration = 90.seconds
+): LightWalletClient =
+    LightWalletClientImpl.new(
+        channelFactory = AndroidChannelFactory(context),
+        lightWalletEndpoint = lightWalletEndpoint,
+        singleRequestTimeout = singleRequestTimeout,
+        streamingRequestTimeout = streamingRequestTimeout
+    )

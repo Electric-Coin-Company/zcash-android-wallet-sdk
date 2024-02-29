@@ -24,6 +24,7 @@ import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.tool.CheckpointTool
 import cash.z.ecc.android.sdk.type.AddressType
 import cash.z.ecc.android.sdk.type.ConsensusMatchType
+import cash.z.ecc.android.sdk.type.ServerValidation
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
 import co.electriccoin.lightwallet.client.model.Response
 import kotlinx.coroutines.flow.Flow
@@ -241,6 +242,22 @@ interface Synchronizer {
      * and provides helper functions for communicating detailed errors to the user.
      */
     suspend fun validateConsensusBranch(): ConsensusMatchType
+
+    /**
+     * This function checks whether the provided server endpoint is valid. The validation is based on comparing:
+     * - network types,
+     * - sapling activation heights
+     * - consensus branches
+     *
+     * @param endpoint LightWalletEndpoint data to be validated
+     * @param context Context
+     *
+     * @return an instance of [ServerValidation] that provides details about the validation result
+     */
+    suspend fun validateServerEndpoint(
+        context: Context,
+        endpoint: LightWalletEndpoint
+    ): ServerValidation
 
     /**
      * Validates the given address, returning information about why it is invalid. This is a
