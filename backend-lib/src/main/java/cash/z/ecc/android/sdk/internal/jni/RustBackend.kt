@@ -328,19 +328,19 @@ class RustBackend private constructor(
         }
     }
 
-    override suspend fun createProposedTransaction(
+    override suspend fun createProposedTransactions(
         proposal: ProposalUnsafe,
         unifiedSpendingKey: ByteArray
-    ): ByteArray =
+    ): List<ByteArray> =
         withContext(SdkDispatchers.DATABASE_IO) {
-            createProposedTransaction(
+            createProposedTransactions(
                 dataDbFile.absolutePath,
                 proposal.toByteArray(),
                 unifiedSpendingKey,
                 spendParamsPath = saplingSpendFile.absolutePath,
                 outputParamsPath = saplingOutputFile.absolutePath,
                 networkId = networkId
-            )
+            ).asList()
         }
 
     override suspend fun putUtxo(
@@ -599,14 +599,14 @@ class RustBackend private constructor(
 
         @JvmStatic
         @Suppress("LongParameterList")
-        private external fun createProposedTransaction(
+        private external fun createProposedTransactions(
             dbDataPath: String,
             proposal: ByteArray,
             usk: ByteArray,
             spendParamsPath: String,
             outputParamsPath: String,
             networkId: Int
-        ): ByteArray
+        ): Array<ByteArray>
 
         @JvmStatic
         private external fun branchIdForHeight(

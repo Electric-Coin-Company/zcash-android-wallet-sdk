@@ -35,10 +35,10 @@ interface Backend {
         transparentReceiver: String? = null
     ): ProposalUnsafe?
 
-    suspend fun createProposedTransaction(
+    suspend fun createProposedTransactions(
         proposal: ProposalUnsafe,
         unifiedSpendingKey: ByteArray
-    ): ByteArray
+    ): List<ByteArray>
 
     suspend fun decryptAndStoreTransaction(tx: ByteArray)
 

@@ -24,7 +24,7 @@ use zcash_client_backend::{
         chain::{scan_cached_blocks, CommitmentTreeRoot, ScanSummary},
         scanning::{ScanPriority, ScanRange},
         wallet::{
-            create_proposed_transaction, decrypt_and_store_transaction,
+            create_proposed_transactions, decrypt_and_store_transaction,
             input_selection::GreedyInputSelector, propose_shielding, propose_transfer,
         },
         AccountBalance, AccountBirthday, InputSource, WalletCommitmentTrees, WalletRead,
@@ -524,10 +524,10 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getTransp
 
         if let Some(taddr) = ua.0.transparent() {
             let taddr = match taddr {
-                TransparentAddress::PublicKey(data) => {
+                TransparentAddress::PublicKeyHash(data) => {
                     ZcashAddress::from_transparent_p2pkh(network, *data)
                 }
-                TransparentAddress::Script(data) => {
+                TransparentAddress::ScriptHash(data) => {
                     ZcashAddress::from_transparent_p2sh(network, *data)
                 }
             };
@@ -1145,7 +1145,7 @@ fn encode_account_balance<'a>(
 /// pending.
 fn encode_wallet_summary<'a>(
     env: &mut JNIEnv<'a>,
-    summary: WalletSummary,
+    summary: WalletSummary<AccountId>,
 ) -> jni::errors::Result<JObject<'a>> {
     let account_balances = utils::rust_vec_to_java(
         env,
@@ -1397,7 +1397,7 @@ fn zip317_helper<DbT>(
         StandardFeeRule::PreZip313
     };
     GreedyInputSelector::new(
-        SingleOutputChangeStrategy::new(fee_rule, change_memo),
+        SingleOutputChangeStrategy::new(fee_rule, change_memo, ShieldedProtocol::Sapling),
         DustOutputPolicy::default(),
     )
 }
@@ -1463,13 +1463,13 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeTr
         )
         .map_err(|e| format_err!("Error creating transaction proposal: {}", e))?;
 
-        utils::rust_bytes_to_java(
+        Ok(utils::rust_bytes_to_java(
             &env,
             Proposal::from_standard_proposal(&network, &proposal)
                 .encode_to_vec()
                 .as_ref(),
-        )
-        .map(|arr| arr.into_raw())
+        )?
+        .into_raw())
     });
     unwrap_exc_or(&mut env, res, ptr::null_mut())
 }
@@ -1574,19 +1574,19 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeSh
         )
         .map_err(|e| format_err!("Error while shielding transaction: {}", e))?;
 
-        utils::rust_bytes_to_java(
+        Ok(utils::rust_bytes_to_java(
             &env,
             Proposal::from_standard_proposal(&network, &proposal)
                 .encode_to_vec()
                 .as_ref(),
-        )
-        .map(|arr| arr.into_raw())
+        )?
+        .into_raw())
     });
     unwrap_exc_or(&mut env, res, ptr::null_mut())
 }
 
 #[no_mangle]
-pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_createProposedTransaction<
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_createProposedTransactions<
     'local,
 >(
     mut env: JNIEnv<'local>,
@@ -1597,7 +1597,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_createPro
     spend_params: JString<'local>,
     output_params: JString<'local>,
     network_id: jint,
-) -> jbyteArray {
+) -> jobjectArray {
     let res = catch_unwind(&mut env, |env| {
         let _span = tracing::info_span!("RustBackend.createProposedTransaction").entered();
         let network = parse_network(network_id as u32)?;
@@ -1612,7 +1612,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_createPro
             .map_err(|e| format_err!("Invalid proposal: {}", e))?
             .try_into_standard_proposal(&network, &db_data)?;
 
-        let txid = create_proposed_transaction::<_, _, Infallible, _, _>(
+        let txids = create_proposed_transactions::<_, _, Infallible, _, _>(
             &mut db_data,
             &network,
             &prover,
@@ -1621,9 +1621,16 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_createPro
             OvkPolicy::Sender,
             &proposal,
         )
-        .map_err(|e| format_err!("Error while creating transaction: {}", e))?;
+        .map_err(|e| format_err!("Error while creating transactions: {}", e))?;
 
-        utils::rust_bytes_to_java(&env, txid.as_ref()).map(|arr| arr.into_raw())
+        Ok(utils::rust_vec_to_java(
+            env,
+            txids.into(),
+            "[B",
+            |env, txid| utils::rust_bytes_to_java(env, txid.as_ref()),
+            |env| env.new_byte_array(32),
+        )?
+        .into_raw())
     });
     unwrap_exc_or(&mut env, res, ptr::null_mut())
 }
@@ -1699,10 +1706,10 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_listTrans
                     .iter()
                     .map(|(taddr, _)| {
                         let taddr = match taddr {
-                            TransparentAddress::PublicKey(data) => {
+                            TransparentAddress::PublicKeyHash(data) => {
                                 ZcashAddress::from_transparent_p2pkh(zcash_network, *data)
                             }
-                            TransparentAddress::Script(data) => {
+                            TransparentAddress::ScriptHash(data) => {
                                 ZcashAddress::from_transparent_p2sh(zcash_network, *data)
                             }
                         };

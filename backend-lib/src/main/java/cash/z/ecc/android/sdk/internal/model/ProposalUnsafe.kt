@@ -38,9 +38,9 @@ class ProposalUnsafe(
     }
 
     /**
-     * Returns the fee required by this proposal.
+     * Returns the total fee required by this proposal for its transactions.
      */
-    fun feeRequired(): Long {
-        return inner.balance.feeRequired
+    fun totalFeeRequired(): Long {
+        return inner.stepsList.fold(0) { acc, step -> acc + step.balance.feeRequired }
     }
 }

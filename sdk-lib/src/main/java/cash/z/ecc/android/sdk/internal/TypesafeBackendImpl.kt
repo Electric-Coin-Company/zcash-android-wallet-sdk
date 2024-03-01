@@ -68,16 +68,14 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
             )
         }
 
-    override suspend fun createProposedTransaction(
+    override suspend fun createProposedTransactions(
         proposal: Proposal,
         usk: UnifiedSpendingKey
-    ): FirstClassByteArray =
-        FirstClassByteArray(
-            backend.createProposedTransaction(
-                proposal.toUnsafe(),
-                usk.copyBytes()
-            )
-        )
+    ): List<FirstClassByteArray> =
+        backend.createProposedTransactions(
+            proposal.toUnsafe(),
+            usk.copyBytes()
+        ).map { FirstClassByteArray(it) }
 
     override suspend fun getCurrentAddress(account: Account): String {
         return backend.getCurrentAddress(account.value)

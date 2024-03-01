@@ -95,10 +95,10 @@ internal class FakeRustBackend(
         TODO("Not yet implemented")
     }
 
-    override suspend fun createProposedTransaction(
+    override suspend fun createProposedTransactions(
         proposal: ProposalUnsafe,
         unifiedSpendingKey: ByteArray
-    ): ByteArray {
+    ): List<ByteArray> {
         TODO("Not yet implemented")
     }
 

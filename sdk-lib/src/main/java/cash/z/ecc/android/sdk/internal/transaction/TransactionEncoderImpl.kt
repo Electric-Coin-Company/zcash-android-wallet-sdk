@@ -124,11 +124,11 @@ internal class TransactionEncoderImpl(
         }
 
         @Suppress("TooGenericExceptionCaught")
-        val transactionId =
+        val transactionIds =
             try {
                 saplingParamTool.ensureParams(saplingParamTool.properties.paramsDirectory)
                 Twig.debug { "params exist! attempting to send..." }
-                backend.createProposedTransaction(proposal, usk)
+                backend.createProposedTransactions(proposal, usk)
             } catch (t: Throwable) {
                 Twig.debug(t) { "Caught exception while creating transaction." }
                 throw t
@@ -136,11 +136,13 @@ internal class TransactionEncoderImpl(
                 Twig.debug { "result of createProposedTransactions: $result" }
             }
 
-        val tx =
-            repository.findEncodedTransactionByTxId(transactionId)
-                ?: throw TransactionEncoderException.TransactionNotFoundException(transactionId)
+        val txs =
+            transactionIds.map { transactionId ->
+                repository.findEncodedTransactionByTxId(transactionId)
+                    ?: throw TransactionEncoderException.TransactionNotFoundException(transactionId)
+            }
 
-        return listOf(tx)
+        return txs
     }
 
     /**
@@ -223,7 +225,9 @@ internal class TransactionEncoderImpl(
                     amount.value,
                     memo
                 )
-            backend.createProposedTransaction(proposal, usk)
+            val transactionIds = backend.createProposedTransactions(proposal, usk)
+            assert(transactionIds.size == 1)
+            transactionIds[0]
         } catch (t: Throwable) {
             Twig.debug(t) { "Caught exception while creating transaction." }
             throw t
@@ -244,7 +248,9 @@ internal class TransactionEncoderImpl(
             val proposal =
                 backend.proposeShielding(usk.account, 100000, memo)
                     ?: throw SdkException("Insufficient balance (have 0, need 100000 including fee)", null)
-            backend.createProposedTransaction(proposal, usk)
+            val transactionIds = backend.createProposedTransactions(proposal, usk)
+            assert(transactionIds.size == 1)
+            transactionIds[0]
         } catch (t: Throwable) {
             // TODO [#680]: if this error matches: Insufficient balance (have 0, need 1000 including fee)
             //  then consider custom error that says no UTXOs existed to shield

@@ -20,7 +20,7 @@ class Proposal(
 
             // Check for type errors eagerly, to ensure that the caller won't
             // encounter these errors later.
-            typed.feeRequired()
+            typed.totalFeeRequired()
 
             return typed
         }
@@ -34,9 +34,9 @@ class Proposal(
     }
 
     /**
-     * Returns the fee required by this proposal.
+     * Returns the total fee required by this proposal for its transactions.
      */
-    fun feeRequired(): Zatoshi {
-        return Zatoshi(inner.feeRequired())
+    fun totalFeeRequired(): Zatoshi {
+        return Zatoshi(inner.totalFeeRequired())
     }
 }

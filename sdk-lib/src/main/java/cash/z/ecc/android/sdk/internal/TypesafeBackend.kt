@@ -39,10 +39,10 @@ internal interface TypesafeBackend {
         transparentReceiver: String? = null
     ): Proposal?
 
-    suspend fun createProposedTransaction(
+    suspend fun createProposedTransactions(
         proposal: Proposal,
         usk: UnifiedSpendingKey
-    ): FirstClassByteArray
+    ): List<FirstClassByteArray>
 
     suspend fun getCurrentAddress(account: Account): String
 
