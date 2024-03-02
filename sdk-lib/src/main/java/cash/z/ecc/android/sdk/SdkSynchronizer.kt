@@ -11,6 +11,7 @@ import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor.State.Initia
 import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor.State.Stopped
 import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor.State.Synced
 import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor.State.Syncing
+import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException
 import cash.z.ecc.android.sdk.exception.InitializeException
 import cash.z.ecc.android.sdk.exception.TransactionEncoderException
 import cash.z.ecc.android.sdk.exception.TransactionSubmitException
@@ -51,6 +52,7 @@ import cash.z.ecc.android.sdk.type.AddressType.Shielded
 import cash.z.ecc.android.sdk.type.AddressType.Transparent
 import cash.z.ecc.android.sdk.type.AddressType.Unified
 import cash.z.ecc.android.sdk.type.ConsensusMatchType
+import cash.z.ecc.android.sdk.type.ServerValidation
 import co.electriccoin.lightwallet.client.LightWalletClient
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
 import co.electriccoin.lightwallet.client.model.Response
@@ -73,8 +75,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.io.File
+import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.CoroutineContext
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * A Synchronizer that attempts to remain operational, despite any number of errors that can occur.
@@ -631,6 +635,8 @@ class SdkSynchronizer private constructor(
             AddressType.Invalid(error.message ?: "Invalid")
         }
 
+    // TODO [#1405]: Fix/Remove broken SdkSynchronizer.validateConsensusBranch function
+    // TODO [#1405]: https://github.com/Electric-Coin-Company/zcash-android-wallet-sdk/issues/1405
     override suspend fun validateConsensusBranch(): ConsensusMatchType {
         val serverBranchId = tryNull { processor.downloader.getServerInfo()?.consensusBranchId }
 
@@ -663,6 +669,89 @@ class SdkSynchronizer private constructor(
             sdkBranchId?.let { ConsensusBranchId.fromId(it) },
             serverBranchId?.let { ConsensusBranchId.fromHex(it) }
         )
+    }
+
+    @Suppress("LongMethod", "ReturnCount")
+    override suspend fun validateServerEndpoint(
+        context: Context,
+        endpoint: LightWalletEndpoint
+    ): ServerValidation {
+        // Create a dedicated light wallet client for the validation
+        // The single request timeout is changed from default to 5 seconds to speed up a possible custom server
+        // endpoint validation
+        val lightWalletClient =
+            LightWalletClient.new(
+                context = context,
+                lightWalletEndpoint = endpoint,
+                singleRequestTimeout = 5.seconds
+            )
+
+        val remoteInfo =
+            when (val response = lightWalletClient.getServerInfo()) {
+                is Response.Success -> response.result
+                is Response.Failure -> {
+                    return ServerValidation.InValid(response.toThrowable())
+                }
+            }
+
+        // Check network type
+        if (!remoteInfo.matchingNetwork(network.networkName)) {
+            return ServerValidation.InValid(
+                CompactBlockProcessorException.MismatchedNetwork(
+                    clientNetwork = network.networkName,
+                    serverNetwork = remoteInfo.chainName
+                )
+            )
+        }
+
+        // Check sapling activation height
+        runCatching {
+            val remoteSaplingActivationHeight = remoteInfo.saplingActivationHeightUnsafe.toBlockHeight(network)
+            if (network.saplingActivationHeight != remoteSaplingActivationHeight) {
+                return ServerValidation.InValid(
+                    CompactBlockProcessorException.MismatchedSaplingActivationHeight(
+                        clientHeight = network.saplingActivationHeight.value,
+                        serverHeight = remoteSaplingActivationHeight.value
+                    )
+                )
+            }
+        }.getOrElse {
+            return ServerValidation.InValid(it)
+        }
+
+        val currentChainTip =
+            when (val response = lightWalletClient.getLatestBlockHeight()) {
+                is Response.Success -> {
+                    runCatching { response.result.toBlockHeight(network) }.getOrElse {
+                        return ServerValidation.InValid(it)
+                    }
+                }
+                is Response.Failure -> {
+                    return ServerValidation.InValid(response.toThrowable())
+                }
+            }
+
+        val sdkBranchId =
+            runCatching {
+                "%x".format(
+                    Locale.ROOT,
+                    backend.getBranchIdForHeight(currentChainTip)
+                )
+            }.getOrElse {
+                return ServerValidation.InValid(it)
+            }
+
+        // Check branch id
+        return if (remoteInfo.consensusBranchId.equals(sdkBranchId, true)) {
+            ServerValidation.Valid
+        } else {
+            ServerValidation.InValid(
+                CompactBlockProcessorException.MismatchedConsensusBranch(
+                    sdkBranchId,
+                    remoteInfo.consensusBranchId
+                )
+            )
+        }
     }
 
     @Throws(InitializeException.MissingDatabaseException::class)

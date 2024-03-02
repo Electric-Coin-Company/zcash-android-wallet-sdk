@@ -5,6 +5,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import cash.z.ecc.android.bip39.Mnemonics
 import cash.z.ecc.android.bip39.toSeed
+import cash.z.ecc.android.sdk.SdkSynchronizer
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.WalletCoordinator
 import cash.z.ecc.android.sdk.WalletInitMode
@@ -264,6 +265,18 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
         if (null != synchronizer) {
             viewModelScope.launch {
                 synchronizer.quickRewind()
+            }
+        }
+    }
+
+    /**
+     * This safely and asynchronously stops the [Synchronizer].
+     */
+    fun closeSynchronizer() {
+        val synchronizer = synchronizer.value
+        if (null != synchronizer) {
+            viewModelScope.launch {
+                (synchronizer as SdkSynchronizer).close()
             }
         }
     }

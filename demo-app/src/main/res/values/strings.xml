@@ -12,6 +12,7 @@
     <string name="menu_home">Home</string>
     <string name="menu_private_key">Get Private Key</string>
     <string name="menu_address">Get Address</string>
+    <string name="menu_server">Server</string>
     <string name="menu_balance">Get Balance</string>
     <string name="menu_latest_height">Get Latest Height</string>
     <string name="menu_block">Get Block</string>
@@ -71,6 +72,12 @@
     <string name="send_to_address">Destination address</string>
     <string name="send_memo">Memo</string>
     <string name="send_button">Send</string>
+
+    <string name="server_textfield_value"><xliff:g id="host" example="example.com">%1$s</xliff:g>:<xliff:g id="port" example="508">%2$d</xliff:g></string>
+    <string name="server_textfield_hint">&lt;host&gt;:&lt;port&gt;</string>
+    <string name="server_textfield_error">Invalid server</string>
+    <string name="server_custom">custom</string>
+    <string name="server_save">Save</string>
 
     <string name="transactions_refresh">Refresh transactions</string>
 </resources>

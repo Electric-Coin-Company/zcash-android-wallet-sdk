@@ -44,6 +44,7 @@ private fun ComposablePreviewHome() {
             goAddressDetails = {},
             goTransactions = {},
             goTestnetFaucet = {},
+            goServer = {},
             resetSdk = {},
             rewind = {},
         )
@@ -59,6 +60,7 @@ fun Home(
     goSend: () -> Unit,
     goAddressDetails: () -> Unit,
     goTransactions: () -> Unit,
+    goServer: () -> Unit,
     goTestnetFaucet: () -> Unit,
     resetSdk: () -> Unit,
     rewind: () -> Unit,
@@ -76,6 +78,7 @@ fun Home(
             walletSnapshot,
             goBalance = goBalance,
             goSend = goSend,
+            goServer = goServer,
             goAddressDetails = goAddressDetails,
             goTransactions = goTransactions
         )
@@ -155,8 +158,9 @@ private fun HomeMainContent(
     walletSnapshot: WalletSnapshot,
     goBalance: () -> Unit,
     goSend: () -> Unit,
+    goServer: () -> Unit,
     goAddressDetails: () -> Unit,
-    goTransactions: () -> Unit
+    goTransactions: () -> Unit,
 ) {
     Column(
         Modifier
@@ -177,6 +181,10 @@ private fun HomeMainContent(
 
         Button(goTransactions) {
             Text(text = stringResource(id = R.string.menu_transactions))
+        }
+
+        Button(goServer) {
+            Text(text = stringResource(id = R.string.menu_server))
         }
 
         Text(text = stringResource(id = R.string.home_status, walletSnapshot.status.toString()))

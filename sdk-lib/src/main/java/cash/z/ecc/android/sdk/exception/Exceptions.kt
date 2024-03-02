@@ -118,6 +118,21 @@ sealed class CompactBlockProcessorException(message: String, cause: Throwable? =
             "updating the client or switching servers."
     )
 
+    class MismatchedConsensusBranch(clientBranchId: String, serverBranchId: String) : CompactBlockProcessorException(
+        message =
+            "Incompatible server: this client expects a consensus branch $clientBranchId but it " +
+                "was $serverBranchId! Try updating the client or switching servers."
+    )
+
+    class MismatchedSaplingActivationHeight(
+        clientHeight: Long,
+        serverHeight: Long
+    ) : CompactBlockProcessorException(
+            message =
+                "Incompatible server: this client expects a sapling activation height $clientHeight but it " +
+                    "was $serverHeight! Try updating the client or switching servers."
+        )
+
     class BadBlockHeight(serverBlockHeight: BlockHeightUnsafe) : CompactBlockProcessorException(
         "The server returned a block height of $serverBlockHeight which is not valid."
     )

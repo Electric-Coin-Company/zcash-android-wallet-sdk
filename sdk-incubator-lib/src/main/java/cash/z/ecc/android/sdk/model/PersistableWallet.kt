@@ -56,6 +56,16 @@ data class PersistableWallet(
     // For security, intentionally override the toString method to reduce risk of accidentally logging secrets
     override fun toString() = "PersistableWallet"
 
+    /**
+     * This is a safe alternative for the regular [toString] function that prints only non-sensitive parts
+     */
+    fun toSafeString() =
+        "PersistableWallet:" +
+            " network: $network," +
+            " endpoint: $endpoint," +
+            " birthday: $birthday," +
+            " wallet mode: $walletInitMode"
+
     companion object {
         internal const val VERSION_1 = 1
         internal const val VERSION_2 = 2

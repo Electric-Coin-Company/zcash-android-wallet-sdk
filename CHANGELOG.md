@@ -17,6 +17,13 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - `WalletBalanceFixture` class with mock values that are supposed to be used only for testing purposes 
 - `Memo.countLength(memoString: String)` to count memo length in bytes
+- `PersistableWallet.toSafeString` is a safe alternative for the regular [toString] function that prints only 
+  non-sensitive parts
+- `Synchronizer.validateServerEndpoint` this function checks whether the provided server endpoint is valid. 
+  The validation is based on comparing:
+  * network type
+  * sapling activation height
+  * consensus branch id
 
 ## [2.0.6] - 2024-01-30
 
