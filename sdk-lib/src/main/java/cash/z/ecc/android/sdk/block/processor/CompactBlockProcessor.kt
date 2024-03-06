@@ -1466,6 +1466,14 @@ class CompactBlockProcessor internal constructor(
                             if (continuousResult.stageResult == SyncingResult.DeleteSuccess) {
                                 SyncingResult.AllSuccess
                             } else {
+                                // Emitting the possible [SyncingResult.DeleteFailed] state here is necessary
+                                emit(
+                                    BatchSyncProgress(
+                                        order = continuousResult.batch.order,
+                                        range = continuousResult.batch.range,
+                                        resultState = continuousResult.stageResult
+                                    )
+                                )
                                 continuousResult.stageResult
                             }
 
