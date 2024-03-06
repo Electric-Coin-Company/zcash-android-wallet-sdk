@@ -1420,14 +1420,14 @@ class CompactBlockProcessor internal constructor(
                     }.map { scanResult ->
                         Twig.debug { "Scan stage done with result: $scanResult" }
 
-                        val resultState = when (scanResult.stageResult) {
-                            is SyncingResult.ScanSuccess -> {
-                                // TODO: Is this correct?
-                                SyncingResult.AllSuccess
-                            } else -> {
-                                scanResult.stageResult
+                        val resultState =
+                            when (scanResult.stageResult) {
+                                is SyncingResult.ScanSuccess -> {
+                                    SyncingResult.AllSuccess
+                                } else -> {
+                                    scanResult.stageResult
+                                }
                             }
-                        }
 
                         // We don't need to wait for the cached blocks to be deleted, or newly-discovered
                         // transactions to be enhanced, to report that a block range has been scanned.
