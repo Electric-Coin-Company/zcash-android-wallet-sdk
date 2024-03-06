@@ -68,9 +68,9 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
@@ -408,6 +408,7 @@ class SdkSynchronizer private constructor(
                         lastScanTime = now
                         SYNCED
                     }
+
                     is Stopped -> STOPPED
                     is Disconnected -> DISCONNECTED
                     is Syncing, Initialized -> SYNCING
@@ -579,25 +580,28 @@ class SdkSynchronizer private constructor(
         proposal: Proposal,
         usk: UnifiedSpendingKey
     ): Flow<TransactionSubmitResult> {
-        val transactions = txManager.createProposedTransactions(proposal, usk)
-
-        return flow {
-            var submitFailed = false
-            for (transaction in transactions) {
-                if (submitFailed) {
-                    emit(TransactionSubmitResult.NotAttempted(transaction.txId))
+        // Internally, this logic submits and checks every incoming transaction, and once [Failure] or
+        // [NotAttempted] submission result occurs, it returns [NotAttempted] for the rest of them
+        var anySubmissionFailed = false
+        return txManager.createProposedTransactions(proposal, usk)
+            .asFlow()
+            .map { transaction ->
+                if (anySubmissionFailed) {
+                    TransactionSubmitResult.NotAttempted(transaction.txId)
                 } else {
-                    val submitResult = txManager.submit(transaction)
-                    when (submitResult) {
-                        is TransactionSubmitResult.Success -> {}
-                        else -> {
-                            submitFailed = true
+                    val submission = txManager.submit(transaction)
+                    when (submission) {
+                        is TransactionSubmitResult.Success -> {
+                            // Expected state
+                        }
+                        is TransactionSubmitResult.Failure,
+                        is TransactionSubmitResult.NotAttempted -> {
+                            anySubmissionFailed = true
                         }
                     }
-                    emit(submitResult)
+                    submission
                 }
             }
-        }
     }
 
     @Deprecated(
