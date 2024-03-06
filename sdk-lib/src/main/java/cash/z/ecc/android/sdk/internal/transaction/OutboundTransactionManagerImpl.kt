@@ -66,10 +66,11 @@ internal class OutboundTransactionManagerImpl(
         return when (val response = service.submitTransaction(encodedTransaction.raw.byteArray)) {
             is Response.Success -> {
                 if (response.result.code == 0) {
-                    Twig.debug { "SUCCESS: submit transaction completed" }
+                    Twig.info { "SUCCESS: submit transaction completed for:" +
+                        " ${encodedTransaction.txId.byteArray.toHexReversed()}" }
                     TransactionSubmitResult.Success(encodedTransaction.txId)
                 } else {
-                    Twig.debug {
+                    Twig.error {
                         "FAILURE! submit transaction ${encodedTransaction.txId.byteArray.toHexReversed()} " +
                             "completed with response: ${response.result.code}: ${response.result.message}"
                     }
@@ -83,7 +84,7 @@ internal class OutboundTransactionManagerImpl(
             }
 
             is Response.Failure -> {
-                Twig.debug {
+                Twig.error {
                     "FAILURE! submit transaction failed with gRPC response: ${response.code}: ${
                         response.description
                     }"
