@@ -1420,6 +1420,25 @@ class CompactBlockProcessor internal constructor(
                     }.map { scanResult ->
                         Twig.debug { "Scan stage done with result: $scanResult" }
 
+                        val resultState =
+                            when (scanResult.stageResult) {
+                                is SyncingResult.ScanSuccess -> {
+                                    SyncingResult.AllSuccess
+                                } else -> {
+                                    scanResult.stageResult
+                                }
+                            }
+
+                        // We don't need to wait for the cached blocks to be deleted, or newly-discovered
+                        // transactions to be enhanced, to report that a block range has been scanned.
+                        emit(
+                            BatchSyncProgress(
+                                order = scanResult.batch.order,
+                                range = scanResult.batch.range,
+                                resultState = resultState
+                            )
+                        )
+
                         when (scanResult.stageResult) {
                             is SyncingResult.ScanSuccess -> {
                                 // TODO [#1369]: Use the scan summary to trigger balance updates.
@@ -1447,16 +1466,16 @@ class CompactBlockProcessor internal constructor(
                             if (continuousResult.stageResult == SyncingResult.DeleteSuccess) {
                                 SyncingResult.AllSuccess
                             } else {
+                                // Emitting the possible [SyncingResult.DeleteFailed] state here is necessary
+                                emit(
+                                    BatchSyncProgress(
+                                        order = continuousResult.batch.order,
+                                        range = continuousResult.batch.range,
+                                        resultState = continuousResult.stageResult
+                                    )
+                                )
                                 continuousResult.stageResult
                             }
-
-                        emit(
-                            BatchSyncProgress(
-                                order = continuousResult.batch.order,
-                                range = continuousResult.batch.range,
-                                resultState = resultState
-                            )
-                        )
 
                         // Increment and compare the range for triggering the enhancing
                         enhancingRange = enhancingRange.start..continuousResult.batch.range.endInclusive
