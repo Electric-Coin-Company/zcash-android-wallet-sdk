@@ -66,8 +66,10 @@ internal class OutboundTransactionManagerImpl(
         return when (val response = service.submitTransaction(encodedTransaction.raw.byteArray)) {
             is Response.Success -> {
                 if (response.result.code == 0) {
-                    Twig.info { "SUCCESS: submit transaction completed for:" +
-                        " ${encodedTransaction.txId.byteArray.toHexReversed()}" }
+                    Twig.info {
+                        "SUCCESS: submit transaction completed for:" +
+                            " ${encodedTransaction.txId.byteArray.toHexReversed()}"
+                    }
                     TransactionSubmitResult.Success(encodedTransaction.txId)
                 } else {
                     Twig.error {

@@ -79,20 +79,18 @@ internal class TransactionEncoderImpl(
                 " ${recipient.masked()} with memo: ${memo?.decodeToString()}"
         }
 
-        @Suppress("TooGenericExceptionCaught")
-        return try {
+        return runCatching {
             backend.proposeTransfer(
                 account,
                 recipient,
                 amount.value,
                 memo
             )
-        } catch (t: Throwable) {
-            Twig.debug(t) { "Caught exception while creating proposal." }
-            throw t
-        }.also { result ->
+        }.onFailure {
+            Twig.error(it) { "Caught exception while creating proposal." }
+        }.onSuccess { result ->
             Twig.debug { "result of proposeTransfer: $result" }
-        }
+        }.getOrThrow()
     }
 
     override suspend fun proposeShielding(
@@ -101,18 +99,16 @@ internal class TransactionEncoderImpl(
         memo: ByteArray?,
         transparentReceiver: String?
     ): Proposal? {
-        @Suppress("TooGenericExceptionCaught")
-        return try {
+        return runCatching {
             backend.proposeShielding(account, shieldingThreshold.value, memo, transparentReceiver)
-        } catch (t: Throwable) {
+        }.onFailure {
             // TODO [#680]: if this error matches: Insufficient balance (have 0, need 1000 including fee)
             //  then consider custom error that says no UTXOs existed to shield
             // TODO [#680]: https://github.com/zcash/zcash-android-wallet-sdk/issues/680
-            Twig.debug(t) { "proposeShielding failed" }
-            throw t
-        }.also { result ->
+            Twig.error(it) { "proposeShielding failed" }
+        }.onSuccess { result ->
             Twig.debug { "result of proposeShielding: $result" }
-        }
+        }.getOrThrow()
     }
 
     override suspend fun createProposedTransactions(
@@ -123,18 +119,16 @@ internal class TransactionEncoderImpl(
             "creating transactions for proposal"
         }
 
-        @Suppress("TooGenericExceptionCaught")
         val transactionIds =
-            try {
+            runCatching {
                 saplingParamTool.ensureParams(saplingParamTool.properties.paramsDirectory)
                 Twig.debug { "params exist! attempting to send..." }
                 backend.createProposedTransactions(proposal, usk)
-            } catch (t: Throwable) {
-                Twig.debug(t) { "Caught exception while creating transaction." }
-                throw t
-            }.also { result ->
+            }.onFailure {
+                Twig.error(it) { "Caught exception while creating transaction." }
+            }.onSuccess { result ->
                 Twig.debug { "result of createProposedTransactions: $result" }
-            }
+            }.getOrThrow()
 
         val txs =
             transactionIds.map { transactionId ->
@@ -214,8 +208,7 @@ internal class TransactionEncoderImpl(
                 " ${toAddress.masked()} with memo: ${memo?.decodeToString()}"
         }
 
-        @Suppress("TooGenericExceptionCaught")
-        return try {
+        return runCatching {
             saplingParamTool.ensureParams(saplingParamTool.properties.paramsDirectory)
             Twig.debug { "params exist! attempting to send..." }
             val proposal =
@@ -228,37 +221,40 @@ internal class TransactionEncoderImpl(
             val transactionIds = backend.createProposedTransactions(proposal, usk)
             assert(transactionIds.size == 1)
             transactionIds[0]
-        } catch (t: Throwable) {
-            Twig.debug(t) { "Caught exception while creating transaction." }
-            throw t
-        }.also { result ->
+        }.onFailure {
+            Twig.error(it) { "Caught exception while creating transaction." }
+        }.onSuccess { result ->
             Twig.debug { "result of sendToAddress: $result" }
-        }
+        }.getOrThrow()
     }
 
-    @Suppress("MagicNumber")
     private suspend fun createShieldingSpend(
         usk: UnifiedSpendingKey,
         memo: ByteArray? = byteArrayOf()
     ): FirstClassByteArray {
-        @Suppress("TooGenericExceptionCaught")
-        return try {
+        return runCatching {
             saplingParamTool.ensureParams(saplingParamTool.properties.paramsDirectory)
             Twig.debug { "params exist! attempting to shield..." }
             val proposal =
-                backend.proposeShielding(usk.account, 100000, memo)
-                    ?: throw SdkException("Insufficient balance (have 0, need 100000 including fee)", null)
+                backend.proposeShielding(usk.account, SHIELDING_THRESHOLD, memo)
+                    ?: throw SdkException(
+                        "Insufficient balance (have 0, need $SHIELDING_THRESHOLD including fee)",
+                        null
+                    )
             val transactionIds = backend.createProposedTransactions(proposal, usk)
             assert(transactionIds.size == 1)
             transactionIds[0]
-        } catch (t: Throwable) {
+        }.onFailure {
             // TODO [#680]: if this error matches: Insufficient balance (have 0, need 1000 including fee)
             //  then consider custom error that says no UTXOs existed to shield
             // TODO [#680]: https://github.com/zcash/zcash-android-wallet-sdk/issues/680
-            Twig.debug(t) { "Shield failed" }
-            throw t
-        }.also { result ->
+            Twig.error(it) { "Shield failed" }
+        }.onSuccess { result ->
             Twig.debug { "result of shieldToAddress: $result" }
-        }
+        }.getOrThrow()
+    }
+
+    companion object {
+        private const val SHIELDING_THRESHOLD = 100000L
     }
 }
