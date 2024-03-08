@@ -112,11 +112,14 @@ class TestnetIntegrationTest : ScopedTest() {
                 Account.DEFAULT
             )
         log("sending to address")
-        synchronizer.sendToAddress(
-            spendingKey,
-            ZcashSdk.MINERS_FEE,
-            toAddress,
-            "first mainnet tx from the SDK"
+        synchronizer.createProposedTransactions(
+            synchronizer.proposeTransfer(
+                spendingKey.account,
+                toAddress,
+                ZcashSdk.MINERS_FEE,
+                "first mainnet tx from the SDK"
+            ),
+            spendingKey
         )
         return true
     }

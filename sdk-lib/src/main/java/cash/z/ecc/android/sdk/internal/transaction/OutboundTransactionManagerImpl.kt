@@ -1,9 +1,12 @@
 package cash.z.ecc.android.sdk.internal.transaction
 
 import cash.z.ecc.android.sdk.internal.Twig
+import cash.z.ecc.android.sdk.internal.ext.toHexReversed
 import cash.z.ecc.android.sdk.internal.model.EncodedTransaction
 import cash.z.ecc.android.sdk.model.Account
+import cash.z.ecc.android.sdk.model.Proposal
 import cash.z.ecc.android.sdk.model.TransactionRecipient
+import cash.z.ecc.android.sdk.model.TransactionSubmitResult
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.Zatoshi
 import co.electriccoin.lightwallet.client.LightWalletClient
@@ -40,20 +43,60 @@ internal class OutboundTransactionManagerImpl(
         }
     }
 
-    override suspend fun submit(encodedTransaction: EncodedTransaction): Boolean {
+    override suspend fun proposeTransfer(
+        account: Account,
+        recipient: String,
+        amount: Zatoshi,
+        memo: String
+    ): Proposal = encoder.proposeTransfer(account, recipient, amount, memo.toByteArray())
+
+    override suspend fun proposeShielding(
+        account: Account,
+        shieldingThreshold: Zatoshi,
+        memo: String,
+        transparentReceiver: String?
+    ): Proposal? = encoder.proposeShielding(account, shieldingThreshold, memo.toByteArray(), transparentReceiver)
+
+    override suspend fun createProposedTransactions(
+        proposal: Proposal,
+        usk: UnifiedSpendingKey
+    ): List<EncodedTransaction> = encoder.createProposedTransactions(proposal, usk)
+
+    override suspend fun submit(encodedTransaction: EncodedTransaction): TransactionSubmitResult {
         return when (val response = service.submitTransaction(encodedTransaction.raw.byteArray)) {
             is Response.Success -> {
-                Twig.debug { "SUCCESS: submit transaction completed with response: ${response.result}" }
-                true
+                if (response.result.code == 0) {
+                    Twig.info {
+                        "SUCCESS: submit transaction completed for:" +
+                            " ${encodedTransaction.txId.byteArray.toHexReversed()}"
+                    }
+                    TransactionSubmitResult.Success(encodedTransaction.txId)
+                } else {
+                    Twig.error {
+                        "FAILURE! submit transaction ${encodedTransaction.txId.byteArray.toHexReversed()} " +
+                            "completed with response: ${response.result.code}: ${response.result.message}"
+                    }
+                    TransactionSubmitResult.Failure(
+                        encodedTransaction.txId,
+                        false,
+                        response.result.code,
+                        response.result.message
+                    )
+                }
             }
 
             is Response.Failure -> {
-                Twig.debug {
-                    "FAILURE! submit transaction completed with response: ${response.code}: ${
+                Twig.error {
+                    "FAILURE! submit transaction failed with gRPC response: ${response.code}: ${
                         response.description
                     }"
                 }
-                false
+                TransactionSubmitResult.Failure(
+                    encodedTransaction.txId,
+                    true,
+                    response.code,
+                    response.description
+                )
             }
         }
     }

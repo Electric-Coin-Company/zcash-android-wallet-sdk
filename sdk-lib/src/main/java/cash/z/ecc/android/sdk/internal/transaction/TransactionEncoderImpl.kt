@@ -1,5 +1,6 @@
 package cash.z.ecc.android.sdk.internal.transaction
 
+import cash.z.ecc.android.sdk.exception.SdkException
 import cash.z.ecc.android.sdk.exception.TransactionEncoderException
 import cash.z.ecc.android.sdk.ext.masked
 import cash.z.ecc.android.sdk.internal.SaplingParamTool
@@ -7,8 +8,10 @@ import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.TypesafeBackend
 import cash.z.ecc.android.sdk.internal.model.EncodedTransaction
 import cash.z.ecc.android.sdk.internal.repository.DerivedDataRepository
+import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.FirstClassByteArray
+import cash.z.ecc.android.sdk.model.Proposal
 import cash.z.ecc.android.sdk.model.TransactionRecipient
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.Zatoshi
@@ -22,6 +25,7 @@ import cash.z.ecc.android.sdk.model.Zatoshi
  * @property repository the repository that stores information about the transactions being created
  * such as the raw bytes and raw txId.
  */
+@Suppress("TooManyFunctions")
 internal class TransactionEncoderImpl(
     private val backend: TypesafeBackend,
     private val saplingParamTool: SaplingParamTool,
@@ -62,6 +66,77 @@ internal class TransactionEncoderImpl(
         val transactionId = createShieldingSpend(usk, memo)
         return repository.findEncodedTransactionByTxId(transactionId)
             ?: throw TransactionEncoderException.TransactionNotFoundException(transactionId)
+    }
+
+    override suspend fun proposeTransfer(
+        account: Account,
+        recipient: String,
+        amount: Zatoshi,
+        memo: ByteArray?
+    ): Proposal {
+        Twig.debug {
+            "creating proposal to spend $amount zatoshi to" +
+                " ${recipient.masked()} with memo: ${memo?.decodeToString()}"
+        }
+
+        return runCatching {
+            backend.proposeTransfer(
+                account,
+                recipient,
+                amount.value,
+                memo
+            )
+        }.onFailure {
+            Twig.error(it) { "Caught exception while creating proposal." }
+        }.onSuccess { result ->
+            Twig.debug { "result of proposeTransfer: $result" }
+        }.getOrThrow()
+    }
+
+    override suspend fun proposeShielding(
+        account: Account,
+        shieldingThreshold: Zatoshi,
+        memo: ByteArray?,
+        transparentReceiver: String?
+    ): Proposal? {
+        return runCatching {
+            backend.proposeShielding(account, shieldingThreshold.value, memo, transparentReceiver)
+        }.onFailure {
+            // TODO [#680]: if this error matches: Insufficient balance (have 0, need 1000 including fee)
+            //  then consider custom error that says no UTXOs existed to shield
+            // TODO [#680]: https://github.com/zcash/zcash-android-wallet-sdk/issues/680
+            Twig.error(it) { "proposeShielding failed" }
+        }.onSuccess { result ->
+            Twig.debug { "result of proposeShielding: $result" }
+        }.getOrThrow()
+    }
+
+    override suspend fun createProposedTransactions(
+        proposal: Proposal,
+        usk: UnifiedSpendingKey
+    ): List<EncodedTransaction> {
+        Twig.debug {
+            "creating transactions for proposal"
+        }
+
+        val transactionIds =
+            runCatching {
+                saplingParamTool.ensureParams(saplingParamTool.properties.paramsDirectory)
+                Twig.debug { "params exist! attempting to send..." }
+                backend.createProposedTransactions(proposal, usk)
+            }.onFailure {
+                Twig.error(it) { "Caught exception while creating transaction." }
+            }.onSuccess { result ->
+                Twig.debug { "result of createProposedTransactions: $result" }
+            }.getOrThrow()
+
+        val txs =
+            transactionIds.map { transactionId ->
+                repository.findEncodedTransactionByTxId(transactionId)
+                    ?: throw TransactionEncoderException.TransactionNotFoundException(transactionId)
+            }
+
+        return txs
     }
 
     /**
@@ -133,48 +208,53 @@ internal class TransactionEncoderImpl(
                 " ${toAddress.masked()} with memo: ${memo?.decodeToString()}"
         }
 
-        @Suppress("TooGenericExceptionCaught")
-        return try {
+        return runCatching {
             saplingParamTool.ensureParams(saplingParamTool.properties.paramsDirectory)
             Twig.debug { "params exist! attempting to send..." }
-            // TODO [#1359]: Expose the proposal in a way that enables querying its fee.
-            // TODO [#1359]: https://github.com/Electric-Coin-Company/zcash-android-wallet-sdk/issues/1359
             val proposal =
                 backend.proposeTransfer(
-                    usk,
+                    usk.account,
                     toAddress,
                     amount.value,
                     memo
                 )
-            backend.createProposedTransaction(proposal, usk)
-        } catch (t: Throwable) {
-            Twig.debug(t) { "Caught exception while creating transaction." }
-            throw t
-        }.also { result ->
+            val transactionIds = backend.createProposedTransactions(proposal, usk)
+            assert(transactionIds.size == 1)
+            transactionIds[0]
+        }.onFailure {
+            Twig.error(it) { "Caught exception while creating transaction." }
+        }.onSuccess { result ->
             Twig.debug { "result of sendToAddress: $result" }
-        }
+        }.getOrThrow()
     }
 
     private suspend fun createShieldingSpend(
         usk: UnifiedSpendingKey,
         memo: ByteArray? = byteArrayOf()
     ): FirstClassByteArray {
-        @Suppress("TooGenericExceptionCaught")
-        return try {
+        return runCatching {
             saplingParamTool.ensureParams(saplingParamTool.properties.paramsDirectory)
             Twig.debug { "params exist! attempting to shield..." }
-            // TODO [#1359]: Expose the proposal in a way that enables querying its fee.
-            // TODO [#1359]: https://github.com/Electric-Coin-Company/zcash-android-wallet-sdk/issues/1359
-            val proposal = backend.proposeShielding(usk, memo)
-            backend.createProposedTransaction(proposal, usk)
-        } catch (t: Throwable) {
+            val proposal =
+                backend.proposeShielding(usk.account, SHIELDING_THRESHOLD, memo)
+                    ?: throw SdkException(
+                        "Insufficient balance (have 0, need $SHIELDING_THRESHOLD including fee)",
+                        null
+                    )
+            val transactionIds = backend.createProposedTransactions(proposal, usk)
+            assert(transactionIds.size == 1)
+            transactionIds[0]
+        }.onFailure {
             // TODO [#680]: if this error matches: Insufficient balance (have 0, need 1000 including fee)
             //  then consider custom error that says no UTXOs existed to shield
             // TODO [#680]: https://github.com/zcash/zcash-android-wallet-sdk/issues/680
-            Twig.debug(t) { "Shield failed" }
-            throw t
-        }.also { result ->
+            Twig.error(it) { "Shield failed" }
+        }.onSuccess { result ->
             Twig.debug { "result of shieldToAddress: $result" }
-        }
+        }.getOrThrow()
+    }
+
+    companion object {
+        private const val SHIELDING_THRESHOLD = 100000L
     }
 }

@@ -6,15 +6,32 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.7] - 2024-03-08
+
+### Fixed
+- `Synchronizer.sendToAddress` and `Synchronizer.shieldFunds` now throw an
+  exception if the created transaction successfully reaches `lightwalletd` but
+  fails to reach its backing full node's mempool.
+
 ### Changed
 - `WalletBalance` now contains new fields `changePending` and `valuePending`. Fields `total` and `pending` are 
   still provided. See more in the class documentation 
   `sdk-lib/src/main/java/cash/z/ecc/android/sdk/model/WalletBalance.kt`
 - `Synchronizer.transparentBalances: WalletBalance` to `Synchronizer.transparentBalance: Zatoshi`
-- `WalletSnapshot.transparentBalance: WalletBalance` to `WalletSnapshot.transparentBalance: Zatoshi` 
+- `WalletSnapshot.transparentBalance: WalletBalance` to `WalletSnapshot.transparentBalance: Zatoshi`
 - `Memo.MAX_MEMO_LENGTH_BYTES` is now available in public API
+- `Synchronizer.sendToAddress` and `Synchronizer.shieldFunds` have been
+  deprecated, and will be removed in 2.1.0 (which will create multiple
+  transactions at once for some recipients).
 
 ### Added
+- APIs that enable constructing a proposal for transferring or shielding funds,
+  and then creating transactions from a proposal. The intermediate proposal can
+  be used to determine the required fee, before committing to producing
+  transactions.
+  - `Synchronizer.proposeTransfer`
+  - `Synchronizer.proposeShielding`
+  - `Synchronizer.createProposedTransactions`
 - `WalletBalanceFixture` class with mock values that are supposed to be used only for testing purposes 
 - `Memo.countLength(memoString: String)` to count memo length in bytes
 - `PersistableWallet.toSafeString` is a safe alternative for the regular [toString] function that prints only 

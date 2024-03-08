@@ -24,7 +24,7 @@ use zcash_client_backend::{
         chain::{scan_cached_blocks, CommitmentTreeRoot, ScanSummary},
         scanning::{ScanPriority, ScanRange},
         wallet::{
-            create_proposed_transaction, decrypt_and_store_transaction,
+            create_proposed_transactions, decrypt_and_store_transaction,
             input_selection::GreedyInputSelector, propose_shielding, propose_transfer,
         },
         AccountBalance, AccountBirthday, InputSource, WalletCommitmentTrees, WalletRead,
@@ -524,10 +524,10 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getTransp
 
         if let Some(taddr) = ua.0.transparent() {
             let taddr = match taddr {
-                TransparentAddress::PublicKey(data) => {
+                TransparentAddress::PublicKeyHash(data) => {
                     ZcashAddress::from_transparent_p2pkh(network, *data)
                 }
-                TransparentAddress::Script(data) => {
+                TransparentAddress::ScriptHash(data) => {
                     ZcashAddress::from_transparent_p2sh(network, *data)
                 }
             };
@@ -1145,7 +1145,7 @@ fn encode_account_balance<'a>(
 /// pending.
 fn encode_wallet_summary<'a>(
     env: &mut JNIEnv<'a>,
-    summary: WalletSummary,
+    summary: WalletSummary<AccountId>,
 ) -> jni::errors::Result<JObject<'a>> {
     let account_balances = utils::rust_vec_to_java(
         env,
@@ -1397,7 +1397,7 @@ fn zip317_helper<DbT>(
         StandardFeeRule::PreZip313
     };
     GreedyInputSelector::new(
-        SingleOutputChangeStrategy::new(fee_rule, change_memo),
+        SingleOutputChangeStrategy::new(fee_rule, change_memo, ShieldedProtocol::Sapling),
         DustOutputPolicy::default(),
     )
 }
@@ -1463,13 +1463,13 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeTr
         )
         .map_err(|e| format_err!("Error creating transaction proposal: {}", e))?;
 
-        utils::rust_bytes_to_java(
+        Ok(utils::rust_bytes_to_java(
             &env,
             Proposal::from_standard_proposal(&network, &proposal)
                 .encode_to_vec()
                 .as_ref(),
-        )
-        .map(|arr| arr.into_raw())
+        )?
+        .into_raw())
     });
     unwrap_exc_or(&mut env, res, ptr::null_mut())
 }
@@ -1480,7 +1480,9 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeSh
     _: JClass<'local>,
     db_data: JString<'local>,
     account: jint,
+    shielding_threshold: jlong,
     memo: JByteArray<'local>,
+    transparent_receiver: JString<'local>,
     network_id: jint,
     use_zip317_fees: jboolean,
 ) -> jbyteArray {
@@ -1489,12 +1491,40 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeSh
         let network = parse_network(network_id as u32)?;
         let mut db_data = wallet_db(env, network, db_data)?;
         let account = account_id_from_jint(account)?;
+        let shielding_threshold = NonNegativeAmount::from_nonnegative_i64(shielding_threshold)
+            .map_err(|()| format_err!("Invalid shielding threshold, out of range"))?;
         let memo_bytes = env.convert_byte_array(memo).unwrap();
+
+        let transparent_receiver =
+            match utils::java_nullable_string_to_rust(env, &transparent_receiver) {
+                None => Ok(None),
+                Some(addr) => match Address::decode(&network, &addr) {
+                    None => Err(format_err!("Transparent receiver is for the wrong network")),
+                    Some(addr) => match addr {
+                        Address::Sapling(_) | Address::Unified(_) => Err(format_err!(
+                            "Transparent receiver is not a transparent address"
+                        )),
+                        Address::Transparent(addr) => {
+                            if db_data
+                                .get_transparent_receivers(account)?
+                                .contains_key(&addr)
+                            {
+                                Ok(Some(addr))
+                            } else {
+                                Err(format_err!(
+                                    "Transparent receiver does not belong to account {}",
+                                    u32::from(account),
+                                ))
+                            }
+                        }
+                    },
+                },
+            }?;
 
         let min_confirmations = 0;
         let min_confirmations_for_heights = NonZeroU32::new(1).unwrap();
 
-        let from_addrs: Vec<TransparentAddress> = db_data
+        let account_receivers = db_data
             .get_target_and_anchor_heights(min_confirmations_for_heights)
             .map_err(|e| format_err!("Error while fetching anchor height: {}", e))
             .and_then(|opt_anchor| {
@@ -1512,15 +1542,27 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeSh
                             e
                         )
                     })
-            })?
-            .into_keys()
-            .collect();
+            })?;
+
+        let from_addrs = if let Some((addr, _)) = transparent_receiver.map_or_else(||
+            if account_receivers.len() > 1 {
+                Err(format_err!(
+                    "Account has more than one transparent receiver with funds to shield; this is not yet supported by the SDK. Provide a specific transparent receiver to shield funds from."
+                ))
+            } else {
+                Ok(account_receivers.iter().next().map(|(a, v)| (*a, *v)))
+            },
+            |addr| Ok(account_receivers.get(&addr).map(|value| (addr, *value)))
+        )?.filter(|(_, value)| *value >= shielding_threshold.into()) {
+            [addr]
+        } else {
+            // There are no transparent funds to shield; don't create a proposal.
+            return Ok(ptr::null_mut());
+        };
 
         let memo = Memo::from_bytes(&memo_bytes).unwrap();
 
         let input_selector = zip317_helper(Some(MemoBytes::from(&memo)), use_zip317_fees);
-
-        let shielding_threshold = NonNegativeAmount::from_u64(100000).unwrap();
 
         let proposal = propose_shielding::<_, _, _, Infallible>(
             &mut db_data,
@@ -1532,19 +1574,19 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeSh
         )
         .map_err(|e| format_err!("Error while shielding transaction: {}", e))?;
 
-        utils::rust_bytes_to_java(
+        Ok(utils::rust_bytes_to_java(
             &env,
             Proposal::from_standard_proposal(&network, &proposal)
                 .encode_to_vec()
                 .as_ref(),
-        )
-        .map(|arr| arr.into_raw())
+        )?
+        .into_raw())
     });
     unwrap_exc_or(&mut env, res, ptr::null_mut())
 }
 
 #[no_mangle]
-pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_createProposedTransaction<
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_createProposedTransactions<
     'local,
 >(
     mut env: JNIEnv<'local>,
@@ -1555,7 +1597,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_createPro
     spend_params: JString<'local>,
     output_params: JString<'local>,
     network_id: jint,
-) -> jbyteArray {
+) -> jobjectArray {
     let res = catch_unwind(&mut env, |env| {
         let _span = tracing::info_span!("RustBackend.createProposedTransaction").entered();
         let network = parse_network(network_id as u32)?;
@@ -1570,7 +1612,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_createPro
             .map_err(|e| format_err!("Invalid proposal: {}", e))?
             .try_into_standard_proposal(&network, &db_data)?;
 
-        let txid = create_proposed_transaction::<_, _, Infallible, _, _>(
+        let txids = create_proposed_transactions::<_, _, Infallible, _, _>(
             &mut db_data,
             &network,
             &prover,
@@ -1579,9 +1621,16 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_createPro
             OvkPolicy::Sender,
             &proposal,
         )
-        .map_err(|e| format_err!("Error while creating transaction: {}", e))?;
+        .map_err(|e| format_err!("Error while creating transactions: {}", e))?;
 
-        utils::rust_bytes_to_java(&env, txid.as_ref()).map(|arr| arr.into_raw())
+        Ok(utils::rust_vec_to_java(
+            env,
+            txids.into(),
+            "[B",
+            |env, txid| utils::rust_bytes_to_java(env, txid.as_ref()),
+            |env| env.new_byte_array(32),
+        )?
+        .into_raw())
     });
     unwrap_exc_or(&mut env, res, ptr::null_mut())
 }
@@ -1657,10 +1706,10 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_listTrans
                     .iter()
                     .map(|(taddr, _)| {
                         let taddr = match taddr {
-                            TransparentAddress::PublicKey(data) => {
+                            TransparentAddress::PublicKeyHash(data) => {
                                 ZcashAddress::from_transparent_p2pkh(zcash_network, *data)
                             }
-                            TransparentAddress::Script(data) => {
+                            TransparentAddress::ScriptHash(data) => {
                                 ZcashAddress::from_transparent_p2sh(zcash_network, *data)
                             }
                         };

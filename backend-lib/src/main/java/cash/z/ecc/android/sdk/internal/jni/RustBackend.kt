@@ -307,34 +307,40 @@ class RustBackend private constructor(
 
     override suspend fun proposeShielding(
         account: Int,
-        memo: ByteArray?
-    ): ProposalUnsafe {
+        shieldingThreshold: Long,
+        memo: ByteArray?,
+        transparentReceiver: String?
+    ): ProposalUnsafe? {
         return withContext(SdkDispatchers.DATABASE_IO) {
-            ProposalUnsafe.parse(
-                proposeShielding(
-                    dataDbFile.absolutePath,
-                    account,
-                    memo ?: ByteArray(0),
-                    networkId = networkId,
-                    useZip317Fees = IS_USE_ZIP_317_FEES
+            proposeShielding(
+                dataDbFile.absolutePath,
+                account,
+                shieldingThreshold,
+                memo ?: ByteArray(0),
+                transparentReceiver,
+                networkId = networkId,
+                useZip317Fees = IS_USE_ZIP_317_FEES
+            )?.let {
+                ProposalUnsafe.parse(
+                    it
                 )
-            )
+            }
         }
     }
 
-    override suspend fun createProposedTransaction(
+    override suspend fun createProposedTransactions(
         proposal: ProposalUnsafe,
         unifiedSpendingKey: ByteArray
-    ): ByteArray =
+    ): List<ByteArray> =
         withContext(SdkDispatchers.DATABASE_IO) {
-            createProposedTransaction(
+            createProposedTransactions(
                 dataDbFile.absolutePath,
                 proposal.toByteArray(),
                 unifiedSpendingKey,
                 spendParamsPath = saplingSpendFile.absolutePath,
                 outputParamsPath = saplingOutputFile.absolutePath,
                 networkId = networkId
-            )
+            ).asList()
         }
 
     override suspend fun putUtxo(
@@ -584,21 +590,23 @@ class RustBackend private constructor(
         private external fun proposeShielding(
             dbDataPath: String,
             account: Int,
+            shieldingThreshold: Long,
             memo: ByteArray,
+            transparentReceiver: String?,
             networkId: Int,
             useZip317Fees: Boolean
-        ): ByteArray
+        ): ByteArray?
 
         @JvmStatic
         @Suppress("LongParameterList")
-        private external fun createProposedTransaction(
+        private external fun createProposedTransactions(
             dbDataPath: String,
             proposal: ByteArray,
             usk: ByteArray,
             spendParamsPath: String,
             outputParamsPath: String,
             networkId: Int
-        ): ByteArray
+        ): Array<ByteArray>
 
         @JvmStatic
         private external fun branchIdForHeight(

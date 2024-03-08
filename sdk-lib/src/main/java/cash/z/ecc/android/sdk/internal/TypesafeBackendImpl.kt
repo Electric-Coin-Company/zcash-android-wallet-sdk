@@ -37,14 +37,14 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
 
     @Suppress("LongParameterList")
     override suspend fun proposeTransfer(
-        usk: UnifiedSpendingKey,
+        account: Account,
         to: String,
         value: Long,
         memo: ByteArray?
     ): Proposal =
         Proposal.fromUnsafe(
             backend.proposeTransfer(
-                usk.account.value,
+                account.value,
                 to,
                 value,
                 memo
@@ -52,26 +52,30 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
         )
 
     override suspend fun proposeShielding(
-        usk: UnifiedSpendingKey,
-        memo: ByteArray?
-    ): Proposal =
-        Proposal.fromUnsafe(
-            backend.proposeShielding(
-                usk.account.value,
-                memo
+        account: Account,
+        shieldingThreshold: Long,
+        memo: ByteArray?,
+        transparentReceiver: String?
+    ): Proposal? =
+        backend.proposeShielding(
+            account.value,
+            shieldingThreshold,
+            memo,
+            transparentReceiver
+        )?.let {
+            Proposal.fromUnsafe(
+                it
             )
-        )
+        }
 
-    override suspend fun createProposedTransaction(
+    override suspend fun createProposedTransactions(
         proposal: Proposal,
         usk: UnifiedSpendingKey
-    ): FirstClassByteArray =
-        FirstClassByteArray(
-            backend.createProposedTransaction(
-                proposal.toUnsafe(),
-                usk.copyBytes()
-            )
-        )
+    ): List<FirstClassByteArray> =
+        backend.createProposedTransactions(
+            proposal.toUnsafe(),
+            usk.copyBytes()
+        ).map { FirstClassByteArray(it) }
 
     override suspend fun getCurrentAddress(account: Account): String {
         return backend.getCurrentAddress(account.value)

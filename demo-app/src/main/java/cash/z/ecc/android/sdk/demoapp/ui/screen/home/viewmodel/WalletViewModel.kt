@@ -22,6 +22,7 @@ import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.PercentDecimal
 import cash.z.ecc.android.sdk.model.PersistableWallet
+import cash.z.ecc.android.sdk.model.TransactionSubmitResult
 import cash.z.ecc.android.sdk.model.WalletAddresses
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
@@ -47,6 +48,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -202,7 +204,7 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
             viewModelScope.launch {
                 val spendingKey = spendingKey.filterNotNull().first()
                 runCatching { synchronizer.send(spendingKey, zecSend) }
-                    .onSuccess { mutableSendState.value = SendState.Sent(it) }
+                    .onSuccess { mutableSendState.value = SendState.Sent(it.toList()) }
                     .onFailure { mutableSendState.value = SendState.Error(it) }
             }
         } else {
@@ -215,6 +217,7 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
      *
      * Observe the result via [sendState].
      */
+    @Suppress("MagicNumber")
     fun shieldFunds() {
         if (sendState.value is SendState.Sending) {
             return
@@ -226,8 +229,15 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
         if (null != synchronizer) {
             viewModelScope.launch {
                 val spendingKey = spendingKey.filterNotNull().first()
-                kotlin.runCatching { synchronizer.shieldFunds(spendingKey) }
-                    .onSuccess { mutableSendState.value = SendState.Sent(it) }
+                kotlin.runCatching {
+                    synchronizer.proposeShielding(spendingKey.account, Zatoshi(100000))?.let {
+                        synchronizer.createProposedTransactions(
+                            it,
+                            spendingKey
+                        )
+                    }
+                }
+                    .onSuccess { it?.let { mutableSendState.value = SendState.Sent(it.toList()) } }
                     .onFailure { mutableSendState.value = SendState.Error(it) }
             }
         } else {
@@ -302,7 +312,7 @@ sealed class SendState {
         override fun toString(): String = "Sending"
     }
 
-    class Sent(val localTxId: Long) : SendState() {
+    class Sent(val txIds: List<TransactionSubmitResult>) : SendState() {
         override fun toString(): String = "Sent"
     }
 

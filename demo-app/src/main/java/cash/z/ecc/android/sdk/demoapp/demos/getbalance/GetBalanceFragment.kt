@@ -47,6 +47,7 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
         reportTraceEvent(SyncBlockchainBenchmarkTrace.Event.BALANCE_SCREEN_END)
     }
 
+    @Suppress("MagicNumber")
     override fun onViewCreated(
         view: View,
         savedInstanceState: Bundle?
@@ -60,13 +61,20 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
         binding.shield.apply {
             setOnClickListener {
                 lifecycleScope.launch {
-                    sharedViewModel.synchronizerFlow.value?.shieldFunds(
+                    val usk =
                         DerivationTool.getInstance().deriveUnifiedSpendingKey(
                             seed,
                             network,
                             Account.DEFAULT
                         )
-                    )
+                    sharedViewModel.synchronizerFlow.value?.let { synchronizer ->
+                        synchronizer.proposeShielding(usk.account, Zatoshi(100000))?.let { it1 ->
+                            synchronizer.createProposedTransactions(
+                                it1,
+                                usk
+                            )
+                        }
+                    }
                 }
             }
         }

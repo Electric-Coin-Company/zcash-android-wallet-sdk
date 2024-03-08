@@ -42,8 +42,10 @@ import cash.z.ecc.android.sdk.internal.transaction.TransactionEncoderImpl
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.PercentDecimal
+import cash.z.ecc.android.sdk.model.Proposal
 import cash.z.ecc.android.sdk.model.TransactionOverview
 import cash.z.ecc.android.sdk.model.TransactionRecipient
+import cash.z.ecc.android.sdk.model.TransactionSubmitResult
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
@@ -66,6 +68,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.launchIn
@@ -405,6 +408,7 @@ class SdkSynchronizer private constructor(
                         lastScanTime = now
                         SYNCED
                     }
+
                     is Stopped -> STOPPED
                     is Disconnected -> DISCONNECTED
                     is Syncing, Initialized -> SYNCING
@@ -555,6 +559,58 @@ class SdkSynchronizer private constructor(
             account
         )
 
+    @Throws(TransactionEncoderException::class)
+    override suspend fun proposeTransfer(
+        account: Account,
+        recipient: String,
+        amount: Zatoshi,
+        memo: String
+    ): Proposal = txManager.proposeTransfer(account, recipient, amount, memo)
+
+    @Throws(TransactionEncoderException::class)
+    override suspend fun proposeShielding(
+        account: Account,
+        shieldingThreshold: Zatoshi,
+        memo: String,
+        transparentReceiver: String?
+    ): Proposal? = txManager.proposeShielding(account, shieldingThreshold, memo, transparentReceiver)
+
+    @Throws(TransactionEncoderException::class)
+    override suspend fun createProposedTransactions(
+        proposal: Proposal,
+        usk: UnifiedSpendingKey
+    ): Flow<TransactionSubmitResult> {
+        // Internally, this logic submits and checks every incoming transaction, and once [Failure] or
+        // [NotAttempted] submission result occurs, it returns [NotAttempted] for the rest of them
+        var anySubmissionFailed = false
+        return txManager.createProposedTransactions(proposal, usk)
+            .asFlow()
+            .map { transaction ->
+                if (anySubmissionFailed) {
+                    TransactionSubmitResult.NotAttempted(transaction.txId)
+                } else {
+                    val submission = txManager.submit(transaction)
+                    when (submission) {
+                        is TransactionSubmitResult.Success -> {
+                            // Expected state
+                        }
+                        is TransactionSubmitResult.Failure,
+                        is TransactionSubmitResult.NotAttempted -> {
+                            anySubmissionFailed = true
+                        }
+                    }
+                    submission
+                }
+            }
+    }
+
+    @Deprecated(
+        message = "Upcoming SDK 2.1 will create multiple transactions at once for some recipients.",
+        replaceWith =
+            ReplaceWith(
+                "createProposedTransactions(proposeTransfer(usk.account, toAddress, amount, memo), usk)"
+            )
+    )
     @Throws(TransactionEncoderException::class, TransactionSubmitException::class)
     override suspend fun sendToAddress(
         usk: UnifiedSpendingKey,
@@ -571,13 +627,23 @@ class SdkSynchronizer private constructor(
                 usk.account
             )
 
-        if (txManager.submit(encodedTx)) {
-            return storage.findMatchingTransactionId(encodedTx.txId.byteArray)!!
-        } else {
-            throw TransactionSubmitException()
+        when (txManager.submit(encodedTx)) {
+            is TransactionSubmitResult.Success -> {
+                return storage.findMatchingTransactionId(encodedTx.txId.byteArray)!!
+            }
+            else -> {
+                throw TransactionSubmitException()
+            }
         }
     }
 
+    @Deprecated(
+        message = "Upcoming SDK 2.1 will create multiple transactions at once for some recipients.",
+        replaceWith =
+            ReplaceWith(
+                "proposeShielding(usk.account, shieldingThreshold, memo)?.let { createProposedTransactions(it, usk) }"
+            )
+    )
     @Throws(TransactionEncoderException::class, TransactionSubmitException::class)
     override suspend fun shieldFunds(
         usk: UnifiedSpendingKey,
@@ -596,10 +662,13 @@ class SdkSynchronizer private constructor(
                 usk.account
             )
 
-        if (txManager.submit(encodedTx)) {
-            return storage.findMatchingTransactionId(encodedTx.txId.byteArray)!!
-        } else {
-            throw TransactionSubmitException()
+        when (txManager.submit(encodedTx)) {
+            is TransactionSubmitResult.Success -> {
+                return storage.findMatchingTransactionId(encodedTx.txId.byteArray)!!
+            }
+            else -> {
+                throw TransactionSubmitException()
+            }
         }
     }
 

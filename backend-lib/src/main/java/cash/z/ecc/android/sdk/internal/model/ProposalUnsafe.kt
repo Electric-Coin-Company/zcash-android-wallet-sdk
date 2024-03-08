@@ -38,9 +38,21 @@ class ProposalUnsafe(
     }
 
     /**
-     * Returns the fee required by this proposal.
+     * Returns the number of transactions that this proposal will create.
+     *
+     * This is equal to the number of `TransactionSubmitResult`s that will be returned
+     * from `Synchronizer.createProposedTransactions`.
+     *
+     * Proposals always create at least one transaction.
      */
-    fun feeRequired(): Long {
-        return inner.balance.feeRequired
+    fun transactionCount(): Int {
+        return inner.stepsCount
+    }
+
+    /**
+     * Returns the total fee required by this proposal for its transactions.
+     */
+    fun totalFeeRequired(): Long {
+        return inner.stepsList.fold(0) { acc, step -> acc + step.balance.feeRequired }
     }
 }

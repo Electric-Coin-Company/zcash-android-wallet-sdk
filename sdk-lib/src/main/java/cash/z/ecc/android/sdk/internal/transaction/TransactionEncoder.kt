@@ -1,7 +1,9 @@
 package cash.z.ecc.android.sdk.internal.transaction
 
 import cash.z.ecc.android.sdk.internal.model.EncodedTransaction
+import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
+import cash.z.ecc.android.sdk.model.Proposal
 import cash.z.ecc.android.sdk.model.TransactionRecipient
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.Zatoshi
@@ -37,6 +39,61 @@ internal interface TransactionEncoder {
         recipient: TransactionRecipient,
         memo: ByteArray? = byteArrayOf()
     ): EncodedTransaction
+
+    /**
+     * Creates a proposal for transferring funds to the given recipient.
+     *
+     * @param account the account from which to transfer funds.
+     * @param recipient the recipient's address.
+     * @param amount the amount of zatoshi to send.
+     * @param memo the optional memo to include as part of the proposal's transactions.
+     *
+     * @return the proposal or an exception
+     */
+    suspend fun proposeTransfer(
+        account: Account,
+        recipient: String,
+        amount: Zatoshi,
+        memo: ByteArray? = byteArrayOf()
+    ): Proposal
+
+    /**
+     * Creates a proposal for shielding any transparent funds sent to the given account.
+     *
+     * @param account the account for which to shield funds.
+     * @param shieldingThreshold the minimum transparent balance required before a
+     *                           proposal will be created.
+     * @param memo the optional memo to include as part of the proposal's transactions.
+     * @param transparentReceiver a specific transparent receiver within the account that
+     *                            should be the source of transparent funds. Default is
+     *                            null which will select whichever of the account's
+     *                            transparent receivers has funds to shield.
+     *
+     * @return the proposal, or null if the transparent balance that would be shielded is
+     *         zero or below `shieldingThreshold`.
+     *
+     * @throws Exception if `transparentReceiver` is null and there are transparent funds
+     *         in more than one of the account's transparent receivers.
+     */
+    suspend fun proposeShielding(
+        account: Account,
+        shieldingThreshold: Zatoshi,
+        memo: ByteArray? = byteArrayOf(),
+        transparentReceiver: String? = null
+    ): Proposal?
+
+    /**
+     * Creates the transactions in the given proposal.
+     *
+     * @param proposal the proposal to create.
+     * @param usk the unified spending key associated with the notes that will be spent.
+     *
+     * @return the successfully encoded transactions or an exception
+     */
+    suspend fun createProposedTransactions(
+        proposal: Proposal,
+        usk: UnifiedSpendingKey
+    ): List<EncodedTransaction>
 
     /**
      * Utility function to help with validation. This is not called during [createTransaction]

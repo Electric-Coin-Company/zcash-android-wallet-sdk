@@ -9,9 +9,12 @@ data class ZecSend(val destination: WalletAddress, val amount: Zatoshi, val memo
 suspend fun Synchronizer.send(
     spendingKey: UnifiedSpendingKey,
     send: ZecSend
-) = sendToAddress(
-    spendingKey,
-    send.amount,
-    send.destination.address,
-    send.memo.value
+) = createProposedTransactions(
+    proposeTransfer(
+        spendingKey.account,
+        send.destination.address,
+        send.amount,
+        send.memo.value
+    ),
+    spendingKey
 )
