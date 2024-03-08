@@ -6,6 +6,8 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.7] - 2024-03-08
+
 ### Fixed
 - `Synchronizer.sendToAddress` and `Synchronizer.shieldFunds` now throw an
   exception if the created transaction successfully reaches `lightwalletd` but
