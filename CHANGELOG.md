@@ -6,6 +6,10 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- The SDK uses ZIP-317 fee system internally
+- `ZcashSdk.MINERS_FEE` has been deprecated, and will be removed in 2.1.0
+
 ## [2.0.7] - 2024-03-08
 
 ### Fixed
