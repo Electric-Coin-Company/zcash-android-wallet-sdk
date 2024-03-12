@@ -3,7 +3,6 @@
 package cash.z.ecc.android.sdk.sample
 
 import androidx.test.filters.LargeTest
-import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
@@ -20,7 +19,7 @@ import org.junit.Test
  * the same data.
  */
 class TransparentRestoreSample {
-    val txValue = Zatoshi(ZcashSdk.MINERS_FEE.value / 2)
+    val txValue = Zatoshi(Zatoshi(10_000L).value / 2)
 
 //    val walletA = SimpleWallet(SEED_PHRASE, "WalletA")
 

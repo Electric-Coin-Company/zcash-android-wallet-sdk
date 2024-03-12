@@ -1,12 +1,12 @@
 package cash.z.ecc.android.sdk.fixture
 
-import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.FirstClassByteArray
 import cash.z.ecc.android.sdk.model.TransactionOverview
 import cash.z.ecc.android.sdk.model.TransactionState
 import cash.z.ecc.android.sdk.model.Zatoshi
 
+@Suppress("MagicNumber")
 object TransactionOverviewFixture {
     const val ID: Long = 1
     val RAW_ID: FirstClassByteArray get() = FirstClassByteArray("rawId".toByteArray())
@@ -16,9 +16,8 @@ object TransactionOverviewFixture {
     val RAW: FirstClassByteArray get() = FirstClassByteArray("raw".toByteArray())
     const val IS_SENT_TRANSACTION: Boolean = false
 
-    @Suppress("MagicNumber")
     val NET_VALUE: Zatoshi = Zatoshi(10_000)
-    val FEE_PAID: Zatoshi = ZcashSdk.MINERS_FEE
+    val FEE_PAID: Zatoshi = Zatoshi(10_000)
     const val IS_CHANGE: Boolean = false
     const val RECEIVED_NOTE_COUNT: Int = 1
     const val SENT_NOTE_COUNT: Int = 0
