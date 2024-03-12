@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -43,6 +44,7 @@ import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.fixture.WalletFixture
 import cash.z.ecc.android.sdk.model.Memo
 import cash.z.ecc.android.sdk.model.MonetarySeparators
+import cash.z.ecc.android.sdk.model.Proposal
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.model.ZecSend
 import cash.z.ecc.android.sdk.model.ZecSendExt
@@ -60,18 +62,22 @@ private fun ComposablePreview() {
             walletSnapshot = WalletSnapshotFixture.new(),
             sendState = SendState.None,
             onSend = {},
-            onBack = {}
+            onGetProposal = {},
+            onBack = {},
+            sendTransactionProposal = null
         )
     }
 }
 
 @Composable
-@Suppress("ktlint:standard:function-naming")
+@Suppress("ktlint:standard:function-naming", "LongParameterList")
 fun Send(
     walletSnapshot: WalletSnapshot,
     sendState: SendState,
     onSend: (ZecSend) -> Unit,
-    onBack: () -> Unit
+    onGetProposal: (ZecSend) -> Unit,
+    onBack: () -> Unit,
+    sendTransactionProposal: Proposal?,
 ) {
     Scaffold(topBar = {
         SendTopAppBar(onBack)
@@ -80,7 +86,9 @@ fun Send(
             paddingValues = paddingValues,
             walletSnapshot = walletSnapshot,
             sendState = sendState,
-            onSend = onSend
+            onSend = onSend,
+            onGetProposal = onGetProposal,
+            sendTransactionProposal = sendTransactionProposal
         )
     }
 }
@@ -105,12 +113,14 @@ private fun SendTopAppBar(onBack: () -> Unit) {
 }
 
 @Composable
-@Suppress("LongMethod", "ktlint:standard:function-naming")
+@Suppress("LongMethod", "ktlint:standard:function-naming", "LongParameterList")
 private fun SendMainContent(
     paddingValues: PaddingValues,
     walletSnapshot: WalletSnapshot,
     sendState: SendState,
-    onSend: (ZecSend) -> Unit
+    onSend: (ZecSend) -> Unit,
+    onGetProposal: (ZecSend) -> Unit,
+    sendTransactionProposal: Proposal?,
 ) {
     val context = LocalContext.current
     val monetarySeparators = MonetarySeparators.current(locale = Locale.US)
@@ -227,6 +237,36 @@ private fun SendMainContent(
              * the fields.
              */
             Text(validation.joinToString(", "))
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Button(
+            onClick = {
+                val zecSendValidation =
+                    ZecSendExt.new(
+                        context,
+                        recipientAddressString,
+                        amountZecString,
+                        memoString,
+                        monetarySeparators
+                    )
+
+                when (zecSendValidation) {
+                    is ZecSendExt.ZecSendValidation.Valid -> onGetProposal(zecSendValidation.zecSend)
+                    is ZecSendExt.ZecSendValidation.Invalid -> validation = zecSendValidation.validationErrors
+                }
+            },
+            // Needs actual validation
+            enabled = amountZecString.isNotBlank() && recipientAddressString.isNotBlank()
+        ) {
+            Text(stringResource(id = R.string.send_proposal_button))
+        }
+
+        if (sendTransactionProposal != null) {
+            Text(stringResource(id = R.string.send_proposal_status, sendTransactionProposal.toPrettyString()))
+
+            Spacer(modifier = Modifier.height(16.dp))
         }
 
         Button(

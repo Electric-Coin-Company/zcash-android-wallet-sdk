@@ -18,3 +18,13 @@ suspend fun Synchronizer.send(
     ),
     spendingKey
 )
+
+suspend fun Synchronizer.proposeSend(
+    spendingKey: UnifiedSpendingKey,
+    send: ZecSend
+) = proposeTransfer(
+    spendingKey.account,
+    send.destination.address,
+    send.amount,
+    send.memo.value
+)

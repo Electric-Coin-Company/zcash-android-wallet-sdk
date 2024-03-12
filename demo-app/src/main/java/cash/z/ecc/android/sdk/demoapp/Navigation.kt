@@ -40,6 +40,7 @@ import cash.z.ecc.android.sdk.demoapp.ui.screen.transactions.view.Transactions
 import cash.z.ecc.android.sdk.demoapp.util.AndroidApiVersion
 import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.internal.Twig
+import cash.z.ecc.android.sdk.model.Proposal
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.type.ServerValidation
 import kotlinx.coroutines.CoroutineScope
@@ -131,6 +132,9 @@ internal fun ComposeActivity.Navigation() {
             val synchronizer = walletViewModel.synchronizer.collectAsStateWithLifecycle().value
             val walletSnapshot = walletViewModel.walletSnapshot.collectAsStateWithLifecycle().value
             val spendingKey = walletViewModel.spendingKey.collectAsStateWithLifecycle().value
+
+            val sendTransactionProposal = remember { mutableStateOf<Proposal?>(null) }
+
             if (null == synchronizer || null == walletSnapshot || null == spendingKey) {
                 // Display loading indicator
             } else {
@@ -140,10 +144,14 @@ internal fun ComposeActivity.Navigation() {
                     onSend = {
                         walletViewModel.send(it)
                     },
+                    onGetProposal = {
+                        sendTransactionProposal.value = walletViewModel.getSendProposal(it)
+                    },
                     onBack = {
                         walletViewModel.clearSendOrShieldState()
                         navController.popBackStackJustOnce(SEND)
-                    }
+                    },
+                    sendTransactionProposal = sendTransactionProposal.value
                 )
             }
         }
