@@ -5,7 +5,6 @@ import androidx.test.platform.app.InstrumentationRegistry
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.Synchronizer.Status.SYNCED
 import cash.z.ecc.android.sdk.WalletInitMode
-import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.ext.onFirst
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.model.Account
@@ -116,7 +115,7 @@ class TestnetIntegrationTest : ScopedTest() {
             synchronizer.proposeTransfer(
                 spendingKey.account,
                 toAddress,
-                ZcashSdk.MINERS_FEE,
+                Zatoshi(10_000L),
                 "first mainnet tx from the SDK"
             ),
             spendingKey

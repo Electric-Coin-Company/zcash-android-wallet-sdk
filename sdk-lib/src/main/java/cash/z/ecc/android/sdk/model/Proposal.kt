@@ -51,4 +51,8 @@ class Proposal(
     fun totalFeeRequired(): Zatoshi {
         return Zatoshi(inner.totalFeeRequired())
     }
+
+    fun toPrettyString(): String {
+        return "Transaction count: ${transactionCount()}, Total fee required: ${totalFeeRequired()}"
+    }
 }

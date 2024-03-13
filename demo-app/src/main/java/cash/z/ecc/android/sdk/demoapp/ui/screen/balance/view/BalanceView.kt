@@ -26,12 +26,11 @@ import cash.z.ecc.android.sdk.demoapp.R
 import cash.z.ecc.android.sdk.demoapp.fixture.WalletSnapshotFixture
 import cash.z.ecc.android.sdk.demoapp.ui.screen.home.viewmodel.SendState
 import cash.z.ecc.android.sdk.demoapp.ui.screen.home.viewmodel.WalletSnapshot
-import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.model.toZecString
 
 @Preview(name = "Balance")
-@Composable
 @Suppress("ktlint:standard:function-naming")
+@Composable
 private fun ComposablePreview() {
     MaterialTheme {
         Balance(
@@ -152,10 +151,8 @@ private fun BalanceMainContent(
             )
         )
 
-        // TODO [#776]: Support variable fees
-        // TODO [#776]: https://github.com/zcash/zcash-android-wallet-sdk/issues/776
-        // This check will not be correct with variable fees
-        if (walletSnapshot.transparentBalance > ZcashSdk.MINERS_FEE) {
+        // This check is not entirely correct - it does not calculate the resulting fee with the new Proposal API
+        if (walletSnapshot.transparentBalance.value > 0L) {
             // Note this implementation does not guard against multiple clicks
             Button(onClick = onShieldFunds) {
                 Text(stringResource(id = R.string.action_shield))

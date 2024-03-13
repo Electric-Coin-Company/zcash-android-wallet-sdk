@@ -14,7 +14,6 @@ import cash.z.ecc.android.sdk.demoapp.databinding.FragmentGetBalanceBinding
 import cash.z.ecc.android.sdk.demoapp.ext.requireApplicationContext
 import cash.z.ecc.android.sdk.demoapp.util.SyncBlockchainBenchmarkTrace
 import cash.z.ecc.android.sdk.demoapp.util.fromResources
-import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.ext.convertZatoshiToZecString
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.model.Account
@@ -138,10 +137,10 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
         }
 
         binding.shield.apply {
-            // TODO [#776]: Support variable fees
-            // TODO [#776]: https://github.com/zcash/zcash-android-wallet-sdk/issues/776
+            // This check is not entirely correct - it does not calculate the resulting fee with the new Proposal API
+            // Note that the entire fragment-based old Demo app will be removed as part of [#973]
             visibility =
-                if ((transparentBalance ?: Zatoshi(0)) > ZcashSdk.MINERS_FEE) {
+                if ((transparentBalance ?: Zatoshi(0)).value > 0L) {
                     View.VISIBLE
                 } else {
                     View.GONE

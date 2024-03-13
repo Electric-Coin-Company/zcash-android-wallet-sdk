@@ -8,11 +8,19 @@ import cash.z.ecc.android.sdk.model.Zatoshi
  * becomes easier to reduce privacy by segmenting the anonymity set of users, particularly as it
  * relates to network requests.
  */
-@Suppress("MagicNumber")
 object ZcashSdk {
     /**
      * Miner's fee in zatoshi.
      */
+    @Suppress("MagicNumber")
+    @Deprecated(
+        message = "Upcoming SDK 2.1 will create multiple transactions at once for some recipients.",
+        replaceWith =
+            ReplaceWith(
+                "proposeTransfer(usk.account, toAddress, amount, memo) OR " +
+                    "proposeShielding(usk.account, shieldingThreshold, memo)"
+            )
+    )
     val MINERS_FEE = Zatoshi(10_000L)
 
     /**

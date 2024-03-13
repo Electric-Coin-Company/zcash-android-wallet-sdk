@@ -22,12 +22,14 @@ import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.PercentDecimal
 import cash.z.ecc.android.sdk.model.PersistableWallet
+import cash.z.ecc.android.sdk.model.Proposal
 import cash.z.ecc.android.sdk.model.TransactionSubmitResult
 import cash.z.ecc.android.sdk.model.WalletAddresses
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.model.ZecSend
+import cash.z.ecc.android.sdk.model.proposeSend
 import cash.z.ecc.android.sdk.model.send
 import cash.z.ecc.android.sdk.tool.DerivationTool
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
@@ -50,6 +52,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -57,6 +60,7 @@ import kotlin.time.Duration.Companion.seconds
 
 // To make this more multiplatform compatible, we need to remove the dependency on Context
 // for loading the preferences.
+@Suppress("TooManyFunctions")
 class WalletViewModel(application: Application) : AndroidViewModel(application) {
     private val walletCoordinator = WalletCoordinator.getInstance(application)
 
@@ -213,11 +217,35 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     /**
+     * Synchronously provides proposal object for the given [spendingKey] and [zecSend] objects
+     */
+    fun getSendProposal(zecSend: ZecSend): Proposal? {
+        if (sendState.value is SendState.Sending) {
+            return null
+        }
+
+        val synchronizer = synchronizer.value
+
+        return if (null != synchronizer) {
+            // Calling the proposal API within a blocking coroutine should be fine for the showcase purpose
+            runBlocking {
+                val spendingKey = spendingKey.filterNotNull().first()
+                kotlin.runCatching {
+                    synchronizer.proposeSend(spendingKey, zecSend)
+                }.onFailure {
+                    Twig.error(it) { "Failed to get transaction proposal" }
+                }.getOrNull()
+            }
+        } else {
+            error("Unable to send funds because synchronizer is not loaded.")
+        }
+    }
+
+    /**
      * Asynchronously shields transparent funds.  Note that two shielding operations cannot occur at the same time.
      *
      * Observe the result via [sendState].
      */
-    @Suppress("MagicNumber")
     fun shieldFunds() {
         if (sendState.value is SendState.Sending) {
             return
@@ -230,6 +258,7 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
             viewModelScope.launch {
                 val spendingKey = spendingKey.filterNotNull().first()
                 kotlin.runCatching {
+                    @Suppress("MagicNumber")
                     synchronizer.proposeShielding(spendingKey.account, Zatoshi(100000))?.let {
                         synchronizer.createProposedTransactions(
                             it,

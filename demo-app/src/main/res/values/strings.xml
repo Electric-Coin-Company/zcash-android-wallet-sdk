@@ -73,6 +73,9 @@
     <string name="send_memo">Memo</string>
     <string name="send_button">Send</string>
 
+    <string name="send_proposal_button">Get Proposal</string>
+    <string name="send_proposal_status">Proposal:\n<xliff:g id="proposal" example="Fee:0.001...">%1$s</xliff:g></string>
+
     <string name="server_textfield_value"><xliff:g id="host" example="example.com">%1$s</xliff:g>:<xliff:g id="port" example="508">%2$d</xliff:g></string>
     <string name="server_textfield_hint">&lt;host&gt;:&lt;port&gt;</string>
     <string name="server_textfield_error">Invalid server</string>
