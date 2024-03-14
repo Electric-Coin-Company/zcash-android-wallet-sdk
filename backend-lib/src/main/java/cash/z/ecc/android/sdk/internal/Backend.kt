@@ -65,6 +65,12 @@ interface Backend {
         recoverUntil: Long?
     ): JniUnifiedSpendingKey
 
+    /**
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    @Throws(RuntimeException::class)
+    suspend fun isSeedRelevantToWallet(seed: ByteArray): Boolean
+
     fun isValidSaplingAddr(addr: String): Boolean
 
     fun isValidTransparentAddr(addr: String): Boolean
