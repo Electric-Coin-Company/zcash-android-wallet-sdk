@@ -28,10 +28,10 @@ suspend fun Synchronizer.send(
  * This is just a syntactic sugar function for [Synchronizer.proposeTransfer]
  */
 suspend fun Synchronizer.proposeSend(
-    spendingKey: UnifiedSpendingKey,
+    account: Account,
     send: ZecSend
 ) = proposeTransfer(
-    spendingKey.account,
+    account,
     send.destination.address,
     send.amount,
     send.memo.value
