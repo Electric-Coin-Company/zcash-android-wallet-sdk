@@ -231,7 +231,7 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
             runBlocking {
                 val spendingKey = spendingKey.filterNotNull().first()
                 kotlin.runCatching {
-                    synchronizer.proposeSend(spendingKey, zecSend)
+                    synchronizer.proposeSend(spendingKey.account, zecSend)
                 }.onFailure {
                     Twig.error(it) { "Failed to get transaction proposal" }
                 }.getOrNull()

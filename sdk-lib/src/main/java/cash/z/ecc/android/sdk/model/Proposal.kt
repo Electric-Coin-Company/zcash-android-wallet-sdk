@@ -15,15 +15,22 @@ class Proposal(
          * @throws IllegalArgumentException if the proposal is invalid.
          */
         @Throws(IllegalArgumentException::class)
-        fun fromUnsafe(proposal: ProposalUnsafe): Proposal {
-            val typed = Proposal(proposal)
+        fun fromUnsafe(proposal: ProposalUnsafe) =
+            Proposal(proposal).also {
+                it.check()
+            }
 
-            // Check for type errors eagerly, to ensure that the caller won't
-            // encounter these errors later.
-            typed.totalFeeRequired()
+        /**
+         * @throws IllegalArgumentException if the given [ByteArray] data could not be parsed and mapped to the new
+         * type-safe Proposal class.
+         */
+        @Throws(IllegalArgumentException::class)
+        fun fromByteArray(array: ByteArray) = fromUnsafe(ProposalUnsafe.parse(array))
+    }
 
-            return typed
-        }
+    // Check for type errors eagerly, to ensure that the caller won't encounter these errors later.
+    private fun check() {
+        totalFeeRequired()
     }
 
     /**
@@ -31,6 +38,13 @@ class Proposal(
      */
     fun toUnsafe(): ProposalUnsafe {
         return inner
+    }
+
+    /**
+     * Serializes this proposal type-safe data to [ByteArray] for storing purposes.
+     */
+    fun toByteArray(): ByteArray {
+        return inner.toByteArray()
     }
 
     /**

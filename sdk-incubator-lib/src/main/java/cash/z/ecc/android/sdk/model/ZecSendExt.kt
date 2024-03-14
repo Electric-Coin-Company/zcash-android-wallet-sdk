@@ -28,7 +28,7 @@ object ZecSendExt {
             }
 
         return if (validationErrors.isEmpty()) {
-            ZecSendValidation.Valid(ZecSend(destination, amount!!, memo))
+            ZecSendValidation.Valid(ZecSend(destination, amount!!, memo, null))
         } else {
             ZecSendValidation.Invalid(validationErrors)
         }
