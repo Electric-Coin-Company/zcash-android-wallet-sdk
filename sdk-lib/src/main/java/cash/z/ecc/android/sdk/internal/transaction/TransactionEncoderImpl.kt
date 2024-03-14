@@ -89,7 +89,7 @@ internal class TransactionEncoderImpl(
         }.onFailure {
             Twig.error(it) { "Caught exception while creating proposal." }
         }.onSuccess { result ->
-            Twig.debug { "result of proposeTransfer: $result" }
+            Twig.debug { "result of proposeTransfer: ${result.toPrettyString()}" }
         }.getOrThrow()
     }
 
