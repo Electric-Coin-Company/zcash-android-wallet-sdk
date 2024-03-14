@@ -263,6 +263,7 @@ class RustBackend private constructor(
 
     override suspend fun scanBlocks(
         fromHeight: Long,
+        fromState: ByteArray,
         limit: Long
     ): JniScanSummary {
         return withContext(SdkDispatchers.DATABASE_IO) {
@@ -270,6 +271,7 @@ class RustBackend private constructor(
                 fsBlockDbRoot.absolutePath,
                 dataDbFile.absolutePath,
                 fromHeight,
+                fromState,
                 limit,
                 networkId = networkId
             )
@@ -562,6 +564,7 @@ class RustBackend private constructor(
             dbCachePath: String,
             dbDataPath: String,
             fromHeight: Long,
+            fromState: ByteArray,
             limit: Long,
             networkId: Int
         ): JniScanSummary

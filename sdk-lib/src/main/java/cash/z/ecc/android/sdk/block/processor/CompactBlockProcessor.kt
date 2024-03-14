@@ -42,6 +42,7 @@ import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.internal.model.ScanRange
 import cash.z.ecc.android.sdk.internal.model.SubtreeRoot
 import cash.z.ecc.android.sdk.internal.model.SuggestScanRangePriority
+import cash.z.ecc.android.sdk.internal.model.TreeState
 import cash.z.ecc.android.sdk.internal.model.WalletSummary
 import cash.z.ecc.android.sdk.internal.model.ext.from
 import cash.z.ecc.android.sdk.internal.model.ext.toBlockHeight
@@ -1404,7 +1405,8 @@ class CompactBlockProcessor internal constructor(
                                 downloadStageResult.batch,
                                 scanBatchOfBlocks(
                                     backend = backend,
-                                    batch = downloadStageResult.batch
+                                    batch = downloadStageResult.batch,
+                                    fromState = downloadStageResult.stageResult.fromState
                                 )
                             )
                         }
@@ -1599,6 +1601,22 @@ class CompactBlockProcessor internal constructor(
             var downloadedBlocks = listOf<JniBlockMeta>()
             var downloadException: CompactBlockProcessorException.FailedDownloadException? = null
 
+            val fromState =
+                when (val response = downloader.getTreeState(BlockHeightUnsafe.from(batch.range.start - 1))) {
+                    is Response.Success -> {
+                        TreeState.new(response.result)
+                    }
+                    is Response.Failure -> {
+                        Twig.error {
+                            "Tree state fetch failed with: ${response.toThrowable()}"
+                        }
+                        return SyncingResult.DownloadFailed(
+                            batch.range.start,
+                            downloadException ?: CompactBlockProcessorException.FailedDownloadException()
+                        )
+                    }
+                }
+
             retryUpToAndContinue(
                 retries = RETRIES,
                 exceptionWrapper = {
@@ -1617,7 +1635,7 @@ class CompactBlockProcessor internal constructor(
             Twig.verbose { "Successfully downloaded batch: $batch of $downloadedBlocks blocks" }
 
             return if (downloadedBlocks.isNotEmpty()) {
-                SyncingResult.DownloadSuccess(downloadedBlocks)
+                SyncingResult.DownloadSuccess(fromState, downloadedBlocks)
             } else {
                 SyncingResult.DownloadFailed(
                     batch.range.start,
@@ -1629,12 +1647,13 @@ class CompactBlockProcessor internal constructor(
         @VisibleForTesting
         internal suspend fun scanBatchOfBlocks(
             batch: BlockBatch,
+            fromState: TreeState,
             backend: TypesafeBackend
         ): SyncingResult {
             val traceScope = TraceScope("CompactBlockProcessor.scanBatchOfBlocks")
             val result =
                 runCatching {
-                    backend.scanBlocks(batch.range.start, batch.range.length())
+                    backend.scanBlocks(batch.range.start, fromState, batch.range.length())
                 }.onSuccess {
                     Twig.verbose { "Successfully scanned batch $batch" }
                 }.onFailure {

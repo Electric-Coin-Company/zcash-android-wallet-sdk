@@ -196,8 +196,9 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
 
     override suspend fun scanBlocks(
         fromHeight: BlockHeight,
+        fromState: TreeState,
         limit: Long
-    ): ScanSummary = ScanSummary.new(backend.scanBlocks(fromHeight.value, limit), network)
+    ): ScanSummary = ScanSummary.new(backend.scanBlocks(fromHeight.value, fromState.encoded, limit), network)
 
     override suspend fun getWalletSummary(): WalletSummary? =
         backend.getWalletSummary()?.let { jniWalletSummary ->

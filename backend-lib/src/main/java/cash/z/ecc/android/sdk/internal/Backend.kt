@@ -154,6 +154,7 @@ interface Backend {
     @Throws(RuntimeException::class)
     suspend fun scanBlocks(
         fromHeight: Long,
+        fromState: ByteArray,
         limit: Long
     ): JniScanSummary
 
