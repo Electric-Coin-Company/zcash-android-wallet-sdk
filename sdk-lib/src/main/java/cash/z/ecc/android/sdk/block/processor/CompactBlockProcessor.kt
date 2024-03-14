@@ -464,7 +464,6 @@ class CompactBlockProcessor internal constructor(
                 repository = repository,
                 network = network,
                 syncRange = verifyRangeResult.scanRange.range,
-                withDownload = true,
                 enhanceStartHeight = firstUnenhancedHeight
             ).collect { batchSyncProgress ->
                 // Update sync progress and wallet balance
@@ -561,7 +560,6 @@ class CompactBlockProcessor internal constructor(
                 repository = repository,
                 network = network,
                 syncRange = scanRange.range,
-                withDownload = true,
                 enhanceStartHeight = firstUnenhancedHeight
             ).map { batchSyncProgress ->
                 // Update sync progress and wallet balance
@@ -1342,8 +1340,6 @@ class CompactBlockProcessor internal constructor(
          * @param repository the derived data repository component
          * @param network the network in which the sync mechanism operates
          * @param syncRange the range of blocks to download
-         * @param withDownload the flag indicating whether the blocks should also be downloaded and processed, or
-         * processed existing blocks
          * @param enhanceStartHeight the height in which the enhancing should start, or null in case of no previous
          * transaction enhancing done yet
          *
@@ -1357,7 +1353,6 @@ class CompactBlockProcessor internal constructor(
             repository: DerivedDataRepository,
             network: ZcashNetwork,
             syncRange: ClosedRange<BlockHeight>,
-            withDownload: Boolean,
             enhanceStartHeight: BlockHeight?
         ): Flow<BatchSyncProgress> =
             flow {
@@ -1389,14 +1384,10 @@ class CompactBlockProcessor internal constructor(
                         SyncStageResult(
                             batch = it,
                             stageResult =
-                                if (withDownload) {
-                                    downloadBatchOfBlocks(
-                                        downloader = downloader,
-                                        batch = it
-                                    )
-                                } else {
-                                    SyncingResult.DownloadSuccess(null)
-                                }
+                                downloadBatchOfBlocks(
+                                    downloader = downloader,
+                                    batch = it
+                                )
                         )
                     }.buffer(1).map { downloadStageResult ->
                         Twig.debug { "Download stage done with result: $downloadStageResult" }
