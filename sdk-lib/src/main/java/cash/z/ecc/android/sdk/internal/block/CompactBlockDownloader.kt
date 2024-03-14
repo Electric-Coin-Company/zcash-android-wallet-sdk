@@ -178,6 +178,13 @@ open class CompactBlockDownloader private constructor(val compactBlockRepository
         maxEntries = maxEntries
     )
 
+    /**
+     * Returns a stream of information about roots of subtrees of the Sapling and Orchard note commitment trees.
+     *
+     * @return a flow of information about roots of subtrees of the Sapling and Orchard note commitment trees.
+     */
+    suspend fun getTreeState(height: BlockHeightUnsafe) = lightWalletClient.getTreeState(height = height)
+
     companion object {
         private const val GET_SERVER_INFO_RETRIES = 6
     }

@@ -13,6 +13,7 @@ import co.electriccoin.lightwallet.client.model.Response
 import co.electriccoin.lightwallet.client.model.SendResponseUnsafe
 import co.electriccoin.lightwallet.client.model.ShieldedProtocolEnum
 import co.electriccoin.lightwallet.client.model.SubtreeRootUnsafe
+import co.electriccoin.lightwallet.client.model.TreeStateUnsafe
 import kotlinx.coroutines.flow.Flow
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
@@ -89,6 +90,11 @@ interface LightWalletClient {
         shieldedProtocol: ShieldedProtocolEnum,
         maxEntries: UInt
     ): Flow<Response<SubtreeRootUnsafe>>
+
+    /**
+     * @return the latest block height known to the service.
+     */
+    suspend fun getTreeState(height: BlockHeightUnsafe): Response<TreeStateUnsafe>
 
     /**
      * Reconnect to the same or a different server. This is useful when the connection is

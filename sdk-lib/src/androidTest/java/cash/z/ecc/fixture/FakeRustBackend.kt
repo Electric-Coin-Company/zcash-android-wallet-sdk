@@ -154,6 +154,7 @@ internal class FakeRustBackend(
 
     override suspend fun scanBlocks(
         fromHeight: Long,
+        fromState: ByteArray,
         limit: Long
     ) = error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 }
