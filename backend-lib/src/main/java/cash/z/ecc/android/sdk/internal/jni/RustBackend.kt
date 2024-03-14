@@ -91,6 +91,15 @@ class RustBackend private constructor(
         }
     }
 
+    override suspend fun isSeedRelevantToWallet(seed: ByteArray): Boolean =
+        withContext(SdkDispatchers.DATABASE_IO) {
+            isSeedRelevantToWallet(
+                dataDbFile.absolutePath,
+                seed,
+                networkId = networkId
+            )
+        }
+
     override suspend fun getCurrentAddress(account: Int) =
         withContext(SdkDispatchers.DATABASE_IO) {
             getCurrentAddress(
@@ -433,6 +442,13 @@ class RustBackend private constructor(
             recoverUntil: Long,
             networkId: Int
         ): JniUnifiedSpendingKey
+
+        @JvmStatic
+        private external fun isSeedRelevantToWallet(
+            dbDataPath: String,
+            seed: ByteArray,
+            networkId: Int
+        ): Boolean
 
         @JvmStatic
         private external fun getCurrentAddress(

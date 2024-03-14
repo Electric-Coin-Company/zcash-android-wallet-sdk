@@ -114,6 +114,9 @@ internal class FakeRustBackend(
         recoverUntil: Long?
     ): JniUnifiedSpendingKey = error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 
+    override suspend fun isSeedRelevantToWallet(seed: ByteArray): Boolean =
+        error("Intentionally not implemented in mocked FakeRustBackend implementation.")
+
     override fun isValidSaplingAddr(addr: String): Boolean =
         error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 

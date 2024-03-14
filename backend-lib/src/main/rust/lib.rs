@@ -40,6 +40,7 @@ use zcash_client_backend::{
 };
 use zcash_client_sqlite::{
     chain::{init::init_blockmeta_db, BlockMeta},
+    error::SqliteClientError,
     wallet::init::{init_wallet_db, WalletMigrationError},
     AccountId, FsBlockDb, WalletDb,
 };
@@ -326,6 +327,46 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_createAcc
         Ok(encode_usk(env, account_index, usk)?.into_raw())
     });
     unwrap_exc_or(&mut env, res, ptr::null_mut())
+}
+
+/// Checks whether the given seed is relevant to any of the accounts in the wallet.
+#[no_mangle]
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_isSeedRelevantToWallet<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _: JClass<'local>,
+    db_data: JString<'local>,
+    seed: JByteArray<'local>,
+    network_id: jint,
+) -> jboolean {
+    let res = catch_unwind(&mut env, |env| {
+        let network = parse_network(network_id as u32)?;
+        let db_data = wallet_db(env, network, db_data)?;
+        let seed = SecretVec::new(env.convert_byte_array(seed).unwrap());
+
+        for account_id in db_data.get_account_ids()? {
+            match db_data.validate_seed(account_id, &seed) {
+                // The seed is relevant to this account. No need to check any others.
+                Ok(true) => return Ok(JNI_TRUE),
+                // We know by dead reckoning that this account ID exists in the wallet, so
+                // this must be the other `false` state, that the account is derived from
+                // a different seed.
+                Ok(false) => (),
+                // The account is imported. The seed _might_ be relevant, but the only way
+                // we could determine that is by brute-forcing the ZIP 32 account index
+                // space, which we're not going to do. Assume the seed is not relevant,
+                // which technically violates the intent of this method.
+                Err(SqliteClientError::UnknownZip32Derivation) => (),
+                // Other error cases are assumed to be actual errors, not distinguishers.
+                Err(e) => return Err(e.into()),
+            }
+        }
+
+        // The seed was not relevant to any of the accounts in the wallet.
+        Ok(JNI_FALSE)
+    });
+    unwrap_exc_or(&mut env, res, JNI_FALSE)
 }
 
 /// Derives and returns a unified spending key from the given seed for the given account ID.
