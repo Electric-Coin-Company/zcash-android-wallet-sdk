@@ -19,9 +19,9 @@ internal sealed class SyncingResult {
 
     data class DownloadSuccess(
         val fromState: TreeState,
-        val downloadedBlocks: List<JniBlockMeta>?
+        val downloadedBlocks: List<JniBlockMeta>
     ) : SyncingResult() {
-        override fun toString() = "${this::class.java.simpleName} with ${downloadedBlocks?.size ?: "none"} blocks"
+        override fun toString() = "${this::class.java.simpleName} with ${downloadedBlocks.size} blocks"
     }
 
     interface Failure {
