@@ -179,9 +179,9 @@ open class CompactBlockDownloader private constructor(val compactBlockRepository
     )
 
     /**
-     * Returns a stream of information about roots of subtrees of the Sapling and Orchard note commitment trees.
+     * Returns information about roots of subtrees of the Sapling and Orchard note commitment trees.
      *
-     * @return a flow of information about roots of subtrees of the Sapling and Orchard note commitment trees.
+     * @return information about roots of subtrees of the Sapling and Orchard note commitment trees.
      */
     suspend fun getTreeState(height: BlockHeightUnsafe) = lightWalletClient.getTreeState(height = height)
 
