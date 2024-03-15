@@ -576,6 +576,7 @@ class RustBackend private constructor(
         ): Array<JniScanRange>
 
         @JvmStatic
+        @Suppress("LongParameterList")
         private external fun scanBlocks(
             dbCachePath: String,
             dbDataPath: String,
