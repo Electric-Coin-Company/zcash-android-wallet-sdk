@@ -88,7 +88,6 @@ internal class LightWalletClientImpl private constructor(
         }
     }
 
-    @Suppress("SwallowedException")
     override suspend fun getServerInfo(): Response<LightWalletEndpointInfoUnsafe> {
         return try {
             val lightdInfo =
@@ -241,7 +240,12 @@ internal class LightWalletClientImpl private constructor(
                     .getTreeState(height.toBlockHeight())
 
             // TODO: Orchard tree
-            val blockHeight = TreeStateUnsafe.fromParts(response.height, response.hash, response.time, response.saplingTree)
+            val blockHeight = TreeStateUnsafe.fromParts(
+                height = response.height,
+                hash = response.hash,
+                time = response.time,
+                tree = response.saplingTree
+            )
 
             Response.Success(blockHeight)
         } catch (e: StatusException) {

@@ -21,6 +21,7 @@ import kotlin.time.Duration.Companion.seconds
 /**
  * Client for interacting with lightwalletd.
  */
+@Suppress("TooManyFunctions")
 interface LightWalletClient {
     /**
      * @return the full transaction info.

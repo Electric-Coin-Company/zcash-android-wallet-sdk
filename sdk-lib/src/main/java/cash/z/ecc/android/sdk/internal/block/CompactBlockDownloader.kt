@@ -29,6 +29,7 @@ import kotlinx.coroutines.withContext
  * @property lightWalletClient the client used for requesting compact blocks
  * @property compactBlockStore responsible for persisting the compact blocks that are received
  */
+@Suppress("TooManyFunctions")
 open class CompactBlockDownloader private constructor(val compactBlockRepository: CompactBlockRepository) {
     private lateinit var lightWalletClient: LightWalletClient
 
