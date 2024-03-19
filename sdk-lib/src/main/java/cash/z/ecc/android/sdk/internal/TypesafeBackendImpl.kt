@@ -1,5 +1,6 @@
 package cash.z.ecc.android.sdk.internal
 
+import cash.z.ecc.android.sdk.exception.InitializeException
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.internal.model.JniSubtreeRoot
 import cash.z.ecc.android.sdk.internal.model.ScanRange
@@ -149,7 +150,15 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
         outputIndex: Int
     ): String? = backend.getMemoAsUtf8(txId, outputIndex)
 
-    override suspend fun initDataDb(seed: ByteArray?): Int = backend.initDataDb(seed)
+    override suspend fun initDataDb(seed: ByteArray?) {
+        val ret = backend.initDataDb(seed)
+        when (ret) {
+            1 -> throw InitializeException.SeedRequired
+            0 -> { /* Successful case - no action needed */ }
+            -1 -> error("Rust backend only uses -1 as an error sentinel")
+            else -> error("Rust backend used a code that needs to be defined here")
+        }
+    }
 
     override suspend fun putSaplingSubtreeRoots(
         startIndex: UInt,

@@ -1,5 +1,6 @@
 package cash.z.ecc.android.sdk.internal
 
+import cash.z.ecc.android.sdk.exception.InitializeException
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.internal.model.ScanRange
 import cash.z.ecc.android.sdk.internal.model.ScanSummary
@@ -77,7 +78,8 @@ internal interface TypesafeBackend {
         outputIndex: Int
     ): String?
 
-    suspend fun initDataDb(seed: ByteArray?): Int
+    @Throws(InitializeException::class)
+    suspend fun initDataDb(seed: ByteArray?)
 
     /**
      * @throws RuntimeException as a common indicator of the operation failure

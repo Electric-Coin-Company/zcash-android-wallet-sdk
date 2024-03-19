@@ -47,8 +47,8 @@ interface Backend {
      *
      * If `seed` is `null`, database migrations will be attempted without it.
      *
-     * @return 0 if successful, 1 if the seed must be provided in order to execute the requested migrations, or -1
-     * otherwise.
+     * @return 0 if successful, 1 if the seed must be provided in order to execute the
+     *         requested migrations.
      *
      * @throws RuntimeException as a common indicator of the operation failure
      */

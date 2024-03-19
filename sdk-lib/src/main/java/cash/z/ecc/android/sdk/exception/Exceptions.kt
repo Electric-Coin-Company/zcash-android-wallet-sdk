@@ -53,13 +53,6 @@ sealed class CompactBlockProcessorException(message: String, cause: Throwable? =
 
     class FailedReorgRepair(message: String) : CompactBlockProcessorException(message)
 
-    class Uninitialized(cause: Throwable? = null) : CompactBlockProcessorException(
-        "Cannot process blocks because the wallet has not been" +
-            " initialized. Verify that the seed phrase was properly created or imported. If so, then this problem" +
-            " can be fixed by re-importing the wallet.",
-        cause
-    )
-
     data object NoAccount : CompactBlockProcessorException(
         "Attempting to scan without an account. This is probably a setup error or a race condition."
     ) {
