@@ -6,6 +6,13 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- SDK release 1.11.0-beta01 documented that `Synchronizer.new` would throw an
+  exception indicating that an internal migration requires the wallet seed, if
+  called with `null`. This has been unintentionally broken the entire time: the
+  handling logic for this case was accidentally removed shortly after it was
+  added. The SDK now correctly throws `InitializeException.SeedRequired`.
+
 ### Changed
 - The SDK uses ZIP-317 fee system internally
 - `ZcashSdk.MINERS_FEE` has been deprecated, and will be removed in 2.1.0
