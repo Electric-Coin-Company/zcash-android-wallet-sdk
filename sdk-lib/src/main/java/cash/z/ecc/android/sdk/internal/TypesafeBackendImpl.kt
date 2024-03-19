@@ -154,7 +154,7 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
         val ret = backend.initDataDb(seed)
         when (ret) {
             1 -> throw InitializeException.SeedRequired
-            0 -> {}
+            0 -> { /* Successful case - no action needed */ }
             -1 -> error("Rust backend only uses -1 as an error sentinel")
             else -> error("Rust backend used a code that needs to be defined here")
         }
