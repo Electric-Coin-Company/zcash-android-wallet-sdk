@@ -153,6 +153,7 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
     override suspend fun initDataDb(seed: ByteArray?) {
         val ret = backend.initDataDb(seed)
         when (ret) {
+            2 -> throw InitializeException.SeedNotRelevant
             1 -> throw InitializeException.SeedRequired
             0 -> { /* Successful case - no action needed */ }
             -1 -> error("Rust backend only uses -1 as an error sentinel")
