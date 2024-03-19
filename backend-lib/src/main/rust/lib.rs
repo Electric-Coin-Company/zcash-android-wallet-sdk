@@ -1,4 +1,5 @@
 use std::convert::{Infallible, TryFrom, TryInto};
+use std::error::Error;
 use std::num::NonZeroU32;
 use std::panic;
 use std::path::Path;
@@ -12,7 +13,6 @@ use jni::{
     JNIEnv,
 };
 use prost::Message;
-use schemer::MigratorError;
 use secrecy::{ExposeSecret, SecretVec};
 use tracing::{debug, error};
 use tracing_subscriber::prelude::*;
@@ -27,8 +27,8 @@ use zcash_client_backend::{
             create_proposed_transactions, decrypt_and_store_transaction,
             input_selection::GreedyInputSelector, propose_shielding, propose_transfer,
         },
-        Account, AccountBalance, AccountBirthday, AccountKind, InputSource, WalletCommitmentTrees,
-        WalletRead, WalletSummary, WalletWrite,
+        Account, AccountBalance, AccountBirthday, AccountSource, InputSource, SeedRelevance,
+        WalletCommitmentTrees, WalletRead, WalletSummary, WalletWrite,
     },
     encoding::AddressCodec,
     fees::{standard::SingleOutputChangeStrategy, DustOutputPolicy},
@@ -40,7 +40,6 @@ use zcash_client_backend::{
 };
 use zcash_client_sqlite::{
     chain::{init::init_blockmeta_db, BlockMeta},
-    error::SqliteClientError,
     wallet::init::{init_wallet_db, WalletMigrationError},
     AccountId, FsBlockDb, WalletDb,
 };
@@ -120,8 +119,8 @@ fn account_id_from_jni<'local, P: Parameters>(
                 .get_account(account_id)
                 .transpose()
                 .expect("account_id exists")
-                .map(|account| match account.kind() {
-                    AccountKind::Derived { account_index, .. }
+                .map(|account| match account.source() {
+                    AccountSource::Derived { account_index, .. }
                         if account_index == requested_account_index =>
                     {
                         Some(account)
@@ -207,8 +206,10 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_initBlock
 ///
 /// If `seed` is `null`, database migrations will be attempted without it.
 ///
-/// Returns 0 if successful, 1 if the seed must be provided in order to execute the requested
-/// migrations, or -1 otherwise.
+/// Returns:
+/// - 0 if successful.
+/// - 1 if the seed must be provided in order to execute the requested migrations.
+/// - 2 if the provided seed is not relevant to any of the derived accounts in the wallet.
 #[no_mangle]
 pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_initDataDb<'local>(
     mut env: JNIEnv<'local>,
@@ -226,10 +227,21 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_initDataD
 
         match init_wallet_db(&mut db_data, seed) {
             Ok(()) => Ok(0),
-            Err(MigratorError::Migration { error, .. })
-                if matches!(error, WalletMigrationError::SeedRequired) =>
+            Err(e)
+                if matches!(
+                    e.source().and_then(|e| e.downcast_ref()),
+                    Some(&WalletMigrationError::SeedRequired)
+                ) =>
             {
                 Ok(1)
+            }
+            Err(e)
+                if matches!(
+                    e.source().and_then(|e| e.downcast_ref()),
+                    Some(&WalletMigrationError::SeedNotRelevant)
+                ) =>
+            {
+                Ok(2)
             }
             Err(e) => Err(format_err!("Error while initializing data DB: {}", e)),
         }
@@ -319,9 +331,9 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_createAcc
             .map_err(|e| format_err!("Error while initializing accounts: {}", e))?;
 
         let account = db_data.get_account(account_id)?.expect("just created");
-        let account_index = match account.kind() {
-            AccountKind::Derived { account_index, .. } => account_index,
-            AccountKind::Imported => unreachable!("just created"),
+        let account_index = match account.source() {
+            AccountSource::Derived { account_index, .. } => account_index,
+            AccountSource::Imported => unreachable!("just created"),
         };
 
         Ok(encode_usk(env, account_index, usk)?.into_raw())
@@ -329,9 +341,9 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_createAcc
     unwrap_exc_or(&mut env, res, ptr::null_mut())
 }
 
-/// Checks whether the given seed is relevant to any of the accounts in the wallet.
+/// Checks whether the given seed is relevant to any of the derived accounts in the wallet.
 #[no_mangle]
-pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_isSeedRelevantToWallet<
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_isSeedRelevantToAnyDerivedAccounts<
     'local,
 >(
     mut env: JNIEnv<'local>,
@@ -345,26 +357,11 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_isSeedRel
         let db_data = wallet_db(env, network, db_data)?;
         let seed = SecretVec::new(env.convert_byte_array(seed).unwrap());
 
-        for account_id in db_data.get_account_ids()? {
-            match db_data.validate_seed(account_id, &seed) {
-                // The seed is relevant to this account. No need to check any others.
-                Ok(true) => return Ok(JNI_TRUE),
-                // We know by dead reckoning that this account ID exists in the wallet, so
-                // this must be the other `false` state, that the account is derived from
-                // a different seed.
-                Ok(false) => (),
-                // The account is imported. The seed _might_ be relevant, but the only way
-                // we could determine that is by brute-forcing the ZIP 32 account index
-                // space, which we're not going to do. Assume the seed is not relevant,
-                // which technically violates the intent of this method.
-                Err(SqliteClientError::UnknownZip32Derivation) => (),
-                // Other error cases are assumed to be actual errors, not distinguishers.
-                Err(e) => return Err(e.into()),
-            }
-        }
-
-        // The seed was not relevant to any of the accounts in the wallet.
-        Ok(JNI_FALSE)
+        // Replicate the logic from `initWalletDb`.
+        Ok(match db_data.seed_relevance_to_derived_accounts(&seed)? {
+            SeedRelevance::Relevant { .. } | SeedRelevance::NoAccounts => JNI_TRUE,
+            SeedRelevance::NotRelevant | SeedRelevance::NoDerivedAccounts => JNI_FALSE,
+        })
     });
     unwrap_exc_or(&mut env, res, JNI_FALSE)
 }
@@ -1237,10 +1234,10 @@ fn encode_wallet_summary<'a, P: Parameters>(
                 let account_index = match db_data
                     .get_account(*account_id)?
                     .expect("the account exists in the wallet")
-                    .kind()
+                    .source()
                 {
-                    AccountKind::Derived { account_index, .. } => account_index,
-                    AccountKind::Imported => unreachable!("Imported accounts are unimplemented"),
+                    AccountSource::Derived { account_index, .. } => account_index,
+                    AccountSource::Imported => unreachable!("Imported accounts are unimplemented"),
                 };
                 Ok::<_, failure::Error>((account_index, balance))
             })
