@@ -48,7 +48,8 @@ interface Backend {
      * If `seed` is `null`, database migrations will be attempted without it.
      *
      * @return 0 if successful, 1 if the seed must be provided in order to execute the
-     *         requested migrations.
+     *         requested migrations, 2 if the provided seed is not relevant to any of the
+     *         derived accounts in the wallet.
      *
      * @throws RuntimeException as a common indicator of the operation failure
      */
@@ -69,7 +70,7 @@ interface Backend {
      * @throws RuntimeException as a common indicator of the operation failure
      */
     @Throws(RuntimeException::class)
-    suspend fun isSeedRelevantToWallet(seed: ByteArray): Boolean
+    suspend fun isSeedRelevantToAnyDerivedAccounts(seed: ByteArray): Boolean
 
     fun isValidSaplingAddr(addr: String): Boolean
 

@@ -91,9 +91,9 @@ class RustBackend private constructor(
         }
     }
 
-    override suspend fun isSeedRelevantToWallet(seed: ByteArray): Boolean =
+    override suspend fun isSeedRelevantToAnyDerivedAccounts(seed: ByteArray): Boolean =
         withContext(SdkDispatchers.DATABASE_IO) {
-            isSeedRelevantToWallet(
+            isSeedRelevantToAnyDerivedAccounts(
                 dataDbFile.absolutePath,
                 seed,
                 networkId = networkId
@@ -444,7 +444,7 @@ class RustBackend private constructor(
         ): JniUnifiedSpendingKey
 
         @JvmStatic
-        private external fun isSeedRelevantToWallet(
+        private external fun isSeedRelevantToAnyDerivedAccounts(
             dbDataPath: String,
             seed: ByteArray,
             networkId: Int
