@@ -1598,24 +1598,18 @@ class CompactBlockProcessor internal constructor(
             batch: BlockBatch
         ): SyncingResult {
             val traceScope = TraceScope("CompactBlockProcessor.downloadBatchOfBlocks")
-            var downloadedBlocks = listOf<JniBlockMeta>()
-            var downloadException: CompactBlockProcessorException.FailedDownloadException? = null
 
             val fromState =
-                when (val response = downloader.getTreeState(BlockHeightUnsafe.from(batch.range.start - 1))) {
-                    is Response.Success -> {
-                        TreeState.new(response.result)
-                    }
-                    is Response.Failure -> {
-                        Twig.error {
-                            "Tree state fetch failed with: ${response.toThrowable()}"
-                        }
-                        return SyncingResult.DownloadFailed(
-                            batch.range.start,
-                            downloadException ?: CompactBlockProcessorException.FailedDownloadException()
-                        )
-                    }
-                }
+                fetchTreeStateForHeight(
+                    height = batch.range.start - 1,
+                    downloader = downloader
+                ) ?: return SyncingResult.DownloadFailed(
+                    batch.range.start,
+                    CompactBlockProcessorException.FailedDownloadException()
+                )
+
+            var downloadedBlocks = listOf<JniBlockMeta>()
+            var downloadException: CompactBlockProcessorException.FailedDownloadException? = null
 
             retryUpToAndContinue(
                 retries = RETRIES,
@@ -1642,6 +1636,33 @@ class CompactBlockProcessor internal constructor(
                     downloadException ?: CompactBlockProcessorException.FailedDownloadException()
                 )
             }
+        }
+
+        @VisibleForTesting
+        internal suspend fun fetchTreeStateForHeight(
+            height: BlockHeight,
+            downloader: CompactBlockDownloader,
+        ): TreeState? {
+            retryUpToAndContinue(retries = RETRIES) { failedAttempts ->
+                if (failedAttempts == 0) {
+                    Twig.debug { "Starting to fetch tree state for height ${height.value}" }
+                } else {
+                    Twig.warn {
+                        "Retrying to fetch tree state for height ${height.value} after $failedAttempts failure(s)..."
+                    }
+                }
+                when (val response = downloader.getTreeState(BlockHeightUnsafe(height.value))) {
+                    is Response.Success -> {
+                        return TreeState.new(response.result)
+                    }
+                    is Response.Failure -> {
+                        Twig.error(response.toThrowable()) { "Tree state fetch failed" }
+                        throw response.toThrowable()
+                    }
+                }
+            }
+
+            return null
         }
 
         @VisibleForTesting
