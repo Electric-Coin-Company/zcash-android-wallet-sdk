@@ -8,7 +8,8 @@ internal data class WalletSummary(
     val chainTipHeight: BlockHeight,
     val fullyScannedHeight: BlockHeight,
     val scanProgress: ScanProgress,
-    val nextSaplingSubtreeIndex: UInt
+    val nextSaplingSubtreeIndex: UInt,
+    val nextOrchardSubtreeIndex: UInt
 ) {
     companion object {
         fun new(jni: JniWalletSummary): WalletSummary {
@@ -20,7 +21,8 @@ internal data class WalletSummary(
                 chainTipHeight = BlockHeight(jni.chainTipHeight),
                 fullyScannedHeight = BlockHeight(jni.fullyScannedHeight),
                 scanProgress = ScanProgress.new(jni),
-                nextSaplingSubtreeIndex = jni.nextSaplingSubtreeIndex.toUInt()
+                nextSaplingSubtreeIndex = jni.nextSaplingSubtreeIndex.toUInt(),
+                nextOrchardSubtreeIndex = jni.nextOrchardSubtreeIndex.toUInt()
             )
         }
     }

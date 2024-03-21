@@ -161,18 +161,28 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
         }
     }
 
-    override suspend fun putSaplingSubtreeRoots(
-        startIndex: UInt,
-        roots: List<SubtreeRoot>
-    ) = backend.putSaplingSubtreeRoots(
-        startIndex = startIndex.toLong(),
-        roots =
-            roots.map {
+    override suspend fun putSubtreeRoots(
+        saplingStartIndex: UInt,
+        saplingRoots: List<SubtreeRoot>,
+        orchardStartIndex: UInt,
+        orchardRoots: List<SubtreeRoot>
+    ) = backend.putSubtreeRoots(
+        saplingStartIndex = saplingStartIndex.toLong(),
+        saplingRoots =
+            saplingRoots.map {
                 JniSubtreeRoot.new(
                     rootHash = it.rootHash,
                     completingBlockHeight = it.completingBlockHeight.value
                 )
-            }
+            },
+        orchardStartIndex = orchardStartIndex.toLong(),
+        orchardRoots =
+            orchardRoots.map {
+                JniSubtreeRoot.new(
+                    rootHash = it.rootHash,
+                    completingBlockHeight = it.completingBlockHeight.value
+                )
+            },
     )
 
     override suspend fun updateChainTip(height: BlockHeight) = backend.updateChainTip(height.value)
