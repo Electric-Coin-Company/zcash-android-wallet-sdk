@@ -14,14 +14,16 @@ class TreeStateUnsafe(
             height: Long,
             hash: String,
             time: Int,
-            tree: String
+            saplingTree: String,
+            orchardTree: String
         ): TreeStateUnsafe {
             val treeState =
                 TreeState.newBuilder()
                     .setHeight(height)
                     .setHash(hash)
                     .setTime(time)
-                    .setSaplingTree(tree)
+                    .setSaplingTree(saplingTree)
+                    .setOrchardTree(orchardTree)
                     .build()
             return new(treeState)
         }

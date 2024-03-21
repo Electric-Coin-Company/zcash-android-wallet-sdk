@@ -109,9 +109,11 @@ interface Backend {
      * @throws RuntimeException as a common indicator of the operation failure
      */
     @Throws(RuntimeException::class)
-    suspend fun putSaplingSubtreeRoots(
-        startIndex: Long,
-        roots: List<JniSubtreeRoot>,
+    suspend fun putSubtreeRoots(
+        saplingStartIndex: Long,
+        saplingRoots: List<JniSubtreeRoot>,
+        orchardStartIndex: Long,
+        orchardRoots: List<JniSubtreeRoot>,
     )
 
     /**

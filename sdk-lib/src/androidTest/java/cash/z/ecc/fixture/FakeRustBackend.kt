@@ -20,9 +20,11 @@ internal class FakeRustBackend(
         metadata.removeAll { it.height > height }
     }
 
-    override suspend fun putSaplingSubtreeRoots(
-        startIndex: Long,
-        roots: List<JniSubtreeRoot>,
+    override suspend fun putSubtreeRoots(
+        saplingStartIndex: Long,
+        saplingRoots: List<JniSubtreeRoot>,
+        orchardStartIndex: Long,
+        orchardRoots: List<JniSubtreeRoot>,
     ) {
         TODO("Not yet implemented")
     }

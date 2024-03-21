@@ -239,15 +239,7 @@ internal class LightWalletClientImpl private constructor(
                 requireChannel().createStub(singleRequestTimeout)
                     .getTreeState(height.toBlockHeight())
 
-            // TODO: Orchard tree
-            val blockHeight = TreeStateUnsafe.fromParts(
-                height = response.height,
-                hash = response.hash,
-                time = response.time,
-                tree = response.saplingTree
-            )
-
-            Response.Success(blockHeight)
+            Response.Success(TreeStateUnsafe.new(response))
         } catch (e: StatusException) {
             GrpcStatusResolver.resolveFailureFromStatus(e)
         }

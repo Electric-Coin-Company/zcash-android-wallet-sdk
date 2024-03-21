@@ -202,14 +202,18 @@ class RustBackend private constructor(
             )
         }
 
-    override suspend fun putSaplingSubtreeRoots(
-        startIndex: Long,
-        roots: List<JniSubtreeRoot>,
+    override suspend fun putSubtreeRoots(
+        saplingStartIndex: Long,
+        saplingRoots: List<JniSubtreeRoot>,
+        orchardStartIndex: Long,
+        orchardRoots: List<JniSubtreeRoot>,
     ) = withContext(SdkDispatchers.DATABASE_IO) {
-        putSaplingSubtreeRoots(
+        putSubtreeRoots(
             dataDbFile.absolutePath,
-            startIndex,
-            roots.toTypedArray(),
+            saplingStartIndex,
+            saplingRoots.toTypedArray(),
+            orchardStartIndex,
+            orchardRoots.toTypedArray(),
             networkId = networkId
         )
     }
@@ -537,10 +541,12 @@ class RustBackend private constructor(
         )
 
         @JvmStatic
-        private external fun putSaplingSubtreeRoots(
+        private external fun putSubtreeRoots(
             dbDataPath: String,
-            startIndex: Long,
-            roots: Array<JniSubtreeRoot>,
+            saplingStartIndex: Long,
+            saplingRoots: Array<JniSubtreeRoot>,
+            orchardStartIndex: Long,
+            orchardRoots: Array<JniSubtreeRoot>,
             networkId: Int
         )
 

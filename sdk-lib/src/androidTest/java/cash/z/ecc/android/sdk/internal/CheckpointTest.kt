@@ -5,7 +5,8 @@ import cash.z.ecc.android.sdk.internal.model.Checkpoint
 import cash.z.ecc.android.sdk.internal.model.ext.KEY_EPOCH_SECONDS
 import cash.z.ecc.android.sdk.internal.model.ext.KEY_HASH
 import cash.z.ecc.android.sdk.internal.model.ext.KEY_HEIGHT
-import cash.z.ecc.android.sdk.internal.model.ext.KEY_TREE
+import cash.z.ecc.android.sdk.internal.model.ext.KEY_ORCHARD_TREE
+import cash.z.ecc.android.sdk.internal.model.ext.KEY_SAPLING_TREE
 import cash.z.ecc.android.sdk.internal.model.ext.KEY_VERSION
 import cash.z.ecc.android.sdk.internal.model.ext.VERSION_1
 import cash.z.ecc.android.sdk.internal.model.ext.from
@@ -45,7 +46,8 @@ class CheckpointTest {
                 put(Checkpoint.KEY_HEIGHT, UInt.MAX_VALUE.toLong())
                 put(Checkpoint.KEY_HASH, CheckpointFixture.HASH)
                 put(Checkpoint.KEY_EPOCH_SECONDS, CheckpointFixture.EPOCH_SECONDS)
-                put(Checkpoint.KEY_TREE, CheckpointFixture.TREE)
+                put(Checkpoint.KEY_SAPLING_TREE, CheckpointFixture.SAPLING_TREE)
+                put(Checkpoint.KEY_ORCHARD_TREE, CheckpointFixture.ORCHARD_TREE)
             }.toString()
 
         Checkpoint.from(CheckpointFixture.NETWORK, jsonString).also {
