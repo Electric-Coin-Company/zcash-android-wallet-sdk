@@ -53,7 +53,7 @@ class TransparentTest(val expected: Expected, val network: ZcashNetwork) {
         object ExpectedMainnet : Expected {
             override val tAddr = "t1PKtYdJJHhc3Pxowmznkg7vdTwnhEsCvR4"
             override val zAddr = "zs1yc4sgtfwwzz6xfsy2xsradzr6m4aypgxhfw2vcn3hatrh5ryqsr08sgpemlg39vdh9kfupx20py"
-            override val uAddr = "u1607xqhx72u8x94xcg6kyt9sd83aw8zvys2vwlr5n956e5jfytcaaeuzrk938c03jv4t0kdk73yxz9yd8rdksutw68ycpy6yt9vzhu28z58rh89gtt653cspr0c50ev4av0ddzj5vrrh"
+            override val uAddr = "u1t23erzgkn7c6c2jn66rspl4m45lg8rn3f7mn7le4yxk7693wr7sgx472jn95s00x8kx3hct5ej4tf76k59dfhsd809t7mzt9ldzw8f5083fw4xqvxfshl9u7ed2wyv6ypmzny0px0nvszslr5kr7fgk2zgfnlycddzqak4adsqjdzp76y7fl0k4ygamjr43t6rpxsf6xql8g20rdk0h"
             override val tAccountPrivKey = "xprv9z1aorRbyM5A6ok9QmdCUztMRRgthiNpus4u8Rgn9YeZEz1EVkLthFpJS1Y1FaXAvgNDPKTwxvshUMj7KJiGeNVhKL8RzDv14yHbUu3szy5"
             override val tskCompressed = "L4BvDC33yLjMRxipZvdiUmdYeRfZmR8viziwsVwe72zJdGbiJPv2"
             override val tpk = "03b1d7fb28d17c125b504d06b1530097e0a3c76ada184237e3bc0925041230a5af"
@@ -63,7 +63,7 @@ class TransparentTest(val expected: Expected, val network: ZcashNetwork) {
         object ExpectedTestnet : Expected {
             override val tAddr = "tm9v3KTsjXK8XWSqiwFjic6Vda6eHY9Mjjq"
             override val zAddr = "ztestsapling1wn3tw9w5rs55x5yl586gtk72e8hcfdq8zsnjzcu8p7ghm8lrx54axc74mvm335q7lmy3g0sqje6"
-            override val uAddr = "utest1cy80kzr6fj5vrrazldtcgmycs6rgu2x73pvwrjjmlwrwx343m06lxua5u36jdwyeckn4a6a0fkxm4y7t3lvhzscqrwg3gxpj4rgrgmf93m0cpm9ddkzn5qyzgadktuwza5d5kucewv3"
+            override val uAddr = "utest10prpna6ydq6042q7t9qqr66qg9xhj8gn7aesrxnxelp7sqh5lc56w9qzl4pydhjvt9v34cxp5krdracecwg3dpkvgv8fttvz4hcql2m35se6u2n8h9p86xc7c6wm8fj7p4r3kq0mvvl4g650s6xdkhkg9yhtnnne4vy9k3hw27m0y6ctlmgkeadvn38v6wp9fpdwwhwrgn52z8fp6pc"
             override val tAccountPrivKey = "xprv9yUDoMsKVAQ8W8tf3VuPGyBKHuDPa4SkBXT7KHp4dfW7iBWKUEgAYG1g6ZpdotTWc4iMrj6vgaT8otHCWRj5SYtXkDcxkheFCp6QZEW9dPi"
             override val tskCompressed = "KzVugoXxR7AtTMdR5sdJtHxCNvMzQ4H196k7ATv4nnjoummsRC9G"
             override val tpk = "03b1d7fb28d17c125b504d06b1530097e0a3c76ada184237e3bc0925041230a5af"
