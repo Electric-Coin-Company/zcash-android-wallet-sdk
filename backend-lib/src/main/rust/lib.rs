@@ -71,7 +71,7 @@ const ANCHOR_OFFSET: NonZeroU32 = unsafe { NonZeroU32::new_unchecked(ANCHOR_OFFS
 
 // Do not generate Orchard receivers until we support receiving Orchard funds.
 const DEFAULT_ADDRESS_REQUEST: UnifiedAddressRequest =
-    UnifiedAddressRequest::unsafe_new(false, true, true);
+    UnifiedAddressRequest::unsafe_new(true, true, true);
 
 #[cfg(debug_assertions)]
 fn print_debug_state() {
@@ -327,7 +327,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_createAcc
             })?;
 
         let (account_id, usk) = db_data
-            .create_account(&seed, birthday)
+            .create_account(&seed, &birthday)
             .map_err(|e| format_err!("Error while initializing accounts: {}", e))?;
 
         let account = db_data.get_account(account_id)?.expect("just created");
@@ -1038,10 +1038,11 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_rewindToH
     unwrap_exc_or(&mut env, res, JNI_FALSE)
 }
 
-fn decode_sapling_subtree_root(
+fn decode_subtree_root<H>(
     env: &mut JNIEnv,
     obj: JObject,
-) -> Result<CommitmentTreeRoot<sapling::Node>, failure::Error> {
+    node_parser: impl FnOnce(&[u8]) -> std::io::Result<H>,
+) -> Result<CommitmentTreeRoot<H>, failure::Error> {
     fn long_as_u32(env: &mut JNIEnv, obj: &JObject, name: &str) -> Result<u32, failure::Error> {
         Ok(u32::try_from(env.get_field(obj, name, "J")?.j()?)?)
     }
@@ -1053,48 +1054,68 @@ fn decode_sapling_subtree_root(
 
     Ok(CommitmentTreeRoot::from_parts(
         BlockHeight::from_u32(long_as_u32(env, &obj, "completingBlockHeight")?),
-        sapling::Node::read(&byte_array(env, &obj, "rootHash")?[..])?,
+        node_parser(&byte_array(env, &obj, "rootHash")?[..])?,
     ))
 }
 
 #[no_mangle]
-pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_putSaplingSubtreeRoots<
-    'local,
->(
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_putSubtreeRoots<'local>(
     mut env: JNIEnv<'local>,
     _: JClass<'local>,
     db_data: JString<'local>,
-    start_index: jlong,
-    roots: JObjectArray<'local>,
+    sapling_start_index: jlong,
+    sapling_roots: JObjectArray<'local>,
+    orchard_start_index: jlong,
+    orchard_roots: JObjectArray<'local>,
     network_id: jint,
 ) -> jboolean {
     let res = catch_unwind(&mut env, |env| {
-        let _span = tracing::info_span!("RustBackend.putSaplingSubtreeRoots").entered();
+        let _span = tracing::info_span!("RustBackend.putSubtreeRoots").entered();
         let network = parse_network(network_id as u32)?;
         let mut db_data = wallet_db(env, network, db_data)?;
 
-        let start_index = if start_index >= 0 {
-            start_index as u64
-        } else {
-            return Err(format_err!("Start index must be nonnegative."));
-        };
-        let roots = {
+        fn parse_roots<H>(
+            env: &mut JNIEnv,
+            roots: JObjectArray,
+            node_parser: impl Fn(&[u8]) -> std::io::Result<H>,
+        ) -> Result<Vec<CommitmentTreeRoot<H>>, failure::Error> {
             let count = env.get_array_length(&roots).unwrap();
             (0..count)
                 .scan(env, |env, i| {
                     Some(
                         env.get_object_array_element(&roots, i)
                             .map_err(|e| e.into())
-                            .and_then(|jobj| decode_sapling_subtree_root(env, jobj)),
+                            .and_then(|jobj| decode_subtree_root(env, jobj, &node_parser)),
                     )
                 })
-                .collect::<Result<Vec<_>, _>>()?
+                .collect::<Result<Vec<_>, _>>()
+        }
+
+        let sapling_start_index = if sapling_start_index >= 0 {
+            sapling_start_index as u64
+        } else {
+            return Err(format_err!("Sapling start index must be nonnegative."));
         };
+        let sapling_roots = parse_roots(env, sapling_roots, |n| sapling::Node::read(n))?;
+
+        let orchard_start_index = if orchard_start_index >= 0 {
+            orchard_start_index as u64
+        } else {
+            return Err(format_err!("Orchard start index must be nonnegative."));
+        };
+        let orchard_roots = parse_roots(env, orchard_roots, |n| {
+            orchard::tree::MerkleHashOrchard::read(n)
+        })?;
 
         db_data
-            .put_sapling_subtree_roots(start_index, &roots)
-            .map(|()| JNI_TRUE)
-            .map_err(|e| format_err!("Error while storing Sapling subtree roots: {}", e))
+            .put_sapling_subtree_roots(sapling_start_index, &sapling_roots)
+            .map_err(|e| format_err!("Error while storing Sapling subtree roots: {}", e))?;
+
+        db_data
+            .put_orchard_subtree_roots(orchard_start_index, &orchard_roots)
+            .map_err(|e| format_err!("Error while storing Orchard subtree roots: {}", e))?;
+
+        Ok(JNI_TRUE)
     });
 
     unwrap_exc_or(&mut env, res, JNI_FALSE)
@@ -1254,7 +1275,7 @@ fn encode_wallet_summary<'a, P: Parameters>(
 
     Ok(env.new_object(
         "cash/z/ecc/android/sdk/internal/model/JniWalletSummary",
-        &format!("([L{};JJJJJ)V", JNI_ACCOUNT_BALANCE),
+        &format!("([L{};JJJJJJ)V", JNI_ACCOUNT_BALANCE),
         &[
             (&account_balances).into(),
             JValue::Long(i64::from(u32::from(summary.chain_tip_height()))),
@@ -1262,6 +1283,7 @@ fn encode_wallet_summary<'a, P: Parameters>(
             JValue::Long(progress_numerator as i64),
             JValue::Long(progress_denominator as i64),
             JValue::Long(summary.next_sapling_subtree_index() as i64),
+            JValue::Long(summary.next_orchard_subtree_index() as i64),
         ],
     )?)
 }
@@ -1500,7 +1522,7 @@ fn zip317_helper<DbT>(
         StandardFeeRule::PreZip313
     };
     GreedyInputSelector::new(
-        SingleOutputChangeStrategy::new(fee_rule, change_memo, ShieldedProtocol::Sapling),
+        SingleOutputChangeStrategy::new(fee_rule, change_memo, ShieldedProtocol::Orchard),
         DustOutputPolicy::default(),
     )
 }

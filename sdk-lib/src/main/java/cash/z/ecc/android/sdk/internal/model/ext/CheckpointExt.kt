@@ -3,6 +3,7 @@ package cash.z.ecc.android.sdk.internal.model.ext
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.ZcashNetwork
+import org.json.JSONException
 import org.json.JSONObject
 
 // Version is not returned from the server, so version 1 is implied.  A version is declared here
@@ -17,8 +18,10 @@ internal val Checkpoint.Companion.KEY_HASH
     get() = "hash"
 internal val Checkpoint.Companion.KEY_EPOCH_SECONDS
     get() = "time"
-internal val Checkpoint.Companion.KEY_TREE
+internal val Checkpoint.Companion.KEY_SAPLING_TREE
     get() = "saplingTree"
+internal val Checkpoint.Companion.KEY_ORCHARD_TREE
+    get() = "orchardTree"
 
 internal fun Checkpoint.Companion.from(
     zcashNetwork: ZcashNetwork,
@@ -38,9 +41,21 @@ private fun Checkpoint.Companion.from(
                 }
             val hash = jsonObject.getString(Checkpoint.KEY_HASH)
             val epochSeconds = jsonObject.getLong(Checkpoint.KEY_EPOCH_SECONDS)
-            val tree = jsonObject.getString(Checkpoint.KEY_TREE)
+            val saplingTree = jsonObject.getString(Checkpoint.KEY_SAPLING_TREE)
+            val orchardTree =
+                try {
+                    jsonObject.getString(Checkpoint.KEY_ORCHARD_TREE)
+                } catch (e: JSONException) {
+                    // For checkpoints that don't contain an Orchard tree state, we can use
+                    // the empty Orchard tree state as long as the height is before NU5.
+                    if (height < zcashNetwork.orchardActivationHeight) {
+                        "000000"
+                    } else {
+                        throw IllegalArgumentException("Post-NU5 checkpoint at height $height missing orchardTree field")
+                    }
+                }
 
-            return Checkpoint(height, hash, epochSeconds, tree)
+            return Checkpoint(height, hash, epochSeconds, saplingTree, orchardTree)
         }
         else -> {
             throw IllegalArgumentException("Unsupported version $version")
