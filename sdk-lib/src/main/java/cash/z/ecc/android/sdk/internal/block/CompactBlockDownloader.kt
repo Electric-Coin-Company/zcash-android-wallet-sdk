@@ -29,6 +29,7 @@ import kotlinx.coroutines.withContext
  * @property lightWalletClient the client used for requesting compact blocks
  * @property compactBlockStore responsible for persisting the compact blocks that are received
  */
+@Suppress("TooManyFunctions")
 open class CompactBlockDownloader private constructor(val compactBlockRepository: CompactBlockRepository) {
     private lateinit var lightWalletClient: LightWalletClient
 
@@ -177,6 +178,13 @@ open class CompactBlockDownloader private constructor(val compactBlockRepository
         shieldedProtocol = shieldedProtocol,
         maxEntries = maxEntries
     )
+
+    /**
+     * Returns information about roots of subtrees of the Sapling and Orchard note commitment trees.
+     *
+     * @return information about roots of subtrees of the Sapling and Orchard note commitment trees.
+     */
+    suspend fun getTreeState(height: BlockHeightUnsafe) = lightWalletClient.getTreeState(height = height)
 
     companion object {
         private const val GET_SERVER_INFO_RETRIES = 6

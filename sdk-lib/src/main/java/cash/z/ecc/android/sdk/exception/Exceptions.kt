@@ -174,6 +174,12 @@ sealed class InitializeException(message: String, cause: Throwable? = null) : Sd
         private fun readResolve(): Any = SeedRequired
     }
 
+    data object SeedNotRelevant : InitializeException(
+        "The provided seed is not relevant to any of the derived accounts in the wallet database."
+    ) {
+        private fun readResolve(): Any = SeedNotRelevant
+    }
+
     class FalseStart(cause: Throwable?) : InitializeException("Failed to initialize accounts due to: $cause", cause)
 
     class AlreadyInitializedException(cause: Throwable, dbPath: String) : InitializeException(

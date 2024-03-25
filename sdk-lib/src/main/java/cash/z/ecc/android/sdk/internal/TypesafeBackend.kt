@@ -125,6 +125,7 @@ internal interface TypesafeBackend {
     @Throws(RuntimeException::class)
     suspend fun scanBlocks(
         fromHeight: BlockHeight,
+        fromState: TreeState,
         limit: Long
     ): ScanSummary
 

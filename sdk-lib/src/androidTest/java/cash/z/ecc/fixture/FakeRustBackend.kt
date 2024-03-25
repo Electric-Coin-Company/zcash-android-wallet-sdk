@@ -114,6 +114,9 @@ internal class FakeRustBackend(
         recoverUntil: Long?
     ): JniUnifiedSpendingKey = error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 
+    override suspend fun isSeedRelevantToAnyDerivedAccounts(seed: ByteArray): Boolean =
+        error("Intentionally not implemented in mocked FakeRustBackend implementation.")
+
     override fun isValidSaplingAddr(addr: String): Boolean =
         error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 
@@ -154,6 +157,7 @@ internal class FakeRustBackend(
 
     override suspend fun scanBlocks(
         fromHeight: Long,
+        fromState: ByteArray,
         limit: Long
     ) = error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 }
