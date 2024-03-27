@@ -25,6 +25,11 @@ internal interface TypesafeBackend {
         recoverUntil: BlockHeight?
     ): UnifiedSpendingKey
 
+    suspend fun proposeTransferFromUri(
+        account: Account,
+        uri: String
+    ): Proposal
+
     @Suppress("LongParameterList")
     suspend fun proposeTransfer(
         account: Account,

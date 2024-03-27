@@ -285,6 +285,22 @@ class RustBackend private constructor(
             )
         }
 
+    override suspend fun proposeTransferFromUri(
+        account: Int,
+        uri: String
+    ): ProposalUnsafe =
+        withContext(SdkDispatchers.DATABASE_IO) {
+            ProposalUnsafe.parse(
+                proposeTransferFromUri(
+                    dataDbFile.absolutePath,
+                    account,
+                    uri,
+                    networkId = networkId,
+                    useZip317Fees = IS_USE_ZIP_317_FEES
+                )
+            )
+        }
+
     override suspend fun proposeTransfer(
         account: Int,
         to: String,
@@ -572,6 +588,16 @@ class RustBackend private constructor(
             tx: ByteArray,
             networkId: Int
         )
+
+        @JvmStatic
+        @Suppress("LongParameterList")
+        private external fun proposeTransferFromUri(
+            dbDataPath: String,
+            account: Int,
+            uri: String,
+            networkId: Int,
+            useZip317Fees: Boolean
+        ): ByteArray
 
         @JvmStatic
         @Suppress("LongParameterList")

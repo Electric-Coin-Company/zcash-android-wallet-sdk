@@ -68,6 +68,36 @@ internal class TransactionEncoderImpl(
             ?: throw TransactionEncoderException.TransactionNotFoundException(transactionId)
     }
 
+    /**
+     * Creates a proposal for transferring from a valid ZIP-321 Payment URI string
+     *
+     * @param account the account from which to transfer funds.
+     * @param uri a valid ZIP-321 Payment URI string
+     *
+     * @return the proposal or an exception
+     */
+    override suspend fun proposeTransferFromUri(
+        account: Account,
+        uri: String
+    ): Proposal {
+        Twig.debug {
+            "creating proposal from URI: $uri"
+        }
+
+        @Suppress("TooGenericExceptionCaught")
+        return try {
+            backend.proposeTransferFromUri(
+                account,
+                uri
+            )
+        } catch (t: Throwable) {
+            Twig.debug(t) { "Caught exception while creating proposal from URI String." }
+            throw t
+        }.also { result ->
+            Twig.debug { "result of proposeTransferFromUri: $result" }
+        }
+    }
+
     override suspend fun proposeTransfer(
         account: Account,
         recipient: String,
