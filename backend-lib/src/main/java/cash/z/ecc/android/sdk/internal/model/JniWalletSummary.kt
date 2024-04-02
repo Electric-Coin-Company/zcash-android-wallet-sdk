@@ -21,6 +21,7 @@ import cash.z.ecc.android.sdk.internal.ext.isInUIntRange
  *         range 0.0 to 1.0 inclusive).
  */
 @Keep
+@Suppress("LongParameterList")
 class JniWalletSummary(
     val accountBalances: Array<JniAccountBalance>,
     val chainTipHeight: Long,

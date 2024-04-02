@@ -1,5 +1,6 @@
 package cash.z.ecc.android.sdk.internal.model.ext
 
+import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.ZcashNetwork
@@ -46,13 +47,13 @@ private fun Checkpoint.Companion.from(
                 try {
                     jsonObject.getString(Checkpoint.KEY_ORCHARD_TREE)
                 } catch (e: JSONException) {
+                    Twig.warn(e) { "This checkpoint does not contain an Orchard tree state" }
                     // For checkpoints that don't contain an Orchard tree state, we can use
                     // the empty Orchard tree state as long as the height is before NU5.
-                    if (height < zcashNetwork.orchardActivationHeight) {
-                        "000000"
-                    } else {
-                        throw IllegalArgumentException("Post-NU5 checkpoint at height $height missing orchardTree field")
+                    require(height < zcashNetwork.orchardActivationHeight) {
+                        "Post-NU5 checkpoint at height $height missing orchardTree field"
                     }
+                    "000000" // NON-NLS
                 }
 
             return Checkpoint(height, hash, epochSeconds, saplingTree, orchardTree)

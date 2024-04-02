@@ -295,7 +295,8 @@ class CompactBlockProcessor internal constructor(
                             }
                             GetSubtreeRootsResult.FailureConnection -> {
                                 // SubtreeRoot fetching retry
-                                subTreeRootResult = getSubtreeRoots(downloader, network, saplingStartIndex, orchardStartIndex)
+                                subTreeRootResult =
+                                    getSubtreeRoots(downloader, network, saplingStartIndex, orchardStartIndex)
                                 BlockProcessingResult.Reconnecting
                             }
                         }
@@ -1126,6 +1127,7 @@ class CompactBlockProcessor internal constructor(
          * @return GetSubtreeRootsResult as a wrapper for the lightwalletd response result
          */
         @VisibleForTesting
+        @Suppress("LongMethod")
         internal suspend fun getSubtreeRoots(
             downloader: CompactBlockDownloader,
             network: ZcashNetwork,
@@ -1167,7 +1169,9 @@ class CompactBlockProcessor internal constructor(
                                 }
                                 result = GetSubtreeRootsResult.FailureConnection
                             } else {
-                                Twig.error { "Fetching Sapling SubtreeRoot failed with failure: ${response.toThrowable()}" }
+                                Twig.error {
+                                    "Fetching Sapling SubtreeRoot failed with failure: ${response.toThrowable()}"
+                                }
                                 result = GetSubtreeRootsResult.OtherFailure(error)
                             }
                             traceScope.end()
@@ -1214,7 +1218,9 @@ class CompactBlockProcessor internal constructor(
                                 }
                                 result = GetSubtreeRootsResult.FailureConnection
                             } else {
-                                Twig.error { "Fetching Orchard SubtreeRoot failed with failure: ${response.toThrowable()}" }
+                                Twig.error {
+                                    "Fetching Orchard SubtreeRoot failed with failure: ${response.toThrowable()}"
+                                }
                                 result = GetSubtreeRootsResult.OtherFailure(error)
                             }
                             traceScope.end()
@@ -1257,6 +1263,7 @@ class CompactBlockProcessor internal constructor(
          * @return PutSaplingSubtreeRootsResult
          */
         @VisibleForTesting
+        @Suppress("LongParameterList")
         internal suspend fun putSaplingSubtreeRoots(
             backend: TypesafeBackend,
             saplingStartIndex: UInt,
