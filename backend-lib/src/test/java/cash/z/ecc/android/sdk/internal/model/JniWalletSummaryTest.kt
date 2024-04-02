@@ -15,7 +15,8 @@ class JniWalletSummaryTest {
                 fullyScannedHeight = 0,
                 progressNumerator = 1L,
                 progressDenominator = 100L,
-                nextSaplingSubtreeIndex = 0
+                nextSaplingSubtreeIndex = 0L,
+                nextOrchardSubtreeIndex = 0L
             )
         assertIs<JniWalletSummary>(instance)
     }
@@ -29,7 +30,8 @@ class JniWalletSummaryTest {
                 fullyScannedHeight = 0,
                 progressNumerator = 1L,
                 progressDenominator = 100L,
-                nextSaplingSubtreeIndex = 0
+                nextSaplingSubtreeIndex = 0L,
+                nextOrchardSubtreeIndex = 0
             )
         }
     }
@@ -43,7 +45,8 @@ class JniWalletSummaryTest {
                 fullyScannedHeight = 0,
                 progressNumerator = -1L,
                 progressDenominator = 100L,
-                nextSaplingSubtreeIndex = 0
+                nextSaplingSubtreeIndex = 0L,
+                nextOrchardSubtreeIndex = 0L
             )
         }
     }
@@ -57,7 +60,8 @@ class JniWalletSummaryTest {
                 fullyScannedHeight = 0,
                 progressNumerator = 1L,
                 progressDenominator = 0L,
-                nextSaplingSubtreeIndex = 0
+                nextSaplingSubtreeIndex = 0L,
+                nextOrchardSubtreeIndex = 0L
             )
         }
     }
@@ -71,7 +75,8 @@ class JniWalletSummaryTest {
                 fullyScannedHeight = 0,
                 progressNumerator = 100L,
                 progressDenominator = 1L,
-                nextSaplingSubtreeIndex = 0
+                nextSaplingSubtreeIndex = 0L,
+                nextOrchardSubtreeIndex = 0L
             )
         }
     }
@@ -85,7 +90,8 @@ class JniWalletSummaryTest {
                 fullyScannedHeight = 0,
                 progressNumerator = 1L,
                 progressDenominator = 100L,
-                nextSaplingSubtreeIndex = -1
+                nextSaplingSubtreeIndex = -1L,
+                nextOrchardSubtreeIndex = -1L
             )
         }
     }
