@@ -83,11 +83,11 @@ internal object TxOutputsViewDefinition {
 
     const val COLUMN_INTEGER_OUTPUT_INDEX = "output_index" // $NON-NLS
 
-    const val COLUMN_INTEGER_FROM_ACCOUNT = "from_account" // $NON-NLS
+    const val COLUMN_INTEGER_FROM_ACCOUNT = "from_account_id" // $NON-NLS
 
     const val COLUMN_STRING_TO_ADDRESS = "to_address" // $NON-NLS
 
-    const val COLUMN_INTEGER_TO_ACCOUNT = "to_account" // $NON-NLS
+    const val COLUMN_INTEGER_TO_ACCOUNT = "to_account_id" // $NON-NLS
 
     const val COLUMN_INTEGER_VALUE = "value" // $NON-NLS
 
