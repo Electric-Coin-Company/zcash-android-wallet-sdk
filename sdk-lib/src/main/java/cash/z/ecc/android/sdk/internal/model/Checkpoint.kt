@@ -16,14 +16,14 @@ internal data class Checkpoint(
     val hash: String,
     // Note: this field does NOT match the name of the JSON, so will break with field-based JSON parsing
     val epochSeconds: Long,
-    // Note: this field does NOT match the name of the JSON, so will break with field-based JSON parsing
-    val tree: String
+    val saplingTree: String,
+    val orchardTree: String
 ) {
     fun treeState(): TreeState {
         require(epochSeconds.isInUIntRange()) {
             "epochSeconds $epochSeconds is outside of allowed UInt range"
         }
-        return TreeState.fromParts(height.value, hash, epochSeconds.toInt(), tree)
+        return TreeState.fromParts(height.value, hash, epochSeconds.toInt(), saplingTree, orchardTree)
     }
 
     internal companion object
