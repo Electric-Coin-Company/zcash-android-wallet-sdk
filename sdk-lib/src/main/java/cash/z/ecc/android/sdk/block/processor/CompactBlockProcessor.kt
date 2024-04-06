@@ -1240,7 +1240,7 @@ class CompactBlockProcessor internal constructor(
                     }
             }
 
-            if (!saplingSubtreeRootList.isEmpty()) {
+            if (saplingSubtreeRootList.isNotEmpty() && orchardSubtreeRootList.isNotEmpty()) {
                 result =
                     GetSubtreeRootsResult.SpendBeforeSync(
                         saplingStartIndex,
