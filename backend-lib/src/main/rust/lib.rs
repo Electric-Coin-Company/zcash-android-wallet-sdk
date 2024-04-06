@@ -117,16 +117,24 @@ fn account_id_from_jni<'local, P: Parameters>(
         .filter_map(|account_id| {
             db_data
                 .get_account(account_id)
-                .transpose()
-                .expect("account_id exists")
-                .map(|account| match account.source() {
-                    AccountSource::Derived { account_index, .. }
-                        if account_index == requested_account_index =>
-                    {
-                        Some(account)
-                    }
-                    _ => None,
+                .map_err(|e| {
+                    format_err!(
+                        "Database error encountered retrieving account {:?}: {}",
+                        account_id,
+                        e
+                    )
                 })
+                .and_then(|acct_opt|
+                    acct_opt.ok_or_else(||
+                        format_err!(
+                            "Wallet data corrupted: unable to retrieve account data for account {:?}",
+                            account_id
+                        )
+                    ).map(|account| match account.source() {
+                        AccountSource::Derived { account_index, .. } if account_index == requested_account_index => Some(account),
+                        _ => None
+                    })
+                )
                 .transpose()
         });
 
