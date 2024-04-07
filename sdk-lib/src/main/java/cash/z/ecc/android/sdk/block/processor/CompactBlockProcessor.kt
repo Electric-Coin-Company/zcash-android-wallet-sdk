@@ -1240,7 +1240,12 @@ class CompactBlockProcessor internal constructor(
                     }
             }
 
-            if (saplingSubtreeRootList.isNotEmpty() && orchardSubtreeRootList.isNotEmpty()) {
+            // Intentionally omitting [orchardSubtreeRootList], e.g., for Mainnet usage, we could check it, but on
+            // custom networks without NU5 activation, it wouldn't work. If the Orchard subtree roots are empty, it's
+            // technically still ok (as Orchard activates after Sapling, so on a network that doesn't have NU5
+            // activated, this would behave correctly). In contrast, if the Sapling subtree roots are empty, we
+            // cannot do SbS at all.
+            if (saplingSubtreeRootList.isNotEmpty()) {
                 result =
                     GetSubtreeRootsResult.SpendBeforeSync(
                         saplingStartIndex,
