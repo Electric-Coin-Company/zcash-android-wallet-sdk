@@ -6,6 +6,10 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- The Orchard support has been finished, and the SDK now fully supports sending and receiving funds on the Orchard 
+  addresses
+
 ### Fixed
 - SDK release 1.11.0-beta01 documented that `Synchronizer.new` would throw an
   exception indicating that an internal migration requires the wallet seed, if
@@ -14,9 +18,12 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   added. The SDK now correctly throws `InitializeException.SeedRequired`.
 
 ### Changed
+- `Synchronizer.refreshAllBalances` now refreshes the Orchard balances as well
 - The SDK uses ZIP-317 fee system internally
-- `ZcashSdk.MINERS_FEE` has been deprecated, and will be removed in 2.1.0
+- `ZcashSdk.MINERS_FEE` has been deprecated, and will be removed in 2.1.x
 - `ZecSend` data class now provides `Proposal?` object initiated using `Synchronizer.proposeTransfer`
+- Wallet initialization using `Synchronizer.new` now could throw a new `SeedNotRelevant` exception when the provided 
+  seed is not relevant to any of the derived accounts in the wallet database
 - Checkpoints update
 
 ## [2.0.7] - 2024-03-08
@@ -34,7 +41,7 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `WalletSnapshot.transparentBalance: WalletBalance` to `WalletSnapshot.transparentBalance: Zatoshi`
 - `Memo.MAX_MEMO_LENGTH_BYTES` is now available in public API
 - `Synchronizer.sendToAddress` and `Synchronizer.shieldFunds` have been
-  deprecated, and will be removed in 2.1.0 (which will create multiple
+  deprecated, and will be removed in 2.1.x (which will create multiple
   transactions at once for some recipients).
 
 ### Added
@@ -96,7 +103,7 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - `LightWalletEndpointExt` and its functions and variables were removed from the SDK's public APIs entirely. It's 
   preserved only for testing and wallet Demo app purposes. The calling wallet app should provide its own 
-  `LightWalletEndpoint` instance within `PersistableWallet` or `SdkSynchornizer` APIs.
+  `LightWalletEndpoint` instance within `PersistableWallet` or `SdkSynchronizer` APIs.
 
 ### Changed
 - Gradle 8.5
