@@ -42,6 +42,7 @@ import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.internal.model.ScanRange
 import cash.z.ecc.android.sdk.internal.model.SubtreeRoot
 import cash.z.ecc.android.sdk.internal.model.SuggestScanRangePriority
+import cash.z.ecc.android.sdk.internal.model.TreeState
 import cash.z.ecc.android.sdk.internal.model.WalletSummary
 import cash.z.ecc.android.sdk.internal.model.ext.from
 import cash.z.ecc.android.sdk.internal.model.ext.toBlockHeight
@@ -207,7 +208,7 @@ class CompactBlockProcessor internal constructor(
     suspend fun start() {
         val traceScope = TraceScope("CompactBlockProcessor.start")
 
-        val startIndex = refreshWalletSummary()
+        val (saplingStartIndex, orchardStartIndex) = refreshWalletSummary()
 
         verifySetup()
 
@@ -226,7 +227,7 @@ class CompactBlockProcessor internal constructor(
 
         // Download note commitment tree data from lightwalletd to decide if we communicate with linear
         // or spend-before-sync node.
-        var subTreeRootResult = getSubtreeRoots(downloader, network, startIndex)
+        var subTreeRootResult = getSubtreeRoots(downloader, network, saplingStartIndex, orchardStartIndex)
         Twig.info { "Fetched SubTreeRoot result: $subTreeRootResult" }
 
         Twig.debug { "Setup verified. Processor starting..." }
@@ -251,10 +252,14 @@ class CompactBlockProcessor internal constructor(
                                     val result =
                                         putSaplingSubtreeRoots(
                                             backend = backend,
-                                            startIndex = startIndex,
-                                            subTreeRootList =
+                                            saplingStartIndex = saplingStartIndex,
+                                            saplingSubtreeRootList =
                                                 (subTreeRootResult as GetSubtreeRootsResult.SpendBeforeSync)
-                                                    .subTreeRootList,
+                                                    .saplingSubtreeRootList,
+                                            orchardStartIndex = orchardStartIndex,
+                                            orchardSubtreeRootList =
+                                                (subTreeRootResult as GetSubtreeRootsResult.SpendBeforeSync)
+                                                    .orchardSubtreeRootList,
                                             lastValidHeight = lowerBoundHeight
                                         )
                                 ) {
@@ -290,7 +295,8 @@ class CompactBlockProcessor internal constructor(
                             }
                             GetSubtreeRootsResult.FailureConnection -> {
                                 // SubtreeRoot fetching retry
-                                subTreeRootResult = getSubtreeRoots(downloader, network, startIndex)
+                                subTreeRootResult =
+                                    getSubtreeRoots(downloader, network, saplingStartIndex, orchardStartIndex)
                                 BlockProcessingResult.Reconnecting
                             }
                         }
@@ -464,7 +470,6 @@ class CompactBlockProcessor internal constructor(
                 repository = repository,
                 network = network,
                 syncRange = verifyRangeResult.scanRange.range,
-                withDownload = true,
                 enhanceStartHeight = firstUnenhancedHeight
             ).collect { batchSyncProgress ->
                 // Update sync progress and wallet balance
@@ -561,7 +566,6 @@ class CompactBlockProcessor internal constructor(
                 repository = repository,
                 network = network,
                 syncRange = scanRange.range,
-                withDownload = true,
                 enhanceStartHeight = firstUnenhancedHeight
             ).map { batchSyncProgress ->
                 // Update sync progress and wallet balance
@@ -728,15 +732,13 @@ class CompactBlockProcessor internal constructor(
 
     /**
      * Update the latest balances using the given wallet summary, and transmit this information
-     * into the related internal flows. Note that the Orchard balance is not supported.
+     * into the related internal flows.
      */
     internal suspend fun updateAllBalances(summary: WalletSummary) {
         summary.accountBalances[Account.DEFAULT]?.let {
-            Twig.debug { "Updating Sapling balance" }
+            Twig.debug { "Updating balances" }
             saplingBalances.value = it.sapling
-            // TODO [#682]: Uncomment this once we have Orchard support.
-            // TODO [#682]: https://github.com/zcash/zcash-android-wallet-sdk/issues/682
-            // orchardBalances.value = it.orchard
+            orchardBalances.value = it.orchard
             // We only allow stored transparent balance to be shielded, and we do so with
             // a zero-conf transaction, so treat all unshielded balance as available.
             transparentBalance.value = it.unshielded
@@ -745,23 +747,26 @@ class CompactBlockProcessor internal constructor(
 
     /**
      * Refreshes the SDK's wallet summary from the Rust backend, and transmits this information
-     * into the related internal flows. Note that the Orchard balance is not yet supported.
+     * into the related internal flows.
      *
      * @return the next subtree index to fetch.
      */
-    internal suspend fun refreshWalletSummary(): UInt {
+    internal suspend fun refreshWalletSummary(): Pair<UInt, UInt> {
         when (val result = getWalletSummary(backend)) {
             is GetWalletSummaryResult.Success -> {
                 val resultProgress = result.scanProgressPercentDecimal()
                 Twig.info { "Progress from rust: ${resultProgress.decimal}" }
                 setProgress(resultProgress)
                 updateAllBalances(result.walletSummary)
-                return result.walletSummary.nextSaplingSubtreeIndex
+                return Pair(
+                    result.walletSummary.nextSaplingSubtreeIndex,
+                    result.walletSummary.nextOrchardSubtreeIndex
+                )
             }
             else -> {
                 // Do not report the progress and balances in case of any error, and
                 // tell the caller to fetch all subtree roots.
-                return UInt.MIN_VALUE
+                return Pair(UInt.MIN_VALUE, UInt.MIN_VALUE)
             }
         }
     }
@@ -1122,26 +1127,31 @@ class CompactBlockProcessor internal constructor(
          * @return GetSubtreeRootsResult as a wrapper for the lightwalletd response result
          */
         @VisibleForTesting
+        @Suppress("LongMethod")
         internal suspend fun getSubtreeRoots(
             downloader: CompactBlockDownloader,
             network: ZcashNetwork,
-            startIndex: UInt
+            saplingStartIndex: UInt,
+            orchardStartIndex: UInt
         ): GetSubtreeRootsResult {
             Twig.debug { "Fetching SubtreeRoots..." }
             val traceScope = TraceScope("CompactBlockProcessor.getSubtreeRoots")
 
             var result: GetSubtreeRootsResult = GetSubtreeRootsResult.Linear
 
+            var saplingSubtreeRootList: List<SubtreeRoot> = emptyList()
+            var orchardSubtreeRootList: List<SubtreeRoot> = emptyList()
+
             retryUpToAndContinue(GET_SUBTREE_ROOTS_RETRIES) {
                 downloader.getSubtreeRoots(
-                    startIndex,
+                    saplingStartIndex,
                     maxEntries = UInt.MIN_VALUE,
                     shieldedProtocol = ShieldedProtocolEnum.SAPLING
                 ).onEach { response ->
                     when (response) {
                         is Response.Success -> {
                             Twig.verbose {
-                                "SubtreeRoot fetched successfully: its completingHeight is: ${response.result
+                                "Sapling SubtreeRoot fetched successfully: its completingHeight is: ${response.result
                                     .completingBlockHeight}"
                             }
                         }
@@ -1154,12 +1164,14 @@ class CompactBlockProcessor internal constructor(
                                 )
                             if (response is Response.Failure.Server.Unavailable) {
                                 Twig.error {
-                                    "Fetching SubtreeRoot failed due to server communication problem with " +
+                                    "Fetching Sapling SubtreeRoot failed due to server communication problem with " +
                                         "failure: ${response.toThrowable()}"
                                 }
                                 result = GetSubtreeRootsResult.FailureConnection
                             } else {
-                                Twig.error { "Fetching SubtreeRoot failed with failure: ${response.toThrowable()}" }
+                                Twig.error {
+                                    "Fetching Sapling SubtreeRoot failed with failure: ${response.toThrowable()}"
+                                }
                                 result = GetSubtreeRootsResult.OtherFailure(error)
                             }
                             traceScope.end()
@@ -1175,13 +1187,72 @@ class CompactBlockProcessor internal constructor(
                     .map {
                         SubtreeRoot.new(it, network)
                     }.let {
-                        result =
-                            if (it.isEmpty()) {
-                                GetSubtreeRootsResult.Linear
-                            } else {
-                                GetSubtreeRootsResult.SpendBeforeSync(startIndex, it)
-                            }
+                        saplingSubtreeRootList = it
                     }
+            }
+
+            retryUpToAndContinue(GET_SUBTREE_ROOTS_RETRIES) {
+                downloader.getSubtreeRoots(
+                    orchardStartIndex,
+                    maxEntries = UInt.MIN_VALUE,
+                    shieldedProtocol = ShieldedProtocolEnum.ORCHARD
+                ).onEach { response ->
+                    when (response) {
+                        is Response.Success -> {
+                            Twig.verbose {
+                                "Orchard SubtreeRoot fetched successfully: its completingHeight is: ${response.result
+                                    .completingBlockHeight}"
+                            }
+                        }
+                        is Response.Failure -> {
+                            val error =
+                                LightWalletException.GetSubtreeRootsException(
+                                    response.code,
+                                    response.description,
+                                    response.toThrowable()
+                                )
+                            if (response is Response.Failure.Server.Unavailable) {
+                                Twig.error {
+                                    "Fetching Orchard SubtreeRoot failed due to server communication problem with " +
+                                        "failure: ${response.toThrowable()}"
+                                }
+                                result = GetSubtreeRootsResult.FailureConnection
+                            } else {
+                                Twig.error {
+                                    "Fetching Orchard SubtreeRoot failed with failure: ${response.toThrowable()}"
+                                }
+                                result = GetSubtreeRootsResult.OtherFailure(error)
+                            }
+                            traceScope.end()
+                            throw error
+                        }
+                    }
+                }
+                    .filterIsInstance<Response.Success<SubtreeRootUnsafe>>()
+                    .map { response ->
+                        response.result
+                    }
+                    .toList()
+                    .map {
+                        SubtreeRoot.new(it, network)
+                    }.let {
+                        orchardSubtreeRootList = it
+                    }
+            }
+
+            // Intentionally omitting [orchardSubtreeRootList], e.g., for Mainnet usage, we could check it, but on
+            // custom networks without NU5 activation, it wouldn't work. If the Orchard subtree roots are empty, it's
+            // technically still ok (as Orchard activates after Sapling, so on a network that doesn't have NU5
+            // activated, this would behave correctly). In contrast, if the Sapling subtree roots are empty, we
+            // cannot do SbS at all.
+            if (saplingSubtreeRootList.isNotEmpty()) {
+                result =
+                    GetSubtreeRootsResult.SpendBeforeSync(
+                        saplingStartIndex,
+                        saplingSubtreeRootList,
+                        orchardStartIndex,
+                        orchardSubtreeRootList
+                    )
             }
 
             traceScope.end()
@@ -1197,22 +1268,27 @@ class CompactBlockProcessor internal constructor(
          * @return PutSaplingSubtreeRootsResult
          */
         @VisibleForTesting
+        @Suppress("LongParameterList")
         internal suspend fun putSaplingSubtreeRoots(
             backend: TypesafeBackend,
-            startIndex: UInt,
-            subTreeRootList: List<SubtreeRoot>,
+            saplingStartIndex: UInt,
+            saplingSubtreeRootList: List<SubtreeRoot>,
+            orchardStartIndex: UInt,
+            orchardSubtreeRootList: List<SubtreeRoot>,
             lastValidHeight: BlockHeight
         ): PutSaplingSubtreeRootsResult {
             return runCatching {
-                backend.putSaplingSubtreeRoots(
-                    startIndex = startIndex,
-                    roots = subTreeRootList
+                backend.putSubtreeRoots(
+                    saplingStartIndex = saplingStartIndex,
+                    saplingRoots = saplingSubtreeRootList,
+                    orchardStartIndex = orchardStartIndex,
+                    orchardRoots = orchardSubtreeRootList,
                 )
             }
                 .onSuccess {
                     Twig.info {
-                        "Sapling subtree roots put successfully with startIndex: $startIndex and roots: " +
-                            "${subTreeRootList.size}"
+                        "Subtree roots put successfully with saplingStartIndex: $saplingStartIndex and " +
+                            "orchardStartIndex: $orchardStartIndex"
                     }
                 }
                 .onFailure {
@@ -1342,8 +1418,6 @@ class CompactBlockProcessor internal constructor(
          * @param repository the derived data repository component
          * @param network the network in which the sync mechanism operates
          * @param syncRange the range of blocks to download
-         * @param withDownload the flag indicating whether the blocks should also be downloaded and processed, or
-         * processed existing blocks
          * @param enhanceStartHeight the height in which the enhancing should start, or null in case of no previous
          * transaction enhancing done yet
          *
@@ -1357,7 +1431,6 @@ class CompactBlockProcessor internal constructor(
             repository: DerivedDataRepository,
             network: ZcashNetwork,
             syncRange: ClosedRange<BlockHeight>,
-            withDownload: Boolean,
             enhanceStartHeight: BlockHeight?
         ): Flow<BatchSyncProgress> =
             flow {
@@ -1389,14 +1462,10 @@ class CompactBlockProcessor internal constructor(
                         SyncStageResult(
                             batch = it,
                             stageResult =
-                                if (withDownload) {
-                                    downloadBatchOfBlocks(
-                                        downloader = downloader,
-                                        batch = it
-                                    )
-                                } else {
-                                    SyncingResult.DownloadSuccess(null)
-                                }
+                                downloadBatchOfBlocks(
+                                    downloader = downloader,
+                                    batch = it
+                                )
                         )
                     }.buffer(1).map { downloadStageResult ->
                         Twig.debug { "Download stage done with result: $downloadStageResult" }
@@ -1413,7 +1482,8 @@ class CompactBlockProcessor internal constructor(
                                 downloadStageResult.batch,
                                 scanBatchOfBlocks(
                                     backend = backend,
-                                    batch = downloadStageResult.batch
+                                    batch = downloadStageResult.batch,
+                                    fromState = downloadStageResult.stageResult.fromState
                                 )
                             )
                         }
@@ -1605,6 +1675,16 @@ class CompactBlockProcessor internal constructor(
             batch: BlockBatch
         ): SyncingResult {
             val traceScope = TraceScope("CompactBlockProcessor.downloadBatchOfBlocks")
+
+            val fromState =
+                fetchTreeStateForHeight(
+                    height = batch.range.start - 1,
+                    downloader = downloader
+                ) ?: return SyncingResult.DownloadFailed(
+                    batch.range.start,
+                    CompactBlockProcessorException.FailedDownloadException()
+                )
+
             var downloadedBlocks = listOf<JniBlockMeta>()
             var downloadException: CompactBlockProcessorException.FailedDownloadException? = null
 
@@ -1626,7 +1706,7 @@ class CompactBlockProcessor internal constructor(
             Twig.verbose { "Successfully downloaded batch: $batch of $downloadedBlocks blocks" }
 
             return if (downloadedBlocks.isNotEmpty()) {
-                SyncingResult.DownloadSuccess(downloadedBlocks)
+                SyncingResult.DownloadSuccess(fromState, downloadedBlocks)
             } else {
                 SyncingResult.DownloadFailed(
                     batch.range.start,
@@ -1636,14 +1716,42 @@ class CompactBlockProcessor internal constructor(
         }
 
         @VisibleForTesting
+        internal suspend fun fetchTreeStateForHeight(
+            height: BlockHeight,
+            downloader: CompactBlockDownloader,
+        ): TreeState? {
+            retryUpToAndContinue(retries = RETRIES) { failedAttempts ->
+                if (failedAttempts == 0) {
+                    Twig.debug { "Starting to fetch tree state for height ${height.value}" }
+                } else {
+                    Twig.warn {
+                        "Retrying to fetch tree state for height ${height.value} after $failedAttempts failure(s)..."
+                    }
+                }
+                when (val response = downloader.getTreeState(BlockHeightUnsafe(height.value))) {
+                    is Response.Success -> {
+                        return TreeState.new(response.result)
+                    }
+                    is Response.Failure -> {
+                        Twig.error(response.toThrowable()) { "Tree state fetch failed" }
+                        throw response.toThrowable()
+                    }
+                }
+            }
+
+            return null
+        }
+
+        @VisibleForTesting
         internal suspend fun scanBatchOfBlocks(
             batch: BlockBatch,
+            fromState: TreeState,
             backend: TypesafeBackend
         ): SyncingResult {
             val traceScope = TraceScope("CompactBlockProcessor.scanBatchOfBlocks")
             val result =
                 runCatching {
-                    backend.scanBlocks(batch.range.start, batch.range.length())
+                    backend.scanBlocks(batch.range.start, fromState, batch.range.length())
                 }.onSuccess {
                     Twig.verbose { "Successfully scanned batch $batch" }
                 }.onFailure {

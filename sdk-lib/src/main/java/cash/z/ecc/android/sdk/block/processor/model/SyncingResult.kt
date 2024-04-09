@@ -4,6 +4,7 @@ import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor
 import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.internal.model.ScanSummary
+import cash.z.ecc.android.sdk.internal.model.TreeState
 import cash.z.ecc.android.sdk.model.BlockHeight
 
 /**
@@ -16,8 +17,11 @@ internal sealed class SyncingResult {
 
     object RestartSynchronization : SyncingResult()
 
-    data class DownloadSuccess(val downloadedBlocks: List<JniBlockMeta>?) : SyncingResult() {
-        override fun toString() = "${this::class.java.simpleName} with ${downloadedBlocks?.size ?: "none"} blocks"
+    data class DownloadSuccess(
+        val fromState: TreeState,
+        val downloadedBlocks: List<JniBlockMeta>
+    ) : SyncingResult() {
+        override fun toString() = "${this::class.java.simpleName} with ${downloadedBlocks.size} blocks"
     }
 
     interface Failure {

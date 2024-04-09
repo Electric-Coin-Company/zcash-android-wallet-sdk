@@ -91,6 +91,15 @@ class RustBackend private constructor(
         }
     }
 
+    override suspend fun isSeedRelevantToAnyDerivedAccounts(seed: ByteArray): Boolean =
+        withContext(SdkDispatchers.DATABASE_IO) {
+            isSeedRelevantToAnyDerivedAccounts(
+                dataDbFile.absolutePath,
+                seed,
+                networkId = networkId
+            )
+        }
+
     override suspend fun getCurrentAddress(account: Int) =
         withContext(SdkDispatchers.DATABASE_IO) {
             getCurrentAddress(
@@ -193,14 +202,18 @@ class RustBackend private constructor(
             )
         }
 
-    override suspend fun putSaplingSubtreeRoots(
-        startIndex: Long,
-        roots: List<JniSubtreeRoot>,
+    override suspend fun putSubtreeRoots(
+        saplingStartIndex: Long,
+        saplingRoots: List<JniSubtreeRoot>,
+        orchardStartIndex: Long,
+        orchardRoots: List<JniSubtreeRoot>,
     ) = withContext(SdkDispatchers.DATABASE_IO) {
-        putSaplingSubtreeRoots(
+        putSubtreeRoots(
             dataDbFile.absolutePath,
-            startIndex,
-            roots.toTypedArray(),
+            saplingStartIndex,
+            saplingRoots.toTypedArray(),
+            orchardStartIndex,
+            orchardRoots.toTypedArray(),
             networkId = networkId
         )
     }
@@ -263,6 +276,7 @@ class RustBackend private constructor(
 
     override suspend fun scanBlocks(
         fromHeight: Long,
+        fromState: ByteArray,
         limit: Long
     ): JniScanSummary {
         return withContext(SdkDispatchers.DATABASE_IO) {
@@ -270,6 +284,7 @@ class RustBackend private constructor(
                 fsBlockDbRoot.absolutePath,
                 dataDbFile.absolutePath,
                 fromHeight,
+                fromState,
                 limit,
                 networkId = networkId
             )
@@ -433,6 +448,13 @@ class RustBackend private constructor(
         ): JniUnifiedSpendingKey
 
         @JvmStatic
+        private external fun isSeedRelevantToAnyDerivedAccounts(
+            dbDataPath: String,
+            seed: ByteArray,
+            networkId: Int
+        ): Boolean
+
+        @JvmStatic
         private external fun getCurrentAddress(
             dbDataPath: String,
             account: Int,
@@ -519,10 +541,13 @@ class RustBackend private constructor(
         )
 
         @JvmStatic
-        private external fun putSaplingSubtreeRoots(
+        @Suppress("LongParameterList")
+        private external fun putSubtreeRoots(
             dbDataPath: String,
-            startIndex: Long,
-            roots: Array<JniSubtreeRoot>,
+            saplingStartIndex: Long,
+            saplingRoots: Array<JniSubtreeRoot>,
+            orchardStartIndex: Long,
+            orchardRoots: Array<JniSubtreeRoot>,
             networkId: Int
         )
 
@@ -558,10 +583,12 @@ class RustBackend private constructor(
         ): Array<JniScanRange>
 
         @JvmStatic
+        @Suppress("LongParameterList")
         private external fun scanBlocks(
             dbCachePath: String,
             dbDataPath: String,
             fromHeight: Long,
+            fromState: ByteArray,
             limit: Long,
             networkId: Int
         ): JniScanSummary

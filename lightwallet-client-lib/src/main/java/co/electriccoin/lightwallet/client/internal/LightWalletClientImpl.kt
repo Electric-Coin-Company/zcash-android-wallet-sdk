@@ -15,6 +15,7 @@ import co.electriccoin.lightwallet.client.model.Response
 import co.electriccoin.lightwallet.client.model.SendResponseUnsafe
 import co.electriccoin.lightwallet.client.model.ShieldedProtocolEnum
 import co.electriccoin.lightwallet.client.model.SubtreeRootUnsafe
+import co.electriccoin.lightwallet.client.model.TreeStateUnsafe
 import com.google.protobuf.ByteString
 import io.grpc.CallOptions
 import io.grpc.Channel
@@ -87,7 +88,6 @@ internal class LightWalletClientImpl private constructor(
         }
     }
 
-    @Suppress("SwallowedException")
     override suspend fun getServerInfo(): Response<LightWalletEndpointInfoUnsafe> {
         return try {
             val lightdInfo =
@@ -230,6 +230,18 @@ internal class LightWalletClientImpl private constructor(
                 }
         } catch (e: StatusException) {
             flowOf(GrpcStatusResolver.resolveFailureFromStatus(e))
+        }
+    }
+
+    override suspend fun getTreeState(height: BlockHeightUnsafe): Response<TreeStateUnsafe> {
+        return try {
+            val response =
+                requireChannel().createStub(singleRequestTimeout)
+                    .getTreeState(height.toBlockHeight())
+
+            Response.Success(TreeStateUnsafe.new(response))
+        } catch (e: StatusException) {
+            GrpcStatusResolver.resolveFailureFromStatus(e)
         }
     }
 

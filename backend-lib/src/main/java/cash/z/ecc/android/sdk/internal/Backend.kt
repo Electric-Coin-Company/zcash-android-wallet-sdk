@@ -48,7 +48,8 @@ interface Backend {
      * If `seed` is `null`, database migrations will be attempted without it.
      *
      * @return 0 if successful, 1 if the seed must be provided in order to execute the
-     *         requested migrations.
+     *         requested migrations, 2 if the provided seed is not relevant to any of the
+     *         derived accounts in the wallet.
      *
      * @throws RuntimeException as a common indicator of the operation failure
      */
@@ -64,6 +65,12 @@ interface Backend {
         treeState: ByteArray,
         recoverUntil: Long?
     ): JniUnifiedSpendingKey
+
+    /**
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    @Throws(RuntimeException::class)
+    suspend fun isSeedRelevantToAnyDerivedAccounts(seed: ByteArray): Boolean
 
     fun isValidSaplingAddr(addr: String): Boolean
 
@@ -102,9 +109,11 @@ interface Backend {
      * @throws RuntimeException as a common indicator of the operation failure
      */
     @Throws(RuntimeException::class)
-    suspend fun putSaplingSubtreeRoots(
-        startIndex: Long,
-        roots: List<JniSubtreeRoot>,
+    suspend fun putSubtreeRoots(
+        saplingStartIndex: Long,
+        saplingRoots: List<JniSubtreeRoot>,
+        orchardStartIndex: Long,
+        orchardRoots: List<JniSubtreeRoot>,
     )
 
     /**
@@ -154,6 +163,7 @@ interface Backend {
     @Throws(RuntimeException::class)
     suspend fun scanBlocks(
         fromHeight: Long,
+        fromState: ByteArray,
         limit: Long
     ): JniScanSummary
 

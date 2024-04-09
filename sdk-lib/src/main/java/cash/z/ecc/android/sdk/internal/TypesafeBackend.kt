@@ -85,9 +85,11 @@ internal interface TypesafeBackend {
      * @throws RuntimeException as a common indicator of the operation failure
      */
     @Throws(RuntimeException::class)
-    suspend fun putSaplingSubtreeRoots(
-        startIndex: UInt,
-        roots: List<SubtreeRoot>,
+    suspend fun putSubtreeRoots(
+        saplingStartIndex: UInt,
+        saplingRoots: List<SubtreeRoot>,
+        orchardStartIndex: UInt,
+        orchardRoots: List<SubtreeRoot>,
     )
 
     /**
@@ -125,6 +127,7 @@ internal interface TypesafeBackend {
     @Throws(RuntimeException::class)
     suspend fun scanBlocks(
         fromHeight: BlockHeight,
+        fromState: TreeState,
         limit: Long
     ): ScanSummary
 
