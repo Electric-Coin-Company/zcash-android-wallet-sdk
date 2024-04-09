@@ -6,6 +6,8 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.0] - 2024-04-09
+
 ### Added
 - The Orchard support has been finished, and the SDK now fully supports sending and receiving funds on the Orchard 
   addresses
