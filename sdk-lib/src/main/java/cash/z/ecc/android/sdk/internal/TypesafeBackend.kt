@@ -4,6 +4,7 @@ import cash.z.ecc.android.sdk.exception.InitializeException
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.internal.model.ScanRange
 import cash.z.ecc.android.sdk.internal.model.ScanSummary
+import cash.z.ecc.android.sdk.internal.model.ShieldedProtocol
 import cash.z.ecc.android.sdk.internal.model.SubtreeRoot
 import cash.z.ecc.android.sdk.internal.model.TreeState
 import cash.z.ecc.android.sdk.internal.model.WalletSummary
@@ -75,6 +76,7 @@ internal interface TypesafeBackend {
 
     suspend fun getMemoAsUtf8(
         txId: ByteArray,
+        protocol: ShieldedProtocol,
         outputIndex: Int
     ): String?
 

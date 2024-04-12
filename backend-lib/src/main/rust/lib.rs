@@ -799,15 +799,25 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getTotalT
     unwrap_exc_or(&mut env, res, -1)
 }
 
+fn parse_protocol(code: i32) -> Option<ShieldedProtocol> {
+    match code {
+        2 => Some(ShieldedProtocol::Sapling),
+        3 => Some(ShieldedProtocol::Orchard),
+        _ => None
+    }
+}
+
 #[no_mangle]
 pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getMemoAsUtf8<'local>(
     mut env: JNIEnv<'local>,
     _: JClass<'local>,
     db_data: JString<'local>,
     txid_bytes: JByteArray<'local>,
+    pool_type: jint,
     output_index: jint,
     network_id: jint,
 ) -> jstring {
+
     let res = catch_unwind(&mut env, |env| {
         let _span = tracing::info_span!("RustBackend.getMemoAsUtf8").entered();
         let network = parse_network(network_id as u32)?;
@@ -815,10 +825,11 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getMemoAs
 
         let txid_bytes = env.convert_byte_array(txid_bytes)?;
         let txid = TxId::read(&txid_bytes[..])?;
+        let protocol = parse_protocol(pool_type).ok_or(format_err!("Shielded protocol not recognized: {}", pool_type))?;
         let output_index = u16::try_from(output_index)?;
 
         let memo = (&db_data)
-            .get_memo(NoteId::new(txid, ShieldedProtocol::Sapling, output_index))
+            .get_memo(NoteId::new(txid, protocol, output_index))
             .map_err(|e| format_err!("An error occurred retrieving the memo, {}", e))
             .and_then(|memo| match memo {
                 Some(Memo::Empty) => Ok("".to_string()),

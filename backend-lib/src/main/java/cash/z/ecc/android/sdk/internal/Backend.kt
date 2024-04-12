@@ -7,6 +7,7 @@ import cash.z.ecc.android.sdk.internal.model.JniSubtreeRoot
 import cash.z.ecc.android.sdk.internal.model.JniUnifiedSpendingKey
 import cash.z.ecc.android.sdk.internal.model.JniWalletSummary
 import cash.z.ecc.android.sdk.internal.model.ProposalUnsafe
+import cash.z.ecc.android.sdk.internal.model.ShieldedProtocol
 
 /**
  * Contract defining the exposed capabilities of the Rust backend.
@@ -94,6 +95,7 @@ interface Backend {
     @Throws(RuntimeException::class)
     suspend fun getMemoAsUtf8(
         txId: ByteArray,
+        protocol: ShieldedProtocol,
         outputIndex: Int
     ): String?
 

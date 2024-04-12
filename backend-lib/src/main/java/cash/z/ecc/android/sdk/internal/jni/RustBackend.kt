@@ -11,6 +11,7 @@ import cash.z.ecc.android.sdk.internal.model.JniSubtreeRoot
 import cash.z.ecc.android.sdk.internal.model.JniUnifiedSpendingKey
 import cash.z.ecc.android.sdk.internal.model.JniWalletSummary
 import cash.z.ecc.android.sdk.internal.model.ProposalUnsafe
+import cash.z.ecc.android.sdk.internal.model.ShieldedProtocol
 import kotlinx.coroutines.withContext
 import java.io.File
 
@@ -125,11 +126,13 @@ class RustBackend private constructor(
 
     override suspend fun getMemoAsUtf8(
         txId: ByteArray,
+        protocol: ShieldedProtocol,
         outputIndex: Int
     ) = withContext(SdkDispatchers.DATABASE_IO) {
         getMemoAsUtf8(
             dataDbFile.absolutePath,
             txId,
+            protocol.poolCode(),
             outputIndex,
             networkId = networkId
         )
@@ -501,6 +504,7 @@ class RustBackend private constructor(
         private external fun getMemoAsUtf8(
             dbDataPath: String,
             txId: ByteArray,
+            poolType: Int,
             outputIndex: Int,
             networkId: Int
         ): String?
