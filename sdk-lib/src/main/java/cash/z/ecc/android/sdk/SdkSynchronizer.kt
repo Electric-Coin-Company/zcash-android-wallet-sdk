@@ -327,17 +327,25 @@ class SdkSynchronizer private constructor(
     }
 
     override fun getMemos(transactionOverview: TransactionOverview): Flow<String> {
-        return storage.getSaplingOutputIndices(transactionOverview.rawId).map {
-            runCatching {
-                backend.getMemoAsUtf8(transactionOverview.rawId.byteArray, it)
-            }.onFailure {
-                Twig.error { "Failed to get memo with: $it" }
-            }.onSuccess {
-                Twig.debug { "Transaction memo queried: $it" }
-            }.fold(
-                onSuccess = { it ?: "" },
-                onFailure = { "" }
-            )
+        return storage.getOutputProperties(transactionOverview.rawId).map { properties ->
+            if (!properties.protocol.isShielded()) {
+                ""
+            } else {
+                runCatching {
+                    backend.getMemoAsUtf8(
+                        txId = transactionOverview.rawId.byteArray,
+                        protocol = properties.protocol,
+                        outputIndex = properties.index
+                    )
+                }.onFailure {
+                    Twig.error { "Failed to get memo with: $it" }
+                }.onSuccess {
+                    Twig.debug { "Transaction memo queried: $it" }
+                }.fold(
+                    onSuccess = { it ?: "" },
+                    onFailure = { "" }
+                )
+            }
         }
     }
 

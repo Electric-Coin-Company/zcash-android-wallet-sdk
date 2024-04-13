@@ -2,6 +2,7 @@ package cash.z.ecc.android.sdk.internal.db.derived
 
 import androidx.sqlite.db.SupportSQLiteDatabase
 import cash.z.ecc.android.sdk.internal.db.queryAndMap
+import cash.z.ecc.android.sdk.internal.model.OutputProperties
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.FirstClassByteArray
 import cash.z.ecc.android.sdk.model.TransactionRecipient
@@ -22,7 +23,11 @@ internal class TxOutputsView(
                 TxOutputsViewDefinition.COLUMN_BLOB_TRANSACTION_ID
             )
 
-        private val PROJECTION_OUTPUT_INDEX = arrayOf(TxOutputsViewDefinition.COLUMN_INTEGER_OUTPUT_INDEX)
+        private val PROJECTION_OUTPUT_PROPERTIES =
+            arrayOf(
+                TxOutputsViewDefinition.COLUMN_INTEGER_OUTPUT_INDEX,
+                TxOutputsViewDefinition.COLUMN_INTEGER_OUTPUT_POOL,
+            )
 
         private val PROJECTION_RECIPIENT =
             arrayOf(
@@ -40,17 +45,22 @@ internal class TxOutputsView(
             )
     }
 
-    fun getSaplingOutputIndices(transactionId: FirstClassByteArray) =
+    fun getOutputProperties(transactionId: FirstClassByteArray) =
         sqliteDatabase.queryAndMap(
             table = TxOutputsViewDefinition.VIEW_NAME,
-            columns = PROJECTION_OUTPUT_INDEX,
+            columns = PROJECTION_OUTPUT_PROPERTIES,
             selection = SELECT_BY_TRANSACTION_ID_AND_NOT_CHANGE,
             selectionArgs = arrayOf(transactionId.byteArray),
             orderBy = ORDER_BY,
             cursorParser = {
                 val idColumnOutputIndex = it.getColumnIndex(TxOutputsViewDefinition.COLUMN_INTEGER_OUTPUT_INDEX)
+                val idColumnOutputPoolIndex = it.getColumnIndex(TxOutputsViewDefinition.COLUMN_INTEGER_OUTPUT_POOL)
 
-                it.getInt(idColumnOutputIndex)
+                OutputProperties.new(
+                    index = it.getInt(idColumnOutputIndex),
+                    // Converting blob to Int
+                    poolType = it.getInt(idColumnOutputPoolIndex)
+                )
             }
         )
 
