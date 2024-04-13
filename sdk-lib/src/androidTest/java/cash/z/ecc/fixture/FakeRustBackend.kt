@@ -150,6 +150,7 @@ internal class FakeRustBackend(
 
     override suspend fun getMemoAsUtf8(
         txId: ByteArray,
+        protocol: Int,
         outputIndex: Int
     ): String? = error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 
