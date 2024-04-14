@@ -125,11 +125,13 @@ class RustBackend private constructor(
 
     override suspend fun getMemoAsUtf8(
         txId: ByteArray,
+        protocol: Int,
         outputIndex: Int
     ) = withContext(SdkDispatchers.DATABASE_IO) {
         getMemoAsUtf8(
             dataDbFile.absolutePath,
             txId,
+            protocol,
             outputIndex,
             networkId = networkId
         )
@@ -501,6 +503,7 @@ class RustBackend private constructor(
         private external fun getMemoAsUtf8(
             dbDataPath: String,
             txId: ByteArray,
+            poolType: Int,
             outputIndex: Int,
             networkId: Int
         ): String?

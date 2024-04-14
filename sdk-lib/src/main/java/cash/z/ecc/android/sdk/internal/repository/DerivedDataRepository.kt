@@ -2,6 +2,7 @@ package cash.z.ecc.android.sdk.internal.repository
 
 import cash.z.ecc.android.sdk.internal.model.DbTransactionOverview
 import cash.z.ecc.android.sdk.internal.model.EncodedTransaction
+import cash.z.ecc.android.sdk.internal.model.OutputProperties
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.FirstClassByteArray
 import cash.z.ecc.android.sdk.model.TransactionRecipient
@@ -81,7 +82,7 @@ internal interface DerivedDataRepository {
 
     val allTransactions: Flow<List<DbTransactionOverview>>
 
-    fun getSaplingOutputIndices(transactionId: FirstClassByteArray): Flow<Int>
+    fun getOutputProperties(transactionId: FirstClassByteArray): Flow<OutputProperties>
 
     fun getRecipients(transactionId: FirstClassByteArray): Flow<TransactionRecipient>
 

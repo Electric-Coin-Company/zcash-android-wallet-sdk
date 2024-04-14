@@ -94,6 +94,7 @@ interface Backend {
     @Throws(RuntimeException::class)
     suspend fun getMemoAsUtf8(
         txId: ByteArray,
+        protocol: Int,
         outputIndex: Int
     ): String?
 

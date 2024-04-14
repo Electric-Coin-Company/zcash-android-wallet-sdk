@@ -52,6 +52,7 @@ captures/
 .idea/protoeditor.xml
 .idea/appInsightsSettings.xml
 .idea/migrations.xml
+.idea/deploymentTargetSelector.xml
 *.iml
 
 # Keystore files

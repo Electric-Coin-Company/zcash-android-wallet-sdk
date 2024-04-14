@@ -8,6 +8,7 @@ import cash.z.ecc.android.sdk.internal.model.ScanSummary
 import cash.z.ecc.android.sdk.internal.model.SubtreeRoot
 import cash.z.ecc.android.sdk.internal.model.TreeState
 import cash.z.ecc.android.sdk.internal.model.WalletSummary
+import cash.z.ecc.android.sdk.internal.model.ZcashProtocol
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.FirstClassByteArray
@@ -147,8 +148,14 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
 
     override suspend fun getMemoAsUtf8(
         txId: ByteArray,
+        protocol: ZcashProtocol,
         outputIndex: Int
-    ): String? = backend.getMemoAsUtf8(txId, outputIndex)
+    ): String? =
+        backend.getMemoAsUtf8(
+            txId = txId,
+            protocol = protocol.poolCode,
+            outputIndex = outputIndex
+        )
 
     override suspend fun initDataDb(seed: ByteArray?) {
         val ret = backend.initDataDb(seed)

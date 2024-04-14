@@ -7,6 +7,7 @@ import cash.z.ecc.android.sdk.internal.model.ScanSummary
 import cash.z.ecc.android.sdk.internal.model.SubtreeRoot
 import cash.z.ecc.android.sdk.internal.model.TreeState
 import cash.z.ecc.android.sdk.internal.model.WalletSummary
+import cash.z.ecc.android.sdk.internal.model.ZcashProtocol
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.FirstClassByteArray
@@ -75,6 +76,7 @@ internal interface TypesafeBackend {
 
     suspend fun getMemoAsUtf8(
         txId: ByteArray,
+        protocol: ZcashProtocol,
         outputIndex: Int
     ): String?
 
