@@ -129,7 +129,6 @@ dependencies {
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.junit)
     androidTestImplementation(libs.androidx.test.core)
-    androidTestImplementation(libs.coroutines.okhttp)
     androidTestImplementation(libs.kotlin.test)
 }
 
