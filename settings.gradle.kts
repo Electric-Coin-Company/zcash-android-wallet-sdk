@@ -77,7 +77,7 @@ dependencyResolutionManagement {
         }
     }
 
-    @Suppress("UnstableApiUsage", "MaxLineLength")
+    @Suppress("MaxLineLength")
     versionCatalogs {
         create("libs") {
             val androidGradlePluginVersion = extra["ANDROID_GRADLE_PLUGIN_VERSION"].toString()
@@ -98,7 +98,6 @@ dependencyResolutionManagement {
             val androidxNavigationComposeVersion = extra["ANDROIDX_NAVIGATION_COMPOSE_VERSION"].toString()
             val androidxNavigationFragmentVersion = extra["ANDROIDX_NAVIGATION_FRAGMENT_VERSION"].toString()
             val androidxProfileInstallerVersion = extra["ANDROIDX_PROFILE_INSTALLER_VERSION"].toString()
-            val androidxRoomVersion = extra["ANDROIDX_ROOM_VERSION"].toString()
             val androidxSecurityCryptoVersion = extra["ANDROIDX_SECURITY_CRYPTO_VERSION"].toString()
             val androidxTestJunitVersion = extra["ANDROIDX_TEST_JUNIT_VERSION"].toString()
             val androidxTestMacrobenchmarkVersion = extra["ANDROIDX_TEST_MACROBENCHMARK_VERSION"].toString()
@@ -159,8 +158,6 @@ dependencyResolutionManagement {
             library("androidx-navigation-fragment", "androidx.navigation:navigation-fragment-ktx:$androidxNavigationFragmentVersion")
             library("androidx-navigation-ui", "androidx.navigation:navigation-ui-ktx:$androidxNavigationVersion")
             library("androidx-profileinstaller", "androidx.profileinstaller:profileinstaller:$androidxProfileInstallerVersion")
-            library("androidx-room-compiler", "androidx.room:room-compiler:$androidxRoomVersion")
-            library("androidx-room-core", "androidx.room:room-ktx:$androidxRoomVersion")
             library("androidx-sqlite", "androidx.sqlite:sqlite-ktx:${androidxDatabaseVersion}")
             library("androidx-sqlite-framework", "androidx.sqlite:sqlite-framework:${androidxDatabaseVersion}")
             library("androidx-viewmodel-compose", "androidx.lifecycle:lifecycle-viewmodel-compose:$androidxLifecycleVersion")
