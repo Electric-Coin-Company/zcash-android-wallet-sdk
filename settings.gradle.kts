@@ -119,7 +119,6 @@ dependencyResolutionManagement {
             val kotlinxCoroutinesVersion = extra["KOTLINX_COROUTINES_VERSION"].toString()
             val kotlinxDateTimeVersion = extra["KOTLINX_DATETIME_VERSION"].toString()
             val kotlinxImmutableCollectionsVersion = extra["KOTLINX_IMMUTABLE_COLLECTIONS_VERSION"].toString()
-            val mockitoKotlinVersion = extra["MOCKITO_KOTLIN_VERSION"].toString()
             val mockitoVersion = extra["MOCKITO_VERSION"].toString()
             val protocVersion = extra["PROTOC_VERSION"].toString()
             val rustGradlePluginVersion = extra["RUST_GRADLE_PLUGIN_VERSION"].toString()
@@ -210,7 +209,6 @@ dependencyResolutionManagement {
             library("kotlinx-coroutines-test", "org.jetbrains.kotlinx:kotlinx-coroutines-test:$kotlinxCoroutinesVersion")
             library("mockito-android", "org.mockito:mockito-android:$mockitoVersion")
             library("mockito-junit", "org.mockito:mockito-junit-jupiter:$mockitoVersion")
-            library("mockito-kotlin", "com.nhaarman.mockitokotlin2:mockito-kotlin:$mockitoKotlinVersion")
 
             // Bundles
             bundle(
