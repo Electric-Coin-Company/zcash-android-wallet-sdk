@@ -122,12 +122,10 @@ dependencies {
     // was buggy, crashing in several places. It also would require a separate test flavor because it's minimum API 26
     // because "JUnit 5 uses Java 8-specific APIs that didn't exist on Android before the Oreo release."
     androidTestImplementation(libs.androidx.multidex)
-    androidTestImplementation(libs.mockito.kotlin)
     androidTestImplementation(libs.mockito.android)
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.junit)
     androidTestImplementation(libs.androidx.test.core)
-    androidTestImplementation(libs.coroutines.okhttp)
     androidTestImplementation(libs.kotlin.test)
     androidTestImplementation(libs.kotlinx.coroutines.test)
 

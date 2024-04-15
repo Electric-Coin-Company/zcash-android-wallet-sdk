@@ -66,9 +66,16 @@ class MainActivity :
         appBarConfiguration =
             AppBarConfiguration(
                 setOf(
-                    R.id.nav_home, R.id.nav_address, R.id.nav_balance, R.id.nav_block, R.id.nav_private_key,
-                    R.id.nav_latest_height, R.id.nav_block_range,
-                    R.id.nav_transactions, R.id.nav_utxos, R.id.nav_send
+                    R.id.nav_home,
+                    R.id.nav_address,
+                    R.id.nav_balance,
+                    R.id.nav_block,
+                    R.id.nav_private_key,
+                    R.id.nav_latest_height,
+                    R.id.nav_block_range,
+                    R.id.nav_transactions,
+                    R.id.nav_utxos,
+                    R.id.nav_send
                 ),
                 drawerLayout
             )

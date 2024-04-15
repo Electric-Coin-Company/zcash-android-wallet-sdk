@@ -6,6 +6,12 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Gradle 8.7
+- Android Gradle Plugin 8.3.0
+- Kotlin 1.9.23
+- Other dependencies update
+
 ## [2.1.0] - 2024-04-09
 
 ### Added

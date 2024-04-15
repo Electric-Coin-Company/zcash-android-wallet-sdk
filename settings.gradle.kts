@@ -77,7 +77,7 @@ dependencyResolutionManagement {
         }
     }
 
-    @Suppress("UnstableApiUsage", "MaxLineLength")
+    @Suppress("MaxLineLength")
     versionCatalogs {
         create("libs") {
             val androidGradlePluginVersion = extra["ANDROID_GRADLE_PLUGIN_VERSION"].toString()
@@ -98,7 +98,6 @@ dependencyResolutionManagement {
             val androidxNavigationComposeVersion = extra["ANDROIDX_NAVIGATION_COMPOSE_VERSION"].toString()
             val androidxNavigationFragmentVersion = extra["ANDROIDX_NAVIGATION_FRAGMENT_VERSION"].toString()
             val androidxProfileInstallerVersion = extra["ANDROIDX_PROFILE_INSTALLER_VERSION"].toString()
-            val androidxRoomVersion = extra["ANDROIDX_ROOM_VERSION"].toString()
             val androidxSecurityCryptoVersion = extra["ANDROIDX_SECURITY_CRYPTO_VERSION"].toString()
             val androidxTestJunitVersion = extra["ANDROIDX_TEST_JUNIT_VERSION"].toString()
             val androidxTestMacrobenchmarkVersion = extra["ANDROIDX_TEST_MACROBENCHMARK_VERSION"].toString()
@@ -108,7 +107,6 @@ dependencyResolutionManagement {
             val androidxTracingVersion = extra["ANDROIDX_TRACING_VERSION"].toString()
             val androidxUiAutomatorVersion = extra["ANDROIDX_UI_AUTOMATOR_VERSION"].toString()
             val bip39Version = extra["BIP39_VERSION"].toString()
-            val coroutinesOkhttpVersion = extra["COROUTINES_OKHTTP"].toString()
             val flankVersion = extra["FLANK_VERSION"].toString()
             val googleMaterialVersion = extra["GOOGLE_MATERIAL_VERSION"].toString()
             val grpcJavaVersion = extra["GRPC_VERSION"].toString()
@@ -121,7 +119,6 @@ dependencyResolutionManagement {
             val kotlinxCoroutinesVersion = extra["KOTLINX_COROUTINES_VERSION"].toString()
             val kotlinxDateTimeVersion = extra["KOTLINX_DATETIME_VERSION"].toString()
             val kotlinxImmutableCollectionsVersion = extra["KOTLINX_IMMUTABLE_COLLECTIONS_VERSION"].toString()
-            val mockitoKotlinVersion = extra["MOCKITO_KOTLIN_VERSION"].toString()
             val mockitoVersion = extra["MOCKITO_VERSION"].toString()
             val protocVersion = extra["PROTOC_VERSION"].toString()
             val rustGradlePluginVersion = extra["RUST_GRADLE_PLUGIN_VERSION"].toString()
@@ -159,8 +156,6 @@ dependencyResolutionManagement {
             library("androidx-navigation-fragment", "androidx.navigation:navigation-fragment-ktx:$androidxNavigationFragmentVersion")
             library("androidx-navigation-ui", "androidx.navigation:navigation-ui-ktx:$androidxNavigationVersion")
             library("androidx-profileinstaller", "androidx.profileinstaller:profileinstaller:$androidxProfileInstallerVersion")
-            library("androidx-room-compiler", "androidx.room:room-compiler:$androidxRoomVersion")
-            library("androidx-room-core", "androidx.room:room-ktx:$androidxRoomVersion")
             library("androidx-sqlite", "androidx.sqlite:sqlite-ktx:${androidxDatabaseVersion}")
             library("androidx-sqlite-framework", "androidx.sqlite:sqlite-framework:${androidxDatabaseVersion}")
             library("androidx-viewmodel-compose", "androidx.lifecycle:lifecycle-viewmodel-compose:$androidxLifecycleVersion")
@@ -206,7 +201,6 @@ dependencyResolutionManagement {
             library("androidx-test-orchestrator", "androidx.test:orchestrator:$androidxTestOrchestratorVersion")
             library("androidx-tracing", "androidx.tracing:tracing:$androidxTracingVersion")
             library("androidx-uiAutomator", "androidx.test.uiautomator:uiautomator:$androidxUiAutomatorVersion")
-            library("coroutines-okhttp", "ru.gildor.coroutines:kotlin-coroutines-okhttp:$coroutinesOkhttpVersion")
             library("grpc-testing", "io.grpc:grpc-testing:$grpcJavaVersion")
             library("junit-api", "org.junit.jupiter:junit-jupiter-api:$junitVersion")
             library("junit-engine", "org.junit.jupiter:junit-jupiter-engine:$junitVersion")
@@ -215,7 +209,6 @@ dependencyResolutionManagement {
             library("kotlinx-coroutines-test", "org.jetbrains.kotlinx:kotlinx-coroutines-test:$kotlinxCoroutinesVersion")
             library("mockito-android", "org.mockito:mockito-android:$mockitoVersion")
             library("mockito-junit", "org.mockito:mockito-junit-jupiter:$mockitoVersion")
-            library("mockito-kotlin", "com.nhaarman.mockitokotlin2:mockito-kotlin:$mockitoKotlinVersion")
 
             // Bundles
             bundle(
