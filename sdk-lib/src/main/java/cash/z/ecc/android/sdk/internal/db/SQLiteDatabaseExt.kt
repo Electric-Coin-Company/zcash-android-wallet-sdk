@@ -5,14 +5,13 @@ package cash.z.ecc.android.sdk.internal.db
 import android.database.sqlite.SQLiteDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
 import androidx.sqlite.db.SupportSQLiteQueryBuilder
-import kotlinx.coroutines.Dispatchers
+import cash.z.ecc.android.sdk.internal.SdkDispatchers
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import java.util.Locale
-import kotlin.coroutines.CoroutineContext
 
 /**
- * Performs a query on a background thread.
+ * Performs a query on a background thread using the dedicated [SdkDispatchers.DATABASE_IO] dispatcher.
  *
  * Note that this method is best for small queries, as Cursor has an in-memory window of cached data.  If iterating
  * through a large number of items that exceeds the window, the Cursor may perform additional IO.
@@ -28,7 +27,6 @@ internal fun <T> SQLiteDatabase.queryAndMap(
     orderBy: String? = null,
     limit: String? = null,
     offset: String? = null,
-    coroutineContext: CoroutineContext = Dispatchers.IO,
     cursorParser: CursorParser<T>
 ) = flow<T> {
     // TODO [#703]: Support blobs for argument binding
@@ -64,10 +62,10 @@ internal fun <T> SQLiteDatabase.queryAndMap(
             emit(cursorParser.newObject(it))
         }
     }
-}.flowOn(coroutineContext)
+}.flowOn(SdkDispatchers.DATABASE_IO)
 
 /**
- * Performs a query on a background thread.
+ * Performs a query on a background thread using the dedicated [SdkDispatchers.DATABASE_IO] dispatcher.
  *
  * Note that this method is best for small queries, as Cursor has an in-memory window of cached data.  If iterating
  * through a large number of items that exceeds the window, the Cursor may perform additional IO.
@@ -83,7 +81,6 @@ internal fun <T> SupportSQLiteDatabase.queryAndMap(
     orderBy: String? = null,
     limit: String? = null,
     offset: String? = null,
-    coroutineContext: CoroutineContext = Dispatchers.IO,
     cursorParser: CursorParser<T>
 ) = flow<T> {
     val qb =
@@ -111,4 +108,4 @@ internal fun <T> SupportSQLiteDatabase.queryAndMap(
             emit(cursorParser.newObject(it))
         }
     }
-}.flowOn(coroutineContext)
+}.flowOn(SdkDispatchers.DATABASE_IO)
