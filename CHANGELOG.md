@@ -7,6 +7,7 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- The SDK components no longer contain logging statements in the release build
 - Gradle 8.7
 - Android Gradle Plugin 8.3.0
 - Kotlin 1.9.23
