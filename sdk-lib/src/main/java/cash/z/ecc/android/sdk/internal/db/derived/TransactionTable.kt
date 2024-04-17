@@ -6,10 +6,8 @@ import cash.z.ecc.android.sdk.internal.model.EncodedTransaction
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.FirstClassByteArray
 import cash.z.ecc.android.sdk.model.ZcashNetwork
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.withContext
 import java.util.Locale
 
 internal class TransactionTable(
@@ -57,13 +55,11 @@ internal class TransactionTable(
     }
 
     suspend fun count() =
-        withContext(Dispatchers.IO) {
-            sqliteDatabase.queryAndMap(
-                table = TransactionTableDefinition.TABLE_NAME,
-                columns = PROJECTION_COUNT,
-                cursorParser = { it.getLong(0) }
-            ).first()
-        }
+        sqliteDatabase.queryAndMap(
+            table = TransactionTableDefinition.TABLE_NAME,
+            columns = PROJECTION_COUNT,
+            cursorParser = { it.getLong(0) }
+        ).first()
 
     suspend fun countUnmined() =
         sqliteDatabase.queryAndMap(
