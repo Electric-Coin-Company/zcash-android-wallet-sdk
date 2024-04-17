@@ -743,7 +743,7 @@ private fun validateAlias(alias: String) {
 }
 
 private fun validateLogging() {
-    if (!BuildConfig.DEBUG) {
+    if (BuildConfig.BUILD_TYPE == "release") {
         // In release builds, logs should be stripped by R8 rules
         Twig.assertLoggingStripped()
     }
