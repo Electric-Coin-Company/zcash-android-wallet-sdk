@@ -571,6 +571,8 @@ interface Synchronizer {
 
             validateAlias(alias)
 
+            validateLogging()
+
             val saplingParamTool = SaplingParamTool.new(applicationContext)
 
             val loadedCheckpoint =
@@ -737,5 +739,12 @@ private fun validateAlias(alias: String) {
     ) {
         "ERROR: Invalid alias ($alias). For security, the alias must be shorter than 100 " +
             "characters and only contain letters, digits, hyphens, and underscores."
+    }
+}
+
+private fun validateLogging() {
+    if (!BuildConfig.DEBUG) {
+        // In release builds, logs should be stripped by R8 rules
+        Twig.assertLoggingStripped()
     }
 }
