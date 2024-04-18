@@ -11,11 +11,9 @@ edition = "2018"
 rust-version = "1.77"
 
 [dependencies]
-failure = "0.1"
 hdwallet = "0.4"
 hdwallet-bitcoin = "0.4"
 hex = "0.4"
-jni = { version = "0.21", default-features = false }
 orchard = "0.8"
 prost = "0.12"
 rusqlite = "0.29"
@@ -31,6 +29,10 @@ zcash_proofs = "0.15"
 
 # Initialization
 rayon = "1.7"
+
+# JNI
+anyhow = "1"
+jni = { version = "0.21", default-features = false }
 
 # Logging
 log-panics = "2.0.0"
