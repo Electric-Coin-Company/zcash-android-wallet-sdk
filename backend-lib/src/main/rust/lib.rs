@@ -1652,7 +1652,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeSh
                             {
                                 Ok(Some(addr))
                             } else {
-                                Err(anyhow!("Transparent receiver does not belong to account",))
+                                Err(anyhow!("Transparent receiver does not belong to account"))
                             }
                         }
                     },
