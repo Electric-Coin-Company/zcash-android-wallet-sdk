@@ -8,14 +8,12 @@ authors = [
 description = "JNI backend for the Android wallet SDK"
 publish = false
 edition = "2018"
-rust-version = "1.75"
+rust-version = "1.77"
 
 [dependencies]
-failure = "0.1"
 hdwallet = "0.4"
 hdwallet-bitcoin = "0.4"
 hex = "0.4"
-jni = { version = "0.21", default-features = false }
 orchard = "0.8"
 prost = "0.12"
 rusqlite = "0.29"
@@ -32,6 +30,10 @@ zcash_proofs = "0.15"
 # Initialization
 rayon = "1.7"
 
+# JNI
+anyhow = "1"
+jni = { version = "0.21", default-features = false }
+
 # Logging
 log-panics = "2.0.0"
 paranoid-android = "0.2"
@@ -39,7 +41,7 @@ tracing = "0.1"
 tracing-subscriber = "0.3"
 
 # Conditional access to newer NDK features
-dlopen2 = "0.6"
+dlopen2 = "0.7"
 libc = "0.2"
 
 ## Uncomment this to test librustzcash changes locally
