@@ -82,8 +82,8 @@ class ConversionsTest {
 
     @Test
     fun `toZec reduces precision`() {
-        val amount = "20.37905033625433054819645404524149".safelyConvertToBigDecimal()
-        val expected = "20.379050".safelyConvertToBigDecimal()
+        val amount = "20.37905033625433054819645404524149".safelyConvertToBigDecimal('.')
+        val expected = "20.379050".safelyConvertToBigDecimal('.')
         assertEquals(expected, amount.toZec(6))
         assertEquals("20.37905", amount.toZecString(6))
     }
@@ -91,8 +91,8 @@ class ConversionsTest {
     @Test
     fun `convert usd to zec`() {
         val price = BigDecimal("49.07", MathContext.DECIMAL128)
-        val usdValue = "1000".safelyConvertToBigDecimal()
+        val usdValue = "1000".safelyConvertToBigDecimal('.')
         val zecValue = usdValue.convertUsdToZec(price)
-        assertEquals("20.379050".safelyConvertToBigDecimal(), zecValue.toZec(6))
+        assertEquals("20.379050".safelyConvertToBigDecimal('.'), zecValue.toZec(6))
     }
 }

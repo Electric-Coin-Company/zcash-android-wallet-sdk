@@ -334,14 +334,14 @@ fun BigDecimal.convertCurrency(
  *
  * @return this string as a BigDecimal or null when parsing fails.
  */
-fun String?.safelyConvertToBigDecimal(): BigDecimal? {
+fun String?.safelyConvertToBigDecimal(decimalSeparator: Char): BigDecimal? {
     if (this.isNullOrEmpty()) {
         return BigDecimal.ZERO
     }
     val result =
         try {
             // ignore commas and whitespace
-            val sanitizedInput = this.filter { it.isDigit() or (it == '.') }
+            val sanitizedInput = this.filter { it.isDigit() or (it == decimalSeparator) }
             BigDecimal.ZERO.max(BigDecimal(sanitizedInput, MathContext.DECIMAL128))
         } catch (nfe: NumberFormatException) {
             Twig.debug(nfe) { "Exception while converting String to BigDecimal" }
