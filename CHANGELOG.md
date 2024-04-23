@@ -6,9 +6,11 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.1] - 2024-04-23
+
 ### Changed
 - The SDK components no longer contain logging statements in the release build
-- `safelyConvertToBigDecimal()` API from `CurrencyFormatter.kt` now excepts decimal separator Char on input
+- `safelyConvertToBigDecimal()` API from `CurrencyFormatter.kt` now expects decimal separator Char on input
 - Gradle 8.7
 - Android Gradle Plugin 8.3.0
 - Kotlin 1.9.23
