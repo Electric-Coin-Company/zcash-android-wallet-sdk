@@ -12,6 +12,7 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Android Gradle Plugin 8.3.0
 - Kotlin 1.9.23
 - Other dependencies update
+- `safelyConvertToBigDecimal()` API from `CurrencyFormatter.kt` now excepts decimal separator Char on input 
 
 ## [2.1.0] - 2024-04-09
 
