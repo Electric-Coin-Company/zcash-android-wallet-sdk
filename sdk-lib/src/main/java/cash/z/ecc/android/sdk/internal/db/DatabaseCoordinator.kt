@@ -182,6 +182,8 @@ internal class DatabaseCoordinator private constructor(context: Context) {
 
             val cacheDeleted = fsBlockDbRoot(network, alias).deleteRecursivelySuspend()
 
+            Twig.info { "Delete databases result: ${dataDeleted || cacheDeleted}" }
+
             return dataDeleted || cacheDeleted
         }
     }

@@ -172,6 +172,32 @@ class WalletCoordinator(
         }
     }
 
+    /**
+     * This Flow-providing function deletes all the persisted data in the SDK (databases associated with this wallet,
+     * all compact blocks, and data derived from those blocks) but preserves the wallet secrets. This function
+     * requires secrets available on the device at the time of running.
+     */
+    fun deleteSdkDataFlow(): Flow<Boolean> =
+        callbackFlow {
+            walletScope.launch {
+                val zcashNetwork = persistableWallet.first()?.network
+                if (null != zcashNetwork) {
+                    synchronizerMutex.withLock {
+                        val didDelete =
+                            Synchronizer.erase(
+                                appContext = applicationContext,
+                                network = zcashNetwork
+                            )
+                        Twig.info { "SDK erase result: $didDelete" }
+                        trySend(didDelete)
+                    }
+                }
+            }
+            awaitClose {
+                // Nothing to close here
+            }
+        }
+
     // Allows for extension functions
     companion object
 }
