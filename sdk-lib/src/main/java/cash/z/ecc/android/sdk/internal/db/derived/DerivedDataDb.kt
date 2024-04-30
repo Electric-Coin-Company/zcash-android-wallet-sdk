@@ -3,13 +3,13 @@ package cash.z.ecc.android.sdk.internal.db.derived
 import android.content.Context
 import androidx.sqlite.db.SupportSQLiteDatabase
 import cash.z.ecc.android.sdk.internal.NoBackupContextWrapper
+import cash.z.ecc.android.sdk.internal.SdkDispatchers
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.TypesafeBackend
 import cash.z.ecc.android.sdk.internal.db.ReadOnlySupportSqliteOpenHelper
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.ZcashNetwork
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 
@@ -25,11 +25,15 @@ internal class DerivedDataDb private constructor(
 
     val txOutputsView = TxOutputsView(zcashNetwork, sqliteDatabase)
 
-    suspend fun close() {
-        withContext(Dispatchers.IO) {
+    suspend fun close() =
+        withContext(SdkDispatchers.DATABASE_IO) {
             sqliteDatabase.close()
         }
-    }
+
+    suspend fun isClosed(): Boolean =
+        withContext(SdkDispatchers.DATABASE_IO) {
+            !sqliteDatabase.isOpen
+        }
 
     companion object {
         // Database migrations are managed by librustzcash.  This is a hard-coded value to ensure that Android's

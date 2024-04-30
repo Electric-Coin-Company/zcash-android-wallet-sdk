@@ -64,4 +64,8 @@ internal class DbDerivedDataRepository(
     override suspend fun close() {
         derivedDataDb.close()
     }
+
+    override suspend fun isClosed(): Boolean {
+        return derivedDataDb.isClosed()
+    }
 }

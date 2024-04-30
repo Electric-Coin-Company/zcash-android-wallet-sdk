@@ -6,6 +6,13 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `SdkSynchronizer.closeFlow()` is a Flow-providing version of `Synchronizer.close()`. It safely closes the 
+  Synchronizer together with the related components.
+- `WalletCoordinator.deleteSdkDataFlow` is a Flow-providing function that deletes all the persisted data in the SDK 
+  (databases associated with the wallet, all compact blocks, and data derived from those blocks) but preserves the 
+  wallet secrets.
+
 ## [2.1.1] - 2024-04-23
 
 ### Changed

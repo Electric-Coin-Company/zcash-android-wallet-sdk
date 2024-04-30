@@ -87,4 +87,6 @@ internal interface DerivedDataRepository {
     fun getRecipients(transactionId: FirstClassByteArray): Flow<TransactionRecipient>
 
     suspend fun close()
+
+    suspend fun isClosed(): Boolean
 }
