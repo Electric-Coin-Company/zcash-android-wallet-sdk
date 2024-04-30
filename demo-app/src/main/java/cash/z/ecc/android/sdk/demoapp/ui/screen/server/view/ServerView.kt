@@ -61,19 +61,28 @@ private fun ComposablePreview() {
     }
 }
 
-// North America  | [na.lightwalletd.com](http://na.lightwalletd.com/) | 443
-// South America | [sa.lightwalletd.com](http://sa.lightwalletd.com/) | 443
-// Europe & Africa | [eu.lightwalletd.com](http://eu.lightwalletd.com/) | 443
-// Asia & Oceania | [ai.lightwalletd.com](http://ai.lightwalletd.com/) | 443
-// Plus current network defaults:
-// Mainnet: mainnet.lightwalletd.com | 9067
-// Testnet: lightwalletd.testnet.electriccoin.co | 9067
+private const val NH_HOST_NA = "na.lightwalletd.com" // NON-NLS
+private const val NH_HOST_SA = "sa.lightwalletd.com" // NON-NLS
+private const val NH_HOST_EU = "eu.lightwalletd.com" // NON-NLS
+private const val NH_HOST_AI = "ai.lightwalletd.com" // NON-NLS
+private const val NH_PORT = 443
 
-const val HOST_NA = "na.lightwalletd.com" // NON-NLS
-const val HOST_SA = "sa.lightwalletd.com" // NON-NLS
-const val HOST_EU = "eu.lightwalletd.com" // NON-NLS
-const val HOST_AI = "ai.lightwalletd.com" // NON-NLS
-const val PORT = 443
+private const val YW_HOST_1 = "lwd1.zcash-infra.com" // NON-NLS
+private const val YW_HOST_2 = "lwd2.zcash-infra.com" // NON-NLS
+private const val YW_HOST_3 = "lwd3.zcash-infra.com" // NON-NLS
+private const val YW_HOST_4 = "lwd4.zcash-infra.com" // NON-NLS
+private const val YW_HOST_5 = "lwd5.zcash-infra.com" // NON-NLS
+private const val YW_HOST_6 = "lwd6.zcash-infra.com" // NON-NLS
+private const val YW_HOST_7 = "lwd7.zcash-infra.com" // NON-NLS
+private const val YW_HOST_8 = "lwd8.zcash-infra.com" // NON-NLS
+private const val YW_PORT = 9067
+
+private const val ZR_HOST = "zec.rocks" // NON-NLS
+private const val ZR_HOST_NA = "na.zec.rocks" // NON-NLS
+private const val ZR_HOST_SA = "sa.zec.rocks" // NON-NLS
+private const val ZR_HOST_EU = "eu.zec.rocks" // NON-NLS
+private const val ZR_HOST_AP = "ap.zec.rocks" // NON-NLS
+private const val ZR_PORT = 443
 
 @Composable
 fun Server(
@@ -135,16 +144,37 @@ fun ServerSwitch(
 
     val options =
         buildList {
+            // Default servers
             if (buildInNetwork == ZcashNetwork.Mainnet) {
                 add(LightWalletEndpoint.Mainnet)
-                add(LightWalletEndpoint(HOST_NA, PORT, true))
-                add(LightWalletEndpoint(HOST_SA, PORT, true))
-                add(LightWalletEndpoint(HOST_EU, PORT, true))
-                add(LightWalletEndpoint(HOST_AI, PORT, true))
             } else {
                 add(LightWalletEndpoint.Testnet)
             }
 
+            // Then alternative servers
+            if (buildInNetwork == ZcashNetwork.Mainnet) {
+                add(LightWalletEndpoint(NH_HOST_NA, NH_PORT, true))
+                add(LightWalletEndpoint(NH_HOST_SA, NH_PORT, true))
+                add(LightWalletEndpoint(NH_HOST_EU, NH_PORT, true))
+                add(LightWalletEndpoint(NH_HOST_AI, NH_PORT, true))
+
+                add(LightWalletEndpoint(YW_HOST_1, YW_PORT, true))
+                add(LightWalletEndpoint(YW_HOST_2, YW_PORT, true))
+                add(LightWalletEndpoint(YW_HOST_3, YW_PORT, true))
+                add(LightWalletEndpoint(YW_HOST_4, YW_PORT, true))
+                add(LightWalletEndpoint(YW_HOST_5, YW_PORT, true))
+                add(LightWalletEndpoint(YW_HOST_6, YW_PORT, true))
+                add(LightWalletEndpoint(YW_HOST_7, YW_PORT, true))
+                add(LightWalletEndpoint(YW_HOST_8, YW_PORT, true))
+
+                add(LightWalletEndpoint(ZR_HOST, ZR_PORT, true))
+                add(LightWalletEndpoint(ZR_HOST_NA, ZR_PORT, true))
+                add(LightWalletEndpoint(ZR_HOST_SA, ZR_PORT, true))
+                add(LightWalletEndpoint(ZR_HOST_EU, ZR_PORT, true))
+                add(LightWalletEndpoint(ZR_HOST_AP, ZR_PORT, true))
+            }
+
+            // Custom server
             if (contains(wallet.endpoint)) {
                 // The custom server is defined as secured by default
                 add(LightWalletEndpoint("", -1, true))
@@ -240,7 +270,7 @@ fun ServerSwitch(
             onClick = {
                 val selectedServer =
                     if (selectedOptionIndex == options.lastIndex) {
-                        Twig.info { "Built custom server from: $customServerTextFieldValue" }
+                        Twig.info { "Building custom server from: $customServerTextFieldValue" }
 
                         if (!validateCustomServerValue(customServerTextFieldValue)) {
                             customServerError = context.getString(R.string.server_textfield_error)
@@ -249,6 +279,7 @@ fun ServerSwitch(
 
                         customServerTextFieldValue.toEndpoint()
                     } else {
+                        Twig.info { "Building  regular server from: ${options[selectedOptionIndex]}" }
                         options[selectedOptionIndex]
                     }
 
