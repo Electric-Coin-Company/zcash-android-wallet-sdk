@@ -394,10 +394,11 @@ class RustBackend private constructor(
     companion object {
         internal val rustLibraryLoader = NativeLibraryLoader("zcashwalletsdk")
         private const val IS_USE_ZIP_317_FEES = true
+        private const val IS_VERBOSE_LOGGING = false
 
         suspend fun loadLibrary() {
             rustLibraryLoader.load {
-                initOnLoad()
+                initOnLoad(IS_VERBOSE_LOGGING)
             }
         }
 
@@ -428,7 +429,7 @@ class RustBackend private constructor(
         //
 
         @JvmStatic
-        private external fun initOnLoad()
+        private external fun initOnLoad(showTraceLogs: Boolean)
 
         @JvmStatic
         private external fun initBlockMetaDb(fsBlockDbRoot: String): Int

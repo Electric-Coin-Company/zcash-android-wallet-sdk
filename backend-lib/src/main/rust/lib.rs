@@ -145,16 +145,29 @@ fn account_id_from_jni<'local, P: Parameters>(
     }
 }
 
+/// Initializes global Rust state, such as the logging infrastructure and threadpools.
+///
+/// When `show_trace_logs` is `true`, Rust events at the `TRACE` level will be logged, events at the `DEBUG` level
+/// will be logged otherwise.
+///
+/// # Panics
+///
+/// This method panics if called more than once.
 #[no_mangle]
 pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_initOnLoad<'local>(
     _env: JNIEnv<'local>,
     _: JClass<'local>,
+    show_trace_logs: jboolean
 ) {
     // Set up the Android tracing layer.
     #[cfg(target_os = "android")]
     let android_layer = paranoid_android::layer("cash.z.rust.logs")
         .with_ansi(false)
-        .with_filter(tracing_subscriber::filter::LevelFilter::INFO);
+        .with_filter(if show_trace_logs == JNI_TRUE {
+            tracing_subscriber::filter::LevelFilter::TRACE
+        } else {
+            tracing_subscriber::filter::LevelFilter::DEBUG
+        });
 
     // Generate Android trace events from `tracing` spans.
     let (trace_event_layer, reload_handle) = reload::Layer::new(utils::trace::Layer::new(None));
