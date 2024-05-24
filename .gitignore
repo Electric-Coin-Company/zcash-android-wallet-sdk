@@ -53,6 +53,8 @@ captures/
 .idea/appInsightsSettings.xml
 .idea/migrations.xml
 .idea/deploymentTargetSelector.xml
+.idea/other.xml
+.idea/studiobot.xml
 *.iml
 
 # Keystore files

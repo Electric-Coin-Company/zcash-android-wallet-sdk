@@ -13,6 +13,9 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (databases associated with the wallet, all compact blocks, and data derived from those blocks) but preserves the 
   wallet secrets.
 
+### Changed
+- Checkpoints update
+
 ## [2.1.1] - 2024-04-23
 
 ### Changed
