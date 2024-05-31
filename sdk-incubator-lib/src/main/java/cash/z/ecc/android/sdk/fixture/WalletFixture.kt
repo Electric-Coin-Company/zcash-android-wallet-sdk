@@ -27,25 +27,13 @@ sealed class WalletFixture {
     )
 
     @Suppress("MaxLineLength")
-    object Ben : WalletFixture() {
+    data object Ben : WalletFixture() {
         override val seedPhrase: String
             get() =
                 "kitchen renew wide common vague fold vacuum tilt amazing pear square gossip jewel month tree" +
                     " shock scan alpha just spot fluid toilet view dinner"
 
-        // These birthdays were the latest checkpoint at the time this was implemented
-        // Moving these forward will improve testing time, while leaving old transactions behind
-        @Suppress("MagicNumber")
-        override fun getBirthday(zcashNetwork: ZcashNetwork) =
-            when (zcashNetwork.id) {
-                ZcashNetwork.ID_TESTNET -> {
-                    BlockHeight.new(zcashNetwork, 2170000L)
-                }
-                ZcashNetwork.ID_MAINNET -> {
-                    BlockHeight.new(zcashNetwork, 1935000L)
-                }
-                else -> error("Unknown network $zcashNetwork")
-            }
+        override fun getBirthday(zcashNetwork: ZcashNetwork) = lastKnownBirthday(zcashNetwork)
 
         @Suppress("ktlint:standard:max-line-length")
         override fun getAddresses(zcashNetwork: ZcashNetwork) =
@@ -73,25 +61,13 @@ sealed class WalletFixture {
     }
 
     @Suppress("MaxLineLength")
-    object Alice : WalletFixture() {
+    data object Alice : WalletFixture() {
         override val seedPhrase: String
             get() =
                 "wish puppy smile loan doll curve hole maze file ginger hair nose key relax knife witness cannon" +
                     " grab despair throw review deal slush frame"
 
-        // These birthdays were the latest checkpoint at the time this was implemented
-        // Moving these forward will improve testing time, while leaving old transactions behind
-        @Suppress("MagicNumber")
-        override fun getBirthday(zcashNetwork: ZcashNetwork) =
-            when (zcashNetwork.id) {
-                ZcashNetwork.ID_TESTNET -> {
-                    BlockHeight.new(zcashNetwork, 2170000L)
-                }
-                ZcashNetwork.ID_MAINNET -> {
-                    BlockHeight.new(zcashNetwork, 1935000L)
-                }
-                else -> error("Unknown network $zcashNetwork")
-            }
+        override fun getBirthday(zcashNetwork: ZcashNetwork) = lastKnownBirthday(zcashNetwork)
 
         @Suppress("ktlint:standard:max-line-length")
         override fun getAddresses(zcashNetwork: ZcashNetwork) =
@@ -113,6 +89,22 @@ sealed class WalletFixture {
                             "zs15tzaulx5weua5c7l47l4pku2pw9fzwvvnsp4y80jdpul0y3nwn5zp7tmkcclqaca3mdjqjkl7hx",
                         transparent = "t1duiEGg7b39nfQee3XaTY4f5McqfyJKhBi"
                     )
+                }
+                else -> error("Unknown network $zcashNetwork")
+            }
+    }
+
+    companion object {
+        // These birthdays were the latest checkpoint at the time this was implemented
+        // Moving these forward will improve testing time, while leaving old transactions behind
+        @Suppress("MagicNumber")
+        fun lastKnownBirthday(zcashNetwork: ZcashNetwork) =
+            when (zcashNetwork.id) {
+                ZcashNetwork.ID_TESTNET -> {
+                    BlockHeight.new(zcashNetwork, 2170000L)
+                }
+                ZcashNetwork.ID_MAINNET -> {
+                    BlockHeight.new(zcashNetwork, 1935000L)
                 }
                 else -> error("Unknown network $zcashNetwork")
             }
