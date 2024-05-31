@@ -78,6 +78,7 @@ interface Backend {
 
     fun isValidUnifiedAddr(addr: String): Boolean
 
+    @Throws(RuntimeException::class)
     suspend fun getCurrentAddress(account: Int): String
 
     fun getTransparentReceiver(ua: String): String?
@@ -132,6 +133,7 @@ interface Backend {
      * @return The height to which the wallet has been fully scanned, or Null if no blocks have been scanned.
      * @throws RuntimeException as a common indicator of the operation failure
      */
+    @Throws(RuntimeException::class)
     suspend fun getFullyScannedHeight(): Long?
 
     /**
@@ -144,6 +146,7 @@ interface Backend {
      * @return The maximum height that the wallet has scanned, or Null if no blocks have been scanned.
      * @throws RuntimeException as a common indicator of the operation failure
      */
+    @Throws(RuntimeException::class)
     suspend fun getMaxScannedHeight(): Long?
 
     /**

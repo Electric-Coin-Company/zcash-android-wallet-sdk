@@ -10,6 +10,9 @@ import cash.z.ecc.android.sdk.model.FirstClassByteArray
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 
+// TODO [#1484]: Validate and standardize SDK exceptions
+// TODO [#1484]: https://github.com/Electric-Coin-Company/zcash-android-wallet-sdk/issues/1484
+
 /**
  * Marker for all custom exceptions from the SDK. Making it an interface would result in more typing
  * so it's a supertype, instead.
@@ -17,14 +20,25 @@ import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 open class SdkException(message: String, cause: Throwable?) : RuntimeException(message, cause)
 
 /**
- * Exceptions thrown in the Rust layer of the SDK. We may not always be able to surface details about this
- * exception so it's important for the SDK to provide helpful messages whenever these errors are encountered.
+ * Exceptions thrown in the Rust layer as [RuntimeException] that the Kotlin layer translates to a more detailed ones.
+ * It's important for the SDK to provide helpful messages whenever these errors are encountered.
  */
 sealed class RustLayerException(message: String, cause: Throwable? = null) : SdkException(message, cause) {
-    class BalanceException(cause: Throwable) : RustLayerException(
-        "Error while requesting the current balance over " +
-            "JNI. This might mean that the database has been corrupted and needs to be rebuilt. Verify that " +
-            "blocks are not missing or have not been scanned out of order.",
+    class GetCurrentAddressException(cause: Throwable) : RustLayerException(
+        "Error while requesting the current address from the Rust layer over JNI. This might mean that the SDK is " +
+            "not yet correctly set up.",
+        cause
+    )
+
+    class GetFullyScannedHeight(cause: Throwable) : RustLayerException(
+        "Error while requesting the fully scanned height from the Rust layer over JNI. This might mean that the SDK " +
+            "is not yet correctly set up.",
+        cause
+    )
+
+    class GetMaxScannedHeight(cause: Throwable) : RustLayerException(
+        "Error while requesting the max scanned height from the Rust layer over JNI. This might mean that the SDK " +
+            "is not yet correctly set up.",
         cause
     )
 }

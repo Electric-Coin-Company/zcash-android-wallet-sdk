@@ -1,6 +1,7 @@
 package cash.z.ecc.android.sdk.internal
 
 import cash.z.ecc.android.sdk.exception.InitializeException
+import cash.z.ecc.android.sdk.exception.RustLayerException
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.internal.model.ScanRange
 import cash.z.ecc.android.sdk.internal.model.ScanSummary
@@ -46,6 +47,7 @@ internal interface TypesafeBackend {
         usk: UnifiedSpendingKey
     ): List<FirstClassByteArray>
 
+    @Throws(RustLayerException.GetCurrentAddressException::class)
     suspend fun getCurrentAddress(account: Account): String
 
     suspend fun listTransparentReceivers(account: Account): List<String>
@@ -107,8 +109,9 @@ internal interface TypesafeBackend {
      * preceding blocks above the wallet's birthday height.
      *
      * @return The height to which the wallet has been fully scanned, or Null if no blocks have been scanned.
-     * @throws RuntimeException as a common indicator of the operation failure
+     * @throws RustLayerException.GetFullyScannedHeight as a common indicator of the operation failure
      */
+    @Throws(RustLayerException.GetFullyScannedHeight::class)
     suspend fun getFullyScannedHeight(): BlockHeight?
 
     /**
@@ -119,8 +122,9 @@ internal interface TypesafeBackend {
      * height due to the fact that out-of-order scanning can leave gaps.
      *
      * @return The maximum height that the wallet has scanned, or Null if no blocks have been scanned.
-     * @throws RuntimeException as a common indicator of the operation failure
+     * @throws RustLayerException.GetMaxScannedHeight as a common indicator of the operation failure
      */
+    @Throws(RustLayerException.GetMaxScannedHeight::class)
     suspend fun getMaxScannedHeight(): BlockHeight?
 
     /**

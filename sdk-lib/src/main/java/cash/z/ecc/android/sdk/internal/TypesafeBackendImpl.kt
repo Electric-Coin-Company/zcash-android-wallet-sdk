@@ -1,6 +1,7 @@
 package cash.z.ecc.android.sdk.internal
 
 import cash.z.ecc.android.sdk.exception.InitializeException
+import cash.z.ecc.android.sdk.exception.RustLayerException
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.internal.model.JniSubtreeRoot
 import cash.z.ecc.android.sdk.internal.model.ScanRange
@@ -80,7 +81,11 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
         ).map { FirstClassByteArray(it) }
 
     override suspend fun getCurrentAddress(account: Account): String {
-        return backend.getCurrentAddress(account.value)
+        return runCatching {
+            backend.getCurrentAddress(account.value)
+        }.onFailure {
+            Twig.error(it) { "Failed to get current address" }
+        }.getOrElse { throw RustLayerException.GetCurrentAddressException(it) }
     }
 
     override suspend fun listTransparentReceivers(account: Account): List<String> {
@@ -195,21 +200,29 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
     override suspend fun updateChainTip(height: BlockHeight) = backend.updateChainTip(height.value)
 
     override suspend fun getFullyScannedHeight(): BlockHeight? {
-        return backend.getFullyScannedHeight()?.let {
-            BlockHeight.new(
-                ZcashNetwork.from(backend.networkId),
-                it
-            )
-        }
+        return runCatching {
+            backend.getFullyScannedHeight()?.let {
+                BlockHeight.new(
+                    ZcashNetwork.from(backend.networkId),
+                    it
+                )
+            }
+        }.onFailure {
+            Twig.error(it) { "Failed to get fully scanned height" }
+        }.getOrElse { throw RustLayerException.GetFullyScannedHeight(it) }
     }
 
     override suspend fun getMaxScannedHeight(): BlockHeight? {
-        return backend.getMaxScannedHeight()?.let {
-            BlockHeight.new(
-                ZcashNetwork.from(backend.networkId),
-                it
-            )
-        }
+        return runCatching {
+            backend.getMaxScannedHeight()?.let {
+                BlockHeight.new(
+                    ZcashNetwork.from(backend.networkId),
+                    it
+                )
+            }
+        }.onFailure {
+            Twig.error(it) { "Failed to get max scanned height" }
+        }.getOrElse { throw RustLayerException.GetMaxScannedHeight(it) }
     }
 
     override suspend fun scanBlocks(
