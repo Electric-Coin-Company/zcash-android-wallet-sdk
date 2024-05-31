@@ -198,7 +198,13 @@ class SdkSynchronizer private constructor(
     override val transactions
         get() =
             combine(processor.networkHeight, storage.allTransactions) { networkHeight, allTransactions ->
-                val latestBlockHeight = networkHeight ?: backend.getMaxScannedHeight()
+                val latestBlockHeight =
+                    networkHeight ?: runCatching {
+                        backend.getMaxScannedHeight()
+                    }.onFailure {
+                        Twig.error(it) { "Failed to get max scanned height" }
+                    }.getOrNull()
+
                 allTransactions.map { TransactionOverview.new(it, latestBlockHeight) }
             }
 
