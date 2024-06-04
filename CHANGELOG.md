@@ -12,7 +12,6 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `WalletCoordinator.deleteSdkDataFlow` is a Flow-providing function that deletes all the persisted data in the SDK 
   (databases associated with the wallet, all compact blocks, and data derived from those blocks) but preserves the 
   wallet secrets.
-- Added ability to restore wallet using seed phrase and birthday value.
 
 ### Changed
 - Checkpoints update
