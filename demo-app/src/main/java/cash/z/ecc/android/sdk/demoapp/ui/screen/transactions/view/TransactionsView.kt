@@ -69,7 +69,13 @@ fun Transactions(
         // TODO [#846]: https://github.com/zcash/zcash-android-wallet-sdk/issues/846
         val walletAddresses =
             flow {
-                emit(WalletAddresses.new(synchronizer))
+                emit(
+                    runCatching {
+                        WalletAddresses.new(synchronizer)
+                    }.onFailure {
+                        Twig.warn { "Wait until the SDK starts providing the addresses" }
+                    }.getOrNull()
+                )
             }.collectAsState(
                 initial = null
             ).value
