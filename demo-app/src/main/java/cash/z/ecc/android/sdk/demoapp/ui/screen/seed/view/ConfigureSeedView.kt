@@ -33,6 +33,7 @@ import cash.z.ecc.android.sdk.WalletInitMode
 import cash.z.ecc.android.sdk.demoapp.R
 import cash.z.ecc.android.sdk.demoapp.ext.defaultForNetwork
 import cash.z.ecc.android.sdk.fixture.WalletFixture
+import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.PersistableWallet
 import cash.z.ecc.android.sdk.model.SeedPhrase
@@ -180,7 +181,9 @@ private fun RestoreWalletSection(
                     )
                 onExistingWallet(wallet)
             } catch (e: IllegalArgumentException) {
-                Toast.makeText(context, e.message, Toast.LENGTH_LONG).show()
+                val errorMessage = e.message ?: "Unknown error"
+                Toast.makeText(context, errorMessage, Toast.LENGTH_LONG).show()
+                Twig.error(e) { errorMessage }
             }
         }
 
