@@ -26,6 +26,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.demoapp.R
+import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.model.WalletAddresses
 import kotlinx.coroutines.flow.flow
 
@@ -59,7 +60,13 @@ fun Addresses(
         // TODO [#846]: https://github.com/zcash/zcash-android-wallet-sdk/issues/846
         val walletAddresses =
             flow {
-                emit(WalletAddresses.new(synchronizer))
+                emit(
+                    runCatching {
+                        WalletAddresses.new(synchronizer)
+                    }.onFailure {
+                        Twig.warn { "Wait until the SDK starts providing the addresses" }
+                    }.getOrNull()
+                )
             }.collectAsState(
                 initial = null
             ).value
