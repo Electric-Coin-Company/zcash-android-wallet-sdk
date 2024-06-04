@@ -11,6 +11,8 @@ import cash.z.ecc.android.sdk.internal.model.JniSubtreeRoot
 import cash.z.ecc.android.sdk.internal.model.JniUnifiedSpendingKey
 import cash.z.ecc.android.sdk.internal.model.JniWalletSummary
 import cash.z.ecc.android.sdk.internal.model.ProposalUnsafe
+import cash.z.ecc.android.sdk.internal.model.RustLogging
+import cash.z.ecc.android.sdk.internal.model.isNotLoggingInProduction
 import kotlinx.coroutines.withContext
 import java.io.File
 
@@ -395,9 +397,15 @@ class RustBackend private constructor(
         internal val rustLibraryLoader = NativeLibraryLoader("zcashwalletsdk")
         private const val IS_USE_ZIP_317_FEES = true
 
+        private val rustLogging: RustLogging = RustLogging.Off
+
         suspend fun loadLibrary() {
             rustLibraryLoader.load {
-                initOnLoad()
+                require(rustLogging.isNotLoggingInProduction()) {
+                    "Rust layer logging must be turned off in production build"
+                }
+
+                initOnLoad(rustLogging.identifier)
             }
         }
 
@@ -428,7 +436,7 @@ class RustBackend private constructor(
         //
 
         @JvmStatic
-        private external fun initOnLoad()
+        private external fun initOnLoad(logLevel: String)
 
         @JvmStatic
         private external fun initBlockMetaDb(fsBlockDbRoot: String): Int

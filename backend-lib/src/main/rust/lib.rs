@@ -145,16 +145,44 @@ fn account_id_from_jni<'local, P: Parameters>(
     }
 }
 
+/// Initializes global Rust state, such as the logging infrastructure and threadpools.
+///
+/// When `log_level` defines how the Rust layer logs its events. These values are supported:
+/// `trace` - Logs very low priority, often extremely verbose, information
+/// `debug` - Logs lower priority information
+/// `off` - The logs are completely disabled
+///
+/// # Panics
+///
+/// This method panics if called more than once.
 #[no_mangle]
 pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_initOnLoad<'local>(
-    _env: JNIEnv<'local>,
+    mut _env: JNIEnv<'local>,
     _: JClass<'local>,
+    _log_level: JString<'local>,
 ) {
     // Set up the Android tracing layer.
     #[cfg(target_os = "android")]
-    let android_layer = paranoid_android::layer("cash.z.rust.logs")
-        .with_ansi(false)
-        .with_filter(tracing_subscriber::filter::LevelFilter::INFO);
+    let android_layer = {
+        let log_filter = _env
+            .get_string(&_log_level)
+            .ok()
+            .as_ref()
+            .and_then(|s| s.to_str().ok())
+            .unwrap_or_else(|| {
+                eprintln!("log_level not UTF-8, falling back on 'debug' level");
+                "debug"
+            })
+            .parse()
+            .unwrap_or_else(|_| {
+                eprintln!("log_level not a valid level, falling back on 'debug' level");
+                tracing::level_filters::LevelFilter::DEBUG
+            });
+
+        paranoid_android::layer("cash.z.rust.logs")
+            .with_ansi(false)
+            .with_filter(log_filter)
+    };
 
     // Generate Android trace events from `tracing` spans.
     let (trace_event_layer, reload_handle) = reload::Layer::new(utils::trace::Layer::new(None));
