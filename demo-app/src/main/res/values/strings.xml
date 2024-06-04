@@ -1,4 +1,8 @@
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+
+    <string name="pending">Pending</string>
+    <string name="unknown">Unknown</string>
+
     <string name="app_name">Demo App</string>
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
@@ -85,4 +89,11 @@
     <string name="server_save">Save</string>
 
     <string name="transactions_refresh">Refresh transactions</string>
+
+    <string name="transaction_time">Time:</string>
+    <string name="transaction_value">Value:</string>
+    <string name="transaction_fee">Fee:</string>
+    <string name="transaction_fee_unavailable">Unavailable</string>
+    <string name="transaction_status">Status:</string>
+
 </resources>
