@@ -49,7 +49,7 @@ internal fun Transaction(state: TransactionState) {
 }
 
 @Composable
-@Suppress("ktlint:standard:function-naming")
+@Suppress("ktlint:standard:function-naming", "MagicNumber")
 private fun TransactionRow(
     title: String,
     value: String
