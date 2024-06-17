@@ -10,31 +10,40 @@ import cash.z.ecc.android.sdk.model.TransactionOverview
 import cash.z.ecc.android.sdk.model.toFiatCurrencyState
 import kotlinx.datetime.Instant
 
-internal fun TransactionOverview.toTransactionState(context: Context, onClick: () -> Unit) = TransactionState(
-    time = (minedHeight
-        ?.let {
-            blockTimeEpochSeconds?.let { Instant.fromEpochSeconds(it) }
-                ?: context.getString(R.string.unknown)
-        } ?: context.getString(R.string.pending))
-        .toString(),
-    value = if (isSentTransaction) {
-        -netValue.value
-    } else {
-        netValue.value
-    }.toString(),
-    fee = feePaid?.toFiatCurrencyState(
-        currencyConversion = null,
-        locale = Locale.current.toKotlinLocale(),
-        monetarySeparators = MonetarySeparators.current(java.util.Locale.getDefault())
-    )?.toFiatCurrencyRateValue(context).orEmpty(),
+internal fun TransactionOverview.toTransactionState(
+    context: Context,
+    onClick: () -> Unit
+) = TransactionState(
+    time =
+        (
+            minedHeight
+                ?.let {
+                    blockTimeEpochSeconds?.let { Instant.fromEpochSeconds(it) }
+                        ?: context.getString(R.string.unknown)
+                } ?: context.getString(R.string.pending)
+        )
+            .toString(),
+    value =
+        if (isSentTransaction) {
+            -netValue.value
+        } else {
+            netValue.value
+        }.toString(),
+    fee =
+        feePaid?.toFiatCurrencyState(
+            currencyConversion = null,
+            locale = Locale.current.toKotlinLocale(),
+            monetarySeparators = MonetarySeparators.current(java.util.Locale.getDefault())
+        )?.toFiatCurrencyRateValue(context).orEmpty(),
     status = transactionState.name,
     onClick = onClick
 )
 
 private fun Locale.toKotlinLocale() = cash.z.ecc.android.sdk.model.Locale(language, region, script)
 
-private fun FiatCurrencyConversionRateState.toFiatCurrencyRateValue(context: Context): String = when (this) {
-    is FiatCurrencyConversionRateState.Current -> formattedFiatValue
-    is FiatCurrencyConversionRateState.Stale -> formattedFiatValue
-    is FiatCurrencyConversionRateState.Unavailable -> context.getString(R.string.transaction_fee_unavailable)
-}
+private fun FiatCurrencyConversionRateState.toFiatCurrencyRateValue(context: Context): String =
+    when (this) {
+        is FiatCurrencyConversionRateState.Current -> formattedFiatValue
+        is FiatCurrencyConversionRateState.Stale -> formattedFiatValue
+        is FiatCurrencyConversionRateState.Unavailable -> context.getString(R.string.transaction_fee_unavailable)
+    }

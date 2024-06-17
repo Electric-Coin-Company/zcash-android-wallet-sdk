@@ -31,6 +31,8 @@ import cash.z.ecc.android.sdk.demoapp.R
 import cash.z.ecc.android.sdk.demoapp.util.toTransactionState
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.model.WalletAddresses
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.toList
@@ -38,37 +40,42 @@ import kotlinx.coroutines.launch
 
 @Composable
 @Suppress("ktlint:standard:function-naming")
-fun Transactions(synchronizer: Synchronizer, onBack: () -> Unit) {
+fun Transactions(
+    synchronizer: Synchronizer,
+    onBack: () -> Unit
+) {
     val queryScope = rememberCoroutineScope()
 
     // TODO [#846]: Slow addresses providing
     // TODO [#846]: https://github.com/zcash/zcash-android-wallet-sdk/issues/846
-    val walletAddresses: WalletAddresses? = flow<WalletAddresses?> {
-        emit(WalletAddresses.new(synchronizer))
-    }.catch { emit(null) }.collectAsState(initial = null).value
+    val walletAddresses: WalletAddresses? =
+        flow<WalletAddresses?> {
+            emit(WalletAddresses.new(synchronizer))
+        }.catch { emit(null) }.collectAsState(initial = null).value
 
-    val transactions = if (walletAddresses == null) {
-        emptyList()
-    } else {
-        synchronizer
-            .transactions
-            .collectAsStateWithLifecycle(initialValue = emptyList())
-            .value
-            .map { transactionOverview ->
-                transactionOverview.toTransactionState(
-                    context = LocalContext.current,
-                    onClick = {
-                        queryScope.launch {
-                            synchronizer.getMemos(transactionOverview).toList().run {
-                                Twig.info {
-                                    "Transaction memos: count: $size, contains: ${joinToString().ifEmpty { "-" }}"
+    val transactions =
+        if (walletAddresses == null) {
+            emptyList()
+        } else {
+            synchronizer
+                .transactions
+                .collectAsStateWithLifecycle(initialValue = emptyList())
+                .value
+                .map { transactionOverview ->
+                    transactionOverview.toTransactionState(
+                        context = LocalContext.current,
+                        onClick = {
+                            queryScope.launch {
+                                synchronizer.getMemos(transactionOverview).toList().run {
+                                    Twig.info {
+                                        "Transaction memos: count: $size, contains: ${joinToString().ifEmpty { "-" }}"
+                                    }
                                 }
                             }
                         }
-                    }
-                )
-            }
-    }
+                    )
+                }
+        }.toImmutableList()
 
     TransactionsInternal(
         onBack = onBack,
@@ -77,11 +84,12 @@ fun Transactions(synchronizer: Synchronizer, onBack: () -> Unit) {
     )
 }
 
+@Suppress("ktlint:standard:function-naming")
 @Composable
 private fun TransactionsInternal(
     onBack: () -> Unit,
     onRefresh: () -> Unit,
-    transactions: List<TransactionState>
+    transactions: ImmutableList<TransactionState>
 ) {
     Scaffold(
         topBar = {
@@ -143,26 +151,27 @@ private fun TransactionsTopAppBar(
 @Preview
 @Composable
 @Suppress("ktlint:standard:function-naming")
-private fun TransactionsPreview() = MaterialTheme {
-    TransactionsInternal(
-        onBack = {},
-        onRefresh = {},
-        transactions = listOf(
-            TransactionState(
-                time = "time",
-                value = "value",
-                fee = "fee",
-                status = "status",
-                onClick = {},
-            ),
-            TransactionState(
-                time = "time",
-                value = "value",
-                fee = "fee",
-                status = "status",
-                onClick = {},
-            ),
+private fun TransactionsPreview() =
+    MaterialTheme {
+        TransactionsInternal(
+            onBack = {},
+            onRefresh = {},
+            transactions =
+                listOf(
+                    TransactionState(
+                        time = "time",
+                        value = "value",
+                        fee = "fee",
+                        status = "status",
+                        onClick = {},
+                    ),
+                    TransactionState(
+                        time = "time",
+                        value = "value",
+                        fee = "fee",
+                        status = "status",
+                        onClick = {},
+                    ),
+                ).toImmutableList()
         )
-    )
-}
-
+    }

@@ -18,13 +18,15 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import cash.z.ecc.android.sdk.demoapp.R
 
+@Suppress("ktlint:standard:function-naming")
 @Composable
 internal fun Transaction(state: TransactionState) {
     Column(
-        modifier = Modifier
-            .background(Color.White)
-            .clickable(onClick = state.onClick)
-            .padding(16.dp),
+        modifier =
+            Modifier
+                .background(Color.White)
+                .clickable(onClick = state.onClick)
+                .padding(16.dp),
         verticalArrangement = spacedBy(8.dp)
     ) {
         TransactionRow(
@@ -47,7 +49,11 @@ internal fun Transaction(state: TransactionState) {
 }
 
 @Composable
-private fun TransactionRow(title: String, value: String) {
+@Suppress("ktlint:standard:function-naming")
+private fun TransactionRow(
+    title: String,
+    value: String
+) {
     Row {
         Text(
             color = Color.Gray,
@@ -73,14 +79,17 @@ data class TransactionState(
 
 @Preview
 @Composable
-private fun TransactionPreview() = MaterialTheme {
-    Transaction(
-        state = TransactionState(
-            time = "12:00",
-            value = "1000",
-            fee = "100",
-            status = "success",
-            onClick = {},
+@Suppress("ktlint:standard:function-naming")
+private fun TransactionPreview() =
+    MaterialTheme {
+        Transaction(
+            state =
+                TransactionState(
+                    time = "12:00",
+                    value = "1000",
+                    fee = "100",
+                    status = "success",
+                    onClick = {},
+                )
         )
-    )
-}
+    }
