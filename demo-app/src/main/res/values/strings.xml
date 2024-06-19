@@ -44,7 +44,9 @@
     <string name="person_alyssa">Alyssa P. Hacker</string>
     <string name="person_ben">Ben Bitdiddle</string>
     <string name="seed_custom">Type in a secret phrase</string>
+    <string name="seed_birthday_optional">Type in a birthday (optional)</string>
     <string name="seed_random">Generate a new random secret phrase</string>
+    <string name="seed_restore">Restore wallet</string>
 
     <string name="home_status">Status: <xliff:g id="status" example="Syncing">%1$s</xliff:g></string>
     <string name="home_progress">Progress: <xliff:g id="percentage" example="15%">%1$.2f</xliff:g>%%</string>
