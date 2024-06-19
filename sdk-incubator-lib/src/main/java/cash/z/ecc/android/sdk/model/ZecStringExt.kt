@@ -16,6 +16,9 @@ object ZecStringExt {
      * Valid amounts: "" . | .123 | 123, | 123. | 123,456 | 123.456 | 123,456.789 | 123,456,789 | 123,456,789.123 | etc.
      * Invalid amounts: 123,, | 123,. | 123.. | ,123 | 123.456.789 | etc.
      *
+     * Note that this validation handles locales with the same grouping and decimal separators, which might be
+     * required in some rare cases.
+     *
      * @param context used for loading localized pattern from strings.xml
      * @param separators which consist of localized monetary separators
      * @param zecString to be validated
@@ -27,15 +30,18 @@ object ZecStringExt {
         separators: MonetarySeparators,
         zecString: String
     ): Boolean {
-        if (!context.getString(
+        return if (separators.isGroupingValid()) {
+            context.getString(
                 R.string.co_electriccoin_zcash_zec_amount_regex_continuous_filter,
                 separators.grouping,
                 separators.decimal
-            ).toRegex().matches(zecString) || !checkFor3Digits(separators, zecString)
-        ) {
-            return false
+            ).toRegex().matches(zecString) && checkFor3Digits(separators, zecString)
+        } else {
+            context.getString(
+                R.string.co_electriccoin_zcash_zec_amount_regex_continuous_no_grouping_filter,
+                separators.decimal
+            ).toRegex().matches(zecString)
         }
-        return true
     }
 
     /**
@@ -72,6 +78,9 @@ object ZecStringExt {
      * Valid amounts: 123 | .123 | 123. | 123, | 123.456 | 123,456 | 123,456.789 | 123,456,789 | 123,456,789.123 | etc.
      * Invalid amounts: "" | , | . | 123,, | 123,. | 123.. | ,123 | 123.456.789 | etc.
      *
+     * Note that this validation handles locales with the same grouping and decimal separators, which might be
+     * required in some rare cases.
+     *
      * @param context used for loading localized pattern from strings.xml
      * @param separators which consist of localized monetary separators
      * @param zecString to be validated
@@ -90,12 +99,17 @@ object ZecStringExt {
             return false
         }
 
-        return (
+        return if (separators.isGroupingValid()) {
             context.getString(
                 R.string.co_electriccoin_zcash_zec_amount_regex_confirm_filter,
                 separators.grouping,
                 separators.decimal
             ).toRegex().matches(zecString) && checkFor3Digits(separators, zecString)
-        )
+        } else {
+            context.getString(
+                R.string.co_electriccoin_zcash_zec_amount_regex_confirm_no_grouping_filter,
+                separators.decimal
+            ).toRegex().matches(zecString)
+        }
     }
 }

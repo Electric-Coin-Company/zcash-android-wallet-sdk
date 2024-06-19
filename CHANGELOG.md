@@ -14,7 +14,12 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   wallet secrets.
 
 ### Changed
+- `ZecString` and `Zatoshi` APIs now handle `MonetarySeparators` with the same grouping and decimal characters
 - Checkpoints update
+
+### Fixed
+- `MonetarySeparators` API does not signal an unsupported state to clients if used on a device with Locale with the 
+ same decimal and grouping separators. Instead, it will just omit the grouping separator.
 
 ## [2.1.1] - 2024-04-23
 
