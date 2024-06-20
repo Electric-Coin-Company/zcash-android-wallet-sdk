@@ -55,6 +55,7 @@ captures/
 .idea/deploymentTargetSelector.xml
 .idea/other.xml
 .idea/studiobot.xml
+.idea/deviceManager.xml
 *.iml
 
 # Keystore files

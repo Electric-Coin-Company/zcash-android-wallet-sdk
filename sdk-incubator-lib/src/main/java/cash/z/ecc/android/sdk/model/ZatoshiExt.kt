@@ -64,6 +64,7 @@ private fun BigDecimal.convertZecDecimalToFiatDecimal(zecPrice: BigDecimal): Big
     return multiply(zecPrice, MathContext.DECIMAL128)
 }
 
+@Suppress("NestedBlockDepth")
 private fun BigDecimal.convertFiatDecimalToFiatString(
     fiatCurrency: Currency,
     locale: java.util.Locale,
@@ -76,7 +77,9 @@ private fun BigDecimal.convertFiatDecimalToFiatString(
             decimalFormatSymbols.apply {
                 decimalSeparator = monetarySeparators.decimal
                 monetaryDecimalSeparator = monetarySeparators.decimal
-                groupingSeparator = monetarySeparators.grouping
+                if (monetarySeparators.isGroupingValid()) {
+                    groupingSeparator = monetarySeparators.grouping
+                }
             }
         }
     }.format(this)

@@ -24,15 +24,13 @@ object ZecString {
             add('8')
             add('9')
             add(monetarySeparators.decimal)
-            add(monetarySeparators.grouping)
+            if (monetarySeparators.isGroupingValid()) {
+                add(monetarySeparators.grouping)
+            }
         }
 }
 
 data class MonetarySeparators(val grouping: Char, val decimal: Char) {
-    init {
-        require(grouping != decimal) { "Grouping and decimal separator cannot be the same character" }
-    }
-
     companion object {
         /**
          * @param locale Preferred Locale for the returned monetary separators. If Locale is not provided, the
@@ -53,6 +51,8 @@ data class MonetarySeparators(val grouping: Char, val decimal: Char) {
             )
         }
     }
+
+    fun isGroupingValid() = this.grouping.isDefined() && this.grouping != this.decimal
 }
 
 private const val DECIMALS = 8
@@ -84,10 +84,18 @@ fun Zatoshi.Companion.fromZecString(
 
     val symbols =
         DecimalFormatSymbols.getInstance(Locale.US).apply {
-            this.groupingSeparator = monetarySeparators.grouping
             this.decimalSeparator = monetarySeparators.decimal
+            if (monetarySeparators.isGroupingValid()) {
+                this.groupingSeparator = monetarySeparators.grouping
+            }
         }
-    val localizedPattern = "#${monetarySeparators.grouping}##0${monetarySeparators.decimal}0#"
+
+    val localizedPattern =
+        if (monetarySeparators.isGroupingValid()) {
+            "#${monetarySeparators.grouping}##0${monetarySeparators.decimal}0#"
+        } else {
+            "0${monetarySeparators.decimal}0#"
+        }
 
     val decimalFormat =
         DecimalFormat(localizedPattern, symbols).apply {
