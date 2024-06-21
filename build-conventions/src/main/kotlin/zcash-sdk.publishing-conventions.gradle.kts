@@ -88,8 +88,8 @@ plugins.withId("org.gradle.maven-publish") {
 
     plugins.withId("org.gradle.signing") {
         project.the<SigningExtension>().apply {
-            // Maven Central requires signing for non-snapshots
-            isRequired = !isSnapshot
+            // Maven Central allows signing for both snapshot and release SDK versions
+            isRequired = true
 
             val signingKey = run {
                 val base64EncodedKey = project.property("ZCASH_ASCII_GPG_KEY").toString()
