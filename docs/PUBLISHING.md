@@ -47,19 +47,20 @@ Because Gradle caches dependencies and because multiple snapshots can be deploye
 Production releases can be consumed using the instructions in the [README.MD](../README.md).  Note that production releases can include alpha or beta designations.
 
 Automated production releases require a manual trigger of the GitHub action and a manual step inside the Sonatype dashboard.  To do a production release:
-1. Update the [CHANGELOG](../CHANGELOG.md) and [MIGRATIONS](../MIGRATIONS.md) for any new changes since the last production release.
+1. Update the [CHANGELOG](../CHANGELOG.md) for any new changes since the last production release.
 1. Run the [release deployment](https://github.com/zcash/zcash-android-wallet-sdk/actions/workflows/deploy-release.yml).
 1. Log into Maven Central and release the deployment.
     1. Check the contents of the staging repository, to verify it looks correct
     1. Close the staging repository
     1. Wait a few minutes and refresh the page
     1. Release the staging repository
-1. Confirm deployment succeeded by modifying the [ECC Wallet](https://github.com/zcash/zcash-android-wallet) to consume the new SDK version.
+1. Confirm deployment succeeded by modifying the [Zashi Wallet](https://github.com/Electric-Coin-Company/zashi-android) to consume the new SDK version.
 1. Create a new Git tag for the new release in this repository.
 1. Create a new pull request bumping the version to the next version (this ensures that the next merge to the main branch creates a snapshot under the next version number).
 
 # Manual Publishing
-See [ci.md](ci.md), which describes the continuous integration workflow for deployment and describes the secrets that would need to be configured in a repository fork.
+See [CI.md](CI.md), which describes the continuous integration workflow for deployment and describes the secrets that 
+would need to be configured in a repository fork.
 
 ## One time only
 * Set up environment to [compile the SDK](https://github.com/zcash/zcash-android-wallet-sdk/#compiling-sources)
@@ -84,6 +85,9 @@ See [ci.md](ci.md), which describes the continuous integration workflow for depl
         2. Log into the Sonatype portal to complete the process of closing and releasing the repository.
 
 Note:
-Our existing artifacts can be found here and here:
+Our existing release artifacts can be found here and here:
 https://search.maven.org/artifact/cash.z.ecc.android/zcash-android-sdk
 https://repo1.maven.org/maven2/cash/z/ecc/android/
+
+And our snapshot artifacts here:
+https://oss.sonatype.org/content/repositories/snapshots/cash/z/ecc/android/

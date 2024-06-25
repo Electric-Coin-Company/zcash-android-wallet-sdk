@@ -56,6 +56,7 @@ captures/
 .idea/other.xml
 .idea/studiobot.xml
 .idea/deviceManager.xml
+.idea/material_theme_project_new.xml
 *.iml
 
 # Keystore files

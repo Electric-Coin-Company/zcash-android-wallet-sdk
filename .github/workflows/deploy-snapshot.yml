@@ -1,8 +1,9 @@
 # Expected secrets
 # MAVEN_CENTRAL_USERNAME - Username for Maven Central
 # MAVEN_CENTRAL_PASSWORD - Password for Maven Central
+# MAVEN_SIGNING_KEY_ASCII - GPG key without a password which has ASCII-armored and then BASE64-encoded
 
-# Note that snapshot releases do not require GPG signing
+# Note that we sign the snapshot releases with GPG key, too
 
 name: Deploy Snapshot
 
@@ -47,12 +48,14 @@ jobs:
         env:
           MAVEN_CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
           MAVEN_CENTRAL_PASSWORD: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
-        if: "${{ env.MAVEN_CENTRAL_USERNAME != '' && env.MAVEN_CENTRAL_PASSWORD != '' }}"
+          MAVEN_SIGNING_KEY: ${{ secrets.MAVEN_SIGNING_KEY_ASCII }}
+        if: "${{ env.MAVEN_CENTRAL_USERNAME != '' && env.MAVEN_CENTRAL_PASSWORD != '' && env.MAVEN_SIGNING_KEY != '' }}"
         run: echo "defined=true" >> $GITHUB_OUTPUT
 
   deploy_snapshot:
     environment: deployment
     needs: [validate_gradle_wrapper, check_secrets]
+    if: needs.check_secrets.outputs.has-secrets == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -71,13 +74,17 @@ jobs:
         timeout-minutes: 25
         env:
           ORG_GRADLE_PROJECT_IS_SNAPSHOT: true
+          ORG_GRADLE_PROJECT_ZCASH_ASCII_GPG_KEY: ${{ secrets.MAVEN_SIGNING_KEY_ASCII }}
         run: |
           ./gradlew publishReleasePublicationToMavenLocalRepository --no-parallel
+      # Note that GitHub Actions appears to have issues with environment variables that contain periods,
+      # so the GPG variables are done as command line arguments instead.
       - name: Deploy to Maven Central
         timeout-minutes: 8
         env:
           ORG_GRADLE_PROJECT_ZCASH_MAVEN_PUBLISH_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
           ORG_GRADLE_PROJECT_ZCASH_MAVEN_PUBLISH_PASSWORD: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          ORG_GRADLE_PROJECT_ZCASH_ASCII_GPG_KEY: ${{ secrets.MAVEN_SIGNING_KEY_ASCII }}
           ORG_GRADLE_PROJECT_IS_SNAPSHOT: true
         run: |
           ./gradlew publishReleasePublicationToMavenCentralRepository --no-parallel
