@@ -2,17 +2,14 @@ import com.google.protobuf.gradle.id
 import com.google.protobuf.gradle.proto
 
 plugins {
+    id("org.mozilla.rust-android-gradle.rust-android")
     id("com.android.library")
     id("org.jetbrains.kotlin.android")
     id("zcash-sdk.android-conventions")
-
     id("org.jetbrains.dokka")
-    id("org.mozilla.rust-android-gradle.rust-android")
     id("com.google.protobuf")
-
     id("wtf.emulator.gradle")
     id("zcash-sdk.emulator-wtf-conventions")
-
     id("maven-publish")
     id("signing")
     id("zcash-sdk.publishing-conventions")
@@ -85,21 +82,23 @@ cargo {
         "x86" to minSdkVersion,
         "x86_64" to minSdkVersion,
     )
-
     profile = "release"
     prebuiltToolchains = true
+}
 
-    // As a workaround to the Gradle (starting from v7.4.1) and Rust Android Gradle plugin (starting from v0.9.3)
-    // incompatibility issue we need to add rust jni directory manually. See
-    // https://github.com/mozilla/rust-android-gradle/issues/118
-    tasks.whenObjectAdded {
-        // This covers mergeDebugJniLibFolders, mergeReleaseJniLibFolders, etc.
-        if (name.contains("^merge.+JniLibFolders$".toRegex())) {
-            dependsOn("cargoBuild")
+// As a workaround to the Gradle (starting from v7.4.1) and Rust Android Gradle plugin (starting from v0.9.3)
+// incompatibility issue we need to add rust jni directory manually. See
+// https://github.com/mozilla/rust-android-gradle/issues/118
+project.afterEvaluate {
+    tasks
+        .matching {
+            name.contains("^merge.+JniLibFolders$".toRegex())
+        }
+        .configureEach {
+            dependsOn("cargoBuild", "cargoBuildArm64", "cargoBuildX86", "cargoBuildX86_64")
             // Fix for mergeDebugJniLibFolders UP-TO-DATE
             inputs.dir(layout.buildDirectory.dir("rustJniLibs/android").get().asFile)
         }
-    }
 }
 
 protobuf {
