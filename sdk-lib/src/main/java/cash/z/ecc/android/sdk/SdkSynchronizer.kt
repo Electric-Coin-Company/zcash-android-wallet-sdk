@@ -30,6 +30,7 @@ import cash.z.ecc.android.sdk.internal.ext.isNullOrEmpty
 import cash.z.ecc.android.sdk.internal.ext.tryNull
 import cash.z.ecc.android.sdk.internal.jni.RustBackend
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
+import cash.z.ecc.android.sdk.internal.model.TorClient
 import cash.z.ecc.android.sdk.internal.model.TreeState
 import cash.z.ecc.android.sdk.internal.model.ext.toBlockHeight
 import cash.z.ecc.android.sdk.internal.repository.CompactBlockRepository
@@ -81,6 +82,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.io.File
+import java.math.BigDecimal
+import java.time.Instant
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.CoroutineContext
@@ -106,6 +109,7 @@ class SdkSynchronizer private constructor(
     private val storage: DerivedDataRepository,
     private val txManager: OutboundTransactionManager,
     val processor: CompactBlockProcessor,
+    private val torDir: File,
     private val backend: TypesafeBackend
 ) : CloseableSynchronizer {
     companion object {
@@ -136,6 +140,7 @@ class SdkSynchronizer private constructor(
             repository: DerivedDataRepository,
             txManager: OutboundTransactionManager,
             processor: CompactBlockProcessor,
+            torDir: File,
             backend: TypesafeBackend
         ): CloseableSynchronizer {
             val synchronizerKey = SynchronizerKey(zcashNetwork, alias)
@@ -149,6 +154,7 @@ class SdkSynchronizer private constructor(
                     repository,
                     txManager,
                     processor,
+                    torDir,
                     backend
                 ).apply {
                     instances[synchronizerKey] = InstanceState.Active
@@ -189,12 +195,14 @@ class SdkSynchronizer private constructor(
     }
 
     private val _status = MutableStateFlow<Synchronizer.Status>(DISCONNECTED)
+    private val _exchangeRateUsd = MutableStateFlow<Pair<BigDecimal, Instant>?>(null)
 
     var coroutineScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     override val orchardBalances = processor.orchardBalances.asStateFlow()
     override val saplingBalances = processor.saplingBalances.asStateFlow()
     override val transparentBalance = processor.transparentBalance.asStateFlow()
+    override val exchangeRateUsd = _exchangeRateUsd.asStateFlow()
 
     override val transactions
         get() =
@@ -415,6 +423,30 @@ class SdkSynchronizer private constructor(
      */
     suspend fun refreshAllBalances() {
         processor.refreshWalletSummary()
+    }
+
+    override suspend fun refreshExchangeRateUsd() {
+        Twig.info { "Bootstrapping Tor client for fetching exchange rates" }
+        val tor =
+            try {
+                TorClient.new(torDir)
+            } catch (e: Exception) {
+                Twig.error(e) { "Failed to bootstrap Tor client" }
+                throw e
+            }
+
+        val rate =
+            try {
+                tor.getExchangeRateUsd()
+            } catch (e: Exception) {
+                Twig.error(e) { "Failed to fetch exchange rate through Tor" }
+                throw e
+            } finally {
+                tor.dispose()
+            }
+        Twig.info { "Latest USD/ZEC exchange rate is $rate" }
+
+        _exchangeRateUsd.value = Pair(rate, Instant.now())
     }
 
     suspend fun isValidAddress(address: String): Boolean {

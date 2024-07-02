@@ -14,6 +14,7 @@ use jni::{
 };
 use prost::Message;
 use secrecy::{ExposeSecret, SecretVec};
+use tor_rtcompat::BlockOn;
 use tracing::{debug, error};
 use tracing_subscriber::prelude::*;
 use tracing_subscriber::reload;
@@ -34,6 +35,7 @@ use zcash_client_backend::{
     fees::{standard::SingleOutputChangeStrategy, DustOutputPolicy},
     keys::{DecodingError, Era, UnifiedAddressRequest, UnifiedFullViewingKey, UnifiedSpendingKey},
     proto::{proposal::Proposal, service::TreeState},
+    tor::http::cryptex,
     wallet::{NoteId, OvkPolicy, WalletTransparentOutput},
     zip321::{Payment, TransactionRequest},
     ShieldedProtocol,
@@ -64,6 +66,7 @@ use zcash_proofs::prover::LocalTxProver;
 
 use crate::utils::{catch_unwind, exception::unwrap_exc_or};
 
+mod tor;
 mod utils;
 
 const ANCHOR_OFFSET_U32: u32 = 10;
@@ -1838,6 +1841,79 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_branchIdF
         Ok(branch_id.into())
     });
     unwrap_exc_or(&mut env, res, -1)
+}
+
+//
+// Tor support
+//
+
+/// Creates a Tor runtime
+#[no_mangle]
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorClient_createTorRuntime<'local>(
+    mut env: JNIEnv<'local>,
+    _: JClass<'local>,
+    tor_dir: JString<'local>,
+) -> jlong {
+    let res = catch_unwind(&mut env, |env| {
+        let tor_dir = utils::java_string_to_rust(env, &tor_dir);
+        let tor_dir = Path::new(&tor_dir);
+
+        let tor = crate::tor::TorRuntime::create(tor_dir)?;
+
+        Ok((Box::into_raw(Box::new(tor)) as usize) as jlong)
+    });
+    unwrap_exc_or(&mut env, res, -1)
+}
+
+/// Frees a Tor runtime.
+#[no_mangle]
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorClient_freeTorRuntime(ptr: jlong) {
+    let ptr = (ptr as usize) as *mut crate::tor::TorRuntime;
+    if !ptr.is_null() {
+        let s = unsafe { Box::from_raw(ptr) };
+        drop(s);
+    }
+}
+
+/// Fetches the current ZEC-USD exchange rate over Tor.
+#[no_mangle]
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorClient_getExchangeRateUsd<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _: JClass<'local>,
+    tor_runtime: jlong,
+) -> jobject {
+    let res = catch_unwind(&mut env, |env| {
+        let tor_runtime =
+            unsafe { ((tor_runtime as usize) as *mut crate::tor::TorRuntime).as_mut() }
+                .ok_or_else(|| anyhow!("A Tor runtime is required"))?;
+
+        let exchanges = cryptex::Exchanges::unauthenticated_known_with_gemini_trusted();
+
+        let rate = tor_runtime.runtime().block_on(async {
+            tor_runtime
+                .client()
+                .get_latest_zec_to_usd_rate(&exchanges)
+                .await
+        })?;
+
+        let mantissa = env.byte_array_from_slice(&rate.mantissa().to_be_bytes())?;
+        let unscaled_val =
+            env.new_object("java/math/BigInteger", "([B)V", &[(&mantissa).into()])?;
+
+        Ok(env
+            .new_object(
+                "java/math/BigDecimal",
+                "(Ljava/math/BigInteger;I)V",
+                &[
+                    JValue::Object(&unscaled_val),
+                    JValue::Int(rate.scale() as i32),
+                ],
+            )?
+            .into_raw())
+    });
+    unwrap_exc_or(&mut env, res, ptr::null_mut())
 }
 
 //

@@ -12,6 +12,9 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - `Synchronizer.isValidTexAddr` which checks whether the given address is a valid ZIP 320 TEX address
+- `Synchronizer.exchangeRateUsd` is a `StateFlow` containing the latest USD/ZEC
+  exchange rate, along with the `Instant` it was fetched. It can be initialized
+  and refreshed by calling `Synchronizer.refreshExchangeRateUsd()`.
 
 ## [2.1.3] - 2024-08-08
 

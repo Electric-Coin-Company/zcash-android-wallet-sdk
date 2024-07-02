@@ -26,6 +26,8 @@ import cash.z.ecc.android.sdk.demoapp.R
 import cash.z.ecc.android.sdk.demoapp.fixture.WalletSnapshotFixture
 import cash.z.ecc.android.sdk.demoapp.ui.screen.home.viewmodel.SendState
 import cash.z.ecc.android.sdk.demoapp.ui.screen.home.viewmodel.WalletSnapshot
+import cash.z.ecc.android.sdk.ext.convertZatoshiToZec
+import cash.z.ecc.android.sdk.ext.toUsdString
 import cash.z.ecc.android.sdk.model.toZecString
 
 @Preview(name = "Balance")
@@ -115,13 +117,17 @@ private fun BalanceMainContent(
         Text(
             stringResource(
                 id = R.string.balance_available_amount_format,
-                walletSnapshot.orchardBalance.available.toZecString()
+                walletSnapshot.orchardBalance.available.toZecString(),
+                walletSnapshot.exchangeRateUsd?.multiply(walletSnapshot.orchardBalance.available.convertZatoshiToZec())
+                    .toUsdString()
             )
         )
         Text(
             stringResource(
                 id = R.string.balance_pending_amount_format,
-                walletSnapshot.orchardBalance.pending.toZecString()
+                walletSnapshot.orchardBalance.pending.toZecString(),
+                walletSnapshot.exchangeRateUsd?.multiply(walletSnapshot.orchardBalance.pending.convertZatoshiToZec())
+                    .toUsdString()
             )
         )
 
@@ -131,13 +137,17 @@ private fun BalanceMainContent(
         Text(
             stringResource(
                 id = R.string.balance_available_amount_format,
-                walletSnapshot.saplingBalance.available.toZecString()
+                walletSnapshot.saplingBalance.available.toZecString(),
+                walletSnapshot.exchangeRateUsd?.multiply(walletSnapshot.saplingBalance.available.convertZatoshiToZec())
+                    .toUsdString()
             )
         )
         Text(
             stringResource(
                 id = R.string.balance_pending_amount_format,
-                walletSnapshot.saplingBalance.pending.toZecString()
+                walletSnapshot.saplingBalance.pending.toZecString(),
+                walletSnapshot.exchangeRateUsd?.multiply(walletSnapshot.saplingBalance.pending.convertZatoshiToZec())
+                    .toUsdString()
             )
         )
 
@@ -147,7 +157,9 @@ private fun BalanceMainContent(
         Text(
             stringResource(
                 id = R.string.balance_available_amount_format,
-                walletSnapshot.transparentBalance.toZecString()
+                walletSnapshot.transparentBalance.toZecString(),
+                walletSnapshot.exchangeRateUsd?.multiply(walletSnapshot.transparentBalance.convertZatoshiToZec())
+                    .toUsdString()
             )
         )
 

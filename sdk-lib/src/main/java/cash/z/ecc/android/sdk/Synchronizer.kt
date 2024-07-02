@@ -8,6 +8,7 @@ import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor
 import cash.z.ecc.android.sdk.exception.InitializeException
 import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.internal.Derivation
+import cash.z.ecc.android.sdk.internal.Files
 import cash.z.ecc.android.sdk.internal.SaplingParamTool
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.db.DatabaseCoordinator
@@ -33,6 +34,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.runBlocking
 import java.io.Closeable
+import java.math.BigDecimal
+import java.time.Instant
 
 @Suppress("TooManyFunctions")
 interface Synchronizer {
@@ -85,6 +88,13 @@ interface Synchronizer {
      * A stream of a balance for the transparent pool.
      */
     val transparentBalance: StateFlow<Zatoshi?>
+
+    /**
+     * The latest known USD/ZEC exchange rate, paired with the time it was queried.
+     *
+     * The rate can be initialized and refreshed by calling [refreshExchangeRateUsd].
+     */
+    val exchangeRateUsd: StateFlow<Pair<BigDecimal, Instant>?>
 
     /**
      * A flow of all the transactions that are on the blockchain.
@@ -168,6 +178,11 @@ interface Synchronizer {
      * @return a legacy transparent address for the given account.
      */
     suspend fun getTransparentAddress(account: Account): String
+
+    /**
+     * Refreshes [exchangeRateUsd].
+     */
+    suspend fun refreshExchangeRateUsd()
 
     /**
      * Creates a proposal for transferring funds to the given recipient.
@@ -670,6 +685,7 @@ interface Synchronizer {
                 repository = repository,
                 txManager = txManager,
                 processor = processor,
+                torDir = Files.getTorDir(context),
                 backend = backend
             )
         }
