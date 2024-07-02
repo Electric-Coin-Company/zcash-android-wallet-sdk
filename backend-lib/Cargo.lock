@@ -75,12 +75,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0c4b4d0bd25bd0b74681c0ad21497610ce1b7c91b1022cd21c80c6fbdd9476b0"
 
 [[package]]
-name = "base58"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6107fe1be6682a68940da878d9e9f5e90ca5745b3dec9fd1bb393c8777d4f581"
-
-[[package]]
 name = "base64"
 version = "0.21.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -620,18 +614,6 @@ dependencies = [
  "ring",
  "secp256k1",
  "thiserror",
-]
-
-[[package]]
-name = "hdwallet-bitcoin"
-version = "0.4.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4412333586deae44def90f2627065d95928decda2315de17df4551ac32059542"
-dependencies = [
- "base58",
- "hdwallet",
- "hex",
- "ripemd",
 ]
 
 [[package]]
@@ -2053,9 +2035,6 @@ version = "0.0.4"
 dependencies = [
  "anyhow",
  "dlopen2",
- "hdwallet",
- "hdwallet-bitcoin",
- "hex",
  "jni",
  "libc",
  "log-panics",
@@ -2065,8 +2044,6 @@ dependencies = [
  "rayon",
  "rusqlite",
  "sapling-crypto",
- "schemer",
- "secp256k1",
  "secrecy",
  "tracing",
  "tracing-subscriber",

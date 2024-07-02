@@ -11,15 +11,10 @@ edition = "2018"
 rust-version = "1.77"
 
 [dependencies]
-hdwallet = "0.4"
-hdwallet-bitcoin = "0.4"
-hex = "0.4"
 orchard = "0.8"
 prost = "0.12"
 rusqlite = "0.29"
 sapling = { package = "sapling-crypto", version = "0.1", default-features = false }
-schemer = "0.2"
-secp256k1 = "0.26"
 secrecy = "0.8"
 zcash_address = "0.3"
 zcash_client_backend = { version = "0.12.1", features = ["orchard", "transparent-inputs", "unstable"] }
