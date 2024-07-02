@@ -14,6 +14,7 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   wallet secrets.
 
 ### Changed
+- Migrated to Rust 1.79.0.
 - `ZecString` and `Zatoshi` APIs now handle `MonetarySeparators` with the same grouping and decimal characters
 - Checkpoints update
 
