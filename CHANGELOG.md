@@ -6,6 +6,8 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.2] - 2024-07-02
+
 ### Added
 - `SdkSynchronizer.closeFlow()` is a Flow-providing version of `Synchronizer.close()`. It safely closes the 
   Synchronizer together with the related components.
