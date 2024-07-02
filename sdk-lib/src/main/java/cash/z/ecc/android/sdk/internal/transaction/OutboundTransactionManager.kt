@@ -127,6 +127,15 @@ internal interface OutboundTransactionManager {
      * @return true when the given address is a valid ZIP 316 Unified Address.
      */
     suspend fun isValidUnifiedAddress(address: String): Boolean
+
+    /**
+     * Return true when the given address is a valid ZIP 320 TEX address.
+     *
+     * @param address the address to validate.
+     *
+     * @return true when the given address is a valid ZIP 320 TEX address.
+     */
+    suspend fun isValidTexAddress(address: String): Boolean
 }
 
 /**

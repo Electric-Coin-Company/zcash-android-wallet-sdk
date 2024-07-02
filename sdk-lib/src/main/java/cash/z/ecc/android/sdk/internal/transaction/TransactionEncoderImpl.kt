@@ -170,6 +170,16 @@ internal class TransactionEncoderImpl(
     override suspend fun isValidUnifiedAddress(address: String): Boolean = backend.isValidUnifiedAddr(address)
 
     /**
+     * Utility function to help with validation. This is not called during [createTransaction]
+     * because this class asserts that all validation is done externally by the UI, for now.
+     *
+     * @param address the address to validate
+     *
+     * @return true when the given address is a valid ZIP 320 TEX address
+     */
+    override suspend fun isValidTexAddress(address: String): Boolean = backend.isValidTexAddr(address)
+
+    /**
      * Return the consensus branch that the encoder is using when making transactions.
      *
      * @param height the height at which we want to get the consensus branch

@@ -305,6 +305,21 @@ interface Synchronizer {
     suspend fun isValidUnifiedAddr(address: String): Boolean
 
     /**
+     * Returns true when the given address is a valid ZIP 320 TEX address.
+     *
+     * This method is intended for type checking (e.g. form validation). Invalid
+     * addresses will throw an exception. See valid t-addresses characteristics
+     * in the related ZIP.
+     *
+     * @param address the address to validate.
+     *
+     * @return true when the given address is a valid ZIP 320 TEX address.
+     *
+     * @throws RuntimeException when the address is invalid.
+     */
+    suspend fun isValidTexAddr(address: String): Boolean
+
+    /**
      * Validate whether the server and this SDK share the same consensus branch. This is
      * particularly important to check around network updates so that any wallet that's connected to
      * an incompatible server can surface that information effectively. For the SDK, the consensus

@@ -168,4 +168,6 @@ internal interface TypesafeBackend {
     fun isValidTransparentAddr(addr: String): Boolean
 
     fun isValidUnifiedAddr(addr: String): Boolean
+
+    fun isValidTexAddr(addr: String): Boolean
 }
