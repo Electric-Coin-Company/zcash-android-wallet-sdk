@@ -68,7 +68,7 @@ would need to be configured in a repository fork.
   * add your sonotype credentials with these properties
       * `ZCASH_MAVEN_PUBLISH_USERNAME`
       * `ZCASH_MAVEN_PUBLISH_PASSWORD`
-  * Point it to a passwordless GPG key that has been ASCII armored, then base64 encoded.  Note this is only required for release builds.  Snapshots do not require signing.
+  * Point it to a passwordless GPG key that has been ASCII armored, then base64 encoded.
      * `ZCASH_ASCII_GPG_KEY`
 
 ## Every time
