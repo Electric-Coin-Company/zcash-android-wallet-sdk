@@ -8,6 +8,7 @@ import cash.z.ecc.android.sdk.fixture.WalletBalanceFixture
 import cash.z.ecc.android.sdk.model.PercentDecimal
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
+import java.math.BigDecimal
 
 @Suppress("MagicNumber")
 object WalletSnapshotFixture {
@@ -30,6 +31,7 @@ object WalletSnapshotFixture {
         orchardBalance: WalletBalance = ORCHARD_BALANCE,
         saplingBalance: WalletBalance = SAPLING_BALANCE,
         transparentBalance: Zatoshi = TRANSPARENT_BALANCE,
+        exchangeRateUsd: BigDecimal? = null,
         progress: PercentDecimal = PROGRESS,
         synchronizerError: SynchronizerError? = null
     ) = WalletSnapshot(
@@ -38,6 +40,7 @@ object WalletSnapshotFixture {
         orchardBalance,
         saplingBalance,
         transparentBalance,
+        exchangeRateUsd,
         progress,
         synchronizerError
     )

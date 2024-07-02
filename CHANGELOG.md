@@ -27,6 +27,9 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `WalletCoordinator.deleteSdkDataFlow` is a Flow-providing function that deletes all the persisted data in the SDK 
   (databases associated with the wallet, all compact blocks, and data derived from those blocks) but preserves the 
   wallet secrets.
+- `Synchronizer.exchangeRateUsd` is a `StateFlow` containing the latest USD/ZEC
+  exchange rate, along with the `Instant` it was fetched. It can be initialized
+  and refreshed by calling `Synchronizer.refreshExchangeRateUsd()`.
 
 ### Changed
 - The Android SDK target API level has been updated to version 34
