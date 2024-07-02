@@ -107,6 +107,8 @@ internal class OutboundTransactionManagerImpl(
 
     override suspend fun isValidUnifiedAddress(address: String) = encoder.isValidUnifiedAddress(address)
 
+    override suspend fun isValidTexAddress(address: String) = encoder.isValidTexAddress(address)
+
     //
     // Helper functions
     //

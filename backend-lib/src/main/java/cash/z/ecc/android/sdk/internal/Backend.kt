@@ -77,6 +77,8 @@ interface Backend {
 
     fun isValidUnifiedAddr(addr: String): Boolean
 
+    fun isValidTexAddr(addr: String): Boolean
+
     @Throws(RuntimeException::class)
     suspend fun getCurrentAddress(account: Int): String
 

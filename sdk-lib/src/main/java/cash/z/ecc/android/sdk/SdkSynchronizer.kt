@@ -51,6 +51,7 @@ import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.type.AddressType
 import cash.z.ecc.android.sdk.type.AddressType.Shielded
+import cash.z.ecc.android.sdk.type.AddressType.Tex
 import cash.z.ecc.android.sdk.type.AddressType.Transparent
 import cash.z.ecc.android.sdk.type.AddressType.Unified
 import cash.z.ecc.android.sdk.type.ConsensusMatchType
@@ -730,6 +731,8 @@ class SdkSynchronizer private constructor(
 
     override suspend fun isValidUnifiedAddr(address: String) = txManager.isValidUnifiedAddress(address)
 
+    override suspend fun isValidTexAddr(address: String) = txManager.isValidTexAddress(address)
+
     override suspend fun validateAddress(address: String): AddressType =
         runCatching {
             if (isValidShieldedAddr(address)) {
@@ -738,6 +741,8 @@ class SdkSynchronizer private constructor(
                 Transparent
             } else if (isValidUnifiedAddr(address)) {
                 Unified
+            } else if (isValidTexAddr(address)) {
+                Tex
             } else {
                 AddressType.Invalid("Not a Zcash address")
             }

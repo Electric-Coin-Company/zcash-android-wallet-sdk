@@ -782,6 +782,31 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_isValidUn
 }
 
 #[no_mangle]
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_isValidTexAddress<'local>(
+    mut env: JNIEnv<'local>,
+    _: JClass<'local>,
+    addr: JString<'local>,
+    network_id: jint,
+) -> jboolean {
+    let res = catch_unwind(&mut env, |env| {
+        let _span = tracing::info_span!("RustBackend.isValidTexAddress").entered();
+        let network = parse_network(network_id as u32)?;
+        let addr = utils::java_string_to_rust(env, &addr);
+
+        match Address::decode(&network, &addr) {
+            Some(addr) => match addr {
+                Address::Sapling(_) | Address::Transparent(_) | Address::Unified(_) => {
+                    Ok(JNI_FALSE)
+                }
+                Address::Tex(_) => Ok(JNI_TRUE),
+            },
+            None => Err(anyhow!("Address is for the wrong network")),
+        }
+    });
+    unwrap_exc_or(&mut env, res, JNI_FALSE)
+}
+
+#[no_mangle]
 pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getTotalTransparentBalance<
     'local,
 >(

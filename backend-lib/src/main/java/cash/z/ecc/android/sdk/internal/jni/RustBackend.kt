@@ -388,6 +388,8 @@ class RustBackend private constructor(
 
     override fun isValidUnifiedAddr(addr: String) = isValidUnifiedAddress(addr, networkId = networkId)
 
+    override fun isValidTexAddr(addr: String) = isValidTexAddress(addr, networkId = networkId)
+
     override fun getBranchIdForHeight(height: Long): Long = branchIdForHeight(height, networkId = networkId)
 
     /**
@@ -503,6 +505,12 @@ class RustBackend private constructor(
 
         @JvmStatic
         private external fun isValidUnifiedAddress(
+            addr: String,
+            networkId: Int
+        ): Boolean
+
+        @JvmStatic
+        private external fun isValidTexAddress(
             addr: String,
             networkId: Int
         ): Boolean
