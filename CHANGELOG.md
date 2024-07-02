@@ -7,6 +7,7 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- Migrated to Rust 1.79.0
 - The fetch UTXOs logic reports `FetchUtxosException` to the wrapping `onProcessorErrorHandler` or 
   `onCriticalErrorHandler` in case any error occurs 
 
