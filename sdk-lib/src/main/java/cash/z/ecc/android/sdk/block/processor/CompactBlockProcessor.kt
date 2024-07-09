@@ -78,6 +78,7 @@ import java.util.Locale
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.random.Random
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
@@ -2241,8 +2242,9 @@ class CompactBlockProcessor internal constructor(
             } else {
                 POLL_INTERVAL
             }
+        val randomMultiplier = Random.nextDouble(0.75, 1.25)
         val now = System.currentTimeMillis()
-        val deltaToNextInterval = interval - (now + interval).rem(interval)
+        val deltaToNextInterval = (interval - (now + interval).rem(interval)) * randomMultiplier
         return deltaToNextInterval.toDuration(DurationUnit.MILLISECONDS)
     }
 
