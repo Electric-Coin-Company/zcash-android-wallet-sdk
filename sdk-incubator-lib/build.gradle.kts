@@ -66,7 +66,6 @@ dependencies {
     implementation(libs.bip39)
 
     implementation(libs.androidx.annotation)
-    implementation(libs.androidx.appcompat)
 
     implementation(libs.kotlinx.datetime)
 

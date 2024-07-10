@@ -92,7 +92,7 @@ dependencies {
     implementation(projects.backendLib)
 
     implementation(libs.androidx.annotation)
-    implementation(libs.androidx.appcompat)
+    implementation(libs.androidx.core)
 
     // Architecture Components: Lifecycle
     implementation(libs.androidx.lifecycle.runtime)

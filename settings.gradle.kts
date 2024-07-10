@@ -83,7 +83,6 @@ dependencyResolutionManagement {
             val androidGradlePluginVersion = extra["ANDROID_GRADLE_PLUGIN_VERSION"].toString()
             val androidxActivityVersion = extra["ANDROIDX_ACTIVITY_VERSION"].toString()
             val androidxAnnotationVersion = extra["ANDROIDX_ANNOTATION_VERSION"].toString()
-            val androidxAppcompatVersion = extra["ANDROIDX_APPCOMPAT_VERSION"].toString()
             val androidxComposeCompilerVersion = extra["ANDROIDX_COMPOSE_COMPILER_VERSION"].toString()
             val androidxComposeMaterial3Version = extra["ANDROIDX_COMPOSE_MATERIAL3_VERSION"].toString()
             val androidxComposeMaterialIconsVersion = extra["ANDROIDX_COMPOSE_MATERIAL_ICONS_VERSION"].toString()
@@ -145,7 +144,6 @@ dependencyResolutionManagement {
             // Libraries
             library("androidx-annotation", "androidx.annotation:annotation:$androidxAnnotationVersion")
             library("androidx-activity-compose", "androidx.activity:activity-compose:$androidxActivityVersion")
-            library("androidx-appcompat", "androidx.appcompat:appcompat:$androidxAppcompatVersion")
             library("androidx-constraintlayout", "androidx.constraintlayout:constraintlayout:$androidxConstraintLayoutVersion")
             library("androidx-core", "androidx.core:core-ktx:$androidxCoreVersion")
             library("androidx-lifecycle-common", "androidx.lifecycle:lifecycle-common-java8:$androidxLifecycleVersion")
