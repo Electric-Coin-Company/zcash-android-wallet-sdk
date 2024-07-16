@@ -18,7 +18,9 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -39,7 +41,7 @@ import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 
 @Composable
-@Suppress("ktlint:standard:function-naming")
+@Suppress("ktlint:standard:function-naming", "standard:function-naming")
 fun Transactions(
     synchronizer: Synchronizer,
     onBack: () -> Unit
@@ -48,10 +50,13 @@ fun Transactions(
 
     // TODO [#846]: Slow addresses providing
     // TODO [#846]: https://github.com/zcash/zcash-android-wallet-sdk/issues/846
-    val walletAddresses: WalletAddresses? =
-        flow<WalletAddresses?> {
-            emit(WalletAddresses.new(synchronizer))
-        }.catch { emit(null) }.collectAsState(initial = null).value
+
+    val stateFlow by remember(synchronizer) {
+        mutableStateOf(
+            flow<WalletAddresses?> { emit(WalletAddresses.new(synchronizer)) }.catch { emit(null) }
+        )
+    }
+    val walletAddresses by stateFlow.collectAsStateWithLifecycle(initialValue = null)
 
     val transactions =
         if (walletAddresses == null) {
