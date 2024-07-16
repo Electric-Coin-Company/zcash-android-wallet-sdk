@@ -1,4 +1,4 @@
-@file:Suppress("ktlint:standard:filename")
+@file:Suppress("ktlint:standard:filename", "MagicNumber")
 
 package cash.z.ecc.android.sdk.demoapp.ext
 
@@ -17,13 +17,11 @@ internal fun LightWalletEndpoint.Companion.defaultForNetwork(zcashNetwork: Zcash
     }
 }
 
-private const val DEFAULT_PORT = 9067
-
 internal val LightWalletEndpoint.Companion.Mainnet
     get() =
         LightWalletEndpoint(
-            "mainnet.lightwalletd.com",
-            DEFAULT_PORT,
+            "zec.rocks",
+            443,
             isSecure = true
         )
 
@@ -31,7 +29,7 @@ internal val LightWalletEndpoint.Companion.Testnet
     get() =
         LightWalletEndpoint(
             "lightwalletd.testnet.electriccoin.co",
-            DEFAULT_PORT,
+            9067,
             isSecure = true
         )
 
