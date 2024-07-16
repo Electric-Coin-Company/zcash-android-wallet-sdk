@@ -84,7 +84,7 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
         return runCatching {
             backend.getCurrentAddress(account.value)
         }.onFailure {
-            Twig.error(it) { "Failed to get current address" }
+            Twig.warn(it) { "Currently unable to get current address" }
         }.getOrElse { throw RustLayerException.GetCurrentAddressException(it) }
     }
 
@@ -208,7 +208,7 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
                 )
             }
         }.onFailure {
-            Twig.error(it) { "Failed to get fully scanned height" }
+            Twig.warn(it) { "Currently unable to get fully scanned height" }
         }.getOrElse { throw RustLayerException.GetFullyScannedHeight(it) }
     }
 
@@ -221,7 +221,7 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
                 )
             }
         }.onFailure {
-            Twig.error(it) { "Failed to get max scanned height" }
+            Twig.warn(it) { "Currently unable to get max scanned height" }
         }.getOrElse { throw RustLayerException.GetMaxScannedHeight(it) }
     }
 
