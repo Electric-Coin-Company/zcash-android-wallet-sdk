@@ -16,6 +16,7 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   wallet secrets.
 
 ### Changed
+- The Android SDK target API level has been updated to version 34
 - `ZecString` and `Zatoshi` APIs now handle `MonetarySeparators` with the same grouping and decimal characters
 - Checkpoints update
 
