@@ -42,7 +42,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import cash.z.ecc.android.sdk.demoapp.R
-import cash.z.ecc.android.sdk.demoapp.ext.Mainnet
 import cash.z.ecc.android.sdk.demoapp.ext.Testnet
 import cash.z.ecc.android.sdk.demoapp.ext.isValid
 import cash.z.ecc.android.sdk.internal.Twig
@@ -60,12 +59,6 @@ private fun ComposablePreview() {
         // Server()
     }
 }
-
-private const val NH_HOST_NA = "na.lightwalletd.com" // NON-NLS
-private const val NH_HOST_SA = "sa.lightwalletd.com" // NON-NLS
-private const val NH_HOST_EU = "eu.lightwalletd.com" // NON-NLS
-private const val NH_HOST_AI = "ai.lightwalletd.com" // NON-NLS
-private const val NH_PORT = 443
 
 private const val YW_HOST_1 = "lwd1.zcash-infra.com" // NON-NLS
 private const val YW_HOST_2 = "lwd2.zcash-infra.com" // NON-NLS
@@ -144,19 +137,12 @@ fun ServerSwitch(
 
     val options =
         buildList {
-            // Default servers
             if (buildInNetwork == ZcashNetwork.Mainnet) {
-                add(LightWalletEndpoint.Mainnet)
-            } else {
-                add(LightWalletEndpoint.Testnet)
-            }
-
-            // Then alternative servers
-            if (buildInNetwork == ZcashNetwork.Mainnet) {
-                add(LightWalletEndpoint(NH_HOST_NA, NH_PORT, true))
-                add(LightWalletEndpoint(NH_HOST_SA, NH_PORT, true))
-                add(LightWalletEndpoint(NH_HOST_EU, NH_PORT, true))
-                add(LightWalletEndpoint(NH_HOST_AI, NH_PORT, true))
+                add(LightWalletEndpoint(ZR_HOST, ZR_PORT, true))
+                add(LightWalletEndpoint(ZR_HOST_NA, ZR_PORT, true))
+                add(LightWalletEndpoint(ZR_HOST_SA, ZR_PORT, true))
+                add(LightWalletEndpoint(ZR_HOST_EU, ZR_PORT, true))
+                add(LightWalletEndpoint(ZR_HOST_AP, ZR_PORT, true))
 
                 add(LightWalletEndpoint(YW_HOST_1, YW_PORT, true))
                 add(LightWalletEndpoint(YW_HOST_2, YW_PORT, true))
@@ -166,12 +152,8 @@ fun ServerSwitch(
                 add(LightWalletEndpoint(YW_HOST_6, YW_PORT, true))
                 add(LightWalletEndpoint(YW_HOST_7, YW_PORT, true))
                 add(LightWalletEndpoint(YW_HOST_8, YW_PORT, true))
-
-                add(LightWalletEndpoint(ZR_HOST, ZR_PORT, true))
-                add(LightWalletEndpoint(ZR_HOST_NA, ZR_PORT, true))
-                add(LightWalletEndpoint(ZR_HOST_SA, ZR_PORT, true))
-                add(LightWalletEndpoint(ZR_HOST_EU, ZR_PORT, true))
-                add(LightWalletEndpoint(ZR_HOST_AP, ZR_PORT, true))
+            } else {
+                add(LightWalletEndpoint.Testnet)
             }
 
             // Custom server
