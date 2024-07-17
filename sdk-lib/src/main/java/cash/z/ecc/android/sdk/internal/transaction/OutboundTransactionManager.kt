@@ -36,6 +36,19 @@ internal interface OutboundTransactionManager {
     ): EncodedTransaction
 
     /**
+     * Creates a proposal for transferring funds from a ZIP-321 compliant payment URI
+     *
+     * @param account the account from which to transfer funds.
+     * @param uri a ZIP-321 compliant payment URI
+     *
+     * @return the proposal or an exception
+     */
+    suspend fun proposeTransferFromUri(
+        account: Account,
+        uri: String
+    ): Proposal
+
+    /**
      * Creates a proposal for transferring funds to the given recipient.
      *
      * @param account the account from which to transfer funds.

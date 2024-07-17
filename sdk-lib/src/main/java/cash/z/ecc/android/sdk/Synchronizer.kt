@@ -187,6 +187,19 @@ interface Synchronizer {
     ): Proposal
 
     /**
+     * Creates a proposal for fulfilling a payment ZIP-321 URI
+     *
+     * @param account the account from which to transfer funds.
+     * @param uri a ZIP-321 compliant payment URI String
+     *
+     * @return the proposal or an exception
+     */
+    suspend fun proposeFulfillingPaymentUri(
+        account: Account,
+        uri: String
+    ): Proposal
+    
+    /**
      * Creates a proposal for shielding any transparent funds received by the given account.
      *
      * @param account the account for which to shield funds.
