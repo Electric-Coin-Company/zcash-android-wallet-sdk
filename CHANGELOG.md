@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Changed
+- Migrated to Rust 1.79.0.
+
+## [2.1.2] - 2024-07-16
 
 ### Added
 - `SdkSynchronizer.closeFlow()` is a Flow-providing version of `Synchronizer.close()`. It safely closes the 
@@ -14,7 +18,7 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   wallet secrets.
 
 ### Changed
-- Migrated to Rust 1.79.0.
+- The Android SDK target API level has been updated to version 34
 - `ZecString` and `Zatoshi` APIs now handle `MonetarySeparators` with the same grouping and decimal characters
 - Checkpoints update
 
