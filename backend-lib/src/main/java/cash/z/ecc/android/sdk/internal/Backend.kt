@@ -24,13 +24,13 @@ interface Backend {
         account: Int,
         to: String,
         value: Long,
-        memo: ByteArray? = byteArrayOf()
+        memo: ByteArray? = null
     ): ProposalUnsafe
 
     suspend fun proposeShielding(
         account: Int,
         shieldingThreshold: Long,
-        memo: ByteArray? = byteArrayOf(),
+        memo: ByteArray? = null,
         transparentReceiver: String? = null
     ): ProposalUnsafe?
 

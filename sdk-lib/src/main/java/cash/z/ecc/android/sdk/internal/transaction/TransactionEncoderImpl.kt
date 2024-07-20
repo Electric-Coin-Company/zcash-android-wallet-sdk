@@ -211,7 +211,7 @@ internal class TransactionEncoderImpl(
         usk: UnifiedSpendingKey,
         amount: Zatoshi,
         toAddress: String,
-        memo: ByteArray? = byteArrayOf()
+        memo: ByteArray? = null
     ): FirstClassByteArray {
         Twig.debug {
             "creating transaction to spend $amount zatoshi to" +
@@ -240,7 +240,7 @@ internal class TransactionEncoderImpl(
 
     private suspend fun createShieldingSpend(
         usk: UnifiedSpendingKey,
-        memo: ByteArray? = byteArrayOf()
+        memo: ByteArray? = null
     ): FirstClassByteArray {
         return runCatching {
             saplingParamTool.ensureParams(saplingParamTool.properties.paramsDirectory)
