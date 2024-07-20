@@ -32,13 +32,13 @@ internal interface TypesafeBackend {
         account: Account,
         to: String,
         value: Long,
-        memo: ByteArray? = byteArrayOf()
+        memo: ByteArray? = null
     ): Proposal
 
     suspend fun proposeShielding(
         account: Account,
         shieldingThreshold: Long,
-        memo: ByteArray? = byteArrayOf(),
+        memo: ByteArray? = null,
         transparentReceiver: String? = null
     ): Proposal?
 

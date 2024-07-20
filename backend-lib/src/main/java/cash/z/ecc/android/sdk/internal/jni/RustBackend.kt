@@ -317,7 +317,7 @@ class RustBackend private constructor(
                     account,
                     to,
                     value,
-                    memo ?: ByteArray(0),
+                    memo,
                     networkId = networkId,
                     useZip317Fees = IS_USE_ZIP_317_FEES
                 )
@@ -335,7 +335,7 @@ class RustBackend private constructor(
                 dataDbFile.absolutePath,
                 account,
                 shieldingThreshold,
-                memo ?: ByteArray(0),
+                memo,
                 transparentReceiver,
                 networkId = networkId,
                 useZip317Fees = IS_USE_ZIP_317_FEES
@@ -626,7 +626,7 @@ class RustBackend private constructor(
             account: Int,
             to: String,
             value: Long,
-            memo: ByteArray,
+            memo: ByteArray?,
             networkId: Int,
             useZip317Fees: Boolean
         ): ByteArray
@@ -637,7 +637,7 @@ class RustBackend private constructor(
             dbDataPath: String,
             account: Int,
             shieldingThreshold: Long,
-            memo: ByteArray,
+            memo: ByteArray?,
             transparentReceiver: String?,
             networkId: Int,
             useZip317Fees: Boolean
