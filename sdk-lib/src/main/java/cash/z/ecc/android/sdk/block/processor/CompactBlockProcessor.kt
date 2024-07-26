@@ -568,7 +568,7 @@ class CompactBlockProcessor internal constructor(
                 syncRange = scanRange.range,
                 enhanceStartHeight = firstUnenhancedHeight
             ).map { batchSyncProgress ->
-                // Update sync progress and wallet balance
+                // Update sync progress and wallet balances
                 refreshWalletSummary()
 
                 when (batchSyncProgress.resultState) {
@@ -900,79 +900,58 @@ class CompactBlockProcessor internal constructor(
         }
     }
 
-    var failedUtxoFetches = 0
-
-    @Suppress("MagicNumber", "LongMethod")
+    @Suppress("LongMethod")
+    @Throws(LightWalletException.FetchUtxosException::class)
     internal suspend fun refreshUtxos(
         account: Account,
         startHeight: BlockHeight
     ): Int {
         Twig.debug { "Checking for UTXOs above height $startHeight" }
         var count = 0
-        // TODO [#683]: cleanup the way that we prevent this from running excessively
-        //       For now, try for about 3 blocks per app launch. If the service fails it is
-        //       probably disabled on ligthtwalletd, so then stop trying until the next app launch.
-        // TODO [#683]: https://github.com/zcash/zcash-android-wallet-sdk/issues/683
-        if (failedUtxoFetches < 9) { // there are 3 attempts per block
-            @Suppress("TooGenericExceptionCaught")
-            try {
-                retryUpToAndThrow(UTXO_FETCH_RETRIES) {
-                    val tAddresses = backend.listTransparentReceivers(account)
 
-                    downloader.fetchUtxos(
-                        tAddresses,
-                        BlockHeightUnsafe.from(startHeight)
-                    ).onEach { response ->
-                        when (response) {
-                            is Response.Success -> {
-                                Twig.verbose { "Downloading UTXO at height: ${response.result.height} succeeded." }
-                            }
+        retryUpToAndThrow(UTXO_FETCH_RETRIES) {
+            val tAddresses = backend.listTransparentReceivers(account)
 
-                            is Response.Failure -> {
-                                Twig.warn {
-                                    "Downloading UTXO from height:" +
-                                        " $startHeight failed with: ${response.description}."
-                                }
-                                throw LightWalletException.FetchUtxosException(
-                                    response.code,
-                                    response.description,
-                                    response.toThrowable()
-                                )
-                            }
-                        }
+            downloader.fetchUtxos(
+                tAddresses,
+                BlockHeightUnsafe.from(startHeight)
+            ).onEach { response ->
+                when (response) {
+                    is Response.Success -> {
+                        Twig.verbose { "Downloading UTXO at height: ${response.result.height} succeeded." }
                     }
-                        .filterIsInstance<Response.Success<GetAddressUtxosReplyUnsafe>>()
-                        .map { response ->
-                            response.result
-                        }
-                        .onCompletion {
-                            if (it != null) {
-                                Twig.debug { "UTXOs from height $startHeight failed to download with: $it" }
-                            } else {
-                                Twig.debug { "All UTXOs from height $startHeight fetched successfully" }
-                            }
-                        }.collect { utxo ->
-                            Twig.verbose { "Fetched UTXO at height: ${utxo.height}" }
-                            val processResult = processUtxoResult(utxo)
-                            if (processResult) {
-                                count++
-                            }
-                        }
-                }
-            } catch (e: Throwable) {
-                failedUtxoFetches++
-                Twig.debug {
-                    "Warning: Fetching UTXOs is repeatedly failing! We will only try about " +
-                        "${(9 - failedUtxoFetches + 2) / 3} more times then give up for this session. " +
-                        "Exception message: ${e.message}, caused by: ${e.cause}."
-                }
-            }
-        } else {
-            Twig.debug {
-                "Warning: gave up on fetching UTXOs for this session. It is unavailable on lightwalletd."
-            }
-        }
 
+                    is Response.Failure -> {
+                        Twig.warn {
+                            "Downloading UTXO from height:" +
+                                " $startHeight failed with: ${response.description}."
+                        }
+                        throw LightWalletException.FetchUtxosException(
+                            response.code,
+                            response.description,
+                            response.toThrowable()
+                        )
+                    }
+                }
+            }
+                .filterIsInstance<Response.Success<GetAddressUtxosReplyUnsafe>>()
+                .map { response ->
+                    response.result
+                }
+                .onCompletion {
+                    if (it != null) {
+                        Twig.debug { "UTXOs from height $startHeight failed to download with: $it" }
+                    } else {
+                        Twig.debug { "All UTXOs from height $startHeight fetched successfully" }
+                    }
+                }.collect { utxo ->
+                    Twig.verbose { "Fetched UTXO at height: ${utxo.height}" }
+                    val processResult = processUtxoResult(utxo)
+                    if (processResult) {
+                        count++
+                    }
+                }
+        }
         return count
     }
 

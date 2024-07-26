@@ -541,7 +541,7 @@ class SdkSynchronizer private constructor(
         val reason = if (scannedRange.isNullOrEmpty()) "it's been a while" else "new blocks were scanned"
 
         if (shouldRefresh) {
-            Twig.debug { "Triggering utxo refresh since $reason!" }
+            Twig.info { "Triggering utxo refresh since $reason!" }
             refreshUtxos(Account.DEFAULT)
 
             Twig.debug { "Triggering balance refresh since $reason!" }
