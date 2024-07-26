@@ -13,7 +13,19 @@ import java.util.Currency
 import kotlin.time.Duration
 
 fun Zatoshi.toFiatCurrencyState(
-    currencyConversion: CurrencyConversion?,
+    fiatCurrencyResult: FiatCurrencyResult,
+    locale: Locale,
+    monetarySeparators: MonetarySeparators,
+    clock: Clock = Clock.System
+) = toFiatCurrencyState(
+    (fiatCurrencyResult as? FiatCurrencyResult.Success)?.currencyConversion,
+    locale,
+    monetarySeparators,
+    clock
+)
+
+fun Zatoshi.toFiatCurrencyState(
+    currencyConversion: FiatCurrencyConversion?,
     locale: Locale,
     monetarySeparators: MonetarySeparators,
     clock: Clock = Clock.System
@@ -42,15 +54,17 @@ fun Zatoshi.toFiatCurrencyState(
 }
 
 fun Zatoshi.toFiatString(
-    currencyConversion: CurrencyConversion,
+    currencyConversion: FiatCurrencyConversion,
     locale: Locale,
-    monetarySeparators: MonetarySeparators
+    monetarySeparators: MonetarySeparators,
+    includeSymbols: Boolean = true,
 ) = convertZatoshiToZecDecimal()
     .convertZecDecimalToFiatDecimal(BigDecimal(currencyConversion.priceOfZec))
     .convertFiatDecimalToFiatString(
         Currency.getInstance(currencyConversion.fiatCurrency.code),
         locale.toJavaLocale(),
-        monetarySeparators
+        monetarySeparators,
+        includeSymbols
     )
 
 private fun Zatoshi.convertZatoshiToZecDecimal(): BigDecimal {
@@ -65,13 +79,23 @@ private fun BigDecimal.convertZecDecimalToFiatDecimal(zecPrice: BigDecimal): Big
 }
 
 @Suppress("NestedBlockDepth")
-private fun BigDecimal.convertFiatDecimalToFiatString(
+fun BigDecimal.convertFiatDecimalToFiatString(
     fiatCurrency: Currency,
     locale: java.util.Locale,
-    monetarySeparators: MonetarySeparators
+    monetarySeparators: MonetarySeparators,
+    includeSymbols: Boolean = true
 ): String {
-    return NumberFormat.getCurrencyInstance(locale).apply {
-        currency = fiatCurrency
+    val numberFormat = if (includeSymbols) {
+        NumberFormat.getCurrencyInstance(locale)
+    } else {
+        NumberFormat.getInstance(locale)
+    }
+
+    return numberFormat.apply {
+        if (includeSymbols) {
+            currency = fiatCurrency
+        }
+
         roundingMode = RoundingMode.HALF_EVEN
         if (this is DecimalFormat) {
             decimalFormatSymbols.apply {

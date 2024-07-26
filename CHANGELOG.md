@@ -8,6 +8,8 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - `Synchronizer.isValidTexAddr` which checks whether the given address is a valid ZIP 320 TEX address
+- `Synchronizer.exchangeRateUsd` to observe current USD exchange rate
+- `Synchronizer.refreshExchangeRateUsd` refreshes `Synchronizer.exchangeRateUsd` 
 
 ### Changed
 - Migrated to Rust 1.80.0

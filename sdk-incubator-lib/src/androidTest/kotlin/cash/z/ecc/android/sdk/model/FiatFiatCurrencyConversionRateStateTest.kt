@@ -11,7 +11,7 @@ import org.junit.Test
 import kotlin.test.assertIs
 import kotlin.time.Duration.Companion.seconds
 
-class FiatCurrencyConversionRateStateTest {
+class FiatFiatCurrencyConversionRateStateTest {
     @Test
     @SmallTest
     fun future_near() {
