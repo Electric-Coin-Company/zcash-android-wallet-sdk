@@ -6,6 +6,14 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- The fetch UTXOs logic reports `FetchUtxosException` to the wrapping `onProcessorErrorHandler` or 
+  `onCriticalErrorHandler` in case any error occurs 
+
+### Fixed
+- `Synchronizer.refreshUtxos(account: Account, since: BlockHeight)` now correctly uses the `since` parameter in the 
+  underlying logic and fetches UTXOs from that height
+
 ## [2.1.2] - 2024-07-16
 
 ### Added
