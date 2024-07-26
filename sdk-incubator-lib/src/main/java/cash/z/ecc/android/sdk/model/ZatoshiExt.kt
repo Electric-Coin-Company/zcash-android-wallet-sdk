@@ -85,11 +85,12 @@ fun BigDecimal.convertFiatDecimalToFiatString(
     monetarySeparators: MonetarySeparators,
     includeSymbols: Boolean = true
 ): String {
-    val numberFormat = if (includeSymbols) {
-        NumberFormat.getCurrencyInstance(locale)
-    } else {
-        NumberFormat.getInstance(locale)
-    }
+    val numberFormat =
+        if (includeSymbols) {
+            NumberFormat.getCurrencyInstance(locale)
+        } else {
+            NumberFormat.getInstance(locale)
+        }
 
     return numberFormat.apply {
         if (includeSymbols) {

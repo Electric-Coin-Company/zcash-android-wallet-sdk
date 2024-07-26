@@ -10,6 +10,7 @@ import java.io.File
 internal class UsdExchangeRateFetcher(
     private val torDir: File
 ) {
+    @Suppress("TooGenericExceptionCaught", "ReturnCount")
     suspend operator fun invoke(): FiatCurrencyResult {
         Twig.info { "Bootstrapping Tor client for fetching exchange rates" }
 
@@ -34,11 +35,12 @@ internal class UsdExchangeRateFetcher(
         Twig.info { "Latest USD/ZEC exchange rate is $rate" }
 
         return FiatCurrencyResult.Success(
-            currencyConversion = FiatCurrencyConversion(
-                fiatCurrency = FiatCurrency.USD,
-                priceOfZec = rate.toDouble(),
-                timestamp = Clock.System.now()
-            )
+            currencyConversion =
+                FiatCurrencyConversion(
+                    fiatCurrency = FiatCurrency.USD,
+                    priceOfZec = rate.toDouble(),
+                    timestamp = Clock.System.now()
+                )
         )
     }
 }

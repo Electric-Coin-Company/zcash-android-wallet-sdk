@@ -213,19 +213,20 @@ class SdkSynchronizer private constructor(
     private val refreshExchangeRateUsd = MutableSharedFlow<Unit>(replay = 1)
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    override val exchangeRateUsd = refreshExchangeRateUsd
-        .onStart {
-            emit(Unit)
-        }
-        .flatMapLatest {
-            flow {
-                emit(fetchExchangeChangeUsd())
+    override val exchangeRateUsd =
+        refreshExchangeRateUsd
+            .onStart {
+                emit(Unit)
             }
-        }.stateIn(
-            scope = coroutineScope,
-            started = SharingStarted.WhileSubscribed(1.minutes),
-            initialValue = FiatCurrencyResult.Loading()
-        )
+            .flatMapLatest {
+                flow {
+                    emit(fetchExchangeChangeUsd())
+                }
+            }.stateIn(
+                scope = coroutineScope,
+                started = SharingStarted.WhileSubscribed(1.minutes),
+                initialValue = FiatCurrencyResult.Loading()
+            )
 
     override val transactions
         get() =
@@ -686,9 +687,9 @@ class SdkSynchronizer private constructor(
     @Deprecated(
         message = "Upcoming SDK 2.1 will create multiple transactions at once for some recipients.",
         replaceWith =
-        ReplaceWith(
-            "createProposedTransactions(proposeTransfer(usk.account, toAddress, amount, memo), usk)"
-        )
+            ReplaceWith(
+                "createProposedTransactions(proposeTransfer(usk.account, toAddress, amount, memo), usk)"
+            )
     )
     @Throws(TransactionEncoderException::class, TransactionSubmitException::class)
     override suspend fun sendToAddress(
@@ -719,9 +720,9 @@ class SdkSynchronizer private constructor(
     @Deprecated(
         message = "Upcoming SDK 2.1 will create multiple transactions at once for some recipients.",
         replaceWith =
-        ReplaceWith(
-            "proposeShielding(usk.account, shieldingThreshold, memo)?.let { createProposedTransactions(it, usk) }"
-        )
+            ReplaceWith(
+                "proposeShielding(usk.account, shieldingThreshold, memo)?.let { createProposedTransactions(it, usk) }"
+            )
     )
     @Throws(TransactionEncoderException::class, TransactionSubmitException::class)
     override suspend fun shieldFunds(

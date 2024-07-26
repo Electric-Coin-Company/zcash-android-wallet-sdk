@@ -686,9 +686,10 @@ interface Synchronizer {
                 txManager = txManager,
                 processor = processor,
                 backend = backend,
-                fetchExchangeChangeUsd = UsdExchangeRateFetcher(
-                    torDir = Files.getTorDir(context)
-                )
+                fetchExchangeChangeUsd =
+                    UsdExchangeRateFetcher(
+                        torDir = Files.getTorDir(context)
+                    )
             )
         }
 

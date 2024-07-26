@@ -3,7 +3,6 @@ package cash.z.ecc.android.sdk.model
 import android.icu.util.Currency
 
 data class FiatCurrency(val code: String) {
-
     val symbol: String
         get() = Currency.getInstance(code).symbol
 
@@ -17,6 +16,7 @@ data class FiatCurrency(val code: String) {
         /**
          * Checks whether [code] complies with ISO 4217 3-letter code.
          */
+        @Suppress("ReturnCount", "MagicNumber")
         fun isAlpha3Code(code: String): Boolean {
             if (code.length != 3) {
                 return false

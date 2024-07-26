@@ -12,26 +12,29 @@ import java.math.BigDecimal
 class TorClient(
     private val nativeHandle: Long?,
 ) {
-    suspend fun dispose() = withContext(Dispatchers.IO) {
-        nativeHandle?.let { freeTorRuntime(it) }
-    }
+    suspend fun dispose() =
+        withContext(Dispatchers.IO) {
+            nativeHandle?.let { freeTorRuntime(it) }
+        }
 
-    suspend fun getExchangeRateUsd(): BigDecimal = withContext(Dispatchers.IO) {
-        getExchangeRateUsd(nativeHandle!!)
-    }
+    suspend fun getExchangeRateUsd(): BigDecimal =
+        withContext(Dispatchers.IO) {
+            getExchangeRateUsd(nativeHandle!!)
+        }
 
     companion object {
-        suspend fun new(torDir: File): TorClient = withContext(Dispatchers.IO) {
-            RustBackend.loadLibrary()
+        suspend fun new(torDir: File): TorClient =
+            withContext(Dispatchers.IO) {
+                RustBackend.loadLibrary()
 
-            // Ensure that the directory exists.
-            torDir.mkdirsSuspend()
-            if (!torDir.existsSuspend()) {
-                error("${torDir.path} directory does not exist and could not be created.")
+                // Ensure that the directory exists.
+                torDir.mkdirsSuspend()
+                if (!torDir.existsSuspend()) {
+                    error("${torDir.path} directory does not exist and could not be created.")
+                }
+
+                TorClient(createTorRuntime(torDir.path))
             }
-
-            TorClient(createTorRuntime(torDir.path))
-        }
 
         //
         // External Functions

@@ -1,12 +1,11 @@
 package cash.z.ecc.android.sdk.model
 
 sealed interface FiatCurrencyResult {
-
     val fiatCurrency: FiatCurrency
 
     data class Loading(
         override val fiatCurrency: FiatCurrency = FiatCurrency.USD
-    ): FiatCurrencyResult
+    ) : FiatCurrencyResult
 
     data class Success(val currencyConversion: FiatCurrencyConversion) : FiatCurrencyResult {
         override val fiatCurrency: FiatCurrency
