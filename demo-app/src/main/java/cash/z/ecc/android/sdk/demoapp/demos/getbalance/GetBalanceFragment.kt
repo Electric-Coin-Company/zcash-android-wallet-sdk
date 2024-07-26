@@ -19,6 +19,7 @@ import cash.z.ecc.android.sdk.ext.convertZatoshiToZecString
 import cash.z.ecc.android.sdk.ext.toUsdString
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.model.Account
+import cash.z.ecc.android.sdk.model.FiatCurrencyResult
 import cash.z.ecc.android.sdk.model.PercentDecimal
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
@@ -95,6 +96,7 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
         monitorChanges()
     }
 
+    @Suppress("LongMethod")
     @OptIn(ExperimentalCoroutinesApi::class)
     private fun monitorChanges() {
         viewLifecycleOwner.lifecycleScope.launch {
@@ -116,7 +118,13 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
                         .filterNotNull()
                         .flatMapLatest {
                             it.saplingBalances.combine(it.exchangeRateUsd) { b, r ->
-                                b?.let { Pair(b, r?.first) }
+                                b?.let {
+                                    b to
+                                        (r as? FiatCurrencyResult.Success)
+                                            ?.currencyConversion
+                                            ?.priceOfZec
+                                            ?.toBigDecimal()
+                                }
                             }
                         }
                         .collect { onSaplingBalance(it) }
@@ -126,7 +134,11 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
                         .filterNotNull()
                         .flatMapLatest {
                             it.orchardBalances.combine(it.exchangeRateUsd) { b, r ->
-                                b?.let { Pair(b, r?.first) }
+                                b?.let {
+                                    b to
+                                        (r as? FiatCurrencyResult.Success)
+                                            ?.currencyConversion?.priceOfZec?.toBigDecimal()
+                                }
                             }
                         }
                         .collect { onOrchardBalance(it) }
@@ -136,7 +148,13 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
                         .filterNotNull()
                         .flatMapLatest {
                             it.transparentBalance.combine(it.exchangeRateUsd) { b, r ->
-                                b?.let { Pair(b, r?.first) }
+                                b?.let {
+                                    b to
+                                        (r as? FiatCurrencyResult.Success)
+                                            ?.currencyConversion
+                                            ?.priceOfZec
+                                            ?.toBigDecimal()
+                                }
                             }
                         }
                         .collect { onTransparentBalance(it) }
@@ -193,7 +211,9 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
 
         binding.textStatus.text = "Status: $status"
         sharedViewModel.synchronizerFlow.value?.let { synchronizer ->
-            val rate = synchronizer.exchangeRateUsd.value?.first
+            val rate =
+                (synchronizer.exchangeRateUsd.value as? FiatCurrencyResult.Success)?.currencyConversion
+                    ?.priceOfZec?.toBigDecimal()
             onOrchardBalance(synchronizer.orchardBalances.value?.let { Pair(it, rate) })
             onSaplingBalance(synchronizer.saplingBalances.value?.let { Pair(it, rate) })
             onTransparentBalance(synchronizer.transparentBalance.value?.let { Pair(it, rate) })
