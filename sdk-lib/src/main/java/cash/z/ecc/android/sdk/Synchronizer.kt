@@ -8,12 +8,14 @@ import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor
 import cash.z.ecc.android.sdk.exception.InitializeException
 import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.internal.Derivation
+import cash.z.ecc.android.sdk.internal.FastestServerFetcher
 import cash.z.ecc.android.sdk.internal.SaplingParamTool
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.db.DatabaseCoordinator
 import cash.z.ecc.android.sdk.internal.model.ext.toBlockHeight
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
+import cash.z.ecc.android.sdk.model.FastestServersResult
 import cash.z.ecc.android.sdk.model.PercentDecimal
 import cash.z.ecc.android.sdk.model.Proposal
 import cash.z.ecc.android.sdk.model.TransactionOverview
@@ -109,6 +111,8 @@ interface Synchronizer {
     //
     // Operations
     //
+
+    suspend fun getFastestServers(context: Context, servers: List<LightWalletEndpoint>): Flow<FastestServersResult>
 
     @Suppress("ktlint:standard:no-consecutive-comments")
     /**
@@ -646,13 +650,16 @@ interface Synchronizer {
                     birthdayHeight = birthday ?: zcashNetwork.saplingActivationHeight
                 )
 
+            val fastestServerFetcher = FastestServerFetcher(backend = backend, network = processor.network)
+
             return SdkSynchronizer.new(
                 zcashNetwork = zcashNetwork,
                 alias = alias,
                 repository = repository,
                 txManager = txManager,
                 processor = processor,
-                backend = backend
+                backend = backend,
+                fastestServerFetcher
             )
         }
 
