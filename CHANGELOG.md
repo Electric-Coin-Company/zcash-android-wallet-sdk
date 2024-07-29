@@ -6,6 +6,10 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `Synchronizer.getFastestServers([LightWalletEndpoint])` is a flow that measures connections to given endpoints and 
+  returns the three fastest ones
+
 ### Changed
 - The fetch UTXOs logic reports `FetchUtxosException` to the wrapping `onProcessorErrorHandler` or 
   `onCriticalErrorHandler` in case any error occurs 
