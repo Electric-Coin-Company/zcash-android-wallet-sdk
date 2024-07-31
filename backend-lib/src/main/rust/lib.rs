@@ -1535,7 +1535,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_putUtxo<'
                     .map_err(|_| anyhow!("Invalid UTXO value"))?,
                 script_pubkey,
             },
-            BlockHeight::from(height as u32),
+            Some(BlockHeight::from(height as u32)),
         )
         .ok_or_else(|| anyhow!("UTXO is not P2PKH or P2SH"))?;
 
