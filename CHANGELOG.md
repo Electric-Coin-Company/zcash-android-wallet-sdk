@@ -10,7 +10,7 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Synchronizer.isValidTexAddr` which checks whether the given address is a valid ZIP 320 TEX address
 
 ### Changed
-- Migrated to Rust 1.79.0
+- Migrated to Rust 1.80.0
 - `Synchronizer.proposeTransfer` now supports TEX addresses (ZIP 320)
 - The fetch UTXOs logic reports `FetchUtxosException` to the wrapping `onProcessorErrorHandler` or 
   `onCriticalErrorHandler` in case any error occurs 
