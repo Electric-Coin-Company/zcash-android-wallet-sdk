@@ -104,7 +104,7 @@ fn account_id_from_jint(account: jint) -> anyhow::Result<zip32::AccountId> {
         .map_err(|_| anyhow!("Invalid account ID"))
 }
 
-fn account_id_from_jni<'local, P: Parameters>(
+fn account_id_from_jni<P: Parameters>(
     db_data: &WalletDb<rusqlite::Connection, P>,
     account_index: jint,
 ) -> anyhow::Result<AccountId> {
@@ -825,7 +825,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getTotalT
 
         let min_confirmations = NonZeroU32::new(1).unwrap();
 
-        let amount = (&db_data)
+        let amount = db_data
             .get_target_and_anchor_heights(min_confirmations)
             .map_err(|e| anyhow!("Error while fetching target height: {}", e))
             .and_then(|opt_target| {
@@ -834,7 +834,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getTotalT
                     .ok_or(anyhow!("Target height not available; scan required."))
             })
             .and_then(|target| {
-                (&db_data)
+                db_data
                     .get_spendable_transparent_outputs(&taddr, target, 0)
                     .map_err(|e| anyhow!("Error while fetching verified balance: {}", e))
             })?
@@ -878,7 +878,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getMemoAs
             .ok_or(anyhow!("Shielded protocol not recognized: {}", pool_type))?;
         let output_index = u16::try_from(output_index)?;
 
-        let memo = (&db_data)
+        let memo = db_data
             .get_memo(NoteId::new(txid, protocol, output_index))
             .map_err(|e| anyhow!("An error occurred retrieving the memo, {}", e))
             .and_then(|memo| match memo {
@@ -1066,12 +1066,9 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getNeares
             match db_data.get_min_unspent_height() {
                 Ok(Some(best_height)) => {
                     let first_unspent_note_height = u32::from(best_height);
-                    Ok(std::cmp::min(
-                        first_unspent_note_height as i64,
-                        height as i64,
-                    ))
+                    Ok(std::cmp::min(first_unspent_note_height as i64, height))
                 }
-                Ok(None) => Ok(height as i64),
+                Ok(None) => Ok(height),
                 Err(e) => Err(anyhow!(
                     "Error while getting nearest rewind height for {}: {}",
                     height,
@@ -1118,7 +1115,7 @@ fn decode_subtree_root<H>(
 
     fn byte_array(env: &mut JNIEnv, obj: &JObject, name: &str) -> anyhow::Result<Vec<u8>> {
         let field = JByteArray::from(env.get_field(obj, name, "[B")?.l()?);
-        Ok(env.convert_byte_array(field)?[..].try_into()?)
+        Ok(env.convert_byte_array(field)?)
     }
 
     Ok(CommitmentTreeRoot::from_parts(
@@ -1319,7 +1316,7 @@ fn encode_wallet_summary<'a, P: Parameters>(
         env,
         summary
             .account_balances()
-            .into_iter()
+            .iter()
             .map(|(account_id, balance)| {
                 let account_index = match db_data
                     .get_account(*account_id)?
@@ -1649,7 +1646,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeTr
         .map_err(|e| anyhow!("Error creating transaction proposal: {}", e))?;
 
         Ok(utils::rust_bytes_to_java(
-            &env,
+            env,
             Proposal::from_standard_proposal(&proposal)
                 .encode_to_vec()
                 .as_ref(),
@@ -1734,7 +1731,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeSh
                 Ok(account_receivers.iter().next().map(|(a, v)| (*a, *v)))
             },
             |addr| Ok(account_receivers.get(&addr).map(|value| (addr, *value)))
-        )?.filter(|(_, value)| *value >= shielding_threshold.into()) {
+        )?.filter(|(_, value)| *value >= shielding_threshold) {
             [addr]
         } else {
             // There are no transparent funds to shield; don't create a proposal.
@@ -1762,7 +1759,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeSh
         .map_err(|e| anyhow!("Error while shielding transaction: {}", e))?;
 
         Ok(utils::rust_bytes_to_java(
-            &env,
+            env,
             Proposal::from_standard_proposal(&proposal)
                 .encode_to_vec()
                 .as_ref(),
@@ -1789,7 +1786,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_createPro
         let _span = tracing::info_span!("RustBackend.createProposedTransaction").entered();
         let network = parse_network(network_id as u32)?;
         let mut db_data = wallet_db(env, network, db_data)?;
-        let usk = decode_usk(&env, usk)?;
+        let usk = decode_usk(env, usk)?;
         let spend_params = utils::java_string_to_rust(env, &spend_params);
         let output_params = utils::java_string_to_rust(env, &output_params);
 
@@ -1888,8 +1885,8 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_listTrans
         match db_data.get_transparent_receivers(account) {
             Ok(receivers) => {
                 let trasparent_receivers = receivers
-                    .iter()
-                    .map(|(taddr, _)| {
+                    .keys()
+                    .map(|taddr| {
                         let taddr = match taddr {
                             TransparentAddress::PublicKeyHash(data) => {
                                 ZcashAddress::from_transparent_p2pkh(zcash_network, *data)
