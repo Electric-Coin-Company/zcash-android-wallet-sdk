@@ -782,6 +782,31 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_isValidUn
 }
 
 #[no_mangle]
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_isValidTexAddress<'local>(
+    mut env: JNIEnv<'local>,
+    _: JClass<'local>,
+    addr: JString<'local>,
+    network_id: jint,
+) -> jboolean {
+    let res = catch_unwind(&mut env, |env| {
+        let _span = tracing::info_span!("RustBackend.isValidTexAddress").entered();
+        let network = parse_network(network_id as u32)?;
+        let addr = utils::java_string_to_rust(env, &addr);
+
+        match Address::decode(&network, &addr) {
+            Some(addr) => match addr {
+                Address::Sapling(_) | Address::Transparent(_) | Address::Unified(_) => {
+                    Ok(JNI_FALSE)
+                }
+                Address::Tex(_) => Ok(JNI_TRUE),
+            },
+            None => Err(anyhow!("Address is for the wrong network")),
+        }
+    });
+    unwrap_exc_or(&mut env, res, JNI_FALSE)
+}
+
+#[no_mangle]
 pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getTotalTransparentBalance<
     'local,
 >(
@@ -1653,7 +1678,6 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeSh
         let account = account_id_from_jni(&db_data, account)?;
         let shielding_threshold = NonNegativeAmount::from_nonnegative_i64(shielding_threshold)
             .map_err(|_| anyhow!("Invalid shielding threshold, out of range"))?;
-        let memo_bytes = env.convert_byte_array(memo).unwrap();
 
         let transparent_receiver =
             match utils::java_nullable_string_to_rust(env, &transparent_receiver) {
@@ -1717,9 +1741,15 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeSh
             return Ok(ptr::null_mut());
         };
 
-        let memo = Memo::from_bytes(&memo_bytes).unwrap();
+        let memo = if memo.is_null() {
+            None
+        } else {
+            MemoBytes::from_bytes(&env.convert_byte_array(memo)?)
+                .map(Some)
+                .map_err(|e| anyhow!("Invalid MemoBytes: {}", e))?
+        };
 
-        let input_selector = zip317_helper(Some(MemoBytes::from(&memo)), use_zip317_fees);
+        let input_selector = zip317_helper(memo, use_zip317_fees);
 
         let proposal = propose_shielding::<_, _, _, Infallible>(
             &mut db_data,

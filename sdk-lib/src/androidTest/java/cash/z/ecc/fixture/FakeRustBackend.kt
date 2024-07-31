@@ -128,6 +128,10 @@ internal class FakeRustBackend(
     override fun isValidUnifiedAddr(addr: String): Boolean =
         error("Intentionally not implemented in mocked FakeRustBackend implementation.")
 
+    override fun isValidTexAddr(addr: String): Boolean {
+        error("Intentionally not implemented in mocked FakeRustBackend implementation.")
+    }
+
     override suspend fun getCurrentAddress(account: Int): String {
         TODO("Not yet implemented")
     }

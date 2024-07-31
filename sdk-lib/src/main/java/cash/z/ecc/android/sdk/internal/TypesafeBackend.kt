@@ -32,13 +32,13 @@ internal interface TypesafeBackend {
         account: Account,
         to: String,
         value: Long,
-        memo: ByteArray? = byteArrayOf()
+        memo: ByteArray? = null
     ): Proposal
 
     suspend fun proposeShielding(
         account: Account,
         shieldingThreshold: Long,
-        memo: ByteArray? = byteArrayOf(),
+        memo: ByteArray? = null,
         transparentReceiver: String? = null
     ): Proposal?
 
@@ -168,4 +168,10 @@ internal interface TypesafeBackend {
     fun isValidTransparentAddr(addr: String): Boolean
 
     fun isValidUnifiedAddr(addr: String): Boolean
+
+    /**
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    @Throws(RuntimeException::class)
+    fun isValidTexAddr(addr: String): Boolean
 }

@@ -5,8 +5,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
 ### Changed
 - Migrated to Rust 1.79.0.
+- `Synchronizer.proposeTransfer` now supports TEX addresses (ZIP 320).
+
+### Added
+- `Synchronizer.isValidTexAddr` which checks whether the given address is a valid ZIP 320 TEX address
 
 ## [2.1.2] - 2024-07-16
 
