@@ -59,12 +59,20 @@ internal class AllTransactionView(
                 AllTransactionViewDefinition.COLUMN_INTEGER_MINED_HEIGHT
             )
 
-        private val SELECTION_RAW_IS_NULL =
+        // SQLite versions prior to 3.30.0 don't inherently support the NULLS LAST clause for ordering, and we support
+        // these SQLite versions by supporting older Android API level starting from 27. This means NULL values are
+        // typically sorted before non-null values in ascending order. As pointed out in #1536 we need to sort them
+        // at the end. Thus, we need to use condition in the query below. We should avoid decision logic based on
+        // Android API level as the SQLite version is rather device-specific. The specific SQLite version can vary
+        // across different device manufacturers and Android versions, making it unreliable to rely on a fixed value.
+        private val SELECTION_RAW_IS_NULL_AND_NULL_MINED_HEIGHT_GO_LAST =
             String.format(
                 Locale.ROOT,
                 // $NON-NLS
-                "%s IS NULL",
-                AllTransactionViewDefinition.COLUMN_BLOB_RAW
+                "%s IS NULL AND CASE WHEN %s IS NULL THEN 999999999 ELSE %s END",
+                AllTransactionViewDefinition.COLUMN_BLOB_RAW,
+                AllTransactionViewDefinition.COLUMN_INTEGER_MINED_HEIGHT,
+                AllTransactionViewDefinition.COLUMN_INTEGER_MINED_HEIGHT,
             )
 
         private val PROJECTION_COUNT = arrayOf("COUNT(*)") // $NON-NLS
@@ -166,7 +174,7 @@ internal class AllTransactionView(
                 table = AllTransactionViewDefinition.VIEW_NAME,
                 columns = PROJECTION_MINED_HEIGHT,
                 orderBy = ORDER_BY_MINED_HEIGHT,
-                selection = SELECTION_RAW_IS_NULL,
+                selection = SELECTION_RAW_IS_NULL_AND_NULL_MINED_HEIGHT_GO_LAST,
                 limit = QUERY_LIMIT,
                 cursorParser = { it.getLong(0) }
             ).firstOrNull()
