@@ -2102,9 +2102,10 @@ class CompactBlockProcessor internal constructor(
     }
 
     suspend fun getNearestRewindHeight(height: BlockHeight): BlockHeight {
-        // TODO [#683]: add a concept of original checkpoint height to the processor. For now, derive it
+        // TODO [#1545]: Improve getNearestRewindHeight
+        //  Add a concept of original checkpoint height to the processor. For now, derive it
         //  add one because we already have the checkpoint. Add one again because we delete ABOVE the block
-        // TODO [#683]: https://github.com/zcash/zcash-android-wallet-sdk/issues/683
+        // TODO [#1545]: https://github.com/Electric-Coin-Company/zcash-android-wallet-sdk/issues/1545
         val originalCheckpoint = lowerBoundHeight + MAX_REORG_SIZE + 2
         return if (height < originalCheckpoint) {
             originalCheckpoint
