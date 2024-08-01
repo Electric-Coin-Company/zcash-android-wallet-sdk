@@ -153,6 +153,7 @@ class CompactBlockProcessor internal constructor(
     private val _progress = MutableStateFlow(PercentDecimal.ZERO_PERCENT)
     private val _processorInfo = MutableStateFlow(ProcessorInfo(null, null, null))
     private val _networkHeight = MutableStateFlow<BlockHeight?>(null)
+    private val _fullyScannedHeight = MutableStateFlow<BlockHeight?>(null)
 
     // pools
     internal val saplingBalances = MutableStateFlow<WalletBalance?>(null)
@@ -200,6 +201,12 @@ class CompactBlockProcessor internal constructor(
      * rounded down to the nearest 100. So in some cases, this is a dynamic value.
      */
     val birthdayHeight = _birthdayHeight.value
+
+    /**
+     * The flow of fully scanned height. This value is updated at the same time as the other values from
+     * [WalletSummary]. This allows consumers to have the information pushed instead of polling.
+     */
+    val fullyScannedHeight = _fullyScannedHeight.asStateFlow()
 
     /**
      * Download compact blocks, verify and scan them until [stop] is called.
@@ -483,8 +490,17 @@ class CompactBlockProcessor internal constructor(
                         Twig.info { "Triggering transaction refresh now" }
                         // Invalidate transaction data
                         checkTransactions(transactionStorage = repository)
-                        batchSyncProgress.range?.start?.let {
-                            refreshUtxos(account = Account.DEFAULT, startHeight = it)
+                    }
+                    SyncingResult.FetchUtxos -> {
+                        Twig.info { "Triggering UTXOs fetching from: ${fullyScannedHeight.value}" }
+                        if (fullyScannedHeight.value == null) {
+                            Twig.info { "Postponing UTXOs fetching because fullyScannedHeight is null" }
+                        } else {
+                            val fetchedCount = refreshUtxos(
+                                account = Account.DEFAULT,
+                                startHeight = fullyScannedHeight.value!!
+                            )
+                            Twig.info { "UTXOs fetched count: $fetchedCount" }
                         }
                     }
                     is SyncingResult.Failure -> {
@@ -580,8 +596,18 @@ class CompactBlockProcessor internal constructor(
                         Twig.info { "Triggering transaction refresh now" }
                         // Invalidate transaction data and return the common batch syncing success result to the caller
                         checkTransactions(transactionStorage = repository)
-                        batchSyncProgress.range?.start?.let {
-                            refreshUtxos(account = Account.DEFAULT, startHeight = it)
+                        SyncingResult.AllSuccess
+                    }
+                    SyncingResult.FetchUtxos -> {
+                        Twig.info { "Triggering UTXOs fetching from: ${fullyScannedHeight.value}" }
+                        if (fullyScannedHeight.value == null) {
+                            Twig.info { "Postponing UTXOs fetching because fullyScannedHeight is null" }
+                        } else {
+                            val fetchedCount = refreshUtxos(
+                                account = Account.DEFAULT,
+                                startHeight = fullyScannedHeight.value!!
+                            )
+                            Twig.debug { "UTXOs fetched count: $fetchedCount" }
                         }
                         SyncingResult.AllSuccess
                     }
@@ -757,6 +783,7 @@ class CompactBlockProcessor internal constructor(
                 val resultProgress = result.scanProgressPercentDecimal()
                 Twig.info { "Progress from rust: ${resultProgress.decimal}" }
                 setProgress(resultProgress)
+                setFullyScannedHeight(result.walletSummary.fullyScannedHeight)
                 updateAllBalances(result.walletSummary)
                 return Pair(
                     result.walletSummary.nextSaplingSubtreeIndex,
@@ -1428,6 +1455,15 @@ class CompactBlockProcessor internal constructor(
                     }.buffer(1).map { downloadStageResult ->
                         Twig.debug { "Download stage done with result: $downloadStageResult" }
 
+                        // Triggering UTXOs fetch operation
+                        emit(
+                            BatchSyncProgress(
+                                order = downloadStageResult.batch.order,
+                                range = downloadStageResult.batch.range,
+                                resultState = SyncingResult.FetchUtxos
+                            )
+                        )
+
                         if (downloadStageResult.stageResult !is SyncingResult.DownloadSuccess) {
                             // In case of any failure, we just propagate the result
                             downloadStageResult
@@ -2039,6 +2075,16 @@ class CompactBlockProcessor internal constructor(
      */
     private fun setProgress(progress: PercentDecimal = _progress.value) {
         _progress.value = progress
+    }
+
+    /**
+     * Sets the [_fullyScannedHeight] for this [CompactBlockProcessor].
+     *
+     * @param height the height below which all blocks have been scanned by the wallet, ignoring blocks below the
+     * wallet birthday.
+     */
+    private fun setFullyScannedHeight(height: BlockHeight) {
+        _fullyScannedHeight.value = height
     }
 
     /**
