@@ -31,6 +31,7 @@ import cash.z.ecc.android.sdk.internal.block.CompactBlockDownloader
 import cash.z.ecc.android.sdk.internal.ext.isNullOrEmpty
 import cash.z.ecc.android.sdk.internal.ext.isScanContinuityError
 import cash.z.ecc.android.sdk.internal.ext.length
+import cash.z.ecc.android.sdk.internal.ext.overlaps
 import cash.z.ecc.android.sdk.internal.ext.retryUpToAndContinue
 import cash.z.ecc.android.sdk.internal.ext.retryUpToAndThrow
 import cash.z.ecc.android.sdk.internal.ext.retryWithBackoff
@@ -1008,7 +1009,17 @@ class CompactBlockProcessor internal constructor(
          * granular information can be provided about scan state. Unfortunately, small batches may also lead to a lot
          * of overhead during scanning.
          */
-        internal const val SYNC_BATCH_SIZE = 100
+        private const val SYNC_BATCH_SIZE = 1000
+
+        /**
+         * This is the same as [SYNC_BATCH_SIZE] but meant to be used in the Zcash sandblasting periods
+         */
+        private const val SYNC_BATCH_SMALL_SIZE = 100
+
+        /**
+         * Known Zcash sandblasting period
+         */
+        private val SANDBLASTING_RANGE = 1_710_000L..2_050_000L
 
         /**
          * Default size of batch of blocks for running the transaction enhancing.
@@ -1559,67 +1570,58 @@ class CompactBlockProcessor internal constructor(
                 }
             }
 
-        /**
-         * Returns count of batches of blocks across all ranges. It works the same when triggered from the Linear
-         * synchronization or from the SbS synchronization.
-         *
-         * @param syncRanges List of ranges of all blocks to process
-         *
-         * @return Count of all batches for processing
-         */
-        private fun getBatchCount(syncRanges: List<ClosedRange<BlockHeight>>): Long {
-            var allRangesBatchCount = 0L
-            var allMissingBlocksCount = 0L
-
-            syncRanges.forEach { range ->
-                val missingBlockCount = range.endInclusive.value - range.start.value + 1
-                val batchCount = (missingBlockCount + SYNC_BATCH_SIZE - 1) / SYNC_BATCH_SIZE
-                allMissingBlocksCount += missingBlockCount
-                allRangesBatchCount += batchCount
-            }
-
-            Twig.debug {
-                "Found $allMissingBlocksCount missing blocks, syncing in $allRangesBatchCount batches of " +
-                    "$SYNC_BATCH_SIZE..."
-            }
-            return allRangesBatchCount
+        private fun calculateBatchEnd(start: Long, rangeEnd: Long, batchSize: Int): Long {
+            return min(
+                // Subtract 1 on the first value because the range is inclusive
+                (start + batchSize) - 1,
+                rangeEnd
+            )
         }
 
         /**
-         * Prepare list of all [BlockBatch] internal objects to be processed during a range of
+         * Prepare list of all [ClosedRange<BlockBatch>] internal objects to be processed during a range of
          * blocks processing
          *
          * @param syncRange Current range to be processed
          * @param network The network we are operating on
          *
-         * @return List of [BlockBatch] to prepare for synchronization
+         * @return List of [ClosedRange<BlockBatch>] to prepare for synchronization
          */
         private fun getBatchedBlockList(
             syncRange: ClosedRange<BlockHeight>,
             network: ZcashNetwork
         ): List<BlockBatch> {
-            val batchCount = getBatchCount(listOf(syncRange))
-            var start = syncRange.start
-            return buildList {
-                for (index in 1..batchCount) {
-                    val end =
-                        BlockHeight.new(
-                            network,
-                            min(
-                                (syncRange.start.value + (index * SYNC_BATCH_SIZE)) - 1,
-                                syncRange.endInclusive.value
-                            )
-                        ) // subtract 1 on the first value because the range is inclusive
+            var order = 1L
+            var start = syncRange.start.value
+            var end = 0L
 
-                    add(
-                        BlockBatch(
-                            order = index,
-                            range = start..end
-                        )
-                    )
+            Twig.verbose { "Get batched logic input: $syncRange" }
+
+            val resultList = buildList {
+                while (end != syncRange.endInclusive.value) {
+                    end = calculateBatchEnd(start, syncRange.endInclusive.value, SYNC_BATCH_SIZE)
+
+                    if (((start..end)).overlaps(SANDBLASTING_RANGE)) {
+                        end = calculateBatchEnd(start, syncRange.endInclusive.value, SYNC_BATCH_SMALL_SIZE)
+                    }
+
+                    val range = BlockHeight.new(network, start)..BlockHeight.new(network, end)
+                    add(BlockBatch(
+                        order = order,
+                        range = range,
+                        size = range.length()
+                    ))
+
                     start = end + 1
+                    order++
                 }
             }
+
+            Twig.verbose {
+                "Get batched output: ${resultList.size}: ${resultList.joinToString(prefix = "\n", separator = "\n")}"
+            }
+
+            return resultList
         }
 
         /**
