@@ -1570,7 +1570,11 @@ class CompactBlockProcessor internal constructor(
                 }
             }
 
-        private fun calculateBatchEnd(start: Long, rangeEnd: Long, batchSize: Int): Long {
+        private fun calculateBatchEnd(
+            start: Long,
+            rangeEnd: Long,
+            batchSize: Int
+        ): Long {
             return min(
                 // Subtract 1 on the first value because the range is inclusive
                 (start + batchSize) - 1,
@@ -1597,25 +1601,28 @@ class CompactBlockProcessor internal constructor(
 
             Twig.verbose { "Get batched logic input: $syncRange" }
 
-            val resultList = buildList {
-                while (end != syncRange.endInclusive.value) {
-                    end = calculateBatchEnd(start, syncRange.endInclusive.value, SYNC_BATCH_SIZE)
+            val resultList =
+                buildList {
+                    while (end != syncRange.endInclusive.value) {
+                        end = calculateBatchEnd(start, syncRange.endInclusive.value, SYNC_BATCH_SIZE)
 
-                    if (((start..end)).overlaps(SANDBLASTING_RANGE)) {
-                        end = calculateBatchEnd(start, syncRange.endInclusive.value, SYNC_BATCH_SMALL_SIZE)
+                        if (((start..end)).overlaps(SANDBLASTING_RANGE)) {
+                            end = calculateBatchEnd(start, syncRange.endInclusive.value, SYNC_BATCH_SMALL_SIZE)
+                        }
+
+                        val range = BlockHeight.new(network, start)..BlockHeight.new(network, end)
+                        add(
+                            BlockBatch(
+                                order = order,
+                                range = range,
+                                size = range.length()
+                            )
+                        )
+
+                        start = end + 1
+                        order++
                     }
-
-                    val range = BlockHeight.new(network, start)..BlockHeight.new(network, end)
-                    add(BlockBatch(
-                        order = order,
-                        range = range,
-                        size = range.length()
-                    ))
-
-                    start = end + 1
-                    order++
                 }
-            }
 
             Twig.verbose {
                 "Get batched output: ${resultList.size}: ${resultList.joinToString(prefix = "\n", separator = "\n")}"

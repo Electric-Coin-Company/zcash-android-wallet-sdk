@@ -8,6 +8,9 @@ internal data class BlockBatch(
     val size: Long,
     var blocks: List<JniBlockMeta>? = null
 ) {
-    override fun toString() =
-        "BlockBatch(order=$order, range=$range, size=$size${blocks?.let { ", blocks=${blocks!!.size}" } ?: ""})"
+    override fun toString(): String {
+        return "BlockBatch(order=$order, range=$range, size=$size${blocks?.let {
+            ", blocks=${blocks!!.size}"
+        } ?: ""})"
+    }
 }
