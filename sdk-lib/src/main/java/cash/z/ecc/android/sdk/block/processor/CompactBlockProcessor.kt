@@ -204,7 +204,11 @@ class CompactBlockProcessor internal constructor(
 
     /**
      * The flow of fully scanned height. This value is updated at the same time as the other values from
-     * [WalletSummary]. This allows consumers to have the information pushed instead of polling.
+     * [WalletSummary]. fullyScannedHeight is the height below which all blocks have been scanned by the wallet,
+     * ignoring blocks below the wallet birthday. This allows consumers to have the information pushed instead of
+     * polling.
+     *
+     * We can consider moving this property to public API by creating equivalent property on `Synchronizer`
      */
     val fullyScannedHeight = _fullyScannedHeight.asStateFlow()
 
@@ -496,10 +500,11 @@ class CompactBlockProcessor internal constructor(
                         if (fullyScannedHeight.value == null) {
                             Twig.info { "Postponing UTXOs fetching because fullyScannedHeight is null" }
                         } else {
-                            val fetchedCount = refreshUtxos(
-                                account = Account.DEFAULT,
-                                startHeight = fullyScannedHeight.value!!
-                            )
+                            val fetchedCount =
+                                refreshUtxos(
+                                    account = Account.DEFAULT,
+                                    startHeight = fullyScannedHeight.value!!
+                                )
                             Twig.info { "UTXOs fetched count: $fetchedCount" }
                         }
                     }
@@ -603,10 +608,11 @@ class CompactBlockProcessor internal constructor(
                         if (fullyScannedHeight.value == null) {
                             Twig.info { "Postponing UTXOs fetching because fullyScannedHeight is null" }
                         } else {
-                            val fetchedCount = refreshUtxos(
-                                account = Account.DEFAULT,
-                                startHeight = fullyScannedHeight.value!!
-                            )
+                            val fetchedCount =
+                                refreshUtxos(
+                                    account = Account.DEFAULT,
+                                    startHeight = fullyScannedHeight.value!!
+                                )
                             Twig.debug { "UTXOs fetched count: $fetchedCount" }
                         }
                         SyncingResult.AllSuccess

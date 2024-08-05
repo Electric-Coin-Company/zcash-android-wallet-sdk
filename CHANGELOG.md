@@ -7,7 +7,10 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
-- The fetch UTXOs logic reports `FetchUtxosException` to the wrapping `onProcessorErrorHandler` or 
+- The fetch UTXOs action is now hooked up at the begging of every scanning phase of the block synchronization logic 
+  instead of being called every 1000 blocks together with shielded transactions enhancing. It uses 
+  `fullyScannedHeight` as its lower bound.
+- The fetch UTXOs action reports `FetchUtxosException` to the wrapping `onProcessorErrorHandler` or 
   `onCriticalErrorHandler` in case any error occurs 
 
 ### Fixed
