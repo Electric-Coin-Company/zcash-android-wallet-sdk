@@ -98,6 +98,7 @@ internal fun ComposeActivity.Navigation() {
                     onRefresh = {
                         scope.launch {
                             (synchronizer as SdkSynchronizer).refreshAllBalances()
+                            synchronizer.refreshExchangeRateUsd()
                         }
                     }
                 )

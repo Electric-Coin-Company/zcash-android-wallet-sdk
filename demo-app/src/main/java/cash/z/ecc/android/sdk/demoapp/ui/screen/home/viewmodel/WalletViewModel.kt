@@ -56,6 +56,8 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import java.math.BigDecimal
+import java.time.Instant
 import kotlin.time.Duration.Companion.seconds
 
 // To make this more multiplatform compatible, we need to remove the dependency on Context
@@ -435,14 +437,19 @@ private fun Synchronizer.toWalletSnapshot() =
         // 4
         transparentBalance,
         // 5
-        progress,
+        exchangeRateUsd,
         // 6
+        progress,
+        // 7
         toCommonError()
     ) { flows ->
         val orchardBalance = flows[2] as WalletBalance?
         val saplingBalance = flows[3] as WalletBalance?
         val transparentBalance = flows[4] as Zatoshi?
-        val progressPercentDecimal = (flows[5] as PercentDecimal)
+
+        @Suppress("UNCHECKED_CAST")
+        val exchangeRateUsd = flows[5] as Pair<BigDecimal, Instant>?
+        val progressPercentDecimal = (flows[6] as PercentDecimal)
 
         WalletSnapshot(
             flows[0] as Synchronizer.Status,
@@ -450,7 +457,8 @@ private fun Synchronizer.toWalletSnapshot() =
             orchardBalance ?: WalletBalance(Zatoshi(0), Zatoshi(0), Zatoshi(0)),
             saplingBalance ?: WalletBalance(Zatoshi(0), Zatoshi(0), Zatoshi(0)),
             transparentBalance ?: Zatoshi(0),
+            exchangeRateUsd?.first,
             progressPercentDecimal,
-            flows[6] as SynchronizerError?
+            flows[7] as SynchronizerError?
         )
     }

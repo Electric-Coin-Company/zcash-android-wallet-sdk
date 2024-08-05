@@ -32,18 +32,14 @@ impl Layer {
         }
     }
 
-    fn with_entered_span<S: Subscriber>(
-        &self,
-        id: &span::Id,
-        ctx: &Context<'_, S>,
-        f: impl FnOnce(&CString),
-    ) where
-        for<'lookup> S: LookupSpan<'lookup>,
+    fn with_entered_span<S>(&self, id: &span::Id, ctx: &Context<'_, S>, f: impl FnOnce(&CString))
+    where
+        for<'lookup> S: Subscriber + LookupSpan<'lookup>,
     {
         let mut open_spans = self.open_spans.lock().unwrap();
 
         if let Some(section_name) = open_spans.get_mut(id) {
-            f(&section_name);
+            f(section_name);
         } else {
             // We need to obtain the span's name as a CString.
             match ctx.metadata(id) {
