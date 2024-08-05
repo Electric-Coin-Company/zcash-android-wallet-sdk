@@ -176,7 +176,7 @@ internal class FastestServerFetcher(
             return null
         }
 
-        if (remoteInfo.estimatedHeight >= remoteInfo.blockHeightUnsafe.value + 100) {
+        if (remoteInfo.estimatedHeight >= remoteInfo.blockHeightUnsafe.value + N) {
             logRuledOut()
             return null
         }
@@ -192,7 +192,7 @@ internal class FastestServerFetcher(
         )
     }
 
-    private suspend inline fun <T, R> Iterable<T>.parallelMapNotNull(crossinline transform: suspend (T) -> R?): List<R> =
+    private suspend inline fun <T, R> Iterable<T>.parallelMapNotNull(crossinline transform: suspend (T) -> R?) =
         map { coroutineScope { async { transform(it) } } }
             .awaitAll()
             .filterNotNull()
