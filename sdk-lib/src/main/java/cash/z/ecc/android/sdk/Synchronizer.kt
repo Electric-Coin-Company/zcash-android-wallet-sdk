@@ -112,7 +112,10 @@ interface Synchronizer {
     // Operations
     //
 
-    suspend fun getFastestServers(context: Context, servers: List<LightWalletEndpoint>): Flow<FastestServersResult>
+    suspend fun getFastestServers(
+        context: Context,
+        servers: List<LightWalletEndpoint>
+    ): Flow<FastestServersResult>
 
     @Suppress("ktlint:standard:no-consecutive-comments")
     /**

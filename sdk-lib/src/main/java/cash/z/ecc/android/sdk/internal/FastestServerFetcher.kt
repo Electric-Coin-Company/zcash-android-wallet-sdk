@@ -39,22 +39,23 @@ internal class FastestServerFetcher(
         return flow {
             emit(FastestServersResult(servers = null, isLoading = true))
 
-            val serversByRpcMeanLatency = servers
-                .parallelMapNotNull {
-                    validateServerEndpointAndMeasure(context, it)
-                }
-                .sortedBy {
-                    it.meanDuration
-                }
-                .mapIndexedNotNull { index, result ->
-                    if (index <= K - 1 || result.meanDuration <= LATENCY_THRESHOLD) {
-                        Twig.debug { "Fastest Server: '${result.endpoint}' VALIDATED by SORTING by RPC latency" }
-                        result
-                    } else {
-                        Twig.debug { "Fastest Server: '${result.endpoint}' RULED OUT by SORTING by RPC latency" }
-                        null
+            val serversByRpcMeanLatency =
+                servers
+                    .parallelMapNotNull {
+                        validateServerEndpointAndMeasure(context, it)
                     }
-                }
+                    .sortedBy {
+                        it.meanDuration
+                    }
+                    .mapIndexedNotNull { index, result ->
+                        if (index <= K - 1 || result.meanDuration <= LATENCY_THRESHOLD) {
+                            Twig.debug { "Fastest Server: '${result.endpoint}' VALIDATED by SORTING by RPC latency" }
+                            result
+                        } else {
+                            Twig.debug { "Fastest Server: '${result.endpoint}' RULED OUT by SORTING by RPC latency" }
+                            null
+                        }
+                    }
 
             Twig.debug {
                 "Fastest Server: '${serversByRpcMeanLatency.map { it.endpoint }}' VALIDATED by MEASURING RPC latency"
@@ -62,28 +63,30 @@ internal class FastestServerFetcher(
 
             emit(FastestServersResult(servers = serversByRpcMeanLatency.map { it.endpoint }.take(K), isLoading = true))
 
-            val serversByGetBlockRangeTimeout = serversByRpcMeanLatency
-                .asFlow()
-                .mapNotNull { result ->
-                    val didTimeOut = withTimeoutOrNull(FETCH_THRESHOLD) {
-                        runCatching {
-                            val to = result.remoteInfo.blockHeightUnsafe
-                            val from = BlockHeightUnsafe((to.value - N).coerceAtLeast(0))
-                            result.lightWalletClient.getBlockRange(from..to)
-                        }.getOrNull()
-                    } == null
+            val serversByGetBlockRangeTimeout =
+                serversByRpcMeanLatency
+                    .asFlow()
+                    .mapNotNull { result ->
+                        val didTimeOut =
+                            withTimeoutOrNull(FETCH_THRESHOLD) {
+                                runCatching {
+                                    val to = result.remoteInfo.blockHeightUnsafe
+                                    val from = BlockHeightUnsafe((to.value - N).coerceAtLeast(0))
+                                    result.lightWalletClient.getBlockRange(from..to)
+                                }.getOrNull()
+                            } == null
 
-                    if (didTimeOut) {
-                        Twig.debug { "Fastest Server: '${result.endpoint}' RULED OUT by getBlockRange timeout" }
-                        null
-                    } else {
-                        Twig.debug { "Fastest Server: '${result.endpoint}' VALIDATED by getBlockRange timeout" }
-                        result
+                        if (didTimeOut) {
+                            Twig.debug { "Fastest Server: '${result.endpoint}' RULED OUT by getBlockRange timeout" }
+                            null
+                        } else {
+                            Twig.debug { "Fastest Server: '${result.endpoint}' VALIDATED by getBlockRange timeout" }
+                            result
+                        }
                     }
-                }
-                .map { it.endpoint }
-                .take(K)
-                .toList()
+                    .map { it.endpoint }
+                    .take(K)
+                    .toList()
 
             Twig.debug { "Fastest Server: '$serversByGetBlockRangeTimeout' VALIDATED by getBlockRange timeout" }
 
@@ -100,22 +103,25 @@ internal class FastestServerFetcher(
             Twig.debug { "Fastest Server: Server '$endpoint' RULED OUT during validating and measuring RPC latency" }
         }
 
-        val lightWalletClient = LightWalletClient.new(
-            context = context,
-            lightWalletEndpoint = endpoint,
-            singleRequestTimeout = 5.seconds
-        )
+        val lightWalletClient =
+            LightWalletClient.new(
+                context = context,
+                lightWalletEndpoint = endpoint,
+                singleRequestTimeout = 5.seconds
+            )
 
         val remoteInfo: LightWalletEndpointInfoUnsafe
-        val getServerInfoDuration = measureTime {
-            remoteInfo = when (val response = lightWalletClient.getServerInfo()) {
-                is Response.Success -> response.result
-                is Response.Failure -> {
-                    logRuledOut()
-                    return null
-                }
+        val getServerInfoDuration =
+            measureTime {
+                remoteInfo =
+                    when (val response = lightWalletClient.getServerInfo()) {
+                        is Response.Success -> response.result
+                        is Response.Failure -> {
+                            logRuledOut()
+                            return null
+                        }
+                    }
             }
-        }
 
         // Check network type
         if (!remoteInfo.matchingNetwork(network.networkName)) {
@@ -136,21 +142,23 @@ internal class FastestServerFetcher(
         }
 
         val currentChainTip: BlockHeight
-        val getLatestBlockHeightDuration = measureTime {
-            currentChainTip = when (val response = lightWalletClient.getLatestBlockHeight()) {
-                is Response.Success -> {
-                    runCatching { response.result.toBlockHeight(network) }.getOrElse {
-                        logRuledOut()
-                        return null
-                    }
-                }
+        val getLatestBlockHeightDuration =
+            measureTime {
+                currentChainTip =
+                    when (val response = lightWalletClient.getLatestBlockHeight()) {
+                        is Response.Success -> {
+                            runCatching { response.result.toBlockHeight(network) }.getOrElse {
+                                logRuledOut()
+                                return null
+                            }
+                        }
 
-                is Response.Failure -> {
-                    logRuledOut()
-                    return null
-                }
+                        is Response.Failure -> {
+                            logRuledOut()
+                            return null
+                        }
+                    }
             }
-        }
 
         val sdkBranchId =
             runCatching {
@@ -184,11 +192,10 @@ internal class FastestServerFetcher(
         )
     }
 
-    private suspend inline fun <T, R> Iterable<T>.parallelMapNotNull(
-        crossinline transform: suspend (T) -> R?
-    ): List<R> = map { coroutineScope { async { transform(it) } } }
-        .awaitAll()
-        .filterNotNull()
+    private suspend inline fun <T, R> Iterable<T>.parallelMapNotNull(crossinline transform: suspend (T) -> R?): List<R> =
+        map { coroutineScope { async { transform(it) } } }
+            .awaitAll()
+            .filterNotNull()
 }
 
 data class ValidateServerResult(
@@ -220,5 +227,3 @@ private val LATENCY_THRESHOLD = 300.milliseconds
  * Threshold for getBlockRange RPC call latency of latest [N] blocks.
  */
 private val FETCH_THRESHOLD = 60.seconds
-
-
