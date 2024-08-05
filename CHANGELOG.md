@@ -6,6 +6,9 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `Synchronizer.isValidTexAddr` which checks whether the given address is a valid ZIP 320 TEX address
+
 ### Changed
 - Migrated to Rust 1.79.0
 - `Synchronizer.proposeTransfer` now supports TEX addresses (ZIP 320)
@@ -15,9 +18,6 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - `Synchronizer.refreshUtxos(account: Account, since: BlockHeight)` now correctly uses the `since` parameter in the 
   underlying logic and fetches UTXOs from that height
-
-### Added
-- `Synchronizer.isValidTexAddr` which checks whether the given address is a valid ZIP 320 TEX address
 
 ## [2.1.2] - 2024-07-16
 
