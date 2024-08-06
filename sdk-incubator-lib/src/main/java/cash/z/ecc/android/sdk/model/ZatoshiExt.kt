@@ -13,18 +13,6 @@ import java.util.Currency
 import kotlin.time.Duration
 
 fun Zatoshi.toFiatCurrencyState(
-    fiatCurrencyResult: FiatCurrencyResult,
-    locale: Locale,
-    monetarySeparators: MonetarySeparators,
-    clock: Clock = Clock.System
-) = toFiatCurrencyState(
-    (fiatCurrencyResult as? FiatCurrencyResult.Success)?.currencyConversion,
-    locale,
-    monetarySeparators,
-    clock
-)
-
-fun Zatoshi.toFiatCurrencyState(
     currencyConversion: FiatCurrencyConversion?,
     locale: Locale,
     monetarySeparators: MonetarySeparators,

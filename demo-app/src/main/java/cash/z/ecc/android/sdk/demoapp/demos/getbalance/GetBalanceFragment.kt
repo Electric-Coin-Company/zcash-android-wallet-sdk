@@ -19,7 +19,6 @@ import cash.z.ecc.android.sdk.ext.convertZatoshiToZecString
 import cash.z.ecc.android.sdk.ext.toUsdString
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.model.Account
-import cash.z.ecc.android.sdk.model.FiatCurrencyResult
 import cash.z.ecc.android.sdk.model.PercentDecimal
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
@@ -120,8 +119,7 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
                             it.saplingBalances.combine(it.exchangeRateUsd) { b, r ->
                                 b?.let {
                                     b to
-                                        (r as? FiatCurrencyResult.Success)
-                                            ?.currencyConversion
+                                        r.currencyConversion
                                             ?.priceOfZec
                                             ?.toBigDecimal()
                                 }
@@ -136,8 +134,7 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
                             it.orchardBalances.combine(it.exchangeRateUsd) { b, r ->
                                 b?.let {
                                     b to
-                                        (r as? FiatCurrencyResult.Success)
-                                            ?.currencyConversion?.priceOfZec?.toBigDecimal()
+                                        r.currencyConversion?.priceOfZec?.toBigDecimal()
                                 }
                             }
                         }
@@ -150,8 +147,7 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
                             it.transparentBalance.combine(it.exchangeRateUsd) { b, r ->
                                 b?.let {
                                     b to
-                                        (r as? FiatCurrencyResult.Success)
-                                            ?.currencyConversion
+                                        r.currencyConversion
                                             ?.priceOfZec
                                             ?.toBigDecimal()
                                 }
@@ -211,9 +207,7 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
 
         binding.textStatus.text = "Status: $status"
         sharedViewModel.synchronizerFlow.value?.let { synchronizer ->
-            val rate =
-                (synchronizer.exchangeRateUsd.value as? FiatCurrencyResult.Success)?.currencyConversion
-                    ?.priceOfZec?.toBigDecimal()
+            val rate = synchronizer.exchangeRateUsd.value.currencyConversion?.priceOfZec?.toBigDecimal()
             onOrchardBalance(synchronizer.orchardBalances.value?.let { Pair(it, rate) })
             onSaplingBalance(synchronizer.saplingBalances.value?.let { Pair(it, rate) })
             onTransparentBalance(synchronizer.transparentBalance.value?.let { Pair(it, rate) })

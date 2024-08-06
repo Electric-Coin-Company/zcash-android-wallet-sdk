@@ -11,10 +11,11 @@ import kotlinx.datetime.Instant
  * @param priceOfZec The conversion rate of ZEC to the fiat currency.
  */
 data class FiatCurrencyConversion(
-    val fiatCurrency: FiatCurrency,
     val timestamp: Instant,
     val priceOfZec: Double
 ) {
+    val fiatCurrency: FiatCurrency = FiatCurrency.USD
+
     init {
         require(priceOfZec > 0) { "priceOfZec must be greater than 0" }
         require(priceOfZec.isFinite()) { "priceOfZec must be finite" }

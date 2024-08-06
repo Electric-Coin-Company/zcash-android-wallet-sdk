@@ -11,12 +11,12 @@ import cash.z.ecc.android.sdk.internal.Derivation
 import cash.z.ecc.android.sdk.internal.Files
 import cash.z.ecc.android.sdk.internal.SaplingParamTool
 import cash.z.ecc.android.sdk.internal.Twig
-import cash.z.ecc.android.sdk.internal.UsdExchangeRateFetcher
 import cash.z.ecc.android.sdk.internal.db.DatabaseCoordinator
+import cash.z.ecc.android.sdk.internal.exchange.UsdExchangeRateFetcher
 import cash.z.ecc.android.sdk.internal.model.ext.toBlockHeight
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
-import cash.z.ecc.android.sdk.model.FiatCurrencyResult
+import cash.z.ecc.android.sdk.model.ObserveFiatCurrencyResult
 import cash.z.ecc.android.sdk.model.PercentDecimal
 import cash.z.ecc.android.sdk.model.Proposal
 import cash.z.ecc.android.sdk.model.TransactionOverview
@@ -94,7 +94,7 @@ interface Synchronizer {
      *
      * The rate can be initialized and refreshed by calling [refreshExchangeRateUsd].
      */
-    val exchangeRateUsd: StateFlow<FiatCurrencyResult>
+    val exchangeRateUsd: StateFlow<ObserveFiatCurrencyResult>
 
     /**
      * A flow of all the transactions that are on the blockchain.
