@@ -317,7 +317,7 @@ class RustBackend private constructor(
                     account,
                     to,
                     value,
-                    memo ?: ByteArray(0),
+                    memo,
                     networkId = networkId,
                     useZip317Fees = IS_USE_ZIP_317_FEES
                 )
@@ -335,7 +335,7 @@ class RustBackend private constructor(
                 dataDbFile.absolutePath,
                 account,
                 shieldingThreshold,
-                memo ?: ByteArray(0),
+                memo,
                 transparentReceiver,
                 networkId = networkId,
                 useZip317Fees = IS_USE_ZIP_317_FEES
@@ -387,6 +387,8 @@ class RustBackend private constructor(
     override fun isValidTransparentAddr(addr: String) = isValidTransparentAddress(addr, networkId = networkId)
 
     override fun isValidUnifiedAddr(addr: String) = isValidUnifiedAddress(addr, networkId = networkId)
+
+    override fun isValidTexAddr(addr: String) = isValidTexAddress(addr, networkId = networkId)
 
     override fun getBranchIdForHeight(height: Long): Long = branchIdForHeight(height, networkId = networkId)
 
@@ -508,6 +510,12 @@ class RustBackend private constructor(
         ): Boolean
 
         @JvmStatic
+        private external fun isValidTexAddress(
+            addr: String,
+            networkId: Int
+        ): Boolean
+
+        @JvmStatic
         private external fun getMemoAsUtf8(
             dbDataPath: String,
             txId: ByteArray,
@@ -618,7 +626,7 @@ class RustBackend private constructor(
             account: Int,
             to: String,
             value: Long,
-            memo: ByteArray,
+            memo: ByteArray?,
             networkId: Int,
             useZip317Fees: Boolean
         ): ByteArray
@@ -629,7 +637,7 @@ class RustBackend private constructor(
             dbDataPath: String,
             account: Int,
             shieldingThreshold: Long,
-            memo: ByteArray,
+            memo: ByteArray?,
             transparentReceiver: String?,
             networkId: Int,
             useZip317Fees: Boolean

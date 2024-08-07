@@ -723,7 +723,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_isValidSa
         match Address::decode(&network, &addr) {
             Some(addr) => match addr {
                 Address::Sapling(_) => Ok(JNI_TRUE),
-                Address::Transparent(_) | Address::Unified(_) => Ok(JNI_FALSE),
+                Address::Transparent(_) | Address::Unified(_) | Address::Tex(_) => Ok(JNI_FALSE),
             },
             None => Err(anyhow!("Address is for the wrong network")),
         }
@@ -747,7 +747,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_isValidTr
 
         match Address::decode(&network, &addr) {
             Some(addr) => match addr {
-                Address::Sapling(_) | Address::Unified(_) => Ok(JNI_FALSE),
+                Address::Sapling(_) | Address::Unified(_) | Address::Tex(_) => Ok(JNI_FALSE),
                 Address::Transparent(_) => Ok(JNI_TRUE),
             },
             None => Err(anyhow!("Address is for the wrong network")),
@@ -773,7 +773,32 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_isValidUn
         match Address::decode(&network, &addr) {
             Some(addr) => match addr {
                 Address::Unified(_) => Ok(JNI_TRUE),
-                Address::Sapling(_) | Address::Transparent(_) => Ok(JNI_FALSE),
+                Address::Sapling(_) | Address::Transparent(_) | Address::Tex(_) => Ok(JNI_FALSE),
+            },
+            None => Err(anyhow!("Address is for the wrong network")),
+        }
+    });
+    unwrap_exc_or(&mut env, res, JNI_FALSE)
+}
+
+#[no_mangle]
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_isValidTexAddress<'local>(
+    mut env: JNIEnv<'local>,
+    _: JClass<'local>,
+    addr: JString<'local>,
+    network_id: jint,
+) -> jboolean {
+    let res = catch_unwind(&mut env, |env| {
+        let _span = tracing::info_span!("RustBackend.isValidTexAddress").entered();
+        let network = parse_network(network_id as u32)?;
+        let addr = utils::java_string_to_rust(env, &addr);
+
+        match Address::decode(&network, &addr) {
+            Some(addr) => match addr {
+                Address::Sapling(_) | Address::Transparent(_) | Address::Unified(_) => {
+                    Ok(JNI_FALSE)
+                }
+                Address::Tex(_) => Ok(JNI_TRUE),
             },
             None => Err(anyhow!("Address is for the wrong network")),
         }
@@ -802,15 +827,15 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getTotalT
 
         let amount = (&db_data)
             .get_target_and_anchor_heights(min_confirmations)
-            .map_err(|e| anyhow!("Error while fetching anchor height: {}", e))
-            .and_then(|opt_anchor| {
-                opt_anchor
-                    .map(|(target, _)| target) // Include unconfirmed funds.
-                    .ok_or(anyhow!("Anchor height not available; scan required."))
+            .map_err(|e| anyhow!("Error while fetching target height: {}", e))
+            .and_then(|opt_target| {
+                opt_target
+                    .map(|(target, _)| target)
+                    .ok_or(anyhow!("Target height not available; scan required."))
             })
-            .and_then(|anchor| {
+            .and_then(|target| {
                 (&db_data)
-                    .get_unspent_transparent_outputs(&taddr, anchor, &[])
+                    .get_spendable_transparent_outputs(&taddr, target, 0)
                     .map_err(|e| anyhow!("Error while fetching verified balance: {}", e))
             })?
             .iter()
@@ -1591,36 +1616,27 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeTr
         let to = utils::java_string_to_rust(env, &to);
         let value = NonNegativeAmount::from_nonnegative_i64(value)
             .map_err(|_| anyhow!("Invalid amount, out of range"))?;
-        let memo_bytes = env.convert_byte_array(memo).unwrap();
 
-        let to = match Address::decode(&network, &to) {
-            Some(to) => to,
-            None => {
-                return Err(anyhow!("Address is for the wrong network"));
-            }
-        };
+        let to = to
+            .parse()
+            .map_err(|e| anyhow!("Can't parse recipient address: {}", e))?;
 
-        // TODO: consider warning in this case somehow, rather than swallowing this error
-        let memo = match to {
-            Address::Sapling(_) | Address::Unified(_) => {
-                let memo_value =
-                    Memo::from_bytes(&memo_bytes).map_err(|_| anyhow!("Invalid memo"))?;
-                Some(MemoBytes::from(&memo_value))
-            }
-            Address::Transparent(_) => None,
+        let memo = if memo.is_null() {
+            None
+        } else {
+            MemoBytes::from_bytes(&env.convert_byte_array(memo)?)
+                .map(Some)
+                .map_err(|e| anyhow!("Invalid MemoBytes: {}", e))?
         };
 
         let input_selector = zip317_helper(None, use_zip317_fees);
 
-        let request = TransactionRequest::new(vec![Payment {
-            recipient_address: to,
-            amount: value,
-            memo,
-            label: None,
-            message: None,
-            other_params: vec![],
-        }])
-        .map_err(|e| anyhow!("Error creating transaction request: {:?}", e))?;
+        let request =
+            TransactionRequest::new(vec![Payment::new(to, value, memo, None, None, vec![])
+                .ok_or_else(|| {
+                    anyhow!("Memos are not permitted when sending to transparent recipients.")
+                })?])
+            .map_err(|e| anyhow!("Error creating transaction request: {:?}", e))?;
 
         let proposal = propose_transfer::<_, _, _, Infallible>(
             &mut db_data,
@@ -1634,7 +1650,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeTr
 
         Ok(utils::rust_bytes_to_java(
             &env,
-            Proposal::from_standard_proposal(&network, &proposal)
+            Proposal::from_standard_proposal(&proposal)
                 .encode_to_vec()
                 .as_ref(),
         )?
@@ -1662,7 +1678,6 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeSh
         let account = account_id_from_jni(&db_data, account)?;
         let shielding_threshold = NonNegativeAmount::from_nonnegative_i64(shielding_threshold)
             .map_err(|_| anyhow!("Invalid shielding threshold, out of range"))?;
-        let memo_bytes = env.convert_byte_array(memo).unwrap();
 
         let transparent_receiver =
             match utils::java_nullable_string_to_rust(env, &transparent_receiver) {
@@ -1670,7 +1685,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeSh
                 Some(addr) => match Address::decode(&network, &addr) {
                     None => Err(anyhow!("Transparent receiver is for the wrong network")),
                     Some(addr) => match addr {
-                        Address::Sapling(_) | Address::Unified(_) => {
+                        Address::Sapling(_) | Address::Unified(_) | Address::Tex(_) => {
                             Err(anyhow!("Transparent receiver is not a transparent address"))
                         }
                         Address::Transparent(addr) => {
@@ -1726,9 +1741,15 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeSh
             return Ok(ptr::null_mut());
         };
 
-        let memo = Memo::from_bytes(&memo_bytes).unwrap();
+        let memo = if memo.is_null() {
+            None
+        } else {
+            MemoBytes::from_bytes(&env.convert_byte_array(memo)?)
+                .map(Some)
+                .map_err(|e| anyhow!("Invalid MemoBytes: {}", e))?
+        };
 
-        let input_selector = zip317_helper(Some(MemoBytes::from(&memo)), use_zip317_fees);
+        let input_selector = zip317_helper(memo, use_zip317_fees);
 
         let proposal = propose_shielding::<_, _, _, Infallible>(
             &mut db_data,
@@ -1742,7 +1763,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeSh
 
         Ok(utils::rust_bytes_to_java(
             &env,
-            Proposal::from_standard_proposal(&network, &proposal)
+            Proposal::from_standard_proposal(&proposal)
                 .encode_to_vec()
                 .as_ref(),
         )?
@@ -1776,7 +1797,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_createPro
 
         let proposal = Proposal::decode(&env.convert_byte_array(proposal)?[..])
             .map_err(|e| anyhow!("Invalid proposal: {}", e))?
-            .try_into_standard_proposal(&network, &db_data)?;
+            .try_into_standard_proposal(&db_data)?;
 
         let txids = create_proposed_transactions::<_, _, Infallible, _, _>(
             &mut db_data,

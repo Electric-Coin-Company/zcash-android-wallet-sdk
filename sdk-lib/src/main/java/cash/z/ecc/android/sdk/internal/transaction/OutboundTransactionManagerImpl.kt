@@ -24,12 +24,18 @@ internal class OutboundTransactionManagerImpl(
         memo: String,
         account: Account
     ): EncodedTransaction {
+        val memoBytes =
+            if (memo.isBlank()) {
+                null
+            } else {
+                memo.toByteArray()
+            }
         return when (recipient) {
             is TransactionRecipient.Account -> {
                 encoder.createShieldingTransaction(
                     usk,
                     recipient,
-                    memo.toByteArray()
+                    memoBytes
                 )
             }
             is TransactionRecipient.Address -> {
@@ -37,7 +43,7 @@ internal class OutboundTransactionManagerImpl(
                     usk,
                     amount,
                     recipient,
-                    memo.toByteArray()
+                    memoBytes
                 )
             }
         }
@@ -48,14 +54,30 @@ internal class OutboundTransactionManagerImpl(
         recipient: String,
         amount: Zatoshi,
         memo: String
-    ): Proposal = encoder.proposeTransfer(account, recipient, amount, memo.toByteArray())
+    ): Proposal {
+        val memoBytes =
+            if (memo.isBlank()) {
+                null
+            } else {
+                memo.toByteArray()
+            }
+        return encoder.proposeTransfer(account, recipient, amount, memoBytes)
+    }
 
     override suspend fun proposeShielding(
         account: Account,
         shieldingThreshold: Zatoshi,
         memo: String,
         transparentReceiver: String?
-    ): Proposal? = encoder.proposeShielding(account, shieldingThreshold, memo.toByteArray(), transparentReceiver)
+    ): Proposal? {
+        val memoBytes =
+            if (memo.isBlank()) {
+                null
+            } else {
+                memo.toByteArray()
+            }
+        return encoder.proposeShielding(account, shieldingThreshold, memoBytes, transparentReceiver)
+    }
 
     override suspend fun createProposedTransactions(
         proposal: Proposal,
@@ -106,6 +128,8 @@ internal class OutboundTransactionManagerImpl(
     override suspend fun isValidTransparentAddress(address: String) = encoder.isValidTransparentAddress(address)
 
     override suspend fun isValidUnifiedAddress(address: String) = encoder.isValidUnifiedAddress(address)
+
+    override suspend fun isValidTexAddress(address: String) = encoder.isValidTexAddress(address)
 
     //
     // Helper functions

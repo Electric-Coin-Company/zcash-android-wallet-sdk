@@ -24,13 +24,13 @@ interface Backend {
         account: Int,
         to: String,
         value: Long,
-        memo: ByteArray? = byteArrayOf()
+        memo: ByteArray? = null
     ): ProposalUnsafe
 
     suspend fun proposeShielding(
         account: Int,
         shieldingThreshold: Long,
-        memo: ByteArray? = byteArrayOf(),
+        memo: ByteArray? = null,
         transparentReceiver: String? = null
     ): ProposalUnsafe?
 
@@ -76,6 +76,12 @@ interface Backend {
     fun isValidTransparentAddr(addr: String): Boolean
 
     fun isValidUnifiedAddr(addr: String): Boolean
+
+    /**
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    @Throws(RuntimeException::class)
+    fun isValidTexAddr(addr: String): Boolean
 
     @Throws(RuntimeException::class)
     suspend fun getCurrentAddress(account: Int): String

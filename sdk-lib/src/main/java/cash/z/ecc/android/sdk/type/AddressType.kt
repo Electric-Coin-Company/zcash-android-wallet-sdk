@@ -27,6 +27,11 @@ sealed class AddressType {
     object Unified : Valid, AddressType()
 
     /**
+     * An instance of [AddressType] corresponding to a valid ZIP 320 TEX address.
+     */
+    object Tex : Valid, AddressType()
+
+    /**
      * An instance of [AddressType] corresponding to an invalid address.
      *
      * @param reason a description of why the address was invalid.

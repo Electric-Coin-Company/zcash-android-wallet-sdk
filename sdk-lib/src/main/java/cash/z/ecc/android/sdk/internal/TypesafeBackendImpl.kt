@@ -262,4 +262,6 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
     override fun isValidTransparentAddr(addr: String): Boolean = backend.isValidTransparentAddr(addr)
 
     override fun isValidUnifiedAddr(addr: String): Boolean = backend.isValidUnifiedAddr(addr)
+
+    override fun isValidTexAddr(addr: String): Boolean = backend.isValidTexAddr(addr)
 }
