@@ -12,6 +12,8 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `fullyScannedHeight` as its lower bound.
 - The fetch UTXOs action reports `FetchUtxosException` to the wrapping `onProcessorErrorHandler` or 
   `onCriticalErrorHandler` in case any error occurs 
+- Block synchronization logic now works above batch of blocks with size 1000 blocks instead of just 100 blocks 
+  except the Zcash sandblasting period in which batch size of 100 blocks is still used
 
 ### Fixed
 - `Synchronizer.refreshUtxos(account: Account, since: BlockHeight)` now correctly uses the `since` parameter in the 
