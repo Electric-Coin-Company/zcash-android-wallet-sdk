@@ -121,7 +121,6 @@ open class CompactBlockDownloader private constructor(val compactBlockRepository
                     }
                 }
             }
-
             null
         }
 

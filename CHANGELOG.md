@@ -6,12 +6,23 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `Synchronizer.isValidTexAddr` which checks whether the given address is a valid ZIP 320 TEX address
+
 ### Changed
 - Migrated to Rust 1.79.0.
 - `Synchronizer.proposeTransfer` now supports TEX addresses (ZIP 320).
+- The fetch UTXOs action is now hooked up at the beginning of every scanning phase of the block synchronization logic 
+  instead of being called every 1000 blocks together with shielded transactions enhancing. It uses 
+  `fullyScannedHeight` as its lower bound.
+- The fetch UTXOs action reports `FetchUtxosException` to the wrapping `onProcessorErrorHandler` or 
+  `onCriticalErrorHandler` in case any error occurs 
+- Block synchronization logic now works above batch of blocks with size 1000 blocks instead of just 100 blocks 
+  except the Zcash sandblasting period in which batch size of 100 blocks is still used
 
-### Added
-- `Synchronizer.isValidTexAddr` which checks whether the given address is a valid ZIP 320 TEX address
+### Fixed
+- `Synchronizer.refreshUtxos(account: Account, since: BlockHeight)` now correctly uses the `since` parameter in the 
+  underlying logic and fetches UTXOs from that height
 
 ## [2.1.2] - 2024-07-16
 

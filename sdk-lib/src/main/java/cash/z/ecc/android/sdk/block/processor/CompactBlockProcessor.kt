@@ -31,6 +31,7 @@ import cash.z.ecc.android.sdk.internal.block.CompactBlockDownloader
 import cash.z.ecc.android.sdk.internal.ext.isNullOrEmpty
 import cash.z.ecc.android.sdk.internal.ext.isScanContinuityError
 import cash.z.ecc.android.sdk.internal.ext.length
+import cash.z.ecc.android.sdk.internal.ext.overlaps
 import cash.z.ecc.android.sdk.internal.ext.retryUpToAndContinue
 import cash.z.ecc.android.sdk.internal.ext.retryUpToAndThrow
 import cash.z.ecc.android.sdk.internal.ext.retryWithBackoff
@@ -153,6 +154,7 @@ class CompactBlockProcessor internal constructor(
     private val _progress = MutableStateFlow(PercentDecimal.ZERO_PERCENT)
     private val _processorInfo = MutableStateFlow(ProcessorInfo(null, null, null))
     private val _networkHeight = MutableStateFlow<BlockHeight?>(null)
+    private val _fullyScannedHeight = MutableStateFlow<BlockHeight?>(null)
 
     // pools
     internal val saplingBalances = MutableStateFlow<WalletBalance?>(null)
@@ -200,6 +202,16 @@ class CompactBlockProcessor internal constructor(
      * rounded down to the nearest 100. So in some cases, this is a dynamic value.
      */
     val birthdayHeight = _birthdayHeight.value
+
+    /**
+     * The flow of fully scanned height. This value is updated at the same time as the other values from
+     * [WalletSummary]. fullyScannedHeight is the height below which all blocks have been scanned by the wallet,
+     * ignoring blocks below the wallet birthday. This allows consumers to have the information pushed instead of
+     * polling.
+     *
+     * We can consider moving this property to public API by creating equivalent property on `Synchronizer`
+     */
+    val fullyScannedHeight = _fullyScannedHeight.asStateFlow()
 
     /**
      * Download compact blocks, verify and scan them until [stop] is called.
@@ -483,8 +495,18 @@ class CompactBlockProcessor internal constructor(
                         Twig.info { "Triggering transaction refresh now" }
                         // Invalidate transaction data
                         checkTransactions(transactionStorage = repository)
-                        batchSyncProgress.range?.start?.let {
-                            refreshUtxos(account = Account.DEFAULT, startHeight = it)
+                    }
+                    SyncingResult.FetchUtxos -> {
+                        Twig.info { "Triggering UTXOs fetching from: ${fullyScannedHeight.value}" }
+                        if (fullyScannedHeight.value == null) {
+                            Twig.info { "Postponing UTXOs fetching because fullyScannedHeight is null" }
+                        } else {
+                            val fetchedCount =
+                                refreshUtxos(
+                                    account = Account.DEFAULT,
+                                    startHeight = fullyScannedHeight.value!!
+                                )
+                            Twig.info { "UTXOs fetched count: $fetchedCount" }
                         }
                     }
                     is SyncingResult.Failure -> {
@@ -568,7 +590,7 @@ class CompactBlockProcessor internal constructor(
                 syncRange = scanRange.range,
                 enhanceStartHeight = firstUnenhancedHeight
             ).map { batchSyncProgress ->
-                // Update sync progress and wallet balance
+                // Update sync progress and wallet balances
                 refreshWalletSummary()
 
                 when (batchSyncProgress.resultState) {
@@ -580,8 +602,19 @@ class CompactBlockProcessor internal constructor(
                         Twig.info { "Triggering transaction refresh now" }
                         // Invalidate transaction data and return the common batch syncing success result to the caller
                         checkTransactions(transactionStorage = repository)
-                        batchSyncProgress.range?.start?.let {
-                            refreshUtxos(account = Account.DEFAULT, startHeight = it)
+                        SyncingResult.AllSuccess
+                    }
+                    SyncingResult.FetchUtxos -> {
+                        Twig.info { "Triggering UTXOs fetching from: ${fullyScannedHeight.value}" }
+                        if (fullyScannedHeight.value == null) {
+                            Twig.info { "Postponing UTXOs fetching because fullyScannedHeight is null" }
+                        } else {
+                            val fetchedCount =
+                                refreshUtxos(
+                                    account = Account.DEFAULT,
+                                    startHeight = fullyScannedHeight.value!!
+                                )
+                            Twig.debug { "UTXOs fetched count: $fetchedCount" }
                         }
                         SyncingResult.AllSuccess
                     }
@@ -757,6 +790,7 @@ class CompactBlockProcessor internal constructor(
                 val resultProgress = result.scanProgressPercentDecimal()
                 Twig.info { "Progress from rust: ${resultProgress.decimal}" }
                 setProgress(resultProgress)
+                setFullyScannedHeight(result.walletSummary.fullyScannedHeight)
                 updateAllBalances(result.walletSummary)
                 return Pair(
                     result.walletSummary.nextSaplingSubtreeIndex,
@@ -900,86 +934,57 @@ class CompactBlockProcessor internal constructor(
         }
     }
 
-    var failedUtxoFetches = 0
-
-    @Suppress("MagicNumber", "LongMethod")
+    @Throws(LightWalletException.FetchUtxosException::class)
     internal suspend fun refreshUtxos(
         account: Account,
         startHeight: BlockHeight
     ): Int {
         Twig.debug { "Checking for UTXOs above height $startHeight" }
         var count = 0
-        // TODO [#683]: cleanup the way that we prevent this from running excessively
-        //       For now, try for about 3 blocks per app launch. If the service fails it is
-        //       probably disabled on ligthtwalletd, so then stop trying until the next app launch.
-        // TODO [#683]: https://github.com/zcash/zcash-android-wallet-sdk/issues/683
-        if (failedUtxoFetches < 9) { // there are 3 attempts per block
-            @Suppress("TooGenericExceptionCaught")
-            try {
-                retryUpToAndThrow(UTXO_FETCH_RETRIES) {
-                    val tAddresses = backend.listTransparentReceivers(account)
 
-                    downloader.fetchUtxos(
-                        tAddresses,
-                        BlockHeightUnsafe.from(startHeight)
-                    ).onEach { response ->
-                        when (response) {
-                            is Response.Success -> {
-                                Twig.verbose { "Downloading UTXO at height: ${response.result.height} succeeded." }
-                            }
+        retryUpToAndThrow(UTXO_FETCH_RETRIES) {
+            val tAddresses = backend.listTransparentReceivers(account)
 
-                            is Response.Failure -> {
-                                Twig.warn {
-                                    "Downloading UTXO from height:" +
-                                        " $startHeight failed with: ${response.description}."
-                                }
-                                throw LightWalletException.FetchUtxosException(
-                                    response.code,
-                                    response.description,
-                                    response.toThrowable()
-                                )
-                            }
-                        }
+            downloader.fetchUtxos(
+                tAddresses = tAddresses,
+                startHeight = BlockHeightUnsafe.from(startHeight)
+            ).onEach { response ->
+                when (response) {
+                    is Response.Success -> {
+                        Twig.debug { "Downloading UTXO at height: ${response.result.height} succeeded." }
+                        processUtxoResult(response.result)
+                        count++
                     }
-                        .filterIsInstance<Response.Success<GetAddressUtxosReplyUnsafe>>()
-                        .map { response ->
-                            response.result
+                    is Response.Failure -> {
+                        Twig.error {
+                            "Downloading UTXO from height: $startHeight failed with: ${response.description}."
                         }
-                        .onCompletion {
-                            if (it != null) {
-                                Twig.debug { "UTXOs from height $startHeight failed to download with: $it" }
-                            } else {
-                                Twig.debug { "All UTXOs from height $startHeight fetched successfully" }
-                            }
-                        }.collect { utxo ->
-                            Twig.verbose { "Fetched UTXO at height: ${utxo.height}" }
-                            val processResult = processUtxoResult(utxo)
-                            if (processResult) {
-                                count++
-                            }
-                        }
+                        throw LightWalletException.FetchUtxosException(
+                            response.code,
+                            response.description,
+                            response.toThrowable()
+                        )
+                    }
                 }
-            } catch (e: Throwable) {
-                failedUtxoFetches++
-                Twig.debug {
-                    "Warning: Fetching UTXOs is repeatedly failing! We will only try about " +
-                        "${(9 - failedUtxoFetches + 2) / 3} more times then give up for this session. " +
-                        "Exception message: ${e.message}, caused by: ${e.cause}."
+            }.onCompletion {
+                if (it != null) {
+                    Twig.error { "UTXOs from height $startHeight failed to download with: $it" }
+                } else {
+                    Twig.debug { "All UTXOs from height $startHeight fetched successfully" }
                 }
-            }
-        } else {
-            Twig.debug {
-                "Warning: gave up on fetching UTXOs for this session. It is unavailable on lightwalletd."
-            }
+            }.collect()
         }
-
         return count
     }
 
     /**
-     * @return True in case of the UTXO processed successfully, false otherwise
+     * This function processes fetched UTXOs by submitting it to the Rust backend. It throws exception in case of the
+     * operation failure.
+     *
+     * @throws RuntimeException in case of the operation failure
      */
-    internal suspend fun processUtxoResult(utxo: GetAddressUtxosReplyUnsafe): Boolean {
+    @Throws(RuntimeException::class)
+    internal suspend fun processUtxoResult(utxo: GetAddressUtxosReplyUnsafe) {
         // Note (str4d): We no longer clear UTXOs here, as rustBackend.putUtxo now uses an upsert instead of an insert.
         //  This means that now-spent UTXOs would previously have been deleted, but now are left in the database (like
         //  shielded notes). Due to the fact that the lightwalletd query only returns _current_ UTXOs, we don't learn
@@ -990,27 +995,14 @@ class CompactBlockProcessor internal constructor(
         //  However, for greater reliability, we may want to alter the Data Access API to support "inferring spentness"
         //  from what is _not_ returned as a UTXO, or alternatively fetch TXOs from lightwalletd instead of just UTXOs.
         Twig.debug { "Found UTXO at height ${utxo.height.toInt()} with ${utxo.valueZat} zatoshi" }
-        @Suppress("TooGenericExceptionCaught")
-        return try {
-            backend.putUtxo(
-                utxo.address,
-                utxo.txid,
-                utxo.index,
-                utxo.script,
-                utxo.valueZat,
-                BlockHeight.new(backend.network, utxo.height)
-            )
-            true
-        } catch (t: Throwable) {
-            Twig.debug {
-                "Warning: Ignoring transaction at height ${utxo.height} @ index ${utxo.index} because " +
-                    "it already exists. Exception message: ${t.message}, caused by: ${t.cause}."
-            }
-            // TODO [#683]: more accurately track the utxos that were skipped (in theory, this could fail for other
-            //  reasons)
-            // TODO [#683]: https://github.com/zcash/zcash-android-wallet-sdk/issues/683
-            false
-        }
+        backend.putUtxo(
+            utxo.address,
+            utxo.txid,
+            utxo.index,
+            utxo.script,
+            utxo.valueZat,
+            BlockHeight.new(backend.network, utxo.height)
+        )
     }
 
     companion object {
@@ -1050,7 +1042,17 @@ class CompactBlockProcessor internal constructor(
          * granular information can be provided about scan state. Unfortunately, small batches may also lead to a lot
          * of overhead during scanning.
          */
-        internal const val SYNC_BATCH_SIZE = 100
+        private const val SYNC_BATCH_SIZE = 1000
+
+        /**
+         * This is the same as [SYNC_BATCH_SIZE] but meant to be used in the Zcash sandblasting periods
+         */
+        private const val SYNC_BATCH_SMALL_SIZE = 100
+
+        /**
+         * Known Zcash sandblasting period
+         */
+        private val SANDBLASTING_RANGE = 1_710_000L..2_050_000L
 
         /**
          * Default size of batch of blocks for running the transaction enhancing.
@@ -1470,6 +1472,15 @@ class CompactBlockProcessor internal constructor(
                     }.buffer(1).map { downloadStageResult ->
                         Twig.debug { "Download stage done with result: $downloadStageResult" }
 
+                        // Triggering UTXOs fetch operation
+                        emit(
+                            BatchSyncProgress(
+                                order = downloadStageResult.batch.order,
+                                range = downloadStageResult.batch.range,
+                                resultState = SyncingResult.FetchUtxos
+                            )
+                        )
+
                         if (downloadStageResult.stageResult !is SyncingResult.DownloadSuccess) {
                             // In case of any failure, we just propagate the result
                             downloadStageResult
@@ -1601,67 +1612,65 @@ class CompactBlockProcessor internal constructor(
                 }
             }
 
-        /**
-         * Returns count of batches of blocks across all ranges. It works the same when triggered from the Linear
-         * synchronization or from the SbS synchronization.
-         *
-         * @param syncRanges List of ranges of all blocks to process
-         *
-         * @return Count of all batches for processing
-         */
-        private fun getBatchCount(syncRanges: List<ClosedRange<BlockHeight>>): Long {
-            var allRangesBatchCount = 0L
-            var allMissingBlocksCount = 0L
-
-            syncRanges.forEach { range ->
-                val missingBlockCount = range.endInclusive.value - range.start.value + 1
-                val batchCount = (missingBlockCount + SYNC_BATCH_SIZE - 1) / SYNC_BATCH_SIZE
-                allMissingBlocksCount += missingBlockCount
-                allRangesBatchCount += batchCount
-            }
-
-            Twig.debug {
-                "Found $allMissingBlocksCount missing blocks, syncing in $allRangesBatchCount batches of " +
-                    "$SYNC_BATCH_SIZE..."
-            }
-            return allRangesBatchCount
+        private fun calculateBatchEnd(
+            start: Long,
+            rangeEnd: Long,
+            batchSize: Int
+        ): Long {
+            return min(
+                // Subtract 1 on the first value because the range is inclusive
+                (start + batchSize) - 1,
+                rangeEnd
+            )
         }
 
         /**
-         * Prepare list of all [BlockBatch] internal objects to be processed during a range of
+         * Prepare list of all [ClosedRange<BlockBatch>] internal objects to be processed during a range of
          * blocks processing
          *
          * @param syncRange Current range to be processed
          * @param network The network we are operating on
          *
-         * @return List of [BlockBatch] to prepare for synchronization
+         * @return List of [ClosedRange<BlockBatch>] to prepare for synchronization
          */
         private fun getBatchedBlockList(
             syncRange: ClosedRange<BlockHeight>,
             network: ZcashNetwork
         ): List<BlockBatch> {
-            val batchCount = getBatchCount(listOf(syncRange))
-            var start = syncRange.start
-            return buildList {
-                for (index in 1..batchCount) {
-                    val end =
-                        BlockHeight.new(
-                            network,
-                            min(
-                                (syncRange.start.value + (index * SYNC_BATCH_SIZE)) - 1,
-                                syncRange.endInclusive.value
-                            )
-                        ) // subtract 1 on the first value because the range is inclusive
+            var order = 1L
+            var start = syncRange.start.value
+            var end = 0L
 
-                    add(
-                        BlockBatch(
-                            order = index,
-                            range = start..end
+            Twig.verbose { "Get batched logic input: $syncRange" }
+
+            val resultList =
+                buildList {
+                    while (end != syncRange.endInclusive.value) {
+                        end = calculateBatchEnd(start, syncRange.endInclusive.value, SYNC_BATCH_SIZE)
+
+                        if (((start..end)).overlaps(SANDBLASTING_RANGE)) {
+                            end = calculateBatchEnd(start, syncRange.endInclusive.value, SYNC_BATCH_SMALL_SIZE)
+                        }
+
+                        val range = BlockHeight.new(network, start)..BlockHeight.new(network, end)
+                        add(
+                            BlockBatch(
+                                order = order,
+                                range = range,
+                                size = range.length()
+                            )
                         )
-                    )
-                    start = end + 1
+
+                        start = end + 1
+                        order++
+                    }
                 }
+
+            Twig.verbose {
+                "Get batched output: ${resultList.size}: ${resultList.joinToString(prefix = "\n", separator = "\n")}"
             }
+
+            return resultList
         }
 
         /**
@@ -2084,6 +2093,16 @@ class CompactBlockProcessor internal constructor(
     }
 
     /**
+     * Sets the [_fullyScannedHeight] for this [CompactBlockProcessor].
+     *
+     * @param height the height below which all blocks have been scanned by the wallet, ignoring blocks below the
+     * wallet birthday.
+     */
+    private fun setFullyScannedHeight(height: BlockHeight) {
+        _fullyScannedHeight.value = height
+    }
+
+    /**
      * Sets the state of this [CompactBlockProcessor].
      */
     private suspend fun setState(newState: State) {
@@ -2102,9 +2121,10 @@ class CompactBlockProcessor internal constructor(
     }
 
     suspend fun getNearestRewindHeight(height: BlockHeight): BlockHeight {
-        // TODO [#683]: add a concept of original checkpoint height to the processor. For now, derive it
+        // TODO [#1545]: Improve getNearestRewindHeight
+        //  Add a concept of original checkpoint height to the processor. For now, derive it
         //  add one because we already have the checkpoint. Add one again because we delete ABOVE the block
-        // TODO [#683]: https://github.com/zcash/zcash-android-wallet-sdk/issues/683
+        // TODO [#1545]: https://github.com/Electric-Coin-Company/zcash-android-wallet-sdk/issues/1545
         val originalCheckpoint = lowerBoundHeight + MAX_REORG_SIZE + 2
         return if (height < originalCheckpoint) {
             originalCheckpoint
