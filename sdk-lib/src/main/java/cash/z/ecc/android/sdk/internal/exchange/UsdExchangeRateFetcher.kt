@@ -9,42 +9,44 @@ import kotlinx.datetime.Clock
 import java.io.File
 
 internal class UsdExchangeRateFetcher(private val torDir: File) {
-
     @Suppress("TooGenericExceptionCaught", "ReturnCount")
-    suspend operator fun invoke(): FetchFiatCurrencyResult = retry {
-        val tor =
-            try {
-                Twig.info { "[USD] Tor client bootstrap" }
-                TorClient.new(torDir)
-            } catch (e: Exception) {
-                Twig.error(e) { "[USD] To client bootstrap failed" }
-                return@retry FetchFiatCurrencyResult.Error(exception = e)
-            }
+    suspend operator fun invoke(): FetchFiatCurrencyResult =
+        retry {
+            val tor =
+                try {
+                    Twig.info { "[USD] Tor client bootstrap" }
+                    TorClient.new(torDir)
+                } catch (e: Exception) {
+                    Twig.error(e) { "[USD] To client bootstrap failed" }
+                    return@retry FetchFiatCurrencyResult.Error(exception = e)
+                }
 
-        val rate =
-            try {
-                Twig.info { "[USD] Fetch start" }
-                tor.getExchangeRateUsd()
-            } catch (e: Exception) {
-                Twig.error(e) { "[USD] Fetch failed" }
-                return@retry FetchFiatCurrencyResult.Error(e)
-            } finally {
-                tor.dispose()
-            }
+            val rate =
+                try {
+                    Twig.info { "[USD] Fetch start" }
+                    tor.getExchangeRateUsd()
+                } catch (e: Exception) {
+                    Twig.error(e) { "[USD] Fetch failed" }
+                    return@retry FetchFiatCurrencyResult.Error(e)
+                } finally {
+                    tor.dispose()
+                }
 
-        Twig.debug { "[USD] Fetch success" }
+            Twig.debug { "[USD] Fetch success" }
 
-        return@retry FetchFiatCurrencyResult.Success(
-            currencyConversion = FiatCurrencyConversion(
-                priceOfZec = rate.toDouble(),
-                timestamp = Clock.System.now()
+            return@retry FetchFiatCurrencyResult.Success(
+                currencyConversion =
+                    FiatCurrencyConversion(
+                        priceOfZec = rate.toDouble(),
+                        timestamp = Clock.System.now()
+                    )
             )
-        )
-    }
+        }
 
     /**
      * Retry with geometric order.
      */
+    @Suppress("TooGenericExceptionCaught", "ReturnCount", "SwallowedException")
     private suspend fun <T> retry(
         times: Int = 3,
         initialDelay: Long = 1000,

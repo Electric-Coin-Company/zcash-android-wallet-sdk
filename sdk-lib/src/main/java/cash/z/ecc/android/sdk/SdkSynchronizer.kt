@@ -213,35 +213,38 @@ class SdkSynchronizer private constructor(
     private val refreshExchangeRateUsd = MutableSharedFlow<Unit>(replay = 1).apply { tryEmit(Unit) }
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    override val exchangeRateUsd = channelFlow {
-        var lastValue = ObserveFiatCurrencyResult()
-        refreshExchangeRateUsd
-            .flatMapLatest {
-                flow {
-                    emit(lastValue.copy(isLoading = true))
-                    lastValue = when (val result = fetchExchangeChangeUsd()) {
-                        is FetchFiatCurrencyResult.Error -> lastValue.copy(isLoading = false)
+    override val exchangeRateUsd =
+        channelFlow {
+            var lastValue = ObserveFiatCurrencyResult()
+            refreshExchangeRateUsd
+                .flatMapLatest {
+                    flow {
+                        emit(lastValue.copy(isLoading = true))
+                        lastValue =
+                            when (val result = fetchExchangeChangeUsd()) {
+                                is FetchFiatCurrencyResult.Error -> lastValue.copy(isLoading = false)
 
-                        is FetchFiatCurrencyResult.Success -> lastValue.copy(
-                            isLoading = false,
-                            currencyConversion = result.currencyConversion
-                        )
+                                is FetchFiatCurrencyResult.Success ->
+                                    lastValue.copy(
+                                        isLoading = false,
+                                        currencyConversion = result.currencyConversion
+                                    )
+                            }
+                        emit(lastValue)
                     }
-                    emit(lastValue)
                 }
-            }
-            .onEach { send(it) }
-            .flowOn(Dispatchers.Default)
-            .launchIn(this)
+                .onEach { send(it) }
+                .flowOn(Dispatchers.Default)
+                .launchIn(this)
 
-        awaitClose {
-            // do nothing
-        }
-    }.flowOn(Dispatchers.Default).stateIn(
-        scope = coroutineScope,
-        started = SharingStarted.WhileSubscribed(), // stop immediately
-        initialValue = ObserveFiatCurrencyResult()
-    )
+            awaitClose {
+                // do nothing
+            }
+        }.flowOn(Dispatchers.Default).stateIn(
+            scope = coroutineScope,
+            started = SharingStarted.WhileSubscribed(), // stop immediately
+            initialValue = ObserveFiatCurrencyResult()
+        )
 
     override val transactions
         get() =
@@ -703,9 +706,9 @@ class SdkSynchronizer private constructor(
     @Deprecated(
         message = "Upcoming SDK 2.1 will create multiple transactions at once for some recipients.",
         replaceWith =
-        ReplaceWith(
-            "createProposedTransactions(proposeTransfer(usk.account, toAddress, amount, memo), usk)"
-        )
+            ReplaceWith(
+                "createProposedTransactions(proposeTransfer(usk.account, toAddress, amount, memo), usk)"
+            )
     )
     @Throws(TransactionEncoderException::class, TransactionSubmitException::class)
     override suspend fun sendToAddress(
@@ -737,9 +740,9 @@ class SdkSynchronizer private constructor(
     @Deprecated(
         message = "Upcoming SDK 2.1 will create multiple transactions at once for some recipients.",
         replaceWith =
-        ReplaceWith(
-            "proposeShielding(usk.account, shieldingThreshold, memo)?.let { createProposedTransactions(it, usk) }"
-        )
+            ReplaceWith(
+                "proposeShielding(usk.account, shieldingThreshold, memo)?.let { createProposedTransactions(it, usk) }"
+            )
     )
     @Throws(TransactionEncoderException::class, TransactionSubmitException::class)
     override suspend fun shieldFunds(
