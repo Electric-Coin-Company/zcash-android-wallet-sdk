@@ -203,11 +203,10 @@ internal class FastestServerFetcher(
         )
     }
 
-    private suspend inline fun <T, R> Iterable<T>.parallelMapNotNull(
-        crossinline transform: suspend (T) -> R?
-    ): List<R> = map { coroutineScope { async { transform(it) } } }
-        .awaitAll()
-        .filterNotNull()
+    private suspend inline fun <T, R> Iterable<T>.parallelMapNotNull(crossinline block: suspend (T) -> R?): List<R> =
+        map { coroutineScope { async { block(it) } } }
+            .awaitAll()
+            .filterNotNull()
 }
 
 data class ValidateServerResult(
