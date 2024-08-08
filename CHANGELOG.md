@@ -6,7 +6,7 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [2.1.3] - 2024-08-07
+## [2.1.3] - 2024-08-08
 
 ### Changed
 - The fetch UTXOs action is now hooked up at the beginning of every scanning phase of the block synchronization logic 
