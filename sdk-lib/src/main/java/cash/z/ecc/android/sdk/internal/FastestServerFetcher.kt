@@ -99,8 +99,19 @@ internal class FastestServerFetcher(
         context: Context,
         endpoint: LightWalletEndpoint
     ): ValidateServerResult? {
-        fun logRuledOut() {
-            Twig.debug { "Fastest Server: Server '$endpoint' RULED OUT during validating and measuring RPC latency" }
+        fun logRuledOut(
+            reason: String,
+            throwable: Throwable? = null
+        ) {
+            val message =
+                "Fastest Server: Server '$endpoint' RULED OUT during validating and measuring RPC " +
+                    "latency. Reason: $reason"
+
+            if (throwable != null) {
+                Twig.debug(throwable) { message }
+            } else {
+                Twig.debug { message }
+            }
         }
 
         val lightWalletClient =
@@ -117,7 +128,7 @@ internal class FastestServerFetcher(
                     when (val response = lightWalletClient.getServerInfo()) {
                         is Response.Success -> response.result
                         is Response.Failure -> {
-                            logRuledOut()
+                            logRuledOut("getServerInfo failed", response.toThrowable())
                             return null
                         }
                     }
@@ -125,7 +136,7 @@ internal class FastestServerFetcher(
 
         // Check network type
         if (!remoteInfo.matchingNetwork(network.networkName)) {
-            logRuledOut()
+            logRuledOut("matchingNetwork failed")
             return null
         }
 
@@ -133,11 +144,11 @@ internal class FastestServerFetcher(
         runCatching {
             val remoteSaplingActivationHeight = remoteInfo.saplingActivationHeightUnsafe.toBlockHeight(network)
             if (network.saplingActivationHeight != remoteSaplingActivationHeight) {
-                logRuledOut()
+                logRuledOut("invalid saplingActivationHeight")
                 return null
             }
         }.getOrElse {
-            logRuledOut()
+            logRuledOut("saplingActivationHeight failed", it)
             return null
         }
 
@@ -148,13 +159,13 @@ internal class FastestServerFetcher(
                     when (val response = lightWalletClient.getLatestBlockHeight()) {
                         is Response.Success -> {
                             runCatching { response.result.toBlockHeight(network) }.getOrElse {
-                                logRuledOut()
+                                logRuledOut("toBlockHeight failed", it)
                                 return null
                             }
                         }
 
                         is Response.Failure -> {
-                            logRuledOut()
+                            logRuledOut("getLatestBlockHeight failed", response.toThrowable())
                             return null
                         }
                     }
@@ -167,17 +178,17 @@ internal class FastestServerFetcher(
                     backend.getBranchIdForHeight(currentChainTip)
                 )
             }.getOrElse {
-                logRuledOut()
+                logRuledOut("getBranchIdForHeight failed", it)
                 return null
             }
 
         if (!remoteInfo.consensusBranchId.equals(sdkBranchId, true)) {
-            logRuledOut()
+            logRuledOut("consensusBranchId does not match")
             return null
         }
 
         if (remoteInfo.estimatedHeight >= remoteInfo.blockHeightUnsafe.value + N) {
-            logRuledOut()
+            logRuledOut("estimatedHeight does not match")
             return null
         }
 
@@ -192,10 +203,11 @@ internal class FastestServerFetcher(
         )
     }
 
-    private suspend inline fun <T, R> Iterable<T>.parallelMapNotNull(crossinline transform: suspend (T) -> R?) =
-        map { coroutineScope { async { transform(it) } } }
-            .awaitAll()
-            .filterNotNull()
+    private suspend inline fun <T, R> Iterable<T>.parallelMapNotNull(
+        crossinline transform: suspend (T) -> R?
+    ): List<R> = map { coroutineScope { async { transform(it) } } }
+        .awaitAll()
+        .filterNotNull()
 }
 
 data class ValidateServerResult(

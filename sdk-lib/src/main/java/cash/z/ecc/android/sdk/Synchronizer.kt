@@ -112,6 +112,11 @@ interface Synchronizer {
     // Operations
     //
 
+    /**
+     * Measure connection quality and speed of given [servers].
+     *
+     * @return a [Flow] of fastest servers which updates it's state during measurement stages
+     */
     suspend fun getFastestServers(
         context: Context,
         servers: List<LightWalletEndpoint>
