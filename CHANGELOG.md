@@ -14,8 +14,14 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `fullyScannedHeight` as its lower bound.
 - The fetch UTXOs action reports `FetchUtxosException` to the wrapping `onProcessorErrorHandler` or 
   `onCriticalErrorHandler` in case any error occurs 
-- Block synchronization logic now works above batch of blocks with size 1000 blocks instead of just 100 blocks 
-  except the Zcash sandblasting period in which batch size of 100 blocks is still used
+- The internal `CompactBlockProcessor.SYNC_BATCH_SIZE` has changed. Block synchronization logic now works above 
+  batch of blocks with size 1000 blocks instead of just 100 blocks, except the Zcash sandblasting period in which 
+  batch size of 100 blocks is still used.
+- The internal `FileCompactBlockRepository.BLOCKS_METADATA_BUFFER_SIZE` constant has been raised from 10 to 1000 to 
+  match the block synchronization batch size. 
+- The overall speed-up of the entire block synchronization logic, thanks to the both mentioned synchronization 
+  improvements above is about 50% out of the Zcash sandblasting period. There is still some improvement in the 
+  sandblasting period.
 - Checkpoints update
 
 ### Fixed
