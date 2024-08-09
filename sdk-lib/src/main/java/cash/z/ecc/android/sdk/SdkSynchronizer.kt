@@ -25,12 +25,12 @@ import cash.z.ecc.android.sdk.internal.block.CompactBlockDownloader
 import cash.z.ecc.android.sdk.internal.db.DatabaseCoordinator
 import cash.z.ecc.android.sdk.internal.db.derived.DbDerivedDataRepository
 import cash.z.ecc.android.sdk.internal.db.derived.DerivedDataDb
+import cash.z.ecc.android.sdk.internal.exchange.UsdExchangeRateFetcher
 import cash.z.ecc.android.sdk.internal.ext.existsSuspend
 import cash.z.ecc.android.sdk.internal.ext.isNullOrEmpty
 import cash.z.ecc.android.sdk.internal.ext.tryNull
 import cash.z.ecc.android.sdk.internal.jni.RustBackend
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
-import cash.z.ecc.android.sdk.internal.model.TorClient
 import cash.z.ecc.android.sdk.internal.model.TreeState
 import cash.z.ecc.android.sdk.internal.model.ext.toBlockHeight
 import cash.z.ecc.android.sdk.internal.repository.CompactBlockRepository
@@ -42,6 +42,8 @@ import cash.z.ecc.android.sdk.internal.transaction.TransactionEncoder
 import cash.z.ecc.android.sdk.internal.transaction.TransactionEncoderImpl
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
+import cash.z.ecc.android.sdk.model.FetchFiatCurrencyResult
+import cash.z.ecc.android.sdk.model.ObserveFiatCurrencyResult
 import cash.z.ecc.android.sdk.model.PercentDecimal
 import cash.z.ecc.android.sdk.model.Proposal
 import cash.z.ecc.android.sdk.model.TransactionOverview
@@ -64,26 +66,32 @@ import co.electriccoin.lightwallet.client.new
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.io.File
-import java.math.BigDecimal
-import java.time.Instant
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.CoroutineContext
@@ -109,8 +117,8 @@ class SdkSynchronizer private constructor(
     private val storage: DerivedDataRepository,
     private val txManager: OutboundTransactionManager,
     val processor: CompactBlockProcessor,
-    private val torDir: File,
-    private val backend: TypesafeBackend
+    private val backend: TypesafeBackend,
+    private val fetchExchangeChangeUsd: UsdExchangeRateFetcher
 ) : CloseableSynchronizer {
     companion object {
         private sealed class InstanceState {
@@ -140,8 +148,8 @@ class SdkSynchronizer private constructor(
             repository: DerivedDataRepository,
             txManager: OutboundTransactionManager,
             processor: CompactBlockProcessor,
-            torDir: File,
-            backend: TypesafeBackend
+            fetchExchangeChangeUsd: UsdExchangeRateFetcher,
+            backend: TypesafeBackend,
         ): CloseableSynchronizer {
             val synchronizerKey = SynchronizerKey(zcashNetwork, alias)
 
@@ -154,8 +162,8 @@ class SdkSynchronizer private constructor(
                     repository,
                     txManager,
                     processor,
-                    torDir,
-                    backend
+                    backend,
+                    fetchExchangeChangeUsd
                 ).apply {
                     instances[synchronizerKey] = InstanceState.Active
                     start()
@@ -194,15 +202,49 @@ class SdkSynchronizer private constructor(
         }
     }
 
-    private val _status = MutableStateFlow<Synchronizer.Status>(DISCONNECTED)
-    private val _exchangeRateUsd = MutableStateFlow<Pair<BigDecimal, Instant>?>(null)
+    private val _status = MutableStateFlow(DISCONNECTED)
 
-    var coroutineScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    val coroutineScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     override val orchardBalances = processor.orchardBalances.asStateFlow()
     override val saplingBalances = processor.saplingBalances.asStateFlow()
     override val transparentBalance = processor.transparentBalance.asStateFlow()
-    override val exchangeRateUsd = _exchangeRateUsd.asStateFlow()
+
+    private val refreshExchangeRateUsd = MutableSharedFlow<Unit>(replay = 1).apply { tryEmit(Unit) }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    override val exchangeRateUsd =
+        channelFlow {
+            var lastValue = ObserveFiatCurrencyResult()
+            refreshExchangeRateUsd
+                .flatMapLatest {
+                    flow {
+                        emit(lastValue.copy(isLoading = true))
+                        lastValue =
+                            when (val result = fetchExchangeChangeUsd()) {
+                                is FetchFiatCurrencyResult.Error -> lastValue.copy(isLoading = false)
+
+                                is FetchFiatCurrencyResult.Success ->
+                                    lastValue.copy(
+                                        isLoading = false,
+                                        currencyConversion = result.currencyConversion
+                                    )
+                            }
+                        emit(lastValue)
+                    }
+                }
+                .onEach { send(it) }
+                .flowOn(Dispatchers.Default)
+                .launchIn(this)
+
+            awaitClose {
+                // do nothing
+            }
+        }.flowOn(Dispatchers.Default).stateIn(
+            scope = coroutineScope,
+            started = SharingStarted.WhileSubscribed(), // stop immediately
+            initialValue = ObserveFiatCurrencyResult()
+        )
 
     override val transactions
         get() =
@@ -426,27 +468,9 @@ class SdkSynchronizer private constructor(
     }
 
     override suspend fun refreshExchangeRateUsd() {
-        Twig.info { "Bootstrapping Tor client for fetching exchange rates" }
-        val tor =
-            try {
-                TorClient.new(torDir)
-            } catch (e: Exception) {
-                Twig.error(e) { "Failed to bootstrap Tor client" }
-                throw e
-            }
-
-        val rate =
-            try {
-                tor.getExchangeRateUsd()
-            } catch (e: Exception) {
-                Twig.error(e) { "Failed to fetch exchange rate through Tor" }
-                throw e
-            } finally {
-                tor.dispose()
-            }
-        Twig.info { "Latest USD/ZEC exchange rate is $rate" }
-
-        _exchangeRateUsd.value = Pair(rate, Instant.now())
+        coroutineScope.launch {
+            refreshExchangeRateUsd.emit(Unit)
+        }
     }
 
     suspend fun isValidAddress(address: String): Boolean {
@@ -574,7 +598,7 @@ class SdkSynchronizer private constructor(
         val reason = if (scannedRange.isNullOrEmpty()) "it's been a while" else "new blocks were scanned"
 
         if (shouldRefresh) {
-            Twig.info { "Triggering utxo refresh since $reason!" }
+            Twig.debug { "Triggering utxo refresh since $reason!" }
             refreshUtxos(Account.DEFAULT)
 
             Twig.debug { "Triggering balance refresh since $reason!" }
@@ -668,6 +692,7 @@ class SdkSynchronizer private constructor(
                         is TransactionSubmitResult.Success -> {
                             // Expected state
                         }
+
                         is TransactionSubmitResult.Failure,
                         is TransactionSubmitResult.NotAttempted -> {
                             anySubmissionFailed = true
@@ -705,6 +730,7 @@ class SdkSynchronizer private constructor(
             is TransactionSubmitResult.Success -> {
                 return storage.findMatchingTransactionId(encodedTx.txId.byteArray)!!
             }
+
             else -> {
                 throw TransactionSubmitException()
             }
@@ -740,6 +766,7 @@ class SdkSynchronizer private constructor(
             is TransactionSubmitResult.Success -> {
                 return storage.findMatchingTransactionId(encodedTx.txId.byteArray)!!
             }
+
             else -> {
                 throw TransactionSubmitException()
             }
@@ -796,6 +823,7 @@ class SdkSynchronizer private constructor(
                     Twig.info { "Chain tip for validate consensus branch action fetched: ${response.result.value}" }
                     runCatching { response.result.toBlockHeight(network) }.getOrNull()
                 }
+
                 is Response.Failure -> {
                     Twig.error {
                         "Chain tip fetch failed for validate consensus branch action with:" +
@@ -873,6 +901,7 @@ class SdkSynchronizer private constructor(
                         return ServerValidation.InValid(it)
                     }
                 }
+
                 is Response.Failure -> {
                     return ServerValidation.InValid(response.toThrowable())
                 }

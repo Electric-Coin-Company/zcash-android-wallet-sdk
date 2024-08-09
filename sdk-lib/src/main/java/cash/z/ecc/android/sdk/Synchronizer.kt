@@ -12,9 +12,11 @@ import cash.z.ecc.android.sdk.internal.Files
 import cash.z.ecc.android.sdk.internal.SaplingParamTool
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.db.DatabaseCoordinator
+import cash.z.ecc.android.sdk.internal.exchange.UsdExchangeRateFetcher
 import cash.z.ecc.android.sdk.internal.model.ext.toBlockHeight
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
+import cash.z.ecc.android.sdk.model.ObserveFiatCurrencyResult
 import cash.z.ecc.android.sdk.model.PercentDecimal
 import cash.z.ecc.android.sdk.model.Proposal
 import cash.z.ecc.android.sdk.model.TransactionOverview
@@ -34,8 +36,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.runBlocking
 import java.io.Closeable
-import java.math.BigDecimal
-import java.time.Instant
 
 @Suppress("TooManyFunctions")
 interface Synchronizer {
@@ -94,7 +94,7 @@ interface Synchronizer {
      *
      * The rate can be initialized and refreshed by calling [refreshExchangeRateUsd].
      */
-    val exchangeRateUsd: StateFlow<Pair<BigDecimal, Instant>?>
+    val exchangeRateUsd: StateFlow<ObserveFiatCurrencyResult>
 
     /**
      * A flow of all the transactions that are on the blockchain.
@@ -685,8 +685,11 @@ interface Synchronizer {
                 repository = repository,
                 txManager = txManager,
                 processor = processor,
-                torDir = Files.getTorDir(context),
-                backend = backend
+                backend = backend,
+                fetchExchangeChangeUsd =
+                    UsdExchangeRateFetcher(
+                        torDir = Files.getTorDir(context)
+                    )
             )
         }
 
