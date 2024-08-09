@@ -229,11 +229,12 @@ internal fun ComposeActivity.Navigation() {
                             }
                         }
                     ).collect {
-                        fastestServers.value = when (it) {
-                            FastestServersResult.Measuring -> emptyList<LightWalletEndpoint>().toImmutableList()
-                            is FastestServersResult.Done -> it.servers.toImmutableList()
-                            is FastestServersResult.Validating -> it.servers.toImmutableList()
-                        }
+                        fastestServers.value =
+                            when (it) {
+                                FastestServersResult.Measuring -> emptyList<LightWalletEndpoint>().toImmutableList()
+                                is FastestServersResult.Done -> it.servers.toImmutableList()
+                                is FastestServersResult.Validating -> it.servers.toImmutableList()
+                            }
                     }
                 }
 

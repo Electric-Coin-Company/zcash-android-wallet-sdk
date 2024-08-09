@@ -3,7 +3,6 @@ package cash.z.ecc.android.sdk.model
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
 
 sealed interface FastestServersResult {
-
     /**
      * Fastest server latency measurement is ongoing.
      */
