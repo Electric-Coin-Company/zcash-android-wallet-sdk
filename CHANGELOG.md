@@ -15,6 +15,7 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Synchronizer.exchangeRateUsd` is a `StateFlow` containing the latest USD/ZEC
   exchange rate, along with the `Instant` it was fetched. It can be initialized
   and refreshed by calling `Synchronizer.refreshExchangeRateUsd()`.
+- `ZatoshiExt.toFiatString` is now a public function
 
 ## [2.1.3] - 2024-08-08
 
