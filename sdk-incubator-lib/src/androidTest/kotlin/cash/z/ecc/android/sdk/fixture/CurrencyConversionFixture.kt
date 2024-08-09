@@ -6,7 +6,7 @@ import kotlinx.datetime.toInstant
 
 object CurrencyConversionFixture {
     val TIMESTAMP = "2022-07-08T11:51:44Z".toInstant()
-    private const val PRICE_OF_ZEC = 54.98
+    const val PRICE_OF_ZEC = 54.98
 
     fun new(
         timestamp: Instant = TIMESTAMP,

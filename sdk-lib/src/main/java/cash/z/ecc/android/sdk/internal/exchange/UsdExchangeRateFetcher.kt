@@ -58,7 +58,7 @@ internal class UsdExchangeRateFetcher(private val torDir: File) {
             try {
                 return block()
             } catch (e: Exception) {
-                // do nothing
+                Twig.debug(e) { "[USD] Fetching attempt failed" }
             }
             delay(currentDelay)
             currentDelay = (currentDelay * multiplier).toLong()
