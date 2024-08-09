@@ -9,7 +9,7 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.math.BigDecimal
 
-class TorClient(
+class TorClient private constructor(
     private val nativeHandle: Long?,
 ) {
     suspend fun dispose() =
@@ -40,14 +40,22 @@ class TorClient(
         // External Functions
         //
 
+        /**
+         * @throws RuntimeException as a common indicator of the operation failure
+         */
         @JvmStatic
+        @Throws(RuntimeException::class)
         private external fun createTorRuntime(torDir: String): Long
 
         @CriticalNative
         @JvmStatic
         private external fun freeTorRuntime(nativeHandle: Long)
 
+        /**
+         * @throws RuntimeException as a common indicator of the operation failure
+         */
         @JvmStatic
+        @Throws(RuntimeException::class)
         private external fun getExchangeRateUsd(nativeHandle: Long): BigDecimal
     }
 }
