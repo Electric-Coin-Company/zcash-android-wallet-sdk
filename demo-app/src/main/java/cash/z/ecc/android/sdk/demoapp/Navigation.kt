@@ -58,6 +58,7 @@ import cash.z.ecc.android.sdk.demoapp.ui.screen.transactions.view.Transactions
 import cash.z.ecc.android.sdk.demoapp.util.AndroidApiVersion
 import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.internal.Twig
+import cash.z.ecc.android.sdk.model.FastestServersResult
 import cash.z.ecc.android.sdk.model.Proposal
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.type.ServerValidation
@@ -228,7 +229,11 @@ internal fun ComposeActivity.Navigation() {
                             }
                         }
                     ).collect {
-                        fastestServers.value = it.servers.orEmpty().toImmutableList()
+                        fastestServers.value = when (it) {
+                            FastestServersResult.Measuring -> emptyList<LightWalletEndpoint>().toImmutableList()
+                            is FastestServersResult.Done -> it.servers.toImmutableList()
+                            is FastestServersResult.Validating -> it.servers.toImmutableList()
+                        }
                     }
                 }
 

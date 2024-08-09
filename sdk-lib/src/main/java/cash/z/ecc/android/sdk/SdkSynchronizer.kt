@@ -108,7 +108,7 @@ class SdkSynchronizer private constructor(
     private val txManager: OutboundTransactionManager,
     val processor: CompactBlockProcessor,
     private val backend: TypesafeBackend,
-    private val fastestServerFetcher: FastestServerFetcher,
+    private val fetchFastestServers: FastestServerFetcher,
 ) : CloseableSynchronizer {
     companion object {
         private sealed class InstanceState {
@@ -304,7 +304,7 @@ class SdkSynchronizer private constructor(
     override suspend fun getFastestServers(
         context: Context,
         servers: List<LightWalletEndpoint>
-    ): Flow<FastestServersResult> = fastestServerFetcher(context, servers)
+    ): Flow<FastestServersResult> = fetchFastestServers(context, servers)
 
     internal fun start() {
         coroutineScope.onReady()

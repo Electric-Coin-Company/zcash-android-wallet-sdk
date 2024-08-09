@@ -11,12 +11,14 @@ import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
 import co.electriccoin.lightwallet.client.model.LightWalletEndpointInfoUnsafe
 import co.electriccoin.lightwallet.client.model.Response
 import co.electriccoin.lightwallet.client.new
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.take
@@ -37,7 +39,7 @@ internal class FastestServerFetcher(
         servers: List<LightWalletEndpoint>,
     ): Flow<FastestServersResult> {
         return flow {
-            emit(FastestServersResult(servers = null, isLoading = true))
+            emit(FastestServersResult.Measuring)
 
             val serversByRpcMeanLatency =
                 servers
@@ -61,7 +63,7 @@ internal class FastestServerFetcher(
                 "Fastest Server: '${serversByRpcMeanLatency.map { it.endpoint }}' VALIDATED by MEASURING RPC latency"
             }
 
-            emit(FastestServersResult(servers = serversByRpcMeanLatency.map { it.endpoint }.take(K), isLoading = true))
+            emit(FastestServersResult.Validating(serversByRpcMeanLatency.map { it.endpoint }.take(K)))
 
             val serversByGetBlockRangeTimeout =
                 serversByRpcMeanLatency
@@ -90,8 +92,8 @@ internal class FastestServerFetcher(
 
             Twig.debug { "Fastest Server: '$serversByGetBlockRangeTimeout' VALIDATED by getBlockRange timeout" }
 
-            emit(FastestServersResult(servers = serversByGetBlockRangeTimeout, isLoading = false))
-        }
+            emit(FastestServersResult.Done(serversByGetBlockRangeTimeout))
+        }.flowOn(Dispatchers.Default)
     }
 
     @Suppress("LongMethod", "ReturnCount")
