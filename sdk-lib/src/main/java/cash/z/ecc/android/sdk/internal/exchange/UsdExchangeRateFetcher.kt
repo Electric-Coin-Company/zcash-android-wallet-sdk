@@ -32,7 +32,7 @@ internal class UsdExchangeRateFetcher(private val torDir: File) {
                     tor.dispose()
                 }
 
-            Twig.debug { "[USD] Fetch success" }
+            Twig.debug { "[USD] Fetch success: $rate" }
 
             return@retry FetchFiatCurrencyResult.Success(
                 currencyConversion =
