@@ -151,10 +151,11 @@ internal class LightWalletClientImpl private constructor(
             "${Constants.ILLEGAL_ARGUMENT_EXCEPTION_MESSAGE_EMPTY} array of addresses contains invalid item." // NON-NLS
         }
 
-        val getUtxosBuilder = Service.GetAddressUtxosArg.newBuilder()
-
-        // Build the request with the different addresses
-        getUtxosBuilder.addAllAddresses(tAddresses)
+        val getUtxosBuilder =
+            Service.GetAddressUtxosArg.newBuilder().apply {
+                addAllAddresses(tAddresses)
+                setStartHeight(startHeight.value)
+            }
 
         val request = getUtxosBuilder.build()
 
