@@ -63,7 +63,6 @@ import cash.z.ecc.android.sdk.model.Proposal
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.type.ServerValidation
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
-import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
@@ -204,37 +203,33 @@ internal fun ComposeActivity.Navigation() {
 
                 BackHandler { onBack() }
 
-                val fastestServers = remember { mutableStateOf(emptyList<LightWalletEndpoint>().toImmutableList()) }
+                val fastestServers = remember { mutableStateOf<FastestServersResult?>(null) }
 
                 LaunchedEffect(Unit) {
                     synchronizer.getFastestServers(
-                        context,
-                        buildList {
-                            if (ZcashNetwork.fromResources(application) == ZcashNetwork.Mainnet) {
-                                add(LightWalletEndpoint(ZR_HOST, ZR_PORT, true))
-                                add(LightWalletEndpoint(ZR_HOST_NA, ZR_PORT, true))
-                                add(LightWalletEndpoint(ZR_HOST_SA, ZR_PORT, true))
-                                add(LightWalletEndpoint(ZR_HOST_EU, ZR_PORT, true))
-                                add(LightWalletEndpoint(ZR_HOST_AP, ZR_PORT, true))
-                                add(LightWalletEndpoint(YW_HOST_1, YW_PORT, true))
-                                add(LightWalletEndpoint(YW_HOST_2, YW_PORT, true))
-                                add(LightWalletEndpoint(YW_HOST_3, YW_PORT, true))
-                                add(LightWalletEndpoint(YW_HOST_4, YW_PORT, true))
-                                add(LightWalletEndpoint(YW_HOST_5, YW_PORT, true))
-                                add(LightWalletEndpoint(YW_HOST_6, YW_PORT, true))
-                                add(LightWalletEndpoint(YW_HOST_7, YW_PORT, true))
-                                add(LightWalletEndpoint(YW_HOST_8, YW_PORT, true))
-                            } else {
-                                add(LightWalletEndpoint.Testnet)
+                        context = context,
+                        servers =
+                            buildList {
+                                if (ZcashNetwork.fromResources(application) == ZcashNetwork.Mainnet) {
+                                    add(LightWalletEndpoint(ZR_HOST, ZR_PORT, true))
+                                    add(LightWalletEndpoint(ZR_HOST_NA, ZR_PORT, true))
+                                    add(LightWalletEndpoint(ZR_HOST_SA, ZR_PORT, true))
+                                    add(LightWalletEndpoint(ZR_HOST_EU, ZR_PORT, true))
+                                    add(LightWalletEndpoint(ZR_HOST_AP, ZR_PORT, true))
+                                    add(LightWalletEndpoint(YW_HOST_1, YW_PORT, true))
+                                    add(LightWalletEndpoint(YW_HOST_2, YW_PORT, true))
+                                    add(LightWalletEndpoint(YW_HOST_3, YW_PORT, true))
+                                    add(LightWalletEndpoint(YW_HOST_4, YW_PORT, true))
+                                    add(LightWalletEndpoint(YW_HOST_5, YW_PORT, true))
+                                    add(LightWalletEndpoint(YW_HOST_6, YW_PORT, true))
+                                    add(LightWalletEndpoint(YW_HOST_7, YW_PORT, true))
+                                    add(LightWalletEndpoint(YW_HOST_8, YW_PORT, true))
+                                } else {
+                                    add(LightWalletEndpoint.Testnet)
+                                }
                             }
-                        }
                     ).collect {
-                        fastestServers.value =
-                            when (it) {
-                                FastestServersResult.Measuring -> emptyList<LightWalletEndpoint>().toImmutableList()
-                                is FastestServersResult.Done -> it.servers.toImmutableList()
-                                is FastestServersResult.Validating -> it.servers.toImmutableList()
-                            }
+                        fastestServers.value = it
                     }
                 }
 

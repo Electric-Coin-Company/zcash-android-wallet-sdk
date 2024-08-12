@@ -17,6 +17,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -45,11 +46,11 @@ import cash.z.ecc.android.sdk.demoapp.R
 import cash.z.ecc.android.sdk.demoapp.ext.Testnet
 import cash.z.ecc.android.sdk.demoapp.ext.isValid
 import cash.z.ecc.android.sdk.internal.Twig
+import cash.z.ecc.android.sdk.model.FastestServersResult
 import cash.z.ecc.android.sdk.model.PersistableWallet
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.type.ServerValidation
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
-import kotlinx.collections.immutable.ImmutableList
 
 @Preview(name = "Server")
 @Composable
@@ -86,7 +87,7 @@ fun Server(
     onServerChange: (LightWalletEndpoint) -> Unit,
     wallet: PersistableWallet,
     validationResult: ServerValidation,
-    fastestServers: ImmutableList<LightWalletEndpoint>
+    fastestServers: FastestServersResult?
 ) {
     Scaffold(
         topBar = { ServerTopAppBar(onBack) },
@@ -127,12 +128,12 @@ private fun ServerTopAppBar(onBack: () -> Unit) {
 }
 
 @Composable
-@Suppress("LongMethod", "LongParameterList")
+@Suppress("LongMethod", "LongParameterList", "CyclomaticComplexMethod")
 fun ServerSwitch(
     buildInNetwork: ZcashNetwork,
     onServerChange: (LightWalletEndpoint) -> Unit,
     wallet: PersistableWallet,
-    fastestServers: ImmutableList<LightWalletEndpoint>,
+    fastestServers: FastestServersResult?,
     validationResult: ServerValidation,
     modifier: Modifier = Modifier,
 ) {
@@ -200,11 +201,29 @@ fun ServerSwitch(
                 .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(2.dp)
     ) {
-        if (fastestServers.isNotEmpty()) {
-            Text(text = stringResource(id = R.string.server_fastest_servers))
-        }
-        fastestServers.forEach {
-            Text(text = it.toString())
+        when (fastestServers) {
+            FastestServersResult.Measuring -> {
+                Text(text = stringResource(R.string.server_fastest_servers))
+                CircularProgressIndicator()
+            }
+            is FastestServersResult.Validating ->
+                if (fastestServers.servers.isNotEmpty()) {
+                    Text(text = stringResource(R.string.server_fastest_servers))
+                    fastestServers.servers.forEach {
+                        Text(text = it.toString())
+                    }
+                    CircularProgressIndicator()
+                }
+            is FastestServersResult.Done ->
+                if (fastestServers.servers.isNotEmpty()) {
+                    Text(text = stringResource(R.string.server_fastest_servers))
+                    fastestServers.servers.forEach {
+                        Text(text = it.toString())
+                    }
+                }
+            null -> {
+                // do nothing
+            }
         }
 
         options.forEachIndexed { index, endpoint ->
