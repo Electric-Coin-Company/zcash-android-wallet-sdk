@@ -54,7 +54,7 @@ internal class UsdExchangeRateFetcher(private val torDir: File) {
         times: Int = 3,
         initialDelay: Long = 1000,
         multiplier: Double = 2.0,
-        block: suspend () -> T,
+        block: () -> T,
     ): T {
         var currentDelay = initialDelay
         repeat(times - 1) {
