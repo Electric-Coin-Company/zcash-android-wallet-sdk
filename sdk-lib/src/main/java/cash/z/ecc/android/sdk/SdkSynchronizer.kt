@@ -43,9 +43,9 @@ import cash.z.ecc.android.sdk.internal.transaction.TransactionEncoder
 import cash.z.ecc.android.sdk.internal.transaction.TransactionEncoderImpl
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
+import cash.z.ecc.android.sdk.model.FastestServersResult
 import cash.z.ecc.android.sdk.model.FetchFiatCurrencyResult
 import cash.z.ecc.android.sdk.model.ObserveFiatCurrencyResult
-import cash.z.ecc.android.sdk.model.FastestServersResult
 import cash.z.ecc.android.sdk.model.PercentDecimal
 import cash.z.ecc.android.sdk.model.Proposal
 import cash.z.ecc.android.sdk.model.TransactionOverview
@@ -113,7 +113,7 @@ import kotlin.time.Duration.Companion.seconds
  * @property processor saves the downloaded compact blocks to the cache and then scans those blocks for
  * data related to this wallet.
  */
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions", "LongParameterList")
 class SdkSynchronizer private constructor(
     private val synchronizerKey: SynchronizerKey,
     private val storage: DerivedDataRepository,
@@ -154,7 +154,7 @@ class SdkSynchronizer private constructor(
             backend: TypesafeBackend,
             fastestServerFetcher: FastestServerFetcher,
             fetchExchangeChangeUsd: UsdExchangeRateFetcher,
-            ): CloseableSynchronizer {
+        ): CloseableSynchronizer {
             val synchronizerKey = SynchronizerKey(zcashNetwork, alias)
 
             return mutex.withLock {
@@ -217,25 +217,26 @@ class SdkSynchronizer private constructor(
 
     private val refreshExchangeRateUsd = MutableSharedFlow<Unit>(replay = 1).apply { tryEmit(Unit) }
 
+    private var lastExchangeRateValue = ObserveFiatCurrencyResult()
+
     @OptIn(ExperimentalCoroutinesApi::class)
     override val exchangeRateUsd =
         channelFlow {
-            var lastValue = ObserveFiatCurrencyResult()
             refreshExchangeRateUsd
                 .flatMapLatest {
                     flow {
-                        emit(lastValue.copy(isLoading = true))
-                        lastValue =
+                        emit(lastExchangeRateValue.copy(isLoading = true))
+                        lastExchangeRateValue =
                             when (val result = fetchExchangeChangeUsd()) {
-                                is FetchFiatCurrencyResult.Error -> lastValue.copy(isLoading = false)
+                                is FetchFiatCurrencyResult.Error -> lastExchangeRateValue.copy(isLoading = false)
 
                                 is FetchFiatCurrencyResult.Success ->
-                                    lastValue.copy(
+                                    lastExchangeRateValue.copy(
                                         isLoading = false,
                                         currencyConversion = result.currencyConversion
                                     )
                             }
-                        emit(lastValue)
+                        emit(lastExchangeRateValue)
                     }
                 }
                 .onEach { send(it) }

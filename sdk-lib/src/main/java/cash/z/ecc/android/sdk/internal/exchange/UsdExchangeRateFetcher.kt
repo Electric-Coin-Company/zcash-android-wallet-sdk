@@ -10,31 +10,33 @@ import java.io.File
 
 internal class UsdExchangeRateFetcher(private val torDir: File) {
     @Suppress("TooGenericExceptionCaught", "ReturnCount")
-    suspend operator fun invoke(): FetchFiatCurrencyResult =
-        retry {
-            val tor =
+    suspend operator fun invoke(): FetchFiatCurrencyResult {
+        val tor =
+            retry {
                 try {
                     Twig.info { "[USD] Tor client bootstrap" }
                     TorClient.new(torDir)
                 } catch (e: Exception) {
                     Twig.error(e) { "[USD] To client bootstrap failed" }
-                    return@retry FetchFiatCurrencyResult.Error(exception = e)
+                    return FetchFiatCurrencyResult.Error(exception = e)
                 }
+            }
 
+        return retry {
             val rate =
                 try {
                     Twig.info { "[USD] Fetch start" }
                     tor.getExchangeRateUsd()
                 } catch (e: Exception) {
                     Twig.error(e) { "[USD] Fetch failed" }
-                    return@retry FetchFiatCurrencyResult.Error(e)
+                    return FetchFiatCurrencyResult.Error(e)
                 } finally {
                     tor.dispose()
                 }
 
             Twig.debug { "[USD] Fetch success: $rate" }
 
-            return@retry FetchFiatCurrencyResult.Success(
+            FetchFiatCurrencyResult.Success(
                 currencyConversion =
                     FiatCurrencyConversion(
                         priceOfZec = rate.toDouble(),
@@ -42,12 +44,13 @@ internal class UsdExchangeRateFetcher(private val torDir: File) {
                     )
             )
         }
+    }
 
     /**
      * Retry with geometric order.
      */
     @Suppress("TooGenericExceptionCaught", "ReturnCount", "SwallowedException")
-    private suspend fun <T> retry(
+    private suspend inline fun <T> retry(
         times: Int = 3,
         initialDelay: Long = 1000,
         multiplier: Double = 2.0,

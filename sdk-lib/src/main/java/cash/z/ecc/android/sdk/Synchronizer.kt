@@ -8,8 +8,8 @@ import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor
 import cash.z.ecc.android.sdk.exception.InitializeException
 import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.internal.Derivation
-import cash.z.ecc.android.sdk.internal.Files
 import cash.z.ecc.android.sdk.internal.FastestServerFetcher
+import cash.z.ecc.android.sdk.internal.Files
 import cash.z.ecc.android.sdk.internal.SaplingParamTool
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.db.DatabaseCoordinator
@@ -699,9 +699,10 @@ interface Synchronizer {
                 processor = processor,
                 backend = backend,
                 fastestServerFetcher = FastestServerFetcher(backend = backend, network = processor.network),
-                fetchExchangeChangeUsd = UsdExchangeRateFetcher(
-                    torDir = Files.getTorDir(context)
-                )
+                fetchExchangeChangeUsd =
+                    UsdExchangeRateFetcher(
+                        torDir = Files.getTorDir(context)
+                    )
             )
         }
 
