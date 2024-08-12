@@ -17,6 +17,7 @@ import cash.z.ecc.android.sdk.exception.TransactionEncoderException
 import cash.z.ecc.android.sdk.exception.TransactionSubmitException
 import cash.z.ecc.android.sdk.ext.ConsensusBranchId
 import cash.z.ecc.android.sdk.ext.ZcashSdk
+import cash.z.ecc.android.sdk.internal.FastestServerFetcher
 import cash.z.ecc.android.sdk.internal.SaplingParamTool
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.TypesafeBackend
@@ -44,6 +45,7 @@ import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.FetchFiatCurrencyResult
 import cash.z.ecc.android.sdk.model.ObserveFiatCurrencyResult
+import cash.z.ecc.android.sdk.model.FastestServersResult
 import cash.z.ecc.android.sdk.model.PercentDecimal
 import cash.z.ecc.android.sdk.model.Proposal
 import cash.z.ecc.android.sdk.model.TransactionOverview
@@ -118,6 +120,7 @@ class SdkSynchronizer private constructor(
     private val txManager: OutboundTransactionManager,
     val processor: CompactBlockProcessor,
     private val backend: TypesafeBackend,
+    private val fetchFastestServers: FastestServerFetcher,
     private val fetchExchangeChangeUsd: UsdExchangeRateFetcher
 ) : CloseableSynchronizer {
     companion object {
@@ -148,9 +151,10 @@ class SdkSynchronizer private constructor(
             repository: DerivedDataRepository,
             txManager: OutboundTransactionManager,
             processor: CompactBlockProcessor,
-            fetchExchangeChangeUsd: UsdExchangeRateFetcher,
             backend: TypesafeBackend,
-        ): CloseableSynchronizer {
+            fastestServerFetcher: FastestServerFetcher,
+            fetchExchangeChangeUsd: UsdExchangeRateFetcher,
+            ): CloseableSynchronizer {
             val synchronizerKey = SynchronizerKey(zcashNetwork, alias)
 
             return mutex.withLock {
@@ -163,6 +167,7 @@ class SdkSynchronizer private constructor(
                     txManager,
                     processor,
                     backend,
+                    fastestServerFetcher,
                     fetchExchangeChangeUsd
                 ).apply {
                     instances[synchronizerKey] = InstanceState.Active
@@ -346,6 +351,11 @@ class SdkSynchronizer private constructor(
 
     override val latestBirthdayHeight
         get() = processor.birthdayHeight
+
+    override suspend fun getFastestServers(
+        context: Context,
+        servers: List<LightWalletEndpoint>
+    ): Flow<FastestServersResult> = fetchFastestServers(context, servers)
 
     internal fun start() {
         coroutineScope.onReady()

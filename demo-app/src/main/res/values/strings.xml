@@ -90,6 +90,7 @@
     <string name="server_textfield_error">Invalid server</string>
     <string name="server_custom">custom</string>
     <string name="server_save">Save</string>
+    <string name="server_fastest_servers">Fastest servers:</string>
 
     <string name="transactions_refresh">Refresh transactions</string>
 

@@ -9,6 +9,7 @@ import cash.z.ecc.android.sdk.exception.InitializeException
 import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.internal.Derivation
 import cash.z.ecc.android.sdk.internal.Files
+import cash.z.ecc.android.sdk.internal.FastestServerFetcher
 import cash.z.ecc.android.sdk.internal.SaplingParamTool
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.db.DatabaseCoordinator
@@ -16,6 +17,7 @@ import cash.z.ecc.android.sdk.internal.exchange.UsdExchangeRateFetcher
 import cash.z.ecc.android.sdk.internal.model.ext.toBlockHeight
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
+import cash.z.ecc.android.sdk.model.FastestServersResult
 import cash.z.ecc.android.sdk.model.ObserveFiatCurrencyResult
 import cash.z.ecc.android.sdk.model.PercentDecimal
 import cash.z.ecc.android.sdk.model.Proposal
@@ -119,6 +121,16 @@ interface Synchronizer {
     //
     // Operations
     //
+
+    /**
+     * Measure connection quality and speed of given [servers].
+     *
+     * @return a [Flow] of fastest servers which updates it's state during measurement stages
+     */
+    suspend fun getFastestServers(
+        context: Context,
+        servers: List<LightWalletEndpoint>
+    ): Flow<FastestServersResult>
 
     @Suppress("ktlint:standard:no-consecutive-comments")
     /**
@@ -686,10 +698,10 @@ interface Synchronizer {
                 txManager = txManager,
                 processor = processor,
                 backend = backend,
-                fetchExchangeChangeUsd =
-                    UsdExchangeRateFetcher(
-                        torDir = Files.getTorDir(context)
-                    )
+                fastestServerFetcher = FastestServerFetcher(backend = backend, network = processor.network),
+                fetchExchangeChangeUsd = UsdExchangeRateFetcher(
+                    torDir = Files.getTorDir(context)
+                )
             )
         }
 
