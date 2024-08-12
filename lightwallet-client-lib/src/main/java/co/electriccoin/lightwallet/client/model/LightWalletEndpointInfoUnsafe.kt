@@ -1,6 +1,6 @@
 package co.electriccoin.lightwallet.client.model
 
-import cash.z.wallet.sdk.internal.rpc.Service
+import cash.z.wallet.sdk.internal.rpc.Service.LightdInfo
 import java.util.Locale
 
 /**
@@ -9,20 +9,17 @@ import java.util.Locale
  * It is marked as "unsafe" because it is not guaranteed to be valid.
  */
 data class LightWalletEndpointInfoUnsafe(
-    val chainName: String,
-    val consensusBranchId: String,
-    val blockHeightUnsafe: BlockHeightUnsafe,
-    val saplingActivationHeightUnsafe: BlockHeightUnsafe
+    val lightdInfo: LightdInfo
 ) {
     companion object {
-        internal fun new(lightdInfo: Service.LightdInfo) =
-            LightWalletEndpointInfoUnsafe(
-                lightdInfo.chainName,
-                lightdInfo.consensusBranchId,
-                BlockHeightUnsafe(lightdInfo.blockHeight),
-                BlockHeightUnsafe(lightdInfo.saplingActivationHeight),
-            )
+        internal fun new(lightdInfo: LightdInfo) = LightWalletEndpointInfoUnsafe(lightdInfo)
     }
+
+    val chainName: String = lightdInfo.chainName
+    val consensusBranchId: String = lightdInfo.consensusBranchId
+    val blockHeightUnsafe: BlockHeightUnsafe = BlockHeightUnsafe(lightdInfo.blockHeight)
+    val saplingActivationHeightUnsafe: BlockHeightUnsafe = BlockHeightUnsafe(lightdInfo.saplingActivationHeight)
+    val estimatedHeight: Long = lightdInfo.estimatedHeight
 
     // [chainName] is either "main" or "test"
     fun matchingNetwork(network: String): Boolean {
