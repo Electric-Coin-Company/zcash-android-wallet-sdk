@@ -17,6 +17,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -45,6 +46,7 @@ import cash.z.ecc.android.sdk.demoapp.R
 import cash.z.ecc.android.sdk.demoapp.ext.Testnet
 import cash.z.ecc.android.sdk.demoapp.ext.isValid
 import cash.z.ecc.android.sdk.internal.Twig
+import cash.z.ecc.android.sdk.model.FastestServersResult
 import cash.z.ecc.android.sdk.model.PersistableWallet
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.type.ServerValidation
@@ -60,23 +62,24 @@ private fun ComposablePreview() {
     }
 }
 
-private const val YW_HOST_1 = "lwd1.zcash-infra.com" // NON-NLS
-private const val YW_HOST_2 = "lwd2.zcash-infra.com" // NON-NLS
-private const val YW_HOST_3 = "lwd3.zcash-infra.com" // NON-NLS
-private const val YW_HOST_4 = "lwd4.zcash-infra.com" // NON-NLS
-private const val YW_HOST_5 = "lwd5.zcash-infra.com" // NON-NLS
-private const val YW_HOST_6 = "lwd6.zcash-infra.com" // NON-NLS
-private const val YW_HOST_7 = "lwd7.zcash-infra.com" // NON-NLS
-private const val YW_HOST_8 = "lwd8.zcash-infra.com" // NON-NLS
-private const val YW_PORT = 9067
+const val YW_HOST_1 = "lwd1.zcash-infra.com" // NON-NLS
+const val YW_HOST_2 = "lwd2.zcash-infra.com" // NON-NLS
+const val YW_HOST_3 = "lwd3.zcash-infra.com" // NON-NLS
+const val YW_HOST_4 = "lwd4.zcash-infra.com" // NON-NLS
+const val YW_HOST_5 = "lwd5.zcash-infra.com" // NON-NLS
+const val YW_HOST_6 = "lwd6.zcash-infra.com" // NON-NLS
+const val YW_HOST_7 = "lwd7.zcash-infra.com" // NON-NLS
+const val YW_HOST_8 = "lwd8.zcash-infra.com" // NON-NLS
+const val YW_PORT = 9067
 
-private const val ZR_HOST = "zec.rocks" // NON-NLS
-private const val ZR_HOST_NA = "na.zec.rocks" // NON-NLS
-private const val ZR_HOST_SA = "sa.zec.rocks" // NON-NLS
-private const val ZR_HOST_EU = "eu.zec.rocks" // NON-NLS
-private const val ZR_HOST_AP = "ap.zec.rocks" // NON-NLS
-private const val ZR_PORT = 443
+const val ZR_HOST = "zec.rocks" // NON-NLS
+const val ZR_HOST_NA = "na.zec.rocks" // NON-NLS
+const val ZR_HOST_SA = "sa.zec.rocks" // NON-NLS
+const val ZR_HOST_EU = "eu.zec.rocks" // NON-NLS
+const val ZR_HOST_AP = "ap.zec.rocks" // NON-NLS
+const val ZR_PORT = 443
 
+@Suppress("LongParameterList")
 @Composable
 fun Server(
     buildInNetwork: ZcashNetwork,
@@ -84,6 +87,7 @@ fun Server(
     onServerChange: (LightWalletEndpoint) -> Unit,
     wallet: PersistableWallet,
     validationResult: ServerValidation,
+    fastestServers: FastestServersResult?
 ) {
     Scaffold(
         topBar = { ServerTopAppBar(onBack) },
@@ -99,7 +103,8 @@ fun Server(
                     bottom = paddingValues.calculateBottomPadding() + 16.dp,
                     start = 16.dp,
                     end = 16.dp
-                )
+                ),
+            fastestServers = fastestServers
         )
     }
 }
@@ -123,11 +128,12 @@ private fun ServerTopAppBar(onBack: () -> Unit) {
 }
 
 @Composable
-@Suppress("LongMethod")
+@Suppress("LongMethod", "LongParameterList", "CyclomaticComplexMethod")
 fun ServerSwitch(
     buildInNetwork: ZcashNetwork,
     onServerChange: (LightWalletEndpoint) -> Unit,
     wallet: PersistableWallet,
+    fastestServers: FastestServersResult?,
     validationResult: ServerValidation,
     modifier: Modifier = Modifier,
 ) {
@@ -184,6 +190,7 @@ fun ServerSwitch(
             is ServerValidation.InValid -> {
                 customServerError = context.getString(R.string.server_textfield_error)
             }
+
             else -> {}
         }
     }
@@ -194,6 +201,31 @@ fun ServerSwitch(
                 .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(2.dp)
     ) {
+        when (fastestServers) {
+            FastestServersResult.Measuring -> {
+                Text(text = stringResource(R.string.server_fastest_servers))
+                CircularProgressIndicator()
+            }
+            is FastestServersResult.Validating ->
+                if (fastestServers.servers.isNotEmpty()) {
+                    Text(text = stringResource(R.string.server_fastest_servers))
+                    fastestServers.servers.forEach {
+                        Text(text = it.toString())
+                    }
+                    CircularProgressIndicator()
+                }
+            is FastestServersResult.Done ->
+                if (fastestServers.servers.isNotEmpty()) {
+                    Text(text = stringResource(R.string.server_fastest_servers))
+                    fastestServers.servers.forEach {
+                        Text(text = it.toString())
+                    }
+                }
+            null -> {
+                // do nothing
+            }
+        }
+
         options.forEachIndexed { index, endpoint ->
             val isSelected = index == selectedOptionIndex
             val isLast = index == options.lastIndex

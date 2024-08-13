@@ -11,11 +11,13 @@ import androidx.activity.viewModels
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.NavOptionsBuilder
@@ -29,6 +31,7 @@ import cash.z.ecc.android.sdk.demoapp.NavigationTargets.SEND
 import cash.z.ecc.android.sdk.demoapp.NavigationTargets.SERVER
 import cash.z.ecc.android.sdk.demoapp.NavigationTargets.TRANSACTIONS
 import cash.z.ecc.android.sdk.demoapp.NavigationTargets.WALLET_ADDRESS_DETAILS
+import cash.z.ecc.android.sdk.demoapp.ext.Testnet
 import cash.z.ecc.android.sdk.demoapp.ui.screen.addresses.view.Addresses
 import cash.z.ecc.android.sdk.demoapp.ui.screen.balance.view.Balance
 import cash.z.ecc.android.sdk.demoapp.ui.screen.home.view.Home
@@ -36,18 +39,35 @@ import cash.z.ecc.android.sdk.demoapp.ui.screen.home.viewmodel.SecretState
 import cash.z.ecc.android.sdk.demoapp.ui.screen.home.viewmodel.WalletViewModel
 import cash.z.ecc.android.sdk.demoapp.ui.screen.send.view.Send
 import cash.z.ecc.android.sdk.demoapp.ui.screen.server.view.Server
+import cash.z.ecc.android.sdk.demoapp.ui.screen.server.view.YW_HOST_1
+import cash.z.ecc.android.sdk.demoapp.ui.screen.server.view.YW_HOST_2
+import cash.z.ecc.android.sdk.demoapp.ui.screen.server.view.YW_HOST_3
+import cash.z.ecc.android.sdk.demoapp.ui.screen.server.view.YW_HOST_4
+import cash.z.ecc.android.sdk.demoapp.ui.screen.server.view.YW_HOST_5
+import cash.z.ecc.android.sdk.demoapp.ui.screen.server.view.YW_HOST_6
+import cash.z.ecc.android.sdk.demoapp.ui.screen.server.view.YW_HOST_7
+import cash.z.ecc.android.sdk.demoapp.ui.screen.server.view.YW_HOST_8
+import cash.z.ecc.android.sdk.demoapp.ui.screen.server.view.YW_PORT
+import cash.z.ecc.android.sdk.demoapp.ui.screen.server.view.ZR_HOST
+import cash.z.ecc.android.sdk.demoapp.ui.screen.server.view.ZR_HOST_AP
+import cash.z.ecc.android.sdk.demoapp.ui.screen.server.view.ZR_HOST_EU
+import cash.z.ecc.android.sdk.demoapp.ui.screen.server.view.ZR_HOST_NA
+import cash.z.ecc.android.sdk.demoapp.ui.screen.server.view.ZR_HOST_SA
+import cash.z.ecc.android.sdk.demoapp.ui.screen.server.view.ZR_PORT
 import cash.z.ecc.android.sdk.demoapp.ui.screen.transactions.view.Transactions
 import cash.z.ecc.android.sdk.demoapp.util.AndroidApiVersion
 import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.internal.Twig
+import cash.z.ecc.android.sdk.model.FastestServersResult
 import cash.z.ecc.android.sdk.model.Proposal
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.type.ServerValidation
+import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 @Composable
-@Suppress("LongMethod", "CyclomaticComplexMethod", "ktlint:standard:function-naming")
+@Suppress("LongMethod", "CyclomaticComplexMethod", "ktlint:standard:function-naming", "standard:function-naming")
 internal fun ComposeActivity.Navigation() {
     val navController = rememberNavController()
 
@@ -98,6 +118,7 @@ internal fun ComposeActivity.Navigation() {
                     onRefresh = {
                         scope.launch {
                             (synchronizer as SdkSynchronizer).refreshAllBalances()
+                            synchronizer.refreshExchangeRateUsd()
                         }
                     }
                 )
@@ -160,6 +181,8 @@ internal fun ComposeActivity.Navigation() {
 
             val synchronizer = walletViewModel.synchronizer.collectAsStateWithLifecycle().value
 
+            val context = LocalContext.current
+
             Twig.info { "Current secrets state: $secretState" }
 
             if (synchronizer == null || secretState !is SecretState.Ready) {
@@ -180,6 +203,36 @@ internal fun ComposeActivity.Navigation() {
                 }
 
                 BackHandler { onBack() }
+
+                val fastestServers = remember { mutableStateOf<FastestServersResult?>(null) }
+
+                LaunchedEffect(Unit) {
+                    synchronizer.getFastestServers(
+                        context = context,
+                        servers =
+                            buildList {
+                                if (ZcashNetwork.fromResources(application) == ZcashNetwork.Mainnet) {
+                                    add(LightWalletEndpoint(ZR_HOST, ZR_PORT, true))
+                                    add(LightWalletEndpoint(ZR_HOST_NA, ZR_PORT, true))
+                                    add(LightWalletEndpoint(ZR_HOST_SA, ZR_PORT, true))
+                                    add(LightWalletEndpoint(ZR_HOST_EU, ZR_PORT, true))
+                                    add(LightWalletEndpoint(ZR_HOST_AP, ZR_PORT, true))
+                                    add(LightWalletEndpoint(YW_HOST_1, YW_PORT, true))
+                                    add(LightWalletEndpoint(YW_HOST_2, YW_PORT, true))
+                                    add(LightWalletEndpoint(YW_HOST_3, YW_PORT, true))
+                                    add(LightWalletEndpoint(YW_HOST_4, YW_PORT, true))
+                                    add(LightWalletEndpoint(YW_HOST_5, YW_PORT, true))
+                                    add(LightWalletEndpoint(YW_HOST_6, YW_PORT, true))
+                                    add(LightWalletEndpoint(YW_HOST_7, YW_PORT, true))
+                                    add(LightWalletEndpoint(YW_HOST_8, YW_PORT, true))
+                                } else {
+                                    add(LightWalletEndpoint.Testnet)
+                                }
+                            }
+                    ).collect {
+                        fastestServers.value = it
+                    }
+                }
 
                 Server(
                     buildInNetwork = ZcashNetwork.fromResources(application),
@@ -210,9 +263,11 @@ internal fun ComposeActivity.Navigation() {
                                         Toast.LENGTH_SHORT
                                     ).show()
                                 }
+
                                 is ServerValidation.InValid -> {
                                     Twig.error { "Failed to validate the new endpoint: $newEndpoint" }
                                 }
+
                                 else -> {
                                     // Should not happen
                                     Twig.info { "Server validation state: $validationResult" }
@@ -222,6 +277,7 @@ internal fun ComposeActivity.Navigation() {
                     },
                     validationResult = validationResult,
                     wallet = wallet,
+                    fastestServers = fastestServers.value
                 )
             }
         }

@@ -7,11 +7,17 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
-- Migrated to Rust 1.79.0.
+- Migrated to Rust 1.80.0.
 - `Synchronizer.proposeTransfer` now supports TEX addresses (ZIP 320).
 
 ### Added
 - `Synchronizer.isValidTexAddr` which checks whether the given address is a valid ZIP 320 TEX address
+- `Synchronizer.exchangeRateUsd` is a `StateFlow` containing the latest USD/ZEC
+  exchange rate, along with the `Instant` it was fetched. It can be initialized
+  and refreshed by calling `Synchronizer.refreshExchangeRateUsd()`.
+- `ZatoshiExt.toFiatString` is now a public function
+- `Synchronizer.getFastestServers([LightWalletEndpoint])` is a flow that measures connections to given endpoints and
+  returns the three fastest ones
 
 ## [2.1.3] - 2024-08-08
 

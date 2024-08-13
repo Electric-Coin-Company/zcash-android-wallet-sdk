@@ -58,11 +58,18 @@
 
 
         <Button
+            android:id="@+id/refresh_exchange_rate"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="@string/action_refresh_exchange_rate"/>
+
+        <Button
             android:id="@+id/shield"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:text="@string/action_shield"/>
+            android:text="@string/action_shield" />
 
     </androidx.appcompat.widget.LinearLayoutCompat>
 </ScrollView>

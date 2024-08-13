@@ -8,12 +8,17 @@ import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor
 import cash.z.ecc.android.sdk.exception.InitializeException
 import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.internal.Derivation
+import cash.z.ecc.android.sdk.internal.FastestServerFetcher
+import cash.z.ecc.android.sdk.internal.Files
 import cash.z.ecc.android.sdk.internal.SaplingParamTool
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.db.DatabaseCoordinator
+import cash.z.ecc.android.sdk.internal.exchange.UsdExchangeRateFetcher
 import cash.z.ecc.android.sdk.internal.model.ext.toBlockHeight
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
+import cash.z.ecc.android.sdk.model.FastestServersResult
+import cash.z.ecc.android.sdk.model.ObserveFiatCurrencyResult
 import cash.z.ecc.android.sdk.model.PercentDecimal
 import cash.z.ecc.android.sdk.model.Proposal
 import cash.z.ecc.android.sdk.model.TransactionOverview
@@ -87,6 +92,13 @@ interface Synchronizer {
     val transparentBalance: StateFlow<Zatoshi?>
 
     /**
+     * The latest known USD/ZEC exchange rate, paired with the time it was queried.
+     *
+     * The rate can be initialized and refreshed by calling [refreshExchangeRateUsd].
+     */
+    val exchangeRateUsd: StateFlow<ObserveFiatCurrencyResult>
+
+    /**
      * A flow of all the transactions that are on the blockchain.
      */
     val transactions: Flow<List<TransactionOverview>>
@@ -109,6 +121,16 @@ interface Synchronizer {
     //
     // Operations
     //
+
+    /**
+     * Measure connection quality and speed of given [servers].
+     *
+     * @return a [Flow] of fastest servers which updates it's state during measurement stages
+     */
+    suspend fun getFastestServers(
+        context: Context,
+        servers: List<LightWalletEndpoint>
+    ): Flow<FastestServersResult>
 
     @Suppress("ktlint:standard:no-consecutive-comments")
     /**
@@ -168,6 +190,11 @@ interface Synchronizer {
      * @return a legacy transparent address for the given account.
      */
     suspend fun getTransparentAddress(account: Account): String
+
+    /**
+     * Refreshes [exchangeRateUsd].
+     */
+    suspend fun refreshExchangeRateUsd()
 
     /**
      * Creates a proposal for transferring funds to the given recipient.
@@ -670,7 +697,12 @@ interface Synchronizer {
                 repository = repository,
                 txManager = txManager,
                 processor = processor,
-                backend = backend
+                backend = backend,
+                fastestServerFetcher = FastestServerFetcher(backend = backend, network = processor.network),
+                fetchExchangeChangeUsd =
+                    UsdExchangeRateFetcher(
+                        torDir = Files.getTorDir(context)
+                    )
             )
         }
 

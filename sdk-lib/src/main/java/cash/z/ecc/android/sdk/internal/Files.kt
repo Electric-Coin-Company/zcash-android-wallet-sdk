@@ -19,6 +19,11 @@ internal object Files {
      */
     const val NO_BACKUP_SUBDIRECTORY = "co.electricoin.zcash" // $NON-NLS
 
+    /**
+     * Subdirectory under [NO_BACKUP_SUBDIRECTORY] for Tor client data.
+     */
+    const val TOR_SUBDIR = "tor"
+
     private val accessMutex = Mutex()
 
     /**
@@ -43,5 +48,9 @@ internal object Files {
             }
         }
         return dir
+    }
+
+    suspend fun getTorDir(context: Context): File {
+        return File(getZcashNoBackupSubdirectory(context), TOR_SUBDIR)
     }
 }

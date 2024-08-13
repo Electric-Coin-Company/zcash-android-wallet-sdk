@@ -20,6 +20,7 @@ import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
+import cash.z.ecc.android.sdk.model.ObserveFiatCurrencyResult
 import cash.z.ecc.android.sdk.model.PercentDecimal
 import cash.z.ecc.android.sdk.model.PersistableWallet
 import cash.z.ecc.android.sdk.model.Proposal
@@ -435,14 +436,19 @@ private fun Synchronizer.toWalletSnapshot() =
         // 4
         transparentBalance,
         // 5
-        progress,
+        exchangeRateUsd,
         // 6
+        progress,
+        // 7
         toCommonError()
     ) { flows ->
         val orchardBalance = flows[2] as WalletBalance?
         val saplingBalance = flows[3] as WalletBalance?
         val transparentBalance = flows[4] as Zatoshi?
-        val progressPercentDecimal = (flows[5] as PercentDecimal)
+
+        @Suppress("UNCHECKED_CAST")
+        val exchangeRateUsd = flows[5] as ObserveFiatCurrencyResult
+        val progressPercentDecimal = (flows[6] as PercentDecimal)
 
         WalletSnapshot(
             flows[0] as Synchronizer.Status,
@@ -450,7 +456,8 @@ private fun Synchronizer.toWalletSnapshot() =
             orchardBalance ?: WalletBalance(Zatoshi(0), Zatoshi(0), Zatoshi(0)),
             saplingBalance ?: WalletBalance(Zatoshi(0), Zatoshi(0), Zatoshi(0)),
             transparentBalance ?: Zatoshi(0),
+            exchangeRateUsd.currencyConversion?.priceOfZec?.toBigDecimal(),
             progressPercentDecimal,
-            flows[6] as SynchronizerError?
+            flows[7] as SynchronizerError?
         )
     }
