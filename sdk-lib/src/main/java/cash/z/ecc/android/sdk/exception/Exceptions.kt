@@ -98,7 +98,7 @@ sealed class CompactBlockProcessorException(message: String, cause: Throwable? =
 
     open class EnhanceTransactionError(
         message: String,
-        val height: BlockHeight,
+        val height: BlockHeight?,
         cause: Throwable
     ) : CompactBlockProcessorException(message, cause) {
         class EnhanceTxDownloadError(
@@ -111,7 +111,7 @@ sealed class CompactBlockProcessorException(message: String, cause: Throwable? =
             )
 
         class EnhanceTxDecryptError(
-            height: BlockHeight,
+            height: BlockHeight?,
             cause: Throwable
         ) : EnhanceTransactionError(
                 "Error while attempting to decrypt and store a transaction to enhance",

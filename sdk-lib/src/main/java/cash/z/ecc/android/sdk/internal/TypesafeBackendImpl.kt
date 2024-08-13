@@ -244,7 +244,11 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
             )
         }
 
-    override suspend fun decryptAndStoreTransaction(tx: ByteArray) = backend.decryptAndStoreTransaction(tx)
+    override suspend fun decryptAndStoreTransaction(
+        tx: ByteArray,
+        minedHeight: BlockHeight?
+    ) = backend
+        .decryptAndStoreTransaction(tx, minedHeight?.value)
 
     override fun getSaplingReceiver(ua: String): String? = backend.getSaplingReceiver(ua)
 

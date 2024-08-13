@@ -369,7 +369,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_createAcc
         let account = db_data.get_account(account_id)?.expect("just created");
         let account_index = match account.source() {
             AccountSource::Derived { account_index, .. } => account_index,
-            AccountSource::Imported => unreachable!("just created"),
+            AccountSource::Imported { .. } => unreachable!("just created"),
         };
 
         Ok(encode_usk(env, account_index, usk)?.into_raw())
@@ -1327,7 +1327,9 @@ fn encode_wallet_summary<'a, P: Parameters>(
                     .source()
                 {
                     AccountSource::Derived { account_index, .. } => account_index,
-                    AccountSource::Imported => unreachable!("Imported accounts are unimplemented"),
+                    AccountSource::Imported { .. } => {
+                        unreachable!("Imported accounts are unimplemented")
+                    }
                 };
                 Ok::<_, anyhow::Error>((account_index, balance))
             })
@@ -1556,6 +1558,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_decryptAn
     _: JClass<'local>,
     db_data: JString<'local>,
     tx: JByteArray<'local>,
+    mined_height: jlong,
     network_id: jint,
 ) -> jboolean {
     let res = catch_unwind(&mut env, |env| {
@@ -1570,8 +1573,9 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_decryptAn
         // - v5 and above transactions ignore the argument, and parse the correct value
         //   from their encoding.
         let tx = Transaction::read(&tx_bytes[..], BranchId::Sapling)?;
+        let mined_height = BlockHeight::try_from(mined_height).ok();
 
-        match decrypt_and_store_transaction(&network, &mut db_data, &tx) {
+        match decrypt_and_store_transaction(&network, &mut db_data, &tx, mined_height) {
             Ok(()) => Ok(JNI_TRUE),
             Err(e) => Err(anyhow!("Error while decrypting transaction: {}", e)),
         }

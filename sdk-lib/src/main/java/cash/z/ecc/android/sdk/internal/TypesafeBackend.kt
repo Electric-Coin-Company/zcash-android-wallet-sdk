@@ -149,7 +149,10 @@ internal interface TypesafeBackend {
     @Throws(RuntimeException::class)
     suspend fun suggestScanRanges(): List<ScanRange>
 
-    suspend fun decryptAndStoreTransaction(tx: ByteArray)
+    suspend fun decryptAndStoreTransaction(
+        tx: ByteArray,
+        minedHeight: BlockHeight?
+    )
 
     fun getSaplingReceiver(ua: String): String?
 

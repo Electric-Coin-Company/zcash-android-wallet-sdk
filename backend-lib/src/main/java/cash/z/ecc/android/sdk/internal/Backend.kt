@@ -39,7 +39,14 @@ interface Backend {
         unifiedSpendingKey: ByteArray
     ): List<ByteArray>
 
-    suspend fun decryptAndStoreTransaction(tx: ByteArray)
+    /**
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    @Throws(RuntimeException::class)
+    suspend fun decryptAndStoreTransaction(
+        tx: ByteArray,
+        minedHeight: Long?
+    )
 
     /**
      * Sets up the internal structure of the data database.

@@ -56,6 +56,7 @@ import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.GetAddressUtxosReplyUnsafe
+import co.electriccoin.lightwallet.client.model.RawTransactionUnsafe
 import co.electriccoin.lightwallet.client.model.Response
 import co.electriccoin.lightwallet.client.model.ShieldedProtocolEnum
 import co.electriccoin.lightwallet.client.model.SubtreeRootUnsafe
@@ -1574,7 +1575,8 @@ class CompactBlockProcessor internal constructor(
                                 range = currentEnhancingRange,
                                 repository = repository,
                                 backend = backend,
-                                downloader = downloader
+                                downloader = downloader,
+                                network = network
                             ).collect { enhancingResult ->
                                 Twig.info { "Enhancing result: $enhancingResult" }
                                 resultState =
@@ -1838,7 +1840,8 @@ class CompactBlockProcessor internal constructor(
             range: ClosedRange<BlockHeight>,
             repository: DerivedDataRepository,
             backend: TypesafeBackend,
-            downloader: CompactBlockDownloader
+            downloader: CompactBlockDownloader,
+            network: ZcashNetwork
         ): Flow<SyncingResult> =
             flow {
                 Twig.debug { "Enhancing transaction details for blocks $range" }
@@ -1856,7 +1859,7 @@ class CompactBlockProcessor internal constructor(
                     }
 
                     newTxs.filter { it.minedHeight != null }.onEach { newTransaction ->
-                        val trEnhanceResult = enhanceTransaction(newTransaction, backend, downloader)
+                        val trEnhanceResult = enhanceTransaction(newTransaction, backend, downloader, network)
                         if (trEnhanceResult is SyncingResult.EnhanceFailed) {
                             Twig.error { "Encountered transaction enhancing error: ${trEnhanceResult.exception}" }
                             emit(trEnhanceResult)
@@ -1872,7 +1875,8 @@ class CompactBlockProcessor internal constructor(
         private suspend fun enhanceTransaction(
             transaction: DbTransactionOverview,
             backend: TypesafeBackend,
-            downloader: CompactBlockDownloader
+            downloader: CompactBlockDownloader,
+            network: ZcashNetwork
         ): SyncingResult {
             Twig.debug {
                 "Starting enhancing transaction (txid:${transaction.txIdString()}  block:${transaction
@@ -1895,7 +1899,8 @@ class CompactBlockProcessor internal constructor(
                             transactionId = transaction.txIdString(),
                             rawTransactionId = transaction.rawId.byteArray,
                             minedHeight = transaction.minedHeight,
-                            downloader = downloader
+                            downloader = downloader,
+                            network = network
                         )
 
                     // Decrypting and storing transaction is run just once, since we consider it more stable
@@ -1904,8 +1909,8 @@ class CompactBlockProcessor internal constructor(
                             "(txid:${transaction.txIdString()}  block:${transaction.minedHeight})"
                     }
                     decryptTransaction(
-                        transactionData = transactionData,
-                        minedHeight = transaction.minedHeight,
+                        transactionData = transactionData.first,
+                        minedHeight = transactionData.second,
                         backend = backend
                     )
 
@@ -1931,10 +1936,11 @@ class CompactBlockProcessor internal constructor(
             transactionId: String,
             rawTransactionId: ByteArray,
             minedHeight: BlockHeight,
-            downloader: CompactBlockDownloader
-        ): ByteArray {
+            downloader: CompactBlockDownloader,
+            network: ZcashNetwork
+        ): Pair<ByteArray, BlockHeight?> {
             val traceScope = TraceScope("CompactBlockProcessor.fetchTransaction")
-            var transactionDataResult: ByteArray? = null
+            var transactionDataResult: Pair<ByteArray, BlockHeight?>? = null
             retryUpToAndThrow(TRANSACTION_FETCH_RETRIES) { failedAttempts ->
                 if (failedAttempts == 0) {
                     Twig.debug { "Starting to fetch transaction (txid:$transactionId, block:$minedHeight)" }
@@ -1946,7 +1952,15 @@ class CompactBlockProcessor internal constructor(
                 }
                 when (val response = downloader.fetchTransaction(rawTransactionId)) {
                     is Response.Success -> {
-                        transactionDataResult = response.result.data
+                        val currentMinedHeight = when (response.result) {
+                            is RawTransactionUnsafe.MainChain -> runCatching {
+                                (response.result as RawTransactionUnsafe.MainChain).height.toBlockHeight(
+                                    network
+                                )
+                            }.getOrNull()
+                            else -> null
+                        }
+                        transactionDataResult = Pair(response.result.data, currentMinedHeight)
                     }
                     is Response.Failure -> {
                         throw EnhanceTxDownloadError(minedHeight, response.toThrowable())
@@ -1961,12 +1975,12 @@ class CompactBlockProcessor internal constructor(
         @Throws(EnhanceTxDecryptError::class)
         private suspend fun decryptTransaction(
             transactionData: ByteArray,
-            minedHeight: BlockHeight,
+            minedHeight: BlockHeight?,
             backend: TypesafeBackend,
         ) {
             val traceScope = TraceScope("CompactBlockProcessor.decryptTransaction")
             runCatching {
-                backend.decryptAndStoreTransaction(transactionData)
+                backend.decryptAndStoreTransaction(transactionData, minedHeight)
             }.onFailure {
                 traceScope.end()
                 throw EnhanceTxDecryptError(minedHeight, it)

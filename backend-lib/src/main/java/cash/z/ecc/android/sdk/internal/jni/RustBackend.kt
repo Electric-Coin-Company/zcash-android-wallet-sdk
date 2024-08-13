@@ -295,14 +295,17 @@ class RustBackend private constructor(
         }
     }
 
-    override suspend fun decryptAndStoreTransaction(tx: ByteArray) =
-        withContext(SdkDispatchers.DATABASE_IO) {
-            decryptAndStoreTransaction(
-                dataDbFile.absolutePath,
-                tx,
-                networkId = networkId
-            )
-        }
+    override suspend fun decryptAndStoreTransaction(
+        tx: ByteArray,
+        minedHeight: Long?
+    ) = withContext(SdkDispatchers.DATABASE_IO) {
+        decryptAndStoreTransaction(
+            dataDbFile.absolutePath,
+            tx,
+            minedHeight = minedHeight ?: -1,
+            networkId = networkId
+        )
+    }
 
     override suspend fun proposeTransfer(
         account: Int,
@@ -616,6 +619,7 @@ class RustBackend private constructor(
         private external fun decryptAndStoreTransaction(
             dbDataPath: String,
             tx: ByteArray,
+            minedHeight: Long,
             networkId: Int
         )
 
