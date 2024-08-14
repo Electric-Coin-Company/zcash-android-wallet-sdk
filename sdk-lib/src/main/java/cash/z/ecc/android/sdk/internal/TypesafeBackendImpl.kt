@@ -7,6 +7,8 @@ import cash.z.ecc.android.sdk.internal.model.JniSubtreeRoot
 import cash.z.ecc.android.sdk.internal.model.ScanRange
 import cash.z.ecc.android.sdk.internal.model.ScanSummary
 import cash.z.ecc.android.sdk.internal.model.SubtreeRoot
+import cash.z.ecc.android.sdk.internal.model.TransactionDataRequest
+import cash.z.ecc.android.sdk.internal.model.TransactionStatus
 import cash.z.ecc.android.sdk.internal.model.TreeState
 import cash.z.ecc.android.sdk.internal.model.WalletSummary
 import cash.z.ecc.android.sdk.internal.model.ZcashProtocol
@@ -231,6 +233,14 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
         limit: Long
     ): ScanSummary = ScanSummary.new(backend.scanBlocks(fromHeight.value, fromState.encoded, limit), network)
 
+    override suspend fun transactionDataRequests(): List<TransactionDataRequest> =
+        backend.transactionDataRequests().map { jniRequest ->
+            TransactionDataRequest.new(
+                jniRequest,
+                network
+            )
+        }
+
     override suspend fun getWalletSummary(): WalletSummary? =
         backend.getWalletSummary()?.let { jniWalletSummary ->
             WalletSummary.new(jniWalletSummary)
@@ -249,6 +259,16 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
         minedHeight: BlockHeight?
     ) = backend
         .decryptAndStoreTransaction(tx, minedHeight?.value)
+
+    override suspend fun setTransactionStatus(txId: ByteArray, status: TransactionStatus) = backend
+        .setTransactionStatus(
+            txId, when (status) {
+                is TransactionStatus.Mined -> status.height.value
+                is TransactionStatus.NotInMainChain -> -1L
+                // TxidNotRecognized
+                else -> -2L
+            }
+        )
 
     override fun getSaplingReceiver(ua: String): String? = backend.getSaplingReceiver(ua)
 

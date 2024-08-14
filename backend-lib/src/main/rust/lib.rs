@@ -19,6 +19,7 @@ use tracing::{debug, error};
 use tracing_subscriber::prelude::*;
 use tracing_subscriber::reload;
 use zcash_address::{ToAddress, ZcashAddress};
+use zcash_client_backend::data_api::{TransactionDataRequest, TransactionStatus};
 use zcash_client_backend::{
     address::{Address, UnifiedAddress},
     data_api::{
@@ -50,7 +51,7 @@ use zcash_primitives::{
     consensus::{
         BlockHeight, BranchId, Network,
         Network::{MainNetwork, TestNetwork},
-        Parameters,
+        NetworkType, Parameters,
     },
     legacy::{Script, TransparentAddress},
     memo::{Memo, MemoBytes},
@@ -1502,6 +1503,87 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_scanBlock
     unwrap_exc_or(&mut env, res, ptr::null_mut())
 }
 
+fn encode_transaction_data_request<'a>(
+    env: &mut JNIEnv<'a>,
+    net: NetworkType,
+    transaction_data_request: TransactionDataRequest,
+) -> jni::errors::Result<JObject<'a>> {
+    match transaction_data_request {
+        TransactionDataRequest::GetStatus(txid) => env.new_object(
+            "cash/z/ecc/android/sdk/internal/model/JniTransactionDataRequest/GetStatus",
+            "([B)V",
+            &[(&env.byte_array_from_slice(txid.as_ref())?).into()],
+        ),
+        TransactionDataRequest::Enhancement(txid) => env.new_object(
+            "cash/z/ecc/android/sdk/internal/model/JniTransactionDataRequest/Enhancement",
+            "([B)V",
+            &[(&env.byte_array_from_slice(txid.as_ref())?).into()],
+        ),
+        TransactionDataRequest::SpendsFromAddress {
+            address,
+            block_range_start,
+            block_range_end,
+        } => {
+            let taddr = match address {
+                TransparentAddress::PublicKeyHash(data) => {
+                    ZcashAddress::from_transparent_p2pkh(net, data)
+                }
+                TransparentAddress::ScriptHash(data) => {
+                    ZcashAddress::from_transparent_p2sh(net, data)
+                }
+            };
+
+            env.new_object(
+                "cash/z/ecc/android/sdk/internal/model/JniTransactionDataRequest/SpendsFromAddress",
+                "(Ljava/lang/String;JJ)V",
+                &[
+                    (&env.new_string(taddr.encode())?).into(),
+                    JValue::Long(i64::from(u32::from(block_range_start))),
+                    JValue::Long(block_range_end.map(u32::from).map(i64::from).unwrap_or(-1)),
+                ],
+            )
+        }
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_transactionDataRequests<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _: JClass<'local>,
+    db_data: JString<'local>,
+    network_id: jint,
+) -> jobjectArray {
+    let res = catch_unwind(&mut env, |env| {
+        let _span = tracing::info_span!("RustBackend.transactionDataRequests").entered();
+        let network = parse_network(network_id as u32)?;
+        let db_data = wallet_db(env, network, db_data)?;
+
+        let ranges = db_data
+            .transaction_data_requests()
+            .map_err(|e| anyhow!("Error while fetching transaction data requests: {}", e))?;
+
+        let net = network.network_type();
+
+        Ok(utils::rust_vec_to_java(
+            env,
+            ranges,
+            "cash/z/ecc/android/sdk/internal/model/JniTransactionDataRequest",
+            |env, request| encode_transaction_data_request(env, net, request),
+            |env| {
+                encode_transaction_data_request(
+                    env,
+                    net,
+                    TransactionDataRequest::GetStatus(TxId::from_bytes([0; 32])),
+                )
+            },
+        )?
+        .into_raw())
+    });
+    unwrap_exc_or(&mut env, res, ptr::null_mut())
+}
+
 #[no_mangle]
 pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_putUtxo<'local>(
     mut env: JNIEnv<'local>,
@@ -1578,6 +1660,38 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_decryptAn
         match decrypt_and_store_transaction(&network, &mut db_data, &tx, mined_height) {
             Ok(()) => Ok(JNI_TRUE),
             Err(e) => Err(anyhow!("Error while decrypting transaction: {}", e)),
+        }
+    });
+
+    unwrap_exc_or(&mut env, res, JNI_FALSE)
+}
+
+#[no_mangle]
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_setTransactionStatus<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _: JClass<'local>,
+    db_data: JString<'local>,
+    txid_bytes: JByteArray<'local>,
+    status: jlong,
+    network_id: jint,
+) -> jboolean {
+    let res = catch_unwind(&mut env, |env| {
+        let _span = tracing::info_span!("RustBackend.setTransactionStatus").entered();
+        let network = parse_network(network_id as u32)?;
+        let mut db_data = wallet_db(env, network, db_data)?;
+        let txid_bytes = env.convert_byte_array(txid_bytes)?;
+        let txid = TxId::read(&txid_bytes[..])?;
+        let status = match status {
+            -2 => TransactionStatus::TxidNotRecognized,
+            -1 => TransactionStatus::NotInMainChain,
+            height => TransactionStatus::Mined(BlockHeight::try_from(height)?),
+        };
+
+        match db_data.set_transaction_status(txid, status) {
+            Ok(()) => Ok(JNI_TRUE),
+            Err(e) => Err(anyhow!("Error while setting transaction status: {}", e)),
         }
     });
 

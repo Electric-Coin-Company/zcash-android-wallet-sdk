@@ -6,6 +6,8 @@ import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.internal.model.ScanRange
 import cash.z.ecc.android.sdk.internal.model.ScanSummary
 import cash.z.ecc.android.sdk.internal.model.SubtreeRoot
+import cash.z.ecc.android.sdk.internal.model.TransactionDataRequest
+import cash.z.ecc.android.sdk.internal.model.TransactionStatus
 import cash.z.ecc.android.sdk.internal.model.TreeState
 import cash.z.ecc.android.sdk.internal.model.WalletSummary
 import cash.z.ecc.android.sdk.internal.model.ZcashProtocol
@@ -141,6 +143,12 @@ internal interface TypesafeBackend {
      * @throws RuntimeException as a common indicator of the operation failure
      */
     @Throws(RuntimeException::class)
+    suspend fun transactionDataRequests(): List<TransactionDataRequest>
+
+    /**
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    @Throws(RuntimeException::class)
     suspend fun getWalletSummary(): WalletSummary?
 
     /**
@@ -152,6 +160,11 @@ internal interface TypesafeBackend {
     suspend fun decryptAndStoreTransaction(
         tx: ByteArray,
         minedHeight: BlockHeight?
+    )
+
+    suspend fun setTransactionStatus(
+        txId: ByteArray,
+        status: TransactionStatus,
     )
 
     fun getSaplingReceiver(ua: String): String?

@@ -4,6 +4,7 @@ import cash.z.ecc.android.sdk.internal.Backend
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.internal.model.JniScanRange
 import cash.z.ecc.android.sdk.internal.model.JniSubtreeRoot
+import cash.z.ecc.android.sdk.internal.model.JniTransactionDataRequest
 import cash.z.ecc.android.sdk.internal.model.JniUnifiedSpendingKey
 import cash.z.ecc.android.sdk.internal.model.JniWalletSummary
 import cash.z.ecc.android.sdk.internal.model.ProposalUnsafe
@@ -63,6 +64,10 @@ internal class FakeRustBackend(
         value: Long,
         height: Long
     ) {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun setTransactionStatus(txId: ByteArray, status: Long) {
         TODO("Not yet implemented")
     }
 
@@ -169,4 +174,8 @@ internal class FakeRustBackend(
         fromState: ByteArray,
         limit: Long
     ) = error("Intentionally not implemented in mocked FakeRustBackend implementation.")
+
+    override suspend fun transactionDataRequests(): List<JniTransactionDataRequest> {
+        TODO("Not yet implemented")
+    }
 }
