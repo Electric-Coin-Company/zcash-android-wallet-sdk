@@ -11,7 +11,6 @@ import kotlinx.datetime.Clock
 import java.io.File
 
 internal class UsdExchangeRateFetcher(torDir: File) {
-
     private val torHolder = TorClientHolder(torDir)
 
     @Suppress("TooGenericExceptionCaught", "ReturnCount")
@@ -70,14 +69,16 @@ private class TorClientHolder(private val torDir: File) {
     private val mutex = Mutex()
     private var torClient: TorClient? = null
 
-    suspend operator fun invoke(): TorClient = mutex.withLock {
-        if (torClient == null) {
-            torClient = TorClient.new(torDir)
+    suspend operator fun invoke(): TorClient =
+        mutex.withLock {
+            if (torClient == null) {
+                torClient = TorClient.new(torDir)
+            }
+            return torClient!!
         }
-        return torClient!!
-    }
 
-    suspend fun dispose() = mutex.withLock {
-        torClient?.dispose()
-    }
+    suspend fun dispose() =
+        mutex.withLock {
+            torClient?.dispose()
+        }
 }
