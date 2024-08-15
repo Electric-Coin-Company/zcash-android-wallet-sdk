@@ -67,7 +67,10 @@ internal class FakeRustBackend(
         TODO("Not yet implemented")
     }
 
-    override suspend fun setTransactionStatus(txId: ByteArray, status: Long) {
+    override suspend fun setTransactionStatus(
+        txId: ByteArray,
+        status: Long
+    ) {
         TODO("Not yet implemented")
     }
 

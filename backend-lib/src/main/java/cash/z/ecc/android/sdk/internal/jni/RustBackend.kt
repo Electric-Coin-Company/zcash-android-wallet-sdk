@@ -395,7 +395,10 @@ class RustBackend private constructor(
         )
     }
 
-    override suspend fun setTransactionStatus(txId: ByteArray, status: Long) = withContext(SdkDispatchers.DATABASE_IO) {
+    override suspend fun setTransactionStatus(
+        txId: ByteArray,
+        status: Long
+    ) = withContext(SdkDispatchers.DATABASE_IO) {
         Companion.setTransactionStatus(
             dataDbFile.absolutePath,
             txId,

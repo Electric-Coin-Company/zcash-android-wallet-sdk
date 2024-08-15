@@ -260,15 +260,13 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
     ) = backend
         .decryptAndStoreTransaction(tx, minedHeight?.value)
 
-    override suspend fun setTransactionStatus(txId: ByteArray, status: TransactionStatus) = backend
-        .setTransactionStatus(
-            txId, when (status) {
-                is TransactionStatus.Mined -> status.height.value
-                is TransactionStatus.NotInMainChain -> -1L
-                // TxidNotRecognized
-                else -> -2L
-            }
-        )
+    override suspend fun setTransactionStatus(
+        txId: ByteArray,
+        status: TransactionStatus
+    ) = backend.setTransactionStatus(
+        txId = txId,
+        status = status.toPrimitiveValue()
+    )
 
     override fun getSaplingReceiver(ua: String): String? = backend.getSaplingReceiver(ua)
 

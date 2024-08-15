@@ -17,6 +17,7 @@ import cash.z.ecc.android.sdk.block.processor.model.VerifySuggestedScanRange
 import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException
 import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException.EnhanceTransactionError.EnhanceTxDecryptError
 import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException.EnhanceTransactionError.EnhanceTxDownloadError
+import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException.EnhanceTransactionError.EnhanceTxSetStatusError
 import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException.MismatchedConsensusBranch
 import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException.MismatchedNetwork
 import cash.z.ecc.android.sdk.exception.InitializeException
@@ -43,14 +44,17 @@ import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.internal.model.ScanRange
 import cash.z.ecc.android.sdk.internal.model.SubtreeRoot
 import cash.z.ecc.android.sdk.internal.model.SuggestScanRangePriority
+import cash.z.ecc.android.sdk.internal.model.TransactionStatus
 import cash.z.ecc.android.sdk.internal.model.TreeState
 import cash.z.ecc.android.sdk.internal.model.WalletSummary
 import cash.z.ecc.android.sdk.internal.model.ext.from
 import cash.z.ecc.android.sdk.internal.model.ext.toBlockHeight
+import cash.z.ecc.android.sdk.internal.model.ext.toTransactionStatus
 import cash.z.ecc.android.sdk.internal.repository.DerivedDataRepository
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.PercentDecimal
+import cash.z.ecc.android.sdk.model.RawTransaction
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
@@ -1872,6 +1876,7 @@ class CompactBlockProcessor internal constructor(
                 emit(SyncingResult.EnhanceSuccess)
             }
 
+        @Suppress("LongMethod")
         private suspend fun enhanceTransaction(
             transaction: DbTransactionOverview,
             backend: TypesafeBackend,
@@ -1894,30 +1899,51 @@ class CompactBlockProcessor internal constructor(
                         "Fetching transaction (txid:${transaction.txIdString()}  block:${transaction
                             .minedHeight})"
                     }
-                    val transactionData =
+                    val rawTransactionUnsafe =
                         fetchTransaction(
-                            transactionId = transaction.txIdString(),
-                            rawTransactionId = transaction.rawId.byteArray,
-                            minedHeight = transaction.minedHeight,
+                            transactionOverview = transaction,
                             downloader = downloader,
-                            network = network
                         )
 
-                    // Decrypting and storing transaction is run just once, since we consider it more stable
-                    Twig.verbose {
-                        "Decrypting and storing transaction " +
-                            "(txid:${transaction.txIdString()}  block:${transaction.minedHeight})"
+                    Twig.debug { "Transaction fetched: $rawTransactionUnsafe" }
+
+                    // We need to distinct between three possible state of the fetched transaction
+                    when (rawTransactionUnsafe) {
+                        is RawTransactionUnsafe.MainChain -> {
+                            // Decrypting and storing transaction is run just once, since we consider it more stable
+                            Twig.verbose {
+                                "Decrypting and storing transaction (txid:${transaction.txIdString()}, " +
+                                    "block:${transaction.minedHeight})"
+                            }
+                            decryptTransaction(
+                                rawTransaction =
+                                    RawTransaction.new(
+                                        rawTransactionUnsafe = rawTransactionUnsafe,
+                                        network = network
+                                    ),
+                                backend = backend
+                            )
+                        }
+                        is RawTransactionUnsafe.Mempool,
+                        is RawTransactionUnsafe.OrphanedBlock -> {
+                            Twig.verbose {
+                                "Setting status of transaction (txid:${transaction.txIdString()}, " +
+                                    "block:${transaction.minedHeight})"
+                            }
+                            setTransactionStatus(
+                                transactionRawId = transaction.rawId.byteArray,
+                                status = rawTransactionUnsafe.toTransactionStatus(network),
+                                height = transaction.minedHeight,
+                                backend = backend
+                            )
+                        }
                     }
-                    decryptTransaction(
-                        transactionData = transactionData.first,
-                        minedHeight = transactionData.second,
-                        backend = backend
-                    )
 
                     Twig.debug {
                         "Done enhancing transaction (txid:${transaction.txIdString()} block:${transaction
                             .minedHeight})"
                     }
+
                     SyncingResult.EnhanceSuccess
                 } catch (exception: CompactBlockProcessorException.EnhanceTransactionError) {
                     SyncingResult.EnhanceFailed(
@@ -1929,61 +1955,74 @@ class CompactBlockProcessor internal constructor(
             return result
         }
 
-        // TODO [#1254]: CompactblockProcessor.fetchTransaction pass txId twice
-        // TODO [#1254]: https://github.com/zcash/zcash-android-wallet-sdk/issues/1254
         @Throws(EnhanceTxDownloadError::class)
         private suspend fun fetchTransaction(
-            transactionId: String,
-            rawTransactionId: ByteArray,
-            minedHeight: BlockHeight,
+            transactionOverview: DbTransactionOverview,
             downloader: CompactBlockDownloader,
-            network: ZcashNetwork
-        ): Pair<ByteArray, BlockHeight?> {
+        ): RawTransactionUnsafe {
+            var transactionResult: RawTransactionUnsafe? = null
             val traceScope = TraceScope("CompactBlockProcessor.fetchTransaction")
-            var transactionDataResult: Pair<ByteArray, BlockHeight?>? = null
+
             retryUpToAndThrow(TRANSACTION_FETCH_RETRIES) { failedAttempts ->
                 if (failedAttempts == 0) {
-                    Twig.debug { "Starting to fetch transaction (txid:$transactionId, block:$minedHeight)" }
+                    Twig.debug {
+                        "Starting to fetch transaction (txid:${transactionOverview.txIdString()}, " +
+                            "block:${transactionOverview.minedHeight})"
+                    }
                 } else {
                     Twig.warn {
-                        "Retrying to fetch transaction (txid:$transactionId, block:$minedHeight) after" +
-                            " $failedAttempts failure(s)..."
+                        "Retrying to fetch transaction (txid:${transactionOverview.txIdString()}, " +
+                            "block:${transactionOverview.minedHeight} after $failedAttempts failure(s)..."
                     }
                 }
-                when (val response = downloader.fetchTransaction(rawTransactionId)) {
-                    is Response.Success -> {
-                        val currentMinedHeight = when (response.result) {
-                            is RawTransactionUnsafe.MainChain -> runCatching {
-                                (response.result as RawTransactionUnsafe.MainChain).height.toBlockHeight(
-                                    network
-                                )
-                            }.getOrNull()
-                            else -> null
+
+                transactionResult =
+                    when (
+                        val response =
+                            downloader.fetchTransaction(
+                                transactionOverview.rawId
+                                    .byteArray
+                            )
+                    ) {
+                        is Response.Success -> response.result
+                        is Response.Failure -> {
+                            throw EnhanceTxDownloadError(transactionOverview.minedHeight, response.toThrowable())
                         }
-                        transactionDataResult = Pair(response.result.data, currentMinedHeight)
                     }
-                    is Response.Failure -> {
-                        throw EnhanceTxDownloadError(minedHeight, response.toThrowable())
-                    }
-                }
             }
             traceScope.end()
             // Result is fetched or EnhanceTxDownloadError is thrown after all attempts failed at this point
-            return transactionDataResult!!
+            return transactionResult!!
         }
 
         @Throws(EnhanceTxDecryptError::class)
         private suspend fun decryptTransaction(
-            transactionData: ByteArray,
-            minedHeight: BlockHeight?,
+            rawTransaction: RawTransaction,
             backend: TypesafeBackend,
         ) {
             val traceScope = TraceScope("CompactBlockProcessor.decryptTransaction")
             runCatching {
-                backend.decryptAndStoreTransaction(transactionData, minedHeight)
+                backend.decryptAndStoreTransaction(rawTransaction.data, rawTransaction.height)
             }.onFailure {
                 traceScope.end()
-                throw EnhanceTxDecryptError(minedHeight, it)
+                throw EnhanceTxDecryptError(rawTransaction.height, it)
+            }
+            traceScope.end()
+        }
+
+        @Throws(EnhanceTxSetStatusError::class)
+        private suspend fun setTransactionStatus(
+            transactionRawId: ByteArray,
+            status: TransactionStatus,
+            height: BlockHeight,
+            backend: TypesafeBackend,
+        ) {
+            val traceScope = TraceScope("CompactBlockProcessor.setTransactionStatus")
+            runCatching {
+                backend.setTransactionStatus(transactionRawId, status)
+            }.onFailure {
+                traceScope.end()
+                throw EnhanceTxSetStatusError(height, it)
             }
             traceScope.end()
         }

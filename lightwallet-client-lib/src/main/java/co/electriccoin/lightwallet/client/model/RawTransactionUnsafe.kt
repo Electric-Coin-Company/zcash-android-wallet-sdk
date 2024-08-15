@@ -31,7 +31,7 @@ sealed class RawTransactionUnsafe(open val data: ByteArray) {
 
     companion object {
         fun new(rawTransaction: RawTransaction): RawTransactionUnsafe {
-            val data = rawTransaction.data.toByteArray();
+            val data = rawTransaction.data.toByteArray()
             return when (rawTransaction.height) {
                 -1L -> OrphanedBlock(data)
                 0L -> Mempool(data)
@@ -39,4 +39,9 @@ sealed class RawTransactionUnsafe(open val data: ByteArray) {
             }
         }
     }
+
+    /**
+     * This is a safe [toString] function that prints only non-sensitive parts
+     */
+    override fun toString() = "RawTransactionUnsafe: type: ${this::class.simpleName}"
 }

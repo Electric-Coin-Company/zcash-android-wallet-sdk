@@ -1,7 +1,6 @@
 package cash.z.ecc.android.sdk.internal.model
 
 import cash.z.ecc.android.sdk.exception.SdkException
-import cash.z.ecc.android.sdk.internal.ext.isInUIntRange
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 
@@ -35,15 +34,16 @@ interface TransactionDataRequest {
             return when (jni) {
                 is JniTransactionDataRequest.GetStatus -> GetStatus(jni.txid)
                 is JniTransactionDataRequest.Enhancement -> Enhancement(jni.txid)
-                is JniTransactionDataRequest.SpendsFromAddress -> SpendsFromAddress(
-                    jni.address,
-                    BlockHeight.new(zcashNetwork, jni.startHeight),
-                    if (jni.endHeight == -1L) {
-                        null
-                    } else {
-                        BlockHeight.new(zcashNetwork, jni.endHeight)
-                    }
-                )
+                is JniTransactionDataRequest.SpendsFromAddress ->
+                    SpendsFromAddress(
+                        jni.address,
+                        BlockHeight.new(zcashNetwork, jni.startHeight),
+                        if (jni.endHeight == -1L) {
+                            null
+                        } else {
+                            BlockHeight.new(zcashNetwork, jni.endHeight)
+                        }
+                    )
 
                 else -> throw SdkException("Unknown JniTransactionDataRequest variant", cause = null)
             }
