@@ -1,16 +1,25 @@
 package cash.z.ecc.android.sdk.internal.model
 
 import cash.z.ecc.android.sdk.exception.SdkException
+import cash.z.ecc.android.sdk.internal.ext.toHexReversed
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 
 /**
  * Serves as cross layer (Kotlin, Rust) communication class.
  */
-interface TransactionDataRequest {
-    class GetStatus(val txid: ByteArray) : TransactionDataRequest
+sealed interface TransactionDataRequest {
+    sealed class EnhancementRequired(open val txid: ByteArray): TransactionDataRequest {
+        abstract fun txIdString(): String
+    }
 
-    class Enhancement(val txid: ByteArray) : TransactionDataRequest
+    data class GetStatus(override val txid: ByteArray) : EnhancementRequired(txid) {
+        override fun txIdString() = txid.toHexReversed()
+    }
+
+    data class Enhancement(override val txid: ByteArray) : EnhancementRequired(txid) {
+        override fun txIdString() = txid.toHexReversed()
+    }
 
     data class SpendsFromAddress(
         val address: String,

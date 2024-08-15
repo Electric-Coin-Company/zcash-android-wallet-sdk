@@ -1,15 +1,18 @@
 package cash.z.ecc.android.sdk.internal.model
 
+import androidx.annotation.Keep
 import cash.z.ecc.android.sdk.internal.ext.isInUIntRange
 
 /**
  * Serves as cross layer (Kotlin, Rust) communication class.
  */
+@Keep
 interface JniTransactionDataRequest {
+    @Keep
     class GetStatus(val txid: ByteArray) : JniTransactionDataRequest
-
+    @Keep
     class Enhancement(val txid: ByteArray) : JniTransactionDataRequest
-
+    @Keep
     data class SpendsFromAddress(
         val address: String,
         val startHeight: Long,

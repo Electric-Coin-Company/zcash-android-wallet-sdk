@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.withContext
 
 /**
@@ -149,6 +150,21 @@ open class CompactBlockDownloader private constructor(val compactBlockRepository
      * @return the full transaction info.
      */
     suspend fun fetchTransaction(txId: ByteArray) = lightWalletClient.fetchTransaction(txId)
+
+    /**
+     * Get transactions belonging to the given transparent address
+     *
+     * @throws LightWalletException.GetTAddressTransactionsException if any error while getting the transactions occurs
+     * @return List of all the transaction belonging to the given transparent address on the given block range
+     */
+    suspend fun getTAddressTransactions(
+        transparentAddress: String,
+        blockHeightRange: ClosedRange<BlockHeight>
+    ) = lightWalletClient.getTAddressTransactions(
+        tAddress = transparentAddress,
+        blockHeightRange = BlockHeightUnsafe.from(blockHeightRange.start)..
+            BlockHeightUnsafe.from(blockHeightRange.endInclusive)
+    )
 
     /**
      * Fetch all UTXOs for the given addresses and from the given height.

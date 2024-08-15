@@ -15,6 +15,8 @@ import cash.z.ecc.android.sdk.block.processor.model.SyncingResult
 import cash.z.ecc.android.sdk.block.processor.model.UpdateChainTipResult
 import cash.z.ecc.android.sdk.block.processor.model.VerifySuggestedScanRange
 import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException
+import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException.EnhanceTransactionError
+    .EnhanceTxDataRequestsError
 import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException.EnhanceTransactionError.EnhanceTxDecryptError
 import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException.EnhanceTransactionError.EnhanceTxDownloadError
 import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException.EnhanceTransactionError.EnhanceTxSetStatusError
@@ -39,11 +41,11 @@ import cash.z.ecc.android.sdk.internal.ext.retryWithBackoff
 import cash.z.ecc.android.sdk.internal.ext.toHexReversed
 import cash.z.ecc.android.sdk.internal.metrics.TraceScope
 import cash.z.ecc.android.sdk.internal.model.BlockBatch
-import cash.z.ecc.android.sdk.internal.model.DbTransactionOverview
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.internal.model.ScanRange
 import cash.z.ecc.android.sdk.internal.model.SubtreeRoot
 import cash.z.ecc.android.sdk.internal.model.SuggestScanRangePriority
+import cash.z.ecc.android.sdk.internal.model.TransactionDataRequest
 import cash.z.ecc.android.sdk.internal.model.TransactionStatus
 import cash.z.ecc.android.sdk.internal.model.TreeState
 import cash.z.ecc.android.sdk.internal.model.WalletSummary
@@ -1850,24 +1852,58 @@ class CompactBlockProcessor internal constructor(
             flow {
                 Twig.debug { "Enhancing transaction details for blocks $range" }
 
-                val newTxs = repository.findNewTransactions(range)
+                val newTxs = runCatching {
+                    transactionDataRequests(backend)
+                }.onFailure {
+                    Twig.error(it) { "Failed to get transaction data requests" }
+                }.getOrElse {
+                    emit(
+                        SyncingResult.EnhanceFailed(
+                            range.start,
+                            it as CompactBlockProcessorException.EnhanceTransactionError
+                        )
+                    )
+                    return@flow
+                }
+
                 if (newTxs.isEmpty()) {
                     Twig.debug { "No new transactions found in $range" }
                 } else {
                     Twig.debug { "Enhancing ${newTxs.size} transaction(s)!" }
 
                     // If the first transaction has been added
+                    // Ideally, we could remove this last reference to the transaction view from the enhancing logic
                     if (newTxs.size.toLong() == repository.getTransactionCount()) {
                         Twig.debug { "Encountered the first transaction. This changes the birthday height!" }
                         emit(SyncingResult.UpdateBirthday)
                     }
 
-                    newTxs.filter { it.minedHeight != null }.onEach { newTransaction ->
-                        val trEnhanceResult = enhanceTransaction(newTransaction, backend, downloader, network)
-                        if (trEnhanceResult is SyncingResult.EnhanceFailed) {
-                            Twig.error { "Encountered transaction enhancing error: ${trEnhanceResult.exception}" }
-                            emit(trEnhanceResult)
-                            // We intentionally do not terminate the batch enhancing here, just reporting it
+                    newTxs.forEach {
+                        Twig.debug { "Transaction data request: $it" }
+
+                        when (it) {
+                            is TransactionDataRequest.EnhancementRequired -> {
+                                val trxEnhanceResult = enhanceTransaction(it, backend, downloader, network)
+                                if (trxEnhanceResult is SyncingResult.EnhanceFailed) {
+                                    Twig.error { "Encountered transaction enhancing error: ${trxEnhanceResult.exception}" }
+                                    emit(trxEnhanceResult)
+                                    // We intentionally do not terminate the batch enhancing here, just reporting it
+                                }
+                            }
+                            is TransactionDataRequest.SpendsFromAddress -> {
+                                val processTaddrTxidsResult = processTransparentAddressTxids(
+                                    transactionRequest = it,
+                                    backend = backend,
+                                    downloader = downloader,
+                                    network = network
+                                )
+                                if (processTaddrTxidsResult is SyncingResult.EnhanceFailed) {
+                                    Twig.error(processTaddrTxidsResult.exception)
+                                    { "Encountered SpendsFromAddress transactions error" }
+                                    emit(processTaddrTxidsResult)
+                                    // We intentionally do not terminate the batch enhancing here, just reporting it
+                                }
+                            }
                         }
                     }
                 }
@@ -1876,32 +1912,120 @@ class CompactBlockProcessor internal constructor(
                 emit(SyncingResult.EnhanceSuccess)
             }
 
-        @Suppress("LongMethod")
-        private suspend fun enhanceTransaction(
-            transaction: DbTransactionOverview,
+        private suspend fun processTransparentAddressTxids(
+            transactionRequest: TransactionDataRequest.SpendsFromAddress,
             backend: TypesafeBackend,
             downloader: CompactBlockDownloader,
             network: ZcashNetwork
         ): SyncingResult {
-            Twig.debug {
-                "Starting enhancing transaction (txid:${transaction.txIdString()}  block:${transaction
-                    .minedHeight})"
+            Twig.debug { "Starting to get transparent address transactions ids" }
+
+            val traceScope = TraceScope("CompactBlockProcessor.processTransparentAddressTxids")
+            val result =
+                try {
+                    // Fetching transactions is done with retries to eliminate a bad network condition
+                    val listOfResults =
+                        getTransparentAddressTransactions(
+                            transactionRequest = transactionRequest,
+                            downloader = downloader,
+                        )
+
+                    Twig.debug { "Obtained ${listOfResults.size} transactions for processing" }
+
+                    listOfResults.forEach { rawTransactionUnsafe ->
+                        when (rawTransactionUnsafe) {
+                            is RawTransactionUnsafe.MainChain -> {
+                                // Decrypting and storing transaction is run just once, since we consider it more stable
+                                Twig.verbose {
+                                    "Decrypting and storing transaction at height: ${rawTransactionUnsafe.height.value}"
+                                }
+                                decryptTransaction(
+                                    rawTransaction =
+                                    RawTransaction.new(
+                                        rawTransactionUnsafe = rawTransactionUnsafe,
+                                        network = network
+                                    ),
+                                    backend = backend
+                                )
+                            }
+                            is RawTransactionUnsafe.Mempool,
+                            is RawTransactionUnsafe.OrphanedBlock -> {
+                                error("Unsupported transaction type: $rawTransactionUnsafe")
+                            }
+                        }
+                    }
+
+                    Twig.debug { "Done Decrypting and storing of all transaction" }
+                    SyncingResult.EnhanceSuccess
+
+                } catch (exception: CompactBlockProcessorException.EnhanceTransactionError) {
+                    SyncingResult.EnhanceFailed(null, exception)
+                }
+            traceScope.end()
+            return result
+        }
+
+        @Throws(EnhanceTxDownloadError::class)
+        private suspend fun getTransparentAddressTransactions(
+            transactionRequest: TransactionDataRequest.SpendsFromAddress,
+            downloader: CompactBlockDownloader,
+        ): List<RawTransactionUnsafe> {
+            val transactionsResult = arrayListOf<RawTransactionUnsafe>()
+            val traceScope = TraceScope("CompactBlockProcessor.getTransparentAddressTransactions")
+
+            retryUpToAndThrow(TRANSACTION_FETCH_RETRIES) { failedAttempts ->
+                if (failedAttempts == 0) {
+                    Twig.debug { "Starting to get transactions for tAddr: ${transactionRequest.address}" }
+                } else {
+                    Twig.warn {
+                        "Retrying to fetch transactions for tAddr: ${transactionRequest.address}" +
+                            " after $failedAttempts failure(s)..."
+                    }
+                }
+
+                downloader.getTAddressTransactions(
+                    transparentAddress = transactionRequest.address,
+                    // fixme !!
+                    blockHeightRange = transactionRequest.startHeight..transactionRequest.endHeight!!
+                ).onEach { response ->
+                    when (response) {
+                        is Response.Success -> {
+                            Twig.verbose { "Get a new transaction successfully" }
+                            transactionsResult.add(response.result)
+                        }
+                        is Response.Failure -> {
+                            Twig.error(response.toThrowable()) { "Getting transaction failed" }
+                            throw EnhanceTxDownloadError(response.toThrowable())
+                        }
+                    }
+                }.onCompletion { error ->
+                    if (error != null) {
+                        Twig.error(error) { "Getting list of transactions failed" }
+                    } else {
+                        Twig.debug { "All transaction got successfully" }
+                    }
+                }.collect()
             }
-            if (transaction.minedHeight == null) {
-                return SyncingResult.EnhanceSuccess
-            }
+            traceScope.end()
+            return transactionsResult
+        }
+
+        @Suppress("LongMethod")
+        private suspend fun enhanceTransaction(
+            transactionRequest: TransactionDataRequest.EnhancementRequired,
+            backend: TypesafeBackend,
+            downloader: CompactBlockDownloader,
+            network: ZcashNetwork
+        ): SyncingResult {
+            Twig.debug { "Starting enhancing transaction: txid: ${transactionRequest.txIdString()}" }
 
             val traceScope = TraceScope("CompactBlockProcessor.enhanceTransaction")
             val result =
                 try {
                     // Fetching transaction is done with retries to eliminate a bad network condition
-                    Twig.verbose {
-                        "Fetching transaction (txid:${transaction.txIdString()}  block:${transaction
-                            .minedHeight})"
-                    }
                     val rawTransactionUnsafe =
                         fetchTransaction(
-                            transactionOverview = transaction,
+                            transactionRequest = transactionRequest,
                             downloader = downloader,
                         )
 
@@ -1912,8 +2036,7 @@ class CompactBlockProcessor internal constructor(
                         is RawTransactionUnsafe.MainChain -> {
                             // Decrypting and storing transaction is run just once, since we consider it more stable
                             Twig.verbose {
-                                "Decrypting and storing transaction (txid:${transaction.txIdString()}, " +
-                                    "block:${transaction.minedHeight})"
+                                "Decrypting and storing transaction: txid: ${transactionRequest.txIdString()}"
                             }
                             decryptTransaction(
                                 rawTransaction =
@@ -1926,30 +2049,20 @@ class CompactBlockProcessor internal constructor(
                         }
                         is RawTransactionUnsafe.Mempool,
                         is RawTransactionUnsafe.OrphanedBlock -> {
-                            Twig.verbose {
-                                "Setting status of transaction (txid:${transaction.txIdString()}, " +
-                                    "block:${transaction.minedHeight})"
-                            }
+                            Twig.verbose { "Setting status of transaction: txid: ${transactionRequest.txIdString()}" }
                             setTransactionStatus(
-                                transactionRawId = transaction.rawId.byteArray,
+                                transactionRawId = transactionRequest.txid,
                                 status = rawTransactionUnsafe.toTransactionStatus(network),
-                                height = transaction.minedHeight,
                                 backend = backend
                             )
                         }
                     }
 
-                    Twig.debug {
-                        "Done enhancing transaction (txid:${transaction.txIdString()} block:${transaction
-                            .minedHeight})"
-                    }
-
+                    Twig.debug { "Done enhancing transaction: txid: ${transactionRequest.txIdString()}" }
                     SyncingResult.EnhanceSuccess
+
                 } catch (exception: CompactBlockProcessorException.EnhanceTransactionError) {
-                    SyncingResult.EnhanceFailed(
-                        transaction.minedHeight,
-                        exception
-                    )
+                    SyncingResult.EnhanceFailed(null, exception)
                 }
             traceScope.end()
             return result
@@ -1957,7 +2070,7 @@ class CompactBlockProcessor internal constructor(
 
         @Throws(EnhanceTxDownloadError::class)
         private suspend fun fetchTransaction(
-            transactionOverview: DbTransactionOverview,
+            transactionRequest: TransactionDataRequest.EnhancementRequired,
             downloader: CompactBlockDownloader,
         ): RawTransactionUnsafe {
             var transactionResult: RawTransactionUnsafe? = null
@@ -1965,28 +2078,19 @@ class CompactBlockProcessor internal constructor(
 
             retryUpToAndThrow(TRANSACTION_FETCH_RETRIES) { failedAttempts ->
                 if (failedAttempts == 0) {
-                    Twig.debug {
-                        "Starting to fetch transaction (txid:${transactionOverview.txIdString()}, " +
-                            "block:${transactionOverview.minedHeight})"
-                    }
+                    Twig.debug { "Starting to fetch transaction: txid: ${transactionRequest.txIdString()}" }
                 } else {
                     Twig.warn {
-                        "Retrying to fetch transaction (txid:${transactionOverview.txIdString()}, " +
-                            "block:${transactionOverview.minedHeight} after $failedAttempts failure(s)..."
+                        "Retrying to fetch transaction: txid: ${transactionRequest.txIdString()}" +
+                            " after $failedAttempts failure(s)..."
                     }
                 }
 
                 transactionResult =
-                    when (
-                        val response =
-                            downloader.fetchTransaction(
-                                transactionOverview.rawId
-                                    .byteArray
-                            )
-                    ) {
+                    when (val response = downloader.fetchTransaction(transactionRequest.txid)) {
                         is Response.Success -> response.result
                         is Response.Failure -> {
-                            throw EnhanceTxDownloadError(transactionOverview.minedHeight, response.toThrowable())
+                            throw EnhanceTxDownloadError(response.toThrowable())
                         }
                     }
             }
@@ -2010,11 +2114,25 @@ class CompactBlockProcessor internal constructor(
             traceScope.end()
         }
 
+        @Throws(EnhanceTxDataRequestsError::class)
+        private suspend fun transactionDataRequests(
+            backend: TypesafeBackend
+        ): List<TransactionDataRequest> {
+            val traceScope = TraceScope("CompactBlockProcessor.transactionDataRequests")
+            val result = runCatching {
+                backend.transactionDataRequests()
+            }.getOrElse {
+                traceScope.end()
+                throw EnhanceTxDataRequestsError(it)
+            }
+            traceScope.end()
+            return result
+        }
+
         @Throws(EnhanceTxSetStatusError::class)
         private suspend fun setTransactionStatus(
             transactionRawId: ByteArray,
             status: TransactionStatus,
-            height: BlockHeight,
             backend: TypesafeBackend,
         ) {
             val traceScope = TraceScope("CompactBlockProcessor.setTransactionStatus")
@@ -2022,7 +2140,7 @@ class CompactBlockProcessor internal constructor(
                 backend.setTransactionStatus(transactionRawId, status)
             }.onFailure {
                 traceScope.end()
-                throw EnhanceTxSetStatusError(height, it)
+                throw EnhanceTxSetStatusError(it)
             }
             traceScope.end()
         }

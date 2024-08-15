@@ -101,14 +101,11 @@ sealed class CompactBlockProcessorException(message: String, cause: Throwable? =
         val height: BlockHeight?,
         cause: Throwable
     ) : CompactBlockProcessorException(message, cause) {
-        class EnhanceTxDownloadError(
-            height: BlockHeight?,
-            cause: Throwable
-        ) : EnhanceTransactionError(
-                "Error while attempting to download a transaction to enhance",
-                height,
-                cause
-            )
+        class EnhanceTxDownloadError(cause: Throwable): EnhanceTransactionError(
+            "Error while attempting to download a transaction to enhance",
+            null,
+            cause
+        )
 
         class EnhanceTxDecryptError(
             height: BlockHeight?,
@@ -119,14 +116,17 @@ sealed class CompactBlockProcessorException(message: String, cause: Throwable? =
                 cause
             )
 
-        class EnhanceTxSetStatusError(
-            height: BlockHeight?,
-            cause: Throwable
-        ) : EnhanceTransactionError(
-                "Error while attempting to set status of a transaction to the Rust backend",
-                height,
-                cause
-            )
+        class EnhanceTxSetStatusError(cause: Throwable): EnhanceTransactionError(
+            "Error while attempting to set status of a transaction to the Rust backend",
+            null,
+            cause
+        )
+
+        class EnhanceTxDataRequestsError(cause: Throwable): EnhanceTransactionError(
+            "Error while attempting to request transactions data from the Rust backend",
+            null,
+            cause
+        )
     }
 
     class MismatchedNetwork(clientNetwork: String?, serverNetwork: String?) : CompactBlockProcessorException(
@@ -288,6 +288,12 @@ sealed class LightWalletException(message: String, cause: Throwable? = null) : S
 
     class GetLatestBlockHeightException(code: Int, description: String?, cause: Throwable) : SdkException(
         "Failed to fetch latest block height with code: $code due to: ${description ?: "-"}",
+        cause
+    )
+
+    class GetTAddressTransactionsException(code: Int, description: String?, cause: Throwable) : SdkException(
+        "Failed to get transactions belonging to the given transparent address with code: $code due" +
+            " to: ${description ?: "-"}",
         cause
     )
 }

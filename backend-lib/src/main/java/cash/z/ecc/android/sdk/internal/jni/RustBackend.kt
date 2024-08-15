@@ -299,7 +299,7 @@ class RustBackend private constructor(
     override suspend fun transactionDataRequests(): List<JniTransactionDataRequest> {
         return withContext(SdkDispatchers.DATABASE_IO) {
             transactionDataRequests(
-                dataDbFile.absolutePath,
+                dbDataPath = dataDbFile.absolutePath,
                 networkId = networkId
             ).asList()
         }
