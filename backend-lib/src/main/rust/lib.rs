@@ -1510,12 +1510,12 @@ fn encode_transaction_data_request<'a>(
 ) -> jni::errors::Result<JObject<'a>> {
     match transaction_data_request {
         TransactionDataRequest::GetStatus(txid) => env.new_object(
-            "cash/z/ecc/android/sdk/internal/model/JniTransactionDataRequest/GetStatus",
+            "cash/z/ecc/android/sdk/internal/model/JniTransactionDataRequest$GetStatus",
             "([B)V",
             &[(&env.byte_array_from_slice(txid.as_ref())?).into()],
         ),
         TransactionDataRequest::Enhancement(txid) => env.new_object(
-            "cash/z/ecc/android/sdk/internal/model/JniTransactionDataRequest/Enhancement",
+            "cash/z/ecc/android/sdk/internal/model/JniTransactionDataRequest$Enhancement",
             "([B)V",
             &[(&env.byte_array_from_slice(txid.as_ref())?).into()],
         ),
@@ -1534,7 +1534,7 @@ fn encode_transaction_data_request<'a>(
             };
 
             env.new_object(
-                "cash/z/ecc/android/sdk/internal/model/JniTransactionDataRequest/SpendsFromAddress",
+                "cash/z/ecc/android/sdk/internal/model/JniTransactionDataRequest$SpendsFromAddress",
                 "(Ljava/lang/String;JJ)V",
                 &[
                     (&env.new_string(taddr.encode())?).into(),

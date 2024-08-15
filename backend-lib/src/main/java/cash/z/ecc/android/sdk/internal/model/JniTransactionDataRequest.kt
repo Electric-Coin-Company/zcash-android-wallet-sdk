@@ -7,17 +7,17 @@ import cash.z.ecc.android.sdk.internal.ext.isInUIntRange
  * Serves as cross layer (Kotlin, Rust) communication class.
  */
 @Keep
-interface JniTransactionDataRequest {
+sealed class JniTransactionDataRequest {
     @Keep
-    class GetStatus(val txid: ByteArray) : JniTransactionDataRequest
+    class GetStatus(val txid: ByteArray) : JniTransactionDataRequest()
     @Keep
-    class Enhancement(val txid: ByteArray) : JniTransactionDataRequest
+    class Enhancement(val txid: ByteArray) : JniTransactionDataRequest()
     @Keep
     data class SpendsFromAddress(
         val address: String,
         val startHeight: Long,
         val endHeight: Long,
-    ) : JniTransactionDataRequest {
+    ) : JniTransactionDataRequest() {
         init {
             // We require some of the parameters below to be in the range of unsigned integer, because of the Rust layer
             // implementation.
