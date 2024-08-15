@@ -101,7 +101,7 @@ sealed class CompactBlockProcessorException(message: String, cause: Throwable? =
         val height: BlockHeight?,
         cause: Throwable
     ) : CompactBlockProcessorException(message, cause) {
-        class EnhanceTxDownloadError(cause: Throwable): EnhanceTransactionError(
+        class EnhanceTxDownloadError(cause: Throwable) : EnhanceTransactionError(
             "Error while attempting to download a transaction to enhance",
             null,
             cause
@@ -116,13 +116,13 @@ sealed class CompactBlockProcessorException(message: String, cause: Throwable? =
                 cause
             )
 
-        class EnhanceTxSetStatusError(cause: Throwable): EnhanceTransactionError(
+        class EnhanceTxSetStatusError(cause: Throwable) : EnhanceTransactionError(
             "Error while attempting to set status of a transaction to the Rust backend",
             null,
             cause
         )
 
-        class EnhanceTxDataRequestsError(cause: Throwable): EnhanceTransactionError(
+        class EnhanceTxDataRequestsError(cause: Throwable) : EnhanceTransactionError(
             "Error while attempting to request transactions data from the Rust backend",
             null,
             cause

@@ -9,7 +9,7 @@ import cash.z.ecc.android.sdk.model.ZcashNetwork
  * Serves as cross layer (Kotlin, Rust) communication class.
  */
 sealed interface TransactionDataRequest {
-    sealed class EnhancementRequired(open val txid: ByteArray): TransactionDataRequest {
+    sealed class EnhancementRequired(open val txid: ByteArray) : TransactionDataRequest {
         abstract fun txIdString(): String
     }
 

@@ -18,7 +18,6 @@ import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.withContext
 
 /**
@@ -162,8 +161,8 @@ open class CompactBlockDownloader private constructor(val compactBlockRepository
         blockHeightRange: ClosedRange<BlockHeight>
     ) = lightWalletClient.getTAddressTransactions(
         tAddress = transparentAddress,
-        blockHeightRange = BlockHeightUnsafe.from(blockHeightRange.start)..
-            BlockHeightUnsafe.from(blockHeightRange.endInclusive)
+        blockHeightRange =
+            BlockHeightUnsafe.from(blockHeightRange.start)..BlockHeightUnsafe.from(blockHeightRange.endInclusive)
     )
 
     /**

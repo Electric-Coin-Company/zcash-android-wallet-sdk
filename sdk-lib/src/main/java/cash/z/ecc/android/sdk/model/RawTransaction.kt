@@ -27,10 +27,11 @@ data class RawTransaction internal constructor(
         ): RawTransaction {
             return RawTransaction(
                 data = rawTransactionUnsafe.data,
-                height = when (rawTransactionUnsafe) {
-                    is RawTransactionUnsafe.MainChain -> rawTransactionUnsafe.height.toBlockHeight(network)
-                    else -> null
-                }
+                height =
+                    when (rawTransactionUnsafe) {
+                        is RawTransactionUnsafe.MainChain -> rawTransactionUnsafe.height.toBlockHeight(network)
+                        else -> null
+                    }
             )
         }
     }

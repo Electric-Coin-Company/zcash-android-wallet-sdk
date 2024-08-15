@@ -1852,19 +1852,20 @@ class CompactBlockProcessor internal constructor(
             flow {
                 Twig.debug { "Enhancing transaction details for blocks $range" }
 
-                val newTxs = runCatching {
-                    transactionDataRequests(backend)
-                }.onFailure {
-                    Twig.error(it) { "Failed to get transaction data requests" }
-                }.getOrElse {
-                    emit(
-                        SyncingResult.EnhanceFailed(
-                            range.start,
-                            it as CompactBlockProcessorException.EnhanceTransactionError
+                val newTxs =
+                    runCatching {
+                        transactionDataRequests(backend)
+                    }.onFailure {
+                        Twig.error(it) { "Failed to get transaction data requests" }
+                    }.getOrElse {
+                        emit(
+                            SyncingResult.EnhanceFailed(
+                                range.start,
+                                it as CompactBlockProcessorException.EnhanceTransactionError
+                            )
                         )
-                    )
-                    return@flow
-                }
+                        return@flow
+                    }
 
                 if (newTxs.isEmpty()) {
                     Twig.debug { "No new transactions found in $range" }
@@ -1885,21 +1886,26 @@ class CompactBlockProcessor internal constructor(
                             is TransactionDataRequest.EnhancementRequired -> {
                                 val trxEnhanceResult = enhanceTransaction(it, backend, downloader, network)
                                 if (trxEnhanceResult is SyncingResult.EnhanceFailed) {
-                                    Twig.error { "Encountered transaction enhancing error: ${trxEnhanceResult.exception}" }
+                                    Twig.error {
+                                        "Encountered transaction enhancing error: " +
+                                            "${trxEnhanceResult.exception}"
+                                    }
                                     emit(trxEnhanceResult)
                                     // We intentionally do not terminate the batch enhancing here, just reporting it
                                 }
                             }
                             is TransactionDataRequest.SpendsFromAddress -> {
-                                val processTaddrTxidsResult = processTransparentAddressTxids(
-                                    transactionRequest = it,
-                                    backend = backend,
-                                    downloader = downloader,
-                                    network = network
-                                )
+                                val processTaddrTxidsResult =
+                                    processTransparentAddressTxids(
+                                        transactionRequest = it,
+                                        backend = backend,
+                                        downloader = downloader,
+                                        network = network
+                                    )
                                 if (processTaddrTxidsResult is SyncingResult.EnhanceFailed) {
-                                    Twig.error(processTaddrTxidsResult.exception)
-                                    { "Encountered SpendsFromAddress transactions error" }
+                                    Twig.error(processTaddrTxidsResult.exception) {
+                                        "Encountered SpendsFromAddress transactions error"
+                                    }
                                     emit(processTaddrTxidsResult)
                                     // We intentionally do not terminate the batch enhancing here, just reporting it
                                 }
@@ -1937,17 +1943,16 @@ class CompactBlockProcessor internal constructor(
                         Twig.verbose { "Decrypting and storing transaction" }
                         decryptTransaction(
                             rawTransaction =
-                            RawTransaction.new(
-                                rawTransactionUnsafe = rawTransactionUnsafe,
-                                network = network
-                            ),
+                                RawTransaction.new(
+                                    rawTransactionUnsafe = rawTransactionUnsafe,
+                                    network = network
+                                ),
                             backend = backend
                         )
                     }
 
                     Twig.debug { "Done Decrypting and storing of all transaction" }
                     SyncingResult.EnhanceSuccess
-
                 } catch (exception: CompactBlockProcessorException.EnhanceTransactionError) {
                     SyncingResult.EnhanceFailed(null, exception)
                 }
@@ -2050,7 +2055,6 @@ class CompactBlockProcessor internal constructor(
 
                     Twig.debug { "Done enhancing transaction: txid: ${transactionRequest.txIdString()}" }
                     SyncingResult.EnhanceSuccess
-
                 } catch (exception: CompactBlockProcessorException.EnhanceTransactionError) {
                     SyncingResult.EnhanceFailed(null, exception)
                 }
@@ -2105,16 +2109,15 @@ class CompactBlockProcessor internal constructor(
         }
 
         @Throws(EnhanceTxDataRequestsError::class)
-        private suspend fun transactionDataRequests(
-            backend: TypesafeBackend
-        ): List<TransactionDataRequest> {
+        private suspend fun transactionDataRequests(backend: TypesafeBackend): List<TransactionDataRequest> {
             val traceScope = TraceScope("CompactBlockProcessor.transactionDataRequests")
-            val result = runCatching {
-                backend.transactionDataRequests()
-            }.getOrElse {
-                traceScope.end()
-                throw EnhanceTxDataRequestsError(it)
-            }
+            val result =
+                runCatching {
+                    backend.transactionDataRequests()
+                }.getOrElse {
+                    traceScope.end()
+                    throw EnhanceTxDataRequestsError(it)
+                }
             traceScope.end()
             return result
         }
