@@ -1933,26 +1933,16 @@ class CompactBlockProcessor internal constructor(
                     Twig.debug { "Obtained ${listOfResults.size} transactions for processing" }
 
                     listOfResults.forEach { rawTransactionUnsafe ->
-                        when (rawTransactionUnsafe) {
-                            is RawTransactionUnsafe.MainChain -> {
-                                // Decrypting and storing transaction is run just once, since we consider it more stable
-                                Twig.verbose {
-                                    "Decrypting and storing transaction at height: ${rawTransactionUnsafe.height.value}"
-                                }
-                                decryptTransaction(
-                                    rawTransaction =
-                                    RawTransaction.new(
-                                        rawTransactionUnsafe = rawTransactionUnsafe,
-                                        network = network
-                                    ),
-                                    backend = backend
-                                )
-                            }
-                            is RawTransactionUnsafe.Mempool,
-                            is RawTransactionUnsafe.OrphanedBlock -> {
-                                error("Unsupported transaction type: $rawTransactionUnsafe")
-                            }
-                        }
+                        // Decrypting and storing transaction is run just once, since we consider it more stable
+                        Twig.verbose { "Decrypting and storing transaction" }
+                        decryptTransaction(
+                            rawTransaction =
+                            RawTransaction.new(
+                                rawTransactionUnsafe = rawTransactionUnsafe,
+                                network = network
+                            ),
+                            backend = backend
+                        )
                     }
 
                     Twig.debug { "Done Decrypting and storing of all transaction" }
