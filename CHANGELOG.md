@@ -9,6 +9,7 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Migrated to Rust 1.80.0.
 - `Synchronizer.proposeTransfer` now supports TEX addresses (ZIP 320).
+- Internal transactions-enhancing logic has changed to support the history of transactions made to TEX addresses 
 
 ### Added
 - `Synchronizer.isValidTexAddr` which checks whether the given address is a valid ZIP 320 TEX address
