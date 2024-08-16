@@ -5,33 +5,24 @@ import cash.z.ecc.android.sdk.internal.model.TorClient
 import cash.z.ecc.android.sdk.model.FetchFiatCurrencyResult
 import cash.z.ecc.android.sdk.model.FiatCurrencyConversion
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.Clock
 import java.io.File
 
-internal class UsdExchangeRateFetcher(private val torDir: File) {
+internal class UsdExchangeRateFetcher(torDir: File) {
+    private val torHolder = TorClientHolder(torDir)
+
     @Suppress("TooGenericExceptionCaught", "ReturnCount")
     suspend operator fun invoke(): FetchFiatCurrencyResult {
-        val tor =
-            retry {
-                try {
-                    Twig.info { "[USD] Tor client bootstrap" }
-                    TorClient.new(torDir)
-                } catch (e: Exception) {
-                    Twig.error(e) { "[USD] To client bootstrap failed" }
-                    return FetchFiatCurrencyResult.Error(exception = e)
-                }
-            }
-
         return retry {
             val rate =
                 try {
                     Twig.info { "[USD] Fetch start" }
-                    tor.getExchangeRateUsd()
+                    torHolder().getExchangeRateUsd()
                 } catch (e: Exception) {
                     Twig.error(e) { "[USD] Fetch failed" }
                     return FetchFiatCurrencyResult.Error(e)
-                } finally {
-                    tor.dispose()
                 }
 
             Twig.debug { "[USD] Fetch success: $rate" }
@@ -44,6 +35,10 @@ internal class UsdExchangeRateFetcher(private val torDir: File) {
                     )
             )
         }
+    }
+
+    suspend fun dispose() {
+        torHolder.dispose()
     }
 
     /**
@@ -68,4 +63,22 @@ internal class UsdExchangeRateFetcher(private val torDir: File) {
         }
         return block() // last attempt
     }
+}
+
+private class TorClientHolder(private val torDir: File) {
+    private val mutex = Mutex()
+    private var torClient: TorClient? = null
+
+    suspend operator fun invoke(): TorClient =
+        mutex.withLock {
+            if (torClient == null) {
+                torClient = TorClient.new(torDir)
+            }
+            return torClient!!
+        }
+
+    suspend fun dispose() =
+        mutex.withLock {
+            torClient?.dispose()
+        }
 }

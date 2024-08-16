@@ -370,6 +370,7 @@ class SdkSynchronizer private constructor(
             coroutineScope.launch {
                 Twig.info { "Stopping synchronizer $synchronizerKey…" }
                 processor.stop()
+                fetchExchangeChangeUsd.dispose()
             }
 
         instances[synchronizerKey] = InstanceState.ShuttingDown(shutdownJob)
