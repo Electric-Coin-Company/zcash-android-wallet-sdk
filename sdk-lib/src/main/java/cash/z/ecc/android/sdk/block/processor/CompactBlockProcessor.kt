@@ -1886,10 +1886,7 @@ class CompactBlockProcessor internal constructor(
                             is TransactionDataRequest.EnhancementRequired -> {
                                 val trxEnhanceResult = enhanceTransaction(it, backend, downloader, network)
                                 if (trxEnhanceResult is SyncingResult.EnhanceFailed) {
-                                    Twig.error {
-                                        "Encountered transaction enhancing error: " +
-                                            "${trxEnhanceResult.exception}"
-                                    }
+                                    Twig.error(trxEnhanceResult.exception) { "Encountered transaction enhancing error" }
                                     emit(trxEnhanceResult)
                                     // We intentionally do not terminate the batch enhancing here, just reporting it
                                 }
@@ -1968,6 +1965,10 @@ class CompactBlockProcessor internal constructor(
             val transactionsResult = arrayListOf<RawTransactionUnsafe>()
             val traceScope = TraceScope("CompactBlockProcessor.getTransparentAddressTransactions")
 
+            if (transactionRequest.endHeight == null) {
+                return transactionsResult
+            }
+
             retryUpToAndThrow(TRANSACTION_FETCH_RETRIES) { failedAttempts ->
                 if (failedAttempts == 0) {
                     Twig.debug { "Starting to get transactions for tAddr: ${transactionRequest.address}" }
@@ -1980,8 +1981,7 @@ class CompactBlockProcessor internal constructor(
 
                 downloader.getTAddressTransactions(
                     transparentAddress = transactionRequest.address,
-                    // fixme !!
-                    blockHeightRange = transactionRequest.startHeight..transactionRequest.endHeight!!
+                    blockHeightRange = transactionRequest.startHeight..transactionRequest.endHeight
                 ).onEach { response ->
                     when (response) {
                         is Response.Success -> {
