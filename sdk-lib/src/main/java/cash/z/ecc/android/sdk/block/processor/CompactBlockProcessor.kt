@@ -1927,11 +1927,12 @@ class CompactBlockProcessor internal constructor(
                 Twig.error { "Unexpected Null " }
                 return SyncingResult.EnhanceFailed(
                     failedAtHeight = transactionRequest.startHeight,
-                    exception = CompactBlockProcessorException.EnhanceTransactionError(
-                        message = "Unexpected NULL TransactionDataRequest.SpendsFromAddress.endHeight",
-                        height = transactionRequest.startHeight,
-                        cause = IllegalStateException()
-                    )
+                    exception =
+                        CompactBlockProcessorException.EnhanceTransactionError(
+                            message = "Unexpected NULL TransactionDataRequest.SpendsFromAddress.endHeight",
+                            height = transactionRequest.startHeight,
+                            cause = IllegalStateException("Unexpected SpendsFromAddress state")
+                        )
                 )
             }
 
@@ -1985,11 +1986,12 @@ class CompactBlockProcessor internal constructor(
                             " after $failedAttempts failure(s)..."
                     }
                 }
-                resultFlow = downloader.getTAddressTransactions(
-                    transparentAddress = transactionRequest.address,
-                    // We can safely assert non-nullability here as we check in the function caller
-                    blockHeightRange = transactionRequest.startHeight..transactionRequest.endHeight!!
-                )
+                resultFlow =
+                    downloader.getTAddressTransactions(
+                        transparentAddress = transactionRequest.address,
+                        // We can safely assert non-nullability here as we check in the function caller
+                        blockHeightRange = transactionRequest.startHeight..transactionRequest.endHeight!!
+                    )
             }
             traceScope.end()
             // The flow is initialized or the EnhanceTxDownloadError is thrown after all the attempts failed
