@@ -1851,7 +1851,7 @@ class CompactBlockProcessor internal constructor(
             flow {
                 Twig.debug { "Enhancing transaction details for blocks $range" }
 
-                val newTxs =
+                val newTxDataRequests =
                     runCatching {
                         transactionDataRequests(backend)
                     }.onFailure {
@@ -1866,19 +1866,19 @@ class CompactBlockProcessor internal constructor(
                         return@flow
                     }
 
-                if (newTxs.isEmpty()) {
+                if (newTxDataRequests.isEmpty()) {
                     Twig.debug { "No new transactions found in $range" }
                 } else {
-                    Twig.debug { "Enhancing ${newTxs.size} transaction(s)!" }
+                    Twig.debug { "Enhancing ${newTxDataRequests.size} transaction(s)!" }
 
                     // If the first transaction has been added
                     // Ideally, we could remove this last reference to the transaction view from the enhancing logic
-                    if (newTxs.size.toLong() == repository.getTransactionCount()) {
+                    if (newTxDataRequests.size.toLong() == repository.getTransactionCount()) {
                         Twig.debug { "Encountered the first transaction. This changes the birthday height!" }
                         emit(SyncingResult.UpdateBirthday)
                     }
 
-                    newTxs.forEach {
+                    newTxDataRequests.forEach {
                         Twig.debug { "Transaction data request: $it" }
 
                         when (it) {
@@ -2019,30 +2019,47 @@ class CompactBlockProcessor internal constructor(
 
                     Twig.debug { "Transaction fetched: $rawTransactionUnsafe" }
 
-                    // We need to distinct between three possible state of the fetched transaction
-                    when (rawTransactionUnsafe) {
-                        is RawTransactionUnsafe.MainChain -> {
-                            // Decrypting and storing transaction is run just once, since we consider it more stable
-                            Twig.verbose {
-                                "Decrypting and storing transaction: txid: ${transactionRequest.txIdString()}"
+                    // We need to distinct between the two possible states of [transactionRequest]
+                    when (transactionRequest) {
+                        is TransactionDataRequest.GetStatus -> {
+                            Twig.debug {
+                                "Resolving TransactionDataRequest.GetStatus by setting status of " +
+                                    "transaction: txid: ${transactionRequest.txIdString() }"
                             }
-                            decryptTransaction(
-                                rawTransaction =
-                                    RawTransaction.new(
-                                        rawTransactionUnsafe = rawTransactionUnsafe,
-                                        network = network
-                                    ),
+                            val status =
+                                rawTransactionUnsafe?.toTransactionStatus(network)
+                                    ?: TransactionStatus.TxidNotRecognized
+                            setTransactionStatus(
+                                transactionRawId = transactionRequest.txid,
+                                status = status,
                                 backend = backend
                             )
                         }
-                        is RawTransactionUnsafe.Mempool,
-                        is RawTransactionUnsafe.OrphanedBlock -> {
-                            Twig.verbose { "Setting status of transaction: txid: ${transactionRequest.txIdString()}" }
-                            setTransactionStatus(
-                                transactionRawId = transactionRequest.txid,
-                                status = rawTransactionUnsafe.toTransactionStatus(network),
-                                backend = backend
-                            )
+                        is TransactionDataRequest.Enhancement -> {
+                            if (rawTransactionUnsafe == null) {
+                                Twig.debug {
+                                    "Resolving TransactionDataRequest.Enhancement by setting status of " +
+                                        "transaction. Txid not recognized: ${transactionRequest.txIdString()}"
+                                }
+                                setTransactionStatus(
+                                    transactionRawId = transactionRequest.txid,
+                                    status = TransactionStatus.TxidNotRecognized,
+                                    backend = backend
+                                )
+                            } else {
+                                Twig.debug {
+                                    "Resolving TransactionDataRequest.Enhancement by decrypting and storing " +
+                                        "transaction: txid: ${transactionRequest.txIdString()}"
+                                }
+                                decryptTransaction(
+                                    rawTransaction =
+                                        RawTransaction.new(
+                                            rawTransactionUnsafe = rawTransactionUnsafe,
+                                            network = network
+                                        ),
+                                    backend = backend
+                                )
+                            }
                         }
                     }
 
@@ -2055,11 +2072,19 @@ class CompactBlockProcessor internal constructor(
             return result
         }
 
+        /**
+         * Fetch the transaction complete data by [TransactionDataRequest.EnhancementRequired.txid] from Light Wallet
+         * server. This function handles [Response.Failure.Server.NotFound] by returning null.
+         *
+         * @return [RawTransactionUnsafe] if the transaction has been found, null otherwise.
+         *
+         * @throws CompactBlockProcessorException.EnhanceTransactionError in case of any other error
+         */
         @Throws(EnhanceTxDownloadError::class)
         private suspend fun fetchTransaction(
             transactionRequest: TransactionDataRequest.EnhancementRequired,
             downloader: CompactBlockDownloader,
-        ): RawTransactionUnsafe {
+        ): RawTransactionUnsafe? {
             var transactionResult: RawTransactionUnsafe? = null
             val traceScope = TraceScope("CompactBlockProcessor.fetchTransaction")
 
@@ -2077,13 +2102,16 @@ class CompactBlockProcessor internal constructor(
                     when (val response = downloader.fetchTransaction(transactionRequest.txid)) {
                         is Response.Success -> response.result
                         is Response.Failure -> {
-                            throw EnhanceTxDownloadError(response.toThrowable())
+                            if (response is Response.Failure.Server.NotFound) {
+                                null
+                            } else {
+                                throw EnhanceTxDownloadError(response.toThrowable())
+                            }
                         }
                     }
             }
             traceScope.end()
-            // Result is fetched or EnhanceTxDownloadError is thrown after all attempts failed at this point
-            return transactionResult!!
+            return transactionResult
         }
 
         @Throws(EnhanceTxDecryptError::class)
