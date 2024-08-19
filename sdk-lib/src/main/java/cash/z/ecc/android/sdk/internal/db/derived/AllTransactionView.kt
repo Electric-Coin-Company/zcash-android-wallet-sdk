@@ -1,6 +1,7 @@
 package cash.z.ecc.android.sdk.internal.db.derived
 
 import androidx.core.database.getBlobOrNull
+import androidx.core.database.getIntOrNull
 import androidx.core.database.getLongOrNull
 import androidx.sqlite.db.SupportSQLiteDatabase
 import cash.z.ecc.android.sdk.internal.db.CursorParser
@@ -101,6 +102,7 @@ internal class AllTransactionView(
             val sentNoteCountIndex = cursor.getColumnIndex(AllTransactionViewDefinition.COLUMN_INTEGER_SENT_NOTE_COUNT)
             val memoCountIndex = cursor.getColumnIndex(AllTransactionViewDefinition.COLUMN_INTEGER_MEMO_COUNT)
             val blockTimeIndex = cursor.getColumnIndex(AllTransactionViewDefinition.COLUMN_INTEGER_BLOCK_TIME)
+            val isShielding = cursor.getColumnIndex(AllTransactionViewDefinition.COLUMN_BOOLEAN_IS_SHIELDING)
 
             val netValueLong = cursor.getLong(netValueIndex)
             val isSent = netValueLong < 0
@@ -129,7 +131,8 @@ internal class AllTransactionView(
                 receivedNoteCount = cursor.getInt(receivedNoteCountIndex),
                 sentNoteCount = cursor.getInt(sentNoteCountIndex),
                 memoCount = cursor.getInt(memoCountIndex),
-                blockTimeEpochSeconds = cursor.getLongOrNull(blockTimeIndex)
+                blockTimeEpochSeconds = cursor.getLongOrNull(blockTimeIndex),
+                isShielding = cursor.getIntOrNull(isShielding) == 1
             )
         }
 
@@ -212,4 +215,6 @@ internal object AllTransactionViewDefinition {
     const val COLUMN_INTEGER_MEMO_COUNT = "memo_count" // $NON-NLS
 
     const val COLUMN_INTEGER_BLOCK_TIME = "block_time" // $NON-NLS
+
+    const val COLUMN_BOOLEAN_IS_SHIELDING = "is_shielding" // $NON-NLS
 }

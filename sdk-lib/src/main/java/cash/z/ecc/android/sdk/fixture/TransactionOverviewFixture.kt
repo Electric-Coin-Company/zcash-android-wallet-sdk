@@ -24,6 +24,7 @@ object TransactionOverviewFixture {
     const val MEMO_COUNT: Int = 0
     const val BLOCK_TIME_EPOCH_SECONDS: Long = 1234
     val STATE = TransactionState.Confirmed
+    val IS_SHIELDING = false
 
     @Suppress("LongParameterList")
     fun new(
@@ -40,21 +41,23 @@ object TransactionOverviewFixture {
         sentNoteCount: Int = SENT_NOTE_COUNT,
         memoCount: Int = MEMO_COUNT,
         blockTimeEpochSeconds: Long = BLOCK_TIME_EPOCH_SECONDS,
-        transactionState: TransactionState = STATE
+        transactionState: TransactionState = STATE,
+        isShielding: Boolean = IS_SHIELDING
     ) = TransactionOverview(
-        rawId,
-        minedHeight,
-        expiryHeight,
-        index,
-        raw,
-        isSentTransaction,
-        netValue,
-        feePaid,
-        isChange,
-        receivedNoteCount,
-        sentNoteCount,
-        memoCount,
-        blockTimeEpochSeconds,
-        transactionState
+        rawId = rawId,
+        minedHeight = minedHeight,
+        expiryHeight = expiryHeight,
+        index = index,
+        raw = raw,
+        isSentTransaction = isSentTransaction,
+        netValue = netValue,
+        feePaid = feePaid,
+        isChange = isChange,
+        receivedNoteCount = receivedNoteCount,
+        sentNoteCount = sentNoteCount,
+        memoCount = memoCount,
+        blockTimeEpochSeconds = blockTimeEpochSeconds,
+        transactionState = transactionState,
+        isShielding = isShielding
     )
 }
