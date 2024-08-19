@@ -1986,11 +1986,15 @@ class CompactBlockProcessor internal constructor(
                             " after $failedAttempts failure(s)..."
                     }
                 }
+
+                // We can safely assert non-nullability here as we check in the function caller
+                // - 1 for the end height because the GRPC request is end-inclusive whereas we use end-exclusive
+                // ranges everywhere in the Rust code
+                val requestedRange = transactionRequest.startHeight..(transactionRequest.endHeight!! - 1)
                 resultFlow =
                     downloader.getTAddressTransactions(
                         transparentAddress = transactionRequest.address,
-                        // We can safely assert non-nullability here as we check in the function caller
-                        blockHeightRange = transactionRequest.startHeight..transactionRequest.endHeight!!
+                        blockHeightRange = requestedRange
                     )
             }
             traceScope.end()
