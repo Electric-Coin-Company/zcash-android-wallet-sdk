@@ -10,6 +10,9 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Synchronizer.getFastestServers([LightWalletEndpoint])` is a flow that measures connections to given endpoints and
   returns the three fastest ones
 
+### Changed
+- Checkpoints update
+
 ## [2.1.3] - 2024-08-08
 
 ### Changed
