@@ -6,6 +6,8 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.0] - 2024-08-20
+
 ### Added
 - `Synchronizer.getFastestServers([LightWalletEndpoint])` is a flow that measures connections to given endpoints and
   returns the three fastest ones
