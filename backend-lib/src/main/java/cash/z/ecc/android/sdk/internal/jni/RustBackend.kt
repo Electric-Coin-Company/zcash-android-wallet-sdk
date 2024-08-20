@@ -8,6 +8,7 @@ import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.internal.model.JniScanRange
 import cash.z.ecc.android.sdk.internal.model.JniScanSummary
 import cash.z.ecc.android.sdk.internal.model.JniSubtreeRoot
+import cash.z.ecc.android.sdk.internal.model.JniTransactionDataRequest
 import cash.z.ecc.android.sdk.internal.model.JniUnifiedSpendingKey
 import cash.z.ecc.android.sdk.internal.model.JniWalletSummary
 import cash.z.ecc.android.sdk.internal.model.ProposalUnsafe
@@ -295,14 +296,26 @@ class RustBackend private constructor(
         }
     }
 
-    override suspend fun decryptAndStoreTransaction(tx: ByteArray) =
-        withContext(SdkDispatchers.DATABASE_IO) {
-            decryptAndStoreTransaction(
-                dataDbFile.absolutePath,
-                tx,
+    override suspend fun transactionDataRequests(): List<JniTransactionDataRequest> {
+        return withContext(SdkDispatchers.DATABASE_IO) {
+            transactionDataRequests(
+                dbDataPath = dataDbFile.absolutePath,
                 networkId = networkId
-            )
+            ).asList()
         }
+    }
+
+    override suspend fun decryptAndStoreTransaction(
+        tx: ByteArray,
+        minedHeight: Long?
+    ) = withContext(SdkDispatchers.DATABASE_IO) {
+        decryptAndStoreTransaction(
+            dataDbFile.absolutePath,
+            tx,
+            minedHeight = minedHeight ?: -1,
+            networkId = networkId
+        )
+    }
 
     override suspend fun proposeTransfer(
         account: Int,
@@ -378,6 +391,18 @@ class RustBackend private constructor(
             script,
             value,
             height,
+            networkId = networkId
+        )
+    }
+
+    override suspend fun setTransactionStatus(
+        txId: ByteArray,
+        status: Long
+    ) = withContext(SdkDispatchers.DATABASE_IO) {
+        Companion.setTransactionStatus(
+            dataDbFile.absolutePath,
+            txId,
+            status,
             networkId = networkId
         )
     }
@@ -613,9 +638,24 @@ class RustBackend private constructor(
         ): JniScanSummary
 
         @JvmStatic
+        private external fun transactionDataRequests(
+            dbDataPath: String,
+            networkId: Int
+        ): Array<JniTransactionDataRequest>
+
+        @JvmStatic
         private external fun decryptAndStoreTransaction(
             dbDataPath: String,
             tx: ByteArray,
+            minedHeight: Long,
+            networkId: Int
+        )
+
+        @JvmStatic
+        private external fun setTransactionStatus(
+            dbDataPath: String,
+            txId: ByteArray,
+            status: Long,
             networkId: Int
         )
 

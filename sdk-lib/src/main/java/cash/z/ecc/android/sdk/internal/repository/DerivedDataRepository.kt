@@ -30,19 +30,6 @@ internal interface DerivedDataRepository {
      */
     suspend fun findEncodedTransactionByTxId(txId: FirstClassByteArray): EncodedTransaction?
 
-    /**
-     * Find all the newly scanned transactions in the given range, including transactions (like
-     * change or those only identified by nullifiers) which should not appear in the UI. This method
-     * is intended for use after a scan, in order to collect all the transactions that were
-     * discovered and then enhance them with additional details. It returns a list to signal that
-     * the intention is not to add them to a recyclerview or otherwise show in the UI.
-     *
-     * @param blockHeightRange the range of blocks to check for transactions.
-     *
-     * @return a list of transactions that were mined in the given range, inclusive.
-     */
-    suspend fun findNewTransactions(blockHeightRange: ClosedRange<BlockHeight>): List<DbTransactionOverview>
-
     suspend fun getOldestTransaction(): DbTransactionOverview?
 
     /**
