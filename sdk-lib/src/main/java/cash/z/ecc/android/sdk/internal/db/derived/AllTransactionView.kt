@@ -57,15 +57,6 @@ internal class AllTransactionView(
                 AllTransactionViewDefinition.COLUMN_INTEGER_MINED_HEIGHT
             )
 
-        private val SELECTION_BLOCK_RANGE =
-            String.format(
-                Locale.ROOT,
-                // $NON-NLS
-                "%s >= ? AND %s <= ?",
-                AllTransactionViewDefinition.COLUMN_INTEGER_MINED_HEIGHT,
-                AllTransactionViewDefinition.COLUMN_INTEGER_MINED_HEIGHT
-            )
-
         private val SELECTION_RAW_IS_NULL =
             String.format(
                 Locale.ROOT,
@@ -145,16 +136,6 @@ internal class AllTransactionView(
             table = AllTransactionViewDefinition.VIEW_NAME,
             columns = COLUMNS,
             orderBy = ORDER_BY,
-            cursorParser = cursorParser
-        )
-
-    fun getTransactionRange(blockHeightRange: ClosedRange<BlockHeight>) =
-        sqliteDatabase.queryAndMap(
-            table = AllTransactionViewDefinition.VIEW_NAME,
-            columns = COLUMNS,
-            orderBy = ORDER_BY,
-            selection = SELECTION_BLOCK_RANGE,
-            selectionArgs = arrayOf(blockHeightRange.start.value, blockHeightRange.endInclusive.value),
             cursorParser = cursorParser
         )
 

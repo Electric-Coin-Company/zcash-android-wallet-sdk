@@ -5,6 +5,7 @@ import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor
 import cash.z.ecc.android.sdk.model.PercentDecimal
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
+import java.math.BigDecimal
 
 data class WalletSnapshot(
     val status: Synchronizer.Status,
@@ -12,6 +13,7 @@ data class WalletSnapshot(
     val orchardBalance: WalletBalance,
     val saplingBalance: WalletBalance,
     val transparentBalance: Zatoshi,
+    val exchangeRateUsd: BigDecimal?,
     val progress: PercentDecimal,
     val synchronizerError: SynchronizerError?
 ) {

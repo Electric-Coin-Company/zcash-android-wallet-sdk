@@ -26,9 +26,6 @@ internal class DbDerivedDataRepository(
         return derivedDataDb.transactionTable.findEncodedTransactionByTxId(txId)
     }
 
-    override suspend fun findNewTransactions(blockHeightRange: ClosedRange<BlockHeight>): List<DbTransactionOverview> =
-        derivedDataDb.allTransactionView.getTransactionRange(blockHeightRange).toList()
-
     override suspend fun getOldestTransaction() = derivedDataDb.allTransactionView.getOldestTransaction()
 
     override suspend fun findMinedHeight(rawTransactionId: ByteArray) =

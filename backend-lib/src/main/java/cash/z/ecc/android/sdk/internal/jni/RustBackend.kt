@@ -8,6 +8,7 @@ import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.internal.model.JniScanRange
 import cash.z.ecc.android.sdk.internal.model.JniScanSummary
 import cash.z.ecc.android.sdk.internal.model.JniSubtreeRoot
+import cash.z.ecc.android.sdk.internal.model.JniTransactionDataRequest
 import cash.z.ecc.android.sdk.internal.model.JniUnifiedSpendingKey
 import cash.z.ecc.android.sdk.internal.model.JniWalletSummary
 import cash.z.ecc.android.sdk.internal.model.ProposalUnsafe
@@ -295,14 +296,26 @@ class RustBackend private constructor(
         }
     }
 
-    override suspend fun decryptAndStoreTransaction(tx: ByteArray) =
-        withContext(SdkDispatchers.DATABASE_IO) {
-            decryptAndStoreTransaction(
-                dataDbFile.absolutePath,
-                tx,
+    override suspend fun transactionDataRequests(): List<JniTransactionDataRequest> {
+        return withContext(SdkDispatchers.DATABASE_IO) {
+            transactionDataRequests(
+                dbDataPath = dataDbFile.absolutePath,
                 networkId = networkId
-            )
+            ).asList()
         }
+    }
+
+    override suspend fun decryptAndStoreTransaction(
+        tx: ByteArray,
+        minedHeight: Long?
+    ) = withContext(SdkDispatchers.DATABASE_IO) {
+        decryptAndStoreTransaction(
+            dataDbFile.absolutePath,
+            tx,
+            minedHeight = minedHeight ?: -1,
+            networkId = networkId
+        )
+    }
 
     override suspend fun proposeTransfer(
         account: Int,
@@ -317,7 +330,7 @@ class RustBackend private constructor(
                     account,
                     to,
                     value,
-                    memo ?: ByteArray(0),
+                    memo,
                     networkId = networkId,
                     useZip317Fees = IS_USE_ZIP_317_FEES
                 )
@@ -335,7 +348,7 @@ class RustBackend private constructor(
                 dataDbFile.absolutePath,
                 account,
                 shieldingThreshold,
-                memo ?: ByteArray(0),
+                memo,
                 transparentReceiver,
                 networkId = networkId,
                 useZip317Fees = IS_USE_ZIP_317_FEES
@@ -382,11 +395,25 @@ class RustBackend private constructor(
         )
     }
 
+    override suspend fun setTransactionStatus(
+        txId: ByteArray,
+        status: Long
+    ) = withContext(SdkDispatchers.DATABASE_IO) {
+        Companion.setTransactionStatus(
+            dataDbFile.absolutePath,
+            txId,
+            status,
+            networkId = networkId
+        )
+    }
+
     override fun isValidSaplingAddr(addr: String) = isValidSaplingAddress(addr, networkId = networkId)
 
     override fun isValidTransparentAddr(addr: String) = isValidTransparentAddress(addr, networkId = networkId)
 
     override fun isValidUnifiedAddr(addr: String) = isValidUnifiedAddress(addr, networkId = networkId)
+
+    override fun isValidTexAddr(addr: String) = isValidTexAddress(addr, networkId = networkId)
 
     override fun getBranchIdForHeight(height: Long): Long = branchIdForHeight(height, networkId = networkId)
 
@@ -508,6 +535,12 @@ class RustBackend private constructor(
         ): Boolean
 
         @JvmStatic
+        private external fun isValidTexAddress(
+            addr: String,
+            networkId: Int
+        ): Boolean
+
+        @JvmStatic
         private external fun getMemoAsUtf8(
             dbDataPath: String,
             txId: ByteArray,
@@ -605,9 +638,24 @@ class RustBackend private constructor(
         ): JniScanSummary
 
         @JvmStatic
+        private external fun transactionDataRequests(
+            dbDataPath: String,
+            networkId: Int
+        ): Array<JniTransactionDataRequest>
+
+        @JvmStatic
         private external fun decryptAndStoreTransaction(
             dbDataPath: String,
             tx: ByteArray,
+            minedHeight: Long,
+            networkId: Int
+        )
+
+        @JvmStatic
+        private external fun setTransactionStatus(
+            dbDataPath: String,
+            txId: ByteArray,
+            status: Long,
             networkId: Int
         )
 
@@ -618,7 +666,7 @@ class RustBackend private constructor(
             account: Int,
             to: String,
             value: Long,
-            memo: ByteArray,
+            memo: ByteArray?,
             networkId: Int,
             useZip317Fees: Boolean
         ): ByteArray
@@ -629,7 +677,7 @@ class RustBackend private constructor(
             dbDataPath: String,
             account: Int,
             shieldingThreshold: Long,
-            memo: ByteArray,
+            memo: ByteArray?,
             transparentReceiver: String?,
             networkId: Int,
             useZip317Fees: Boolean

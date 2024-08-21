@@ -26,6 +26,7 @@ import cash.z.ecc.android.sdk.internal.block.CompactBlockDownloader
 import cash.z.ecc.android.sdk.internal.db.DatabaseCoordinator
 import cash.z.ecc.android.sdk.internal.db.derived.DbDerivedDataRepository
 import cash.z.ecc.android.sdk.internal.db.derived.DerivedDataDb
+import cash.z.ecc.android.sdk.internal.exchange.UsdExchangeRateFetcher
 import cash.z.ecc.android.sdk.internal.ext.existsSuspend
 import cash.z.ecc.android.sdk.internal.ext.isNullOrEmpty
 import cash.z.ecc.android.sdk.internal.ext.tryNull
@@ -43,6 +44,8 @@ import cash.z.ecc.android.sdk.internal.transaction.TransactionEncoderImpl
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.FastestServersResult
+import cash.z.ecc.android.sdk.model.FetchFiatCurrencyResult
+import cash.z.ecc.android.sdk.model.ObserveFiatCurrencyResult
 import cash.z.ecc.android.sdk.model.PercentDecimal
 import cash.z.ecc.android.sdk.model.Proposal
 import cash.z.ecc.android.sdk.model.TransactionOverview
@@ -53,6 +56,7 @@ import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.type.AddressType
 import cash.z.ecc.android.sdk.type.AddressType.Shielded
+import cash.z.ecc.android.sdk.type.AddressType.Tex
 import cash.z.ecc.android.sdk.type.AddressType.Transparent
 import cash.z.ecc.android.sdk.type.AddressType.Unified
 import cash.z.ecc.android.sdk.type.ConsensusMatchType
@@ -64,20 +68,28 @@ import co.electriccoin.lightwallet.client.new
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -101,7 +113,7 @@ import kotlin.time.Duration.Companion.seconds
  * @property processor saves the downloaded compact blocks to the cache and then scans those blocks for
  * data related to this wallet.
  */
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions", "LongParameterList")
 class SdkSynchronizer private constructor(
     private val synchronizerKey: SynchronizerKey,
     private val storage: DerivedDataRepository,
@@ -109,6 +121,7 @@ class SdkSynchronizer private constructor(
     val processor: CompactBlockProcessor,
     private val backend: TypesafeBackend,
     private val fetchFastestServers: FastestServerFetcher,
+    private val fetchExchangeChangeUsd: UsdExchangeRateFetcher
 ) : CloseableSynchronizer {
     companion object {
         private sealed class InstanceState {
@@ -139,7 +152,8 @@ class SdkSynchronizer private constructor(
             txManager: OutboundTransactionManager,
             processor: CompactBlockProcessor,
             backend: TypesafeBackend,
-            fastestServerFetcher: FastestServerFetcher
+            fastestServerFetcher: FastestServerFetcher,
+            fetchExchangeChangeUsd: UsdExchangeRateFetcher,
         ): CloseableSynchronizer {
             val synchronizerKey = SynchronizerKey(zcashNetwork, alias)
 
@@ -153,7 +167,8 @@ class SdkSynchronizer private constructor(
                     txManager,
                     processor,
                     backend,
-                    fastestServerFetcher
+                    fastestServerFetcher,
+                    fetchExchangeChangeUsd
                 ).apply {
                     instances[synchronizerKey] = InstanceState.Active
                     start()
@@ -192,13 +207,50 @@ class SdkSynchronizer private constructor(
         }
     }
 
-    private val _status = MutableStateFlow<Synchronizer.Status>(DISCONNECTED)
+    private val _status = MutableStateFlow(DISCONNECTED)
 
-    var coroutineScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    val coroutineScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     override val orchardBalances = processor.orchardBalances.asStateFlow()
     override val saplingBalances = processor.saplingBalances.asStateFlow()
     override val transparentBalance = processor.transparentBalance.asStateFlow()
+
+    private val refreshExchangeRateUsd = MutableSharedFlow<Unit>(replay = 1).apply { tryEmit(Unit) }
+
+    private var lastExchangeRateValue = ObserveFiatCurrencyResult()
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    override val exchangeRateUsd =
+        channelFlow {
+            refreshExchangeRateUsd
+                .flatMapLatest {
+                    flow {
+                        emit(lastExchangeRateValue.copy(isLoading = true))
+                        lastExchangeRateValue =
+                            when (val result = fetchExchangeChangeUsd()) {
+                                is FetchFiatCurrencyResult.Error -> lastExchangeRateValue.copy(isLoading = false)
+
+                                is FetchFiatCurrencyResult.Success ->
+                                    lastExchangeRateValue.copy(
+                                        isLoading = false,
+                                        currencyConversion = result.currencyConversion
+                                    )
+                            }
+                        emit(lastExchangeRateValue)
+                    }
+                }
+                .onEach { send(it) }
+                .flowOn(Dispatchers.Default)
+                .launchIn(this)
+
+            awaitClose {
+                // do nothing
+            }
+        }.flowOn(Dispatchers.Default).stateIn(
+            scope = coroutineScope,
+            started = SharingStarted.WhileSubscribed(), // stop immediately
+            initialValue = ObserveFiatCurrencyResult()
+        )
 
     override val transactions
         get() =
@@ -318,6 +370,7 @@ class SdkSynchronizer private constructor(
             coroutineScope.launch {
                 Twig.info { "Stopping synchronizer $synchronizerKey…" }
                 processor.stop()
+                fetchExchangeChangeUsd.dispose()
             }
 
         instances[synchronizerKey] = InstanceState.ShuttingDown(shutdownJob)
@@ -424,6 +477,12 @@ class SdkSynchronizer private constructor(
      */
     suspend fun refreshAllBalances() {
         processor.refreshWalletSummary()
+    }
+
+    override suspend fun refreshExchangeRateUsd() {
+        coroutineScope.launch {
+            refreshExchangeRateUsd.emit(Unit)
+        }
     }
 
     suspend fun isValidAddress(address: String): Boolean {
@@ -551,7 +610,7 @@ class SdkSynchronizer private constructor(
         val reason = if (scannedRange.isNullOrEmpty()) "it's been a while" else "new blocks were scanned"
 
         if (shouldRefresh) {
-            Twig.info { "Triggering utxo refresh since $reason!" }
+            Twig.debug { "Triggering utxo refresh since $reason!" }
             refreshUtxos(Account.DEFAULT)
 
             Twig.debug { "Triggering balance refresh since $reason!" }
@@ -645,6 +704,7 @@ class SdkSynchronizer private constructor(
                         is TransactionSubmitResult.Success -> {
                             // Expected state
                         }
+
                         is TransactionSubmitResult.Failure,
                         is TransactionSubmitResult.NotAttempted -> {
                             anySubmissionFailed = true
@@ -682,6 +742,7 @@ class SdkSynchronizer private constructor(
             is TransactionSubmitResult.Success -> {
                 return storage.findMatchingTransactionId(encodedTx.txId.byteArray)!!
             }
+
             else -> {
                 throw TransactionSubmitException()
             }
@@ -717,6 +778,7 @@ class SdkSynchronizer private constructor(
             is TransactionSubmitResult.Success -> {
                 return storage.findMatchingTransactionId(encodedTx.txId.byteArray)!!
             }
+
             else -> {
                 throw TransactionSubmitException()
             }
@@ -740,6 +802,8 @@ class SdkSynchronizer private constructor(
 
     override suspend fun isValidUnifiedAddr(address: String) = txManager.isValidUnifiedAddress(address)
 
+    override suspend fun isValidTexAddr(address: String) = txManager.isValidTexAddress(address)
+
     override suspend fun validateAddress(address: String): AddressType =
         runCatching {
             if (isValidShieldedAddr(address)) {
@@ -748,6 +812,8 @@ class SdkSynchronizer private constructor(
                 Transparent
             } else if (isValidUnifiedAddr(address)) {
                 Unified
+            } else if (isValidTexAddr(address)) {
+                Tex
             } else {
                 AddressType.Invalid("Not a Zcash address")
             }
@@ -769,6 +835,7 @@ class SdkSynchronizer private constructor(
                     Twig.info { "Chain tip for validate consensus branch action fetched: ${response.result.value}" }
                     runCatching { response.result.toBlockHeight(network) }.getOrNull()
                 }
+
                 is Response.Failure -> {
                     Twig.error {
                         "Chain tip fetch failed for validate consensus branch action with:" +
@@ -846,6 +913,7 @@ class SdkSynchronizer private constructor(
                         return ServerValidation.InValid(it)
                     }
                 }
+
                 is Response.Failure -> {
                     return ServerValidation.InValid(response.toThrowable())
                 }
