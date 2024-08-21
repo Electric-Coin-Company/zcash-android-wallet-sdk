@@ -6,6 +6,21 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+This release adds several important new features:
+- Currency exchange rates (currently just USD/ZEC) are now made available via the SDK.
+  The exchange rate computed as the median of values provided by at least three separate
+  cryptocurrency exchanges, and is fetched over Tor connections in order to avoid leaking
+  the wallet's IP address to the exchanges.
+- Sending to ZIP 320 (TEX) addresses is now supported. When sending to a ZIP 320 address,
+  the wallet will first automatically de-shield the required funds to a fresh ephemeral 
+  transparent address, and then will make a second fully-transparent transaction sending
+  the funds to the eventual recipient that is not linkable via on-chain information to any 
+  other transaction in the  user's wallet.
+- As part of adding ZIP 320 support, the SDK now also provides full support for recovering
+  transparent transaction history. Prior to this release, only transactions belonging to the
+  wallet that contained either some shielded component OR a member of the current
+  transparent UTXO set were included in transaction history.
+
 ### Changed
 - Migrated to Rust 1.80.0.
 - `Synchronizer.proposeTransfer` now supports TEX addresses (ZIP 320).
