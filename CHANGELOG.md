@@ -6,7 +6,7 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [2.2.0] - 2024-08-20
+## [2.2.0] - 2024-08-22
 
 This release adds several important new features:
 - Currency exchange rates (currently just USD/ZEC) are now made available via the SDK.
