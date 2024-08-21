@@ -11,6 +11,6 @@ internal fun RawTransactionUnsafe.toTransactionStatus(network: ZcashNetwork): Tr
     return when (this) {
         is MainChain -> TransactionStatus.Mined(height.toBlockHeight(network))
         is Mempool -> TransactionStatus.NotInMainChain
-        is OrphanedBlock -> TransactionStatus.TxidNotRecognized
+        is OrphanedBlock -> TransactionStatus.NotInMainChain
     }
 }
