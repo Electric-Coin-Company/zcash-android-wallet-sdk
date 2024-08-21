@@ -88,6 +88,7 @@ tasks.dokkaHtml.configure {
 }
 
 dependencies {
+    api(libs.kotlinx.datetime)
     api(projects.lightwalletClientLib)
     implementation(projects.backendLib)
 
