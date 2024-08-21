@@ -1922,7 +1922,7 @@ class CompactBlockProcessor internal constructor(
         ): SyncingResult {
             Twig.debug { "Starting to get transparent address transactions ids" }
 
-            // This case should not happen, at least for now, but we must handle it
+            // TODO [#1564]: Support empty block range end
             if (transactionRequest.endHeight == null) {
                 Twig.error { "Unexpected Null " }
                 return SyncingResult.EnhanceFailed(
