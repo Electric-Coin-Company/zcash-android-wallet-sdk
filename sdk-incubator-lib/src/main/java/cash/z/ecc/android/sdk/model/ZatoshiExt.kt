@@ -73,18 +73,10 @@ fun BigDecimal.convertFiatDecimalToFiatString(
     monetarySeparators: MonetarySeparators,
     includeSymbols: Boolean = true
 ): String {
-    val numberFormat =
-        if (includeSymbols) {
-            NumberFormat.getCurrencyInstance(locale)
-        } else {
-            NumberFormat.getInstance(locale)
-        }
+    val numberFormat = NumberFormat.getCurrencyInstance(locale)
 
     return numberFormat.apply {
-        if (includeSymbols) {
-            currency = fiatCurrency
-        }
-
+        currency = fiatCurrency
         roundingMode = RoundingMode.HALF_EVEN
         if (this is DecimalFormat) {
             decimalFormatSymbols.apply {
@@ -95,5 +87,11 @@ fun BigDecimal.convertFiatDecimalToFiatString(
                 }
             }
         }
-    }.format(this)
+    }.format(this).let {
+        if (includeSymbols) {
+            it
+        } else {
+            it.replace(fiatCurrency.symbol, "")
+        }
+    }
 }
