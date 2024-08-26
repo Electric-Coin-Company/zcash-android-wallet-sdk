@@ -45,14 +45,12 @@ fun Zatoshi.toFiatString(
     currencyConversion: FiatCurrencyConversion,
     locale: Locale,
     monetarySeparators: MonetarySeparators,
-    includeSymbols: Boolean = true,
 ) = convertZatoshiToZecDecimal()
     .convertZecDecimalToFiatDecimal(BigDecimal(currencyConversion.priceOfZec))
     .convertFiatDecimalToFiatString(
         Currency.getInstance(currencyConversion.fiatCurrency.code),
         locale.toJavaLocale(),
         monetarySeparators,
-        includeSymbols
     )
 
 private fun Zatoshi.convertZatoshiToZecDecimal(): BigDecimal {
@@ -71,19 +69,11 @@ fun BigDecimal.convertFiatDecimalToFiatString(
     fiatCurrency: Currency,
     locale: java.util.Locale,
     monetarySeparators: MonetarySeparators,
-    includeSymbols: Boolean = true
 ): String {
-    val numberFormat =
-        if (includeSymbols) {
-            NumberFormat.getCurrencyInstance(locale)
-        } else {
-            NumberFormat.getInstance(locale)
-        }
+    val numberFormat = NumberFormat.getCurrencyInstance(locale)
 
     return numberFormat.apply {
-        if (includeSymbols) {
-            currency = fiatCurrency
-        }
+        currency = fiatCurrency
 
         roundingMode = RoundingMode.HALF_EVEN
         if (this is DecimalFormat) {
