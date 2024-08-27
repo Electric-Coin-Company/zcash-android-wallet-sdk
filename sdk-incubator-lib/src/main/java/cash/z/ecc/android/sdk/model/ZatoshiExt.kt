@@ -91,7 +91,7 @@ fun BigDecimal.convertFiatDecimalToFiatString(
         if (includeSymbols) {
             it
         } else {
-            it.replace(fiatCurrency.symbol, "")
+            it.replace(fiatCurrency.symbol, "").trim()
         }
     }
 }
