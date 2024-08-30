@@ -70,8 +70,8 @@ path = "src/main/rust/lib.rs"
 crate-type = ["staticlib", "cdylib"]
 
 [patch.crates-io]
-zcash_address = { git = "https://github.com/nuttycom/librustzcash", rev = "19a01f5a62ecc4c9d8df71776b368b745fa46b9c" }
-zcash_client_backend = { git = "https://github.com/nuttycom/librustzcash", rev = "19a01f5a62ecc4c9d8df71776b368b745fa46b9c" }
-zcash_client_sqlite = { git = "https://github.com/nuttycom/librustzcash", rev = "19a01f5a62ecc4c9d8df71776b368b745fa46b9c" }
-zcash_primitives = { git = "https://github.com/nuttycom/librustzcash", rev = "19a01f5a62ecc4c9d8df71776b368b745fa46b9c" }
-zcash_proofs = { git = "https://github.com/nuttycom/librustzcash", rev = "19a01f5a62ecc4c9d8df71776b368b745fa46b9c" }
+zcash_address = { git = "https://github.com/nuttycom/librustzcash", rev = "51cd3ed96cddf70da0d112373c3135b5af23884f" }
+zcash_client_backend = { git = "https://github.com/nuttycom/librustzcash", rev = "51cd3ed96cddf70da0d112373c3135b5af23884f" }
+zcash_client_sqlite = { git = "https://github.com/nuttycom/librustzcash", rev = "51cd3ed96cddf70da0d112373c3135b5af23884f" }
+zcash_primitives = { git = "https://github.com/nuttycom/librustzcash", rev = "51cd3ed96cddf70da0d112373c3135b5af23884f" }
+zcash_proofs = { git = "https://github.com/nuttycom/librustzcash", rev = "51cd3ed96cddf70da0d112373c3135b5af23884f" }
