@@ -6,6 +6,10 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Migrated to `zcash_client_sqlite 0.11.2` to remove use of a database feature
+  that prevented use of Zashi on older devices.
+
 ## [2.2.1] - 2024-08-22
 
 ### Fixed
