@@ -6,6 +6,11 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Transaction resubmission feature has been added to the CompactBlockProcessor's regular actions. This new action 
+  periodically checks unmined sent transactions that are still within their expiry window and resubmits them if 
+  there are any.
+
 ## [2.2.1] - 2024-08-22
 
 ### Fixed

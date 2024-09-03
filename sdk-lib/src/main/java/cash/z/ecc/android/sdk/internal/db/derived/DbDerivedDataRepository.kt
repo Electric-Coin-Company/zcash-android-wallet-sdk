@@ -26,6 +26,9 @@ internal class DbDerivedDataRepository(
         return derivedDataDb.transactionTable.findEncodedTransactionByTxId(txId)
     }
 
+    override suspend fun findUnminedTransactionsWithinExpiry(blockHeight: BlockHeight): List<DbTransactionOverview> =
+        derivedDataDb.allTransactionView.getUnminedUnexpiredTransactions(blockHeight).toList()
+
     override suspend fun getOldestTransaction() = derivedDataDb.allTransactionView.getOldestTransaction()
 
     override suspend fun findMinedHeight(rawTransactionId: ByteArray) =
