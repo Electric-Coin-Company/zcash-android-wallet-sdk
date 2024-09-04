@@ -84,6 +84,9 @@ cargo {
     )
     profile = "release"
     prebuiltToolchains = true
+    exec = { spec, _ ->
+        spec.environment["RUST_ANDROID_GRADLE_CC_LINK_ARG"] = "-Wl,-z,max-page-size=16384"
+    }
 }
 
 // As a workaround to the Gradle (starting from v7.4.1) and Rust Android Gradle plugin (starting from v0.9.3)
