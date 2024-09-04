@@ -11,6 +11,15 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   periodically checks unmined sent transactions that are still within their expiry window and resubmits them if 
   there are any.
 
+## [2.2.2] - 2024-09-03
+
+### Fixed
+- Migrated to `zcash_client_sqlite 0.11.2` to remove use of a database feature
+  that prevented use of Zashi on older devices.
+
+### Changed
+- Checkpoints update
+
 ## [2.2.1] - 2024-08-22
 
 ### Fixed
