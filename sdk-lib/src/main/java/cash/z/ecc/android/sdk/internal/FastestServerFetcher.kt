@@ -189,7 +189,7 @@ internal class FastestServerFetcher(
             return null
         }
 
-        if (remoteInfo.estimatedHeight >= remoteInfo.blockHeightUnsafe.value + N) {
+        if (remoteInfo.estimatedHeight >= remoteInfo.blockHeightUnsafe.value + SYNCED_THRESHOLD_BLOCKS) {
             logRuledOut("estimatedHeight does not match")
             return null
         }
@@ -240,3 +240,5 @@ private val LATENCY_THRESHOLD = 300.milliseconds
  * Threshold for getBlockRange RPC call latency of latest [N] blocks.
  */
 private val FETCH_THRESHOLD = 60.seconds
+
+private const val SYNCED_THRESHOLD_BLOCKS = 288
