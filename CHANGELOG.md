@@ -6,6 +6,9 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Fastest Server calculation changed for estimated height
+
 ## [2.2.2] - 2024-09-03
 
 ### Fixed
