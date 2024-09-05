@@ -24,6 +24,8 @@ internal class AllTransactionView(
 
         private const val QUERY_LIMIT = "1" // $NON-NLS
 
+        private const val SENT_TRANSACTION_RECOGNITION_VALUE = "0" // $NON-NLS
+
         private val COLUMNS =
             arrayOf(
                 // $NON-NLS
@@ -67,10 +69,11 @@ internal class AllTransactionView(
             String.format(
                 Locale.ROOT,
                 // $NON-NLS
-                "%s IS NULL AND %s > ? AND %s < 0",
+                "%s IS NULL AND %s > ? AND %s < %s",
                 AllTransactionViewDefinition.COLUMN_INTEGER_MINED_HEIGHT,
                 AllTransactionViewDefinition.COLUMN_INTEGER_EXPIRY_HEIGHT,
-                AllTransactionViewDefinition.COLUMN_LONG_ACCOUNT_BALANCE_DELTA
+                AllTransactionViewDefinition.COLUMN_LONG_ACCOUNT_BALANCE_DELTA,
+                SENT_TRANSACTION_RECOGNITION_VALUE
             )
 
         private val SELECTION_RAW_IS_NULL =
