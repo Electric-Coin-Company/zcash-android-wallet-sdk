@@ -3,7 +3,6 @@ package cash.z.ecc.android.sdk.model
 import androidx.test.filters.SmallTest
 import cash.z.ecc.android.sdk.fixture.CurrencyConversionFixture
 import cash.z.ecc.android.sdk.fixture.LocaleFixture
-import cash.z.ecc.android.sdk.fixture.MonetarySeparatorsFixture
 import cash.z.ecc.android.sdk.fixture.ZatoshiFixture
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
@@ -28,7 +27,6 @@ class FiatCurrencyConversionRateStateTest {
             zatoshi.toFiatCurrencyState(
                 currencyConversion,
                 LocaleFixture.new(),
-                MonetarySeparatorsFixture.new(),
                 frozenClock
             )
 
@@ -53,7 +51,6 @@ class FiatCurrencyConversionRateStateTest {
             zatoshi.toFiatCurrencyState(
                 currencyConversion,
                 LocaleFixture.new(),
-                MonetarySeparatorsFixture.new(),
                 frozenClock
             )
 
@@ -76,7 +73,6 @@ class FiatCurrencyConversionRateStateTest {
             zatoshi.toFiatCurrencyState(
                 currencyConversion,
                 LocaleFixture.new(),
-                MonetarySeparatorsFixture.new(),
                 frozenClock
             )
 
@@ -102,7 +98,6 @@ class FiatCurrencyConversionRateStateTest {
             zatoshi.toFiatCurrencyState(
                 currencyConversion,
                 LocaleFixture.new(),
-                MonetarySeparatorsFixture.new(),
                 frozenClock
             )
 
@@ -128,7 +123,6 @@ class FiatCurrencyConversionRateStateTest {
             zatoshi.toFiatCurrencyState(
                 currencyConversion,
                 LocaleFixture.new(),
-                MonetarySeparatorsFixture.new(),
                 frozenClock
             )
 
@@ -144,7 +138,6 @@ class FiatCurrencyConversionRateStateTest {
             zatoshi.toFiatCurrencyState(
                 null,
                 LocaleFixture.new(),
-                MonetarySeparatorsFixture.new()
             )
 
         assertIs<FiatCurrencyConversionRateState.Unavailable>(result)
