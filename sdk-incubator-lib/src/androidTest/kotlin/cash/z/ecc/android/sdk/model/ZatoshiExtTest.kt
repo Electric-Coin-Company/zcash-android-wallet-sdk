@@ -12,6 +12,7 @@ import kotlin.test.assertTrue
 class ZatoshiExtTest {
     companion object {
         private val EN_US_SEPARATORS = MonetarySeparatorsFixture.new()
+        private val EN_US_LOCALE = LocaleFixture.new("EN", "US")
         private val CURRENCY_CONVERSION = CurrencyConversionFixture.new()
     }
 
@@ -19,7 +20,7 @@ class ZatoshiExtTest {
     @SmallTest
     fun zero_zatoshi_to_fiat_conversion_test() {
         val zatoshi = ZatoshiFixture.new(0L)
-        val fiatString = zatoshi.toFiatString(CURRENCY_CONVERSION, LocaleFixture.new(), EN_US_SEPARATORS)
+        val fiatString = zatoshi.toFiatString(CURRENCY_CONVERSION, EN_US_LOCALE)
 
         fiatString.also {
             assertNotNull(it)
@@ -33,7 +34,7 @@ class ZatoshiExtTest {
     @SmallTest
     fun regular_zatoshi_to_fiat_conversion_test() {
         val zatoshi = ZatoshiFixture.new(123_456_789L)
-        val fiatString = zatoshi.toFiatString(CURRENCY_CONVERSION, LocaleFixture.new(), EN_US_SEPARATORS)
+        val fiatString = zatoshi.toFiatString(CURRENCY_CONVERSION, EN_US_LOCALE)
 
         fiatString.also {
             assertNotNull(it)
@@ -54,15 +55,14 @@ class ZatoshiExtTest {
         val fiatString =
             roundedZatoshi.toFiatString(
                 roundedCurrencyConversion,
-                LocaleFixture.new(),
-                EN_US_SEPARATORS
+                EN_US_LOCALE
             )
 
         fiatString.also {
             assertNotNull(it)
             assertTrue(it.isNotEmpty())
             assertTrue(it.isValidNumber(EN_US_SEPARATORS))
-            assertTrue("$100${EN_US_SEPARATORS.decimal}00" == it)
+            assertTrue("100${EN_US_SEPARATORS.decimal}00" == it)
         }
     }
 }
