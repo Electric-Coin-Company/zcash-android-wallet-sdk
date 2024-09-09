@@ -4,6 +4,7 @@ import cash.z.ecc.android.sdk.internal.Backend
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.internal.model.JniScanRange
 import cash.z.ecc.android.sdk.internal.model.JniSubtreeRoot
+import cash.z.ecc.android.sdk.internal.model.JniTransactionDataRequest
 import cash.z.ecc.android.sdk.internal.model.JniUnifiedSpendingKey
 import cash.z.ecc.android.sdk.internal.model.JniWalletSummary
 import cash.z.ecc.android.sdk.internal.model.ProposalUnsafe
@@ -26,33 +27,33 @@ internal class FakeRustBackend(
         orchardStartIndex: Long,
         orchardRoots: List<JniSubtreeRoot>,
     ) {
-        TODO("Not yet implemented")
+        error("Intentionally not implemented yet.")
     }
 
     override suspend fun updateChainTip(height: Long) {
-        TODO("Not yet implemented")
+        error("Intentionally not implemented yet.")
     }
 
     override suspend fun getFullyScannedHeight(): Long? {
-        TODO("Not yet implemented")
+        error("Intentionally not implemented yet.")
     }
 
     override suspend fun getMaxScannedHeight(): Long? {
-        TODO("Not yet implemented")
+        error("Intentionally not implemented yet.")
     }
 
     override suspend fun getWalletSummary(): JniWalletSummary {
-        TODO("Not yet implemented")
+        error("Intentionally not implemented yet.")
     }
 
     override suspend fun suggestScanRanges(): List<JniScanRange> {
-        TODO("Not yet implemented")
+        error("Intentionally not implemented yet.")
     }
 
     override suspend fun getLatestCacheHeight(): Long = metadata.maxOf { it.height }
 
     override suspend fun getTotalTransparentBalance(address: String): Long {
-        TODO("Not yet implemented")
+        error("Intentionally not implemented yet.")
     }
 
     override suspend fun putUtxo(
@@ -63,7 +64,14 @@ internal class FakeRustBackend(
         value: Long,
         height: Long
     ) {
-        TODO("Not yet implemented")
+        error("Intentionally not implemented yet.")
+    }
+
+    override suspend fun setTransactionStatus(
+        txId: ByteArray,
+        status: Long
+    ) {
+        error("Intentionally not implemented yet.")
     }
 
     override suspend fun findBlockMetadata(height: Long): JniBlockMeta? {
@@ -74,10 +82,9 @@ internal class FakeRustBackend(
         metadata.removeAll { it.height > height }
     }
 
-    override suspend fun initBlockMetaDb(): Int =
-        error(
-            "Intentionally not implemented in mocked FakeRustBackend implementation."
-        )
+    override suspend fun initBlockMetaDb(): Int {
+        error("Intentionally not implemented yet.")
+    }
 
     override suspend fun proposeTransfer(
         account: Int,
@@ -85,7 +92,7 @@ internal class FakeRustBackend(
         value: Long,
         memo: ByteArray?
     ): ProposalUnsafe {
-        TODO("Not yet implemented")
+        error("Intentionally not implemented yet.")
     }
 
     override suspend fun proposeShielding(
@@ -94,27 +101,34 @@ internal class FakeRustBackend(
         memo: ByteArray?,
         transparentReceiver: String?
     ): ProposalUnsafe? {
-        TODO("Not yet implemented")
+        error("Intentionally not implemented yet.")
     }
 
     override suspend fun createProposedTransactions(
         proposal: ProposalUnsafe,
         unifiedSpendingKey: ByteArray
     ): List<ByteArray> {
-        TODO("Not yet implemented")
+        error("Intentionally not implemented yet.")
     }
 
-    override suspend fun decryptAndStoreTransaction(tx: ByteArray) =
-        error("Intentionally not implemented in mocked FakeRustBackend implementation.")
+    override suspend fun decryptAndStoreTransaction(
+        tx: ByteArray,
+        minedHeight: Long?
+    ) {
+        error("Intentionally not implemented yet.")
+    }
 
-    override suspend fun initDataDb(seed: ByteArray?): Int =
-        error("Intentionally not implemented in mocked FakeRustBackend implementation.")
+    override suspend fun initDataDb(seed: ByteArray?): Int {
+        error("Intentionally not implemented yet.")
+    }
 
     override suspend fun createAccount(
         seed: ByteArray,
         treeState: ByteArray,
         recoverUntil: Long?
-    ): JniUnifiedSpendingKey = error("Intentionally not implemented in mocked FakeRustBackend implementation.")
+    ): JniUnifiedSpendingKey {
+        error("Intentionally not implemented yet.")
+    }
 
     override suspend fun isSeedRelevantToAnyDerivedAccounts(seed: ByteArray): Boolean =
         error("Intentionally not implemented in mocked FakeRustBackend implementation.")
@@ -133,33 +147,35 @@ internal class FakeRustBackend(
     }
 
     override suspend fun getCurrentAddress(account: Int): String {
-        TODO("Not yet implemented")
+        error("Intentionally not implemented yet.")
     }
 
-    override fun getTransparentReceiver(ua: String): String? =
-        error("Intentionally not implemented in mocked FakeRustBackend implementation.")
+    override fun getTransparentReceiver(ua: String): String? {
+        error("Intentionally not implemented yet.")
+    }
 
-    override fun getSaplingReceiver(ua: String): String? =
-        error(
-            "Intentionally not implemented in mocked FakeRustBackend implementation."
-        )
+    override fun getSaplingReceiver(ua: String): String? {
+        error("Intentionally not implemented yet.")
+    }
 
     override suspend fun listTransparentReceivers(account: Int): List<String> {
-        TODO("Not yet implemented")
+        error("Intentionally not implemented yet.")
     }
 
     override fun getBranchIdForHeight(height: Long): Long {
-        TODO("Not yet implemented")
+        error("Intentionally not implemented yet.")
     }
 
     override suspend fun getMemoAsUtf8(
         txId: ByteArray,
         protocol: Int,
         outputIndex: Int
-    ): String? = error("Intentionally not implemented in mocked FakeRustBackend implementation.")
+    ): String? {
+        error("Intentionally not implemented yet.")
+    }
 
     override suspend fun getNearestRewindHeight(height: Long): Long {
-        TODO("Not yet implemented")
+        error("Intentionally not implemented yet.")
     }
 
     override suspend fun scanBlocks(
@@ -167,4 +183,8 @@ internal class FakeRustBackend(
         fromState: ByteArray,
         limit: Long
     ) = error("Intentionally not implemented in mocked FakeRustBackend implementation.")
+
+    override suspend fun transactionDataRequests(): List<JniTransactionDataRequest> {
+        error("Intentionally not implemented yet.")
+    }
 }

@@ -7,8 +7,54 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- Several functions have been updated to accept `cash.z.ecc.android.sdk.model.Locale` instead of
+  `cash.z.ecc.android.sdk.model.MonetarySeparators` as an argument. MonetarySeparators are derived from Locale now.
+- `FiatCurrencyConversion.toZatoshi`
+- `Zatoshi.toFiatCurrencyState`
+- `Zatoshi.toFiatString`
+- `BigDecimal.convertFiatDecimalToFiatString`
+- `Zatoshi.Companion.fromZecString`
+
+### Added
+- `Double?.convertUsdToZec` has been added as we are moving away from `BigDecimal` in favor of primitive types
+- `Locale.getDefault()` has been added
+
+## [2.2.2] - 2024-09-03
+
+### Fixed
+- Migrated to `zcash_client_sqlite 0.11.2` to remove use of a database feature
+  that prevented use of Zashi on older devices.
+
+### Changed
+- Checkpoints update
+
+## [2.2.1] - 2024-08-22
+
+### Fixed
+- A database migration misconfiguration that could result in problems with wallet
+  initialization was fixed.
+
+## [2.2.0] - 2024-08-22
+
+This release adds several important new features:
+- Currency exchange rates (currently just USD/ZEC) are now made available via the SDK.
+  The exchange rate computed as the median of values provided by at least three separate
+  cryptocurrency exchanges, and is fetched over Tor connections in order to avoid leaking
+  the wallet's IP address to the exchanges.
+- Sending to ZIP 320 (TEX) addresses is now supported. When sending to a ZIP 320 address,
+  the wallet will first automatically de-shield the required funds to a fresh ephemeral 
+  transparent address, and then will make a second fully-transparent transaction sending
+  the funds to the eventual recipient that is not linkable via on-chain information to any 
+  other transaction in the  user's wallet.
+- As part of adding ZIP 320 support, the SDK now also provides full support for recovering
+  transparent transaction history. Prior to this release, only transactions belonging to the
+  wallet that contained either some shielded component OR a member of the current
+  transparent UTXO set were included in transaction history.
+
+### Changed
 - Migrated to Rust 1.80.0.
 - `Synchronizer.proposeTransfer` now supports TEX addresses (ZIP 320).
+- Internal transactions-enhancing logic has changed to support the history of transactions made to TEX addresses 
 
 ### Added
 - `Synchronizer.isValidTexAddr` which checks whether the given address is a valid ZIP 320 TEX address
@@ -18,6 +64,10 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `ZatoshiExt.toFiatString` is now a public function
 - `Synchronizer.getFastestServers([LightWalletEndpoint])` is a flow that measures connections to given endpoints and
   returns the three fastest ones
+- `Synchronizer.getTAddressTransactions` returns all the transactions for a given t-address over the given range
+
+### Changed
+- Checkpoints update
 
 ## [2.1.3] - 2024-08-08
 

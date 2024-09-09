@@ -4,6 +4,7 @@ import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.internal.model.JniScanRange
 import cash.z.ecc.android.sdk.internal.model.JniScanSummary
 import cash.z.ecc.android.sdk.internal.model.JniSubtreeRoot
+import cash.z.ecc.android.sdk.internal.model.JniTransactionDataRequest
 import cash.z.ecc.android.sdk.internal.model.JniUnifiedSpendingKey
 import cash.z.ecc.android.sdk.internal.model.JniWalletSummary
 import cash.z.ecc.android.sdk.internal.model.ProposalUnsafe
@@ -39,7 +40,14 @@ interface Backend {
         unifiedSpendingKey: ByteArray
     ): List<ByteArray>
 
-    suspend fun decryptAndStoreTransaction(tx: ByteArray)
+    /**
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    @Throws(RuntimeException::class)
+    suspend fun decryptAndStoreTransaction(
+        tx: ByteArray,
+        minedHeight: Long?
+    )
 
     /**
      * Sets up the internal structure of the data database.
@@ -180,6 +188,12 @@ interface Backend {
      * @throws RuntimeException as a common indicator of the operation failure
      */
     @Throws(RuntimeException::class)
+    suspend fun transactionDataRequests(): List<JniTransactionDataRequest>
+
+    /**
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    @Throws(RuntimeException::class)
     suspend fun writeBlockMetadata(blockMetadata: List<JniBlockMeta>)
 
     /**
@@ -205,5 +219,14 @@ interface Backend {
         script: ByteArray,
         value: Long,
         height: Long
+    )
+
+    /**
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    @Throws(RuntimeException::class)
+    suspend fun setTransactionStatus(
+        txId: ByteArray,
+        status: Long,
     )
 }

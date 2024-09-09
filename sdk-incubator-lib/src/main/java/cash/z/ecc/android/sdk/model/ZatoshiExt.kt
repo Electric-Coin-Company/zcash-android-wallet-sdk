@@ -2,27 +2,26 @@
 
 package cash.z.ecc.android.sdk.model
 
+import android.icu.text.DecimalFormat
+import android.icu.text.NumberFormat
+import android.icu.util.Currency
 import cash.z.ecc.android.sdk.ext.Conversions
 import kotlinx.datetime.Clock
 import java.math.BigDecimal
 import java.math.MathContext
 import java.math.RoundingMode
-import java.text.DecimalFormat
-import java.text.NumberFormat
-import java.util.Currency
 import kotlin.time.Duration
 
 fun Zatoshi.toFiatCurrencyState(
     currencyConversion: FiatCurrencyConversion?,
     locale: Locale,
-    monetarySeparators: MonetarySeparators,
     clock: Clock = Clock.System
 ): FiatCurrencyConversionRateState {
     if (currencyConversion == null) {
         return FiatCurrencyConversionRateState.Unavailable
     }
 
-    val fiatCurrencyConversionRate = toFiatString(currencyConversion, locale, monetarySeparators)
+    val fiatCurrencyConversionRate = toFiatString(currencyConversion, locale)
 
     val currentSystemTime = clock.now()
 
@@ -44,15 +43,11 @@ fun Zatoshi.toFiatCurrencyState(
 fun Zatoshi.toFiatString(
     currencyConversion: FiatCurrencyConversion,
     locale: Locale,
-    monetarySeparators: MonetarySeparators,
-    includeSymbols: Boolean = true,
 ) = convertZatoshiToZecDecimal()
     .convertZecDecimalToFiatDecimal(BigDecimal(currencyConversion.priceOfZec))
     .convertFiatDecimalToFiatString(
         Currency.getInstance(currencyConversion.fiatCurrency.code),
-        locale.toJavaLocale(),
-        monetarySeparators,
-        includeSymbols
+        locale,
     )
 
 private fun Zatoshi.convertZatoshiToZecDecimal(): BigDecimal {
@@ -66,34 +61,15 @@ private fun BigDecimal.convertZecDecimalToFiatDecimal(zecPrice: BigDecimal): Big
     return multiply(zecPrice, MathContext.DECIMAL128)
 }
 
-@Suppress("NestedBlockDepth")
 fun BigDecimal.convertFiatDecimalToFiatString(
     fiatCurrency: Currency,
-    locale: java.util.Locale,
-    monetarySeparators: MonetarySeparators,
-    includeSymbols: Boolean = true
+    locale: Locale = Locale.getDefault(),
 ): String {
-    val numberFormat =
-        if (includeSymbols) {
-            NumberFormat.getCurrencyInstance(locale)
-        } else {
-            NumberFormat.getInstance(locale)
-        }
-
-    return numberFormat.apply {
-        if (includeSymbols) {
-            currency = fiatCurrency
-        }
-
-        roundingMode = RoundingMode.HALF_EVEN
-        if (this is DecimalFormat) {
-            decimalFormatSymbols.apply {
-                decimalSeparator = monetarySeparators.decimal
-                monetaryDecimalSeparator = monetarySeparators.decimal
-                if (monetarySeparators.isGroupingValid()) {
-                    groupingSeparator = monetarySeparators.grouping
-                }
-            }
-        }
-    }.format(this)
+    return DecimalFormat.getInstance(locale.toJavaLocale(), NumberFormat.NUMBERSTYLE).apply {
+        this.currency = fiatCurrency
+        // TODO [#343]: https://github.com/zcash/secant-android-wallet/issues/343
+        roundingMode = android.icu.math.BigDecimal.ROUND_HALF_EVEN // aka Bankers rounding
+        this.minimumFractionDigits = FRACTION_DIGITS
+        this.maximumFractionDigits = FRACTION_DIGITS
+    }.format(this.toDouble()).replace(fiatCurrency.symbol, "").trim()
 }

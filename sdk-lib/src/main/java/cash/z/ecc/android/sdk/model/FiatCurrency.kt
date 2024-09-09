@@ -1,10 +1,12 @@
 package cash.z.ecc.android.sdk.model
 
 import android.icu.util.Currency
+import java.util.Locale
 
 data class FiatCurrency(val code: String) {
+    // The fixed [Locale.ENGLISH] is intended to avoid, e.g., US$ in other Locales
     val symbol: String
-        get() = Currency.getInstance(code).symbol
+        get() = Currency.getInstance(code).getSymbol(Locale.ENGLISH)
 
     init {
         check(isAlpha3Code(code))
