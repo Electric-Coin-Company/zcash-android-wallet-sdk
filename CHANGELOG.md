@@ -6,6 +6,8 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.3] - 2024-09-09
+
 ### Changed
 - Several functions have been updated to accept `cash.z.ecc.android.sdk.model.Locale` instead of
   `cash.z.ecc.android.sdk.model.MonetarySeparators` as an argument. MonetarySeparators are derived from Locale now.
