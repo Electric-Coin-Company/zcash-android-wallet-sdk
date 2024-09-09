@@ -24,7 +24,7 @@ object TransactionOverviewFixture {
     const val MEMO_COUNT: Int = 0
     const val BLOCK_TIME_EPOCH_SECONDS: Long = 1234
     val STATE = TransactionState.Confirmed
-    val IS_SHIELDING = false
+    const val IS_SHIELDING = false
 
     @Suppress("LongParameterList")
     fun new(

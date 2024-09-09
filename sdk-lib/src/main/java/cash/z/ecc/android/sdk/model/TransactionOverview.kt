@@ -55,11 +55,12 @@ data class TransactionOverview internal constructor(
                 sentNoteCount = dbTransactionOverview.sentNoteCount,
                 memoCount = dbTransactionOverview.memoCount,
                 blockTimeEpochSeconds = dbTransactionOverview.blockTimeEpochSeconds,
-                transactionState = TransactionState.new(
-                    latestBlockHeight,
-                    dbTransactionOverview.minedHeight,
-                    dbTransactionOverview.expiryHeight
-                ),
+                transactionState =
+                    TransactionState.new(
+                        latestBlockHeight,
+                        dbTransactionOverview.minedHeight,
+                        dbTransactionOverview.expiryHeight
+                    ),
                 isShielding = dbTransactionOverview.isShielding
             )
         }
