@@ -7,6 +7,8 @@ import cash.z.ecc.android.sdk.internal.model.JniSubtreeRoot
 import cash.z.ecc.android.sdk.internal.model.ScanRange
 import cash.z.ecc.android.sdk.internal.model.ScanSummary
 import cash.z.ecc.android.sdk.internal.model.SubtreeRoot
+import cash.z.ecc.android.sdk.internal.model.TransactionDataRequest
+import cash.z.ecc.android.sdk.internal.model.TransactionStatus
 import cash.z.ecc.android.sdk.internal.model.TreeState
 import cash.z.ecc.android.sdk.internal.model.WalletSummary
 import cash.z.ecc.android.sdk.internal.model.ZcashProtocol
@@ -84,7 +86,7 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
         return runCatching {
             backend.getCurrentAddress(account.value)
         }.onFailure {
-            Twig.error(it) { "Failed to get current address" }
+            Twig.warn(it) { "Currently unable to get current address" }
         }.getOrElse { throw RustLayerException.GetCurrentAddressException(it) }
     }
 
@@ -208,7 +210,7 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
                 )
             }
         }.onFailure {
-            Twig.error(it) { "Failed to get fully scanned height" }
+            Twig.warn(it) { "Currently unable to get fully scanned height" }
         }.getOrElse { throw RustLayerException.GetFullyScannedHeight(it) }
     }
 
@@ -221,7 +223,7 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
                 )
             }
         }.onFailure {
-            Twig.error(it) { "Failed to get max scanned height" }
+            Twig.warn(it) { "Currently unable to get max scanned height" }
         }.getOrElse { throw RustLayerException.GetMaxScannedHeight(it) }
     }
 
@@ -230,6 +232,14 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
         fromState: TreeState,
         limit: Long
     ): ScanSummary = ScanSummary.new(backend.scanBlocks(fromHeight.value, fromState.encoded, limit), network)
+
+    override suspend fun transactionDataRequests(): List<TransactionDataRequest> =
+        backend.transactionDataRequests().map { jniRequest ->
+            TransactionDataRequest.new(
+                jniRequest,
+                network
+            )
+        }
 
     override suspend fun getWalletSummary(): WalletSummary? =
         backend.getWalletSummary()?.let { jniWalletSummary ->
@@ -244,7 +254,19 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
             )
         }
 
-    override suspend fun decryptAndStoreTransaction(tx: ByteArray) = backend.decryptAndStoreTransaction(tx)
+    override suspend fun decryptAndStoreTransaction(
+        tx: ByteArray,
+        minedHeight: BlockHeight?
+    ) = backend
+        .decryptAndStoreTransaction(tx, minedHeight?.value)
+
+    override suspend fun setTransactionStatus(
+        txId: ByteArray,
+        status: TransactionStatus
+    ) = backend.setTransactionStatus(
+        txId = txId,
+        status = status.toPrimitiveValue()
+    )
 
     override fun getSaplingReceiver(ua: String): String? = backend.getSaplingReceiver(ua)
 
@@ -262,4 +284,6 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
     override fun isValidTransparentAddr(addr: String): Boolean = backend.isValidTransparentAddr(addr)
 
     override fun isValidUnifiedAddr(addr: String): Boolean = backend.isValidUnifiedAddr(addr)
+
+    override fun isValidTexAddr(addr: String): Boolean = backend.isValidTexAddr(addr)
 }

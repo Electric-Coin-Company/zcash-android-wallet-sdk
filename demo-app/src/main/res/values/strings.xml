@@ -1,4 +1,8 @@
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+
+    <string name="pending">Pending</string>
+    <string name="unknown">Unknown</string>
+
     <string name="app_name">Demo App</string>
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
@@ -31,6 +35,7 @@
     <string name="unified_address">Unified address</string>
     <string name="sapling_address">Sapling address</string>
     <string name="transparent_address">Transparent address</string>
+    <string name="action_refresh_exchange_rate">Refresh Exchange Rate</string>
     <string name="action_shield">Shield Funds</string>
     <string name="send_status">Send status: <xliff:g id="status" example="Idle">%1$s</xliff:g></string>
 
@@ -55,9 +60,11 @@
     <string name="balance_sapling">Sapling</string>
     <string name="balance_orchard">Orchard</string>
     <string name="balance_available_amount_format">Available:
-        <xliff:g id="ZEC balance" example="0.3">%1$s</xliff:g></string>
+        <xliff:g id="ZEC balance" example="0.3">%1$s</xliff:g>
+        (<xliff:g id="USD balance" example="7.2">%2$s</xliff:g> USD)</string>
     <string name="balance_pending_amount_format">Pending:
-        <xliff:g id="ZEC balance" example="0.3">%1$s</xliff:g></string>
+        <xliff:g id="ZEC balance" example="0.3">%1$s</xliff:g>
+        (<xliff:g id="USD balance" example="7.2">%2$s</xliff:g> USD)</string>
     <string name="balances_refresh">Refresh balances</string>
 
     <string name="send_amount">Amount</string>
@@ -83,6 +90,14 @@
     <string name="server_textfield_error">Invalid server</string>
     <string name="server_custom">custom</string>
     <string name="server_save">Save</string>
+    <string name="server_fastest_servers">Fastest servers:</string>
 
     <string name="transactions_refresh">Refresh transactions</string>
+
+    <string name="transaction_time">Time:</string>
+    <string name="transaction_value">Value:</string>
+    <string name="transaction_fee">Fee:</string>
+    <string name="transaction_fee_unavailable">Unavailable</string>
+    <string name="transaction_status">Status:</string>
+
 </resources>

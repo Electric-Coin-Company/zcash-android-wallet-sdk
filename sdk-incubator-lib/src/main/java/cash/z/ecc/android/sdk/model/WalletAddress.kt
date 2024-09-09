@@ -31,6 +31,16 @@ sealed class WalletAddress(val address: String) {
         }
     }
 
+    class Tex private constructor(address: String) : WalletAddress(address) {
+        companion object {
+            suspend fun new(address: String): Tex {
+                // TODO [#342]: https://github.com/zcash/zcash-android-wallet-sdk/issues/342
+                // TODO [#342]: refactor SDK to enable direct calls for address verification
+                return Tex(address)
+            }
+        }
+    }
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false

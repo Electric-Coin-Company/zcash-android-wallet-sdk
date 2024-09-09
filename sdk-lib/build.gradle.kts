@@ -88,11 +88,12 @@ tasks.dokkaHtml.configure {
 }
 
 dependencies {
+    api(libs.kotlinx.datetime)
     api(projects.lightwalletClientLib)
     implementation(projects.backendLib)
 
     implementation(libs.androidx.annotation)
-    implementation(libs.androidx.appcompat)
+    implementation(libs.androidx.core)
 
     // Architecture Components: Lifecycle
     implementation(libs.androidx.lifecycle.runtime)

@@ -42,19 +42,17 @@ internal class AllTransactionView(
                 AllTransactionViewDefinition.COLUMN_INTEGER_TRANSACTION_INDEX
             )
 
+        // SQLite versions prior to 3.30.0 don't inherently support the NULLS LAST clause for ordering, and we support
+        // these SQLite versions by supporting older Android API level starting from 27. This means NULL values are
+        // typically sorted before non-null values in ascending order. As pointed out in #1536 we need to sort them
+        // at the end. Thus, we need to use condition in the query below. We should avoid decision logic based on
+        // Android API level as the SQLite version is rather device-specific. The specific SQLite version can vary
+        // across different device manufacturers and Android versions, making it unreliable to rely on a fixed value.
         private val ORDER_BY_MINED_HEIGHT =
             String.format(
                 Locale.ROOT,
                 // $NON-NLS
-                "%s ASC",
-                AllTransactionViewDefinition.COLUMN_INTEGER_MINED_HEIGHT
-            )
-
-        private val SELECTION_BLOCK_RANGE =
-            String.format(
-                Locale.ROOT,
-                // $NON-NLS
-                "%s >= ? AND %s <= ?",
+                "CASE WHEN %s IS NULL THEN 1 ELSE 0 END ASC, %s ASC",
                 AllTransactionViewDefinition.COLUMN_INTEGER_MINED_HEIGHT,
                 AllTransactionViewDefinition.COLUMN_INTEGER_MINED_HEIGHT
             )
@@ -138,16 +136,6 @@ internal class AllTransactionView(
             table = AllTransactionViewDefinition.VIEW_NAME,
             columns = COLUMNS,
             orderBy = ORDER_BY,
-            cursorParser = cursorParser
-        )
-
-    fun getTransactionRange(blockHeightRange: ClosedRange<BlockHeight>) =
-        sqliteDatabase.queryAndMap(
-            table = AllTransactionViewDefinition.VIEW_NAME,
-            columns = COLUMNS,
-            orderBy = ORDER_BY,
-            selection = SELECTION_BLOCK_RANGE,
-            selectionArgs = arrayOf(blockHeightRange.start.value, blockHeightRange.endInclusive.value),
             cursorParser = cursorParser
         )
 

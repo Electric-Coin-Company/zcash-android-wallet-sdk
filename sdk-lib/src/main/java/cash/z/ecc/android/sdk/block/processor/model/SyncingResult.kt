@@ -13,9 +13,9 @@ import cash.z.ecc.android.sdk.model.BlockHeight
 internal sealed class SyncingResult {
     override fun toString(): String = this::class.java.simpleName
 
-    object AllSuccess : SyncingResult()
+    data object AllSuccess : SyncingResult()
 
-    object RestartSynchronization : SyncingResult()
+    data object RestartSynchronization : SyncingResult()
 
     data class DownloadSuccess(
         val fromState: TreeState,
@@ -49,21 +49,23 @@ internal sealed class SyncingResult {
         override val exception: CompactBlockProcessorException
     ) : Failure, SyncingResult()
 
-    object DeleteSuccess : SyncingResult()
+    data object DeleteSuccess : SyncingResult()
 
     data class DeleteFailed(
         override val failedAtHeight: BlockHeight?,
         override val exception: CompactBlockProcessorException
     ) : Failure, SyncingResult()
 
-    object EnhanceSuccess : SyncingResult()
+    data object EnhanceSuccess : SyncingResult()
+
+    data object FetchUtxos : SyncingResult()
 
     data class EnhanceFailed(
-        override val failedAtHeight: BlockHeight,
+        override val failedAtHeight: BlockHeight? = null,
         override val exception: CompactBlockProcessorException
     ) : Failure, SyncingResult()
 
-    object UpdateBirthday : SyncingResult()
+    data object UpdateBirthday : SyncingResult()
 
     data class ContinuityError(
         override val failedAtHeight: BlockHeight,

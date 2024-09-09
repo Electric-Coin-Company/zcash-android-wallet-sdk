@@ -125,10 +125,15 @@ internal class FileCompactBlockRepository(
          */
         const val BLOCK_FILENAME_SUFFIX = "-compactblock"
 
+        // TODO [#1555]: Keep BLOCKS_METADATA_BUFFER_SIZE the same as current SYNC_BATCH_SIZE
+        // TODO [#1555]: https://github.com/Electric-Coin-Company/zcash-android-wallet-sdk/issues/1555
+
         /**
          * The size of block meta data buffer
+         *
+         * Note: we should keep this size as close as possible to [CompactBlockProcessor.SYNC_BATCH_SIZE]
          */
-        const val BLOCKS_METADATA_BUFFER_SIZE = 10
+        const val BLOCKS_METADATA_BUFFER_SIZE = 1000
 
         /**
          * @param blockCacheRoot The root directory for the compact block cache (contains the database and a

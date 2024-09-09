@@ -8,6 +8,7 @@ import cash.z.ecc.android.sdk.fixture.WalletBalanceFixture
 import cash.z.ecc.android.sdk.model.PercentDecimal
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
+import java.math.BigDecimal
 
 @Suppress("MagicNumber")
 object WalletSnapshotFixture {
@@ -16,6 +17,7 @@ object WalletSnapshotFixture {
     val TRANSPARENT_BALANCE: Zatoshi = Zatoshi(8)
     val ORCHARD_BALANCE: WalletBalance = WalletBalanceFixture.new(Zatoshi(5), Zatoshi(2), Zatoshi(1))
     val SAPLING_BALANCE: WalletBalance = WalletBalanceFixture.new(Zatoshi(4), Zatoshi(4), Zatoshi(2))
+    val EXCHANGE_RATE_USD: BigDecimal = BigDecimal(37.4850)
 
     // Should fill in with non-empty values for better example values in tests and UI previews
     @Suppress("LongParameterList")
@@ -30,6 +32,7 @@ object WalletSnapshotFixture {
         orchardBalance: WalletBalance = ORCHARD_BALANCE,
         saplingBalance: WalletBalance = SAPLING_BALANCE,
         transparentBalance: Zatoshi = TRANSPARENT_BALANCE,
+        exchangeRateUsd: BigDecimal? = EXCHANGE_RATE_USD,
         progress: PercentDecimal = PROGRESS,
         synchronizerError: SynchronizerError? = null
     ) = WalletSnapshot(
@@ -38,6 +41,7 @@ object WalletSnapshotFixture {
         orchardBalance,
         saplingBalance,
         transparentBalance,
+        exchangeRateUsd,
         progress,
         synchronizerError
     )

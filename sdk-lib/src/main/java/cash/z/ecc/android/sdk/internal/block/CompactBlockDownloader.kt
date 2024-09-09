@@ -121,7 +121,6 @@ open class CompactBlockDownloader private constructor(val compactBlockRepository
                     }
                 }
             }
-
             null
         }
 
@@ -152,6 +151,42 @@ open class CompactBlockDownloader private constructor(val compactBlockRepository
     suspend fun fetchTransaction(txId: ByteArray) = lightWalletClient.fetchTransaction(txId)
 
     /**
+     * Get transactions belonging to the given transparent address
+     *
+     * @throws LightWalletException.GetTAddressTransactionsException if any error while getting the transactions occurs
+     * @return List of all the transaction belonging to the given transparent address on the given block range
+     */
+    fun getTAddressTransactions(
+        transparentAddress: String,
+        blockHeightRange: ClosedRange<BlockHeight>
+    ) = lightWalletClient.getTAddressTransactions(
+        tAddress = transparentAddress,
+        blockHeightRange =
+            BlockHeightUnsafe.from(blockHeightRange.start)..BlockHeightUnsafe.from(blockHeightRange.endInclusive)
+    ).map { response ->
+        when (response) {
+            is Response.Success -> {
+                Twig.verbose { "Get a new rawTransactionUnsafe successfully" }
+                response.result
+            }
+            is Response.Failure -> {
+                Twig.error(response.toThrowable()) { "Getting a new rawTransactionUnsafe failed" }
+                throw LightWalletException.GetTAddressTransactionsException(
+                    response.code,
+                    response.description,
+                    response.toThrowable()
+                )
+            }
+        }
+    }.onCompletion { error ->
+        if (error != null) {
+            Twig.error(error) { "Getting list of rawTransactionUnsafe failed" }
+        } else {
+            Twig.debug { "All rawTransactionUnsafe got successfully" }
+        }
+    }
+
+    /**
      * Fetch all UTXOs for the given addresses and from the given height.
      *
      * @return Flow of UTXOs for the given [tAddresses] from the [startHeight]
@@ -169,7 +204,7 @@ open class CompactBlockDownloader private constructor(val compactBlockRepository
      *
      * @return a flow of information about roots of subtrees of the Sapling and Orchard note commitment trees.
      */
-    suspend fun getSubtreeRoots(
+    fun getSubtreeRoots(
         startIndex: UInt,
         shieldedProtocol: ShieldedProtocolEnum,
         maxEntries: UInt

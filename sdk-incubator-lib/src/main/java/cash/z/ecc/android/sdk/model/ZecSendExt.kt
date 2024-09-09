@@ -9,12 +9,11 @@ object ZecSendExt {
         destinationString: String,
         zecString: String,
         memoString: String,
-        monetarySeparators: MonetarySeparators
     ): ZecSendValidation {
         // This runBlocking shouldn't have a performance impact, since everything needs to be loaded at this point.
         // However it would be better to eliminate it entirely.
         val destination = runBlocking { WalletAddress.Unified.new(destinationString) }
-        val amount = Zatoshi.fromZecString(context, zecString, monetarySeparators)
+        val amount = Zatoshi.fromZecString(context, zecString)
         val memo = Memo(memoString)
 
         val validationErrors =

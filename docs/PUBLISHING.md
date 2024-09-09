@@ -84,10 +84,22 @@ would need to be configured in a repository fork.
         1. `./gradlew publishReleasePublicationToMavenCentralRepository -PIS_SNAPSHOT=false`
         2. Log into the Sonatype portal to complete the process of closing and releasing the repository.
 
-Note:
-Our existing release artifacts can be found here and here:
-https://search.maven.org/artifact/cash.z.ecc.android/zcash-android-sdk
-https://repo1.maven.org/maven2/cash/z/ecc/android/
+### Artifacts availability 
+- Our existing release artifacts can be found here and here:
+   - https://search.maven.org/artifact/cash.z.ecc.android/zcash-android-sdk
+   - https://repo1.maven.org/maven2/cash/z/ecc/android/
 
-And our snapshot artifacts here:
-https://oss.sonatype.org/content/repositories/snapshots/cash/z/ecc/android/
+- And our snapshot artifacts here:
+   - https://oss.sonatype.org/content/repositories/snapshots/cash/z/ecc/android/
+
+### Obtain new user token
+1. Log in to Sonatype Nexus Repository Manager:
+   - Go to https://oss.sonatype.org/ and log in with your Sonatype credentials
+1. Access User Token Page:
+   - Click on your username in the top right corner
+   - Select **Profile** from the dropdown menu
+   - In the Profile tab, select **User Token** from the dropdown menu
+1. Generate a New Token:
+   - Click the **Access User Token** button
+   - Re-enter your credentials for authentication
+   - A new token will be generated

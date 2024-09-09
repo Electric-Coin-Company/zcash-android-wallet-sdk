@@ -34,7 +34,7 @@ jobs:
       # https://github.com/gradle/wrapper-validation-action/issues/40
       - name: Gradle Wrapper Validation
         timeout-minutes: 1
-        uses: gradle/wrapper-validation-action@88425854a36845f9c881450d9660b5fd46bee142
+        uses: gradle/wrapper-validation-action@f9c9c575b8b21b6485636a91ffecd10e558c62f6
 
   check_firebase_secrets:
     runs-on: ubuntu-latest
@@ -107,7 +107,7 @@ jobs:
           zip -r ${REPORTS_ZIP_PATH} . -i build/reports/detekt/\*
       - name: Upload Artifacts
         if: ${{ always() }}
-        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
+        uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874
         timeout-minutes: 1
         with:
           name: Detekt static analysis results
@@ -142,7 +142,7 @@ jobs:
           zip -r ${REPORTS_ZIP_PATH} . -i build/reports/ktlint/\*
       - name: Upload Artifacts
         if: ${{ always() }}
-        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
+        uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874
         timeout-minutes: 1
         with:
           name: Ktlint static analysis results
@@ -179,7 +179,7 @@ jobs:
           zip -r ${LINT_ZIP_PATH} . -i \*build/reports/\*
       - name: Upload Artifacts
         if: ${{ always() }}
-        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
+        uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874
         timeout-minutes: 1
         with:
           name: Android Lint static analysis results
@@ -214,7 +214,7 @@ jobs:
           zip -r ${TEST_RESULTS_ZIP_PATH} . -i \*/build/test-results/\* \*/build/reports/\*
       - name: Upload Artifacts
         if: ${{ always() }}
-        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
+        uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874
         timeout-minutes: 1
         with:
           name: Test Android modules with Unit Tests
@@ -242,7 +242,7 @@ jobs:
           ./gradlew assembleDebug assembleAndroidTest
       - name: Authenticate to Google Cloud for Firebase Test Lab
         id: auth_test_lab
-        uses: google-github-actions/auth@71fee32a0bb7e97b4d33d548e7d957010649d8fa
+        uses: google-github-actions/auth@62cf5bd3e4211a0a0b51f2c6d6a37129d828611d
         with:
           create_credentials_file: true
           project_id: ${{ vars.FIREBASE_TEST_LAB_PROJECT }}
@@ -271,7 +271,7 @@ jobs:
           zip -r ${TEST_RESULTS_ZIP_PATH} . -i build/fladle/\* \*/build/outputs/androidTest-results/\*
       - name: Upload Artifacts
         if: ${{ always() }}
-        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
+        uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874
         timeout-minutes: 1
         with:
           name: Test Android modules with FTL results
@@ -309,7 +309,7 @@ jobs:
           zip -r ${TEST_RESULTS_ZIP_PATH} . -i \*/build/test-results/\*
       - name: Upload Artifacts
         if: ${{ always() }}
-        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
+        uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874
         timeout-minutes: 1
         with:
           name: Test Android modules with WTF results
@@ -355,7 +355,7 @@ jobs:
           zip -r ${BINARIES_ZIP_PATH} . -i demo-app/build/outputs/apk/\*/release/\*.apk demo-app/build/outputs/bundle/\*/release/\*.aab
           zip -r ${MAPPINGS_ZIP_PATH} . -i demo-app/build/outputs/mapping/\*/mapping.txt
       - name: Upload Artifacts
-        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
+        uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874
         timeout-minutes: 1
         with:
           name: Demo app release binaries
@@ -380,7 +380,7 @@ jobs:
         uses: ./.github/actions/setup
       - name: Authenticate to Google Cloud for Firebase Test Lab
         id: auth_test_lab
-        uses: google-github-actions/auth@71fee32a0bb7e97b4d33d548e7d957010649d8fa
+        uses: google-github-actions/auth@62cf5bd3e4211a0a0b51f2c6d6a37129d828611d
         with:
           create_credentials_file: true
           project_id: ${{ vars.FIREBASE_TEST_LAB_PROJECT }}
@@ -388,7 +388,7 @@ jobs:
           workload_identity_provider: ${{ secrets.FIREBASE_TEST_LAB_WORKLOAD_IDENTITY_PROVIDER }}
           access_token_lifetime: '900s'
       - name: Download a single artifact
-        uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16
         with:
           name: Demo app release binaries
       - name: Robo test

@@ -8,12 +8,17 @@ import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor
 import cash.z.ecc.android.sdk.exception.InitializeException
 import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.internal.Derivation
+import cash.z.ecc.android.sdk.internal.FastestServerFetcher
+import cash.z.ecc.android.sdk.internal.Files
 import cash.z.ecc.android.sdk.internal.SaplingParamTool
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.db.DatabaseCoordinator
+import cash.z.ecc.android.sdk.internal.exchange.UsdExchangeRateFetcher
 import cash.z.ecc.android.sdk.internal.model.ext.toBlockHeight
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
+import cash.z.ecc.android.sdk.model.FastestServersResult
+import cash.z.ecc.android.sdk.model.ObserveFiatCurrencyResult
 import cash.z.ecc.android.sdk.model.PercentDecimal
 import cash.z.ecc.android.sdk.model.Proposal
 import cash.z.ecc.android.sdk.model.TransactionOverview
@@ -87,6 +92,13 @@ interface Synchronizer {
     val transparentBalance: StateFlow<Zatoshi?>
 
     /**
+     * The latest known USD/ZEC exchange rate, paired with the time it was queried.
+     *
+     * The rate can be initialized and refreshed by calling [refreshExchangeRateUsd].
+     */
+    val exchangeRateUsd: StateFlow<ObserveFiatCurrencyResult>
+
+    /**
      * A flow of all the transactions that are on the blockchain.
      */
     val transactions: Flow<List<TransactionOverview>>
@@ -109,6 +121,16 @@ interface Synchronizer {
     //
     // Operations
     //
+
+    /**
+     * Measure connection quality and speed of given [servers].
+     *
+     * @return a [Flow] of fastest servers which updates it's state during measurement stages
+     */
+    suspend fun getFastestServers(
+        context: Context,
+        servers: List<LightWalletEndpoint>
+    ): Flow<FastestServersResult>
 
     @Suppress("ktlint:standard:no-consecutive-comments")
     /**
@@ -168,6 +190,11 @@ interface Synchronizer {
      * @return a legacy transparent address for the given account.
      */
     suspend fun getTransparentAddress(account: Account): String
+
+    /**
+     * Refreshes [exchangeRateUsd].
+     */
+    suspend fun refreshExchangeRateUsd()
 
     /**
      * Creates a proposal for transferring funds to the given recipient.
@@ -266,6 +293,9 @@ interface Synchronizer {
         memo: String = ZcashSdk.DEFAULT_SHIELD_FUNDS_MEMO_PREFIX
     ): Long
 
+    // TODO [#1534]: Add RustLayerException.ValidateAddressException
+    // TODO [#1534]: https://github.com/Electric-Coin-Company/zcash-android-wallet-sdk/issues/1534
+
     /**
      * Returns true when the given address is a valid z-addr. Invalid addresses will throw an
      * exception. See valid z-addresses characteristics in related ZIP.
@@ -303,6 +333,21 @@ interface Synchronizer {
      * @throws RuntimeException when the address is invalid.
      */
     suspend fun isValidUnifiedAddr(address: String): Boolean
+
+    /**
+     * Returns true when the given address is a valid ZIP 320 TEX address.
+     *
+     * This method is intended for type checking (e.g. form validation). Invalid
+     * addresses will throw an exception. See valid t-addresses characteristics
+     * in the related ZIP.
+     *
+     * @param address the address to validate.
+     *
+     * @return true when the given address is a valid ZIP 320 TEX address.
+     *
+     * @throws RuntimeException when the address is invalid.
+     */
+    suspend fun isValidTexAddr(address: String): Boolean
 
     /**
      * Validate whether the server and this SDK share the same consensus branch. This is
@@ -652,7 +697,12 @@ interface Synchronizer {
                 repository = repository,
                 txManager = txManager,
                 processor = processor,
-                backend = backend
+                backend = backend,
+                fastestServerFetcher = FastestServerFetcher(backend = backend, network = processor.network),
+                fetchExchangeChangeUsd =
+                    UsdExchangeRateFetcher(
+                        torDir = Files.getTorDir(context)
+                    )
             )
         }
 
