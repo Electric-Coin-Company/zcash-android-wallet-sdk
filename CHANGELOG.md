@@ -18,6 +18,7 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - `Double?.convertUsdToZec` has been added as we are moving away from `BigDecimal` in favor of primitive types
 - `Locale.getDefault()` has been added
+- support for shielded transactions
 
 ## [2.2.2] - 2024-09-03
 
