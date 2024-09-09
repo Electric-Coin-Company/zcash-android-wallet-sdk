@@ -6,6 +6,19 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Several functions have been updated to accept `cash.z.ecc.android.sdk.model.Locale` instead of
+  `cash.z.ecc.android.sdk.model.MonetarySeparators` as an argument. MonetarySeparators are derived from Locale now.
+- `FiatCurrencyConversion.toZatoshi`
+- `Zatoshi.toFiatCurrencyState`
+- `Zatoshi.toFiatString`
+- `BigDecimal.convertFiatDecimalToFiatString`
+- `Zatoshi.Companion.fromZecString`
+
+### Added
+- `Double?.convertUsdToZec` has been added as we are moving away from `BigDecimal` in favor of primitive types
+- `Locale.getDefault()` has been added
+
 ### Fixed
 - Fastest Server calculation changed for estimated height
 
