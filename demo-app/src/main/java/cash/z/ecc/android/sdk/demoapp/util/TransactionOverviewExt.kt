@@ -5,7 +5,6 @@ import androidx.compose.ui.text.intl.Locale
 import cash.z.ecc.android.sdk.demoapp.R
 import cash.z.ecc.android.sdk.demoapp.ui.screen.transactions.view.TransactionState
 import cash.z.ecc.android.sdk.model.FiatCurrencyConversionRateState
-import cash.z.ecc.android.sdk.model.MonetarySeparators
 import cash.z.ecc.android.sdk.model.TransactionOverview
 import cash.z.ecc.android.sdk.model.toFiatCurrencyState
 import kotlinx.datetime.Instant
@@ -33,7 +32,6 @@ internal fun TransactionOverview.toTransactionState(
         feePaid?.toFiatCurrencyState(
             currencyConversion = null,
             locale = Locale.current.toKotlinLocale(),
-            monetarySeparators = MonetarySeparators.current(java.util.Locale.getDefault())
         )?.toFiatCurrencyRateValue(context).orEmpty(),
     status = transactionState.name,
     onClick = onClick

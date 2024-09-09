@@ -308,6 +308,26 @@ fun BigDecimal?.convertUsdToZec(zecPrice: BigDecimal): BigDecimal {
 }
 
 /**
+ * Convert this USD value to ZEC, using the given price per ZEC.
+ * Start with USD -> End with ZEC.
+ *
+ * @param zecPrice the current price of ZEC represented as USD per ZEC.
+ *
+ * @return this Double USD value converted into ZEC, with proper rounding and precision.
+ */
+fun Double?.convertUsdToZec(zecPrice: Double): Double {
+    if (this == null) return .0
+    if (this < .0) {
+        throw IllegalArgumentException(
+            "Invalid USD value: $zecPrice. Converting" +
+                " this would result in negative ZEC and ZEC is represented by notes and cannot be" +
+                " negative"
+        )
+    }
+    return this.div(zecPrice)
+}
+
+/**
  * Convert this value from one currency to the other, based on given price and whether this value is
  * USD.
  * If starting with USD -> End with ZEC.

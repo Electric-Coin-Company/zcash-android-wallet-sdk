@@ -6,9 +6,20 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Several functions have been updated to accept `cash.z.ecc.android.sdk.model.Locale` instead of
+  `cash.z.ecc.android.sdk.model.MonetarySeparators` as an argument. MonetarySeparators are derived from Locale now.
+- `FiatCurrencyConversion.toZatoshi`
+- `Zatoshi.toFiatCurrencyState`
+- `Zatoshi.toFiatString`
+- `BigDecimal.convertFiatDecimalToFiatString`
+- `Zatoshi.Companion.fromZecString`
+
 ### Added
-- Transaction resubmission feature has been added to the CompactBlockProcessor's regular actions. This new action 
-  periodically checks unmined sent transactions that are still within their expiry window and resubmits them if 
+- `Double?.convertUsdToZec` has been added as we are moving away from `BigDecimal` in favor of primitive types
+- `Locale.getDefault()` has been added
+- Transaction resubmission feature has been added to the CompactBlockProcessor's regular actions. This new action
+  periodically checks unmined sent transactions that are still within their expiry window and resubmits them if
   there are any.
 
 ## [2.2.2] - 2024-09-03
