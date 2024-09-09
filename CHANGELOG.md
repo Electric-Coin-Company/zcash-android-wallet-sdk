@@ -22,6 +22,9 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   periodically checks unmined sent transactions that are still within their expiry window and resubmits them if
   there are any.
 
+### Fixed
+- Fastest Server calculation changed for estimated height
+
 ## [2.2.2] - 2024-09-03
 
 ### Fixed
