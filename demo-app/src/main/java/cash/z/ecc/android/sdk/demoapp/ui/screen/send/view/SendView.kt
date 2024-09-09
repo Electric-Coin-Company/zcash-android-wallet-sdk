@@ -249,7 +249,6 @@ private fun SendMainContent(
                         recipientAddressString,
                         amountZecString,
                         memoString,
-                        monetarySeparators
                     )
 
                 when (zecSendValidation) {
@@ -277,7 +276,6 @@ private fun SendMainContent(
                         recipientAddressString,
                         amountZecString,
                         memoString,
-                        monetarySeparators
                     )
 
                 when (zecSendValidation) {

@@ -6,8 +6,21 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Several functions have been updated to accept `cash.z.ecc.android.sdk.model.Locale` instead of
+  `cash.z.ecc.android.sdk.model.MonetarySeparators` as an argument. MonetarySeparators are derived from Locale now.
+- `FiatCurrencyConversion.toZatoshi`
+- `Zatoshi.toFiatCurrencyState`
+- `Zatoshi.toFiatString`
+- `BigDecimal.convertFiatDecimalToFiatString`
+- `Zatoshi.Companion.fromZecString`
+
+### Added
+- `Double?.convertUsdToZec` has been added as we are moving away from `BigDecimal` in favor of primitive types
+- `Locale.getDefault()` has been added
+
 ### Fixed
-- Android 15 support added for 16kb memory page size
+- Android 15 (SDK level 35) support added for 16kb memory page size
 
 ## [2.2.2] - 2024-09-03
 

@@ -1,7 +1,9 @@
 package cash.z.ecc.android.sdk.model
 
 data class Locale(val language: String, val region: String?, val variant: String?) {
-    companion object
+    companion object {
+        fun getDefault() = java.util.Locale.getDefault().toKotlinLocale()
+    }
 }
 
 fun Locale.toJavaLocale(): java.util.Locale {
