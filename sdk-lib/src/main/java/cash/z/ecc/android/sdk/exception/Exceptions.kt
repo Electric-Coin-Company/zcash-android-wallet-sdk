@@ -271,30 +271,38 @@ sealed class InitializeException(message: String, cause: Throwable? = null) : Sd
  * Exceptions thrown while interacting with lightwalletd.
  */
 sealed class LightWalletException(message: String, cause: Throwable? = null) : SdkException(message, cause) {
-    class DownloadBlockException(code: Int, description: String?, cause: Throwable) : SdkException(
-        "Failed to download block with code: $code due to: ${description ?: "-"}",
-        cause
+    class DownloadBlockException(code: Int, description: String?, cause: Throwable) : LightWalletException(
+        message = "Failed to download block with code: $code due to: ${description ?: "-"}",
+        cause = cause
     )
 
-    class GetSubtreeRootsException(code: Int, description: String?, cause: Throwable) : SdkException(
-        "Failed to get subtree roots with code: $code due to: ${description ?: "-"}",
-        cause
+    class GetSubtreeRootsException(code: Int, description: String?, cause: Throwable) : LightWalletException(
+        message = "Failed to get subtree roots with code: $code due to: ${description ?: "-"}",
+        cause = cause
     )
 
-    class FetchUtxosException(code: Int, description: String?, cause: Throwable) : SdkException(
-        "Failed to fetch UTXOs with code: $code due to: ${description ?: "-"}",
-        cause
+    class FetchUtxosException(code: Int, description: String?, cause: Throwable) : LightWalletException(
+        message = "Failed to fetch UTXOs with code: $code due to: ${description ?: "-"}",
+        cause = cause
     )
 
-    class GetLatestBlockHeightException(code: Int, description: String?, cause: Throwable) : SdkException(
-        "Failed to fetch latest block height with code: $code due to: ${description ?: "-"}",
-        cause
+    class GetLatestBlockHeightException(code: Int, description: String?, cause: Throwable) : LightWalletException(
+        message = "Failed to fetch latest block height with code: $code due to: ${description ?: "-"}",
+        cause = cause
     )
 
-    class GetTAddressTransactionsException(code: Int, description: String?, cause: Throwable) : SdkException(
-        "Failed to get transactions belonging to the given transparent address with code: $code due" +
-            " to: ${description ?: "-"}",
-        cause
+    class GetTAddressTransactionsException(code: Int, description: String?, cause: Throwable) : LightWalletException(
+        message =
+            "Failed to get transactions belonging to the given transparent address with code: $code due" +
+                " to: ${description ?: "-"}",
+        cause = cause
+    )
+
+    class TransactionSubmitException(code: Int? = null, description: String? = null) : LightWalletException(
+        message =
+            "Failed to submit transaction to the lightwalletd server with code: ${code ?: "-"} due" +
+                " to: ${description ?: "-"}",
+        cause = null
     )
 }
 
@@ -340,5 +348,3 @@ sealed class TransactionEncoderException(
             " height was $lastScannedHeight."
     )
 }
-
-class TransactionSubmitException : Exception()

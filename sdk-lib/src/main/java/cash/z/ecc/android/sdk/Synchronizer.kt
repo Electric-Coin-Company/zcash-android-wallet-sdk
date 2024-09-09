@@ -686,9 +686,10 @@ interface Synchronizer {
             val processor =
                 DefaultSynchronizerFactory.defaultProcessor(
                     backend = backend,
+                    birthdayHeight = birthday ?: zcashNetwork.saplingActivationHeight,
                     downloader = downloader,
                     repository = repository,
-                    birthdayHeight = birthday ?: zcashNetwork.saplingActivationHeight
+                    txManager = txManager,
                 )
 
             return SdkSynchronizer.new(
