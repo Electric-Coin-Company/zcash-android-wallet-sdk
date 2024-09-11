@@ -34,7 +34,7 @@ data class TransactionOverview internal constructor(
     /**
      * @return Transaction ID in String obtained from `rawId`
      */
-    fun txIdString() = rawId.byteArray.toHexReversed().takeIf { it.isNotEmpty() }
+    fun txIdString() = rawId.byteArray.toHexReversed()
 
     companion object {
         internal fun new(
@@ -56,11 +56,11 @@ data class TransactionOverview internal constructor(
                 memoCount = dbTransactionOverview.memoCount,
                 blockTimeEpochSeconds = dbTransactionOverview.blockTimeEpochSeconds,
                 transactionState =
-                    TransactionState.new(
-                        latestBlockHeight,
-                        dbTransactionOverview.minedHeight,
-                        dbTransactionOverview.expiryHeight
-                    ),
+                TransactionState.new(
+                    latestBlockHeight,
+                    dbTransactionOverview.minedHeight,
+                    dbTransactionOverview.expiryHeight
+                ),
                 isShielding = dbTransactionOverview.isShielding
             )
         }
