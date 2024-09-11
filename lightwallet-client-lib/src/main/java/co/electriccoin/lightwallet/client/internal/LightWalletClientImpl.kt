@@ -124,6 +124,10 @@ internal class LightWalletClientImpl private constructor(
         }
     }
 
+    override fun close() {
+        shutdown()
+    }
+
     override suspend fun fetchTransaction(txId: ByteArray): Response<RawTransactionUnsafe> {
         require(txId.isNotEmpty()) {
             "${Constants.ILLEGAL_ARGUMENT_EXCEPTION_MESSAGE_EMPTY} Failed to start fetching the transaction with" +

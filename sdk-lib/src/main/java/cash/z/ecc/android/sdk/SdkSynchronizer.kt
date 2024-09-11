@@ -864,79 +864,79 @@ class SdkSynchronizer private constructor(
         // Create a dedicated light wallet client for the validation
         // The single request timeout is changed from default to 5 seconds to speed up a possible custom server
         // endpoint validation
-        val lightWalletClient =
-            LightWalletClient.new(
-                context = context,
-                lightWalletEndpoint = endpoint,
-                singleRequestTimeout = 5.seconds
-            )
 
-        val remoteInfo =
-            when (val response = lightWalletClient.getServerInfo()) {
-                is Response.Success -> response.result
-                is Response.Failure -> {
-                    return ServerValidation.InValid(response.toThrowable())
-                }
-            }
-
-        // Check network type
-        if (!remoteInfo.matchingNetwork(network.networkName)) {
-            return ServerValidation.InValid(
-                CompactBlockProcessorException.MismatchedNetwork(
-                    clientNetwork = network.networkName,
-                    serverNetwork = remoteInfo.chainName
-                )
-            )
-        }
-
-        // Check sapling activation height
-        runCatching {
-            val remoteSaplingActivationHeight = remoteInfo.saplingActivationHeightUnsafe.toBlockHeight(network)
-            if (network.saplingActivationHeight != remoteSaplingActivationHeight) {
-                return ServerValidation.InValid(
-                    CompactBlockProcessorException.MismatchedSaplingActivationHeight(
-                        clientHeight = network.saplingActivationHeight.value,
-                        serverHeight = remoteSaplingActivationHeight.value
-                    )
-                )
-            }
-        }.getOrElse {
-            return ServerValidation.InValid(it)
-        }
-
-        val currentChainTip =
-            when (val response = lightWalletClient.getLatestBlockHeight()) {
-                is Response.Success -> {
-                    runCatching { response.result.toBlockHeight(network) }.getOrElse {
-                        return ServerValidation.InValid(it)
+        LightWalletClient.new(
+            context = context,
+            lightWalletEndpoint = endpoint,
+            singleRequestTimeout = 5.seconds
+        ).use { lightWalletClient ->
+            val remoteInfo =
+                when (val response = lightWalletClient.getServerInfo()) {
+                    is Response.Success -> response.result
+                    is Response.Failure -> {
+                        return ServerValidation.InValid(response.toThrowable())
                     }
                 }
 
-                is Response.Failure -> {
-                    return ServerValidation.InValid(response.toThrowable())
-                }
+            // Check network type
+            if (!remoteInfo.matchingNetwork(network.networkName)) {
+                return ServerValidation.InValid(
+                    CompactBlockProcessorException.MismatchedNetwork(
+                        clientNetwork = network.networkName,
+                        serverNetwork = remoteInfo.chainName
+                    )
+                )
             }
 
-        val sdkBranchId =
+            // Check sapling activation height
             runCatching {
-                "%x".format(
-                    Locale.ROOT,
-                    backend.getBranchIdForHeight(currentChainTip)
-                )
+                val remoteSaplingActivationHeight = remoteInfo.saplingActivationHeightUnsafe.toBlockHeight(network)
+                if (network.saplingActivationHeight != remoteSaplingActivationHeight) {
+                    return ServerValidation.InValid(
+                        CompactBlockProcessorException.MismatchedSaplingActivationHeight(
+                            clientHeight = network.saplingActivationHeight.value,
+                            serverHeight = remoteSaplingActivationHeight.value
+                        )
+                    )
+                }
             }.getOrElse {
                 return ServerValidation.InValid(it)
             }
 
-        // Check branch id
-        return if (remoteInfo.consensusBranchId.equals(sdkBranchId, true)) {
-            ServerValidation.Valid
-        } else {
-            ServerValidation.InValid(
-                CompactBlockProcessorException.MismatchedConsensusBranch(
-                    sdkBranchId,
-                    remoteInfo.consensusBranchId
+            val currentChainTip =
+                when (val response = lightWalletClient.getLatestBlockHeight()) {
+                    is Response.Success -> {
+                        runCatching { response.result.toBlockHeight(network) }.getOrElse {
+                            return ServerValidation.InValid(it)
+                        }
+                    }
+
+                    is Response.Failure -> {
+                        return ServerValidation.InValid(response.toThrowable())
+                    }
+                }
+
+            val sdkBranchId =
+                runCatching {
+                    "%x".format(
+                        Locale.ROOT,
+                        backend.getBranchIdForHeight(currentChainTip)
+                    )
+                }.getOrElse {
+                    return ServerValidation.InValid(it)
+                }
+
+            // Check branch id
+            return if (remoteInfo.consensusBranchId.equals(sdkBranchId, true)) {
+                ServerValidation.Valid
+            } else {
+                ServerValidation.InValid(
+                    CompactBlockProcessorException.MismatchedConsensusBranch(
+                        sdkBranchId,
+                        remoteInfo.consensusBranchId
+                    )
                 )
-            )
+            }
         }
     }
 
