@@ -14,13 +14,15 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Zatoshi.toFiatString`
 - `BigDecimal.convertFiatDecimalToFiatString`
 - `Zatoshi.Companion.fromZecString`
+- NDK version has been updated to `27.0.12077973`
+- Android `compileSdkVersion` and `targetSdkVersion` has been updated to 35
 
 ### Added
 - `Double?.convertUsdToZec` has been added as we are moving away from `BigDecimal` in favor of primitive types
 - `Locale.getDefault()` has been added
 
 ### Fixed
-- Android 15 (SDK level 35) support added for 16kb memory page size
+- Android 15 (SDK level 35) support added for 16 KB memory page size
 
 ## [2.2.2] - 2024-09-03
 
