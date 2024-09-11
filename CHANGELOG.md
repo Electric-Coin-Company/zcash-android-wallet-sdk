@@ -16,6 +16,7 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Zatoshi.toFiatString`
 - `BigDecimal.convertFiatDecimalToFiatString`
 - `Zatoshi.Companion.fromZecString`
+- `CompackBlockProcessor.calculatePollInterval` now uses a randomized poll interval to avoid exposing computation time
 
 ### Added
 - `Double?.convertUsdToZec` has been added as we are moving away from `BigDecimal` in favor of primitive types

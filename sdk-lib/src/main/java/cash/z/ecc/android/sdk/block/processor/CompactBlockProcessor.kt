@@ -2460,9 +2460,9 @@ class CompactBlockProcessor internal constructor(
     }
 
     /**
-     * Poll on time boundaries. Per Issue #95, we want to avoid exposing computation time to a
-     * network observer. Instead, we poll at regular time intervals that are large enough for all
-     * computation to complete so no intervals are skipped. See 95 for more details.
+     * Poll on time boundaries. In order to avoid exposing computation time to a network observer this function uses
+     * randomized poll intervals that are large enough for all computation to complete so no intervals are skipped.
+     * See 95 for more details.
      *
      * @param fastIntervalDesired set if the short poll interval should be used
      *
