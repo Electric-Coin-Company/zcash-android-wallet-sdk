@@ -84,7 +84,6 @@ import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import org.intellij.lang.annotations.MagicConstant
 import java.util.Locale
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.max
@@ -2475,6 +2474,7 @@ class CompactBlockProcessor internal constructor(
             } else {
                 POLL_INTERVAL
             }
+
         @Suppress("MagicNumber")
         val randomMultiplier = Random.nextDouble(0.75, 1.25)
         val now = System.currentTimeMillis()
