@@ -88,6 +88,7 @@ import java.util.Locale
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.random.Random
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
@@ -2458,9 +2459,9 @@ class CompactBlockProcessor internal constructor(
     }
 
     /**
-     * Poll on time boundaries. Per Issue #95, we want to avoid exposing computation time to a
-     * network observer. Instead, we poll at regular time intervals that are large enough for all
-     * computation to complete so no intervals are skipped. See 95 for more details.
+     * Poll on time boundaries. In order to avoid exposing computation time to a network observer this function uses
+     * randomized poll intervals that are large enough for all computation to complete so no intervals are skipped.
+     * See 95 for more details.
      *
      * @param fastIntervalDesired set if the short poll interval should be used
      *
@@ -2473,8 +2474,11 @@ class CompactBlockProcessor internal constructor(
             } else {
                 POLL_INTERVAL
             }
+
+        @Suppress("MagicNumber")
+        val randomMultiplier = Random.nextDouble(0.75, 1.25)
         val now = System.currentTimeMillis()
-        val deltaToNextInterval = interval - (now + interval).rem(interval)
+        val deltaToNextInterval = (interval - (now + interval).rem(interval)) * randomMultiplier
         return deltaToNextInterval.toDuration(DurationUnit.MILLISECONDS)
     }
 
