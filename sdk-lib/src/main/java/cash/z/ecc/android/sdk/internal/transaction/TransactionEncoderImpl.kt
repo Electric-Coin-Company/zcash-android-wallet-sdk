@@ -42,6 +42,8 @@ internal class TransactionEncoderImpl(
      * @param memo the optional memo to include as part of the transaction.
      *
      * @return the successfully encoded transaction or an exception
+     *
+     * @throws TransactionEncoderException.TransactionNotFoundException in case the encoded transaction not found
      */
     override suspend fun createTransaction(
         usk: UnifiedSpendingKey,
