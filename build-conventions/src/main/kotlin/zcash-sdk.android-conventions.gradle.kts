@@ -35,7 +35,8 @@ pluginManager.withPlugin("com.android.library") {
         defaultConfig {
             minSdk = project.property("ANDROID_MIN_SDK_VERSION").toString().toInt()
             // This is deprecated but there isn't a replacement for it yet with instrumentation tests.
-            targetSdk = project.property("ANDROID_TARGET_SDK_VERSION").toString().toInt()
+            lint.targetSdk = project.property("ANDROID_TARGET_SDK_VERSION").toString().toInt()
+            testOptions.targetSdk = project.property("ANDROID_TARGET_SDK_VERSION").toString().toInt()
 
             multiDexEnabled = true
 
