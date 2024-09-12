@@ -6,6 +6,8 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.4] - 2024-09-12
+
 ### Changed
 - NDK version has been updated to `27.0.12077973`
 - Android `compileSdkVersion` and `targetSdkVersion` has been updated to 35
