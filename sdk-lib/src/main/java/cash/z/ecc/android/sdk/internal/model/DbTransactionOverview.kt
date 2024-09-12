@@ -18,7 +18,8 @@ internal data class DbTransactionOverview internal constructor(
     val receivedNoteCount: Int,
     val sentNoteCount: Int,
     val memoCount: Int,
-    val blockTimeEpochSeconds: Long?
+    val blockTimeEpochSeconds: Long?,
+    val isShielding: Boolean,
 ) {
     override fun toString() = "DbTransactionOverview"
 

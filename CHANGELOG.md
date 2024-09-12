@@ -6,6 +6,9 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `TransactionOverview.isShielding` has been added to indicate the shielding transaction type
+
 ### Changed
 - NDK version has been updated to `27.0.12077973`
 - Android `compileSdkVersion` and `targetSdkVersion` has been updated to 35
