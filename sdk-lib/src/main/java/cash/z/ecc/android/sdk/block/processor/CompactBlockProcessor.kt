@@ -23,6 +23,7 @@ import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException.Mismatche
 import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException.MismatchedNetwork
 import cash.z.ecc.android.sdk.exception.InitializeException
 import cash.z.ecc.android.sdk.exception.LightWalletException
+import cash.z.ecc.android.sdk.exception.TransactionEncoderException
 import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.ext.ZcashSdk.MAX_BACKOFF_INTERVAL
 import cash.z.ecc.android.sdk.ext.ZcashSdk.POLL_INTERVAL
@@ -52,10 +53,12 @@ import cash.z.ecc.android.sdk.internal.model.ext.from
 import cash.z.ecc.android.sdk.internal.model.ext.toBlockHeight
 import cash.z.ecc.android.sdk.internal.model.ext.toTransactionStatus
 import cash.z.ecc.android.sdk.internal.repository.DerivedDataRepository
+import cash.z.ecc.android.sdk.internal.transaction.OutboundTransactionManager
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.PercentDecimal
 import cash.z.ecc.android.sdk.model.RawTransaction
+import cash.z.ecc.android.sdk.model.TransactionSubmitResult
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
@@ -85,6 +88,7 @@ import java.util.Locale
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.random.Random
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
@@ -108,10 +112,11 @@ import kotlin.time.toDuration
 @OpenForTesting
 @Suppress("TooManyFunctions", "LargeClass")
 class CompactBlockProcessor internal constructor(
-    val downloader: CompactBlockDownloader,
-    private val repository: DerivedDataRepository,
     private val backend: TypesafeBackend,
-    minimumHeight: BlockHeight
+    val downloader: CompactBlockDownloader,
+    minimumHeight: BlockHeight,
+    private val repository: DerivedDataRepository,
+    private val txManager: OutboundTransactionManager
 ) {
     /**
      * Callback for any non-trivial errors that occur while processing compact blocks.
@@ -457,6 +462,10 @@ class CompactBlockProcessor internal constructor(
                 network = network,
                 lastValidHeight = lastValidHeight
             )
+
+        // Running the unsubmitted transactions check action at the beginning of every sync loop
+        resubmitUnminedTransactions(networkHeight.value)
+
         when (preparationResult) {
             is SbSPreparationResult.ProcessFailure -> {
                 return preparationResult.toBlockProcessingResult()
@@ -492,6 +501,9 @@ class CompactBlockProcessor internal constructor(
             ).collect { batchSyncProgress ->
                 // Update sync progress and wallet balance
                 refreshWalletSummary()
+
+                // Running the unsubmitted transactions check action at the end of processing every block batch
+                resubmitUnminedTransactions(networkHeight.value)
 
                 when (batchSyncProgress.resultState) {
                     SyncingResult.UpdateBirthday -> {
@@ -598,6 +610,9 @@ class CompactBlockProcessor internal constructor(
             ).map { batchSyncProgress ->
                 // Update sync progress and wallet balances
                 refreshWalletSummary()
+
+                // Running the unsubmitted transactions check action at the end of processing every block batch
+                resubmitUnminedTransactions(networkHeight.value)
 
                 when (batchSyncProgress.resultState) {
                     SyncingResult.UpdateBirthday -> {
@@ -1021,6 +1036,11 @@ class CompactBlockProcessor internal constructor(
          * Transaction fetching default attempts at retrying.
          */
         internal const val TRANSACTION_FETCH_RETRIES = 1
+
+        /**
+         * Transaction resubmit retry attempts
+         */
+        internal const val TRANSACTION_RESUBMIT_RETRIES = 1
 
         /**
          * UTXOs fetching default attempts at retrying.
@@ -2199,16 +2219,18 @@ class CompactBlockProcessor internal constructor(
          * or repository is empty
          */
         @VisibleForTesting
-        @Suppress("MaxLineLength")
-        internal suspend fun getFirstUnenhancedHeight(repository: DerivedDataRepository) = repository.firstUnenhancedHeight()
+        internal suspend fun getFirstUnenhancedHeight(repository: DerivedDataRepository): BlockHeight? {
+            return repository.firstUnenhancedHeight()
+        }
 
         /**
          * Get the height of the last block that was downloaded by this processor.
          *
          * @return the last downloaded height reported by the downloader.
          */
-        @Suppress("MaxLineLength")
-        internal suspend fun getLastDownloadedHeight(downloader: CompactBlockDownloader) = downloader.getLastDownloadedHeight()
+        internal suspend fun getLastDownloadedHeight(downloader: CompactBlockDownloader): BlockHeight? {
+            return downloader.getLastDownloadedHeight()
+        }
 
         /**
          * Get the current unified address for the given wallet account.
@@ -2437,9 +2459,9 @@ class CompactBlockProcessor internal constructor(
     }
 
     /**
-     * Poll on time boundaries. Per Issue #95, we want to avoid exposing computation time to a
-     * network observer. Instead, we poll at regular time intervals that are large enough for all
-     * computation to complete so no intervals are skipped. See 95 for more details.
+     * Poll on time boundaries. In order to avoid exposing computation time to a network observer this function uses
+     * randomized poll intervals that are large enough for all computation to complete so no intervals are skipped.
+     * See 95 for more details.
      *
      * @param fastIntervalDesired set if the short poll interval should be used
      *
@@ -2452,8 +2474,11 @@ class CompactBlockProcessor internal constructor(
             } else {
                 POLL_INTERVAL
             }
+
+        @Suppress("MagicNumber")
+        val randomMultiplier = Random.nextDouble(0.75, 1.25)
         val now = System.currentTimeMillis()
-        val deltaToNextInterval = interval - (now + interval).rem(interval)
+        val deltaToNextInterval = (interval - (now + interval).rem(interval)) * randomMultiplier
         return deltaToNextInterval.toDuration(DurationUnit.MILLISECONDS)
     }
 
@@ -2481,6 +2506,56 @@ class CompactBlockProcessor internal constructor(
                 BlockHeight.new(network, oldestTransactionHeightValue)
             }
         } ?: lowerBoundHeight
+    }
+
+    /**
+     * This function resubmits the unmined sent transactions that are still within the expiry window. It can produce
+     * [TransactionEncoderException.TransactionNotFoundException] in case the transaction in not found in the database,
+     * but networking issues are not reported, it is retried in the next sync cycle instead.
+     *
+     * @param blockHeight The block height to which transactions should be compared (usually the current chain tip)
+     *
+     * @throws TransactionEncoderException.TransactionNotFoundException in case the encoded transaction is not found
+     */
+    @Throws(TransactionEncoderException.TransactionNotFoundException::class)
+    private suspend fun resubmitUnminedTransactions(blockHeight: BlockHeight?) {
+        // Run the check only in case we have already obtained the current chain tip
+        if (blockHeight == null) {
+            return
+        }
+        val list = repository.findUnminedTransactionsWithinExpiry(blockHeight)
+
+        Twig.debug { "Trx resubmission: ${list.size}, ${list.joinToString(separator = ", ") { it.txIdString() }}" }
+
+        if (list.isNotEmpty()) {
+            list.forEach {
+                val trxForResubmission =
+                    repository.findEncodedTransactionByTxId(it.rawId)
+                        ?: throw TransactionEncoderException.TransactionNotFoundException(it.rawId)
+
+                Twig.debug { "Trx resubmission: Found: ${trxForResubmission.txIdString()}" }
+
+                retryUpToAndContinue(TRANSACTION_RESUBMIT_RETRIES) {
+                    when (val response = txManager.submit(trxForResubmission)) {
+                        is TransactionSubmitResult.Success -> {
+                            Twig.info { "Trx resubmission success: ${response.txIdString()}" }
+                        }
+                        is TransactionSubmitResult.Failure -> {
+                            Twig.error { "Trx resubmission failure: ${response.description}" }
+                            throw LightWalletException.TransactionSubmitException(
+                                response.code,
+                                response.description,
+                            )
+                        }
+                        is TransactionSubmitResult.NotAttempted -> {
+                            Twig.warn { "Trx resubmission not attempted: ${response.txIdString()}" }
+                        }
+                    }
+                }
+            }
+        } else {
+            Twig.debug { "Trx resubmission: No trx for resubmission found" }
+        }
     }
 
     suspend fun getUtxoCacheBalance(address: String): Zatoshi = backend.getDownloadedUtxoBalance(address)

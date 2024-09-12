@@ -13,8 +13,8 @@ import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor.State.Synced
 import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor.State.Syncing
 import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException
 import cash.z.ecc.android.sdk.exception.InitializeException
+import cash.z.ecc.android.sdk.exception.LightWalletException
 import cash.z.ecc.android.sdk.exception.TransactionEncoderException
-import cash.z.ecc.android.sdk.exception.TransactionSubmitException
 import cash.z.ecc.android.sdk.ext.ConsensusBranchId
 import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.internal.FastestServerFetcher
@@ -722,7 +722,7 @@ class SdkSynchronizer private constructor(
                 "createProposedTransactions(proposeTransfer(usk.account, toAddress, amount, memo), usk)"
             )
     )
-    @Throws(TransactionEncoderException::class, TransactionSubmitException::class)
+    @Throws(TransactionEncoderException::class, LightWalletException.TransactionSubmitException::class)
     override suspend fun sendToAddress(
         usk: UnifiedSpendingKey,
         amount: Zatoshi,
@@ -742,9 +742,8 @@ class SdkSynchronizer private constructor(
             is TransactionSubmitResult.Success -> {
                 return storage.findMatchingTransactionId(encodedTx.txId.byteArray)!!
             }
-
             else -> {
-                throw TransactionSubmitException()
+                throw LightWalletException.TransactionSubmitException()
             }
         }
     }
@@ -756,7 +755,7 @@ class SdkSynchronizer private constructor(
                 "proposeShielding(usk.account, shieldingThreshold, memo)?.let { createProposedTransactions(it, usk) }"
             )
     )
-    @Throws(TransactionEncoderException::class, TransactionSubmitException::class)
+    @Throws(TransactionEncoderException::class, LightWalletException.TransactionSubmitException::class)
     override suspend fun shieldFunds(
         usk: UnifiedSpendingKey,
         memo: String
@@ -778,9 +777,8 @@ class SdkSynchronizer private constructor(
             is TransactionSubmitResult.Success -> {
                 return storage.findMatchingTransactionId(encodedTx.txId.byteArray)!!
             }
-
             else -> {
-                throw TransactionSubmitException()
+                throw LightWalletException.TransactionSubmitException()
             }
         }
     }
@@ -1046,13 +1044,15 @@ internal object DefaultSynchronizerFactory {
         backend: TypesafeBackend,
         downloader: CompactBlockDownloader,
         repository: DerivedDataRepository,
-        birthdayHeight: BlockHeight
+        birthdayHeight: BlockHeight,
+        txManager: OutboundTransactionManager
     ): CompactBlockProcessor =
         CompactBlockProcessor(
-            downloader = downloader,
-            repository = repository,
             backend = backend,
-            minimumHeight = birthdayHeight
+            downloader = downloader,
+            minimumHeight = birthdayHeight,
+            repository = repository,
+            txManager = txManager,
         )
 }
 
