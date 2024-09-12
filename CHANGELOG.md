@@ -6,6 +6,8 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.4] - 2024-09-12
+
 ### Added
 - `TransactionOverview.isShielding` has been added to indicate the shielding transaction type
 
