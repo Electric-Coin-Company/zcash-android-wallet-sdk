@@ -84,6 +84,9 @@ cargo {
     )
     profile = "release"
     prebuiltToolchains = true
+    // To force the compiler to use the given page size
+    // See the new Android 16 KB page size requirement for more details:
+    // https://developer.android.com/about/versions/15/behavior-changes-all#16-kb
     exec = { spec, _ ->
         spec.environment["RUST_ANDROID_GRADLE_CC_LINK_ARG"] = "-Wl,-z,max-page-size=16384"
     }
