@@ -10,7 +10,6 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - NDK version has been updated to `27.0.12077973`
 - Android `compileSdkVersion` and `targetSdkVersion` has been updated to 35
 - `CompackBlockProcessor.calculatePollInterval` now uses a randomized poll interval to avoid exposing computation time
-- Migrated to NDK 27.0.12077973
 
 ### Fixed
 - Android 15 (SDK level 35) support added for 16 KB memory page size
