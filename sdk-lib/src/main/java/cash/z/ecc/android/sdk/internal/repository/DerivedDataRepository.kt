@@ -30,6 +30,18 @@ internal interface DerivedDataRepository {
      */
     suspend fun findEncodedTransactionByTxId(txId: FirstClassByteArray): EncodedTransaction?
 
+    /**
+     * Find all unmined and unexpired transactions in the given height inclusively. This method
+     * is intended for getting a transaction list for the transaction re-submitting. It returns a list to signal that
+     * the intention is not to add them to a recyclerview or otherwise show in the UI.
+     *
+     * @param blockHeight the height of the block to which the query should be done
+     *
+     * @return a list of transactions that were unmined and are still in the expiry window till the give height
+     * inclusively.
+     */
+    suspend fun findUnminedTransactionsWithinExpiry(blockHeight: BlockHeight): List<DbTransactionOverview>
+
     suspend fun getOldestTransaction(): DbTransactionOverview?
 
     /**

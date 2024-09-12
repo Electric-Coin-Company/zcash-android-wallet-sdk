@@ -6,6 +6,19 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `TransactionOverview.isShielding` has been added to indicate the shielding transaction type
+
+### Changed
+- NDK version has been updated to `27.0.12077973`
+- Android `compileSdkVersion` and `targetSdkVersion` has been updated to 35
+- `CompackBlockProcessor.calculatePollInterval` now uses a randomized poll interval to avoid exposing computation time
+
+### Fixed
+- Android 15 (SDK level 35) support added for 16 KB memory page size
+
+## [2.2.3] - 2024-09-09
+
 ### Changed
 - Several functions have been updated to accept `cash.z.ecc.android.sdk.model.Locale` instead of
   `cash.z.ecc.android.sdk.model.MonetarySeparators` as an argument. MonetarySeparators are derived from Locale now.
@@ -18,7 +31,12 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - `Double?.convertUsdToZec` has been added as we are moving away from `BigDecimal` in favor of primitive types
 - `Locale.getDefault()` has been added
-- `TransactionOverview.isShielding` has been added to indicate a shielding transaction
+- Transaction resubmission feature has been added to the CompactBlockProcessor's regular actions. This new action
+  periodically checks unmined sent transactions that are still within their expiry window and resubmits them if
+  there are any.
+
+### Fixed
+- Fastest Server calculation changed for estimated height
 
 ## [2.2.2] - 2024-09-03
 

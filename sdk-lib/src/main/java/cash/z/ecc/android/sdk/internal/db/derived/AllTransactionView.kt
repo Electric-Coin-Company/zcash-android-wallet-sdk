@@ -25,6 +25,8 @@ internal class AllTransactionView(
 
         private const val QUERY_LIMIT = "1" // $NON-NLS
 
+        private const val SENT_TRANSACTION_RECOGNITION_VALUE = "0" // $NON-NLS
+
         private val COLUMNS =
             arrayOf(
                 // $NON-NLS
@@ -56,6 +58,23 @@ internal class AllTransactionView(
                 "CASE WHEN %s IS NULL THEN 1 ELSE 0 END ASC, %s ASC",
                 AllTransactionViewDefinition.COLUMN_INTEGER_MINED_HEIGHT,
                 AllTransactionViewDefinition.COLUMN_INTEGER_MINED_HEIGHT
+            )
+
+        /**
+         * Get all sent, unmined transactions that are still within the expiry window
+         *
+         * Requested selection should look like this:
+         * mined_height IS NULL AND expiry_height > ? AND account_balance_delta < 0
+         */
+        private val SELECTION_TRX_RESUBMISSION =
+            String.format(
+                Locale.ROOT,
+                // $NON-NLS
+                "%s IS NULL AND %s > ? AND %s < %s",
+                AllTransactionViewDefinition.COLUMN_INTEGER_MINED_HEIGHT,
+                AllTransactionViewDefinition.COLUMN_INTEGER_EXPIRY_HEIGHT,
+                AllTransactionViewDefinition.COLUMN_LONG_ACCOUNT_BALANCE_DELTA,
+                SENT_TRANSACTION_RECOGNITION_VALUE
             )
 
         private val SELECTION_RAW_IS_NULL =
@@ -139,6 +158,16 @@ internal class AllTransactionView(
             table = AllTransactionViewDefinition.VIEW_NAME,
             columns = COLUMNS,
             orderBy = ORDER_BY,
+            cursorParser = cursorParser
+        )
+
+    fun getUnminedUnexpiredTransactions(blockHeight: BlockHeight) =
+        sqliteDatabase.queryAndMap(
+            table = AllTransactionViewDefinition.VIEW_NAME,
+            columns = COLUMNS,
+            orderBy = ORDER_BY,
+            selection = SELECTION_TRX_RESUBMISSION,
+            selectionArgs = arrayOf(blockHeight.value),
             cursorParser = cursorParser
         )
 
