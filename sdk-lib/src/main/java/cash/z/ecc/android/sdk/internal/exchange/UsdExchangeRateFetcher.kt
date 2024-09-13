@@ -19,7 +19,7 @@ internal class UsdExchangeRateFetcher(torDir: File) {
             val rate =
                 try {
                     Twig.info { "[USD] Fetch start" }
-                    torHolder().getExchangeRateUsd()
+                    torHolder { it.getExchangeRateUsd() }
                 } catch (e: Exception) {
                     Twig.error(e) { "[USD] Fetch failed" }
                     return FetchFiatCurrencyResult.Error(e)
@@ -69,12 +69,12 @@ private class TorClientHolder(private val torDir: File) {
     private val mutex = Mutex()
     private var torClient: TorClient? = null
 
-    suspend operator fun invoke(): TorClient =
+    suspend operator fun <T> invoke(block: suspend (TorClient) -> T): T =
         mutex.withLock {
             if (torClient == null) {
                 torClient = TorClient.new(torDir)
             }
-            return torClient!!
+            return block(torClient!!)
         }
 
     suspend fun dispose() =

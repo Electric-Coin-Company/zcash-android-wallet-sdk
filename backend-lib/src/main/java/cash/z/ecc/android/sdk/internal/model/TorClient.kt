@@ -5,6 +5,8 @@ import cash.z.ecc.android.sdk.internal.ext.mkdirsSuspend
 import cash.z.ecc.android.sdk.internal.jni.RustBackend
 import dalvik.annotation.optimization.CriticalNative
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.math.BigDecimal
@@ -12,14 +14,20 @@ import java.math.BigDecimal
 class TorClient private constructor(
     private val nativeHandle: Long?,
 ) {
+    private val accessMutex = Mutex()
+
     suspend fun dispose() =
-        withContext(Dispatchers.IO) {
-            nativeHandle?.let { freeTorRuntime(it) }
+        accessMutex.withLock {
+            withContext(Dispatchers.IO) {
+                nativeHandle?.let { freeTorRuntime(it) }
+            }
         }
 
     suspend fun getExchangeRateUsd(): BigDecimal =
-        withContext(Dispatchers.IO) {
-            getExchangeRateUsd(nativeHandle!!)
+        accessMutex.withLock {
+            withContext(Dispatchers.IO) {
+                getExchangeRateUsd(nativeHandle!!)
+            }
         }
 
     companion object {
