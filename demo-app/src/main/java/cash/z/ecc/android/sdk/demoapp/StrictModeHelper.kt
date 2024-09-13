@@ -1,6 +1,7 @@
 package cash.z.ecc.android.sdk.demoapp
 
 import android.annotation.SuppressLint
+import android.os.Build
 import android.os.StrictMode
 import cash.z.ecc.android.sdk.demoapp.util.AndroidApiVersion
 
@@ -22,6 +23,9 @@ object StrictModeHelper {
 
         StrictMode.setVmPolicy(
             StrictMode.VmPolicy.Builder().apply {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    detectUnsafeIntentLaunch()
+                }
                 detectActivityLeaks()
                 detectCleartextNetwork()
                 detectContentUriWithoutPermission()
