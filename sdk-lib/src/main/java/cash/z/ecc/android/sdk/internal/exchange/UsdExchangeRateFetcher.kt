@@ -80,5 +80,6 @@ private class TorClientHolder(private val torDir: File) {
     suspend fun dispose() =
         mutex.withLock {
             torClient?.dispose()
+            torClient = null
         }
 }

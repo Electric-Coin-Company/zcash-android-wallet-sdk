@@ -12,7 +12,7 @@ import java.io.File
 import java.math.BigDecimal
 
 class TorClient private constructor(
-    private val nativeHandle: Long?,
+    private var nativeHandle: Long?,
 ) {
     private val accessMutex = Mutex()
 
@@ -20,6 +20,7 @@ class TorClient private constructor(
         accessMutex.withLock {
             withContext(Dispatchers.IO) {
                 nativeHandle?.let { freeTorRuntime(it) }
+                nativeHandle = null
             }
         }
 
