@@ -18,7 +18,7 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Android 15 (SDK level 35) support added for 16 KB memory page size
-- The disposing logic of `TorClient` (the USD/ZEC rate fetching component) has been improved
+- The broken disposing logic `TorClient.freeTorRuntime` for Android SDK API level 27 has been fixed
 
 ## [2.2.3] - 2024-09-09
 
