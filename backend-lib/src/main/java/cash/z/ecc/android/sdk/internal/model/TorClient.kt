@@ -27,6 +27,7 @@ class TorClient private constructor(
     suspend fun getExchangeRateUsd(): BigDecimal =
         accessMutex.withLock {
             withContext(Dispatchers.IO) {
+                checkNotNull(nativeHandle) { "TorClient is disposed" }
                 getExchangeRateUsd(nativeHandle!!)
             }
         }
@@ -42,7 +43,7 @@ class TorClient private constructor(
                     error("${torDir.path} directory does not exist and could not be created.")
                 }
 
-                TorClient(createTorRuntime(torDir.path))
+                TorClient(nativeHandle = createTorRuntime(torDir.path))
             }
 
         //
