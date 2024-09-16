@@ -6,7 +6,7 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [2.2.4] - 2024-09-12
+## [2.2.4] - 2024-09-16
 
 ### Added
 - `TransactionOverview.isShielding` has been added to indicate the shielding transaction type
@@ -18,6 +18,7 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Android 15 (SDK level 35) support added for 16 KB memory page size
+- The disposing logic of `TorClient` (the USD/ZEC rate fetching component) has been improved
 
 ## [2.2.3] - 2024-09-09
 
