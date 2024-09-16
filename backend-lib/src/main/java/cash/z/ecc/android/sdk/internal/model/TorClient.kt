@@ -57,7 +57,6 @@ class TorClient private constructor(
         @Throws(RuntimeException::class)
         private external fun createTorRuntime(torDir: String): Long
 
-        @CriticalNative
         @JvmStatic
         private external fun freeTorRuntime(nativeHandle: Long)
 
