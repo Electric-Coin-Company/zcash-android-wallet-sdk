@@ -22,6 +22,9 @@ object StrictModeHelper {
 
         StrictMode.setVmPolicy(
             StrictMode.VmPolicy.Builder().apply {
+                if (AndroidApiVersion.isAtLeastS) {
+                    detectUnsafeIntentLaunch()
+                }
                 detectActivityLeaks()
                 detectCleartextNetwork()
                 detectContentUriWithoutPermission()

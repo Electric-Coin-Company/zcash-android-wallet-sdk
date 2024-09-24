@@ -341,7 +341,7 @@ private fun copyToClipboard(
 
     // Notify users with Snackbar only on Android level 32 and lower, as 33 and higher notifies users by its own system
     // way
-    if (!AndroidApiVersion.isAtLeastT) {
+    if (!AndroidApiVersion.isAtLeastTiramisu) {
         scope.launch {
             snackbarHostState.showSnackbar(
                 message = context.getString(R.string.address_copied, textToCopy),

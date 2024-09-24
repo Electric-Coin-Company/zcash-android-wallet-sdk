@@ -93,7 +93,7 @@ fladle {
     val FIREBASE_TEST_LAB_MIN_API = 27 // Minimum for Pixel2.arm device
 
     @Suppress("MagicNumber", "VariableNaming")
-    val FIREBASE_TEST_LAB_MAX_API = 33
+    val FIREBASE_TEST_LAB_MAX_API = 34
 
     val minSdkVersion = run {
         val buildMinSdk = project.properties["ANDROID_MIN_SDK_VERSION"].toString().toInt()
