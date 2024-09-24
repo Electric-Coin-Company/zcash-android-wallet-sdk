@@ -8,7 +8,7 @@ runs:
       run: |
         echo "home=${HOME}" >> "$GITHUB_ENV"
     - name: Set up Java
-      uses: actions/setup-java@6a0805fcefea3d4657a47ac4c165951e33482018
+      uses: actions/setup-java@2dfa2011c5b2a0f1489bf9e433881c92c1631f88
       with:
         distribution: 'temurin'
         java-version: 17
@@ -18,7 +18,7 @@ runs:
         ANDROID_ROOT=/usr/local/lib/android
         ANDROID_SDK_ROOT=${ANDROID_ROOT}/sdk
         SDKMANAGER=${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager
-        echo "y" | $SDKMANAGER "ndk;26.1.10909125"
+        echo "y" | $SDKMANAGER "ndk;27.0.12077973"
     - name: Setup Rust
       shell: bash
       run: |

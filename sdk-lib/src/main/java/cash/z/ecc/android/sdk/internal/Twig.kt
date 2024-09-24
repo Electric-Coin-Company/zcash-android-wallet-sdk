@@ -176,7 +176,7 @@ private fun cleanupClassName(classNameString: String): String {
  * due to some race conditions in Android.
  */
 private fun searchForProcessName(context: Context): String? {
-    return if (AndroidApiVersion.isAtLeastT) {
+    return if (AndroidApiVersion.isAtLeastTiramisu) {
         getProcessNameTPlus()
     } else if (AndroidApiVersion.isAtLeastP) {
         getProcessNamePPlus()

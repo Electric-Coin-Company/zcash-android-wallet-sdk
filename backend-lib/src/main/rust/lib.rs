@@ -1985,7 +1985,11 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorClient_createTor
 
 /// Frees a Tor runtime.
 #[no_mangle]
-pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorClient_freeTorRuntime(ptr: jlong) {
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorClient_freeTorRuntime<'local>(
+    _: JNIEnv<'local>,
+    _: JClass<'local>,
+    ptr: jlong,
+) {
     let ptr = (ptr as usize) as *mut crate::tor::TorRuntime;
     if !ptr.is_null() {
         let s = unsafe { Box::from_raw(ptr) };

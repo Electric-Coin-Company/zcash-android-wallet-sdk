@@ -30,7 +30,13 @@ internal object AndroidApiVersion {
     val isAtLeastS = isAtLeast(Build.VERSION_CODES.S)
 
     @ChecksSdkIntAtLeast(api = Build.VERSION_CODES.TIRAMISU)
-    val isAtLeastT = isAtLeast(Build.VERSION_CODES.TIRAMISU)
+    val isAtLeastTiramisu = isAtLeast(Build.VERSION_CODES.TIRAMISU)
+
+    @ChecksSdkIntAtLeast(api = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+    val isAtLeastUpsideDownCake = isAtLeast(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+
+    @ChecksSdkIntAtLeast(api = Build.VERSION_CODES.VANILLA_ICE_CREAM)
+    val isAtLeastVanillaIceCream = isAtLeast(Build.VERSION_CODES.VANILLA_ICE_CREAM)
 
     /**
      * This property indicates a preview version of the current device Android SDK.

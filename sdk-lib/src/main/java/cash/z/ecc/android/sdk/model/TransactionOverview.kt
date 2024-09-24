@@ -26,7 +26,8 @@ data class TransactionOverview internal constructor(
     val sentNoteCount: Int,
     val memoCount: Int,
     val blockTimeEpochSeconds: Long?,
-    val transactionState: TransactionState
+    val transactionState: TransactionState,
+    val isShielding: Boolean
 ) {
     override fun toString() = "TransactionOverview"
 
@@ -41,24 +42,26 @@ data class TransactionOverview internal constructor(
             latestBlockHeight: BlockHeight?
         ): TransactionOverview {
             return TransactionOverview(
-                dbTransactionOverview.rawId,
-                dbTransactionOverview.minedHeight,
-                dbTransactionOverview.expiryHeight,
-                dbTransactionOverview.index,
-                dbTransactionOverview.raw,
-                dbTransactionOverview.isSentTransaction,
-                dbTransactionOverview.netValue,
-                dbTransactionOverview.feePaid,
-                dbTransactionOverview.isChange,
-                dbTransactionOverview.receivedNoteCount,
-                dbTransactionOverview.sentNoteCount,
-                dbTransactionOverview.memoCount,
-                dbTransactionOverview.blockTimeEpochSeconds,
-                TransactionState.new(
-                    latestBlockHeight,
-                    dbTransactionOverview.minedHeight,
-                    dbTransactionOverview.expiryHeight
-                )
+                rawId = dbTransactionOverview.rawId,
+                minedHeight = dbTransactionOverview.minedHeight,
+                expiryHeight = dbTransactionOverview.expiryHeight,
+                index = dbTransactionOverview.index,
+                raw = dbTransactionOverview.raw,
+                isSentTransaction = dbTransactionOverview.isSentTransaction,
+                netValue = dbTransactionOverview.netValue,
+                feePaid = dbTransactionOverview.feePaid,
+                isChange = dbTransactionOverview.isChange,
+                receivedNoteCount = dbTransactionOverview.receivedNoteCount,
+                sentNoteCount = dbTransactionOverview.sentNoteCount,
+                memoCount = dbTransactionOverview.memoCount,
+                blockTimeEpochSeconds = dbTransactionOverview.blockTimeEpochSeconds,
+                transactionState =
+                    TransactionState.new(
+                        latestBlockHeight,
+                        dbTransactionOverview.minedHeight,
+                        dbTransactionOverview.expiryHeight
+                    ),
+                isShielding = dbTransactionOverview.isShielding
             )
         }
     }

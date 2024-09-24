@@ -7,7 +7,21 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 - `LightWalletClient` now implements `Closeable` and is thus correctly cleaned up in `SdkSynchronizer` and
-  `FastestServerFetcher` as it's used
+  `FastestServerFetcher` after it's used
+
+## [2.2.4] - 2024-09-16
+
+### Added
+- `TransactionOverview.isShielding` has been added to indicate the shielding transaction type
+
+### Changed
+- NDK version has been updated to `27.0.12077973`
+- Android `compileSdkVersion` and `targetSdkVersion` has been updated to 35
+- `CompackBlockProcessor.calculatePollInterval` now uses a randomized poll interval to avoid exposing computation time
+
+### Fixed
+- Android 15 (SDK level 35) support added for 16 KB memory page size
+- The broken disposing logic `TorClient.freeTorRuntime` for Android SDK API level 27 has been fixed
 
 ## [2.2.3] - 2024-09-09
 
