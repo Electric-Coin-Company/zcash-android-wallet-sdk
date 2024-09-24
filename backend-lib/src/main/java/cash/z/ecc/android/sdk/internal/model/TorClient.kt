@@ -3,23 +3,32 @@ package cash.z.ecc.android.sdk.internal.model
 import cash.z.ecc.android.sdk.internal.ext.existsSuspend
 import cash.z.ecc.android.sdk.internal.ext.mkdirsSuspend
 import cash.z.ecc.android.sdk.internal.jni.RustBackend
-import dalvik.annotation.optimization.CriticalNative
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.math.BigDecimal
 
 class TorClient private constructor(
-    private val nativeHandle: Long?,
+    private var nativeHandle: Long?,
 ) {
+    private val accessMutex = Mutex()
+
     suspend fun dispose() =
-        withContext(Dispatchers.IO) {
-            nativeHandle?.let { freeTorRuntime(it) }
+        accessMutex.withLock {
+            withContext(Dispatchers.IO) {
+                nativeHandle?.let { freeTorRuntime(it) }
+                nativeHandle = null
+            }
         }
 
     suspend fun getExchangeRateUsd(): BigDecimal =
-        withContext(Dispatchers.IO) {
-            getExchangeRateUsd(nativeHandle!!)
+        accessMutex.withLock {
+            withContext(Dispatchers.IO) {
+                checkNotNull(nativeHandle) { "TorClient is disposed" }
+                getExchangeRateUsd(nativeHandle!!)
+            }
         }
 
     companion object {
@@ -33,7 +42,7 @@ class TorClient private constructor(
                     error("${torDir.path} directory does not exist and could not be created.")
                 }
 
-                TorClient(createTorRuntime(torDir.path))
+                TorClient(nativeHandle = createTorRuntime(torDir.path))
             }
 
         //
@@ -47,7 +56,6 @@ class TorClient private constructor(
         @Throws(RuntimeException::class)
         private external fun createTorRuntime(torDir: String): Long
 
-        @CriticalNative
         @JvmStatic
         private external fun freeTorRuntime(nativeHandle: Long)
 
