@@ -6,6 +6,9 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- `LightWalletClient` now implements `Closeable` and is thus correctly cleaned up in `SdkSynchronizer` and
+  `FastestServerFetcher` as it's used
+
 ## [2.2.3] - 2024-09-09
 
 ### Changed
@@ -16,8 +19,6 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Zatoshi.toFiatString`
 - `BigDecimal.convertFiatDecimalToFiatString`
 - `Zatoshi.Companion.fromZecString`
-- `LightWalletClient` now implements `Closeable` and is now correctly cleaned up in `SdkSynchronizer` and 
-  `FastestServerFetcher`
 
 ### Added
 - `Double?.convertUsdToZec` has been added as we are moving away from `BigDecimal` in favor of primitive types
