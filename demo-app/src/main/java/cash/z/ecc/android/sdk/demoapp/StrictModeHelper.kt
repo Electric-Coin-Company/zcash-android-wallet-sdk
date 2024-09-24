@@ -1,7 +1,6 @@
 package cash.z.ecc.android.sdk.demoapp
 
 import android.annotation.SuppressLint
-import android.os.Build
 import android.os.StrictMode
 import cash.z.ecc.android.sdk.demoapp.util.AndroidApiVersion
 
