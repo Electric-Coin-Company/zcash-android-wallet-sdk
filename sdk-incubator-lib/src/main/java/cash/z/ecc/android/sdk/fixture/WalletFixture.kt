@@ -101,10 +101,10 @@ sealed class WalletFixture {
         fun lastKnownBirthday(zcashNetwork: ZcashNetwork) =
             when (zcashNetwork.id) {
                 ZcashNetwork.ID_TESTNET -> {
-                    BlockHeight.new(zcashNetwork, 2170000L)
+                    BlockHeight.new(2170000L)
                 }
                 ZcashNetwork.ID_MAINNET -> {
-                    BlockHeight.new(zcashNetwork, 1935000L)
+                    BlockHeight.new(1935000L)
                 }
                 else -> error("Unknown network $zcashNetwork")
             }

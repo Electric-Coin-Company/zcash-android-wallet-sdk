@@ -3,7 +3,6 @@ package cash.z.ecc.android.sdk.internal.model
 import cash.z.ecc.android.sdk.exception.SdkException
 import cash.z.ecc.android.sdk.internal.ext.toHexReversed
 import cash.z.ecc.android.sdk.model.BlockHeight
-import cash.z.ecc.android.sdk.model.ZcashNetwork
 
 /**
  * Serves as cross layer (Kotlin, Rust) communication class.
@@ -36,21 +35,18 @@ sealed interface TransactionDataRequest {
     }
 
     companion object {
-        fun new(
-            jni: JniTransactionDataRequest,
-            zcashNetwork: ZcashNetwork
-        ): TransactionDataRequest {
+        fun new(jni: JniTransactionDataRequest): TransactionDataRequest {
             return when (jni) {
                 is JniTransactionDataRequest.GetStatus -> GetStatus(jni.txid)
                 is JniTransactionDataRequest.Enhancement -> Enhancement(jni.txid)
                 is JniTransactionDataRequest.SpendsFromAddress ->
                     SpendsFromAddress(
                         jni.address,
-                        BlockHeight.new(zcashNetwork, jni.startHeight),
+                        BlockHeight.new(jni.startHeight),
                         if (jni.endHeight == -1L) {
                             null
                         } else {
-                            BlockHeight.new(zcashNetwork, jni.endHeight)
+                            BlockHeight.new(jni.endHeight)
                         }
                     )
 

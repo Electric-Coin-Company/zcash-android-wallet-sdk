@@ -6,14 +6,9 @@ import cash.z.ecc.android.sdk.internal.model.OutputProperties
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.FirstClassByteArray
 import cash.z.ecc.android.sdk.model.TransactionRecipient
-import cash.z.ecc.android.sdk.model.ZcashNetwork
 import java.util.Locale
 
-internal class TxOutputsView(
-    @Suppress("UnusedPrivateMember")
-    private val zcashNetwork: ZcashNetwork,
-    private val sqliteDatabase: SupportSQLiteDatabase
-) {
+internal class TxOutputsView(private val sqliteDatabase: SupportSQLiteDatabase) {
     companion object {
         private val ORDER_BY =
             String.format(

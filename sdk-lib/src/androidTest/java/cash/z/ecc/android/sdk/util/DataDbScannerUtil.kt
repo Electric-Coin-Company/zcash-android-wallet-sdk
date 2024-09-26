@@ -70,11 +70,7 @@ class DataDbScannerUtil {
                 ZcashNetwork.Mainnet,
                 lightWalletEndpoint = LightWalletEndpointFixture.newEndpointForNetwork(ZcashNetwork.Mainnet),
                 seed = byteArrayOf(),
-                birthday =
-                    BlockHeight.new(
-                        ZcashNetwork.Mainnet,
-                        birthdayHeight
-                    ),
+                birthday = BlockHeight.new(birthdayHeight),
                 // Using existing wallet init mode as simplification for the test
                 walletInitMode = WalletInitMode.ExistingWallet
             )

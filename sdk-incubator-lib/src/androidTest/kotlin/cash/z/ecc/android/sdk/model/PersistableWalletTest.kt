@@ -90,7 +90,7 @@ class PersistableWalletTest {
         val json = PersistableWalletFixture.new().toJson()
         assertEquals(
             PersistableWalletFixture.BIRTHDAY.value,
-            PersistableWallet.getBirthday(json, PersistableWalletFixture.NETWORK)!!.value
+            PersistableWallet.getBirthday(json)!!.value
         )
     }
 

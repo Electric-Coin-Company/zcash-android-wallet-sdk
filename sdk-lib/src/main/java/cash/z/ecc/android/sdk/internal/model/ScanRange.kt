@@ -1,7 +1,6 @@
 package cash.z.ecc.android.sdk.internal.model
 
 import cash.z.ecc.android.sdk.model.BlockHeight
-import cash.z.ecc.android.sdk.model.ZcashNetwork
 
 internal data class ScanRange(
     val range: ClosedRange<BlockHeight>,
@@ -24,13 +23,9 @@ internal data class ScanRange(
          *  Note that this function subtracts 1 from [JniScanRange.endHeight] as the rest of the logic works with
          *  [ClosedRange] and the endHeight is exclusive.
          */
-        fun new(
-            jni: JniScanRange,
-            zcashNetwork: ZcashNetwork
-        ): ScanRange {
+        fun new(jni: JniScanRange): ScanRange {
             return ScanRange(
-                range =
-                    BlockHeight.new(zcashNetwork, jni.startHeight)..(BlockHeight.new(zcashNetwork, jni.endHeight) - 1),
+                range = BlockHeight.new(jni.startHeight)..(BlockHeight.new(jni.endHeight) - 1),
                 priority = jni.priority
             )
         }

@@ -21,15 +21,12 @@ data class RawTransaction internal constructor(
     }
 
     companion object {
-        fun new(
-            rawTransactionUnsafe: RawTransactionUnsafe,
-            network: ZcashNetwork
-        ): RawTransaction {
+        fun new(rawTransactionUnsafe: RawTransactionUnsafe): RawTransaction {
             return RawTransaction(
                 data = rawTransactionUnsafe.data,
                 height =
                     when (rawTransactionUnsafe) {
-                        is RawTransactionUnsafe.MainChain -> rawTransactionUnsafe.height.toBlockHeight(network)
+                        is RawTransactionUnsafe.MainChain -> rawTransactionUnsafe.height.toBlockHeight()
                         else -> null
                     }
             )

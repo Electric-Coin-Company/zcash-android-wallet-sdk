@@ -84,28 +84,28 @@ class BranchIdTest internal constructor(
                 // Mainnet Cases
                 arrayOf(
                     "Sapling",
-                    BlockHeight.new(ZcashNetwork.Mainnet, 419_200),
+                    BlockHeight.new(419_200L),
                     1991772603L,
                     "76b809bb",
                     mainnetBackend
                 ),
                 arrayOf(
                     "Blossom",
-                    BlockHeight.new(ZcashNetwork.Mainnet, 653_600),
+                    BlockHeight.new(653_600L),
                     733220448L,
                     "2bb40e60",
                     mainnetBackend
                 ),
                 arrayOf(
                     "Heartwood",
-                    BlockHeight.new(ZcashNetwork.Mainnet, 903_000),
+                    BlockHeight.new(903_000L),
                     4122551051L,
                     "f5b9230b",
                     mainnetBackend
                 ),
                 arrayOf(
                     "Canopy",
-                    BlockHeight.new(ZcashNetwork.Mainnet, 1_046_400),
+                    BlockHeight.new(1_046_400L),
                     3925833126L,
                     "e9ff75a6",
                     mainnetBackend
@@ -113,28 +113,28 @@ class BranchIdTest internal constructor(
                 // Testnet Cases
                 arrayOf(
                     "Sapling",
-                    BlockHeight.new(ZcashNetwork.Testnet, 280_000),
+                    BlockHeight.new(280_000L),
                     1991772603L,
                     "76b809bb",
                     testnetBackend
                 ),
                 arrayOf(
                     "Blossom",
-                    BlockHeight.new(ZcashNetwork.Testnet, 584_000),
+                    BlockHeight.new(584_000L),
                     733220448L,
                     "2bb40e60",
                     testnetBackend
                 ),
                 arrayOf(
                     "Heartwood",
-                    BlockHeight.new(ZcashNetwork.Testnet, 903_800),
+                    BlockHeight.new(903_800L),
                     4122551051L,
                     "f5b9230b",
                     testnetBackend
                 ),
                 arrayOf(
                     "Canopy",
-                    BlockHeight.new(ZcashNetwork.Testnet, 1_028_500),
+                    BlockHeight.new(1_028_500L),
                     3925833126L,
                     "e9ff75a6",
                     testnetBackend

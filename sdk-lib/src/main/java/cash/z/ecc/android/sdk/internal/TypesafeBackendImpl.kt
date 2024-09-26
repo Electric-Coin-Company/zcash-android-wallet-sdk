@@ -99,10 +99,7 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
     }
 
     override suspend fun getNearestRewindHeight(height: BlockHeight): BlockHeight {
-        return BlockHeight.new(
-            ZcashNetwork.from(backend.networkId),
-            backend.getNearestRewindHeight(height.value)
-        )
+        return BlockHeight.new(backend.getNearestRewindHeight(height.value))
     }
 
     override suspend fun rewindToHeight(height: BlockHeight) {
@@ -111,10 +108,7 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
 
     override suspend fun getLatestCacheHeight(): BlockHeight? {
         return backend.getLatestCacheHeight()?.let {
-            BlockHeight.new(
-                ZcashNetwork.from(backend.networkId),
-                it
-            )
+            BlockHeight.new(it)
         }
     }
 
@@ -204,10 +198,7 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
     override suspend fun getFullyScannedHeight(): BlockHeight? {
         return runCatching {
             backend.getFullyScannedHeight()?.let {
-                BlockHeight.new(
-                    ZcashNetwork.from(backend.networkId),
-                    it
-                )
+                BlockHeight.new(it)
             }
         }.onFailure {
             Twig.warn(it) { "Currently unable to get fully scanned height" }
@@ -217,10 +208,7 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
     override suspend fun getMaxScannedHeight(): BlockHeight? {
         return runCatching {
             backend.getMaxScannedHeight()?.let {
-                BlockHeight.new(
-                    ZcashNetwork.from(backend.networkId),
-                    it
-                )
+                BlockHeight.new(it)
             }
         }.onFailure {
             Twig.warn(it) { "Currently unable to get max scanned height" }
@@ -231,14 +219,11 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
         fromHeight: BlockHeight,
         fromState: TreeState,
         limit: Long
-    ): ScanSummary = ScanSummary.new(backend.scanBlocks(fromHeight.value, fromState.encoded, limit), network)
+    ): ScanSummary = ScanSummary.new(backend.scanBlocks(fromHeight.value, fromState.encoded, limit))
 
     override suspend fun transactionDataRequests(): List<TransactionDataRequest> =
         backend.transactionDataRequests().map { jniRequest ->
-            TransactionDataRequest.new(
-                jniRequest,
-                network
-            )
+            TransactionDataRequest.new(jniRequest)
         }
 
     override suspend fun getWalletSummary(): WalletSummary? =
@@ -248,10 +233,7 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
 
     override suspend fun suggestScanRanges(): List<ScanRange> =
         backend.suggestScanRanges().map { jniScanRange ->
-            ScanRange.new(
-                jniScanRange,
-                network
-            )
+            ScanRange.new(jniScanRange)
         }
 
     override suspend fun decryptAndStoreTransaction(

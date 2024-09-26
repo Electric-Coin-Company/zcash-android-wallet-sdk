@@ -9,21 +9,19 @@ import cash.z.ecc.android.sdk.internal.TypesafeBackend
 import cash.z.ecc.android.sdk.internal.db.ReadOnlySupportSqliteOpenHelper
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
 import cash.z.ecc.android.sdk.model.BlockHeight
-import cash.z.ecc.android.sdk.model.ZcashNetwork
 import kotlinx.coroutines.withContext
 import java.io.File
 
 internal class DerivedDataDb private constructor(
-    zcashNetwork: ZcashNetwork,
     private val sqliteDatabase: SupportSQLiteDatabase
 ) {
     val accountTable = AccountTable(sqliteDatabase)
 
-    val transactionTable = TransactionTable(zcashNetwork, sqliteDatabase)
+    val transactionTable = TransactionTable(sqliteDatabase)
 
-    val allTransactionView = AllTransactionView(zcashNetwork, sqliteDatabase)
+    val allTransactionView = AllTransactionView(sqliteDatabase)
 
-    val txOutputsView = TxOutputsView(zcashNetwork, sqliteDatabase)
+    val txOutputsView = TxOutputsView(sqliteDatabase)
 
     suspend fun close() =
         withContext(SdkDispatchers.DATABASE_IO) {
@@ -45,7 +43,6 @@ internal class DerivedDataDb private constructor(
             context: Context,
             backend: TypesafeBackend,
             databaseFile: File,
-            zcashNetwork: ZcashNetwork,
             checkpoint: Checkpoint,
             seed: ByteArray?,
             numberOfAccounts: Int,
@@ -63,7 +60,7 @@ internal class DerivedDataDb private constructor(
                     DATABASE_VERSION
                 )
 
-            val dataDb = DerivedDataDb(zcashNetwork, database)
+            val dataDb = DerivedDataDb(database)
 
             // If a seed is provided, fill in the accounts.
             seed?.let { checkedSeed ->

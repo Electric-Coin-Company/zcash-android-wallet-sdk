@@ -28,7 +28,7 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
         endpoint: LightWalletEndpoint = LightWalletEndpoint.Darkside
     ) : this(TestWallet(seedPhrase, alias, network, endpoint, startHeight = startHeight))
 
-    private val targetHeight = BlockHeight.new(wallet.network, 663250)
+    private val targetHeight = BlockHeight.new(663250L)
     private val context = InstrumentationRegistry.getInstrumentation().context
 
     // dependencies: private
@@ -306,7 +306,7 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
             "https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/basic-reorg/after-small-reorg.txt"
         private const val LARGE_REORG =
             "https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/basic-reorg/after-large-reorg.txt"
-        private val DEFAULT_START_HEIGHT = BlockHeight.new(ZcashNetwork.Mainnet, 663150)
+        private val DEFAULT_START_HEIGHT = BlockHeight.new(663150L)
         private const val DEFAULT_SEED_PHRASE =
             "still champion voice habit trend flight survey between bitter process artefact blind carbon truly" +
                 " provide dizzy crush flush breeze blouse charge solid fish spread"

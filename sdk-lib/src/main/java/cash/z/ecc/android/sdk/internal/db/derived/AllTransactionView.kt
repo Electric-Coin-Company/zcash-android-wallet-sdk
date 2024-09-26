@@ -10,14 +10,12 @@ import cash.z.ecc.android.sdk.internal.model.DbTransactionOverview
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.FirstClassByteArray
 import cash.z.ecc.android.sdk.model.Zatoshi
-import cash.z.ecc.android.sdk.model.ZcashNetwork
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import java.util.Locale
 import kotlin.math.absoluteValue
 
 internal class AllTransactionView(
-    private val zcashNetwork: ZcashNetwork,
     private val sqliteDatabase: SupportSQLiteDatabase
 ) {
     companion object {
@@ -121,7 +119,7 @@ internal class AllTransactionView(
                 rawId = FirstClassByteArray(cursor.getBlob(rawTransactionIdIndex)),
                 minedHeight =
                     cursor.getLongOrNull(minedHeightColumnIndex)?.let {
-                        BlockHeight.new(zcashNetwork, it)
+                        BlockHeight.new(it)
                     },
                 expiryHeight =
                     cursor.getLongOrNull(expiryHeightIndex)?.let {
@@ -129,7 +127,7 @@ internal class AllTransactionView(
                         if (0L == it) {
                             null
                         } else {
-                            BlockHeight.new(zcashNetwork, it)
+                            BlockHeight.new(it)
                         }
                     },
                 index = cursor.getLongOrNull(transactionIndexColumnIndex),
@@ -192,7 +190,7 @@ internal class AllTransactionView(
             ).firstOrNull()
 
         return if (heightLong != null) {
-            BlockHeight.new(zcashNetwork, heightLong)
+            BlockHeight.new(heightLong)
         } else {
             null
         }
