@@ -16,7 +16,7 @@ object CheckpointFixture {
     val NETWORK = ZcashNetwork.Mainnet
 
     // These came from the mainnet 1700000.json file
-    val HEIGHT = BlockHeight.new(ZcashNetwork.Mainnet, 1700000L)
+    val HEIGHT = BlockHeight.new(1700000L)
     const val HASH = "0000000000f430793e0c6381b40b47ed77b0ed76d21c2c667acdfe7747a8ed5b"
     const val EPOCH_SECONDS = 1654991544L
 

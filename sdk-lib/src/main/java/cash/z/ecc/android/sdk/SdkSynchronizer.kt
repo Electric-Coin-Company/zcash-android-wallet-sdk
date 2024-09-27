@@ -831,7 +831,7 @@ class SdkSynchronizer private constructor(
             ) {
                 is Response.Success -> {
                     Twig.info { "Chain tip for validate consensus branch action fetched: ${response.result.value}" }
-                    runCatching { response.result.toBlockHeight(network) }.getOrNull()
+                    runCatching { response.result.toBlockHeight() }.getOrNull()
                 }
 
                 is Response.Failure -> {
@@ -891,7 +891,7 @@ class SdkSynchronizer private constructor(
 
         // Check sapling activation height
         runCatching {
-            val remoteSaplingActivationHeight = remoteInfo.saplingActivationHeightUnsafe.toBlockHeight(network)
+            val remoteSaplingActivationHeight = remoteInfo.saplingActivationHeightUnsafe.toBlockHeight()
             if (network.saplingActivationHeight != remoteSaplingActivationHeight) {
                 return ServerValidation.InValid(
                     CompactBlockProcessorException.MismatchedSaplingActivationHeight(
@@ -907,7 +907,7 @@ class SdkSynchronizer private constructor(
         val currentChainTip =
             when (val response = lightWalletClient.getLatestBlockHeight()) {
                 is Response.Success -> {
-                    runCatching { response.result.toBlockHeight(network) }.getOrElse {
+                    runCatching { response.result.toBlockHeight() }.getOrElse {
                         return ServerValidation.InValid(it)
                     }
                 }
@@ -986,7 +986,6 @@ internal object DefaultSynchronizerFactory {
         context: Context,
         rustBackend: TypesafeBackend,
         databaseFile: File,
-        zcashNetwork: ZcashNetwork,
         checkpoint: Checkpoint,
         seed: ByteArray?,
         numberOfAccounts: Int,
@@ -997,7 +996,6 @@ internal object DefaultSynchronizerFactory {
                 context,
                 rustBackend,
                 databaseFile,
-                zcashNetwork,
                 checkpoint,
                 seed,
                 numberOfAccounts,

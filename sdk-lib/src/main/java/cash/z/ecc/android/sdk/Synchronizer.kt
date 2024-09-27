@@ -650,7 +650,7 @@ interface Synchronizer {
                         when (val response = downloader.getLatestBlockHeight()) {
                             is Response.Success -> {
                                 Twig.info { "Chain tip for recovery until param fetched: ${response.result.value}" }
-                                runCatching { response.result.toBlockHeight(zcashNetwork) }.getOrNull()
+                                runCatching { response.result.toBlockHeight() }.getOrNull()
                             }
                             is Response.Failure -> {
                                 Twig.error {
@@ -670,7 +670,6 @@ interface Synchronizer {
                     context = applicationContext,
                     rustBackend = backend,
                     databaseFile = coordinator.dataDbFile(zcashNetwork, alias),
-                    zcashNetwork = zcashNetwork,
                     checkpoint = loadedCheckpoint,
                     seed = seed,
                     numberOfAccounts = Derivation.DEFAULT_NUMBER_OF_ACCOUNTS,

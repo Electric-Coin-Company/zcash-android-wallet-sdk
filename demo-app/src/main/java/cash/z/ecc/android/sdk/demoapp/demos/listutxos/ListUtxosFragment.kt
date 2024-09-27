@@ -1,6 +1,5 @@
 package cash.z.ecc.android.sdk.demoapp.demos.listutxos
 
-import android.content.Context
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -57,7 +56,7 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
         binding.inputRangeStart.setText(
             ZcashNetwork.fromResources(requireApplicationContext()).saplingActivationHeight.toString()
         )
-        binding.inputRangeEnd.setText(getUxtoEndHeight(requireApplicationContext()).value.toString())
+        binding.inputRangeEnd.setText(getUxtoEndHeight().value.toString())
 
         binding.buttonLoad.setOnClickListener {
             mainActivity()?.hideKeyboard()
@@ -237,7 +236,7 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
     }
 
     @Suppress("MagicNumber")
-    private fun getUxtoEndHeight(context: Context): BlockHeight {
-        return BlockHeight.new(ZcashNetwork.fromResources(context), 968085L)
+    private fun getUxtoEndHeight(): BlockHeight {
+        return BlockHeight.new(968085L)
     }
 }

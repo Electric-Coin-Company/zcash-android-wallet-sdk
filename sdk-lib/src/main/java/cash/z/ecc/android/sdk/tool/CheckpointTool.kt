@@ -72,13 +72,12 @@ internal object CheckpointTool {
     internal fun checkpointDirectory(network: ZcashNetwork) =
         "co.electriccoin.zcash/checkpoint/${network.networkName.lowercase(Locale.ROOT)}"
 
-    internal fun checkpointHeightFromFilename(
-        zcashNetwork: ZcashNetwork,
-        fileName: String
-    ) = BlockHeight.new(zcashNetwork, fileName.split('.').first().toLong())
+    internal fun checkpointHeightFromFilename(fileName: String) = BlockHeight.new(fileName.split('.').first().toLong())
 
-    private fun Array<String>.sortDescending(zcashNetwork: ZcashNetwork) =
-        apply { sortByDescending { checkpointHeightFromFilename(zcashNetwork, it).value } }
+    private fun Array<String>.sortDescending() =
+        apply {
+            sortByDescending { checkpointHeightFromFilename(it).value }
+        }
 
     /**
      * Load the given birthday file from the assets of the given context. When no height is
@@ -97,7 +96,7 @@ internal object CheckpointTool {
     ): Checkpoint {
         Twig.debug { "loading checkpoint from assets: $birthday" }
         val directory = checkpointDirectory(network)
-        val treeFiles = getFilteredFileNames(context, network, directory, birthday)
+        val treeFiles = getFilteredFileNames(context, directory, birthday)
 
         Twig.debug { "found ${treeFiles.size} sapling tree checkpoints: $treeFiles" }
 
@@ -106,7 +105,6 @@ internal object CheckpointTool {
 
     private suspend fun getFilteredFileNames(
         context: Context,
-        network: ZcashNetwork,
         directory: String,
         birthday: BlockHeight?
     ): List<String> {
@@ -117,9 +115,9 @@ internal object CheckpointTool {
 
         val filteredTreeFiles =
             unfilteredTreeFiles
-                .sortDescending(network)
+                .sortDescending()
                 .filter { filename ->
-                    birthday?.let { checkpointHeightFromFilename(network, filename) <= it } ?: true
+                    birthday?.let { checkpointHeightFromFilename(filename) <= it } ?: true
                 }
 
         if (filteredTreeFiles.isEmpty()) {

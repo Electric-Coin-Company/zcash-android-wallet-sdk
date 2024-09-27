@@ -5,13 +5,11 @@ import cash.z.ecc.android.sdk.internal.db.queryAndMap
 import cash.z.ecc.android.sdk.internal.model.EncodedTransaction
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.FirstClassByteArray
-import cash.z.ecc.android.sdk.model.ZcashNetwork
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import java.util.Locale
 
 internal class TransactionTable(
-    private val zcashNetwork: ZcashNetwork,
     private val sqliteDatabase: SupportSQLiteDatabase
 ) {
     companion object {
@@ -84,7 +82,7 @@ internal class TransactionTable(
                 if (it.isNull(heightIndex)) {
                     null
                 } else {
-                    BlockHeight.new(zcashNetwork, it.getLong(heightIndex))
+                    BlockHeight.new(it.getLong(heightIndex))
                 }
 
             EncodedTransaction(
@@ -103,7 +101,7 @@ internal class TransactionTable(
             selectionArgs = arrayOf(rawTransactionId)
         ) {
             val blockIndex = it.getColumnIndexOrThrow(TransactionTableDefinition.COLUMN_INTEGER_BLOCK)
-            BlockHeight.new(zcashNetwork, it.getLong(blockIndex))
+            BlockHeight.new(it.getLong(blockIndex))
         }.firstOrNull()
     }
 

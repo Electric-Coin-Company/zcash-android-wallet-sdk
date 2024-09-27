@@ -26,15 +26,9 @@ class TransactionCounterUtil {
         @Suppress("ktlint:standard:multiline-expression-wrapping")
         lightWalletClient.getBlockRange(
             BlockHeightUnsafe.from(
-                BlockHeight.new(
-                    ZcashNetwork.Mainnet,
-                    900_000
-                )
+                BlockHeight.new(900_000L)
             )..BlockHeightUnsafe.from(
-                BlockHeight.new(
-                    ZcashNetwork.Mainnet,
-                    910_000
-                )
+                BlockHeight.new(910_000L)
             )
         )
         /*
@@ -63,15 +57,9 @@ class TransactionCounterUtil {
         @Suppress("ktlint:standard:multiline-expression-wrapping")
         lightWalletClient.getBlockRange(
             BlockHeightUnsafe.from(
-                BlockHeight.new(
-                    ZcashNetwork.Mainnet,
-                    900_000
-                )
+                BlockHeight.new(900_000L)
             )..BlockHeightUnsafe.from(
-                BlockHeight.new(
-                    ZcashNetwork.Mainnet,
-                    950_000
-                )
+                BlockHeight.new(950_000L)
             )
         )
         /*

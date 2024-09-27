@@ -85,7 +85,7 @@ data class PersistableWallet(
         fun from(jsonObject: JSONObject): PersistableWallet {
             // Common parameters
             val network = getNetwork(jsonObject)
-            val birthday = getBirthday(jsonObject, network)
+            val birthday = getBirthday(jsonObject)
             val seedPhrase = getSeedPhrase(jsonObject)
             // From version 2
             val endpoint: LightWalletEndpoint
@@ -124,13 +124,10 @@ data class PersistableWallet(
             return ZcashNetwork.from(networkId)
         }
 
-        internal fun getBirthday(
-            jsonObject: JSONObject,
-            network: ZcashNetwork
-        ): BlockHeight? {
+        internal fun getBirthday(jsonObject: JSONObject): BlockHeight? {
             return if (jsonObject.has(KEY_BIRTHDAY)) {
                 val birthdayBlockHeightLong = jsonObject.getLong(KEY_BIRTHDAY)
-                BlockHeight.new(network, birthdayBlockHeightLong)
+                BlockHeight.new(birthdayBlockHeightLong)
             } else {
                 null
             }

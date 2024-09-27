@@ -1,7 +1,6 @@
 package cash.z.ecc.android.sdk.internal.model
 
 import cash.z.ecc.android.sdk.model.BlockHeight
-import cash.z.ecc.android.sdk.model.ZcashNetwork
 import co.electriccoin.lightwallet.client.model.SubtreeRootUnsafe
 
 internal data class SubtreeRoot(
@@ -32,14 +31,11 @@ internal data class SubtreeRoot(
     }
 
     companion object {
-        fun new(
-            unsafe: SubtreeRootUnsafe,
-            zcashNetwork: ZcashNetwork
-        ): SubtreeRoot {
+        fun new(unsafe: SubtreeRootUnsafe): SubtreeRoot {
             return SubtreeRoot(
                 rootHash = unsafe.rootHash,
                 completingBlockHash = unsafe.completingBlockHash,
-                completingBlockHeight = BlockHeight.new(zcashNetwork, unsafe.completingBlockHeight.value)
+                completingBlockHeight = BlockHeight.new(unsafe.completingBlockHeight.value)
             )
         }
     }

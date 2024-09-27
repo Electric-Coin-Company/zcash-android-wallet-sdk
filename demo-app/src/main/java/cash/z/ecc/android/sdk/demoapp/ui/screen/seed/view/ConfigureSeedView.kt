@@ -168,7 +168,7 @@ private fun RestoreWalletSection(
 
                 val blockHeight =
                     walletBirthdayString.toLongOrNull()?.let { blockHeight ->
-                        BlockHeight.new(zcashNetwork, blockHeight)
+                        BlockHeight.new(blockHeight)
                     } ?: zcashNetwork.saplingActivationHeight // fallback to last known valid value
 
                 val wallet =
