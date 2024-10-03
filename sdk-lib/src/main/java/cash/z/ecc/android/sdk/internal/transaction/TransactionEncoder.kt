@@ -1,5 +1,6 @@
 package cash.z.ecc.android.sdk.internal.transaction
 
+import cash.z.ecc.android.sdk.exception.TransactionEncoderException
 import cash.z.ecc.android.sdk.internal.model.EncodedTransaction
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
@@ -8,6 +9,7 @@ import cash.z.ecc.android.sdk.model.TransactionRecipient
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.Zatoshi
 
+@Suppress("TooManyFunctions")
 internal interface TransactionEncoder {
     /**
      * Creates a transaction, throwing an exception whenever things are missing. When the provided
@@ -41,6 +43,22 @@ internal interface TransactionEncoder {
     ): EncodedTransaction
 
     /**
+     * Creates a proposal for transferring from a valid ZIP-321 Payment URI string
+     *
+     * @param account the account from which to transfer funds.
+     * @param uri a valid ZIP-321 Payment URI string
+     *
+     * @return the proposal or an exception
+     *
+     * @throws TransactionEncoderException.ProposalFromUriException
+     */
+    @Throws(TransactionEncoderException.ProposalFromUriException::class)
+    suspend fun proposeTransferFromUri(
+        account: Account,
+        uri: String
+    ): Proposal
+
+    /**
      * Creates a proposal for transferring funds to the given recipient.
      *
      * @param account the account from which to transfer funds.
@@ -49,7 +67,10 @@ internal interface TransactionEncoder {
      * @param memo the optional memo to include as part of the proposal's transactions.
      *
      * @return the proposal or an exception
+     *
+     * @throws TransactionEncoderException.ProposalFromParametersException
      */
+    @Throws(TransactionEncoderException.ProposalFromParametersException::class)
     suspend fun proposeTransfer(
         account: Account,
         recipient: String,
@@ -72,9 +93,10 @@ internal interface TransactionEncoder {
      * @return the proposal, or null if the transparent balance that would be shielded is
      *         zero or below `shieldingThreshold`.
      *
-     * @throws Exception if `transparentReceiver` is null and there are transparent funds
-     *         in more than one of the account's transparent receivers.
+     * @throws TransactionEncoderException.ProposalShieldingException if `transparentReceiver` is null and there are
+     * transparent funds in more than one of the account's transparent receivers.
      */
+    @Throws(TransactionEncoderException.ProposalShieldingException::class)
     suspend fun proposeShielding(
         account: Account,
         shieldingThreshold: Zatoshi,
@@ -89,7 +111,14 @@ internal interface TransactionEncoder {
      * @param usk the unified spending key associated with the notes that will be spent.
      *
      * @return the successfully encoded transactions or an exception
+     *
+     * @throws TransactionEncoderException.TransactionNotCreatedException
+     * @throws TransactionEncoderException.TransactionNotFoundException
      */
+    @Throws(
+        TransactionEncoderException.TransactionNotCreatedException::class,
+        TransactionEncoderException.TransactionNotFoundException::class,
+    )
     suspend fun createProposedTransactions(
         proposal: Proposal,
         usk: UnifiedSpendingKey

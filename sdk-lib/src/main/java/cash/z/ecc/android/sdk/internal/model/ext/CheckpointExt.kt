@@ -38,7 +38,7 @@ private fun Checkpoint.Companion.from(
             val height =
                 run {
                     val heightLong = jsonObject.getLong(Checkpoint.KEY_HEIGHT)
-                    BlockHeight.new(zcashNetwork, heightLong)
+                    BlockHeight.new(heightLong)
                 }
             val hash = jsonObject.getString(Checkpoint.KEY_HASH)
             val epochSeconds = jsonObject.getLong(Checkpoint.KEY_EPOCH_SECONDS)

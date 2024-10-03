@@ -108,17 +108,9 @@ class SampleCodeTest {
             @Suppress("ktlint:standard:multiline-expression-wrapping")
             val blockRange =
                 BlockHeightUnsafe(
-                    BlockHeight.new(
-                        ZcashNetwork.Mainnet,
-                        500_000
-                    ).value
+                    BlockHeight.new(500_000L).value
                 )..BlockHeightUnsafe(
-                    (
-                        BlockHeight.new(
-                            ZcashNetwork.Mainnet,
-                            500_009
-                        ).value
-                    )
+                    (BlockHeight.new(500_009L).value)
                 )
 
             val lightWalletClient = LightWalletClient.new(context, lightwalletdHost)

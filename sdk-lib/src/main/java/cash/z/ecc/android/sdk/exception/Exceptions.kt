@@ -335,10 +335,8 @@ sealed class TransactionEncoderException(
             "have thrown an exception but failed to do so."
     )
 
-    class TransactionNotEncodedException(transactionId: Long) : TransactionEncoderException(
-        "The transaction returned by the wallet," +
-            " with id $transactionId, does not have any raw data. This is a scenario where the wallet should have " +
-            "thrown an exception but failed to do so."
+    data class TransactionNotCreatedException(val rootCause: Throwable) : TransactionEncoderException(
+        "The transactions have not been successfully created due to: ${rootCause.message}"
     )
 
     class IncompleteScanException(lastScannedHeight: BlockHeight?) : TransactionEncoderException(
@@ -346,5 +344,21 @@ sealed class TransactionEncoderException(
             " create spending transaction because scanning is incomplete. We must scan up to the" +
             " latest height to know which consensus rules to apply. However, the last scanned" +
             " height was $lastScannedHeight."
+    )
+
+    data class ProposalFromParametersException(val rootCause: Throwable) : TransactionEncoderException(
+        "The attempt to create a new proposal from the given parameters failed due to: ${rootCause.message}",
+        rootCause
+    )
+
+    data class ProposalFromUriException(val rootCause: Throwable) : TransactionEncoderException(
+        "The attempt to create a new proposal from the given URI failed due to: ${rootCause.message}",
+        rootCause
+    )
+
+    data class ProposalShieldingException(val rootCause: Throwable) : TransactionEncoderException(
+        "The attempt to create a new proposal for shielding operation from the given parameters failed due to: " +
+            "${rootCause.message}",
+        rootCause
     )
 }

@@ -29,7 +29,7 @@ jobs:
     steps:
       - name: Checkout
         timeout-minutes: 1
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+        uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938
       # Gradle Wrapper validation can be flaky
       # https://github.com/gradle/wrapper-validation-action/issues/40
       - name: Gradle Wrapper Validation
@@ -68,7 +68,7 @@ jobs:
     steps:
       - name: Checkout
         timeout-minutes: 1
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+        uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938
       - name: Setup
         id: setup
         timeout-minutes: 10
@@ -86,7 +86,7 @@ jobs:
     steps:
       - name: Checkout
         timeout-minutes: 1
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+        uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938
       - name: Setup
         id: setup
         timeout-minutes: 30
@@ -121,7 +121,7 @@ jobs:
     steps:
       - name: Checkout
         timeout-minutes: 1
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+        uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938
       - name: Setup
         id: setup
         timeout-minutes: 30
@@ -156,7 +156,7 @@ jobs:
     steps:
       - name: Checkout
         timeout-minutes: 1
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+        uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938
       - name: Setup
         id: setup
         timeout-minutes: 30
@@ -193,7 +193,7 @@ jobs:
     steps:
       - name: Checkout
         timeout-minutes: 1
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+        uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938
       - name: Setup
         id: setup
         timeout-minutes: 30
@@ -231,7 +231,7 @@ jobs:
     steps:
       - name: Checkout
         timeout-minutes: 1
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+        uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938
       - name: Setup
         id: setup
         timeout-minutes: 30
@@ -242,7 +242,7 @@ jobs:
           ./gradlew assembleDebug assembleAndroidTest
       - name: Authenticate to Google Cloud for Firebase Test Lab
         id: auth_test_lab
-        uses: google-github-actions/auth@62cf5bd3e4211a0a0b51f2c6d6a37129d828611d
+        uses: google-github-actions/auth@8254fb75a33b976a221574d287e93919e6a36f70
         with:
           create_credentials_file: true
           project_id: ${{ vars.FIREBASE_TEST_LAB_PROJECT }}
@@ -286,7 +286,7 @@ jobs:
     steps:
       - name: Checkout
         timeout-minutes: 1
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+        uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938
       - name: Setup
         id: setup
         timeout-minutes: 30
@@ -323,7 +323,7 @@ jobs:
     steps:
       - name: Checkout
         timeout-minutes: 1
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+        uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938
       - name: Setup
         id: setup
         timeout-minutes: 30
@@ -373,14 +373,14 @@ jobs:
     steps:
       - name: Checkout
         timeout-minutes: 1
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+        uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938
       - name: Setup
         id: setup
         timeout-minutes: 30
         uses: ./.github/actions/setup
       - name: Authenticate to Google Cloud for Firebase Test Lab
         id: auth_test_lab
-        uses: google-github-actions/auth@62cf5bd3e4211a0a0b51f2c6d6a37129d828611d
+        uses: google-github-actions/auth@8254fb75a33b976a221574d287e93919e6a36f70
         with:
           create_credentials_file: true
           project_id: ${{ vars.FIREBASE_TEST_LAB_PROJECT }}

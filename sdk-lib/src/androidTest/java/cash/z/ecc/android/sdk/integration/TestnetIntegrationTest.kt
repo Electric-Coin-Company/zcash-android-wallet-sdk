@@ -152,7 +152,7 @@ class TestnetIntegrationTest : ScopedTest() {
                     lightWalletEndpoint =
                     lightWalletEndpoint,
                     seed = seed,
-                    birthday = BlockHeight.new(ZcashNetwork.Testnet, BIRTHDAY_HEIGHT),
+                    birthday = BlockHeight.new(BIRTHDAY_HEIGHT),
                     // Using existing wallet init mode as simplification for the test
                     walletInitMode = WalletInitMode.ExistingWallet
                 )

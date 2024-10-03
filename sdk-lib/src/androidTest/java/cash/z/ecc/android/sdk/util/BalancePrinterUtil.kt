@@ -27,7 +27,7 @@ import org.junit.Test
 class BalancePrinterUtil {
     private val network = ZcashNetwork.Mainnet
     private val downloadBatchSize = 9_000
-    private val birthdayHeight = BlockHeight.new(network, 523240)
+    private val birthdayHeight = BlockHeight.new(523240L)
 
     private val mnemonics = SimpleMnemonics()
     private val context = InstrumentationRegistry.getInstrumentation().context

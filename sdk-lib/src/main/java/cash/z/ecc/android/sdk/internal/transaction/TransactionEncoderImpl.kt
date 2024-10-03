@@ -70,6 +70,40 @@ internal class TransactionEncoderImpl(
             ?: throw TransactionEncoderException.TransactionNotFoundException(transactionId)
     }
 
+    /**
+     * Creates a proposal for transferring from a valid ZIP-321 Payment URI string
+     *
+     * @param account the account from which to transfer funds.
+     * @param uri a valid ZIP-321 Payment URI string
+     *
+     * @return the proposal or an exception
+     *
+     * @throws TransactionEncoderException.ProposalFromUriException
+     */
+    @Throws(TransactionEncoderException.ProposalFromUriException::class)
+    override suspend fun proposeTransferFromUri(
+        account: Account,
+        uri: String
+    ): Proposal {
+        Twig.debug {
+            "creating proposal from URI: $uri"
+        }
+
+        return runCatching {
+            backend.proposeTransferFromUri(
+                account,
+                uri
+            )
+        }.onSuccess {
+            Twig.info { "Result of proposeTransferFromUri: ${it.toPrettyString()}" }
+        }.onFailure {
+            Twig.error(it) { "Caught exception while creating proposal from URI String." }
+        }.getOrElse {
+            throw TransactionEncoderException.ProposalFromUriException(it)
+        }
+    }
+
+    @Throws(TransactionEncoderException.ProposalFromParametersException::class)
     override suspend fun proposeTransfer(
         account: Account,
         recipient: String,
@@ -88,13 +122,16 @@ internal class TransactionEncoderImpl(
                 amount.value,
                 memo
             )
+        }.onSuccess {
+            Twig.info { "Result of proposeTransfer: ${it.toPrettyString()}" }
         }.onFailure {
             Twig.error(it) { "Caught exception while creating proposal." }
-        }.onSuccess { result ->
-            Twig.debug { "result of proposeTransfer: ${result.toPrettyString()}" }
-        }.getOrThrow()
+        }.getOrElse {
+            throw TransactionEncoderException.ProposalFromParametersException(it)
+        }
     }
 
+    @Throws(TransactionEncoderException.ProposalShieldingException::class)
     override suspend fun proposeShielding(
         account: Account,
         shieldingThreshold: Zatoshi,
@@ -109,10 +146,16 @@ internal class TransactionEncoderImpl(
             // TODO [#680]: https://github.com/zcash/zcash-android-wallet-sdk/issues/680
             Twig.error(it) { "proposeShielding failed" }
         }.onSuccess { result ->
-            Twig.debug { "result of proposeShielding: $result" }
-        }.getOrThrow()
+            Twig.info { "Result of proposeShielding: ${result?.toPrettyString()}" }
+        }.getOrElse {
+            throw TransactionEncoderException.ProposalShieldingException(it)
+        }
     }
 
+    @Throws(
+        TransactionEncoderException.TransactionNotCreatedException::class,
+        TransactionEncoderException.TransactionNotFoundException::class,
+    )
     override suspend fun createProposedTransactions(
         proposal: Proposal,
         usk: UnifiedSpendingKey
@@ -129,8 +172,10 @@ internal class TransactionEncoderImpl(
             }.onFailure {
                 Twig.error(it) { "Caught exception while creating transaction." }
             }.onSuccess { result ->
-                Twig.debug { "result of createProposedTransactions: $result" }
-            }.getOrThrow()
+                Twig.info { "Result of createProposedTransactions: $result" }
+            }.getOrElse {
+                throw TransactionEncoderException.TransactionNotCreatedException(it)
+            }
 
         val txs =
             transactionIds.map { transactionId ->

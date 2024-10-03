@@ -80,9 +80,11 @@
     <string name="send_available_balance">Available Sapling balance: </string>
     <string name="send_to_address">Destination address</string>
     <string name="send_memo">Memo</string>
+    <string name="send_zip_321_uri">ZIP 321 Uri</string>
     <string name="send_button">Send</string>
 
     <string name="send_proposal_button">Get Proposal</string>
+    <string name="send_proposal_from_uri_button">Get Proposal from Uri</string>
     <string name="send_proposal_status">Proposal:\n<xliff:g id="proposal" example="Fee:0.001...">%1$s</xliff:g></string>
 
     <string name="server_textfield_value"><xliff:g id="host" example="example.com">%1$s</xliff:g>:<xliff:g id="port" example="508">%2$d</xliff:g></string>

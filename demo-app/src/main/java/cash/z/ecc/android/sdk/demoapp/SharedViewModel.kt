@@ -82,7 +82,7 @@ class SharedViewModel(application: Application) : AndroidViewModel(application) 
                             seed = seedBytes,
                             birthday =
                                 if (BenchmarkingExt.isBenchmarking()) {
-                                    BlockHeight.new(ZcashNetwork.Mainnet, BenchmarkingBlockRangeFixture.new().start)
+                                    BlockHeight.new(BenchmarkingBlockRangeFixture.new().start)
                                 } else {
                                     birthdayHeight.value
                                 },

@@ -18,8 +18,8 @@ class CheckpointToolTest {
     @SmallTest
     fun birthday_height_from_filename() {
         assertEquals(
-            BlockHeight.new(ZcashNetwork.Mainnet, 1_230_000),
-            CheckpointTool.checkpointHeightFromFilename(ZcashNetwork.Mainnet, "1230000.json")
+            BlockHeight.new(1_230_000L),
+            CheckpointTool.checkpointHeightFromFilename("1230000.json")
         )
     }
 

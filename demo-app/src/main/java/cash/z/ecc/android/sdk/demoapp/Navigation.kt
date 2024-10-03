@@ -156,6 +156,8 @@ internal fun ComposeActivity.Navigation() {
 
             val sendTransactionProposal = remember { mutableStateOf<Proposal?>(null) }
 
+            val sendTransactionProposalFromUri = remember { mutableStateOf<Proposal?>(null) }
+
             if (null == synchronizer || null == walletSnapshot || null == spendingKey) {
                 // Display loading indicator
             } else {
@@ -168,11 +170,15 @@ internal fun ComposeActivity.Navigation() {
                     onGetProposal = {
                         sendTransactionProposal.value = walletViewModel.getSendProposal(it)
                     },
+                    onGetProposalFromUri = {
+                        sendTransactionProposalFromUri.value = walletViewModel.getSendProposalFromUri(it)
+                    },
                     onBack = {
                         walletViewModel.clearSendOrShieldState()
                         navController.popBackStackJustOnce(SEND)
                     },
-                    sendTransactionProposal = sendTransactionProposal.value
+                    sendTransactionProposal = sendTransactionProposal.value,
+                    sendTransactionProposalFromUri = sendTransactionProposalFromUri.value
                 )
             }
         }

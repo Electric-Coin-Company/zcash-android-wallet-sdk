@@ -75,7 +75,7 @@ class TransparentRestoreSample {
 //        wallet.rewindToHeight(1343500).join(45_000)
             val wallet = TestWallet(TestWallet.Backups.SAMPLE_WALLET, alias = "WalletC")
 //        wallet.sync().rewindToHeight(1339178).join(10000)
-            wallet.sync().rewindToHeight(BlockHeight.new(ZcashNetwork.Testnet, 1339178)).send(
+            wallet.sync().rewindToHeight(BlockHeight.new(1339178L)).send(
                 "ztestsapling17zazsl8rryl8kjaqxnr2r29rw9d9a2mud37ugapm0s8gmyv0ue43h9lqwmhdsp3nu9dazeqfs6l",
                 "is send broken?"
             ).join(5)
@@ -94,10 +94,7 @@ class TransparentRestoreSample {
                     "tmpabc",
                     ZcashNetwork.Testnet,
                     startHeight =
-                        BlockHeight.new(
-                            ZcashNetwork.Testnet,
-                            1330190
-                        )
+                        BlockHeight.new(1330190L)
                 )
 //        val wallet1 = SimpleWallet(WALLET0_PHRASE, "Wallet1")
 
@@ -128,10 +125,7 @@ class TransparentRestoreSample {
                     "WalletC",
                     ZcashNetwork.Testnet,
                     startHeight =
-                        BlockHeight.new(
-                            ZcashNetwork.Testnet,
-                            1330190
-                        )
+                        BlockHeight.new(1330190L)
                 )
             //        val job = walletA.walletScope.launch {
             //            walletA.sync()
@@ -147,7 +141,7 @@ class TransparentRestoreSample {
             // send z->t
             //        walletA.send(TX_VALUE, walletA.transparentAddress, "${TransparentRestoreSample::class.java.simpleName} z->t")
 
-            walletSandbox.rewindToHeight(BlockHeight.new(ZcashNetwork.Testnet, 1339178))
+            walletSandbox.rewindToHeight(BlockHeight.new(1339178L))
             delay(500)
             //        walletB.sync()
             // rewind database B to height then rescan

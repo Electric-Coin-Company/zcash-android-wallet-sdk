@@ -153,7 +153,7 @@ internal class FastestServerFetcher(
 
         // Check sapling activation height
         runCatching {
-            val remoteSaplingActivationHeight = remoteInfo.saplingActivationHeightUnsafe.toBlockHeight(network)
+            val remoteSaplingActivationHeight = remoteInfo.saplingActivationHeightUnsafe.toBlockHeight()
             if (network.saplingActivationHeight != remoteSaplingActivationHeight) {
                 logRuledOut("invalid saplingActivationHeight")
                 lightWalletClient.close()
@@ -171,7 +171,7 @@ internal class FastestServerFetcher(
                 currentChainTip =
                     when (val response = lightWalletClient.getLatestBlockHeight()) {
                         is Response.Success -> {
-                            runCatching { response.result.toBlockHeight(network) }.getOrElse {
+                            runCatching { response.result.toBlockHeight() }.getOrElse {
                                 logRuledOut("toBlockHeight failed", it)
                                 lightWalletClient.close()
                                 return null

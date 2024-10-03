@@ -61,7 +61,6 @@ import cash.z.ecc.android.sdk.model.RawTransaction
 import cash.z.ecc.android.sdk.model.TransactionSubmitResult
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
-import cash.z.ecc.android.sdk.model.ZcashNetwork
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.GetAddressUtxosReplyUnsafe
 import co.electriccoin.lightwallet.client.model.RawTransactionUnsafe
@@ -250,7 +249,7 @@ class CompactBlockProcessor internal constructor(
 
         // Download note commitment tree data from lightwalletd to decide if we communicate with linear
         // or spend-before-sync node.
-        var subTreeRootResult = getSubtreeRoots(downloader, network, saplingStartIndex, orchardStartIndex)
+        var subTreeRootResult = getSubtreeRoots(downloader, saplingStartIndex, orchardStartIndex)
         Twig.info { "Fetched SubTreeRoot result: $subTreeRootResult" }
 
         Twig.debug { "Setup verified. Processor starting..." }
@@ -298,7 +297,6 @@ class CompactBlockProcessor internal constructor(
                                     backend = backend,
                                     downloader = downloader,
                                     repository = repository,
-                                    network = network,
                                     lastValidHeight = lowerBoundHeight,
                                     firstUnenhancedHeight = _processorInfo.value.firstUnenhancedHeight
                                 )
@@ -311,7 +309,6 @@ class CompactBlockProcessor internal constructor(
                                     backend = backend,
                                     downloader = downloader,
                                     repository = repository,
-                                    network = network,
                                     lastValidHeight = lowerBoundHeight,
                                     firstUnenhancedHeight = _processorInfo.value.firstUnenhancedHeight
                                 )
@@ -319,7 +316,7 @@ class CompactBlockProcessor internal constructor(
                             GetSubtreeRootsResult.FailureConnection -> {
                                 // SubtreeRoot fetching retry
                                 subTreeRootResult =
-                                    getSubtreeRoots(downloader, network, saplingStartIndex, orchardStartIndex)
+                                    getSubtreeRoots(downloader, saplingStartIndex, orchardStartIndex)
                                 BlockProcessingResult.Reconnecting
                             }
                         }
@@ -439,12 +436,11 @@ class CompactBlockProcessor internal constructor(
     /**
      * This function process the missing blocks in non-linear order with Spend-before-Sync algorithm.
      */
-    @Suppress("ReturnCount", "LongMethod", "CyclomaticComplexMethod", "LongParameterList")
+    @Suppress("ReturnCount", "LongMethod", "CyclomaticComplexMethod")
     private suspend fun processNewBlocksInSbSOrder(
         backend: TypesafeBackend,
         downloader: CompactBlockDownloader,
         repository: DerivedDataRepository,
-        network: ZcashNetwork,
         lastValidHeight: BlockHeight,
         firstUnenhancedHeight: BlockHeight?
     ): BlockProcessingResult {
@@ -459,7 +455,6 @@ class CompactBlockProcessor internal constructor(
             runSbSSyncingPreparation(
                 backend = backend,
                 downloader = downloader,
-                network = network,
                 lastValidHeight = lastValidHeight
             )
 
@@ -495,7 +490,6 @@ class CompactBlockProcessor internal constructor(
                 backend = backend,
                 downloader = downloader,
                 repository = repository,
-                network = network,
                 syncRange = verifyRangeResult.scanRange.range,
                 enhanceStartHeight = firstUnenhancedHeight
             ).collect { batchSyncProgress ->
@@ -604,7 +598,6 @@ class CompactBlockProcessor internal constructor(
                 backend = backend,
                 downloader = downloader,
                 repository = repository,
-                network = network,
                 syncRange = scanRange.range,
                 enhanceStartHeight = firstUnenhancedHeight
             ).map { batchSyncProgress ->
@@ -702,15 +695,11 @@ class CompactBlockProcessor internal constructor(
     internal suspend fun runSbSSyncingPreparation(
         backend: TypesafeBackend,
         downloader: CompactBlockDownloader,
-        network: ZcashNetwork,
         lastValidHeight: BlockHeight
     ): SbSPreparationResult {
         // Download chain tip metadata from lightwalletd
         val chainTip =
-            fetchLatestBlockHeight(
-                downloader = downloader,
-                network = network
-            ) ?: let {
+            fetchLatestBlockHeight(downloader = downloader) ?: let {
                 Twig.warn { "Disconnection detected. Attempting to reconnect." }
                 return SbSPreparationResult.ConnectionFailure
             }
@@ -851,7 +840,7 @@ class CompactBlockProcessor internal constructor(
     private suspend fun updateRange(ranges: List<ScanRange>): Boolean {
         // This fetches the latest height each time this method is called, which can be very inefficient
         // when downloading all of the blocks from the server
-        val networkBlockHeight = fetchLatestBlockHeight(downloader, network) ?: return false
+        val networkBlockHeight = fetchLatestBlockHeight(downloader) ?: return false
 
         // Get the first un-enhanced transaction from the repository
         val firstUnenhancedHeight = getFirstUnenhancedHeight(repository)
@@ -903,7 +892,7 @@ class CompactBlockProcessor internal constructor(
 
                 downloader.getServerInfo()?.let { info ->
                     val serverBlockHeight =
-                        runCatching { info.blockHeightUnsafe.toBlockHeight(network) }.getOrNull()
+                        runCatching { info.blockHeightUnsafe.toBlockHeight() }.getOrNull()
 
                     if (null == serverBlockHeight) {
                         // Note: we could better signal network connection issue
@@ -1022,7 +1011,7 @@ class CompactBlockProcessor internal constructor(
             utxo.index,
             utxo.script,
             utxo.valueZat,
-            BlockHeight.new(backend.network, utxo.height)
+            BlockHeight.new(utxo.height)
         )
     }
 
@@ -1114,10 +1103,7 @@ class CompactBlockProcessor internal constructor(
          * @return Latest block height wrapped in BlockHeight object, or null in case of failure
          */
         @VisibleForTesting
-        internal suspend fun fetchLatestBlockHeight(
-            downloader: CompactBlockDownloader,
-            network: ZcashNetwork
-        ): BlockHeight? {
+        internal suspend fun fetchLatestBlockHeight(downloader: CompactBlockDownloader): BlockHeight? {
             Twig.debug { "Fetching latest block height..." }
             val traceScope = TraceScope("CompactBlockProcessor.fetchLatestBlockHeight")
 
@@ -1129,7 +1115,7 @@ class CompactBlockProcessor internal constructor(
                         Twig.debug { "Latest block height fetched successfully with value: ${response.result.value}" }
                         latestBlockHeight =
                             runCatching {
-                                response.result.toBlockHeight(network)
+                                response.result.toBlockHeight()
                             }.getOrNull()
                     }
                     is Response.Failure -> {
@@ -1158,7 +1144,6 @@ class CompactBlockProcessor internal constructor(
         @Suppress("LongMethod")
         internal suspend fun getSubtreeRoots(
             downloader: CompactBlockDownloader,
-            network: ZcashNetwork,
             saplingStartIndex: UInt,
             orchardStartIndex: UInt
         ): GetSubtreeRootsResult {
@@ -1213,7 +1198,7 @@ class CompactBlockProcessor internal constructor(
                     }
                     .toList()
                     .map {
-                        SubtreeRoot.new(it, network)
+                        SubtreeRoot.new(it)
                     }.let {
                         saplingSubtreeRootList = it
                     }
@@ -1262,7 +1247,7 @@ class CompactBlockProcessor internal constructor(
                     }
                     .toList()
                     .map {
-                        SubtreeRoot.new(it, network)
+                        SubtreeRoot.new(it)
                     }.let {
                         orchardSubtreeRootList = it
                     }
@@ -1444,7 +1429,6 @@ class CompactBlockProcessor internal constructor(
          * @param backend the Rust backend component
          * @param downloader the compact block downloader component
          * @param repository the derived data repository component
-         * @param network the network in which the sync mechanism operates
          * @param syncRange the range of blocks to download
          * @param enhanceStartHeight the height in which the enhancing should start, or null in case of no previous
          * transaction enhancing done yet
@@ -1457,7 +1441,6 @@ class CompactBlockProcessor internal constructor(
             backend: TypesafeBackend,
             downloader: CompactBlockDownloader,
             repository: DerivedDataRepository,
-            network: ZcashNetwork,
             syncRange: ClosedRange<BlockHeight>,
             enhanceStartHeight: BlockHeight?
         ): Flow<BatchSyncProgress> =
@@ -1472,7 +1455,7 @@ class CompactBlockProcessor internal constructor(
                 } else {
                     Twig.info { "Syncing blocks in range $syncRange" }
 
-                    val batches = getBatchedBlockList(syncRange, network)
+                    val batches = getBatchedBlockList(syncRange)
 
                     // Check for the last enhanced height and eventually set it as the beginning of the next
                     // enhancing range
@@ -1600,8 +1583,7 @@ class CompactBlockProcessor internal constructor(
                                 range = currentEnhancingRange,
                                 repository = repository,
                                 backend = backend,
-                                downloader = downloader,
-                                network = network
+                                downloader = downloader
                             ).collect { enhancingResult ->
                                 Twig.info { "Enhancing result: $enhancingResult" }
                                 resultState =
@@ -1656,14 +1638,10 @@ class CompactBlockProcessor internal constructor(
          * blocks processing
          *
          * @param syncRange Current range to be processed
-         * @param network The network we are operating on
          *
          * @return List of [ClosedRange<BlockBatch>] to prepare for synchronization
          */
-        private fun getBatchedBlockList(
-            syncRange: ClosedRange<BlockHeight>,
-            network: ZcashNetwork
-        ): List<BlockBatch> {
+        private fun getBatchedBlockList(syncRange: ClosedRange<BlockHeight>): List<BlockBatch> {
             var order = 1L
             var start = syncRange.start.value
             var end = 0L
@@ -1679,7 +1657,7 @@ class CompactBlockProcessor internal constructor(
                             end = calculateBatchEnd(start, syncRange.endInclusive.value, SYNC_BATCH_SMALL_SIZE)
                         }
 
-                        val range = BlockHeight.new(network, start)..BlockHeight.new(network, end)
+                        val range = BlockHeight.new(start)..BlockHeight.new(end)
                         add(
                             BlockBatch(
                                 order = order,
@@ -1865,8 +1843,7 @@ class CompactBlockProcessor internal constructor(
             range: ClosedRange<BlockHeight>,
             repository: DerivedDataRepository,
             backend: TypesafeBackend,
-            downloader: CompactBlockDownloader,
-            network: ZcashNetwork
+            downloader: CompactBlockDownloader
         ): Flow<SyncingResult> =
             flow {
                 Twig.debug { "Enhancing transaction details for blocks $range" }
@@ -1903,7 +1880,7 @@ class CompactBlockProcessor internal constructor(
 
                         when (it) {
                             is TransactionDataRequest.EnhancementRequired -> {
-                                val trxEnhanceResult = enhanceTransaction(it, backend, downloader, network)
+                                val trxEnhanceResult = enhanceTransaction(it, backend, downloader)
                                 if (trxEnhanceResult is SyncingResult.EnhanceFailed) {
                                     Twig.error(trxEnhanceResult.exception) { "Encountered transaction enhancing error" }
                                     emit(trxEnhanceResult)
@@ -1915,8 +1892,7 @@ class CompactBlockProcessor internal constructor(
                                     processTransparentAddressTxids(
                                         transactionRequest = it,
                                         backend = backend,
-                                        downloader = downloader,
-                                        network = network
+                                        downloader = downloader
                                     )
                                 if (processTaddrTxidsResult is SyncingResult.EnhanceFailed) {
                                     Twig.error(processTaddrTxidsResult.exception) {
@@ -1937,8 +1913,7 @@ class CompactBlockProcessor internal constructor(
         private suspend fun processTransparentAddressTxids(
             transactionRequest: TransactionDataRequest.SpendsFromAddress,
             backend: TypesafeBackend,
-            downloader: CompactBlockDownloader,
-            network: ZcashNetwork
+            downloader: CompactBlockDownloader
         ): SyncingResult {
             Twig.debug { "Starting to get transparent address transactions ids" }
 
@@ -1967,11 +1942,7 @@ class CompactBlockProcessor internal constructor(
                         // Decrypting and storing transaction is run just once, since we consider it more stable
                         Twig.verbose { "Decrypting and storing rawTransactionUnsafe" }
                         decryptTransaction(
-                            rawTransaction =
-                                RawTransaction.new(
-                                    rawTransactionUnsafe = rawTransactionUnsafe,
-                                    network = network
-                                ),
+                            rawTransaction = RawTransaction.new(rawTransactionUnsafe = rawTransactionUnsafe),
                             backend = backend
                         )
                     }.onCompletion {
@@ -2026,8 +1997,7 @@ class CompactBlockProcessor internal constructor(
         private suspend fun enhanceTransaction(
             transactionRequest: TransactionDataRequest.EnhancementRequired,
             backend: TypesafeBackend,
-            downloader: CompactBlockDownloader,
-            network: ZcashNetwork
+            downloader: CompactBlockDownloader
         ): SyncingResult {
             Twig.debug { "Starting enhancing transaction: txid: ${transactionRequest.txIdString()}" }
 
@@ -2051,7 +2021,7 @@ class CompactBlockProcessor internal constructor(
                                     "transaction: txid: ${transactionRequest.txIdString() }"
                             }
                             val status =
-                                rawTransactionUnsafe?.toTransactionStatus(network)
+                                rawTransactionUnsafe?.toTransactionStatus()
                                     ?: TransactionStatus.TxidNotRecognized
                             setTransactionStatus(
                                 transactionRawId = transactionRequest.txid,
@@ -2076,11 +2046,7 @@ class CompactBlockProcessor internal constructor(
                                         "transaction: txid: ${transactionRequest.txIdString()}"
                                 }
                                 decryptTransaction(
-                                    rawTransaction =
-                                        RawTransaction.new(
-                                            rawTransactionUnsafe = rawTransactionUnsafe,
-                                            network = network
-                                        ),
+                                    rawTransaction = RawTransaction.new(rawTransactionUnsafe = rawTransactionUnsafe),
                                     backend = backend
                                 )
                             }
@@ -2359,11 +2325,7 @@ class CompactBlockProcessor internal constructor(
                 else -> return false
             }
         val blocksPer14Days = 14.days.inWholeMilliseconds / ZcashSdk.BLOCK_INTERVAL_MILLIS.toInt()
-        val twoWeeksBack =
-            BlockHeight.new(
-                network,
-                (height.value - blocksPer14Days).coerceAtLeast(lowerBoundHeight.value)
-            )
+        val twoWeeksBack = BlockHeight.new((height.value - blocksPer14Days).coerceAtLeast(lowerBoundHeight.value))
         return rewindToNearestHeight(twoWeeksBack)
     }
 
@@ -2503,7 +2465,7 @@ class CompactBlockProcessor internal constructor(
             if (oldestTransactionHeightValue < lowerBoundHeight.value) {
                 lowerBoundHeight
             } else {
-                BlockHeight.new(network, oldestTransactionHeightValue)
+                BlockHeight.new(oldestTransactionHeightValue)
             }
         } ?: lowerBoundHeight
     }

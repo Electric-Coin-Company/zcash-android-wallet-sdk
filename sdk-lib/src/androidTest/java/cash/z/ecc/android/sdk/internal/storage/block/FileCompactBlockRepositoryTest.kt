@@ -7,7 +7,6 @@ import cash.z.ecc.android.sdk.internal.ext.existsSuspend
 import cash.z.ecc.android.sdk.internal.ext.listSuspend
 import cash.z.ecc.android.sdk.internal.ext.mkdirsSuspend
 import cash.z.ecc.android.sdk.model.BlockHeight
-import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.fixture.FakeRustBackendFixture
 import cash.z.ecc.fixture.FilePathFixture
 import co.electriccoin.lightwallet.client.fixture.ListOfCompactBlocksFixture
@@ -76,7 +75,6 @@ class FileCompactBlockRepositoryTest {
     @Test
     fun findCompactBlockTest() =
         runTest {
-            val network = ZcashNetwork.Testnet
             val rustBackend = FakeRustBackendFixture().new()
             val blockRepository =
                 getMockedFileCompactBlockRepository(
@@ -90,17 +88,14 @@ class FileCompactBlockRepositoryTest {
 
             val firstPersistedBlock =
                 blockRepository.findCompactBlock(
-                    BlockHeight.new(network, blocks.first().height)
+                    BlockHeight.new(blockHeight = blocks.first().height)
                 )
             val lastPersistedBlock =
                 blockRepository.findCompactBlock(
-                    BlockHeight.new(network, blocks.last().height)
+                    BlockHeight.new(blockHeight = blocks.last().height)
                 )
             val notPersistedBlockHeight =
-                BlockHeight.new(
-                    network,
-                    blockHeight = blocks.last().height + 1
-                )
+                BlockHeight.new(blockHeight = blocks.last().height + 1)
 
             assertNotNull(firstPersistedBlock)
             assertNotNull(lastPersistedBlock)

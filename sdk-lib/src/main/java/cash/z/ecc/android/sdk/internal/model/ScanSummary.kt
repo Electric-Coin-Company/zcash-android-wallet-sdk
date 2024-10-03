@@ -1,7 +1,6 @@
 package cash.z.ecc.android.sdk.internal.model
 
 import cash.z.ecc.android.sdk.model.BlockHeight
-import cash.z.ecc.android.sdk.model.ZcashNetwork
 
 internal data class ScanSummary(
     val scannedRange: ClosedRange<BlockHeight>,
@@ -14,21 +13,9 @@ internal data class ScanSummary(
          *  as the rest of the logic works with [ClosedRange] and the endHeight
          *  is exclusive.
          */
-        fun new(
-            jni: JniScanSummary,
-            zcashNetwork: ZcashNetwork
-        ): ScanSummary {
+        fun new(jni: JniScanSummary): ScanSummary {
             return ScanSummary(
-                scannedRange =
-                    BlockHeight.new(
-                        zcashNetwork,
-                        jni.startHeight
-                    )..(
-                        BlockHeight.new(
-                            zcashNetwork,
-                            jni.endHeight
-                        ) - 1
-                    ),
+                scannedRange = BlockHeight.new(jni.startHeight)..(BlockHeight.new(jni.endHeight) - 1),
                 spentSaplingNoteCount = jni.spentSaplingNoteCount,
                 receivedSaplingNoteCount = jni.receivedSaplingNoteCount
             )

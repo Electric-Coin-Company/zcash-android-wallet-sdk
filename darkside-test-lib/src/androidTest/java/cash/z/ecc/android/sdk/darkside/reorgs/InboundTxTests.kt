@@ -4,7 +4,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import cash.z.ecc.android.sdk.darkside.test.DarksideTestCoordinator
 import cash.z.ecc.android.sdk.darkside.test.ScopedTest
 import cash.z.ecc.android.sdk.model.BlockHeight
-import cash.z.ecc.android.sdk.model.ZcashNetwork
 import org.junit.BeforeClass
 import org.junit.Ignore
 import org.junit.Test
@@ -22,7 +21,7 @@ class InboundTxTests : ScopedTest() {
 
     @Test
     fun testLatestHeight() {
-        validator.validateLatestHeight(BlockHeight.new(ZcashNetwork.Mainnet, targetTxBlock.value - 1))
+        validator.validateLatestHeight(BlockHeight.new(targetTxBlock.value - 1))
     }
 
     @Test
@@ -83,8 +82,8 @@ class InboundTxTests : ScopedTest() {
                 "https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/transactions/recv/71935e29127a7de0b96081f4c8a42a9c11584d83adedfaab414362a6f3d965cf.txt"
             )
 
-        private val firstBlock = BlockHeight.new(ZcashNetwork.Mainnet, 663150L)
-        private val targetTxBlock = BlockHeight.new(ZcashNetwork.Mainnet, 663188L)
+        private val firstBlock = BlockHeight.new(663150L)
+        private val targetTxBlock = BlockHeight.new(663188L)
         private const val LAST_BLOCK_HASH = "2fc7b4682f5ba6ba6f86e170b40f0aa9302e1d3becb2a6ee0db611ff87835e4a"
         private val sithLord = DarksideTestCoordinator()
         private val validator = sithLord.validator
@@ -98,7 +97,7 @@ class InboundTxTests : ScopedTest() {
             chainMaker
                 .resetBlocks(BLOCKS_URL, startHeight = firstBlock, tipHeight = targetTxBlock)
                 .stageEmptyBlocks(firstBlock + 1, 100)
-                .applyTipHeight(BlockHeight.new(ZcashNetwork.Mainnet, targetTxBlock.value - 1))
+                .applyTipHeight(BlockHeight.new(targetTxBlock.value - 1))
 
             // sithLord.await()
         }
