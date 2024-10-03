@@ -15,6 +15,7 @@ import co.electriccoin.lightwallet.client.model.ShieldedProtocolEnum
 import co.electriccoin.lightwallet.client.model.SubtreeRootUnsafe
 import co.electriccoin.lightwallet.client.model.TreeStateUnsafe
 import kotlinx.coroutines.flow.Flow
+import java.io.Closeable
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -22,7 +23,7 @@ import kotlin.time.Duration.Companion.seconds
  * Client for interacting with lightwalletd.
  */
 @Suppress("TooManyFunctions")
-interface LightWalletClient {
+interface LightWalletClient : Closeable {
     /**
      * @return the full transaction info.
      */

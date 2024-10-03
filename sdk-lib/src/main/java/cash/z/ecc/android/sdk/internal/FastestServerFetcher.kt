@@ -19,11 +19,11 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.withTimeoutOrNull
+import java.io.Closeable
 import java.util.Locale
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
@@ -69,24 +69,25 @@ internal class FastestServerFetcher(
                 serversByRpcMeanLatency
                     .asFlow()
                     .mapNotNull { result ->
-                        val didTimeOut =
-                            withTimeoutOrNull(FETCH_THRESHOLD) {
-                                runCatching {
-                                    val to = result.remoteInfo.blockHeightUnsafe
-                                    val from = BlockHeightUnsafe((to.value - N).coerceAtLeast(0))
-                                    result.lightWalletClient.getBlockRange(from..to)
-                                }.getOrNull()
-                            } == null
+                        result.use {
+                            val didTimeOut =
+                                withTimeoutOrNull(FETCH_THRESHOLD) {
+                                    runCatching {
+                                        val to = result.remoteInfo.blockHeightUnsafe
+                                        val from = BlockHeightUnsafe((to.value - N).coerceAtLeast(0))
+                                        result.lightWalletClient.getBlockRange(from..to)
+                                    }.getOrNull()
+                                } == null
 
-                        if (didTimeOut) {
-                            Twig.debug { "Fastest Server: '${result.endpoint}' RULED OUT by getBlockRange timeout" }
-                            null
-                        } else {
-                            Twig.debug { "Fastest Server: '${result.endpoint}' VALIDATED by getBlockRange timeout" }
-                            result
+                            if (didTimeOut) {
+                                Twig.debug { "Fastest Server: '${result.endpoint}' RULED OUT by getBlockRange timeout" }
+                                null
+                            } else {
+                                Twig.debug { "Fastest Server: '${result.endpoint}' VALIDATED by getBlockRange timeout" }
+                                result.endpoint
+                            }
                         }
                     }
-                    .map { it.endpoint }
                     .take(K)
                     .toList()
 
@@ -120,25 +121,33 @@ internal class FastestServerFetcher(
             LightWalletClient.new(
                 context = context,
                 lightWalletEndpoint = endpoint,
-                singleRequestTimeout = 5.seconds
+                singleRequestTimeout = FETCH_THRESHOLD
             )
 
-        val remoteInfo: LightWalletEndpointInfoUnsafe
+        val remoteInfo: LightWalletEndpointInfoUnsafe?
         val getServerInfoDuration =
             measureTime {
                 remoteInfo =
-                    when (val response = lightWalletClient.getServerInfo()) {
-                        is Response.Success -> response.result
-                        is Response.Failure -> {
-                            logRuledOut("getServerInfo failed", response.toThrowable())
-                            return null
+                    withTimeoutOrNull(5.seconds) { // 5 seconds timeout in case server is very unresponsive
+                        when (val response = lightWalletClient.getServerInfo()) {
+                            is Response.Success -> response.result
+                            is Response.Failure -> {
+                                logRuledOut("getServerInfo failed", response.toThrowable())
+                                null
+                            }
                         }
                     }
             }
 
+        if (remoteInfo == null) {
+            lightWalletClient.close()
+            return null
+        }
+
         // Check network type
         if (!remoteInfo.matchingNetwork(network.networkName)) {
             logRuledOut("matchingNetwork failed")
+            lightWalletClient.close()
             return null
         }
 
@@ -147,10 +156,12 @@ internal class FastestServerFetcher(
             val remoteSaplingActivationHeight = remoteInfo.saplingActivationHeightUnsafe.toBlockHeight()
             if (network.saplingActivationHeight != remoteSaplingActivationHeight) {
                 logRuledOut("invalid saplingActivationHeight")
+                lightWalletClient.close()
                 return null
             }
         }.getOrElse {
             logRuledOut("saplingActivationHeight failed", it)
+            lightWalletClient.close()
             return null
         }
 
@@ -162,12 +173,14 @@ internal class FastestServerFetcher(
                         is Response.Success -> {
                             runCatching { response.result.toBlockHeight() }.getOrElse {
                                 logRuledOut("toBlockHeight failed", it)
+                                lightWalletClient.close()
                                 return null
                             }
                         }
 
                         is Response.Failure -> {
                             logRuledOut("getLatestBlockHeight failed", response.toThrowable())
+                            lightWalletClient.close()
                             return null
                         }
                     }
@@ -181,16 +194,19 @@ internal class FastestServerFetcher(
                 )
             }.getOrElse {
                 logRuledOut("getBranchIdForHeight failed", it)
+                lightWalletClient.close()
                 return null
             }
 
         if (!remoteInfo.consensusBranchId.equals(sdkBranchId, true)) {
             logRuledOut("consensusBranchId does not match")
+            lightWalletClient.close()
             return null
         }
 
         if (remoteInfo.estimatedHeight >= remoteInfo.blockHeightUnsafe.value + SYNCED_THRESHOLD_BLOCKS) {
             logRuledOut("estimatedHeight does not match")
+            lightWalletClient.close()
             return null
         }
 
@@ -217,8 +233,12 @@ data class ValidateServerResult(
     val endpoint: LightWalletEndpoint,
     val getServerInfoDuration: Duration,
     val getLatestBlockHeightDuration: Duration,
-) {
+) : Closeable {
     val meanDuration = (getServerInfoDuration + getLatestBlockHeightDuration) / 2
+
+    override fun close() {
+        lightWalletClient.close()
+    }
 }
 
 /**
