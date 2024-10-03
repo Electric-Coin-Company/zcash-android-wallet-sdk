@@ -6,6 +6,15 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- The new `Synchronizer.proposeFulfillingPaymentUri` API has been added. It enables constructing Proposal object from 
+  the given ZIP-321 Uri, and then creating transactions from it.
+
+### Changed
+- `Synchronizer.proposeTransfer` throws `TransactionEncoderException.ProposalFromParametersException`
+- `Synchronizer.proposeShielding` throws `TransactionEncoderException.ProposalShieldingException`
+- `Synchronizer.createProposedTransactions` throws `TransactionEncoderException.TransactionNotCreatedException` and `TransactionEncoderException.TransactionNotFoundException`
+
 ## [2.2.4] - 2024-09-16
 
 ### Added

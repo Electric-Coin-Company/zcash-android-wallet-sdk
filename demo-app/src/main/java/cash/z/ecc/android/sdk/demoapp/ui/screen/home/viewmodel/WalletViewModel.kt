@@ -247,6 +247,31 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     /**
+     * Synchronously provides proposal object for the given [spendingKey] and [uri] objects
+     */
+    fun getSendProposalFromUri(uri: String): Proposal? {
+        if (sendState.value is SendState.Sending) {
+            return null
+        }
+
+        val synchronizer = synchronizer.value
+
+        return if (null != synchronizer) {
+            // Calling the proposal API within a blocking coroutine should be fine for the showcase purpose
+            runBlocking {
+                val spendingKey = spendingKey.filterNotNull().first()
+                kotlin.runCatching {
+                    synchronizer.proposeFulfillingPaymentUri(spendingKey.account, uri)
+                }.onFailure {
+                    Twig.error(it) { "Failed to get transaction proposal from uri" }
+                }.getOrNull()
+            }
+        } else {
+            error("Unable to send funds because synchronizer is not loaded.")
+        }
+    }
+
+    /**
      * Asynchronously shields transparent funds.  Note that two shielding operations cannot occur at the same time.
      *
      * Observe the result via [sendState].

@@ -669,7 +669,28 @@ class SdkSynchronizer private constructor(
             account
         )
 
-    @Throws(TransactionEncoderException::class)
+    /**
+     * Creates a proposal for fulfilling a payment ZIP-321 URI
+     *
+     * @param account the account from which to transfer funds.
+     * @param uri a ZIP-321 compliant payment URI String
+     *
+     * @throws TransactionEncoderException.ProposalFromUriException in case the proposal creation failed
+     *
+     * @return the proposal or an exception
+     */
+    @Throws(TransactionEncoderException.ProposalFromUriException::class)
+    override suspend fun proposeFulfillingPaymentUri(
+        account: Account,
+        uri: String
+    ): Proposal = txManager.proposeTransferFromUri(account, uri)
+
+    /**
+     * @throws TransactionEncoderException.ProposalFromParametersException in case the proposal creation failed
+     *
+     * @return the proposal or an exception
+     */
+    @Throws(TransactionEncoderException.ProposalFromParametersException::class)
     override suspend fun proposeTransfer(
         account: Account,
         recipient: String,
@@ -677,7 +698,12 @@ class SdkSynchronizer private constructor(
         memo: String
     ): Proposal = txManager.proposeTransfer(account, recipient, amount, memo)
 
-    @Throws(TransactionEncoderException::class)
+    /**
+     * @throws TransactionEncoderException.ProposalShieldingException in case the proposal creation failed
+     *
+     * @return the proposal or an exception
+     */
+    @Throws(TransactionEncoderException.ProposalShieldingException::class)
     override suspend fun proposeShielding(
         account: Account,
         shieldingThreshold: Zatoshi,
@@ -685,7 +711,10 @@ class SdkSynchronizer private constructor(
         transparentReceiver: String?
     ): Proposal? = txManager.proposeShielding(account, shieldingThreshold, memo, transparentReceiver)
 
-    @Throws(TransactionEncoderException::class)
+    @Throws(
+        TransactionEncoderException.TransactionNotCreatedException::class,
+        TransactionEncoderException.TransactionNotFoundException::class
+    )
     override suspend fun createProposedTransactions(
         proposal: Proposal,
         usk: UnifiedSpendingKey
