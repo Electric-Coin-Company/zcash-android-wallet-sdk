@@ -86,6 +86,13 @@ internal class FakeRustBackend(
         error("Intentionally not implemented yet.")
     }
 
+    override suspend fun proposeTransferFromUri(
+        account: Int,
+        uri: String
+    ): ProposalUnsafe {
+        error("Intentionally not implemented yet.")
+    }
+
     override suspend fun proposeTransfer(
         account: Int,
         to: String,
