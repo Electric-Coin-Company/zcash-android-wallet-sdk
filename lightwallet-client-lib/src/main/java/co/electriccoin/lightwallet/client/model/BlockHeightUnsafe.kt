@@ -5,14 +5,14 @@ package co.electriccoin.lightwallet.client.model
  *
  * It is marked as "unsafe" because it is not guaranteed to be valid.
  */
-data class BlockHeightUnsafe(val value: Long) : Comparable<BlockHeightUnsafe> {
+data class BlockHeightUnsafe(val value: ULong) : Comparable<BlockHeightUnsafe> {
     init {
-        require(UINT_RANGE.contains(value)) { "Height $value is outside of allowed range $UINT_RANGE" }
+        require(ULONG_RANGE.contains(value)) { "Height $value is outside of allowed range $ULONG_RANGE" }
     }
 
     override fun compareTo(other: BlockHeightUnsafe): Int = value.compareTo(other.value)
 
     companion object {
-        private val UINT_RANGE = 0.toLong()..UInt.MAX_VALUE.toLong()
+        private val ULONG_RANGE: ULongRange = 0.toULong()..UInt.MAX_VALUE.toULong()
     }
 }
