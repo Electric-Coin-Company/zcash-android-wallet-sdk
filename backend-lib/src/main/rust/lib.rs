@@ -1589,7 +1589,6 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_putUtxo<'
     mut env: JNIEnv<'local>,
     _: JClass<'local>,
     db_data: JString<'local>,
-    address: JString<'local>,
     txid_bytes: JByteArray<'local>,
     index: jint,
     script: JByteArray<'local>,
@@ -1609,8 +1608,6 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_putUtxo<'
 
         let script_pubkey = Script(env.convert_byte_array(script).unwrap());
         let mut db_data = wallet_db(env, network, db_data)?;
-        let addr = utils::java_string_to_rust(env, &address);
-        let _address = TransparentAddress::decode(&network, &addr).unwrap();
 
         let output = WalletTransparentOutput::from_parts(
             OutPoint::new(txid, index as u32),

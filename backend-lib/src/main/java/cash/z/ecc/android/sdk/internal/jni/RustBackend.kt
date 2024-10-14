@@ -389,7 +389,6 @@ class RustBackend private constructor(
         }
 
     override suspend fun putUtxo(
-        tAddress: String,
         txId: ByteArray,
         index: Int,
         script: ByteArray,
@@ -398,7 +397,6 @@ class RustBackend private constructor(
     ) = withContext(SdkDispatchers.DATABASE_IO) {
         putUtxo(
             dataDbFile.absolutePath,
-            tAddress,
             txId,
             index,
             script,
@@ -722,7 +720,6 @@ class RustBackend private constructor(
         @Suppress("LongParameterList")
         private external fun putUtxo(
             dbDataPath: String,
-            tAddress: String,
             txId: ByteArray,
             index: Int,
             script: ByteArray,

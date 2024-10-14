@@ -75,7 +75,6 @@ internal interface TypesafeBackend {
 
     @Suppress("LongParameterList")
     suspend fun putUtxo(
-        tAddress: String,
         txId: ByteArray,
         index: Int,
         script: ByteArray,

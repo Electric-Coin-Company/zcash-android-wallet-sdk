@@ -141,7 +141,6 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
 
     @Suppress("LongParameterList")
     override suspend fun putUtxo(
-        tAddress: String,
         txId: ByteArray,
         index: Int,
         script: ByteArray,
@@ -149,7 +148,6 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
         height: BlockHeight
     ) {
         return backend.putUtxo(
-            tAddress,
             txId,
             index,
             script,
