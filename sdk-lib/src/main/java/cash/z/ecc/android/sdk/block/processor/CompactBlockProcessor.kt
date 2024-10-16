@@ -1006,7 +1006,6 @@ class CompactBlockProcessor internal constructor(
         //  from what is _not_ returned as a UTXO, or alternatively fetch TXOs from lightwalletd instead of just UTXOs.
         Twig.debug { "Found UTXO at height ${utxo.height.toInt()} with ${utxo.valueZat} zatoshi" }
         backend.putUtxo(
-            utxo.address,
             utxo.txid,
             utxo.index,
             utxo.script,

@@ -57,7 +57,6 @@ internal class FakeRustBackend(
     }
 
     override suspend fun putUtxo(
-        tAddress: String,
         txId: ByteArray,
         index: Int,
         script: ByteArray,

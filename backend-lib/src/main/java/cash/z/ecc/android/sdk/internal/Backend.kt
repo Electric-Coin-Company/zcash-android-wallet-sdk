@@ -222,7 +222,6 @@ interface Backend {
     @Suppress("LongParameterList")
     @Throws(RuntimeException::class)
     suspend fun putUtxo(
-        tAddress: String,
         txId: ByteArray,
         index: Int,
         script: ByteArray,
