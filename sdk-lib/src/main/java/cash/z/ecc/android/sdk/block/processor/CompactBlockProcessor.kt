@@ -63,6 +63,7 @@ import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.GetAddressUtxosReplyUnsafe
+import co.electriccoin.lightwallet.client.model.LightWalletEndpointInfoUnsafe
 import co.electriccoin.lightwallet.client.model.RawTransactionUnsafe
 import co.electriccoin.lightwallet.client.model.Response
 import co.electriccoin.lightwallet.client.model.ShieldedProtocolEnum
@@ -231,8 +232,6 @@ class CompactBlockProcessor internal constructor(
         val traceScope = TraceScope("CompactBlockProcessor.start")
 
         val (saplingStartIndex, orchardStartIndex) = refreshWalletSummary()
-
-        verifySetup()
 
         updateBirthdayHeight()
 
@@ -873,65 +872,70 @@ class CompactBlockProcessor internal constructor(
         return true
     }
 
-    // TODO [#1127]: Refactor CompactBlockProcessor.verifySetup
-    // TODO [#1127]: Need to refactor this to be less ugly and more testable
-    // TODO [#1127]: https://github.com/zcash/zcash-android-wallet-sdk/issues/1127
-
     /**
      * Confirm that the wallet data is properly setup for use.
      */
-    @Suppress("NestedBlockDepth")
-    private suspend fun verifySetup() {
-        val error =
-            if (repository.getAccountCount() == 0) {
-                CompactBlockProcessorException.NoAccount
-            } else {
-                // verify that the server is correct
+    internal suspend fun verifySetup() {
+        if (repository.getAccountCount() == 0) {
+            reportSetupException(CompactBlockProcessorException.NoAccount)
+        } else {
+            // Reach out to the server to obtain the current server info
+            val serverInfo =
+                runCatching {
+                    downloader.getServerInfo()
+                }.onFailure {
+                    Twig.error { "Unable to obtain server info due to: ${it.message}" }
+                }.getOrElse {
+                    reportSetupException(it as CompactBlockProcessorException)
+                    setState(State.Disconnected)
+                    return
+                }.let { it as LightWalletEndpointInfoUnsafe }
 
-                // How do we handle network connection issues?
-
-                downloader.getServerInfo()?.let { info ->
-                    val serverBlockHeight =
-                        runCatching { info.blockHeightUnsafe.toBlockHeight() }.getOrNull()
-
-                    if (null == serverBlockHeight) {
-                        // Note: we could better signal network connection issue
-                        CompactBlockProcessorException.BadBlockHeight(info.blockHeightUnsafe)
-                    } else {
-                        val clientBranchId =
-                            "%x".format(
-                                Locale.ROOT,
-                                backend.getBranchIdForHeight(serverBlockHeight)
-                            )
-                        val network = backend.network.networkName
-
-                        if (!clientBranchId.equals(info.consensusBranchId, true)) {
-                            MismatchedConsensusBranch(
-                                clientBranchId = clientBranchId,
-                                serverBranchId = info.consensusBranchId
-                            )
-                        } else if (!info.matchingNetwork(network)) {
-                            MismatchedNetwork(
-                                clientNetwork = network,
-                                serverNetwork = info.chainName
-                            )
-                        } else {
-                            null
-                        }
-                    }
+            // Validate server block height
+            val serverBlockHeight =
+                runCatching {
+                    serverInfo.blockHeightUnsafe.toBlockHeight()
+                }.onFailure {
+                    Twig.error { "Failed to parse server block height with: ${it.message}" }
+                }.getOrElse {
+                    reportSetupException(CompactBlockProcessorException.BadBlockHeight(serverInfo.blockHeightUnsafe))
+                    return
                 }
+
+            val clientBranchId =
+                "%x".format(
+                    Locale.ROOT,
+                    backend.getBranchIdForHeight(serverBlockHeight)
+                )
+            val network = backend.network.networkName
+
+            if (!clientBranchId.equals(serverInfo.consensusBranchId, true)) {
+                reportSetupException(
+                    MismatchedConsensusBranch(
+                        clientBranchId = clientBranchId,
+                        serverBranchId = serverInfo.consensusBranchId
+                    )
+                )
+            } else if (!serverInfo.matchingNetwork(network)) {
+                reportSetupException(
+                    MismatchedNetwork(
+                        clientNetwork = network,
+                        serverNetwork = serverInfo.chainName
+                    )
+                )
             }
+        }
+    }
 
-        if (error != null) {
-            Twig.debug { "Validating setup prior to scanning . . . ISSUE FOUND! - ${error.javaClass.simpleName}" }
-            // give listener a chance to override
-            if (onSetupErrorListener?.invoke(error) != true) {
-                throw error
-            } else {
-                Twig.debug {
-                    "Warning: An ${error::class.java.simpleName} was encountered while verifying setup but " +
-                        "it was ignored by the onSetupErrorHandler. Ignoring message: ${error.message}"
-                }
+    private fun reportSetupException(error: CompactBlockProcessorException) {
+        Twig.warn { "Validating setup prior to scanning . . . ISSUE FOUND! - ${error.message}" }
+        // Give listener a chance to override
+        if (onSetupErrorListener?.invoke(error) != true) {
+            throw error
+        } else {
+            Twig.warn {
+                "Warning: An was encountered while verifying setup but it was ignored by the onSetupErrorHandler. " +
+                    "Ignoring message: ${error.message}"
             }
         }
     }

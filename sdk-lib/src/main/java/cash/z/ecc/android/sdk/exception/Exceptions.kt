@@ -291,10 +291,10 @@ sealed class LightWalletException(message: String, cause: Throwable? = null) : S
         cause = cause
     )
 
-    class GetTAddressTransactionsException(code: Int, description: String?, cause: Throwable) : LightWalletException(
+    class GetServerInfoException(code: Int, description: String?, cause: Throwable) : LightWalletException(
         message =
-            "Failed to get transactions belonging to the given transparent address with code: $code due" +
-                " to: ${description ?: "-"}",
+            "Failed to get data about currently connected lightwalletd server with code: $code due to: ${description
+                ?: "-"}",
         cause = cause
     )
 
@@ -303,6 +303,13 @@ sealed class LightWalletException(message: String, cause: Throwable? = null) : S
             "Failed to submit transaction to the lightwalletd server with code: ${code ?: "-"} due" +
                 " to: ${description ?: "-"}",
         cause = null
+    )
+
+    class GetTAddressTransactionsException(code: Int, description: String?, cause: Throwable) : LightWalletException(
+        message =
+            "Failed to get transactions belonging to the given transparent address with code: $code due" +
+                " to: ${description ?: "-"}",
+        cause = cause
     )
 }
 
