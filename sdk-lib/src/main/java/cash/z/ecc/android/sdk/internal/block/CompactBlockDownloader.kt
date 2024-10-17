@@ -110,14 +110,20 @@ open class CompactBlockDownloader private constructor(val compactBlockRepository
      */
     suspend fun getLastDownloadedHeight() = compactBlockRepository.getLatestHeight()
 
+    @Throws(LightWalletException.GetServerInfoException::class)
     suspend fun getServerInfo(): LightWalletEndpointInfoUnsafe? =
         withContext(IO) {
             retryUpToAndThrow(GET_SERVER_INFO_RETRIES) {
                 when (val response = lightWalletClient.getServerInfo()) {
                     is Response.Success -> return@withContext response.result
-                    else -> {
+                    is Response.Failure -> {
                         lightWalletClient.reconnect()
                         Twig.warn { "WARNING: reconnecting to server in response to failure (retry #${it + 1})" }
+                        throw LightWalletException.GetServerInfoException(
+                            response.code,
+                            response.description,
+                            response.toThrowable()
+                        )
                     }
                 }
             }

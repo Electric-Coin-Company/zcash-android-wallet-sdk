@@ -496,6 +496,11 @@ class SdkSynchronizer private constructor(
     private fun CoroutineScope.onReady() {
         Twig.debug { "Starting synchronizer…" }
 
+        // Verify processor setup as soon as possible
+        launch(CoroutineExceptionHandler(::onCriticalError)) {
+            processor.verifySetup()
+        }
+
         // Triggering UTXOs and transactions fetching at the beginning of the block synchronization right after the
         //  app starts makes the transparent transactions appear faster.
         launch(CoroutineExceptionHandler(::onCriticalError)) {
