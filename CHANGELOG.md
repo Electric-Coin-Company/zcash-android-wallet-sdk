@@ -11,6 +11,7 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the given ZIP-321 Uri, and then creating transactions from it.
 
 ### Changed
+- Migrated to Rust 1.82.0.
 - `Synchronizer.proposeTransfer` throws `TransactionEncoderException.ProposalFromParametersException`
 - `Synchronizer.proposeShielding` throws `TransactionEncoderException.ProposalShieldingException`
 - `Synchronizer.createProposedTransactions` throws `TransactionEncoderException.TransactionNotCreatedException` and `TransactionEncoderException.TransactionNotFoundException`
