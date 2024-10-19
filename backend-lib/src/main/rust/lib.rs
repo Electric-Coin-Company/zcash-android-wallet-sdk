@@ -1347,7 +1347,7 @@ fn encode_wallet_summary<'a, P: Parameters>(
 
     Ok(env.new_object(
         "cash/z/ecc/android/sdk/internal/model/JniWalletSummary",
-        &format!("([L{};JJJJJJ)V", JNI_ACCOUNT_BALANCE),
+        format!("([L{};JJJJJJ)V", JNI_ACCOUNT_BALANCE),
         &[
             (&account_balances).into(),
             JValue::Long(i64::from(u32::from(summary.chain_tip_height()))),
