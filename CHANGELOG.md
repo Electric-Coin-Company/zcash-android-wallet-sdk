@@ -16,6 +16,7 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Synchronizer.createProposedTransactions` throws `TransactionEncoderException.TransactionNotCreatedException` and `TransactionEncoderException.TransactionNotFoundException`
 - `LightWalletClient` now implements `Closeable` and is thus correctly cleaned up in `SdkSynchronizer` and
   `FastestServerFetcher` after it's used
+- Checkpoints update
 
 ### Fixed
 - `FailedSynchronizationException` reported using `Synchronizer.onProcessorErrorHandler` now contains the full 
