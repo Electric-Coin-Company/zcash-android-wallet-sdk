@@ -425,20 +425,16 @@ interface Synchronizer {
     suspend fun getTransparentBalance(tAddr: String): Zatoshi
 
     /**
-     * Returns the safest height to which we can rewind, given a desire to rewind to the height
-     * provided. Due to how witness incrementing works, a wallet cannot simply rewind to any
-     * arbitrary height. This handles all that complexity yet remains flexible in the future as
-     * improvements are made.
-     */
-    suspend fun getNearestRewindHeight(height: BlockHeight): BlockHeight
-
-    /**
      * Rewinds to the safest height to which we can rewind, given a desire to rewind to the height
-     * provided. Due to how witness incrementing works, a wallet cannot simply rewind to any
+     * provided.
+     *
+     * Due to how witness incrementing works, a wallet cannot simply rewind to any
      * arbitrary height. This handles all that complexity yet remains flexible in the future as
      * improvements are made.
+     *
+     * Returns the height to which we actually rewound, or `null` if the rewind failed.
      */
-    suspend fun rewindToNearestHeight(height: BlockHeight)
+    suspend fun rewindToNearestHeight(height: BlockHeight): BlockHeight?
 
     /**
      * Rewinds to the safest height approximately 14 days backward from the current chain tip. Due to how witness

@@ -3,6 +3,7 @@ package cash.z.ecc.android.sdk.internal
 import cash.z.ecc.android.sdk.exception.InitializeException
 import cash.z.ecc.android.sdk.exception.RustLayerException
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
+import cash.z.ecc.android.sdk.internal.model.RewindResult
 import cash.z.ecc.android.sdk.internal.model.ScanRange
 import cash.z.ecc.android.sdk.internal.model.ScanSummary
 import cash.z.ecc.android.sdk.internal.model.SubtreeRoot
@@ -61,9 +62,7 @@ internal interface TypesafeBackend {
 
     fun getBranchIdForHeight(height: BlockHeight): Long
 
-    suspend fun getNearestRewindHeight(height: BlockHeight): BlockHeight
-
-    suspend fun rewindToHeight(height: BlockHeight)
+    suspend fun rewindToHeight(height: BlockHeight): RewindResult
 
     suspend fun getLatestCacheHeight(): BlockHeight?
 

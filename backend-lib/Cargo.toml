@@ -12,13 +12,13 @@ rust-version = "1.82"
 
 [dependencies]
 # Zcash dependencies
-orchard = "0.9"
-sapling = { package = "sapling-crypto", version = "0.2", default-features = false }
-zcash_address = "0.4"
-zcash_client_backend = { version = "0.13", features = ["orchard", "tor", "transparent-inputs", "unstable"] }
-zcash_client_sqlite = { version = "0.11.2", features = ["orchard", "transparent-inputs", "unstable"] }
-zcash_primitives = "0.16"
-zcash_proofs = "0.16"
+orchard = "0.10"
+sapling = { package = "sapling-crypto", version = "0.3", default-features = false }
+zcash_address = "0.6"
+zcash_client_backend = { version = "0.14", features = ["orchard", "tor", "transparent-inputs", "unstable"] }
+zcash_client_sqlite = { version = "0.12", features = ["orchard", "transparent-inputs", "unstable"] }
+zcash_primitives = "0.19"
+zcash_proofs = "0.19"
 
 # Infrastructure
 prost = "0.13"

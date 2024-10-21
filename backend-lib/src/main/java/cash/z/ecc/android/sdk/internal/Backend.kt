@@ -1,6 +1,7 @@
 package cash.z.ecc.android.sdk.internal
 
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
+import cash.z.ecc.android.sdk.internal.model.JniRewindResult
 import cash.z.ecc.android.sdk.internal.model.JniScanRange
 import cash.z.ecc.android.sdk.internal.model.JniScanSummary
 import cash.z.ecc.android.sdk.internal.model.JniSubtreeRoot
@@ -121,13 +122,11 @@ interface Backend {
         outputIndex: Int
     ): String?
 
-    suspend fun getNearestRewindHeight(height: Long): Long
-
     /**
      * @throws RuntimeException as a common indicator of the operation failure
      */
     @Throws(RuntimeException::class)
-    suspend fun rewindToHeight(height: Long)
+    suspend fun rewindToHeight(height: Long): JniRewindResult
 
     /**
      * @throws RuntimeException as a common indicator of the operation failure

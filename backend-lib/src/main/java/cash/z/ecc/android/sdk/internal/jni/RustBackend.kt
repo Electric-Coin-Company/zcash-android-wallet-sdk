@@ -5,6 +5,7 @@ import cash.z.ecc.android.sdk.internal.SdkDispatchers
 import cash.z.ecc.android.sdk.internal.ext.deleteRecursivelySuspend
 import cash.z.ecc.android.sdk.internal.ext.deleteSuspend
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
+import cash.z.ecc.android.sdk.internal.model.JniRewindResult
 import cash.z.ecc.android.sdk.internal.model.JniScanRange
 import cash.z.ecc.android.sdk.internal.model.JniScanSummary
 import cash.z.ecc.android.sdk.internal.model.JniSubtreeRoot
@@ -184,21 +185,10 @@ class RustBackend private constructor(
             )
         }
 
-    override suspend fun getNearestRewindHeight(height: Long): Long =
-        withContext(SdkDispatchers.DATABASE_IO) {
-            getNearestRewindHeight(
-                dataDbFile.absolutePath,
-                height,
-                networkId = networkId
-            )
-        }
-
     /**
-     * Deletes data for all blocks above the given height. Boils down to:
-     *
-     * DELETE FROM blocks WHERE height > ?
+     * Rewinds the data database to at most the given height.
      */
-    override suspend fun rewindToHeight(height: Long) =
+    override suspend fun rewindToHeight(height: Long): JniRewindResult =
         withContext(SdkDispatchers.DATABASE_IO) {
             rewindToHeight(
                 dataDbFile.absolutePath,
@@ -581,18 +571,11 @@ class RustBackend private constructor(
         )
 
         @JvmStatic
-        private external fun getNearestRewindHeight(
-            dbDataPath: String,
-            height: Long,
-            networkId: Int
-        ): Long
-
-        @JvmStatic
         private external fun rewindToHeight(
             dbDataPath: String,
             height: Long,
             networkId: Int
-        )
+        ): JniRewindResult
 
         @JvmStatic
         @Suppress("LongParameterList")

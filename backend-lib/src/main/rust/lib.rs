@@ -41,6 +41,7 @@ use zcash_client_backend::{
     zip321::{Payment, TransactionRequest},
     ShieldedProtocol,
 };
+use zcash_client_sqlite::error::SqliteClientError;
 use zcash_client_sqlite::{
     chain::{init::init_blockmeta_db, BlockMeta},
     wallet::init::{init_wallet_db, WalletMigrationError},
@@ -1049,40 +1050,34 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_rewindBlo
     unwrap_exc_or(&mut env, res, ())
 }
 
-#[unsafe(no_mangle)]
-pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getNearestRewindHeight<
-    'local,
->(
-    mut env: JNIEnv<'local>,
-    _: JClass<'local>,
-    db_data: JString<'local>,
-    height: jlong,
-    network_id: jint,
-) -> jlong {
-    #[allow(deprecated)]
-    let res = catch_unwind(&mut env, |env| {
-        let _span = tracing::info_span!("RustBackend.getNearestRewindHeight").entered();
-        if height < 100 {
-            Ok(height)
-        } else {
-            let network = parse_network(network_id as u32)?;
-            let db_data = wallet_db(env, network, db_data)?;
-            match db_data.get_min_unspent_height() {
-                Ok(Some(best_height)) => {
-                    let first_unspent_note_height = u32::from(best_height);
-                    Ok(std::cmp::min(first_unspent_note_height as i64, height))
-                }
-                Ok(None) => Ok(height),
-                Err(e) => Err(anyhow!(
-                    "Error while getting nearest rewind height for {}: {}",
-                    height,
-                    e
-                )),
-            }
-        }
-    });
-
-    unwrap_exc_or(&mut env, res, -1) as jlong
+fn encode_rewind_result<'a>(
+    env: &mut JNIEnv<'a>,
+    requested_height: BlockHeight,
+    rewind_result: Result<BlockHeight, SqliteClientError>,
+) -> anyhow::Result<JObject<'a>> {
+    match rewind_result {
+        Ok(height) => Ok(env.new_object(
+            "cash/z/ecc/android/sdk/internal/model/JniRewindResult$Success",
+            "(J)V",
+            &[JValue::Long(u32::from(height).into())],
+        )?),
+        Err(SqliteClientError::RequestedRewindInvalid {
+            safe_rewind_height: Some(safe_rewind_height),
+            ..
+        }) => Ok(env.new_object(
+            "cash/z/ecc/android/sdk/internal/model/JniRewindResult$Invalid",
+            "(JJ)V",
+            &[
+                JValue::Long(u32::from(safe_rewind_height).into()),
+                JValue::Long(u32::from(requested_height).into()),
+            ],
+        )?),
+        Err(e) => Err(anyhow!(
+            "Error while rewinding data DB to height {}: {}",
+            requested_height,
+            e,
+        )),
+    }
 }
 
 #[unsafe(no_mangle)]
@@ -1092,20 +1087,19 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_rewindToH
     db_data: JString<'local>,
     height: jlong,
     network_id: jint,
-) -> jboolean {
+) -> jobject {
     let res = catch_unwind(&mut env, |env| {
         let _span = tracing::info_span!("RustBackend.rewindToHeight").entered();
         let network = parse_network(network_id as u32)?;
         let mut db_data = wallet_db(env, network, db_data)?;
 
         let height = BlockHeight::try_from(height)?;
-        db_data
-            .truncate_to_height(height)
-            .map(|_| 1)
-            .map_err(|e| anyhow!("Error while rewinding data DB to height {}: {}", height, e))
+        let rewind_result = db_data.truncate_to_height(height);
+
+        Ok(encode_rewind_result(env, height, rewind_result)?.into_raw())
     });
 
-    unwrap_exc_or(&mut env, res, JNI_FALSE)
+    unwrap_exc_or(&mut env, res, ptr::null_mut())
 }
 
 fn decode_subtree_root<H>(
@@ -1342,7 +1336,16 @@ fn encode_wallet_summary<'a, P: Parameters>(
 
     let (progress_numerator, progress_denominator) = summary
         .scan_progress()
-        .map(|progress| (*progress.numerator(), *progress.denominator()))
+        .map(|scan_progress| {
+            let (recovery_numerator, recovery_denominator) = summary
+                .recovery_progress()
+                .map(|progress| (*progress.numerator(), *progress.denominator()))
+                .unwrap_or((0, 0));
+            (
+                *scan_progress.numerator() + recovery_numerator,
+                *scan_progress.denominator() + recovery_denominator,
+            )
+        })
         .unwrap_or((0, 1));
 
     Ok(env.new_object(
