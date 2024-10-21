@@ -3,9 +3,6 @@ package cash.z.ecc.android.sdk.internal.model
 import cash.z.ecc.android.sdk.exception.SdkException
 import cash.z.ecc.android.sdk.model.BlockHeight
 
-/**
- * Serves as cross layer (Kotlin, Rust) communication class.
- */
 sealed interface RewindResult {
     data class Success(val height: BlockHeight) : RewindResult
 
