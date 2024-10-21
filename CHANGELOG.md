@@ -18,6 +18,10 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `FastestServerFetcher` after it's used
 - Checkpoints update
 
+### Fixed
+- `FailedSynchronizationException` reported using `Synchronizer.onProcessorErrorHandler` now contains the full 
+  stacktrace history
+
 ## [2.2.4] - 2024-09-16
 
 ### Added
