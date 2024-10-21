@@ -17,6 +17,10 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `LightWalletClient` now implements `Closeable` and is thus correctly cleaned up in `SdkSynchronizer` and
   `FastestServerFetcher` after it's used
 
+### Fixed
+- `FailedSynchronizationException` reported using `Synchronizer.onProcessorErrorHandler` now contains the full 
+  stacktrace history
+
 ## [2.2.4] - 2024-09-16
 
 ### Added

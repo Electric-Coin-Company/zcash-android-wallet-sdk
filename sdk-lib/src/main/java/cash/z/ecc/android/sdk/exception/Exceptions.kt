@@ -75,7 +75,8 @@ sealed class CompactBlockProcessorException(message: String, cause: Throwable? =
 
     class FailedSynchronizationException(message: String, cause: Throwable) : CompactBlockProcessorException(
         "Common error while running the block synchronization. This is typically caused by a failed underlying " +
-            "synchronization operation. See failure description: $message OR the root cause: $cause"
+            "synchronization operation. See failure description: $message OR the root cause: $cause",
+        cause
     )
 
     class FailedDownloadException(cause: Throwable? = null) : CompactBlockProcessorException(
