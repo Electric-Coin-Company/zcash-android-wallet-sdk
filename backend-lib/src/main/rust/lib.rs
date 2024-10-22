@@ -404,174 +404,6 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_isSeedRel
     unwrap_exc_or(&mut env, res, JNI_FALSE)
 }
 
-/// Derives and returns a unified spending key from the given seed for the given account ID.
-///
-/// Returns the newly created [ZIP 316] account identifier, along with the binary encoding
-/// of the [`UnifiedSpendingKey`] for the newly created account. The caller should store
-/// the returned spending key in a secure fashion.
-#[unsafe(no_mangle)]
-pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustDerivationTool_deriveSpendingKey<
-    'local,
->(
-    mut env: JNIEnv<'local>,
-    _: JClass<'local>,
-    seed: JByteArray<'local>,
-    account: jint,
-    network_id: jint,
-) -> jobject {
-    let res = catch_unwind(&mut env, |env| {
-        let _span = tracing::info_span!("RustDerivationTool.deriveSpendingKey").entered();
-        let network = parse_network(network_id as u32)?;
-        let seed = SecretVec::new(env.convert_byte_array(seed).unwrap());
-        let account = account_id_from_jint(account)?;
-
-        let usk = UnifiedSpendingKey::from_seed(&network, seed.expose_secret(), account)
-            .map_err(|e| anyhow!("error generating unified spending key from seed: {:?}", e))?;
-
-        Ok(encode_usk(env, account, usk)?.into_raw())
-    });
-    unwrap_exc_or(&mut env, res, ptr::null_mut())
-}
-
-#[unsafe(no_mangle)]
-pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustDerivationTool_deriveUnifiedFullViewingKeysFromSeed<
-    'local,
->(
-    mut env: JNIEnv<'local>,
-    _: JClass<'local>,
-    seed: JByteArray<'local>,
-    accounts: jint,
-    network_id: jint,
-) -> jobjectArray {
-    let res = catch_unwind(&mut env, |env| {
-        let _span = tracing::info_span!("RustDerivationTool.deriveUnifiedFullViewingKeysFromSeed")
-            .entered();
-        let network = parse_network(network_id as u32)?;
-        let seed = env.convert_byte_array(seed).unwrap();
-        let accounts = if accounts > 0 {
-            accounts as u32
-        } else {
-            return Err(anyhow!("accounts argument must be greater than zero"));
-        };
-
-        let ufvks: Vec<_> = (0..accounts)
-            .map(|account| {
-                let account_id = zip32::AccountId::try_from(account)
-                    .map_err(|_| anyhow!("Invalid account ID"))?;
-                UnifiedSpendingKey::from_seed(&network, &seed, account_id)
-                    .map_err(|e| {
-                        anyhow!("error generating unified spending key from seed: {:?}", e)
-                    })
-                    .map(|usk| usk.to_unified_full_viewing_key().encode(&network))
-            })
-            .collect::<Result<_, _>>()?;
-
-        Ok(utils::rust_vec_to_java(
-            env,
-            ufvks,
-            "java/lang/String",
-            |env, ufvk| env.new_string(ufvk),
-            |env| env.new_string(""),
-        )?
-        .into_raw())
-    });
-    unwrap_exc_or(&mut env, res, ptr::null_mut())
-}
-
-#[unsafe(no_mangle)]
-pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustDerivationTool_deriveUnifiedAddressFromSeed<
-    'local,
->(
-    mut env: JNIEnv<'local>,
-    _: JClass<'local>,
-    seed: JByteArray<'local>,
-    account_index: jint,
-    network_id: jint,
-) -> jstring {
-    let res = panic::catch_unwind(|| {
-        let _span =
-            tracing::info_span!("RustDerivationTool.deriveUnifiedAddressFromSeed").entered();
-        let network = parse_network(network_id as u32)?;
-        let seed = env.convert_byte_array(seed).unwrap();
-        let account_id = account_id_from_jint(account_index)?;
-
-        let ufvk = UnifiedSpendingKey::from_seed(&network, &seed, account_id)
-            .map_err(|e| anyhow!("error generating unified spending key from seed: {:?}", e))
-            .map(|usk| usk.to_unified_full_viewing_key())?;
-
-        let (ua, _) = ufvk
-            .find_address(DiversifierIndex::new(), DEFAULT_ADDRESS_REQUEST)
-            .expect("At least one Unified Address should be derivable");
-        let address_str = ua.encode(&network);
-        let output = env
-            .new_string(address_str)
-            .expect("Couldn't create Java string!");
-        Ok(output.into_raw())
-    });
-    unwrap_exc_or(&mut env, res, ptr::null_mut())
-}
-
-#[unsafe(no_mangle)]
-pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustDerivationTool_deriveUnifiedAddressFromViewingKey<
-    'local,
->(
-    mut env: JNIEnv<'local>,
-    _: JClass<'local>,
-    ufvk_string: JString<'local>,
-    network_id: jint,
-) -> jstring {
-    let res = catch_unwind(&mut env, |env| {
-        let _span =
-            tracing::info_span!("RustDerivationTool.deriveUnifiedAddressFromViewingKey").entered();
-        let network = parse_network(network_id as u32)?;
-        let ufvk_string = utils::java_string_to_rust(env, &ufvk_string);
-        let ufvk = match UnifiedFullViewingKey::decode(&network, &ufvk_string) {
-            Ok(ufvk) => ufvk,
-            Err(e) => {
-                return Err(anyhow!(
-                    "Error while deriving viewing key from string input: {}",
-                    e,
-                ));
-            }
-        };
-
-        // Derive the default Unified Address (containing the default Sapling payment
-        // address that older SDKs used).
-        let (ua, _) = ufvk.default_address(DEFAULT_ADDRESS_REQUEST)?;
-        let address_str = ua.encode(&network);
-        let output = env
-            .new_string(address_str)
-            .expect("Couldn't create Java string!");
-        Ok(output.into_raw())
-    });
-    unwrap_exc_or(&mut env, res, ptr::null_mut())
-}
-
-#[unsafe(no_mangle)]
-pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustDerivationTool_deriveUnifiedFullViewingKey<
-    'local,
->(
-    mut env: JNIEnv<'local>,
-    _: JClass<'local>,
-    usk: JByteArray<'local>,
-    network_id: jint,
-) -> jstring {
-    let res = panic::catch_unwind(|| {
-        let _span = tracing::info_span!("RustDerivationTool.deriveUnifiedFullViewingKey").entered();
-        let usk = decode_usk(&env, usk)?;
-        let network = parse_network(network_id as u32)?;
-
-        let ufvk = usk.to_unified_full_viewing_key();
-
-        let output = env
-            .new_string(ufvk.encode(&network))
-            .expect("Couldn't create Java string!");
-
-        Ok(output.into_raw())
-    });
-    unwrap_exc_or(&mut env, res, ptr::null_mut())
-}
-
 #[unsafe(no_mangle)]
 pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getCurrentAddress<'local>(
     mut env: JNIEnv<'local>,
@@ -2001,6 +1833,178 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_branchIdF
         Ok(branch_id.into())
     });
     unwrap_exc_or(&mut env, res, -1)
+}
+
+//
+// Derivation tool
+//
+
+/// Derives and returns a unified spending key from the given seed for the given account ID.
+///
+/// Returns the newly created [ZIP 316] account identifier, along with the binary encoding
+/// of the [`UnifiedSpendingKey`] for the newly created account. The caller should store
+/// the returned spending key in a secure fashion.
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustDerivationTool_deriveSpendingKey<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _: JClass<'local>,
+    seed: JByteArray<'local>,
+    account: jint,
+    network_id: jint,
+) -> jobject {
+    let res = catch_unwind(&mut env, |env| {
+        let _span = tracing::info_span!("RustDerivationTool.deriveSpendingKey").entered();
+        let network = parse_network(network_id as u32)?;
+        let seed = SecretVec::new(env.convert_byte_array(seed).unwrap());
+        let account = account_id_from_jint(account)?;
+
+        let usk = UnifiedSpendingKey::from_seed(&network, seed.expose_secret(), account)
+            .map_err(|e| anyhow!("error generating unified spending key from seed: {:?}", e))?;
+
+        Ok(encode_usk(env, account, usk)?.into_raw())
+    });
+    unwrap_exc_or(&mut env, res, ptr::null_mut())
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustDerivationTool_deriveUnifiedFullViewingKeysFromSeed<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _: JClass<'local>,
+    seed: JByteArray<'local>,
+    accounts: jint,
+    network_id: jint,
+) -> jobjectArray {
+    let res = catch_unwind(&mut env, |env| {
+        let _span = tracing::info_span!("RustDerivationTool.deriveUnifiedFullViewingKeysFromSeed")
+            .entered();
+        let network = parse_network(network_id as u32)?;
+        let seed = env.convert_byte_array(seed).unwrap();
+        let accounts = if accounts > 0 {
+            accounts as u32
+        } else {
+            return Err(anyhow!("accounts argument must be greater than zero"));
+        };
+
+        let ufvks: Vec<_> = (0..accounts)
+            .map(|account| {
+                let account_id = zip32::AccountId::try_from(account)
+                    .map_err(|_| anyhow!("Invalid account ID"))?;
+                UnifiedSpendingKey::from_seed(&network, &seed, account_id)
+                    .map_err(|e| {
+                        anyhow!("error generating unified spending key from seed: {:?}", e)
+                    })
+                    .map(|usk| usk.to_unified_full_viewing_key().encode(&network))
+            })
+            .collect::<Result<_, _>>()?;
+
+        Ok(utils::rust_vec_to_java(
+            env,
+            ufvks,
+            "java/lang/String",
+            |env, ufvk| env.new_string(ufvk),
+            |env| env.new_string(""),
+        )?
+        .into_raw())
+    });
+    unwrap_exc_or(&mut env, res, ptr::null_mut())
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustDerivationTool_deriveUnifiedAddressFromSeed<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _: JClass<'local>,
+    seed: JByteArray<'local>,
+    account_index: jint,
+    network_id: jint,
+) -> jstring {
+    let res = panic::catch_unwind(|| {
+        let _span =
+            tracing::info_span!("RustDerivationTool.deriveUnifiedAddressFromSeed").entered();
+        let network = parse_network(network_id as u32)?;
+        let seed = env.convert_byte_array(seed).unwrap();
+        let account_id = account_id_from_jint(account_index)?;
+
+        let ufvk = UnifiedSpendingKey::from_seed(&network, &seed, account_id)
+            .map_err(|e| anyhow!("error generating unified spending key from seed: {:?}", e))
+            .map(|usk| usk.to_unified_full_viewing_key())?;
+
+        let (ua, _) = ufvk
+            .find_address(DiversifierIndex::new(), DEFAULT_ADDRESS_REQUEST)
+            .expect("At least one Unified Address should be derivable");
+        let address_str = ua.encode(&network);
+        let output = env
+            .new_string(address_str)
+            .expect("Couldn't create Java string!");
+        Ok(output.into_raw())
+    });
+    unwrap_exc_or(&mut env, res, ptr::null_mut())
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustDerivationTool_deriveUnifiedAddressFromViewingKey<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _: JClass<'local>,
+    ufvk_string: JString<'local>,
+    network_id: jint,
+) -> jstring {
+    let res = catch_unwind(&mut env, |env| {
+        let _span =
+            tracing::info_span!("RustDerivationTool.deriveUnifiedAddressFromViewingKey").entered();
+        let network = parse_network(network_id as u32)?;
+        let ufvk_string = utils::java_string_to_rust(env, &ufvk_string);
+        let ufvk = match UnifiedFullViewingKey::decode(&network, &ufvk_string) {
+            Ok(ufvk) => ufvk,
+            Err(e) => {
+                return Err(anyhow!(
+                    "Error while deriving viewing key from string input: {}",
+                    e,
+                ));
+            }
+        };
+
+        // Derive the default Unified Address (containing the default Sapling payment
+        // address that older SDKs used).
+        let (ua, _) = ufvk.default_address(DEFAULT_ADDRESS_REQUEST)?;
+        let address_str = ua.encode(&network);
+        let output = env
+            .new_string(address_str)
+            .expect("Couldn't create Java string!");
+        Ok(output.into_raw())
+    });
+    unwrap_exc_or(&mut env, res, ptr::null_mut())
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustDerivationTool_deriveUnifiedFullViewingKey<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _: JClass<'local>,
+    usk: JByteArray<'local>,
+    network_id: jint,
+) -> jstring {
+    let res = panic::catch_unwind(|| {
+        let _span = tracing::info_span!("RustDerivationTool.deriveUnifiedFullViewingKey").entered();
+        let usk = decode_usk(&env, usk)?;
+        let network = parse_network(network_id as u32)?;
+
+        let ufvk = usk.to_unified_full_viewing_key();
+
+        let output = env
+            .new_string(ufvk.encode(&network))
+            .expect("Couldn't create Java string!");
+
+        Ok(output.into_raw())
+    });
+    unwrap_exc_or(&mut env, res, ptr::null_mut())
 }
 
 //
