@@ -417,10 +417,6 @@ class SdkSynchronizer private constructor(
         return processor.rewindToNearestHeight(height)
     }
 
-    override suspend fun quickRewind() {
-        processor.quickRewind()
-    }
-
     override fun getMemos(transactionOverview: TransactionOverview): Flow<String> {
         return storage.getOutputProperties(transactionOverview.rawId).map { properties ->
             if (!properties.protocol.isShielded()) {

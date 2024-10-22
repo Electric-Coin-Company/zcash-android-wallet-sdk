@@ -437,13 +437,6 @@ interface Synchronizer {
     suspend fun rewindToNearestHeight(height: BlockHeight): BlockHeight?
 
     /**
-     * Rewinds to the safest height approximately 14 days backward from the current chain tip. Due to how witness
-     * incrementing works, a wallet cannot simply rewind to any arbitrary height. This handles all that complexity
-     * yet remains flexible in the future as improvements are made.
-     */
-    suspend fun quickRewind()
-
-    /**
      * Returns a stream of memos for a transaction. It works for both received and sent transaction.
      *
      * Note that this function internally resolves any error which comes, logs it, and then transforms it to an empty

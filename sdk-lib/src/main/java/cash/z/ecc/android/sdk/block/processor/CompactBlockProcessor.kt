@@ -24,7 +24,6 @@ import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException.Mismatche
 import cash.z.ecc.android.sdk.exception.InitializeException
 import cash.z.ecc.android.sdk.exception.LightWalletException
 import cash.z.ecc.android.sdk.exception.TransactionEncoderException
-import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.ext.ZcashSdk.MAX_BACKOFF_INTERVAL
 import cash.z.ecc.android.sdk.ext.ZcashSdk.POLL_INTERVAL
 import cash.z.ecc.android.sdk.ext.ZcashSdk.POLL_INTERVAL_SHORT
@@ -91,7 +90,6 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.random.Random
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
@@ -2301,20 +2299,6 @@ class CompactBlockProcessor internal constructor(
                 rewindToNearestHeight(lowerBound)
             }
         }
-    }
-
-    /**
-     * Rewind back two weeks worth of blocks. The final amount of rewinded blocks depends on [rewindToNearestHeight].
-     */
-    suspend fun quickRewind(): Boolean {
-        val height =
-            when (val result = getMaxScannedHeight(backend)) {
-                is GetMaxScannedHeightResult.Success -> result.height
-                else -> return false
-            }
-        val blocksPer14Days = 14.days.inWholeMilliseconds / ZcashSdk.BLOCK_INTERVAL_MILLIS.toInt()
-        val twoWeeksBack = BlockHeight.new((height.value - blocksPer14Days).coerceAtLeast(lowerBoundHeight.value))
-        return rewindToNearestHeight(twoWeeksBack) != null
     }
 
     @Suppress("LongMethod")
