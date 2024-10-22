@@ -6,7 +6,7 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [2.2.5] - 2024-10-21
+## [2.2.5] - 2024-10-22
 
 ### Added
 - The new `Synchronizer.proposeFulfillingPaymentUri` API has been added. It enables constructing Proposal object from 
