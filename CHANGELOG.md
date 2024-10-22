@@ -11,6 +11,9 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the given ZIP-321 Uri, and then creating transactions from it.
 
 ### Changed
+- Migrated to Rust 1.82.0.
+- `Synchronizer.rewindToNearestHeight` now returns the block height that was
+  actually rewound to, or `null` if no rewind was performed.
 - `Synchronizer.proposeTransfer` throws `TransactionEncoderException.ProposalFromParametersException`
 - `Synchronizer.proposeShielding` throws `TransactionEncoderException.ProposalShieldingException`
 - `Synchronizer.createProposedTransactions` throws `TransactionEncoderException.TransactionNotCreatedException` and `TransactionEncoderException.TransactionNotFoundException`
@@ -21,6 +24,12 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - `FailedSynchronizationException` reported using `Synchronizer.onProcessorErrorHandler` now contains the full 
   stacktrace history
+
+### Removed
+- `Synchronizer.getNearestRewindHeight` (its function is now handled internally
+  by `Synchronizer.rewindToNearestHeight`).
+- `Synchronizer.quickRewind` and `CompactBlockProcessor.quickRewind` have been removed as they triggered the block 
+  rewind action at an invalid height. Use `Synchronizer.rewindToNearestHeight` instead.
 
 ## [2.2.4] - 2024-09-16
 

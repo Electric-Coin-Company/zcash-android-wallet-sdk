@@ -24,7 +24,6 @@ import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException.Mismatche
 import cash.z.ecc.android.sdk.exception.InitializeException
 import cash.z.ecc.android.sdk.exception.LightWalletException
 import cash.z.ecc.android.sdk.exception.TransactionEncoderException
-import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.ext.ZcashSdk.MAX_BACKOFF_INTERVAL
 import cash.z.ecc.android.sdk.ext.ZcashSdk.POLL_INTERVAL
 import cash.z.ecc.android.sdk.ext.ZcashSdk.POLL_INTERVAL_SHORT
@@ -42,6 +41,7 @@ import cash.z.ecc.android.sdk.internal.ext.toHexReversed
 import cash.z.ecc.android.sdk.internal.metrics.TraceScope
 import cash.z.ecc.android.sdk.internal.model.BlockBatch
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
+import cash.z.ecc.android.sdk.internal.model.RewindResult
 import cash.z.ecc.android.sdk.internal.model.ScanRange
 import cash.z.ecc.android.sdk.internal.model.SubtreeRoot
 import cash.z.ecc.android.sdk.internal.model.SuggestScanRangePriority
@@ -90,7 +90,6 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.random.Random
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
@@ -2302,72 +2301,59 @@ class CompactBlockProcessor internal constructor(
         }
     }
 
-    suspend fun getNearestRewindHeight(height: BlockHeight): BlockHeight {
-        // TODO [#1545]: Improve getNearestRewindHeight
-        //  Add a concept of original checkpoint height to the processor. For now, derive it
-        //  add one because we already have the checkpoint. Add one again because we delete ABOVE the block
-        // TODO [#1545]: https://github.com/Electric-Coin-Company/zcash-android-wallet-sdk/issues/1545
-        val originalCheckpoint = lowerBoundHeight + MAX_REORG_SIZE + 2
-        return if (height < originalCheckpoint) {
-            originalCheckpoint
-        } else {
-            // tricky: subtract one because we delete ABOVE this block
-            // This could create an invalid height if height was saplingActivationHeight
-            val rewindHeight = BlockHeight(height.value - 1)
-            backend.getNearestRewindHeight(rewindHeight)
-        }
-    }
-
-    /**
-     * Rewind back two weeks worth of blocks. The final amount of rewinded blocks depends on [rewindToNearestHeight].
-     */
-    suspend fun quickRewind(): Boolean {
-        val height =
-            when (val result = getMaxScannedHeight(backend)) {
-                is GetMaxScannedHeightResult.Success -> result.height
-                else -> return false
-            }
-        val blocksPer14Days = 14.days.inWholeMilliseconds / ZcashSdk.BLOCK_INTERVAL_MILLIS.toInt()
-        val twoWeeksBack = BlockHeight.new((height.value - blocksPer14Days).coerceAtLeast(lowerBoundHeight.value))
-        return rewindToNearestHeight(twoWeeksBack)
-    }
-
     @Suppress("LongMethod")
-    suspend fun rewindToNearestHeight(height: BlockHeight): Boolean {
+    suspend fun rewindToNearestHeight(height: BlockHeight): BlockHeight? {
         processingMutex.withLockLogged("rewindToHeight") {
             val lastLocalBlock =
                 when (val result = getMaxScannedHeight(backend)) {
                     is GetMaxScannedHeightResult.Success -> result.height
-                    else -> return false
+                    else -> return null
                 }
-            val targetHeight = getNearestRewindHeight(height)
 
             Twig.debug {
-                "Rewinding to requested height: $height using target height: $targetHeight with last local block:" +
-                    " $lastLocalBlock"
+                "Rewinding to requested height: $height with last local block: $lastLocalBlock"
             }
 
-            if (targetHeight < lastLocalBlock) {
-                Twig.debug { "Rewinding because targetHeight is less than lastLocalBlock." }
-                runCatching {
-                    backend.rewindToHeight(targetHeight)
-                    downloader.rewindToHeight(targetHeight)
-                }.onFailure {
-                    Twig.error { "Rewinding to the targetHeight $targetHeight failed with $it" }
-                }.onSuccess {
-                    Twig.info { "Rewind to $targetHeight was successful." }
-                    setState(newState = State.Syncing)
-                    setProgress(progress = PercentDecimal.ZERO_PERCENT)
-                    setProcessorInfo(overallSyncRange = null)
-                }
+            return if (height < lastLocalBlock) {
+                Twig.debug { "Rewinding because height is less than lastLocalBlock." }
+                rewindToHeightInner(height)
             } else {
                 Twig.info {
-                    "Not rewinding dataDb because last local block is $lastLocalBlock which is less than the target " +
-                        "height of $targetHeight"
+                    "Not rewinding dataDb because last local block is $lastLocalBlock which is less than the " +
+                        "requested height of $height"
                 }
+                lastLocalBlock
             }
         }
-        return true
+    }
+
+    private suspend fun rewindToHeightInner(height: BlockHeight): BlockHeight? {
+        val ret =
+            runCatching {
+                backend.rewindToHeight(height)
+            }.onFailure {
+                Twig.error { "Rewinding to $height failed with $it" }
+            }.mapCatching {
+                when (it) {
+                    is RewindResult.Success -> {
+                        downloader.rewindToHeight(it.height)
+                        Twig.info { "Rewound to ${it.height} successfully" }
+                        setState(newState = State.Syncing)
+                        setProgress(progress = PercentDecimal.ZERO_PERCENT)
+                        setProcessorInfo(overallSyncRange = null)
+                        it.height
+                    }
+                    is RewindResult.Invalid -> {
+                        Twig.warn { "Requested rewind height ${it.requestedHeight} is invalid" }
+                        if (it.safeRewindHeight != null) {
+                            rewindToHeightInner(it.safeRewindHeight)
+                        } else {
+                            null
+                        }
+                    }
+                }
+            }
+        return ret.getOrNull()
     }
 
     /** insightful function for debugging these critical errors */

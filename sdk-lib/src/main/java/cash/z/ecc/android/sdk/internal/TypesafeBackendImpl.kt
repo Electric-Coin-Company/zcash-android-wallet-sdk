@@ -4,6 +4,7 @@ import cash.z.ecc.android.sdk.exception.InitializeException
 import cash.z.ecc.android.sdk.exception.RustLayerException
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.internal.model.JniSubtreeRoot
+import cash.z.ecc.android.sdk.internal.model.RewindResult
 import cash.z.ecc.android.sdk.internal.model.ScanRange
 import cash.z.ecc.android.sdk.internal.model.ScanSummary
 import cash.z.ecc.android.sdk.internal.model.SubtreeRoot
@@ -109,12 +110,8 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
         return backend.getBranchIdForHeight(height.value)
     }
 
-    override suspend fun getNearestRewindHeight(height: BlockHeight): BlockHeight {
-        return BlockHeight.new(backend.getNearestRewindHeight(height.value))
-    }
-
-    override suspend fun rewindToHeight(height: BlockHeight) {
-        backend.rewindToHeight(height.value)
+    override suspend fun rewindToHeight(height: BlockHeight): RewindResult {
+        return RewindResult.new(backend.rewindToHeight(height.value))
     }
 
     override suspend fun getLatestCacheHeight(): BlockHeight? {

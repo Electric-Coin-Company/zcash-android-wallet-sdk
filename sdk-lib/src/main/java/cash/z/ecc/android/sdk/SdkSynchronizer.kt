@@ -413,17 +413,8 @@ class SdkSynchronizer private constructor(
             }
         }
 
-    override suspend fun getNearestRewindHeight(height: BlockHeight): BlockHeight =
-        processor.getNearestRewindHeight(
-            height
-        )
-
-    override suspend fun rewindToNearestHeight(height: BlockHeight) {
-        processor.rewindToNearestHeight(height)
-    }
-
-    override suspend fun quickRewind() {
-        processor.quickRewind()
+    override suspend fun rewindToNearestHeight(height: BlockHeight): BlockHeight? {
+        return processor.rewindToNearestHeight(height)
     }
 
     override fun getMemos(transactionOverview: TransactionOverview): Flow<String> {

@@ -327,13 +327,16 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     /**
-     * This rewinds to the nearest height, i.e. 14 days back from the current chain tip.
+     * This rewinds to the nearest height, i.e. 100 blocks back from the current chain tip.
      */
     fun rewind() {
         val synchronizer = synchronizer.value
-        if (null != synchronizer) {
+        val currentBlockHeight = synchronizer?.networkHeight?.value
+        if (null != synchronizer && null != currentBlockHeight) {
             viewModelScope.launch {
-                synchronizer.quickRewind()
+                synchronizer.rewindToNearestHeight(
+                    BlockHeight.new(currentBlockHeight.value - QUICK_REWIND_BLOCKS)
+                )
             }
         }
     }
@@ -348,6 +351,10 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
                 (synchronizer as SdkSynchronizer).close()
             }
         }
+    }
+
+    companion object {
+        private const val QUICK_REWIND_BLOCKS = 100
     }
 }
 

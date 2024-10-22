@@ -2,6 +2,7 @@ package cash.z.ecc.fixture
 
 import cash.z.ecc.android.sdk.internal.Backend
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
+import cash.z.ecc.android.sdk.internal.model.JniRewindResult
 import cash.z.ecc.android.sdk.internal.model.JniScanRange
 import cash.z.ecc.android.sdk.internal.model.JniSubtreeRoot
 import cash.z.ecc.android.sdk.internal.model.JniTransactionDataRequest
@@ -17,8 +18,9 @@ internal class FakeRustBackend(
         metadata.addAll(blockMetadata)
     }
 
-    override suspend fun rewindToHeight(height: Long) {
+    override suspend fun rewindToHeight(height: Long): JniRewindResult {
         metadata.removeAll { it.height > height }
+        return JniRewindResult.Success(height)
     }
 
     override suspend fun putSubtreeRoots(
@@ -177,10 +179,6 @@ internal class FakeRustBackend(
         protocol: Int,
         outputIndex: Int
     ): String? {
-        error("Intentionally not implemented yet.")
-    }
-
-    override suspend fun getNearestRewindHeight(height: Long): Long {
         error("Intentionally not implemented yet.")
     }
 
