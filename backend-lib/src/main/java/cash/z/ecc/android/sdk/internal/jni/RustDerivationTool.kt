@@ -40,6 +40,18 @@ class RustDerivationTool private constructor() : Derivation {
         networkId: Int
     ): String = deriveUnifiedAddressFromViewingKey(viewingKey, networkId = networkId)
 
+    override fun deriveArbitraryWalletKey(
+        contextString: ByteArray,
+        seed: ByteArray
+    ): ByteArray = deriveArbitraryWalletKeyFromSeed(contextString, seed)
+
+    override fun deriveArbitraryAccountKey(
+        contextString: ByteArray,
+        seed: ByteArray,
+        networkId: Int,
+        accountIndex: Int
+    ): ByteArray = deriveArbitraryAccountKeyFromSeed(contextString, seed, accountIndex = accountIndex, networkId = networkId)
+
     companion object {
         suspend fun new(): Derivation {
             RustBackend.loadLibrary()
@@ -79,5 +91,19 @@ class RustDerivationTool private constructor() : Derivation {
             key: String,
             networkId: Int
         ): String
+
+        @JvmStatic
+        private external fun deriveArbitraryWalletKeyFromSeed(
+            contextString: ByteArray,
+            seed: ByteArray
+        ): ByteArray
+
+        @JvmStatic
+        private external fun deriveArbitraryAccountKeyFromSeed(
+            contextString: ByteArray,
+            seed: ByteArray,
+            accountIndex: Int,
+            networkId: Int
+        ): ByteArray
     }
 }

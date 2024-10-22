@@ -34,4 +34,16 @@ internal class TypesafeDerivationToolImpl(private val derivation: Derivation) : 
         viewingKey: String,
         network: ZcashNetwork,
     ): String = derivation.deriveUnifiedAddress(viewingKey, network)
+
+    override suspend fun deriveArbitraryWalletKey(
+        contextString: ByteArray,
+        seed: ByteArray
+    ): ByteArray = derivation.deriveArbitraryWalletKeyTypesafe(contextString, seed)
+
+    override suspend fun deriveArbitraryAccountKey(
+        contextString: ByteArray,
+        seed: ByteArray,
+        network: ZcashNetwork,
+        account: Account
+    ): ByteArray = derivation.deriveArbitraryAccountKeyTypesafe(contextString, seed, network, account)
 }

@@ -47,6 +47,7 @@ use zcash_client_sqlite::{
     wallet::init::{init_wallet_db, WalletMigrationError},
     AccountId, FsBlockDb, WalletDb,
 };
+use zcash_primitives::consensus::NetworkConstants;
 use zcash_primitives::{
     block::BlockHash,
     consensus::{
@@ -65,6 +66,7 @@ use zcash_primitives::{
     zip32::{self, DiversifierIndex},
 };
 use zcash_proofs::prover::LocalTxProver;
+use zip32::ChildIndex;
 
 use crate::utils::{catch_unwind, exception::unwrap_exc_or};
 
@@ -2003,6 +2005,63 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustDerivationTool_de
             .expect("Couldn't create Java string!");
 
         Ok(output.into_raw())
+    });
+    unwrap_exc_or(&mut env, res, ptr::null_mut())
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustDerivationTool_deriveArbitraryWalletKeyFromSeed<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _: JClass<'local>,
+    context_string: JByteArray<'local>,
+    seed: JByteArray<'local>,
+) -> jbyteArray {
+    let res = panic::catch_unwind(|| {
+        let _span =
+            tracing::info_span!("RustDerivationTool.deriveArbitraryWalletKeyFromSeed").entered();
+        let context_string = env.convert_byte_array(context_string)?;
+        let seed = SecretVec::new(env.convert_byte_array(seed)?);
+
+        let key =
+            zip32::arbitrary::SecretKey::from_path(&context_string, seed.expose_secret(), &[]);
+
+        Ok(utils::rust_bytes_to_java(&env, key.data())?.into_raw())
+    });
+    unwrap_exc_or(&mut env, res, ptr::null_mut())
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustDerivationTool_deriveArbitraryAccountKeyFromSeed<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _: JClass<'local>,
+    context_string: JByteArray<'local>,
+    seed: JByteArray<'local>,
+    account: jint,
+    network_id: jint,
+) -> jbyteArray {
+    let res = panic::catch_unwind(|| {
+        let _span =
+            tracing::info_span!("RustDerivationTool.deriveArbitraryAccountKeyFromSeed").entered();
+        let network = parse_network(network_id as u32)?;
+        let context_string = env.convert_byte_array(context_string)?;
+        let seed = SecretVec::new(env.convert_byte_array(seed)?);
+        let account = account_id_from_jint(account)?;
+
+        let key = zip32::arbitrary::SecretKey::from_path(
+            &context_string,
+            seed.expose_secret(),
+            &[
+                ChildIndex::hardened(32),
+                ChildIndex::hardened(network.coin_type()),
+                ChildIndex::hardened(account.into()),
+            ],
+        );
+
+        Ok(utils::rust_bytes_to_java(&env, key.data())?.into_raw())
     });
     unwrap_exc_or(&mut env, res, ptr::null_mut())
 }
