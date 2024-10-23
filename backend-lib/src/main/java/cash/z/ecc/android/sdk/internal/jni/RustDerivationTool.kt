@@ -50,7 +50,13 @@ class RustDerivationTool private constructor() : Derivation {
         seed: ByteArray,
         networkId: Int,
         accountIndex: Int
-    ): ByteArray = deriveArbitraryAccountKeyFromSeed(contextString, seed, accountIndex = accountIndex, networkId = networkId)
+    ): ByteArray =
+        deriveArbitraryAccountKeyFromSeed(
+            contextString = contextString,
+            seed = seed,
+            accountIndex = accountIndex,
+            networkId = networkId
+        )
 
     companion object {
         suspend fun new(): Derivation {
