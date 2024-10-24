@@ -82,6 +82,41 @@ interface DerivationTool {
         network: ZcashNetwork
     ): String
 
+    /**
+     * Derives a [ZIP 32 Arbitrary Key] from the given seed at the "wallet level", i.e.
+     * directly from the seed with no ZIP 32 path applied.
+     *
+     * The resulting key will be the same across all networks (Zcash mainnet, Zcash
+     * testnet, OtherCoin mainnet, and so on). You can think of it as a context-specific
+     * seed fingerprint that can be used as (static) key material.
+     *
+     * [ZIP 32 Arbitrary Key]: https://zips.z.cash/zip-0032#specification-arbitrary-key-derivation
+     *
+     * @param contextString a globally-unique non-empty sequence of at most 252 bytes that
+     *        identifies the desired context.
+     * @return an array of 32 bytes.
+     */
+    suspend fun deriveArbitraryWalletKey(
+        contextString: ByteArray,
+        seed: ByteArray
+    ): ByteArray
+
+    /**
+     * Derives a [ZIP 32 Arbitrary Key] from the given seed at the account level.
+     *
+     * [ZIP 32 Arbitrary Key]: https://zips.z.cash/zip-0032#specification-arbitrary-key-derivation
+     *
+     * @param contextString a globally-unique non-empty sequence of at most 252 bytes that
+     *        identifies the desired context.
+     * @return an array of 32 bytes.
+     */
+    suspend fun deriveArbitraryAccountKey(
+        contextString: ByteArray,
+        seed: ByteArray,
+        network: ZcashNetwork,
+        account: Account
+    ): ByteArray
+
     companion object {
         const val DEFAULT_NUMBER_OF_ACCOUNTS = Derivation.DEFAULT_NUMBER_OF_ACCOUNTS
 
