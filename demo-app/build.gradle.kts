@@ -71,7 +71,6 @@ android {
     buildTypes {
         getByName("release").apply {
             isMinifyEnabled = project.property("IS_MINIFY_APP_ENABLED").toString().toBoolean()
-            isShrinkResources = project.property("IS_MINIFY_APP_ENABLED").toString().toBoolean()
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-project.txt"
