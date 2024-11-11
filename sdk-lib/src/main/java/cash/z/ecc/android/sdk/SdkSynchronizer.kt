@@ -33,6 +33,7 @@ import cash.z.ecc.android.sdk.internal.ext.tryNull
 import cash.z.ecc.android.sdk.internal.jni.RustBackend
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
 import cash.z.ecc.android.sdk.internal.model.TreeState
+import cash.z.ecc.android.sdk.internal.model.ZcashProtocol
 import cash.z.ecc.android.sdk.internal.model.ext.toBlockHeight
 import cash.z.ecc.android.sdk.internal.repository.CompactBlockRepository
 import cash.z.ecc.android.sdk.internal.repository.DerivedDataRepository
@@ -48,7 +49,9 @@ import cash.z.ecc.android.sdk.model.FetchFiatCurrencyResult
 import cash.z.ecc.android.sdk.model.ObserveFiatCurrencyResult
 import cash.z.ecc.android.sdk.model.PercentDecimal
 import cash.z.ecc.android.sdk.model.Proposal
+import cash.z.ecc.android.sdk.model.TransactionOutput
 import cash.z.ecc.android.sdk.model.TransactionOverview
+import cash.z.ecc.android.sdk.model.TransactionPool
 import cash.z.ecc.android.sdk.model.TransactionRecipient
 import cash.z.ecc.android.sdk.model.TransactionSubmitResult
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
@@ -90,6 +93,7 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -444,6 +448,18 @@ class SdkSynchronizer private constructor(
         require(transactionOverview.isSentTransaction) { "Recipients can only be queried for sent transactions" }
 
         return storage.getRecipients(transactionOverview.rawId)
+    }
+
+    override suspend fun getTransactionOutputs(transactionOverview: TransactionOverview): List<TransactionOutput> {
+        return storage.getOutputProperties(transactionOverview.rawId).toList().map {
+            TransactionOutput(
+                when (it.protocol) {
+                    ZcashProtocol.TRANSPARENT -> TransactionPool.TRANSPARENT
+                    ZcashProtocol.SAPLING -> TransactionPool.SAPLING
+                    ZcashProtocol.ORCHARD -> TransactionPool.ORCHARD
+                }
+            )
+        }
     }
 
     //
