@@ -6,6 +6,9 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `Synchronizer.getTransactionOutputs` API has been added. It enables to fetch all transaction outputs from database.
+
 ## [2.2.5] - 2024-10-22
 
 ### Added
