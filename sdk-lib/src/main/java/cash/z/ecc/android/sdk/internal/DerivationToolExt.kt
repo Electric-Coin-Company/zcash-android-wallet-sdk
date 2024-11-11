@@ -47,3 +47,15 @@ fun Derivation.deriveUnifiedFullViewingKeysTypesafe(
         network.id,
         numberOfAccounts
     ).map { UnifiedFullViewingKey(it) }
+
+fun Derivation.deriveArbitraryWalletKeyTypesafe(
+    contextString: ByteArray,
+    seed: ByteArray
+): ByteArray = deriveArbitraryWalletKey(contextString, seed)
+
+fun Derivation.deriveArbitraryAccountKeyTypesafe(
+    contextString: ByteArray,
+    seed: ByteArray,
+    network: ZcashNetwork,
+    account: Account
+): ByteArray = deriveArbitraryAccountKey(contextString, seed, network.id, account.value)
