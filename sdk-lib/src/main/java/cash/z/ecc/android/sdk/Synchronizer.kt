@@ -21,6 +21,7 @@ import cash.z.ecc.android.sdk.model.FastestServersResult
 import cash.z.ecc.android.sdk.model.ObserveFiatCurrencyResult
 import cash.z.ecc.android.sdk.model.PercentDecimal
 import cash.z.ecc.android.sdk.model.Proposal
+import cash.z.ecc.android.sdk.model.TransactionOutput
 import cash.z.ecc.android.sdk.model.TransactionOverview
 import cash.z.ecc.android.sdk.model.TransactionRecipient
 import cash.z.ecc.android.sdk.model.TransactionSubmitResult
@@ -469,6 +470,11 @@ interface Synchronizer {
         network: ZcashNetwork,
         alias: String = ZcashSdk.DEFAULT_ALIAS
     ): String
+
+    /**
+     * Returns a list of all transaction outputs for a transaction.
+     */
+    suspend fun getTransactionOutputs(transactionOverview: TransactionOverview): List<TransactionOutput>
 
     //
     // Error Handling
