@@ -48,7 +48,7 @@ class DerivationToolImplTest {
         runTest {
             val secretKey =
                 DerivationTool.getInstance().deriveArbitraryWalletKey(
-                    contextString = "5a63617368207465737420766563746f7273".hexToByteArray(),
+                    contextString = "Zcash test vectors".toByteArray(),
                     seed = "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f".hexToByteArray(),
                 )
             assertEquals("e9da8806409dc3c3ebd1fc2a71c879c13dd7aa93ede803bf1a83414b9d3b158a", secretKey.toHex())
@@ -60,7 +60,7 @@ class DerivationToolImplTest {
         runTest {
             val secretKey =
                 DerivationTool.getInstance().deriveArbitraryAccountKey(
-                    contextString = "5a63617368207465737420766563746f7273".hexToByteArray(),
+                    contextString = "Zcash test vectors".toByteArray(),
                     seed = "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f".hexToByteArray(),
                     network = network,
                     account = account,
