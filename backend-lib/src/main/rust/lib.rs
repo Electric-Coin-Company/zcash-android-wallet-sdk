@@ -1,6 +1,6 @@
 use std::convert::{Infallible, TryFrom, TryInto};
 use std::error::Error;
-use std::num::NonZeroU32;
+use std::num::{NonZeroU32, NonZeroUsize};
 use std::panic;
 use std::path::Path;
 use std::ptr;
@@ -20,6 +20,8 @@ use tracing_subscriber::prelude::*;
 use tracing_subscriber::reload;
 use zcash_address::{ToAddress, ZcashAddress};
 use zcash_client_backend::data_api::{TransactionDataRequest, TransactionStatus};
+use zcash_client_backend::fees::zip317::MultiOutputChangeStrategy;
+use zcash_client_backend::fees::{SplitPolicy, StandardFeeRule};
 use zcash_client_backend::{
     address::{Address, UnifiedAddress},
     data_api::{
@@ -33,7 +35,7 @@ use zcash_client_backend::{
         WalletCommitmentTrees, WalletRead, WalletSummary, WalletWrite,
     },
     encoding::AddressCodec,
-    fees::{standard::SingleOutputChangeStrategy, DustOutputPolicy},
+    fees::DustOutputPolicy,
     keys::{DecodingError, Era, UnifiedAddressRequest, UnifiedFullViewingKey, UnifiedSpendingKey},
     proto::{proposal::Proposal, service::TreeState},
     tor::http::cryptex,
@@ -60,7 +62,6 @@ use zcash_primitives::{
     merkle_tree::HashSer,
     transaction::{
         components::{amount::NonNegativeAmount, Amount, OutPoint, TxOut},
-        fees::StandardFeeRule,
         Transaction, TxId,
     },
     zip32::{self, DiversifierIndex},
@@ -1168,19 +1169,18 @@ fn encode_wallet_summary<'a, P: Parameters>(
         |env| encode_account_balance(env, &zip32::AccountId::ZERO, &AccountBalance::ZERO),
     )?;
 
-    let (progress_numerator, progress_denominator) = summary
-        .scan_progress()
-        .map(|scan_progress| {
-            let (recovery_numerator, recovery_denominator) = summary
-                .recovery_progress()
-                .map(|progress| (*progress.numerator(), *progress.denominator()))
-                .unwrap_or((0, 0));
+    let (progress_numerator, progress_denominator) =
+        if let Some(recovery_progress) = summary.progress().recovery() {
             (
-                *scan_progress.numerator() + recovery_numerator,
-                *scan_progress.denominator() + recovery_denominator,
+                *summary.progress().scan().numerator() + *recovery_progress.numerator(),
+                *summary.progress().scan().denominator() + *recovery_progress.denominator(),
             )
-        })
-        .unwrap_or((0, 1));
+        } else {
+            (
+                *summary.progress().scan().numerator(),
+                *summary.progress().scan().denominator(),
+            )
+        };
 
     Ok(env.new_object(
         "cash/z/ecc/android/sdk/internal/model/JniWalletSummary",
@@ -1212,12 +1212,8 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getWallet
         match db_data
             .get_wallet_summary(ANCHOR_OFFSET_U32)
             .map_err(|e| anyhow!("Error while fetching scan progress: {}", e))?
-            .filter(|summary| {
-                summary
-                    .scan_progress()
-                    .map(|r| r.denominator() > &0)
-                    .unwrap_or(false)
-            }) {
+            .filter(|summary| summary.progress().scan().denominator() > &0)
+        {
             Some(summary) => Ok(encode_wallet_summary(env, &db_data, summary)?.into_raw()),
             None => Ok(ptr::null_mut()),
         }
@@ -1534,14 +1530,22 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_setTransa
 
 fn zip317_helper<DbT>(
     change_memo: Option<MemoBytes>,
-) -> GreedyInputSelector<DbT, SingleOutputChangeStrategy> {
-    GreedyInputSelector::new(
-        SingleOutputChangeStrategy::new(
+) -> (
+    MultiOutputChangeStrategy<StandardFeeRule, DbT>,
+    GreedyInputSelector<DbT>,
+) {
+    (
+        MultiOutputChangeStrategy::new(
             StandardFeeRule::Zip317,
             change_memo,
             ShieldedProtocol::Orchard,
+            DustOutputPolicy::default(),
+            SplitPolicy::with_min_output_value(
+                NonZeroUsize::new(4).expect("4 is nonzero"),
+                NonNegativeAmount::const_from_u64(1000_0000),
+            ),
         ),
-        DustOutputPolicy::default(),
+        GreedyInputSelector::new(),
     )
 }
 
@@ -1564,16 +1568,17 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeTr
         let payment_uri = utils::java_string_to_rust(env, &payment_uri);
 
         // Always use ZIP 317 fees
-        let input_selector = zip317_helper(None);
+        let (change_strategy, input_selector) = zip317_helper(None);
 
         let request = TransactionRequest::from_uri(&payment_uri)
             .map_err(|e| anyhow!("Error creating transaction request: {:?}", e))?;
 
-        let proposal = propose_transfer::<_, _, _, Infallible>(
+        let proposal = propose_transfer::<_, _, _, _, Infallible>(
             &mut db_data,
             &network,
             account,
             &input_selector,
+            &change_strategy,
             request,
             ANCHOR_OFFSET,
         )
@@ -1623,7 +1628,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeTr
         };
 
         // Always use ZIP 317 fees
-        let input_selector = zip317_helper(None);
+        let (change_strategy, input_selector) = zip317_helper(None);
 
         let request =
             TransactionRequest::new(vec![Payment::new(to, value, memo, None, None, vec![])
@@ -1632,11 +1637,12 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeTr
                 })?])
             .map_err(|e| anyhow!("Error creating transaction request: {:?}", e))?;
 
-        let proposal = propose_transfer::<_, _, _, Infallible>(
+        let proposal = propose_transfer::<_, _, _, _, Infallible>(
             &mut db_data,
             &network,
             account,
             &input_selector,
+            &change_strategy,
             request,
             ANCHOR_OFFSET,
         )
@@ -1743,14 +1749,16 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeSh
         };
 
         // Always use ZIP 317 fees
-        let input_selector = zip317_helper(memo);
+        let (change_strategy, input_selector) = zip317_helper(memo);
 
-        let proposal = propose_shielding::<_, _, _, Infallible>(
+        let proposal = propose_shielding::<_, _, _, _, Infallible>(
             &mut db_data,
             &network,
             &input_selector,
+            &change_strategy,
             shielding_threshold,
             &from_addrs,
+            account,
             min_confirmations,
         )
         .map_err(|e| anyhow!("Error while shielding transaction: {}", e))?;
@@ -1793,7 +1801,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_createPro
             .map_err(|e| anyhow!("Invalid proposal: {}", e))?
             .try_into_standard_proposal(&db_data)?;
 
-        let txids = create_proposed_transactions::<_, _, Infallible, _, _>(
+        let txids = create_proposed_transactions::<_, _, Infallible, _, Infallible, _>(
             &mut db_data,
             &network,
             &prover,
