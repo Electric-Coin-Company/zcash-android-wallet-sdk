@@ -62,7 +62,7 @@ internal class DerivedDataDb private constructor(
 
             // If a seed is provided, fill in the accounts.
             seed?.let { checkedSeed ->
-                val missingAccounts = numberOfAccounts - backend.getAccounts().count().toInt()
+                val missingAccounts = numberOfAccounts - backend.getAccounts().count()
                 require(missingAccounts >= 0) {
                     "Unexpected number of accounts: $missingAccounts"
                 }
