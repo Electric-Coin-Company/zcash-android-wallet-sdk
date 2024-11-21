@@ -10,11 +10,11 @@ To get set up for development, there are several steps that you need to go throu
 
 Start by making sure the command line with Gradle works first, because **all the Android Studio run configurations use Gradle internally.**  The run configurations are not magic—they map directly to command line invocations with different arguments.
 
-1. Install Java
-    1. Install JVM 17 or greater on your system.  Our setup has been tested with Java 17.  Although a variety of 
+1. Install Java (Tested with Temurin version `19.0.2`)
+    1. Install JVM 19 or greater on your system.  Our setup has been tested with Java 19.  Although a variety of 
        JVM distributions are available and should work, we have settled on recommending [Adoptium/Temurin](https://adoptium.net), because this is the default distribution used by Gradle toolchains.  For Windows or Linux, be sure that the `JAVA_HOME` environment variable points to the right Java version.  Note: If you switch from a newer to an older JVM version, you may see an error like the following `> com.android.ide.common.signing.KeytoolException: Failed to read key AndroidDebugKey from store "~/.android/debug.keystore": Integrity check failed: java.security.NoSuchAlgorithmException: Algorithm HmacPBESHA256 not available`.  A solution is to delete the debug keystore and allow it to be re-generated.
     1. Android Studio has an embedded JVM, although running Gradle tasks from the command line requires a separate JVM to be installed.  Our Gradle scripts are configured to use toolchains to automatically install the correct JVM version.
-1. Configure Rust
+1. Configure Rust (Tested with `1.82.0`)
     1. [Install Rust](https://www.rust-lang.org/learn/get-started). You will need at least Rust 1.82.  Older versions of Rust will fail.  If you use system packages, check the provided version.
         1. macOS with Homebrew
             1. `brew install rustup`
@@ -25,13 +25,13 @@ Start by making sure the command line with Gradle works first, because **all the
         ```bash
         rustup target add armv7-linux-androideabi aarch64-linux-android i686-linux-android x86_64-linux-android
         ```
-1. Install python 2.7 
+1. Install Python (Tested with version `2.7.18`)
    1. macOS with Homebrew
       1. `brew install pyenv`
       1. `pyenv install 2.7.18`
       1. To enable pyenv in your bash shell run: `eval "$(pyenv init -)"`
       1. Get the path to python 2: `which python2`
-      1. Add `rust.pythonCommand=PYTHON2 PATH` in `${sdkRootDir}/local.properties`
+      1. Optionally add `rust.pythonCommand=PYTHON2 PATH` in `${sdkRootDir}/local.properties`
 1. Install Android Studio and the Android SDK
     1. Download [Android Studio](https://developer.android.com/studio/).  We typically use the stable version of Android Studio, unless specifically noted due to short-term known issues.
     1. During the Android Studio setup wizard, choose the "Standard" setup option

@@ -93,3 +93,4 @@ backup-dbs/
 /.idea/androidTestResultsUserPreferences.xml
 /.idea/inspectionProfiles/Project_Default.xml
 /.idea/kotlinc.xml
+/.idea/runConfigurations.xml
