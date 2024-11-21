@@ -290,6 +290,74 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_initDataD
     unwrap_exc_or(&mut env, res, -1)
 }
 
+const JNI_ACCOUNT: &str = "cash/z/ecc/android/sdk/internal/model/JniAccount";
+
+fn encode_account<'a, P: Parameters>(
+    env: &mut JNIEnv<'a>,
+    network: &P,
+    account: zcash_client_sqlite::wallet::Account,
+) -> jni::errors::Result<JObject<'a>> {
+    let ufvk = match account.ufvk() {
+        Some(ufvk) => env.new_string(ufvk.encode(network))?.into(),
+        None => JObject::null(),
+    };
+
+    env.new_object(
+        JNI_ACCOUNT,
+        "(JLjava/lang/String;)V",
+        &[
+            // TODO: This will be replaced by the multi-seed-compatible account ID.
+            JValue::Long(i64::from(account.id().as_u32())),
+            (&ufvk).into(),
+        ],
+    )
+}
+
+/// Fetches the accounts in the given wallet.
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getAccounts<'local>(
+    mut env: JNIEnv<'local>,
+    _: JClass<'local>,
+    db_data: JString<'local>,
+    network_id: jint,
+) -> jobjectArray {
+    let res = catch_unwind(&mut env, |env| {
+        let network = parse_network(network_id as u32)?;
+        let db_data = wallet_db(env, network, db_data)?;
+
+        let accounts = db_data
+            .get_account_ids()?
+            .into_iter()
+            .map(|account_id| {
+                db_data
+                    .get_account(account_id)
+                    .transpose()
+                    .expect("account_id exists")
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+
+        let first_account = accounts.first().cloned();
+
+        Ok(utils::rust_vec_to_java(
+            env,
+            accounts,
+            JNI_ACCOUNT,
+            |env, account| encode_account(env, &network, account),
+            |env| {
+                // The array contains non-null values in Kotlin. This returns `null` if
+                // there are no accounts, which is fine because the array has no entries
+                // and thus the empty element is never used.
+                match first_account {
+                    Some(account) => encode_account(env, &network, account),
+                    None => Ok(JObject::null()),
+                }
+            },
+        )?
+        .into_raw())
+    });
+    unwrap_exc_or(&mut env, res, ptr::null_mut())
+}
+
 fn encode_usk<'a>(
     env: &mut JNIEnv<'a>,
     account: zip32::AccountId,

@@ -875,7 +875,7 @@ class CompactBlockProcessor internal constructor(
      * Confirm that the wallet data is properly setup for use.
      */
     internal suspend fun verifySetup() {
-        if (repository.getAccountCount() == 0) {
+        if (backend.getAccounts().isEmpty()) {
             reportSetupException(CompactBlockProcessorException.NoAccount)
         } else {
             // Reach out to the server to obtain the current server info

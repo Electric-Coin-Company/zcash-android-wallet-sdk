@@ -15,8 +15,6 @@ import java.io.File
 internal class DerivedDataDb private constructor(
     private val sqliteDatabase: SupportSQLiteDatabase
 ) {
-    val accountTable = AccountTable(sqliteDatabase)
-
     val transactionTable = TransactionTable(sqliteDatabase)
 
     val allTransactionView = AllTransactionView(sqliteDatabase)
@@ -64,8 +62,7 @@ internal class DerivedDataDb private constructor(
 
             // If a seed is provided, fill in the accounts.
             seed?.let { checkedSeed ->
-                // toInt() should be safe because we expect very few accounts
-                val missingAccounts = numberOfAccounts - dataDb.accountTable.count().toInt()
+                val missingAccounts = numberOfAccounts - backend.getAccounts().count().toInt()
                 require(missingAccounts >= 0) {
                     "Unexpected number of accounts: $missingAccounts"
                 }

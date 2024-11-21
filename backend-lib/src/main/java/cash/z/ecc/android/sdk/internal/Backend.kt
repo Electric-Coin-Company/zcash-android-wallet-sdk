@@ -1,5 +1,6 @@
 package cash.z.ecc.android.sdk.internal
 
+import cash.z.ecc.android.sdk.internal.model.JniAccount
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.internal.model.JniRewindResult
 import cash.z.ecc.android.sdk.internal.model.JniScanRange
@@ -72,6 +73,12 @@ interface Backend {
      */
     @Throws(RuntimeException::class)
     suspend fun initDataDb(seed: ByteArray?): Int
+
+    /**
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    @Throws(RuntimeException::class)
+    suspend fun getAccounts(): List<JniAccount>
 
     /**
      * @throws RuntimeException as a common indicator of the operation failure

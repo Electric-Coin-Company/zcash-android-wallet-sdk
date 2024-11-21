@@ -62,7 +62,7 @@ where
     U: Desc<'a, JClass<'a>>,
     V: Into<JObject<'a>>,
     F: Fn(&mut JNIEnv<'a>, T) -> JNIResult<V>,
-    G: Fn(&mut JNIEnv<'a>) -> JNIResult<V>,
+    G: FnOnce(&mut JNIEnv<'a>) -> JNIResult<V>,
 {
     let jempty = empty_element(env)?;
     let jret = env.new_object_array(data.len() as jsize, element_class, jempty.into())?;

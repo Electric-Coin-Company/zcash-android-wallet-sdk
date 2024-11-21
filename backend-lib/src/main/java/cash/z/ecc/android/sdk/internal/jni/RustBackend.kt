@@ -4,6 +4,7 @@ import cash.z.ecc.android.sdk.internal.Backend
 import cash.z.ecc.android.sdk.internal.SdkDispatchers
 import cash.z.ecc.android.sdk.internal.ext.deleteRecursivelySuspend
 import cash.z.ecc.android.sdk.internal.ext.deleteSuspend
+import cash.z.ecc.android.sdk.internal.model.JniAccount
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.internal.model.JniRewindResult
 import cash.z.ecc.android.sdk.internal.model.JniScanRange
@@ -78,6 +79,15 @@ class RustBackend private constructor(
                 networkId = networkId
             )
         }
+
+    override suspend fun getAccounts(): List<JniAccount> {
+        return withContext(SdkDispatchers.DATABASE_IO) {
+            getAccounts(
+                dbDataPath = dataDbFile.absolutePath,
+                networkId = networkId
+            ).asList()
+        }
+    }
 
     override suspend fun createAccount(
         seed: ByteArray,
@@ -474,6 +484,12 @@ class RustBackend private constructor(
             seed: ByteArray?,
             networkId: Int
         ): Int
+
+        @JvmStatic
+        private external fun getAccounts(
+            dbDataPath: String,
+            networkId: Int
+        ): Array<JniAccount>
 
         @JvmStatic
         private external fun createAccount(
