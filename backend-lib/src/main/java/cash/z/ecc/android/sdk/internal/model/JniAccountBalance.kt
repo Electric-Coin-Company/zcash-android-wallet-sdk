@@ -25,7 +25,7 @@ import androidx.annotation.Keep
 @Keep
 @Suppress("LongParameterList")
 class JniAccountBalance(
-    val account: Int,
+    val account: ByteArray,
     val saplingVerifiedBalance: Long,
     val saplingChangePending: Long,
     val saplingValuePending: Long,

@@ -1,16 +1,29 @@
 package cash.z.ecc.android.sdk.model
 
 /**
- * A [ZIP 32](https://zips.z.cash/zip-0032) account index.
+ * Unique identifier for a specific account tracked by a `Synchronizer`.
  *
- * @param value A 0-based account index.  Must be >= 0.
+ * Account identifiers are "one-way stable": a given identifier always points to a
+ * specific viewing key within a specific `Synchronizer` instance, but the same viewing
+ * key may have multiple account identifiers over time. In particular, this SDK upholds
+ * the following properties:
+ *
+ * - When an account starts being tracked within a `Synchronizer` instance, a new
+ *   `Account` is generated.
+ * - If an `Account` is present within a `Synchronizer`, it always points to the same
+ *   account.
+ *
+ * What this means is that account identifiers are not stable across "wallet recreation
+ * events". Examples of these include:
+ * - Restoring a wallet from a backed-up seed.
+ * - Importing the same viewing key into two different wallet instances.
+ *
+ * @param accountUuid The account identifier. Must be length 16.
  */
-data class Account(val value: Int) {
+data class Account(val accountUuid: ByteArray) {
     init {
-        require(value >= 0) { "Account index must be >= 0 but actually is $value" }
-    }
-
-    companion object {
-        val DEFAULT = Account(0)
+        require(accountUuid.size == 16) {
+            "Account UUID must be 16 bytes"
+        }
     }
 }

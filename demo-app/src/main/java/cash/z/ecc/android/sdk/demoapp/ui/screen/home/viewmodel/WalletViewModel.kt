@@ -107,7 +107,7 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
                 DerivationTool.getInstance().deriveUnifiedSpendingKey(
                     seed = bip39Seed,
                     network = it.network,
-                    account = Account.DEFAULT
+                    accountIndex = 0
                 )
             }.stateIn(
                 viewModelScope,
