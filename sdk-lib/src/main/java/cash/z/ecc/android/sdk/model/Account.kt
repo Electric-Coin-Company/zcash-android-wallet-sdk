@@ -1,7 +1,7 @@
 package cash.z.ecc.android.sdk.model
 
 /**
- * A [ZIP 316](https://zips.z.cash/zip-0316) account identifier.
+ * A [ZIP 32](https://zips.z.cash/zip-0032) account index.
  *
  * @param value A 0-based account index.  Must be >= 0.
  */

@@ -89,14 +89,14 @@ internal class FakeRustBackend(
     }
 
     override suspend fun proposeTransferFromUri(
-        account: Int,
+        accountIndex: Int,
         uri: String
     ): ProposalUnsafe {
         error("Intentionally not implemented yet.")
     }
 
     override suspend fun proposeTransfer(
-        account: Int,
+        accountIndex: Int,
         to: String,
         value: Long,
         memo: ByteArray?
@@ -105,7 +105,7 @@ internal class FakeRustBackend(
     }
 
     override suspend fun proposeShielding(
-        account: Int,
+        accountIndex: Int,
         shieldingThreshold: Long,
         memo: ByteArray?,
         transparentReceiver: String?
@@ -159,7 +159,7 @@ internal class FakeRustBackend(
         error("Intentionally not implemented in mocked FakeRustBackend implementation.")
     }
 
-    override suspend fun getCurrentAddress(account: Int): String {
+    override suspend fun getCurrentAddress(accountIndex: Int): String {
         error("Intentionally not implemented yet.")
     }
 
@@ -171,7 +171,7 @@ internal class FakeRustBackend(
         error("Intentionally not implemented yet.")
     }
 
-    override suspend fun listTransparentReceivers(account: Int): List<String> {
+    override suspend fun listTransparentReceivers(accountIndex: Int): List<String> {
         error("Intentionally not implemented yet.")
     }
 

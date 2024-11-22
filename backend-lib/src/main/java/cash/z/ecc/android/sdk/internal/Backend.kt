@@ -24,7 +24,7 @@ interface Backend {
     suspend fun initBlockMetaDb(): Int
 
     suspend fun proposeTransfer(
-        account: Int,
+        accountIndex: Int,
         to: String,
         value: Long,
         memo: ByteArray? = null
@@ -35,12 +35,12 @@ interface Backend {
      */
     @Throws(RuntimeException::class)
     suspend fun proposeTransferFromUri(
-        account: Int,
+        accountIndex: Int,
         uri: String
     ): ProposalUnsafe
 
     suspend fun proposeShielding(
-        account: Int,
+        accountIndex: Int,
         shieldingThreshold: Long,
         memo: ByteArray? = null,
         transparentReceiver: String? = null
@@ -109,13 +109,13 @@ interface Backend {
     fun isValidTexAddr(addr: String): Boolean
 
     @Throws(RuntimeException::class)
-    suspend fun getCurrentAddress(account: Int): String
+    suspend fun getCurrentAddress(accountIndex: Int): String
 
     fun getTransparentReceiver(ua: String): String?
 
     fun getSaplingReceiver(ua: String): String?
 
-    suspend fun listTransparentReceivers(account: Int): List<String>
+    suspend fun listTransparentReceivers(accountIndex: Int): List<String>
 
     fun getBranchIdForHeight(height: Long): Long
 

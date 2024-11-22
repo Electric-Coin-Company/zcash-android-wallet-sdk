@@ -13,6 +13,9 @@ import androidx.annotation.Keep
  */
 @Keep
 class JniUnifiedSpendingKey(
+    /**
+     * The [ZIP 32](https://zips.z.cash/zip-0032) account index used to derive this key.
+     */
     val account: Int,
     /**
      * The binary encoding of the [ZIP 316](https://zips.z.cash/zip-0316) Unified Spending
