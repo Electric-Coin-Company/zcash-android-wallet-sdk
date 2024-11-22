@@ -1,6 +1,7 @@
 package cash.z.ecc.fixture
 
 import cash.z.ecc.android.sdk.internal.Backend
+import cash.z.ecc.android.sdk.internal.model.JniAccount
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.internal.model.JniRewindResult
 import cash.z.ecc.android.sdk.internal.model.JniScanRange
@@ -127,6 +128,10 @@ internal class FakeRustBackend(
     }
 
     override suspend fun initDataDb(seed: ByteArray?): Int {
+        error("Intentionally not implemented yet.")
+    }
+
+    override suspend fun getAccounts(): List<JniAccount> {
         error("Intentionally not implemented yet.")
     }
 

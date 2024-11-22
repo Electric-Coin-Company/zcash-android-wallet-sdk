@@ -63,8 +63,6 @@ internal interface DerivedDataRepository {
      */
     fun invalidate()
 
-    suspend fun getAccountCount(): Int
-
     //
     // Transactions
     //

@@ -24,6 +24,8 @@ import cash.z.ecc.android.sdk.model.ZcashNetwork
 internal interface TypesafeBackend {
     val network: ZcashNetwork
 
+    suspend fun getAccounts(): List<Account>
+
     suspend fun createAccountAndGetSpendingKey(
         seed: ByteArray,
         treeState: TreeState,

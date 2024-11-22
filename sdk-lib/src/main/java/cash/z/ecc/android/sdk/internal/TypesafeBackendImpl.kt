@@ -27,6 +27,8 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
     override val network: ZcashNetwork
         get() = ZcashNetwork.from(backend.networkId)
 
+    override suspend fun getAccounts(): List<Account> = backend.getAccounts().map { Account(it.accountId.toInt()) }
+
     override suspend fun createAccountAndGetSpendingKey(
         seed: ByteArray,
         treeState: TreeState,

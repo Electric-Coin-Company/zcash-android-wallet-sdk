@@ -45,11 +45,6 @@ internal class DbDerivedDataRepository(
         invalidatingFlow.value = UUID.randomUUID()
     }
 
-    override suspend fun getAccountCount() =
-        derivedDataDb.accountTable.count()
-            // toInt() should be safe because we expect very few accounts
-            .toInt()
-
     override val allTransactions: Flow<List<DbTransactionOverview>>
         get() = invalidatingFlow.map { derivedDataDb.allTransactionView.getAllTransactions().toList() }
 
