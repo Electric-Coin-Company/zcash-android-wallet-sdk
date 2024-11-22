@@ -1,22 +1,23 @@
 package cash.z.ecc.android.sdk.internal.model
 
 import androidx.annotation.Keep
+import cash.z.ecc.android.sdk.internal.jni.JNI_ACCOUNT_UUID_BYTES_SIZE
 
 /**
  * Serves as cross layer (Kotlin, Rust) communication class.
  *
- * @param accountIndex the ZIP 32 account index.
+ * @param accountUuid the "one-way stable" identifier for the account.
  * @param ufvk The account's Unified Full Viewing Key, if any.
  * @throws IllegalArgumentException if the values are inconsistent.
  */
 @Keep
 class JniAccount(
-    val accountIndex: Int,
+    val accountUuid: ByteArray,
     val ufvk: String?,
 ) {
     init {
-        require(accountIndex >= 0) {
-            "Account index must be non-negative"
+        require(accountUuid.size == JNI_ACCOUNT_UUID_BYTES_SIZE) {
+            "Account UUID must be 16 bytes"
         }
     }
 }

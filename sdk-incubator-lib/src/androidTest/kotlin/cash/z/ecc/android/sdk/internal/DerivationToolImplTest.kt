@@ -13,7 +13,7 @@ import kotlin.test.assertEquals
 class DerivationToolImplTest {
     private val seedPhrase = WalletFixture.Alice.seedPhrase
     private val network = ZcashNetwork.Mainnet
-    private val account = Account.DEFAULT
+    private val accountIndex = 0
 
     @OptIn(ExperimentalEncodingApi::class)
     @Test
@@ -24,7 +24,7 @@ class DerivationToolImplTest {
                     contextString = CONTEXT.toByteArray(),
                     seed = seedPhrase.toByteArray(),
                     network = network,
-                    account = account,
+                    accountIndex = accountIndex,
                 )
             assertEquals("byyNHiMfj8N2tiCHc4Mv/0ts0IuUqDPe99MvW8B03IY=", Base64.encode(key))
         }
@@ -62,7 +62,7 @@ class DerivationToolImplTest {
                     contextString = "Zcash test vectors".toByteArray(),
                     seed = "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f".hexToByteArray(),
                     network = network,
-                    account = account,
+                    accountIndex = accountIndex,
                 )
             assertEquals("bf60078362a09234fcbc6bf6c8a87bde9fc73776bf93f37adbcc439a85574a9a", secretKey.toHex())
         }

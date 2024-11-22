@@ -19,7 +19,7 @@ class RustDerivationTool private constructor() : Derivation {
         seed: ByteArray,
         networkId: Int,
         accountIndex: Int
-    ): JniUnifiedSpendingKey = deriveSpendingKey(seed, accountIndex, networkId = networkId)
+    ): ByteArray = deriveSpendingKey(seed, accountIndex, networkId = networkId)
 
     override fun deriveUnifiedAddress(
         seed: ByteArray,
@@ -70,7 +70,7 @@ class RustDerivationTool private constructor() : Derivation {
             seed: ByteArray,
             accountIndex: Int,
             networkId: Int
-        ): JniUnifiedSpendingKey
+        ): ByteArray
 
         @JvmStatic
         private external fun deriveUnifiedFullViewingKeysFromSeed(

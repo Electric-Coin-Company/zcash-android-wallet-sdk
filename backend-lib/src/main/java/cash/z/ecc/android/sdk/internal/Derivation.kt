@@ -18,7 +18,7 @@ interface Derivation {
         seed: ByteArray,
         networkId: Int,
         accountIndex: Int
-    ): JniUnifiedSpendingKey
+    ): ByteArray
 
     /**
      * @return a unified full viewing key.

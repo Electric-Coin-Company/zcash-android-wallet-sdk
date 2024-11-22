@@ -27,7 +27,7 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
     override val network: ZcashNetwork
         get() = ZcashNetwork.from(backend.networkId)
 
-    override suspend fun getAccounts(): List<Account> = backend.getAccounts().map { Account(it.accountIndex.toInt()) }
+    override suspend fun getAccounts(): List<Account> = backend.getAccounts().map { Account(it.accountUuid) }
 
     override suspend fun createAccountAndGetSpendingKey(
         seed: ByteArray,
@@ -49,7 +49,7 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
     ): Proposal =
         Proposal.fromUnsafe(
             backend.proposeTransferFromUri(
-                account.value,
+                account.accountUuid,
                 uri
             )
         )
@@ -63,7 +63,7 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
     ): Proposal =
         Proposal.fromUnsafe(
             backend.proposeTransfer(
-                account.value,
+                account.accountUuid,
                 to,
                 value,
                 memo
@@ -77,7 +77,7 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
         transparentReceiver: String?
     ): Proposal? =
         backend.proposeShielding(
-            account.value,
+            account.accountUuid,
             shieldingThreshold,
             memo,
             transparentReceiver
@@ -98,14 +98,14 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
 
     override suspend fun getCurrentAddress(account: Account): String {
         return runCatching {
-            backend.getCurrentAddress(account.value)
+            backend.getCurrentAddress(account.accountUuid)
         }.onFailure {
             Twig.warn(it) { "Currently unable to get current address" }
         }.getOrElse { throw RustLayerException.GetCurrentAddressException(it) }
     }
 
     override suspend fun listTransparentReceivers(account: Account): List<String> {
-        return backend.listTransparentReceivers(account.value)
+        return backend.listTransparentReceivers(account.accountUuid)
     }
 
     override fun getBranchIdForHeight(height: BlockHeight): Long {

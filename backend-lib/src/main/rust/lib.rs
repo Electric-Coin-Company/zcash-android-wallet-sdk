@@ -18,6 +18,8 @@ use tor_rtcompat::BlockOn;
 use tracing::{debug, error};
 use tracing_subscriber::prelude::*;
 use tracing_subscriber::reload;
+use utils::{java_nullable_string_to_rust, java_string_to_rust};
+use uuid::Uuid;
 use zcash_address::{ToAddress, ZcashAddress};
 use zcash_client_backend::data_api::{TransactionDataRequest, TransactionStatus};
 use zcash_client_backend::fees::zip317::MultiOutputChangeStrategy;
@@ -31,7 +33,7 @@ use zcash_client_backend::{
             create_proposed_transactions, decrypt_and_store_transaction,
             input_selection::GreedyInputSelector, propose_shielding, propose_transfer,
         },
-        Account, AccountBalance, AccountBirthday, AccountSource, InputSource, SeedRelevance,
+        Account, AccountBalance, AccountBirthday, InputSource, SeedRelevance,
         WalletCommitmentTrees, WalletRead, WalletSummary, WalletWrite,
     },
     encoding::AddressCodec,
@@ -44,10 +46,11 @@ use zcash_client_backend::{
     ShieldedProtocol,
 };
 use zcash_client_sqlite::error::SqliteClientError;
+use zcash_client_sqlite::AccountUuid;
 use zcash_client_sqlite::{
     chain::{init::init_blockmeta_db, BlockMeta},
     wallet::init::{init_wallet_db, WalletMigrationError},
-    AccountId, FsBlockDb, WalletDb,
+    FsBlockDb, WalletDb,
 };
 use zcash_primitives::consensus::NetworkConstants;
 use zcash_primitives::{
@@ -112,45 +115,10 @@ fn zip32_account_index_from_jint(account_index: jint) -> anyhow::Result<zip32::A
         .map_err(|_| anyhow!("Invalid account ID"))
 }
 
-fn account_id_from_jni<P: Parameters>(
-    db_data: &WalletDb<rusqlite::Connection, P>,
-    account_index: jint,
-) -> anyhow::Result<AccountId> {
-    let requested_account_index = zip32_account_index_from_jint(account_index)?;
-
-    // Find the single account matching the given ZIP 32 account index.
-    let mut accounts = db_data
-        .get_account_ids()?
-        .into_iter()
-        .filter_map(|account_id| {
-            db_data
-                .get_account(account_id)
-                .map_err(|e| {
-                    anyhow!(
-                        "Database error encountered retrieving account {:?}: {}",
-                        account_id,
-                        e
-                    )
-                })
-                .and_then(|acct_opt|
-                    acct_opt.ok_or_else(||
-                        anyhow!(
-                            "Wallet data corrupted: unable to retrieve account data for account {:?}",
-                            account_id
-                        )
-                    ).map(|account| match account.source() {
-                        AccountSource::Derived { account_index, .. } if account_index == requested_account_index => Some(account),
-                        _ => None
-                    })
-                )
-                .transpose()
-        });
-
-    match (accounts.next(), accounts.next()) {
-        (Some(account), None) => Ok(account?.id()),
-        (None, None) => Err(anyhow!("Account does not exist")),
-        (_, Some(_)) => Err(anyhow!("Account index matches more than one account")),
-    }
+fn account_id_from_jni(env: &JNIEnv, account_uuid: JByteArray) -> anyhow::Result<AccountUuid> {
+    Ok(AccountUuid::from_uuid(Uuid::from_slice(
+        &env.convert_byte_array(account_uuid)?,
+    )?))
 }
 
 /// Initializes global Rust state, such as the logging infrastructure and threadpools.
@@ -297,11 +265,6 @@ fn encode_account<'a, P: Parameters>(
     network: &P,
     account: zcash_client_sqlite::wallet::Account,
 ) -> jni::errors::Result<JObject<'a>> {
-    let account_index = match account.source() {
-        AccountSource::Derived { account_index, .. } => account_index,
-        AccountSource::Imported { .. } => panic!("Should have been filtered out"),
-    };
-
     let ufvk = match account.ufvk() {
         Some(ufvk) => env.new_string(ufvk.encode(network))?.into(),
         None => JObject::null(),
@@ -309,10 +272,9 @@ fn encode_account<'a, P: Parameters>(
 
     env.new_object(
         JNI_ACCOUNT,
-        "(ILjava/lang/String;)V",
+        "([BLjava/lang/String;)V",
         &[
-            // TODO: This will be replaced by the multi-seed-compatible account ID.
-            JValue::Int(u32::from(account_index) as i32),
+            (&env.byte_array_from_slice(account.id().expose_uuid().as_bytes())?).into(),
             (&ufvk).into(),
         ],
     )
@@ -341,13 +303,6 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getAccoun
             })
             .collect::<Result<Vec<_>, _>>()?;
 
-        // Filter out imported accounts (for which we don't know a ZIP 32 account index).
-        // TODO: Remove this when we switch to account identifiers.
-        let accounts = accounts
-            .into_iter()
-            .filter(|account| matches!(account.source(), AccountSource::Derived { .. }))
-            .collect::<Vec<_>>();
-
         Ok(
             utils::rust_vec_to_java(env, accounts, JNI_ACCOUNT, |env, account| {
                 encode_account(env, &network, account)
@@ -360,7 +315,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getAccoun
 
 fn encode_usk<'a>(
     env: &mut JNIEnv<'a>,
-    account_index: zip32::AccountId,
+    account_uuid: AccountUuid,
     usk: UnifiedSpendingKey,
 ) -> jni::errors::Result<JObject<'a>> {
     let encoded = SecretVec::new(usk.to_bytes(Era::Orchard));
@@ -369,7 +324,7 @@ fn encode_usk<'a>(
         "cash/z/ecc/android/sdk/internal/model/JniUnifiedSpendingKey",
         "(I[B)V",
         &[
-            JValue::Int(u32::from(account_index) as i32),
+            (&env.byte_array_from_slice(account_uuid.expose_uuid().as_bytes())?).into(),
             (&bytes).into(),
         ],
     )
@@ -417,6 +372,8 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_createAcc
     treestate: JByteArray<'local>,
     recover_until: jlong,
     network_id: jint,
+    account_name: JString<'local>,
+    key_source: JString<'local>,
 ) -> jobject {
     use zcash_client_backend::data_api::BirthdayError;
 
@@ -438,17 +395,19 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_createAcc
                 }
             })?;
 
-        let (account_id, usk) = db_data
-            .create_account(&seed, &birthday)
+        let account_name = java_string_to_rust(env, &account_name);
+        let key_source = java_nullable_string_to_rust(env, &key_source);
+
+        let (account_uuid, usk) = db_data
+            .create_account(
+                &account_name,
+                &seed,
+                &birthday,
+                key_source.as_ref().map(|s| s.as_ref()),
+            )
             .map_err(|e| anyhow!("Error while initializing accounts: {}", e))?;
 
-        let account = db_data.get_account(account_id)?.expect("just created");
-        let account_index = match account.source() {
-            AccountSource::Derived { account_index, .. } => account_index,
-            AccountSource::Imported { .. } => unreachable!("just created"),
-        };
-
-        Ok(encode_usk(env, account_index, usk)?.into_raw())
+        Ok(encode_usk(env, account_uuid, usk)?.into_raw())
     });
     unwrap_exc_or(&mut env, res, ptr::null_mut())
 }
@@ -483,16 +442,16 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getCurren
     mut env: JNIEnv<'local>,
     _: JClass<'local>,
     db_data: JString<'local>,
-    account_index: jint,
+    account_uuid: JByteArray<'local>,
     network_id: jint,
 ) -> jstring {
     let res = catch_unwind(&mut env, |env| {
         let _span = tracing::info_span!("RustBackend.getCurrentAddress").entered();
         let network = parse_network(network_id as u32)?;
         let db_data = wallet_db(env, network, db_data)?;
-        let account = account_id_from_jni(&db_data, account_index)?;
+        let account_uuid = account_id_from_jni(&env, account_uuid)?;
 
-        match db_data.get_current_address(account) {
+        match db_data.get_current_address(account_uuid) {
             Ok(Some(addr)) => {
                 let addr_str = addr.encode(&network);
                 let output = env
@@ -500,7 +459,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getCurren
                     .expect("Couldn't create Java string!");
                 Ok(output.into_raw())
             }
-            Ok(None) => Err(anyhow!("{:?} is not known to the wallet", account)),
+            Ok(None) => Err(anyhow!("{:?} is not known to the wallet", account_uuid)),
             Err(e) => Err(anyhow!("Error while fetching address: {}", e)),
         }
     });
@@ -1172,7 +1131,7 @@ const JNI_ACCOUNT_BALANCE: &str = "cash/z/ecc/android/sdk/internal/model/JniAcco
 
 fn encode_account_balance<'a>(
     env: &mut JNIEnv<'a>,
-    account: &zip32::AccountId,
+    account_uuid: &AccountUuid,
     balance: &AccountBalance,
 ) -> jni::errors::Result<JObject<'a>> {
     let sapling_verified_balance = Amount::from(balance.sapling_balance().spendable_value());
@@ -1191,9 +1150,9 @@ fn encode_account_balance<'a>(
 
     env.new_object(
         JNI_ACCOUNT_BALANCE,
-        "(IJJJJJJJ)V",
+        "([BJJJJJJJ)V",
         &[
-            JValue::Int(u32::from(*account) as i32),
+            (&env.byte_array_from_slice(account_uuid.expose_uuid().as_bytes())?).into(),
             JValue::Long(sapling_verified_balance.into()),
             JValue::Long(sapling_change_pending.into()),
             JValue::Long(sapling_value_pending.into()),
@@ -1211,32 +1170,17 @@ fn encode_account_balance<'a>(
 ///
 /// If these conditions are not met, this fails and leaves an `IllegalArgumentException`
 /// pending.
-fn encode_wallet_summary<'a, P: Parameters>(
+fn encode_wallet_summary<'a>(
     env: &mut JNIEnv<'a>,
-    db_data: &WalletDb<rusqlite::Connection, P>,
-    summary: WalletSummary<AccountId>,
+    summary: WalletSummary<AccountUuid>,
 ) -> anyhow::Result<JObject<'a>> {
+    let account_balances = summary.account_balances().iter().collect::<Vec<_>>();
+
     let account_balances = utils::rust_vec_to_java(
         env,
-        summary
-            .account_balances()
-            .iter()
-            .map(|(account_id, balance)| {
-                let account_index = match db_data
-                    .get_account(*account_id)?
-                    .expect("the account exists in the wallet")
-                    .source()
-                {
-                    AccountSource::Derived { account_index, .. } => account_index,
-                    AccountSource::Imported { .. } => {
-                        unreachable!("Imported accounts are unimplemented")
-                    }
-                };
-                Ok::<_, anyhow::Error>((account_index, balance))
-            })
-            .collect::<Result<_, _>>()?,
+        account_balances,
         JNI_ACCOUNT_BALANCE,
-        |env, (account_index, balance)| encode_account_balance(env, &account_index, balance),
+        |env, (account_uuid, balance)| encode_account_balance(env, &account_uuid, balance),
     )?;
 
     let (progress_numerator, progress_denominator) =
@@ -1284,7 +1228,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getWallet
             .map_err(|e| anyhow!("Error while fetching scan progress: {}", e))?
             .filter(|summary| summary.progress().scan().denominator() > &0)
         {
-            Some(summary) => Ok(encode_wallet_summary(env, &db_data, summary)?.into_raw()),
+            Some(summary) => Ok(encode_wallet_summary(env, summary)?.into_raw()),
             None => Ok(ptr::null_mut()),
         }
     });
@@ -1613,7 +1557,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeTr
     mut env: JNIEnv<'local>,
     _: JClass<'local>,
     db_data: JString<'local>,
-    account_index: jint,
+    account_uuid: JByteArray<'local>,
     payment_uri: JString<'local>,
     network_id: jint,
 ) -> jbyteArray {
@@ -1621,7 +1565,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeTr
         let _span = tracing::info_span!("RustBackend.proposeTransfer").entered();
         let network = parse_network(network_id as u32)?;
         let mut db_data = wallet_db(env, network, db_data)?;
-        let account = account_id_from_jni(&db_data, account_index)?;
+        let account_uuid = account_id_from_jni(&env, account_uuid)?;
         let payment_uri = utils::java_string_to_rust(env, &payment_uri);
 
         // Always use ZIP 317 fees
@@ -1633,7 +1577,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeTr
         let proposal = propose_transfer::<_, _, _, _, Infallible>(
             &mut db_data,
             &network,
-            account,
+            account_uuid,
             &input_selector,
             &change_strategy,
             request,
@@ -1657,7 +1601,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeTr
     mut env: JNIEnv<'local>,
     _: JClass<'local>,
     db_data: JString<'local>,
-    account_index: jint,
+    account_uuid: JByteArray<'local>,
     to: JString<'local>,
     value: jlong,
     memo: JByteArray<'local>,
@@ -1667,7 +1611,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeTr
         let _span = tracing::info_span!("RustBackend.proposeTransfer").entered();
         let network = parse_network(network_id as u32)?;
         let mut db_data = wallet_db(env, network, db_data)?;
-        let account = account_id_from_jni(&db_data, account_index)?;
+        let account_uuid = account_id_from_jni(&env, account_uuid)?;
         let to = utils::java_string_to_rust(env, &to);
         let value = NonNegativeAmount::from_nonnegative_i64(value)
             .map_err(|_| anyhow!("Invalid amount, out of range"))?;
@@ -1697,7 +1641,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeTr
         let proposal = propose_transfer::<_, _, _, _, Infallible>(
             &mut db_data,
             &network,
-            account,
+            account_uuid,
             &input_selector,
             &change_strategy,
             request,
@@ -1721,7 +1665,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeSh
     mut env: JNIEnv<'local>,
     _: JClass<'local>,
     db_data: JString<'local>,
-    account_index: jint,
+    account_uuid: JByteArray<'local>,
     shielding_threshold: jlong,
     memo: JByteArray<'local>,
     transparent_receiver: JString<'local>,
@@ -1731,7 +1675,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeSh
         let _span = tracing::info_span!("RustBackend.proposeShielding").entered();
         let network = parse_network(network_id as u32)?;
         let mut db_data = wallet_db(env, network, db_data)?;
-        let account = account_id_from_jni(&db_data, account_index)?;
+        let account_uuid = account_id_from_jni(&env, account_uuid)?;
         let shielding_threshold = NonNegativeAmount::from_nonnegative_i64(shielding_threshold)
             .map_err(|_| anyhow!("Invalid shielding threshold, out of range"))?;
 
@@ -1746,7 +1690,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeSh
                         }
                         Address::Transparent(addr) => {
                             if db_data
-                                .get_transparent_receivers(account)?
+                                .get_transparent_receivers(account_uuid)?
                                 .contains_key(&addr)
                             {
                                 Ok(Some(addr))
@@ -1771,11 +1715,11 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeSh
             })
             .and_then(|anchor| {
                 db_data
-                    .get_transparent_balances(account, anchor)
+                    .get_transparent_balances(account_uuid, anchor)
                     .map_err(|e| {
                         anyhow!(
                             "Error while fetching transparent balances for {:?}: {}",
-                            account,
+                            account_uuid,
                             e
                         )
                     })
@@ -1815,7 +1759,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeSh
             &change_strategy,
             shielding_threshold,
             &from_addrs,
-            account,
+            account_uuid,
             min_confirmations,
         )
         .map_err(|e| anyhow!("Error while shielding transaction: {}", e))?;
@@ -1918,7 +1862,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustDerivationTool_de
     seed: JByteArray<'local>,
     account_index: jint,
     network_id: jint,
-) -> jobject {
+) -> jbyteArray {
     let res = catch_unwind(&mut env, |env| {
         let _span = tracing::info_span!("RustDerivationTool.deriveSpendingKey").entered();
         let network = parse_network(network_id as u32)?;
@@ -1928,7 +1872,8 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustDerivationTool_de
         let usk = UnifiedSpendingKey::from_seed(&network, seed.expose_secret(), account)
             .map_err(|e| anyhow!("error generating unified spending key from seed: {:?}", e))?;
 
-        Ok(encode_usk(env, account, usk)?.into_raw())
+        let encoded = SecretVec::new(usk.to_bytes(Era::Orchard));
+        Ok(utils::rust_bytes_to_java(&env, encoded.expose_secret())?.into_raw())
     });
     unwrap_exc_or(&mut env, res, ptr::null_mut())
 }
@@ -2236,7 +2181,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_listTrans
     mut env: JNIEnv<'local>,
     _: JClass<'local>,
     db_data: JString<'local>,
-    account_index: jint,
+    account_uuid: JByteArray<'local>,
     network_id: jint,
 ) -> jobjectArray {
     let res = catch_unwind(&mut env, |env| {
@@ -2244,7 +2189,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_listTrans
         let network = parse_network(network_id as u32)?;
         let zcash_network = network.network_type();
         let db_data = wallet_db(env, network, db_data)?;
-        let account = account_id_from_jni(&db_data, account_index)?;
+        let account = account_id_from_jni(&env, account_uuid)?;
 
         match db_data.get_transparent_receivers(account) {
             Ok(receivers) => {
