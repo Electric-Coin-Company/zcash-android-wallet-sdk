@@ -14,10 +14,10 @@
 
     <!-- Drawer Menu -->
     <string name="menu_home">Home</string>
-    <string name="menu_private_key">Get Private Key</string>
     <string name="menu_address">Get Address</string>
     <string name="menu_server">Server</string>
     <string name="menu_balance">Get Balance</string>
+    <string name="menu_keys">Private Keys</string>
     <string name="menu_latest_height">Get Latest Height</string>
     <string name="menu_block">Get Block</string>
     <string name="menu_block_range">Get Block Range</string>
@@ -101,5 +101,12 @@
     <string name="transaction_fee">Fee:</string>
     <string name="transaction_fee_unavailable">Unavailable</string>
     <string name="transaction_status">Status:</string>
+
+    <string name="keys_disclaimer">Note that we strongly discouraged wallets from displaying the private keys the UI.
+        This is only for testing purposes.</string>
+    <string name="keys_ufvk">Unified Full View Key:</string>
+    <string name="keys_usk">Unified Spending Key:</string>
+    <string name="keys_wk">ZIP 32 Arbitrary Wallet Key:</string>
+    <string name="keys_ak">ZIP 32 Arbitrary Account Key:</string>
 
 </resources>

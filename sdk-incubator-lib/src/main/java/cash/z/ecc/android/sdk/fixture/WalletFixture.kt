@@ -12,6 +12,8 @@ import cash.z.ecc.android.sdk.tool.DerivationTool
 sealed class WalletFixture {
     abstract val seedPhrase: String
 
+    abstract val accounts: List<Account>
+
     abstract fun getBirthday(zcashNetwork: ZcashNetwork): BlockHeight
 
     abstract fun getAddresses(zcashNetwork: ZcashNetwork): Addresses
@@ -19,7 +21,7 @@ sealed class WalletFixture {
     suspend fun getUnifiedSpendingKey(
         seed: String = seedPhrase,
         network: ZcashNetwork,
-        account: Account = Account.DEFAULT
+        account: Account
     ) = DerivationTool.getInstance().deriveUnifiedSpendingKey(
         Mnemonics.MnemonicCode(seed).toEntropy(),
         network,
@@ -28,6 +30,8 @@ sealed class WalletFixture {
 
     @Suppress("MaxLineLength")
     data object Ben : WalletFixture() {
+        override val accounts: List<Account>
+            get() = listOf(Account())
         override val seedPhrase: String
             get() =
                 "kitchen renew wide common vague fold vacuum tilt amazing pear square gossip jewel month tree" +
