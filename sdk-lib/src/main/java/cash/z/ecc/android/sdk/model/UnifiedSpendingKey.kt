@@ -13,6 +13,9 @@ import cash.z.ecc.android.sdk.internal.model.JniUnifiedSpendingKey
  * export/import, or backup purposes.
  */
 class UnifiedSpendingKey private constructor(
+    /**
+     * The [ZIP 32](https://zips.z.cash/zip-0032) account index used to derive this key.
+     */
     val account: Account,
     /**
      * The binary encoding of the [ZIP 316](https://zips.z.cash/zip-0316) Unified Spending

@@ -114,11 +114,11 @@ class RustBackend private constructor(
             )
         }
 
-    override suspend fun getCurrentAddress(account: Int) =
+    override suspend fun getCurrentAddress(accountIndex: Int) =
         withContext(SdkDispatchers.DATABASE_IO) {
             getCurrentAddress(
                 dataDbFile.absolutePath,
-                account,
+                accountIndex,
                 networkId = networkId
             )
         }
@@ -127,11 +127,11 @@ class RustBackend private constructor(
 
     override fun getSaplingReceiver(ua: String) = getSaplingReceiverForUnifiedAddress(ua)
 
-    override suspend fun listTransparentReceivers(account: Int): List<String> {
+    override suspend fun listTransparentReceivers(accountIndex: Int): List<String> {
         return withContext(SdkDispatchers.DATABASE_IO) {
             listTransparentReceivers(
                 dbDataPath = dataDbFile.absolutePath,
-                account = account,
+                accountIndex = accountIndex,
                 networkId = networkId
             ).asList()
         }
@@ -318,14 +318,14 @@ class RustBackend private constructor(
     }
 
     override suspend fun proposeTransferFromUri(
-        account: Int,
+        accountIndex: Int,
         uri: String
     ): ProposalUnsafe =
         withContext(SdkDispatchers.DATABASE_IO) {
             ProposalUnsafe.parse(
                 proposeTransferFromUri(
                     dataDbFile.absolutePath,
-                    account,
+                    accountIndex,
                     uri,
                     networkId = networkId,
                 )
@@ -333,7 +333,7 @@ class RustBackend private constructor(
         }
 
     override suspend fun proposeTransfer(
-        account: Int,
+        accountIndex: Int,
         to: String,
         value: Long,
         memo: ByteArray?
@@ -342,7 +342,7 @@ class RustBackend private constructor(
             ProposalUnsafe.parse(
                 proposeTransfer(
                     dataDbFile.absolutePath,
-                    account,
+                    accountIndex,
                     to,
                     value,
                     memo,
@@ -352,7 +352,7 @@ class RustBackend private constructor(
         }
 
     override suspend fun proposeShielding(
-        account: Int,
+        accountIndex: Int,
         shieldingThreshold: Long,
         memo: ByteArray?,
         transparentReceiver: String?
@@ -360,7 +360,7 @@ class RustBackend private constructor(
         return withContext(SdkDispatchers.DATABASE_IO) {
             proposeShielding(
                 dataDbFile.absolutePath,
-                account,
+                accountIndex,
                 shieldingThreshold,
                 memo,
                 transparentReceiver,
@@ -510,7 +510,7 @@ class RustBackend private constructor(
         @JvmStatic
         private external fun getCurrentAddress(
             dbDataPath: String,
-            account: Int,
+            accountIndex: Int,
             networkId: Int
         ): String
 
@@ -523,7 +523,7 @@ class RustBackend private constructor(
         @JvmStatic
         private external fun listTransparentReceivers(
             dbDataPath: String,
-            account: Int,
+            accountIndex: Int,
             networkId: Int
         ): Array<String>
 
@@ -671,7 +671,7 @@ class RustBackend private constructor(
         @JvmStatic
         private external fun proposeTransferFromUri(
             dbDataPath: String,
-            account: Int,
+            accountIndex: Int,
             uri: String,
             networkId: Int,
         ): ByteArray
@@ -680,7 +680,7 @@ class RustBackend private constructor(
         @Suppress("LongParameterList")
         private external fun proposeTransfer(
             dbDataPath: String,
-            account: Int,
+            accountIndex: Int,
             to: String,
             value: Long,
             memo: ByteArray?,
@@ -691,7 +691,7 @@ class RustBackend private constructor(
         @Suppress("LongParameterList")
         private external fun proposeShielding(
             dbDataPath: String,
-            account: Int,
+            accountIndex: Int,
             shieldingThreshold: Long,
             memo: ByteArray?,
             transparentReceiver: String?,

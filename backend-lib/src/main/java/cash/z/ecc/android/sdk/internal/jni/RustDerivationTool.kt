@@ -68,7 +68,7 @@ class RustDerivationTool private constructor() : Derivation {
         @JvmStatic
         private external fun deriveSpendingKey(
             seed: ByteArray,
-            account: Int,
+            accountIndex: Int,
             networkId: Int
         ): JniUnifiedSpendingKey
 
