@@ -297,6 +297,11 @@ fn encode_account<'a, P: Parameters>(
     network: &P,
     account: zcash_client_sqlite::wallet::Account,
 ) -> jni::errors::Result<JObject<'a>> {
+    let account_index = match account.source() {
+        AccountSource::Derived { account_index, .. } => account_index,
+        AccountSource::Imported { .. } => panic!("Should have been filtered out"),
+    };
+
     let ufvk = match account.ufvk() {
         Some(ufvk) => env.new_string(ufvk.encode(network))?.into(),
         None => JObject::null(),
@@ -304,10 +309,10 @@ fn encode_account<'a, P: Parameters>(
 
     env.new_object(
         JNI_ACCOUNT,
-        "(JLjava/lang/String;)V",
+        "(ILjava/lang/String;)V",
         &[
             // TODO: This will be replaced by the multi-seed-compatible account ID.
-            JValue::Long(i64::from(account.id().as_u32())),
+            JValue::Int(u32::from(account_index) as i32),
             (&ufvk).into(),
         ],
     )
@@ -335,6 +340,13 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getAccoun
                     .expect("account_id exists")
             })
             .collect::<Result<Vec<_>, _>>()?;
+
+        // Filter out imported accounts (for which we don't know a ZIP 32 account index).
+        // TODO: Remove this when we switch to account identifiers.
+        let accounts = accounts
+            .into_iter()
+            .filter(|account| matches!(account.source(), AccountSource::Derived { .. }))
+            .collect::<Vec<_>>();
 
         let first_account = accounts.first().cloned();
 
