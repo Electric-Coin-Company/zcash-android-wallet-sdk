@@ -1,10 +1,11 @@
 use core::slice;
+use std::convert::TryFrom;
 use std::panic::{self, AssertUnwindSafe, UnwindSafe};
 use std::thread;
 
 use jni::{
     descriptors::Desc,
-    errors::Result as JNIResult,
+    errors::{Error as JNIError, Result as JNIResult},
     objects::{JByteArray, JClass, JObject, JObjectArray, JString},
     sys::jsize,
     JNIEnv,
@@ -51,26 +52,42 @@ pub(crate) fn rust_bytes_to_java<'a>(env: &JNIEnv<'a>, data: &[u8]) -> JNIResult
     Ok(jret)
 }
 
-pub(crate) fn rust_vec_to_java<'a, T, U, V, F, G>(
+pub(crate) fn rust_vec_to_java<'a, T, U, V, F>(
     env: &mut JNIEnv<'a>,
     data: Vec<T>,
     element_class: U,
     element_map: F,
-    empty_element: G,
 ) -> JNIResult<JObjectArray<'a>>
 where
     U: Desc<'a, JClass<'a>>,
     V: Into<JObject<'a>>,
     F: Fn(&mut JNIEnv<'a>, T) -> JNIResult<V>,
-    G: FnOnce(&mut JNIEnv<'a>) -> JNIResult<V>,
 {
-    let jempty = empty_element(env)?;
-    let jret = env.new_object_array(data.len() as jsize, element_class, jempty.into())?;
-    for (i, elem) in data.into_iter().enumerate() {
+    let length = jsize::try_from(data.len())
+        // not quite the right error but close enough
+        .map_err(|_| JNIError::WrongJValueType("jsize", "usize"))?;
+    let mut iter = data.into_iter().enumerate();
+
+    if let Some((_, elem)) = iter.next() {
         let jelem = element_map(env, elem)?;
-        env.set_object_array_element(&jret, i as jsize, jelem.into())?;
+        // All array entries, and in particular the one at index 0, are initialized to jelem.into().
+        let jret = env.new_object_array(length, element_class, jelem.into())?;
+
+        // All array entries after the first will be set.
+        for (i, elem) in iter {
+            let jelem = element_map(env, elem)?;
+            env.set_object_array_element(
+                &jret,
+                jsize::try_from(i).expect("i fits in jsize"),
+                jelem.into(),
+            )?;
+        }
+        Ok(jret)
+    } else {
+        // It is okay to use null for initial_element here even if the Kotlin type is non-nullable,
+        // because the array is empty.
+        Ok(env.new_object_array(0, element_class, JObject::null())?)
     }
-    Ok(jret)
 }
 
 // // 2D array
