@@ -11,20 +11,20 @@ data class WalletAddresses(
     override fun toString() = "WalletAddresses"
 
     companion object {
-        suspend fun new(synchronizer: Synchronizer): WalletAddresses {
+        suspend fun new(synchronizer: Synchronizer, account: Account): WalletAddresses {
             val unified =
                 WalletAddress.Unified.new(
-                    synchronizer.getUnifiedAddress(Account.DEFAULT)
+                    synchronizer.getUnifiedAddress(account)
                 )
 
             val saplingAddress =
                 WalletAddress.Sapling.new(
-                    synchronizer.getSaplingAddress(Account.DEFAULT)
+                    synchronizer.getSaplingAddress(account)
                 )
 
             val transparentAddress =
                 WalletAddress.Transparent.new(
-                    synchronizer.getTransparentAddress(Account.DEFAULT)
+                    synchronizer.getTransparentAddress(account)
                 )
 
             return WalletAddresses(
