@@ -348,24 +348,12 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getAccoun
             .filter(|account| matches!(account.source(), AccountSource::Derived { .. }))
             .collect::<Vec<_>>();
 
-        let first_account = accounts.first().cloned();
-
-        Ok(utils::rust_vec_to_java(
-            env,
-            accounts,
-            JNI_ACCOUNT,
-            |env, account| encode_account(env, &network, account),
-            |env| {
-                // The array contains non-null values in Kotlin. This returns `null` if
-                // there are no accounts, which is fine because the array has no entries
-                // and thus the empty element is never used.
-                match first_account {
-                    Some(account) => encode_account(env, &network, account),
-                    None => Ok(JObject::null()),
-                }
-            },
-        )?
-        .into_raw())
+        Ok(
+            utils::rust_vec_to_java(env, accounts, JNI_ACCOUNT, |env, account| {
+                encode_account(env, &network, account)
+            })?
+            .into_raw(),
+        )
     });
     unwrap_exc_or(&mut env, res, ptr::null_mut())
 }
@@ -1249,7 +1237,6 @@ fn encode_wallet_summary<'a, P: Parameters>(
             .collect::<Result<_, _>>()?,
         JNI_ACCOUNT_BALANCE,
         |env, (account_index, balance)| encode_account_balance(env, &account_index, balance),
-        |env| encode_account_balance(env, &zip32::AccountId::ZERO, &AccountBalance::ZERO),
     )?;
 
     let (progress_numerator, progress_denominator) =
@@ -1349,12 +1336,6 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_suggestSc
             ranges,
             "cash/z/ecc/android/sdk/internal/model/JniScanRange",
             |env, scan_range| encode_scan_range(env, scan_range),
-            |env| {
-                encode_scan_range(
-                    env,
-                    ScanRange::from_parts((0.into())..(0.into()), ScanPriority::Scanned),
-                )
-            },
         )?
         .into_raw())
     });
@@ -1487,13 +1468,6 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_transacti
             ranges,
             "cash/z/ecc/android/sdk/internal/model/JniTransactionDataRequest",
             |env, request| encode_transaction_data_request(env, net, request),
-            |env| {
-                encode_transaction_data_request(
-                    env,
-                    net,
-                    TransactionDataRequest::GetStatus(TxId::from_bytes([0; 32])),
-                )
-            },
         )?
         .into_raw())
     });
@@ -1895,14 +1869,12 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_createPro
         )
         .map_err(|e| anyhow!("Error while creating transactions: {}", e))?;
 
-        Ok(utils::rust_vec_to_java(
-            env,
-            txids.into(),
-            "[B",
-            |env, txid| utils::rust_bytes_to_java(env, txid.as_ref()),
-            |env| env.new_byte_array(32),
-        )?
-        .into_raw())
+        Ok(
+            utils::rust_vec_to_java(env, txids.into(), "[B", |env, txid| {
+                utils::rust_bytes_to_java(env, txid.as_ref())
+            })?
+            .into_raw(),
+        )
     });
     unwrap_exc_or(&mut env, res, ptr::null_mut())
 }
@@ -1994,14 +1966,12 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustDerivationTool_de
             })
             .collect::<Result<_, _>>()?;
 
-        Ok(utils::rust_vec_to_java(
-            env,
-            ufvks,
-            "java/lang/String",
-            |env, ufvk| env.new_string(ufvk),
-            |env| env.new_string(""),
-        )?
-        .into_raw())
+        Ok(
+            utils::rust_vec_to_java(env, ufvks, "java/lang/String", |env, ufvk| {
+                env.new_string(ufvk)
+            })?
+            .into_raw(),
+        )
     });
     unwrap_exc_or(&mut env, res, ptr::null_mut())
 }
@@ -2298,7 +2268,6 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_listTrans
                     trasparent_receivers,
                     "java/lang/String",
                     |env, taddr| env.new_string(taddr),
-                    |env| env.new_string(""),
                 )?
                 .into_raw())
             }
