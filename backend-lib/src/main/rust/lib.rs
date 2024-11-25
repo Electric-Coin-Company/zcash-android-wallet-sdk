@@ -1190,10 +1190,6 @@ fn encode_wallet_summary<'a, P: Parameters>(
         })
         .collect::<Result<Vec<_>, _>>()?;
 
-    let first_account_balance = account_balances
-        .first()
-        .map(|(account_uuid, balance)| (*account_uuid, **balance));
-
     let account_balances = utils::rust_vec_to_java(
         env,
         account_balances,
