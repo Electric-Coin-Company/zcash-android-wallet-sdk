@@ -637,12 +637,11 @@ class SdkSynchronizer private constructor(
     // Account management
     //
 
-    // Not ready to be a public API; internal for testing only
-    internal suspend fun createAccount(
+    override suspend fun createAccount(
         seed: ByteArray,
         treeState: TreeState,
         recoverUntil: BlockHeight?
-    ): UnifiedSpendingKey? {
+    ): UnifiedSpendingKey {
         return runCatching {
             backend.createAccountAndGetSpendingKey(
                 seed = seed,
@@ -651,7 +650,19 @@ class SdkSynchronizer private constructor(
             )
         }.onFailure {
             Twig.error(it) { "Create account failed." }
-        }.getOrNull()
+        }.getOrElse {
+            throw InitializeException.CreateAccountException(it)
+        }
+    }
+
+    override suspend fun getAccounts(): List<Account> {
+        return runCatching {
+            backend.getAccounts()
+        }.onFailure {
+            Twig.error(it) { "Get wallet accounts failed." }
+        }.getOrElse {
+            throw InitializeException.GetAccountsException(it)
+        }
     }
 
     /**

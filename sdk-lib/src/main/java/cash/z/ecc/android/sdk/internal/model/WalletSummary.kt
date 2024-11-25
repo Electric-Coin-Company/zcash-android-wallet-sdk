@@ -1,6 +1,7 @@
 package cash.z.ecc.android.sdk.internal.model
 
 import cash.z.ecc.android.sdk.model.Account
+import cash.z.ecc.android.sdk.model.AccountBalance
 import cash.z.ecc.android.sdk.model.BlockHeight
 
 internal data class WalletSummary(

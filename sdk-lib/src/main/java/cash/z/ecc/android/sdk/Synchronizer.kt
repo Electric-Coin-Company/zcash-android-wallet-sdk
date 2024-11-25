@@ -124,6 +124,14 @@ interface Synchronizer {
     //
 
     /**
+     * Returns all the wallet accounts or throws [InitializeException.GetAccountsException]
+     *
+     * @return List of all wallet accounts
+     * @throws [InitializeException.GetAccountsException] in case of the operation failure
+     */
+    suspend fun getAccounts(): List<Account>
+
+    /**
      * Measure connection quality and speed of given [servers].
      *
      * @return a [Flow] of fastest servers which updates it's state during measurement stages
@@ -133,7 +141,6 @@ interface Synchronizer {
         servers: List<LightWalletEndpoint>
     ): Flow<FastestServersResult>
 
-    @Suppress("ktlint:standard:no-consecutive-comments")
     /**
      * Adds the next available account-level spend authority, given the current set of
      * [ZIP 316](https://zips.z.cash/zip-0316) account identifiers known, to the wallet
@@ -154,13 +161,19 @@ interface Synchronizer {
      * automated account recovery).
      *
      * @param seed the wallet's seed phrase.
+     * @param treeState
+     * @param recoverUntil
      *
      * @return the newly created ZIP 316 account identifier, along with the binary
      * encoding of the `UnifiedSpendingKey` for the newly created account.
      *
-     * This is not yet ready to be a public API!
-     * suspend fun createAccount(seed: ByteArray): UnifiedSpendingKey
+     * @throws [InitializeException.CreateAccountException] in case of the operation failure
      **/
+     suspend fun createAccount(
+        seed: ByteArray,
+        treeState: TreeState,
+        recoverUntil: BlockHeight?
+     ): UnifiedSpendingKey
 
     /**
      * Gets the current unified address for the given account.

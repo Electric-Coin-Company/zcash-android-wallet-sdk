@@ -6,6 +6,9 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `Synchronizer.getAccounts`
+- `Synchronizer.createAccount`
 ## [2.2.6] - 2024-11-16
 
 ### Added

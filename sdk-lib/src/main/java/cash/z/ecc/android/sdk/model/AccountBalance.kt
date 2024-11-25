@@ -1,9 +1,8 @@
-package cash.z.ecc.android.sdk.internal.model
+package cash.z.ecc.android.sdk.model
 
-import cash.z.ecc.android.sdk.model.WalletBalance
-import cash.z.ecc.android.sdk.model.Zatoshi
+import cash.z.ecc.android.sdk.internal.model.JniAccountBalance
 
-internal data class AccountBalance(
+data class AccountBalance(
     val sapling: WalletBalance,
     val orchard: WalletBalance,
     val unshielded: Zatoshi
