@@ -9,6 +9,11 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - `Synchronizer.getAccounts`
 - `Synchronizer.createAccount`
+
+### Changed
+- `Synchronizer.orchardBalances`, `Synchronizer.saplingBalances`, and `Synchronizer.transparentBalance` have been 
+  replaced by `Synchronizer.walletBalances` that provides these balances based on `Account`
+
 ## [2.2.6] - 2024-11-16
 
 ### Added

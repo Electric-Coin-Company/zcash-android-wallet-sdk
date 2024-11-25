@@ -215,9 +215,7 @@ class SdkSynchronizer private constructor(
 
     val coroutineScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
-    override val orchardBalances = processor.orchardBalances.asStateFlow()
-    override val saplingBalances = processor.saplingBalances.asStateFlow()
-    override val transparentBalance = processor.transparentBalance.asStateFlow()
+    override val walletBalances = processor.walletBalances.asStateFlow()
 
     private val refreshExchangeRateUsd = MutableSharedFlow<Unit>(replay = 1).apply { tryEmit(Unit) }
 
@@ -511,7 +509,8 @@ class SdkSynchronizer private constructor(
         // Triggering UTXOs and transactions fetching at the beginning of the block synchronization right after the
         //  app starts makes the transparent transactions appear faster.
         launch(CoroutineExceptionHandler(::onCriticalError)) {
-            refreshUtxos(Account.DEFAULT)
+            // Refresh UTXOs and transactions for all the wallet's accounts
+            refreshAllAccountsUtxos()
             refreshTransactions()
         }
 
@@ -621,9 +620,10 @@ class SdkSynchronizer private constructor(
         val shouldRefresh = !scannedRange.isNullOrEmpty() || elapsedMillis > (ZcashSdk.POLL_INTERVAL * 5)
         val reason = if (scannedRange.isNullOrEmpty()) "it's been a while" else "new blocks were scanned"
 
+        // Refresh UTXOs, balances, and transactions for all the wallet's accounts
         if (shouldRefresh) {
             Twig.debug { "Triggering utxo refresh since $reason!" }
-            refreshUtxos(Account.DEFAULT)
+            refreshAllAccountsUtxos()
 
             Twig.debug { "Triggering balance refresh since $reason!" }
             refreshAllBalances()
@@ -631,6 +631,10 @@ class SdkSynchronizer private constructor(
             Twig.debug { "Triggering transaction refresh since $reason!" }
             refreshTransactions()
         }
+    }
+
+    private suspend fun refreshAllAccountsUtxos() {
+        getAccounts().forEach { refreshUtxos(it) }
     }
 
     //
