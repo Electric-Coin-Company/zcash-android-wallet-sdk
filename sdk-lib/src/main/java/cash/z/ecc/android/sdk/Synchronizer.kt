@@ -14,8 +14,10 @@ import cash.z.ecc.android.sdk.internal.SaplingParamTool
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.db.DatabaseCoordinator
 import cash.z.ecc.android.sdk.internal.exchange.UsdExchangeRateFetcher
+import cash.z.ecc.android.sdk.internal.model.TreeState
 import cash.z.ecc.android.sdk.internal.model.ext.toBlockHeight
 import cash.z.ecc.android.sdk.model.Account
+import cash.z.ecc.android.sdk.model.AccountBalance
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.FastestServersResult
 import cash.z.ecc.android.sdk.model.ObserveFiatCurrencyResult
@@ -26,7 +28,6 @@ import cash.z.ecc.android.sdk.model.TransactionOverview
 import cash.z.ecc.android.sdk.model.TransactionRecipient
 import cash.z.ecc.android.sdk.model.TransactionSubmitResult
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
-import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.tool.CheckpointTool
@@ -78,19 +79,9 @@ interface Synchronizer {
     val networkHeight: StateFlow<BlockHeight?>
 
     /**
-     * A stream of balance values for the orchard pool.
+     * A stream of wallet balances
      */
-    val orchardBalances: StateFlow<WalletBalance?>
-
-    /**
-     * A stream of balance values for the sapling pool.
-     */
-    val saplingBalances: StateFlow<WalletBalance?>
-
-    /**
-     * A stream of a balance for the transparent pool.
-     */
-    val transparentBalance: StateFlow<Zatoshi?>
+    val walletBalances: StateFlow<Map<Account, AccountBalance>?>
 
     /**
      * The latest known USD/ZEC exchange rate, paired with the time it was queried.
@@ -178,8 +169,7 @@ interface Synchronizer {
     /**
      * Gets the current unified address for the given account.
      *
-     * @param account the account whose address is of interest. Use Account.DEFAULT to get a result for the first
-     * account.
+     * @param account the account whose address is of interest.
      *
      * @return the current unified address for the given account.
      */
@@ -188,8 +178,7 @@ interface Synchronizer {
     /**
      * Gets the legacy Sapling address corresponding to the current unified address for the given account.
      *
-     * @param account the account whose address is of interest. Use Account.DEFAULT to get a result for the first
-     * account.
+     * @param account the account whose address is of interest.
      *
      * @return a legacy Sapling address for the given account.
      */
@@ -198,8 +187,7 @@ interface Synchronizer {
     /**
      * Gets the legacy transparent address corresponding to the current unified address for the given account.
      *
-     * @param account the account whose address is of interest. Use Account.DEFAULT to get a result for the first
-     * account.
+     * @param account the account whose address is of interest.
      *
      * @return a legacy transparent address for the given account.
      */
@@ -422,8 +410,7 @@ interface Synchronizer {
     /**
      * Download all UTXOs for the given account addresses and store any new ones in the database.
      *
-     * @param account The Account, for which all addresses blocks will be downloaded. Use Account.DEFAULT to get a
-     * result for the first account.
+     * @param account The Account, for which all addresses blocks will be downloaded.
      * @param since The BlockHeight, from which blocks will be downloaded.
      *
      * @return the number of utxos that were downloaded and added to the UTXO table.
