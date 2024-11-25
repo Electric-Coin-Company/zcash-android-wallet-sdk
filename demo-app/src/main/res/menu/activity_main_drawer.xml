@@ -12,7 +12,7 @@
         <item
             android:id="@+id/nav_private_key"
             android:icon="@drawable/ic_menu_private_key"
-            android:title="@string/menu_private_key" />
+            android:title="@string/menu_keys" />
         <item
             android:id="@+id/nav_address"
             android:icon="@drawable/ic_menu_address"
