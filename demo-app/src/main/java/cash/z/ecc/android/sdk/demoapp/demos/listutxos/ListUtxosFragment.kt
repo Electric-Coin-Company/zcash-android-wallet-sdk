@@ -10,12 +10,12 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import cash.z.ecc.android.sdk.SdkSynchronizer
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
+import cash.z.ecc.android.sdk.demoapp.CURRENT_ACCOUNT
 import cash.z.ecc.android.sdk.demoapp.databinding.FragmentListUtxosBinding
 import cash.z.ecc.android.sdk.demoapp.ext.requireApplicationContext
 import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.demoapp.util.mainActivity
 import cash.z.ecc.android.sdk.internal.Twig
-import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.PercentDecimal
 import cash.z.ecc.android.sdk.model.TransactionOverview
@@ -188,7 +188,7 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
                         .filterNotNull()
                         .collect {
                             binding.inputAddress.setText(
-                                it.getTransparentAddress(Account.DEFAULT)
+                                it.getTransparentAddress(it.getAccounts()[CURRENT_ACCOUNT])
                             )
                         }
                 }
