@@ -19,10 +19,7 @@ sealed class WalletFixture {
     @Suppress("MaxLineLength")
     data object Ben : WalletFixture() {
         override val accounts: List<Account>
-            get() = listOf(
-                // fixme
-                Account(byteArrayOf())
-            )
+            get() = listOf(Account("a1b2c3d4-e5f6-7890-1234-567890abcdef".toByteArray()))
 
         override val seedPhrase: String
             get() =
@@ -59,10 +56,7 @@ sealed class WalletFixture {
     @Suppress("MaxLineLength")
     data object Alice : WalletFixture() {
         override val accounts: List<Account>
-            get() = listOf(
-                // fixme
-                Account(byteArrayOf())
-            )
+            get() = listOf(Account("f47ac10b-58cc-4372-a567-0e02b2c3d479".toByteArray()))
 
         override val seedPhrase: String
             get() =
