@@ -3,10 +3,10 @@ package cash.z.ecc.android.sdk.fixture
 import cash.z.ecc.android.sdk.model.Account
 
 object AccountFixture {
-    val DEFAULT_UUID: ByteArray = "test_uuid".toByteArray()
+    val ACCOUNT_UUID = WalletFixture.Alice.accounts[0].accountUuid
 
     fun new(
-        accountUuid: ByteArray = DEFAULT_UUID
+        accountUuid: ByteArray = ACCOUNT_UUID
     ) = Account(
         accountUuid = accountUuid
     )

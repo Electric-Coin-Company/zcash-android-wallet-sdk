@@ -4,20 +4,22 @@ import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor
 import cash.z.ecc.android.sdk.demoapp.ui.screen.home.viewmodel.SynchronizerError
 import cash.z.ecc.android.sdk.demoapp.ui.screen.home.viewmodel.WalletSnapshot
-import cash.z.ecc.android.sdk.fixture.WalletBalanceFixture
+import cash.z.ecc.android.sdk.fixture.AccountBalanceFixture
+import cash.z.ecc.android.sdk.fixture.AccountFixture
+import cash.z.ecc.android.sdk.model.Account
+import cash.z.ecc.android.sdk.model.AccountBalance
 import cash.z.ecc.android.sdk.model.PercentDecimal
-import cash.z.ecc.android.sdk.model.WalletBalance
-import cash.z.ecc.android.sdk.model.Zatoshi
 import java.math.BigDecimal
 
 @Suppress("MagicNumber")
 object WalletSnapshotFixture {
     val STATUS = Synchronizer.Status.SYNCED
     val PROGRESS = PercentDecimal.ZERO_PERCENT
-    val TRANSPARENT_BALANCE: Zatoshi = Zatoshi(8)
-    val ORCHARD_BALANCE: WalletBalance = WalletBalanceFixture.new(Zatoshi(5), Zatoshi(2), Zatoshi(1))
-    val SAPLING_BALANCE: WalletBalance = WalletBalanceFixture.new(Zatoshi(4), Zatoshi(4), Zatoshi(2))
     val EXCHANGE_RATE_USD: BigDecimal = BigDecimal(37.4850)
+    val ACCOUNT = AccountFixture.new()
+    val WALLET_BALANCES: Map<Account, AccountBalance> = mapOf(
+        ACCOUNT to AccountBalanceFixture.new()
+    )
 
     // Should fill in with non-empty values for better example values in tests and UI previews
     @Suppress("LongParameterList")
@@ -29,18 +31,14 @@ object WalletSnapshotFixture {
                 null,
                 null
             ),
-        orchardBalance: WalletBalance = ORCHARD_BALANCE,
-        saplingBalance: WalletBalance = SAPLING_BALANCE,
-        transparentBalance: Zatoshi = TRANSPARENT_BALANCE,
+        walletBalances: Map<Account, AccountBalance> = WALLET_BALANCES,
         exchangeRateUsd: BigDecimal? = EXCHANGE_RATE_USD,
         progress: PercentDecimal = PROGRESS,
         synchronizerError: SynchronizerError? = null
     ) = WalletSnapshot(
         status,
         processorInfo,
-        orchardBalance,
-        saplingBalance,
-        transparentBalance,
+        walletBalances,
         exchangeRateUsd,
         progress,
         synchronizerError

@@ -11,7 +11,10 @@ data class WalletAddresses(
     override fun toString() = "WalletAddresses"
 
     companion object {
-        suspend fun new(synchronizer: Synchronizer, account: Account): WalletAddresses {
+        suspend fun new(
+            account: Account,
+            synchronizer: Synchronizer
+        ): WalletAddresses {
             val unified =
                 WalletAddress.Unified.new(
                     synchronizer.getUnifiedAddress(account)
