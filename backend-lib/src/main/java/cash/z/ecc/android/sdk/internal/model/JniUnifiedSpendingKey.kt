@@ -28,6 +28,12 @@ class JniUnifiedSpendingKey(
      */
     val bytes: ByteArray
 ) {
+    init {
+        require(accountUuid.size == 16) {
+            "Account UUID must be 16 bytes"
+        }
+    }
+
     // Override to prevent leaking key to logs
     override fun toString() = "JniUnifiedSpendingKey(account=$accountUuid, bytes=***)"
 
