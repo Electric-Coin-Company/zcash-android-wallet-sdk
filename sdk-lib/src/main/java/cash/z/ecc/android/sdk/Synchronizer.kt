@@ -269,45 +269,6 @@ interface Synchronizer {
         usk: UnifiedSpendingKey
     ): Flow<TransactionSubmitResult>
 
-    /**
-     * Sends zatoshi.
-     *
-     * @param usk the unified spending key associated with the notes that will be spent.
-     * @param amount the amount of zatoshi to send.
-     * @param toAddress the recipient's address.
-     * @param memo the optional memo to include as part of the transaction.
-     *
-     * @return a flow of PendingTransaction objects representing changes to the state of the
-     * transaction. Any time the state changes a new instance will be emitted by this flow. This is
-     * useful for updating the UI without needing to poll. Of course, polling is always an option
-     * for any wallet that wants to ignore this return value.
-     */
-    @Deprecated(
-        message = "Upcoming SDK 2.1 will create multiple transactions at once for some recipients.",
-        replaceWith =
-            ReplaceWith(
-                "createProposedTransactions(proposeTransfer(usk.account, toAddress, amount, memo), usk)"
-            )
-    )
-    suspend fun sendToAddress(
-        usk: UnifiedSpendingKey,
-        amount: Zatoshi,
-        toAddress: String,
-        memo: String = ""
-    ): Long
-
-    @Deprecated(
-        message = "Upcoming SDK 2.1 will create multiple transactions at once for some recipients.",
-        replaceWith =
-            ReplaceWith(
-                "proposeShielding(usk.account, shieldingThreshold, memo)?.let { createProposedTransactions(it, usk) }"
-            )
-    )
-    suspend fun shieldFunds(
-        usk: UnifiedSpendingKey,
-        memo: String = ZcashSdk.DEFAULT_SHIELD_FUNDS_MEMO_PREFIX
-    ): Long
-
     // TODO [#1534]: Add RustLayerException.ValidateAddressException
     // TODO [#1534]: https://github.com/Electric-Coin-Company/zcash-android-wallet-sdk/issues/1534
 
