@@ -1,14 +1,13 @@
 package cash.z.ecc.android.sdk.demoapp.demos.getaddress
 
 import android.os.Bundle
-import android.provider.SyncStateContract
 import android.view.LayoutInflater
 import android.view.View
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
-import cash.z.ecc.android.sdk.demoapp.CURRENT_ACCOUNT
+import cash.z.ecc.android.sdk.demoapp.CURRENT_ZIP_32_ACCOUNT_INDEX
 import cash.z.ecc.android.sdk.demoapp.databinding.FragmentGetAddressBinding
 import cash.z.ecc.android.sdk.demoapp.ext.requireApplicationContext
 import cash.z.ecc.android.sdk.demoapp.util.ProvideAddressBenchmarkTrace
@@ -31,7 +30,7 @@ class GetAddressFragment : BaseDemoFragment<FragmentGetAddressBinding>() {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
                     sharedViewModel.synchronizerFlow.filterNotNull().collect { synchronizer ->
-                        val account = synchronizer.getAccounts()[CURRENT_ACCOUNT]
+                        val account = synchronizer.getAccounts()[CURRENT_ZIP_32_ACCOUNT_INDEX]
 
                         binding.unifiedAddress.apply {
                             reportTraceEvent(ProvideAddressBenchmarkTrace.Event.UNIFIED_ADDRESS_START)

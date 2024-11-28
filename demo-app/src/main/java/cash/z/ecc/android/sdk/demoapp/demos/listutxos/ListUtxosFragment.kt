@@ -10,7 +10,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import cash.z.ecc.android.sdk.SdkSynchronizer
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
-import cash.z.ecc.android.sdk.demoapp.CURRENT_ACCOUNT
+import cash.z.ecc.android.sdk.demoapp.CURRENT_ZIP_32_ACCOUNT_INDEX
 import cash.z.ecc.android.sdk.demoapp.databinding.FragmentListUtxosBinding
 import cash.z.ecc.android.sdk.demoapp.ext.requireApplicationContext
 import cash.z.ecc.android.sdk.demoapp.util.fromResources
@@ -188,7 +188,7 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
                         .filterNotNull()
                         .collect {
                             binding.inputAddress.setText(
-                                it.getTransparentAddress(it.getAccounts()[CURRENT_ACCOUNT])
+                                it.getTransparentAddress(it.getAccounts()[CURRENT_ZIP_32_ACCOUNT_INDEX])
                             )
                         }
                 }
