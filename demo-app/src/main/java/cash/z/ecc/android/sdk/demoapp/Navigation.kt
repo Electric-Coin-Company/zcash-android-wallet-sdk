@@ -106,9 +106,11 @@ internal fun ComposeActivity.Navigation() {
             if (null == synchronizer || null == walletSnapshot) {
                 // Display loading indicator
             } else {
+                val balance = walletSnapshot.balanceByAccount(walletViewModel.getCurrentAccount())
                 val scope = rememberCoroutineScope()
                 Balance(
-                    walletSnapshot,
+                    exchangeRateUsd = walletSnapshot.exchangeRateUsd,
+                    accountBalance = balance,
                     onShieldFunds = { walletViewModel.shieldFunds() },
                     sendState = walletViewModel.sendState.collectAsStateWithLifecycle().value,
                     onBack = {
@@ -129,11 +131,13 @@ internal fun ComposeActivity.Navigation() {
             if (null == synchronizer) {
                 // Display loading indicator
             } else {
+                val currentAccount = walletViewModel.getCurrentAccount()
                 val scope = rememberCoroutineScope()
                 val snackbarHostState = remember { SnackbarHostState() }
                 // I don't like giving synchronizer directly over to the view, but for now it isolates each of the
                 // demo app views
                 Addresses(
+                    account = currentAccount,
                     synchronizer = synchronizer,
                     copyToClipboard = { tag, textToCopy ->
                         copyToClipboard(
@@ -161,8 +165,9 @@ internal fun ComposeActivity.Navigation() {
             if (null == synchronizer || null == walletSnapshot || null == spendingKey) {
                 // Display loading indicator
             } else {
+                val currentAccount = walletViewModel.getCurrentAccount()
                 Send(
-                    walletSnapshot = walletSnapshot,
+                    accountBalance = walletSnapshot.balanceByAccount(currentAccount),
                     sendState = walletViewModel.sendState.collectAsStateWithLifecycle().value,
                     onSend = {
                         walletViewModel.send(it)
@@ -292,7 +297,9 @@ internal fun ComposeActivity.Navigation() {
             if (null == synchronizer) {
                 // Display loading indicator
             } else {
+                val currentAccount = walletViewModel.getCurrentAccount()
                 Transactions(
+                    account = currentAccount,
                     synchronizer = synchronizer,
                     onBack = { navController.popBackStackJustOnce(TRANSACTIONS) }
                 )

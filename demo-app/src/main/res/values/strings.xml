@@ -1,5 +1,4 @@
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
-
     <string name="pending">Pending</string>
     <string name="unknown">Unknown</string>
 
@@ -101,12 +100,4 @@
     <string name="transaction_fee">Fee:</string>
     <string name="transaction_fee_unavailable">Unavailable</string>
     <string name="transaction_status">Status:</string>
-
-    <string name="keys_disclaimer">Note that we strongly discouraged wallets from displaying the private keys the UI.
-        This is only for testing purposes.</string>
-    <string name="keys_ufvk">Unified Full View Key:</string>
-    <string name="keys_usk">Unified Spending Key:</string>
-    <string name="keys_wk">ZIP 32 Arbitrary Wallet Key:</string>
-    <string name="keys_ak">ZIP 32 Arbitrary Account Key:</string>
-
 </resources>

@@ -36,13 +36,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import cash.z.ecc.android.sdk.demoapp.MINIMAL_WEIGHT
 import cash.z.ecc.android.sdk.demoapp.R
-import cash.z.ecc.android.sdk.demoapp.fixture.WalletSnapshotFixture
-import cash.z.ecc.android.sdk.demoapp.ui.common.MINIMAL_WEIGHT
 import cash.z.ecc.android.sdk.demoapp.ui.screen.home.viewmodel.SendState
-import cash.z.ecc.android.sdk.demoapp.ui.screen.home.viewmodel.WalletSnapshot
 import cash.z.ecc.android.sdk.demoapp.util.fromResources
+import cash.z.ecc.android.sdk.fixture.AccountBalanceFixture
 import cash.z.ecc.android.sdk.fixture.WalletFixture
+import cash.z.ecc.android.sdk.model.AccountBalance
 import cash.z.ecc.android.sdk.model.Memo
 import cash.z.ecc.android.sdk.model.MonetarySeparators
 import cash.z.ecc.android.sdk.model.Proposal
@@ -60,7 +60,7 @@ import java.util.Locale
 private fun ComposablePreview() {
     MaterialTheme {
         Send(
-            walletSnapshot = WalletSnapshotFixture.new(),
+            accountBalance = AccountBalanceFixture.new(),
             sendState = SendState.None,
             onSend = {},
             onGetProposal = {},
@@ -75,7 +75,7 @@ private fun ComposablePreview() {
 @Composable
 @Suppress("ktlint:standard:function-naming", "LongParameterList")
 fun Send(
-    walletSnapshot: WalletSnapshot,
+    accountBalance: AccountBalance,
     sendState: SendState,
     onSend: (ZecSend) -> Unit,
     onGetProposal: (ZecSend) -> Unit,
@@ -89,7 +89,7 @@ fun Send(
     }) { paddingValues ->
         SendMainContent(
             paddingValues = paddingValues,
-            walletSnapshot = walletSnapshot,
+            accountBalance = accountBalance,
             sendState = sendState,
             onSend = onSend,
             onGetProposal = onGetProposal,
@@ -123,7 +123,7 @@ private fun SendTopAppBar(onBack: () -> Unit) {
 @Suppress("LongMethod", "ktlint:standard:function-naming", "LongParameterList")
 private fun SendMainContent(
     paddingValues: PaddingValues,
-    walletSnapshot: WalletSnapshot,
+    accountBalance: AccountBalance,
     sendState: SendState,
     onSend: (ZecSend) -> Unit,
     onGetProposal: (ZecSend) -> Unit,
@@ -157,7 +157,7 @@ private fun SendMainContent(
     ) {
         Text(text = stringResource(id = R.string.send_available_balance))
         Row(Modifier.fillMaxWidth()) {
-            Text(text = walletSnapshot.saplingBalance.available.toZecString())
+            Text(text = accountBalance.sapling.available.toZecString())
         }
 
         TextField(
