@@ -23,12 +23,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import cash.z.ecc.android.sdk.demoapp.R
-import cash.z.ecc.android.sdk.demoapp.fixture.WalletSnapshotFixture
 import cash.z.ecc.android.sdk.demoapp.ui.screen.home.viewmodel.SendState
-import cash.z.ecc.android.sdk.demoapp.ui.screen.home.viewmodel.WalletSnapshot
 import cash.z.ecc.android.sdk.ext.convertZatoshiToZec
 import cash.z.ecc.android.sdk.ext.toUsdString
+import cash.z.ecc.android.sdk.fixture.AccountBalanceFixture
+import cash.z.ecc.android.sdk.model.AccountBalance
 import cash.z.ecc.android.sdk.model.toZecString
+import java.math.BigDecimal
 
 @Preview(name = "Balance")
 @Suppress("ktlint:standard:function-naming")
@@ -36,7 +37,8 @@ import cash.z.ecc.android.sdk.model.toZecString
 private fun ComposablePreview() {
     MaterialTheme {
         Balance(
-            walletSnapshot = WalletSnapshotFixture.new(),
+            exchangeRateUsd = BigDecimal(50),
+            accountBalance = AccountBalanceFixture.new(),
             sendState = SendState.None,
             onBack = {},
             onShieldFunds = {},
@@ -48,7 +50,8 @@ private fun ComposablePreview() {
 @Composable
 @Suppress("ktlint:standard:function-naming")
 fun Balance(
-    walletSnapshot: WalletSnapshot,
+    exchangeRateUsd: BigDecimal?,
+    accountBalance: AccountBalance,
     sendState: SendState,
     onShieldFunds: () -> Unit,
     onBack: () -> Unit,
@@ -63,8 +66,9 @@ fun Balance(
 
         BalanceMainContent(
             paddingValues = paddingValues,
-            walletSnapshot,
-            sendState,
+            exchangeRateUsd = exchangeRateUsd,
+            accountBalance = accountBalance,
+            sendState = sendState,
             onShieldFunds = onShieldFunds
         )
     }
@@ -103,8 +107,9 @@ private fun BalanceTopAppBar(
 @Composable
 @Suppress("ktlint:standard:function-naming")
 private fun BalanceMainContent(
+    exchangeRateUsd: BigDecimal?,
+    accountBalance: AccountBalance,
     paddingValues: PaddingValues,
-    walletSnapshot: WalletSnapshot,
     sendState: SendState,
     onShieldFunds: () -> Unit
 ) {
@@ -117,16 +122,16 @@ private fun BalanceMainContent(
         Text(
             stringResource(
                 id = R.string.balance_available_amount_format,
-                walletSnapshot.orchardBalance.available.toZecString(),
-                walletSnapshot.exchangeRateUsd?.multiply(walletSnapshot.orchardBalance.available.convertZatoshiToZec())
+                accountBalance.orchard.available.toZecString(),
+                exchangeRateUsd?.multiply(accountBalance.orchard.available.convertZatoshiToZec())
                     .toUsdString()
             )
         )
         Text(
             stringResource(
                 id = R.string.balance_pending_amount_format,
-                walletSnapshot.orchardBalance.pending.toZecString(),
-                walletSnapshot.exchangeRateUsd?.multiply(walletSnapshot.orchardBalance.pending.convertZatoshiToZec())
+                accountBalance.orchard.pending.toZecString(),
+                exchangeRateUsd?.multiply(accountBalance.orchard.pending.convertZatoshiToZec())
                     .toUsdString()
             )
         )
@@ -137,16 +142,16 @@ private fun BalanceMainContent(
         Text(
             stringResource(
                 id = R.string.balance_available_amount_format,
-                walletSnapshot.saplingBalance.available.toZecString(),
-                walletSnapshot.exchangeRateUsd?.multiply(walletSnapshot.saplingBalance.available.convertZatoshiToZec())
+                accountBalance.sapling.available.toZecString(),
+                exchangeRateUsd?.multiply(accountBalance.sapling.available.convertZatoshiToZec())
                     .toUsdString()
             )
         )
         Text(
             stringResource(
                 id = R.string.balance_pending_amount_format,
-                walletSnapshot.saplingBalance.pending.toZecString(),
-                walletSnapshot.exchangeRateUsd?.multiply(walletSnapshot.saplingBalance.pending.convertZatoshiToZec())
+                accountBalance.sapling.pending.toZecString(),
+                exchangeRateUsd?.multiply(accountBalance.sapling.pending.convertZatoshiToZec())
                     .toUsdString()
             )
         )
@@ -157,14 +162,14 @@ private fun BalanceMainContent(
         Text(
             stringResource(
                 id = R.string.balance_available_amount_format,
-                walletSnapshot.transparentBalance.toZecString(),
-                walletSnapshot.exchangeRateUsd?.multiply(walletSnapshot.transparentBalance.convertZatoshiToZec())
+                accountBalance.unshielded.toZecString(),
+                exchangeRateUsd?.multiply(accountBalance.unshielded.convertZatoshiToZec())
                     .toUsdString()
             )
         )
 
         // This check is not entirely correct - it does not calculate the resulting fee with the new Proposal API
-        if (walletSnapshot.transparentBalance.value > 0L) {
+        if (accountBalance.unshielded.value > 0L) {
             // Note this implementation does not guard against multiple clicks
             Button(onClick = onShieldFunds) {
                 Text(stringResource(id = R.string.action_shield))

@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.demoapp.R
 import cash.z.ecc.android.sdk.internal.Twig
+import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.WalletAddresses
 import kotlinx.coroutines.flow.flow
 
@@ -48,6 +49,7 @@ private fun ComposablePreview() {
 @Suppress("ktlint:standard:function-naming")
 fun Addresses(
     synchronizer: Synchronizer,
+    account: Account,
     copyToClipboard: (String, String) -> Unit,
     onBack: () -> Unit,
     snackbarHostState: SnackbarHostState
@@ -62,7 +64,7 @@ fun Addresses(
             flow {
                 emit(
                     runCatching {
-                        WalletAddresses.new(synchronizer)
+                        WalletAddresses.new(account, synchronizer)
                     }.onFailure {
                         Twig.warn { "Wait until the SDK starts providing the addresses" }
                     }.getOrNull()
