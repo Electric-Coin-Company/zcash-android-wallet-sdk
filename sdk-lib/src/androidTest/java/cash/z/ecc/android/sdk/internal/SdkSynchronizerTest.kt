@@ -8,8 +8,8 @@ import cash.z.ecc.android.sdk.WalletInitMode
 import cash.z.ecc.android.sdk.exception.InitializeException
 import cash.z.ecc.android.sdk.fixture.LightWalletEndpointFixture
 import cash.z.ecc.android.sdk.fixture.WalletFixture
-import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.ZcashNetwork
+import cash.z.ecc.fixture.AccountFixture
 import kotlinx.coroutines.test.runTest
 import java.util.UUID
 import kotlin.test.Test
@@ -107,7 +107,7 @@ class SdkSynchronizerTest {
                 // Using existing wallet init mode as simplification for the test
                 walletInitMode = WalletInitMode.ExistingWallet
             ).use {
-                it.getSaplingAddress(Account.DEFAULT)
+                it.getSaplingAddress(AccountFixture.new())
             }
 
             // Second instance should fail because the seed is not relevant to the wallet.

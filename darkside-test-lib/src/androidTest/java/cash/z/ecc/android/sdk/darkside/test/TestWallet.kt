@@ -8,7 +8,6 @@ import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.WalletInitMode
 import cash.z.ecc.android.sdk.ext.Darkside
 import cash.z.ecc.android.sdk.internal.Twig
-import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
@@ -55,11 +54,17 @@ class TestWallet(
     // Although runBlocking isn't great, this usage is OK because this is only used within the
     // automated tests
 
-    private val account = Account.DEFAULT
+    internal val account = AccountFixture.new()
     private val context = InstrumentationRegistry.getInstrumentation().context
     private val seed: ByteArray = Mnemonics.MnemonicCode(seedPhrase).toSeed()
     private val shieldedSpendingKey =
-        runBlocking { DerivationTool.getInstance().deriveUnifiedSpendingKey(seed, network = network, account) }
+        runBlocking {
+            DerivationTool.getInstance().deriveUnifiedSpendingKey(
+                seed = seed,
+                network = network,
+                accountIndex = AccountFixture.ZIP_32_ACCOUNT_INDEX
+            )
+        }
     val synchronizer: SdkSynchronizer =
         Synchronizer.newBlocking(
             context,
@@ -72,7 +77,8 @@ class TestWallet(
             walletInitMode = WalletInitMode.ExistingWallet
         ) as SdkSynchronizer
 
-    val available get() = synchronizer.saplingBalances.value?.available
+    val available
+        get() = synchronizer.walletBalances.value?.get(account)?.sapling?.available
     val unifiedAddress =
         runBlocking { synchronizer.getUnifiedAddress(account) }
     val transparentAddress =
@@ -123,7 +129,7 @@ class TestWallet(
     }
 
     suspend fun shieldFunds(): TestWallet {
-        synchronizer.refreshUtxos(Account.DEFAULT, BlockHeight.new(935000L)).let { count ->
+        synchronizer.refreshUtxos(account, BlockHeight.new(935000L)).let { count ->
             Twig.debug { "FOUND $count new UTXOs" }
         }
 
