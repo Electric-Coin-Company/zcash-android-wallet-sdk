@@ -7,13 +7,13 @@ import cash.z.ecc.android.sdk.Synchronizer.Status.SYNCED
 import cash.z.ecc.android.sdk.WalletInitMode
 import cash.z.ecc.android.sdk.ext.onFirst
 import cash.z.ecc.android.sdk.internal.Twig
-import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.test.ScopedTest
 import cash.z.ecc.android.sdk.tool.CheckpointTool
 import cash.z.ecc.android.sdk.tool.DerivationTool
+import cash.z.ecc.fixture.AccountFixture
 import co.electriccoin.lightwallet.client.LightWalletClient
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
@@ -36,6 +36,7 @@ import java.util.concurrent.CountDownLatch
 class TestnetIntegrationTest : ScopedTest() {
     var stopWatch = CountDownLatch(1)
     val saplingActivation = synchronizer.network.saplingActivationHeight
+    val account = AccountFixture.new()
 
     @Test
     @Ignore("This test is broken")
@@ -68,7 +69,7 @@ class TestnetIntegrationTest : ScopedTest() {
     @Ignore("This test is broken")
     fun getAddress() =
         runBlocking {
-            assertEquals(address, synchronizer.getUnifiedAddress(Account.DEFAULT))
+            assertEquals(address, synchronizer.getUnifiedAddress(AccountFixture.new()))
         }
 
     // This is an extremely slow test; it is disabled so that we can get CI set up
@@ -78,8 +79,8 @@ class TestnetIntegrationTest : ScopedTest() {
     fun testBalance() =
         runBlocking {
             var availableBalance: Zatoshi? = null
-            synchronizer.saplingBalances.onFirst {
-                availableBalance = it?.available
+            synchronizer.walletBalances.onFirst {
+                availableBalance = it?.get(account)?.sapling?.available
             }
 
             synchronizer.status.filter { it == SYNCED }.onFirst {
@@ -96,7 +97,7 @@ class TestnetIntegrationTest : ScopedTest() {
     fun testSpend() =
         runBlocking {
             var success = false
-            synchronizer.saplingBalances.filterNotNull().onEach {
+            synchronizer.walletBalances.filterNotNull().onEach {
                 success = sendFunds()
             }.first()
             log("asserting $success")
@@ -108,7 +109,7 @@ class TestnetIntegrationTest : ScopedTest() {
             DerivationTool.getInstance().deriveUnifiedSpendingKey(
                 seed,
                 synchronizer.network,
-                Account.DEFAULT
+                AccountFixture.ZIP_32_ACCOUNT_INDEX
             )
         log("sending to address")
         synchronizer.createProposedTransactions(
