@@ -1,7 +1,6 @@
 package cash.z.ecc.android.sdk.internal
 
 import cash.z.ecc.android.sdk.internal.model.JniUnifiedSpendingKey
-import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.UnifiedFullViewingKey
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.ZcashNetwork

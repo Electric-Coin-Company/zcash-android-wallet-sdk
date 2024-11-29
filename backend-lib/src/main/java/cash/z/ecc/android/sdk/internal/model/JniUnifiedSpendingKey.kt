@@ -1,6 +1,7 @@
 package cash.z.ecc.android.sdk.internal.model
 
 import androidx.annotation.Keep
+import cash.z.ecc.android.sdk.internal.jni.JNI_ACCOUNT_UUID_BYTES_SIZE
 
 /**
  * A [ZIP 316](https://zips.z.cash/zip-0316) Unified Spending Key.
@@ -29,7 +30,7 @@ class JniUnifiedSpendingKey(
     val bytes: ByteArray
 ) {
     init {
-        require(accountUuid.size == 16) {
+        require(accountUuid.size == JNI_ACCOUNT_UUID_BYTES_SIZE) {
             "Account UUID must be 16 bytes"
         }
     }
