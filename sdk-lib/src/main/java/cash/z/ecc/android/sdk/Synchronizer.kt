@@ -160,11 +160,11 @@ interface Synchronizer {
      *
      * @throws [InitializeException.CreateAccountException] in case of the operation failure
      **/
-     suspend fun createAccount(
+    suspend fun createAccount(
         seed: ByteArray,
         treeState: TreeState,
         recoverUntil: BlockHeight?
-     ): UnifiedSpendingKey
+    ): UnifiedSpendingKey
 
     /**
      * Gets the current unified address for the given account.

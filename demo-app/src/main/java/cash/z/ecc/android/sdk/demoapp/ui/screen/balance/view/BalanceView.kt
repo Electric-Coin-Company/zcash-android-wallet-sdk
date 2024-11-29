@@ -32,7 +32,7 @@ import cash.z.ecc.android.sdk.model.toZecString
 import java.math.BigDecimal
 
 @Preview(name = "Balance")
-@Suppress("ktlint:standard:function-naming")
+@Suppress("ktlint:standard:function-naming", "MagicNumber")
 @Composable
 private fun ComposablePreview() {
     MaterialTheme {
@@ -48,7 +48,7 @@ private fun ComposablePreview() {
 }
 
 @Composable
-@Suppress("ktlint:standard:function-naming")
+@Suppress("ktlint:standard:function-naming", "LongParameterList")
 fun Balance(
     exchangeRateUsd: BigDecimal?,
     accountBalance: AccountBalance,
