@@ -17,9 +17,10 @@ object WalletSnapshotFixture {
     val PROGRESS = PercentDecimal.ZERO_PERCENT
     val EXCHANGE_RATE_USD: BigDecimal = BigDecimal(37.4850)
     val ACCOUNT = AccountFixture.new()
-    val WALLET_BALANCES: Map<Account, AccountBalance> = mapOf(
-        ACCOUNT to AccountBalanceFixture.new()
-    )
+    val WALLET_BALANCES: Map<Account, AccountBalance> =
+        mapOf(
+            ACCOUNT to AccountBalanceFixture.new()
+        )
 
     // Should fill in with non-empty values for better example values in tests and UI previews
     @Suppress("LongParameterList")
