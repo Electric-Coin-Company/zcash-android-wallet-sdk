@@ -18,7 +18,6 @@ import cash.z.ecc.android.sdk.demoapp.ui.common.ANDROID_STATE_FLOW_TIMEOUT
 import cash.z.ecc.android.sdk.demoapp.ui.common.throttle
 import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.internal.Twig
-import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.ObserveFiatCurrencyResult
 import cash.z.ecc.android.sdk.model.PercentDecimal
