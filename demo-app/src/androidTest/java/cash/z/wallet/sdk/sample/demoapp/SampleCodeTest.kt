@@ -8,8 +8,8 @@ import cash.z.ecc.android.sdk.demoapp.ext.defaultForNetwork
 import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.ext.convertZecToZatoshi
 import cash.z.ecc.android.sdk.ext.toHex
+import cash.z.ecc.android.sdk.fixture.AccountFixture
 import cash.z.ecc.android.sdk.internal.Twig
-import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.tool.DerivationTool
@@ -72,7 +72,7 @@ class SampleCodeTest {
     @Test
     fun getAddress() =
         runBlocking {
-            val address = synchronizer.getUnifiedAddress(Account.DEFAULT)
+            val address = synchronizer.getUnifiedAddress(AccountFixture.new())
             assertFalse(address.isBlank())
             log("Address: $address")
         }
@@ -170,7 +170,7 @@ class SampleCodeTest {
     // ///////////////////////////////////////////////////
     // Create a signed transaction (with memo) and broadcast
     @Test
-    fun submitTransaction() =
+    fun submitTransaction(): Unit =
         runBlocking {
             val amount = 0.123.convertZecToZatoshi()
             val address = "ztestsapling1tklsjr0wyw0d58f3p7wufvrj2cyfv6q6caumyueadq8qvqt8lda6v6tpx474rfru9y6u75u7qnw"
@@ -179,7 +179,7 @@ class SampleCodeTest {
                 DerivationTool.getInstance().deriveUnifiedSpendingKey(
                     seed,
                     ZcashNetwork.Mainnet,
-                    Account.DEFAULT
+                    AccountFixture.ZIP_32_ACCOUNT_INDEX
                 )
             synchronizer.createProposedTransactions(
                 synchronizer.proposeTransfer(
@@ -197,7 +197,7 @@ class SampleCodeTest {
     // ////////////////////////////////////////////////////
 
     companion object {
-        private val seed = "Insert seed for testing".toByteArray()
+        private val seed = "Inserting seed for test purposes".toByteArray()
         private val lightwalletdHost = LightWalletEndpoint.Mainnet
 
         private val context = InstrumentationRegistry.getInstrumentation().targetContext
