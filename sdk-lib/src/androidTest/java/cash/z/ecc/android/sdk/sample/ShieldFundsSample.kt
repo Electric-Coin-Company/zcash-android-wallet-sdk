@@ -3,6 +3,7 @@ package cash.z.ecc.android.sdk.sample
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.util.TestWallet
+import cash.z.ecc.fixture.AccountFixture
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert
 import org.junit.Ignore
@@ -34,6 +35,9 @@ class ShieldFundsSample {
             Assert.assertEquals("foo", "${wallet.unifiedAddress} ${wallet.transparentAddress}")
 //        wallet.shieldFunds()
 
-            Assert.assertEquals(Zatoshi(5), wallet.synchronizer.saplingBalances.value?.available)
+            Assert.assertEquals(
+                Zatoshi(5),
+                wallet.synchronizer.walletBalances.value?.get(AccountFixture.new())?.sapling?.available
+            )
         }
 }
