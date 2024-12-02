@@ -16,6 +16,6 @@ data class WalletSnapshot(
     val synchronizerError: SynchronizerError?
 ) {
     fun balanceByAccount(account: Account): AccountBalance {
-        return walletBalances[account] ?: error("Balance of $account could not be find.")
+        return walletBalances[account] ?: error("Balance of $account could not be found.")
     }
 }

@@ -370,6 +370,19 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val accounts: StateFlow<List<Account>> =
+        synchronizer
+            .filterNotNull()
+            .flatMapLatest {
+                it.accountsFlow.filterNotNull()
+            }
+            .stateIn(
+                viewModelScope,
+                SharingStarted.WhileSubscribed(ANDROID_STATE_FLOW_TIMEOUT),
+                emptyList()
+            )
+
     fun getCurrentAccount(): Account = getAccounts()[CURRENT_ZIP_32_ACCOUNT_INDEX]
 
     companion object {

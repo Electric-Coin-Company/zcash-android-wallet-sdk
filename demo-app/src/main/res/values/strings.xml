@@ -52,6 +52,14 @@
     <string name="seed_random">Generate a new random secret phrase</string>
     <string name="seed_restore">Restore wallet</string>
 
+    <string name="home_accounts">
+        The wallet\'s accounts:
+        <xliff:g id="accounts" example="Account(uuid1), Account(uuid2)">%1$s</xliff:g>
+    </string>
+    <string name="home_current_account">
+        Selected account:
+        <xliff:g id="account" example="Account(uuid1)">%1$s</xliff:g>
+    </string>
     <string name="home_status">Status: <xliff:g id="status" example="Syncing">%1$s</xliff:g></string>
     <string name="home_progress">Progress: <xliff:g id="percentage" example="15%">%1$.2f</xliff:g>%%</string>
 

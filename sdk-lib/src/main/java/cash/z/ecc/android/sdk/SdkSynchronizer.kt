@@ -640,6 +640,8 @@ class SdkSynchronizer private constructor(
     // Account management
     //
 
+    private val refreshAccountsBus = MutableSharedFlow<Unit>()
+
     // Not ready to be a public API; internal for testing only
     internal suspend fun createAccount(
         seed: ByteArray,
@@ -651,7 +653,9 @@ class SdkSynchronizer private constructor(
                 seed = seed,
                 treeState = treeState,
                 recoverUntil = recoverUntil
-            )
+            ).also {
+                refreshAccountsBus.emit(Unit)
+            }
         }.onFailure {
             Twig.error(it) { "Create account failed." }
         }.getOrElse {
@@ -668,6 +672,21 @@ class SdkSynchronizer private constructor(
             throw InitializeException.GetAccountsException(it)
         }
     }
+
+    override val accountsFlow: Flow<List<Account>?> =
+        channelFlow {
+            send(getAccounts())
+            launch {
+                refreshAccountsBus.collect {
+                    send(getAccounts())
+                }
+            }
+            awaitClose()
+        }.stateIn(
+            coroutineScope,
+            SharingStarted.WhileSubscribed(),
+            null
+        )
 
     /**
      * Returns the current Unified Address for this account.

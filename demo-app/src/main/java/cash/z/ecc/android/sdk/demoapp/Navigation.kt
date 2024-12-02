@@ -63,6 +63,7 @@ import cash.z.ecc.android.sdk.model.Proposal
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.type.ServerValidation
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
@@ -76,11 +77,14 @@ internal fun ComposeActivity.Navigation() {
     NavHost(navController = navController, startDestination = HOME) {
         composable(HOME) {
             val walletSnapshot = walletViewModel.walletSnapshot.collectAsStateWithLifecycle().value
+            val allAccounts = walletViewModel.accounts.collectAsStateWithLifecycle().value
             if (null == walletSnapshot) {
                 // Display loading indicator
             } else {
                 Home(
-                    walletSnapshot,
+                    currentAccount = walletViewModel.getCurrentAccount(),
+                    allAccounts = allAccounts.toImmutableList(),
+                    walletSnapshot = walletSnapshot,
                     goBalance = { navController.navigateJustOnce(BALANCE) },
                     goSend = { navController.navigateJustOnce(SEND) },
                     goAddressDetails = { navController.navigateJustOnce(WALLET_ADDRESS_DETAILS) },

@@ -122,6 +122,16 @@ interface Synchronizer {
     suspend fun getAccounts(): List<Account>
 
     /**
+     * Returns all the wallet accounts or throws [InitializeException.GetAccountsException]
+     *
+     * It's a Flow version of [getAccounts]
+     *
+     * @return Flow of all wallet accounts
+     * @throws [InitializeException.GetAccountsException] in case of the operation failure
+     */
+    val accountsFlow: Flow<List<Account>?>
+
+    /**
      * Measure connection quality and speed of given [servers].
      *
      * @return a [Flow] of fastest servers which updates it's state during measurement stages
@@ -159,6 +169,7 @@ interface Synchronizer {
      *
      * @throws [InitializeException.CreateAccountException] in case of the operation failure
      **/
+    @Suppress("standard:no-consecutive-comments")
     /* Not ready to be a public API; internal for testing only
     suspend fun createAccount(
         seed: ByteArray,

@@ -2,6 +2,8 @@ package cash.z.ecc.android.sdk.demoapp.ui.screen.home.view
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -25,11 +27,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.demoapp.R
 import cash.z.ecc.android.sdk.demoapp.fixture.WalletSnapshotFixture
 import cash.z.ecc.android.sdk.demoapp.ui.common.DisableScreenTimeout
 import cash.z.ecc.android.sdk.demoapp.ui.screen.home.viewmodel.WalletSnapshot
+import cash.z.ecc.android.sdk.fixture.AccountFixture
+import cash.z.ecc.android.sdk.model.Account
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
 
 @Preview(name = "Home")
 @Composable
@@ -37,14 +44,16 @@ import cash.z.ecc.android.sdk.demoapp.ui.screen.home.viewmodel.WalletSnapshot
 private fun ComposablePreviewHome() {
     MaterialTheme {
         Home(
-            WalletSnapshotFixture.new(),
+            allAccounts = persistentListOf(AccountFixture.new()),
+            currentAccount = AccountFixture.new(),
+            walletSnapshot = WalletSnapshotFixture.new(),
             isTestnet = true,
             goBalance = {},
             goSend = {},
             goAddressDetails = {},
             goTransactions = {},
-            goTestnetFaucet = {},
             goServer = {},
+            goTestnetFaucet = {},
             resetSdk = {},
             rewind = {},
         )
@@ -54,6 +63,8 @@ private fun ComposablePreviewHome() {
 @Composable
 @Suppress("LongParameterList", "ktlint:standard:function-naming")
 fun Home(
+    allAccounts: ImmutableList<Account>,
+    currentAccount: Account,
     walletSnapshot: WalletSnapshot,
     isTestnet: Boolean,
     goBalance: () -> Unit,
@@ -75,12 +86,14 @@ fun Home(
     }) { paddingValues ->
         HomeMainContent(
             paddingValues = paddingValues,
-            walletSnapshot,
+            walletSnapshot = walletSnapshot,
             goBalance = goBalance,
             goSend = goSend,
             goServer = goServer,
             goAddressDetails = goAddressDetails,
-            goTransactions = goTransactions
+            goTransactions = goTransactions,
+            currentAccount = currentAccount,
+            allAccounts = allAccounts
         )
     }
 }
@@ -154,6 +167,8 @@ private fun DebugMenu(
 @Composable
 @Suppress("LongParameterList", "ktlint:standard:function-naming")
 private fun HomeMainContent(
+    allAccounts: ImmutableList<Account>,
+    currentAccount: Account,
     paddingValues: PaddingValues,
     walletSnapshot: WalletSnapshot,
     goBalance: () -> Unit,
@@ -198,5 +213,13 @@ private fun HomeMainContent(
             // is different from a longer sync.
             DisableScreenTimeout()
         }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Text(text = stringResource(id = R.string.home_accounts, allAccounts))
+
+        Spacer(modifier = Modifier.height(6.dp))
+
+        Text(text = stringResource(id = R.string.home_current_account, currentAccount))
     }
 }
