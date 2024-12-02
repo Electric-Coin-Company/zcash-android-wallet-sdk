@@ -14,7 +14,6 @@ import cash.z.ecc.android.sdk.internal.SaplingParamTool
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.db.DatabaseCoordinator
 import cash.z.ecc.android.sdk.internal.exchange.UsdExchangeRateFetcher
-import cash.z.ecc.android.sdk.internal.model.TreeState
 import cash.z.ecc.android.sdk.internal.model.ext.toBlockHeight
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.AccountBalance
@@ -160,11 +159,13 @@ interface Synchronizer {
      *
      * @throws [InitializeException.CreateAccountException] in case of the operation failure
      **/
+    /* Not ready to be a public API; internal for testing only
     suspend fun createAccount(
         seed: ByteArray,
         treeState: TreeState,
         recoverUntil: BlockHeight?
     ): UnifiedSpendingKey
+     */
 
     /**
      * Gets the current unified address for the given account.

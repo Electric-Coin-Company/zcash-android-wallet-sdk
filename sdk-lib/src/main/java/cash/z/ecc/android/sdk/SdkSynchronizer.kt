@@ -640,7 +640,8 @@ class SdkSynchronizer private constructor(
     // Account management
     //
 
-    override suspend fun createAccount(
+    // Not ready to be a public API; internal for testing only
+    internal suspend fun createAccount(
         seed: ByteArray,
         treeState: TreeState,
         recoverUntil: BlockHeight?

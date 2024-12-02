@@ -8,7 +8,6 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - `Synchronizer.getAccounts()`
-- `Synchronizer.createAccount()`
 - `Synchronizer.walletBalances: StateFlow<Map<Account, AccountBalance>?>` that is replacement for the removed 
   `orchardBalances`, `saplingBalances`, and `transparentBalance`
 
