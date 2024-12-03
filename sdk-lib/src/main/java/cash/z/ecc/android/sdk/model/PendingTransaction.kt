@@ -31,7 +31,7 @@ sealed class TransactionRecipient {
         override fun toString() = "TransactionRecipient.Address"
     }
 
-    data class Account(val accountZip32Index: Int) : TransactionRecipient() {
+    data class Account(val accountId: Int) : TransactionRecipient() {
         override fun toString() = "TransactionRecipient.Account"
     }
 
