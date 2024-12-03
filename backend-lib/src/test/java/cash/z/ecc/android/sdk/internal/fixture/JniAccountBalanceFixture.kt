@@ -5,7 +5,7 @@ import cash.z.ecc.android.sdk.internal.model.JniAccountBalance
 /**
  * This is a test fixture for [JniAccountBalance] class. It holds mocked values that are only used within
  * [JniWalletSummaryTest].
-  */
+ */
 object JniAccountBalanceFixture {
     val ACCOUNT_UUID: ByteArray = "random_uuid_16_b".toByteArray()
     const val SAPLING_VERIFIED_BALANCE: Long = 0L

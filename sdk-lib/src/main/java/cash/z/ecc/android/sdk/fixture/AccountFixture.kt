@@ -20,10 +20,12 @@ object AccountFixture {
         )
 }
 
+private const val UUID_V4_BYTE_SIZE = 16
+
 // This provides us with a way to convert [UUID] to [ByteArray]
 private fun UUID.toByteArray(): ByteArray =
     ByteBuffer
-        .allocate(16)
+        .allocate(UUID_V4_BYTE_SIZE)
         .putLong(mostSignificantBits)
         .putLong(leastSignificantBits)
         .array()
