@@ -1,10 +1,10 @@
 package cash.z.ecc.android.sdk.util
 
+import cash.z.ecc.android.sdk.fixture.AccountFixture
 import cash.z.ecc.android.sdk.internal.deriveUnifiedAddress
 import cash.z.ecc.android.sdk.internal.jni.RustDerivationTool
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.test.readFileLinesInFlow
-import cash.z.ecc.fixture.AccountFixture
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.runBlocking

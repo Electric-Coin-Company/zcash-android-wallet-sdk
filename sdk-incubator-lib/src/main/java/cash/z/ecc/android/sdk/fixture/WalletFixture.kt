@@ -3,6 +3,7 @@ package cash.z.ecc.android.sdk.fixture
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.ZcashNetwork
+import java.util.UUID
 
 /**
  * Provides two default wallets, making it easy to test sending funds back and forth between them.
@@ -19,7 +20,7 @@ sealed class WalletFixture {
     @Suppress("MaxLineLength")
     data object Ben : WalletFixture() {
         override val accounts: List<Account>
-            get() = listOf(Account("ben_uuid_16_byte".toByteArray()))
+            get() = listOf(AccountFixture.new(UUID.fromString("52175368-821a-4664-8a7c-6a75d850f71c")))
 
         override val seedPhrase: String
             get() =
@@ -56,7 +57,7 @@ sealed class WalletFixture {
     @Suppress("MaxLineLength")
     data object Alice : WalletFixture() {
         override val accounts: List<Account>
-            get() = listOf(Account("alice_uuid_16_by".toByteArray()))
+            get() = listOf(AccountFixture.new(UUID.fromString("8a204240-73a5-4e7a-93c2-a6e05711a000")))
 
         override val seedPhrase: String
             get() =

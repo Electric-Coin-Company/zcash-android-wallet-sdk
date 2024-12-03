@@ -1,9 +1,9 @@
 package cash.z.ecc.android.sdk.sample
 
+import cash.z.ecc.android.sdk.fixture.AccountFixture
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.util.TestWallet
-import cash.z.ecc.fixture.AccountFixture
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert
 import org.junit.Ignore

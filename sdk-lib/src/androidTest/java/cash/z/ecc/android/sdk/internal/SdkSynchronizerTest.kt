@@ -6,10 +6,10 @@ import cash.z.ecc.android.bip39.Mnemonics
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.WalletInitMode
 import cash.z.ecc.android.sdk.exception.InitializeException
+import cash.z.ecc.android.sdk.fixture.AccountFixture
 import cash.z.ecc.android.sdk.fixture.LightWalletEndpointFixture
 import cash.z.ecc.android.sdk.fixture.WalletFixture
 import cash.z.ecc.android.sdk.model.ZcashNetwork
-import cash.z.ecc.fixture.AccountFixture
 import kotlinx.coroutines.test.runTest
 import java.util.UUID
 import kotlin.test.Test
