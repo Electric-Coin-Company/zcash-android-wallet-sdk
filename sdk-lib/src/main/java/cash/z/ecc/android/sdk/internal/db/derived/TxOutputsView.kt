@@ -3,7 +3,6 @@ package cash.z.ecc.android.sdk.internal.db.derived
 import androidx.sqlite.db.SupportSQLiteDatabase
 import cash.z.ecc.android.sdk.internal.db.queryAndMap
 import cash.z.ecc.android.sdk.internal.model.OutputProperties
-import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.FirstClassByteArray
 import cash.z.ecc.android.sdk.model.TransactionRecipient
 import java.util.Locale
@@ -73,9 +72,9 @@ internal class TxOutputsView(private val sqliteDatabase: SupportSQLiteDatabase) 
                 if (!it.isNull(toAccountIndex)) {
                     // TODO [#1644]: Refactor Account ZIP32 index across SDK
                     // TODO [#1644]: https://github.com/Electric-Coin-Company/zcash-android-wallet-sdk/issues/1644
-                    TransactionRecipient.Account(0)
+                    TransactionRecipient.RecipientAccount(it.getInt(toAccountIndex))
                 } else {
-                    TransactionRecipient.Address(it.getString(toAddressIndex))
+                    TransactionRecipient.RecipientAddress(it.getString(toAddressIndex))
                 }
             }
         )

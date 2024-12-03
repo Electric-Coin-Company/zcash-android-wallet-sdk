@@ -51,7 +51,7 @@ internal class TransactionEncoderImpl(
         recipient: TransactionRecipient,
         memo: ByteArray?
     ): EncodedTransaction {
-        require(recipient is TransactionRecipient.Address)
+        require(recipient is TransactionRecipient.RecipientAddress)
 
         val transactionId = createSpend(usk, amount, recipient.addressValue, memo)
         return repository.findEncodedTransactionByTxId(transactionId)
@@ -63,7 +63,7 @@ internal class TransactionEncoderImpl(
         recipient: TransactionRecipient,
         memo: ByteArray?
     ): EncodedTransaction {
-        require(recipient is TransactionRecipient.Account)
+        require(recipient is TransactionRecipient.RecipientAccount)
 
         val transactionId = createShieldingSpend(usk, memo)
         return repository.findEncodedTransactionByTxId(transactionId)
