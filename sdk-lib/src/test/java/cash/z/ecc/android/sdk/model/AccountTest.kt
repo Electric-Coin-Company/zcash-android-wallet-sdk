@@ -7,7 +7,7 @@ class AccountTest {
     @Test
     fun out_of_bounds() {
         assertFailsWith(IllegalArgumentException::class) {
-            Account("random".toByteArray())
+            Account(-1)
         }
     }
 }
