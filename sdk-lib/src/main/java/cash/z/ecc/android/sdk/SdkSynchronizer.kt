@@ -644,12 +644,16 @@ class SdkSynchronizer private constructor(
 
     // Not ready to be a public API; internal for testing only
     internal suspend fun createAccount(
+        accountName: String,
+        keySource: String?,
+        recoverUntil: BlockHeight?,
         seed: ByteArray,
         treeState: TreeState,
-        recoverUntil: BlockHeight?
     ): UnifiedSpendingKey {
         return runCatching {
             backend.createAccountAndGetSpendingKey(
+                accountName = accountName,
+                keySource = keySource,
                 seed = seed,
                 treeState = treeState,
                 recoverUntil = recoverUntil
@@ -990,6 +994,8 @@ internal object DefaultSynchronizerFactory {
 
     @Suppress("LongParameterList")
     internal suspend fun defaultDerivedDataRepository(
+        accountName: String?,
+        keySource: String?,
         context: Context,
         rustBackend: TypesafeBackend,
         databaseFile: File,
@@ -1000,13 +1006,15 @@ internal object DefaultSynchronizerFactory {
     ): DerivedDataRepository =
         DbDerivedDataRepository(
             DerivedDataDb.new(
+                accountName,
                 context,
                 rustBackend,
                 databaseFile,
                 checkpoint,
-                seed,
+                keySource,
                 numberOfAccounts,
-                recoverUntil
+                recoverUntil,
+                seed,
             )
         )
 

@@ -90,7 +90,7 @@ class RustBackend private constructor(
     }
 
     override suspend fun createAccount(
-        accountName: String,
+        accountName: String?,
         keySource: String?,
         seed: ByteArray,
         treeState: ByteArray,
@@ -521,7 +521,7 @@ class RustBackend private constructor(
         private external fun createAccount(
             dbDataPath: String,
             networkId: Int,
-            accountName: String,
+            accountName: String?,
             keySource: String?,
             seed: ByteArray,
             treeState: ByteArray,

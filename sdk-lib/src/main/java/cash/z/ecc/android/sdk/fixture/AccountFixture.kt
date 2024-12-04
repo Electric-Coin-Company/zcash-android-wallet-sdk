@@ -15,9 +15,9 @@ object AccountFixture {
     val ACCOUNT_UUID = UUID.fromString("01234567-89ab-cdef-0123-456789abcdef")
     const val ZIP_32_ACCOUNT_INDEX = 0
 
-    fun new(accountId: Int = ZIP_32_ACCOUNT_INDEX) =
+    fun new(accountId: UUID = ACCOUNT_UUID) =
         Account(
-            value = accountId
+            accountUuid = accountId.toByteArray()
         )
 }
 

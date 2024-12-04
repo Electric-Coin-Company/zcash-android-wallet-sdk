@@ -38,13 +38,15 @@ internal class DerivedDataDb private constructor(
 
         @Suppress("LongParameterList")
         suspend fun new(
+            accountName: String?,
             context: Context,
             backend: TypesafeBackend,
             databaseFile: File,
             checkpoint: Checkpoint,
-            seed: ByteArray?,
+            keySource: String?,
             numberOfAccounts: Int,
-            recoverUntil: BlockHeight?
+            recoverUntil: BlockHeight?,
+            seed: ByteArray?,
         ): DerivedDataDb {
             backend.initDataDb(seed)
 
@@ -69,9 +71,11 @@ internal class DerivedDataDb private constructor(
                 repeat(missingAccounts) {
                     runCatching {
                         backend.createAccountAndGetSpendingKey(
+                            accountName = accountName,
+                            keySource = keySource,
+                            recoverUntil = recoverUntil,
                             seed = checkedSeed,
                             treeState = checkpoint.treeState(),
-                            recoverUntil = recoverUntil
                         )
                     }.onFailure {
                         Twig.error(it) { "Create account failed." }

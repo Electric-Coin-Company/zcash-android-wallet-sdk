@@ -549,6 +549,12 @@ interface Synchronizer {
         /**
          * Primary method that SDK clients will use to construct a synchronizer.
          *
+         * @param accountName Optional account name that will be created as part of the new wallet setup process based
+         * on the given seed
+         *
+         * @param keySource Optional key source that will be persisted alongside the account created in the new
+         * wallet setup process based on the given seed
+         *
          * @param zcashNetwork the network to use.
          *
          * @param alias A string used to segregate multiple wallets in the filesystem.  This implies the string
@@ -585,13 +591,15 @@ interface Synchronizer {
          */
         @Suppress("LongParameterList", "LongMethod")
         suspend fun new(
-            context: Context,
-            zcashNetwork: ZcashNetwork,
+            accountName: String?,
             alias: String = ZcashSdk.DEFAULT_ALIAS,
+            birthday: BlockHeight?,
+            context: Context,
+            keySource: String?,
             lightWalletEndpoint: LightWalletEndpoint,
             seed: ByteArray?,
-            birthday: BlockHeight?,
-            walletInitMode: WalletInitMode
+            walletInitMode: WalletInitMode,
+            zcashNetwork: ZcashNetwork,
         ): CloseableSynchronizer {
             val applicationContext = context.applicationContext
 
@@ -648,10 +656,12 @@ interface Synchronizer {
 
             val repository =
                 DefaultSynchronizerFactory.defaultDerivedDataRepository(
+                    accountName = accountName,
                     context = applicationContext,
                     rustBackend = backend,
                     databaseFile = coordinator.dataDbFile(zcashNetwork, alias),
                     checkpoint = loadedCheckpoint,
+                    keySource = keySource,
                     seed = seed,
                     numberOfAccounts = Derivation.DEFAULT_NUMBER_OF_ACCOUNTS,
                     recoverUntil = chainTip,
@@ -696,16 +706,28 @@ interface Synchronizer {
         @JvmStatic
         @Suppress("LongParameterList")
         fun newBlocking(
-            context: Context,
-            zcashNetwork: ZcashNetwork,
+            accountName: String?,
             alias: String = ZcashSdk.DEFAULT_ALIAS,
+            birthday: BlockHeight?,
+            context: Context,
+            keySource: String?,
             lightWalletEndpoint: LightWalletEndpoint,
             seed: ByteArray?,
-            birthday: BlockHeight?,
-            walletInitMode: WalletInitMode
+            walletInitMode: WalletInitMode,
+            zcashNetwork: ZcashNetwork,
         ): CloseableSynchronizer =
             runBlocking {
-                new(context, zcashNetwork, alias, lightWalletEndpoint, seed, birthday, walletInitMode)
+                new(
+                    accountName = accountName,
+                    alias = alias,
+                    birthday = birthday,
+                    context = context,
+                    keySource = keySource,
+                    lightWalletEndpoint = lightWalletEndpoint,
+                    seed = seed,
+                    walletInitMode = walletInitMode,
+                    zcashNetwork = zcashNetwork,
+                )
             }
 
         /**

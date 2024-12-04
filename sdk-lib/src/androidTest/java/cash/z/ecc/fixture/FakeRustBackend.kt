@@ -136,6 +136,8 @@ internal class FakeRustBackend(
     }
 
     override suspend fun createAccount(
+        accountName: String,
+        keySource: String?,
         seed: ByteArray,
         treeState: ByteArray,
         recoverUntil: Long?
