@@ -9,21 +9,4 @@ data class Account(val value: Int) {
     init {
         require(value >= 0) { "Account index must be >= 0 but actually is $value" }
     }
-
-    companion object {
-        val DEFAULT = Account(0)
-    }
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-
-        other as Account
-
-        return accountUuid.contentEquals(other.accountUuid)
-    }
-
-    override fun hashCode(): Int {
-        return accountUuid.contentHashCode()
-    }
 }

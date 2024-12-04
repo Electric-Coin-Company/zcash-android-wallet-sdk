@@ -28,7 +28,7 @@ object WalletFixture {
         accountIndex: Int = ACCOUNT_INDEX
     ) = RustDerivationTool.new().deriveUnifiedSpendingKey(
         Mnemonics.MnemonicCode(seed).toEntropy(),
-        network,
+        network.id,
         accountIndex
     )
 }

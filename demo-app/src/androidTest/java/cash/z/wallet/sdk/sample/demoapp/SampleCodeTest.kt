@@ -179,7 +179,7 @@ class SampleCodeTest {
                 DerivationTool.getInstance().deriveUnifiedSpendingKey(
                     seed,
                     ZcashNetwork.Mainnet,
-                    AccountFixture.ZIP_32_ACCOUNT_INDEX
+                    AccountFixture.new()
                 )
             synchronizer.createProposedTransactions(
                 synchronizer.proposeTransfer(

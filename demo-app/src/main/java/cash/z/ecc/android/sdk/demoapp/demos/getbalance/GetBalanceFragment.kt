@@ -19,6 +19,7 @@ import cash.z.ecc.android.sdk.ext.convertZatoshiToZec
 import cash.z.ecc.android.sdk.ext.convertZatoshiToZecString
 import cash.z.ecc.android.sdk.ext.toUsdString
 import cash.z.ecc.android.sdk.internal.Twig
+import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.PercentDecimal
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
@@ -78,7 +79,7 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
                         DerivationTool.getInstance().deriveUnifiedSpendingKey(
                             seed,
                             network,
-                            CURRENT_ZIP_32_ACCOUNT_INDEX
+                            Account(CURRENT_ZIP_32_ACCOUNT_INDEX)
                         )
                     sharedViewModel.synchronizerFlow.value?.let { synchronizer ->
                         synchronizer.proposeShielding(usk.account, Zatoshi(100000))?.let { it1 ->
