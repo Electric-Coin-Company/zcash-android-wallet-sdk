@@ -6,6 +6,20 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `Synchronizer.getAccounts()`
+- `Synchronizer.walletBalances: StateFlow<Map<Account, AccountBalance>?>` that is replacement for the removed 
+  `orchardBalances`, `saplingBalances`, and `transparentBalance`
+
+### Changed 
+- `Synchronizer.orchardBalances`, `Synchronizer.saplingBalances`, and `Synchronizer.transparentBalance` have been 
+  replaced by `Synchronizer.walletBalances` that provides these balances based on `Account` 
+
+### Removed
+- `Synchronizer.sendToAddress` and `Synchronizer.shieldFunds` have been removed, use 
+  `Synchronizer.createProposedTransactions` and `Synchronizer.proposeShielding` instead
+- `Synchronizer.orchardBalances`, `Synchronizer.saplingBalances`, and `Synchronizer.transparentBalance`
+
 ## [2.2.6] - 2024-11-16
 
 ### Added

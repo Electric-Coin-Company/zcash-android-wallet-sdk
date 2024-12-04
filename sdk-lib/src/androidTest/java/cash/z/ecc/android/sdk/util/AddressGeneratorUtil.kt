@@ -1,8 +1,8 @@
 package cash.z.ecc.android.sdk.util
 
+import cash.z.ecc.android.sdk.fixture.AccountFixture
 import cash.z.ecc.android.sdk.internal.deriveUnifiedAddress
 import cash.z.ecc.android.sdk.internal.jni.RustDerivationTool
-import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.test.readFileLinesInFlow
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -32,7 +32,11 @@ class AddressGeneratorUtil {
                 .map { seedPhrase ->
                     mnemonics.toSeed(seedPhrase.toCharArray())
                 }.map { seed ->
-                    RustDerivationTool.new().deriveUnifiedAddress(seed, ZcashNetwork.Mainnet, Account.DEFAULT)
+                    RustDerivationTool.new().deriveUnifiedAddress(
+                        seed = seed,
+                        network = ZcashNetwork.Mainnet,
+                        accountIndex = AccountFixture.ZIP_32_ACCOUNT_INDEX
+                    )
                 }.collect { address ->
                     println("xrxrx2\t$address")
                     assertTrue(address.startsWith("u1"))

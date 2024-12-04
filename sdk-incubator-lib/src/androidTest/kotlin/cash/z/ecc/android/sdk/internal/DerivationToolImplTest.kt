@@ -2,7 +2,6 @@ package cash.z.ecc.android.sdk.internal
 
 import cash.z.ecc.android.sdk.ext.toHex
 import cash.z.ecc.android.sdk.fixture.WalletFixture
-import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.tool.DerivationTool
 import kotlinx.coroutines.test.runTest

@@ -71,7 +71,9 @@ internal class TxOutputsView(private val sqliteDatabase: SupportSQLiteDatabase) 
                 val toAddressIndex = it.getColumnIndex(TxOutputsViewDefinition.COLUMN_STRING_TO_ADDRESS)
 
                 if (!it.isNull(toAccountIndex)) {
-                    TransactionRecipient.Account(Account(it.getInt(toAccountIndex)))
+                    // TODO [#1644]: Refactor Account ZIP32 index across SDK
+                    // TODO [#1644]: https://github.com/Electric-Coin-Company/zcash-android-wallet-sdk/issues/1644
+                    TransactionRecipient.Account(0)
                 } else {
                     TransactionRecipient.Address(it.getString(toAddressIndex))
                 }

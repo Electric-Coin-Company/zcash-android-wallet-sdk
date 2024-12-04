@@ -14,8 +14,7 @@ interface DerivationTool {
      * Given a seed and a number of accounts, return the associated Unified Full Viewing Keys.
      *
      * @param seed the seed from which to derive viewing keys.
-     * @param numberOfAccounts the number of accounts to use. Multiple accounts are not fully
-     * supported so the default value of 1 is recommended.
+     * @param numberOfAccounts the number of accounts to use.
      *
      * @return the UFVKs derived from the seed, encoded as Strings.
      */

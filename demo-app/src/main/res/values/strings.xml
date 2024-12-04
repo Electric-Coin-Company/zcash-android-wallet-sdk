@@ -1,5 +1,4 @@
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
-
     <string name="pending">Pending</string>
     <string name="unknown">Unknown</string>
 
@@ -14,10 +13,10 @@
 
     <!-- Drawer Menu -->
     <string name="menu_home">Home</string>
-    <string name="menu_private_key">Get Private Key</string>
     <string name="menu_address">Get Address</string>
     <string name="menu_server">Server</string>
     <string name="menu_balance">Get Balance</string>
+    <string name="menu_keys">Private Keys</string>
     <string name="menu_latest_height">Get Latest Height</string>
     <string name="menu_block">Get Block</string>
     <string name="menu_block_range">Get Block Range</string>
@@ -53,6 +52,14 @@
     <string name="seed_random">Generate a new random secret phrase</string>
     <string name="seed_restore">Restore wallet</string>
 
+    <string name="home_accounts">
+        The wallet\'s accounts:
+        <xliff:g id="accounts" example="Account(uuid1), Account(uuid2)">%1$s</xliff:g>
+    </string>
+    <string name="home_current_account">
+        Selected account:
+        <xliff:g id="account" example="Account(uuid1)">%1$s</xliff:g>
+    </string>
     <string name="home_status">Status: <xliff:g id="status" example="Syncing">%1$s</xliff:g></string>
     <string name="home_progress">Progress: <xliff:g id="percentage" example="15%">%1$.2f</xliff:g>%%</string>
 
@@ -101,5 +108,4 @@
     <string name="transaction_fee">Fee:</string>
     <string name="transaction_fee_unavailable">Unavailable</string>
     <string name="transaction_status">Status:</string>
-
 </resources>

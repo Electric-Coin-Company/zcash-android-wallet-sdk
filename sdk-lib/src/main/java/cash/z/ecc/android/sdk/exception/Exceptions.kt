@@ -204,7 +204,15 @@ sealed class InitializeException(message: String, cause: Throwable? = null) : Sd
         private fun readResolve(): Any = SeedNotRelevant
     }
 
-    class FalseStart(cause: Throwable?) : InitializeException("Failed to initialize accounts due to: $cause", cause)
+    class GetAccountsException(cause: Throwable?) : InitializeException(
+        "Failed to get accounts due to: ${cause?.message}",
+        cause
+    )
+
+    class CreateAccountException(cause: Throwable?) : InitializeException(
+        "Failed to create new account due to: ${cause?.message}",
+        cause
+    )
 
     class AlreadyInitializedException(cause: Throwable, dbPath: String) : InitializeException(
         "Failed to initialize the blocks table" +

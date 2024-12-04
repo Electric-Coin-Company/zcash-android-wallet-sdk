@@ -31,7 +31,7 @@ sealed class TransactionRecipient {
         override fun toString() = "TransactionRecipient.Address"
     }
 
-    data class Account(val accountValue: cash.z.ecc.android.sdk.model.Account) : TransactionRecipient() {
+    data class Account(val accountId: Int) : TransactionRecipient() {
         override fun toString() = "TransactionRecipient.Account"
     }
 

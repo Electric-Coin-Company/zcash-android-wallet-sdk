@@ -9,8 +9,4 @@ data class Account(val value: Int) {
     init {
         require(value >= 0) { "Account index must be >= 0 but actually is $value" }
     }
-
-    companion object {
-        val DEFAULT = Account(0)
-    }
 }

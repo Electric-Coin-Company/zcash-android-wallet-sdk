@@ -10,7 +10,6 @@ import androidx.annotation.Keep
  * @throws IllegalArgumentException if the values are inconsistent.
  */
 @Keep
-@Suppress("LongParameterList")
 class JniAccount(
     val accountIndex: Int,
     val ufvk: String?,

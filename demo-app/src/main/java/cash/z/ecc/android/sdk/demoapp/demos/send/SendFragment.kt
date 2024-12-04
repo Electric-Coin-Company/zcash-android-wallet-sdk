@@ -10,6 +10,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
+import cash.z.ecc.android.sdk.demoapp.CURRENT_ZIP_32_ACCOUNT_INDEX
 import cash.z.ecc.android.sdk.demoapp.DemoConstants
 import cash.z.ecc.android.sdk.demoapp.databinding.FragmentSendBinding
 import cash.z.ecc.android.sdk.demoapp.util.mainActivity
@@ -22,6 +23,7 @@ import cash.z.ecc.android.sdk.model.WalletBalance
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.launch
 
 /**
@@ -96,7 +98,15 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
                 launch {
                     sharedViewModel.synchronizerFlow
                         .filterNotNull()
-                        .flatMapLatest { it.saplingBalances }
+                        .flatMapLatest {
+                            val account = it.getAccounts()[CURRENT_ZIP_32_ACCOUNT_INDEX]
+                            it.walletBalances.mapLatest { balances ->
+                                balances?.let {
+                                    val walletBalance = balances[account]!!.sapling
+                                    walletBalance
+                                }
+                            }
+                        }
                         .collect { onBalance(it) }
                 }
             }

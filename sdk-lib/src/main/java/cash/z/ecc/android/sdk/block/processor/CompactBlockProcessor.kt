@@ -55,11 +55,11 @@ import cash.z.ecc.android.sdk.internal.model.ext.toTransactionStatus
 import cash.z.ecc.android.sdk.internal.repository.DerivedDataRepository
 import cash.z.ecc.android.sdk.internal.transaction.OutboundTransactionManager
 import cash.z.ecc.android.sdk.model.Account
+import cash.z.ecc.android.sdk.model.AccountBalance
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.PercentDecimal
 import cash.z.ecc.android.sdk.model.RawTransaction
 import cash.z.ecc.android.sdk.model.TransactionSubmitResult
-import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.GetAddressUtxosReplyUnsafe
@@ -165,11 +165,7 @@ class CompactBlockProcessor internal constructor(
     private val _processorInfo = MutableStateFlow(ProcessorInfo(null, null, null))
     private val _networkHeight = MutableStateFlow<BlockHeight?>(null)
     private val _fullyScannedHeight = MutableStateFlow<BlockHeight?>(null)
-
-    // pools
-    internal val saplingBalances = MutableStateFlow<WalletBalance?>(null)
-    internal val orchardBalances = MutableStateFlow<WalletBalance?>(null)
-    internal val transparentBalance = MutableStateFlow<Zatoshi?>(null)
+    internal val walletBalances = MutableStateFlow<Map<Account, AccountBalance>?>(null)
 
     private val processingMutex = Mutex()
 
@@ -511,12 +507,12 @@ class CompactBlockProcessor internal constructor(
                         if (fullyScannedHeight.value == null) {
                             Twig.info { "Postponing UTXOs fetching because fullyScannedHeight is null" }
                         } else {
-                            val fetchedCount =
+                            backend.getAccounts().forEach {
                                 refreshUtxos(
-                                    account = Account.DEFAULT,
+                                    account = it,
                                     startHeight = fullyScannedHeight.value!!
                                 )
-                            Twig.info { "UTXOs fetched count: $fetchedCount" }
+                            }
                         }
                     }
                     is SyncingResult.Failure -> {
@@ -621,12 +617,12 @@ class CompactBlockProcessor internal constructor(
                         if (fullyScannedHeight.value == null) {
                             Twig.info { "Postponing UTXOs fetching because fullyScannedHeight is null" }
                         } else {
-                            val fetchedCount =
+                            backend.getAccounts().forEach {
                                 refreshUtxos(
-                                    account = Account.DEFAULT,
+                                    account = it,
                                     startHeight = fullyScannedHeight.value!!
                                 )
-                            Twig.debug { "UTXOs fetched count: $fetchedCount" }
+                            }
                         }
                         SyncingResult.AllSuccess
                     }
@@ -773,17 +769,13 @@ class CompactBlockProcessor internal constructor(
 
     /**
      * Update the latest balances using the given wallet summary, and transmit this information
-     * into the related internal flows.
+     * into the related internal flow.
      */
     internal suspend fun updateAllBalances(summary: WalletSummary) {
-        summary.accountBalances[Account.DEFAULT]?.let {
-            Twig.debug { "Updating balances" }
-            saplingBalances.value = it.sapling
-            orchardBalances.value = it.orchard
-            // We only allow stored transparent balance to be shielded, and we do so with
-            // a zero-conf transaction, so treat all unshielded balance as available.
-            transparentBalance.value = it.unshielded
-        }
+        // We only allow stored transparent balance to be shielded, and we do so with
+        // a zero-conf transaction, so treat all unshielded balance as available.
+        Twig.debug { "Updating balances" }
+        walletBalances.value = summary.accountBalances
     }
 
     /**

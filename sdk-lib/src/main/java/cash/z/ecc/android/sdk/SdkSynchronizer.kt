@@ -13,7 +13,6 @@ import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor.State.Synced
 import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor.State.Syncing
 import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException
 import cash.z.ecc.android.sdk.exception.InitializeException
-import cash.z.ecc.android.sdk.exception.LightWalletException
 import cash.z.ecc.android.sdk.exception.TransactionEncoderException
 import cash.z.ecc.android.sdk.ext.ConsensusBranchId
 import cash.z.ecc.android.sdk.ext.ZcashSdk
@@ -215,9 +214,7 @@ class SdkSynchronizer private constructor(
 
     val coroutineScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
-    override val orchardBalances = processor.orchardBalances.asStateFlow()
-    override val saplingBalances = processor.saplingBalances.asStateFlow()
-    override val transparentBalance = processor.transparentBalance.asStateFlow()
+    override val walletBalances = processor.walletBalances.asStateFlow()
 
     private val refreshExchangeRateUsd = MutableSharedFlow<Unit>(replay = 1).apply { tryEmit(Unit) }
 
@@ -511,7 +508,8 @@ class SdkSynchronizer private constructor(
         // Triggering UTXOs and transactions fetching at the beginning of the block synchronization right after the
         //  app starts makes the transparent transactions appear faster.
         launch(CoroutineExceptionHandler(::onCriticalError)) {
-            refreshUtxos(Account.DEFAULT)
+            // Refresh UTXOs and transactions for all the wallet's accounts
+            refreshAllAccountsUtxos()
             refreshTransactions()
         }
 
@@ -621,9 +619,10 @@ class SdkSynchronizer private constructor(
         val shouldRefresh = !scannedRange.isNullOrEmpty() || elapsedMillis > (ZcashSdk.POLL_INTERVAL * 5)
         val reason = if (scannedRange.isNullOrEmpty()) "it's been a while" else "new blocks were scanned"
 
+        // Refresh UTXOs, balances, and transactions for all the wallet's accounts
         if (shouldRefresh) {
             Twig.debug { "Triggering utxo refresh since $reason!" }
-            refreshUtxos(Account.DEFAULT)
+            refreshAllAccountsUtxos()
 
             Twig.debug { "Triggering balance refresh since $reason!" }
             refreshAllBalances()
@@ -633,26 +632,61 @@ class SdkSynchronizer private constructor(
         }
     }
 
+    private suspend fun refreshAllAccountsUtxos() {
+        getAccounts().forEach { refreshUtxos(it) }
+    }
+
     //
     // Account management
     //
+
+    private val refreshAccountsBus = MutableSharedFlow<Unit>()
 
     // Not ready to be a public API; internal for testing only
     internal suspend fun createAccount(
         seed: ByteArray,
         treeState: TreeState,
         recoverUntil: BlockHeight?
-    ): UnifiedSpendingKey? {
+    ): UnifiedSpendingKey {
         return runCatching {
             backend.createAccountAndGetSpendingKey(
                 seed = seed,
                 treeState = treeState,
                 recoverUntil = recoverUntil
-            )
+            ).also {
+                refreshAccountsBus.emit(Unit)
+            }
         }.onFailure {
             Twig.error(it) { "Create account failed." }
-        }.getOrNull()
+        }.getOrElse {
+            throw InitializeException.CreateAccountException(it)
+        }
     }
+
+    override suspend fun getAccounts(): List<Account> {
+        return runCatching {
+            backend.getAccounts()
+        }.onFailure {
+            Twig.error(it) { "Get wallet accounts failed." }
+        }.getOrElse {
+            throw InitializeException.GetAccountsException(it)
+        }
+    }
+
+    override val accountsFlow: Flow<List<Account>?> =
+        channelFlow {
+            send(getAccounts())
+            launch {
+                refreshAccountsBus.collect {
+                    send(getAccounts())
+                }
+            }
+            awaitClose()
+        }.stateIn(
+            coroutineScope,
+            SharingStarted.WhileSubscribed(),
+            null
+        )
 
     /**
      * Returns the current Unified Address for this account.
@@ -754,74 +788,6 @@ class SdkSynchronizer private constructor(
                     submission
                 }
             }
-    }
-
-    @Deprecated(
-        message = "Upcoming SDK 2.1 will create multiple transactions at once for some recipients.",
-        replaceWith =
-            ReplaceWith(
-                "createProposedTransactions(proposeTransfer(usk.account, toAddress, amount, memo), usk)"
-            )
-    )
-    @Throws(TransactionEncoderException::class, LightWalletException.TransactionSubmitException::class)
-    override suspend fun sendToAddress(
-        usk: UnifiedSpendingKey,
-        amount: Zatoshi,
-        toAddress: String,
-        memo: String
-    ): Long {
-        val encodedTx =
-            txManager.encode(
-                usk,
-                amount,
-                TransactionRecipient.Address(toAddress),
-                memo,
-                usk.account
-            )
-
-        when (txManager.submit(encodedTx)) {
-            is TransactionSubmitResult.Success -> {
-                return storage.findMatchingTransactionId(encodedTx.txId.byteArray)!!
-            }
-            else -> {
-                throw LightWalletException.TransactionSubmitException()
-            }
-        }
-    }
-
-    @Deprecated(
-        message = "Upcoming SDK 2.1 will create multiple transactions at once for some recipients.",
-        replaceWith =
-            ReplaceWith(
-                "proposeShielding(usk.account, shieldingThreshold, memo)?.let { createProposedTransactions(it, usk) }"
-            )
-    )
-    @Throws(TransactionEncoderException::class, LightWalletException.TransactionSubmitException::class)
-    override suspend fun shieldFunds(
-        usk: UnifiedSpendingKey,
-        memo: String
-    ): Long {
-        Twig.debug { "Initializing shielding transaction" }
-        val tAddr = CompactBlockProcessor.getTransparentAddress(backend, usk.account)
-        val tBalance = processor.getUtxoCacheBalance(tAddr)
-
-        val encodedTx =
-            txManager.encode(
-                usk,
-                tBalance,
-                TransactionRecipient.Account(usk.account),
-                memo,
-                usk.account
-            )
-
-        when (txManager.submit(encodedTx)) {
-            is TransactionSubmitResult.Success -> {
-                return storage.findMatchingTransactionId(encodedTx.txId.byteArray)!!
-            }
-            else -> {
-                throw LightWalletException.TransactionSubmitException()
-            }
-        }
     }
 
     override suspend fun refreshUtxos(

@@ -10,15 +10,17 @@ import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.WalletCoordinator
 import cash.z.ecc.android.sdk.WalletInitMode
 import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor
+import cash.z.ecc.android.sdk.demoapp.ANDROID_STATE_FLOW_TIMEOUT
+import cash.z.ecc.android.sdk.demoapp.CURRENT_ZIP_32_ACCOUNT_INDEX
 import cash.z.ecc.android.sdk.demoapp.ext.defaultForNetwork
 import cash.z.ecc.android.sdk.demoapp.getInstance
 import cash.z.ecc.android.sdk.demoapp.preference.EncryptedPreferenceKeys
 import cash.z.ecc.android.sdk.demoapp.preference.EncryptedPreferenceSingleton
-import cash.z.ecc.android.sdk.demoapp.ui.common.ANDROID_STATE_FLOW_TIMEOUT
 import cash.z.ecc.android.sdk.demoapp.ui.common.throttle
 import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.model.Account
+import cash.z.ecc.android.sdk.model.AccountBalance
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.ObserveFiatCurrencyResult
 import cash.z.ecc.android.sdk.model.PercentDecimal
@@ -26,7 +28,6 @@ import cash.z.ecc.android.sdk.model.PersistableWallet
 import cash.z.ecc.android.sdk.model.Proposal
 import cash.z.ecc.android.sdk.model.TransactionSubmitResult
 import cash.z.ecc.android.sdk.model.WalletAddresses
-import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.model.ZecSend
@@ -107,7 +108,7 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
                 DerivationTool.getInstance().deriveUnifiedSpendingKey(
                     seed = bip39Seed,
                     network = it.network,
-                    account = Account.DEFAULT
+                    account = getCurrentAccount()
                 )
             }.stateIn(
                 viewModelScope,
@@ -137,7 +138,7 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
             .filterNotNull()
             .map {
                 runCatching {
-                    WalletAddresses.new(it)
+                    WalletAddresses.new(getCurrentAccount(), it)
                 }.onFailure {
                     Twig.warn { "Wait until the SDK starts providing the addresses" }
                 }.getOrNull()
@@ -353,6 +354,37 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
+    fun getAccounts(): List<Account> {
+        val synchronizer = synchronizer.value
+
+        return if (null != synchronizer) {
+            runBlocking {
+                kotlin.runCatching {
+                    synchronizer.getAccounts()
+                }.onFailure {
+                    Twig.error(it) { "Failed to get wallet accounts" }
+                }.getOrThrow()
+            }
+        } else {
+            error("Unable get wallet accounts.")
+        }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val accounts: StateFlow<List<Account>> =
+        synchronizer
+            .filterNotNull()
+            .flatMapLatest {
+                it.accountsFlow.filterNotNull()
+            }
+            .stateIn(
+                viewModelScope,
+                SharingStarted.WhileSubscribed(ANDROID_STATE_FLOW_TIMEOUT),
+                emptyList()
+            )
+
+    fun getCurrentAccount(): Account = getAccounts()[CURRENT_ZIP_32_ACCOUNT_INDEX]
+
     companion object {
         private const val QUICK_REWIND_BLOCKS = 100
     }
@@ -454,7 +486,7 @@ private fun Synchronizer.toCommonError(): Flow<SynchronizerError?> =
     }
 
 // No good way around needing magic numbers for the indices
-@Suppress("MagicNumber")
+@Suppress("MagicNumber", "UNCHECKED_CAST")
 private fun Synchronizer.toWalletSnapshot() =
     combine(
         // 0
@@ -462,34 +494,23 @@ private fun Synchronizer.toWalletSnapshot() =
         // 1
         processorInfo,
         // 2
-        orchardBalances,
+        walletBalances.filterNotNull(),
         // 3
-        saplingBalances,
-        // 4
-        transparentBalance,
-        // 5
         exchangeRateUsd,
-        // 6
+        // 4
         progress,
-        // 7
+        // 5
         toCommonError()
     ) { flows ->
-        val orchardBalance = flows[2] as WalletBalance?
-        val saplingBalance = flows[3] as WalletBalance?
-        val transparentBalance = flows[4] as Zatoshi?
-
-        @Suppress("UNCHECKED_CAST")
-        val exchangeRateUsd = flows[5] as ObserveFiatCurrencyResult
-        val progressPercentDecimal = (flows[6] as PercentDecimal)
+        val exchangeRateUsd = flows[3] as ObserveFiatCurrencyResult
+        val progressPercentDecimal = (flows[4] as PercentDecimal)
 
         WalletSnapshot(
             flows[0] as Synchronizer.Status,
             flows[1] as CompactBlockProcessor.ProcessorInfo,
-            orchardBalance ?: WalletBalance(Zatoshi(0), Zatoshi(0), Zatoshi(0)),
-            saplingBalance ?: WalletBalance(Zatoshi(0), Zatoshi(0), Zatoshi(0)),
-            transparentBalance ?: Zatoshi(0),
+            flows[2] as Map<Account, AccountBalance>,
             exchangeRateUsd.currencyConversion?.priceOfZec?.toBigDecimal(),
             progressPercentDecimal,
-            flows[7] as SynchronizerError?
+            flows[5] as SynchronizerError?
         )
     }
