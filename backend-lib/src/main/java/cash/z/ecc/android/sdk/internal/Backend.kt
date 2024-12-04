@@ -85,9 +85,11 @@ interface Backend {
      */
     @Throws(RuntimeException::class)
     suspend fun createAccount(
+        accountName: String,
+        keySource: String?,
         seed: ByteArray,
         treeState: ByteArray,
-        recoverUntil: Long?
+        recoverUntil: Long?,
     ): JniUnifiedSpendingKey
 
     /**

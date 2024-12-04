@@ -367,13 +367,13 @@ fn decode_usk(env: &JNIEnv, usk: JByteArray) -> anyhow::Result<UnifiedSpendingKe
 pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_createAccount<'local>(
     mut env: JNIEnv<'local>,
     _: JClass<'local>,
+    account_name: JString<'local>,
+    key_source: JString<'local>,
     db_data: JString<'local>,
     seed: JByteArray<'local>,
     treestate: JByteArray<'local>,
     recover_until: jlong,
     network_id: jint,
-    account_name: JString<'local>,
-    key_source: JString<'local>,
 ) -> jobject {
     use zcash_client_backend::data_api::BirthdayError;
 

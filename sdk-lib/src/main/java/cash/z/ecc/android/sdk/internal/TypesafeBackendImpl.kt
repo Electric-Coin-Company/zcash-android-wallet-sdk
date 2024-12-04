@@ -30,12 +30,16 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
     override suspend fun getAccounts(): List<Account> = backend.getAccounts().map { Account(it.accountUuid) }
 
     override suspend fun createAccountAndGetSpendingKey(
+        accountName: String,
+        keySource: String?,
         seed: ByteArray,
         treeState: TreeState,
         recoverUntil: BlockHeight?
     ): UnifiedSpendingKey {
         return UnifiedSpendingKey(
             backend.createAccount(
+                accountName = accountName,
+                keySource = keySource,
                 seed = seed,
                 treeState = treeState.encoded,
                 recoverUntil = recoverUntil?.value

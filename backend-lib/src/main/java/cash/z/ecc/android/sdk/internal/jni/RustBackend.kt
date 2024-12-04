@@ -90,21 +90,21 @@ class RustBackend private constructor(
     }
 
     override suspend fun createAccount(
+        accountName: String,
+        keySource: String?,
         seed: ByteArray,
         treeState: ByteArray,
-        recoverUntil: Long?
-        account_name: String,
-        key_source: String?
+        recoverUntil: Long?,
     ): JniUnifiedSpendingKey {
         return withContext(SdkDispatchers.DATABASE_IO) {
             createAccount(
-                dataDbFile.absolutePath,
-                seed,
-                treeState,
-                recoverUntil ?: -1,
+                accountName = accountName,
+                keySource = keySource,
+                dbDataPath = dataDbFile.absolutePath,
+                seed = seed,
+                treeState = treeState,
+                recoverUntil = recoverUntil ?: -1,
                 networkId = networkId,
-                account_name,
-                key_source
             )
         }
     }
@@ -497,13 +497,13 @@ class RustBackend private constructor(
 
         @JvmStatic
         private external fun createAccount(
+            accountName: String,
+            keySource: String?,
             dbDataPath: String,
             seed: ByteArray,
             treeState: ByteArray,
             recoverUntil: Long,
             networkId: Int,
-            account_name: String,
-            key_source: String?
         ): JniUnifiedSpendingKey
 
         @JvmStatic

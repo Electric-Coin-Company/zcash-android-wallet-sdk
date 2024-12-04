@@ -27,6 +27,8 @@ internal interface TypesafeBackend {
     suspend fun getAccounts(): List<Account>
 
     suspend fun createAccountAndGetSpendingKey(
+        accountName: String,
+        keySource: String?,
         seed: ByteArray,
         treeState: TreeState,
         recoverUntil: BlockHeight?
