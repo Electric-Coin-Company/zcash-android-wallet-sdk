@@ -21,7 +21,9 @@ use tracing_subscriber::reload;
 use utils::{java_nullable_string_to_rust, java_string_to_rust};
 use uuid::Uuid;
 use zcash_address::{ToAddress, ZcashAddress};
-use zcash_client_backend::data_api::{TransactionDataRequest, TransactionStatus};
+use zcash_client_backend::data_api::{
+    AccountPurpose, BirthdayError, TransactionDataRequest, TransactionStatus,
+};
 use zcash_client_backend::fees::zip317::MultiOutputChangeStrategy;
 use zcash_client_backend::fees::{SplitPolicy, StandardFeeRule};
 use zcash_client_backend::{
@@ -367,16 +369,14 @@ fn decode_usk(env: &JNIEnv, usk: JByteArray) -> anyhow::Result<UnifiedSpendingKe
 pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_createAccount<'local>(
     mut env: JNIEnv<'local>,
     _: JClass<'local>,
+    db_data: JString<'local>,
+    network_id: jint,
     account_name: JString<'local>,
     key_source: JString<'local>,
-    db_data: JString<'local>,
     seed: JByteArray<'local>,
     treestate: JByteArray<'local>,
     recover_until: jlong,
-    network_id: jint,
 ) -> jobject {
-    use zcash_client_backend::data_api::BirthdayError;
-
     let res = catch_unwind(&mut env, |env| {
         let network = parse_network(network_id as u32)?;
         let mut db_data = wallet_db(env, network, db_data)?;
@@ -408,6 +408,70 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_createAcc
             .map_err(|e| anyhow!("Error while initializing accounts: {}", e))?;
 
         Ok(encode_usk(env, account_uuid, usk)?.into_raw())
+    });
+    unwrap_exc_or(&mut env, res, ptr::null_mut())
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_importAccountUfvk<'local>(
+    mut env: JNIEnv<'local>,
+    _: JClass<'local>,
+    db_data: JString<'local>,
+    network_id: jint,
+    account_name: JString<'local>,
+    key_source: JString<'local>,
+    ufvk_str: JString<'local>,
+    treestate: JByteArray<'local>,
+    recover_until: jlong,
+    purpose: jint,
+) -> jobject {
+    let res = catch_unwind(&mut env, |env| {
+        let network = parse_network(network_id as u32)?;
+        let mut db_data = wallet_db(env, network, db_data)?;
+        let ufvk_str = java_string_to_rust(env, &ufvk_str);
+        let ufvk = UnifiedFullViewingKey::decode(&network, &ufvk_str).map_err(|e| {
+            anyhow!(
+                "Value \"{}\" did not decode as a valid UFVK: {}",
+                ufvk_str,
+                e
+            )
+        })?;
+        let treestate = TreeState::decode(&env.convert_byte_array(treestate).unwrap()[..])
+            .map_err(|e| anyhow!("Invalid TreeState: {}", e))?;
+        let recover_until = recover_until.try_into().ok();
+
+        let birthday =
+            AccountBirthday::from_treestate(treestate, recover_until).map_err(|e| match e {
+                BirthdayError::HeightInvalid(e) => {
+                    anyhow!("Invalid TreeState: Invalid height: {}", e)
+                }
+                BirthdayError::Decode(e) => {
+                    anyhow!("Invalid TreeState: Invalid frontier encoding: {}", e)
+                }
+            })?;
+
+        let account_name = java_string_to_rust(env, &account_name);
+        let key_source = java_nullable_string_to_rust(env, &key_source);
+
+        let purpose = match purpose {
+            0 => Ok(AccountPurpose::Spending),
+            1 => Ok(AccountPurpose::ViewOnly),
+            _ => Err(anyhow!(
+                "Account purpose must be either 0 (Spending) or 1 (ViewOnly)"
+            )),
+        }?;
+
+        let account = db_data
+            .import_account_ufvk(
+                &account_name,
+                &ufvk,
+                &birthday,
+                purpose,
+                key_source.as_ref().map(|s| s.as_ref()),
+            )
+            .map_err(|e| anyhow!("Error while initializing accounts: {}", e))?;
+
+        Ok(encode_account(env, &network, account)?.into_raw())
     });
     unwrap_exc_or(&mut env, res, ptr::null_mut())
 }

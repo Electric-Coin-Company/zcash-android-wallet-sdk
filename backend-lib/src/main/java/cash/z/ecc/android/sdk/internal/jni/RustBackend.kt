@@ -98,13 +98,35 @@ class RustBackend private constructor(
     ): JniUnifiedSpendingKey {
         return withContext(SdkDispatchers.DATABASE_IO) {
             createAccount(
+                dbDataPath = dataDbFile.absolutePath,
+                networkId = networkId,
                 accountName = accountName,
                 keySource = keySource,
-                dbDataPath = dataDbFile.absolutePath,
                 seed = seed,
                 treeState = treeState,
                 recoverUntil = recoverUntil ?: -1,
+            )
+        }
+    }
+
+    override suspend fun importAccountUfvk(
+        accountName: String,
+        keySource: String?,
+        ufvk: String,
+        treeState: ByteArray,
+        recoverUntil: Long?
+        purpose: Int
+    ): JniAccount {
+        return withContext(SdkDispatchers.DATABASE_IO) {
+            importAccountUfvk(
+                dbDataPath = dataDbFile.absolutePath,
                 networkId = networkId,
+                accountName = accountName,
+                keySource = keySource,
+                ufvk = ufvk,
+                treeState = treeState,
+                recoverUntil = recoverUntil ?: -1,
+                purpose = purpose,
             )
         }
     }
@@ -497,14 +519,26 @@ class RustBackend private constructor(
 
         @JvmStatic
         private external fun createAccount(
+            dbDataPath: String,
+            networkId: Int,
             accountName: String,
             keySource: String?,
-            dbDataPath: String,
             seed: ByteArray,
             treeState: ByteArray,
             recoverUntil: Long,
-            networkId: Int,
         ): JniUnifiedSpendingKey
+
+        @JvmStatic
+        private external fun importAccountUfvk(
+            dbDataPath: String,
+            networkId: Int
+            accountName: String,
+            keySource: String?,
+            ufvk: String,
+            treeState: ByteArray,
+            recoverUntil: Long,
+            purpose: Int,
+        ): JniAccount
 
         @JvmStatic
         private external fun isSeedRelevantToAnyDerivedAccounts(

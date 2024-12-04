@@ -96,6 +96,19 @@ interface Backend {
      * @throws RuntimeException as a common indicator of the operation failure
      */
     @Throws(RuntimeException::class)
+    suspend fun importAccountUfvk(
+        accountName: String,
+        keySource: String?,
+        ufvk: String,
+        treeState: ByteArray,
+        recoverUntil: Long?
+        purpose: Int
+    ): JniAccount
+
+    /**
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    @Throws(RuntimeException::class)
     suspend fun isSeedRelevantToAnyDerivedAccounts(seed: ByteArray): Boolean
 
     fun isValidSaplingAddr(addr: String): Boolean
