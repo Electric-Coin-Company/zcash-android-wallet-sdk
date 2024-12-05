@@ -17,8 +17,9 @@ import cash.z.ecc.android.sdk.internal.exchange.UsdExchangeRateFetcher
 import cash.z.ecc.android.sdk.internal.model.ext.toBlockHeight
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.AccountBalance
+import cash.z.ecc.android.sdk.model.AccountCreateSetup
+import cash.z.ecc.android.sdk.model.AccountImportSetup
 import cash.z.ecc.android.sdk.model.AccountPurpose
-import cash.z.ecc.android.sdk.model.AccountSetup
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.FastestServersResult
 import cash.z.ecc.android.sdk.model.ObserveFiatCurrencyResult
@@ -28,7 +29,6 @@ import cash.z.ecc.android.sdk.model.TransactionOutput
 import cash.z.ecc.android.sdk.model.TransactionOverview
 import cash.z.ecc.android.sdk.model.TransactionRecipient
 import cash.z.ecc.android.sdk.model.TransactionSubmitResult
-import cash.z.ecc.android.sdk.model.UnifiedFullViewingKey
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
@@ -141,26 +141,21 @@ interface Synchronizer {
      * the newly-created wallet database entry. Unlike the other account creation APIs, no spending key is returned
      * because the wallet has no information about how the UFVK was derived.
      *
-     * @param accountName A human-readable name for the account
-     * @param keySource A string identifier or other metadata describing the source of the seed
      * @param purpose Metadata describing whether or not data required for spending should be tracked by the wallet
      * @param recoverUntil An optional height at which the wallet should exit "recovery mode"
+     * @param setup The account's setup information. See [AccountImportSetup] for more.
      * @param treeState The tree state corresponding to the last block prior to the wallet's birthday height
-     * @param ufvk The UFVK used to detect transactions involving the account
      *
      * @return Account containing details about the imported account, including the unique account identifier for the
      * newly-created wallet database entry
      *
      * @throws [InitializeException.ImportAccountException] in case of the operation failure
      */
-    @Suppress("LongParameterList")
     suspend fun importAccountByUfvk(
-        accountName: String,
-        keySource: String?,
         purpose: AccountPurpose,
         recoverUntil: Long?,
+        setup: AccountImportSetup,
         treeState: ByteArray,
-        ufvk: UnifiedFullViewingKey,
     ): Account
 
     /**
@@ -182,11 +177,9 @@ interface Synchronizer {
      * have been received by the currently-available account (in order to enable
      * automated account recovery).
      *
-     * @param accountName A human-readable name for the account
-     * @param keySource A string identifier or other metadata describing the source of the seed
-     * @param seed The wallet's seed phrase
-     * @param treeState The tree state corresponding to the last block prior to the wallet's birthday height
      * @param recoverUntil An optional height at which the wallet should exit "recovery mode"
+     * @param setup The wallet's setup information. See [AccountCreateSetup] for more.
+     * @param treeState The tree state corresponding to the last block prior to the wallet's birthday height
      *
      * @return the newly created ZIP 316 account identifier, along with the binary
      * encoding of the `UnifiedSpendingKey` for the newly created account.
@@ -196,9 +189,7 @@ interface Synchronizer {
     @Suppress("standard:no-consecutive-comments")
     /* Not ready to be a public API; internal for testing only
     suspend fun createAccount(
-        accountName: String,
-        keySource: String?,
-        seed: ByteArray,
+        setup: AccountCreateSetup,
         treeState: TreeState,
         recoverUntil: BlockHeight?
     ): UnifiedSpendingKey
@@ -601,7 +592,7 @@ interface Synchronizer {
          * sync times.  After sync completes, the birthday can be determined from [Synchronizer.latestBirthdayHeight].
          *
          * @param setup An optional Account setup data that holds seed and other account related information.
-         * See [AccountSetup] for more.
+         * See [AccountCreateSetup] for more.
          *
          * @param walletInitMode a required parameter with one of [WalletInitMode] values. Use
          * [WalletInitMode.NewWallet] when starting synchronizer for a newly created wallet. Or use
@@ -625,7 +616,7 @@ interface Synchronizer {
             birthday: BlockHeight?,
             context: Context,
             lightWalletEndpoint: LightWalletEndpoint,
-            setup: AccountSetup?,
+            setup: AccountCreateSetup?,
             walletInitMode: WalletInitMode,
             zcashNetwork: ZcashNetwork,
         ): CloseableSynchronizer {
@@ -736,7 +727,7 @@ interface Synchronizer {
             birthday: BlockHeight?,
             context: Context,
             lightWalletEndpoint: LightWalletEndpoint,
-            setup: AccountSetup?,
+            setup: AccountCreateSetup?,
             walletInitMode: WalletInitMode,
             zcashNetwork: ZcashNetwork,
         ): CloseableSynchronizer =

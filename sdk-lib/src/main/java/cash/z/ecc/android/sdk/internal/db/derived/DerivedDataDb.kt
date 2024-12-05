@@ -8,7 +8,7 @@ import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.TypesafeBackend
 import cash.z.ecc.android.sdk.internal.db.ReadOnlySupportSqliteOpenHelper
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
-import cash.z.ecc.android.sdk.model.AccountSetup
+import cash.z.ecc.android.sdk.model.AccountCreateSetup
 import cash.z.ecc.android.sdk.model.BlockHeight
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -45,7 +45,7 @@ internal class DerivedDataDb private constructor(
             checkpoint: Checkpoint,
             numberOfAccounts: Int,
             recoverUntil: BlockHeight?,
-            setup: AccountSetup?,
+            setup: AccountCreateSetup?,
         ): DerivedDataDb {
             backend.initDataDb(setup?.seed)
 

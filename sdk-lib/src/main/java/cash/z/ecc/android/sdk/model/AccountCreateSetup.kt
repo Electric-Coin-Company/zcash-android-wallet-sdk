@@ -1,16 +1,14 @@
 package cash.z.ecc.android.sdk.model
 
 /**
- * Optional wrapper for the Synchronizer setup
+ * Wrapper for the create account API based on seed phrase
  *
- * @param accountName Optional account name that will be created as part of the new wallet setup process based
- * on the given seed
- * @param keySource Optional key source that will be persisted alongside the account created in the new
- * wallet setup process based on the given seed
+ * @param accountName A human-readable name for the account
+ * @param keySource A string identifier or other metadata describing the source of the seed
  * @param seed the wallet's seed phrase. This is required the first time a new wallet is set up. For
  * subsequent calls, seed is only needed if [InitializerException.SeedRequired] is thrown.
  */
-data class AccountSetup(
+data class AccountCreateSetup(
     val accountName: String,
     val keySource: String?,
     val seed: ByteArray,
@@ -19,7 +17,7 @@ data class AccountSetup(
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
 
-        other as AccountSetup
+        other as AccountCreateSetup
 
         if (accountName != other.accountName) return false
         if (keySource != other.keySource) return false

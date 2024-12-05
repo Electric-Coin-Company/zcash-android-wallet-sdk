@@ -19,6 +19,7 @@ import cash.z.ecc.android.sdk.demoapp.preference.EncryptedPreferenceSingleton
 import cash.z.ecc.android.sdk.demoapp.ui.common.throttle
 import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.internal.Twig
+import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.ObserveFiatCurrencyResult
 import cash.z.ecc.android.sdk.model.PercentDecimal

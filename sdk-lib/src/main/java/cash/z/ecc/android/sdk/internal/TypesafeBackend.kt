@@ -13,11 +13,11 @@ import cash.z.ecc.android.sdk.internal.model.TreeState
 import cash.z.ecc.android.sdk.internal.model.WalletSummary
 import cash.z.ecc.android.sdk.internal.model.ZcashProtocol
 import cash.z.ecc.android.sdk.model.Account
+import cash.z.ecc.android.sdk.model.AccountImportSetup
 import cash.z.ecc.android.sdk.model.AccountPurpose
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.FirstClassByteArray
 import cash.z.ecc.android.sdk.model.Proposal
-import cash.z.ecc.android.sdk.model.UnifiedFullViewingKey
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
@@ -36,14 +36,11 @@ internal interface TypesafeBackend {
         recoverUntil: BlockHeight?
     ): UnifiedSpendingKey
 
-    @Suppress("LongParameterList")
     suspend fun importAccountUfvk(
-        accountName: String,
-        keySource: String?,
         purpose: AccountPurpose,
         recoverUntil: Long?,
+        setup: AccountImportSetup,
         treeState: ByteArray,
-        ufvk: UnifiedFullViewingKey,
     ): Account
 
     suspend fun proposeTransferFromUri(
