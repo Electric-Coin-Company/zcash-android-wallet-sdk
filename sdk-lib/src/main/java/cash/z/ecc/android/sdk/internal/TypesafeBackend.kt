@@ -36,6 +36,7 @@ internal interface TypesafeBackend {
         recoverUntil: BlockHeight?
     ): UnifiedSpendingKey
 
+    @Suppress("LongParameterList")
     suspend fun importAccountUfvk(
         accountName: String,
         keySource: String?,

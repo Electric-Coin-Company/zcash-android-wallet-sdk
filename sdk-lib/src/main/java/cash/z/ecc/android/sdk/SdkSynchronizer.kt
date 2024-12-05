@@ -43,6 +43,7 @@ import cash.z.ecc.android.sdk.internal.transaction.TransactionEncoder
 import cash.z.ecc.android.sdk.internal.transaction.TransactionEncoderImpl
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.AccountPurpose
+import cash.z.ecc.android.sdk.model.AccountSetup
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.FastestServersResult
 import cash.z.ecc.android.sdk.model.FetchFiatCurrencyResult
@@ -1022,27 +1023,23 @@ internal object DefaultSynchronizerFactory {
 
     @Suppress("LongParameterList")
     internal suspend fun defaultDerivedDataRepository(
-        accountName: String?,
-        keySource: String?,
         context: Context,
-        rustBackend: TypesafeBackend,
         databaseFile: File,
         checkpoint: Checkpoint,
-        seed: ByteArray?,
         numberOfAccounts: Int,
-        recoverUntil: BlockHeight?
+        recoverUntil: BlockHeight?,
+        rustBackend: TypesafeBackend,
+        setup: AccountSetup?,
     ): DerivedDataRepository =
         DbDerivedDataRepository(
             DerivedDataDb.new(
-                accountName,
-                context,
-                rustBackend,
-                databaseFile,
-                checkpoint,
-                keySource,
-                numberOfAccounts,
-                recoverUntil,
-                seed,
+                context = context,
+                backend = rustBackend,
+                databaseFile = databaseFile,
+                checkpoint = checkpoint,
+                numberOfAccounts = numberOfAccounts,
+                recoverUntil = recoverUntil,
+                setup = setup,
             )
         )
 

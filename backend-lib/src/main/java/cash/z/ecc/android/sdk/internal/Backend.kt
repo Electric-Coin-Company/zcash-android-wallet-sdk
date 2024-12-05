@@ -96,6 +96,7 @@ interface Backend {
      * @throws RuntimeException as a common indicator of the operation failure
      */
     @Throws(RuntimeException::class)
+    @Suppress("LongParameterList")
     suspend fun importAccountUfvk(
         accountName: String,
         keySource: String?,

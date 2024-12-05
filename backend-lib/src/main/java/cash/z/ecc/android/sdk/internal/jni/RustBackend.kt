@@ -518,6 +518,7 @@ class RustBackend private constructor(
         ): Array<JniAccount>
 
         @JvmStatic
+        @Suppress("LongParameterList")
         private external fun createAccount(
             dbDataPath: String,
             networkId: Int,
@@ -529,6 +530,7 @@ class RustBackend private constructor(
         ): JniUnifiedSpendingKey
 
         @JvmStatic
+        @Suppress("LongParameterList")
         private external fun importAccountUfvk(
             dbDataPath: String,
             networkId: Int,

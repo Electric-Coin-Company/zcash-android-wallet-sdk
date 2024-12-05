@@ -18,6 +18,7 @@ import cash.z.ecc.android.sdk.internal.model.ext.toBlockHeight
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.AccountBalance
 import cash.z.ecc.android.sdk.model.AccountPurpose
+import cash.z.ecc.android.sdk.model.AccountSetup
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.FastestServersResult
 import cash.z.ecc.android.sdk.model.ObserveFiatCurrencyResult
@@ -152,6 +153,7 @@ interface Synchronizer {
      *
      * @throws [InitializeException.ImportAccountException] in case of the operation failure
      */
+    @Suppress("LongParameterList")
     suspend fun importAccountByUfvk(
         accountName: String,
         keySource: String?,
@@ -583,12 +585,6 @@ interface Synchronizer {
         /**
          * Primary method that SDK clients will use to construct a synchronizer.
          *
-         * @param accountName Optional account name that will be created as part of the new wallet setup process based
-         * on the given seed
-         *
-         * @param keySource Optional key source that will be persisted alongside the account created in the new
-         * wallet setup process based on the given seed
-         *
          * @param zcashNetwork the network to use.
          *
          * @param alias A string used to segregate multiple wallets in the filesystem.  This implies the string
@@ -599,13 +595,13 @@ interface Synchronizer {
          * client wishes to change the server endpoint, the active synchronizer will need to be stopped and a new
          * instance created with a new value.
          *
-         * @param seed the wallet's seed phrase. This is required the first time a new wallet is set up. For
-         * subsequent calls, seed is only needed if [InitializerException.SeedRequired] is thrown.
-         *
          * @param birthday Block height representing the "birthday" of the wallet.  When creating a new wallet, see
          * [BlockHeight.ofLatestCheckpoint].  When restoring an existing wallet, use block height that was first used
          * to create the wallet.  If that value is unknown, null is acceptable but will result in longer
          * sync times.  After sync completes, the birthday can be determined from [Synchronizer.latestBirthdayHeight].
+         *
+         * @param setup An optional Account setup data that holds seed and other account related information.
+         * See [AccountSetup] for more.
          *
          * @param walletInitMode a required parameter with one of [WalletInitMode] values. Use
          * [WalletInitMode.NewWallet] when starting synchronizer for a newly created wallet. Or use
@@ -625,13 +621,11 @@ interface Synchronizer {
          */
         @Suppress("LongParameterList", "LongMethod")
         suspend fun new(
-            accountName: String?,
             alias: String = ZcashSdk.DEFAULT_ALIAS,
             birthday: BlockHeight?,
             context: Context,
-            keySource: String?,
             lightWalletEndpoint: LightWalletEndpoint,
-            seed: ByteArray?,
+            setup: AccountSetup?,
             walletInitMode: WalletInitMode,
             zcashNetwork: ZcashNetwork,
         ): CloseableSynchronizer {
@@ -690,15 +684,13 @@ interface Synchronizer {
 
             val repository =
                 DefaultSynchronizerFactory.defaultDerivedDataRepository(
-                    accountName = accountName,
                     context = applicationContext,
                     rustBackend = backend,
                     databaseFile = coordinator.dataDbFile(zcashNetwork, alias),
                     checkpoint = loadedCheckpoint,
-                    keySource = keySource,
-                    seed = seed,
                     numberOfAccounts = Derivation.DEFAULT_NUMBER_OF_ACCOUNTS,
                     recoverUntil = chainTip,
+                    setup = setup,
                 )
 
             val encoder = DefaultSynchronizerFactory.defaultEncoder(backend, saplingParamTool, repository)
@@ -740,25 +732,21 @@ interface Synchronizer {
         @JvmStatic
         @Suppress("LongParameterList")
         fun newBlocking(
-            accountName: String?,
             alias: String = ZcashSdk.DEFAULT_ALIAS,
             birthday: BlockHeight?,
             context: Context,
-            keySource: String?,
             lightWalletEndpoint: LightWalletEndpoint,
-            seed: ByteArray?,
+            setup: AccountSetup?,
             walletInitMode: WalletInitMode,
             zcashNetwork: ZcashNetwork,
         ): CloseableSynchronizer =
             runBlocking {
                 new(
-                    accountName = accountName,
                     alias = alias,
                     birthday = birthday,
                     context = context,
-                    keySource = keySource,
                     lightWalletEndpoint = lightWalletEndpoint,
-                    seed = seed,
+                    setup = setup,
                     walletInitMode = walletInitMode,
                     zcashNetwork = zcashNetwork,
                 )
