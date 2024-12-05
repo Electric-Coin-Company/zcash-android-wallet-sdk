@@ -140,8 +140,19 @@ internal class FakeRustBackend(
         keySource: String?,
         seed: ByteArray,
         treeState: ByteArray,
-        recoverUntil: Long?
+        recoverUntil: Long?,
     ): JniUnifiedSpendingKey {
+        error("Intentionally not implemented yet.")
+    }
+
+    override suspend fun importAccountUfvk(
+        accountName: String,
+        keySource: String?,
+        ufvk: String,
+        treeState: ByteArray,
+        recoverUntil: Long?,
+        purpose: Int
+    ): JniAccount {
         error("Intentionally not implemented yet.")
     }
 

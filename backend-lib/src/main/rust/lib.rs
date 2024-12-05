@@ -412,6 +412,39 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_createAcc
     unwrap_exc_or(&mut env, res, ptr::null_mut())
 }
 
+/// Tells the wallet to track an account using a unified full viewing key.
+///
+/// Returns details about the imported account, including the unique account identifier for
+/// the newly-created wallet database entry. Unlike the other account creation APIs
+/// ([`Self::create_account`] and [`Self::import_account_hd`]), no spending key is returned
+/// because the wallet has no information about how the UFVK was derived.
+///
+/// Certain optimizations are possible for accounts which will never be used to spend funds. If
+/// `spending_key_available` is `false`, the wallet may choose to optimize for this case, in
+/// which case any attempt to spend funds from the account will result in an error.
+///
+/// The [`WalletWrite`] trait documentation has more details about account creation and import.
+///
+/// # Arguments
+/// - `account_name`: A human-readable name for the account.
+/// - `ufvk_str`: The UFVK used to detect transactions involving the account.
+/// - `purpose`: Metadata describing whether or not data required for spending should be
+///   tracked by the wallet.
+/// - `treestate`: The tree state corresponding to the last block prior to the wallet's
+///   birthday height.
+/// - `recover_until`: An optional height at which the wallet should exit "recovery mode". In
+///    order to avoid confusing shifts in wallet balance and spendability that may temporarily be
+///    visible to a user during the process of recovering from seed, wallets may optionally set a
+///    "recover until" height. The wallet is considered to be in "recovery mode" until there
+///    exist no unscanned ranges between the wallet's birthday height and the provided
+///   `recover_until` height, exclusive.
+/// - `key_source`: A string identifier or other metadata describing the source of the seed.
+///   This is treated as opaque metadata by the wallet backend; it is provided for use by
+///   applications which need to track additional identifying information for an account.
+///
+/// # Panics
+///
+/// Panics if the length of the seed is not between 32 and 252 bytes inclusive.
 #[unsafe(no_mangle)]
 pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_importAccountUfvk<'local>(
     mut env: JNIEnv<'local>,

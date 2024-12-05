@@ -90,7 +90,7 @@ class RustBackend private constructor(
     }
 
     override suspend fun createAccount(
-        accountName: String?,
+        accountName: String,
         keySource: String?,
         seed: ByteArray,
         treeState: ByteArray,
@@ -114,7 +114,7 @@ class RustBackend private constructor(
         keySource: String?,
         ufvk: String,
         treeState: ByteArray,
-        recoverUntil: Long?
+        recoverUntil: Long?,
         purpose: Int
     ): JniAccount {
         return withContext(SdkDispatchers.DATABASE_IO) {
@@ -521,7 +521,7 @@ class RustBackend private constructor(
         private external fun createAccount(
             dbDataPath: String,
             networkId: Int,
-            accountName: String?,
+            accountName: String,
             keySource: String?,
             seed: ByteArray,
             treeState: ByteArray,
@@ -531,7 +531,7 @@ class RustBackend private constructor(
         @JvmStatic
         private external fun importAccountUfvk(
             dbDataPath: String,
-            networkId: Int
+            networkId: Int,
             accountName: String,
             keySource: String?,
             ufvk: String,

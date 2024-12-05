@@ -42,6 +42,7 @@ import cash.z.ecc.android.sdk.internal.transaction.OutboundTransactionManagerImp
 import cash.z.ecc.android.sdk.internal.transaction.TransactionEncoder
 import cash.z.ecc.android.sdk.internal.transaction.TransactionEncoderImpl
 import cash.z.ecc.android.sdk.model.Account
+import cash.z.ecc.android.sdk.model.AccountPurpose
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.FastestServersResult
 import cash.z.ecc.android.sdk.model.FetchFiatCurrencyResult
@@ -53,6 +54,7 @@ import cash.z.ecc.android.sdk.model.TransactionOverview
 import cash.z.ecc.android.sdk.model.TransactionPool
 import cash.z.ecc.android.sdk.model.TransactionRecipient
 import cash.z.ecc.android.sdk.model.TransactionSubmitResult
+import cash.z.ecc.android.sdk.model.UnifiedFullViewingKey
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
@@ -664,6 +666,32 @@ class SdkSynchronizer private constructor(
             Twig.error(it) { "Create account failed." }
         }.getOrElse {
             throw InitializeException.CreateAccountException(it)
+        }
+    }
+
+    override suspend fun importAccountByUfvk(
+        accountName: String,
+        keySource: String?,
+        purpose: AccountPurpose,
+        recoverUntil: Long?,
+        treeState: ByteArray,
+        ufvk: UnifiedFullViewingKey,
+    ): Account {
+        return runCatching {
+            backend.importAccountUfvk(
+                accountName = accountName,
+                keySource = keySource,
+                purpose = purpose,
+                recoverUntil = recoverUntil,
+                treeState = treeState,
+                ufvk = ufvk,
+            ).also {
+                refreshAccountsBus.emit(Unit)
+            }
+        }.onFailure {
+            Twig.error(it) { "Import account failed." }
+        }.getOrElse {
+            throw InitializeException.ImportAccountException(it)
         }
     }
 

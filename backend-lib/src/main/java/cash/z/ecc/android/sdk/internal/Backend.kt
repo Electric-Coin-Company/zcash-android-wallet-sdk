@@ -85,7 +85,7 @@ interface Backend {
      */
     @Throws(RuntimeException::class)
     suspend fun createAccount(
-        accountName: String?,
+        accountName: String,
         keySource: String?,
         seed: ByteArray,
         treeState: ByteArray,
@@ -101,7 +101,7 @@ interface Backend {
         keySource: String?,
         ufvk: String,
         treeState: ByteArray,
-        recoverUntil: Long?
+        recoverUntil: Long?,
         purpose: Int
     ): JniAccount
 

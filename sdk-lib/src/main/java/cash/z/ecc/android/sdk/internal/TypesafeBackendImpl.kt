@@ -14,9 +14,11 @@ import cash.z.ecc.android.sdk.internal.model.TreeState
 import cash.z.ecc.android.sdk.internal.model.WalletSummary
 import cash.z.ecc.android.sdk.internal.model.ZcashProtocol
 import cash.z.ecc.android.sdk.model.Account
+import cash.z.ecc.android.sdk.model.AccountPurpose
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.FirstClassByteArray
 import cash.z.ecc.android.sdk.model.Proposal
+import cash.z.ecc.android.sdk.model.UnifiedFullViewingKey
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
@@ -30,7 +32,7 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
     override suspend fun getAccounts(): List<Account> = backend.getAccounts().map { Account(it.accountUuid) }
 
     override suspend fun createAccountAndGetSpendingKey(
-        accountName: String?,
+        accountName: String,
         keySource: String?,
         seed: ByteArray,
         treeState: TreeState,
@@ -44,6 +46,26 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
                 treeState = treeState.encoded,
                 recoverUntil = recoverUntil?.value
             )
+        )
+    }
+
+    override suspend fun importAccountUfvk(
+        accountName: String,
+        keySource: String?,
+        purpose: AccountPurpose,
+        recoverUntil: Long?,
+        treeState: ByteArray,
+        ufvk: UnifiedFullViewingKey,
+    ): Account {
+        return Account(
+            backend.importAccountUfvk(
+                accountName = accountName,
+                keySource = keySource,
+                purpose = purpose.value,
+                recoverUntil = recoverUntil,
+                treeState = treeState,
+                ufvk = ufvk.encoding,
+            ).accountUuid
         )
     }
 
