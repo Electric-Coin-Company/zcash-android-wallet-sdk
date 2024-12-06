@@ -1,6 +1,8 @@
 package cash.z.ecc.android.sdk.model
 
+import cash.z.ecc.android.sdk.internal.jni.JNI_ACCOUNT_SEED_FP_BYTES_SIZE
 import cash.z.ecc.android.sdk.internal.jni.JNI_ACCOUNT_UUID_BYTES_SIZE
+import cash.z.ecc.android.sdk.internal.model.JniAccount
 
 /**
  * Unique identifier for a specific account tracked by a `Synchronizer`.
@@ -21,16 +23,61 @@ import cash.z.ecc.android.sdk.internal.jni.JNI_ACCOUNT_UUID_BYTES_SIZE
  * - Importing the same viewing key into two different wallet instances.
  *
  * @param accountUuid The account identifier. Must be length 16.
+ * @param ufvk The account's Unified Full Viewing Key, if any.
+ * @param accountName A human-readable name for the account
+ * @param keySource A string identifier or other metadata describing the source of the seed
+ * @param seedFingerprint The seed fingerprint. Must be length 16.
+ * @param hdAccountIndex ZIP 32 account index
  */
-data class Account(val accountUuid: ByteArray) {
+data class Account internal constructor(
+    val accountUuid: ByteArray,
+    val ufvk: String?,
+    val accountName: String?,
+    val keySource: String?,
+    val seedFingerprint: ByteArray?,
+    val hdAccountIndex: Long?,
+) {
     init {
         require(accountUuid.size == JNI_ACCOUNT_UUID_BYTES_SIZE) {
             "Account UUID must be 16 bytes"
         }
+        seedFingerprint?.let {
+            require(seedFingerprint.size == JNI_ACCOUNT_SEED_FP_BYTES_SIZE) {
+                "Seed fingerprint must be 32 bytes"
+            }
+        }
+    }
+
+    companion object {
+        fun new(jniAccount: JniAccount): Account =
+            Account(
+                accountUuid = jniAccount.accountUuid,
+                ufvk = jniAccount.ufvk,
+                accountName = jniAccount.accountName,
+                keySource = jniAccount.keySource,
+                seedFingerprint = jniAccount.seedFingerprint,
+                // We use -1L to represent NULL across JNI
+                hdAccountIndex = if (jniAccount.hdAccountIndex == -1L) null else jniAccount.hdAccountIndex
+            )
+
+        fun new(accountUuid: ByteArray): Account =
+            Account(
+                accountUuid = accountUuid,
+                ufvk = null,
+                accountName = null,
+                keySource = null,
+                seedFingerprint = null,
+                hdAccountIndex = null
+            )
     }
 
     override fun toString(): String {
-        return "Account(accountUuid=${accountUuid.contentToString()})"
+        return "Account(accountUuid=${accountUuid.contentToString()}," +
+            " ufvk length=${ufvk?.length}," +
+            " accountName=$accountName," +
+            " keySource=$keySource," +
+            " seedFingerprint size=${seedFingerprint?.size}," +
+            " hdAccountIndex=$hdAccountIndex)"
     }
 
     override fun equals(other: Any?): Boolean {
@@ -39,10 +86,28 @@ data class Account(val accountUuid: ByteArray) {
 
         other as Account
 
-        return accountUuid.contentEquals(other.accountUuid)
+        if (!accountUuid.contentEquals(other.accountUuid)) return false
+        if (ufvk != other.ufvk) return false
+        if (accountName != other.accountName) return false
+        if (keySource != other.keySource) return false
+        if (seedFingerprint != null) {
+            if (other.seedFingerprint == null) return false
+            if (!seedFingerprint.contentEquals(other.seedFingerprint)) return false
+        } else if (other.seedFingerprint != null) {
+            return false
+        }
+        if (hdAccountIndex != other.hdAccountIndex) return false
+
+        return true
     }
 
     override fun hashCode(): Int {
-        return accountUuid.contentHashCode()
+        var result = accountUuid.contentHashCode()
+        result = 31 * result + (ufvk?.hashCode() ?: 0)
+        result = 31 * result + (accountName?.hashCode() ?: 0)
+        result = 31 * result + (keySource?.hashCode() ?: 0)
+        result = 31 * result + (seedFingerprint?.contentHashCode() ?: 0)
+        result = 31 * result + (hdAccountIndex?.hashCode() ?: 0)
+        return result
     }
 }

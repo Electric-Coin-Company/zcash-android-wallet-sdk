@@ -288,22 +288,22 @@ fn encode_account<'a, P: Parameters>(
         None => JObject::null(),
     };
 
-    let null = JObject::null();
     let hd_account_index = match account.source().key_derivation() {
         Some(d) => JValue::Long(i64::from(u32::from(d.account_index()))),
-        None => (&null).into(),
+        // Use -1 to return null across the FFI.
+        None => JValue::Long(-1),
     };
 
     env.new_object(
         JNI_ACCOUNT,
-        "([BLjava/lang/String;Ljava/lang/String;Ljava/lang/String;[BI)V",
+        "(Ljava/lang/String;[BJLjava/lang/String;[BLjava/lang/String;)V",
         &[
-            (&env.byte_array_from_slice(account.id().expose_uuid().as_bytes())?).into(),
-            (&ufvk).into(),
             (&account_name).into(),
+            (&env.byte_array_from_slice(account.id().expose_uuid().as_bytes())?).into(),
+            hd_account_index,
             (&key_source).into(),
             (&seed_fingerprint).into(),
-            hd_account_index
+            (&ufvk).into()
         ],
     )
 }

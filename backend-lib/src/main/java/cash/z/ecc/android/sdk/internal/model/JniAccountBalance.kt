@@ -1,11 +1,12 @@
 package cash.z.ecc.android.sdk.internal.model
 
 import androidx.annotation.Keep
+import cash.z.ecc.android.sdk.internal.jni.JNI_ACCOUNT_UUID_BYTES_SIZE
 
 /**
  * Serves as cross layer (Kotlin, Rust) communication class.
  *
- * @param account the account ID
+ * @param accountUuid the account UUID in ByteArray
  * @param saplingVerifiedBalance The verified account balance in the Sapling pool.
  * @param saplingChangePending The value in the account of Sapling change notes that do
  *        not yet have sufficient confirmations to be spendable.
@@ -25,7 +26,7 @@ import androidx.annotation.Keep
 @Keep
 @Suppress("LongParameterList")
 class JniAccountBalance(
-    val account: ByteArray,
+    val accountUuid: ByteArray,
     val saplingVerifiedBalance: Long,
     val saplingChangePending: Long,
     val saplingValuePending: Long,
@@ -35,6 +36,9 @@ class JniAccountBalance(
     val unshieldedBalance: Long,
 ) {
     init {
+        require(accountUuid.size == JNI_ACCOUNT_UUID_BYTES_SIZE) {
+            "Account UUID must be 16 bytes"
+        }
         require(saplingVerifiedBalance >= MIN_INCLUSIVE) {
             "Sapling verified balance $saplingVerifiedBalance must by equal or above $MIN_INCLUSIVE"
         }

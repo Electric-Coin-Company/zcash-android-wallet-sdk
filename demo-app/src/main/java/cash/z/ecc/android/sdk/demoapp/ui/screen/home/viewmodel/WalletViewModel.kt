@@ -20,6 +20,7 @@ import cash.z.ecc.android.sdk.demoapp.ui.common.throttle
 import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.model.Account
+import cash.z.ecc.android.sdk.model.AccountBalance
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.ObserveFiatCurrencyResult
 import cash.z.ecc.android.sdk.model.PercentDecimal
@@ -104,11 +105,13 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
                     withContext(Dispatchers.IO) {
                         Mnemonics.MnemonicCode(it.seedPhrase.joinToString()).toSeed()
                     }
+                val accountIndex = getCurrentAccount().hdAccountIndex?.toInt()
+                    ?: error("The account must be set at this point")
+
                 DerivationTool.getInstance().deriveUnifiedSpendingKey(
                     seed = bip39Seed,
                     network = it.network,
-                    // TODO: Get accountIndex from account returned by getCurrentAccount()
-                    accountIndex = 0
+                    accountIndex = accountIndex
                 )
             }.stateIn(
                 viewModelScope,

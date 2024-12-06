@@ -3,6 +3,7 @@ package cash.z.ecc.android.sdk
 import android.content.Context
 import cash.z.ecc.android.sdk.ext.onFirst
 import cash.z.ecc.android.sdk.internal.Twig
+import cash.z.ecc.android.sdk.model.AccountCreateSetup
 import cash.z.ecc.android.sdk.model.PersistableWallet
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
@@ -79,7 +80,11 @@ class WalletCoordinator(
                                 zcashNetwork = persistableWallet.network,
                                 lightWalletEndpoint = persistableWallet.endpoint,
                                 birthday = persistableWallet.birthday,
-                                seed = persistableWallet.seedPhrase.toByteArray(),
+                                setup = AccountCreateSetup(
+                                    accountName = "Zcash Account 1",
+                                    keySource = "ZCASH",
+                                    seed = persistableWallet.seedPhrase.toByteArray()
+                                ),
                                 walletInitMode = persistableWallet.walletInitMode,
                             )
 

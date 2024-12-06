@@ -20,7 +20,14 @@ fun Derivation.deriveUnifiedSpendingKey(
     seed: ByteArray,
     network: ZcashNetwork,
     accountIndex: Int
-): UnifiedSpendingKey = UnifiedSpendingKey(deriveUnifiedSpendingKey(seed, network.id, accountIndex))
+): UnifiedSpendingKey =
+    UnifiedSpendingKey(
+        JniUnifiedSpendingKey(
+            // fixme
+            accountUuid = byteArrayOf(),
+            bytes = deriveUnifiedSpendingKey(seed, network.id, accountIndex)
+        )
+    )
 
 fun Derivation.deriveUnifiedFullViewingKey(
     usk: UnifiedSpendingKey,

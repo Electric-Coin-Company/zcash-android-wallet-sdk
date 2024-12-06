@@ -16,9 +16,10 @@ internal data class WalletSummary(
         fun new(jni: JniWalletSummary): WalletSummary {
             return WalletSummary(
                 accountBalances =
-                    jni.accountBalances.associateBy({ Account(it.account) }, {
-                        AccountBalance.new(it)
-                    }),
+                    jni.accountBalances.associateBy(
+                        { Account.new(it.accountUuid) },
+                        { AccountBalance.new(it) }
+                    ),
                 chainTipHeight = BlockHeight(jni.chainTipHeight),
                 fullyScannedHeight = BlockHeight(jni.fullyScannedHeight),
                 scanProgress = ScanProgress.new(jni),

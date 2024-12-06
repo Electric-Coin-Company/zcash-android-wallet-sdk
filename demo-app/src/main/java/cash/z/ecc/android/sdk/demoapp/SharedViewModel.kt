@@ -11,6 +11,7 @@ import cash.z.ecc.android.sdk.demoapp.ext.defaultForNetwork
 import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.ext.onFirst
 import cash.z.ecc.android.sdk.internal.Twig
+import cash.z.ecc.android.sdk.model.AccountCreateSetup
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import co.electriccoin.lightwallet.client.ext.BenchmarkingExt
@@ -76,19 +77,19 @@ class SharedViewModel(application: Application) : AndroidViewModel(application) 
                     val network = ZcashNetwork.fromResources(application)
                     val synchronizer =
                         Synchronizer.new(
-                            application,
-                            network,
-                            lightWalletEndpoint = LightWalletEndpoint.defaultForNetwork(network),
-                            seed = seedBytes,
+                            alias = OLD_UI_SYNCHRONIZER_ALIAS,
                             birthday =
-                                if (BenchmarkingExt.isBenchmarking()) {
-                                    BlockHeight.new(BenchmarkingBlockRangeFixture.new().start)
-                                } else {
-                                    birthdayHeight.value
-                                },
+                            if (BenchmarkingExt.isBenchmarking()) {
+                                BlockHeight.new(BenchmarkingBlockRangeFixture.new().start)
+                            } else {
+                                birthdayHeight.value
+                            },
+                            context = application,
+                            lightWalletEndpoint = LightWalletEndpoint.defaultForNetwork(network),
+                            setup = AccountCreateSetup("ZCASH", "Zcash Account 1", seedBytes),
                             // We use restore mode as this is always initialization with an older seed
                             walletInitMode = WalletInitMode.RestoreWallet,
-                            alias = OLD_UI_SYNCHRONIZER_ALIAS
+                            zcashNetwork = network,
                         )
 
                     send(InternalSynchronizerStatus.Available(synchronizer))

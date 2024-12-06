@@ -29,7 +29,7 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
     override val network: ZcashNetwork
         get() = ZcashNetwork.from(backend.networkId)
 
-    override suspend fun getAccounts(): List<Account> = backend.getAccounts().map { Account(it.accountUuid) }
+    override suspend fun getAccounts(): List<Account> = backend.getAccounts().map { Account.new(it) }
 
     override suspend fun createAccountAndGetSpendingKey(
         accountName: String,
@@ -55,15 +55,16 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
         setup: AccountImportSetup,
         treeState: ByteArray,
     ): Account {
-        return Account(
-            backend.importAccountUfvk(
-                accountName = setup.accountName,
-                keySource = setup.keySource,
-                purpose = purpose.value,
-                recoverUntil = recoverUntil,
-                treeState = treeState,
-                ufvk = setup.ufvk.encoding,
-            ).accountUuid
+        return Account.new(
+            jniAccount =
+                backend.importAccountUfvk(
+                    accountName = setup.accountName,
+                    keySource = setup.keySource,
+                    purpose = purpose.value,
+                    recoverUntil = recoverUntil,
+                    treeState = treeState,
+                    ufvk = setup.ufvk.encoding
+                )
         )
     }
 
