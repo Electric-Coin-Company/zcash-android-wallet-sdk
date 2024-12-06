@@ -22,7 +22,7 @@ use utils::{java_nullable_string_to_rust, java_string_to_rust};
 use uuid::Uuid;
 use zcash_address::{ToAddress, ZcashAddress};
 use zcash_client_backend::data_api::{
-    AccountPurpose, BirthdayError, TransactionDataRequest, TransactionStatus,
+    AccountPurpose, BirthdayError, TransactionDataRequest, TransactionStatus, Zip32Derivation,
 };
 use zcash_client_backend::fees::zip317::MultiOutputChangeStrategy;
 use zcash_client_backend::fees::{SplitPolicy, StandardFeeRule};
@@ -72,6 +72,7 @@ use zcash_primitives::{
     zip32::{self, DiversifierIndex},
 };
 use zcash_proofs::prover::LocalTxProver;
+use zip32::fingerprint::SeedFingerprint;
 use zip32::ChildIndex;
 
 use crate::utils::{catch_unwind, exception::unwrap_exc_or};
@@ -272,12 +273,37 @@ fn encode_account<'a, P: Parameters>(
         None => JObject::null(),
     };
 
+    let account_name = match account.name() {
+        Some(name) => env.new_string(name)?.into(),
+        None => JObject::null(),
+    };
+
+    let key_source = match account.source().key_source() {
+        Some(source) => env.new_string(source)?.into(),
+        None => JObject::null(),
+    };
+
+    let seed_fingerprint = match account.source().key_derivation() {
+        Some(d) => env.byte_array_from_slice(&d.seed_fingerprint().to_bytes()[..])?.into(),
+        None => JObject::null(),
+    };
+
+    let null = JObject::null();
+    let hd_account_index = match account.source().key_derivation() {
+        Some(d) => JValue::Long(i64::from(u32::from(d.account_index()))),
+        None => (&null).into(),
+    };
+
     env.new_object(
         JNI_ACCOUNT,
-        "([BLjava/lang/String;)V",
+        "([BLjava/lang/String;Ljava/lang/String;Ljava/lang/String;[BI)V",
         &[
             (&env.byte_array_from_slice(account.id().expose_uuid().as_bytes())?).into(),
             (&ufvk).into(),
+            (&account_name).into(),
+            (&key_source).into(),
+            (&seed_fingerprint).into(),
+            hd_account_index
         ],
     )
 }
@@ -457,6 +483,8 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_importAcc
     treestate: JByteArray<'local>,
     recover_until: jlong,
     purpose: jint,
+    seed_fingerprint_bytes: JByteArray<'local>,
+    hd_account_index_raw: u32,
 ) -> jobject {
     let res = catch_unwind(&mut env, |env| {
         let network = parse_network(network_id as u32)?;
@@ -486,8 +514,18 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_importAcc
         let account_name = java_string_to_rust(env, &account_name);
         let key_source = java_nullable_string_to_rust(env, &key_source);
 
+        let seed_fingerprint =
+            <[u8; 32]>::try_from(&env.convert_byte_array(seed_fingerprint_bytes)?[..])
+                .ok()
+                .map(SeedFingerprint::from_bytes);
+        let hd_account_index = zip32::AccountId::try_from(hd_account_index_raw).ok();
+
+        let derivation = seed_fingerprint
+            .zip(hd_account_index)
+            .map(|(seed_fp, idx)| Zip32Derivation::new(seed_fp, idx));
+
         let purpose = match purpose {
-            0 => Ok(AccountPurpose::Spending),
+            0 => Ok(AccountPurpose::Spending { derivation }),
             1 => Ok(AccountPurpose::ViewOnly),
             _ => Err(anyhow!(
                 "Account purpose must be either 0 (Spending) or 1 (ViewOnly)"

@@ -7,3 +7,8 @@ import cash.z.ecc.android.sdk.internal.model.JniAccount
  * [JniUnifiedSpendingKey.accountUuid]
  */
 const val JNI_ACCOUNT_UUID_BYTES_SIZE = 16
+
+/**
+ * The number of bytes in the seed fingerprint parameter. It's used e.g. in [JniAccount.seedFingerprint]
+ */
+const val JNI_ACCOUNT_SEED_FP_BYTES_SIZE = 16
