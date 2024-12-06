@@ -40,7 +40,7 @@ use zcash_client_backend::{
     },
     encoding::AddressCodec,
     fees::DustOutputPolicy,
-    keys::{DecodingError, Era, UnifiedAddressRequest, UnifiedFullViewingKey, UnifiedSpendingKey},
+    keys::{DecodingError, Era, UnifiedFullViewingKey, UnifiedSpendingKey},
     proto::{proposal::Proposal, service::TreeState},
     tor::http::cryptex,
     wallet::{NoteId, OvkPolicy, WalletTransparentOutput},
@@ -82,10 +82,6 @@ mod utils;
 
 const ANCHOR_OFFSET_U32: u32 = 10;
 const ANCHOR_OFFSET: NonZeroU32 = unsafe { NonZeroU32::new_unchecked(ANCHOR_OFFSET_U32) };
-
-// Do not generate Orchard receivers until we support receiving Orchard funds.
-const DEFAULT_ADDRESS_REQUEST: UnifiedAddressRequest =
-    UnifiedAddressRequest::unsafe_new(true, true, true);
 
 #[cfg(debug_assertions)]
 fn print_debug_state() {
@@ -284,7 +280,9 @@ fn encode_account<'a, P: Parameters>(
     };
 
     let seed_fingerprint = match account.source().key_derivation() {
-        Some(d) => env.byte_array_from_slice(&d.seed_fingerprint().to_bytes()[..])?.into(),
+        Some(d) => env
+            .byte_array_from_slice(&d.seed_fingerprint().to_bytes()[..])?
+            .into(),
         None => JObject::null(),
     };
 
@@ -303,7 +301,7 @@ fn encode_account<'a, P: Parameters>(
             hd_account_index,
             (&key_source).into(),
             (&seed_fingerprint).into(),
-            (&ufvk).into()
+            (&ufvk).into(),
         ],
     )
 }
@@ -1285,7 +1283,7 @@ fn encode_account_balance<'a>(
     let orchard_value_pending =
         Amount::from(balance.orchard_balance().value_pending_spendability());
 
-    let unshielded = Amount::from(balance.unshielded());
+    let unshielded = Amount::from(balance.unshielded_balance().total());
 
     env.new_object(
         JNI_ACCOUNT_BALANCE,
@@ -2082,7 +2080,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustDerivationTool_de
             .map(|usk| usk.to_unified_full_viewing_key())?;
 
         let (ua, _) = ufvk
-            .find_address(DiversifierIndex::new(), DEFAULT_ADDRESS_REQUEST)
+            .find_address(DiversifierIndex::new(), None)
             .expect("At least one Unified Address should be derivable");
         let address_str = ua.encode(&network);
         let output = env
@@ -2119,7 +2117,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustDerivationTool_de
 
         // Derive the default Unified Address (containing the default Sapling payment
         // address that older SDKs used).
-        let (ua, _) = ufvk.default_address(DEFAULT_ADDRESS_REQUEST)?;
+        let (ua, _) = ufvk.default_address(None)?;
         let address_str = ua.encode(&network);
         let output = env
             .new_string(address_str)
