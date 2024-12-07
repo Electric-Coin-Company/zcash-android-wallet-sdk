@@ -20,6 +20,10 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `Synchronizer.createProposedTransactions` and `Synchronizer.proposeShielding` instead
 - `Synchronizer.orchardBalances`, `Synchronizer.saplingBalances`, and `Synchronizer.transparentBalance`
 
+### Fixed
+- The `CompactBlockProcessor` now correctly distinguishes between `Response.Failure.Server.Unavailable` and other 
+  errors in its `refreshUtxos` API. It then sets its state to `State.Disconnected` in such a case.
+
 ## [2.2.6] - 2024-11-16
 
 ### Added
