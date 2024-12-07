@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::convert::{Infallible, TryFrom, TryInto};
 use std::error::Error;
 use std::num::{NonZeroU32, NonZeroUsize};
@@ -42,7 +41,7 @@ use zcash_client_backend::{
     },
     encoding::AddressCodec,
     fees::DustOutputPolicy,
-    keys::{DecodingError, Era, UnifiedAddressRequest, UnifiedFullViewingKey, UnifiedSpendingKey},
+    keys::{DecodingError, Era, UnifiedFullViewingKey, UnifiedSpendingKey},
     proto::{proposal::Proposal, service::TreeState},
     tor::http::cryptex,
     wallet::{NoteId, OvkPolicy, WalletTransparentOutput},
@@ -84,10 +83,6 @@ mod utils;
 
 const ANCHOR_OFFSET_U32: u32 = 10;
 const ANCHOR_OFFSET: NonZeroU32 = unsafe { NonZeroU32::new_unchecked(ANCHOR_OFFSET_U32) };
-
-// Do not generate Orchard receivers until we support receiving Orchard funds.
-const DEFAULT_ADDRESS_REQUEST: UnifiedAddressRequest =
-    UnifiedAddressRequest::unsafe_new(true, true, true);
 
 #[cfg(debug_assertions)]
 fn print_debug_state() {
@@ -2016,8 +2011,6 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_createPro
             .map_err(|e| anyhow!("Invalid proposal: {}", e))?
             .try_into_standard_proposal(&db_data)?;
 
-        let mut unused_transparent_outputs = HashMap::new();
-
         let account_id = db_data
             .get_account_for_ufvk(&ufvk)
             .map_err(|e| anyhow!("Error retrieving account information for ufvk: {}", e))?
@@ -2030,14 +2023,9 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_createPro
             let pczt = create_proposed_transaction_pczt::<_, _, Infallible, _, Infallible, _>(
                 &mut db_data,
                 &network,
-                &ufvk,
                 account_id,
                 OvkPolicy::Sender,
-                proposal.fee_rule(),
-                proposal.min_target_height(),
-                &[],
-                &proposal.steps().head,
-                &mut unused_transparent_outputs,
+                &proposal,
             )
             .map_err(|e| anyhow!("Error creating PCZT from single-step proposal: {}", e))?;
 
@@ -2171,7 +2159,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustDerivationTool_de
             .map(|usk| usk.to_unified_full_viewing_key())?;
 
         let (ua, _) = ufvk
-            .find_address(DiversifierIndex::new(), DEFAULT_ADDRESS_REQUEST)
+            .find_address(DiversifierIndex::new(), None)
             .expect("At least one Unified Address should be derivable");
         let address_str = ua.encode(&network);
         let output = env
@@ -2208,7 +2196,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustDerivationTool_de
 
         // Derive the default Unified Address (containing the default Sapling payment
         // address that older SDKs used).
-        let (ua, _) = ufvk.default_address(DEFAULT_ADDRESS_REQUEST)?;
+        let (ua, _) = ufvk.default_address(None)?;
         let address_str = ua.encode(&network);
         let output = env
             .new_string(address_str)
