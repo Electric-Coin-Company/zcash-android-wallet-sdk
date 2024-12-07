@@ -964,11 +964,17 @@ class CompactBlockProcessor internal constructor(
                         Twig.error {
                             "Downloading UTXO from height: $startHeight failed with: ${response.description}."
                         }
-                        throw LightWalletException.FetchUtxosException(
-                            response.code,
-                            response.description,
-                            response.toThrowable()
-                        )
+                        if (response is Response.Failure.Server.Unavailable) {
+                            Twig.error { "Download UTXOs failed - setting Disconnected state" }
+                            setState(State.Disconnected)
+                        } else {
+                            Twig.error { "Download UTXOs failed - throwing exception" }
+                            throw LightWalletException.FetchUtxosException(
+                                response.code,
+                                response.description,
+                                response.toThrowable()
+                            )
+                        }
                     }
                 }
             }.onCompletion {
