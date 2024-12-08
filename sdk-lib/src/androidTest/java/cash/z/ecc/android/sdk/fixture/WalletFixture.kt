@@ -1,13 +1,10 @@
 package cash.z.ecc.android.sdk.fixture
 
 import cash.z.ecc.android.bip39.Mnemonics
-import cash.z.ecc.android.sdk.internal.deriveUnifiedSpendingKey
 import cash.z.ecc.android.sdk.internal.jni.RustDerivationTool
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 
 object WalletFixture {
-    // TODO [#1644]: Refactor Account ZIP32 index across SDK
-    // TODO [#1644]: https://github.com/Electric-Coin-Company/zcash-android-wallet-sdk/issues/1644
     const val ACCOUNT_INDEX = 0
 
     val NETWORK = ZcashNetwork.Mainnet

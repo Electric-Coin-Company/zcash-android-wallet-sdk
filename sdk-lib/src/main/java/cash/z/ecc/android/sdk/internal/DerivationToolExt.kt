@@ -1,5 +1,6 @@
 package cash.z.ecc.android.sdk.internal
 
+import cash.z.ecc.android.sdk.fixture.AccountFixture
 import cash.z.ecc.android.sdk.internal.model.JniUnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.UnifiedFullViewingKey
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
@@ -23,8 +24,9 @@ fun Derivation.deriveUnifiedSpendingKey(
 ): UnifiedSpendingKey =
     UnifiedSpendingKey(
         JniUnifiedSpendingKey(
-            // fixme
-            accountUuid = byteArrayOf(),
+            // FIXME: How to construct JniUnifiedSpendingKey without accountUuid?
+            // FIXME: The tests fixture currently used to pass tests
+            accountUuid = AccountFixture.new().accountUuid,
             bytes = deriveUnifiedSpendingKey(seed, network.id, accountIndex)
         )
     )

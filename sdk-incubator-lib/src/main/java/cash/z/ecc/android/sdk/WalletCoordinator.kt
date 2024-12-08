@@ -80,11 +80,12 @@ class WalletCoordinator(
                                 zcashNetwork = persistableWallet.network,
                                 lightWalletEndpoint = persistableWallet.endpoint,
                                 birthday = persistableWallet.birthday,
-                                setup = AccountCreateSetup(
-                                    accountName = "Zcash Account 1",
-                                    keySource = "ZCASH",
-                                    seed = persistableWallet.seedPhrase.toByteArray()
-                                ),
+                                setup =
+                                    AccountCreateSetup(
+                                        accountName = "Zcash Account 1",
+                                        keySource = "ZCASH",
+                                        seed = persistableWallet.seedPhrase.toByteArray()
+                                    ),
                                 walletInitMode = persistableWallet.walletInitMode,
                             )
 

@@ -79,11 +79,11 @@ class SharedViewModel(application: Application) : AndroidViewModel(application) 
                         Synchronizer.new(
                             alias = OLD_UI_SYNCHRONIZER_ALIAS,
                             birthday =
-                            if (BenchmarkingExt.isBenchmarking()) {
-                                BlockHeight.new(BenchmarkingBlockRangeFixture.new().start)
-                            } else {
-                                birthdayHeight.value
-                            },
+                                if (BenchmarkingExt.isBenchmarking()) {
+                                    BlockHeight.new(BenchmarkingBlockRangeFixture.new().start)
+                                } else {
+                                    birthdayHeight.value
+                                },
                             context = application,
                             lightWalletEndpoint = LightWalletEndpoint.defaultForNetwork(network),
                             setup = AccountCreateSetup("ZCASH", "Zcash Account 1", seedBytes),

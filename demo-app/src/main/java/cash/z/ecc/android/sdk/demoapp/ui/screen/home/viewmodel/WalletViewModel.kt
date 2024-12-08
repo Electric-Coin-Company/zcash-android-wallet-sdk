@@ -100,19 +100,18 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
         secretState
             .filterIsInstance<SecretState.Ready>()
             .map { it.persistableWallet }
-            .map {
+            .map { secretState ->
                 val bip39Seed =
                     withContext(Dispatchers.IO) {
-                        Mnemonics.MnemonicCode(it.seedPhrase.joinToString()).toSeed()
+                        Mnemonics.MnemonicCode(secretState.seedPhrase.joinToString()).toSeed()
                     }
-                val accountIndex = getCurrentAccount().hdAccountIndex?.toInt()
-                    ?: error("The account must be set at this point")
-
-                DerivationTool.getInstance().deriveUnifiedSpendingKey(
-                    seed = bip39Seed,
-                    network = it.network,
-                    accountIndex = accountIndex
-                )
+                getCurrentAccount().hdAccountIndex?.let { accountIndex ->
+                    DerivationTool.getInstance().deriveUnifiedSpendingKey(
+                        seed = bip39Seed,
+                        network = secretState.network,
+                        accountIndex = accountIndex.toInt()
+                    )
+                }
             }.stateIn(
                 viewModelScope,
                 SharingStarted.WhileSubscribed(ANDROID_STATE_FLOW_TIMEOUT),
