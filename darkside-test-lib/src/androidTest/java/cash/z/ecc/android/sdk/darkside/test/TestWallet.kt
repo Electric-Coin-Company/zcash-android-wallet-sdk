@@ -7,6 +7,7 @@ import cash.z.ecc.android.sdk.SdkSynchronizer
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.WalletInitMode
 import cash.z.ecc.android.sdk.ext.Darkside
+import cash.z.ecc.android.sdk.fixture.AccountCreateSetupFixture
 import cash.z.ecc.android.sdk.fixture.AccountFixture
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.model.BlockHeight
@@ -63,19 +64,19 @@ class TestWallet(
             DerivationTool.getInstance().deriveUnifiedSpendingKey(
                 seed = seed,
                 network = network,
-                account = AccountFixture.new()
+                accountIndex = AccountFixture.new().hdAccountIndex!!.toInt()
             )
         }
     val synchronizer: SdkSynchronizer =
         Synchronizer.newBlocking(
-            context,
-            network,
-            alias,
-            endpoint,
-            seed,
-            startHeight,
+            alias = alias,
+            birthday = startHeight,
+            context = context,
+            lightWalletEndpoint = endpoint,
+            setup = AccountCreateSetupFixture.new(),
             // Using existing wallet init mode as simplification for the test
-            walletInitMode = WalletInitMode.ExistingWallet
+            walletInitMode = WalletInitMode.ExistingWallet,
+            zcashNetwork = network,
         ) as SdkSynchronizer
 
     val available

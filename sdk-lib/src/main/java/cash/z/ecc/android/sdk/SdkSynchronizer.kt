@@ -42,6 +42,9 @@ import cash.z.ecc.android.sdk.internal.transaction.OutboundTransactionManagerImp
 import cash.z.ecc.android.sdk.internal.transaction.TransactionEncoder
 import cash.z.ecc.android.sdk.internal.transaction.TransactionEncoderImpl
 import cash.z.ecc.android.sdk.model.Account
+import cash.z.ecc.android.sdk.model.AccountCreateSetup
+import cash.z.ecc.android.sdk.model.AccountImportSetup
+import cash.z.ecc.android.sdk.model.AccountPurpose
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.FastestServersResult
 import cash.z.ecc.android.sdk.model.FetchFiatCurrencyResult
@@ -644,12 +647,16 @@ class SdkSynchronizer private constructor(
 
     // Not ready to be a public API; internal for testing only
     internal suspend fun createAccount(
+        accountName: String,
+        keySource: String?,
+        recoverUntil: BlockHeight?,
         seed: ByteArray,
         treeState: TreeState,
-        recoverUntil: BlockHeight?
     ): UnifiedSpendingKey {
         return runCatching {
             backend.createAccountAndGetSpendingKey(
+                accountName = accountName,
+                keySource = keySource,
                 seed = seed,
                 treeState = treeState,
                 recoverUntil = recoverUntil
@@ -660,6 +667,28 @@ class SdkSynchronizer private constructor(
             Twig.error(it) { "Create account failed." }
         }.getOrElse {
             throw InitializeException.CreateAccountException(it)
+        }
+    }
+
+    override suspend fun importAccountByUfvk(
+        purpose: AccountPurpose,
+        recoverUntil: Long?,
+        setup: AccountImportSetup,
+        treeState: ByteArray,
+    ): Account {
+        return runCatching {
+            backend.importAccountUfvk(
+                purpose = purpose,
+                recoverUntil = recoverUntil,
+                setup = setup,
+                treeState = treeState,
+            ).also {
+                refreshAccountsBus.emit(Unit)
+            }
+        }.onFailure {
+            Twig.error(it) { "Import account failed." }
+        }.getOrElse {
+            throw InitializeException.ImportAccountException(it)
         }
     }
 
@@ -991,22 +1020,22 @@ internal object DefaultSynchronizerFactory {
     @Suppress("LongParameterList")
     internal suspend fun defaultDerivedDataRepository(
         context: Context,
-        rustBackend: TypesafeBackend,
         databaseFile: File,
         checkpoint: Checkpoint,
-        seed: ByteArray?,
         numberOfAccounts: Int,
-        recoverUntil: BlockHeight?
+        recoverUntil: BlockHeight?,
+        rustBackend: TypesafeBackend,
+        setup: AccountCreateSetup?,
     ): DerivedDataRepository =
         DbDerivedDataRepository(
             DerivedDataDb.new(
-                context,
-                rustBackend,
-                databaseFile,
-                checkpoint,
-                seed,
-                numberOfAccounts,
-                recoverUntil
+                context = context,
+                backend = rustBackend,
+                databaseFile = databaseFile,
+                checkpoint = checkpoint,
+                numberOfAccounts = numberOfAccounts,
+                recoverUntil = recoverUntil,
+                setup = setup,
             )
         )
 

@@ -31,14 +31,14 @@ internal class OutboundTransactionManagerImpl(
                 memo.toByteArray()
             }
         return when (recipient) {
-            is TransactionRecipient.Account -> {
+            is TransactionRecipient.RecipientAccount -> {
                 encoder.createShieldingTransaction(
                     usk,
                     recipient,
                     memoBytes
                 )
             }
-            is TransactionRecipient.Address -> {
+            is TransactionRecipient.RecipientAddress -> {
                 encoder.createTransaction(
                     usk,
                     amount,

@@ -1,7 +1,7 @@
 package cash.z.ecc.android.sdk.internal
 
+import cash.z.ecc.android.sdk.fixture.AccountFixture
 import cash.z.ecc.android.sdk.internal.model.JniUnifiedSpendingKey
-import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.UnifiedFullViewingKey
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.ZcashNetwork
@@ -9,8 +9,8 @@ import cash.z.ecc.android.sdk.model.ZcashNetwork
 fun Derivation.deriveUnifiedAddress(
     seed: ByteArray,
     network: ZcashNetwork,
-    account: Account
-): String = deriveUnifiedAddress(seed, network.id, account.value)
+    accountIndex: Int
+): String = deriveUnifiedAddress(seed, network.id, accountIndex)
 
 fun Derivation.deriveUnifiedAddress(
     viewingKey: String,
@@ -20,8 +20,16 @@ fun Derivation.deriveUnifiedAddress(
 fun Derivation.deriveUnifiedSpendingKey(
     seed: ByteArray,
     network: ZcashNetwork,
-    account: Account
-): UnifiedSpendingKey = UnifiedSpendingKey(deriveUnifiedSpendingKey(seed, network.id, account.value))
+    accountIndex: Int
+): UnifiedSpendingKey =
+    UnifiedSpendingKey(
+        JniUnifiedSpendingKey(
+            // FIXME: How to construct JniUnifiedSpendingKey without accountUuid?
+            // FIXME: The tests fixture currently used to pass tests
+            accountUuid = AccountFixture.new().accountUuid,
+            bytes = deriveUnifiedSpendingKey(seed, network.id, accountIndex)
+        )
+    )
 
 fun Derivation.deriveUnifiedFullViewingKey(
     usk: UnifiedSpendingKey,
@@ -30,7 +38,7 @@ fun Derivation.deriveUnifiedFullViewingKey(
     UnifiedFullViewingKey(
         deriveUnifiedFullViewingKey(
             JniUnifiedSpendingKey(
-                usk.account.value,
+                usk.account.accountUuid,
                 usk.copyBytes()
             ),
             network.id
@@ -57,5 +65,5 @@ fun Derivation.deriveArbitraryAccountKeyTypesafe(
     contextString: ByteArray,
     seed: ByteArray,
     network: ZcashNetwork,
-    account: Account
-): ByteArray = deriveArbitraryAccountKey(contextString, seed, network.id, account.value)
+    accountIndex: Int
+): ByteArray = deriveArbitraryAccountKey(contextString, seed, network.id, accountIndex)

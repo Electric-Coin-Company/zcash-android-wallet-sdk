@@ -11,13 +11,23 @@ import java.util.UUID
  * Note that these values are used in the automated tests only and are not passed across the JNI.
  */
 object AccountFixture {
-    @Suppress("UnusedPrivateMember")
-    val ACCOUNT_UUID = UUID.fromString("01234567-89ab-cdef-0123-456789abcdef")
-    const val ZIP_32_ACCOUNT_INDEX = 0
+    const val ZIP_32_ACCOUNT_INDEX = 0L
 
-    fun new(accountId: Int = ZIP_32_ACCOUNT_INDEX) =
+    val ACCOUNT_UUID = UUID.fromString("01234567-89ab-cdef-0123-456789abcdef")
+    const val ACCOUNT_NAME = "Test Account"
+    const val UFVK = "ufvk1d68jqrx0q98rl0w8f5085y898x0p9z5k0sksqre87949w9494949"
+    const val KEY_SOURCE = "ZCASH"
+    const val SEED_FINGER_PRINT = "8ac5439f8ac5439f8ac5439f8ac5439f"
+    const val HD_ACCOUNT_INDEX = ZIP_32_ACCOUNT_INDEX
+
+    fun new(accountId: UUID = ACCOUNT_UUID) =
         Account(
-            value = accountId
+            accountName = ACCOUNT_NAME,
+            accountUuid = accountId.toByteArray(),
+            hdAccountIndex = HD_ACCOUNT_INDEX,
+            keySource = KEY_SOURCE,
+            seedFingerprint = SEED_FINGER_PRINT.toByteArray(),
+            ufvk = UFVK,
         )
 }
 

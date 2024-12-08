@@ -13,9 +13,9 @@ class UnifiedSpendingKeyTest {
     fun factory_copies_bytes() =
         runTest {
             val spendingKey = WalletFixture.getUnifiedSpendingKey()
-            val expected = spendingKey.copyBytes().copyOf()
+            val expected = spendingKey.copyOf()
 
-            val bytes = spendingKey.copyBytes()
+            val bytes = spendingKey
             val newSpendingKey = UnifiedSpendingKey.new(spendingKey.account, bytes)
             bytes.clear()
 

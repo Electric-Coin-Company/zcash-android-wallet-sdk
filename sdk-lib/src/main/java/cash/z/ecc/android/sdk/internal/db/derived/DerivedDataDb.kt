@@ -8,6 +8,7 @@ import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.TypesafeBackend
 import cash.z.ecc.android.sdk.internal.db.ReadOnlySupportSqliteOpenHelper
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
+import cash.z.ecc.android.sdk.model.AccountCreateSetup
 import cash.z.ecc.android.sdk.model.BlockHeight
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -42,11 +43,11 @@ internal class DerivedDataDb private constructor(
             backend: TypesafeBackend,
             databaseFile: File,
             checkpoint: Checkpoint,
-            seed: ByteArray?,
             numberOfAccounts: Int,
-            recoverUntil: BlockHeight?
+            recoverUntil: BlockHeight?,
+            setup: AccountCreateSetup?,
         ): DerivedDataDb {
-            backend.initDataDb(seed)
+            backend.initDataDb(setup?.seed)
 
             val database =
                 ReadOnlySupportSqliteOpenHelper.openExistingDatabaseAsReadOnly(
@@ -61,7 +62,7 @@ internal class DerivedDataDb private constructor(
             val dataDb = DerivedDataDb(database)
 
             // If a seed is provided, fill in the accounts.
-            seed?.let { checkedSeed ->
+            setup?.let { checkedSetup ->
                 val missingAccounts = numberOfAccounts - backend.getAccounts().count()
                 require(missingAccounts >= 0) {
                     "Unexpected number of accounts: $missingAccounts"
@@ -69,9 +70,11 @@ internal class DerivedDataDb private constructor(
                 repeat(missingAccounts) {
                     runCatching {
                         backend.createAccountAndGetSpendingKey(
-                            seed = checkedSeed,
+                            accountName = checkedSetup.accountName,
+                            keySource = checkedSetup.keySource,
+                            recoverUntil = recoverUntil,
+                            seed = checkedSetup.seed,
                             treeState = checkpoint.treeState(),
-                            recoverUntil = recoverUntil
                         )
                     }.onFailure {
                         Twig.error(it) { "Create account failed." }

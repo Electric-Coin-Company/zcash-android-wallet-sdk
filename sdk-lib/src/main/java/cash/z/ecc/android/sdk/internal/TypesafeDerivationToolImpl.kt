@@ -1,6 +1,5 @@
 package cash.z.ecc.android.sdk.internal
 
-import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.UnifiedFullViewingKey
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.ZcashNetwork
@@ -21,14 +20,14 @@ internal class TypesafeDerivationToolImpl(private val derivation: Derivation) : 
     override suspend fun deriveUnifiedSpendingKey(
         seed: ByteArray,
         network: ZcashNetwork,
-        account: Account
-    ): UnifiedSpendingKey = derivation.deriveUnifiedSpendingKey(seed, network, account)
+        accountIndex: Int
+    ): UnifiedSpendingKey = derivation.deriveUnifiedSpendingKey(seed, network, accountIndex)
 
     override suspend fun deriveUnifiedAddress(
         seed: ByteArray,
         network: ZcashNetwork,
-        account: Account
-    ): String = derivation.deriveUnifiedAddress(seed, network, account)
+        accountIndex: Int
+    ): String = derivation.deriveUnifiedAddress(seed, network, accountIndex)
 
     override suspend fun deriveUnifiedAddress(
         viewingKey: String,
@@ -44,6 +43,6 @@ internal class TypesafeDerivationToolImpl(private val derivation: Derivation) : 
         contextString: ByteArray,
         seed: ByteArray,
         network: ZcashNetwork,
-        account: Account
-    ): ByteArray = derivation.deriveArbitraryAccountKeyTypesafe(contextString, seed, network, account)
+        accountIndex: Int
+    ): ByteArray = derivation.deriveArbitraryAccountKeyTypesafe(contextString, seed, network, accountIndex)
 }

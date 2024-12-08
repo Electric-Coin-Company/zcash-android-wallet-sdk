@@ -6,6 +6,7 @@ import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.Synchronizer.Status.SYNCED
 import cash.z.ecc.android.sdk.WalletInitMode
 import cash.z.ecc.android.sdk.ext.onFirst
+import cash.z.ecc.android.sdk.fixture.AccountCreateSetupFixture
 import cash.z.ecc.android.sdk.fixture.AccountFixture
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.model.BlockHeight
@@ -109,7 +110,7 @@ class TestnetIntegrationTest : ScopedTest() {
             DerivationTool.getInstance().deriveUnifiedSpendingKey(
                 seed,
                 synchronizer.network,
-                AccountFixture.ZIP_32_ACCOUNT_INDEX
+                AccountFixture.ZIP_32_ACCOUNT_INDEX.toInt()
             )
         log("sending to address")
         synchronizer.createProposedTransactions(
@@ -148,14 +149,14 @@ class TestnetIntegrationTest : ScopedTest() {
         fun startUp() {
             synchronizer =
                 Synchronizer.newBlocking(
-                    context,
-                    ZcashNetwork.Testnet,
-                    lightWalletEndpoint =
-                    lightWalletEndpoint,
-                    seed = seed,
+                    alias = "TEST",
+                    context = context,
                     birthday = BlockHeight.new(BIRTHDAY_HEIGHT),
+                    lightWalletEndpoint = lightWalletEndpoint,
+                    setup = AccountCreateSetupFixture.new(),
                     // Using existing wallet init mode as simplification for the test
-                    walletInitMode = WalletInitMode.ExistingWallet
+                    walletInitMode = WalletInitMode.ExistingWallet,
+                    zcashNetwork = ZcashNetwork.Testnet,
                 )
         }
     }

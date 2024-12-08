@@ -11,14 +11,16 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Synchronizer.walletBalances: StateFlow<Map<Account, AccountBalance>?>` that is replacement for the removed 
   `orchardBalances`, `saplingBalances`, and `transparentBalance`
 
-### Changed 
-- `Synchronizer.orchardBalances`, `Synchronizer.saplingBalances`, and `Synchronizer.transparentBalance` have been 
-  replaced by `Synchronizer.walletBalances` that provides these balances based on `Account` 
+### Changed
+- `Account` data class works with `accountUuid: ByteArray` instead of the previous ZIP 32 account index
+- These functions from `DerivationTool` have been refactored to work with the ZIP 32 account index instead of the
+  `Account` data class: `deriveUnifiedSpendingKey`, `deriveUnifiedAddress`, `deriveArbitraryAccountKey`
 
 ### Removed
 - `Synchronizer.sendToAddress` and `Synchronizer.shieldFunds` have been removed, use 
   `Synchronizer.createProposedTransactions` and `Synchronizer.proposeShielding` instead
 - `Synchronizer.orchardBalances`, `Synchronizer.saplingBalances`, and `Synchronizer.transparentBalance`
+  (use `Synchronizer.walletBalances` instead).
 
 ## [2.2.6] - 2024-11-16
 

@@ -28,7 +28,7 @@ class UnifiedSpendingKey private constructor(
     private val bytes: FirstClassByteArray
 ) {
     internal constructor(uskJni: JniUnifiedSpendingKey) : this(
-        Account(uskJni.account),
+        Account.new(uskJni.accountUuid),
         FirstClassByteArray(uskJni.bytes.copyOf())
     )
 
