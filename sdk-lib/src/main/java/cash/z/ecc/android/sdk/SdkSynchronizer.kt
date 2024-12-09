@@ -59,6 +59,7 @@ import cash.z.ecc.android.sdk.model.TransactionSubmitResult
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
+import cash.z.ecc.android.sdk.tool.CheckpointTool
 import cash.z.ecc.android.sdk.type.AddressType
 import cash.z.ecc.android.sdk.type.AddressType.Shielded
 import cash.z.ecc.android.sdk.type.AddressType.Tex
@@ -121,6 +122,7 @@ import kotlin.time.Duration.Companion.seconds
  */
 @Suppress("TooManyFunctions", "LongParameterList")
 class SdkSynchronizer private constructor(
+    private val context: Context,
     private val synchronizerKey: SynchronizerKey,
     private val storage: DerivedDataRepository,
     private val txManager: OutboundTransactionManager,
@@ -152,6 +154,7 @@ class SdkSynchronizer private constructor(
          */
         @Suppress("LongParameterList")
         internal suspend fun new(
+            context: Context,
             zcashNetwork: ZcashNetwork,
             alias: String,
             repository: DerivedDataRepository,
@@ -168,6 +171,7 @@ class SdkSynchronizer private constructor(
                 checkForExistingSynchronizers(synchronizerKey)
 
                 SdkSynchronizer(
+                    context,
                     synchronizerKey,
                     repository,
                     txManager,
@@ -672,16 +676,36 @@ class SdkSynchronizer private constructor(
 
     override suspend fun importAccountByUfvk(
         purpose: AccountPurpose,
-        recoverUntil: Long?,
         setup: AccountImportSetup,
-        treeState: ByteArray,
     ): Account {
+        val chainTip: BlockHeight? =
+            when (val response = processor.downloader.getLatestBlockHeight()) {
+                is Response.Success -> {
+                    Twig.info { "Chain tip for recovery until param fetched: ${response.result.value}" }
+                    runCatching { response.result.toBlockHeight() }.getOrNull()
+                }
+                is Response.Failure -> {
+                    Twig.error {
+                        "Chain tip fetch for recovery until failed with: ${response.toThrowable()}"
+                    }
+                    null
+                }
+            }
+
+        val loadedCheckpoint =
+            CheckpointTool.loadNearest(
+                context = context,
+                network = network,
+                chainTip ?: network.saplingActivationHeight
+            )
+        val treeState: TreeState = loadedCheckpoint.treeState()
+
         return runCatching {
             backend.importAccountUfvk(
                 purpose = purpose,
-                recoverUntil = recoverUntil,
+                recoverUntil = chainTip?.value,
                 setup = setup,
-                treeState = treeState,
+                treeState = treeState.encoded,
             ).also {
                 refreshAccountsBus.emit(Unit)
             }

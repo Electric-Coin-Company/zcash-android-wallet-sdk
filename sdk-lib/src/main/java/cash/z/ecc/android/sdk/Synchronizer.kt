@@ -142,9 +142,7 @@ interface Synchronizer {
      * because the wallet has no information about how the UFVK was derived.
      *
      * @param purpose Metadata describing whether or not data required for spending should be tracked by the wallet
-     * @param recoverUntil An optional height at which the wallet should exit "recovery mode"
      * @param setup The account's setup information. See [AccountImportSetup] for more.
-     * @param treeState The tree state corresponding to the last block prior to the wallet's birthday height
      *
      * @return Account containing details about the imported account, including the unique account identifier for the
      * newly-created wallet database entry
@@ -153,9 +151,7 @@ interface Synchronizer {
      */
     suspend fun importAccountByUfvk(
         purpose: AccountPurpose,
-        recoverUntil: Long?,
         setup: AccountImportSetup,
-        treeState: ByteArray,
     ): Account
 
     /**
@@ -700,6 +696,7 @@ interface Synchronizer {
                 )
 
             return SdkSynchronizer.new(
+                context = context.applicationContext,
                 zcashNetwork = zcashNetwork,
                 alias = alias,
                 repository = repository,
