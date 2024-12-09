@@ -12,6 +12,10 @@ use jni::{
     sys::{jboolean, jbyteArray, jint, jlong, jobject, jobjectArray, jstring, JNI_FALSE, JNI_TRUE},
     JNIEnv,
 };
+use pczt::{
+    roles::{combiner::Combiner, prover::Prover},
+    Pczt,
+};
 use prost::Message;
 use secrecy::{ExposeSecret, SecretVec};
 use tor_rtcompat::BlockOn;
@@ -32,8 +36,9 @@ use zcash_client_backend::{
         chain::{scan_cached_blocks, CommitmentTreeRoot, ScanSummary},
         scanning::{ScanPriority, ScanRange},
         wallet::{
-            create_proposed_transactions, decrypt_and_store_transaction,
-            input_selection::GreedyInputSelector, propose_shielding, propose_transfer,
+            create_pczt_from_proposal, create_proposed_transactions, decrypt_and_store_transaction,
+            extract_and_store_transaction_from_pczt, input_selection::GreedyInputSelector,
+            propose_shielding, propose_transfer,
         },
         Account, AccountBalance, AccountBirthday, InputSource, SeedRelevance,
         WalletCommitmentTrees, WalletRead, WalletSummary, WalletWrite,
@@ -1956,6 +1961,137 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_createPro
             })?
             .into_raw(),
         )
+    });
+    unwrap_exc_or(&mut env, res, ptr::null_mut())
+}
+
+/// Creates a partially-created (unsigned without proofs) transaction from the given proposal.
+///
+/// Returns the partially created transaction in its serialized format.
+///
+/// Do not call this multiple times in parallel, or you will generate PCZT instances that, if
+/// finalized, would double-spend the same notes.
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_createPcztFromProposal<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _: JClass<'local>,
+    db_data: JString<'local>,
+    account_uuid: JByteArray<'local>,
+    proposal: JByteArray<'local>,
+    network_id: jint,
+) -> jbyteArray {
+    let res = catch_unwind(&mut env, |env| {
+        let _span = tracing::info_span!("RustBackend.createPcztFromProposal").entered();
+        let network = parse_network(network_id as u32)?;
+        let mut db_data = wallet_db(env, network, db_data)?;
+        let account_id = account_id_from_jni(&env, account_uuid)?;
+
+        let proposal = Proposal::decode(&env.convert_byte_array(proposal)?[..])
+            .map_err(|e| anyhow!("Invalid proposal: {}", e))?
+            .try_into_standard_proposal(&db_data)?;
+
+        if proposal.steps().len() == 1 {
+            let pczt = create_pczt_from_proposal::<_, _, Infallible, _, Infallible, _>(
+                &mut db_data,
+                &network,
+                account_id,
+                OvkPolicy::Sender,
+                &proposal,
+            )
+            .map_err(|e| anyhow!("Error creating PCZT from single-step proposal: {}", e))?;
+
+            Ok(utils::rust_bytes_to_java(&env, &pczt.serialize())?.into_raw())
+        } else {
+            Err(anyhow!(
+                "Multi-step proposals are not yet supported for PCZT generation."
+            ))
+        }
+    });
+    unwrap_exc_or(&mut env, res, ptr::null_mut())
+}
+
+/// Adds proofs to the given PCZT.
+///
+/// Returns the updated PCZT in its serialized format.
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_addProofsToPczt<'local>(
+    mut env: JNIEnv<'local>,
+    _: JClass<'local>,
+    pczt: JByteArray<'local>,
+    spend_params: JString<'local>,
+    output_params: JString<'local>,
+) -> jbyteArray {
+    let res = catch_unwind(&mut env, |env| {
+        let _span = tracing::info_span!("RustBackend.addProofsToPczt").entered();
+
+        let pczt = Pczt::parse(&env.convert_byte_array(pczt)?[..])
+            .map_err(|e| anyhow!("Invalid PCZT: {:?}", e))?;
+
+        let spend_params = utils::java_string_to_rust(env, &spend_params);
+        let output_params = utils::java_string_to_rust(env, &output_params);
+        let prover = LocalTxProver::new(Path::new(&spend_params), Path::new(&output_params));
+
+        let pczt_with_proofs = Prover::new(pczt)
+            .create_orchard_proof(&orchard::circuit::ProvingKey::build())
+            .map_err(|e| anyhow!("Failed to create Orchard proof for PCZT: {:?}", e))?
+            .create_sapling_proofs(&prover, &prover)
+            .map_err(|e| anyhow!("Failed to create Sapling proofs for PCZT: {:?}", e))?
+            .finish();
+
+        Ok(utils::rust_bytes_to_java(&env, &pczt_with_proofs.serialize())?.into_raw())
+    });
+    unwrap_exc_or(&mut env, res, ptr::null_mut())
+}
+
+/// Takes a PCZT that has been separately proven and signed, finalizes it, and stores it
+/// in the wallet.
+///
+/// Returns the txid of the completed transaction.
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_extractAndStoreTxFromPczt<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _: JClass<'local>,
+    db_data: JString<'local>,
+    pczt_with_proofs: JByteArray<'local>,
+    pczt_with_signatures: JByteArray<'local>,
+    spend_params: JString<'local>,
+    output_params: JString<'local>,
+    network_id: jint,
+) -> jbyteArray {
+    let res = catch_unwind(&mut env, |env| {
+        let _span = tracing::info_span!("RustBackend.extractAndStoreTxFromPczt").entered();
+        let network = parse_network(network_id as u32)?;
+        let mut db_data = wallet_db(env, network, db_data)?;
+
+        let pczt_with_proofs = Pczt::parse(&env.convert_byte_array(pczt_with_proofs)?[..])
+            .map_err(|e| anyhow!("Invalid PCZT-with-proofs: {:?}", e))?;
+
+        let pczt_with_signatures = Pczt::parse(&env.convert_byte_array(pczt_with_signatures)?[..])
+            .map_err(|e| anyhow!("Invalid PCZT-with-proofs: {:?}", e))?;
+
+        let spend_params = utils::java_string_to_rust(env, &spend_params);
+        let output_params = utils::java_string_to_rust(env, &output_params);
+        let prover = LocalTxProver::new(Path::new(&spend_params), Path::new(&output_params));
+        let (spend_vk, output_vk) = prover.verifying_keys();
+
+        let pczt = Combiner::new(vec![pczt_with_proofs, pczt_with_signatures])
+            .combine()
+            .map_err(|e| anyhow!("Failed to combine PCZTs: {:?}", e))?;
+
+        let txid = extract_and_store_transaction_from_pczt::<_, ()>(
+            &mut db_data,
+            pczt,
+            &spend_vk,
+            &output_vk,
+            &orchard::circuit::VerifyingKey::build(),
+        )
+        .map_err(|e| anyhow!("Failed to extract transaction from PCZT: {:?}", e))?;
+
+        Ok(utils::rust_bytes_to_java(env, txid.as_ref())?.into_raw())
     });
     unwrap_exc_or(&mut env, res, ptr::null_mut())
 }

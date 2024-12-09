@@ -5353,6 +5353,7 @@ dependencies = [
  "log-panics",
  "orchard",
  "paranoid-android",
+ "pczt",
  "prost",
  "rayon",
  "rusqlite",

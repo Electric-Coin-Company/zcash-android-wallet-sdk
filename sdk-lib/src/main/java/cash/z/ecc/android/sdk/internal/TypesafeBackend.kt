@@ -17,6 +17,7 @@ import cash.z.ecc.android.sdk.model.AccountImportSetup
 import cash.z.ecc.android.sdk.model.AccountUsk
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.FirstClassByteArray
+import cash.z.ecc.android.sdk.model.Pczt
 import cash.z.ecc.android.sdk.model.Proposal
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.Zatoshi
@@ -66,6 +67,43 @@ internal interface TypesafeBackend {
         proposal: Proposal,
         usk: UnifiedSpendingKey
     ): List<FirstClassByteArray>
+
+    /**
+     * Creates a partially-created (unsigned without proofs) transaction from the given proposal.
+     *
+     * Do not call this multiple times in parallel, or you will generate PCZT instances that, if
+     * finalized, would double-spend the same notes.
+     *
+     * @return the partially created transaction in its serialized format.
+     *
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    suspend fun createPcztFromProposal(
+        account: Account,
+        proposal: Proposal
+    ): Pczt
+
+    /**
+     * Adds proofs to the given PCZT.
+     *
+     * @return the updated PCZT in its serialized format.
+     *
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    suspend fun addProofsToPczt(pczt: Pczt): Pczt
+
+    /**
+     * Takes a PCZT that has been separately proven and signed, finalizes it, and stores
+     * it in the wallet.
+     *
+     * @return the txid of the completed transaction.
+     *
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    suspend fun extractAndStoreTxFromPczt(
+        pcztWithProofs: Pczt,
+        pcztWithSignatures: Pczt,
+    ): FirstClassByteArray
 
     @Throws(RustLayerException.GetCurrentAddressException::class)
     suspend fun getCurrentAddress(account: Account): String

@@ -19,6 +19,7 @@ import cash.z.ecc.android.sdk.model.AccountPurpose
 import cash.z.ecc.android.sdk.model.AccountUsk
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.FirstClassByteArray
+import cash.z.ecc.android.sdk.model.Pczt
 import cash.z.ecc.android.sdk.model.Proposal
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.Zatoshi
@@ -136,6 +137,25 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
             proposal.toUnsafe(),
             usk.copyBytes()
         ).map { FirstClassByteArray(it) }
+
+    override suspend fun createPcztFromProposal(
+        account: Account,
+        proposal: Proposal
+    ): Pczt =
+        Pczt(
+            backend.createPcztFromProposal(
+                account.accountUuid,
+                proposal.toUnsafe()
+            )
+        )
+
+    override suspend fun addProofsToPczt(pczt: Pczt): Pczt = Pczt(backend.addProofsToPczt(pczt.toByteArray()))
+
+    override suspend fun extractAndStoreTxFromPczt(
+        pcztWithProofs: Pczt,
+        pcztWithSignatures: Pczt
+    ): FirstClassByteArray =
+        FirstClassByteArray(backend.extractAndStoreTxFromPczt(pcztWithProofs.toByteArray(), pcztWithSignatures.toByteArray()))
 
     override suspend fun getCurrentAddress(account: Account): String {
         return runCatching {
