@@ -74,7 +74,7 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
     ): Proposal =
         Proposal.fromUnsafe(
             backend.proposeTransferFromUri(
-                account.accountUuid,
+                account.accountUuid.value,
                 uri
             )
         )
@@ -88,7 +88,7 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
     ): Proposal =
         Proposal.fromUnsafe(
             backend.proposeTransfer(
-                account.accountUuid,
+                account.accountUuid.value,
                 to,
                 value,
                 memo
@@ -102,7 +102,7 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
         transparentReceiver: String?
     ): Proposal? =
         backend.proposeShielding(
-            account.accountUuid,
+            account.accountUuid.value,
             shieldingThreshold,
             memo,
             transparentReceiver
@@ -123,14 +123,14 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
 
     override suspend fun getCurrentAddress(account: Account): String {
         return runCatching {
-            backend.getCurrentAddress(account.accountUuid)
+            backend.getCurrentAddress(account.accountUuid.value)
         }.onFailure {
             Twig.warn(it) { "Currently unable to get current address" }
         }.getOrElse { throw RustLayerException.GetCurrentAddressException(it) }
     }
 
     override suspend fun listTransparentReceivers(account: Account): List<String> {
-        return backend.listTransparentReceivers(account.accountUuid)
+        return backend.listTransparentReceivers(account.accountUuid.value)
     }
 
     override fun getBranchIdForHeight(height: BlockHeight): Long {

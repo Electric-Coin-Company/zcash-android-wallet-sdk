@@ -81,7 +81,7 @@ class TestWallet(
             zcashNetwork = network,
         ) as SdkSynchronizer
 
-    val available get() = synchronizer.walletBalances.value?.get(account)?.sapling?.available
+    val available get() = synchronizer.walletBalances.value?.get(account.accountUuid)?.sapling?.available
     val unifiedAddress =
         runBlocking { synchronizer.getUnifiedAddress(account) }
     val transparentAddress =

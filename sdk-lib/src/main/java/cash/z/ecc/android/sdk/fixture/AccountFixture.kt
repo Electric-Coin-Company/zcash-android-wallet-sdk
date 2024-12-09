@@ -1,6 +1,7 @@
 package cash.z.ecc.android.sdk.fixture
 
 import cash.z.ecc.android.sdk.model.Account
+import cash.z.ecc.android.sdk.model.AccountUuid
 import cash.z.ecc.android.sdk.model.Zip32AccountIndex
 import java.nio.ByteBuffer
 import java.util.UUID
@@ -31,7 +32,7 @@ object AccountFixture {
         ufvk: String = UFVK
     ) = Account(
         accountName = accountName,
-        accountUuid = accountUuid.toByteArray(),
+        accountUuid = AccountUuid.new(accountUuid.toByteArray()),
         hdAccountIndex = hdAccountIndex,
         keySource = keySource,
         seedFingerprint = seedFingerprint.toByteArray(),
@@ -42,7 +43,6 @@ object AccountFixture {
 private const val UUID_V4_BYTE_SIZE = 16
 
 // This provides us with a way to convert [UUID] to [ByteArray]
-@Suppress("UnusedPrivateMember")
 private fun UUID.toByteArray(): ByteArray =
     ByteBuffer
         .allocate(UUID_V4_BYTE_SIZE)

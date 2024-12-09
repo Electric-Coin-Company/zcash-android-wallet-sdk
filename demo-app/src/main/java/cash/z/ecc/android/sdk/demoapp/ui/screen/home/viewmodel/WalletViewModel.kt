@@ -21,6 +21,7 @@ import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.AccountBalance
+import cash.z.ecc.android.sdk.model.AccountUuid
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.ObserveFiatCurrencyResult
 import cash.z.ecc.android.sdk.model.PercentDecimal
@@ -513,7 +514,7 @@ private fun Synchronizer.toWalletSnapshot() =
         WalletSnapshot(
             flows[0] as Synchronizer.Status,
             flows[1] as CompactBlockProcessor.ProcessorInfo,
-            flows[2] as Map<Account, AccountBalance>,
+            flows[2] as Map<AccountUuid, AccountBalance>,
             exchangeRateUsd.currencyConversion?.priceOfZec?.toBigDecimal(),
             progressPercentDecimal,
             flows[5] as SynchronizerError?

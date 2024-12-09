@@ -102,7 +102,7 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
                             val account = it.getAccounts()[CURRENT_ZIP_32_ACCOUNT_INDEX.toInt()]
                             it.walletBalances.mapLatest { balances ->
                                 balances?.let {
-                                    val walletBalance = balances[account]!!.sapling
+                                    val walletBalance = balances[account.accountUuid]!!.sapling
                                     walletBalance
                                 }
                             }

@@ -20,6 +20,7 @@ import cash.z.ecc.android.sdk.model.AccountBalance
 import cash.z.ecc.android.sdk.model.AccountCreateSetup
 import cash.z.ecc.android.sdk.model.AccountImportSetup
 import cash.z.ecc.android.sdk.model.AccountPurpose
+import cash.z.ecc.android.sdk.model.AccountUuid
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.FastestServersResult
 import cash.z.ecc.android.sdk.model.ObserveFiatCurrencyResult
@@ -83,7 +84,7 @@ interface Synchronizer {
     /**
      * A stream of wallet balances
      */
-    val walletBalances: StateFlow<Map<Account, AccountBalance>?>
+    val walletBalances: StateFlow<Map<AccountUuid, AccountBalance>?>
 
     /**
      * The latest known USD/ZEC exchange rate, paired with the time it was queried.

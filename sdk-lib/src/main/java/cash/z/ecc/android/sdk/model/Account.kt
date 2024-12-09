@@ -1,7 +1,6 @@
 package cash.z.ecc.android.sdk.model
 
 import cash.z.ecc.android.sdk.internal.jni.JNI_ACCOUNT_SEED_FP_BYTES_SIZE
-import cash.z.ecc.android.sdk.internal.jni.JNI_ACCOUNT_UUID_BYTES_SIZE
 import cash.z.ecc.android.sdk.internal.model.JniAccount
 
 /**
@@ -22,7 +21,7 @@ import cash.z.ecc.android.sdk.internal.model.JniAccount
  * - Restoring a wallet from a backed-up seed.
  * - Importing the same viewing key into two different wallet instances.
  *
- * @param accountUuid The account identifier. Must be length 16.
+ * @param accountUuid The account identifier.
  * @param ufvk The account's Unified Full Viewing Key, if any.
  * @param accountName A human-readable name for the account
  * @param keySource A string identifier or other metadata describing the source of the seed
@@ -30,7 +29,7 @@ import cash.z.ecc.android.sdk.internal.model.JniAccount
  * @param hdAccountIndex ZIP 32 account index
  */
 data class Account internal constructor(
-    val accountUuid: ByteArray,
+    val accountUuid: AccountUuid,
     val ufvk: String?,
     val accountName: String?,
     val keySource: String?,
@@ -38,9 +37,6 @@ data class Account internal constructor(
     val hdAccountIndex: Zip32AccountIndex?,
 ) {
     init {
-        require(accountUuid.size == JNI_ACCOUNT_UUID_BYTES_SIZE) {
-            "Account UUID must be 16 bytes"
-        }
         seedFingerprint?.let {
             require(seedFingerprint.size == JNI_ACCOUNT_SEED_FP_BYTES_SIZE) {
                 "Seed fingerprint must be 32 bytes"
@@ -51,7 +47,7 @@ data class Account internal constructor(
     companion object {
         fun new(jniAccount: JniAccount): Account =
             Account(
-                accountUuid = jniAccount.accountUuid,
+                accountUuid = AccountUuid.new(jniAccount.accountUuid),
                 ufvk = jniAccount.ufvk,
                 accountName = jniAccount.accountName,
                 keySource = jniAccount.keySource,
@@ -65,7 +61,7 @@ data class Account internal constructor(
                     }
             )
 
-        fun new(accountUuid: ByteArray): Account =
+        fun new(accountUuid: AccountUuid): Account =
             Account(
                 accountUuid = accountUuid,
                 ufvk = null,
@@ -77,7 +73,7 @@ data class Account internal constructor(
     }
 
     override fun toString(): String {
-        return "Account(accountUuid=${accountUuid.contentToString()}," +
+        return "Account(accountUuid=$accountUuid," +
             " ufvk length=${ufvk?.length}," +
             " accountName=$accountName," +
             " keySource=$keySource," +
@@ -91,7 +87,7 @@ data class Account internal constructor(
 
         other as Account
 
-        if (!accountUuid.contentEquals(other.accountUuid)) return false
+        if (accountUuid != other.accountUuid) return false
         if (ufvk != other.ufvk) return false
         if (accountName != other.accountName) return false
         if (keySource != other.keySource) return false
@@ -107,7 +103,7 @@ data class Account internal constructor(
     }
 
     override fun hashCode(): Int {
-        var result = accountUuid.contentHashCode()
+        var result = accountUuid.hashCode()
         result = 31 * result + (ufvk?.hashCode() ?: 0)
         result = 31 * result + (accountName?.hashCode() ?: 0)
         result = 31 * result + (keySource?.hashCode() ?: 0)

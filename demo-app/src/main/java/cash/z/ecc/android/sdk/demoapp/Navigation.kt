@@ -110,7 +110,10 @@ internal fun ComposeActivity.Navigation() {
             if (null == synchronizer || null == walletSnapshot) {
                 // Display loading indicator
             } else {
-                val balance = walletSnapshot.balanceByAccount(walletViewModel.getCurrentAccount())
+                val balance =
+                    walletSnapshot.balanceByAccountUuid(
+                        accountUuid = walletViewModel.getCurrentAccount().accountUuid
+                    )
                 val scope = rememberCoroutineScope()
                 Balance(
                     exchangeRateUsd = walletSnapshot.exchangeRateUsd,
@@ -171,7 +174,10 @@ internal fun ComposeActivity.Navigation() {
             } else {
                 val currentAccount = walletViewModel.getCurrentAccount()
                 Send(
-                    accountBalance = walletSnapshot.balanceByAccount(currentAccount),
+                    accountBalance =
+                        walletSnapshot.balanceByAccountUuid(
+                            accountUuid = currentAccount.accountUuid
+                        ),
                     sendState = walletViewModel.sendState.collectAsStateWithLifecycle().value,
                     onSend = {
                         walletViewModel.send(it)

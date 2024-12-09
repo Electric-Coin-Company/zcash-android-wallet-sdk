@@ -121,7 +121,7 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
                             val account = it.getAccounts()[CURRENT_ZIP_32_ACCOUNT_INDEX.toInt()]
                             it.walletBalances.combine(it.exchangeRateUsd) { balances, rate ->
                                 balances?.let {
-                                    val walletBalance = balances[account]!!.sapling
+                                    val walletBalance = balances[account.accountUuid]!!.sapling
                                     walletBalance to
                                         rate.currencyConversion
                                             ?.priceOfZec
@@ -138,7 +138,7 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
                             val account = it.getAccounts()[CURRENT_ZIP_32_ACCOUNT_INDEX.toInt()]
                             it.walletBalances.combine(it.exchangeRateUsd) { balances, rate ->
                                 balances?.let {
-                                    val walletBalance = balances[account]!!.orchard
+                                    val walletBalance = balances[account.accountUuid]!!.orchard
                                     walletBalance to
                                         rate.currencyConversion
                                             ?.priceOfZec
@@ -154,7 +154,7 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
                             val account = it.getAccounts()[CURRENT_ZIP_32_ACCOUNT_INDEX.toInt()]
                             it.walletBalances.combine(it.exchangeRateUsd) { balances, rate ->
                                 balances?.let {
-                                    val walletBalance = balances[account]!!.unshielded
+                                    val walletBalance = balances[account.accountUuid]!!.unshielded
                                     walletBalance to
                                         rate.currencyConversion
                                             ?.priceOfZec
@@ -219,9 +219,21 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
             val rate = synchronizer.exchangeRateUsd.value.currencyConversion?.priceOfZec?.toBigDecimal()
             viewLifecycleOwner.lifecycleScope.launch {
                 val account = synchronizer.getAccounts()[CURRENT_ZIP_32_ACCOUNT_INDEX.toInt()]
-                onOrchardBalance(synchronizer.walletBalances.value?.let { Pair(it[account]!!.orchard, rate) })
-                onSaplingBalance(synchronizer.walletBalances.value?.let { Pair(it[account]!!.sapling, rate) })
-                onTransparentBalance(synchronizer.walletBalances.value?.let { Pair(it[account]!!.unshielded, rate) })
+                onOrchardBalance(
+                    synchronizer.walletBalances.value?.let {
+                        Pair(it[account.accountUuid]!!.orchard, rate)
+                    }
+                )
+                onSaplingBalance(
+                    synchronizer.walletBalances.value?.let {
+                        Pair(it[account.accountUuid]!!.sapling, rate)
+                    }
+                )
+                onTransparentBalance(
+                    synchronizer.walletBalances.value?.let {
+                        Pair(it[account.accountUuid]!!.unshielded, rate)
+                    }
+                )
             }
         }
     }

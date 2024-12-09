@@ -81,7 +81,7 @@ class TestnetIntegrationTest : ScopedTest() {
         runBlocking {
             var availableBalance: Zatoshi? = null
             synchronizer.walletBalances.onFirst {
-                availableBalance = it?.get(account)?.sapling?.available
+                availableBalance = it?.get(account.accountUuid)?.sapling?.available
             }
 
             synchronizer.status.filter { it == SYNCED }.onFirst {
