@@ -109,7 +109,7 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
                     DerivationTool.getInstance().deriveUnifiedSpendingKey(
                         seed = bip39Seed,
                         network = secretState.network,
-                        accountIndex = accountIndex.toInt()
+                        accountIndex = accountIndex
                     )
                 }
             }.stateIn(
@@ -385,7 +385,7 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
                 emptyList()
             )
 
-    fun getCurrentAccount(): Account = getAccounts()[CURRENT_ZIP_32_ACCOUNT_INDEX]
+    fun getCurrentAccount(): Account = getAccounts()[CURRENT_ZIP_32_ACCOUNT_INDEX.toInt()]
 
     companion object {
         private const val QUICK_REWIND_BLOCKS = 100

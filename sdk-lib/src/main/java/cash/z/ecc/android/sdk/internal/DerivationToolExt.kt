@@ -5,12 +5,13 @@ import cash.z.ecc.android.sdk.internal.model.JniUnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.UnifiedFullViewingKey
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.ZcashNetwork
+import cash.z.ecc.android.sdk.model.Zip32AccountIndex
 
 fun Derivation.deriveUnifiedAddress(
     seed: ByteArray,
     network: ZcashNetwork,
-    accountIndex: Int
-): String = deriveUnifiedAddress(seed, network.id, accountIndex)
+    accountIndex: Zip32AccountIndex
+): String = deriveUnifiedAddress(seed, network.id, accountIndex.index)
 
 fun Derivation.deriveUnifiedAddress(
     viewingKey: String,
@@ -20,14 +21,14 @@ fun Derivation.deriveUnifiedAddress(
 fun Derivation.deriveUnifiedSpendingKey(
     seed: ByteArray,
     network: ZcashNetwork,
-    accountIndex: Int
+    accountIndex: Zip32AccountIndex
 ): UnifiedSpendingKey =
     UnifiedSpendingKey(
         JniUnifiedSpendingKey(
             // FIXME: How to construct JniUnifiedSpendingKey without accountUuid?
             // FIXME: The tests fixture currently used to pass tests
             accountUuid = AccountFixture.new().accountUuid,
-            bytes = deriveUnifiedSpendingKey(seed, network.id, accountIndex)
+            bytes = deriveUnifiedSpendingKey(seed, network.id, accountIndex.index)
         )
     )
 
@@ -65,5 +66,5 @@ fun Derivation.deriveArbitraryAccountKeyTypesafe(
     contextString: ByteArray,
     seed: ByteArray,
     network: ZcashNetwork,
-    accountIndex: Int
-): ByteArray = deriveArbitraryAccountKey(contextString, seed, network.id, accountIndex)
+    accountIndex: Zip32AccountIndex
+): ByteArray = deriveArbitraryAccountKey(contextString, seed, network.id, accountIndex.index)

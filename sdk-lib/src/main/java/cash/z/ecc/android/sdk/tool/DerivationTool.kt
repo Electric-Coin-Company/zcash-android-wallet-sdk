@@ -7,6 +7,7 @@ import cash.z.ecc.android.sdk.internal.jni.RustDerivationTool
 import cash.z.ecc.android.sdk.model.UnifiedFullViewingKey
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.ZcashNetwork
+import cash.z.ecc.android.sdk.model.Zip32AccountIndex
 
 interface DerivationTool {
     /**
@@ -50,7 +51,7 @@ interface DerivationTool {
     suspend fun deriveUnifiedSpendingKey(
         seed: ByteArray,
         network: ZcashNetwork,
-        accountIndex: Int
+        accountIndex: Zip32AccountIndex
     ): UnifiedSpendingKey
 
     /**
@@ -64,7 +65,7 @@ interface DerivationTool {
     suspend fun deriveUnifiedAddress(
         seed: ByteArray,
         network: ZcashNetwork,
-        accountIndex: Int
+        accountIndex: Zip32AccountIndex
     ): String
 
     /**
@@ -114,7 +115,7 @@ interface DerivationTool {
         contextString: ByteArray,
         seed: ByteArray,
         network: ZcashNetwork,
-        accountIndex: Int
+        accountIndex: Zip32AccountIndex
     ): ByteArray
 
     companion object {

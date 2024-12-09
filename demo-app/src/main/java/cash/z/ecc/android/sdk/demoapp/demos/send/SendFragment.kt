@@ -99,7 +99,7 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
                     sharedViewModel.synchronizerFlow
                         .filterNotNull()
                         .flatMapLatest {
-                            val account = it.getAccounts()[CURRENT_ZIP_32_ACCOUNT_INDEX]
+                            val account = it.getAccounts()[CURRENT_ZIP_32_ACCOUNT_INDEX.toInt()]
                             it.walletBalances.mapLatest { balances ->
                                 balances?.let {
                                     val walletBalance = balances[account]!!.sapling

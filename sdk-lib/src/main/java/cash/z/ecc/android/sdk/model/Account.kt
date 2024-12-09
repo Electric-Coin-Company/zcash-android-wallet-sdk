@@ -35,7 +35,7 @@ data class Account internal constructor(
     val accountName: String?,
     val keySource: String?,
     val seedFingerprint: ByteArray?,
-    val hdAccountIndex: Long?,
+    val hdAccountIndex: Zip32AccountIndex?,
 ) {
     init {
         require(accountUuid.size == JNI_ACCOUNT_UUID_BYTES_SIZE) {
@@ -57,7 +57,11 @@ data class Account internal constructor(
                 keySource = jniAccount.keySource,
                 seedFingerprint = jniAccount.seedFingerprint,
                 // We use -1L to represent NULL across JNI
-                hdAccountIndex = if (jniAccount.hdAccountIndex == -1L) null else jniAccount.hdAccountIndex
+                hdAccountIndex = if (jniAccount.hdAccountIndex == -1L) {
+                    null
+                } else {
+                    Zip32AccountIndex.new(jniAccount.hdAccountIndex)
+                }
             )
 
         fun new(accountUuid: ByteArray): Account =

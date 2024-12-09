@@ -1,6 +1,7 @@
 package cash.z.ecc.android.sdk.fixture
 
 import cash.z.ecc.android.sdk.model.Account
+import cash.z.ecc.android.sdk.model.Zip32AccountIndex
 import java.nio.ByteBuffer
 import java.util.UUID
 
@@ -18,7 +19,7 @@ object AccountFixture {
     const val UFVK = "ufvk1d68jqrx0q98rl0w8f5085y898x0p9z5k0sksqre87949w9494949"
     const val KEY_SOURCE = "ZCASH"
     const val SEED_FINGER_PRINT = "8ac5439f8ac5439f8ac5439f8ac5439f"
-    const val HD_ACCOUNT_INDEX = ZIP_32_ACCOUNT_INDEX
+    val HD_ACCOUNT_INDEX = Zip32AccountIndex.new(ZIP_32_ACCOUNT_INDEX)
 
     fun new(accountId: UUID = ACCOUNT_UUID) =
         Account(

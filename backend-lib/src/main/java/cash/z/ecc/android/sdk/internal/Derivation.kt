@@ -11,13 +11,13 @@ interface Derivation {
     fun deriveUnifiedAddress(
         seed: ByteArray,
         networkId: Int,
-        accountIndex: Int
+        accountIndex: Long
     ): String
 
     fun deriveUnifiedSpendingKey(
         seed: ByteArray,
         networkId: Int,
-        accountIndex: Int
+        accountIndex: Long
     ): ByteArray
 
     /**
@@ -66,7 +66,7 @@ interface Derivation {
         contextString: ByteArray,
         seed: ByteArray,
         networkId: Int,
-        accountIndex: Int
+        accountIndex: Long
     ): ByteArray
 
     companion object {

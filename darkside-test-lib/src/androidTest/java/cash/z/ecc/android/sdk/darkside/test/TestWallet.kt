@@ -64,7 +64,7 @@ class TestWallet(
             DerivationTool.getInstance().deriveUnifiedSpendingKey(
                 seed = seed,
                 network = network,
-                accountIndex = AccountFixture.new().hdAccountIndex!!.toInt()
+                accountIndex = AccountFixture.new().hdAccountIndex!!
             )
         }
     val synchronizer: SdkSynchronizer =

@@ -18,13 +18,13 @@ class RustDerivationTool private constructor() : Derivation {
     override fun deriveUnifiedSpendingKey(
         seed: ByteArray,
         networkId: Int,
-        accountIndex: Int
+        accountIndex: Long
     ): ByteArray = deriveSpendingKey(seed, accountIndex, networkId = networkId)
 
     override fun deriveUnifiedAddress(
         seed: ByteArray,
         networkId: Int,
-        accountIndex: Int
+        accountIndex: Long
     ): String = deriveUnifiedAddressFromSeed(seed, accountIndex = accountIndex, networkId = networkId)
 
     /**
@@ -49,7 +49,7 @@ class RustDerivationTool private constructor() : Derivation {
         contextString: ByteArray,
         seed: ByteArray,
         networkId: Int,
-        accountIndex: Int
+        accountIndex: Long
     ): ByteArray =
         deriveArbitraryAccountKeyFromSeed(
             contextString = contextString,
@@ -68,7 +68,7 @@ class RustDerivationTool private constructor() : Derivation {
         @JvmStatic
         private external fun deriveSpendingKey(
             seed: ByteArray,
-            accountIndex: Int,
+            accountIndex: Long,
             networkId: Int
         ): ByteArray
 
@@ -88,7 +88,7 @@ class RustDerivationTool private constructor() : Derivation {
         @JvmStatic
         private external fun deriveUnifiedAddressFromSeed(
             seed: ByteArray,
-            accountIndex: Int,
+            accountIndex: Long,
             networkId: Int
         ): String
 
@@ -108,7 +108,7 @@ class RustDerivationTool private constructor() : Derivation {
         private external fun deriveArbitraryAccountKeyFromSeed(
             contextString: ByteArray,
             seed: ByteArray,
-            accountIndex: Int,
+            accountIndex: Long,
             networkId: Int
         ): ByteArray
     }
