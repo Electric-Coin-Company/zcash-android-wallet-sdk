@@ -343,16 +343,14 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getAccoun
 
 fn encode_usk<'a>(
     env: &mut JNIEnv<'a>,
-    account_uuid: AccountUuid,
     usk: UnifiedSpendingKey,
 ) -> jni::errors::Result<JObject<'a>> {
     let encoded = SecretVec::new(usk.to_bytes(Era::Orchard));
     let bytes = env.byte_array_from_slice(encoded.expose_secret())?;
     env.new_object(
         "cash/z/ecc/android/sdk/internal/model/JniUnifiedSpendingKey",
-        "(I[B)V",
+        "([B)V",
         &[
-            (&env.byte_array_from_slice(account_uuid.expose_uuid().as_bytes())?).into(),
             (&bytes).into(),
         ],
     )
@@ -424,7 +422,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_createAcc
         let account_name = java_string_to_rust(env, &account_name);
         let key_source = java_nullable_string_to_rust(env, &key_source);
 
-        let (account_uuid, usk) = db_data
+        let (_account_uuid, usk) = db_data
             .create_account(
                 &account_name,
                 &seed,
@@ -433,7 +431,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_createAcc
             )
             .map_err(|e| anyhow!("Error while initializing accounts: {}", e))?;
 
-        Ok(encode_usk(env, account_uuid, usk)?.into_raw())
+        Ok(encode_usk(env, usk)?.into_raw())
     });
     unwrap_exc_or(&mut env, res, ptr::null_mut())
 }
