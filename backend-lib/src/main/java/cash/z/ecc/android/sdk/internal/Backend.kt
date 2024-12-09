@@ -24,7 +24,7 @@ interface Backend {
     suspend fun initBlockMetaDb(): Int
 
     suspend fun proposeTransfer(
-        accountIndex: Int,
+        accountUuid: ByteArray,
         to: String,
         value: Long,
         memo: ByteArray? = null
@@ -35,12 +35,12 @@ interface Backend {
      */
     @Throws(RuntimeException::class)
     suspend fun proposeTransferFromUri(
-        accountIndex: Int,
+        accountUuid: ByteArray,
         uri: String
     ): ProposalUnsafe
 
     suspend fun proposeShielding(
-        accountIndex: Int,
+        accountUuid: ByteArray,
         shieldingThreshold: Long,
         memo: ByteArray? = null,
         transparentReceiver: String? = null
@@ -85,10 +85,26 @@ interface Backend {
      */
     @Throws(RuntimeException::class)
     suspend fun createAccount(
+        accountName: String,
+        keySource: String?,
         seed: ByteArray,
         treeState: ByteArray,
-        recoverUntil: Long?
+        recoverUntil: Long?,
     ): JniUnifiedSpendingKey
+
+    /**
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    @Throws(RuntimeException::class)
+    @Suppress("LongParameterList")
+    suspend fun importAccountUfvk(
+        accountName: String,
+        keySource: String?,
+        ufvk: String,
+        treeState: ByteArray,
+        recoverUntil: Long?,
+        purpose: Int
+    ): JniAccount
 
     /**
      * @throws RuntimeException as a common indicator of the operation failure
@@ -109,13 +125,13 @@ interface Backend {
     fun isValidTexAddr(addr: String): Boolean
 
     @Throws(RuntimeException::class)
-    suspend fun getCurrentAddress(accountIndex: Int): String
+    suspend fun getCurrentAddress(accountUuid: ByteArray): String
 
     fun getTransparentReceiver(ua: String): String?
 
     fun getSaplingReceiver(ua: String): String?
 
-    suspend fun listTransparentReceivers(accountIndex: Int): List<String>
+    suspend fun listTransparentReceivers(accountUuid: ByteArray): List<String>
 
     fun getBranchIdForHeight(height: Long): Long
 

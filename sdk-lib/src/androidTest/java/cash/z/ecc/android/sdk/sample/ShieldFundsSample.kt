@@ -37,7 +37,7 @@ class ShieldFundsSample {
 
             Assert.assertEquals(
                 Zatoshi(5),
-                wallet.synchronizer.walletBalances.value?.get(AccountFixture.new())?.sapling?.available
+                wallet.synchronizer.walletBalances.value?.get(AccountFixture.new().accountUuid)?.sapling?.available
             )
         }
 }

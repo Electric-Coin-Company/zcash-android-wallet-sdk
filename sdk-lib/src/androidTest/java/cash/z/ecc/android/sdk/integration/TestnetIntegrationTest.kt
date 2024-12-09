@@ -6,6 +6,7 @@ import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.Synchronizer.Status.SYNCED
 import cash.z.ecc.android.sdk.WalletInitMode
 import cash.z.ecc.android.sdk.ext.onFirst
+import cash.z.ecc.android.sdk.fixture.AccountCreateSetupFixture
 import cash.z.ecc.android.sdk.fixture.AccountFixture
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.model.BlockHeight
@@ -80,7 +81,7 @@ class TestnetIntegrationTest : ScopedTest() {
         runBlocking {
             var availableBalance: Zatoshi? = null
             synchronizer.walletBalances.onFirst {
-                availableBalance = it?.get(account)?.sapling?.available
+                availableBalance = it?.get(account.accountUuid)?.sapling?.available
             }
 
             synchronizer.status.filter { it == SYNCED }.onFirst {
@@ -105,16 +106,17 @@ class TestnetIntegrationTest : ScopedTest() {
         }
 
     private suspend fun sendFunds(): Boolean {
+        val account = AccountFixture.new()
         val spendingKey =
             DerivationTool.getInstance().deriveUnifiedSpendingKey(
                 seed,
                 synchronizer.network,
-                AccountFixture.ZIP_32_ACCOUNT_INDEX
+                account.hdAccountIndex!!
             )
         log("sending to address")
         synchronizer.createProposedTransactions(
             synchronizer.proposeTransfer(
-                spendingKey.account,
+                account,
                 toAddress,
                 Zatoshi(10_000L),
                 "first mainnet tx from the SDK"
@@ -148,14 +150,14 @@ class TestnetIntegrationTest : ScopedTest() {
         fun startUp() {
             synchronizer =
                 Synchronizer.newBlocking(
-                    context,
-                    ZcashNetwork.Testnet,
-                    lightWalletEndpoint =
-                    lightWalletEndpoint,
-                    seed = seed,
+                    alias = "TEST",
+                    context = context,
                     birthday = BlockHeight.new(BIRTHDAY_HEIGHT),
+                    lightWalletEndpoint = lightWalletEndpoint,
+                    setup = AccountCreateSetupFixture.new(),
                     // Using existing wallet init mode as simplification for the test
-                    walletInitMode = WalletInitMode.ExistingWallet
+                    walletInitMode = WalletInitMode.ExistingWallet,
+                    zcashNetwork = ZcashNetwork.Testnet,
                 )
         }
     }

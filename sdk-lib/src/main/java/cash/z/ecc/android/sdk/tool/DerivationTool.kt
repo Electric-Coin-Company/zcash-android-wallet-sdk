@@ -4,10 +4,10 @@ import cash.z.ecc.android.sdk.internal.Derivation
 import cash.z.ecc.android.sdk.internal.SuspendingLazy
 import cash.z.ecc.android.sdk.internal.TypesafeDerivationToolImpl
 import cash.z.ecc.android.sdk.internal.jni.RustDerivationTool
-import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.UnifiedFullViewingKey
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.ZcashNetwork
+import cash.z.ecc.android.sdk.model.Zip32AccountIndex
 
 interface DerivationTool {
     /**
@@ -44,28 +44,28 @@ interface DerivationTool {
      * the returned spending key in a secure fashion.
      *
      * @param seed the seed from which to derive spending keys.
-     * @param account the account to derive.
+     * @param accountIndex the ZIP 32 account index to derive.
      *
      * @return the unified spending key for the account.
      */
     suspend fun deriveUnifiedSpendingKey(
         seed: ByteArray,
         network: ZcashNetwork,
-        account: Account
+        accountIndex: Zip32AccountIndex
     ): UnifiedSpendingKey
 
     /**
      * Given a seed and account index, return the associated Unified Address.
      *
      * @param seed the seed from which to derive the address.
-     * @param account the index of the account to use for deriving the address.
+     * @param accountIndex the ZIP 32 account index to use for deriving the address.
      *
      * @return the address that corresponds to the seed and account index.
      */
     suspend fun deriveUnifiedAddress(
         seed: ByteArray,
         network: ZcashNetwork,
-        account: Account
+        accountIndex: Zip32AccountIndex
     ): String
 
     /**
@@ -107,13 +107,15 @@ interface DerivationTool {
      *
      * @param contextString a globally-unique non-empty sequence of at most 252 bytes that
      *        identifies the desired context.
+     * @param seed the seed from which to derive the arbitrary key.
+     * @param accountIndex the ZIP 32 account index for which to derive the arbitrary key.
      * @return an array of 32 bytes.
      */
     suspend fun deriveArbitraryAccountKey(
         contextString: ByteArray,
         seed: ByteArray,
         network: ZcashNetwork,
-        account: Account
+        accountIndex: Zip32AccountIndex
     ): ByteArray
 
     companion object {

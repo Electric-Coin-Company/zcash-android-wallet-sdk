@@ -8,6 +8,7 @@ import cash.z.ecc.android.sdk.demoapp.ext.defaultForNetwork
 import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.ext.convertZecToZatoshi
 import cash.z.ecc.android.sdk.ext.toHex
+import cash.z.ecc.android.sdk.fixture.AccountCreateSetupFixture
 import cash.z.ecc.android.sdk.fixture.AccountFixture
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.model.BlockHeight
@@ -172,6 +173,7 @@ class SampleCodeTest {
     @Test
     fun submitTransaction(): Unit =
         runBlocking {
+            val account = AccountFixture.new()
             val amount = 0.123.convertZecToZatoshi()
             val address = "ztestsapling1tklsjr0wyw0d58f3p7wufvrj2cyfv6q6caumyueadq8qvqt8lda6v6tpx474rfru9y6u75u7qnw"
             val memo = "Test Transaction"
@@ -179,11 +181,11 @@ class SampleCodeTest {
                 DerivationTool.getInstance().deriveUnifiedSpendingKey(
                     seed,
                     ZcashNetwork.Mainnet,
-                    AccountFixture.new()
+                    account.hdAccountIndex!!
                 )
             synchronizer.createProposedTransactions(
                 synchronizer.proposeTransfer(
-                    spendingKey.account,
+                    account,
                     address,
                     amount,
                     memo
@@ -199,19 +201,20 @@ class SampleCodeTest {
     companion object {
         private val seed = "Inserting seed for test purposes".toByteArray()
         private val lightwalletdHost = LightWalletEndpoint.Mainnet
+        private val setup = AccountCreateSetupFixture.new(seed = seed)
 
         private val context = InstrumentationRegistry.getInstrumentation().targetContext
         private val synchronizer: Synchronizer =
             run {
                 val network = ZcashNetwork.fromResources(context)
                 Synchronizer.newBlocking(
-                    context,
-                    network,
-                    lightWalletEndpoint = LightWalletEndpoint.defaultForNetwork(network),
-                    seed = seed,
                     birthday = null,
+                    context = context,
+                    lightWalletEndpoint = LightWalletEndpoint.defaultForNetwork(network),
+                    setup = setup,
                     // Using existing wallet init mode as simplification for the test
-                    walletInitMode = WalletInitMode.ExistingWallet
+                    walletInitMode = WalletInitMode.ExistingWallet,
+                    zcashNetwork = network,
                 )
             }
 

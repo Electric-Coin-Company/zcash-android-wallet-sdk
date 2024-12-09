@@ -14,12 +14,8 @@ import androidx.annotation.Keep
 @Keep
 class JniUnifiedSpendingKey(
     /**
-     * The [ZIP 32](https://zips.z.cash/zip-0032) account index used to derive this key.
-     */
-    val account: Int,
-    /**
      * The binary encoding of the [ZIP 316](https://zips.z.cash/zip-0316) Unified Spending
-     * Key for [account].
+     * Key for the selected account.
      *
      * This encoding **MUST NOT** be exposed to users. It is an internal encoding that is
      * inherently unstable, and only intended to be passed between the SDK and the storage
@@ -28,7 +24,7 @@ class JniUnifiedSpendingKey(
     val bytes: ByteArray
 ) {
     // Override to prevent leaking key to logs
-    override fun toString() = "JniUnifiedSpendingKey(account=$account, bytes=***)"
+    override fun toString() = "JniUnifiedSpendingKey(bytes=***)"
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -36,15 +32,10 @@ class JniUnifiedSpendingKey(
 
         other as JniUnifiedSpendingKey
 
-        if (account != other.account) return false
-        if (!bytes.contentEquals(other.bytes)) return false
-
-        return true
+        return bytes.contentEquals(other.bytes)
     }
 
     override fun hashCode(): Int {
-        var result = account.hashCode()
-        result = 31 * result + bytes.hashCode()
-        return result
+        return bytes.contentHashCode()
     }
 }

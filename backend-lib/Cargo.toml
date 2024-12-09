@@ -32,6 +32,7 @@ rayon = "1.7"
 # JNI
 anyhow = "1"
 jni = { version = "0.21", default-features = false }
+uuid = "1"
 
 # Logging
 log-panics = "2.0.0"
@@ -69,3 +70,10 @@ xz2 = { version = "0.1", features = ["static"] }
 name = "zcashwalletsdk"
 path = "src/main/rust/lib.rs"
 crate-type = ["staticlib", "cdylib"]
+
+[patch.crates-io]
+zcash_address = { git = "https://github.com/zcash/librustzcash", rev = "f1724c436a99208e612d8dec2119613fd280492d" }
+zcash_client_backend = { git = "https://github.com/zcash/librustzcash", rev = "f1724c436a99208e612d8dec2119613fd280492d" }
+zcash_client_sqlite = { git = "https://github.com/zcash/librustzcash", rev = "f1724c436a99208e612d8dec2119613fd280492d" }
+zcash_primitives = { git = "https://github.com/zcash/librustzcash", rev = "f1724c436a99208e612d8dec2119613fd280492d" }
+zcash_proofs = { git = "https://github.com/zcash/librustzcash", rev = "f1724c436a99208e612d8dec2119613fd280492d" }

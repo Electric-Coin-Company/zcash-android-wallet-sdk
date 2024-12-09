@@ -89,14 +89,14 @@ internal class FakeRustBackend(
     }
 
     override suspend fun proposeTransferFromUri(
-        accountIndex: Int,
+        accountUuid: ByteArray,
         uri: String
     ): ProposalUnsafe {
         error("Intentionally not implemented yet.")
     }
 
     override suspend fun proposeTransfer(
-        accountIndex: Int,
+        accountUuid: ByteArray,
         to: String,
         value: Long,
         memo: ByteArray?
@@ -105,7 +105,7 @@ internal class FakeRustBackend(
     }
 
     override suspend fun proposeShielding(
-        accountIndex: Int,
+        accountUuid: ByteArray,
         shieldingThreshold: Long,
         memo: ByteArray?,
         transparentReceiver: String?
@@ -136,10 +136,23 @@ internal class FakeRustBackend(
     }
 
     override suspend fun createAccount(
+        accountName: String,
+        keySource: String?,
         seed: ByteArray,
         treeState: ByteArray,
-        recoverUntil: Long?
+        recoverUntil: Long?,
     ): JniUnifiedSpendingKey {
+        error("Intentionally not implemented yet.")
+    }
+
+    override suspend fun importAccountUfvk(
+        accountName: String,
+        keySource: String?,
+        ufvk: String,
+        treeState: ByteArray,
+        recoverUntil: Long?,
+        purpose: Int
+    ): JniAccount {
         error("Intentionally not implemented yet.")
     }
 
@@ -159,7 +172,7 @@ internal class FakeRustBackend(
         error("Intentionally not implemented in mocked FakeRustBackend implementation.")
     }
 
-    override suspend fun getCurrentAddress(accountIndex: Int): String {
+    override suspend fun getCurrentAddress(accountUuid: ByteArray): String {
         error("Intentionally not implemented yet.")
     }
 
@@ -171,7 +184,7 @@ internal class FakeRustBackend(
         error("Intentionally not implemented yet.")
     }
 
-    override suspend fun listTransparentReceivers(accountIndex: Int): List<String> {
+    override suspend fun listTransparentReceivers(accountUuid: ByteArray): List<String> {
         error("Intentionally not implemented yet.")
     }
 
