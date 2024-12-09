@@ -120,6 +120,24 @@ internal class FakeRustBackend(
         error("Intentionally not implemented yet.")
     }
 
+    override suspend fun createPcztFromProposal(
+        accountUuid: ByteArray,
+        proposal: ProposalUnsafe
+    ): ByteArray {
+        error("Intentionally not implemented yet.")
+    }
+
+    override suspend fun addProofsToPczt(pczt: ByteArray): ByteArray {
+        error("Intentionally not implemented yet.")
+    }
+
+    override suspend fun extractAndStoreTxFromPczt(
+        pcztWithProofs: ByteArray,
+        pcztWithSignatures: ByteArray
+    ): ByteArray {
+        error("Intentionally not implemented yet.")
+    }
+
     override suspend fun decryptAndStoreTransaction(
         tx: ByteArray,
         minedHeight: Long?
