@@ -106,16 +106,17 @@ class TestnetIntegrationTest : ScopedTest() {
         }
 
     private suspend fun sendFunds(): Boolean {
+        val account = AccountFixture.new()
         val spendingKey =
             DerivationTool.getInstance().deriveUnifiedSpendingKey(
                 seed,
                 synchronizer.network,
-                AccountFixture.ZIP_32_ACCOUNT_INDEX.toInt()
+                account.hdAccountIndex!!
             )
         log("sending to address")
         synchronizer.createProposedTransactions(
             synchronizer.proposeTransfer(
-                spendingKey.account,
+                account,
                 toAddress,
                 Zatoshi(10_000L),
                 "first mainnet tx from the SDK"

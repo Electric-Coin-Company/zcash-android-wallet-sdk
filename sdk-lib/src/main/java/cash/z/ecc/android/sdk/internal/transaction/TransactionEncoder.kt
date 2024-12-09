@@ -25,6 +25,7 @@ internal interface TransactionEncoder {
      */
     suspend fun createTransaction(
         usk: UnifiedSpendingKey,
+        account: Account,
         amount: Zatoshi,
         recipient: TransactionRecipient,
         memo: ByteArray? = byteArrayOf()
@@ -38,6 +39,7 @@ internal interface TransactionEncoder {
      */
     suspend fun createShieldingTransaction(
         usk: UnifiedSpendingKey,
+        account: Account,
         recipient: TransactionRecipient,
         memo: ByteArray? = byteArrayOf()
     ): EncodedTransaction

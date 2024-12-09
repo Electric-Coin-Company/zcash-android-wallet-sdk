@@ -14,12 +14,8 @@ import cash.z.ecc.android.sdk.internal.model.JniUnifiedSpendingKey
  */
 class UnifiedSpendingKey private constructor(
     /**
-     * The [ZIP 32](https://zips.z.cash/zip-0032) account index used to derive this key.
-     */
-    val account: Account,
-    /**
      * The binary encoding of the [ZIP 316](https://zips.z.cash/zip-0316) Unified Spending
-     * Key for [account].
+     * Key for the selected account.
      *
      * This encoding **MUST NOT** be exposed to users. It is an internal encoding that is
      * inherently unstable, and only intended to be passed between the SDK and the storage
@@ -28,7 +24,6 @@ class UnifiedSpendingKey private constructor(
     private val bytes: FirstClassByteArray
 ) {
     internal constructor(uskJni: JniUnifiedSpendingKey) : this(
-        Account.new(uskJni.accountUuid),
         FirstClassByteArray(uskJni.bytes.copyOf())
     )
 
@@ -43,25 +38,7 @@ class UnifiedSpendingKey private constructor(
     fun copyBytes() = bytes.byteArray.copyOf()
 
     // Override to prevent leaking key to logs
-    override fun toString() = "UnifiedSpendingKey(account=$account)"
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-
-        other as UnifiedSpendingKey
-
-        if (account != other.account) return false
-        if (bytes != other.bytes) return false
-
-        return true
-    }
-
-    override fun hashCode(): Int {
-        var result = account.hashCode()
-        result = 31 * result + bytes.hashCode()
-        return result
-    }
+    override fun toString() = "UnifiedSpendingKey(bytes=***)"
 
     companion object {
         /**
@@ -71,15 +48,12 @@ class UnifiedSpendingKey private constructor(
          *
          * @return A validated UnifiedSpendingKey.
          */
-        suspend fun new(
-            account: Account,
-            bytes: ByteArray
-        ): Result<UnifiedSpendingKey> {
+        suspend fun new(bytes: ByteArray): UnifiedSpendingKey {
             val bytesCopy = bytes.copyOf()
             RustBackend.loadLibrary()
-            return runCatching {
+            return run {
                 require(RustBackend.validateUnifiedSpendingKey(bytesCopy))
-                UnifiedSpendingKey(account, FirstClassByteArray(bytesCopy))
+                UnifiedSpendingKey(FirstClassByteArray(bytesCopy))
             }
         }
     }

@@ -13,13 +13,13 @@ class UnifiedSpendingKeyTest {
     fun factory_copies_bytes() =
         runTest {
             val spendingKey = WalletFixture.getUnifiedSpendingKey()
-            val expected = spendingKey.copyOf()
+            val expected = spendingKey.copyBytes().copyOf()
 
-            val bytes = spendingKey
-            val newSpendingKey = UnifiedSpendingKey.new(spendingKey.account, bytes)
+            val bytes = spendingKey.copyBytes()
+            val newSpendingKey = UnifiedSpendingKey.new(bytes)
             bytes.clear()
 
-            assertContentEquals(expected, newSpendingKey.getOrThrow().copyBytes())
+            assertContentEquals(expected, newSpendingKey.copyBytes())
         }
 
     @Test
@@ -29,11 +29,11 @@ class UnifiedSpendingKeyTest {
             val spendingKey = WalletFixture.getUnifiedSpendingKey()
 
             val expected = spendingKey.copyBytes()
-            val newSpendingKey = UnifiedSpendingKey.new(spendingKey.account, expected)
+            val newSpendingKey = UnifiedSpendingKey.new(expected)
 
-            newSpendingKey.getOrThrow().copyBytes().clear()
+            newSpendingKey.copyBytes().clear()
 
-            assertContentEquals(expected, newSpendingKey.getOrThrow().copyBytes())
+            assertContentEquals(expected, newSpendingKey.copyBytes())
         }
 
     @Test

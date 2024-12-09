@@ -212,10 +212,12 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
         mutableSendState.value = SendState.Sending
 
         val synchronizer = synchronizer.value
+
         if (null != synchronizer) {
+            val account = getCurrentAccount()
             viewModelScope.launch {
                 val spendingKey = spendingKey.filterNotNull().first()
-                runCatching { synchronizer.send(spendingKey, zecSend) }
+                runCatching { synchronizer.send(spendingKey, account, zecSend) }
                     .onSuccess { mutableSendState.value = SendState.Sent(it.toList()) }
                     .onFailure { mutableSendState.value = SendState.Error(it) }
             }
@@ -235,11 +237,11 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
         val synchronizer = synchronizer.value
 
         return if (null != synchronizer) {
+            val account = getCurrentAccount()
             // Calling the proposal API within a blocking coroutine should be fine for the showcase purpose
             runBlocking {
-                val spendingKey = spendingKey.filterNotNull().first()
                 kotlin.runCatching {
-                    synchronizer.proposeSend(spendingKey.account, zecSend)
+                    synchronizer.proposeSend(account, zecSend)
                 }.onFailure {
                     Twig.error(it) { "Failed to get transaction proposal" }
                 }.getOrNull()
@@ -260,11 +262,11 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
         val synchronizer = synchronizer.value
 
         return if (null != synchronizer) {
+            val account = getCurrentAccount()
             // Calling the proposal API within a blocking coroutine should be fine for the showcase purpose
             runBlocking {
-                val spendingKey = spendingKey.filterNotNull().first()
                 kotlin.runCatching {
-                    synchronizer.proposeFulfillingPaymentUri(spendingKey.account, uri)
+                    synchronizer.proposeFulfillingPaymentUri(account, uri)
                 }.onFailure {
                     Twig.error(it) { "Failed to get transaction proposal from uri" }
                 }.getOrNull()
@@ -288,11 +290,12 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
 
         val synchronizer = synchronizer.value
         if (null != synchronizer) {
+            val account = getCurrentAccount()
             viewModelScope.launch {
                 val spendingKey = spendingKey.filterNotNull().first()
                 kotlin.runCatching {
                     @Suppress("MagicNumber")
-                    synchronizer.proposeShielding(spendingKey.account, Zatoshi(100000))?.let {
+                    synchronizer.proposeShielding(account, Zatoshi(100000))?.let {
                         synchronizer.createProposedTransactions(
                             it,
                             spendingKey

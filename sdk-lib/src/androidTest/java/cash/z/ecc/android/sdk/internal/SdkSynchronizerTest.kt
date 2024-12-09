@@ -6,6 +6,7 @@ import cash.z.ecc.android.bip39.Mnemonics
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.WalletInitMode
 import cash.z.ecc.android.sdk.exception.InitializeException
+import cash.z.ecc.android.sdk.fixture.AccountCreateSetupFixture
 import cash.z.ecc.android.sdk.fixture.AccountFixture
 import cash.z.ecc.android.sdk.fixture.LightWalletEndpointFixture
 import cash.z.ecc.android.sdk.fixture.WalletFixture
@@ -27,25 +28,31 @@ class SdkSynchronizerTest {
 
             // In the future, inject fake networking component so that it doesn't require hitting the network
             Synchronizer.new(
-                InstrumentationRegistry.getInstrumentation().context,
-                ZcashNetwork.Mainnet,
-                alias,
-                LightWalletEndpointFixture.newEndpointForNetwork(ZcashNetwork.Mainnet),
-                Mnemonics.MnemonicCode(WalletFixture.SEED_PHRASE).toEntropy(),
+                alias = alias,
                 birthday = null,
+                context = InstrumentationRegistry.getInstrumentation().context,
+                lightWalletEndpoint = LightWalletEndpointFixture.newEndpointForNetwork(ZcashNetwork.Mainnet),
+                setup =
+                    AccountCreateSetupFixture.new(
+                        seed = Mnemonics.MnemonicCode(WalletFixture.SEED_PHRASE).toEntropy()
+                    ),
                 // Using existing wallet init mode as simplification for the test
-                walletInitMode = WalletInitMode.ExistingWallet
+                walletInitMode = WalletInitMode.ExistingWallet,
+                zcashNetwork = ZcashNetwork.Mainnet,
             ).use {
                 assertFailsWith<IllegalStateException> {
                     Synchronizer.new(
-                        InstrumentationRegistry.getInstrumentation().context,
-                        ZcashNetwork.Mainnet,
-                        alias,
-                        LightWalletEndpointFixture.newEndpointForNetwork(ZcashNetwork.Mainnet),
-                        Mnemonics.MnemonicCode(WalletFixture.SEED_PHRASE).toEntropy(),
+                        alias = alias,
                         birthday = null,
+                        context = InstrumentationRegistry.getInstrumentation().context,
+                        lightWalletEndpoint = LightWalletEndpointFixture.newEndpointForNetwork(ZcashNetwork.Mainnet),
+                        setup =
+                            AccountCreateSetupFixture.new(
+                                seed = Mnemonics.MnemonicCode(WalletFixture.SEED_PHRASE).toEntropy()
+                            ),
                         // Using existing wallet init mode as simplification for the test
-                        walletInitMode = WalletInitMode.ExistingWallet
+                        walletInitMode = WalletInitMode.ExistingWallet,
+                        zcashNetwork = ZcashNetwork.Mainnet,
                     )
                 }
             }
@@ -63,26 +70,32 @@ class SdkSynchronizerTest {
             // TODO [#1094]: https://github.com/zcash/zcash-android-wallet-sdk/issues/1094
             // In the future, inject fake networking component so that it doesn't require hitting the network
             Synchronizer.new(
-                InstrumentationRegistry.getInstrumentation().context,
-                ZcashNetwork.Mainnet,
-                alias,
-                LightWalletEndpointFixture.newEndpointForNetwork(ZcashNetwork.Mainnet),
-                Mnemonics.MnemonicCode(WalletFixture.SEED_PHRASE).toEntropy(),
+                alias = alias,
                 birthday = null,
+                context = InstrumentationRegistry.getInstrumentation().context,
+                lightWalletEndpoint = LightWalletEndpointFixture.newEndpointForNetwork(ZcashNetwork.Mainnet),
+                setup =
+                    AccountCreateSetupFixture.new(
+                        seed = Mnemonics.MnemonicCode(WalletFixture.SEED_PHRASE).toEntropy()
+                    ),
                 // Using existing wallet init mode as simplification for the test
-                walletInitMode = WalletInitMode.ExistingWallet
+                walletInitMode = WalletInitMode.ExistingWallet,
+                zcashNetwork = ZcashNetwork.Mainnet,
             ).use {}
 
             // Second instance should succeed because first one was closed
             Synchronizer.new(
-                InstrumentationRegistry.getInstrumentation().context,
-                ZcashNetwork.Mainnet,
-                alias,
-                LightWalletEndpointFixture.newEndpointForNetwork(ZcashNetwork.Mainnet),
-                Mnemonics.MnemonicCode(WalletFixture.SEED_PHRASE).toEntropy(),
+                alias = alias,
                 birthday = null,
+                context = InstrumentationRegistry.getInstrumentation().context,
+                lightWalletEndpoint = LightWalletEndpointFixture.newEndpointForNetwork(ZcashNetwork.Mainnet),
+                setup =
+                    AccountCreateSetupFixture.new(
+                        seed = Mnemonics.MnemonicCode(WalletFixture.SEED_PHRASE).toEntropy()
+                    ),
                 // Using existing wallet init mode as simplification for the test
-                walletInitMode = WalletInitMode.ExistingWallet
+                walletInitMode = WalletInitMode.ExistingWallet,
+                zcashNetwork = ZcashNetwork.Mainnet,
             ).use {}
         }
 
@@ -98,14 +111,17 @@ class SdkSynchronizerTest {
             // TODO [#1094]: https://github.com/zcash/zcash-android-wallet-sdk/issues/1094
             // In the future, inject fake networking component so that it doesn't require hitting the network
             Synchronizer.new(
-                InstrumentationRegistry.getInstrumentation().context,
-                ZcashNetwork.Mainnet,
-                alias,
-                LightWalletEndpointFixture.newEndpointForNetwork(ZcashNetwork.Mainnet),
-                Mnemonics.MnemonicCode(WalletFixture.SEED_PHRASE).toEntropy(),
+                alias = alias,
                 birthday = null,
+                context = InstrumentationRegistry.getInstrumentation().context,
+                lightWalletEndpoint = LightWalletEndpointFixture.newEndpointForNetwork(ZcashNetwork.Mainnet),
+                setup =
+                    AccountCreateSetupFixture.new(
+                        seed = Mnemonics.MnemonicCode(WalletFixture.SEED_PHRASE).toEntropy()
+                    ),
                 // Using existing wallet init mode as simplification for the test
-                walletInitMode = WalletInitMode.ExistingWallet
+                walletInitMode = WalletInitMode.ExistingWallet,
+                zcashNetwork = ZcashNetwork.Mainnet,
             ).use {
                 it.getSaplingAddress(AccountFixture.new())
             }
@@ -114,14 +130,17 @@ class SdkSynchronizerTest {
             val error =
                 assertFailsWith<InitializeException> {
                     Synchronizer.new(
-                        InstrumentationRegistry.getInstrumentation().context,
-                        ZcashNetwork.Mainnet,
-                        alias,
-                        LightWalletEndpointFixture.newEndpointForNetwork(ZcashNetwork.Mainnet),
-                        Mnemonics.MnemonicCode(WalletFixture.ALICE_SEED_PHRASE).toEntropy(),
+                        alias = alias,
                         birthday = null,
+                        context = InstrumentationRegistry.getInstrumentation().context,
+                        lightWalletEndpoint = LightWalletEndpointFixture.newEndpointForNetwork(ZcashNetwork.Mainnet),
+                        setup =
+                            AccountCreateSetupFixture.new(
+                                seed = Mnemonics.MnemonicCode(WalletFixture.ALICE_SEED_PHRASE).toEntropy()
+                            ),
                         // Using existing wallet init mode as simplification for the test
-                        walletInitMode = WalletInitMode.ExistingWallet
+                        walletInitMode = WalletInitMode.ExistingWallet,
+                        zcashNetwork = ZcashNetwork.Mainnet,
                     ).use {}
                 }
             assertEquals(InitializeException.SeedNotRelevant, error)

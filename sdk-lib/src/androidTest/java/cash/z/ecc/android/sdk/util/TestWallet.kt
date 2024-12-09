@@ -12,6 +12,7 @@ import cash.z.ecc.android.sdk.fixture.LightWalletEndpointFixture
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.deriveUnifiedSpendingKey
 import cash.z.ecc.android.sdk.internal.jni.RustDerivationTool
+import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
@@ -65,7 +66,7 @@ class TestWallet(
             RustDerivationTool.new().deriveUnifiedSpendingKey(
                 seed = seed,
                 network = network,
-                accountIndex = AccountFixture.ZIP_32_ACCOUNT_INDEX.toInt()
+                accountIndex = AccountFixture.new().hdAccountIndex!!
             )
         }
     val synchronizer: SdkSynchronizer =
@@ -109,13 +110,14 @@ class TestWallet(
     }
 
     suspend fun send(
+        account: Account,
         address: String = transparentAddress,
         memo: String = "",
         amount: Zatoshi = Zatoshi(500L)
     ): TestWallet {
         synchronizer.createProposedTransactions(
             synchronizer.proposeTransfer(
-                spendingKey.account,
+                account,
                 address,
                 amount,
                 memo
@@ -130,7 +132,7 @@ class TestWallet(
         return this
     }
 
-    suspend fun shieldFunds(): TestWallet {
+    suspend fun shieldFunds(account: Account): TestWallet {
         synchronizer.refreshUtxos(account, BlockHeight.new(935000L)).let { count ->
             Twig.debug { "FOUND $count new UTXOs" }
         }
@@ -139,7 +141,7 @@ class TestWallet(
             Twig.debug { "FOUND utxo balance of total: $walletBalance" }
 
             if (walletBalance.value > 0L) {
-                synchronizer.proposeShielding(spendingKey.account, Zatoshi(100000))?.let {
+                synchronizer.proposeShielding(account, Zatoshi(100000))?.let {
                     synchronizer.createProposedTransactions(
                         it,
                         spendingKey

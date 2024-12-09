@@ -9,7 +9,7 @@ class AccountTest {
     @Test
     fun out_of_bounds() {
         assertFailsWith(IllegalArgumentException::class) {
-            AccountFixture.new(accountId = UUID.fromString("random"))
+            AccountFixture.new(accountUuid = UUID.fromString("random"))
         }
     }
 }

@@ -33,17 +33,19 @@ internal class OutboundTransactionManagerImpl(
         return when (recipient) {
             is TransactionRecipient.RecipientAccount -> {
                 encoder.createShieldingTransaction(
-                    usk,
-                    recipient,
-                    memoBytes
+                    usk = usk,
+                    account = account,
+                    recipient = recipient,
+                    memo = memoBytes
                 )
             }
             is TransactionRecipient.RecipientAddress -> {
                 encoder.createTransaction(
-                    usk,
-                    amount,
-                    recipient,
-                    memoBytes
+                    usk = usk,
+                    account = account,
+                    amount = amount,
+                    recipient = recipient,
+                    memo = memoBytes
                 )
             }
         }

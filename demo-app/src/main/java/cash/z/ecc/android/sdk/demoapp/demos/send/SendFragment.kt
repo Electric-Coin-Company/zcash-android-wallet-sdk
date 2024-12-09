@@ -156,9 +156,10 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
         val toAddress = addressInput.text.toString().trim()
         lifecycleScope.launch {
             sharedViewModel.synchronizerFlow.value?.let { synchronizer ->
+                val account = synchronizer.getAccounts()[CURRENT_ZIP_32_ACCOUNT_INDEX.toInt()]
                 synchronizer.createProposedTransactions(
                     synchronizer.proposeTransfer(
-                        spendingKey.account,
+                        account,
                         toAddress,
                         amount,
                         "Funds from Demo App"

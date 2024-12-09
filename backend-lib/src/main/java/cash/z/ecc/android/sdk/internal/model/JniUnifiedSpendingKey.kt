@@ -1,7 +1,6 @@
 package cash.z.ecc.android.sdk.internal.model
 
 import androidx.annotation.Keep
-import cash.z.ecc.android.sdk.internal.jni.JNI_ACCOUNT_UUID_BYTES_SIZE
 
 /**
  * A [ZIP 316](https://zips.z.cash/zip-0316) Unified Spending Key.
@@ -15,13 +14,8 @@ import cash.z.ecc.android.sdk.internal.jni.JNI_ACCOUNT_UUID_BYTES_SIZE
 @Keep
 class JniUnifiedSpendingKey(
     /**
-     * The "one-way stable" identifier for the account tracked in the wallet to which this
-     * spending key belongs.
-     */
-    val accountUuid: ByteArray,
-    /**
      * The binary encoding of the [ZIP 316](https://zips.z.cash/zip-0316) Unified Spending
-     * Key for [accountUuid].
+     * Key for the selected account.
      *
      * This encoding **MUST NOT** be exposed to users. It is an internal encoding that is
      * inherently unstable, and only intended to be passed between the SDK and the storage
@@ -29,14 +23,8 @@ class JniUnifiedSpendingKey(
      */
     val bytes: ByteArray
 ) {
-    init {
-        require(accountUuid.size == JNI_ACCOUNT_UUID_BYTES_SIZE) {
-            "Account UUID must be 16 bytes"
-        }
-    }
-
     // Override to prevent leaking key to logs
-    override fun toString() = "JniUnifiedSpendingKey(account=$accountUuid, bytes=***)"
+    override fun toString() = "JniUnifiedSpendingKey(bytes=***)"
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -44,15 +32,10 @@ class JniUnifiedSpendingKey(
 
         other as JniUnifiedSpendingKey
 
-        if (!accountUuid.contentEquals(other.accountUuid)) return false
-        if (!bytes.contentEquals(other.bytes)) return false
-
-        return true
+        return bytes.contentEquals(other.bytes)
     }
 
     override fun hashCode(): Int {
-        var result = accountUuid.hashCode()
-        result = 31 * result + bytes.hashCode()
-        return result
+        return bytes.contentHashCode()
     }
 }

@@ -82,7 +82,8 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
                             Zip32AccountIndex.new(CURRENT_ZIP_32_ACCOUNT_INDEX)
                         )
                     sharedViewModel.synchronizerFlow.value?.let { synchronizer ->
-                        synchronizer.proposeShielding(usk.account, Zatoshi(100000))?.let { it1 ->
+                        val account = synchronizer.getAccounts()[CURRENT_ZIP_32_ACCOUNT_INDEX.toInt()]
+                        synchronizer.proposeShielding(account, Zatoshi(100000))?.let { it1 ->
                             synchronizer.createProposedTransactions(
                                 it1,
                                 usk

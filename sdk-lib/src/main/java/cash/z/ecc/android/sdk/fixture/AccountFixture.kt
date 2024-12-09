@@ -21,15 +21,22 @@ object AccountFixture {
     const val SEED_FINGER_PRINT = "8ac5439f8ac5439f8ac5439f8ac5439f"
     val HD_ACCOUNT_INDEX = Zip32AccountIndex.new(ZIP_32_ACCOUNT_INDEX)
 
-    fun new(accountId: UUID = ACCOUNT_UUID) =
-        Account(
-            accountName = ACCOUNT_NAME,
-            accountUuid = accountId.toByteArray(),
-            hdAccountIndex = HD_ACCOUNT_INDEX,
-            keySource = KEY_SOURCE,
-            seedFingerprint = SEED_FINGER_PRINT.toByteArray(),
-            ufvk = UFVK,
-        )
+    @Suppress("LongParameterList")
+    fun new(
+        accountName: String = ACCOUNT_NAME,
+        accountUuid: UUID = ACCOUNT_UUID,
+        hdAccountIndex: Zip32AccountIndex = HD_ACCOUNT_INDEX,
+        keySource: String = KEY_SOURCE,
+        seedFingerprint: String = SEED_FINGER_PRINT,
+        ufvk: String = UFVK
+    ) = Account(
+        accountName = accountName,
+        accountUuid = accountUuid.toByteArray(),
+        hdAccountIndex = hdAccountIndex,
+        keySource = keySource,
+        seedFingerprint = seedFingerprint.toByteArray(),
+        ufvk = ufvk
+    )
 }
 
 private const val UUID_V4_BYTE_SIZE = 16
