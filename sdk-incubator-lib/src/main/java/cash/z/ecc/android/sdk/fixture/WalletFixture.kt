@@ -20,7 +20,7 @@ sealed class WalletFixture {
     @Suppress("MaxLineLength")
     data object Ben : WalletFixture() {
         override val accounts: List<Account>
-            get() = listOf(AccountFixture.new(UUID.fromString("52175368-821a-4664-8a7c-6a75d850f71c")))
+            get() = listOf(AccountFixture.new(accountUuid = UUID.fromString("52175368-821a-4664-8a7c-6a75d850f71c")))
 
         override val seedPhrase: String
             get() =
@@ -57,7 +57,7 @@ sealed class WalletFixture {
     @Suppress("MaxLineLength")
     data object Alice : WalletFixture() {
         override val accounts: List<Account>
-            get() = listOf(AccountFixture.new(UUID.fromString("8a204240-73a5-4e7a-93c2-a6e05711a000")))
+            get() = listOf(AccountFixture.new(accountUuid = UUID.fromString("8a204240-73a5-4e7a-93c2-a6e05711a000")))
 
         override val seedPhrase: String
             get() =
