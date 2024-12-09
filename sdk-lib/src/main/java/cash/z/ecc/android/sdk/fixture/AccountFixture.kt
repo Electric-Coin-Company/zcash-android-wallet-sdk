@@ -17,7 +17,7 @@ object AccountFixture {
     val ACCOUNT_UUID = UUID.fromString("01234567-89ab-cdef-0123-456789abcdef")
     const val ACCOUNT_NAME = "Test Account"
     const val UFVK = "ufvk1d68jqrx0q98rl0w8f5085y898x0p9z5k0sksqre87949w9494949"
-    const val KEY_SOURCE = "ZCASH"
+    const val KEY_SOURCE = "zcash"
     const val SEED_FINGER_PRINT = "8ac5439f8ac5439f8ac5439f8ac5439f"
     val HD_ACCOUNT_INDEX = Zip32AccountIndex.new(ZIP_32_ACCOUNT_INDEX)
 

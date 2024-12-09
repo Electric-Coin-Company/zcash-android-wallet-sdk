@@ -57,11 +57,12 @@ data class Account internal constructor(
                 keySource = jniAccount.keySource,
                 seedFingerprint = jniAccount.seedFingerprint,
                 // We use -1L to represent NULL across JNI
-                hdAccountIndex = if (jniAccount.hdAccountIndex == -1L) {
-                    null
-                } else {
-                    Zip32AccountIndex.new(jniAccount.hdAccountIndex)
-                }
+                hdAccountIndex =
+                    if (jniAccount.hdAccountIndex == -1L) {
+                        null
+                    } else {
+                        Zip32AccountIndex.new(jniAccount.hdAccountIndex)
+                    }
             )
 
         fun new(accountUuid: ByteArray): Account =

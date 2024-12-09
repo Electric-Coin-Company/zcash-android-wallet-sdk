@@ -86,7 +86,12 @@ class SharedViewModel(application: Application) : AndroidViewModel(application) 
                                 },
                             context = application,
                             lightWalletEndpoint = LightWalletEndpoint.defaultForNetwork(network),
-                            setup = AccountCreateSetup("ZCASH", "Zcash Account 1", seedBytes),
+                            setup =
+                                AccountCreateSetup(
+                                    accountName = "Zcash Account 1",
+                                    keySource = DEMO_APP_ZCASH_ACCOUNT_KEY_SOURCE,
+                                    seed = seedBytes
+                                ),
                             // We use restore mode as this is always initialization with an older seed
                             walletInitMode = WalletInitMode.RestoreWallet,
                             zcashNetwork = network,
