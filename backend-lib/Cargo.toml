@@ -72,8 +72,8 @@ path = "src/main/rust/lib.rs"
 crate-type = ["staticlib", "cdylib"]
 
 [patch.crates-io]
-zcash_address = { git = "https://github.com/zcash/librustzcash", rev = "f2dfa4702ad19c15c302f77c4000c3babd23d7eb" }
-zcash_client_backend = { git = "https://github.com/zcash/librustzcash", rev = "f2dfa4702ad19c15c302f77c4000c3babd23d7eb" }
-zcash_client_sqlite = { git = "https://github.com/zcash/librustzcash", rev = "f2dfa4702ad19c15c302f77c4000c3babd23d7eb" }
-zcash_primitives = { git = "https://github.com/zcash/librustzcash", rev = "f2dfa4702ad19c15c302f77c4000c3babd23d7eb" }
-zcash_proofs = { git = "https://github.com/zcash/librustzcash", rev = "f2dfa4702ad19c15c302f77c4000c3babd23d7eb" }
+zcash_address = { git = "https://github.com/zcash/librustzcash", rev = "d9e74a5d0161e010643274f77d58df8c19db7618" }
+zcash_client_backend = { git = "https://github.com/zcash/librustzcash", rev = "d9e74a5d0161e010643274f77d58df8c19db7618" }
+zcash_client_sqlite = { git = "https://github.com/zcash/librustzcash", rev = "d9e74a5d0161e010643274f77d58df8c19db7618" }
+zcash_primitives = { git = "https://github.com/zcash/librustzcash", rev = "d9e74a5d0161e010643274f77d58df8c19db7618" }
+zcash_proofs = { git = "https://github.com/zcash/librustzcash", rev = "d9e74a5d0161e010643274f77d58df8c19db7618" }
