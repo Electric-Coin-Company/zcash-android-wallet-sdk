@@ -7,7 +7,6 @@ import cash.z.ecc.android.sdk.WalletInitMode.RestoreWallet
 import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor
 import cash.z.ecc.android.sdk.exception.InitializeException
 import cash.z.ecc.android.sdk.ext.ZcashSdk
-import cash.z.ecc.android.sdk.internal.Derivation
 import cash.z.ecc.android.sdk.internal.FastestServerFetcher
 import cash.z.ecc.android.sdk.internal.Files
 import cash.z.ecc.android.sdk.internal.SaplingParamTool
@@ -684,7 +683,6 @@ interface Synchronizer {
                     rustBackend = backend,
                     databaseFile = coordinator.dataDbFile(zcashNetwork, alias),
                     checkpoint = loadedCheckpoint,
-                    numberOfAccounts = Derivation.DEFAULT_NUMBER_OF_ACCOUNTS,
                     recoverUntil = chainTip,
                     setup = setup,
                 )

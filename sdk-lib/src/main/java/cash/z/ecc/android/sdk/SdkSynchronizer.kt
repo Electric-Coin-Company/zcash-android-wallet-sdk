@@ -1064,7 +1064,6 @@ internal object DefaultSynchronizerFactory {
         context: Context,
         databaseFile: File,
         checkpoint: Checkpoint,
-        numberOfAccounts: Int,
         recoverUntil: BlockHeight?,
         rustBackend: TypesafeBackend,
         setup: AccountCreateSetup?,
@@ -1075,7 +1074,6 @@ internal object DefaultSynchronizerFactory {
                 backend = rustBackend,
                 databaseFile = databaseFile,
                 checkpoint = checkpoint,
-                numberOfAccounts = numberOfAccounts,
                 recoverUntil = recoverUntil,
                 setup = setup,
             )

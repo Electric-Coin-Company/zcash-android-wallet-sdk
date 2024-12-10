@@ -2,6 +2,7 @@ package cash.z.ecc.android.sdk.internal.db.derived
 
 import android.content.Context
 import androidx.sqlite.db.SupportSQLiteDatabase
+import cash.z.ecc.android.sdk.exception.InitializeException
 import cash.z.ecc.android.sdk.internal.NoBackupContextWrapper
 import cash.z.ecc.android.sdk.internal.SdkDispatchers
 import cash.z.ecc.android.sdk.internal.Twig
@@ -43,7 +44,6 @@ internal class DerivedDataDb private constructor(
             backend: TypesafeBackend,
             databaseFile: File,
             checkpoint: Checkpoint,
-            numberOfAccounts: Int,
             recoverUntil: BlockHeight?,
             setup: AccountCreateSetup?,
         ): DerivedDataDb {
@@ -61,24 +61,22 @@ internal class DerivedDataDb private constructor(
 
             val dataDb = DerivedDataDb(database)
 
-            // If a seed is provided, fill in the accounts.
-            setup?.let { checkedSetup ->
-                val missingAccounts = numberOfAccounts - backend.getAccounts().count()
-                require(missingAccounts >= 0) {
-                    "Unexpected number of accounts: $missingAccounts"
-                }
-                repeat(missingAccounts) {
-                    runCatching {
-                        backend.createAccountAndGetSpendingKey(
-                            accountName = checkedSetup.accountName,
-                            keySource = checkedSetup.keySource,
-                            recoverUntil = recoverUntil,
-                            seed = checkedSetup.seed,
-                            treeState = checkpoint.treeState(),
-                        )
-                    }.onFailure {
-                        Twig.error(it) { "Create account failed." }
-                    }
+            // If a seed is provided, and the wallet database does not contain the primary seed account, we approach
+            // adding it. Note that this is subject to refactoring once we support a fully multi-account wallet.
+            if (setup != null && backend.getAccounts().isEmpty()) {
+                runCatching {
+                    backend.createAccountAndGetSpendingKey(
+                        accountName = setup.accountName,
+                        keySource = setup.keySource,
+                        recoverUntil = recoverUntil,
+                        seed = setup.seed,
+                        treeState = checkpoint.treeState()
+                    )
+                }.onFailure {
+                    Twig.error(it) { "Create account failed." }
+                    throw InitializeException.CreateAccountException(it)
+                }.onSuccess {
+                    Twig.debug { "The creation of account: $it was successful." }
                 }
             }
 
