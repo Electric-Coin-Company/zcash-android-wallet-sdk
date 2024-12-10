@@ -115,7 +115,9 @@ class RustBackend private constructor(
         ufvk: String,
         treeState: ByteArray,
         recoverUntil: Long?,
-        purpose: Int
+        purpose: Int,
+        seedFingerprint: ByteArray?,
+        zip32AccountIndex: Long?,
     ): JniAccount {
         return withContext(SdkDispatchers.DATABASE_IO) {
             importAccountUfvk(
@@ -127,6 +129,8 @@ class RustBackend private constructor(
                 treeState = treeState,
                 recoverUntil = recoverUntil ?: -1,
                 purpose = purpose,
+                seedFingerprint = seedFingerprint,
+                zip32AccountIndex = zip32AccountIndex,
             )
         }
     }
@@ -540,6 +544,8 @@ class RustBackend private constructor(
             treeState: ByteArray,
             recoverUntil: Long,
             purpose: Int,
+            seedFingerprint: ByteArray?,
+            zip32AccountIndex: Long?,
         ): JniAccount
 
         @JvmStatic

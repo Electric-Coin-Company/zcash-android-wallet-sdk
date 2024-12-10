@@ -64,7 +64,9 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
                     purpose = purpose.value,
                     recoverUntil = recoverUntil,
                     treeState = treeState,
-                    ufvk = setup.ufvk.encoding
+                    ufvk = setup.ufvk.encoding,
+                    seedFingerprint = setup.seedFingerprint,
+                    zip32AccountIndex = setup.zip32AccountIndex?.index,
                 )
         )
     }

@@ -46,6 +46,7 @@ import cash.z.ecc.android.sdk.model.AccountCreateSetup
 import cash.z.ecc.android.sdk.model.AccountImportSetup
 import cash.z.ecc.android.sdk.model.AccountPurpose
 import cash.z.ecc.android.sdk.model.AccountUsk
+import cash.z.ecc.android.sdk.model.AccountUuid
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.FastestServersResult
 import cash.z.ecc.android.sdk.model.FetchFiatCurrencyResult
@@ -464,6 +465,22 @@ class SdkSynchronizer private constructor(
                     ZcashProtocol.ORCHARD -> TransactionPool.ORCHARD
                 }
             )
+        }
+    }
+
+    override suspend fun getTransactions(accountUuid: AccountUuid): Flow<List<TransactionOverview>> {
+        return combine(
+            processor.networkHeight,
+            storage.getTransactions(accountUuid)
+        ) { networkHeight, allAccountTransactions ->
+            val latestBlockHeight =
+                networkHeight ?: runCatching {
+                    backend.getMaxScannedHeight()
+                }.onFailure {
+                    Twig.error(it) { "Failed to get max scanned height" }
+                }.getOrNull()
+
+            allAccountTransactions.map { TransactionOverview.new(it, latestBlockHeight) }
         }
     }
 

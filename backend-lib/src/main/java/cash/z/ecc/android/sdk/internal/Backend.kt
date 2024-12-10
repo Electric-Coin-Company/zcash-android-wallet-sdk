@@ -103,7 +103,9 @@ interface Backend {
         ufvk: String,
         treeState: ByteArray,
         recoverUntil: Long?,
-        purpose: Int
+        purpose: Int,
+        seedFingerprint: ByteArray?,
+        zip32AccountIndex: Long?,
     ): JniAccount
 
     /**
