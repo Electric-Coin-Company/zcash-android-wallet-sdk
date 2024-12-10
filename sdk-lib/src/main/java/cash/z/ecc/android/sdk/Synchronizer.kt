@@ -473,6 +473,14 @@ interface Synchronizer {
      */
     suspend fun getTransactionOutputs(transactionOverview: TransactionOverview): List<TransactionOutput>
 
+    /**
+     * Returns all transactions belonging to the given account UUID
+     *
+     * @param accountUuid The given account UUID
+     * @return Flow of transactions by the given account UUID
+     */
+    suspend fun getTransactions(accountUuid: AccountUuid): Flow<List<TransactionOverview>>
+
     //
     // Error Handling
     //
