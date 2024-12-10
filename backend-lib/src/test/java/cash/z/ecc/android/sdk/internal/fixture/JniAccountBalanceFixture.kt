@@ -27,7 +27,7 @@ object JniAccountBalanceFixture {
         orchardValuePending: Long = ORCHARD_VALUE_PENDING,
         unshieldedBalance: Long = UNSHIELDED_BALANCE,
     ) = JniAccountBalance(
-        account = account,
+        accountUuid = account,
         saplingVerifiedBalance = saplingVerifiedBalance,
         saplingChangePending = saplingChangePending,
         saplingValuePending = saplingValuePending,

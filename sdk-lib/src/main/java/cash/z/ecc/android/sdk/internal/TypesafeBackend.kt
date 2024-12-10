@@ -13,6 +13,9 @@ import cash.z.ecc.android.sdk.internal.model.TreeState
 import cash.z.ecc.android.sdk.internal.model.WalletSummary
 import cash.z.ecc.android.sdk.internal.model.ZcashProtocol
 import cash.z.ecc.android.sdk.model.Account
+import cash.z.ecc.android.sdk.model.AccountImportSetup
+import cash.z.ecc.android.sdk.model.AccountPurpose
+import cash.z.ecc.android.sdk.model.AccountUsk
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.FirstClassByteArray
 import cash.z.ecc.android.sdk.model.Proposal
@@ -27,10 +30,19 @@ internal interface TypesafeBackend {
     suspend fun getAccounts(): List<Account>
 
     suspend fun createAccountAndGetSpendingKey(
+        accountName: String,
+        keySource: String?,
         seed: ByteArray,
         treeState: TreeState,
         recoverUntil: BlockHeight?
-    ): UnifiedSpendingKey
+    ): AccountUsk
+
+    suspend fun importAccountUfvk(
+        purpose: AccountPurpose,
+        recoverUntil: Long?,
+        setup: AccountImportSetup,
+        treeState: ByteArray,
+    ): Account
 
     suspend fun proposeTransferFromUri(
         account: Account,

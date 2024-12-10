@@ -1,16 +1,16 @@
 package cash.z.ecc.android.sdk.internal
 
 import cash.z.ecc.android.sdk.internal.model.JniUnifiedSpendingKey
-import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.UnifiedFullViewingKey
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.ZcashNetwork
+import cash.z.ecc.android.sdk.model.Zip32AccountIndex
 
 fun Derivation.deriveUnifiedAddress(
     seed: ByteArray,
     network: ZcashNetwork,
-    account: Account
-): String = deriveUnifiedAddress(seed, network.id, account.value)
+    accountIndex: Zip32AccountIndex
+): String = deriveUnifiedAddress(seed, network.id, accountIndex.index)
 
 fun Derivation.deriveUnifiedAddress(
     viewingKey: String,
@@ -20,8 +20,13 @@ fun Derivation.deriveUnifiedAddress(
 fun Derivation.deriveUnifiedSpendingKey(
     seed: ByteArray,
     network: ZcashNetwork,
-    account: Account
-): UnifiedSpendingKey = UnifiedSpendingKey(deriveUnifiedSpendingKey(seed, network.id, account.value))
+    accountIndex: Zip32AccountIndex
+): UnifiedSpendingKey =
+    UnifiedSpendingKey(
+        JniUnifiedSpendingKey(
+            bytes = deriveUnifiedSpendingKey(seed, network.id, accountIndex.index)
+        )
+    )
 
 fun Derivation.deriveUnifiedFullViewingKey(
     usk: UnifiedSpendingKey,
@@ -30,8 +35,7 @@ fun Derivation.deriveUnifiedFullViewingKey(
     UnifiedFullViewingKey(
         deriveUnifiedFullViewingKey(
             JniUnifiedSpendingKey(
-                usk.account.value,
-                usk.copyBytes()
+                bytes = usk.copyBytes()
             ),
             network.id
         )
@@ -57,5 +61,5 @@ fun Derivation.deriveArbitraryAccountKeyTypesafe(
     contextString: ByteArray,
     seed: ByteArray,
     network: ZcashNetwork,
-    account: Account
-): ByteArray = deriveArbitraryAccountKey(contextString, seed, network.id, account.value)
+    accountIndex: Zip32AccountIndex
+): ByteArray = deriveArbitraryAccountKey(contextString, seed, network.id, accountIndex.index)

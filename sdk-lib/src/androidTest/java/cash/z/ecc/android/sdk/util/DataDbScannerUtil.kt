@@ -5,6 +5,7 @@ import cash.z.ecc.android.sdk.CloseableSynchronizer
 import cash.z.ecc.android.sdk.SdkSynchronizer
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.WalletInitMode
+import cash.z.ecc.android.sdk.fixture.AccountCreateSetupFixture
 import cash.z.ecc.android.sdk.fixture.LightWalletEndpointFixture
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.ZcashNetwork
@@ -66,11 +67,11 @@ class DataDbScannerUtil {
     fun scanExistingDb() {
         synchronizer =
             Synchronizer.newBlocking(
-                context,
-                ZcashNetwork.Mainnet,
-                lightWalletEndpoint = LightWalletEndpointFixture.newEndpointForNetwork(ZcashNetwork.Mainnet),
-                seed = byteArrayOf(),
                 birthday = BlockHeight.new(birthdayHeight),
+                context = context,
+                lightWalletEndpoint = LightWalletEndpointFixture.newEndpointForNetwork(ZcashNetwork.Mainnet),
+                zcashNetwork = ZcashNetwork.Mainnet,
+                setup = AccountCreateSetupFixture.new(seed = byteArrayOf()),
                 // Using existing wallet init mode as simplification for the test
                 walletInitMode = WalletInitMode.ExistingWallet
             )

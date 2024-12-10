@@ -21,6 +21,7 @@ import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.AccountBalance
+import cash.z.ecc.android.sdk.model.AccountUuid
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.ObserveFiatCurrencyResult
 import cash.z.ecc.android.sdk.model.PercentDecimal
@@ -100,16 +101,18 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
         secretState
             .filterIsInstance<SecretState.Ready>()
             .map { it.persistableWallet }
-            .map {
+            .map { secretState ->
                 val bip39Seed =
                     withContext(Dispatchers.IO) {
-                        Mnemonics.MnemonicCode(it.seedPhrase.joinToString()).toSeed()
+                        Mnemonics.MnemonicCode(secretState.seedPhrase.joinToString()).toSeed()
                     }
-                DerivationTool.getInstance().deriveUnifiedSpendingKey(
-                    seed = bip39Seed,
-                    network = it.network,
-                    account = getCurrentAccount()
-                )
+                getCurrentAccount().hdAccountIndex?.let { accountIndex ->
+                    DerivationTool.getInstance().deriveUnifiedSpendingKey(
+                        seed = bip39Seed,
+                        network = secretState.network,
+                        accountIndex = accountIndex
+                    )
+                }
             }.stateIn(
                 viewModelScope,
                 SharingStarted.WhileSubscribed(ANDROID_STATE_FLOW_TIMEOUT),
@@ -210,10 +213,12 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
         mutableSendState.value = SendState.Sending
 
         val synchronizer = synchronizer.value
+
         if (null != synchronizer) {
+            val account = getCurrentAccount()
             viewModelScope.launch {
                 val spendingKey = spendingKey.filterNotNull().first()
-                runCatching { synchronizer.send(spendingKey, zecSend) }
+                runCatching { synchronizer.send(spendingKey, account, zecSend) }
                     .onSuccess { mutableSendState.value = SendState.Sent(it.toList()) }
                     .onFailure { mutableSendState.value = SendState.Error(it) }
             }
@@ -233,11 +238,11 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
         val synchronizer = synchronizer.value
 
         return if (null != synchronizer) {
+            val account = getCurrentAccount()
             // Calling the proposal API within a blocking coroutine should be fine for the showcase purpose
             runBlocking {
-                val spendingKey = spendingKey.filterNotNull().first()
                 kotlin.runCatching {
-                    synchronizer.proposeSend(spendingKey.account, zecSend)
+                    synchronizer.proposeSend(account, zecSend)
                 }.onFailure {
                     Twig.error(it) { "Failed to get transaction proposal" }
                 }.getOrNull()
@@ -258,11 +263,11 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
         val synchronizer = synchronizer.value
 
         return if (null != synchronizer) {
+            val account = getCurrentAccount()
             // Calling the proposal API within a blocking coroutine should be fine for the showcase purpose
             runBlocking {
-                val spendingKey = spendingKey.filterNotNull().first()
                 kotlin.runCatching {
-                    synchronizer.proposeFulfillingPaymentUri(spendingKey.account, uri)
+                    synchronizer.proposeFulfillingPaymentUri(account, uri)
                 }.onFailure {
                     Twig.error(it) { "Failed to get transaction proposal from uri" }
                 }.getOrNull()
@@ -286,11 +291,12 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
 
         val synchronizer = synchronizer.value
         if (null != synchronizer) {
+            val account = getCurrentAccount()
             viewModelScope.launch {
                 val spendingKey = spendingKey.filterNotNull().first()
                 kotlin.runCatching {
                     @Suppress("MagicNumber")
-                    synchronizer.proposeShielding(spendingKey.account, Zatoshi(100000))?.let {
+                    synchronizer.proposeShielding(account, Zatoshi(100000))?.let {
                         synchronizer.createProposedTransactions(
                             it,
                             spendingKey
@@ -383,7 +389,7 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
                 emptyList()
             )
 
-    fun getCurrentAccount(): Account = getAccounts()[CURRENT_ZIP_32_ACCOUNT_INDEX]
+    fun getCurrentAccount(): Account = getAccounts()[CURRENT_ZIP_32_ACCOUNT_INDEX.toInt()]
 
     companion object {
         private const val QUICK_REWIND_BLOCKS = 100
@@ -508,7 +514,7 @@ private fun Synchronizer.toWalletSnapshot() =
         WalletSnapshot(
             flows[0] as Synchronizer.Status,
             flows[1] as CompactBlockProcessor.ProcessorInfo,
-            flows[2] as Map<Account, AccountBalance>,
+            flows[2] as Map<AccountUuid, AccountBalance>,
             exchangeRateUsd.currencyConversion?.priceOfZec?.toBigDecimal(),
             progressPercentDecimal,
             flows[5] as SynchronizerError?

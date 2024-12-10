@@ -7,6 +7,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import cash.z.ecc.android.sdk.internal.db.CursorParser
 import cash.z.ecc.android.sdk.internal.db.queryAndMap
 import cash.z.ecc.android.sdk.internal.model.DbTransactionOverview
+import cash.z.ecc.android.sdk.model.AccountUuid
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.FirstClassByteArray
 import cash.z.ecc.android.sdk.model.Zatoshi
@@ -73,6 +74,17 @@ internal class AllTransactionView(
                 AllTransactionViewDefinition.COLUMN_INTEGER_EXPIRY_HEIGHT,
                 AllTransactionViewDefinition.COLUMN_LONG_ACCOUNT_BALANCE_DELTA,
                 SENT_TRANSACTION_RECOGNITION_VALUE
+            )
+
+        /**
+         * Get all transactions belonging to the given account UUID
+         */
+        private val SELECTION_TRX_BY_ACCOUNT_UUID =
+            String.format(
+                Locale.ROOT,
+                // $NON-NLS
+                "%s = ?",
+                AllTransactionViewDefinition.COLUMN_BLOB_ACCOUNT_UUID,
             )
 
         private val SELECTION_RAW_IS_NULL =
@@ -159,6 +171,16 @@ internal class AllTransactionView(
             cursorParser = cursorParser
         )
 
+    fun getTransactions(accountUuid: AccountUuid) =
+        sqliteDatabase.queryAndMap(
+            table = AllTransactionViewDefinition.VIEW_NAME,
+            columns = COLUMNS,
+            orderBy = ORDER_BY,
+            selection = SELECTION_TRX_BY_ACCOUNT_UUID,
+            selectionArgs = arrayOf(accountUuid.value),
+            cursorParser = cursorParser
+        )
+
     fun getUnminedUnexpiredTransactions(blockHeight: BlockHeight) =
         sqliteDatabase.queryAndMap(
             table = AllTransactionViewDefinition.VIEW_NAME,
@@ -225,4 +247,6 @@ internal object AllTransactionViewDefinition {
     const val COLUMN_INTEGER_BLOCK_TIME = "block_time" // $NON-NLS
 
     const val COLUMN_BOOLEAN_IS_SHIELDING = "is_shielding" // $NON-NLS
+
+    const val COLUMN_BLOB_ACCOUNT_UUID = "account_uuid" // $NON-NLS
 }

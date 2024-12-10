@@ -2,12 +2,14 @@ package cash.z.ecc.android.sdk.internal.db.derived
 
 import android.content.Context
 import androidx.sqlite.db.SupportSQLiteDatabase
+import cash.z.ecc.android.sdk.exception.InitializeException
 import cash.z.ecc.android.sdk.internal.NoBackupContextWrapper
 import cash.z.ecc.android.sdk.internal.SdkDispatchers
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.TypesafeBackend
 import cash.z.ecc.android.sdk.internal.db.ReadOnlySupportSqliteOpenHelper
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
+import cash.z.ecc.android.sdk.model.AccountCreateSetup
 import cash.z.ecc.android.sdk.model.BlockHeight
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -42,11 +44,10 @@ internal class DerivedDataDb private constructor(
             backend: TypesafeBackend,
             databaseFile: File,
             checkpoint: Checkpoint,
-            seed: ByteArray?,
-            numberOfAccounts: Int,
-            recoverUntil: BlockHeight?
+            recoverUntil: BlockHeight?,
+            setup: AccountCreateSetup?,
         ): DerivedDataDb {
-            backend.initDataDb(seed)
+            backend.initDataDb(setup?.seed)
 
             val database =
                 ReadOnlySupportSqliteOpenHelper.openExistingDatabaseAsReadOnly(
@@ -60,22 +61,22 @@ internal class DerivedDataDb private constructor(
 
             val dataDb = DerivedDataDb(database)
 
-            // If a seed is provided, fill in the accounts.
-            seed?.let { checkedSeed ->
-                val missingAccounts = numberOfAccounts - backend.getAccounts().count()
-                require(missingAccounts >= 0) {
-                    "Unexpected number of accounts: $missingAccounts"
-                }
-                repeat(missingAccounts) {
-                    runCatching {
-                        backend.createAccountAndGetSpendingKey(
-                            seed = checkedSeed,
-                            treeState = checkpoint.treeState(),
-                            recoverUntil = recoverUntil
-                        )
-                    }.onFailure {
-                        Twig.error(it) { "Create account failed." }
-                    }
+            // If a seed is provided, and the wallet database does not contain the primary seed account, we approach
+            // adding it. Note that this is subject to refactoring once we support a fully multi-account wallet.
+            if (setup != null && backend.getAccounts().isEmpty()) {
+                runCatching {
+                    backend.createAccountAndGetSpendingKey(
+                        accountName = setup.accountName,
+                        keySource = setup.keySource,
+                        recoverUntil = recoverUntil,
+                        seed = setup.seed,
+                        treeState = checkpoint.treeState()
+                    )
+                }.onFailure {
+                    Twig.error(it) { "Create account failed." }
+                    throw InitializeException.CreateAccountException(it)
+                }.onSuccess {
+                    Twig.debug { "The creation of account: $it was successful." }
                 }
             }
 

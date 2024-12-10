@@ -3,6 +3,7 @@ package cash.z.ecc.android.sdk.internal.repository
 import cash.z.ecc.android.sdk.internal.model.DbTransactionOverview
 import cash.z.ecc.android.sdk.internal.model.EncodedTransaction
 import cash.z.ecc.android.sdk.internal.model.OutputProperties
+import cash.z.ecc.android.sdk.model.AccountUuid
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.FirstClassByteArray
 import cash.z.ecc.android.sdk.model.TransactionRecipient
@@ -78,6 +79,8 @@ internal interface DerivedDataRepository {
      */
 
     val allTransactions: Flow<List<DbTransactionOverview>>
+
+    suspend fun getTransactions(accountUuid: AccountUuid): Flow<List<DbTransactionOverview>>
 
     fun getOutputProperties(transactionId: FirstClassByteArray): Flow<OutputProperties>
 

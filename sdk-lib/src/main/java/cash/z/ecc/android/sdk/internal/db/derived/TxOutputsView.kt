@@ -3,7 +3,6 @@ package cash.z.ecc.android.sdk.internal.db.derived
 import androidx.sqlite.db.SupportSQLiteDatabase
 import cash.z.ecc.android.sdk.internal.db.queryAndMap
 import cash.z.ecc.android.sdk.internal.model.OutputProperties
-import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.FirstClassByteArray
 import cash.z.ecc.android.sdk.model.TransactionRecipient
 import java.util.Locale
@@ -27,7 +26,7 @@ internal class TxOutputsView(private val sqliteDatabase: SupportSQLiteDatabase) 
         private val PROJECTION_RECIPIENT =
             arrayOf(
                 TxOutputsViewDefinition.COLUMN_STRING_TO_ADDRESS,
-                TxOutputsViewDefinition.COLUMN_INTEGER_TO_ACCOUNT
+                TxOutputsViewDefinition.COLUMN_BLOB_TO_ACCOUNT
             )
 
         private val SELECT_BY_TRANSACTION_ID_AND_NOT_CHANGE =
@@ -67,15 +66,13 @@ internal class TxOutputsView(private val sqliteDatabase: SupportSQLiteDatabase) 
             selectionArgs = arrayOf(transactionId.byteArray),
             orderBy = ORDER_BY,
             cursorParser = {
-                val toAccountIndex = it.getColumnIndex(TxOutputsViewDefinition.COLUMN_INTEGER_TO_ACCOUNT)
+                val toAccountIndex = it.getColumnIndex(TxOutputsViewDefinition.COLUMN_BLOB_TO_ACCOUNT)
                 val toAddressIndex = it.getColumnIndex(TxOutputsViewDefinition.COLUMN_STRING_TO_ADDRESS)
 
                 if (!it.isNull(toAccountIndex)) {
-                    // TODO [#1644]: Refactor Account ZIP32 index across SDK
-                    // TODO [#1644]: https://github.com/Electric-Coin-Company/zcash-android-wallet-sdk/issues/1644
-                    TransactionRecipient.Account(0)
+                    TransactionRecipient.RecipientAccount(accountUuid = it.getBlob(toAccountIndex))
                 } else {
-                    TransactionRecipient.Address(it.getString(toAddressIndex))
+                    TransactionRecipient.RecipientAddress(addressValue = it.getString(toAddressIndex))
                 }
             }
         )
@@ -94,7 +91,7 @@ internal object TxOutputsViewDefinition {
 
     const val COLUMN_STRING_TO_ADDRESS = "to_address" // $NON-NLS
 
-    const val COLUMN_INTEGER_TO_ACCOUNT = "to_account_id" // $NON-NLS
+    const val COLUMN_BLOB_TO_ACCOUNT = "to_account_uuid" // $NON-NLS
 
     const val COLUMN_INTEGER_VALUE = "value" // $NON-NLS
 

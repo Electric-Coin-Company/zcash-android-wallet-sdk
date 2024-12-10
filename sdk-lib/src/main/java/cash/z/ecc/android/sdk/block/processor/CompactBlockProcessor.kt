@@ -56,6 +56,7 @@ import cash.z.ecc.android.sdk.internal.repository.DerivedDataRepository
 import cash.z.ecc.android.sdk.internal.transaction.OutboundTransactionManager
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.AccountBalance
+import cash.z.ecc.android.sdk.model.AccountUuid
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.PercentDecimal
 import cash.z.ecc.android.sdk.model.RawTransaction
@@ -165,7 +166,7 @@ class CompactBlockProcessor internal constructor(
     private val _processorInfo = MutableStateFlow(ProcessorInfo(null, null, null))
     private val _networkHeight = MutableStateFlow<BlockHeight?>(null)
     private val _fullyScannedHeight = MutableStateFlow<BlockHeight?>(null)
-    internal val walletBalances = MutableStateFlow<Map<Account, AccountBalance>?>(null)
+    internal val walletBalances = MutableStateFlow<Map<AccountUuid, AccountBalance>?>(null)
 
     private val processingMutex = Mutex()
 

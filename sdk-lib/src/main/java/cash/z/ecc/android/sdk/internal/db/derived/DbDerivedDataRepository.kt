@@ -3,6 +3,7 @@ package cash.z.ecc.android.sdk.internal.db.derived
 import cash.z.ecc.android.sdk.internal.model.DbTransactionOverview
 import cash.z.ecc.android.sdk.internal.model.EncodedTransaction
 import cash.z.ecc.android.sdk.internal.repository.DerivedDataRepository
+import cash.z.ecc.android.sdk.model.AccountUuid
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.FirstClassByteArray
 import cash.z.ecc.android.sdk.model.TransactionRecipient
@@ -40,6 +41,9 @@ internal class DbDerivedDataRepository(
             .findDatabaseId(rawTransactionId)
 
     override suspend fun getTransactionCount() = derivedDataDb.transactionTable.count()
+
+    override suspend fun getTransactions(accountUuid: AccountUuid) =
+        invalidatingFlow.map { derivedDataDb.allTransactionView.getTransactions(accountUuid).toList() }
 
     override fun invalidate() {
         invalidatingFlow.value = UUID.randomUUID()

@@ -13,15 +13,17 @@ data class ZecSend(
 
 suspend fun Synchronizer.send(
     spendingKey: UnifiedSpendingKey,
+    account: Account,
     send: ZecSend
 ) = createProposedTransactions(
-    proposeTransfer(
-        spendingKey.account,
-        send.destination.address,
-        send.amount,
-        send.memo.value
-    ),
-    spendingKey
+    proposal =
+        proposeTransfer(
+            account = account,
+            recipient = send.destination.address,
+            amount = send.amount,
+            memo = send.memo.value
+        ),
+    usk = spendingKey
 )
 
 /**

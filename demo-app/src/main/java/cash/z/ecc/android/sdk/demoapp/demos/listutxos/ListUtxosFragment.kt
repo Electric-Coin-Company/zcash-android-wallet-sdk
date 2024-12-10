@@ -188,7 +188,7 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
                         .filterNotNull()
                         .collect {
                             binding.inputAddress.setText(
-                                it.getTransparentAddress(it.getAccounts()[CURRENT_ZIP_32_ACCOUNT_INDEX])
+                                it.getTransparentAddress(it.getAccounts()[CURRENT_ZIP_32_ACCOUNT_INDEX.toInt()])
                             )
                         }
                 }
