@@ -45,6 +45,7 @@ import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.AccountCreateSetup
 import cash.z.ecc.android.sdk.model.AccountImportSetup
 import cash.z.ecc.android.sdk.model.AccountPurpose
+import cash.z.ecc.android.sdk.model.AccountUsk
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.FastestServersResult
 import cash.z.ecc.android.sdk.model.FetchFiatCurrencyResult
@@ -656,7 +657,7 @@ class SdkSynchronizer private constructor(
         recoverUntil: BlockHeight?,
         seed: ByteArray,
         treeState: TreeState,
-    ): UnifiedSpendingKey {
+    ): AccountUsk {
         return runCatching {
             backend.createAccountAndGetSpendingKey(
                 accountName = accountName,

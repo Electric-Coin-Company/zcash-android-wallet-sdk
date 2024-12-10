@@ -1,6 +1,7 @@
 package cash.z.ecc.android.sdk.internal.model
 
 import androidx.annotation.Keep
+import cash.z.ecc.android.sdk.internal.jni.JNI_ACCOUNT_UUID_BYTES_SIZE
 
 /**
  * A [ZIP 316](https://zips.z.cash/zip-0316) Unified Spending Key.
@@ -12,10 +13,15 @@ import androidx.annotation.Keep
  * export/import, or backup purposes.
  */
 @Keep
-class JniUnifiedSpendingKey(
+class JniAccountUsk(
+    /**
+     * The "one-way stable" identifier for the account tracked in the wallet to which this
+     * spending key belongs.
+     */
+    val accountUuid: ByteArray,
     /**
      * The binary encoding of the [ZIP 316](https://zips.z.cash/zip-0316) Unified Spending
-     * Key for the selected account.
+     * Key for [accountUuid].
      *
      * This encoding **MUST NOT** be exposed to users. It is an internal encoding that is
      * inherently unstable, and only intended to be passed between the SDK and the storage
@@ -24,11 +30,11 @@ class JniUnifiedSpendingKey(
     val bytes: ByteArray
 ) {
     init {
-        require(bytes.isNotEmpty()) {
-            "Unified Spending Key must not be empty"
+        require(accountUuid.size == JNI_ACCOUNT_UUID_BYTES_SIZE) {
+            "Account UUID must be 16 bytes"
         }
     }
 
     // Override to prevent leaking key to logs
-    override fun toString() = "JniUnifiedSpendingKey(bytes=***)"
+    override fun toString() = "JniUnifiedSpendingKey(account=$accountUuid, bytes=***)"
 }

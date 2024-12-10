@@ -16,6 +16,7 @@ import cash.z.ecc.android.sdk.internal.model.ZcashProtocol
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.AccountImportSetup
 import cash.z.ecc.android.sdk.model.AccountPurpose
+import cash.z.ecc.android.sdk.model.AccountUsk
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.FirstClassByteArray
 import cash.z.ecc.android.sdk.model.Proposal
@@ -37,8 +38,8 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
         seed: ByteArray,
         treeState: TreeState,
         recoverUntil: BlockHeight?
-    ): UnifiedSpendingKey {
-        return UnifiedSpendingKey(
+    ): AccountUsk {
+        return AccountUsk.new(
             backend.createAccount(
                 accountName = accountName,
                 keySource = keySource,

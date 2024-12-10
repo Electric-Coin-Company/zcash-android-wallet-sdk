@@ -80,7 +80,7 @@ class TestWallet(
         ) as SdkSynchronizer
 
     val available
-        get() = synchronizer.walletBalances.value?.get(account)?.sapling?.available
+        get() = synchronizer.walletBalances.value?.get(account.accountUuid)?.sapling?.available
     val unifiedAddress =
         runBlocking { synchronizer.getUnifiedAddress(account) }
     val transparentAddress =
@@ -115,7 +115,7 @@ class TestWallet(
     ): TestWallet {
         synchronizer.createProposedTransactions(
             synchronizer.proposeTransfer(
-                shieldedSpendingKey.account,
+                account,
                 address,
                 amount,
                 memo
@@ -137,7 +137,7 @@ class TestWallet(
 
         synchronizer.getTransparentBalance(transparentAddress).let { walletBalance ->
             if (walletBalance.value > 0L) {
-                synchronizer.proposeShielding(shieldedSpendingKey.account, Zatoshi(100000))?.let {
+                synchronizer.proposeShielding(account, Zatoshi(100000))?.let {
                     synchronizer.createProposedTransactions(
                         it,
                         shieldedSpendingKey

@@ -2,12 +2,12 @@ package cash.z.ecc.fixture
 
 import cash.z.ecc.android.sdk.internal.Backend
 import cash.z.ecc.android.sdk.internal.model.JniAccount
+import cash.z.ecc.android.sdk.internal.model.JniAccountUsk
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.internal.model.JniRewindResult
 import cash.z.ecc.android.sdk.internal.model.JniScanRange
 import cash.z.ecc.android.sdk.internal.model.JniSubtreeRoot
 import cash.z.ecc.android.sdk.internal.model.JniTransactionDataRequest
-import cash.z.ecc.android.sdk.internal.model.JniUnifiedSpendingKey
 import cash.z.ecc.android.sdk.internal.model.JniWalletSummary
 import cash.z.ecc.android.sdk.internal.model.ProposalUnsafe
 
@@ -141,7 +141,7 @@ internal class FakeRustBackend(
         seed: ByteArray,
         treeState: ByteArray,
         recoverUntil: Long?,
-    ): JniUnifiedSpendingKey {
+    ): JniAccountUsk {
         error("Intentionally not implemented yet.")
     }
 

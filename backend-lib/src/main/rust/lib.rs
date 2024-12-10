@@ -349,8 +349,8 @@ fn encode_usk<'a>(
     let encoded = SecretVec::new(usk.to_bytes(Era::Orchard));
     let bytes = env.byte_array_from_slice(encoded.expose_secret())?;
     env.new_object(
-        "cash/z/ecc/android/sdk/internal/model/JniUnifiedSpendingKey",
-        "(I[B)V",
+        "cash/z/ecc/android/sdk/internal/model/JniAccountUsk",
+        "([B[B)V",
         &[
             (&env.byte_array_from_slice(account_uuid.expose_uuid().as_bytes())?).into(),
             (&bytes).into(),
