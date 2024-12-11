@@ -144,7 +144,7 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
     ): Pczt =
         Pczt(
             backend.createPcztFromProposal(
-                account.accountUuid,
+                account.accountUuid.value,
                 proposal.toUnsafe()
             )
         )
