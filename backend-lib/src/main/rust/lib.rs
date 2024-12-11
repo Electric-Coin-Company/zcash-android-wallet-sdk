@@ -453,9 +453,10 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_createAcc
 ///
 /// # Arguments
 /// - `account_name`: A human-readable name for the account.
+/// - `key_source`: A string identifier or other metadata describing the source of the seed.
+///   This is treated as opaque metadata by the wallet backend; it is provided for use by
+///   applications which need to track additional identifying information for an account.
 /// - `ufvk_str`: The UFVK used to detect transactions involving the account.
-/// - `purpose`: Metadata describing whether or not data required for spending should be
-///   tracked by the wallet.
 /// - `treestate`: The tree state corresponding to the last block prior to the wallet's
 ///   birthday height.
 /// - `recover_until`: An optional height at which the wallet should exit "recovery mode". In
@@ -464,9 +465,12 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_createAcc
 ///    "recover until" height. The wallet is considered to be in "recovery mode" until there
 ///    exist no unscanned ranges between the wallet's birthday height and the provided
 ///   `recover_until` height, exclusive.
-/// - `key_source`: A string identifier or other metadata describing the source of the seed.
-///   This is treated as opaque metadata by the wallet backend; it is provided for use by
-///   applications which need to track additional identifying information for an account.
+/// - `purpose`: 0 (Spending) if data required for spending should be tracked by the wallet,
+///   or 1 (ViewOnly) if the account will never be used to spend funds.
+/// - `seed_fingerprint_bytes`: the [seed fingerprint]. Only used if `purpose` is 0 (Spending).
+/// - `hd_account_index_raw`: the ZIP 32 account index. Only used if `purpose` is 0 (Spending).
+///
+/// [seed fingerprint]: https://zips.z.cash/zip-0032#seed-fingerprints
 ///
 /// # Panics
 ///
