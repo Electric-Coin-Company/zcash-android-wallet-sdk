@@ -52,7 +52,7 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
 
     override suspend fun importAccountUfvk(
         purpose: AccountPurpose,
-        recoverUntil: Long?,
+        recoverUntil: BlockHeight?,
         setup: AccountImportSetup,
         treeState: ByteArray,
     ): Account {
