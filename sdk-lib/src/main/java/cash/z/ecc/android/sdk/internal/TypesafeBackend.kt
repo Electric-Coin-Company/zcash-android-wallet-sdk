@@ -39,7 +39,7 @@ internal interface TypesafeBackend {
 
     suspend fun importAccountUfvk(
         purpose: AccountPurpose,
-        recoverUntil: Long?,
+        recoverUntil: BlockHeight?,
         setup: AccountImportSetup,
         treeState: ByteArray,
     ): Account
