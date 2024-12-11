@@ -41,7 +41,7 @@ internal interface TypesafeBackend {
         purpose: AccountPurpose,
         recoverUntil: BlockHeight?,
         setup: AccountImportSetup,
-        treeState: ByteArray,
+        treeState: TreeState,
     ): Account
 
     suspend fun proposeTransferFromUri(
