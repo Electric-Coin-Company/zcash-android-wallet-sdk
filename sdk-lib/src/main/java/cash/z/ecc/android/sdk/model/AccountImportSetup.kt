@@ -9,15 +9,13 @@ package cash.z.ecc.android.sdk.model
  * @param keySource A string identifier or other metadata describing the location of the spending
  *        key corresponding to the provided UFVK. This should be set internally by the wallet app
  *        based on its private enumeration of spending methods it supports.
- * @param seedFingerprint The [ZIP 32 seed fingerprint](https://zips.z.cash/zip-0032#seed-fingerprints)
+ * @param purpose Metadata describing whether or not data required for spending should be tracked by the wallet
  * @param ufvk The UFVK used to detect transactions involving the account
- * @param zip32AccountIndex The ZIP 32 account-level component of the HD derivation path at which to derive the
  * account's UFVK.
  */
 data class AccountImportSetup(
     val accountName: String,
     val keySource: String?,
-    val seedFingerprint: ByteArray?,
+    val purpose: AccountPurpose,
     val ufvk: UnifiedFullViewingKey,
-    val zip32AccountIndex: Zip32AccountIndex?,
 )

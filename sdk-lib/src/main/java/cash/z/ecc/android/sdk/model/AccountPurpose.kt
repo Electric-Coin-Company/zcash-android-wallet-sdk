@@ -11,8 +11,14 @@ sealed class AccountPurpose {
 
     /**
      * For spending accounts, the wallet will track information needed to spend received notes
+     *
+     * @param seedFingerprint The [ZIP 32 seed fingerprint](https://zips.z.cash/zip-0032#seed-fingerprints)
+     * @param zip32AccountIndex The ZIP 32 account-level component of the HD derivation path at which to derive the
      */
-    data object Spending : AccountPurpose() {
+    data class Spending(
+        val seedFingerprint: ByteArray?,
+        val zip32AccountIndex: Zip32AccountIndex?,
+    ) : AccountPurpose() {
         override val value = 0
     }
 

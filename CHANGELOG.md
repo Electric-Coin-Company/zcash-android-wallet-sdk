@@ -12,8 +12,8 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Synchronizer.walletBalances: StateFlow<Map<AccountUuid, AccountBalance>?>` that is replacement for the removed 
   `orchardBalances`, `saplingBalances`, and `transparentBalance`
 - `getTransactions(accountUuid: AccountUuid)` to get transactions belonging to the given account
-- `Zip32AccountIndex`, `AccountUuid`, and `AccountUsk` model classes have been added to support the new or the changed 
-  APIs
+- `Zip32AccountIndex`, `AccountUuid`, `AccountUsk`, `AccountPurpose`, `AccountCreateSetup`, and `AcountImportSetup` 
+  model classes have been added to support the new or the changed APIs
 
 ### Changed
 - `Account` data class works with `accountUuid: AccountUuid` instead of the previous ZIP 32 account index

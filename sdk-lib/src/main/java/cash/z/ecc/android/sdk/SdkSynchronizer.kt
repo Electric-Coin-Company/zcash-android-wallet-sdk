@@ -44,7 +44,6 @@ import cash.z.ecc.android.sdk.internal.transaction.TransactionEncoderImpl
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.AccountCreateSetup
 import cash.z.ecc.android.sdk.model.AccountImportSetup
-import cash.z.ecc.android.sdk.model.AccountPurpose
 import cash.z.ecc.android.sdk.model.AccountUsk
 import cash.z.ecc.android.sdk.model.AccountUuid
 import cash.z.ecc.android.sdk.model.BlockHeight
@@ -692,10 +691,7 @@ class SdkSynchronizer private constructor(
         }
     }
 
-    override suspend fun importAccountByUfvk(
-        purpose: AccountPurpose,
-        setup: AccountImportSetup,
-    ): Account {
+    override suspend fun importAccountByUfvk(setup: AccountImportSetup,): Account {
         val chainTip: BlockHeight? =
             when (val response = processor.downloader.getLatestBlockHeight()) {
                 is Response.Success -> {
@@ -720,7 +716,6 @@ class SdkSynchronizer private constructor(
 
         return runCatching {
             backend.importAccountUfvk(
-                purpose = purpose,
                 recoverUntil = chainTip,
                 setup = setup,
                 treeState = treeState,

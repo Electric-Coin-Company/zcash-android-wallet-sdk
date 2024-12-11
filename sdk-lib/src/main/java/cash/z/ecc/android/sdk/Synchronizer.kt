@@ -18,7 +18,6 @@ import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.AccountBalance
 import cash.z.ecc.android.sdk.model.AccountCreateSetup
 import cash.z.ecc.android.sdk.model.AccountImportSetup
-import cash.z.ecc.android.sdk.model.AccountPurpose
 import cash.z.ecc.android.sdk.model.AccountUuid
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.FastestServersResult
@@ -150,10 +149,7 @@ interface Synchronizer {
      *
      * @throws [InitializeException.ImportAccountException] in case of the operation failure
      */
-    suspend fun importAccountByUfvk(
-        purpose: AccountPurpose,
-        setup: AccountImportSetup,
-    ): Account
+    suspend fun importAccountByUfvk(setup: AccountImportSetup,): Account
 
     /**
      * Adds the next available account-level spend authority, given the current set of

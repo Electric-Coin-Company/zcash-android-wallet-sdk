@@ -51,23 +51,36 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
     }
 
     override suspend fun importAccountUfvk(
-        purpose: AccountPurpose,
         recoverUntil: BlockHeight?,
         setup: AccountImportSetup,
         treeState: TreeState,
     ): Account {
         return Account.new(
             jniAccount =
-                backend.importAccountUfvk(
-                    accountName = setup.accountName,
-                    keySource = setup.keySource,
-                    purpose = purpose.value,
-                    recoverUntil = recoverUntil?.value,
-                    treeState = treeState.encoded,
-                    ufvk = setup.ufvk.encoding,
-                    seedFingerprint = setup.seedFingerprint,
-                    zip32AccountIndex = setup.zip32AccountIndex?.index,
-                )
+                when (setup.purpose) {
+                    is AccountPurpose.Spending ->
+                        backend.importAccountUfvk(
+                            accountName = setup.accountName,
+                            keySource = setup.keySource,
+                            purpose = setup.purpose.value,
+                            recoverUntil = recoverUntil?.value,
+                            treeState = treeState.encoded,
+                            ufvk = setup.ufvk.encoding,
+                            seedFingerprint = setup.purpose.seedFingerprint,
+                            zip32AccountIndex = setup.purpose.zip32AccountIndex?.index,
+                        )
+                    AccountPurpose.ViewOnly ->
+                        backend.importAccountUfvk(
+                            accountName = setup.accountName,
+                            keySource = setup.keySource,
+                            purpose = setup.purpose.value,
+                            recoverUntil = recoverUntil?.value,
+                            treeState = treeState.encoded,
+                            ufvk = setup.ufvk.encoding,
+                            seedFingerprint = null,
+                            zip32AccountIndex = null,
+                        )
+                }
         )
     }
 
