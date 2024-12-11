@@ -151,7 +151,9 @@ internal class FakeRustBackend(
         ufvk: String,
         treeState: ByteArray,
         recoverUntil: Long?,
-        purpose: Int
+        purpose: Int,
+        seedFingerprint: ByteArray?,
+        zip32AccountIndex: Long?,
     ): JniAccount {
         error("Intentionally not implemented yet.")
     }

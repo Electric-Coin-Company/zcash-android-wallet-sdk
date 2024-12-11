@@ -3,6 +3,7 @@ package cash.z.ecc.android.sdk.internal
 import cash.z.ecc.android.sdk.ext.toHex
 import cash.z.ecc.android.sdk.fixture.WalletFixture
 import cash.z.ecc.android.sdk.model.ZcashNetwork
+import cash.z.ecc.android.sdk.model.Zip32AccountIndex
 import cash.z.ecc.android.sdk.tool.DerivationTool
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
@@ -13,7 +14,7 @@ import kotlin.test.assertEquals
 class DerivationToolImplTest {
     private val seedPhrase = WalletFixture.Alice.seedPhrase
     private val network = ZcashNetwork.Mainnet
-    private val accountIndex = 0
+    private val accountIndex = Zip32AccountIndex.new(0L)
 
     @OptIn(ExperimentalEncodingApi::class)
     @Test
