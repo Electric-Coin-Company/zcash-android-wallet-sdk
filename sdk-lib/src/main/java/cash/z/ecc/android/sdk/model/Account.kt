@@ -23,8 +23,11 @@ import cash.z.ecc.android.sdk.internal.model.JniAccount
  *
  * @param accountUuid The account identifier.
  * @param ufvk The account's Unified Full Viewing Key, if any.
- * @param accountName A human-readable name for the account
- * @param keySource A string identifier or other metadata describing the source of the seed
+ * @param accountName A human-readable name for the account. This is visible to the wallet user, and
+ *        the wallet app may have obtained it from them.
+ * @param keySource A string identifier or other metadata describing the location of the spending
+ *        key corresponding to the account's UFVK. This is set internally by the wallet app based on
+ *        its private enumeration of spending methods it supports.
  * @param seedFingerprint The seed fingerprint. Must be length 16.
  * @param hdAccountIndex ZIP 32 account index
  */
