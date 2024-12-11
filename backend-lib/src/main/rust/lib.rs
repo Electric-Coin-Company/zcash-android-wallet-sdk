@@ -445,9 +445,9 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_createAcc
 /// ([`Self::create_account`] and [`Self::import_account_hd`]), no spending key is returned
 /// because the wallet has no information about how the UFVK was derived.
 ///
-/// Certain optimizations are possible for accounts which will never be used to spend funds. If
-/// `spending_key_available` is `false`, the wallet may choose to optimize for this case, in
-/// which case any attempt to spend funds from the account will result in an error.
+/// Certain optimizations are possible for accounts which will never be used to spend funds.
+/// If `purpose` is 1 (ViewOnly), the wallet may choose to optimize for this case, in which
+/// case any attempt to spend funds from the account will result in an error.
 ///
 /// The [`WalletWrite`] trait documentation has more details about account creation and import.
 ///
