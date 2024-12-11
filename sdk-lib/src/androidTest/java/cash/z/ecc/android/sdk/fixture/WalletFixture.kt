@@ -11,7 +11,7 @@ object WalletFixture {
     val NETWORK = ZcashNetwork.Mainnet
 
     // This is the "Ben" wallet phrase from sdk-incubator-lib.
-    const val SEED_PHRASE =
+    const val BEN_SEED_PHRASE =
         "kitchen renew wide common vague fold vacuum tilt amazing pear square gossip jewel month" +
             " tree shock scan alpha just spot fluid toilet view dinner"
 
@@ -21,7 +21,7 @@ object WalletFixture {
             " cannon grab despair throw review deal slush frame"
 
     suspend fun getUnifiedSpendingKey(
-        seed: String = SEED_PHRASE,
+        seed: String = BEN_SEED_PHRASE,
         network: ZcashNetwork = NETWORK,
         accountIndex: Long = ACCOUNT_INDEX
     ) = UnifiedSpendingKey.new(

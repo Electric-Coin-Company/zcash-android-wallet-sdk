@@ -7,7 +7,6 @@ import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.WalletInitMode
 import cash.z.ecc.android.sdk.exception.InitializeException
 import cash.z.ecc.android.sdk.fixture.AccountCreateSetupFixture
-import cash.z.ecc.android.sdk.fixture.AccountFixture
 import cash.z.ecc.android.sdk.fixture.LightWalletEndpointFixture
 import cash.z.ecc.android.sdk.fixture.WalletFixture
 import cash.z.ecc.android.sdk.model.ZcashNetwork
@@ -34,7 +33,7 @@ class SdkSynchronizerTest {
                 lightWalletEndpoint = LightWalletEndpointFixture.newEndpointForNetwork(ZcashNetwork.Mainnet),
                 setup =
                     AccountCreateSetupFixture.new(
-                        seed = Mnemonics.MnemonicCode(WalletFixture.SEED_PHRASE).toEntropy()
+                        seed = Mnemonics.MnemonicCode(WalletFixture.BEN_SEED_PHRASE).toEntropy()
                     ),
                 // Using existing wallet init mode as simplification for the test
                 walletInitMode = WalletInitMode.ExistingWallet,
@@ -48,7 +47,7 @@ class SdkSynchronizerTest {
                         lightWalletEndpoint = LightWalletEndpointFixture.newEndpointForNetwork(ZcashNetwork.Mainnet),
                         setup =
                             AccountCreateSetupFixture.new(
-                                seed = Mnemonics.MnemonicCode(WalletFixture.SEED_PHRASE).toEntropy()
+                                seed = Mnemonics.MnemonicCode(WalletFixture.BEN_SEED_PHRASE).toEntropy()
                             ),
                         // Using existing wallet init mode as simplification for the test
                         walletInitMode = WalletInitMode.ExistingWallet,
@@ -76,7 +75,7 @@ class SdkSynchronizerTest {
                 lightWalletEndpoint = LightWalletEndpointFixture.newEndpointForNetwork(ZcashNetwork.Mainnet),
                 setup =
                     AccountCreateSetupFixture.new(
-                        seed = Mnemonics.MnemonicCode(WalletFixture.SEED_PHRASE).toEntropy()
+                        seed = Mnemonics.MnemonicCode(WalletFixture.BEN_SEED_PHRASE).toEntropy()
                     ),
                 // Using existing wallet init mode as simplification for the test
                 walletInitMode = WalletInitMode.ExistingWallet,
@@ -91,7 +90,7 @@ class SdkSynchronizerTest {
                 lightWalletEndpoint = LightWalletEndpointFixture.newEndpointForNetwork(ZcashNetwork.Mainnet),
                 setup =
                     AccountCreateSetupFixture.new(
-                        seed = Mnemonics.MnemonicCode(WalletFixture.SEED_PHRASE).toEntropy()
+                        seed = Mnemonics.MnemonicCode(WalletFixture.BEN_SEED_PHRASE).toEntropy()
                     ),
                 // Using existing wallet init mode as simplification for the test
                 walletInitMode = WalletInitMode.ExistingWallet,
@@ -117,13 +116,13 @@ class SdkSynchronizerTest {
                 lightWalletEndpoint = LightWalletEndpointFixture.newEndpointForNetwork(ZcashNetwork.Mainnet),
                 setup =
                     AccountCreateSetupFixture.new(
-                        seed = Mnemonics.MnemonicCode(WalletFixture.SEED_PHRASE).toEntropy()
+                        seed = Mnemonics.MnemonicCode(WalletFixture.ALICE_SEED_PHRASE).toEntropy()
                     ),
                 // Using existing wallet init mode as simplification for the test
                 walletInitMode = WalletInitMode.ExistingWallet,
                 zcashNetwork = ZcashNetwork.Mainnet,
             ).use {
-                it.getSaplingAddress(AccountFixture.new())
+                it.getSaplingAddress(it.getAccounts()[0])
             }
 
             // Second instance should fail because the seed is not relevant to the wallet.
@@ -136,7 +135,7 @@ class SdkSynchronizerTest {
                         lightWalletEndpoint = LightWalletEndpointFixture.newEndpointForNetwork(ZcashNetwork.Mainnet),
                         setup =
                             AccountCreateSetupFixture.new(
-                                seed = Mnemonics.MnemonicCode(WalletFixture.ALICE_SEED_PHRASE).toEntropy()
+                                seed = Mnemonics.MnemonicCode(WalletFixture.BEN_SEED_PHRASE).toEntropy()
                             ),
                         // Using existing wallet init mode as simplification for the test
                         walletInitMode = WalletInitMode.ExistingWallet,

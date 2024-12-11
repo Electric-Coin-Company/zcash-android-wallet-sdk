@@ -41,7 +41,7 @@ class UnifiedSpendingKeyTest {
     fun toString_does_not_leak() =
         runTest {
             assertEquals(
-                "UnifiedSpendingKey(account=Account(value=0))",
+                "UnifiedSpendingKey(bytes=***)",
                 WalletFixture.getUnifiedSpendingKey().toString()
             )
         }

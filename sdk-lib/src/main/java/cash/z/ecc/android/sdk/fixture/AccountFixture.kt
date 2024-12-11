@@ -19,7 +19,44 @@ object AccountFixture {
     const val ACCOUNT_NAME = "Test Account"
     const val UFVK = "ufvk1d68jqrx0q98rl0w8f5085y898x0p9z5k0sksqre87949w9494949"
     const val KEY_SOURCE = "zcash"
-    const val SEED_FINGER_PRINT = "8ac5439f8ac5439f8ac5439f8ac5439f"
+
+    // This seed fingerprint belongs to Alice's seed phrase
+    @Suppress("MagicNumber")
+    val SEED_FINGER_PRINT =
+        byteArrayOf(
+            -105,
+            67,
+            68,
+            101,
+            -93,
+            45,
+            -17,
+            -27,
+            -69,
+            -46,
+            -39,
+            11,
+            84,
+            69,
+            85,
+            123,
+            49,
+            78,
+            82,
+            78,
+            127,
+            -96,
+            70,
+            -112,
+            -118,
+            40,
+            -113,
+            120,
+            -93,
+            101,
+            56,
+            33
+        )
     val HD_ACCOUNT_INDEX = Zip32AccountIndex.new(ZIP_32_ACCOUNT_INDEX)
 
     @Suppress("LongParameterList")
@@ -28,14 +65,14 @@ object AccountFixture {
         accountUuid: UUID = ACCOUNT_UUID,
         hdAccountIndex: Zip32AccountIndex = HD_ACCOUNT_INDEX,
         keySource: String = KEY_SOURCE,
-        seedFingerprint: String = SEED_FINGER_PRINT,
+        seedFingerprint: ByteArray = SEED_FINGER_PRINT,
         ufvk: String = UFVK
     ) = Account(
         accountName = accountName,
         accountUuid = AccountUuid.new(accountUuid.toByteArray()),
         hdAccountIndex = hdAccountIndex,
         keySource = keySource,
-        seedFingerprint = seedFingerprint.toByteArray(),
+        seedFingerprint = seedFingerprint,
         ufvk = ufvk
     )
 }
