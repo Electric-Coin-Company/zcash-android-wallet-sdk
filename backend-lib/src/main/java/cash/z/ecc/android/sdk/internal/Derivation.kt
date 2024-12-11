@@ -11,14 +11,14 @@ interface Derivation {
     fun deriveUnifiedAddress(
         seed: ByteArray,
         networkId: Int,
-        accountIndex: Int
+        accountIndex: Long
     ): String
 
     fun deriveUnifiedSpendingKey(
         seed: ByteArray,
         networkId: Int,
-        accountIndex: Int
-    ): JniUnifiedSpendingKey
+        accountIndex: Long
+    ): ByteArray
 
     /**
      * @return a unified full viewing key.
@@ -66,7 +66,7 @@ interface Derivation {
         contextString: ByteArray,
         seed: ByteArray,
         networkId: Int,
-        accountIndex: Int
+        accountIndex: Long
     ): ByteArray
 
     companion object {

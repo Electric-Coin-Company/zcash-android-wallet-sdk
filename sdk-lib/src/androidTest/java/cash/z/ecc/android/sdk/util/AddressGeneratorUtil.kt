@@ -35,7 +35,7 @@ class AddressGeneratorUtil {
                     RustDerivationTool.new().deriveUnifiedAddress(
                         seed = seed,
                         network = ZcashNetwork.Mainnet,
-                        accountIndex = AccountFixture.ZIP_32_ACCOUNT_INDEX
+                        accountIndex = AccountFixture.new().hdAccountIndex!!
                     )
                 }.collect { address ->
                     println("xrxrx2\t$address")

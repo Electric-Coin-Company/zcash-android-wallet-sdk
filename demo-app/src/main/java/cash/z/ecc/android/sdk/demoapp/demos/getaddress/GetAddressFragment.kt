@@ -30,7 +30,7 @@ class GetAddressFragment : BaseDemoFragment<FragmentGetAddressBinding>() {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
                     sharedViewModel.synchronizerFlow.filterNotNull().collect { synchronizer ->
-                        val account = synchronizer.getAccounts()[CURRENT_ZIP_32_ACCOUNT_INDEX]
+                        val account = synchronizer.getAccounts()[CURRENT_ZIP_32_ACCOUNT_INDEX.toInt()]
 
                         binding.unifiedAddress.apply {
                             reportTraceEvent(ProvideAddressBenchmarkTrace.Event.UNIFIED_ADDRESS_START)

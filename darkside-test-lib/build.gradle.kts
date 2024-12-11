@@ -25,6 +25,7 @@ dependencies {
     implementation(libs.androidx.multidex)
     implementation(libs.bundles.grpc)
 
+    androidTestImplementation(projects.sdkLib)
     androidTestImplementation(projects.sdkIncubatorLib)
     androidTestImplementation(libs.bundles.androidx.test)
     androidTestImplementation(libs.zcashwalletplgn)

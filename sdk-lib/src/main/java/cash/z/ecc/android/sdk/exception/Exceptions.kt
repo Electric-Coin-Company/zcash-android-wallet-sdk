@@ -214,6 +214,11 @@ sealed class InitializeException(message: String, cause: Throwable? = null) : Sd
         cause
     )
 
+    class ImportAccountException(cause: Throwable?) : InitializeException(
+        "Failed to import new account based on UFVK due to: ${cause?.message}",
+        cause
+    )
+
     class AlreadyInitializedException(cause: Throwable, dbPath: String) : InitializeException(
         "Failed to initialize the blocks table" +
             " because it already exists in $dbPath",

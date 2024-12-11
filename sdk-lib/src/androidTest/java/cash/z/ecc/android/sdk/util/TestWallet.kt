@@ -6,11 +6,13 @@ import cash.z.ecc.android.bip39.toSeed
 import cash.z.ecc.android.sdk.SdkSynchronizer
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.WalletInitMode
+import cash.z.ecc.android.sdk.fixture.AccountCreateSetupFixture
 import cash.z.ecc.android.sdk.fixture.AccountFixture
 import cash.z.ecc.android.sdk.fixture.LightWalletEndpointFixture
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.deriveUnifiedSpendingKey
 import cash.z.ecc.android.sdk.internal.jni.RustDerivationTool
+import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
@@ -64,22 +66,22 @@ class TestWallet(
             RustDerivationTool.new().deriveUnifiedSpendingKey(
                 seed = seed,
                 network = network,
-                accountIndex = AccountFixture.ZIP_32_ACCOUNT_INDEX
+                accountIndex = AccountFixture.new().hdAccountIndex!!
             )
         }
     val synchronizer: SdkSynchronizer =
         Synchronizer.newBlocking(
-            context,
-            network,
-            alias,
+            alias = alias,
+            birthday = startHeight,
+            context = context,
             lightWalletEndpoint = endpoint,
-            seed = seed,
-            startHeight,
+            setup = AccountCreateSetupFixture.new(),
             // Using existing wallet init mode as simplification for the test
-            walletInitMode = WalletInitMode.ExistingWallet
+            walletInitMode = WalletInitMode.ExistingWallet,
+            zcashNetwork = network,
         ) as SdkSynchronizer
 
-    val available get() = synchronizer.walletBalances.value?.get(account)?.sapling?.available
+    val available get() = synchronizer.walletBalances.value?.get(account.accountUuid)?.sapling?.available
     val unifiedAddress =
         runBlocking { synchronizer.getUnifiedAddress(account) }
     val transparentAddress =
@@ -108,13 +110,14 @@ class TestWallet(
     }
 
     suspend fun send(
+        account: Account,
         address: String = transparentAddress,
         memo: String = "",
         amount: Zatoshi = Zatoshi(500L)
     ): TestWallet {
         synchronizer.createProposedTransactions(
             synchronizer.proposeTransfer(
-                spendingKey.account,
+                account,
                 address,
                 amount,
                 memo
@@ -129,7 +132,7 @@ class TestWallet(
         return this
     }
 
-    suspend fun shieldFunds(): TestWallet {
+    suspend fun shieldFunds(account: Account): TestWallet {
         synchronizer.refreshUtxos(account, BlockHeight.new(935000L)).let { count ->
             Twig.debug { "FOUND $count new UTXOs" }
         }
@@ -138,7 +141,7 @@ class TestWallet(
             Twig.debug { "FOUND utxo balance of total: $walletBalance" }
 
             if (walletBalance.value > 0L) {
-                synchronizer.proposeShielding(spendingKey.account, Zatoshi(100000))?.let {
+                synchronizer.proposeShielding(account, Zatoshi(100000))?.let {
                     synchronizer.createProposedTransactions(
                         it,
                         spendingKey

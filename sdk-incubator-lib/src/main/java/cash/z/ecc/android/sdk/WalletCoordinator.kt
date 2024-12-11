@@ -3,6 +3,8 @@ package cash.z.ecc.android.sdk
 import android.content.Context
 import cash.z.ecc.android.sdk.ext.onFirst
 import cash.z.ecc.android.sdk.internal.Twig
+import cash.z.ecc.android.sdk.model.AccountCreateSetup
+import cash.z.ecc.android.sdk.model.FirstClassByteArray
 import cash.z.ecc.android.sdk.model.PersistableWallet
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
@@ -31,6 +33,9 @@ import java.util.UUID
 
 /**
  * @param persistableWallet flow of the user's stored wallet.  Null indicates that no wallet has been stored.
+ * @param accountName A human-readable name for the account, that will be used while instantiating [Synchronizer.new]
+ * @param keySource A string identifier or other metadata describing the source of the seed, that will be used while
+ * instantiating [Synchronizer.new]
  *
  * One area where this class needs to change before it can be moved out of the incubator is that we need to be able to
  * start synchronization without necessarily decrypting the wallet.
@@ -40,7 +45,9 @@ import java.util.UUID
  */
 class WalletCoordinator(
     context: Context,
-    val persistableWallet: Flow<PersistableWallet?>
+    val persistableWallet: Flow<PersistableWallet?>,
+    val accountName: String,
+    val keySource: String?,
 ) {
     private val applicationContext = context.applicationContext
 
@@ -79,7 +86,12 @@ class WalletCoordinator(
                                 zcashNetwork = persistableWallet.network,
                                 lightWalletEndpoint = persistableWallet.endpoint,
                                 birthday = persistableWallet.birthday,
-                                seed = persistableWallet.seedPhrase.toByteArray(),
+                                setup =
+                                    AccountCreateSetup(
+                                        accountName = accountName,
+                                        keySource = keySource,
+                                        seed = FirstClassByteArray(persistableWallet.seedPhrase.toByteArray())
+                                    ),
                                 walletInitMode = persistableWallet.walletInitMode,
                             )
 

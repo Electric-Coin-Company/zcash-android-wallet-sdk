@@ -7,18 +7,30 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- `Synchronizer.getAccounts()`
-- `Synchronizer.walletBalances: StateFlow<Map<Account, AccountBalance>?>` that is replacement for the removed 
+- `Synchronizer.importAccountByUfvk()` has been added
+- `Synchronizer.getAccounts()` returning all the created or imported accounts. See the documentation in `Account`.
+- `Synchronizer.walletBalances: StateFlow<Map<AccountUuid, AccountBalance>?>` that is replacement for the removed 
   `orchardBalances`, `saplingBalances`, and `transparentBalance`
+- `getTransactions(accountUuid: AccountUuid)` to get transactions belonging to the given account
+- `Zip32AccountIndex`, `AccountUuid`, `AccountUsk`, `AccountPurpose`, `AccountCreateSetup`, and `AcountImportSetup` 
+  model classes have been added to support the new or the changed APIs
 
-### Changed 
-- `Synchronizer.orchardBalances`, `Synchronizer.saplingBalances`, and `Synchronizer.transparentBalance` have been 
-  replaced by `Synchronizer.walletBalances` that provides these balances based on `Account` 
+### Changed
+- `Account` data class works with `accountUuid: AccountUuid` instead of the previous ZIP 32 account index
+- These functions from `DerivationTool` have been refactored to work with the new `Zip32AccountIndex` instead of the
+  `Account` data class: `deriveUnifiedSpendingKey`, `deriveUnifiedAddress`, `deriveArbitraryAccountKey`
+- `WalletCoordinator` now provides a way to instantiate `Synchronizer` with the new `accountName` and `keySource` 
+  parameters
+- `UnifiedSpendingKey` does not hold `Account` information anymore, it has been replaced by `AccountUsk` model class 
+  in a few internal cases
+- `Synchronizer.send` extension function receives `Account` on input
+- `PendingTransaction` sealed class descendants have been renamed
 
 ### Removed
 - `Synchronizer.sendToAddress` and `Synchronizer.shieldFunds` have been removed, use 
   `Synchronizer.createProposedTransactions` and `Synchronizer.proposeShielding` instead
 - `Synchronizer.orchardBalances`, `Synchronizer.saplingBalances`, and `Synchronizer.transparentBalance`
+  (use `Synchronizer.walletBalances` instead).
 
 ### Fixed
 - The `CompactBlockProcessor` now correctly distinguishes between `Response.Failure.Server.Unavailable` and other 

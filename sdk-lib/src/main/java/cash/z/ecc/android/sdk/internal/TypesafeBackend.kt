@@ -13,6 +13,8 @@ import cash.z.ecc.android.sdk.internal.model.TreeState
 import cash.z.ecc.android.sdk.internal.model.WalletSummary
 import cash.z.ecc.android.sdk.internal.model.ZcashProtocol
 import cash.z.ecc.android.sdk.model.Account
+import cash.z.ecc.android.sdk.model.AccountImportSetup
+import cash.z.ecc.android.sdk.model.AccountUsk
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.FirstClassByteArray
 import cash.z.ecc.android.sdk.model.Proposal
@@ -27,10 +29,18 @@ internal interface TypesafeBackend {
     suspend fun getAccounts(): List<Account>
 
     suspend fun createAccountAndGetSpendingKey(
-        seed: ByteArray,
+        accountName: String,
+        keySource: String?,
+        seed: FirstClassByteArray,
         treeState: TreeState,
         recoverUntil: BlockHeight?
-    ): UnifiedSpendingKey
+    ): AccountUsk
+
+    suspend fun importAccountUfvk(
+        recoverUntil: BlockHeight?,
+        setup: AccountImportSetup,
+        treeState: TreeState,
+    ): Account
 
     suspend fun proposeTransferFromUri(
         account: Account,
@@ -90,7 +100,7 @@ internal interface TypesafeBackend {
     ): String?
 
     @Throws(InitializeException::class)
-    suspend fun initDataDb(seed: ByteArray?)
+    suspend fun initDataDb(seed: FirstClassByteArray?)
 
     /**
      * @throws RuntimeException as a common indicator of the operation failure

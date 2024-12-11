@@ -47,25 +47,39 @@ internal class TransactionEncoderImpl(
      */
     override suspend fun createTransaction(
         usk: UnifiedSpendingKey,
+        account: Account,
         amount: Zatoshi,
         recipient: TransactionRecipient,
         memo: ByteArray?
     ): EncodedTransaction {
-        require(recipient is TransactionRecipient.Address)
+        require(recipient is TransactionRecipient.RecipientAddress)
 
-        val transactionId = createSpend(usk, amount, recipient.addressValue, memo)
+        val transactionId =
+            createSpend(
+                account = account,
+                amount = amount,
+                memo = memo,
+                toAddress = recipient.addressValue,
+                usk = usk,
+            )
         return repository.findEncodedTransactionByTxId(transactionId)
             ?: throw TransactionEncoderException.TransactionNotFoundException(transactionId)
     }
 
     override suspend fun createShieldingTransaction(
         usk: UnifiedSpendingKey,
+        account: Account,
         recipient: TransactionRecipient,
         memo: ByteArray?
     ): EncodedTransaction {
-        require(recipient is TransactionRecipient.Account)
+        require(recipient is TransactionRecipient.RecipientAccount)
 
-        val transactionId = createShieldingSpend(usk, memo)
+        val transactionId =
+            createShieldingSpend(
+                account = account,
+                memo = memo,
+                usk = usk,
+            )
         return repository.findEncodedTransactionByTxId(transactionId)
             ?: throw TransactionEncoderException.TransactionNotFoundException(transactionId)
     }
@@ -255,10 +269,11 @@ internal class TransactionEncoderImpl(
      * failed.
      */
     private suspend fun createSpend(
-        usk: UnifiedSpendingKey,
+        account: Account,
         amount: Zatoshi,
+        memo: ByteArray? = null,
         toAddress: String,
-        memo: ByteArray? = null
+        usk: UnifiedSpendingKey,
     ): FirstClassByteArray {
         Twig.debug {
             "creating transaction to spend $amount zatoshi to" +
@@ -270,7 +285,7 @@ internal class TransactionEncoderImpl(
             Twig.debug { "params exist! attempting to send..." }
             val proposal =
                 backend.proposeTransfer(
-                    usk.account,
+                    account,
                     toAddress,
                     amount.value,
                     memo
@@ -286,14 +301,15 @@ internal class TransactionEncoderImpl(
     }
 
     private suspend fun createShieldingSpend(
+        account: Account,
+        memo: ByteArray? = null,
         usk: UnifiedSpendingKey,
-        memo: ByteArray? = null
     ): FirstClassByteArray {
         return runCatching {
             saplingParamTool.ensureParams(saplingParamTool.properties.paramsDirectory)
             Twig.debug { "params exist! attempting to shield..." }
             val proposal =
-                backend.proposeShielding(usk.account, SHIELDING_THRESHOLD, memo)
+                backend.proposeShielding(account, SHIELDING_THRESHOLD, memo)
                     ?: throw SdkException(
                         "Insufficient balance (have 0, need $SHIELDING_THRESHOLD including fee)",
                         null

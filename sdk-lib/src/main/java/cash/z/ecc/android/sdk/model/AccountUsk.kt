@@ -1,10 +1,10 @@
 package cash.z.ecc.android.sdk.model
 
 import cash.z.ecc.android.sdk.internal.jni.RustBackend
-import cash.z.ecc.android.sdk.internal.model.JniUnifiedSpendingKey
+import cash.z.ecc.android.sdk.internal.model.JniAccountUsk
 
 /**
- * A [ZIP 316](https://zips.z.cash/zip-0316) Unified Spending Key.
+ * Account related model class providing a [ZIP 316](https://zips.z.cash/zip-0316) Unified Spending Key.
  *
  * This is the spend authority for an account under the wallet's seed.
  *
@@ -12,10 +12,14 @@ import cash.z.ecc.android.sdk.internal.model.JniUnifiedSpendingKey
  * derived at the time of its creation. As such, it is not suitable for long-term storage,
  * export/import, or backup purposes.
  */
-class UnifiedSpendingKey private constructor(
+class AccountUsk private constructor(
+    /**
+     * The account UUID used to derive this key.
+     */
+    val accountUuid: AccountUuid,
     /**
      * The binary encoding of the [ZIP 316](https://zips.z.cash/zip-0316) Unified Spending
-     * Key for the selected account.
+     * Key for [accountUuid].
      *
      * This encoding **MUST NOT** be exposed to users. It is an internal encoding that is
      * inherently unstable, and only intended to be passed between the SDK and the storage
@@ -23,13 +27,14 @@ class UnifiedSpendingKey private constructor(
      */
     private val bytes: FirstClassByteArray
 ) {
-    internal constructor(uskJni: JniUnifiedSpendingKey) : this(
+    internal constructor(uskJni: JniAccountUsk) : this(
+        AccountUuid.new(uskJni.accountUuid),
         FirstClassByteArray(uskJni.bytes.copyOf())
     )
 
     /**
      * The binary encoding of the [ZIP 316](https://zips.z.cash/zip-0316) Unified Spending
-     * Key for [account].
+     * Key for [accountUuid].
      *
      * This encoding **MUST NOT** be exposed to users. It is an internal encoding that is
      * inherently unstable, and only intended to be passed between the SDK and the storage
@@ -38,7 +43,7 @@ class UnifiedSpendingKey private constructor(
     fun copyBytes() = bytes.byteArray.copyOf()
 
     // Override to prevent leaking key to logs
-    override fun toString() = "UnifiedSpendingKey(bytes=***)"
+    override fun toString() = "AccountUsk(account=$accountUuid, bytes=***)"
 
     companion object {
         /**
@@ -46,15 +51,24 @@ class UnifiedSpendingKey private constructor(
          * network upgrades or other internal changes.  If a non-successful result is returned, clients are expected
          * to use [DerivationTool.deriveUnifiedSpendingKey] to regenerate the key from the seed.
          *
-         * @return A validated UnifiedSpendingKey.
+         * @return A validated AccountUsk.
          */
-        suspend fun new(bytes: ByteArray): UnifiedSpendingKey {
+        suspend fun new(
+            accountUuid: AccountUuid,
+            bytes: ByteArray
+        ): Result<AccountUsk> {
             val bytesCopy = bytes.copyOf()
             RustBackend.loadLibrary()
-            return run {
+            return runCatching {
                 require(RustBackend.validateUnifiedSpendingKey(bytesCopy))
-                UnifiedSpendingKey(FirstClassByteArray(bytesCopy))
+                AccountUsk(accountUuid, FirstClassByteArray(bytesCopy))
             }
         }
+
+        fun new(jniAccountUsk: JniAccountUsk): AccountUsk =
+            AccountUsk(
+                accountUuid = AccountUuid.new(jniAccountUsk.accountUuid),
+                bytes = FirstClassByteArray(jniAccountUsk.bytes)
+            )
     }
 }

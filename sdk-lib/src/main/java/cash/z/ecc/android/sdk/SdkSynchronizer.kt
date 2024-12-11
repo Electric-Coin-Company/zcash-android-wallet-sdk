@@ -42,9 +42,14 @@ import cash.z.ecc.android.sdk.internal.transaction.OutboundTransactionManagerImp
 import cash.z.ecc.android.sdk.internal.transaction.TransactionEncoder
 import cash.z.ecc.android.sdk.internal.transaction.TransactionEncoderImpl
 import cash.z.ecc.android.sdk.model.Account
+import cash.z.ecc.android.sdk.model.AccountCreateSetup
+import cash.z.ecc.android.sdk.model.AccountImportSetup
+import cash.z.ecc.android.sdk.model.AccountUsk
+import cash.z.ecc.android.sdk.model.AccountUuid
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.FastestServersResult
 import cash.z.ecc.android.sdk.model.FetchFiatCurrencyResult
+import cash.z.ecc.android.sdk.model.FirstClassByteArray
 import cash.z.ecc.android.sdk.model.ObserveFiatCurrencyResult
 import cash.z.ecc.android.sdk.model.PercentDecimal
 import cash.z.ecc.android.sdk.model.Proposal
@@ -56,6 +61,7 @@ import cash.z.ecc.android.sdk.model.TransactionSubmitResult
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
+import cash.z.ecc.android.sdk.tool.CheckpointTool
 import cash.z.ecc.android.sdk.type.AddressType
 import cash.z.ecc.android.sdk.type.AddressType.Shielded
 import cash.z.ecc.android.sdk.type.AddressType.Tex
@@ -118,6 +124,7 @@ import kotlin.time.Duration.Companion.seconds
  */
 @Suppress("TooManyFunctions", "LongParameterList")
 class SdkSynchronizer private constructor(
+    private val context: Context,
     private val synchronizerKey: SynchronizerKey,
     private val storage: DerivedDataRepository,
     private val txManager: OutboundTransactionManager,
@@ -149,6 +156,7 @@ class SdkSynchronizer private constructor(
          */
         @Suppress("LongParameterList")
         internal suspend fun new(
+            context: Context,
             zcashNetwork: ZcashNetwork,
             alias: String,
             repository: DerivedDataRepository,
@@ -165,6 +173,7 @@ class SdkSynchronizer private constructor(
                 checkForExistingSynchronizers(synchronizerKey)
 
                 SdkSynchronizer(
+                    context,
                     synchronizerKey,
                     repository,
                     txManager,
@@ -459,6 +468,22 @@ class SdkSynchronizer private constructor(
         }
     }
 
+    override suspend fun getTransactions(accountUuid: AccountUuid): Flow<List<TransactionOverview>> {
+        return combine(
+            processor.networkHeight,
+            storage.getTransactions(accountUuid)
+        ) { networkHeight, allAccountTransactions ->
+            val latestBlockHeight =
+                networkHeight ?: runCatching {
+                    backend.getMaxScannedHeight()
+                }.onFailure {
+                    Twig.error(it) { "Failed to get max scanned height" }
+                }.getOrNull()
+
+            allAccountTransactions.map { TransactionOverview.new(it, latestBlockHeight) }
+        }
+    }
+
     //
     // Storage APIs
     //
@@ -644,12 +669,16 @@ class SdkSynchronizer private constructor(
 
     // Not ready to be a public API; internal for testing only
     internal suspend fun createAccount(
-        seed: ByteArray,
+        accountName: String,
+        keySource: String?,
+        recoverUntil: BlockHeight?,
+        seed: FirstClassByteArray,
         treeState: TreeState,
-        recoverUntil: BlockHeight?
-    ): UnifiedSpendingKey {
+    ): AccountUsk {
         return runCatching {
             backend.createAccountAndGetSpendingKey(
+                accountName = accountName,
+                keySource = keySource,
                 seed = seed,
                 treeState = treeState,
                 recoverUntil = recoverUntil
@@ -660,6 +689,44 @@ class SdkSynchronizer private constructor(
             Twig.error(it) { "Create account failed." }
         }.getOrElse {
             throw InitializeException.CreateAccountException(it)
+        }
+    }
+
+    override suspend fun importAccountByUfvk(setup: AccountImportSetup,): Account {
+        val chainTip: BlockHeight? =
+            when (val response = processor.downloader.getLatestBlockHeight()) {
+                is Response.Success -> {
+                    Twig.info { "Chain tip for recovery until param fetched: ${response.result.value}" }
+                    runCatching { response.result.toBlockHeight() }.getOrNull()
+                }
+                is Response.Failure -> {
+                    Twig.error {
+                        "Chain tip fetch for recovery until failed with: ${response.toThrowable()}"
+                    }
+                    null
+                }
+            }
+
+        val loadedCheckpoint =
+            CheckpointTool.loadNearest(
+                context = context,
+                network = network,
+                chainTip ?: network.saplingActivationHeight
+            )
+        val treeState: TreeState = loadedCheckpoint.treeState()
+
+        return runCatching {
+            backend.importAccountUfvk(
+                recoverUntil = chainTip,
+                setup = setup,
+                treeState = treeState,
+            ).also {
+                refreshAccountsBus.emit(Unit)
+            }
+        }.onFailure {
+            Twig.error(it) { "Import account failed." }
+        }.getOrElse {
+            throw InitializeException.ImportAccountException(it)
         }
     }
 
@@ -991,22 +1058,20 @@ internal object DefaultSynchronizerFactory {
     @Suppress("LongParameterList")
     internal suspend fun defaultDerivedDataRepository(
         context: Context,
-        rustBackend: TypesafeBackend,
         databaseFile: File,
         checkpoint: Checkpoint,
-        seed: ByteArray?,
-        numberOfAccounts: Int,
-        recoverUntil: BlockHeight?
+        recoverUntil: BlockHeight?,
+        rustBackend: TypesafeBackend,
+        setup: AccountCreateSetup?,
     ): DerivedDataRepository =
         DbDerivedDataRepository(
             DerivedDataDb.new(
-                context,
-                rustBackend,
-                databaseFile,
-                checkpoint,
-                seed,
-                numberOfAccounts,
-                recoverUntil
+                context = context,
+                backend = rustBackend,
+                databaseFile = databaseFile,
+                checkpoint = checkpoint,
+                recoverUntil = recoverUntil,
+                setup = setup,
             )
         )
 

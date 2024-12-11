@@ -14,6 +14,9 @@ import cash.z.ecc.android.sdk.internal.model.TreeState
 import cash.z.ecc.android.sdk.internal.model.WalletSummary
 import cash.z.ecc.android.sdk.internal.model.ZcashProtocol
 import cash.z.ecc.android.sdk.model.Account
+import cash.z.ecc.android.sdk.model.AccountImportSetup
+import cash.z.ecc.android.sdk.model.AccountPurpose
+import cash.z.ecc.android.sdk.model.AccountUsk
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.FirstClassByteArray
 import cash.z.ecc.android.sdk.model.Proposal
@@ -27,19 +30,57 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
     override val network: ZcashNetwork
         get() = ZcashNetwork.from(backend.networkId)
 
-    override suspend fun getAccounts(): List<Account> = backend.getAccounts().map { Account(it.accountIndex.toInt()) }
+    override suspend fun getAccounts(): List<Account> = backend.getAccounts().map { Account.new(it) }
 
     override suspend fun createAccountAndGetSpendingKey(
-        seed: ByteArray,
+        accountName: String,
+        keySource: String?,
+        seed: FirstClassByteArray,
         treeState: TreeState,
         recoverUntil: BlockHeight?
-    ): UnifiedSpendingKey {
-        return UnifiedSpendingKey(
+    ): AccountUsk {
+        return AccountUsk.new(
             backend.createAccount(
-                seed = seed,
+                accountName = accountName,
+                keySource = keySource,
+                seed = seed.byteArray,
                 treeState = treeState.encoded,
                 recoverUntil = recoverUntil?.value
             )
+        )
+    }
+
+    override suspend fun importAccountUfvk(
+        recoverUntil: BlockHeight?,
+        setup: AccountImportSetup,
+        treeState: TreeState,
+    ): Account {
+        return Account.new(
+            jniAccount =
+                when (setup.purpose) {
+                    is AccountPurpose.Spending ->
+                        backend.importAccountUfvk(
+                            accountName = setup.accountName,
+                            keySource = setup.keySource,
+                            purpose = setup.purpose.value,
+                            recoverUntil = recoverUntil?.value,
+                            treeState = treeState.encoded,
+                            ufvk = setup.ufvk.encoding,
+                            seedFingerprint = setup.purpose.seedFingerprint,
+                            zip32AccountIndex = setup.purpose.zip32AccountIndex?.index,
+                        )
+                    AccountPurpose.ViewOnly ->
+                        backend.importAccountUfvk(
+                            accountName = setup.accountName,
+                            keySource = setup.keySource,
+                            purpose = setup.purpose.value,
+                            recoverUntil = recoverUntil?.value,
+                            treeState = treeState.encoded,
+                            ufvk = setup.ufvk.encoding,
+                            seedFingerprint = null,
+                            zip32AccountIndex = null,
+                        )
+                }
         )
     }
 
@@ -49,7 +90,7 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
     ): Proposal =
         Proposal.fromUnsafe(
             backend.proposeTransferFromUri(
-                account.value,
+                account.accountUuid.value,
                 uri
             )
         )
@@ -63,7 +104,7 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
     ): Proposal =
         Proposal.fromUnsafe(
             backend.proposeTransfer(
-                account.value,
+                account.accountUuid.value,
                 to,
                 value,
                 memo
@@ -77,7 +118,7 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
         transparentReceiver: String?
     ): Proposal? =
         backend.proposeShielding(
-            account.value,
+            account.accountUuid.value,
             shieldingThreshold,
             memo,
             transparentReceiver
@@ -98,14 +139,14 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
 
     override suspend fun getCurrentAddress(account: Account): String {
         return runCatching {
-            backend.getCurrentAddress(account.value)
+            backend.getCurrentAddress(account.accountUuid.value)
         }.onFailure {
             Twig.warn(it) { "Currently unable to get current address" }
         }.getOrElse { throw RustLayerException.GetCurrentAddressException(it) }
     }
 
     override suspend fun listTransparentReceivers(account: Account): List<String> {
-        return backend.listTransparentReceivers(account.value)
+        return backend.listTransparentReceivers(account.accountUuid.value)
     }
 
     override fun getBranchIdForHeight(height: BlockHeight): Long {
@@ -166,8 +207,8 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
             outputIndex = outputIndex
         )
 
-    override suspend fun initDataDb(seed: ByteArray?) {
-        val ret = backend.initDataDb(seed)
+    override suspend fun initDataDb(seed: FirstClassByteArray?) {
+        val ret = backend.initDataDb(seed?.byteArray)
         when (ret) {
             2 -> throw InitializeException.SeedNotRelevant
             1 -> throw InitializeException.SeedRequired
