@@ -54,7 +54,7 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
         purpose: AccountPurpose,
         recoverUntil: BlockHeight?,
         setup: AccountImportSetup,
-        treeState: ByteArray,
+        treeState: TreeState,
     ): Account {
         return Account.new(
             jniAccount =
