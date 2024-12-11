@@ -18,7 +18,7 @@ object JniAccountBalanceFixture {
 
     @Suppress("LongParameterList")
     fun new(
-        account: ByteArray = ACCOUNT_UUID,
+        accountUuid: ByteArray = ACCOUNT_UUID,
         saplingVerifiedBalance: Long = SAPLING_VERIFIED_BALANCE,
         saplingChangePending: Long = SAPLING_CHANGE_PENDING,
         saplingValuePending: Long = SAPLING_VALUE_PENDING,
@@ -27,7 +27,7 @@ object JniAccountBalanceFixture {
         orchardValuePending: Long = ORCHARD_VALUE_PENDING,
         unshieldedBalance: Long = UNSHIELDED_BALANCE,
     ) = JniAccountBalance(
-        accountUuid = account,
+        accountUuid = accountUuid,
         saplingVerifiedBalance = saplingVerifiedBalance,
         saplingChangePending = saplingChangePending,
         saplingValuePending = saplingValuePending,

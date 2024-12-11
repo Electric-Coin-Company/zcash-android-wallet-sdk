@@ -4,7 +4,8 @@ import androidx.annotation.Keep
 import cash.z.ecc.android.sdk.internal.jni.JNI_ACCOUNT_UUID_BYTES_SIZE
 
 /**
- * A [ZIP 316](https://zips.z.cash/zip-0316) Unified Spending Key.
+ * Serves as cross layer (Kotlin, Rust) communication class. It contains account identifier together with
+ * a [ZIP 316](https://zips.z.cash/zip-0316) Unified Spending Key.
  *
  * This is the spend authority for an account under the wallet's seed.
  *
@@ -36,5 +37,5 @@ class JniAccountUsk(
     }
 
     // Override to prevent leaking key to logs
-    override fun toString() = "JniUnifiedSpendingKey(account=$accountUuid, bytes=***)"
+    override fun toString() = "JniAccountUsk(account=$accountUuid, bytes=***)"
 }

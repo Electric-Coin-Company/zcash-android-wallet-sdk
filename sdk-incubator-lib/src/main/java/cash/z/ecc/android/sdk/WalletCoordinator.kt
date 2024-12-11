@@ -32,8 +32,9 @@ import java.util.UUID
 
 /**
  * @param persistableWallet flow of the user's stored wallet.  Null indicates that no wallet has been stored.
- * @param accountName FIXME
- * @param keySource FIXME
+ * @param accountName A human-readable name for the account, that will be used while instantiating [Synchronizer.new]
+ * @param keySource A string identifier or other metadata describing the source of the seed, that will be used while
+ * instantiating [Synchronizer.new]
  *
  * One area where this class needs to change before it can be moved out of the incubator is that we need to be able to
  * start synchronization without necessarily decrypting the wallet.
