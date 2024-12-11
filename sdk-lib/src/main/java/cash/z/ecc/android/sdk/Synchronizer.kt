@@ -138,8 +138,9 @@ interface Synchronizer {
      * Tells the wallet to track an account using a unified full viewing key.
      *
      * Returns details about the imported account, including the unique account identifier for
-     * the newly-created wallet database entry. Unlike the other account creation APIs, no spending key is returned
-     * because the wallet has no information about how the UFVK was derived.
+     * the newly-created wallet database entry. Unlike the other account creation APIs, no spending
+     * key is returned because the wallet has no information about the mnemonic phrase from which
+     * the UFVK was derived.
      *
      * @param purpose Metadata describing whether or not data required for spending should be tracked by the wallet
      * @param setup The account's setup information. See [AccountImportSetup] for more.
