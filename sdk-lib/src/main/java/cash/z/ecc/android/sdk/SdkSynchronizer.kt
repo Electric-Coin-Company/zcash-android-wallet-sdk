@@ -721,9 +721,9 @@ class SdkSynchronizer private constructor(
         return runCatching {
             backend.importAccountUfvk(
                 purpose = purpose,
-                recoverUntil = chainTip?.value,
+                recoverUntil = chainTip,
                 setup = setup,
-                treeState = treeState.encoded,
+                treeState = treeState,
             ).also {
                 refreshAccountsBus.emit(Unit)
             }
