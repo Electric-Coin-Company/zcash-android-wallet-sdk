@@ -4,6 +4,7 @@ import android.content.Context
 import cash.z.ecc.android.sdk.ext.onFirst
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.model.AccountCreateSetup
+import cash.z.ecc.android.sdk.model.FirstClassByteArray
 import cash.z.ecc.android.sdk.model.PersistableWallet
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
@@ -89,7 +90,7 @@ class WalletCoordinator(
                                     AccountCreateSetup(
                                         accountName = accountName,
                                         keySource = keySource,
-                                        seed = persistableWallet.seedPhrase.toByteArray()
+                                        seed = FirstClassByteArray(persistableWallet.seedPhrase.toByteArray())
                                     ),
                                 walletInitMode = persistableWallet.walletInitMode,
                             )

@@ -31,7 +31,7 @@ internal interface TypesafeBackend {
     suspend fun createAccountAndGetSpendingKey(
         accountName: String,
         keySource: String?,
-        seed: ByteArray,
+        seed: FirstClassByteArray,
         treeState: TreeState,
         recoverUntil: BlockHeight?
     ): AccountUsk
@@ -100,7 +100,7 @@ internal interface TypesafeBackend {
     ): String?
 
     @Throws(InitializeException::class)
-    suspend fun initDataDb(seed: ByteArray?)
+    suspend fun initDataDb(seed: FirstClassByteArray?)
 
     /**
      * @throws RuntimeException as a common indicator of the operation failure

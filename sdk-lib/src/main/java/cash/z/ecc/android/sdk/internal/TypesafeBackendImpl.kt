@@ -35,7 +35,7 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
     override suspend fun createAccountAndGetSpendingKey(
         accountName: String,
         keySource: String?,
-        seed: ByteArray,
+        seed: FirstClassByteArray,
         treeState: TreeState,
         recoverUntil: BlockHeight?
     ): AccountUsk {
@@ -43,7 +43,7 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
             backend.createAccount(
                 accountName = accountName,
                 keySource = keySource,
-                seed = seed,
+                seed = seed.byteArray,
                 treeState = treeState.encoded,
                 recoverUntil = recoverUntil?.value
             )
@@ -207,8 +207,8 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
             outputIndex = outputIndex
         )
 
-    override suspend fun initDataDb(seed: ByteArray?) {
-        val ret = backend.initDataDb(seed)
+    override suspend fun initDataDb(seed: FirstClassByteArray?) {
+        val ret = backend.initDataDb(seed?.byteArray)
         when (ret) {
             2 -> throw InitializeException.SeedNotRelevant
             1 -> throw InitializeException.SeedRequired

@@ -49,6 +49,7 @@ import cash.z.ecc.android.sdk.model.AccountUuid
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.FastestServersResult
 import cash.z.ecc.android.sdk.model.FetchFiatCurrencyResult
+import cash.z.ecc.android.sdk.model.FirstClassByteArray
 import cash.z.ecc.android.sdk.model.ObserveFiatCurrencyResult
 import cash.z.ecc.android.sdk.model.PercentDecimal
 import cash.z.ecc.android.sdk.model.Proposal
@@ -671,7 +672,7 @@ class SdkSynchronizer private constructor(
         accountName: String,
         keySource: String?,
         recoverUntil: BlockHeight?,
-        seed: ByteArray,
+        seed: FirstClassByteArray,
         treeState: TreeState,
     ): AccountUsk {
         return runCatching {

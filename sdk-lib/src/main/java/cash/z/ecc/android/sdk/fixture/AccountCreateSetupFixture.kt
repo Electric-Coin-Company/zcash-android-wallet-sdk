@@ -1,6 +1,7 @@
 package cash.z.ecc.android.sdk.fixture
 
 import cash.z.ecc.android.sdk.model.AccountCreateSetup
+import cash.z.ecc.android.sdk.model.FirstClassByteArray
 
 object AccountCreateSetupFixture {
     const val ACCOUNT_NAME = AccountFixture.ACCOUNT_NAME
@@ -18,6 +19,6 @@ object AccountCreateSetupFixture {
     ) = AccountCreateSetup(
         accountName,
         keySource,
-        seed
+        FirstClassByteArray(seed)
     )
 }

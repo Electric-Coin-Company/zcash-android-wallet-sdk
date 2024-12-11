@@ -13,6 +13,7 @@ import cash.z.ecc.android.sdk.ext.onFirst
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.model.AccountCreateSetup
 import cash.z.ecc.android.sdk.model.BlockHeight
+import cash.z.ecc.android.sdk.model.FirstClassByteArray
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import co.electriccoin.lightwallet.client.ext.BenchmarkingExt
 import co.electriccoin.lightwallet.client.fixture.BenchmarkingBlockRangeFixture
@@ -90,7 +91,7 @@ class SharedViewModel(application: Application) : AndroidViewModel(application) 
                                 AccountCreateSetup(
                                     accountName = "Zcash Account 1",
                                     keySource = DEMO_APP_ZCASH_ACCOUNT_KEY_SOURCE,
-                                    seed = seedBytes
+                                    seed = FirstClassByteArray(seedBytes)
                                 ),
                             // We use restore mode as this is always initialization with an older seed
                             walletInitMode = WalletInitMode.RestoreWallet,
