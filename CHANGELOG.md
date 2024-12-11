@@ -7,14 +7,22 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- `Synchronizer.getAccounts()`
-- `Synchronizer.walletBalances: StateFlow<Map<Account, AccountBalance>?>` that is replacement for the removed 
+- `Synchronizer.importAccountByUfvk()` has been added
+- `Synchronizer.getAccounts()` returning all the created or imported accounts. See the documentation in `Account`.
+- `Synchronizer.walletBalances: StateFlow<Map<AccountUuid, AccountBalance>?>` that is replacement for the removed 
   `orchardBalances`, `saplingBalances`, and `transparentBalance`
+- `getTransactions(accountUuid: AccountUuid)` to get transactions belonging to the given account
 
 ### Changed
-- `Account` data class works with `accountUuid: ByteArray` instead of the previous ZIP 32 account index
-- These functions from `DerivationTool` have been refactored to work with the ZIP 32 account index instead of the
+- `Account` data class works with `accountUuid: AccountUuid` instead of the previous ZIP 32 account index
+- These functions from `DerivationTool` have been refactored to work with the new `Zip32AccountIndex` instead of the
   `Account` data class: `deriveUnifiedSpendingKey`, `deriveUnifiedAddress`, `deriveArbitraryAccountKey`
+- `WalletCoordinator` now provides a way to instantiate `Synchronizer` with the new `accountName` and `keySource` 
+  parameters
+- `UnifiedSpendingKey` does not hold `Account` information anymore, it has been replaced by `AccountUsk` model class 
+  in a few internal cases
+- `Synchronizer.send` extension function receives `Account` on input
+- `PendingTransaction` sealed class descendants have been renamed
 
 ### Removed
 - `Synchronizer.sendToAddress` and `Synchronizer.shieldFunds` have been removed, use 
