@@ -328,6 +328,38 @@ sealed class LightWalletException(message: String, cause: Throwable? = null) : S
 }
 
 /**
+ * Potentially user-facing exceptions thrown while creating transactions
+ */
+sealed class PcztException(
+    message: String,
+    cause: Throwable? = null
+) : SdkException(message, cause) {
+    class CreatePcztFromProposalException internal constructor(
+        description: String?,
+        cause: Throwable?
+    ) : PcztException(
+            "Failed to create PCZT from proposal with message: ${description ?: "-"}",
+            cause
+        )
+
+    class AddProofsToPcztException internal constructor(
+        description: String?,
+        cause: Throwable?
+    ) : PcztException(
+            "Failed to add proofs to PCZT with message: ${description ?: "-"}",
+            cause
+        )
+
+    class ExtractAndStoreTxFromPcztException internal constructor(
+        description: String?,
+        cause: Throwable?
+    ) : PcztException(
+            "Failed to extract and store transaction from PCZT with message: ${description ?: "-"}",
+            cause
+        )
+}
+
+/**
  * Potentially user-facing exceptions thrown while encoding transactions.
  */
 sealed class TransactionEncoderException(

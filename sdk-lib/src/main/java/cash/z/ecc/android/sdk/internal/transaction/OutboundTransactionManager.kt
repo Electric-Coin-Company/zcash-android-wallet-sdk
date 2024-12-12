@@ -2,6 +2,8 @@ package cash.z.ecc.android.sdk.internal.transaction
 
 import cash.z.ecc.android.sdk.internal.model.EncodedTransaction
 import cash.z.ecc.android.sdk.model.Account
+import cash.z.ecc.android.sdk.model.AccountUuid
+import cash.z.ecc.android.sdk.model.Pczt
 import cash.z.ecc.android.sdk.model.Proposal
 import cash.z.ecc.android.sdk.model.TransactionRecipient
 import cash.z.ecc.android.sdk.model.TransactionSubmitResult
@@ -113,6 +115,18 @@ internal interface OutboundTransactionManager {
      * @return true if the transaction was successfully submitted to lightwalletd.
      */
     suspend fun submit(encodedTransaction: EncodedTransaction): TransactionSubmitResult
+
+    suspend fun createPcztFromProposal(
+        accountUuid: AccountUuid,
+        proposal: Proposal
+    ): Pczt
+
+    suspend fun addProofsToPczt(pczt: Pczt): Pczt
+
+    suspend fun extractAndStoreTxFromPczt(
+        pcztWithProofs: Pczt,
+        pcztWithSignatures: Pczt
+    ): EncodedTransaction
 
     /**
      * Return true when the given address is a valid t-addr.

@@ -4,6 +4,8 @@ import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.ext.toHexReversed
 import cash.z.ecc.android.sdk.internal.model.EncodedTransaction
 import cash.z.ecc.android.sdk.model.Account
+import cash.z.ecc.android.sdk.model.AccountUuid
+import cash.z.ecc.android.sdk.model.Pczt
 import cash.z.ecc.android.sdk.model.Proposal
 import cash.z.ecc.android.sdk.model.TransactionRecipient
 import cash.z.ecc.android.sdk.model.TransactionSubmitResult
@@ -137,6 +139,18 @@ internal class OutboundTransactionManagerImpl(
             }
         }
     }
+
+    override suspend fun createPcztFromProposal(
+        accountUuid: AccountUuid,
+        proposal: Proposal
+    ) = encoder.createPcztFromProposal(accountUuid, proposal)
+
+    override suspend fun addProofsToPczt(pczt: Pczt) = encoder.addProofsToPczt(pczt)
+
+    override suspend fun extractAndStoreTxFromPczt(
+        pcztWithProofs: Pczt,
+        pcztWithSignatures: Pczt
+    ) = encoder.extractAndStoreTxFromPczt(pcztWithProofs, pcztWithSignatures)
 
     override suspend fun isValidShieldedAddress(address: String) = encoder.isValidShieldedAddress(address)
 

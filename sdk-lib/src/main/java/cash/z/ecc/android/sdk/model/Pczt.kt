@@ -9,4 +9,7 @@ class Pczt(
     fun toByteArray(): ByteArray {
         return inner
     }
+
+    // Override to prevent leaking data in logs
+    override fun toString() = "Pczt(size=${inner.size})"
 }

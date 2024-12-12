@@ -3,7 +3,9 @@ package cash.z.ecc.android.sdk.internal.transaction
 import cash.z.ecc.android.sdk.exception.TransactionEncoderException
 import cash.z.ecc.android.sdk.internal.model.EncodedTransaction
 import cash.z.ecc.android.sdk.model.Account
+import cash.z.ecc.android.sdk.model.AccountUuid
 import cash.z.ecc.android.sdk.model.BlockHeight
+import cash.z.ecc.android.sdk.model.Pczt
 import cash.z.ecc.android.sdk.model.Proposal
 import cash.z.ecc.android.sdk.model.TransactionRecipient
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
@@ -125,6 +127,18 @@ internal interface TransactionEncoder {
         proposal: Proposal,
         usk: UnifiedSpendingKey
     ): List<EncodedTransaction>
+
+    suspend fun createPcztFromProposal(
+        accountUuid: AccountUuid,
+        proposal: Proposal
+    ): Pczt
+
+    suspend fun addProofsToPczt(pczt: Pczt): Pczt
+
+    suspend fun extractAndStoreTxFromPczt(
+        pcztWithProofs: Pczt,
+        pcztWithSignatures: Pczt
+    ): EncodedTransaction
 
     /**
      * Utility function to help with validation. This is not called during [createTransaction]

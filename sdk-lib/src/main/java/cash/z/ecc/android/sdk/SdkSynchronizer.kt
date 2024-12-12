@@ -51,6 +51,7 @@ import cash.z.ecc.android.sdk.model.FastestServersResult
 import cash.z.ecc.android.sdk.model.FetchFiatCurrencyResult
 import cash.z.ecc.android.sdk.model.FirstClassByteArray
 import cash.z.ecc.android.sdk.model.ObserveFiatCurrencyResult
+import cash.z.ecc.android.sdk.model.Pczt
 import cash.z.ecc.android.sdk.model.PercentDecimal
 import cash.z.ecc.android.sdk.model.Proposal
 import cash.z.ecc.android.sdk.model.TransactionOutput
@@ -93,6 +94,7 @@ import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
@@ -855,6 +857,22 @@ class SdkSynchronizer private constructor(
                     submission
                 }
             }
+    }
+
+    override suspend fun createPcztFromProposal(
+        accountUuid: AccountUuid,
+        proposal: Proposal
+    ) = txManager.createPcztFromProposal(accountUuid, proposal)
+
+    override suspend fun addProofsToPczt(pczt: Pczt) = txManager.addProofsToPczt(pczt)
+
+    override suspend fun createTransactionFromPczt(
+        pcztWithProofs: Pczt,
+        pcztWithSignatures: Pczt
+    ): Flow<TransactionSubmitResult> {
+        // Internally, this logic submits and checks the newly stored and encoded transaction
+        return flowOf(txManager.extractAndStoreTxFromPczt(pcztWithProofs, pcztWithSignatures))
+            .map { transaction -> txManager.submit(transaction) }
     }
 
     override suspend fun refreshUtxos(

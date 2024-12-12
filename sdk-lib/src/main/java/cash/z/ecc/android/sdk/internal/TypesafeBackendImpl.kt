@@ -155,7 +155,11 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
         pcztWithProofs: Pczt,
         pcztWithSignatures: Pczt
     ): FirstClassByteArray =
-        FirstClassByteArray(backend.extractAndStoreTxFromPczt(pcztWithProofs.toByteArray(), pcztWithSignatures.toByteArray()))
+        FirstClassByteArray(
+            backend.extractAndStoreTxFromPczt(
+                pcztWithProofs.toByteArray(), pcztWithSignatures.toByteArray()
+            )
+        )
 
     override suspend fun getCurrentAddress(account: Account): String {
         return runCatching {
