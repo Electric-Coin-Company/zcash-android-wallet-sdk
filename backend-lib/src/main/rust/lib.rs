@@ -555,18 +555,23 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_importAcc
         let account_name = java_string_to_rust(env, &account_name);
         let key_source = java_nullable_string_to_rust(env, &key_source);
 
-        let seed_fingerprint =
-            <[u8; 32]>::try_from(&env.convert_byte_array(seed_fingerprint_bytes)?[..])
-                .ok()
-                .map(SeedFingerprint::from_bytes);
-        let hd_account_index = zip32::AccountId::try_from(hd_account_index_raw).ok();
-
-        let derivation = seed_fingerprint
-            .zip(hd_account_index)
-            .map(|(seed_fp, idx)| Zip32Derivation::new(seed_fp, idx));
-
         let purpose = match purpose {
-            0 => Ok(AccountPurpose::Spending { derivation }),
+            0 => {
+                let seed_fingerprint = if !seed_fingerprint_bytes.is_null() {
+                    <[u8; 32]>::try_from(&env.convert_byte_array(seed_fingerprint_bytes)?[..])
+                        .ok()
+                        .map(SeedFingerprint::from_bytes)
+                } else {
+                    None
+                };
+                let hd_account_index = zip32::AccountId::try_from(hd_account_index_raw).ok();
+
+                let derivation = seed_fingerprint
+                    .zip(hd_account_index)
+                    .map(|(seed_fp, idx)| Zip32Derivation::new(seed_fp, idx));
+
+                Ok(AccountPurpose::Spending { derivation })
+            }
             1 => Ok(AccountPurpose::ViewOnly),
             _ => Err(anyhow!(
                 "Account purpose must be either 0 (Spending) or 1 (ViewOnly)"
