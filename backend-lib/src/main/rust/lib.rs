@@ -344,6 +344,40 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getAccoun
     unwrap_exc_or(&mut env, res, ptr::null_mut())
 }
 
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getAccountForUfvk<'local>(
+    mut env: JNIEnv<'local>,
+    _: JClass<'local>,
+    db_data: JString<'local>,
+    network_id: jint,
+    ufvk_string: JString<'local>,
+) -> jobject {
+    let res = catch_unwind(&mut env, |env| {
+        let network = parse_network(network_id as u32)?;
+        let db_data = wallet_db(env, network, db_data)?;
+
+        let ufvk_string = utils::java_string_to_rust(env, &ufvk_string);
+        let ufvk = match UnifiedFullViewingKey::decode(&network, &ufvk_string) {
+            Ok(ufvk) => ufvk,
+            Err(e) => {
+                return Err(anyhow!(
+                    "Error while deriving viewing key from string input: {}",
+                    e,
+                ));
+            }
+        };
+
+        let account = db_data.get_account_for_ufvk(&ufvk)?;
+
+        if let Some(account) = account {
+            Ok(encode_account(env, &network, account)?.into_raw())
+        } else {
+            Ok(ptr::null_mut())
+        }
+    });
+    unwrap_exc_or(&mut env, res, ptr::null_mut())
+}
+
 fn encode_usk<'a>(
     env: &mut JNIEnv<'a>,
     account_uuid: AccountUuid,

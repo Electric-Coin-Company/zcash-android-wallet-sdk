@@ -89,6 +89,16 @@ class RustBackend private constructor(
         }
     }
 
+    override suspend fun getAccountForUfvk(ufvk: String): JniAccount? {
+        return withContext(SdkDispatchers.DATABASE_IO) {
+            getAccountForUfvk(
+                dbDataPath = dataDbFile.absolutePath,
+                networkId = networkId,
+                ufvk = ufvk,
+            )
+        }
+    }
+
     override suspend fun createAccount(
         accountName: String,
         keySource: String?,
@@ -567,6 +577,13 @@ class RustBackend private constructor(
             treeState: ByteArray,
             recoverUntil: Long,
         ): JniAccountUsk
+c
+        @JvmStatic
+        private external fun getAccountForUfvk(
+            dbDataPath: String,
+            networkId: Int,
+            ufvk: String,
+        ): JniAccount?
 
         @JvmStatic
         @Suppress("LongParameterList")
