@@ -67,7 +67,7 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
                             treeState = treeState.encoded,
                             ufvk = setup.ufvk.encoding,
                             seedFingerprint = setup.purpose.seedFingerprint,
-                            zip32AccountIndex = setup.purpose.zip32AccountIndex?.index,
+                            zip32AccountIndex = setup.purpose.zip32AccountIndex.index,
                         )
                     AccountPurpose.ViewOnly ->
                         backend.importAccountUfvk(
