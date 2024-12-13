@@ -692,7 +692,7 @@ class SdkSynchronizer private constructor(
         }
     }
 
-    override suspend fun importAccountByUfvk(setup: AccountImportSetup,): Account {
+    override suspend fun importAccountByUfvk(setup: AccountImportSetup): Account {
         val chainTip: BlockHeight? =
             when (val response = processor.downloader.getLatestBlockHeight()) {
                 is Response.Success -> {
