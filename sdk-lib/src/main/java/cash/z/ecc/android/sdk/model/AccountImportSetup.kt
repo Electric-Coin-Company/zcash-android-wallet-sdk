@@ -1,8 +1,7 @@
 package cash.z.ecc.android.sdk.model
 
 /**
- * Wrapper for the import account API based on viewing key. Set both [seedFingerprint] and [zip32AccountIndex] null
- * when using [AccountPurpose.ViewOnly].
+ * Wrapper for the import account API based on viewing key.
  *
  * @param accountName A human-readable name for the account. This will be visible to the wallet
  *        user, and the wallet app may obtain it from them.

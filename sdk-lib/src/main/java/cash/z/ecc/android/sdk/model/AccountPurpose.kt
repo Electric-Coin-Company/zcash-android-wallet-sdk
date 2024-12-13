@@ -16,8 +16,8 @@ sealed class AccountPurpose {
      * @param zip32AccountIndex The ZIP 32 account-level component of the HD derivation path at which to derive the
      */
     data class Spending(
-        val seedFingerprint: ByteArray?,
-        val zip32AccountIndex: Zip32AccountIndex?,
+        val seedFingerprint: ByteArray,
+        val zip32AccountIndex: Zip32AccountIndex,
     ) : AccountPurpose() {
         override val value = 0
     }

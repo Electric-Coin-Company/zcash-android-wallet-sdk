@@ -7,7 +7,7 @@ import kotlin.test.assertFailsWith
 
 class AccountTest {
     @Test
-    fun out_of_bounds() {
+    fun uuid_wrong_length() {
         assertFailsWith(IllegalArgumentException::class) {
             AccountFixture.new(accountUuid = UUID.fromString("random"))
         }
