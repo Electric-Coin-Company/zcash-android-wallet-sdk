@@ -7,7 +7,6 @@ import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.AccountUuid
 import cash.z.ecc.android.sdk.model.Pczt
 import cash.z.ecc.android.sdk.model.Proposal
-import cash.z.ecc.android.sdk.model.TransactionRecipient
 import cash.z.ecc.android.sdk.model.TransactionSubmitResult
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.Zatoshi
@@ -19,40 +18,6 @@ internal class OutboundTransactionManagerImpl(
     internal val encoder: TransactionEncoder,
     private val service: LightWalletClient
 ) : OutboundTransactionManager {
-    override suspend fun encode(
-        usk: UnifiedSpendingKey,
-        amount: Zatoshi,
-        recipient: TransactionRecipient,
-        memo: String,
-        account: Account
-    ): EncodedTransaction {
-        val memoBytes =
-            if (memo.isBlank()) {
-                null
-            } else {
-                memo.toByteArray()
-            }
-        return when (recipient) {
-            is TransactionRecipient.RecipientAccount -> {
-                encoder.createShieldingTransaction(
-                    usk = usk,
-                    account = account,
-                    recipient = recipient,
-                    memo = memoBytes
-                )
-            }
-            is TransactionRecipient.RecipientAddress -> {
-                encoder.createTransaction(
-                    usk = usk,
-                    account = account,
-                    amount = amount,
-                    recipient = recipient,
-                    memo = memoBytes
-                )
-            }
-        }
-    }
-
     /**
      * Creates a proposal for transferring funds from a ZIP-321 compliant payment URI
      *
