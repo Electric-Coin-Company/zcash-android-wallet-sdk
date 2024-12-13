@@ -89,6 +89,16 @@ class RustBackend private constructor(
         }
     }
 
+    override suspend fun getAccountForUfvk(ufvk: String): JniAccount? {
+        return withContext(SdkDispatchers.DATABASE_IO) {
+            getAccountForUfvk(
+                dbDataPath = dataDbFile.absolutePath,
+                networkId = networkId,
+                ufvk = ufvk,
+            )
+        }
+    }
+
     override suspend fun createAccount(
         accountName: String,
         keySource: String?,
@@ -418,6 +428,41 @@ class RustBackend private constructor(
             ).asList()
         }
 
+    override suspend fun createPcztFromProposal(
+        accountUuid: ByteArray,
+        proposal: ProposalUnsafe
+    ): ByteArray =
+        withContext(SdkDispatchers.DATABASE_IO) {
+            createPcztFromProposal(
+                dataDbFile.absolutePath,
+                accountUuid,
+                proposal.toByteArray(),
+                networkId = networkId
+            )
+        }
+
+    override suspend fun addProofsToPczt(pczt: ByteArray): ByteArray =
+        addProofsToPczt(
+            pczt,
+            spendParamsPath = saplingSpendFile.absolutePath,
+            outputParamsPath = saplingOutputFile.absolutePath,
+        )
+
+    override suspend fun extractAndStoreTxFromPczt(
+        pcztWithProofs: ByteArray,
+        pcztWithSignatures: ByteArray
+    ): ByteArray =
+        withContext(SdkDispatchers.DATABASE_IO) {
+            extractAndStoreTxFromPczt(
+                dataDbFile.absolutePath,
+                pcztWithProofs,
+                pcztWithSignatures,
+                spendParamsPath = saplingSpendFile.absolutePath,
+                outputParamsPath = saplingOutputFile.absolutePath,
+                networkId = networkId
+            )
+        }
+
     override suspend fun putUtxo(
         txId: ByteArray,
         index: Int,
@@ -532,6 +577,13 @@ class RustBackend private constructor(
             treeState: ByteArray,
             recoverUntil: Long,
         ): JniAccountUsk
+
+        @JvmStatic
+        private external fun getAccountForUfvk(
+            dbDataPath: String,
+            networkId: Int,
+            ufvk: String,
+        ): JniAccount?
 
         @JvmStatic
         @Suppress("LongParameterList")
@@ -756,6 +808,32 @@ class RustBackend private constructor(
             outputParamsPath: String,
             networkId: Int
         ): Array<ByteArray>
+
+        @JvmStatic
+        private external fun createPcztFromProposal(
+            dbDataPath: String,
+            accountUuid: ByteArray,
+            proposal: ByteArray,
+            networkId: Int,
+        ): ByteArray
+
+        @JvmStatic
+        private external fun addProofsToPczt(
+            pczt: ByteArray,
+            spendParamsPath: String,
+            outputParamsPath: String,
+        ): ByteArray
+
+        @JvmStatic
+        @Suppress("LongParameterList")
+        private external fun extractAndStoreTxFromPczt(
+            dbDataPath: String,
+            pcztWithProofs: ByteArray,
+            pcztWithSignatures: ByteArray,
+            spendParamsPath: String,
+            outputParamsPath: String,
+            networkId: Int,
+        ): ByteArray
 
         @JvmStatic
         private external fun branchIdForHeight(

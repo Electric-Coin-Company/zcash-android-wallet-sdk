@@ -6,6 +6,7 @@ import cash.z.ecc.android.sdk.WalletInitMode.NewWallet
 import cash.z.ecc.android.sdk.WalletInitMode.RestoreWallet
 import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor
 import cash.z.ecc.android.sdk.exception.InitializeException
+import cash.z.ecc.android.sdk.exception.PcztException
 import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.internal.FastestServerFetcher
 import cash.z.ecc.android.sdk.internal.Files
@@ -22,6 +23,7 @@ import cash.z.ecc.android.sdk.model.AccountUuid
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.FastestServersResult
 import cash.z.ecc.android.sdk.model.ObserveFiatCurrencyResult
+import cash.z.ecc.android.sdk.model.Pczt
 import cash.z.ecc.android.sdk.model.PercentDecimal
 import cash.z.ecc.android.sdk.model.Proposal
 import cash.z.ecc.android.sdk.model.TransactionOutput
@@ -299,6 +301,54 @@ interface Synchronizer {
     suspend fun createProposedTransactions(
         proposal: Proposal,
         usk: UnifiedSpendingKey
+    ): Flow<TransactionSubmitResult>
+
+    /**
+     * Creates a partially-created (unsigned without proofs) transaction from the given proposal.
+     *
+     * Do not call this multiple times in parallel, or you will generate PCZT instances that, if
+     * finalized, would double-spend the same notes.
+     *
+     * @param accountUuid The account for which the proposal was created.
+     * @param proposal The proposal for which to create the transaction.
+     *
+     * @return The partially created transaction in [Pczt] format.
+     *
+     * @throws PcztException.CreatePcztFromProposalException as a common indicator of the operation failure
+     */
+    @Throws(PcztException.CreatePcztFromProposalException::class)
+    suspend fun createPcztFromProposal(
+        accountUuid: AccountUuid,
+        proposal: Proposal
+    ): Pczt
+
+    /**
+     * Adds proofs to the given PCZT.
+     *
+     * @param pczt The partially created transaction in its serialized format.
+     *
+     * @return The updated PCZT in its serialized format.
+     *
+     * @throws PcztException.AddProofsToPcztException as a common indicator of the operation failure
+     */
+    @Throws(PcztException.AddProofsToPcztException::class)
+    suspend fun addProofsToPczt(pczt: Pczt): Pczt
+
+    /**
+     * Takes a PCZT that has been separately proven and signed, finalizes it, and stores
+     * it in the wallet. Internally, this logic also submits and checks the newly stored and encoded transaction.
+     *
+     * @param pcztWithProofs
+     * @param pcztWithSignatures
+     *
+     * @return The submission result of the completed transaction.
+     *
+     * @throws PcztException.ExtractAndStoreTxFromPcztException as a common indicator of the operation failure
+     */
+    @Throws(PcztException.ExtractAndStoreTxFromPcztException::class)
+    suspend fun createTransactionFromPczt(
+        pcztWithProofs: Pczt,
+        pcztWithSignatures: Pczt,
     ): Flow<TransactionSubmitResult>
 
     // TODO [#1534]: Add RustLayerException.ValidateAddressException

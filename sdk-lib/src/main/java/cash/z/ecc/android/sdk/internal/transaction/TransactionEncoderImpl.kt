@@ -1,5 +1,6 @@
 package cash.z.ecc.android.sdk.internal.transaction
 
+import cash.z.ecc.android.sdk.exception.PcztException
 import cash.z.ecc.android.sdk.exception.TransactionEncoderException
 import cash.z.ecc.android.sdk.ext.masked
 import cash.z.ecc.android.sdk.internal.SaplingParamTool
@@ -8,7 +9,9 @@ import cash.z.ecc.android.sdk.internal.TypesafeBackend
 import cash.z.ecc.android.sdk.internal.model.EncodedTransaction
 import cash.z.ecc.android.sdk.internal.repository.DerivedDataRepository
 import cash.z.ecc.android.sdk.model.Account
+import cash.z.ecc.android.sdk.model.AccountUuid
 import cash.z.ecc.android.sdk.model.BlockHeight
+import cash.z.ecc.android.sdk.model.Pczt
 import cash.z.ecc.android.sdk.model.Proposal
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.Zatoshi
@@ -22,6 +25,7 @@ import cash.z.ecc.android.sdk.model.Zatoshi
  * @property repository the repository that stores information about the transactions being created
  * such as the raw bytes and raw txId.
  */
+@Suppress("TooManyFunctions")
 internal class TransactionEncoderImpl(
     private val backend: TypesafeBackend,
     private val saplingParamTool: SaplingParamTool,
@@ -141,6 +145,60 @@ internal class TransactionEncoderImpl(
             }
 
         return txs
+    }
+
+    override suspend fun createPcztFromProposal(
+        accountUuid: AccountUuid,
+        proposal: Proposal
+    ): Pczt {
+        return runCatching {
+            backend.createPcztFromProposal(
+                account = Account.new(accountUuid),
+                proposal = proposal
+            )
+        }.onSuccess {
+            Twig.debug { "Result of createPcztFromProposal: $it" }
+        }.onFailure {
+            Twig.error(it) { "Caught exception while creating PCZT." }
+        }.getOrElse {
+            throw PcztException.CreatePcztFromProposalException(it.message, it.cause)
+        }
+    }
+
+    override suspend fun addProofsToPczt(pczt: Pczt): Pczt {
+        return runCatching {
+            backend.addProofsToPczt(
+                pczt = pczt
+            )
+        }.onSuccess {
+            Twig.debug { "Result of addProofsToPczt: $it" }
+        }.onFailure {
+            Twig.error(it) { "Caught exception while adding proofs to PCZT." }
+        }.getOrElse {
+            throw PcztException.AddProofsToPcztException(it.message, it.cause)
+        }
+    }
+
+    override suspend fun extractAndStoreTxFromPczt(
+        pcztWithProofs: Pczt,
+        pcztWithSignatures: Pczt
+    ): EncodedTransaction {
+        val txId =
+            runCatching {
+                backend.extractAndStoreTxFromPczt(
+                    pcztWithProofs = pcztWithProofs,
+                    pcztWithSignatures = pcztWithSignatures
+                )
+            }.onSuccess {
+                Twig.debug { "Result of extractAndStoreTxFromPczt: $it" }
+            }.onFailure {
+                Twig.error(it) { "Caught exception while extracting and storing transaction from PCZT." }
+            }.getOrElse {
+                throw PcztException.ExtractAndStoreTxFromPcztException(it.message, it.cause)
+            }
+
+        return repository.findEncodedTransactionByTxId(txId)
+            ?: throw TransactionEncoderException.TransactionNotFoundException(txId)
     }
 
     /**

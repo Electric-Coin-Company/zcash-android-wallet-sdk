@@ -52,6 +52,43 @@ interface Backend {
     ): List<ByteArray>
 
     /**
+     * Creates a partially-created (unsigned without proofs) transaction from the given proposal.
+     *
+     * Do not call this multiple times in parallel, or you will generate PCZT instances that, if
+     * finalized, would double-spend the same notes.
+     *
+     * @return the partially created transaction in its serialized format.
+     *
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    suspend fun createPcztFromProposal(
+        accountUuid: ByteArray,
+        proposal: ProposalUnsafe
+    ): ByteArray
+
+    /**
+     * Adds proofs to the given PCZT.
+     *
+     * @return the updated PCZT in its serialized format.
+     *
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    suspend fun addProofsToPczt(pczt: ByteArray): ByteArray
+
+    /**
+     * Takes a PCZT that has been separately proven and signed, finalizes it, and stores
+     * it in the wallet.
+     *
+     * @return the txid of the completed transaction.
+     *
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    suspend fun extractAndStoreTxFromPczt(
+        pcztWithProofs: ByteArray,
+        pcztWithSignatures: ByteArray,
+    ): ByteArray
+
+    /**
      * @throws RuntimeException as a common indicator of the operation failure
      */
     @Throws(RuntimeException::class)
@@ -79,6 +116,12 @@ interface Backend {
      */
     @Throws(RuntimeException::class)
     suspend fun getAccounts(): List<JniAccount>
+
+    /**
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    @Throws(RuntimeException::class)
+    suspend fun getAccountForUfvk(ufvk: String): JniAccount?
 
     /**
      * @throws RuntimeException as a common indicator of the operation failure
