@@ -151,7 +151,7 @@ interface Synchronizer {
      *
      * @throws [InitializeException.ImportAccountException] in case of the operation failure
      */
-    suspend fun importAccountByUfvk(setup: AccountImportSetup,): Account
+    suspend fun importAccountByUfvk(setup: AccountImportSetup): Account
 
     /**
      * Adds the next available account-level spend authority, given the current set of

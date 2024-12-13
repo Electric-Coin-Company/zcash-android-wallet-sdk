@@ -153,6 +153,10 @@ internal class FakeRustBackend(
         error("Intentionally not implemented yet.")
     }
 
+    override suspend fun getAccountForUfvk(ufvk: String): JniAccount? {
+        error("Intentionally not implemented yet.")
+    }
+
     override suspend fun createAccount(
         accountName: String,
         keySource: String?,

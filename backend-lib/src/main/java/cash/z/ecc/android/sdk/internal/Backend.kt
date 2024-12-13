@@ -121,6 +121,12 @@ interface Backend {
      * @throws RuntimeException as a common indicator of the operation failure
      */
     @Throws(RuntimeException::class)
+    suspend fun getAccountForUfvk(ufvk: String): JniAccount?
+
+    /**
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    @Throws(RuntimeException::class)
     suspend fun createAccount(
         accountName: String,
         keySource: String?,

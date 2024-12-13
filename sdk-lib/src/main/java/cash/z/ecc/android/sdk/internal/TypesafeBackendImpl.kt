@@ -21,6 +21,7 @@ import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.FirstClassByteArray
 import cash.z.ecc.android.sdk.model.Pczt
 import cash.z.ecc.android.sdk.model.Proposal
+import cash.z.ecc.android.sdk.model.UnifiedFullViewingKey
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
@@ -83,6 +84,10 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
                         )
                 }
         )
+    }
+
+    override suspend fun getAccountForUfvk(ufvk: UnifiedFullViewingKey): Account? {
+        return backend.getAccountForUfvk(ufvk = ufvk.encoding)?.let { Account.new(it) }
     }
 
     override suspend fun proposeTransferFromUri(
@@ -157,7 +162,8 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
     ): FirstClassByteArray =
         FirstClassByteArray(
             backend.extractAndStoreTxFromPczt(
-                pcztWithProofs.toByteArray(), pcztWithSignatures.toByteArray()
+                pcztWithProofs.toByteArray(),
+                pcztWithSignatures.toByteArray()
             )
         )
 

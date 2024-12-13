@@ -344,6 +344,40 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getAccoun
     unwrap_exc_or(&mut env, res, ptr::null_mut())
 }
 
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getAccountForUfvk<'local>(
+    mut env: JNIEnv<'local>,
+    _: JClass<'local>,
+    db_data: JString<'local>,
+    network_id: jint,
+    ufvk_string: JString<'local>,
+) -> jobject {
+    let res = catch_unwind(&mut env, |env| {
+        let network = parse_network(network_id as u32)?;
+        let db_data = wallet_db(env, network, db_data)?;
+
+        let ufvk_string = utils::java_string_to_rust(env, &ufvk_string);
+        let ufvk = match UnifiedFullViewingKey::decode(&network, &ufvk_string) {
+            Ok(ufvk) => ufvk,
+            Err(e) => {
+                return Err(anyhow!(
+                    "Error while deriving viewing key from string input: {}",
+                    e,
+                ));
+            }
+        };
+
+        let account = db_data.get_account_for_ufvk(&ufvk)?;
+
+        if let Some(account) = account {
+            Ok(encode_account(env, &network, account)?.into_raw())
+        } else {
+            Ok(ptr::null_mut())
+        }
+    });
+    unwrap_exc_or(&mut env, res, ptr::null_mut())
+}
+
 fn encode_usk<'a>(
     env: &mut JNIEnv<'a>,
     account_uuid: AccountUuid,
@@ -521,18 +555,23 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_importAcc
         let account_name = java_string_to_rust(env, &account_name);
         let key_source = java_nullable_string_to_rust(env, &key_source);
 
-        let seed_fingerprint =
-            <[u8; 32]>::try_from(&env.convert_byte_array(seed_fingerprint_bytes)?[..])
-                .ok()
-                .map(SeedFingerprint::from_bytes);
-        let hd_account_index = zip32::AccountId::try_from(hd_account_index_raw).ok();
-
-        let derivation = seed_fingerprint
-            .zip(hd_account_index)
-            .map(|(seed_fp, idx)| Zip32Derivation::new(seed_fp, idx));
-
         let purpose = match purpose {
-            0 => Ok(AccountPurpose::Spending { derivation }),
+            0 => {
+                let seed_fingerprint = if !seed_fingerprint_bytes.is_null() {
+                    <[u8; 32]>::try_from(&env.convert_byte_array(seed_fingerprint_bytes)?[..])
+                        .ok()
+                        .map(SeedFingerprint::from_bytes)
+                } else {
+                    None
+                };
+                let hd_account_index = zip32::AccountId::try_from(hd_account_index_raw).ok();
+
+                let derivation = seed_fingerprint
+                    .zip(hd_account_index)
+                    .map(|(seed_fp, idx)| Zip32Derivation::new(seed_fp, idx));
+
+                Ok(AccountPurpose::Spending { derivation })
+            }
             1 => Ok(AccountPurpose::ViewOnly),
             _ => Err(anyhow!(
                 "Account purpose must be either 0 (Spending) or 1 (ViewOnly)"
