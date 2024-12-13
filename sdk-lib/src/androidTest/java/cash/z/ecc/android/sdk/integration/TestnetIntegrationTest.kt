@@ -2,6 +2,7 @@ package cash.z.ecc.android.sdk.integration
 
 import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
+import cash.z.ecc.android.bip39.Mnemonics
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.Synchronizer.Status.SYNCED
 import cash.z.ecc.android.sdk.WalletInitMode
@@ -132,13 +133,17 @@ class TestnetIntegrationTest : ScopedTest() {
 
     @Suppress("UnusedPrivateProperty")
     companion object {
-        val lightWalletEndpoint = LightWalletEndpoint("lightwalletd.testnet.z.cash", 9087, true)
+        val lightWalletEndpoint = LightWalletEndpoint(
+            host = "lightwalletd.testnet.electriccoin.co",
+            port = 9067,
+            isSecure = true
+        )
         private const val BIRTHDAY_HEIGHT = 963150L
         private const val TARGET_HEIGHT = 663250
         private const val SEED_PHRASE =
             "still champion voice habit trend flight survey between bitter process" +
                 " artefact blind carbon truly provide dizzy crush flush breeze blouse charge solid fish spread"
-        val seed = "cash.z.ecc.android.sdk.integration.IntegrationTest.seed.value.64bytes".toByteArray()
+        val seed = Mnemonics.MnemonicCode(SEED_PHRASE).toEntropy()
         val address = "zs1m30y59wxut4zk9w24d6ujrdnfnl42hpy0ugvhgyhr8s0guszutqhdj05c7j472dndjstulph74m"
         val toAddress = "zs1vp7kvlqr4n9gpehztr76lcn6skkss9p8keqs3nv8avkdtjrcctrvmk9a7u494kluv756jeee5k0"
 
@@ -154,7 +159,7 @@ class TestnetIntegrationTest : ScopedTest() {
                     context = context,
                     birthday = BlockHeight.new(BIRTHDAY_HEIGHT),
                     lightWalletEndpoint = lightWalletEndpoint,
-                    setup = AccountCreateSetupFixture.new(),
+                    setup = AccountCreateSetupFixture.new(seed = seed),
                     // Using existing wallet init mode as simplification for the test
                     walletInitMode = WalletInitMode.ExistingWallet,
                     zcashNetwork = ZcashNetwork.Testnet,
