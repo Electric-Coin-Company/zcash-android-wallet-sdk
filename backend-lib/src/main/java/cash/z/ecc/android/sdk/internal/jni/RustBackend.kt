@@ -577,7 +577,7 @@ class RustBackend private constructor(
             treeState: ByteArray,
             recoverUntil: Long,
         ): JniAccountUsk
-c
+
         @JvmStatic
         private external fun getAccountForUfvk(
             dbDataPath: String,
