@@ -10,6 +10,7 @@ import cash.z.ecc.android.sdk.model.Proposal
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.Zatoshi
 
+@Suppress("TooManyFunctions")
 internal interface TransactionEncoder {
     /**
      * Creates a proposal for transferring from a valid ZIP-321 Payment URI string

@@ -25,6 +25,7 @@ import cash.z.ecc.android.sdk.model.Zatoshi
  * @property repository the repository that stores information about the transactions being created
  * such as the raw bytes and raw txId.
  */
+@Suppress("TooManyFunctions")
 internal class TransactionEncoderImpl(
     private val backend: TypesafeBackend,
     private val saplingParamTool: SaplingParamTool,

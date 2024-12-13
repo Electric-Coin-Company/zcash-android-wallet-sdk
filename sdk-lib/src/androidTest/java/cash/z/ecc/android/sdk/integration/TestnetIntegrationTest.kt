@@ -133,11 +133,12 @@ class TestnetIntegrationTest : ScopedTest() {
 
     @Suppress("UnusedPrivateProperty")
     companion object {
-        val lightWalletEndpoint = LightWalletEndpoint(
-            host = "lightwalletd.testnet.electriccoin.co",
-            port = 9067,
-            isSecure = true
-        )
+        val lightWalletEndpoint =
+            LightWalletEndpoint(
+                host = "lightwalletd.testnet.electriccoin.co",
+                port = 9067,
+                isSecure = true
+            )
         private const val BIRTHDAY_HEIGHT = 963150L
         private const val TARGET_HEIGHT = 663250
         private const val SEED_PHRASE =
