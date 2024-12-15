@@ -16,7 +16,6 @@ import cash.z.ecc.android.sdk.demoapp.ext.defaultForNetwork
 import cash.z.ecc.android.sdk.demoapp.getInstance
 import cash.z.ecc.android.sdk.demoapp.preference.EncryptedPreferenceKeys
 import cash.z.ecc.android.sdk.demoapp.preference.EncryptedPreferenceSingleton
-import cash.z.ecc.android.sdk.demoapp.ui.common.throttle
 import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.model.Account
@@ -28,7 +27,6 @@ import cash.z.ecc.android.sdk.model.PercentDecimal
 import cash.z.ecc.android.sdk.model.PersistableWallet
 import cash.z.ecc.android.sdk.model.Proposal
 import cash.z.ecc.android.sdk.model.TransactionSubmitResult
-import cash.z.ecc.android.sdk.model.WalletAddresses
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.model.ZecSend
@@ -59,7 +57,6 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import kotlin.time.Duration.Companion.seconds
 
 // To make this more multiplatform compatible, we need to remove the dependency on Context
 // for loading the preferences.
@@ -129,27 +126,12 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
                     it.toWalletSnapshot()
                 }
             }
-            .throttle(1.seconds)
             .stateIn(
                 viewModelScope,
                 SharingStarted.WhileSubscribed(ANDROID_STATE_FLOW_TIMEOUT),
                 null
             )
 
-    val addresses: StateFlow<WalletAddresses?> =
-        synchronizer
-            .filterNotNull()
-            .map {
-                runCatching {
-                    WalletAddresses.new(getCurrentAccount(), it)
-                }.onFailure {
-                    Twig.warn { "Wait until the SDK starts providing the addresses" }
-                }.getOrNull()
-            }.stateIn(
-                viewModelScope,
-                SharingStarted.WhileSubscribed(ANDROID_STATE_FLOW_TIMEOUT),
-                null
-            )
 
     private val mutableSendState = MutableStateFlow<SendState>(SendState.None)
 
