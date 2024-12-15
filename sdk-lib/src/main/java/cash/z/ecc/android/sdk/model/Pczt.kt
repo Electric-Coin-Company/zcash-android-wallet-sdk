@@ -10,6 +10,11 @@ class Pczt(
         return inner
     }
 
+    /**
+     * Clones this object with its inner data
+     */
+    fun clonePczt() = Pczt(this.toByteArray().copyOf())
+
     // Override to prevent leaking data in logs
     override fun toString() = "Pczt(size=${inner.size})"
 }
