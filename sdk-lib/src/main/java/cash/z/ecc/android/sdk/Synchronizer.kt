@@ -7,6 +7,7 @@ import cash.z.ecc.android.sdk.WalletInitMode.RestoreWallet
 import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor
 import cash.z.ecc.android.sdk.exception.InitializeException
 import cash.z.ecc.android.sdk.exception.PcztException
+import cash.z.ecc.android.sdk.exception.RustLayerException
 import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.internal.FastestServerFetcher
 import cash.z.ecc.android.sdk.internal.Files
@@ -206,7 +207,10 @@ interface Synchronizer {
      * @param account the account whose address is of interest.
      *
      * @return the current unified address for the given account.
+     *
+     * @throws RustLayerException.GetAddressException in case of the operation
      */
+    @Throws(RustLayerException.GetAddressException::class)
     suspend fun getUnifiedAddress(account: Account): String
 
     /**
@@ -215,7 +219,10 @@ interface Synchronizer {
      * @param account the account whose address is of interest.
      *
      * @return a legacy Sapling address for the given account.
+     *
+     * @throws RustLayerException.GetAddressException in case of the operation
      */
+    @Throws(RustLayerException.GetAddressException::class)
     suspend fun getSaplingAddress(account: Account): String
 
     /**
@@ -224,7 +231,10 @@ interface Synchronizer {
      * @param account the account whose address is of interest.
      *
      * @return a legacy transparent address for the given account.
+     *
+     * @throws RustLayerException.GetAddressException in case of the operation
      */
+    @Throws(RustLayerException.GetAddressException::class)
     suspend fun getTransparentAddress(account: Account): String
 
     /**
