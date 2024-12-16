@@ -2,12 +2,13 @@ package cash.z.ecc.android.sdk
 
 import android.content.Context
 import cash.z.ecc.android.sdk.Synchronizer.Status.DISCONNECTED
+import cash.z.ecc.android.sdk.Synchronizer.Status.INITIALIZING
 import cash.z.ecc.android.sdk.Synchronizer.Status.STOPPED
 import cash.z.ecc.android.sdk.Synchronizer.Status.SYNCED
 import cash.z.ecc.android.sdk.Synchronizer.Status.SYNCING
 import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor
 import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor.State.Disconnected
-import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor.State.Initialized
+import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor.State.Initializing
 import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor.State.Stopped
 import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor.State.Synced
 import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor.State.Syncing
@@ -548,6 +549,7 @@ class SdkSynchronizer private constructor(
 
             processor.state.onEach {
                 when (it) {
+                    is Initializing -> INITIALIZING
                     is Synced -> {
                         val now = System.currentTimeMillis()
                         // do a bit of housekeeping and then report synced status
@@ -558,7 +560,7 @@ class SdkSynchronizer private constructor(
 
                     is Stopped -> STOPPED
                     is Disconnected -> DISCONNECTED
-                    is Syncing, Initialized -> SYNCING
+                    is Syncing -> SYNCING
                 }.let { synchronizerStatus ->
                     _status.value = synchronizerStatus
                 }
