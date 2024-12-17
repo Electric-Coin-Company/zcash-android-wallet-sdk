@@ -525,7 +525,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_importAcc
     recover_until: jlong,
     purpose: jint,
     seed_fingerprint_bytes: JByteArray<'local>,
-    hd_account_index_raw: u32,
+    hd_account_index_raw: jlong,
 ) -> jobject {
     let res = catch_unwind(&mut env, |env| {
         let network = parse_network(network_id as u32)?;
@@ -564,7 +564,10 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_importAcc
                 } else {
                     None
                 };
-                let hd_account_index = zip32::AccountId::try_from(hd_account_index_raw).ok();
+
+                let hd_account_index = u32::try_from(hd_account_index_raw)
+                    .ok()
+                    .and_then(|hd_account_index_non_null| zip32::AccountId::try_from(hd_account_index_non_null).ok());
 
                 let derivation = seed_fingerprint
                     .zip(hd_account_index)
