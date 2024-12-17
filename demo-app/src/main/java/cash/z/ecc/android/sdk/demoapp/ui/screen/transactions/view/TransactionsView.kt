@@ -32,6 +32,7 @@ import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.demoapp.R
 import cash.z.ecc.android.sdk.demoapp.util.toTransactionState
 import cash.z.ecc.android.sdk.internal.Twig
+import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.WalletAddresses
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
@@ -43,6 +44,7 @@ import kotlinx.coroutines.launch
 @Composable
 @Suppress("ktlint:standard:function-naming", "standard:function-naming")
 fun Transactions(
+    account: Account,
     synchronizer: Synchronizer,
     onBack: () -> Unit
 ) {
@@ -53,7 +55,9 @@ fun Transactions(
 
     val stateFlow by remember(synchronizer) {
         mutableStateOf(
-            flow<WalletAddresses?> { emit(WalletAddresses.new(synchronizer)) }.catch { emit(null) }
+            flow<WalletAddresses?> {
+                emit(WalletAddresses.new(account, synchronizer))
+            }.catch { emit(null) }
         )
     }
     val walletAddresses by stateFlow.collectAsStateWithLifecycle(initialValue = null)

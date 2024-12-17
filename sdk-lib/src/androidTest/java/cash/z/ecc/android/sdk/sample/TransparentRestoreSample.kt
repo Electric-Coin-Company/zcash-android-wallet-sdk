@@ -3,6 +3,7 @@
 package cash.z.ecc.android.sdk.sample
 
 import androidx.test.filters.LargeTest
+import cash.z.ecc.android.sdk.fixture.AccountFixture
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
@@ -76,8 +77,9 @@ class TransparentRestoreSample {
             val wallet = TestWallet(TestWallet.Backups.SAMPLE_WALLET, alias = "WalletC")
 //        wallet.sync().rewindToHeight(1339178).join(10000)
             wallet.sync().rewindToHeight(BlockHeight.new(1339178L)).send(
-                "ztestsapling17zazsl8rryl8kjaqxnr2r29rw9d9a2mud37ugapm0s8gmyv0ue43h9lqwmhdsp3nu9dazeqfs6l",
-                "is send broken?"
+                account = AccountFixture.new(),
+                address = "ztestsapling17zazsl8rryl8kjaqxnr2r29rw9d9a2mud37ugapm0s8gmyv0ue43h9lqwmhdsp3nu9dazeqfs6l",
+                memo = "is send broken?"
             ).join(5)
         }
 

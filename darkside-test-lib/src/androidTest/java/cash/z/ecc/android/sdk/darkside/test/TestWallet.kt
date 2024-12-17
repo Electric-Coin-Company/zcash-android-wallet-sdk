@@ -7,8 +7,9 @@ import cash.z.ecc.android.sdk.SdkSynchronizer
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.WalletInitMode
 import cash.z.ecc.android.sdk.ext.Darkside
+import cash.z.ecc.android.sdk.fixture.AccountCreateSetupFixture
+import cash.z.ecc.android.sdk.fixture.AccountFixture
 import cash.z.ecc.android.sdk.internal.Twig
-import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
@@ -55,24 +56,31 @@ class TestWallet(
     // Although runBlocking isn't great, this usage is OK because this is only used within the
     // automated tests
 
-    private val account = Account.DEFAULT
+    internal val account = AccountFixture.new()
     private val context = InstrumentationRegistry.getInstrumentation().context
     private val seed: ByteArray = Mnemonics.MnemonicCode(seedPhrase).toSeed()
     private val shieldedSpendingKey =
-        runBlocking { DerivationTool.getInstance().deriveUnifiedSpendingKey(seed, network = network, account) }
+        runBlocking {
+            DerivationTool.getInstance().deriveUnifiedSpendingKey(
+                seed = seed,
+                network = network,
+                accountIndex = AccountFixture.new().hdAccountIndex!!
+            )
+        }
     val synchronizer: SdkSynchronizer =
         Synchronizer.newBlocking(
-            context,
-            network,
-            alias,
-            endpoint,
-            seed,
-            startHeight,
+            alias = alias,
+            birthday = startHeight,
+            context = context,
+            lightWalletEndpoint = endpoint,
+            setup = AccountCreateSetupFixture.new(),
             // Using existing wallet init mode as simplification for the test
-            walletInitMode = WalletInitMode.ExistingWallet
+            walletInitMode = WalletInitMode.ExistingWallet,
+            zcashNetwork = network,
         ) as SdkSynchronizer
 
-    val available get() = synchronizer.saplingBalances.value?.available
+    val available
+        get() = synchronizer.walletBalances.value?.get(account.accountUuid)?.sapling?.available
     val unifiedAddress =
         runBlocking { synchronizer.getUnifiedAddress(account) }
     val transparentAddress =
@@ -107,7 +115,7 @@ class TestWallet(
     ): TestWallet {
         synchronizer.createProposedTransactions(
             synchronizer.proposeTransfer(
-                shieldedSpendingKey.account,
+                account,
                 address,
                 amount,
                 memo
@@ -123,13 +131,13 @@ class TestWallet(
     }
 
     suspend fun shieldFunds(): TestWallet {
-        synchronizer.refreshUtxos(Account.DEFAULT, BlockHeight.new(935000L)).let { count ->
+        synchronizer.refreshUtxos(account, BlockHeight.new(935000L)).let { count ->
             Twig.debug { "FOUND $count new UTXOs" }
         }
 
         synchronizer.getTransparentBalance(transparentAddress).let { walletBalance ->
             if (walletBalance.value > 0L) {
-                synchronizer.proposeShielding(shieldedSpendingKey.account, Zatoshi(100000))?.let {
+                synchronizer.proposeShielding(account, Zatoshi(100000))?.let {
                     synchronizer.createProposedTransactions(
                         it,
                         shieldedSpendingKey

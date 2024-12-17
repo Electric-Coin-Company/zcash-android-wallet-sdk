@@ -13,9 +13,13 @@ import cash.z.ecc.android.sdk.internal.model.TreeState
 import cash.z.ecc.android.sdk.internal.model.WalletSummary
 import cash.z.ecc.android.sdk.internal.model.ZcashProtocol
 import cash.z.ecc.android.sdk.model.Account
+import cash.z.ecc.android.sdk.model.AccountImportSetup
+import cash.z.ecc.android.sdk.model.AccountUsk
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.FirstClassByteArray
+import cash.z.ecc.android.sdk.model.Pczt
 import cash.z.ecc.android.sdk.model.Proposal
+import cash.z.ecc.android.sdk.model.UnifiedFullViewingKey
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
@@ -27,10 +31,20 @@ internal interface TypesafeBackend {
     suspend fun getAccounts(): List<Account>
 
     suspend fun createAccountAndGetSpendingKey(
-        seed: ByteArray,
+        accountName: String,
+        keySource: String?,
+        seed: FirstClassByteArray,
         treeState: TreeState,
         recoverUntil: BlockHeight?
-    ): UnifiedSpendingKey
+    ): AccountUsk
+
+    suspend fun importAccountUfvk(
+        recoverUntil: BlockHeight?,
+        setup: AccountImportSetup,
+        treeState: TreeState,
+    ): Account
+
+    suspend fun getAccountForUfvk(ufvk: UnifiedFullViewingKey): Account?
 
     suspend fun proposeTransferFromUri(
         account: Account,
@@ -57,7 +71,44 @@ internal interface TypesafeBackend {
         usk: UnifiedSpendingKey
     ): List<FirstClassByteArray>
 
-    @Throws(RustLayerException.GetCurrentAddressException::class)
+    /**
+     * Creates a partially-created (unsigned without proofs) transaction from the given proposal.
+     *
+     * Do not call this multiple times in parallel, or you will generate PCZT instances that, if
+     * finalized, would double-spend the same notes.
+     *
+     * @return the partially created transaction in its serialized format.
+     *
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    suspend fun createPcztFromProposal(
+        account: Account,
+        proposal: Proposal
+    ): Pczt
+
+    /**
+     * Adds proofs to the given PCZT.
+     *
+     * @return the updated PCZT in its serialized format.
+     *
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    suspend fun addProofsToPczt(pczt: Pczt): Pczt
+
+    /**
+     * Takes a PCZT that has been separately proven and signed, finalizes it, and stores
+     * it in the wallet.
+     *
+     * @return the txid of the completed transaction.
+     *
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    suspend fun extractAndStoreTxFromPczt(
+        pcztWithProofs: Pczt,
+        pcztWithSignatures: Pczt,
+    ): FirstClassByteArray
+
+    @Throws(RustLayerException.GetAddressException::class)
     suspend fun getCurrentAddress(account: Account): String
 
     suspend fun listTransparentReceivers(account: Account): List<String>
@@ -90,7 +141,7 @@ internal interface TypesafeBackend {
     ): String?
 
     @Throws(InitializeException::class)
-    suspend fun initDataDb(seed: ByteArray?)
+    suspend fun initDataDb(seed: FirstClassByteArray?)
 
     /**
      * @throws RuntimeException as a common indicator of the operation failure

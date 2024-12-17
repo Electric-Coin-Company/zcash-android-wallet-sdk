@@ -4,6 +4,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import cash.z.ecc.android.sdk.CloseableSynchronizer
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.WalletInitMode
+import cash.z.ecc.android.sdk.fixture.AccountCreateSetupFixture
 import cash.z.ecc.android.sdk.fixture.LightWalletEndpointFixture
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.ext.deleteSuspend
@@ -93,13 +94,13 @@ class BalancePrinterUtil {
                     synchronizer?.close()
                     synchronizer =
                         Synchronizer.new(
-                            context,
-                            network,
-                            lightWalletEndpoint = LightWalletEndpointFixture.newEndpointForNetwork(network),
-                            seed = seed,
                             birthday = birthdayHeight,
+                            lightWalletEndpoint = LightWalletEndpointFixture.newEndpointForNetwork(network),
+                            context = context,
+                            setup = AccountCreateSetupFixture.new(seed = seed),
                             // Using existing wallet init mode as simplification for the test
-                            walletInitMode = WalletInitMode.ExistingWallet
+                            walletInitMode = WalletInitMode.ExistingWallet,
+                            zcashNetwork = network,
                         )
 
 //            deleteDb(dataDbPath)

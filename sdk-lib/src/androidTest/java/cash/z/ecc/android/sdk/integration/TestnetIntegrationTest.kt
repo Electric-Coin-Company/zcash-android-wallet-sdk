@@ -2,12 +2,14 @@ package cash.z.ecc.android.sdk.integration
 
 import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
+import cash.z.ecc.android.bip39.Mnemonics
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.Synchronizer.Status.SYNCED
 import cash.z.ecc.android.sdk.WalletInitMode
 import cash.z.ecc.android.sdk.ext.onFirst
+import cash.z.ecc.android.sdk.fixture.AccountCreateSetupFixture
+import cash.z.ecc.android.sdk.fixture.AccountFixture
 import cash.z.ecc.android.sdk.internal.Twig
-import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
@@ -36,6 +38,7 @@ import java.util.concurrent.CountDownLatch
 class TestnetIntegrationTest : ScopedTest() {
     var stopWatch = CountDownLatch(1)
     val saplingActivation = synchronizer.network.saplingActivationHeight
+    val account = AccountFixture.new()
 
     @Test
     @Ignore("This test is broken")
@@ -68,7 +71,7 @@ class TestnetIntegrationTest : ScopedTest() {
     @Ignore("This test is broken")
     fun getAddress() =
         runBlocking {
-            assertEquals(address, synchronizer.getUnifiedAddress(Account.DEFAULT))
+            assertEquals(address, synchronizer.getUnifiedAddress(AccountFixture.new()))
         }
 
     // This is an extremely slow test; it is disabled so that we can get CI set up
@@ -78,8 +81,8 @@ class TestnetIntegrationTest : ScopedTest() {
     fun testBalance() =
         runBlocking {
             var availableBalance: Zatoshi? = null
-            synchronizer.saplingBalances.onFirst {
-                availableBalance = it?.available
+            synchronizer.walletBalances.onFirst {
+                availableBalance = it?.get(account.accountUuid)?.sapling?.available
             }
 
             synchronizer.status.filter { it == SYNCED }.onFirst {
@@ -96,7 +99,7 @@ class TestnetIntegrationTest : ScopedTest() {
     fun testSpend() =
         runBlocking {
             var success = false
-            synchronizer.saplingBalances.filterNotNull().onEach {
+            synchronizer.walletBalances.filterNotNull().onEach {
                 success = sendFunds()
             }.first()
             log("asserting $success")
@@ -104,16 +107,17 @@ class TestnetIntegrationTest : ScopedTest() {
         }
 
     private suspend fun sendFunds(): Boolean {
+        val account = AccountFixture.new()
         val spendingKey =
             DerivationTool.getInstance().deriveUnifiedSpendingKey(
                 seed,
                 synchronizer.network,
-                Account.DEFAULT
+                account.hdAccountIndex!!
             )
         log("sending to address")
         synchronizer.createProposedTransactions(
             synchronizer.proposeTransfer(
-                spendingKey.account,
+                account,
                 toAddress,
                 Zatoshi(10_000L),
                 "first mainnet tx from the SDK"
@@ -129,13 +133,18 @@ class TestnetIntegrationTest : ScopedTest() {
 
     @Suppress("UnusedPrivateProperty")
     companion object {
-        val lightWalletEndpoint = LightWalletEndpoint("lightwalletd.testnet.z.cash", 9087, true)
+        val lightWalletEndpoint =
+            LightWalletEndpoint(
+                host = "lightwalletd.testnet.electriccoin.co",
+                port = 9067,
+                isSecure = true
+            )
         private const val BIRTHDAY_HEIGHT = 963150L
         private const val TARGET_HEIGHT = 663250
         private const val SEED_PHRASE =
             "still champion voice habit trend flight survey between bitter process" +
                 " artefact blind carbon truly provide dizzy crush flush breeze blouse charge solid fish spread"
-        val seed = "cash.z.ecc.android.sdk.integration.IntegrationTest.seed.value.64bytes".toByteArray()
+        val seed = Mnemonics.MnemonicCode(SEED_PHRASE).toEntropy()
         val address = "zs1m30y59wxut4zk9w24d6ujrdnfnl42hpy0ugvhgyhr8s0guszutqhdj05c7j472dndjstulph74m"
         val toAddress = "zs1vp7kvlqr4n9gpehztr76lcn6skkss9p8keqs3nv8avkdtjrcctrvmk9a7u494kluv756jeee5k0"
 
@@ -147,14 +156,14 @@ class TestnetIntegrationTest : ScopedTest() {
         fun startUp() {
             synchronizer =
                 Synchronizer.newBlocking(
-                    context,
-                    ZcashNetwork.Testnet,
-                    lightWalletEndpoint =
-                    lightWalletEndpoint,
-                    seed = seed,
+                    alias = "TEST",
+                    context = context,
                     birthday = BlockHeight.new(BIRTHDAY_HEIGHT),
+                    lightWalletEndpoint = lightWalletEndpoint,
+                    setup = AccountCreateSetupFixture.new(seed = seed),
                     // Using existing wallet init mode as simplification for the test
-                    walletInitMode = WalletInitMode.ExistingWallet
+                    walletInitMode = WalletInitMode.ExistingWallet,
+                    zcashNetwork = ZcashNetwork.Testnet,
                 )
         }
     }

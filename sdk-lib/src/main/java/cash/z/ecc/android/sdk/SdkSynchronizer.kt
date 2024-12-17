@@ -2,18 +2,18 @@ package cash.z.ecc.android.sdk
 
 import android.content.Context
 import cash.z.ecc.android.sdk.Synchronizer.Status.DISCONNECTED
+import cash.z.ecc.android.sdk.Synchronizer.Status.INITIALIZING
 import cash.z.ecc.android.sdk.Synchronizer.Status.STOPPED
 import cash.z.ecc.android.sdk.Synchronizer.Status.SYNCED
 import cash.z.ecc.android.sdk.Synchronizer.Status.SYNCING
 import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor
 import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor.State.Disconnected
-import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor.State.Initialized
+import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor.State.Initializing
 import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor.State.Stopped
 import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor.State.Synced
 import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor.State.Syncing
 import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException
 import cash.z.ecc.android.sdk.exception.InitializeException
-import cash.z.ecc.android.sdk.exception.LightWalletException
 import cash.z.ecc.android.sdk.exception.TransactionEncoderException
 import cash.z.ecc.android.sdk.ext.ConsensusBranchId
 import cash.z.ecc.android.sdk.ext.ZcashSdk
@@ -43,10 +43,16 @@ import cash.z.ecc.android.sdk.internal.transaction.OutboundTransactionManagerImp
 import cash.z.ecc.android.sdk.internal.transaction.TransactionEncoder
 import cash.z.ecc.android.sdk.internal.transaction.TransactionEncoderImpl
 import cash.z.ecc.android.sdk.model.Account
+import cash.z.ecc.android.sdk.model.AccountCreateSetup
+import cash.z.ecc.android.sdk.model.AccountImportSetup
+import cash.z.ecc.android.sdk.model.AccountUsk
+import cash.z.ecc.android.sdk.model.AccountUuid
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.FastestServersResult
 import cash.z.ecc.android.sdk.model.FetchFiatCurrencyResult
+import cash.z.ecc.android.sdk.model.FirstClassByteArray
 import cash.z.ecc.android.sdk.model.ObserveFiatCurrencyResult
+import cash.z.ecc.android.sdk.model.Pczt
 import cash.z.ecc.android.sdk.model.PercentDecimal
 import cash.z.ecc.android.sdk.model.Proposal
 import cash.z.ecc.android.sdk.model.TransactionOutput
@@ -57,6 +63,7 @@ import cash.z.ecc.android.sdk.model.TransactionSubmitResult
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
+import cash.z.ecc.android.sdk.tool.CheckpointTool
 import cash.z.ecc.android.sdk.type.AddressType
 import cash.z.ecc.android.sdk.type.AddressType.Shielded
 import cash.z.ecc.android.sdk.type.AddressType.Tex
@@ -88,6 +95,7 @@ import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
@@ -119,6 +127,7 @@ import kotlin.time.Duration.Companion.seconds
  */
 @Suppress("TooManyFunctions", "LongParameterList")
 class SdkSynchronizer private constructor(
+    private val context: Context,
     private val synchronizerKey: SynchronizerKey,
     private val storage: DerivedDataRepository,
     private val txManager: OutboundTransactionManager,
@@ -150,6 +159,7 @@ class SdkSynchronizer private constructor(
          */
         @Suppress("LongParameterList")
         internal suspend fun new(
+            context: Context,
             zcashNetwork: ZcashNetwork,
             alias: String,
             repository: DerivedDataRepository,
@@ -166,6 +176,7 @@ class SdkSynchronizer private constructor(
                 checkForExistingSynchronizers(synchronizerKey)
 
                 SdkSynchronizer(
+                    context,
                     synchronizerKey,
                     repository,
                     txManager,
@@ -215,9 +226,7 @@ class SdkSynchronizer private constructor(
 
     val coroutineScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
-    override val orchardBalances = processor.orchardBalances.asStateFlow()
-    override val saplingBalances = processor.saplingBalances.asStateFlow()
-    override val transparentBalance = processor.transparentBalance.asStateFlow()
+    override val walletBalances = processor.walletBalances.asStateFlow()
 
     private val refreshExchangeRateUsd = MutableSharedFlow<Unit>(replay = 1).apply { tryEmit(Unit) }
 
@@ -462,6 +471,22 @@ class SdkSynchronizer private constructor(
         }
     }
 
+    override suspend fun getTransactions(accountUuid: AccountUuid): Flow<List<TransactionOverview>> {
+        return combine(
+            processor.networkHeight,
+            storage.getTransactions(accountUuid)
+        ) { networkHeight, allAccountTransactions ->
+            val latestBlockHeight =
+                networkHeight ?: runCatching {
+                    backend.getMaxScannedHeight()
+                }.onFailure {
+                    Twig.error(it) { "Failed to get max scanned height" }
+                }.getOrNull()
+
+            allAccountTransactions.map { TransactionOverview.new(it, latestBlockHeight) }
+        }
+    }
+
     //
     // Storage APIs
     //
@@ -511,7 +536,8 @@ class SdkSynchronizer private constructor(
         // Triggering UTXOs and transactions fetching at the beginning of the block synchronization right after the
         //  app starts makes the transparent transactions appear faster.
         launch(CoroutineExceptionHandler(::onCriticalError)) {
-            refreshUtxos(Account.DEFAULT)
+            // Refresh UTXOs and transactions for all the wallet's accounts
+            refreshAllAccountsUtxos()
             refreshTransactions()
         }
 
@@ -523,6 +549,7 @@ class SdkSynchronizer private constructor(
 
             processor.state.onEach {
                 when (it) {
+                    is Initializing -> INITIALIZING
                     is Synced -> {
                         val now = System.currentTimeMillis()
                         // do a bit of housekeeping and then report synced status
@@ -533,7 +560,7 @@ class SdkSynchronizer private constructor(
 
                     is Stopped -> STOPPED
                     is Disconnected -> DISCONNECTED
-                    is Syncing, Initialized -> SYNCING
+                    is Syncing -> SYNCING
                 }.let { synchronizerStatus ->
                     _status.value = synchronizerStatus
                 }
@@ -621,9 +648,10 @@ class SdkSynchronizer private constructor(
         val shouldRefresh = !scannedRange.isNullOrEmpty() || elapsedMillis > (ZcashSdk.POLL_INTERVAL * 5)
         val reason = if (scannedRange.isNullOrEmpty()) "it's been a while" else "new blocks were scanned"
 
+        // Refresh UTXOs, balances, and transactions for all the wallet's accounts
         if (shouldRefresh) {
             Twig.debug { "Triggering utxo refresh since $reason!" }
-            refreshUtxos(Account.DEFAULT)
+            refreshAllAccountsUtxos()
 
             Twig.debug { "Triggering balance refresh since $reason!" }
             refreshAllBalances()
@@ -633,26 +661,103 @@ class SdkSynchronizer private constructor(
         }
     }
 
+    private suspend fun refreshAllAccountsUtxos() {
+        getAccounts().forEach { refreshUtxos(it) }
+    }
+
     //
     // Account management
     //
 
+    private val refreshAccountsBus = MutableSharedFlow<Unit>()
+
     // Not ready to be a public API; internal for testing only
     internal suspend fun createAccount(
-        seed: ByteArray,
+        accountName: String,
+        keySource: String?,
+        recoverUntil: BlockHeight?,
+        seed: FirstClassByteArray,
         treeState: TreeState,
-        recoverUntil: BlockHeight?
-    ): UnifiedSpendingKey? {
+    ): AccountUsk {
         return runCatching {
             backend.createAccountAndGetSpendingKey(
+                accountName = accountName,
+                keySource = keySource,
                 seed = seed,
                 treeState = treeState,
                 recoverUntil = recoverUntil
-            )
+            ).also {
+                refreshAccountsBus.emit(Unit)
+            }
         }.onFailure {
             Twig.error(it) { "Create account failed." }
-        }.getOrNull()
+        }.getOrElse {
+            throw InitializeException.CreateAccountException(it)
+        }
     }
+
+    override suspend fun importAccountByUfvk(setup: AccountImportSetup): Account {
+        val chainTip: BlockHeight? =
+            when (val response = processor.downloader.getLatestBlockHeight()) {
+                is Response.Success -> {
+                    Twig.info { "Chain tip for recovery until param fetched: ${response.result.value}" }
+                    runCatching { response.result.toBlockHeight() }.getOrNull()
+                }
+                is Response.Failure -> {
+                    Twig.error {
+                        "Chain tip fetch for recovery until failed with: ${response.toThrowable()}"
+                    }
+                    null
+                }
+            }
+
+        val loadedCheckpoint =
+            CheckpointTool.loadNearest(
+                context = context,
+                network = network,
+                chainTip ?: network.saplingActivationHeight
+            )
+        val treeState: TreeState = loadedCheckpoint.treeState()
+
+        return runCatching {
+            backend.importAccountUfvk(
+                recoverUntil = chainTip,
+                setup = setup,
+                treeState = treeState,
+            ).also {
+                refreshAccountsBus.emit(Unit)
+            }
+        }.onFailure {
+            Twig.error(it) { "Import account failed." }
+        }.getOrElse {
+            throw InitializeException.ImportAccountException(it)
+        }
+    }
+
+    override suspend fun getAccounts(): List<Account> {
+        return runCatching {
+            backend.getAccounts()
+        }.onFailure {
+            Twig.error(it) { "Get wallet accounts failed." }
+        }.getOrElse {
+            throw InitializeException.GetAccountsException(it)
+        }
+    }
+
+    override val accountsFlow: Flow<List<Account>?> =
+        channelFlow {
+            send(getAccounts())
+            launch {
+                refreshAccountsBus.collect {
+                    send(getAccounts())
+                }
+            }
+            awaitClose()
+        }.stateIn(
+            coroutineScope,
+            SharingStarted.WhileSubscribed(),
+            null
+        )
 
     /**
      * Returns the current Unified Address for this account.
@@ -756,72 +861,20 @@ class SdkSynchronizer private constructor(
             }
     }
 
-    @Deprecated(
-        message = "Upcoming SDK 2.1 will create multiple transactions at once for some recipients.",
-        replaceWith =
-            ReplaceWith(
-                "createProposedTransactions(proposeTransfer(usk.account, toAddress, amount, memo), usk)"
-            )
-    )
-    @Throws(TransactionEncoderException::class, LightWalletException.TransactionSubmitException::class)
-    override suspend fun sendToAddress(
-        usk: UnifiedSpendingKey,
-        amount: Zatoshi,
-        toAddress: String,
-        memo: String
-    ): Long {
-        val encodedTx =
-            txManager.encode(
-                usk,
-                amount,
-                TransactionRecipient.Address(toAddress),
-                memo,
-                usk.account
-            )
+    override suspend fun createPcztFromProposal(
+        accountUuid: AccountUuid,
+        proposal: Proposal
+    ) = txManager.createPcztFromProposal(accountUuid, proposal)
 
-        when (txManager.submit(encodedTx)) {
-            is TransactionSubmitResult.Success -> {
-                return storage.findMatchingTransactionId(encodedTx.txId.byteArray)!!
-            }
-            else -> {
-                throw LightWalletException.TransactionSubmitException()
-            }
-        }
-    }
+    override suspend fun addProofsToPczt(pczt: Pczt) = txManager.addProofsToPczt(pczt)
 
-    @Deprecated(
-        message = "Upcoming SDK 2.1 will create multiple transactions at once for some recipients.",
-        replaceWith =
-            ReplaceWith(
-                "proposeShielding(usk.account, shieldingThreshold, memo)?.let { createProposedTransactions(it, usk) }"
-            )
-    )
-    @Throws(TransactionEncoderException::class, LightWalletException.TransactionSubmitException::class)
-    override suspend fun shieldFunds(
-        usk: UnifiedSpendingKey,
-        memo: String
-    ): Long {
-        Twig.debug { "Initializing shielding transaction" }
-        val tAddr = CompactBlockProcessor.getTransparentAddress(backend, usk.account)
-        val tBalance = processor.getUtxoCacheBalance(tAddr)
-
-        val encodedTx =
-            txManager.encode(
-                usk,
-                tBalance,
-                TransactionRecipient.Account(usk.account),
-                memo,
-                usk.account
-            )
-
-        when (txManager.submit(encodedTx)) {
-            is TransactionSubmitResult.Success -> {
-                return storage.findMatchingTransactionId(encodedTx.txId.byteArray)!!
-            }
-            else -> {
-                throw LightWalletException.TransactionSubmitException()
-            }
-        }
+    override suspend fun createTransactionFromPczt(
+        pcztWithProofs: Pczt,
+        pcztWithSignatures: Pczt
+    ): Flow<TransactionSubmitResult> {
+        // Internally, this logic submits and checks the newly stored and encoded transaction
+        return flowOf(txManager.extractAndStoreTxFromPczt(pcztWithProofs, pcztWithSignatures))
+            .map { transaction -> txManager.submit(transaction) }
     }
 
     override suspend fun refreshUtxos(
@@ -1025,22 +1078,20 @@ internal object DefaultSynchronizerFactory {
     @Suppress("LongParameterList")
     internal suspend fun defaultDerivedDataRepository(
         context: Context,
-        rustBackend: TypesafeBackend,
         databaseFile: File,
         checkpoint: Checkpoint,
-        seed: ByteArray?,
-        numberOfAccounts: Int,
-        recoverUntil: BlockHeight?
+        recoverUntil: BlockHeight?,
+        rustBackend: TypesafeBackend,
+        setup: AccountCreateSetup?,
     ): DerivedDataRepository =
         DbDerivedDataRepository(
             DerivedDataDb.new(
-                context,
-                rustBackend,
-                databaseFile,
-                checkpoint,
-                seed,
-                numberOfAccounts,
-                recoverUntil
+                context = context,
+                backend = rustBackend,
+                databaseFile = databaseFile,
+                checkpoint = checkpoint,
+                recoverUntil = recoverUntil,
+                setup = setup,
             )
         )
 

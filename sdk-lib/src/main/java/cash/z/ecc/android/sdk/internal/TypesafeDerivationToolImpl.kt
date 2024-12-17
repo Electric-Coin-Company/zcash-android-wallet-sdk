@@ -1,9 +1,9 @@
 package cash.z.ecc.android.sdk.internal
 
-import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.UnifiedFullViewingKey
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.ZcashNetwork
+import cash.z.ecc.android.sdk.model.Zip32AccountIndex
 import cash.z.ecc.android.sdk.tool.DerivationTool
 
 internal class TypesafeDerivationToolImpl(private val derivation: Derivation) : DerivationTool {
@@ -21,14 +21,14 @@ internal class TypesafeDerivationToolImpl(private val derivation: Derivation) : 
     override suspend fun deriveUnifiedSpendingKey(
         seed: ByteArray,
         network: ZcashNetwork,
-        account: Account
-    ): UnifiedSpendingKey = derivation.deriveUnifiedSpendingKey(seed, network, account)
+        accountIndex: Zip32AccountIndex
+    ): UnifiedSpendingKey = derivation.deriveUnifiedSpendingKey(seed, network, accountIndex)
 
     override suspend fun deriveUnifiedAddress(
         seed: ByteArray,
         network: ZcashNetwork,
-        account: Account
-    ): String = derivation.deriveUnifiedAddress(seed, network, account)
+        accountIndex: Zip32AccountIndex
+    ): String = derivation.deriveUnifiedAddress(seed, network, accountIndex)
 
     override suspend fun deriveUnifiedAddress(
         viewingKey: String,
@@ -44,6 +44,6 @@ internal class TypesafeDerivationToolImpl(private val derivation: Derivation) : 
         contextString: ByteArray,
         seed: ByteArray,
         network: ZcashNetwork,
-        account: Account
-    ): ByteArray = derivation.deriveArbitraryAccountKeyTypesafe(contextString, seed, network, account)
+        accountIndex: Zip32AccountIndex
+    ): ByteArray = derivation.deriveArbitraryAccountKeyTypesafe(contextString, seed, network, accountIndex)
 }

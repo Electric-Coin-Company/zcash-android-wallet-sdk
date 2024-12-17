@@ -10,6 +10,7 @@ import cash.z.ecc.android.bip39.Mnemonics
 import cash.z.ecc.android.bip39.toSeed
 import cash.z.ecc.android.sdk.Synchronizer
 import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
+import cash.z.ecc.android.sdk.demoapp.CURRENT_ZIP_32_ACCOUNT_INDEX
 import cash.z.ecc.android.sdk.demoapp.databinding.FragmentGetBalanceBinding
 import cash.z.ecc.android.sdk.demoapp.ext.requireApplicationContext
 import cash.z.ecc.android.sdk.demoapp.util.SyncBlockchainBenchmarkTrace
@@ -18,11 +19,11 @@ import cash.z.ecc.android.sdk.ext.convertZatoshiToZec
 import cash.z.ecc.android.sdk.ext.convertZatoshiToZecString
 import cash.z.ecc.android.sdk.ext.toUsdString
 import cash.z.ecc.android.sdk.internal.Twig
-import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.PercentDecimal
 import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
+import cash.z.ecc.android.sdk.model.Zip32AccountIndex
 import cash.z.ecc.android.sdk.tool.DerivationTool
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.combine
@@ -78,10 +79,11 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
                         DerivationTool.getInstance().deriveUnifiedSpendingKey(
                             seed,
                             network,
-                            Account.DEFAULT
+                            Zip32AccountIndex.new(CURRENT_ZIP_32_ACCOUNT_INDEX)
                         )
                     sharedViewModel.synchronizerFlow.value?.let { synchronizer ->
-                        synchronizer.proposeShielding(usk.account, Zatoshi(100000))?.let { it1 ->
+                        val account = synchronizer.getAccounts()[CURRENT_ZIP_32_ACCOUNT_INDEX.toInt()]
+                        synchronizer.proposeShielding(account, Zatoshi(100000))?.let { it1 ->
                             synchronizer.createProposedTransactions(
                                 it1,
                                 usk
@@ -116,10 +118,12 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
                     sharedViewModel.synchronizerFlow
                         .filterNotNull()
                         .flatMapLatest {
-                            it.saplingBalances.combine(it.exchangeRateUsd) { b, r ->
-                                b?.let {
-                                    b to
-                                        r.currencyConversion
+                            val account = it.getAccounts()[CURRENT_ZIP_32_ACCOUNT_INDEX.toInt()]
+                            it.walletBalances.combine(it.exchangeRateUsd) { balances, rate ->
+                                balances?.let {
+                                    val walletBalance = balances[account.accountUuid]!!.sapling
+                                    walletBalance to
+                                        rate.currencyConversion
                                             ?.priceOfZec
                                             ?.toBigDecimal()
                                 }
@@ -131,23 +135,28 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
                     sharedViewModel.synchronizerFlow
                         .filterNotNull()
                         .flatMapLatest {
-                            it.orchardBalances.combine(it.exchangeRateUsd) { b, r ->
-                                b?.let {
-                                    b to
-                                        r.currencyConversion?.priceOfZec?.toBigDecimal()
+                            val account = it.getAccounts()[CURRENT_ZIP_32_ACCOUNT_INDEX.toInt()]
+                            it.walletBalances.combine(it.exchangeRateUsd) { balances, rate ->
+                                balances?.let {
+                                    val walletBalance = balances[account.accountUuid]!!.orchard
+                                    walletBalance to
+                                        rate.currencyConversion
+                                            ?.priceOfZec
+                                            ?.toBigDecimal()
                                 }
                             }
                         }
                         .collect { onOrchardBalance(it) }
-                }
-                launch {
+
                     sharedViewModel.synchronizerFlow
                         .filterNotNull()
                         .flatMapLatest {
-                            it.transparentBalance.combine(it.exchangeRateUsd) { b, r ->
-                                b?.let {
-                                    b to
-                                        r.currencyConversion
+                            val account = it.getAccounts()[CURRENT_ZIP_32_ACCOUNT_INDEX.toInt()]
+                            it.walletBalances.combine(it.exchangeRateUsd) { balances, rate ->
+                                balances?.let {
+                                    val walletBalance = balances[account.accountUuid]!!.unshielded
+                                    walletBalance to
+                                        rate.currencyConversion
                                             ?.priceOfZec
                                             ?.toBigDecimal()
                                 }
@@ -208,9 +217,24 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
         binding.textStatus.text = "Status: $status"
         sharedViewModel.synchronizerFlow.value?.let { synchronizer ->
             val rate = synchronizer.exchangeRateUsd.value.currencyConversion?.priceOfZec?.toBigDecimal()
-            onOrchardBalance(synchronizer.orchardBalances.value?.let { Pair(it, rate) })
-            onSaplingBalance(synchronizer.saplingBalances.value?.let { Pair(it, rate) })
-            onTransparentBalance(synchronizer.transparentBalance.value?.let { Pair(it, rate) })
+            viewLifecycleOwner.lifecycleScope.launch {
+                val account = synchronizer.getAccounts()[CURRENT_ZIP_32_ACCOUNT_INDEX.toInt()]
+                onOrchardBalance(
+                    synchronizer.walletBalances.value?.let {
+                        Pair(it[account.accountUuid]!!.orchard, rate)
+                    }
+                )
+                onSaplingBalance(
+                    synchronizer.walletBalances.value?.let {
+                        Pair(it[account.accountUuid]!!.sapling, rate)
+                    }
+                )
+                onTransparentBalance(
+                    synchronizer.walletBalances.value?.let {
+                        Pair(it[account.accountUuid]!!.unshielded, rate)
+                    }
+                )
+            }
         }
     }
 

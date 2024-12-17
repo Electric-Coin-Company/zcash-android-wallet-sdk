@@ -2,8 +2,9 @@ package cash.z.ecc.android.sdk.internal.transaction
 
 import cash.z.ecc.android.sdk.internal.model.EncodedTransaction
 import cash.z.ecc.android.sdk.model.Account
+import cash.z.ecc.android.sdk.model.AccountUuid
+import cash.z.ecc.android.sdk.model.Pczt
 import cash.z.ecc.android.sdk.model.Proposal
-import cash.z.ecc.android.sdk.model.TransactionRecipient
 import cash.z.ecc.android.sdk.model.TransactionSubmitResult
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.Zatoshi
@@ -15,26 +16,6 @@ import cash.z.ecc.android.sdk.model.Zatoshi
  */
 @Suppress("TooManyFunctions")
 internal interface OutboundTransactionManager {
-    /**
-     * Encode the pending transaction using the given spending key. This is a local operation that
-     * produces a raw transaction to submit to lightwalletd.
-     *
-     * @param usk the unified spending key to use for constructing the transaction.
-     * @param amount the amount to send.
-     * @param recipient the recipient of the transaction.
-     * @param memo the memo to include in the transaction.
-     * @param account the account to use for the transaction.
-     *
-     * @return The encoded transaction, which can be submitted to lightwalletd.
-     */
-    suspend fun encode(
-        usk: UnifiedSpendingKey,
-        amount: Zatoshi,
-        recipient: TransactionRecipient,
-        memo: String,
-        account: Account
-    ): EncodedTransaction
-
     /**
      * Creates a proposal for transferring funds from a ZIP-321 compliant payment URI
      *
@@ -113,6 +94,18 @@ internal interface OutboundTransactionManager {
      * @return true if the transaction was successfully submitted to lightwalletd.
      */
     suspend fun submit(encodedTransaction: EncodedTransaction): TransactionSubmitResult
+
+    suspend fun createPcztFromProposal(
+        accountUuid: AccountUuid,
+        proposal: Proposal
+    ): Pczt
+
+    suspend fun addProofsToPczt(pczt: Pczt): Pczt
+
+    suspend fun extractAndStoreTxFromPczt(
+        pcztWithProofs: Pczt,
+        pcztWithSignatures: Pczt
+    ): EncodedTransaction
 
     /**
      * Return true when the given address is a valid t-addr.

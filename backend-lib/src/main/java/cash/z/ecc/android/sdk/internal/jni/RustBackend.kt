@@ -5,13 +5,13 @@ import cash.z.ecc.android.sdk.internal.SdkDispatchers
 import cash.z.ecc.android.sdk.internal.ext.deleteRecursivelySuspend
 import cash.z.ecc.android.sdk.internal.ext.deleteSuspend
 import cash.z.ecc.android.sdk.internal.model.JniAccount
+import cash.z.ecc.android.sdk.internal.model.JniAccountUsk
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.internal.model.JniRewindResult
 import cash.z.ecc.android.sdk.internal.model.JniScanRange
 import cash.z.ecc.android.sdk.internal.model.JniScanSummary
 import cash.z.ecc.android.sdk.internal.model.JniSubtreeRoot
 import cash.z.ecc.android.sdk.internal.model.JniTransactionDataRequest
-import cash.z.ecc.android.sdk.internal.model.JniUnifiedSpendingKey
 import cash.z.ecc.android.sdk.internal.model.JniWalletSummary
 import cash.z.ecc.android.sdk.internal.model.ProposalUnsafe
 import cash.z.ecc.android.sdk.internal.model.RustLogging
@@ -89,18 +89,58 @@ class RustBackend private constructor(
         }
     }
 
+    override suspend fun getAccountForUfvk(ufvk: String): JniAccount? {
+        return withContext(SdkDispatchers.DATABASE_IO) {
+            getAccountForUfvk(
+                dbDataPath = dataDbFile.absolutePath,
+                networkId = networkId,
+                ufvk = ufvk,
+            )
+        }
+    }
+
     override suspend fun createAccount(
+        accountName: String,
+        keySource: String?,
         seed: ByteArray,
         treeState: ByteArray,
-        recoverUntil: Long?
-    ): JniUnifiedSpendingKey {
+        recoverUntil: Long?,
+    ): JniAccountUsk {
         return withContext(SdkDispatchers.DATABASE_IO) {
             createAccount(
-                dataDbFile.absolutePath,
-                seed,
-                treeState,
-                recoverUntil ?: -1,
-                networkId = networkId
+                dbDataPath = dataDbFile.absolutePath,
+                networkId = networkId,
+                accountName = accountName,
+                keySource = keySource,
+                seed = seed,
+                treeState = treeState,
+                recoverUntil = recoverUntil ?: -1,
+            )
+        }
+    }
+
+    override suspend fun importAccountUfvk(
+        accountName: String,
+        keySource: String?,
+        ufvk: String,
+        treeState: ByteArray,
+        recoverUntil: Long?,
+        purpose: Int,
+        seedFingerprint: ByteArray?,
+        zip32AccountIndex: Long?,
+    ): JniAccount {
+        return withContext(SdkDispatchers.DATABASE_IO) {
+            importAccountUfvk(
+                dbDataPath = dataDbFile.absolutePath,
+                networkId = networkId,
+                accountName = accountName,
+                keySource = keySource,
+                ufvk = ufvk,
+                treeState = treeState,
+                recoverUntil = recoverUntil ?: -1,
+                purpose = purpose,
+                seedFingerprint = seedFingerprint,
+                zip32AccountIndex = zip32AccountIndex,
             )
         }
     }
@@ -114,11 +154,11 @@ class RustBackend private constructor(
             )
         }
 
-    override suspend fun getCurrentAddress(accountIndex: Int) =
+    override suspend fun getCurrentAddress(accountUuid: ByteArray) =
         withContext(SdkDispatchers.DATABASE_IO) {
             getCurrentAddress(
                 dataDbFile.absolutePath,
-                accountIndex,
+                accountUuid,
                 networkId = networkId
             )
         }
@@ -127,11 +167,11 @@ class RustBackend private constructor(
 
     override fun getSaplingReceiver(ua: String) = getSaplingReceiverForUnifiedAddress(ua)
 
-    override suspend fun listTransparentReceivers(accountIndex: Int): List<String> {
+    override suspend fun listTransparentReceivers(accountUuid: ByteArray): List<String> {
         return withContext(SdkDispatchers.DATABASE_IO) {
             listTransparentReceivers(
                 dbDataPath = dataDbFile.absolutePath,
-                accountIndex = accountIndex,
+                accountUuid = accountUuid,
                 networkId = networkId
             ).asList()
         }
@@ -318,14 +358,14 @@ class RustBackend private constructor(
     }
 
     override suspend fun proposeTransferFromUri(
-        accountIndex: Int,
+        accountUuid: ByteArray,
         uri: String
     ): ProposalUnsafe =
         withContext(SdkDispatchers.DATABASE_IO) {
             ProposalUnsafe.parse(
                 proposeTransferFromUri(
                     dataDbFile.absolutePath,
-                    accountIndex,
+                    accountUuid,
                     uri,
                     networkId = networkId,
                 )
@@ -333,7 +373,7 @@ class RustBackend private constructor(
         }
 
     override suspend fun proposeTransfer(
-        accountIndex: Int,
+        accountUuid: ByteArray,
         to: String,
         value: Long,
         memo: ByteArray?
@@ -342,7 +382,7 @@ class RustBackend private constructor(
             ProposalUnsafe.parse(
                 proposeTransfer(
                     dataDbFile.absolutePath,
-                    accountIndex,
+                    accountUuid,
                     to,
                     value,
                     memo,
@@ -352,7 +392,7 @@ class RustBackend private constructor(
         }
 
     override suspend fun proposeShielding(
-        accountIndex: Int,
+        accountUuid: ByteArray,
         shieldingThreshold: Long,
         memo: ByteArray?,
         transparentReceiver: String?
@@ -360,7 +400,7 @@ class RustBackend private constructor(
         return withContext(SdkDispatchers.DATABASE_IO) {
             proposeShielding(
                 dataDbFile.absolutePath,
-                accountIndex,
+                accountUuid,
                 shieldingThreshold,
                 memo,
                 transparentReceiver,
@@ -386,6 +426,41 @@ class RustBackend private constructor(
                 outputParamsPath = saplingOutputFile.absolutePath,
                 networkId = networkId
             ).asList()
+        }
+
+    override suspend fun createPcztFromProposal(
+        accountUuid: ByteArray,
+        proposal: ProposalUnsafe
+    ): ByteArray =
+        withContext(SdkDispatchers.DATABASE_IO) {
+            createPcztFromProposal(
+                dataDbFile.absolutePath,
+                accountUuid,
+                proposal.toByteArray(),
+                networkId = networkId
+            )
+        }
+
+    override suspend fun addProofsToPczt(pczt: ByteArray): ByteArray =
+        addProofsToPczt(
+            pczt,
+            spendParamsPath = saplingSpendFile.absolutePath,
+            outputParamsPath = saplingOutputFile.absolutePath
+        )
+
+    override suspend fun extractAndStoreTxFromPczt(
+        pcztWithProofs: ByteArray,
+        pcztWithSignatures: ByteArray
+    ): ByteArray =
+        withContext(SdkDispatchers.DATABASE_IO) {
+            extractAndStoreTxFromPczt(
+                dataDbFile.absolutePath,
+                pcztWithProofs,
+                pcztWithSignatures,
+                spendParamsPath = saplingSpendFile.absolutePath,
+                outputParamsPath = saplingOutputFile.absolutePath,
+                networkId = networkId
+            )
         }
 
     override suspend fun putUtxo(
@@ -492,13 +567,38 @@ class RustBackend private constructor(
         ): Array<JniAccount>
 
         @JvmStatic
+        @Suppress("LongParameterList")
         private external fun createAccount(
             dbDataPath: String,
+            networkId: Int,
+            accountName: String,
+            keySource: String?,
             seed: ByteArray,
             treeState: ByteArray,
             recoverUntil: Long,
-            networkId: Int
-        ): JniUnifiedSpendingKey
+        ): JniAccountUsk
+
+        @JvmStatic
+        private external fun getAccountForUfvk(
+            dbDataPath: String,
+            networkId: Int,
+            ufvk: String,
+        ): JniAccount?
+
+        @JvmStatic
+        @Suppress("LongParameterList")
+        private external fun importAccountUfvk(
+            dbDataPath: String,
+            networkId: Int,
+            accountName: String,
+            keySource: String?,
+            ufvk: String,
+            treeState: ByteArray,
+            recoverUntil: Long,
+            purpose: Int,
+            seedFingerprint: ByteArray?,
+            zip32AccountIndex: Long?,
+        ): JniAccount
 
         @JvmStatic
         private external fun isSeedRelevantToAnyDerivedAccounts(
@@ -510,7 +610,7 @@ class RustBackend private constructor(
         @JvmStatic
         private external fun getCurrentAddress(
             dbDataPath: String,
-            accountIndex: Int,
+            accountUuid: ByteArray,
             networkId: Int
         ): String
 
@@ -523,7 +623,7 @@ class RustBackend private constructor(
         @JvmStatic
         private external fun listTransparentReceivers(
             dbDataPath: String,
-            accountIndex: Int,
+            accountUuid: ByteArray,
             networkId: Int
         ): Array<String>
 
@@ -671,7 +771,7 @@ class RustBackend private constructor(
         @JvmStatic
         private external fun proposeTransferFromUri(
             dbDataPath: String,
-            accountIndex: Int,
+            accountUuid: ByteArray,
             uri: String,
             networkId: Int,
         ): ByteArray
@@ -680,7 +780,7 @@ class RustBackend private constructor(
         @Suppress("LongParameterList")
         private external fun proposeTransfer(
             dbDataPath: String,
-            accountIndex: Int,
+            accountUuid: ByteArray,
             to: String,
             value: Long,
             memo: ByteArray?,
@@ -691,7 +791,7 @@ class RustBackend private constructor(
         @Suppress("LongParameterList")
         private external fun proposeShielding(
             dbDataPath: String,
-            accountIndex: Int,
+            accountUuid: ByteArray,
             shieldingThreshold: Long,
             memo: ByteArray?,
             transparentReceiver: String?,
@@ -708,6 +808,32 @@ class RustBackend private constructor(
             outputParamsPath: String,
             networkId: Int
         ): Array<ByteArray>
+
+        @JvmStatic
+        private external fun createPcztFromProposal(
+            dbDataPath: String,
+            accountUuid: ByteArray,
+            proposal: ByteArray,
+            networkId: Int,
+        ): ByteArray
+
+        @JvmStatic
+        private external fun addProofsToPczt(
+            pczt: ByteArray,
+            spendParamsPath: String,
+            outputParamsPath: String,
+        ): ByteArray
+
+        @JvmStatic
+        @Suppress("LongParameterList")
+        private external fun extractAndStoreTxFromPczt(
+            dbDataPath: String,
+            pcztWithProofs: ByteArray,
+            pcztWithSignatures: ByteArray,
+            spendParamsPath: String,
+            outputParamsPath: String,
+            networkId: Int,
+        ): ByteArray
 
         @JvmStatic
         private external fun branchIdForHeight(

@@ -7,11 +7,11 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import cash.z.ecc.android.sdk.demoapp.BaseDemoFragment
+import cash.z.ecc.android.sdk.demoapp.CURRENT_ZIP_32_ACCOUNT_INDEX
 import cash.z.ecc.android.sdk.demoapp.databinding.FragmentGetAddressBinding
 import cash.z.ecc.android.sdk.demoapp.ext.requireApplicationContext
 import cash.z.ecc.android.sdk.demoapp.util.ProvideAddressBenchmarkTrace
 import cash.z.ecc.android.sdk.demoapp.util.fromResources
-import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.UnifiedFullViewingKey
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.tool.DerivationTool
@@ -30,23 +30,25 @@ class GetAddressFragment : BaseDemoFragment<FragmentGetAddressBinding>() {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
                     sharedViewModel.synchronizerFlow.filterNotNull().collect { synchronizer ->
+                        val account = synchronizer.getAccounts()[CURRENT_ZIP_32_ACCOUNT_INDEX.toInt()]
+
                         binding.unifiedAddress.apply {
                             reportTraceEvent(ProvideAddressBenchmarkTrace.Event.UNIFIED_ADDRESS_START)
-                            val uaddress = synchronizer.getUnifiedAddress(Account.DEFAULT)
+                            val uaddress = synchronizer.getUnifiedAddress(account)
                             reportTraceEvent(ProvideAddressBenchmarkTrace.Event.UNIFIED_ADDRESS_END)
                             text = uaddress
                             setOnClickListener { copyToClipboard(uaddress) }
                         }
                         binding.saplingAddress.apply {
                             reportTraceEvent(ProvideAddressBenchmarkTrace.Event.SAPLING_ADDRESS_START)
-                            val sapling = synchronizer.getSaplingAddress(Account.DEFAULT)
+                            val sapling = synchronizer.getSaplingAddress(account)
                             reportTraceEvent(ProvideAddressBenchmarkTrace.Event.SAPLING_ADDRESS_END)
                             text = sapling
                             setOnClickListener { copyToClipboard(sapling) }
                         }
                         binding.transparentAddress.apply {
                             reportTraceEvent(ProvideAddressBenchmarkTrace.Event.TRANSPARENT_ADDRESS_START)
-                            val transparent = synchronizer.getTransparentAddress(Account.DEFAULT)
+                            val transparent = synchronizer.getTransparentAddress(account)
                             reportTraceEvent(ProvideAddressBenchmarkTrace.Event.TRANSPARENT_ADDRESS_END)
                             text = transparent
                             setOnClickListener { copyToClipboard(transparent) }

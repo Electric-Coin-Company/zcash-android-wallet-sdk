@@ -2,12 +2,12 @@ package cash.z.ecc.fixture
 
 import cash.z.ecc.android.sdk.internal.Backend
 import cash.z.ecc.android.sdk.internal.model.JniAccount
+import cash.z.ecc.android.sdk.internal.model.JniAccountUsk
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.internal.model.JniRewindResult
 import cash.z.ecc.android.sdk.internal.model.JniScanRange
 import cash.z.ecc.android.sdk.internal.model.JniSubtreeRoot
 import cash.z.ecc.android.sdk.internal.model.JniTransactionDataRequest
-import cash.z.ecc.android.sdk.internal.model.JniUnifiedSpendingKey
 import cash.z.ecc.android.sdk.internal.model.JniWalletSummary
 import cash.z.ecc.android.sdk.internal.model.ProposalUnsafe
 
@@ -89,14 +89,14 @@ internal class FakeRustBackend(
     }
 
     override suspend fun proposeTransferFromUri(
-        accountIndex: Int,
+        accountUuid: ByteArray,
         uri: String
     ): ProposalUnsafe {
         error("Intentionally not implemented yet.")
     }
 
     override suspend fun proposeTransfer(
-        accountIndex: Int,
+        accountUuid: ByteArray,
         to: String,
         value: Long,
         memo: ByteArray?
@@ -105,7 +105,7 @@ internal class FakeRustBackend(
     }
 
     override suspend fun proposeShielding(
-        accountIndex: Int,
+        accountUuid: ByteArray,
         shieldingThreshold: Long,
         memo: ByteArray?,
         transparentReceiver: String?
@@ -117,6 +117,24 @@ internal class FakeRustBackend(
         proposal: ProposalUnsafe,
         unifiedSpendingKey: ByteArray
     ): List<ByteArray> {
+        error("Intentionally not implemented yet.")
+    }
+
+    override suspend fun createPcztFromProposal(
+        accountUuid: ByteArray,
+        proposal: ProposalUnsafe
+    ): ByteArray {
+        error("Intentionally not implemented yet.")
+    }
+
+    override suspend fun addProofsToPczt(pczt: ByteArray): ByteArray {
+        error("Intentionally not implemented yet.")
+    }
+
+    override suspend fun extractAndStoreTxFromPczt(
+        pcztWithProofs: ByteArray,
+        pcztWithSignatures: ByteArray
+    ): ByteArray {
         error("Intentionally not implemented yet.")
     }
 
@@ -135,11 +153,30 @@ internal class FakeRustBackend(
         error("Intentionally not implemented yet.")
     }
 
+    override suspend fun getAccountForUfvk(ufvk: String): JniAccount? {
+        error("Intentionally not implemented yet.")
+    }
+
     override suspend fun createAccount(
+        accountName: String,
+        keySource: String?,
         seed: ByteArray,
         treeState: ByteArray,
-        recoverUntil: Long?
-    ): JniUnifiedSpendingKey {
+        recoverUntil: Long?,
+    ): JniAccountUsk {
+        error("Intentionally not implemented yet.")
+    }
+
+    override suspend fun importAccountUfvk(
+        accountName: String,
+        keySource: String?,
+        ufvk: String,
+        treeState: ByteArray,
+        recoverUntil: Long?,
+        purpose: Int,
+        seedFingerprint: ByteArray?,
+        zip32AccountIndex: Long?,
+    ): JniAccount {
         error("Intentionally not implemented yet.")
     }
 
@@ -159,7 +196,7 @@ internal class FakeRustBackend(
         error("Intentionally not implemented in mocked FakeRustBackend implementation.")
     }
 
-    override suspend fun getCurrentAddress(accountIndex: Int): String {
+    override suspend fun getCurrentAddress(accountUuid: ByteArray): String {
         error("Intentionally not implemented yet.")
     }
 
@@ -171,7 +208,7 @@ internal class FakeRustBackend(
         error("Intentionally not implemented yet.")
     }
 
-    override suspend fun listTransparentReceivers(accountIndex: Int): List<String> {
+    override suspend fun listTransparentReceivers(accountUuid: ByteArray): List<String> {
         error("Intentionally not implemented yet.")
     }
 

@@ -1,10 +1,11 @@
 package cash.z.ecc.android.sdk.internal.model
 
-import cash.z.ecc.android.sdk.model.Account
+import cash.z.ecc.android.sdk.model.AccountBalance
+import cash.z.ecc.android.sdk.model.AccountUuid
 import cash.z.ecc.android.sdk.model.BlockHeight
 
 internal data class WalletSummary(
-    val accountBalances: Map<Account, AccountBalance>,
+    val accountBalances: Map<AccountUuid, AccountBalance>,
     val chainTipHeight: BlockHeight,
     val fullyScannedHeight: BlockHeight,
     val scanProgress: ScanProgress,
@@ -15,9 +16,10 @@ internal data class WalletSummary(
         fun new(jni: JniWalletSummary): WalletSummary {
             return WalletSummary(
                 accountBalances =
-                    jni.accountBalances.associateBy({ Account(it.account) }, {
-                        AccountBalance.new(it)
-                    }),
+                    jni.accountBalances.associateBy(
+                        { AccountUuid.new(it.accountUuid) },
+                        { AccountBalance.new(it) }
+                    ),
                 chainTipHeight = BlockHeight(jni.chainTipHeight),
                 fullyScannedHeight = BlockHeight(jni.fullyScannedHeight),
                 scanProgress = ScanProgress.new(jni),

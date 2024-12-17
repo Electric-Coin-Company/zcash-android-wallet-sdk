@@ -1,13 +1,13 @@
 package cash.z.ecc.android.sdk.internal
 
 import cash.z.ecc.android.sdk.internal.model.JniAccount
+import cash.z.ecc.android.sdk.internal.model.JniAccountUsk
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.internal.model.JniRewindResult
 import cash.z.ecc.android.sdk.internal.model.JniScanRange
 import cash.z.ecc.android.sdk.internal.model.JniScanSummary
 import cash.z.ecc.android.sdk.internal.model.JniSubtreeRoot
 import cash.z.ecc.android.sdk.internal.model.JniTransactionDataRequest
-import cash.z.ecc.android.sdk.internal.model.JniUnifiedSpendingKey
 import cash.z.ecc.android.sdk.internal.model.JniWalletSummary
 import cash.z.ecc.android.sdk.internal.model.ProposalUnsafe
 
@@ -24,7 +24,7 @@ interface Backend {
     suspend fun initBlockMetaDb(): Int
 
     suspend fun proposeTransfer(
-        accountIndex: Int,
+        accountUuid: ByteArray,
         to: String,
         value: Long,
         memo: ByteArray? = null
@@ -35,12 +35,12 @@ interface Backend {
      */
     @Throws(RuntimeException::class)
     suspend fun proposeTransferFromUri(
-        accountIndex: Int,
+        accountUuid: ByteArray,
         uri: String
     ): ProposalUnsafe
 
     suspend fun proposeShielding(
-        accountIndex: Int,
+        accountUuid: ByteArray,
         shieldingThreshold: Long,
         memo: ByteArray? = null,
         transparentReceiver: String? = null
@@ -50,6 +50,43 @@ interface Backend {
         proposal: ProposalUnsafe,
         unifiedSpendingKey: ByteArray
     ): List<ByteArray>
+
+    /**
+     * Creates a partially-created (unsigned without proofs) transaction from the given proposal.
+     *
+     * Do not call this multiple times in parallel, or you will generate PCZT instances that, if
+     * finalized, would double-spend the same notes.
+     *
+     * @return the partially created transaction in its serialized format.
+     *
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    suspend fun createPcztFromProposal(
+        accountUuid: ByteArray,
+        proposal: ProposalUnsafe
+    ): ByteArray
+
+    /**
+     * Adds proofs to the given PCZT.
+     *
+     * @return the updated PCZT in its serialized format.
+     *
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    suspend fun addProofsToPczt(pczt: ByteArray): ByteArray
+
+    /**
+     * Takes a PCZT that has been separately proven and signed, finalizes it, and stores
+     * it in the wallet.
+     *
+     * @return the txid of the completed transaction.
+     *
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    suspend fun extractAndStoreTxFromPczt(
+        pcztWithProofs: ByteArray,
+        pcztWithSignatures: ByteArray,
+    ): ByteArray
 
     /**
      * @throws RuntimeException as a common indicator of the operation failure
@@ -84,11 +121,35 @@ interface Backend {
      * @throws RuntimeException as a common indicator of the operation failure
      */
     @Throws(RuntimeException::class)
+    suspend fun getAccountForUfvk(ufvk: String): JniAccount?
+
+    /**
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    @Throws(RuntimeException::class)
     suspend fun createAccount(
+        accountName: String,
+        keySource: String?,
         seed: ByteArray,
         treeState: ByteArray,
-        recoverUntil: Long?
-    ): JniUnifiedSpendingKey
+        recoverUntil: Long?,
+    ): JniAccountUsk
+
+    /**
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    @Throws(RuntimeException::class)
+    @Suppress("LongParameterList")
+    suspend fun importAccountUfvk(
+        accountName: String,
+        keySource: String?,
+        ufvk: String,
+        treeState: ByteArray,
+        recoverUntil: Long?,
+        purpose: Int,
+        seedFingerprint: ByteArray?,
+        zip32AccountIndex: Long?,
+    ): JniAccount
 
     /**
      * @throws RuntimeException as a common indicator of the operation failure
@@ -109,13 +170,13 @@ interface Backend {
     fun isValidTexAddr(addr: String): Boolean
 
     @Throws(RuntimeException::class)
-    suspend fun getCurrentAddress(accountIndex: Int): String
+    suspend fun getCurrentAddress(accountUuid: ByteArray): String
 
     fun getTransparentReceiver(ua: String): String?
 
     fun getSaplingReceiver(ua: String): String?
 
-    suspend fun listTransparentReceivers(accountIndex: Int): List<String>
+    suspend fun listTransparentReceivers(accountUuid: ByteArray): List<String>
 
     fun getBranchIdForHeight(height: Long): Long
 

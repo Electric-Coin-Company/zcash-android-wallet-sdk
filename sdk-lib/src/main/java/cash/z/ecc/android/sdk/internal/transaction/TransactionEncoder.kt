@@ -3,45 +3,15 @@ package cash.z.ecc.android.sdk.internal.transaction
 import cash.z.ecc.android.sdk.exception.TransactionEncoderException
 import cash.z.ecc.android.sdk.internal.model.EncodedTransaction
 import cash.z.ecc.android.sdk.model.Account
+import cash.z.ecc.android.sdk.model.AccountUuid
 import cash.z.ecc.android.sdk.model.BlockHeight
+import cash.z.ecc.android.sdk.model.Pczt
 import cash.z.ecc.android.sdk.model.Proposal
-import cash.z.ecc.android.sdk.model.TransactionRecipient
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.Zatoshi
 
 @Suppress("TooManyFunctions")
 internal interface TransactionEncoder {
-    /**
-     * Creates a transaction, throwing an exception whenever things are missing. When the provided
-     * wallet implementation doesn't throw an exception, we wrap the issue into a descriptive
-     * exception ourselves (rather than using double-bangs for things).
-     *
-     * @param usk the unified spending key associated with the notes that will be spent.
-     * @param amount the amount of zatoshi to send.
-     * @param toAddress the recipient's address.
-     * @param memo the optional memo to include as part of the transaction.
-     *
-     * @return the successfully encoded transaction or an exception
-     */
-    suspend fun createTransaction(
-        usk: UnifiedSpendingKey,
-        amount: Zatoshi,
-        recipient: TransactionRecipient,
-        memo: ByteArray? = byteArrayOf()
-    ): EncodedTransaction
-
-    /**
-     * Creates a transaction that shields any transparent funds sent to the given usk's account.
-     *
-     * @param usk the unified spending key associated with the transparent funds that will be shielded.
-     * @param memo the optional memo to include as part of the transaction.
-     */
-    suspend fun createShieldingTransaction(
-        usk: UnifiedSpendingKey,
-        recipient: TransactionRecipient,
-        memo: ByteArray? = byteArrayOf()
-    ): EncodedTransaction
-
     /**
      * Creates a proposal for transferring from a valid ZIP-321 Payment URI string
      *
@@ -124,9 +94,20 @@ internal interface TransactionEncoder {
         usk: UnifiedSpendingKey
     ): List<EncodedTransaction>
 
+    suspend fun createPcztFromProposal(
+        accountUuid: AccountUuid,
+        proposal: Proposal
+    ): Pczt
+
+    suspend fun addProofsToPczt(pczt: Pczt): Pczt
+
+    suspend fun extractAndStoreTxFromPczt(
+        pcztWithProofs: Pczt,
+        pcztWithSignatures: Pczt
+    ): EncodedTransaction
+
     /**
-     * Utility function to help with validation. This is not called during [createTransaction]
-     * because this class asserts that all validation is done externally by the UI, for now.
+     * Utility function to help with validation.
      *
      * @param address the address to validate
      *
@@ -135,8 +116,7 @@ internal interface TransactionEncoder {
     suspend fun isValidShieldedAddress(address: String): Boolean
 
     /**
-     * Utility function to help with validation. This is not called during [createTransaction]
-     * because this class asserts that all validation is done externally by the UI, for now.
+     * Utility function to help with validation.
      *
      * @param address the address to validate
      *
@@ -145,8 +125,7 @@ internal interface TransactionEncoder {
     suspend fun isValidTransparentAddress(address: String): Boolean
 
     /**
-     * Utility function to help with validation. This is not called during [createTransaction]
-     * because this class asserts that all validation is done externally by the UI, for now.
+     * Utility function to help with validation.
      *
      * @param address the address to validate
      *

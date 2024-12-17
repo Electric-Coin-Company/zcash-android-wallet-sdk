@@ -6,8 +6,9 @@ import cash.z.ecc.android.sdk.WalletInitMode.NewWallet
 import cash.z.ecc.android.sdk.WalletInitMode.RestoreWallet
 import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor
 import cash.z.ecc.android.sdk.exception.InitializeException
+import cash.z.ecc.android.sdk.exception.PcztException
+import cash.z.ecc.android.sdk.exception.RustLayerException
 import cash.z.ecc.android.sdk.ext.ZcashSdk
-import cash.z.ecc.android.sdk.internal.Derivation
 import cash.z.ecc.android.sdk.internal.FastestServerFetcher
 import cash.z.ecc.android.sdk.internal.Files
 import cash.z.ecc.android.sdk.internal.SaplingParamTool
@@ -16,9 +17,14 @@ import cash.z.ecc.android.sdk.internal.db.DatabaseCoordinator
 import cash.z.ecc.android.sdk.internal.exchange.UsdExchangeRateFetcher
 import cash.z.ecc.android.sdk.internal.model.ext.toBlockHeight
 import cash.z.ecc.android.sdk.model.Account
+import cash.z.ecc.android.sdk.model.AccountBalance
+import cash.z.ecc.android.sdk.model.AccountCreateSetup
+import cash.z.ecc.android.sdk.model.AccountImportSetup
+import cash.z.ecc.android.sdk.model.AccountUuid
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.FastestServersResult
 import cash.z.ecc.android.sdk.model.ObserveFiatCurrencyResult
+import cash.z.ecc.android.sdk.model.Pczt
 import cash.z.ecc.android.sdk.model.PercentDecimal
 import cash.z.ecc.android.sdk.model.Proposal
 import cash.z.ecc.android.sdk.model.TransactionOutput
@@ -26,7 +32,6 @@ import cash.z.ecc.android.sdk.model.TransactionOverview
 import cash.z.ecc.android.sdk.model.TransactionRecipient
 import cash.z.ecc.android.sdk.model.TransactionSubmitResult
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
-import cash.z.ecc.android.sdk.model.WalletBalance
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.tool.CheckpointTool
@@ -78,19 +83,9 @@ interface Synchronizer {
     val networkHeight: StateFlow<BlockHeight?>
 
     /**
-     * A stream of balance values for the orchard pool.
+     * A stream of wallet balances
      */
-    val orchardBalances: StateFlow<WalletBalance?>
-
-    /**
-     * A stream of balance values for the sapling pool.
-     */
-    val saplingBalances: StateFlow<WalletBalance?>
-
-    /**
-     * A stream of a balance for the transparent pool.
-     */
-    val transparentBalance: StateFlow<Zatoshi?>
+    val walletBalances: StateFlow<Map<AccountUuid, AccountBalance>?>
 
     /**
      * The latest known USD/ZEC exchange rate, paired with the time it was queried.
@@ -124,16 +119,41 @@ interface Synchronizer {
     //
 
     /**
-     * Measure connection quality and speed of given [servers].
+     * Returns all the wallet accounts or throws [InitializeException.GetAccountsException]
      *
-     * @return a [Flow] of fastest servers which updates it's state during measurement stages
+     * @return List of all wallet accounts
+     * @throws [InitializeException.GetAccountsException] in case of the operation failure
      */
-    suspend fun getFastestServers(
-        context: Context,
-        servers: List<LightWalletEndpoint>
-    ): Flow<FastestServersResult>
+    suspend fun getAccounts(): List<Account>
 
-    @Suppress("ktlint:standard:no-consecutive-comments")
+    /**
+     * Returns all the wallet accounts or throws [InitializeException.GetAccountsException]
+     *
+     * It's a Flow version of [getAccounts]
+     *
+     * @return Flow of all wallet accounts
+     * @throws [InitializeException.GetAccountsException] in case of the operation failure
+     */
+    val accountsFlow: Flow<List<Account>?>
+
+    /**
+     * Tells the wallet to track an account using a unified full viewing key.
+     *
+     * Returns details about the imported account, including the unique account identifier for
+     * the newly-created wallet database entry. Unlike the other account creation APIs, no spending
+     * key is returned because the wallet has no information about the mnemonic phrase from which
+     * the UFVK was derived.
+     *
+     * @param purpose Metadata describing whether or not data required for spending should be tracked by the wallet
+     * @param setup The account's setup information. See [AccountImportSetup] for more.
+     *
+     * @return Account containing details about the imported account, including the unique account identifier for the
+     * newly-created wallet database entry
+     *
+     * @throws [InitializeException.ImportAccountException] in case of the operation failure
+     */
+    suspend fun importAccountByUfvk(setup: AccountImportSetup): Account
+
     /**
      * Adds the next available account-level spend authority, given the current set of
      * [ZIP 316](https://zips.z.cash/zip-0316) account identifiers known, to the wallet
@@ -153,43 +173,68 @@ interface Synchronizer {
      * have been received by the currently-available account (in order to enable
      * automated account recovery).
      *
-     * @param seed the wallet's seed phrase.
+     * @param recoverUntil An optional height at which the wallet should exit "recovery mode"
+     * @param setup The wallet's setup information. See [AccountCreateSetup] for more.
+     * @param treeState The tree state corresponding to the last block prior to the wallet's birthday height
      *
      * @return the newly created ZIP 316 account identifier, along with the binary
      * encoding of the `UnifiedSpendingKey` for the newly created account.
      *
-     * This is not yet ready to be a public API!
-     * suspend fun createAccount(seed: ByteArray): UnifiedSpendingKey
+     * @throws [InitializeException.CreateAccountException] in case of the operation failure
      **/
+    @Suppress("standard:no-consecutive-comments")
+    /* Not ready to be a public API; internal for testing only
+    suspend fun createAccount(
+        setup: AccountCreateSetup,
+        treeState: TreeState,
+        recoverUntil: BlockHeight?
+    ): UnifiedSpendingKey
+     */
+
+    /**
+     * Measure connection quality and speed of given [servers].
+     *
+     * @return a [Flow] of fastest servers which updates it's state during measurement stages
+     */
+    suspend fun getFastestServers(
+        context: Context,
+        servers: List<LightWalletEndpoint>
+    ): Flow<FastestServersResult>
 
     /**
      * Gets the current unified address for the given account.
      *
-     * @param account the account whose address is of interest. Use Account.DEFAULT to get a result for the first
-     * account.
+     * @param account the account whose address is of interest.
      *
      * @return the current unified address for the given account.
+     *
+     * @throws RustLayerException.GetAddressException in case of the operation
      */
+    @Throws(RustLayerException.GetAddressException::class)
     suspend fun getUnifiedAddress(account: Account): String
 
     /**
      * Gets the legacy Sapling address corresponding to the current unified address for the given account.
      *
-     * @param account the account whose address is of interest. Use Account.DEFAULT to get a result for the first
-     * account.
+     * @param account the account whose address is of interest.
      *
      * @return a legacy Sapling address for the given account.
+     *
+     * @throws RustLayerException.GetAddressException in case of the operation
      */
+    @Throws(RustLayerException.GetAddressException::class)
     suspend fun getSaplingAddress(account: Account): String
 
     /**
      * Gets the legacy transparent address corresponding to the current unified address for the given account.
      *
-     * @param account the account whose address is of interest. Use Account.DEFAULT to get a result for the first
-     * account.
+     * @param account the account whose address is of interest.
      *
      * @return a legacy transparent address for the given account.
+     *
+     * @throws RustLayerException.GetAddressException in case of the operation
      */
+    @Throws(RustLayerException.GetAddressException::class)
     suspend fun getTransparentAddress(account: Account): String
 
     /**
@@ -269,43 +314,52 @@ interface Synchronizer {
     ): Flow<TransactionSubmitResult>
 
     /**
-     * Sends zatoshi.
+     * Creates a partially-created (unsigned without proofs) transaction from the given proposal.
      *
-     * @param usk the unified spending key associated with the notes that will be spent.
-     * @param amount the amount of zatoshi to send.
-     * @param toAddress the recipient's address.
-     * @param memo the optional memo to include as part of the transaction.
+     * Do not call this multiple times in parallel, or you will generate PCZT instances that, if
+     * finalized, would double-spend the same notes.
      *
-     * @return a flow of PendingTransaction objects representing changes to the state of the
-     * transaction. Any time the state changes a new instance will be emitted by this flow. This is
-     * useful for updating the UI without needing to poll. Of course, polling is always an option
-     * for any wallet that wants to ignore this return value.
+     * @param accountUuid The account for which the proposal was created.
+     * @param proposal The proposal for which to create the transaction.
+     *
+     * @return The partially created transaction in [Pczt] format.
+     *
+     * @throws PcztException.CreatePcztFromProposalException as a common indicator of the operation failure
      */
-    @Deprecated(
-        message = "Upcoming SDK 2.1 will create multiple transactions at once for some recipients.",
-        replaceWith =
-            ReplaceWith(
-                "createProposedTransactions(proposeTransfer(usk.account, toAddress, amount, memo), usk)"
-            )
-    )
-    suspend fun sendToAddress(
-        usk: UnifiedSpendingKey,
-        amount: Zatoshi,
-        toAddress: String,
-        memo: String = ""
-    ): Long
+    @Throws(PcztException.CreatePcztFromProposalException::class)
+    suspend fun createPcztFromProposal(
+        accountUuid: AccountUuid,
+        proposal: Proposal
+    ): Pczt
 
-    @Deprecated(
-        message = "Upcoming SDK 2.1 will create multiple transactions at once for some recipients.",
-        replaceWith =
-            ReplaceWith(
-                "proposeShielding(usk.account, shieldingThreshold, memo)?.let { createProposedTransactions(it, usk) }"
-            )
-    )
-    suspend fun shieldFunds(
-        usk: UnifiedSpendingKey,
-        memo: String = ZcashSdk.DEFAULT_SHIELD_FUNDS_MEMO_PREFIX
-    ): Long
+    /**
+     * Adds proofs to the given PCZT.
+     *
+     * @param pczt The partially created transaction in its serialized format.
+     *
+     * @return The updated PCZT in its serialized format.
+     *
+     * @throws PcztException.AddProofsToPcztException as a common indicator of the operation failure
+     */
+    @Throws(PcztException.AddProofsToPcztException::class)
+    suspend fun addProofsToPczt(pczt: Pczt): Pczt
+
+    /**
+     * Takes a PCZT that has been separately proven and signed, finalizes it, and stores
+     * it in the wallet. Internally, this logic also submits and checks the newly stored and encoded transaction.
+     *
+     * @param pcztWithProofs
+     * @param pcztWithSignatures
+     *
+     * @return The submission result of the completed transaction.
+     *
+     * @throws PcztException.ExtractAndStoreTxFromPcztException as a common indicator of the operation failure
+     */
+    @Throws(PcztException.ExtractAndStoreTxFromPcztException::class)
+    suspend fun createTransactionFromPczt(
+        pcztWithProofs: Pczt,
+        pcztWithSignatures: Pczt,
+    ): Flow<TransactionSubmitResult>
 
     // TODO [#1534]: Add RustLayerException.ValidateAddressException
     // TODO [#1534]: https://github.com/Electric-Coin-Company/zcash-android-wallet-sdk/issues/1534
@@ -409,8 +463,7 @@ interface Synchronizer {
     /**
      * Download all UTXOs for the given account addresses and store any new ones in the database.
      *
-     * @param account The Account, for which all addresses blocks will be downloaded. Use Account.DEFAULT to get a
-     * result for the first account.
+     * @param account The Account, for which all addresses blocks will be downloaded.
      * @param since The BlockHeight, from which blocks will be downloaded.
      *
      * @return the number of utxos that were downloaded and added to the UTXO table.
@@ -476,6 +529,14 @@ interface Synchronizer {
      */
     suspend fun getTransactionOutputs(transactionOverview: TransactionOverview): List<TransactionOutput>
 
+    /**
+     * Returns all transactions belonging to the given account UUID
+     *
+     * @param accountUuid The given account UUID
+     * @return Flow of transactions by the given account UUID
+     */
+    suspend fun getTransactions(accountUuid: AccountUuid): Flow<List<TransactionOverview>>
+
     //
     // Error Handling
     //
@@ -533,6 +594,11 @@ interface Synchronizer {
      */
     enum class Status {
         /**
+         * Indicates the initial state of Synchronizer
+         */
+        INITIALIZING,
+
+        /**
          * Indicates that [stop] has been called on this Synchronizer and it will no longer be used.
          */
         STOPPED,
@@ -586,13 +652,13 @@ interface Synchronizer {
          * client wishes to change the server endpoint, the active synchronizer will need to be stopped and a new
          * instance created with a new value.
          *
-         * @param seed the wallet's seed phrase. This is required the first time a new wallet is set up. For
-         * subsequent calls, seed is only needed if [InitializerException.SeedRequired] is thrown.
-         *
          * @param birthday Block height representing the "birthday" of the wallet.  When creating a new wallet, see
          * [BlockHeight.ofLatestCheckpoint].  When restoring an existing wallet, use block height that was first used
          * to create the wallet.  If that value is unknown, null is acceptable but will result in longer
          * sync times.  After sync completes, the birthday can be determined from [Synchronizer.latestBirthdayHeight].
+         *
+         * @param setup An optional Account setup data that holds seed and other account related information.
+         * See [AccountCreateSetup] for more.
          *
          * @param walletInitMode a required parameter with one of [WalletInitMode] values. Use
          * [WalletInitMode.NewWallet] when starting synchronizer for a newly created wallet. Or use
@@ -612,13 +678,13 @@ interface Synchronizer {
          */
         @Suppress("LongParameterList", "LongMethod")
         suspend fun new(
-            context: Context,
-            zcashNetwork: ZcashNetwork,
             alias: String = ZcashSdk.DEFAULT_ALIAS,
-            lightWalletEndpoint: LightWalletEndpoint,
-            seed: ByteArray?,
             birthday: BlockHeight?,
-            walletInitMode: WalletInitMode
+            context: Context,
+            lightWalletEndpoint: LightWalletEndpoint,
+            setup: AccountCreateSetup?,
+            walletInitMode: WalletInitMode,
+            zcashNetwork: ZcashNetwork,
         ): CloseableSynchronizer {
             val applicationContext = context.applicationContext
 
@@ -679,9 +745,8 @@ interface Synchronizer {
                     rustBackend = backend,
                     databaseFile = coordinator.dataDbFile(zcashNetwork, alias),
                     checkpoint = loadedCheckpoint,
-                    seed = seed,
-                    numberOfAccounts = Derivation.DEFAULT_NUMBER_OF_ACCOUNTS,
                     recoverUntil = chainTip,
+                    setup = setup,
                 )
 
             val encoder = DefaultSynchronizerFactory.defaultEncoder(backend, saplingParamTool, repository)
@@ -700,6 +765,7 @@ interface Synchronizer {
                 )
 
             return SdkSynchronizer.new(
+                context = context.applicationContext,
                 zcashNetwork = zcashNetwork,
                 alias = alias,
                 repository = repository,
@@ -723,16 +789,24 @@ interface Synchronizer {
         @JvmStatic
         @Suppress("LongParameterList")
         fun newBlocking(
-            context: Context,
-            zcashNetwork: ZcashNetwork,
             alias: String = ZcashSdk.DEFAULT_ALIAS,
-            lightWalletEndpoint: LightWalletEndpoint,
-            seed: ByteArray?,
             birthday: BlockHeight?,
-            walletInitMode: WalletInitMode
+            context: Context,
+            lightWalletEndpoint: LightWalletEndpoint,
+            setup: AccountCreateSetup?,
+            walletInitMode: WalletInitMode,
+            zcashNetwork: ZcashNetwork,
         ): CloseableSynchronizer =
             runBlocking {
-                new(context, zcashNetwork, alias, lightWalletEndpoint, seed, birthday, walletInitMode)
+                new(
+                    alias = alias,
+                    birthday = birthday,
+                    context = context,
+                    lightWalletEndpoint = lightWalletEndpoint,
+                    setup = setup,
+                    walletInitMode = walletInitMode,
+                    zcashNetwork = zcashNetwork,
+                )
             }
 
         /**

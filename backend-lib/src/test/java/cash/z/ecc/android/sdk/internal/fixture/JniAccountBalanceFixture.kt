@@ -2,8 +2,12 @@ package cash.z.ecc.android.sdk.internal.fixture
 
 import cash.z.ecc.android.sdk.internal.model.JniAccountBalance
 
+/**
+ * This is a test fixture for [JniAccountBalance] class. It holds mocked values that are only used within
+ * [JniWalletSummaryTest].
+ */
 object JniAccountBalanceFixture {
-    const val ACCOUNT_ID: Int = 0
+    val ACCOUNT_UUID: ByteArray = "random_uuid_16_b".toByteArray()
     const val SAPLING_VERIFIED_BALANCE: Long = 0L
     const val SAPLING_CHANGE_PENDING: Long = 0L
     const val SAPLING_VALUE_PENDING: Long = 0L
@@ -14,7 +18,7 @@ object JniAccountBalanceFixture {
 
     @Suppress("LongParameterList")
     fun new(
-        account: Int = ACCOUNT_ID,
+        accountUuid: ByteArray = ACCOUNT_UUID,
         saplingVerifiedBalance: Long = SAPLING_VERIFIED_BALANCE,
         saplingChangePending: Long = SAPLING_CHANGE_PENDING,
         saplingValuePending: Long = SAPLING_VALUE_PENDING,
@@ -23,7 +27,7 @@ object JniAccountBalanceFixture {
         orchardValuePending: Long = ORCHARD_VALUE_PENDING,
         unshieldedBalance: Long = UNSHIELDED_BALANCE,
     ) = JniAccountBalance(
-        account = account,
+        accountUuid = accountUuid,
         saplingVerifiedBalance = saplingVerifiedBalance,
         saplingChangePending = saplingChangePending,
         saplingValuePending = saplingValuePending,

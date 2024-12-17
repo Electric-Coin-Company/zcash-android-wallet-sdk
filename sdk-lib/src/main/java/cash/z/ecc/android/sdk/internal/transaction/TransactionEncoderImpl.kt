@@ -1,6 +1,6 @@
 package cash.z.ecc.android.sdk.internal.transaction
 
-import cash.z.ecc.android.sdk.exception.SdkException
+import cash.z.ecc.android.sdk.exception.PcztException
 import cash.z.ecc.android.sdk.exception.TransactionEncoderException
 import cash.z.ecc.android.sdk.ext.masked
 import cash.z.ecc.android.sdk.internal.SaplingParamTool
@@ -9,16 +9,16 @@ import cash.z.ecc.android.sdk.internal.TypesafeBackend
 import cash.z.ecc.android.sdk.internal.model.EncodedTransaction
 import cash.z.ecc.android.sdk.internal.repository.DerivedDataRepository
 import cash.z.ecc.android.sdk.model.Account
+import cash.z.ecc.android.sdk.model.AccountUuid
 import cash.z.ecc.android.sdk.model.BlockHeight
-import cash.z.ecc.android.sdk.model.FirstClassByteArray
+import cash.z.ecc.android.sdk.model.Pczt
 import cash.z.ecc.android.sdk.model.Proposal
-import cash.z.ecc.android.sdk.model.TransactionRecipient
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.Zatoshi
 
 /**
  * Class responsible for encoding a transaction in a consistent way. This bridges the gap by
- * behaving like a stateless API so that callers can request [createTransaction] and receive a
+ * behaving like a stateless API so that callers can request create a transaction and receive a
  * result, even though there are intermediate database interactions.
  *
  * @property backend the instance of RustBackendWelding to use for creating and validating.
@@ -31,45 +31,6 @@ internal class TransactionEncoderImpl(
     private val saplingParamTool: SaplingParamTool,
     private val repository: DerivedDataRepository
 ) : TransactionEncoder {
-    /**
-     * Creates a transaction, throwing an exception whenever things are missing. When the provided
-     * wallet implementation doesn't throw an exception, we wrap the issue into a descriptive
-     * exception ourselves (rather than using double-bangs for things).
-     *
-     * @param usk the unified spending key associated with the notes that will be spent.
-     * @param amount the amount of zatoshi to send.
-     * @param recipient the recipient's address.
-     * @param memo the optional memo to include as part of the transaction.
-     *
-     * @return the successfully encoded transaction or an exception
-     *
-     * @throws TransactionEncoderException.TransactionNotFoundException in case the encoded transaction not found
-     */
-    override suspend fun createTransaction(
-        usk: UnifiedSpendingKey,
-        amount: Zatoshi,
-        recipient: TransactionRecipient,
-        memo: ByteArray?
-    ): EncodedTransaction {
-        require(recipient is TransactionRecipient.Address)
-
-        val transactionId = createSpend(usk, amount, recipient.addressValue, memo)
-        return repository.findEncodedTransactionByTxId(transactionId)
-            ?: throw TransactionEncoderException.TransactionNotFoundException(transactionId)
-    }
-
-    override suspend fun createShieldingTransaction(
-        usk: UnifiedSpendingKey,
-        recipient: TransactionRecipient,
-        memo: ByteArray?
-    ): EncodedTransaction {
-        require(recipient is TransactionRecipient.Account)
-
-        val transactionId = createShieldingSpend(usk, memo)
-        return repository.findEncodedTransactionByTxId(transactionId)
-            ?: throw TransactionEncoderException.TransactionNotFoundException(transactionId)
-    }
-
     /**
      * Creates a proposal for transferring from a valid ZIP-321 Payment URI string
      *
@@ -186,9 +147,62 @@ internal class TransactionEncoderImpl(
         return txs
     }
 
+    override suspend fun createPcztFromProposal(
+        accountUuid: AccountUuid,
+        proposal: Proposal
+    ): Pczt {
+        return runCatching {
+            backend.createPcztFromProposal(
+                account = Account.new(accountUuid),
+                proposal = proposal
+            )
+        }.onSuccess {
+            Twig.debug { "Result of createPcztFromProposal: $it" }
+        }.onFailure {
+            Twig.error(it) { "Caught exception while creating PCZT." }
+        }.getOrElse {
+            throw PcztException.CreatePcztFromProposalException(it.message, it.cause)
+        }
+    }
+
+    override suspend fun addProofsToPczt(pczt: Pczt): Pczt {
+        return runCatching {
+            saplingParamTool.ensureParams(saplingParamTool.properties.paramsDirectory)
+            Twig.debug { "params exist! attempting to send..." }
+            backend.addProofsToPczt(pczt = pczt)
+        }.onSuccess {
+            Twig.debug { "Result of addProofsToPczt: $it" }
+        }.onFailure {
+            Twig.error(it) { "Caught exception while adding proofs to PCZT." }
+        }.getOrElse {
+            throw PcztException.AddProofsToPcztException(it.message, it.cause)
+        }
+    }
+
+    override suspend fun extractAndStoreTxFromPczt(
+        pcztWithProofs: Pczt,
+        pcztWithSignatures: Pczt
+    ): EncodedTransaction {
+        val txId =
+            runCatching {
+                backend.extractAndStoreTxFromPczt(
+                    pcztWithProofs = pcztWithProofs,
+                    pcztWithSignatures = pcztWithSignatures
+                )
+            }.onSuccess {
+                Twig.debug { "Result of extractAndStoreTxFromPczt: $it" }
+            }.onFailure {
+                Twig.error(it) { "Caught exception while extracting and storing transaction from PCZT." }
+            }.getOrElse {
+                throw PcztException.ExtractAndStoreTxFromPcztException(it.message, it.cause)
+            }
+
+        return repository.findEncodedTransactionByTxId(txId)
+            ?: throw TransactionEncoderException.TransactionNotFoundException(txId)
+    }
+
     /**
-     * Utility function to help with validation. This is not called during [createTransaction]
-     * because this class asserts that all validation is done externally by the UI, for now.
+     * Utility function to help with validation.
      *
      * @param address the address to validate
      *
@@ -197,8 +211,7 @@ internal class TransactionEncoderImpl(
     override suspend fun isValidShieldedAddress(address: String): Boolean = backend.isValidSaplingAddr(address)
 
     /**
-     * Utility function to help with validation. This is not called during [createTransaction]
-     * because this class asserts that all validation is done externally by the UI, for now.
+     * Utility function to help with validation.
      *
      * @param address the address to validate
      *
@@ -207,8 +220,7 @@ internal class TransactionEncoderImpl(
     override suspend fun isValidTransparentAddress(address: String): Boolean = backend.isValidTransparentAddr(address)
 
     /**
-     * Utility function to help with validation. This is not called during [createTransaction]
-     * because this class asserts that all validation is done externally by the UI, for now.
+     * Utility function to help with validation.
      *
      * @param address the address to validate
      *
@@ -240,78 +252,5 @@ internal class TransactionEncoderImpl(
             throw TransactionEncoderException.IncompleteScanException(height)
         }
         return backend.getBranchIdForHeight(height)
-    }
-
-    /**
-     * Does the proofs and processing required to create a transaction to spend funds and inserts
-     * the result in the database. On average, this call takes over 10 seconds.
-     *
-     * @param usk the unified spending key associated with the notes that will be spent.
-     * @param amount the amount of zatoshi to send.
-     * @param toAddress the recipient's address.
-     * @param memo the optional memo to include as part of the transaction.
-     *
-     * @return the row id in the transactions table that contains the spend transaction or -1 if it
-     * failed.
-     */
-    private suspend fun createSpend(
-        usk: UnifiedSpendingKey,
-        amount: Zatoshi,
-        toAddress: String,
-        memo: ByteArray? = null
-    ): FirstClassByteArray {
-        Twig.debug {
-            "creating transaction to spend $amount zatoshi to" +
-                " ${toAddress.masked()} with memo: ${memo?.decodeToString()}"
-        }
-
-        return runCatching {
-            saplingParamTool.ensureParams(saplingParamTool.properties.paramsDirectory)
-            Twig.debug { "params exist! attempting to send..." }
-            val proposal =
-                backend.proposeTransfer(
-                    usk.account,
-                    toAddress,
-                    amount.value,
-                    memo
-                )
-            val transactionIds = backend.createProposedTransactions(proposal, usk)
-            assert(transactionIds.size == 1)
-            transactionIds[0]
-        }.onFailure {
-            Twig.error(it) { "Caught exception while creating transaction." }
-        }.onSuccess { result ->
-            Twig.debug { "result of sendToAddress: $result" }
-        }.getOrThrow()
-    }
-
-    private suspend fun createShieldingSpend(
-        usk: UnifiedSpendingKey,
-        memo: ByteArray? = null
-    ): FirstClassByteArray {
-        return runCatching {
-            saplingParamTool.ensureParams(saplingParamTool.properties.paramsDirectory)
-            Twig.debug { "params exist! attempting to shield..." }
-            val proposal =
-                backend.proposeShielding(usk.account, SHIELDING_THRESHOLD, memo)
-                    ?: throw SdkException(
-                        "Insufficient balance (have 0, need $SHIELDING_THRESHOLD including fee)",
-                        null
-                    )
-            val transactionIds = backend.createProposedTransactions(proposal, usk)
-            assert(transactionIds.size == 1)
-            transactionIds[0]
-        }.onFailure {
-            // TODO [#680]: if this error matches: Insufficient balance (have 0, need 1000 including fee)
-            //  then consider custom error that says no UTXOs existed to shield
-            // TODO [#680]: https://github.com/zcash/zcash-android-wallet-sdk/issues/680
-            Twig.error(it) { "Shield failed" }
-        }.onSuccess { result ->
-            Twig.debug { "result of shieldToAddress: $result" }
-        }.getOrThrow()
-    }
-
-    companion object {
-        private const val SHIELDING_THRESHOLD = 100000L
     }
 }

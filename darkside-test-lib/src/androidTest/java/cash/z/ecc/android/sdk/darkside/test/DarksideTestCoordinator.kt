@@ -189,7 +189,7 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
             available: Long = -1,
             total: Long = -1
         ) {
-            val balance = synchronizer.saplingBalances.value
+            val balance = synchronizer.walletBalances.value?.get(wallet.account.accountUuid)?.sapling
             if (available > 0) {
                 assertTrue(
                     "invalid available balance. Expected a minimum of $available but found ${balance?.available}",

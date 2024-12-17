@@ -27,12 +27,12 @@ data class PendingTransaction internal constructor(
 }
 
 sealed class TransactionRecipient {
-    data class Address(val addressValue: String) : TransactionRecipient() {
-        override fun toString() = "TransactionRecipient.Address"
+    data class RecipientAddress(val addressValue: String) : TransactionRecipient() {
+        override fun toString() = "TransactionRecipient.RecipientAddress"
     }
 
-    data class Account(val accountValue: cash.z.ecc.android.sdk.model.Account) : TransactionRecipient() {
-        override fun toString() = "TransactionRecipient.Account"
+    data class RecipientAccount(val accountUuid: ByteArray) : TransactionRecipient() {
+        override fun toString() = "TransactionRecipient.RecipientAccount"
     }
 
     companion object

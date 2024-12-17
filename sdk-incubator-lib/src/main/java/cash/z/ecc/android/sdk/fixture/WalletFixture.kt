@@ -1,10 +1,9 @@
 package cash.z.ecc.android.sdk.fixture
 
-import cash.z.ecc.android.bip39.Mnemonics
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.ZcashNetwork
-import cash.z.ecc.android.sdk.tool.DerivationTool
+import java.util.UUID
 
 /**
  * Provides two default wallets, making it easy to test sending funds back and forth between them.
@@ -12,22 +11,17 @@ import cash.z.ecc.android.sdk.tool.DerivationTool
 sealed class WalletFixture {
     abstract val seedPhrase: String
 
+    abstract val accounts: List<Account>
+
     abstract fun getBirthday(zcashNetwork: ZcashNetwork): BlockHeight
 
     abstract fun getAddresses(zcashNetwork: ZcashNetwork): Addresses
 
-    suspend fun getUnifiedSpendingKey(
-        seed: String = seedPhrase,
-        network: ZcashNetwork,
-        account: Account = Account.DEFAULT
-    ) = DerivationTool.getInstance().deriveUnifiedSpendingKey(
-        Mnemonics.MnemonicCode(seed).toEntropy(),
-        network,
-        account
-    )
-
     @Suppress("MaxLineLength")
     data object Ben : WalletFixture() {
+        override val accounts: List<Account>
+            get() = listOf(AccountFixture.new(accountUuid = UUID.fromString("52175368-821a-4664-8a7c-6a75d850f71c")))
+
         override val seedPhrase: String
             get() =
                 "kitchen renew wide common vague fold vacuum tilt amazing pear square gossip jewel month tree" +
@@ -62,6 +56,9 @@ sealed class WalletFixture {
 
     @Suppress("MaxLineLength")
     data object Alice : WalletFixture() {
+        override val accounts: List<Account>
+            get() = listOf(AccountFixture.new(accountUuid = UUID.fromString("8a204240-73a5-4e7a-93c2-a6e05711a000")))
+
         override val seedPhrase: String
             get() =
                 "wish puppy smile loan doll curve hole maze file ginger hair nose key relax knife witness cannon" +

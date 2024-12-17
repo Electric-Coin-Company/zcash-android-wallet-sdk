@@ -1,13 +1,15 @@
 package cash.z.ecc.android.sdk.model
 
+import cash.z.ecc.android.sdk.fixture.AccountFixture
 import org.junit.Test
+import java.util.UUID
 import kotlin.test.assertFailsWith
 
 class AccountTest {
     @Test
-    fun out_of_bounds() {
+    fun uuid_wrong_length() {
         assertFailsWith(IllegalArgumentException::class) {
-            Account(-1)
+            AccountFixture.new(accountUuid = UUID.fromString("random"))
         }
     }
 }

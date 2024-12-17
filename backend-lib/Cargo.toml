@@ -13,12 +13,14 @@ rust-version = "1.82"
 [dependencies]
 # Zcash dependencies
 orchard = "0.10"
-sapling = { package = "sapling-crypto", version = "0.3", default-features = false }
+pczt = "0.1"
+sapling = { package = "sapling-crypto", version = "0.4", default-features = false }
 zcash_address = "0.6"
-zcash_client_backend = { version = "0.15", features = ["orchard", "tor", "transparent-inputs", "unstable"] }
-zcash_client_sqlite = { version = "0.13", features = ["orchard", "transparent-inputs", "unstable"] }
-zcash_primitives = "0.20"
-zcash_proofs = "0.20"
+zcash_client_backend = { version = "0.16", features = ["orchard", "tor", "transparent-inputs", "unstable", "pczt"] }
+zcash_client_sqlite = { version = "0.14", features = ["orchard", "transparent-inputs", "unstable", "serde"] }
+zcash_note_encryption = "0.4.1"
+zcash_primitives = "0.21"
+zcash_proofs = "0.21"
 zip32 = "0.1.2"
 
 # Infrastructure
@@ -32,6 +34,7 @@ rayon = "1.7"
 # JNI
 anyhow = "1"
 jni = { version = "0.21", default-features = false }
+uuid = "1"
 
 # Logging
 log-panics = "2.0.0"

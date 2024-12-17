@@ -2,7 +2,6 @@ package cash.z.ecc.android.sdk.model
 
 import androidx.test.filters.SmallTest
 import cash.z.ecc.android.sdk.fixture.WalletFixture
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import kotlin.test.assertContentEquals
@@ -11,41 +10,38 @@ import kotlin.test.assertEquals
 class UnifiedSpendingKeyTest {
     @Test
     @SmallTest
-    @OptIn(ExperimentalCoroutinesApi::class)
     fun factory_copies_bytes() =
         runTest {
             val spendingKey = WalletFixture.getUnifiedSpendingKey()
             val expected = spendingKey.copyBytes().copyOf()
 
             val bytes = spendingKey.copyBytes()
-            val newSpendingKey = UnifiedSpendingKey.new(spendingKey.account, bytes)
+            val newSpendingKey = UnifiedSpendingKey.new(bytes)
             bytes.clear()
 
-            assertContentEquals(expected, newSpendingKey.getOrThrow().copyBytes())
+            assertContentEquals(expected, newSpendingKey.copyBytes())
         }
 
     @Test
     @SmallTest
-    @OptIn(ExperimentalCoroutinesApi::class)
     fun get_copies_bytes() =
         runTest {
             val spendingKey = WalletFixture.getUnifiedSpendingKey()
 
             val expected = spendingKey.copyBytes()
-            val newSpendingKey = UnifiedSpendingKey.new(spendingKey.account, expected)
+            val newSpendingKey = UnifiedSpendingKey.new(expected)
 
-            newSpendingKey.getOrThrow().copyBytes().clear()
+            newSpendingKey.copyBytes().clear()
 
-            assertContentEquals(expected, newSpendingKey.getOrThrow().copyBytes())
+            assertContentEquals(expected, newSpendingKey.copyBytes())
         }
 
     @Test
     @SmallTest
-    @OptIn(ExperimentalCoroutinesApi::class)
     fun toString_does_not_leak() =
         runTest {
             assertEquals(
-                "UnifiedSpendingKey(account=Account(value=0))",
+                "UnifiedSpendingKey(bytes=***)",
                 WalletFixture.getUnifiedSpendingKey().toString()
             )
         }

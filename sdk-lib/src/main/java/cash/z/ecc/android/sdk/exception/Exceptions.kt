@@ -24,7 +24,7 @@ open class SdkException(message: String, cause: Throwable?) : RuntimeException(m
  * It's important for the SDK to provide helpful messages whenever these errors are encountered.
  */
 sealed class RustLayerException(message: String, cause: Throwable? = null) : SdkException(message, cause) {
-    class GetCurrentAddressException(cause: Throwable) : RustLayerException(
+    class GetAddressException(cause: Throwable) : RustLayerException(
         "Error while requesting the current address from the Rust layer over JNI. This might mean that the SDK is " +
             "not yet correctly set up.",
         cause
@@ -204,7 +204,20 @@ sealed class InitializeException(message: String, cause: Throwable? = null) : Sd
         private fun readResolve(): Any = SeedNotRelevant
     }
 
-    class FalseStart(cause: Throwable?) : InitializeException("Failed to initialize accounts due to: $cause", cause)
+    class GetAccountsException(cause: Throwable?) : InitializeException(
+        "Failed to get accounts due to: ${cause?.message}",
+        cause
+    )
+
+    class CreateAccountException(cause: Throwable?) : InitializeException(
+        "Failed to create new account due to: ${cause?.message}",
+        cause
+    )
+
+    class ImportAccountException(cause: Throwable?) : InitializeException(
+        "Failed to import new account based on UFVK due to: ${cause?.message}",
+        cause
+    )
 
     class AlreadyInitializedException(cause: Throwable, dbPath: String) : InitializeException(
         "Failed to initialize the blocks table" +
@@ -312,6 +325,38 @@ sealed class LightWalletException(message: String, cause: Throwable? = null) : S
                 " to: ${description ?: "-"}",
         cause = cause
     )
+}
+
+/**
+ * Potentially user-facing exceptions thrown while creating transactions
+ */
+sealed class PcztException(
+    message: String,
+    cause: Throwable? = null
+) : SdkException(message, cause) {
+    class CreatePcztFromProposalException internal constructor(
+        description: String?,
+        cause: Throwable?
+    ) : PcztException(
+            "Failed to create PCZT from proposal with message: ${description ?: "-"}",
+            cause
+        )
+
+    class AddProofsToPcztException internal constructor(
+        description: String?,
+        cause: Throwable?
+    ) : PcztException(
+            "Failed to add proofs to PCZT with message: ${description ?: "-"}",
+            cause
+        )
+
+    class ExtractAndStoreTxFromPcztException internal constructor(
+        description: String?,
+        cause: Throwable?
+    ) : PcztException(
+            "Failed to extract and store transaction from PCZT with message: ${description ?: "-"}",
+            cause
+        )
 }
 
 /**

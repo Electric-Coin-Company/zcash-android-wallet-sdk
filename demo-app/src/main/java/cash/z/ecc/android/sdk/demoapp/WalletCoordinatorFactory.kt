@@ -24,7 +24,9 @@ private val lazy =
 
         WalletCoordinator(
             context = it,
-            persistableWallet = persistableWalletFlow
+            persistableWallet = persistableWalletFlow,
+            accountName = "Zcash Account 1",
+            keySource = "ZCASH",
         )
     }
 
