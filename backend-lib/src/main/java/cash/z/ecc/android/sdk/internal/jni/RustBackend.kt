@@ -442,13 +442,11 @@ class RustBackend private constructor(
         }
 
     override suspend fun addProofsToPczt(pczt: ByteArray): ByteArray =
-        withContext(SdkDispatchers.DATABASE_IO) {
-            addProofsToPczt(
-                pczt,
-                spendParamsPath = saplingSpendFile.absolutePath,
-                outputParamsPath = saplingOutputFile.absolutePath,
-            )
-        }
+        addProofsToPczt(
+            pczt,
+            spendParamsPath = saplingSpendFile.absolutePath,
+            outputParamsPath = saplingOutputFile.absolutePath
+        )
 
     override suspend fun extractAndStoreTxFromPczt(
         pcztWithProofs: ByteArray,
