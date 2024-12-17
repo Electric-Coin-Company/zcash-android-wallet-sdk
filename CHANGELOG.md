@@ -28,6 +28,7 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   in a few internal cases
 - `Synchronizer.send` extension function receives `Account` on input
 - `PendingTransaction` sealed class descendants have been renamed
+- `RustLayerException.GetCurrentAddressException` has been renamed to `RustLayerException.GetAddressException`
 
 ### Removed
 - `Synchronizer.sendToAddress` and `Synchronizer.shieldFunds` have been removed, use 

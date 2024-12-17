@@ -445,7 +445,7 @@ class RustBackend private constructor(
         addProofsToPczt(
             pczt,
             spendParamsPath = saplingSpendFile.absolutePath,
-            outputParamsPath = saplingOutputFile.absolutePath,
+            outputParamsPath = saplingOutputFile.absolutePath
         )
 
     override suspend fun extractAndStoreTxFromPczt(

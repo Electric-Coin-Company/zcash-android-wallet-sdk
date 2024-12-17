@@ -24,7 +24,7 @@ open class SdkException(message: String, cause: Throwable?) : RuntimeException(m
  * It's important for the SDK to provide helpful messages whenever these errors are encountered.
  */
 sealed class RustLayerException(message: String, cause: Throwable? = null) : SdkException(message, cause) {
-    class GetCurrentAddressException(cause: Throwable) : RustLayerException(
+    class GetAddressException(cause: Throwable) : RustLayerException(
         "Error while requesting the current address from the Rust layer over JNI. This might mean that the SDK is " +
             "not yet correctly set up.",
         cause

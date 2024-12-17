@@ -172,7 +172,7 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
             backend.getCurrentAddress(account.accountUuid.value)
         }.onFailure {
             Twig.warn(it) { "Currently unable to get current address" }
-        }.getOrElse { throw RustLayerException.GetCurrentAddressException(it) }
+        }.getOrElse { throw RustLayerException.GetAddressException(it) }
     }
 
     override suspend fun listTransparentReceivers(account: Account): List<String> {

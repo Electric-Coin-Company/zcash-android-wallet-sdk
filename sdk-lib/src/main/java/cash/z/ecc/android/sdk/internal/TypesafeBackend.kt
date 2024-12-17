@@ -108,7 +108,7 @@ internal interface TypesafeBackend {
         pcztWithSignatures: Pczt,
     ): FirstClassByteArray
 
-    @Throws(RustLayerException.GetCurrentAddressException::class)
+    @Throws(RustLayerException.GetAddressException::class)
     suspend fun getCurrentAddress(account: Account): String
 
     suspend fun listTransparentReceivers(account: Account): List<String>

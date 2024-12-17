@@ -161,7 +161,7 @@ class CompactBlockProcessor internal constructor(
             )
         )
 
-    private val _state: MutableStateFlow<State> = MutableStateFlow(State.Initialized)
+    private val _state: MutableStateFlow<State> = MutableStateFlow(State.Initializing)
     private val _progress = MutableStateFlow(PercentDecimal.ZERO_PERCENT)
     private val _processorInfo = MutableStateFlow(ProcessorInfo(null, null, null))
     private val _networkHeight = MutableStateFlow<BlockHeight?>(null)
@@ -2566,7 +2566,7 @@ class CompactBlockProcessor internal constructor(
         /**
          * [State] the initial state of the processor, once it is constructed.
          */
-        object Initialized : State()
+        object Initializing : State()
     }
 
     /**
