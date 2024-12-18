@@ -6,6 +6,8 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.7] - 2024-12-18
+
 ### Added
 - `Synchronizer.importAccountByUfvk()` has been added
 - `Synchronizer.getAccounts()` returning all the created or imported accounts. See the documentation in `Account`.
