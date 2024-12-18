@@ -140,7 +140,7 @@ class RustBackend private constructor(
                 recoverUntil = recoverUntil ?: -1,
                 purpose = purpose,
                 seedFingerprint = seedFingerprint,
-                zip32AccountIndex = zip32AccountIndex,
+                zip32AccountIndex = zip32AccountIndex ?: -1,
             )
         }
     }
@@ -434,16 +434,16 @@ class RustBackend private constructor(
     ): ByteArray =
         withContext(SdkDispatchers.DATABASE_IO) {
             createPcztFromProposal(
-                dataDbFile.absolutePath,
-                accountUuid,
-                proposal.toByteArray(),
+                dbDataPath = dataDbFile.absolutePath,
+                accountUuid = accountUuid,
+                proposal = proposal.toByteArray(),
                 networkId = networkId
             )
         }
 
     override suspend fun addProofsToPczt(pczt: ByteArray): ByteArray =
         addProofsToPczt(
-            pczt,
+            pczt = pczt,
             spendParamsPath = saplingSpendFile.absolutePath,
             outputParamsPath = saplingOutputFile.absolutePath
         )
@@ -454,9 +454,9 @@ class RustBackend private constructor(
     ): ByteArray =
         withContext(SdkDispatchers.DATABASE_IO) {
             extractAndStoreTxFromPczt(
-                dataDbFile.absolutePath,
-                pcztWithProofs,
-                pcztWithSignatures,
+                dbDataPath = dataDbFile.absolutePath,
+                pcztWithProofs = pcztWithProofs,
+                pcztWithSignatures = pcztWithSignatures,
                 spendParamsPath = saplingSpendFile.absolutePath,
                 outputParamsPath = saplingOutputFile.absolutePath,
                 networkId = networkId
@@ -597,7 +597,7 @@ class RustBackend private constructor(
             recoverUntil: Long,
             purpose: Int,
             seedFingerprint: ByteArray?,
-            zip32AccountIndex: Long?,
+            zip32AccountIndex: Long,
         ): JniAccount
 
         @JvmStatic
