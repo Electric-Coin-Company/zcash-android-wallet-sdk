@@ -453,6 +453,10 @@ class SdkSynchronizer private constructor(
         }
     }
 
+    override fun getTransactionsByMemoSubstring(query: String): Flow<List<FirstClassByteArray>> {
+        return storage.getTransactionsByMemoSubstring(query)
+    }
+
     override fun getRecipients(transactionOverview: TransactionOverview): Flow<TransactionRecipient> {
         require(transactionOverview.isSentTransaction) { "Recipients can only be queried for sent transactions" }
 

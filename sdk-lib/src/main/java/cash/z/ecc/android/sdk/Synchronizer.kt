@@ -23,6 +23,7 @@ import cash.z.ecc.android.sdk.model.AccountImportSetup
 import cash.z.ecc.android.sdk.model.AccountUuid
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.FastestServersResult
+import cash.z.ecc.android.sdk.model.FirstClassByteArray
 import cash.z.ecc.android.sdk.model.ObserveFiatCurrencyResult
 import cash.z.ecc.android.sdk.model.Pczt
 import cash.z.ecc.android.sdk.model.PercentDecimal
@@ -500,6 +501,16 @@ interface Synchronizer {
      * @return Flow of memo strings
      */
     fun getMemos(transactionOverview: TransactionOverview): Flow<String>
+
+    /**
+     * Filters the current transactions based on their memos. It returns the transaction ID of those transactions
+     * whose memo contains the given [query] or its part. Note that white space trimming or normalization is the
+     * client's responsibility.
+     *
+     * @param query Memo or its substring
+     * @return List of transaction IDs which memo contains given [query] or its part wrapped in [Flow]
+     */
+    fun getTransactionsByMemoSubstring(query: String): Flow<List<FirstClassByteArray>>
 
     /**
      * Returns a list of recipients for a transaction.

@@ -84,6 +84,8 @@ internal interface DerivedDataRepository {
 
     fun getOutputProperties(transactionId: FirstClassByteArray): Flow<OutputProperties>
 
+    fun getTransactionsByMemoSubstring(query: String): Flow<List<FirstClassByteArray>>
+
     fun getRecipients(transactionId: FirstClassByteArray): Flow<TransactionRecipient>
 
     suspend fun close()
