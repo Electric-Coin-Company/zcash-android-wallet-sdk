@@ -2,6 +2,7 @@ package cash.z.ecc.android.sdk.fixture
 
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.FirstClassByteArray
+import cash.z.ecc.android.sdk.model.TransactionId
 import cash.z.ecc.android.sdk.model.TransactionOverview
 import cash.z.ecc.android.sdk.model.TransactionState
 import cash.z.ecc.android.sdk.model.Zatoshi
@@ -9,7 +10,7 @@ import cash.z.ecc.android.sdk.model.Zatoshi
 @Suppress("MagicNumber")
 object TransactionOverviewFixture {
     const val ID: Long = 1
-    val RAW_ID: FirstClassByteArray get() = FirstClassByteArray("rawId".toByteArray())
+    val TX_ID: TransactionId get() = TransactionId(FirstClassByteArray("txId".toByteArray()))
     val MINED_HEIGHT: BlockHeight = BlockHeight(1)
     val EXPIRY_HEIGHT: BlockHeight? = null
     const val INDEX: Long = 2
@@ -28,7 +29,7 @@ object TransactionOverviewFixture {
 
     @Suppress("LongParameterList")
     fun new(
-        rawId: FirstClassByteArray = RAW_ID,
+        txId: TransactionId = TX_ID,
         minedHeight: BlockHeight? = MINED_HEIGHT,
         expiryHeight: BlockHeight? = EXPIRY_HEIGHT,
         index: Long = INDEX,
@@ -44,7 +45,7 @@ object TransactionOverviewFixture {
         transactionState: TransactionState = STATE,
         isShielding: Boolean = IS_SHIELDING
     ) = TransactionOverview(
-        rawId = rawId,
+        txId = txId,
         minedHeight = minedHeight,
         expiryHeight = expiryHeight,
         index = index,
