@@ -83,6 +83,8 @@ internal interface DerivedDataRepository {
 
     suspend fun getTransactions(accountUuid: AccountUuid): Flow<List<DbTransactionOverview>>
 
+    suspend fun getFailedTransactions(accountUuid: AccountUuid): Flow<List<DbTransactionOverview>>
+
     fun getOutputProperties(transactionId: TransactionId): Flow<OutputProperties>
 
     fun getTransactionsByMemoSubstring(query: String): Flow<List<TransactionId>>

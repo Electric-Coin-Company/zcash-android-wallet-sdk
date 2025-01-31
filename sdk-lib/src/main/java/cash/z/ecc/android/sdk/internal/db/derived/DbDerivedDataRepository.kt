@@ -46,6 +46,10 @@ internal class DbDerivedDataRepository(
     override suspend fun getTransactions(accountUuid: AccountUuid) =
         invalidatingFlow.map { derivedDataDb.allTransactionView.getTransactions(accountUuid).toList() }
 
+    override suspend fun getFailedTransactions(accountUuid: AccountUuid): Flow<List<DbTransactionOverview>> {
+        TODO("Not yet implemented")
+    }
+
     override fun invalidate() {
         invalidatingFlow.value = UUID.randomUUID()
     }
