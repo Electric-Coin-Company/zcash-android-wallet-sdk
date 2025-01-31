@@ -6,6 +6,9 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `Synchronizer.getTransactionsByMemoSubstring()` has been added
+
 ## [2.2.7] - 2024-12-18
 
 ### Added

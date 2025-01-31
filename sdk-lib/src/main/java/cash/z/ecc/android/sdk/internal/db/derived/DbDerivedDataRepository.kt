@@ -56,6 +56,9 @@ internal class DbDerivedDataRepository(
         derivedDataDb.txOutputsView
             .getOutputProperties(transactionId)
 
+    override fun getTransactionsByMemoSubstring(query: String): Flow<List<FirstClassByteArray>> =
+        derivedDataDb.txOutputsView.getTransactionsByMemoSubstring(query)
+
     override fun getRecipients(transactionId: FirstClassByteArray): Flow<TransactionRecipient> {
         return derivedDataDb.txOutputsView.getRecipients(transactionId)
     }

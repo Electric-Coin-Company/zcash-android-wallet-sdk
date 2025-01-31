@@ -5,6 +5,7 @@ import cash.z.ecc.android.sdk.internal.db.queryAndMap
 import cash.z.ecc.android.sdk.internal.model.OutputProperties
 import cash.z.ecc.android.sdk.model.FirstClassByteArray
 import cash.z.ecc.android.sdk.model.TransactionRecipient
+import kotlinx.coroutines.flow.Flow
 import java.util.Locale
 
 internal class TxOutputsView(private val sqliteDatabase: SupportSQLiteDatabase) {
@@ -23,6 +24,11 @@ internal class TxOutputsView(private val sqliteDatabase: SupportSQLiteDatabase) 
                 TxOutputsViewDefinition.COLUMN_INTEGER_OUTPUT_POOL,
             )
 
+        private val PROJECTION_MEMOS =
+            arrayOf(
+                TxOutputsViewDefinition.COLUMN_BLOB_TRANSACTION_ID
+            )
+
         private val PROJECTION_RECIPIENT =
             arrayOf(
                 TxOutputsViewDefinition.COLUMN_STRING_TO_ADDRESS,
@@ -36,6 +42,14 @@ internal class TxOutputsView(private val sqliteDatabase: SupportSQLiteDatabase) 
                 "%s = ? AND %s == 0",
                 TxOutputsViewDefinition.COLUMN_BLOB_TRANSACTION_ID,
                 TxOutputsViewDefinition.COLUMN_INTEGER_IS_CHANGE
+            )
+
+        private val SELECT_BY_MEMO_QUERY =
+            String.format(
+                Locale.ROOT,
+                // $NON-NLS
+                "%s LIKE ?",
+                TxOutputsViewDefinition.COLUMN_BLOB_MEMO,
             )
     }
 
@@ -55,6 +69,26 @@ internal class TxOutputsView(private val sqliteDatabase: SupportSQLiteDatabase) 
                     // Converting blob to Int
                     poolType = it.getInt(idColumnOutputPoolIndex)
                 )
+            }
+        )
+
+    fun getTransactionsByMemoSubstring(query: String): Flow<List<FirstClassByteArray>> =
+        // This query could be optimized by joining with v_transactions and querying only those transactions whose
+        // memo_count is greater than 0
+        sqliteDatabase.queryAndMap(
+            table = TxOutputsViewDefinition.VIEW_NAME,
+            columns = PROJECTION_MEMOS,
+            selection = SELECT_BY_MEMO_QUERY,
+            selectionArgs = arrayOf("%$query%"),
+            orderBy = ORDER_BY,
+            cursorParser = {
+                val idColumnTrxIdIndex = it.getColumnIndex(TxOutputsViewDefinition.COLUMN_BLOB_TRANSACTION_ID)
+
+                if (!it.isNull(idColumnTrxIdIndex)) {
+                    listOf(FirstClassByteArray(it.getBlob(idColumnTrxIdIndex)))
+                } else {
+                    emptyList()
+                }
             }
         )
 
