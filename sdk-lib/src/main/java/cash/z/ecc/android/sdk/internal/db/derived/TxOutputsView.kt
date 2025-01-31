@@ -69,7 +69,9 @@ internal class TxOutputsView(private val sqliteDatabase: SupportSQLiteDatabase) 
                 val toAccountIndex = it.getColumnIndex(TxOutputsViewDefinition.COLUMN_BLOB_TO_ACCOUNT)
                 val toAddressIndex = it.getColumnIndex(TxOutputsViewDefinition.COLUMN_STRING_TO_ADDRESS)
 
-                if (!it.isNull(toAccountIndex)) {
+                if (!it.isNull(toAddressIndex)) {
+                    TransactionRecipient.RecipientAddress(addressValue = it.getString(toAddressIndex))
+                } else if (!it.isNull(toAccountIndex)) {
                     TransactionRecipient.RecipientAccount(accountUuid = it.getBlob(toAccountIndex))
                 } else {
                     TransactionRecipient.RecipientAddress(addressValue = it.getString(toAddressIndex))

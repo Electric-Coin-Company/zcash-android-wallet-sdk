@@ -6,6 +6,9 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- `Synchronizer.getRecipients` will correctly return an address for an account existing in database
+
 ## [2.2.7] - 2024-12-18
 
 ### Added
