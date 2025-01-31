@@ -8,6 +8,8 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - `Synchronizer.getTransactionsByMemoSubstring()` has been added
+- `TransactionId` object has been added and used instead of `FirstClassByteArray` in `TransactionOverview` and 
+  `PendingTransaction` model classes
 
 ## [2.2.7] - 2024-12-18
 

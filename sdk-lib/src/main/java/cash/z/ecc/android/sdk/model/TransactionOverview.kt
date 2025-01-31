@@ -1,6 +1,5 @@
 package cash.z.ecc.android.sdk.model
 
-import cash.z.ecc.android.sdk.internal.ext.toHexReversed
 import cash.z.ecc.android.sdk.internal.model.DbTransactionOverview
 
 /**
@@ -13,7 +12,7 @@ import cash.z.ecc.android.sdk.internal.model.DbTransactionOverview
  * last synced block exceeds the [expiryHeight].
  */
 data class TransactionOverview internal constructor(
-    val rawId: FirstClassByteArray,
+    val txId: TransactionId,
     val minedHeight: BlockHeight?,
     val expiryHeight: BlockHeight?,
     val index: Long?,
@@ -31,18 +30,13 @@ data class TransactionOverview internal constructor(
 ) {
     override fun toString() = "TransactionOverview"
 
-    /**
-     * @return Transaction ID in String obtained from `rawId`
-     */
-    fun txIdString() = rawId.byteArray.toHexReversed()
-
     companion object {
         internal fun new(
             dbTransactionOverview: DbTransactionOverview,
             latestBlockHeight: BlockHeight?
         ): TransactionOverview {
             return TransactionOverview(
-                rawId = dbTransactionOverview.rawId,
+                txId = TransactionId(dbTransactionOverview.rawId),
                 minedHeight = dbTransactionOverview.minedHeight,
                 expiryHeight = dbTransactionOverview.expiryHeight,
                 index = dbTransactionOverview.index,

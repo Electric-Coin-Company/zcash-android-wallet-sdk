@@ -55,6 +55,7 @@ import cash.z.ecc.android.sdk.model.ObserveFiatCurrencyResult
 import cash.z.ecc.android.sdk.model.Pczt
 import cash.z.ecc.android.sdk.model.PercentDecimal
 import cash.z.ecc.android.sdk.model.Proposal
+import cash.z.ecc.android.sdk.model.TransactionId
 import cash.z.ecc.android.sdk.model.TransactionOutput
 import cash.z.ecc.android.sdk.model.TransactionOverview
 import cash.z.ecc.android.sdk.model.TransactionPool
@@ -431,13 +432,13 @@ class SdkSynchronizer private constructor(
     }
 
     override fun getMemos(transactionOverview: TransactionOverview): Flow<String> {
-        return storage.getOutputProperties(transactionOverview.rawId).map { properties ->
+        return storage.getOutputProperties(transactionOverview.txId).map { properties ->
             if (!properties.protocol.isShielded()) {
                 ""
             } else {
                 runCatching {
                     backend.getMemoAsUtf8(
-                        txId = transactionOverview.rawId.byteArray,
+                        txId = transactionOverview.txId.value.byteArray,
                         protocol = properties.protocol,
                         outputIndex = properties.index
                     )
@@ -453,18 +454,18 @@ class SdkSynchronizer private constructor(
         }
     }
 
-    override fun getTransactionsByMemoSubstring(query: String): Flow<List<FirstClassByteArray>> {
+    override fun getTransactionsByMemoSubstring(query: String): Flow<List<TransactionId>> {
         return storage.getTransactionsByMemoSubstring(query)
     }
 
     override fun getRecipients(transactionOverview: TransactionOverview): Flow<TransactionRecipient> {
         require(transactionOverview.isSentTransaction) { "Recipients can only be queried for sent transactions" }
 
-        return storage.getRecipients(transactionOverview.rawId)
+        return storage.getRecipients(transactionOverview.txId)
     }
 
     override suspend fun getTransactionOutputs(transactionOverview: TransactionOverview): List<TransactionOutput> {
-        return storage.getOutputProperties(transactionOverview.rawId).toList().map {
+        return storage.getOutputProperties(transactionOverview.txId).toList().map {
             TransactionOutput(
                 when (it.protocol) {
                     ZcashProtocol.TRANSPARENT -> TransactionPool.TRANSPARENT

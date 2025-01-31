@@ -23,11 +23,11 @@ import cash.z.ecc.android.sdk.model.AccountImportSetup
 import cash.z.ecc.android.sdk.model.AccountUuid
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.FastestServersResult
-import cash.z.ecc.android.sdk.model.FirstClassByteArray
 import cash.z.ecc.android.sdk.model.ObserveFiatCurrencyResult
 import cash.z.ecc.android.sdk.model.Pczt
 import cash.z.ecc.android.sdk.model.PercentDecimal
 import cash.z.ecc.android.sdk.model.Proposal
+import cash.z.ecc.android.sdk.model.TransactionId
 import cash.z.ecc.android.sdk.model.TransactionOutput
 import cash.z.ecc.android.sdk.model.TransactionOverview
 import cash.z.ecc.android.sdk.model.TransactionRecipient
@@ -510,7 +510,7 @@ interface Synchronizer {
      * @param query Memo or its substring
      * @return List of transaction IDs which memo contains given [query] or its part wrapped in [Flow]
      */
-    fun getTransactionsByMemoSubstring(query: String): Flow<List<FirstClassByteArray>>
+    fun getTransactionsByMemoSubstring(query: String): Flow<List<TransactionId>>
 
     /**
      * Returns a list of recipients for a transaction.

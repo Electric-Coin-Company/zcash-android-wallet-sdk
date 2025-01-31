@@ -6,6 +6,7 @@ import cash.z.ecc.android.sdk.internal.model.OutputProperties
 import cash.z.ecc.android.sdk.model.AccountUuid
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.FirstClassByteArray
+import cash.z.ecc.android.sdk.model.TransactionId
 import cash.z.ecc.android.sdk.model.TransactionRecipient
 import kotlinx.coroutines.flow.Flow
 
@@ -82,11 +83,11 @@ internal interface DerivedDataRepository {
 
     suspend fun getTransactions(accountUuid: AccountUuid): Flow<List<DbTransactionOverview>>
 
-    fun getOutputProperties(transactionId: FirstClassByteArray): Flow<OutputProperties>
+    fun getOutputProperties(transactionId: TransactionId): Flow<OutputProperties>
 
-    fun getTransactionsByMemoSubstring(query: String): Flow<List<FirstClassByteArray>>
+    fun getTransactionsByMemoSubstring(query: String): Flow<List<TransactionId>>
 
-    fun getRecipients(transactionId: FirstClassByteArray): Flow<TransactionRecipient>
+    fun getRecipients(transactionId: TransactionId): Flow<TransactionRecipient>
 
     suspend fun close()
 
