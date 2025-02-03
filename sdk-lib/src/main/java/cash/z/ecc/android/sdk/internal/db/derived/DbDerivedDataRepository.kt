@@ -1,5 +1,6 @@
 package cash.z.ecc.android.sdk.internal.db.derived
 
+import cash.z.ecc.android.sdk.internal.model.DbBlock
 import cash.z.ecc.android.sdk.internal.model.DbTransactionOverview
 import cash.z.ecc.android.sdk.internal.model.EncodedTransaction
 import cash.z.ecc.android.sdk.internal.repository.DerivedDataRepository
@@ -46,10 +47,6 @@ internal class DbDerivedDataRepository(
     override suspend fun getTransactions(accountUuid: AccountUuid) =
         invalidatingFlow.map { derivedDataDb.allTransactionView.getTransactions(accountUuid).toList() }
 
-    override suspend fun getFailedTransactions(accountUuid: AccountUuid): Flow<List<DbTransactionOverview>> {
-        TODO("Not yet implemented")
-    }
-
     override fun invalidate() {
         invalidatingFlow.value = UUID.randomUUID()
     }
@@ -73,6 +70,10 @@ internal class DbDerivedDataRepository(
 
     override fun getRecipients(transactionId: TransactionId): Flow<TransactionRecipient> {
         return derivedDataDb.txOutputsView.getRecipients(transactionId.value)
+    }
+
+    override suspend fun findBlockByHeight(blockHeight: BlockHeight): DbBlock? {
+        return derivedDataDb.blockTable.findBlockByExpiryHeight(blockHeight)
     }
 
     override suspend fun close() {

@@ -19,6 +19,8 @@ internal class DerivedDataDb private constructor(
 ) {
     val transactionTable = TransactionTable(sqliteDatabase)
 
+    val blockTable = BlockTable(sqliteDatabase)
+
     val allTransactionView = AllTransactionView(sqliteDatabase)
 
     val txOutputsView = TxOutputsView(sqliteDatabase)

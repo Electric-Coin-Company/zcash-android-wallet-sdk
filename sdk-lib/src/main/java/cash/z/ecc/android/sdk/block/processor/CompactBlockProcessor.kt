@@ -78,7 +78,6 @@ import kotlinx.coroutines.flow.buffer
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.forEach
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onEach
@@ -501,10 +500,6 @@ class CompactBlockProcessor internal constructor(
                     }
                     SyncingResult.EnhanceSuccess -> {
                         Twig.info { "Triggering transaction refresh now" }
-                        addFailedTransactionsTimestamp(
-                            backend = backend,
-                            transactionStorage = repository,
-                        )
                         // Invalidate transaction data
                         checkTransactions(transactionStorage = repository)
                     }
@@ -764,22 +759,6 @@ class CompactBlockProcessor internal constructor(
             suggestedRangesResult = suggestedRangesResult,
             verifyRangeResult = verifyRangeResult
         )
-    }
-
-    /**
-     * TODO
-     */
-    private suspend fun addFailedTransactionsTimestamp(
-        backend: TypesafeBackend,
-        transactionStorage: DerivedDataRepository
-    ) {
-        backend.getAccounts().forEach {
-            transactionStorage.getFailedTransactions(accountUuid = it.accountUuid)
-                .onEach { trx ->
-                    // TODO create block db view, query for the related block by expiryHeight, and take the block's
-                    //  time column which is time of the block in seconds
-                }
-        }
     }
 
     /**
@@ -1620,10 +1599,6 @@ class CompactBlockProcessor internal constructor(
                                             enhancingResult
                                         }
                                         else -> {
-                                            // TODO better fce placing?
-                                            // Check failed transactions and fill in timestamps from block if needed
-
-
                                             // Transactions enhanced correctly. Let's continue with block processing.
                                             enhancingResult
                                         }
