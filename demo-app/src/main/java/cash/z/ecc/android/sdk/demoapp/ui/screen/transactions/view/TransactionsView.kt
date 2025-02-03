@@ -67,7 +67,7 @@ fun Transactions(
             emptyList()
         } else {
             synchronizer
-                .transactions
+                .allTransactions
                 .collectAsStateWithLifecycle(initialValue = emptyList())
                 .value
                 .map { transactionOverview ->

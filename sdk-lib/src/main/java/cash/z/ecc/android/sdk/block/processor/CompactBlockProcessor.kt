@@ -1580,6 +1580,7 @@ class CompactBlockProcessor internal constructor(
                             // Copy the range for use and reset for the next iteration
                             val currentEnhancingRange = enhancingRange
                             enhancingRange = enhancingRange.endInclusive..enhancingRange.endInclusive
+
                             enhanceTransactionDetails(
                                 range = currentEnhancingRange,
                                 repository = repository,

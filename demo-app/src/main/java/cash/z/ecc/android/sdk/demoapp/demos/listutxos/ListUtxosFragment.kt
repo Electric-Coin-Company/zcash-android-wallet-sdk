@@ -180,7 +180,7 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
                 launch {
                     sharedViewModel.synchronizerFlow
                         .filterNotNull()
-                        .flatMapLatest { it.transactions }
+                        .flatMapLatest { it.allTransactions }
                         .collect { onTransactionsUpdated(it) }
                 }
                 launch {

@@ -126,7 +126,7 @@ import kotlin.time.Duration.Companion.seconds
  * @property processor saves the downloaded compact blocks to the cache and then scans those blocks for
  * data related to this wallet.
  */
-@Suppress("TooManyFunctions", "LongParameterList")
+@Suppress("TooManyFunctions", "LongParameterList", "LargeClass")
 class SdkSynchronizer private constructor(
     private val context: Context,
     private val synchronizerKey: SynchronizerKey,
@@ -266,7 +266,7 @@ class SdkSynchronizer private constructor(
             initialValue = ObserveFiatCurrencyResult()
         )
 
-    override val transactions
+    override val allTransactions
         get() =
             combine(processor.networkHeight, storage.allTransactions) { networkHeight, allTransactions ->
                 val latestBlockHeight =
@@ -276,7 +276,9 @@ class SdkSynchronizer private constructor(
                         Twig.error(it) { "Failed to get max scanned height" }
                     }.getOrNull()
 
-                allTransactions.map { TransactionOverview.new(it, latestBlockHeight) }
+                allTransactions
+                    .map { TransactionOverview.new(it, latestBlockHeight) }
+                    .map { it.checkAndFillInTime(storage) }
             }
 
     override val network: ZcashNetwork get() = processor.network
@@ -488,7 +490,9 @@ class SdkSynchronizer private constructor(
                     Twig.error(it) { "Failed to get max scanned height" }
                 }.getOrNull()
 
-            allAccountTransactions.map { TransactionOverview.new(it, latestBlockHeight) }
+            allAccountTransactions
+                .map { TransactionOverview.new(it, latestBlockHeight) }
+                .map { it.checkAndFillInTime(storage) }
         }
     }
 

@@ -98,7 +98,7 @@ interface Synchronizer {
     /**
      * A flow of all the transactions that are on the blockchain.
      */
-    val transactions: Flow<List<TransactionOverview>>
+    val allTransactions: Flow<List<TransactionOverview>>
 
     //
     // Latest Properties
