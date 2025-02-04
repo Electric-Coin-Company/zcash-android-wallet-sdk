@@ -5,7 +5,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
 class AccountUuidTest {
-
     @Test
     fun uuid_wrong_length_test() {
         assertFailsWith(IllegalArgumentException::class) {

@@ -1,5 +1,6 @@
 package cash.z.ecc.android.sdk.internal.repository
 
+import cash.z.ecc.android.sdk.internal.model.DbBlock
 import cash.z.ecc.android.sdk.internal.model.DbTransactionOverview
 import cash.z.ecc.android.sdk.internal.model.EncodedTransaction
 import cash.z.ecc.android.sdk.internal.model.OutputProperties
@@ -88,6 +89,12 @@ internal interface DerivedDataRepository {
     fun getTransactionsByMemoSubstring(query: String): Flow<List<TransactionId>>
 
     fun getRecipients(transactionId: TransactionId): Flow<TransactionRecipient>
+
+    //
+    // Blocks
+    //
+
+    suspend fun findBlockByHeight(blockHeight: BlockHeight): DbBlock?
 
     suspend fun close()
 

@@ -57,7 +57,7 @@ class ListTransactionsFragment : BaseDemoFragment<FragmentListTransactionsBindin
                 launch {
                     sharedViewModel.synchronizerFlow
                         .filterNotNull()
-                        .flatMapLatest { it.transactions }
+                        .flatMapLatest { it.allTransactions }
                         .collect { onTransactionsUpdated(it) }
                 }
             }
