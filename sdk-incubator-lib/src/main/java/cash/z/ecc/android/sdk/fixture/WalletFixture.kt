@@ -20,6 +20,8 @@ sealed class WalletFixture {
     @Suppress("MaxLineLength")
     data object Ben : WalletFixture() {
         override val accounts: List<Account>
+            // Note that the UUID is regenerated for each wallet restoration, but it's fine to hardcode it here for
+            // the testing purposes
             get() = listOf(AccountFixture.new(accountUuid = UUID.fromString("52175368-821a-4664-8a7c-6a75d850f71c")))
 
         override val seedPhrase: String
@@ -57,12 +59,13 @@ sealed class WalletFixture {
     @Suppress("MaxLineLength")
     data object Alice : WalletFixture() {
         override val accounts: List<Account>
+            // Note that the UUID is regenerated for each wallet restoration, but it's fine to hardcode it here for
+            // the testing purposes
             get() = listOf(AccountFixture.new(accountUuid = UUID.fromString("8a204240-73a5-4e7a-93c2-a6e05711a000")))
 
         override val seedPhrase: String
             get() =
-                "wish puppy smile loan doll curve hole maze file ginger hair nose key relax knife witness cannon" +
-                    " grab despair throw review deal slush frame"
+                "wish puppy smile loan doll curve hole maze file ginger hair nose key relax knife witness cannon grab despair throw review deal slush frame"
 
         override fun getBirthday(zcashNetwork: ZcashNetwork) = lastKnownBirthday(zcashNetwork)
 
