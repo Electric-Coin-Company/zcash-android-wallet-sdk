@@ -334,6 +334,17 @@ interface Synchronizer {
     ): Pczt
 
     /**
+     * Redacts information from the given PCZT that is unnecessary for the Signer role.
+     *
+     * @param pczt The partially created transaction in its serialized format.
+     *
+     * @return the updated PCZT in its serialized format.
+     *
+     * @throws PcztException.RedactPcztForSignerException as a common indicator of the operation failure
+     */
+    suspend fun redactPcztForSigner(pczt: Pczt): Pczt
+
+    /**
      * Adds proofs to the given PCZT.
      *
      * @param pczt The partially created transaction in its serialized format.

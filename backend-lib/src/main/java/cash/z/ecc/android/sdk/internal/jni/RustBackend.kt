@@ -441,6 +441,8 @@ class RustBackend private constructor(
             )
         }
 
+    override suspend fun redactPcztForSigner(pczt: ByteArray): ByteArray = redactPcztForSignerRole(pczt = pczt)
+
     override suspend fun addProofsToPczt(pczt: ByteArray): ByteArray =
         addProofsToPczt(
             pczt = pczt,
@@ -816,6 +818,9 @@ class RustBackend private constructor(
             proposal: ByteArray,
             networkId: Int,
         ): ByteArray
+
+        @JvmStatic
+        private external fun redactPcztForSignerRole(pczt: ByteArray): ByteArray
 
         @JvmStatic
         private external fun addProofsToPczt(

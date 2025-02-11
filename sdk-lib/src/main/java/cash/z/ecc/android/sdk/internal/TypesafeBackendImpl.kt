@@ -154,6 +154,8 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
             )
         )
 
+    override suspend fun redactPcztForSigner(pczt: Pczt): Pczt = Pczt(backend.redactPcztForSigner(pczt.toByteArray()))
+
     override suspend fun addProofsToPczt(pczt: Pczt): Pczt = Pczt(backend.addProofsToPczt(pczt.toByteArray()))
 
     override suspend fun extractAndStoreTxFromPczt(

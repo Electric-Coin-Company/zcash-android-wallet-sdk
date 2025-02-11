@@ -12,6 +12,7 @@ use jni::{
     sys::{jboolean, jbyteArray, jint, jlong, jobject, jobjectArray, jstring, JNI_FALSE, JNI_TRUE},
     JNIEnv,
 };
+use pczt::roles::redactor::Redactor;
 use pczt::{
     roles::{combiner::Combiner, prover::Prover},
     Pczt,
@@ -2051,6 +2052,49 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_createPcz
                 "Multi-step proposals are not yet supported for PCZT generation."
             ))
         }
+    });
+    unwrap_exc_or(&mut env, res, ptr::null_mut())
+}
+
+/// Redacts information from the given PCZT that is unnecessary for the Signer role.
+///
+/// Returns the updated PCZT in its serialized format.
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_redactPcztForSignerRole<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _: JClass<'local>,
+    pczt: JByteArray<'local>,
+) -> jbyteArray {
+    let res = catch_unwind(&mut env, |env| {
+        let _span = tracing::info_span!("RustBackend.redactPcztForSignerRole").entered();
+
+        let pczt = Pczt::parse(&env.convert_byte_array(pczt)?[..])
+            .map_err(|e| anyhow!("Invalid PCZT: {:?}", e))?;
+
+        let pczt_with_proofs = Redactor::new(pczt)
+            .redact_global_with(|mut r| r.redact_proprietary("zcash_client_backend:proposal_info"))
+            .redact_orchard_with(|mut r| {
+                r.redact_actions(|mut ar| {
+                    ar.clear_spend_witness();
+                    ar.redact_output_proprietary("zcash_client_backend:output_info");
+                })
+            })
+            .redact_sapling_with(|mut r| {
+                r.redact_spends(|mut sr| sr.clear_witness());
+                r.redact_outputs(|mut or| {
+                    or.redact_proprietary("zcash_client_backend:output_info")
+                });
+            })
+            .redact_transparent_with(|mut r| {
+                r.redact_outputs(|mut or| {
+                    or.redact_proprietary("zcash_client_backend:output_info")
+                });
+            })
+            .finish();
+
+        Ok(utils::rust_bytes_to_java(&env, &pczt_with_proofs.serialize())?.into_raw())
     });
     unwrap_exc_or(&mut env, res, ptr::null_mut())
 }

@@ -99,6 +99,8 @@ internal interface TransactionEncoder {
         proposal: Proposal
     ): Pczt
 
+    suspend fun redactPcztForSigner(pczt: Pczt): Pczt
+
     suspend fun addProofsToPczt(pczt: Pczt): Pczt
 
     suspend fun extractAndStoreTxFromPczt(

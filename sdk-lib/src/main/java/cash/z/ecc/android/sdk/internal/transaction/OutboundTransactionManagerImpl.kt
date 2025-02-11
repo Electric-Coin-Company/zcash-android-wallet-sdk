@@ -110,6 +110,8 @@ internal class OutboundTransactionManagerImpl(
         proposal: Proposal
     ) = encoder.createPcztFromProposal(accountUuid, proposal)
 
+    override suspend fun redactPcztForSigner(pczt: Pczt): Pczt = encoder.redactPcztForSigner(pczt)
+
     override suspend fun addProofsToPczt(pczt: Pczt) = encoder.addProofsToPczt(pczt)
 
     override suspend fun extractAndStoreTxFromPczt(

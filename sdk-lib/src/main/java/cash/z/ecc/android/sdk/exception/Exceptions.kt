@@ -342,6 +342,14 @@ sealed class PcztException(
             cause
         )
 
+    class RedactPcztForSignerException internal constructor(
+        description: String?,
+        cause: Throwable?
+    ) : PcztException(
+            "Failed to redact PCZT for Signer with message: ${description ?: "-"}",
+            cause
+        )
+
     class AddProofsToPcztException internal constructor(
         description: String?,
         cause: Throwable?

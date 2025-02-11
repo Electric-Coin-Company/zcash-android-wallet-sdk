@@ -875,6 +875,8 @@ class SdkSynchronizer private constructor(
         proposal: Proposal
     ) = txManager.createPcztFromProposal(accountUuid, proposal)
 
+    override suspend fun redactPcztForSigner(pczt: Pczt) = txManager.redactPcztForSigner(pczt)
+
     override suspend fun addProofsToPczt(pczt: Pczt) = txManager.addProofsToPczt(pczt)
 
     override suspend fun createTransactionFromPczt(

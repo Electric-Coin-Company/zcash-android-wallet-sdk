@@ -67,6 +67,15 @@ interface Backend {
     ): ByteArray
 
     /**
+     * Redacts information from the given PCZT that is unnecessary for the Signer role.
+     *
+     * @return the updated PCZT in its serialized format.
+     *
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    suspend fun redactPcztForSigner(pczt: ByteArray): ByteArray
+
+    /**
      * Adds proofs to the given PCZT.
      *
      * @return the updated PCZT in its serialized format.
