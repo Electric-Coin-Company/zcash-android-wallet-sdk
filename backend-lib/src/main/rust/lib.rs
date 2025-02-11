@@ -22,6 +22,7 @@ use tor_rtcompat::BlockOn;
 use tracing::{debug, error};
 use tracing_subscriber::prelude::*;
 use tracing_subscriber::reload;
+use transparent::bundle::{OutPoint, TxOut};
 use utils::{java_nullable_string_to_rust, java_string_to_rust};
 use uuid::Uuid;
 use zcash_address::{ToAddress, ZcashAddress};
@@ -50,7 +51,6 @@ use zcash_client_backend::{
     tor::http::cryptex,
     wallet::{NoteId, OvkPolicy, WalletTransparentOutput},
     zip321::{Payment, TransactionRequest},
-    ShieldedProtocol,
 };
 use zcash_client_sqlite::error::SqliteClientError;
 use zcash_client_sqlite::AccountUuid;
@@ -70,15 +70,14 @@ use zcash_primitives::{
     legacy::{Script, TransparentAddress},
     memo::{Memo, MemoBytes},
     merkle_tree::HashSer,
-    transaction::{
-        components::{amount::NonNegativeAmount, Amount, OutPoint, TxOut},
-        Transaction, TxId,
-    },
-    zip32::{self, DiversifierIndex},
+    transaction::{Transaction, TxId},
 };
 use zcash_proofs::prover::LocalTxProver;
-use zip32::fingerprint::SeedFingerprint;
-use zip32::ChildIndex;
+use zcash_protocol::{
+    value::{ZatBalance, Zatoshis},
+    ShieldedProtocol,
+};
+use zip32::{fingerprint::SeedFingerprint, ChildIndex, DiversifierIndex};
 
 use crate::utils::{catch_unwind, exception::unwrap_exc_or};
 
@@ -565,9 +564,11 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_importAcc
                     None
                 };
 
-                let hd_account_index = u32::try_from(hd_account_index_raw)
-                    .ok()
-                    .and_then(|hd_account_index_non_null| zip32::AccountId::try_from(hd_account_index_non_null).ok());
+                let hd_account_index = u32::try_from(hd_account_index_raw).ok().and_then(
+                    |hd_account_index_non_null| {
+                        zip32::AccountId::try_from(hd_account_index_non_null).ok()
+                    },
+                );
 
                 let derivation = seed_fingerprint
                     .zip(hd_account_index)
@@ -894,10 +895,10 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getTotalT
             })?
             .iter()
             .map(|utxo| utxo.txout().value)
-            .sum::<Option<NonNegativeAmount>>()
+            .sum::<Option<Zatoshis>>()
             .ok_or_else(|| anyhow!("Balance overflowed MAX_MONEY"))?;
 
-        Ok(Amount::from(amount).into())
+        Ok(ZatBalance::from(amount).into())
     });
 
     unwrap_exc_or(&mut env, res, -1)
@@ -1318,19 +1319,19 @@ fn encode_account_balance<'a>(
     account_uuid: &AccountUuid,
     balance: &AccountBalance,
 ) -> jni::errors::Result<JObject<'a>> {
-    let sapling_verified_balance = Amount::from(balance.sapling_balance().spendable_value());
+    let sapling_verified_balance = ZatBalance::from(balance.sapling_balance().spendable_value());
     let sapling_change_pending =
-        Amount::from(balance.sapling_balance().change_pending_confirmation());
+        ZatBalance::from(balance.sapling_balance().change_pending_confirmation());
     let sapling_value_pending =
-        Amount::from(balance.sapling_balance().value_pending_spendability());
+        ZatBalance::from(balance.sapling_balance().value_pending_spendability());
 
-    let orchard_verified_balance = Amount::from(balance.orchard_balance().spendable_value());
+    let orchard_verified_balance = ZatBalance::from(balance.orchard_balance().spendable_value());
     let orchard_change_pending =
-        Amount::from(balance.orchard_balance().change_pending_confirmation());
+        ZatBalance::from(balance.orchard_balance().change_pending_confirmation());
     let orchard_value_pending =
-        Amount::from(balance.orchard_balance().value_pending_spendability());
+        ZatBalance::from(balance.orchard_balance().value_pending_spendability());
 
-    let unshielded = Amount::from(balance.unshielded_balance().total());
+    let unshielded = ZatBalance::from(balance.unshielded_balance().total());
 
     env.new_object(
         JNI_ACCOUNT_BALANCE,
@@ -1630,7 +1631,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_putUtxo<'
         let output = WalletTransparentOutput::from_parts(
             OutPoint::new(txid, index as u32),
             TxOut {
-                value: NonNegativeAmount::from_nonnegative_i64(value)
+                value: Zatoshis::from_nonnegative_i64(value)
                     .map_err(|_| anyhow!("Invalid UTXO value"))?,
                 script_pubkey,
             },
@@ -1727,7 +1728,7 @@ fn zip317_helper<DbT>(
             DustOutputPolicy::default(),
             SplitPolicy::with_min_output_value(
                 NonZeroUsize::new(4).expect("4 is nonzero"),
-                NonNegativeAmount::const_from_u64(1000_0000),
+                Zatoshis::const_from_u64(1000_0000),
             ),
         ),
         GreedyInputSelector::new(),
@@ -1797,7 +1798,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeTr
         let mut db_data = wallet_db(env, network, db_data)?;
         let account_uuid = account_id_from_jni(&env, account_uuid)?;
         let to = utils::java_string_to_rust(env, &to);
-        let value = NonNegativeAmount::from_nonnegative_i64(value)
+        let value = Zatoshis::from_nonnegative_i64(value)
             .map_err(|_| anyhow!("Invalid amount, out of range"))?;
 
         let to = to
@@ -1860,7 +1861,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeSh
         let network = parse_network(network_id as u32)?;
         let mut db_data = wallet_db(env, network, db_data)?;
         let account_uuid = account_id_from_jni(&env, account_uuid)?;
-        let shielding_threshold = NonNegativeAmount::from_nonnegative_i64(shielding_threshold)
+        let shielding_threshold = Zatoshis::from_nonnegative_i64(shielding_threshold)
             .map_err(|_| anyhow!("Invalid shielding threshold, out of range"))?;
 
         let transparent_receiver =
