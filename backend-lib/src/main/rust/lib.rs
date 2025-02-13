@@ -2116,16 +2116,28 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_addProofs
         let pczt = Pczt::parse(&env.convert_byte_array(pczt)?[..])
             .map_err(|e| anyhow!("Invalid PCZT: {:?}", e))?;
 
-        let spend_params = utils::java_string_to_rust(env, &spend_params);
-        let output_params = utils::java_string_to_rust(env, &output_params);
-        let prover = LocalTxProver::new(Path::new(&spend_params), Path::new(&output_params));
+        let mut prover = Prover::new(pczt);
 
-        let pczt_with_proofs = Prover::new(pczt)
-            .create_orchard_proof(&orchard::circuit::ProvingKey::build())
-            .map_err(|e| anyhow!("Failed to create Orchard proof for PCZT: {:?}", e))?
-            .create_sapling_proofs(&prover, &prover)
-            .map_err(|e| anyhow!("Failed to create Sapling proofs for PCZT: {:?}", e))?
-            .finish();
+        if prover.requires_orchard_proof() {
+            prover = prover
+                .create_orchard_proof(&orchard::circuit::ProvingKey::build())
+                .map_err(|e| anyhow!("Failed to create Orchard proof for PCZT: {:?}", e))?;
+        }
+        assert!(!prover.requires_orchard_proof());
+
+        if prover.requires_sapling_proofs() {
+            let spend_params = utils::java_string_to_rust(env, &spend_params);
+            let output_params = utils::java_string_to_rust(env, &output_params);
+            let local_prover =
+                LocalTxProver::new(Path::new(&spend_params), Path::new(&output_params));
+
+            prover = prover
+                .create_sapling_proofs(&local_prover, &local_prover)
+                .map_err(|e| anyhow!("Failed to create Sapling proofs for PCZT: {:?}", e))?;
+        }
+        assert!(!prover.requires_sapling_proofs());
+
+        let pczt_with_proofs = prover.finish();
 
         Ok(utils::rust_bytes_to_java(&env, &pczt_with_proofs.serialize())?.into_raw())
     });
