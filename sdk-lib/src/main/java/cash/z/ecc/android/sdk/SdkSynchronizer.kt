@@ -877,6 +877,8 @@ class SdkSynchronizer private constructor(
 
     override suspend fun redactPcztForSigner(pczt: Pczt) = txManager.redactPcztForSigner(pczt)
 
+    override suspend fun pcztRequiresSaplingProofs(pczt: Pczt) = txManager.pcztRequiresSaplingProofs(pczt)
+
     override suspend fun addProofsToPczt(pczt: Pczt) = txManager.addProofsToPczt(pczt)
 
     override suspend fun createTransactionFromPczt(

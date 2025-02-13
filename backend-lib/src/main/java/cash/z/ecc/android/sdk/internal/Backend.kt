@@ -76,6 +76,15 @@ interface Backend {
     suspend fun redactPcztForSigner(pczt: ByteArray): ByteArray
 
     /**
+     * Checks whether the caller needs to have downloaded the Sapling parameters.
+     *
+     * @return `true` if this PCZT requires Sapling proofs.
+     *
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    suspend fun pcztRequiresSaplingProofs(pczt: ByteArray): Boolean
+
+    /**
      * Adds proofs to the given PCZT.
      *
      * @return the updated PCZT in its serialized format.

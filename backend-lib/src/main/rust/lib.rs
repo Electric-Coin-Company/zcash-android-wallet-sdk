@@ -2099,6 +2099,33 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_redactPcz
     unwrap_exc_or(&mut env, res, ptr::null_mut())
 }
 
+/// Returns `true` if this PCZT requires Sapling proofs (and thus the caller needs to have
+/// downloaded them).
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_requiresSaplingProofs<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _: JClass<'local>,
+    pczt: JByteArray<'local>,
+) -> jboolean {
+    let res = catch_unwind(&mut env, |env| {
+        let _span = tracing::info_span!("RustBackend.pcztRequiresSaplingProofs").entered();
+
+        let pczt = Pczt::parse(&env.convert_byte_array(pczt)?[..])
+            .map_err(|e| anyhow!("Invalid PCZT: {:?}", e))?;
+
+        let prover = Prover::new(pczt);
+
+        Ok(if prover.requires_sapling_proofs() {
+            JNI_TRUE
+        } else {
+            JNI_FALSE
+        })
+    });
+    unwrap_exc_or(&mut env, res, JNI_TRUE)
+}
+
 /// Adds proofs to the given PCZT.
 ///
 /// Returns the updated PCZT in its serialized format.

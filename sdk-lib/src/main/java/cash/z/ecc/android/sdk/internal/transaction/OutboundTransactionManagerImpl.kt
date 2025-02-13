@@ -112,6 +112,8 @@ internal class OutboundTransactionManagerImpl(
 
     override suspend fun redactPcztForSigner(pczt: Pczt): Pczt = encoder.redactPcztForSigner(pczt)
 
+    override suspend fun pcztRequiresSaplingProofs(pczt: Pczt): Boolean = encoder.pcztRequiresSaplingProofs(pczt)
+
     override suspend fun addProofsToPczt(pczt: Pczt) = encoder.addProofsToPczt(pczt)
 
     override suspend fun extractAndStoreTxFromPczt(

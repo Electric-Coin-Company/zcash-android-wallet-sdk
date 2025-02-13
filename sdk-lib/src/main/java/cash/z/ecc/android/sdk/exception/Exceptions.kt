@@ -350,6 +350,14 @@ sealed class PcztException(
             cause
         )
 
+    class PcztRequiresSaplingProofsException internal constructor(
+        description: String?,
+        cause: Throwable?
+    ) : PcztException(
+            "Failed to check PCZT for Sapling presence with message: ${description ?: "-"}",
+            cause
+        )
+
     class AddProofsToPcztException internal constructor(
         description: String?,
         cause: Throwable?

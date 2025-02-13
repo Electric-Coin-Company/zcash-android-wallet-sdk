@@ -177,6 +177,18 @@ internal class TransactionEncoderImpl(
         }
     }
 
+    override suspend fun pcztRequiresSaplingProofs(pczt: Pczt): Boolean {
+        return runCatching {
+            backend.pcztRequiresSaplingProofs(pczt = pczt)
+        }.onSuccess {
+            Twig.debug { "Result of pcztRequiresSaplingProofs: $it" }
+        }.onFailure {
+            Twig.error(it) { "Caught exception while checking PCZT Sapling presence." }
+        }.getOrElse {
+            throw PcztException.PcztRequiresSaplingProofsException(it.message, it.cause)
+        }
+    }
+
     override suspend fun addProofsToPczt(pczt: Pczt): Pczt {
         return runCatching {
             saplingParamTool.ensureParams(saplingParamTool.properties.paramsDirectory)

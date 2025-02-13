@@ -1,6 +1,7 @@
 package cash.z.ecc.android.sdk.internal
 
 import cash.z.ecc.android.sdk.exception.InitializeException
+import cash.z.ecc.android.sdk.exception.PcztException
 import cash.z.ecc.android.sdk.exception.RustLayerException
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.internal.model.RewindResult
@@ -94,6 +95,17 @@ internal interface TypesafeBackend {
      * @throws RuntimeException as a common indicator of the operation failure
      */
     suspend fun redactPcztForSigner(pczt: Pczt): Pczt
+
+    /**
+     * Checks whether the caller needs to have downloaded the Sapling parameters.
+     *
+     * @param pczt The partially created transaction in its serialized format.
+     *
+     * @return `true` if this PCZT requires Sapling proofs.
+     *
+     * @throws PcztException.RedactPcztForSignerException as a common indicator of the operation failure
+     */
+    suspend fun pcztRequiresSaplingProofs(pczt: Pczt): Boolean
 
     /**
      * Adds proofs to the given PCZT.

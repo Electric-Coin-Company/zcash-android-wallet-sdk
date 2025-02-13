@@ -443,6 +443,8 @@ class RustBackend private constructor(
 
     override suspend fun redactPcztForSigner(pczt: ByteArray): ByteArray = redactPcztForSignerRole(pczt = pczt)
 
+    override suspend fun pcztRequiresSaplingProofs(pczt: ByteArray): Boolean = requiresSaplingProofs(pczt = pczt)
+
     override suspend fun addProofsToPczt(pczt: ByteArray): ByteArray =
         addProofsToPczt(
             pczt = pczt,
@@ -821,6 +823,9 @@ class RustBackend private constructor(
 
         @JvmStatic
         private external fun redactPcztForSignerRole(pczt: ByteArray): ByteArray
+
+        @JvmStatic
+        private external fun requiresSaplingProofs(pczt: ByteArray): Boolean
 
         @JvmStatic
         private external fun addProofsToPczt(

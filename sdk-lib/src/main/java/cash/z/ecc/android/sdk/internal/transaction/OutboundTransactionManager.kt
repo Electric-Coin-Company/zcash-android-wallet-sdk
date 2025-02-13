@@ -102,6 +102,8 @@ internal interface OutboundTransactionManager {
 
     suspend fun redactPcztForSigner(pczt: Pczt): Pczt
 
+    suspend fun pcztRequiresSaplingProofs(pczt: Pczt): Boolean
+
     suspend fun addProofsToPczt(pczt: Pczt): Pczt
 
     suspend fun extractAndStoreTxFromPczt(
