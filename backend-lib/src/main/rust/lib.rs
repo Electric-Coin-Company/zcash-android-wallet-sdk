@@ -2488,7 +2488,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorClient_createTor
 
         let tor = crate::tor::TorRuntime::create(tor_dir)?;
 
-        Ok((Box::into_raw(Box::new(tor)) as usize) as jlong)
+        Ok(Box::into_raw(Box::new(tor)).expose_provenance() as jlong)
     });
     unwrap_exc_or(&mut env, res, -1)
 }
@@ -2500,7 +2500,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorClient_freeTorRu
     _: JClass<'local>,
     ptr: jlong,
 ) {
-    let ptr = (ptr as usize) as *mut crate::tor::TorRuntime;
+    let ptr = std::ptr::with_exposed_provenance_mut::<crate::tor::TorRuntime>(ptr as usize);
     if !ptr.is_null() {
         let s = unsafe { Box::from_raw(ptr) };
         drop(s);
@@ -2518,8 +2518,9 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorClient_getExchan
 ) -> jobject {
     let res = catch_unwind(&mut env, |env| {
         let tor_runtime =
-            unsafe { ((tor_runtime as usize) as *mut crate::tor::TorRuntime).as_mut() }
-                .ok_or_else(|| anyhow!("A Tor runtime is required"))?;
+            std::ptr::with_exposed_provenance_mut::<crate::tor::TorRuntime>(tor_runtime as usize);
+        let tor_runtime =
+            unsafe { tor_runtime.as_mut() }.ok_or_else(|| anyhow!("A Tor runtime is required"))?;
 
         let exchanges = cryptex::Exchanges::unauthenticated_known_with_gemini_trusted();
 
