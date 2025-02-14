@@ -2507,6 +2507,36 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorClient_freeTorRu
     }
 }
 
+/// Returns a new isolated `TorClient` handle.
+///
+/// The two `TorClient`s will share internal state and configuration, but their streams
+/// will never share circuits with one another.
+///
+/// Use this method when you want separate parts of your program to each have a
+/// `TorClient` handle, but where you don't want their activities to be linkable to one
+/// another over the Tor network.
+///
+/// Calling this method is usually preferable to creating a completely separate
+/// `TorClient` instance, since it can share its internals with the existing `TorClient`.
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorClient_isolatedClient<'local>(
+    mut env: JNIEnv<'local>,
+    _: JClass<'local>,
+    tor_runtime: jlong,
+) -> jlong {
+    let res = panic::catch_unwind(|| {
+        let tor_runtime =
+            ptr::with_exposed_provenance_mut::<crate::tor::TorRuntime>(tor_runtime as usize);
+        let tor_runtime =
+            unsafe { tor_runtime.as_mut() }.ok_or_else(|| anyhow!("A Tor runtime is required"))?;
+
+        let isolated_client = tor_runtime.isolated_client();
+
+        Ok(Box::into_raw(Box::new(isolated_client)).expose_provenance() as jlong)
+    });
+    unwrap_exc_or(&mut env, res, -1)
+}
+
 /// Fetches the current ZEC-USD exchange rate over Tor.
 #[unsafe(no_mangle)]
 pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorClient_getExchangeRateUsd<

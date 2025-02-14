@@ -23,6 +23,27 @@ class TorClient private constructor(
             }
         }
 
+    /**
+     * Returns a new isolated `TorClient` handle.
+     *
+     * The two `TorClient`s will share internal state and configuration, but their streams
+     * will never share circuits with one another.
+     *
+     * Use this method when you want separate parts of your program to each have a
+     * `TorClient` handle, but where you don't want their activities to be linkable to one
+     * another over the Tor network.
+     *
+     * Calling this method is usually preferable to creating a completely separate
+     * `TorClient` instance, since it can share its internals with the existing `TorClient`.
+     */
+    suspend fun isolatedClient(): TorClient =
+        accessMutex.withLock {
+            withContext(Dispatchers.IO) {
+                checkNotNull(nativeHandle) { "TorClient is disposed" }
+                TorClient(nativeHandle = isolatedClient(nativeHandle!!))
+            }
+        }
+
     suspend fun getExchangeRateUsd(): BigDecimal =
         accessMutex.withLock {
             withContext(Dispatchers.IO) {
@@ -58,6 +79,13 @@ class TorClient private constructor(
 
         @JvmStatic
         private external fun freeTorRuntime(nativeHandle: Long)
+
+        /**
+         * @throws RuntimeException as a common indicator of the operation failure
+         */
+        @JvmStatic
+        @Throws(RuntimeException::class)
+        private external fun isolatedClient(nativeHandle: Long): Long
 
         /**
          * @throws RuntimeException as a common indicator of the operation failure
