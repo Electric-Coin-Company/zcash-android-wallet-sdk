@@ -52,6 +52,19 @@ class TorClient private constructor(
             }
         }
 
+    /**
+     * Connects to the lightwalletd server at the given endpoint.
+     *
+     * Each connection returned by this method is isolated from any other Tor usage.
+     */
+    suspend fun connectToLightwalletd(endpoint: String): TorLwdConn =
+        accessMutex.withLock {
+            withContext(Dispatchers.IO) {
+                checkNotNull(nativeHandle) { "TorClient is disposed" }
+                TorLwdConn.new(connectToLightwalletd(nativeHandle!!, endpoint))
+            }
+        }
+
     companion object {
         suspend fun new(torDir: File): TorClient =
             withContext(Dispatchers.IO) {
@@ -93,5 +106,15 @@ class TorClient private constructor(
         @JvmStatic
         @Throws(RuntimeException::class)
         private external fun getExchangeRateUsd(nativeHandle: Long): BigDecimal
+
+        /**
+         * @throws RuntimeException as a common indicator of the operation failure
+         */
+        @JvmStatic
+        @Throws(RuntimeException::class)
+        private external fun connectToLightwalletd(
+            nativeHandle: Long,
+            endpoint: String
+        ): Long
     }
 }

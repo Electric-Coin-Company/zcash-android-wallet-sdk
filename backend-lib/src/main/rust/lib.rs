@@ -2579,6 +2579,101 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorClient_getExchan
     unwrap_exc_or(&mut env, res, ptr::null_mut())
 }
 
+/// Connects to the lightwalletd server at the given endpoint.
+///
+/// Each connection returned by this method is isolated from any other Tor usage.
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorClient_connectToLightwalletd<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _: JClass<'local>,
+    tor_runtime: jlong,
+    endpoint: JString<'local>,
+) -> jlong {
+    let res = catch_unwind(&mut env, |env| {
+        let tor_runtime =
+            ptr::with_exposed_provenance_mut::<crate::tor::TorRuntime>(tor_runtime as usize);
+        let tor_runtime =
+            unsafe { tor_runtime.as_mut() }.ok_or_else(|| anyhow!("A Tor runtime is required"))?;
+
+        let endpoint = utils::java_string_to_rust(env, &endpoint);
+        let lwd_conn = tor_runtime.connect_to_lightwalletd(
+            endpoint
+                .try_into()
+                .map_err(|e| anyhow!("Invalid lightwalletd endpoint: {e}"))?,
+        )?;
+
+        Ok(Box::into_raw(Box::new(lwd_conn)).expose_provenance() as jlong)
+    });
+    unwrap_exc_or(&mut env, res, -1)
+}
+
+/// Frees a lightwalletd connection.
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorLwdConn_freeLightwalletdConnection<
+    'local,
+>(
+    _: JNIEnv<'local>,
+    _: JClass<'local>,
+    lwd_conn: jlong,
+) {
+    let lwd_conn = ptr::with_exposed_provenance_mut::<crate::tor::LwdConn>(lwd_conn as usize);
+    if !lwd_conn.is_null() {
+        let s = unsafe { Box::from_raw(lwd_conn) };
+        drop(s);
+    }
+}
+
+/// Fetches the transaction with the given ID.
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorLwdConn_fetchTransaction<'local>(
+    mut env: JNIEnv<'local>,
+    _: JClass<'local>,
+    lwd_conn: jlong,
+    txid_bytes: JByteArray<'local>,
+) -> jbyteArray {
+    let res = catch_unwind(&mut env, |env| {
+        let lwd_conn = ptr::with_exposed_provenance_mut::<crate::tor::LwdConn>(lwd_conn as usize);
+        let lwd_conn = unsafe { lwd_conn.as_mut() }
+            .ok_or_else(|| anyhow!("A Tor lightwalletd connection is required"))?;
+
+        let txid_bytes = env.convert_byte_array(txid_bytes)?;
+        // This means we have to serialize back into a `Vec<u8>` next, but it is cheap and
+        // we may as well confirm we were actually passed something shaped correctly.
+        let txid = TxId::read(&txid_bytes[..])?;
+
+        let tx = lwd_conn.get_transaction(txid)?;
+
+        Ok(utils::rust_bytes_to_java(env, &tx)?.into_raw())
+    });
+    unwrap_exc_or(&mut env, res, ptr::null_mut())
+}
+
+/// Submits a transaction to the Zcash network via the given lightwalletd connection.
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorLwdConn_submitTransaction<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _: JClass<'local>,
+    lwd_conn: jlong,
+    tx_bytes: JByteArray<'local>,
+) -> jboolean {
+    let res = catch_unwind(&mut env, |env| {
+        let lwd_conn = ptr::with_exposed_provenance_mut::<crate::tor::LwdConn>(lwd_conn as usize);
+        let lwd_conn = unsafe { lwd_conn.as_mut() }
+            .ok_or_else(|| anyhow!("A Tor lightwalletd connection is required"))?;
+
+        let tx_bytes = env.convert_byte_array(tx_bytes)?;
+
+        lwd_conn.send_transaction(tx_bytes)?;
+
+        Ok(JNI_TRUE)
+    });
+    unwrap_exc_or(&mut env, res, JNI_FALSE)
+}
+
 //
 // Utility functions
 //
