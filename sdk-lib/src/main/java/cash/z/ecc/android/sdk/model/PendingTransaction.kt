@@ -28,7 +28,7 @@ data class PendingTransaction internal constructor(
 
 data class TransactionRecipient(
     val addressValue: String?,
-    val accountUuid: ByteArray?
+    val accountUuid: AccountUuid?
 )
 
 // Note there are some commented out methods which aren't being removed yet, as they might be needed before the
