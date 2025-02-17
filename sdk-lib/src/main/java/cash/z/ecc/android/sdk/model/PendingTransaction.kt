@@ -26,17 +26,10 @@ data class PendingTransaction internal constructor(
     override fun toString() = "PendingTransaction"
 }
 
-sealed class TransactionRecipient {
-    data class RecipientAddress(val addressValue: String) : TransactionRecipient() {
-        override fun toString() = "TransactionRecipient.RecipientAddress"
-    }
-
-    data class RecipientAccount(val accountUuid: ByteArray) : TransactionRecipient() {
-        override fun toString() = "TransactionRecipient.RecipientAccount"
-    }
-
-    companion object
-}
+data class TransactionRecipient(
+    val addressValue: String?,
+    val accountUuid: ByteArray?
+)
 
 // Note there are some commented out methods which aren't being removed yet, as they might be needed before the
 // Roomoval draft PR is completed
