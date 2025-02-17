@@ -1,7 +1,8 @@
 package cash.z.ecc.android.sdk.model
 
-import cash.z.ecc.android.sdk.internal.ext.toHexReversed
+import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.model.DbTransactionOverview
+import cash.z.ecc.android.sdk.internal.repository.DerivedDataRepository
 
 /**
  * High level transaction information, suitable for mapping to a display of transaction history.
@@ -13,7 +14,7 @@ import cash.z.ecc.android.sdk.internal.model.DbTransactionOverview
  * last synced block exceeds the [expiryHeight].
  */
 data class TransactionOverview internal constructor(
-    val rawId: FirstClassByteArray,
+    val txId: TransactionId,
     val minedHeight: BlockHeight?,
     val expiryHeight: BlockHeight?,
     val index: Long?,
@@ -31,18 +32,13 @@ data class TransactionOverview internal constructor(
 ) {
     override fun toString() = "TransactionOverview"
 
-    /**
-     * @return Transaction ID in String obtained from `rawId`
-     */
-    fun txIdString() = rawId.byteArray.toHexReversed()
-
     companion object {
         internal fun new(
             dbTransactionOverview: DbTransactionOverview,
             latestBlockHeight: BlockHeight?
         ): TransactionOverview {
             return TransactionOverview(
-                rawId = dbTransactionOverview.rawId,
+                txId = TransactionId(dbTransactionOverview.rawId),
                 minedHeight = dbTransactionOverview.minedHeight,
                 expiryHeight = dbTransactionOverview.expiryHeight,
                 index = dbTransactionOverview.index,
@@ -65,6 +61,19 @@ data class TransactionOverview internal constructor(
             )
         }
     }
+
+    private fun isExpired() = expiryHeight != null && TransactionState.Expired == transactionState
+
+    internal suspend fun checkAndFillInTime(storage: DerivedDataRepository): TransactionOverview =
+        if (isExpired() && blockTimeEpochSeconds == null) {
+            Twig.debug { "Expired transaction ${txId.txIdString()} - going to find its time" }
+            storage.findBlockByHeight(expiryHeight!!)?.run {
+                Twig.debug { "Expired transaction ${txId.txIdString()} - time found: $blockTimeEpochSeconds" }
+                this@TransactionOverview.copy(blockTimeEpochSeconds = blockTimeEpochSeconds)
+            } ?: this
+        } else {
+            this
+        }
 }
 
 enum class TransactionState {

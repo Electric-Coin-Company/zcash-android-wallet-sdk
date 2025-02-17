@@ -55,6 +55,7 @@ import cash.z.ecc.android.sdk.model.ObserveFiatCurrencyResult
 import cash.z.ecc.android.sdk.model.Pczt
 import cash.z.ecc.android.sdk.model.PercentDecimal
 import cash.z.ecc.android.sdk.model.Proposal
+import cash.z.ecc.android.sdk.model.TransactionId
 import cash.z.ecc.android.sdk.model.TransactionOutput
 import cash.z.ecc.android.sdk.model.TransactionOverview
 import cash.z.ecc.android.sdk.model.TransactionPool
@@ -125,7 +126,7 @@ import kotlin.time.Duration.Companion.seconds
  * @property processor saves the downloaded compact blocks to the cache and then scans those blocks for
  * data related to this wallet.
  */
-@Suppress("TooManyFunctions", "LongParameterList")
+@Suppress("TooManyFunctions", "LongParameterList", "LargeClass")
 class SdkSynchronizer private constructor(
     private val context: Context,
     private val synchronizerKey: SynchronizerKey,
@@ -265,7 +266,7 @@ class SdkSynchronizer private constructor(
             initialValue = ObserveFiatCurrencyResult()
         )
 
-    override val transactions
+    override val allTransactions
         get() =
             combine(processor.networkHeight, storage.allTransactions) { networkHeight, allTransactions ->
                 val latestBlockHeight =
@@ -275,7 +276,9 @@ class SdkSynchronizer private constructor(
                         Twig.error(it) { "Failed to get max scanned height" }
                     }.getOrNull()
 
-                allTransactions.map { TransactionOverview.new(it, latestBlockHeight) }
+                allTransactions
+                    .map { TransactionOverview.new(it, latestBlockHeight) }
+                    .map { it.checkAndFillInTime(storage) }
             }
 
     override val network: ZcashNetwork get() = processor.network
@@ -431,13 +434,13 @@ class SdkSynchronizer private constructor(
     }
 
     override fun getMemos(transactionOverview: TransactionOverview): Flow<String> {
-        return storage.getOutputProperties(transactionOverview.rawId).map { properties ->
+        return storage.getOutputProperties(transactionOverview.txId).map { properties ->
             if (!properties.protocol.isShielded()) {
                 ""
             } else {
                 runCatching {
                     backend.getMemoAsUtf8(
-                        txId = transactionOverview.rawId.byteArray,
+                        txId = transactionOverview.txId.value.byteArray,
                         protocol = properties.protocol,
                         outputIndex = properties.index
                     )
@@ -453,14 +456,18 @@ class SdkSynchronizer private constructor(
         }
     }
 
+    override fun getTransactionsByMemoSubstring(query: String): Flow<List<TransactionId>> {
+        return storage.getTransactionsByMemoSubstring(query)
+    }
+
     override fun getRecipients(transactionOverview: TransactionOverview): Flow<TransactionRecipient> {
         require(transactionOverview.isSentTransaction) { "Recipients can only be queried for sent transactions" }
 
-        return storage.getRecipients(transactionOverview.rawId)
+        return storage.getRecipients(transactionOverview.txId)
     }
 
     override suspend fun getTransactionOutputs(transactionOverview: TransactionOverview): List<TransactionOutput> {
-        return storage.getOutputProperties(transactionOverview.rawId).toList().map {
+        return storage.getOutputProperties(transactionOverview.txId).toList().map {
             TransactionOutput(
                 when (it.protocol) {
                     ZcashProtocol.TRANSPARENT -> TransactionPool.TRANSPARENT
@@ -483,7 +490,9 @@ class SdkSynchronizer private constructor(
                     Twig.error(it) { "Failed to get max scanned height" }
                 }.getOrNull()
 
-            allAccountTransactions.map { TransactionOverview.new(it, latestBlockHeight) }
+            allAccountTransactions
+                .map { TransactionOverview.new(it, latestBlockHeight) }
+                .map { it.checkAndFillInTime(storage) }
         }
     }
 

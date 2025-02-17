@@ -27,6 +27,7 @@ import cash.z.ecc.android.sdk.model.ObserveFiatCurrencyResult
 import cash.z.ecc.android.sdk.model.Pczt
 import cash.z.ecc.android.sdk.model.PercentDecimal
 import cash.z.ecc.android.sdk.model.Proposal
+import cash.z.ecc.android.sdk.model.TransactionId
 import cash.z.ecc.android.sdk.model.TransactionOutput
 import cash.z.ecc.android.sdk.model.TransactionOverview
 import cash.z.ecc.android.sdk.model.TransactionRecipient
@@ -97,7 +98,7 @@ interface Synchronizer {
     /**
      * A flow of all the transactions that are on the blockchain.
      */
-    val transactions: Flow<List<TransactionOverview>>
+    val allTransactions: Flow<List<TransactionOverview>>
 
     //
     // Latest Properties
@@ -500,6 +501,16 @@ interface Synchronizer {
      * @return Flow of memo strings
      */
     fun getMemos(transactionOverview: TransactionOverview): Flow<String>
+
+    /**
+     * Filters the current transactions based on their memos. It returns the transaction ID of those transactions
+     * whose memo contains the given [query] or its part. Note that white space trimming or normalization is the
+     * client's responsibility.
+     *
+     * @param query Memo or its substring
+     * @return List of transaction IDs which memo contains given [query] or its part wrapped in [Flow]
+     */
+    fun getTransactionsByMemoSubstring(query: String): Flow<List<TransactionId>>
 
     /**
      * Returns a list of recipients for a transaction.

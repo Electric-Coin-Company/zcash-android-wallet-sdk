@@ -21,7 +21,7 @@ data class PendingTransaction internal constructor(
     val errorMessage: String?,
     val errorCode: Int?,
     val createTime: Long,
-    val rawTransactionId: FirstClassByteArray?
+    val rawTransactionId: TransactionId?
 ) {
     override fun toString() = "PendingTransaction"
 }
@@ -47,7 +47,7 @@ sealed class TransactionRecipient {
 // fun PendingTransaction.isSameTxId(other: PendingTransaction) =
 //     rawTransactionId == other.rawTransactionId
 
-internal fun PendingTransaction.hasRawTransactionId() = rawTransactionId?.byteArray?.isEmpty() == false
+internal fun PendingTransaction.hasRawTransactionId() = rawTransactionId?.value?.byteArray?.isEmpty() == false
 
 @Suppress("MaxLineLength")
 fun PendingTransaction.isCreating() = raw.byteArray.isNotEmpty() && submitAttempts <= 0 && !isFailedSubmit() && !isFailedEncoding()

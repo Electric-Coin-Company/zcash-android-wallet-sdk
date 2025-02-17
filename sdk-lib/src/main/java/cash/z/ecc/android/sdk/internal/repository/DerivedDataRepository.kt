@@ -1,11 +1,13 @@
 package cash.z.ecc.android.sdk.internal.repository
 
+import cash.z.ecc.android.sdk.internal.model.DbBlock
 import cash.z.ecc.android.sdk.internal.model.DbTransactionOverview
 import cash.z.ecc.android.sdk.internal.model.EncodedTransaction
 import cash.z.ecc.android.sdk.internal.model.OutputProperties
 import cash.z.ecc.android.sdk.model.AccountUuid
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.FirstClassByteArray
+import cash.z.ecc.android.sdk.model.TransactionId
 import cash.z.ecc.android.sdk.model.TransactionRecipient
 import kotlinx.coroutines.flow.Flow
 
@@ -82,9 +84,17 @@ internal interface DerivedDataRepository {
 
     suspend fun getTransactions(accountUuid: AccountUuid): Flow<List<DbTransactionOverview>>
 
-    fun getOutputProperties(transactionId: FirstClassByteArray): Flow<OutputProperties>
+    fun getOutputProperties(transactionId: TransactionId): Flow<OutputProperties>
 
-    fun getRecipients(transactionId: FirstClassByteArray): Flow<TransactionRecipient>
+    fun getTransactionsByMemoSubstring(query: String): Flow<List<TransactionId>>
+
+    fun getRecipients(transactionId: TransactionId): Flow<TransactionRecipient>
+
+    //
+    // Blocks
+    //
+
+    suspend fun findBlockByHeight(blockHeight: BlockHeight): DbBlock?
 
     suspend fun close()
 
