@@ -1,6 +1,7 @@
 package cash.z.ecc.android.sdk.model
 
 import cash.z.ecc.android.sdk.internal.jni.JNI_ACCOUNT_UUID_BYTES_SIZE
+import java.util.UUID
 
 /**
  * Typesafe wrapper class for the account UUID identifier.
@@ -19,6 +20,11 @@ data class AccountUuid internal constructor(
     companion object {
         fun new(uuid: ByteArray) = AccountUuid(uuid)
     }
+
+    /**
+     * @return The account UUID in String format
+     */
+    fun toUuidString(): String = UUID.nameUUIDFromBytes(value).toString()
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
