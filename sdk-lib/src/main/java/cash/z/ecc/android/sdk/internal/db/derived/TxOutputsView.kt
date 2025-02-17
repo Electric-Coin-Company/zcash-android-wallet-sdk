@@ -3,6 +3,7 @@ package cash.z.ecc.android.sdk.internal.db.derived
 import androidx.sqlite.db.SupportSQLiteDatabase
 import cash.z.ecc.android.sdk.internal.db.queryAndMap
 import cash.z.ecc.android.sdk.internal.model.OutputProperties
+import cash.z.ecc.android.sdk.model.AccountUuid
 import cash.z.ecc.android.sdk.model.FirstClassByteArray
 import cash.z.ecc.android.sdk.model.TransactionRecipient
 import kotlinx.coroutines.flow.Flow
@@ -103,11 +104,10 @@ internal class TxOutputsView(private val sqliteDatabase: SupportSQLiteDatabase) 
                 val toAccountIndex = it.getColumnIndex(TxOutputsViewDefinition.COLUMN_BLOB_TO_ACCOUNT)
                 val toAddressIndex = it.getColumnIndex(TxOutputsViewDefinition.COLUMN_STRING_TO_ADDRESS)
 
-                if (!it.isNull(toAccountIndex)) {
-                    TransactionRecipient.RecipientAccount(accountUuid = it.getBlob(toAccountIndex))
-                } else {
-                    TransactionRecipient.RecipientAddress(addressValue = it.getString(toAddressIndex))
-                }
+                TransactionRecipient(
+                    addressValue = if (!it.isNull(toAddressIndex)) it.getString(toAddressIndex) else null,
+                    accountUuid = if (!it.isNull(toAccountIndex)) AccountUuid(it.getBlob(toAccountIndex)) else null
+                )
             }
         )
 }

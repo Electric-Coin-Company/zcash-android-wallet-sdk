@@ -15,7 +15,8 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Synchronizer.getTransactions(accountUuid)` and `Synchronizer.transactions` now internally fill in 
   `TransactionOverview.blockTimeEpochSeconds` based on the related block time 
 - `Synchronizer.transactions` has been renamed to `Synchronizer.allTransactions` to emphasize the fact the API 
-  returns transactions for all the wallet accounts 
+  returns transactions for all the wallet accounts
+- `Synchronizer.getRecipients` now returns both address and an account existing in database
 
 ## [2.2.7] - 2024-12-18
 
