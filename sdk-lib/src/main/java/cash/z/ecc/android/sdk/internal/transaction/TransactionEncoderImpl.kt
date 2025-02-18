@@ -191,7 +191,9 @@ internal class TransactionEncoderImpl(
 
     override suspend fun addProofsToPczt(pczt: Pczt): Pczt {
         return runCatching {
-            saplingParamTool.ensureParams(saplingParamTool.properties.paramsDirectory)
+            if (backend.pcztRequiresSaplingProofs(pczt)) {
+                saplingParamTool.ensureParams(saplingParamTool.properties.paramsDirectory)
+            }
             Twig.debug { "params exist! attempting to send..." }
             backend.addProofsToPczt(pczt = pczt)
         }.onSuccess {
