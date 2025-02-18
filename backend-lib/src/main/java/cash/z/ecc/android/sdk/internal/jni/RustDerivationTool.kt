@@ -44,7 +44,7 @@ class RustDerivationTool private constructor() : Derivation {
     override fun deriveAccountMetadataKey(
         seed: ByteArray,
         networkId: Int,
-        accountIndex: Int
+        accountIndex: Long
     ): JniMetadataKey = deriveAccountMetadataKeyFromSeed(seed, accountIndex, networkId)
 
     override fun derivePrivateUseMetadataKey(
@@ -122,7 +122,7 @@ class RustDerivationTool private constructor() : Derivation {
         @JvmStatic
         private external fun deriveAccountMetadataKeyFromSeed(
             seed: ByteArray,
-            accountIndex: Int,
+            accountIndex: Long,
             networkId: Int
         ): JniMetadataKey
 

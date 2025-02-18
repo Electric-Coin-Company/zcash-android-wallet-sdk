@@ -47,7 +47,7 @@ interface Derivation {
     fun deriveAccountMetadataKey(
         seed: ByteArray,
         networkId: Int,
-        accountIndex: Int
+        accountIndex: Long
     ): JniMetadataKey
 
     /**
