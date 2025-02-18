@@ -1,6 +1,7 @@
 package cash.z.ecc.android.sdk.internal.jni
 
 import cash.z.ecc.android.sdk.internal.Derivation
+import cash.z.ecc.android.sdk.internal.model.JniMetadataKey
 import cash.z.ecc.android.sdk.internal.model.JniUnifiedSpendingKey
 
 class RustDerivationTool private constructor() : Derivation {
@@ -39,6 +40,26 @@ class RustDerivationTool private constructor() : Derivation {
         viewingKey: String,
         networkId: Int
     ): String = deriveUnifiedAddressFromViewingKey(viewingKey, networkId = networkId)
+
+    override fun deriveAccountMetadataKey(
+        seed: ByteArray,
+        networkId: Int,
+        accountIndex: Long
+    ): JniMetadataKey = deriveAccountMetadataKeyFromSeed(seed, accountIndex, networkId)
+
+    override fun derivePrivateUseMetadataKey(
+        accountMetadataKey: JniMetadataKey,
+        ufvk: String?,
+        networkId: Int,
+        privateUseSubject: ByteArray
+    ): Array<ByteArray> =
+        derivePrivateUseMetadataKey(
+            accountMetadataKey_sk = accountMetadataKey.sk,
+            accountMetadataKey_c = accountMetadataKey.chainCode,
+            ufvk,
+            privateUseSubject,
+            networkId
+        )
 
     override fun deriveArbitraryWalletKey(
         contextString: ByteArray,
@@ -97,6 +118,22 @@ class RustDerivationTool private constructor() : Derivation {
             usk: ByteArray,
             networkId: Int
         ): String
+
+        private external fun deriveAccountMetadataKeyFromSeed(
+            seed: ByteArray,
+            accountIndex: Long,
+            networkId: Int
+        ): JniMetadataKey
+
+        @Suppress("FunctionParameterNaming")
+        @JvmStatic
+        private external fun derivePrivateUseMetadataKey(
+            accountMetadataKey_sk: ByteArray,
+            accountMetadataKey_c: ByteArray,
+            ufvk: String?,
+            privateUseSubject: ByteArray,
+            networkId: Int
+        ): Array<ByteArray>
 
         @JvmStatic
         private external fun deriveArbitraryWalletKeyFromSeed(
