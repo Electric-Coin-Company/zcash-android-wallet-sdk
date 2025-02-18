@@ -26,7 +26,8 @@ use tracing_subscriber::reload;
 use transparent::bundle::{OutPoint, TxOut};
 use utils::{java_nullable_string_to_rust, java_string_to_rust};
 use uuid::Uuid;
-use zcash_address::{ToAddress, ZcashAddress};
+use zcash_address::unified::{Container, Encoding, Item as _};
+use zcash_address::{unified, ToAddress, ZcashAddress};
 use zcash_client_backend::data_api::{
     AccountPurpose, BirthdayError, TransactionDataRequest, TransactionStatus, Zip32Derivation,
 };
@@ -78,7 +79,7 @@ use zcash_protocol::{
     value::{ZatBalance, Zatoshis},
     ShieldedProtocol,
 };
-use zip32::{fingerprint::SeedFingerprint, ChildIndex, DiversifierIndex};
+use zip32::{fingerprint::SeedFingerprint, ChainCode, ChildIndex, DiversifierIndex};
 
 use crate::utils::{catch_unwind, exception::unwrap_exc_or};
 
@@ -2410,6 +2411,138 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustDerivationTool_de
             .expect("Couldn't create Java string!");
 
         Ok(output.into_raw())
+    });
+    unwrap_exc_or(&mut env, res, ptr::null_mut())
+}
+
+fn encode_metadata_key<'a>(
+    env: &mut JNIEnv<'a>,
+    key: zip32::registered::SecretKey,
+) -> anyhow::Result<JObject<'a>> {
+    Ok(env.new_object(
+        "cash/z/ecc/android/sdk/internal/model/JniMetadataKey",
+        "([B[B)V",
+        &[
+            (&env.byte_array_from_slice(key.data())?).into(),
+            (&env.byte_array_from_slice(key.chain_code().as_bytes())?).into(),
+        ],
+    )?)
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustDerivationTool_deriveAccountMetadataKeyFromSeed<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _: JClass<'local>,
+    seed: JByteArray<'local>,
+    account_index: jint,
+    network_id: jint,
+) -> jobject {
+    let res = catch_unwind(&mut env, |env| {
+        let _span =
+            tracing::info_span!("RustDerivationTool.deriveAccountMetadataKeyFromSeed").entered();
+        let network = parse_network(network_id as u32)?;
+        let seed = SecretVec::new(env.convert_byte_array(seed)?);
+        let account = zip32_account_index_from_jint(account_index)?;
+
+        let key = zip32::registered::SecretKey::from_path(
+            b"MetadataKeys",
+            seed.expose_secret(),
+            // TODO: Change this to whatever ZIP number is assigned to the metadata key ZIP draft.
+            325,
+            &[
+                (ChildIndex::hardened(network.coin_type()), &[]),
+                (ChildIndex::hardened(account.into()), &[]),
+            ],
+        );
+
+        Ok(encode_metadata_key(env, key)?.into_raw())
+    });
+    unwrap_exc_or(&mut env, res, ptr::null_mut())
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustDerivationTool_derivePrivateUseMetadataKey<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _: JClass<'local>,
+    account_metadata_key_sk: JByteArray<'local>,
+    account_metadata_key_c: JByteArray<'local>,
+    ufvk_string: JString<'local>,
+    private_subject: JByteArray<'local>,
+    network_id: jint,
+) -> jobjectArray {
+    let res = catch_unwind(&mut env, |env| {
+        let _span = tracing::info_span!("RustDerivationTool.derivePrivateUseMetadataKey").entered();
+        let account_metadata_key_sk = env.convert_byte_array(account_metadata_key_sk)?;
+        let account_metadata_key_c = env.convert_byte_array(account_metadata_key_c)?;
+        let ufvk_string = utils::java_nullable_string_to_rust(env, &ufvk_string);
+        let private_subject = env.convert_byte_array(private_subject)?;
+        let network = parse_network(network_id as u32)?;
+
+        let account_metadata_key = {
+            let sk = account_metadata_key_sk
+                .as_slice()
+                .try_into()
+                .map_err(|_| anyhow!("Incorrect length for account_metadata_key_sk"))?;
+
+            let chain_code = ChainCode::new(
+                account_metadata_key_c
+                    .as_slice()
+                    .try_into()
+                    .map_err(|_| anyhow!("Incorrect length for account_metadata_key_c"))?,
+            );
+
+            zip32::registered::SecretKey::from_parts(sk, chain_code)
+        };
+
+        let private_use_keys = match ufvk_string {
+            // For the inherent subtree, there is only ever one key.
+            None => vec![account_metadata_key
+                .derive_child_with_tag(ChildIndex::hardened(0), &[])
+                .derive_child_with_tag(ChildIndex::PRIVATE_USE, &private_subject)],
+            // For the external subtree, we derive keys from the UFVK's items.
+            Some(ufvk_string) => {
+                let (net, ufvk) =
+                    unified::Ufvk::decode(&ufvk_string).map_err(|e| anyhow!("{e}"))?;
+                let expected_net = network.network_type();
+                if net != expected_net {
+                    return Err(anyhow!(
+                        "UFVK is for network {:?} but we expected {:?}",
+                        net,
+                        expected_net,
+                    ));
+                }
+
+                // Any metadata should always be associated with the key derived from the
+                // most preferred FVK item. However, we don't know which FVK items the
+                // UFVK contained the last time we were asked to derive keys. So we derive
+                // every key and return them to the caller in preference order. If the
+                // caller finds data associated with an older FVK item, they will migrate
+                // it to the first key we return.
+                ufvk.items()
+                    .into_iter()
+                    .map(|fvk_item| {
+                        account_metadata_key
+                            .derive_child_with_tag(ChildIndex::hardened(1), &[])
+                            .derive_child_with_tag(
+                                ChildIndex::hardened(0),
+                                &fvk_item.typed_encoding(),
+                            )
+                            .derive_child_with_tag(ChildIndex::PRIVATE_USE, &private_subject)
+                    })
+                    .collect()
+            }
+        };
+
+        Ok(
+            utils::rust_vec_to_java(env, private_use_keys, "[B", |env, key| {
+                utils::rust_bytes_to_java(env, key.data())
+            })?
+            .into_raw(),
+        )
     });
     unwrap_exc_or(&mut env, res, ptr::null_mut())
 }

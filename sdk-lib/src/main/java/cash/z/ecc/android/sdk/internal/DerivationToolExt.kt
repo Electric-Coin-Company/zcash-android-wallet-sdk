@@ -1,6 +1,8 @@
 package cash.z.ecc.android.sdk.internal
 
+import cash.z.ecc.android.sdk.internal.model.JniMetadataKey
 import cash.z.ecc.android.sdk.internal.model.JniUnifiedSpendingKey
+import cash.z.ecc.android.sdk.model.AccountMetadataKey
 import cash.z.ecc.android.sdk.model.UnifiedFullViewingKey
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.ZcashNetwork
@@ -51,6 +53,19 @@ fun Derivation.deriveUnifiedFullViewingKeysTypesafe(
         network.id,
         numberOfAccounts
     ).map { UnifiedFullViewingKey(it) }
+
+fun Derivation.deriveAccountMetadataKeyTypesafe(
+    seed: ByteArray,
+    network: ZcashNetwork,
+    accountIndex: Zip32AccountIndex
+): JniMetadataKey = deriveAccountMetadataKey(seed, network.id, accountIndex.index)
+
+fun Derivation.derivePrivateUseMetadataKeyTypesafe(
+    accountMetadataKey: AccountMetadataKey,
+    ufvk: String?,
+    network: ZcashNetwork,
+    privateSubject: ByteArray
+): Array<ByteArray> = derivePrivateUseMetadataKey(accountMetadataKey.toUnsafe(), ufvk, network.id, privateSubject)
 
 fun Derivation.deriveArbitraryWalletKeyTypesafe(
     contextString: ByteArray,

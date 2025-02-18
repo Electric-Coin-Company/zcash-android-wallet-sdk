@@ -7,6 +7,9 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `AccountMetadataKey`
+- `DerivationTool.deriveAccountMetadataKey`
+- `DerivationTool.derivePrivateUseMetadataKey`
 - `Synchronizer.getTransactionsByMemoSubstring()` has been added
 - `Synchronizer.redactPcztForSigner`
 - `Synchronizer.pcztRequiresSaplingProofs`

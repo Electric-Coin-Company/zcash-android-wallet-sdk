@@ -4,6 +4,7 @@ import cash.z.ecc.android.sdk.internal.Derivation
 import cash.z.ecc.android.sdk.internal.SuspendingLazy
 import cash.z.ecc.android.sdk.internal.TypesafeDerivationToolImpl
 import cash.z.ecc.android.sdk.internal.jni.RustDerivationTool
+import cash.z.ecc.android.sdk.model.AccountMetadataKey
 import cash.z.ecc.android.sdk.model.UnifiedFullViewingKey
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.ZcashNetwork
@@ -80,6 +81,44 @@ interface DerivationTool {
         viewingKey: String,
         network: ZcashNetwork
     ): String
+
+    /**
+     * Derives a ZIP 325 Account Metadata Key from the given seed.
+     *
+     * @return an account metadata key.
+     */
+    suspend fun deriveAccountMetadataKey(
+        seed: ByteArray,
+        network: ZcashNetwork,
+        accountIndex: Zip32AccountIndex
+    ): AccountMetadataKey
+
+    /**
+     * Derives a metadata key for private use from a ZIP 325 Account Metadata Key.
+     *
+     * If `ufvk` is non-null, this method will return one metadata key for every FVK item
+     * contained within the UFVK, in preference order. As UFVKs may in general change over
+     * time (due to the inclusion of new higher-preference FVK items, or removal of older
+     * deprecated FVK items), private usage of these keys should always follow preference
+     * order:
+     * - For encryption-like private usage, the first key in the array should always be
+     *   used, and all other keys ignored.
+     * - For decryption-like private usage, each key in the array should be tried in turn
+     *   until metadata can be recovered, and then the metadata should be re-encrypted
+     *   under the first key.
+     *
+     * @param ufvk the external UFVK for which a metadata key is required, or `null` if the
+     *        metadata key is "inherent" (for the same account as the Account Metadata Key).
+     * @param privateSubject a globally-unique non-empty sequence of at most 252 bytes that
+     *        identifies the desired private use context.
+     * @return an array of 32-byte metadata keys in preference order.
+     */
+    suspend fun derivePrivateUseMetadataKey(
+        accountMetadataKey: AccountMetadataKey,
+        ufvk: String?,
+        network: ZcashNetwork,
+        privateSubject: ByteArray
+    ): Array<ByteArray>
 
     /**
      * Derives a [ZIP 32 Arbitrary Key] from the given seed at the "wallet level", i.e.

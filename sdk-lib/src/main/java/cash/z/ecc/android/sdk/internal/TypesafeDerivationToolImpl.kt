@@ -1,5 +1,6 @@
 package cash.z.ecc.android.sdk.internal
 
+import cash.z.ecc.android.sdk.model.AccountMetadataKey
 import cash.z.ecc.android.sdk.model.UnifiedFullViewingKey
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.ZcashNetwork
@@ -34,6 +35,25 @@ internal class TypesafeDerivationToolImpl(private val derivation: Derivation) : 
         viewingKey: String,
         network: ZcashNetwork,
     ): String = derivation.deriveUnifiedAddress(viewingKey, network)
+
+    override suspend fun deriveAccountMetadataKey(
+        seed: ByteArray,
+        network: ZcashNetwork,
+        accountIndex: Zip32AccountIndex
+    ): AccountMetadataKey = AccountMetadataKey(derivation.deriveAccountMetadataKeyTypesafe(seed, network, accountIndex))
+
+    override suspend fun derivePrivateUseMetadataKey(
+        accountMetadataKey: AccountMetadataKey,
+        ufvk: String?,
+        network: ZcashNetwork,
+        privateSubject: ByteArray
+    ): Array<ByteArray> =
+        derivation.derivePrivateUseMetadataKeyTypesafe(
+            accountMetadataKey,
+            ufvk,
+            network,
+            privateSubject
+        )
 
     override suspend fun deriveArbitraryWalletKey(
         contextString: ByteArray,
