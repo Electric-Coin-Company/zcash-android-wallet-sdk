@@ -112,7 +112,7 @@ fn block_db(env: &mut JNIEnv, fsblockdb_root: JString) -> anyhow::Result<FsBlock
         .map_err(|e| anyhow!("Error opening block source database connection: {:?}", e))
 }
 
-fn zip32_account_index_from_jint(account_index: jint) -> anyhow::Result<zip32::AccountId> {
+fn zip32_account_index_from_jlong(account_index: jlong) -> anyhow::Result<zip32::AccountId> {
     u32::try_from(account_index)
         .map_err(|_| ())
         .and_then(|id| zip32::AccountId::try_from(id).map_err(|_| ()))
@@ -565,11 +565,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_importAcc
                     None
                 };
 
-                let hd_account_index = u32::try_from(hd_account_index_raw).ok().and_then(
-                    |hd_account_index_non_null| {
-                        zip32::AccountId::try_from(hd_account_index_non_null).ok()
-                    },
-                );
+                let hd_account_index = zip32_account_index_from_jlong(hd_account_index_raw).ok();
 
                 let derivation = seed_fingerprint
                     .zip(hd_account_index)
@@ -2320,14 +2316,14 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustDerivationTool_de
     mut env: JNIEnv<'local>,
     _: JClass<'local>,
     seed: JByteArray<'local>,
-    account_index: jint,
+    account_index: jlong,
     network_id: jint,
 ) -> jbyteArray {
     let res = catch_unwind(&mut env, |env| {
         let _span = tracing::info_span!("RustDerivationTool.deriveSpendingKey").entered();
         let network = parse_network(network_id as u32)?;
         let seed = SecretVec::new(env.convert_byte_array(seed).unwrap());
-        let account = zip32_account_index_from_jint(account_index)?;
+        let account = zip32_account_index_from_jlong(account_index)?;
 
         let usk = UnifiedSpendingKey::from_seed(&network, seed.expose_secret(), account)
             .map_err(|e| anyhow!("error generating unified spending key from seed: {:?}", e))?;
@@ -2388,7 +2384,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustDerivationTool_de
     mut env: JNIEnv<'local>,
     _: JClass<'local>,
     seed: JByteArray<'local>,
-    account_index: jint,
+    account_index: jlong,
     network_id: jint,
 ) -> jstring {
     let res = panic::catch_unwind(|| {
@@ -2396,7 +2392,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustDerivationTool_de
             tracing::info_span!("RustDerivationTool.deriveUnifiedAddressFromSeed").entered();
         let network = parse_network(network_id as u32)?;
         let seed = env.convert_byte_array(seed).unwrap();
-        let account_id = zip32_account_index_from_jint(account_index)?;
+        let account_id = zip32_account_index_from_jlong(account_index)?;
 
         let ufvk = UnifiedSpendingKey::from_seed(&network, &seed, account_id)
             .map_err(|e| anyhow!("error generating unified spending key from seed: {:?}", e))
@@ -2506,7 +2502,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustDerivationTool_de
     _: JClass<'local>,
     context_string: JByteArray<'local>,
     seed: JByteArray<'local>,
-    account_index: jint,
+    account_index: jlong,
     network_id: jint,
 ) -> jbyteArray {
     let res = panic::catch_unwind(|| {
@@ -2515,7 +2511,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustDerivationTool_de
         let network = parse_network(network_id as u32)?;
         let context_string = env.convert_byte_array(context_string)?;
         let seed = SecretVec::new(env.convert_byte_array(seed)?);
-        let account = zip32_account_index_from_jint(account_index)?;
+        let account = zip32_account_index_from_jlong(account_index)?;
 
         let key = zip32::arbitrary::SecretKey::from_path(
             &context_string,
