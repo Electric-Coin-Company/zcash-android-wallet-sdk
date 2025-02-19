@@ -746,6 +746,67 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getSaplin
     unwrap_exc_or(&mut env, res, ptr::null_mut())
 }
 
+/// Returns a list of the transparent receivers for the diversified unified addresses that have
+/// been allocated for the provided account.
+///
+/// # Safety
+///
+/// - `db_data` must be non-null and valid for reads for `db_data_len` bytes, and it must have an
+///   alignment of `1`. Its contents must be a string representing a valid system path in the
+///   operating system's preferred representation.
+/// - The memory referenced by `db_data` must not be mutated for the duration of the function call.
+/// - The total size `db_data_len` must be no larger than `isize::MAX`. See the safety
+///   documentation of pointer::offset.
+/// - Call [`zcashlc_free_keys`] to free the memory associated with the returned pointer
+///   when done using it.
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_listTransparentReceivers<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _: JClass<'local>,
+    db_data: JString<'local>,
+    account_uuid: JByteArray<'local>,
+    network_id: jint,
+) -> jobjectArray {
+    let res = catch_unwind(&mut env, |env| {
+        let _span = tracing::info_span!("RustBackend.listTransparentReceivers").entered();
+        let network = parse_network(network_id as u32)?;
+        let zcash_network = network.network_type();
+        let db_data = wallet_db(env, network, db_data)?;
+        let account = account_id_from_jni(&env, account_uuid)?;
+
+        match db_data.get_transparent_receivers(account) {
+            Ok(receivers) => {
+                let trasparent_receivers = receivers
+                    .keys()
+                    .map(|taddr| {
+                        let taddr = match taddr {
+                            TransparentAddress::PublicKeyHash(data) => {
+                                ZcashAddress::from_transparent_p2pkh(zcash_network, *data)
+                            }
+                            TransparentAddress::ScriptHash(data) => {
+                                ZcashAddress::from_transparent_p2sh(zcash_network, *data)
+                            }
+                        };
+                        taddr.encode()
+                    })
+                    .collect::<Vec<_>>();
+
+                Ok(utils::rust_vec_to_java(
+                    env,
+                    trasparent_receivers,
+                    "java/lang/String",
+                    |env, taddr| env.new_string(taddr),
+                )?
+                .into_raw())
+            }
+            Err(e) => Err(anyhow!("Error while fetching address: {}", e)),
+        }
+    });
+    unwrap_exc_or(&mut env, res, ptr::null_mut())
+}
+
 #[unsafe(no_mangle)]
 pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_isValidSpendingKey<
     'local,
@@ -2684,65 +2745,4 @@ fn parse_network(value: u32) -> anyhow::Result<Network> {
         1 => Ok(MainNetwork),
         _ => Err(anyhow!("Invalid network type: {}. Expected either 0 or 1 for Testnet or Mainnet, respectively.", value))
     }
-}
-
-/// Returns a list of the transparent receivers for the diversified unified addresses that have
-/// been allocated for the provided account.
-///
-/// # Safety
-///
-/// - `db_data` must be non-null and valid for reads for `db_data_len` bytes, and it must have an
-///   alignment of `1`. Its contents must be a string representing a valid system path in the
-///   operating system's preferred representation.
-/// - The memory referenced by `db_data` must not be mutated for the duration of the function call.
-/// - The total size `db_data_len` must be no larger than `isize::MAX`. See the safety
-///   documentation of pointer::offset.
-/// - Call [`zcashlc_free_keys`] to free the memory associated with the returned pointer
-///   when done using it.
-#[unsafe(no_mangle)]
-pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_listTransparentReceivers<
-    'local,
->(
-    mut env: JNIEnv<'local>,
-    _: JClass<'local>,
-    db_data: JString<'local>,
-    account_uuid: JByteArray<'local>,
-    network_id: jint,
-) -> jobjectArray {
-    let res = catch_unwind(&mut env, |env| {
-        let _span = tracing::info_span!("RustBackend.listTransparentReceivers").entered();
-        let network = parse_network(network_id as u32)?;
-        let zcash_network = network.network_type();
-        let db_data = wallet_db(env, network, db_data)?;
-        let account = account_id_from_jni(&env, account_uuid)?;
-
-        match db_data.get_transparent_receivers(account) {
-            Ok(receivers) => {
-                let trasparent_receivers = receivers
-                    .keys()
-                    .map(|taddr| {
-                        let taddr = match taddr {
-                            TransparentAddress::PublicKeyHash(data) => {
-                                ZcashAddress::from_transparent_p2pkh(zcash_network, *data)
-                            }
-                            TransparentAddress::ScriptHash(data) => {
-                                ZcashAddress::from_transparent_p2sh(zcash_network, *data)
-                            }
-                        };
-                        taddr.encode()
-                    })
-                    .collect::<Vec<_>>();
-
-                Ok(utils::rust_vec_to_java(
-                    env,
-                    trasparent_receivers,
-                    "java/lang/String",
-                    |env, taddr| env.new_string(taddr),
-                )?
-                .into_raw())
-            }
-            Err(e) => Err(anyhow!("Error while fetching address: {}", e)),
-        }
-    });
-    unwrap_exc_or(&mut env, res, ptr::null_mut())
 }
