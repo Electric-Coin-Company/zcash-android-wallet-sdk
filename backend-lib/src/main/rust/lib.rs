@@ -1050,7 +1050,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_writeBloc
     _: JClass<'local>,
     db_cache: JString<'local>,
     block_meta: JObjectArray<'local>,
-) -> jboolean {
+) {
     let res = catch_unwind(&mut env, |env| {
         let _span = tracing::info_span!("RustBackend.writeBlockMetadata").entered();
         let block_db = block_db(env, db_cache)?;
@@ -1068,15 +1068,11 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_writeBloc
                 .collect::<Result<Vec<_>, _>>()?
         };
 
-        match block_db.write_block_metadata(&block_meta) {
-            Ok(()) => Ok(JNI_TRUE),
-            Err(e) => Err(anyhow!(
-                "Failed to write block metadata to FsBlockDb: {:?}",
-                e
-            )),
-        }
+        block_db
+            .write_block_metadata(&block_meta)
+            .map_err(|e| anyhow!("Failed to write block metadata to FsBlockDb: {:?}", e))
     });
-    unwrap_exc_or(&mut env, res, JNI_FALSE)
+    unwrap_exc_or(&mut env, res, ())
 }
 
 #[unsafe(no_mangle)]
@@ -1236,7 +1232,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_putSubtre
     orchard_start_index: jlong,
     orchard_roots: JObjectArray<'local>,
     network_id: jint,
-) -> jboolean {
+) {
     let res = catch_unwind(&mut env, |env| {
         let _span = tracing::info_span!("RustBackend.putSubtreeRoots").entered();
         let network = parse_network(network_id as u32)?;
@@ -1283,10 +1279,10 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_putSubtre
             .put_orchard_subtree_roots(orchard_start_index, &orchard_roots)
             .map_err(|e| anyhow!("Error while storing Orchard subtree roots: {}", e))?;
 
-        Ok(JNI_TRUE)
+        Ok(())
     });
 
-    unwrap_exc_or(&mut env, res, JNI_FALSE)
+    unwrap_exc_or(&mut env, res, ())
 }
 
 #[unsafe(no_mangle)]
@@ -1296,7 +1292,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_updateCha
     db_data: JString<'local>,
     height: jlong,
     network_id: jint,
-) -> jboolean {
+) {
     let res = catch_unwind(&mut env, |env| {
         let _span = tracing::info_span!("RustBackend.updateChainTip").entered();
         let network = parse_network(network_id as u32)?;
@@ -1305,11 +1301,10 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_updateCha
 
         db_data
             .update_chain_tip(height)
-            .map(|()| JNI_TRUE)
             .map_err(|e| anyhow!("Error while updating chain tip to height {}: {}", height, e))
     });
 
-    unwrap_exc_or(&mut env, res, JNI_FALSE)
+    unwrap_exc_or(&mut env, res, ())
 }
 
 #[unsafe(no_mangle)]
@@ -1668,7 +1663,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_putUtxo<'
     value: jlong,
     height: jlong,
     network_id: jint,
-) -> jboolean {
+) {
     // debug!("For height {} found consensus branch {:?}", height, branch);
     debug!("preparing to store UTXO in db_data");
     #[allow(deprecated)]
@@ -1693,11 +1688,11 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_putUtxo<'
 
         debug!("Storing UTXO in db_data");
         match db_data.put_received_transparent_utxo(&output) {
-            Ok(_) => Ok(JNI_TRUE),
+            Ok(_) => Ok(()),
             Err(e) => Err(anyhow!("Error while inserting UTXO: {}", e)),
         }
     });
-    unwrap_exc_or(&mut env, res, JNI_FALSE)
+    unwrap_exc_or(&mut env, res, ())
 }
 
 #[unsafe(no_mangle)]
@@ -1710,7 +1705,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_decryptAn
     tx: JByteArray<'local>,
     mined_height: jlong,
     network_id: jint,
-) -> jboolean {
+) {
     let res = catch_unwind(&mut env, |env| {
         let _span = tracing::info_span!("RustBackend.decryptAndStoreTransaction").entered();
         let network = parse_network(network_id as u32)?;
@@ -1725,13 +1720,11 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_decryptAn
         let tx = Transaction::read(&tx_bytes[..], BranchId::Sapling)?;
         let mined_height = BlockHeight::try_from(mined_height).ok();
 
-        match decrypt_and_store_transaction(&network, &mut db_data, &tx, mined_height) {
-            Ok(()) => Ok(JNI_TRUE),
-            Err(e) => Err(anyhow!("Error while decrypting transaction: {}", e)),
-        }
+        decrypt_and_store_transaction(&network, &mut db_data, &tx, mined_height)
+            .map_err(|e| anyhow!("Error while decrypting transaction: {}", e))
     });
 
-    unwrap_exc_or(&mut env, res, JNI_FALSE)
+    unwrap_exc_or(&mut env, res, ())
 }
 
 #[unsafe(no_mangle)]
@@ -1744,7 +1737,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_setTransa
     txid_bytes: JByteArray<'local>,
     status: jlong,
     network_id: jint,
-) -> jboolean {
+) {
     let res = catch_unwind(&mut env, |env| {
         let _span = tracing::info_span!("RustBackend.setTransactionStatus").entered();
         let network = parse_network(network_id as u32)?;
@@ -1756,13 +1749,12 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_setTransa
             height => TransactionStatus::Mined(BlockHeight::try_from(height)?),
         };
 
-        match db_data.set_transaction_status(txid, status) {
-            Ok(()) => Ok(JNI_TRUE),
-            Err(e) => Err(anyhow!("Error while setting transaction status: {}", e)),
-        }
+        db_data
+            .set_transaction_status(txid, status)
+            .map_err(|e| anyhow!("Error while setting transaction status: {}", e))
     });
 
-    unwrap_exc_or(&mut env, res, JNI_FALSE)
+    unwrap_exc_or(&mut env, res, ())
 }
 
 fn zip317_helper<DbT>(
