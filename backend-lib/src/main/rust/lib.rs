@@ -1670,7 +1670,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_putUtxo<'
     index: jint,
     script: JByteArray<'local>,
     value: jlong,
-    height: jint,
+    height: jlong,
     network_id: jint,
 ) -> jboolean {
     // debug!("For height {} found consensus branch {:?}", height, branch);
