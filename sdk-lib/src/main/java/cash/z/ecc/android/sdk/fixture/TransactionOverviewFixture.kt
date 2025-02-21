@@ -59,6 +59,8 @@ object TransactionOverviewFixture {
         memoCount = memoCount,
         blockTimeEpochSeconds = blockTimeEpochSeconds,
         transactionState = transactionState,
-        isShielding = isShielding
+        isShielding = isShielding,
+        totalSpent = NET_VALUE,
+        totalReceived = NET_VALUE
     )
 }
