@@ -342,6 +342,7 @@ interface Synchronizer {
      *
      * @throws PcztException.RedactPcztForSignerException as a common indicator of the operation failure
      */
+    @Throws(PcztException.RedactPcztForSignerException::class)
     suspend fun redactPcztForSigner(pczt: Pczt): Pczt
 
     /**
@@ -351,8 +352,9 @@ interface Synchronizer {
      *
      * @return `true` if this PCZT requires Sapling proofs.
      *
-     * @throws PcztException.RedactPcztForSignerException as a common indicator of the operation failure
+     * @throws PcztException.PcztRequiresSaplingProofsException as a common indicator of the operation failure
      */
+    @Throws(PcztException.PcztRequiresSaplingProofsException::class)
     suspend fun pcztRequiresSaplingProofs(pczt: Pczt): Boolean
 
     /**

@@ -61,6 +61,7 @@ interface Backend {
      *
      * @throws RuntimeException as a common indicator of the operation failure
      */
+    @Throws(RuntimeException::class)
     suspend fun createPcztFromProposal(
         accountUuid: ByteArray,
         proposal: ProposalUnsafe
@@ -73,6 +74,7 @@ interface Backend {
      *
      * @throws RuntimeException as a common indicator of the operation failure
      */
+    @Throws(RuntimeException::class)
     suspend fun redactPcztForSigner(pczt: ByteArray): ByteArray
 
     /**
@@ -82,6 +84,7 @@ interface Backend {
      *
      * @throws RuntimeException as a common indicator of the operation failure
      */
+    @Throws(RuntimeException::class)
     suspend fun pcztRequiresSaplingProofs(pczt: ByteArray): Boolean
 
     /**
@@ -91,6 +94,7 @@ interface Backend {
      *
      * @throws RuntimeException as a common indicator of the operation failure
      */
+    @Throws(RuntimeException::class)
     suspend fun addProofsToPczt(pczt: ByteArray): ByteArray
 
     /**
@@ -101,6 +105,7 @@ interface Backend {
      *
      * @throws RuntimeException as a common indicator of the operation failure
      */
+    @Throws(RuntimeException::class)
     suspend fun extractAndStoreTxFromPczt(
         pcztWithProofs: ByteArray,
         pcztWithSignatures: ByteArray,
