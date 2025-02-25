@@ -17,7 +17,9 @@ object TransactionOverviewFixture {
     val RAW: FirstClassByteArray get() = FirstClassByteArray("raw".toByteArray())
     const val IS_SENT_TRANSACTION: Boolean = false
 
-    val NET_VALUE: Zatoshi = Zatoshi(10_000)
+    val NET_VALUE: Zatoshi = Zatoshi(-10_000)
+    val TOTAL_SPENT_VALUE: Zatoshi = Zatoshi(985_000)
+    val TOTAL_RECEIVED_VALUE: Zatoshi = Zatoshi(975_000)
     val FEE_PAID: Zatoshi = Zatoshi(10_000)
     const val IS_CHANGE: Boolean = false
     const val RECEIVED_NOTE_COUNT: Int = 1
@@ -36,6 +38,8 @@ object TransactionOverviewFixture {
         raw: FirstClassByteArray? = RAW,
         isSentTransaction: Boolean = IS_SENT_TRANSACTION,
         netValue: Zatoshi = NET_VALUE,
+        totalReceivedValue: Zatoshi = TOTAL_SPENT_VALUE,
+        totalSpentValue: Zatoshi = TOTAL_RECEIVED_VALUE,
         feePaid: Zatoshi = FEE_PAID,
         isChange: Boolean = IS_CHANGE,
         receivedNoteCount: Int = RECEIVED_NOTE_COUNT,
@@ -52,6 +56,8 @@ object TransactionOverviewFixture {
         raw = raw,
         isSentTransaction = isSentTransaction,
         netValue = netValue,
+        totalSpent = totalSpentValue,
+        totalReceived = totalReceivedValue,
         feePaid = feePaid,
         isChange = isChange,
         receivedNoteCount = receivedNoteCount,
@@ -60,7 +66,5 @@ object TransactionOverviewFixture {
         blockTimeEpochSeconds = blockTimeEpochSeconds,
         transactionState = transactionState,
         isShielding = isShielding,
-        totalSpent = NET_VALUE,
-        totalReceived = NET_VALUE
     )
 }
