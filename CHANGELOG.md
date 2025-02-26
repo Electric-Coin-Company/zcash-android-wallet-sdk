@@ -15,6 +15,8 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Synchronizer.pcztRequiresSaplingProofs`
 - `TransactionId` object has been added and used instead of `FirstClassByteArray` in `TransactionOverview` and 
   `PendingTransaction` model classes
+- `TransactionOverview.totalSpent` and `TransactionOverview.totalReceived` properties added to provide more 
+  information about shielding transaction
 
 ### Changed
 - Migrated to Rust 1.84.1.

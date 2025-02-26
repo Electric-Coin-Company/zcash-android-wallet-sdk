@@ -113,6 +113,8 @@ internal class AllTransactionView(
             val expiryHeightIndex = cursor.getColumnIndex(AllTransactionViewDefinition.COLUMN_INTEGER_EXPIRY_HEIGHT)
             val rawIndex = cursor.getColumnIndex(AllTransactionViewDefinition.COLUMN_BLOB_RAW)
             val netValueIndex = cursor.getColumnIndex(AllTransactionViewDefinition.COLUMN_LONG_ACCOUNT_BALANCE_DELTA)
+            val totalSpentIndex = cursor.getColumnIndex(AllTransactionViewDefinition.COLUMN_LONG_TOTAL_SPENT)
+            val totalReceivedIndex = cursor.getColumnIndex(AllTransactionViewDefinition.COLUMN_LONG_TOTAL_RECEIVED)
             val feePaidIndex = cursor.getColumnIndex(AllTransactionViewDefinition.COLUMN_LONG_FEE_PAID)
             val isChangeIndex = cursor.getColumnIndex(AllTransactionViewDefinition.COLUMN_BOOLEAN_IS_CHANGE)
             val receivedNoteCountIndex =
@@ -146,13 +148,15 @@ internal class AllTransactionView(
                 raw = cursor.getBlobOrNull(rawIndex)?.let { FirstClassByteArray(it) },
                 isSentTransaction = isSent,
                 netValue = Zatoshi(netValueLong.absoluteValue),
+                totalSpent = Zatoshi(cursor.getLong(totalSpentIndex)),
+                totalReceived = Zatoshi(cursor.getLong(totalReceivedIndex)),
                 feePaid = cursor.getLongOrNull(feePaidIndex)?.let { Zatoshi(it) },
                 isChange = cursor.getInt(isChangeIndex) != 0,
                 receivedNoteCount = cursor.getInt(receivedNoteCountIndex),
                 sentNoteCount = cursor.getInt(sentNoteCountIndex),
                 memoCount = cursor.getInt(memoCountIndex),
                 blockTimeEpochSeconds = cursor.getLongOrNull(blockTimeIndex),
-                isShielding = cursor.getIntOrNull(isShielding) == 1
+                isShielding = cursor.getIntOrNull(isShielding) == 1,
             )
         }
 
@@ -233,6 +237,10 @@ internal object AllTransactionViewDefinition {
     const val COLUMN_BLOB_RAW = "raw" // $NON-NLS
 
     const val COLUMN_LONG_ACCOUNT_BALANCE_DELTA = "account_balance_delta" // $NON-NLS
+
+    const val COLUMN_LONG_TOTAL_SPENT = "total_spent" // $NON-NLS
+
+    const val COLUMN_LONG_TOTAL_RECEIVED = "total_received" // $NON-NLS
 
     const val COLUMN_LONG_FEE_PAID = "fee_paid" // $NON-NLS
 
