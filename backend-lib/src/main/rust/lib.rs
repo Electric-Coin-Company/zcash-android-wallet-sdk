@@ -714,7 +714,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_listTrans
 
         match db_data.get_transparent_receivers(account) {
             Ok(receivers) => {
-                let trasparent_receivers = receivers
+                let transparent_receivers = receivers
                     .keys()
                     .map(|taddr| {
                         let taddr = match taddr {
@@ -731,7 +731,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_listTrans
 
                 Ok(utils::rust_vec_to_java(
                     env,
-                    trasparent_receivers,
+                    transparent_receivers,
                     "java/lang/String",
                     |env, taddr| env.new_string(taddr),
                 )?
