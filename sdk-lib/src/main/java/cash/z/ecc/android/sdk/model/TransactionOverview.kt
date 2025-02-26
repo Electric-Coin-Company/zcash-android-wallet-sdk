@@ -21,6 +21,8 @@ data class TransactionOverview internal constructor(
     val raw: FirstClassByteArray?,
     val isSentTransaction: Boolean,
     val netValue: Zatoshi,
+    val totalSpent: Zatoshi,
+    val totalReceived: Zatoshi,
     val feePaid: Zatoshi?,
     val isChange: Boolean,
     val receivedNoteCount: Int,
@@ -57,7 +59,9 @@ data class TransactionOverview internal constructor(
                         dbTransactionOverview.minedHeight,
                         dbTransactionOverview.expiryHeight
                     ),
-                isShielding = dbTransactionOverview.isShielding
+                isShielding = dbTransactionOverview.isShielding,
+                totalSpent = dbTransactionOverview.totalSpent,
+                totalReceived = dbTransactionOverview.totalReceived
             )
         }
     }

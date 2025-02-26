@@ -13,6 +13,8 @@ internal data class DbTransactionOverview internal constructor(
     val raw: FirstClassByteArray?,
     val isSentTransaction: Boolean,
     val netValue: Zatoshi,
+    val totalSpent: Zatoshi,
+    val totalReceived: Zatoshi,
     val feePaid: Zatoshi?,
     val isChange: Boolean,
     val receivedNoteCount: Int,

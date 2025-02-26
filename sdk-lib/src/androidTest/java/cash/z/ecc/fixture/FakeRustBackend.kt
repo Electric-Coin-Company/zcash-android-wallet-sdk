@@ -127,6 +127,14 @@ internal class FakeRustBackend(
         error("Intentionally not implemented yet.")
     }
 
+    override suspend fun redactPcztForSigner(pczt: ByteArray): ByteArray {
+        error("Intentionally not implemented yet.")
+    }
+
+    override suspend fun pcztRequiresSaplingProofs(pczt: ByteArray): Boolean {
+        error("Intentionally not implemented yet.")
+    }
+
     override suspend fun addProofsToPczt(pczt: ByteArray): ByteArray {
         error("Intentionally not implemented yet.")
     }

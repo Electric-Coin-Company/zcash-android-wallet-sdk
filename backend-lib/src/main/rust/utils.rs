@@ -33,14 +33,30 @@ pub fn catch_unwind<F: FnOnce(&mut JNIEnv) -> R + UnwindSafe, R>(
     })
 }
 
-pub(crate) fn java_string_to_rust(env: &mut JNIEnv, jstring: &JString) -> String {
-    env.get_string(jstring)
-        .expect("Couldn't get Java string!")
-        .into()
+pub(crate) fn java_bytes_to_rust(env: &JNIEnv, jbytes: &JByteArray) -> anyhow::Result<Vec<u8>> {
+    Ok(env.convert_byte_array(jbytes)?)
 }
 
-pub(crate) fn java_nullable_string_to_rust(env: &mut JNIEnv, jstring: &JString) -> Option<String> {
-    (!jstring.is_null()).then(|| java_string_to_rust(env, jstring))
+pub(crate) fn java_nullable_bytes_to_rust(
+    env: &JNIEnv,
+    jbytes: &JByteArray,
+) -> anyhow::Result<Option<Vec<u8>>> {
+    (!jbytes.is_null())
+        .then(|| java_bytes_to_rust(env, jbytes))
+        .transpose()
+}
+
+pub(crate) fn java_string_to_rust(env: &mut JNIEnv, jstring: &JString) -> anyhow::Result<String> {
+    Ok(env.get_string(jstring)?.into())
+}
+
+pub(crate) fn java_nullable_string_to_rust(
+    env: &mut JNIEnv,
+    jstring: &JString,
+) -> anyhow::Result<Option<String>> {
+    (!jstring.is_null())
+        .then(|| java_string_to_rust(env, jstring))
+        .transpose()
 }
 
 pub(crate) fn rust_bytes_to_java<'a>(env: &JNIEnv<'a>, data: &[u8]) -> JNIResult<JByteArray<'a>> {

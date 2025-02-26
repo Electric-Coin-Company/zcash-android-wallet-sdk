@@ -61,10 +61,31 @@ interface Backend {
      *
      * @throws RuntimeException as a common indicator of the operation failure
      */
+    @Throws(RuntimeException::class)
     suspend fun createPcztFromProposal(
         accountUuid: ByteArray,
         proposal: ProposalUnsafe
     ): ByteArray
+
+    /**
+     * Redacts information from the given PCZT that is unnecessary for the Signer role.
+     *
+     * @return the updated PCZT in its serialized format.
+     *
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    @Throws(RuntimeException::class)
+    suspend fun redactPcztForSigner(pczt: ByteArray): ByteArray
+
+    /**
+     * Checks whether the caller needs to have downloaded the Sapling parameters.
+     *
+     * @return `true` if this PCZT requires Sapling proofs.
+     *
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    @Throws(RuntimeException::class)
+    suspend fun pcztRequiresSaplingProofs(pczt: ByteArray): Boolean
 
     /**
      * Adds proofs to the given PCZT.
@@ -73,6 +94,7 @@ interface Backend {
      *
      * @throws RuntimeException as a common indicator of the operation failure
      */
+    @Throws(RuntimeException::class)
     suspend fun addProofsToPczt(pczt: ByteArray): ByteArray
 
     /**
@@ -83,6 +105,7 @@ interface Backend {
      *
      * @throws RuntimeException as a common indicator of the operation failure
      */
+    @Throws(RuntimeException::class)
     suspend fun extractAndStoreTxFromPczt(
         pcztWithProofs: ByteArray,
         pcztWithSignatures: ByteArray,

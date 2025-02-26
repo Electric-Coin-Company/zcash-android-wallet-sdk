@@ -2,7 +2,7 @@ use std::convert::{Infallible, TryFrom, TryInto};
 use std::error::Error;
 use std::num::{NonZeroU32, NonZeroUsize};
 use std::panic;
-use std::path::Path;
+use std::path::PathBuf;
 use std::ptr;
 
 use anyhow::anyhow;
@@ -12,6 +12,7 @@ use jni::{
     sys::{jboolean, jbyteArray, jint, jlong, jobject, jobjectArray, jstring, JNI_FALSE, JNI_TRUE},
     JNIEnv,
 };
+use pczt::roles::redactor::Redactor;
 use pczt::{
     roles::{combiner::Combiner, prover::Prover},
     Pczt,
@@ -22,9 +23,11 @@ use tor_rtcompat::BlockOn;
 use tracing::{debug, error};
 use tracing_subscriber::prelude::*;
 use tracing_subscriber::reload;
+use transparent::bundle::{OutPoint, TxOut};
 use utils::{java_nullable_string_to_rust, java_string_to_rust};
 use uuid::Uuid;
-use zcash_address::{ToAddress, ZcashAddress};
+use zcash_address::unified::{Container, Encoding, Item as _};
+use zcash_address::{unified, ToAddress, ZcashAddress};
 use zcash_client_backend::data_api::{
     AccountPurpose, BirthdayError, TransactionDataRequest, TransactionStatus, Zip32Derivation,
 };
@@ -50,7 +53,6 @@ use zcash_client_backend::{
     tor::http::cryptex,
     wallet::{NoteId, OvkPolicy, WalletTransparentOutput},
     zip321::{Payment, TransactionRequest},
-    ShieldedProtocol,
 };
 use zcash_client_sqlite::error::SqliteClientError;
 use zcash_client_sqlite::AccountUuid;
@@ -70,15 +72,16 @@ use zcash_primitives::{
     legacy::{Script, TransparentAddress},
     memo::{Memo, MemoBytes},
     merkle_tree::HashSer,
-    transaction::{
-        components::{amount::NonNegativeAmount, Amount, OutPoint, TxOut},
-        Transaction, TxId,
-    },
-    zip32::{self, DiversifierIndex},
+    transaction::{Transaction, TxId},
 };
 use zcash_proofs::prover::LocalTxProver;
-use zip32::fingerprint::SeedFingerprint;
-use zip32::ChildIndex;
+use zcash_protocol::{
+    value::{ZatBalance, Zatoshis},
+    ShieldedProtocol,
+};
+use zip32::{
+    fingerprint::SeedFingerprint, registered::PathElement, ChainCode, ChildIndex, DiversifierIndex,
+};
 
 use crate::utils::{catch_unwind, exception::unwrap_exc_or};
 
@@ -103,26 +106,13 @@ fn wallet_db<P: Parameters>(
     params: P,
     db_data: JString,
 ) -> anyhow::Result<WalletDb<rusqlite::Connection, P>> {
-    WalletDb::for_path(utils::java_string_to_rust(env, &db_data), params)
+    WalletDb::for_path(path_from_jni(env, db_data)?, params)
         .map_err(|e| anyhow!("Error opening wallet database connection: {}", e))
 }
 
 fn block_db(env: &mut JNIEnv, fsblockdb_root: JString) -> anyhow::Result<FsBlockDb> {
-    FsBlockDb::for_path(utils::java_string_to_rust(env, &fsblockdb_root))
+    FsBlockDb::for_path(path_from_jni(env, fsblockdb_root)?)
         .map_err(|e| anyhow!("Error opening block source database connection: {:?}", e))
-}
-
-fn zip32_account_index_from_jint(account_index: jint) -> anyhow::Result<zip32::AccountId> {
-    u32::try_from(account_index)
-        .map_err(|_| ())
-        .and_then(|id| zip32::AccountId::try_from(id).map_err(|_| ()))
-        .map_err(|_| anyhow!("Invalid account ID"))
-}
-
-fn account_id_from_jni(env: &JNIEnv, account_uuid: JByteArray) -> anyhow::Result<AccountUuid> {
-    Ok(AccountUuid::from_uuid(Uuid::from_slice(
-        &env.convert_byte_array(account_uuid)?,
-    )?))
 }
 
 /// Initializes global Rust state, such as the logging infrastructure and threadpools.
@@ -236,7 +226,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_initDataD
         let mut db_data = wallet_db(env, network, db_data)
             .map_err(|e| anyhow!("Error while opening data DB: {}", e))?;
 
-        let seed = (!seed.is_null()).then(|| SecretVec::new(env.convert_byte_array(seed).unwrap()));
+        let seed = utils::java_nullable_bytes_to_rust(env, &seed)?.map(SecretVec::new);
 
         match init_wallet_db(&mut db_data, seed) {
             Ok(()) => Ok(0),
@@ -355,17 +345,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getAccoun
     let res = catch_unwind(&mut env, |env| {
         let network = parse_network(network_id as u32)?;
         let db_data = wallet_db(env, network, db_data)?;
-
-        let ufvk_string = utils::java_string_to_rust(env, &ufvk_string);
-        let ufvk = match UnifiedFullViewingKey::decode(&network, &ufvk_string) {
-            Ok(ufvk) => ufvk,
-            Err(e) => {
-                return Err(anyhow!(
-                    "Error while deriving viewing key from string input: {}",
-                    e,
-                ));
-            }
-        };
+        let ufvk = parse_ufvk(env, ufvk_string, &network)?;
 
         let account = db_data.get_account_for_ufvk(&ufvk)?;
 
@@ -396,7 +376,7 @@ fn encode_usk<'a>(
 }
 
 fn decode_usk(env: &JNIEnv, usk: JByteArray) -> anyhow::Result<UnifiedSpendingKey> {
-    let usk_bytes = SecretVec::new(env.convert_byte_array(usk).unwrap());
+    let usk_bytes = secret_from_jni(env, usk)?;
 
     // The remainder of the function is safe.
     UnifiedSpendingKey::from_bytes(Era::Orchard, usk_bytes.expose_secret()).map_err(|e| match e {
@@ -443,9 +423,8 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_createAcc
     let res = catch_unwind(&mut env, |env| {
         let network = parse_network(network_id as u32)?;
         let mut db_data = wallet_db(env, network, db_data)?;
-        let seed = SecretVec::new(env.convert_byte_array(seed).unwrap());
-        let treestate = TreeState::decode(&env.convert_byte_array(treestate).unwrap()[..])
-            .map_err(|e| anyhow!("Invalid TreeState: {}", e))?;
+        let seed = secret_from_jni(env, seed)?;
+        let treestate = parse_treestate(env, treestate)?;
         let recover_until = recover_until.try_into().ok();
 
         let birthday =
@@ -458,8 +437,8 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_createAcc
                 }
             })?;
 
-        let account_name = java_string_to_rust(env, &account_name);
-        let key_source = java_nullable_string_to_rust(env, &key_source);
+        let account_name = java_string_to_rust(env, &account_name)?;
+        let key_source = java_nullable_string_to_rust(env, &key_source)?;
 
         let (account_uuid, usk) = db_data
             .create_account(
@@ -530,16 +509,8 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_importAcc
     let res = catch_unwind(&mut env, |env| {
         let network = parse_network(network_id as u32)?;
         let mut db_data = wallet_db(env, network, db_data)?;
-        let ufvk_str = java_string_to_rust(env, &ufvk_str);
-        let ufvk = UnifiedFullViewingKey::decode(&network, &ufvk_str).map_err(|e| {
-            anyhow!(
-                "Value \"{}\" did not decode as a valid UFVK: {}",
-                ufvk_str,
-                e
-            )
-        })?;
-        let treestate = TreeState::decode(&env.convert_byte_array(treestate).unwrap()[..])
-            .map_err(|e| anyhow!("Invalid TreeState: {}", e))?;
+        let ufvk = parse_ufvk(env, ufvk_str, &network)?;
+        let treestate = parse_treestate(env, treestate)?;
         let recover_until = recover_until.try_into().ok();
 
         let birthday =
@@ -552,22 +523,17 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_importAcc
                 }
             })?;
 
-        let account_name = java_string_to_rust(env, &account_name);
-        let key_source = java_nullable_string_to_rust(env, &key_source);
+        let account_name = java_string_to_rust(env, &account_name)?;
+        let key_source = java_nullable_string_to_rust(env, &key_source)?;
 
         let purpose = match purpose {
             0 => {
-                let seed_fingerprint = if !seed_fingerprint_bytes.is_null() {
-                    <[u8; 32]>::try_from(&env.convert_byte_array(seed_fingerprint_bytes)?[..])
-                        .ok()
-                        .map(SeedFingerprint::from_bytes)
-                } else {
-                    None
-                };
+                let seed_fingerprint =
+                    utils::java_nullable_bytes_to_rust(env, &seed_fingerprint_bytes)?
+                        .and_then(|b| b.as_slice().try_into().ok())
+                        .map(SeedFingerprint::from_bytes);
 
-                let hd_account_index = u32::try_from(hd_account_index_raw)
-                    .ok()
-                    .and_then(|hd_account_index_non_null| zip32::AccountId::try_from(hd_account_index_non_null).ok());
+                let hd_account_index = zip32_account_index_from_jlong(hd_account_index_raw).ok();
 
                 let derivation = seed_fingerprint
                     .zip(hd_account_index)
@@ -610,7 +576,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_isSeedRel
     let res = catch_unwind(&mut env, |env| {
         let network = parse_network(network_id as u32)?;
         let db_data = wallet_db(env, network, db_data)?;
-        let seed = SecretVec::new(env.convert_byte_array(seed).unwrap());
+        let seed = secret_from_jni(env, seed)?;
 
         // Replicate the logic from `initWalletDb`.
         Ok(match db_data.seed_relevance_to_derived_accounts(&seed)? {
@@ -651,20 +617,6 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getCurren
     unwrap_exc_or(&mut env, res, ptr::null_mut())
 }
 
-struct UnifiedAddressParser(UnifiedAddress);
-
-impl zcash_address::TryFromRawAddress for UnifiedAddressParser {
-    type Error = anyhow::Error;
-
-    fn try_from_raw_unified(
-        data: zcash_address::unified::Address,
-    ) -> Result<Self, zcash_address::ConversionError<Self::Error>> {
-        data.try_into()
-            .map(UnifiedAddressParser)
-            .map_err(|e| anyhow!("Invalid Unified Address: {}", e).into())
-    }
-}
-
 /// Returns the transparent receiver within the given Unified Address, if any.
 #[unsafe(no_mangle)]
 pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getTransparentReceiverForUnifiedAddress<
@@ -677,16 +629,9 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getTransp
     let res = catch_unwind(&mut env, |env| {
         let _span =
             tracing::info_span!("RustBackend.getTransparentReceiverForUnifiedAddress").entered();
-        let ua_str = utils::java_string_to_rust(env, &ua);
+        let (network, ua) = parse_ua(env, ua)?;
 
-        let (network, ua) = match ZcashAddress::try_from_encoded(&ua_str) {
-            Ok(addr) => addr
-                .convert::<(_, UnifiedAddressParser)>()
-                .map_err(|e| anyhow!("Not a Unified Address: {}", e)),
-            Err(e) => return Err(anyhow!("Invalid Zcash address: {}", e)),
-        }?;
-
-        if let Some(taddr) = ua.0.transparent() {
+        if let Some(taddr) = ua.transparent() {
             let taddr = match taddr {
                 TransparentAddress::PublicKeyHash(data) => {
                     ZcashAddress::from_transparent_p2pkh(network, *data)
@@ -721,16 +666,9 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getSaplin
     let res = catch_unwind(&mut env, |env| {
         let _span =
             tracing::info_span!("RustBackend.getSaplingReceiverForUnifiedAddress").entered();
-        let ua_str = utils::java_string_to_rust(env, &ua);
+        let (network, ua) = parse_ua(env, ua)?;
 
-        let (network, ua) = match ZcashAddress::try_from_encoded(&ua_str) {
-            Ok(addr) => addr
-                .convert::<(_, UnifiedAddressParser)>()
-                .map_err(|e| anyhow!("Not a Unified Address: {}", e)),
-            Err(e) => return Err(anyhow!("Invalid Zcash address: {}", e)),
-        }?;
-
-        if let Some(addr) = ua.0.sapling() {
+        if let Some(addr) = ua.sapling() {
             let output = env
                 .new_string(ZcashAddress::from_sapling(network, addr.to_bytes()).encode())
                 .expect("Couldn't create Java string!");
@@ -739,6 +677,67 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getSaplin
             Err(anyhow!(
                 "Unified Address doesn't contain a Sapling receiver"
             ))
+        }
+    });
+    unwrap_exc_or(&mut env, res, ptr::null_mut())
+}
+
+/// Returns a list of the transparent receivers for the diversified unified addresses that have
+/// been allocated for the provided account.
+///
+/// # Safety
+///
+/// - `db_data` must be non-null and valid for reads for `db_data_len` bytes, and it must have an
+///   alignment of `1`. Its contents must be a string representing a valid system path in the
+///   operating system's preferred representation.
+/// - The memory referenced by `db_data` must not be mutated for the duration of the function call.
+/// - The total size `db_data_len` must be no larger than `isize::MAX`. See the safety
+///   documentation of pointer::offset.
+/// - Call [`zcashlc_free_keys`] to free the memory associated with the returned pointer
+///   when done using it.
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_listTransparentReceivers<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _: JClass<'local>,
+    db_data: JString<'local>,
+    account_uuid: JByteArray<'local>,
+    network_id: jint,
+) -> jobjectArray {
+    let res = catch_unwind(&mut env, |env| {
+        let _span = tracing::info_span!("RustBackend.listTransparentReceivers").entered();
+        let network = parse_network(network_id as u32)?;
+        let zcash_network = network.network_type();
+        let db_data = wallet_db(env, network, db_data)?;
+        let account = account_id_from_jni(&env, account_uuid)?;
+
+        match db_data.get_transparent_receivers(account) {
+            Ok(receivers) => {
+                let transparent_receivers = receivers
+                    .keys()
+                    .map(|taddr| {
+                        let taddr = match taddr {
+                            TransparentAddress::PublicKeyHash(data) => {
+                                ZcashAddress::from_transparent_p2pkh(zcash_network, *data)
+                            }
+                            TransparentAddress::ScriptHash(data) => {
+                                ZcashAddress::from_transparent_p2sh(zcash_network, *data)
+                            }
+                        };
+                        taddr.encode()
+                    })
+                    .collect::<Vec<_>>();
+
+                Ok(utils::rust_vec_to_java(
+                    env,
+                    transparent_receivers,
+                    "java/lang/String",
+                    |env, taddr| env.new_string(taddr),
+                )?
+                .into_raw())
+            }
+            Err(e) => Err(anyhow!("Error while fetching address: {}", e)),
         }
     });
     unwrap_exc_or(&mut env, res, ptr::null_mut())
@@ -772,7 +771,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_isValidSa
     let res = catch_unwind(&mut env, |env| {
         let _span = tracing::info_span!("RustBackend.isValidSaplingAddress").entered();
         let network = parse_network(network_id as u32)?;
-        let addr = utils::java_string_to_rust(env, &addr);
+        let addr = utils::java_string_to_rust(env, &addr)?;
 
         match Address::decode(&network, &addr) {
             Some(addr) => match addr {
@@ -797,7 +796,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_isValidTr
     let res = catch_unwind(&mut env, |env| {
         let _span = tracing::info_span!("RustBackend.isValidTransparentAddress").entered();
         let network = parse_network(network_id as u32)?;
-        let addr = utils::java_string_to_rust(env, &addr);
+        let addr = utils::java_string_to_rust(env, &addr)?;
 
         match Address::decode(&network, &addr) {
             Some(addr) => match addr {
@@ -822,7 +821,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_isValidUn
     let res = catch_unwind(&mut env, |env| {
         let _span = tracing::info_span!("RustBackend.isValidUnifiedAddress").entered();
         let network = parse_network(network_id as u32)?;
-        let addr = utils::java_string_to_rust(env, &addr);
+        let addr = utils::java_string_to_rust(env, &addr)?;
 
         match Address::decode(&network, &addr) {
             Some(addr) => match addr {
@@ -845,7 +844,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_isValidTe
     let res = catch_unwind(&mut env, |env| {
         let _span = tracing::info_span!("RustBackend.isValidTexAddress").entered();
         let network = parse_network(network_id as u32)?;
-        let addr = utils::java_string_to_rust(env, &addr);
+        let addr = utils::java_string_to_rust(env, &addr)?;
 
         match Address::decode(&network, &addr) {
             Some(addr) => match addr {
@@ -874,10 +873,10 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getTotalT
         let _span = tracing::info_span!("RustBackend.getTotalTransparentBalance").entered();
         let network = parse_network(network_id as u32)?;
         let db_data = wallet_db(env, network, db_data)?;
-        let addr = utils::java_string_to_rust(env, &address);
-        let taddr = TransparentAddress::decode(&network, &addr).unwrap();
+        let addr = utils::java_string_to_rust(env, &address)?;
+        let taddr = TransparentAddress::decode(&network, &addr)?;
 
-        let min_confirmations = NonZeroU32::new(1).unwrap();
+        let min_confirmations = NonZeroU32::MIN;
 
         let amount = db_data
             .get_target_and_anchor_heights(min_confirmations)
@@ -894,21 +893,13 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getTotalT
             })?
             .iter()
             .map(|utxo| utxo.txout().value)
-            .sum::<Option<NonNegativeAmount>>()
+            .sum::<Option<Zatoshis>>()
             .ok_or_else(|| anyhow!("Balance overflowed MAX_MONEY"))?;
 
-        Ok(Amount::from(amount).into())
+        Ok(ZatBalance::from(amount).into())
     });
 
     unwrap_exc_or(&mut env, res, -1)
-}
-
-fn parse_protocol(code: i32) -> Option<ShieldedProtocol> {
-    match code {
-        2 => Some(ShieldedProtocol::Sapling),
-        3 => Some(ShieldedProtocol::Orchard),
-        _ => None,
-    }
 }
 
 #[unsafe(no_mangle)]
@@ -926,10 +917,8 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getMemoAs
         let network = parse_network(network_id as u32)?;
         let db_data = wallet_db(env, network, db_data)?;
 
-        let txid_bytes = env.convert_byte_array(txid_bytes)?;
-        let txid = TxId::read(&txid_bytes[..])?;
-        let protocol = parse_protocol(pool_type)
-            .ok_or(anyhow!("Shielded protocol not recognized: {}", pool_type))?;
+        let txid = parse_txid(env, txid_bytes)?;
+        let protocol = parse_protocol(pool_type)?;
         let output_index = u16::try_from(output_index)?;
 
         let memo = db_data
@@ -975,7 +964,7 @@ fn decode_blockmeta(env: &mut JNIEnv, obj: JObject) -> anyhow::Result<BlockMeta>
         name: &str,
     ) -> anyhow::Result<[u8; N]> {
         let field = JByteArray::from(env.get_field(obj, name, "[B")?.l()?);
-        Ok(env.convert_byte_array(field)?[..].try_into()?)
+        Ok(utils::java_bytes_to_rust(env, &field)?[..].try_into()?)
     }
 
     Ok(BlockMeta {
@@ -995,13 +984,13 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_writeBloc
     _: JClass<'local>,
     db_cache: JString<'local>,
     block_meta: JObjectArray<'local>,
-) -> jboolean {
+) {
     let res = catch_unwind(&mut env, |env| {
         let _span = tracing::info_span!("RustBackend.writeBlockMetadata").entered();
         let block_db = block_db(env, db_cache)?;
 
         let block_meta = {
-            let count = env.get_array_length(&block_meta).unwrap();
+            let count = env.get_array_length(&block_meta)?;
             (0..count)
                 .scan(env, |env, i| {
                     Some(
@@ -1013,15 +1002,11 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_writeBloc
                 .collect::<Result<Vec<_>, _>>()?
         };
 
-        match block_db.write_block_metadata(&block_meta) {
-            Ok(()) => Ok(JNI_TRUE),
-            Err(e) => Err(anyhow!(
-                "Failed to write block metadata to FsBlockDb: {:?}",
-                e
-            )),
-        }
+        block_db
+            .write_block_metadata(&block_meta)
+            .map_err(|e| anyhow!("Failed to write block metadata to FsBlockDb: {:?}", e))
     });
-    unwrap_exc_or(&mut env, res, JNI_FALSE)
+    unwrap_exc_or(&mut env, res, ())
 }
 
 #[unsafe(no_mangle)]
@@ -1162,7 +1147,7 @@ fn decode_subtree_root<H>(
 
     fn byte_array(env: &mut JNIEnv, obj: &JObject, name: &str) -> anyhow::Result<Vec<u8>> {
         let field = JByteArray::from(env.get_field(obj, name, "[B")?.l()?);
-        Ok(env.convert_byte_array(field)?)
+        Ok(utils::java_bytes_to_rust(env, &field)?)
     }
 
     Ok(CommitmentTreeRoot::from_parts(
@@ -1181,7 +1166,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_putSubtre
     orchard_start_index: jlong,
     orchard_roots: JObjectArray<'local>,
     network_id: jint,
-) -> jboolean {
+) {
     let res = catch_unwind(&mut env, |env| {
         let _span = tracing::info_span!("RustBackend.putSubtreeRoots").entered();
         let network = parse_network(network_id as u32)?;
@@ -1192,7 +1177,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_putSubtre
             roots: JObjectArray,
             node_parser: impl Fn(&[u8]) -> std::io::Result<H>,
         ) -> anyhow::Result<Vec<CommitmentTreeRoot<H>>> {
-            let count = env.get_array_length(&roots).unwrap();
+            let count = env.get_array_length(&roots)?;
             (0..count)
                 .scan(env, |env, i| {
                     Some(
@@ -1228,10 +1213,10 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_putSubtre
             .put_orchard_subtree_roots(orchard_start_index, &orchard_roots)
             .map_err(|e| anyhow!("Error while storing Orchard subtree roots: {}", e))?;
 
-        Ok(JNI_TRUE)
+        Ok(())
     });
 
-    unwrap_exc_or(&mut env, res, JNI_FALSE)
+    unwrap_exc_or(&mut env, res, ())
 }
 
 #[unsafe(no_mangle)]
@@ -1241,7 +1226,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_updateCha
     db_data: JString<'local>,
     height: jlong,
     network_id: jint,
-) -> jboolean {
+) {
     let res = catch_unwind(&mut env, |env| {
         let _span = tracing::info_span!("RustBackend.updateChainTip").entered();
         let network = parse_network(network_id as u32)?;
@@ -1250,11 +1235,10 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_updateCha
 
         db_data
             .update_chain_tip(height)
-            .map(|()| JNI_TRUE)
             .map_err(|e| anyhow!("Error while updating chain tip to height {}: {}", height, e))
     });
 
-    unwrap_exc_or(&mut env, res, JNI_FALSE)
+    unwrap_exc_or(&mut env, res, ())
 }
 
 #[unsafe(no_mangle)]
@@ -1318,19 +1302,19 @@ fn encode_account_balance<'a>(
     account_uuid: &AccountUuid,
     balance: &AccountBalance,
 ) -> jni::errors::Result<JObject<'a>> {
-    let sapling_verified_balance = Amount::from(balance.sapling_balance().spendable_value());
+    let sapling_verified_balance = ZatBalance::from(balance.sapling_balance().spendable_value());
     let sapling_change_pending =
-        Amount::from(balance.sapling_balance().change_pending_confirmation());
+        ZatBalance::from(balance.sapling_balance().change_pending_confirmation());
     let sapling_value_pending =
-        Amount::from(balance.sapling_balance().value_pending_spendability());
+        ZatBalance::from(balance.sapling_balance().value_pending_spendability());
 
-    let orchard_verified_balance = Amount::from(balance.orchard_balance().spendable_value());
+    let orchard_verified_balance = ZatBalance::from(balance.orchard_balance().spendable_value());
     let orchard_change_pending =
-        Amount::from(balance.orchard_balance().change_pending_confirmation());
+        ZatBalance::from(balance.orchard_balance().change_pending_confirmation());
     let orchard_value_pending =
-        Amount::from(balance.orchard_balance().value_pending_spendability());
+        ZatBalance::from(balance.orchard_balance().value_pending_spendability());
 
-    let unshielded = Amount::from(balance.unshielded_balance().total());
+    let unshielded = ZatBalance::from(balance.unshielded_balance().total());
 
     env.new_object(
         JNI_ACCOUNT_BALANCE,
@@ -1504,9 +1488,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_scanBlock
         let db_cache = block_db(env, db_cache)?;
         let mut db_data = wallet_db(env, network, db_data)?;
         let from_height = BlockHeight::try_from(from_height)?;
-        let from_state = TreeState::decode(&env.convert_byte_array(from_state).unwrap()[..])
-            .map_err(|e| anyhow!("Invalid TreeState: {}", e))?
-            .to_chain_state()?;
+        let from_state = parse_treestate(env, from_state)?.to_chain_state()?;
         let limit = usize::try_from(limit)?;
 
         match scan_cached_blocks(
@@ -1611,26 +1593,24 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_putUtxo<'
     index: jint,
     script: JByteArray<'local>,
     value: jlong,
-    height: jint,
+    height: jlong,
     network_id: jint,
-) -> jboolean {
+) {
     // debug!("For height {} found consensus branch {:?}", height, branch);
     debug!("preparing to store UTXO in db_data");
     #[allow(deprecated)]
     let res = catch_unwind(&mut env, |env| {
         let _span = tracing::info_span!("RustBackend.putUtxo").entered();
         let network = parse_network(network_id as u32)?;
-        let txid_bytes = env.convert_byte_array(txid_bytes).unwrap();
-        let mut txid = [0u8; 32];
-        txid.copy_from_slice(&txid_bytes);
+        let txid = parse_txid(env, txid_bytes)?;
 
-        let script_pubkey = Script(env.convert_byte_array(script).unwrap());
+        let script_pubkey = Script(utils::java_bytes_to_rust(env, &script)?);
         let mut db_data = wallet_db(env, network, db_data)?;
 
         let output = WalletTransparentOutput::from_parts(
-            OutPoint::new(txid, index as u32),
+            OutPoint::new(*txid.as_ref(), index as u32),
             TxOut {
-                value: NonNegativeAmount::from_nonnegative_i64(value)
+                value: Zatoshis::from_nonnegative_i64(value)
                     .map_err(|_| anyhow!("Invalid UTXO value"))?,
                 script_pubkey,
             },
@@ -1640,11 +1620,11 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_putUtxo<'
 
         debug!("Storing UTXO in db_data");
         match db_data.put_received_transparent_utxo(&output) {
-            Ok(_) => Ok(JNI_TRUE),
+            Ok(_) => Ok(()),
             Err(e) => Err(anyhow!("Error while inserting UTXO: {}", e)),
         }
     });
-    unwrap_exc_or(&mut env, res, JNI_FALSE)
+    unwrap_exc_or(&mut env, res, ())
 }
 
 #[unsafe(no_mangle)]
@@ -1657,12 +1637,12 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_decryptAn
     tx: JByteArray<'local>,
     mined_height: jlong,
     network_id: jint,
-) -> jboolean {
+) {
     let res = catch_unwind(&mut env, |env| {
         let _span = tracing::info_span!("RustBackend.decryptAndStoreTransaction").entered();
         let network = parse_network(network_id as u32)?;
         let mut db_data = wallet_db(env, network, db_data)?;
-        let tx_bytes = env.convert_byte_array(tx).unwrap();
+        let tx_bytes = utils::java_bytes_to_rust(env, &tx)?;
         // The consensus branch ID passed in here does not matter:
         // - v4 and below cache it internally, but all we do with this transaction while
         //   it is in memory is decryption and serialization, neither of which use the
@@ -1672,13 +1652,11 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_decryptAn
         let tx = Transaction::read(&tx_bytes[..], BranchId::Sapling)?;
         let mined_height = BlockHeight::try_from(mined_height).ok();
 
-        match decrypt_and_store_transaction(&network, &mut db_data, &tx, mined_height) {
-            Ok(()) => Ok(JNI_TRUE),
-            Err(e) => Err(anyhow!("Error while decrypting transaction: {}", e)),
-        }
+        decrypt_and_store_transaction(&network, &mut db_data, &tx, mined_height)
+            .map_err(|e| anyhow!("Error while decrypting transaction: {}", e))
     });
 
-    unwrap_exc_or(&mut env, res, JNI_FALSE)
+    unwrap_exc_or(&mut env, res, ())
 }
 
 #[unsafe(no_mangle)]
@@ -1691,26 +1669,24 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_setTransa
     txid_bytes: JByteArray<'local>,
     status: jlong,
     network_id: jint,
-) -> jboolean {
+) {
     let res = catch_unwind(&mut env, |env| {
         let _span = tracing::info_span!("RustBackend.setTransactionStatus").entered();
         let network = parse_network(network_id as u32)?;
         let mut db_data = wallet_db(env, network, db_data)?;
-        let txid_bytes = env.convert_byte_array(txid_bytes)?;
-        let txid = TxId::read(&txid_bytes[..])?;
+        let txid = parse_txid(env, txid_bytes)?;
         let status = match status {
             -2 => TransactionStatus::TxidNotRecognized,
             -1 => TransactionStatus::NotInMainChain,
             height => TransactionStatus::Mined(BlockHeight::try_from(height)?),
         };
 
-        match db_data.set_transaction_status(txid, status) {
-            Ok(()) => Ok(JNI_TRUE),
-            Err(e) => Err(anyhow!("Error while setting transaction status: {}", e)),
-        }
+        db_data
+            .set_transaction_status(txid, status)
+            .map_err(|e| anyhow!("Error while setting transaction status: {}", e))
     });
 
-    unwrap_exc_or(&mut env, res, JNI_FALSE)
+    unwrap_exc_or(&mut env, res, ())
 }
 
 fn zip317_helper<DbT>(
@@ -1727,7 +1703,7 @@ fn zip317_helper<DbT>(
             DustOutputPolicy::default(),
             SplitPolicy::with_min_output_value(
                 NonZeroUsize::new(4).expect("4 is nonzero"),
-                NonNegativeAmount::const_from_u64(1000_0000),
+                Zatoshis::const_from_u64(1000_0000),
             ),
         ),
         GreedyInputSelector::new(),
@@ -1750,7 +1726,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeTr
         let network = parse_network(network_id as u32)?;
         let mut db_data = wallet_db(env, network, db_data)?;
         let account_uuid = account_id_from_jni(&env, account_uuid)?;
-        let payment_uri = utils::java_string_to_rust(env, &payment_uri);
+        let payment_uri = utils::java_string_to_rust(env, &payment_uri)?;
 
         // Always use ZIP 317 fees
         let (change_strategy, input_selector) = zip317_helper(None);
@@ -1796,21 +1772,19 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeTr
         let network = parse_network(network_id as u32)?;
         let mut db_data = wallet_db(env, network, db_data)?;
         let account_uuid = account_id_from_jni(&env, account_uuid)?;
-        let to = utils::java_string_to_rust(env, &to);
-        let value = NonNegativeAmount::from_nonnegative_i64(value)
+        let to = utils::java_string_to_rust(env, &to)?;
+        let value = Zatoshis::from_nonnegative_i64(value)
             .map_err(|_| anyhow!("Invalid amount, out of range"))?;
 
         let to = to
             .parse()
             .map_err(|e| anyhow!("Can't parse recipient address: {}", e))?;
 
-        let memo = if memo.is_null() {
-            None
-        } else {
-            MemoBytes::from_bytes(&env.convert_byte_array(memo)?)
-                .map(Some)
-                .map_err(|e| anyhow!("Invalid MemoBytes: {}", e))?
-        };
+        let memo = utils::java_nullable_bytes_to_rust(env, &memo)?
+            .as_deref()
+            .map(MemoBytes::from_bytes)
+            .transpose()
+            .map_err(|e| anyhow!("Invalid MemoBytes: {}", e))?;
 
         // Always use ZIP 317 fees
         let (change_strategy, input_selector) = zip317_helper(None);
@@ -1860,11 +1834,11 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeSh
         let network = parse_network(network_id as u32)?;
         let mut db_data = wallet_db(env, network, db_data)?;
         let account_uuid = account_id_from_jni(&env, account_uuid)?;
-        let shielding_threshold = NonNegativeAmount::from_nonnegative_i64(shielding_threshold)
+        let shielding_threshold = Zatoshis::from_nonnegative_i64(shielding_threshold)
             .map_err(|_| anyhow!("Invalid shielding threshold, out of range"))?;
 
         let transparent_receiver =
-            match utils::java_nullable_string_to_rust(env, &transparent_receiver) {
+            match utils::java_nullable_string_to_rust(env, &transparent_receiver)? {
                 None => Ok(None),
                 Some(addr) => match Address::decode(&network, &addr) {
                     None => Err(anyhow!("Transparent receiver is for the wrong network")),
@@ -1887,7 +1861,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeSh
             }?;
 
         let min_confirmations = 0;
-        let min_confirmations_for_heights = NonZeroU32::new(1).unwrap();
+        let min_confirmations_for_heights = NonZeroU32::MIN;
 
         let account_receivers = db_data
             .get_target_and_anchor_heights(min_confirmations_for_heights)
@@ -1925,13 +1899,11 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeSh
             return Ok(ptr::null_mut());
         };
 
-        let memo = if memo.is_null() {
-            None
-        } else {
-            MemoBytes::from_bytes(&env.convert_byte_array(memo)?)
-                .map(Some)
-                .map_err(|e| anyhow!("Invalid MemoBytes: {}", e))?
-        };
+        let memo = utils::java_nullable_bytes_to_rust(env, &memo)?
+            .as_deref()
+            .map(MemoBytes::from_bytes)
+            .transpose()
+            .map_err(|e| anyhow!("Invalid MemoBytes: {}", e))?;
 
         // Always use ZIP 317 fees
         let (change_strategy, input_selector) = zip317_helper(memo);
@@ -1977,12 +1949,12 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_createPro
         let network = parse_network(network_id as u32)?;
         let mut db_data = wallet_db(env, network, db_data)?;
         let usk = decode_usk(env, usk)?;
-        let spend_params = utils::java_string_to_rust(env, &spend_params);
-        let output_params = utils::java_string_to_rust(env, &output_params);
+        let spend_params = path_from_jni(env, spend_params)?;
+        let output_params = path_from_jni(env, output_params)?;
 
-        let prover = LocalTxProver::new(Path::new(&spend_params), Path::new(&output_params));
+        let prover = LocalTxProver::new(&spend_params, &output_params);
 
-        let proposal = Proposal::decode(&env.convert_byte_array(proposal)?[..])
+        let proposal = Proposal::decode(utils::java_bytes_to_rust(env, &proposal)?.as_slice())
             .map_err(|e| anyhow!("Invalid proposal: {}", e))?
             .try_into_standard_proposal(&db_data)?;
 
@@ -2030,7 +2002,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_createPcz
         let mut db_data = wallet_db(env, network, db_data)?;
         let account_id = account_id_from_jni(&env, account_uuid)?;
 
-        let proposal = Proposal::decode(&env.convert_byte_array(proposal)?[..])
+        let proposal = Proposal::decode(utils::java_bytes_to_rust(env, &proposal)?.as_slice())
             .map_err(|e| anyhow!("Invalid proposal: {}", e))?
             .try_into_standard_proposal(&db_data)?;
 
@@ -2054,6 +2026,74 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_createPcz
     unwrap_exc_or(&mut env, res, ptr::null_mut())
 }
 
+/// Redacts information from the given PCZT that is unnecessary for the Signer role.
+///
+/// Returns the updated PCZT in its serialized format.
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_redactPcztForSignerRole<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _: JClass<'local>,
+    pczt: JByteArray<'local>,
+) -> jbyteArray {
+    let res = catch_unwind(&mut env, |env| {
+        let _span = tracing::info_span!("RustBackend.redactPcztForSignerRole").entered();
+
+        let pczt = parse_pczt(env, pczt)?;
+
+        let pczt_with_proofs = Redactor::new(pczt)
+            .redact_global_with(|mut r| r.redact_proprietary("zcash_client_backend:proposal_info"))
+            .redact_orchard_with(|mut r| {
+                r.redact_actions(|mut ar| {
+                    ar.clear_spend_witness();
+                    ar.redact_output_proprietary("zcash_client_backend:output_info");
+                })
+            })
+            .redact_sapling_with(|mut r| {
+                r.redact_spends(|mut sr| sr.clear_witness());
+                r.redact_outputs(|mut or| {
+                    or.redact_proprietary("zcash_client_backend:output_info")
+                });
+            })
+            .redact_transparent_with(|mut r| {
+                r.redact_outputs(|mut or| {
+                    or.redact_proprietary("zcash_client_backend:output_info")
+                });
+            })
+            .finish();
+
+        Ok(utils::rust_bytes_to_java(&env, &pczt_with_proofs.serialize())?.into_raw())
+    });
+    unwrap_exc_or(&mut env, res, ptr::null_mut())
+}
+
+/// Returns `true` if this PCZT requires Sapling proofs (and thus the caller needs to have
+/// downloaded them).
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_requiresSaplingProofs<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _: JClass<'local>,
+    pczt: JByteArray<'local>,
+) -> jboolean {
+    let res = catch_unwind(&mut env, |env| {
+        let _span = tracing::info_span!("RustBackend.pcztRequiresSaplingProofs").entered();
+
+        let pczt = parse_pczt(env, pczt)?;
+
+        let prover = Prover::new(pczt);
+
+        Ok(if prover.requires_sapling_proofs() {
+            JNI_TRUE
+        } else {
+            JNI_FALSE
+        })
+    });
+    unwrap_exc_or(&mut env, res, JNI_TRUE)
+}
+
 /// Adds proofs to the given PCZT.
 ///
 /// Returns the updated PCZT in its serialized format.
@@ -2068,19 +2108,29 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_addProofs
     let res = catch_unwind(&mut env, |env| {
         let _span = tracing::info_span!("RustBackend.addProofsToPczt").entered();
 
-        let pczt = Pczt::parse(&env.convert_byte_array(pczt)?[..])
-            .map_err(|e| anyhow!("Invalid PCZT: {:?}", e))?;
+        let pczt = parse_pczt(env, pczt)?;
 
-        let spend_params = utils::java_string_to_rust(env, &spend_params);
-        let output_params = utils::java_string_to_rust(env, &output_params);
-        let prover = LocalTxProver::new(Path::new(&spend_params), Path::new(&output_params));
+        let mut prover = Prover::new(pczt);
 
-        let pczt_with_proofs = Prover::new(pczt)
-            .create_orchard_proof(&orchard::circuit::ProvingKey::build())
-            .map_err(|e| anyhow!("Failed to create Orchard proof for PCZT: {:?}", e))?
-            .create_sapling_proofs(&prover, &prover)
-            .map_err(|e| anyhow!("Failed to create Sapling proofs for PCZT: {:?}", e))?
-            .finish();
+        if prover.requires_orchard_proof() {
+            prover = prover
+                .create_orchard_proof(&orchard::circuit::ProvingKey::build())
+                .map_err(|e| anyhow!("Failed to create Orchard proof for PCZT: {:?}", e))?;
+        }
+        assert!(!prover.requires_orchard_proof());
+
+        if prover.requires_sapling_proofs() {
+            let spend_params = path_from_jni(env, spend_params)?;
+            let output_params = path_from_jni(env, output_params)?;
+            let local_prover = LocalTxProver::new(&spend_params, &output_params);
+
+            prover = prover
+                .create_sapling_proofs(&local_prover, &local_prover)
+                .map_err(|e| anyhow!("Failed to create Sapling proofs for PCZT: {:?}", e))?;
+        }
+        assert!(!prover.requires_sapling_proofs());
+
+        let pczt_with_proofs = prover.finish();
 
         Ok(utils::rust_bytes_to_java(&env, &pczt_with_proofs.serialize())?.into_raw())
     });
@@ -2109,15 +2159,15 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_extractAn
         let network = parse_network(network_id as u32)?;
         let mut db_data = wallet_db(env, network, db_data)?;
 
-        let pczt_with_proofs = Pczt::parse(&env.convert_byte_array(pczt_with_proofs)?[..])
+        let pczt_with_proofs = parse_pczt(env, pczt_with_proofs)
             .map_err(|e| anyhow!("Invalid PCZT-with-proofs: {:?}", e))?;
 
-        let pczt_with_signatures = Pczt::parse(&env.convert_byte_array(pczt_with_signatures)?[..])
-            .map_err(|e| anyhow!("Invalid PCZT-with-proofs: {:?}", e))?;
+        let pczt_with_signatures = parse_pczt(env, pczt_with_signatures)
+            .map_err(|e| anyhow!("Invalid PCZT-with-signatures: {:?}", e))?;
 
-        let spend_params = utils::java_string_to_rust(env, &spend_params);
-        let output_params = utils::java_string_to_rust(env, &output_params);
-        let prover = LocalTxProver::new(Path::new(&spend_params), Path::new(&output_params));
+        let spend_params = path_from_jni(env, spend_params)?;
+        let output_params = path_from_jni(env, output_params)?;
+        let prover = LocalTxProver::new(&spend_params, &output_params);
         let (spend_vk, output_vk) = prover.verifying_keys();
 
         let pczt = Combiner::new(vec![pczt_with_proofs, pczt_with_signatures])
@@ -2175,14 +2225,14 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustDerivationTool_de
     mut env: JNIEnv<'local>,
     _: JClass<'local>,
     seed: JByteArray<'local>,
-    account_index: jint,
+    account_index: jlong,
     network_id: jint,
 ) -> jbyteArray {
     let res = catch_unwind(&mut env, |env| {
         let _span = tracing::info_span!("RustDerivationTool.deriveSpendingKey").entered();
         let network = parse_network(network_id as u32)?;
-        let seed = SecretVec::new(env.convert_byte_array(seed).unwrap());
-        let account = zip32_account_index_from_jint(account_index)?;
+        let seed = secret_from_jni(env, seed)?;
+        let account = zip32_account_index_from_jlong(account_index)?;
 
         let usk = UnifiedSpendingKey::from_seed(&network, seed.expose_secret(), account)
             .map_err(|e| anyhow!("error generating unified spending key from seed: {:?}", e))?;
@@ -2207,7 +2257,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustDerivationTool_de
         let _span = tracing::info_span!("RustDerivationTool.deriveUnifiedFullViewingKeysFromSeed")
             .entered();
         let network = parse_network(network_id as u32)?;
-        let seed = env.convert_byte_array(seed).unwrap();
+        let seed = secret_from_jni(env, seed)?;
         let accounts = if accounts > 0 {
             accounts as u32
         } else {
@@ -2218,7 +2268,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustDerivationTool_de
             .map(|account| {
                 let account_id = zip32::AccountId::try_from(account)
                     .map_err(|_| anyhow!("Invalid account ID"))?;
-                UnifiedSpendingKey::from_seed(&network, &seed, account_id)
+                UnifiedSpendingKey::from_seed(&network, seed.expose_secret(), account_id)
                     .map_err(|e| {
                         anyhow!("error generating unified spending key from seed: {:?}", e)
                     })
@@ -2243,17 +2293,17 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustDerivationTool_de
     mut env: JNIEnv<'local>,
     _: JClass<'local>,
     seed: JByteArray<'local>,
-    account_index: jint,
+    account_index: jlong,
     network_id: jint,
 ) -> jstring {
     let res = panic::catch_unwind(|| {
         let _span =
             tracing::info_span!("RustDerivationTool.deriveUnifiedAddressFromSeed").entered();
         let network = parse_network(network_id as u32)?;
-        let seed = env.convert_byte_array(seed).unwrap();
-        let account_id = zip32_account_index_from_jint(account_index)?;
+        let seed = secret_from_jni(&env, seed)?;
+        let account_id = zip32_account_index_from_jlong(account_index)?;
 
-        let ufvk = UnifiedSpendingKey::from_seed(&network, &seed, account_id)
+        let ufvk = UnifiedSpendingKey::from_seed(&network, seed.expose_secret(), account_id)
             .map_err(|e| anyhow!("error generating unified spending key from seed: {:?}", e))
             .map(|usk| usk.to_unified_full_viewing_key())?;
 
@@ -2282,16 +2332,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustDerivationTool_de
         let _span =
             tracing::info_span!("RustDerivationTool.deriveUnifiedAddressFromViewingKey").entered();
         let network = parse_network(network_id as u32)?;
-        let ufvk_string = utils::java_string_to_rust(env, &ufvk_string);
-        let ufvk = match UnifiedFullViewingKey::decode(&network, &ufvk_string) {
-            Ok(ufvk) => ufvk,
-            Err(e) => {
-                return Err(anyhow!(
-                    "Error while deriving viewing key from string input: {}",
-                    e,
-                ));
-            }
-        };
+        let ufvk = parse_ufvk(env, ufvk_string, &network)?;
 
         // Derive the default Unified Address (containing the default Sapling payment
         // address that older SDKs used).
@@ -2330,6 +2371,138 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustDerivationTool_de
     unwrap_exc_or(&mut env, res, ptr::null_mut())
 }
 
+fn encode_metadata_key<'a>(
+    env: &mut JNIEnv<'a>,
+    key: zip32::registered::SecretKey,
+) -> anyhow::Result<JObject<'a>> {
+    Ok(env.new_object(
+        "cash/z/ecc/android/sdk/internal/model/JniMetadataKey",
+        "([B[B)V",
+        &[
+            (&env.byte_array_from_slice(key.data())?).into(),
+            (&env.byte_array_from_slice(key.chain_code().as_bytes())?).into(),
+        ],
+    )?)
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustDerivationTool_deriveAccountMetadataKeyFromSeed<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _: JClass<'local>,
+    seed: JByteArray<'local>,
+    account_index: jlong,
+    network_id: jint,
+) -> jobject {
+    let res = catch_unwind(&mut env, |env| {
+        let _span =
+            tracing::info_span!("RustDerivationTool.deriveAccountMetadataKeyFromSeed").entered();
+        let network = parse_network(network_id as u32)?;
+        let seed = secret_from_jni(env, seed)?;
+        let account = zip32_account_index_from_jlong(account_index)?;
+
+        let key = zip32::registered::SecretKey::from_subpath(
+            b"MetadataKeys",
+            seed.expose_secret(),
+            // TODO: Change this to whatever ZIP number is assigned to the metadata key ZIP draft.
+            325,
+            &[
+                PathElement::new(ChildIndex::hardened(network.coin_type()), &[]),
+                PathElement::new(ChildIndex::hardened(account.into()), &[]),
+            ],
+        )?;
+
+        Ok(encode_metadata_key(env, key)?.into_raw())
+    });
+    unwrap_exc_or(&mut env, res, ptr::null_mut())
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustDerivationTool_derivePrivateUseMetadataKey<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _: JClass<'local>,
+    account_metadata_key_sk: JByteArray<'local>,
+    account_metadata_key_c: JByteArray<'local>,
+    ufvk_string: JString<'local>,
+    private_use_subject: JByteArray<'local>,
+    network_id: jint,
+) -> jobjectArray {
+    let res = catch_unwind(&mut env, |env| {
+        let _span = tracing::info_span!("RustDerivationTool.derivePrivateUseMetadataKey").entered();
+        let account_metadata_key_sk = utils::java_bytes_to_rust(env, &account_metadata_key_sk)?;
+        let account_metadata_key_c = utils::java_bytes_to_rust(env, &account_metadata_key_c)?;
+        let ufvk_string = utils::java_nullable_string_to_rust(env, &ufvk_string)?;
+        let private_use_subject = utils::java_bytes_to_rust(env, &private_use_subject)?;
+        let network = parse_network(network_id as u32)?;
+
+        let account_metadata_key = {
+            let sk = account_metadata_key_sk
+                .as_slice()
+                .try_into()
+                .map_err(|_| anyhow!("Incorrect length for account_metadata_key_sk"))?;
+
+            let chain_code = ChainCode::new(
+                account_metadata_key_c
+                    .as_slice()
+                    .try_into()
+                    .map_err(|_| anyhow!("Incorrect length for account_metadata_key_c"))?,
+            );
+
+            zip32::registered::SecretKey::from_parts(sk, chain_code)
+        };
+
+        let private_use_keys = match ufvk_string {
+            // For the inherent subtree, there is only ever one key.
+            None => vec![account_metadata_key
+                .derive_child_with_tag(ChildIndex::hardened(0), &[])
+                .derive_child_with_tag(ChildIndex::PRIVATE_USE, &private_use_subject)],
+            // For the external subtree, we derive keys from the UFVK's items.
+            Some(ufvk_string) => {
+                let (net, ufvk) =
+                    unified::Ufvk::decode(&ufvk_string).map_err(|e| anyhow!("{e}"))?;
+                let expected_net = network.network_type();
+                if net != expected_net {
+                    return Err(anyhow!(
+                        "UFVK is for network {:?} but we expected {:?}",
+                        net,
+                        expected_net,
+                    ));
+                }
+
+                // Any metadata should always be associated with the key derived from the
+                // most preferred FVK item. However, we don't know which FVK items the
+                // UFVK contained the last time we were asked to derive keys. So we derive
+                // every key and return them to the caller in preference order. If the
+                // caller finds data associated with an older FVK item, they will migrate
+                // it to the first key we return.
+                ufvk.items()
+                    .into_iter()
+                    .map(|fvk_item| {
+                        account_metadata_key
+                            .derive_child_with_tag(ChildIndex::hardened(1), &[])
+                            .derive_child_with_tag(
+                                ChildIndex::hardened(0),
+                                &fvk_item.typed_encoding(),
+                            )
+                            .derive_child_with_tag(ChildIndex::PRIVATE_USE, &private_use_subject)
+                    })
+                    .collect()
+            }
+        };
+
+        Ok(
+            utils::rust_vec_to_java(env, private_use_keys, "[B", |env, key| {
+                utils::rust_bytes_to_java(env, key.data())
+            })?
+            .into_raw(),
+        )
+    });
+    unwrap_exc_or(&mut env, res, ptr::null_mut())
+}
+
 #[unsafe(no_mangle)]
 pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustDerivationTool_deriveArbitraryWalletKeyFromSeed<
     'local,
@@ -2342,8 +2515,8 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustDerivationTool_de
     let res = panic::catch_unwind(|| {
         let _span =
             tracing::info_span!("RustDerivationTool.deriveArbitraryWalletKeyFromSeed").entered();
-        let context_string = env.convert_byte_array(context_string)?;
-        let seed = SecretVec::new(env.convert_byte_array(seed)?);
+        let context_string = utils::java_bytes_to_rust(&env, &context_string)?;
+        let seed = secret_from_jni(&env, seed)?;
 
         let key =
             zip32::arbitrary::SecretKey::from_path(&context_string, seed.expose_secret(), &[]);
@@ -2361,16 +2534,16 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustDerivationTool_de
     _: JClass<'local>,
     context_string: JByteArray<'local>,
     seed: JByteArray<'local>,
-    account_index: jint,
+    account_index: jlong,
     network_id: jint,
 ) -> jbyteArray {
     let res = panic::catch_unwind(|| {
         let _span =
             tracing::info_span!("RustDerivationTool.deriveArbitraryAccountKeyFromSeed").entered();
         let network = parse_network(network_id as u32)?;
-        let context_string = env.convert_byte_array(context_string)?;
-        let seed = SecretVec::new(env.convert_byte_array(seed)?);
-        let account = zip32_account_index_from_jint(account_index)?;
+        let context_string = utils::java_bytes_to_rust(&env, &context_string)?;
+        let seed = secret_from_jni(&env, seed)?;
+        let account = zip32_account_index_from_jlong(account_index)?;
 
         let key = zip32::arbitrary::SecretKey::from_path(
             &context_string,
@@ -2399,12 +2572,11 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorClient_createTor
     tor_dir: JString<'local>,
 ) -> jlong {
     let res = catch_unwind(&mut env, |env| {
-        let tor_dir = utils::java_string_to_rust(env, &tor_dir);
-        let tor_dir = Path::new(&tor_dir);
+        let tor_dir = path_from_jni(env, tor_dir)?;
 
-        let tor = crate::tor::TorRuntime::create(tor_dir)?;
+        let tor = crate::tor::TorRuntime::create(&tor_dir)?;
 
-        Ok((Box::into_raw(Box::new(tor)) as usize) as jlong)
+        Ok(Box::into_raw(Box::new(tor)).expose_provenance() as jlong)
     });
     unwrap_exc_or(&mut env, res, -1)
 }
@@ -2416,11 +2588,41 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorClient_freeTorRu
     _: JClass<'local>,
     ptr: jlong,
 ) {
-    let ptr = (ptr as usize) as *mut crate::tor::TorRuntime;
+    let ptr = std::ptr::with_exposed_provenance_mut::<crate::tor::TorRuntime>(ptr as usize);
     if !ptr.is_null() {
         let s = unsafe { Box::from_raw(ptr) };
         drop(s);
     }
+}
+
+/// Returns a new isolated `TorClient` handle.
+///
+/// The two `TorClient`s will share internal state and configuration, but their streams
+/// will never share circuits with one another.
+///
+/// Use this method when you want separate parts of your program to each have a
+/// `TorClient` handle, but where you don't want their activities to be linkable to one
+/// another over the Tor network.
+///
+/// Calling this method is usually preferable to creating a completely separate
+/// `TorClient` instance, since it can share its internals with the existing `TorClient`.
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorClient_isolatedClient<'local>(
+    mut env: JNIEnv<'local>,
+    _: JClass<'local>,
+    tor_runtime: jlong,
+) -> jlong {
+    let res = panic::catch_unwind(|| {
+        let tor_runtime =
+            ptr::with_exposed_provenance_mut::<crate::tor::TorRuntime>(tor_runtime as usize);
+        let tor_runtime =
+            unsafe { tor_runtime.as_mut() }.ok_or_else(|| anyhow!("A Tor runtime is required"))?;
+
+        let isolated_client = tor_runtime.isolated_client();
+
+        Ok(Box::into_raw(Box::new(isolated_client)).expose_provenance() as jlong)
+    });
+    unwrap_exc_or(&mut env, res, -1)
 }
 
 /// Fetches the current ZEC-USD exchange rate over Tor.
@@ -2434,8 +2636,9 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorClient_getExchan
 ) -> jobject {
     let res = catch_unwind(&mut env, |env| {
         let tor_runtime =
-            unsafe { ((tor_runtime as usize) as *mut crate::tor::TorRuntime).as_mut() }
-                .ok_or_else(|| anyhow!("A Tor runtime is required"))?;
+            std::ptr::with_exposed_provenance_mut::<crate::tor::TorRuntime>(tor_runtime as usize);
+        let tor_runtime =
+            unsafe { tor_runtime.as_mut() }.ok_or_else(|| anyhow!("A Tor runtime is required"))?;
 
         let exchanges = cryptex::Exchanges::unauthenticated_known_with_gemini_trusted();
 
@@ -2464,9 +2667,111 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorClient_getExchan
     unwrap_exc_or(&mut env, res, ptr::null_mut())
 }
 
+/// Connects to the lightwalletd server at the given endpoint.
+///
+/// Each connection returned by this method is isolated from any other Tor usage.
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorClient_connectToLightwalletd<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _: JClass<'local>,
+    tor_runtime: jlong,
+    endpoint: JString<'local>,
+) -> jlong {
+    let res = catch_unwind(&mut env, |env| {
+        let tor_runtime =
+            ptr::with_exposed_provenance_mut::<crate::tor::TorRuntime>(tor_runtime as usize);
+        let tor_runtime =
+            unsafe { tor_runtime.as_mut() }.ok_or_else(|| anyhow!("A Tor runtime is required"))?;
+
+        let endpoint = utils::java_string_to_rust(env, &endpoint)?;
+        let lwd_conn = tor_runtime.connect_to_lightwalletd(
+            endpoint
+                .try_into()
+                .map_err(|e| anyhow!("Invalid lightwalletd endpoint: {e}"))?,
+        )?;
+
+        Ok(Box::into_raw(Box::new(lwd_conn)).expose_provenance() as jlong)
+    });
+    unwrap_exc_or(&mut env, res, -1)
+}
+
+/// Frees a lightwalletd connection.
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorLwdConn_freeLightwalletdConnection<
+    'local,
+>(
+    _: JNIEnv<'local>,
+    _: JClass<'local>,
+    lwd_conn: jlong,
+) {
+    let lwd_conn = ptr::with_exposed_provenance_mut::<crate::tor::LwdConn>(lwd_conn as usize);
+    if !lwd_conn.is_null() {
+        let s = unsafe { Box::from_raw(lwd_conn) };
+        drop(s);
+    }
+}
+
+/// Fetches the transaction with the given ID.
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorLwdConn_fetchTransaction<'local>(
+    mut env: JNIEnv<'local>,
+    _: JClass<'local>,
+    lwd_conn: jlong,
+    txid_bytes: JByteArray<'local>,
+) -> jbyteArray {
+    let res = catch_unwind(&mut env, |env| {
+        let lwd_conn = ptr::with_exposed_provenance_mut::<crate::tor::LwdConn>(lwd_conn as usize);
+        let lwd_conn = unsafe { lwd_conn.as_mut() }
+            .ok_or_else(|| anyhow!("A Tor lightwalletd connection is required"))?;
+
+        // This means we have to serialize back into a `Vec<u8>` next, but it is cheap and
+        // we may as well confirm we were actually passed something shaped correctly.
+        let txid = parse_txid(env, txid_bytes)?;
+
+        let tx = lwd_conn.get_transaction(txid)?;
+
+        Ok(utils::rust_bytes_to_java(env, &tx)?.into_raw())
+    });
+    unwrap_exc_or(&mut env, res, ptr::null_mut())
+}
+
+/// Submits a transaction to the Zcash network via the given lightwalletd connection.
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorLwdConn_submitTransaction<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _: JClass<'local>,
+    lwd_conn: jlong,
+    tx_bytes: JByteArray<'local>,
+) -> jboolean {
+    let res = catch_unwind(&mut env, |env| {
+        let lwd_conn = ptr::with_exposed_provenance_mut::<crate::tor::LwdConn>(lwd_conn as usize);
+        let lwd_conn = unsafe { lwd_conn.as_mut() }
+            .ok_or_else(|| anyhow!("A Tor lightwalletd connection is required"))?;
+
+        let tx_bytes = utils::java_bytes_to_rust(env, &tx_bytes)?;
+
+        lwd_conn.send_transaction(tx_bytes)?;
+
+        Ok(JNI_TRUE)
+    });
+    unwrap_exc_or(&mut env, res, JNI_FALSE)
+}
+
 //
 // Utility functions
 //
+
+fn parse_protocol(code: i32) -> anyhow::Result<ShieldedProtocol> {
+    match code {
+        2 => Ok(ShieldedProtocol::Sapling),
+        3 => Ok(ShieldedProtocol::Orchard),
+        _ => Err(anyhow!("Shielded protocol not recognized: {code}")),
+    }
+}
 
 fn parse_network(value: u32) -> anyhow::Result<Network> {
     match value {
@@ -2476,63 +2781,76 @@ fn parse_network(value: u32) -> anyhow::Result<Network> {
     }
 }
 
-/// Returns a list of the transparent receivers for the diversified unified addresses that have
-/// been allocated for the provided account.
-///
-/// # Safety
-///
-/// - `db_data` must be non-null and valid for reads for `db_data_len` bytes, and it must have an
-///   alignment of `1`. Its contents must be a string representing a valid system path in the
-///   operating system's preferred representation.
-/// - The memory referenced by `db_data` must not be mutated for the duration of the function call.
-/// - The total size `db_data_len` must be no larger than `isize::MAX`. See the safety
-///   documentation of pointer::offset.
-/// - Call [`zcashlc_free_keys`] to free the memory associated with the returned pointer
-///   when done using it.
-#[unsafe(no_mangle)]
-pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_listTransparentReceivers<
-    'local,
->(
-    mut env: JNIEnv<'local>,
-    _: JClass<'local>,
-    db_data: JString<'local>,
-    account_uuid: JByteArray<'local>,
-    network_id: jint,
-) -> jobjectArray {
-    let res = catch_unwind(&mut env, |env| {
-        let _span = tracing::info_span!("RustBackend.listTransparentReceivers").entered();
-        let network = parse_network(network_id as u32)?;
-        let zcash_network = network.network_type();
-        let db_data = wallet_db(env, network, db_data)?;
-        let account = account_id_from_jni(&env, account_uuid)?;
+fn path_from_jni(env: &mut JNIEnv, path: JString) -> anyhow::Result<PathBuf> {
+    Ok(PathBuf::from(env.get_string(&path)?.to_str()?))
+}
 
-        match db_data.get_transparent_receivers(account) {
-            Ok(receivers) => {
-                let trasparent_receivers = receivers
-                    .keys()
-                    .map(|taddr| {
-                        let taddr = match taddr {
-                            TransparentAddress::PublicKeyHash(data) => {
-                                ZcashAddress::from_transparent_p2pkh(zcash_network, *data)
-                            }
-                            TransparentAddress::ScriptHash(data) => {
-                                ZcashAddress::from_transparent_p2sh(zcash_network, *data)
-                            }
-                        };
-                        taddr.encode()
-                    })
-                    .collect::<Vec<_>>();
+fn secret_from_jni(env: &JNIEnv, secret_bytes: JByteArray) -> anyhow::Result<SecretVec<u8>> {
+    Ok(SecretVec::new(utils::java_bytes_to_rust(
+        env,
+        &secret_bytes,
+    )?))
+}
 
-                Ok(utils::rust_vec_to_java(
-                    env,
-                    trasparent_receivers,
-                    "java/lang/String",
-                    |env, taddr| env.new_string(taddr),
-                )?
-                .into_raw())
-            }
-            Err(e) => Err(anyhow!("Error while fetching address: {}", e)),
-        }
-    });
-    unwrap_exc_or(&mut env, res, ptr::null_mut())
+fn zip32_account_index_from_jlong(account_index: jlong) -> anyhow::Result<zip32::AccountId> {
+    u32::try_from(account_index)
+        .map_err(|_| ())
+        .and_then(|id| zip32::AccountId::try_from(id).map_err(|_| ()))
+        .map_err(|_| anyhow!("Invalid account ID"))
+}
+
+fn account_id_from_jni(env: &JNIEnv, account_uuid: JByteArray) -> anyhow::Result<AccountUuid> {
+    Ok(AccountUuid::from_uuid(Uuid::from_slice(
+        &utils::java_bytes_to_rust(env, &account_uuid)?,
+    )?))
+}
+
+fn parse_txid(env: &JNIEnv, txid_bytes: JByteArray) -> anyhow::Result<TxId> {
+    let txid_bytes = utils::java_bytes_to_rust(env, &txid_bytes)?;
+    Ok(TxId::read(&txid_bytes[..])?)
+}
+
+fn parse_treestate(env: &JNIEnv, treestate: JByteArray) -> anyhow::Result<TreeState> {
+    TreeState::decode(utils::java_bytes_to_rust(env, &treestate)?.as_slice())
+        .map_err(|e| anyhow!("Invalid TreeState: {}", e))
+}
+
+fn parse_pczt(env: &JNIEnv, pczt: JByteArray) -> anyhow::Result<Pczt> {
+    Pczt::parse(&utils::java_bytes_to_rust(env, &pczt)?)
+        .map_err(|e| anyhow!("Invalid PCZT: {:?}", e))
+}
+
+fn parse_ufvk(
+    env: &mut JNIEnv,
+    ufvk_string: JString,
+    network: &Network,
+) -> anyhow::Result<UnifiedFullViewingKey> {
+    let ufvk_string = utils::java_string_to_rust(env, &ufvk_string)?;
+    UnifiedFullViewingKey::decode(network, &ufvk_string)
+        .map_err(|e| anyhow!("Value \"{ufvk_string}\" did not decode as a valid UFVK: {e}"))
+}
+
+struct UnifiedAddressParser(UnifiedAddress);
+
+impl zcash_address::TryFromRawAddress for UnifiedAddressParser {
+    type Error = anyhow::Error;
+
+    fn try_from_raw_unified(
+        data: zcash_address::unified::Address,
+    ) -> Result<Self, zcash_address::ConversionError<Self::Error>> {
+        data.try_into()
+            .map(UnifiedAddressParser)
+            .map_err(|e| anyhow!("Invalid Unified Address: {}", e).into())
+    }
+}
+
+fn parse_ua(env: &mut JNIEnv, ua: JString) -> anyhow::Result<(NetworkType, UnifiedAddress)> {
+    let ua_str = utils::java_string_to_rust(env, &ua)?;
+    match ZcashAddress::try_from_encoded(&ua_str) {
+        Ok(addr) => addr
+            .convert::<(_, UnifiedAddressParser)>()
+            .map_err(|e| anyhow!("Not a Unified Address: {}", e))
+            .map(|(network, ua)| (network, ua.0)),
+        Err(e) => return Err(anyhow!("Invalid Zcash address: {}", e)),
+    }
 }

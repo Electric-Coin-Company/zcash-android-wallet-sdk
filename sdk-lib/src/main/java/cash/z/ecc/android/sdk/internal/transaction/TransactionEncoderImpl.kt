@@ -165,9 +165,35 @@ internal class TransactionEncoderImpl(
         }
     }
 
+    override suspend fun redactPcztForSigner(pczt: Pczt): Pczt {
+        return runCatching {
+            backend.redactPcztForSigner(pczt = pczt)
+        }.onSuccess {
+            Twig.debug { "Result of redactPcztForSigner: $it" }
+        }.onFailure {
+            Twig.error(it) { "Caught exception while redacting PCZT for Signer." }
+        }.getOrElse {
+            throw PcztException.RedactPcztForSignerException(it.message, it.cause)
+        }
+    }
+
+    override suspend fun pcztRequiresSaplingProofs(pczt: Pczt): Boolean {
+        return runCatching {
+            backend.pcztRequiresSaplingProofs(pczt = pczt)
+        }.onSuccess {
+            Twig.debug { "Result of pcztRequiresSaplingProofs: $it" }
+        }.onFailure {
+            Twig.error(it) { "Caught exception while checking PCZT Sapling presence." }
+        }.getOrElse {
+            throw PcztException.PcztRequiresSaplingProofsException(it.message, it.cause)
+        }
+    }
+
     override suspend fun addProofsToPczt(pczt: Pczt): Pczt {
         return runCatching {
-            saplingParamTool.ensureParams(saplingParamTool.properties.paramsDirectory)
+            if (backend.pcztRequiresSaplingProofs(pczt)) {
+                saplingParamTool.ensureParams(saplingParamTool.properties.paramsDirectory)
+            }
             Twig.debug { "params exist! attempting to send..." }
             backend.addProofsToPczt(pczt = pczt)
         }.onSuccess {

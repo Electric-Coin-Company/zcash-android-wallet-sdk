@@ -441,6 +441,10 @@ class RustBackend private constructor(
             )
         }
 
+    override suspend fun redactPcztForSigner(pczt: ByteArray): ByteArray = redactPcztForSignerRole(pczt = pczt)
+
+    override suspend fun pcztRequiresSaplingProofs(pczt: ByteArray): Boolean = requiresSaplingProofs(pczt = pczt)
+
     override suspend fun addProofsToPczt(pczt: ByteArray): ByteArray =
         addProofsToPczt(
             pczt = pczt,
@@ -567,6 +571,13 @@ class RustBackend private constructor(
         ): Array<JniAccount>
 
         @JvmStatic
+        private external fun getAccountForUfvk(
+            dbDataPath: String,
+            networkId: Int,
+            ufvk: String,
+        ): JniAccount?
+
+        @JvmStatic
         @Suppress("LongParameterList")
         private external fun createAccount(
             dbDataPath: String,
@@ -577,13 +588,6 @@ class RustBackend private constructor(
             treeState: ByteArray,
             recoverUntil: Long,
         ): JniAccountUsk
-
-        @JvmStatic
-        private external fun getAccountForUfvk(
-            dbDataPath: String,
-            networkId: Int,
-            ufvk: String,
-        ): JniAccount?
 
         @JvmStatic
         @Suppress("LongParameterList")
@@ -655,6 +659,13 @@ class RustBackend private constructor(
             addr: String,
             networkId: Int
         ): Boolean
+
+        @JvmStatic
+        private external fun getTotalTransparentBalance(
+            pathDataDb: String,
+            taddr: String,
+            networkId: Int
+        ): Long
 
         @JvmStatic
         private external fun getMemoAsUtf8(
@@ -753,6 +764,18 @@ class RustBackend private constructor(
         ): Array<JniTransactionDataRequest>
 
         @JvmStatic
+        @Suppress("LongParameterList")
+        private external fun putUtxo(
+            dbDataPath: String,
+            txId: ByteArray,
+            index: Int,
+            script: ByteArray,
+            value: Long,
+            height: Long,
+            networkId: Int
+        )
+
+        @JvmStatic
         private external fun decryptAndStoreTransaction(
             dbDataPath: String,
             tx: ByteArray,
@@ -818,6 +841,12 @@ class RustBackend private constructor(
         ): ByteArray
 
         @JvmStatic
+        private external fun redactPcztForSignerRole(pczt: ByteArray): ByteArray
+
+        @JvmStatic
+        private external fun requiresSaplingProofs(pczt: ByteArray): Boolean
+
+        @JvmStatic
         private external fun addProofsToPczt(
             pczt: ByteArray,
             spendParamsPath: String,
@@ -838,25 +867,6 @@ class RustBackend private constructor(
         @JvmStatic
         private external fun branchIdForHeight(
             height: Long,
-            networkId: Int
-        ): Long
-
-        @JvmStatic
-        @Suppress("LongParameterList")
-        private external fun putUtxo(
-            dbDataPath: String,
-            txId: ByteArray,
-            index: Int,
-            script: ByteArray,
-            value: Long,
-            height: Long,
-            networkId: Int
-        )
-
-        @JvmStatic
-        private external fun getTotalTransparentBalance(
-            pathDataDb: String,
-            taddr: String,
             networkId: Int
         ): Long
     }

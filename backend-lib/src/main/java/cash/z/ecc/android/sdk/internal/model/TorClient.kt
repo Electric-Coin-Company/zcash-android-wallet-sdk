@@ -23,11 +23,45 @@ class TorClient private constructor(
             }
         }
 
+    /**
+     * Returns a new isolated `TorClient` handle.
+     *
+     * The two `TorClient`s will share internal state and configuration, but their streams
+     * will never share circuits with one another.
+     *
+     * Use this method when you want separate parts of your program to each have a
+     * `TorClient` handle, but where you don't want their activities to be linkable to one
+     * another over the Tor network.
+     *
+     * Calling this method is usually preferable to creating a completely separate
+     * `TorClient` instance, since it can share its internals with the existing `TorClient`.
+     */
+    suspend fun isolatedClient(): TorClient =
+        accessMutex.withLock {
+            withContext(Dispatchers.IO) {
+                checkNotNull(nativeHandle) { "TorClient is disposed" }
+                TorClient(nativeHandle = isolatedClient(nativeHandle!!))
+            }
+        }
+
     suspend fun getExchangeRateUsd(): BigDecimal =
         accessMutex.withLock {
             withContext(Dispatchers.IO) {
                 checkNotNull(nativeHandle) { "TorClient is disposed" }
                 getExchangeRateUsd(nativeHandle!!)
+            }
+        }
+
+    /**
+     * Connects to the lightwalletd server at the given endpoint.
+     *
+     * Each connection returned by this method is isolated from any other Tor usage.
+     */
+    suspend fun connectToLightwalletd(endpoint: String): TorLwdConn =
+        accessMutex.withLock {
+            withContext(Dispatchers.IO) {
+                checkNotNull(nativeHandle) { "TorClient is disposed" }
+                TorLwdConn.new(connectToLightwalletd(nativeHandle!!, endpoint))
             }
         }
 
@@ -64,6 +98,23 @@ class TorClient private constructor(
          */
         @JvmStatic
         @Throws(RuntimeException::class)
+        private external fun isolatedClient(nativeHandle: Long): Long
+
+        /**
+         * @throws RuntimeException as a common indicator of the operation failure
+         */
+        @JvmStatic
+        @Throws(RuntimeException::class)
         private external fun getExchangeRateUsd(nativeHandle: Long): BigDecimal
+
+        /**
+         * @throws RuntimeException as a common indicator of the operation failure
+         */
+        @JvmStatic
+        @Throws(RuntimeException::class)
+        private external fun connectToLightwalletd(
+            nativeHandle: Long,
+            endpoint: String
+        ): Long
     }
 }
