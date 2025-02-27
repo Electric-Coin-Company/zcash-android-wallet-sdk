@@ -2746,7 +2746,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorLwdConn_submitTr
     _: JClass<'local>,
     lwd_conn: jlong,
     tx_bytes: JByteArray<'local>,
-) -> jboolean {
+) {
     let res = catch_unwind(&mut env, |env| {
         let lwd_conn = ptr::with_exposed_provenance_mut::<crate::tor::LwdConn>(lwd_conn as usize);
         let lwd_conn = unsafe { lwd_conn.as_mut() }
@@ -2754,11 +2754,9 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorLwdConn_submitTr
 
         let tx_bytes = utils::java_bytes_to_rust(env, &tx_bytes)?;
 
-        lwd_conn.send_transaction(tx_bytes)?;
-
-        Ok(JNI_TRUE)
+        lwd_conn.send_transaction(tx_bytes)
     });
-    unwrap_exc_or(&mut env, res, JNI_FALSE)
+    unwrap_exc_or(&mut env, res, ())
 }
 
 //

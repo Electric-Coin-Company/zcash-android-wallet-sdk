@@ -68,6 +68,6 @@ class TorLwdConn private constructor(
         private external fun submitTransaction(
             nativeHandle: Long,
             tx: ByteArray
-        ): Boolean
+        )
     }
 }
