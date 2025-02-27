@@ -119,6 +119,7 @@ class RustDerivationTool private constructor() : Derivation {
             networkId: Int
         ): String
 
+        @JvmStatic
         private external fun deriveAccountMetadataKeyFromSeed(
             seed: ByteArray,
             accountIndex: Long,
