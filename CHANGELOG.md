@@ -6,7 +6,7 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [2.2.8] - 2025-02-27
+## [2.2.8] - 2025-03-03
 
 ### Added
 - `AccountMetadataKey`
