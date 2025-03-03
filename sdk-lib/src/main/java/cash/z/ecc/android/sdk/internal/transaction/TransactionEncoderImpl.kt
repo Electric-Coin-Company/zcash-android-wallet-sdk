@@ -191,9 +191,12 @@ internal class TransactionEncoderImpl(
 
     override suspend fun addProofsToPczt(pczt: Pczt): Pczt {
         return runCatching {
-            if (backend.pcztRequiresSaplingProofs(pczt)) {
-                saplingParamTool.ensureParams(saplingParamTool.properties.paramsDirectory)
-            }
+            // TODO [#1724]: zcash_client_backend: Make Sapling parameters optional for extract_and_store_transaction
+            // TODO [#1724]: https://github.com/zcash/librustzcash/issues/1724
+            // if (backend.pcztRequiresSaplingProofs(pczt)) {
+            //     saplingParamTool.ensureParams(saplingParamTool.properties.paramsDirectory)
+            // }
+            saplingParamTool.ensureParams(saplingParamTool.properties.paramsDirectory)
             Twig.debug { "params exist! attempting to send..." }
             backend.addProofsToPczt(pczt = pczt)
         }.onSuccess {
