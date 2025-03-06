@@ -274,14 +274,6 @@ dependencyResolutionManagement {
     }
 }
 
-extra["GRADLE_BUILD_CACHE_DAYS"].toString().toIntOrNull()?.let {
-    buildCache {
-        local {
-            removeUnusedEntriesAfterDays = it
-        }
-    }
-}
-
 rootProject.name = "zcash-android-sdk"
 
 includeBuild("build-conventions")
