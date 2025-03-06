@@ -560,7 +560,8 @@ class CompactBlockProcessor internal constructor(
                     verifyRangeResult = shouldVerifySuggestedScanRanges(suggestedRangesResult)
                 }
                 is SuggestScanRangesResult.Failure -> {
-                    Twig.error { "Process suggested scan ranges failure: ${suggestedRangesResult.exception}" }
+                    Twig.error { "Process suggested scan ranges failure: " +
+                        "${(suggestedRangesResult as SuggestScanRangesResult.Failure).exception}" }
                     return BlockProcessingResult.SyncFailure(
                         suggestedRangesResult.failedAtHeight,
                         suggestedRangesResult.exception

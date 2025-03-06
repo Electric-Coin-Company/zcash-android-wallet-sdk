@@ -38,6 +38,7 @@ pluginManagement {
         id("org.jetbrains.dokka") version (dokkaVersion) apply (false)
         id("org.jetbrains.kotlin.android") version (kotlinVersion) apply (false)
         id("org.jetbrains.kotlin.plugin.allopen") version (kotlinVersion) apply (false)
+        id("org.jetbrains.kotlin.plugin.compose") version (kotlinVersion) apply (false)
         id("wtf.emulator.gradle") version (emulatorWtfGradlePluginVersion) apply (false)
     }
 }

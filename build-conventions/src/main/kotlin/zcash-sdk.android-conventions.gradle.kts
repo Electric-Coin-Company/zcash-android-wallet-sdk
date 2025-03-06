@@ -155,7 +155,7 @@ fun com.android.build.gradle.BaseExtension.configureBaseExtension() {
                 .toString().toInt().coerceAtLeast(MANAGED_DEVICES_MIN_SDK)
             val testDeviceMaxSdkVersion = project.properties["ANDROID_TARGET_SDK_VERSION"].toString().toInt()
 
-            devices {
+            allDevices {
                 create<ManagedVirtualDevice>("pixel2Min") {
                     device = "Pixel 2"
                     apiLevel = testDeviceMinSdkVersion
