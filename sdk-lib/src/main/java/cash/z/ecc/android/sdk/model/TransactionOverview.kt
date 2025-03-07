@@ -38,8 +38,8 @@ data class TransactionOverview internal constructor(
         internal fun new(
             dbTransactionOverview: DbTransactionOverview,
             latestBlockHeight: BlockHeight?
-        ): TransactionOverview {
-            return TransactionOverview(
+        ): TransactionOverview =
+            TransactionOverview(
                 txId = TransactionId(dbTransactionOverview.rawId),
                 minedHeight = dbTransactionOverview.minedHeight,
                 expiryHeight = dbTransactionOverview.expiryHeight,
@@ -63,7 +63,6 @@ data class TransactionOverview internal constructor(
                 totalSpent = dbTransactionOverview.totalSpent,
                 totalReceived = dbTransactionOverview.totalReceived
             )
-        }
     }
 
     private fun isExpired() = expiryHeight != null && TransactionState.Expired == transactionState
@@ -92,8 +91,8 @@ enum class TransactionState {
             latestBlockHeight: BlockHeight?,
             minedHeight: BlockHeight?,
             expiryHeight: BlockHeight?
-        ): TransactionState {
-            return latestBlockHeight?.let { chainTip ->
+        ): TransactionState =
+            latestBlockHeight?.let { chainTip ->
                 minedHeight?.let { minedHeight ->
                     // A transaction mined in the latest block has 1 confirmation.
                     if ((chainTip + 1 - minedHeight) >= MIN_CONFIRMATIONS) {
@@ -116,6 +115,5 @@ enum class TransactionState {
                 // unknown expiry height (because we haven't seen the full transaction).
                 // Treat these as Pending because the status will change as we sync.
             } ?: Pending
-        }
     }
 }

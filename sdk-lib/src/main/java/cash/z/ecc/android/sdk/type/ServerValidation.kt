@@ -8,5 +8,7 @@ sealed class ServerValidation {
 
     data object Running : ServerValidation()
 
-    data class InValid(val reason: Throwable) : ServerValidation()
+    data class InValid(
+        val reason: Throwable
+    ) : ServerValidation()
 }

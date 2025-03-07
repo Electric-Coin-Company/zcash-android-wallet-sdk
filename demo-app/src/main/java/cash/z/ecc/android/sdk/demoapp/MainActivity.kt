@@ -101,8 +101,8 @@ class MainActivity :
         return true
     }
 
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        return if (item.itemId == R.id.action_settings) {
+    override fun onOptionsItemSelected(item: MenuItem): Boolean =
+        if (item.itemId == R.id.action_settings) {
             val navController = findNavController(R.id.nav_host_fragment)
             navController.navigate(R.id.nav_home)
             true
@@ -119,7 +119,6 @@ class MainActivity :
         } else {
             super.onOptionsItemSelected(item)
         }
-    }
 
     override fun onSupportNavigateUp(): Boolean {
         val navController = findNavController(R.id.nav_host_fragment)

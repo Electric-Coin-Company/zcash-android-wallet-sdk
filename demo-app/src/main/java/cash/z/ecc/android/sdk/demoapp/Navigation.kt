@@ -228,31 +228,32 @@ internal fun ComposeActivity.Navigation() {
                 val fastestServers = remember { mutableStateOf<FastestServersResult?>(null) }
 
                 LaunchedEffect(Unit) {
-                    synchronizer.getFastestServers(
-                        context = context,
-                        servers =
-                            buildList {
-                                if (ZcashNetwork.fromResources(application) == ZcashNetwork.Mainnet) {
-                                    add(LightWalletEndpoint(ZR_HOST, ZR_PORT, true))
-                                    add(LightWalletEndpoint(ZR_HOST_NA, ZR_PORT, true))
-                                    add(LightWalletEndpoint(ZR_HOST_SA, ZR_PORT, true))
-                                    add(LightWalletEndpoint(ZR_HOST_EU, ZR_PORT, true))
-                                    add(LightWalletEndpoint(ZR_HOST_AP, ZR_PORT, true))
-                                    add(LightWalletEndpoint(YW_HOST_1, YW_PORT, true))
-                                    add(LightWalletEndpoint(YW_HOST_2, YW_PORT, true))
-                                    add(LightWalletEndpoint(YW_HOST_3, YW_PORT, true))
-                                    add(LightWalletEndpoint(YW_HOST_4, YW_PORT, true))
-                                    add(LightWalletEndpoint(YW_HOST_5, YW_PORT, true))
-                                    add(LightWalletEndpoint(YW_HOST_6, YW_PORT, true))
-                                    add(LightWalletEndpoint(YW_HOST_7, YW_PORT, true))
-                                    add(LightWalletEndpoint(YW_HOST_8, YW_PORT, true))
-                                } else {
-                                    add(LightWalletEndpoint.Testnet)
+                    synchronizer
+                        .getFastestServers(
+                            context = context,
+                            servers =
+                                buildList {
+                                    if (ZcashNetwork.fromResources(application) == ZcashNetwork.Mainnet) {
+                                        add(LightWalletEndpoint(ZR_HOST, ZR_PORT, true))
+                                        add(LightWalletEndpoint(ZR_HOST_NA, ZR_PORT, true))
+                                        add(LightWalletEndpoint(ZR_HOST_SA, ZR_PORT, true))
+                                        add(LightWalletEndpoint(ZR_HOST_EU, ZR_PORT, true))
+                                        add(LightWalletEndpoint(ZR_HOST_AP, ZR_PORT, true))
+                                        add(LightWalletEndpoint(YW_HOST_1, YW_PORT, true))
+                                        add(LightWalletEndpoint(YW_HOST_2, YW_PORT, true))
+                                        add(LightWalletEndpoint(YW_HOST_3, YW_PORT, true))
+                                        add(LightWalletEndpoint(YW_HOST_4, YW_PORT, true))
+                                        add(LightWalletEndpoint(YW_HOST_5, YW_PORT, true))
+                                        add(LightWalletEndpoint(YW_HOST_6, YW_PORT, true))
+                                        add(LightWalletEndpoint(YW_HOST_7, YW_PORT, true))
+                                        add(LightWalletEndpoint(YW_HOST_8, YW_PORT, true))
+                                    } else {
+                                        add(LightWalletEndpoint.Testnet)
+                                    }
                                 }
-                            }
-                    ).collect {
-                        fastestServers.value = it
-                    }
+                        ).collect {
+                            fastestServers.value = it
+                        }
                 }
 
                 Server(
@@ -278,11 +279,12 @@ internal fun ComposeActivity.Navigation() {
 
                                     walletViewModel.persistExistingWallet(newWallet)
 
-                                    Toast.makeText(
-                                        applicationContext,
-                                        "Server saved",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
+                                    Toast
+                                        .makeText(
+                                            applicationContext,
+                                            "Server saved",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
                                 }
 
                                 is ServerValidation.InValid -> {

@@ -17,5 +17,7 @@ internal sealed class GetSubtreeRootsResult {
 
     data object FailureConnection : GetSubtreeRootsResult()
 
-    data class OtherFailure(val exception: Throwable) : GetSubtreeRootsResult()
+    data class OtherFailure(
+        val exception: Throwable
+    ) : GetSubtreeRootsResult()
 }

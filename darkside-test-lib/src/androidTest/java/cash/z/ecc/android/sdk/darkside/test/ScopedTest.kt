@@ -18,7 +18,9 @@ import org.junit.BeforeClass
 import java.util.concurrent.TimeoutException
 
 @OptIn(DelicateCoroutinesApi::class)
-open class ScopedTest(val defaultTimeout: Long = 2000L) : DarksideTestPrerequisites() {
+open class ScopedTest(
+    val defaultTimeout: Long = 2000L
+) : DarksideTestPrerequisites() {
     protected lateinit var testScope: CoroutineScope
 
     // if an androidTest doesn't need a context, then maybe it should be a unit test instead?!
@@ -75,16 +77,17 @@ open class ScopedTest(val defaultTimeout: Long = 2000L) : DarksideTestPrerequisi
             duration: Long,
             block: suspend () -> Unit
         ) {
-            scope.launch {
-                delay(duration)
-                val message = "ERROR: Test timed out after ${duration}ms"
-                throw TimeoutException(message)
-            }.let { selfDestruction ->
-                scope.launch {
-                    block()
-                    selfDestruction.cancel()
+            scope
+                .launch {
+                    delay(duration)
+                    val message = "ERROR: Test timed out after ${duration}ms"
+                    throw TimeoutException(message)
+                }.let { selfDestruction ->
+                    scope.launch {
+                        block()
+                        selfDestruction.cancel()
+                    }
                 }
-            }
         }
     }
 }

@@ -4,7 +4,9 @@ import cash.z.ecc.android.sdk.exception.SdkException
 import cash.z.ecc.android.sdk.model.BlockHeight
 
 sealed interface RewindResult {
-    data class Success(val height: BlockHeight) : RewindResult
+    data class Success(
+        val height: BlockHeight
+    ) : RewindResult
 
     data class Invalid(
         val safeRewindHeight: BlockHeight?,
@@ -12,8 +14,8 @@ sealed interface RewindResult {
     ) : RewindResult
 
     companion object {
-        fun new(jni: JniRewindResult): RewindResult {
-            return when (jni) {
+        fun new(jni: JniRewindResult): RewindResult =
+            when (jni) {
                 is JniRewindResult.Success -> Success(BlockHeight.new(jni.height))
                 is JniRewindResult.Invalid ->
                     Invalid(
@@ -27,6 +29,5 @@ sealed interface RewindResult {
 
                 else -> throw SdkException("Unknown JniRewindResult variant", cause = null)
             }
-        }
     }
 }

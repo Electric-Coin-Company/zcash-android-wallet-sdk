@@ -13,7 +13,9 @@ import java.util.concurrent.atomic.AtomicBoolean
  *
  * @param libraryName Name of the library to load.
  */
-internal class NativeLibraryLoader(private val libraryName: String) {
+internal class NativeLibraryLoader(
+    private val libraryName: String
+) {
     private val isLoaded = AtomicBoolean(false)
     private val mutex = Mutex()
 

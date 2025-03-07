@@ -7,18 +7,25 @@ import cash.z.wallet.sdk.internal.rpc.Service.RawTransaction
  *
  * It is marked as "unsafe" because it is not guaranteed to be valid.
  */
-sealed class RawTransactionUnsafe(open val data: ByteArray) {
+sealed class RawTransactionUnsafe(
+    open val data: ByteArray
+) {
     /**
      * The transaction was found in a block mined in the current main chain.
      */
-    class MainChain(override val data: ByteArray, val height: BlockHeightUnsafe) : RawTransactionUnsafe(data)
+    class MainChain(
+        override val data: ByteArray,
+        val height: BlockHeightUnsafe
+    ) : RawTransactionUnsafe(data)
 
     /**
      * The transaction was found in the mempool, and can potentially be mined in the
      * current main chain.
      */
     @Suppress("SpellCheckingInspection")
-    class Mempool(override val data: ByteArray) : RawTransactionUnsafe(data)
+    class Mempool(
+        override val data: ByteArray
+    ) : RawTransactionUnsafe(data)
 
     /**
      * The transaction was found in an orphaned block.
@@ -27,7 +34,9 @@ sealed class RawTransactionUnsafe(open val data: ByteArray) {
      * means that the transaction is likely conflicted with the main chain (e.g. it may
      * double-spend funds spent in the main chain, or it may have expired).
      */
-    class OrphanedBlock(override val data: ByteArray) : RawTransactionUnsafe(data)
+    class OrphanedBlock(
+        override val data: ByteArray
+    ) : RawTransactionUnsafe(data)
 
     companion object {
         fun new(rawTransaction: RawTransaction): RawTransactionUnsafe {

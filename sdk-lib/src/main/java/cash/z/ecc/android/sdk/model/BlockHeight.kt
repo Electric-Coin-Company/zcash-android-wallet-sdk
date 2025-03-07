@@ -13,7 +13,9 @@ import cash.z.ecc.android.sdk.tool.CheckpointTool
  * For easier compatibility with Java clients, this class represents the height value as a Long with
  * assertions to ensure that it is a 32-bit unsigned integer.
  */
-data class BlockHeight internal constructor(val value: Long) : Comparable<BlockHeight> {
+data class BlockHeight internal constructor(
+    val value: Long
+) : Comparable<BlockHeight> {
     init {
         require(UINT_RANGE.contains(value)) { "Height $value is outside of allowed range $UINT_RANGE" }
     }
@@ -60,9 +62,7 @@ data class BlockHeight internal constructor(val value: Long) : Comparable<BlockH
         /**
          * @param blockHeight The block height.  Must be in range of a UInt32.
          */
-        fun new(blockHeight: Long): BlockHeight {
-            return BlockHeight(blockHeight)
-        }
+        fun new(blockHeight: Long): BlockHeight = BlockHeight(blockHeight)
 
         /**
          * Useful when creating a new wallet to reduce sync times.
@@ -73,8 +73,6 @@ data class BlockHeight internal constructor(val value: Long) : Comparable<BlockH
         suspend fun ofLatestCheckpoint(
             context: Context,
             zcashNetwork: ZcashNetwork
-        ): BlockHeight {
-            return CheckpointTool.loadNearest(context, zcashNetwork, null).height
-        }
+        ): BlockHeight = CheckpointTool.loadNearest(context, zcashNetwork, null).height
     }
 }

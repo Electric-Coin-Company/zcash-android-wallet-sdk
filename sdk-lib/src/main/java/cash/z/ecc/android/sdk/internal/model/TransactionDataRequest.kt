@@ -8,15 +8,21 @@ import cash.z.ecc.android.sdk.model.BlockHeight
  * Serves as cross layer (Kotlin, Rust) communication class.
  */
 sealed interface TransactionDataRequest {
-    sealed class EnhancementRequired(open val txid: ByteArray) : TransactionDataRequest {
+    sealed class EnhancementRequired(
+        open val txid: ByteArray
+    ) : TransactionDataRequest {
         abstract fun txIdString(): String
     }
 
-    data class GetStatus(override val txid: ByteArray) : EnhancementRequired(txid) {
+    data class GetStatus(
+        override val txid: ByteArray
+    ) : EnhancementRequired(txid) {
         override fun txIdString() = txid.toHexReversed()
     }
 
-    data class Enhancement(override val txid: ByteArray) : EnhancementRequired(txid) {
+    data class Enhancement(
+        override val txid: ByteArray
+    ) : EnhancementRequired(txid) {
         override fun txIdString() = txid.toHexReversed()
     }
 
@@ -35,8 +41,8 @@ sealed interface TransactionDataRequest {
     }
 
     companion object {
-        fun new(jni: JniTransactionDataRequest): TransactionDataRequest {
-            return when (jni) {
+        fun new(jni: JniTransactionDataRequest): TransactionDataRequest =
+            when (jni) {
                 is JniTransactionDataRequest.GetStatus -> GetStatus(jni.txid)
                 is JniTransactionDataRequest.Enhancement -> Enhancement(jni.txid)
                 is JniTransactionDataRequest.SpendsFromAddress ->
@@ -52,6 +58,5 @@ sealed interface TransactionDataRequest {
 
                 else -> throw SdkException("Unknown JniTransactionDataRequest variant", cause = null)
             }
-        }
     }
 }

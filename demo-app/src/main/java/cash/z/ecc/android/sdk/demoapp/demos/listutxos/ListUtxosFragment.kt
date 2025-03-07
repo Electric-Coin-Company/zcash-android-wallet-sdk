@@ -236,7 +236,5 @@ class ListUtxosFragment : BaseDemoFragment<FragmentListUtxosBinding>() {
     }
 
     @Suppress("MagicNumber")
-    private fun getUxtoEndHeight(): BlockHeight {
-        return BlockHeight.new(968085L)
-    }
+    private fun getUxtoEndHeight(): BlockHeight = BlockHeight.new(968085L)
 }

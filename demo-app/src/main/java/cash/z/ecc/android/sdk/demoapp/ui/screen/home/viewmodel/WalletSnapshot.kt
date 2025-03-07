@@ -15,7 +15,6 @@ data class WalletSnapshot(
     val progress: PercentDecimal,
     val synchronizerError: SynchronizerError?
 ) {
-    fun balanceByAccountUuid(accountUuid: AccountUuid): AccountBalance {
-        return walletBalances[accountUuid] ?: error("Balance of account? $accountUuid could not be found.")
-    }
+    fun balanceByAccountUuid(accountUuid: AccountUuid): AccountBalance =
+        walletBalances[accountUuid] ?: error("Balance of account? $accountUuid could not be found.")
 }

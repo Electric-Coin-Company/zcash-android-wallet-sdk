@@ -34,9 +34,13 @@ object ZecSendExt {
     }
 
     sealed class ZecSendValidation {
-        data class Valid(val zecSend: ZecSend) : ZecSendValidation()
+        data class Valid(
+            val zecSend: ZecSend
+        ) : ZecSendValidation()
 
-        data class Invalid(val validationErrors: Set<ValidationError>) : ZecSendValidation() {
+        data class Invalid(
+            val validationErrors: Set<ValidationError>
+        ) : ZecSendValidation() {
             enum class ValidationError {
                 INVALID_ADDRESS,
                 INVALID_AMOUNT,

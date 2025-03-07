@@ -10,7 +10,9 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.Clock
 import java.io.File
 
-internal class UsdExchangeRateFetcher(torDir: File) {
+internal class UsdExchangeRateFetcher(
+    torDir: File
+) {
     private val torHolder = TorClientHolder(torDir)
 
     @Suppress("TooGenericExceptionCaught", "ReturnCount")
@@ -65,7 +67,9 @@ internal class UsdExchangeRateFetcher(torDir: File) {
     }
 }
 
-private class TorClientHolder(private val torDir: File) {
+private class TorClientHolder(
+    private val torDir: File
+) {
     private val mutex = Mutex()
     private var torClient: TorClient? = null
 

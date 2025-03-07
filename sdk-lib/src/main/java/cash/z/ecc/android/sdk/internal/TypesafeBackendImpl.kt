@@ -28,7 +28,9 @@ import cash.z.ecc.android.sdk.model.ZcashNetwork
 import kotlinx.coroutines.withContext
 
 @Suppress("TooManyFunctions")
-internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBackend {
+internal class TypesafeBackendImpl(
+    private val backend: Backend
+) : TypesafeBackend {
     override val network: ZcashNetwork
         get() = ZcashNetwork.from(backend.networkId)
 
@@ -40,8 +42,8 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
         seed: FirstClassByteArray,
         treeState: TreeState,
         recoverUntil: BlockHeight?
-    ): AccountUsk {
-        return AccountUsk.new(
+    ): AccountUsk =
+        AccountUsk.new(
             backend.createAccount(
                 accountName = accountName,
                 keySource = keySource,
@@ -50,14 +52,13 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
                 recoverUntil = recoverUntil?.value
             )
         )
-    }
 
     override suspend fun importAccountUfvk(
         recoverUntil: BlockHeight?,
         setup: AccountImportSetup,
         treeState: TreeState,
-    ): Account {
-        return Account.new(
+    ): Account =
+        Account.new(
             jniAccount =
                 when (setup.purpose) {
                     is AccountPurpose.Spending ->
@@ -84,11 +85,11 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
                         )
                 }
         )
-    }
 
-    override suspend fun getAccountForUfvk(ufvk: UnifiedFullViewingKey): Account? {
-        return backend.getAccountForUfvk(ufvk = ufvk.encoding)?.let { Account.new(it) }
-    }
+    override suspend fun getAccountForUfvk(ufvk: UnifiedFullViewingKey): Account? =
+        backend.getAccountForUfvk(ufvk = ufvk.encoding)?.let {
+            Account.new(it)
+        }
 
     override suspend fun proposeTransferFromUri(
         account: Account,
@@ -123,25 +124,27 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
         memo: ByteArray?,
         transparentReceiver: String?
     ): Proposal? =
-        backend.proposeShielding(
-            account.accountUuid.value,
-            shieldingThreshold,
-            memo,
-            transparentReceiver
-        )?.let {
-            Proposal.fromUnsafe(
-                it
-            )
-        }
+        backend
+            .proposeShielding(
+                account.accountUuid.value,
+                shieldingThreshold,
+                memo,
+                transparentReceiver
+            )?.let {
+                Proposal.fromUnsafe(
+                    it
+                )
+            }
 
     override suspend fun createProposedTransactions(
         proposal: Proposal,
         usk: UnifiedSpendingKey
     ): List<FirstClassByteArray> =
-        backend.createProposedTransactions(
-            proposal.toUnsafe(),
-            usk.copyBytes()
-        ).map { FirstClassByteArray(it) }
+        backend
+            .createProposedTransactions(
+                proposal.toUnsafe(),
+                usk.copyBytes()
+            ).map { FirstClassByteArray(it) }
 
     override suspend fun createPcztFromProposal(
         account: Account,
@@ -156,9 +159,8 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
 
     override suspend fun redactPcztForSigner(pczt: Pczt): Pczt = Pczt(backend.redactPcztForSigner(pczt.toByteArray()))
 
-    override suspend fun pcztRequiresSaplingProofs(pczt: Pczt): Boolean {
-        return backend.pcztRequiresSaplingProofs(pczt.toByteArray())
-    }
+    override suspend fun pcztRequiresSaplingProofs(pczt: Pczt): Boolean =
+        backend.pcztRequiresSaplingProofs(pczt.toByteArray())
 
     override suspend fun addProofsToPczt(pczt: Pczt): Pczt = Pczt(backend.addProofsToPczt(pczt.toByteArray()))
 
@@ -173,35 +175,27 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
             )
         )
 
-    override suspend fun getCurrentAddress(account: Account): String {
-        return runCatching {
+    override suspend fun getCurrentAddress(account: Account): String =
+        runCatching {
             backend.getCurrentAddress(account.accountUuid.value)
         }.onFailure {
             Twig.warn(it) { "Currently unable to get current address" }
         }.getOrElse { throw RustLayerException.GetAddressException(it) }
-    }
 
-    override suspend fun listTransparentReceivers(account: Account): List<String> {
-        return backend.listTransparentReceivers(account.accountUuid.value)
-    }
+    override suspend fun listTransparentReceivers(account: Account): List<String> =
+        backend.listTransparentReceivers(account.accountUuid.value)
 
-    override fun getBranchIdForHeight(height: BlockHeight): Long {
-        return backend.getBranchIdForHeight(height.value)
-    }
+    override fun getBranchIdForHeight(height: BlockHeight): Long = backend.getBranchIdForHeight(height.value)
 
-    override suspend fun rewindToHeight(height: BlockHeight): RewindResult {
-        return RewindResult.new(backend.rewindToHeight(height.value))
-    }
+    override suspend fun rewindToHeight(height: BlockHeight): RewindResult =
+        RewindResult.new(backend.rewindToHeight(height.value))
 
-    override suspend fun getLatestCacheHeight(): BlockHeight? {
-        return backend.getLatestCacheHeight()?.let {
+    override suspend fun getLatestCacheHeight(): BlockHeight? =
+        backend.getLatestCacheHeight()?.let {
             BlockHeight.new(it)
         }
-    }
 
-    override suspend fun findBlockMetadata(height: BlockHeight): JniBlockMeta? {
-        return backend.findBlockMetadata(height.value)
-    }
+    override suspend fun findBlockMetadata(height: BlockHeight): JniBlockMeta? = backend.findBlockMetadata(height.value)
 
     override suspend fun rewindBlockMetadataToHeight(height: BlockHeight) {
         backend.rewindBlockMetadataToHeight(height.value)
@@ -222,15 +216,13 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
         script: ByteArray,
         value: Long,
         height: BlockHeight
-    ) {
-        return backend.putUtxo(
-            txId,
-            index,
-            script,
-            value,
-            height.value
-        )
-    }
+    ) = backend.putUtxo(
+        txId,
+        index,
+        script,
+        value,
+        height.value
+    )
 
     override suspend fun getMemoAsUtf8(
         txId: ByteArray,
@@ -280,25 +272,23 @@ internal class TypesafeBackendImpl(private val backend: Backend) : TypesafeBacke
 
     override suspend fun updateChainTip(height: BlockHeight) = backend.updateChainTip(height.value)
 
-    override suspend fun getFullyScannedHeight(): BlockHeight? {
-        return runCatching {
+    override suspend fun getFullyScannedHeight(): BlockHeight? =
+        runCatching {
             backend.getFullyScannedHeight()?.let {
                 BlockHeight.new(it)
             }
         }.onFailure {
             Twig.warn(it) { "Currently unable to get fully scanned height" }
         }.getOrElse { throw RustLayerException.GetFullyScannedHeight(it) }
-    }
 
-    override suspend fun getMaxScannedHeight(): BlockHeight? {
-        return runCatching {
+    override suspend fun getMaxScannedHeight(): BlockHeight? =
+        runCatching {
             backend.getMaxScannedHeight()?.let {
                 BlockHeight.new(it)
             }
         }.onFailure {
             Twig.warn(it) { "Currently unable to get max scanned height" }
         }.getOrElse { throw RustLayerException.GetMaxScannedHeight(it) }
-    }
 
     override suspend fun scanBlocks(
         fromHeight: BlockHeight,

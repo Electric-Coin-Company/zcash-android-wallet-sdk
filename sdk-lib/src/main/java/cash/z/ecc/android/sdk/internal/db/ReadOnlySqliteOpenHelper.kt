@@ -36,14 +36,13 @@ internal class ReadOnlySqliteOpenHelper(
             context: Context,
             name: String,
             databaseVersion: Int
-        ): SQLiteDatabase {
-            return withContext(Dispatchers.IO) {
+        ): SQLiteDatabase =
+            withContext(Dispatchers.IO) {
                 ReadOnlySqliteOpenHelper(
                     context,
                     name,
                     databaseVersion
                 ).readableDatabase
             }
-        }
     }
 }

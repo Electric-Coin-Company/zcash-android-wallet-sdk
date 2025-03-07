@@ -80,24 +80,22 @@ class RustBackend private constructor(
             )
         }
 
-    override suspend fun getAccounts(): List<JniAccount> {
-        return withContext(SdkDispatchers.DATABASE_IO) {
+    override suspend fun getAccounts(): List<JniAccount> =
+        withContext(SdkDispatchers.DATABASE_IO) {
             getAccounts(
                 dbDataPath = dataDbFile.absolutePath,
                 networkId = networkId
             ).asList()
         }
-    }
 
-    override suspend fun getAccountForUfvk(ufvk: String): JniAccount? {
-        return withContext(SdkDispatchers.DATABASE_IO) {
+    override suspend fun getAccountForUfvk(ufvk: String): JniAccount? =
+        withContext(SdkDispatchers.DATABASE_IO) {
             getAccountForUfvk(
                 dbDataPath = dataDbFile.absolutePath,
                 networkId = networkId,
                 ufvk = ufvk,
             )
         }
-    }
 
     override suspend fun createAccount(
         accountName: String,
@@ -105,8 +103,8 @@ class RustBackend private constructor(
         seed: ByteArray,
         treeState: ByteArray,
         recoverUntil: Long?,
-    ): JniAccountUsk {
-        return withContext(SdkDispatchers.DATABASE_IO) {
+    ): JniAccountUsk =
+        withContext(SdkDispatchers.DATABASE_IO) {
             createAccount(
                 dbDataPath = dataDbFile.absolutePath,
                 networkId = networkId,
@@ -117,7 +115,6 @@ class RustBackend private constructor(
                 recoverUntil = recoverUntil ?: -1,
             )
         }
-    }
 
     override suspend fun importAccountUfvk(
         accountName: String,
@@ -128,8 +125,8 @@ class RustBackend private constructor(
         purpose: Int,
         seedFingerprint: ByteArray?,
         zip32AccountIndex: Long?,
-    ): JniAccount {
-        return withContext(SdkDispatchers.DATABASE_IO) {
+    ): JniAccount =
+        withContext(SdkDispatchers.DATABASE_IO) {
             importAccountUfvk(
                 dbDataPath = dataDbFile.absolutePath,
                 networkId = networkId,
@@ -143,7 +140,6 @@ class RustBackend private constructor(
                 zip32AccountIndex = zip32AccountIndex ?: -1,
             )
         }
-    }
 
     override suspend fun isSeedRelevantToAnyDerivedAccounts(seed: ByteArray): Boolean =
         withContext(SdkDispatchers.DATABASE_IO) {
@@ -167,15 +163,14 @@ class RustBackend private constructor(
 
     override fun getSaplingReceiver(ua: String) = getSaplingReceiverForUnifiedAddress(ua)
 
-    override suspend fun listTransparentReceivers(accountUuid: ByteArray): List<String> {
-        return withContext(SdkDispatchers.DATABASE_IO) {
+    override suspend fun listTransparentReceivers(accountUuid: ByteArray): List<String> =
+        withContext(SdkDispatchers.DATABASE_IO) {
             listTransparentReceivers(
                 dbDataPath = dataDbFile.absolutePath,
                 accountUuid = accountUuid,
                 networkId = networkId
             ).asList()
         }
-    }
 
     override suspend fun getMemoAsUtf8(
         txId: ByteArray,
@@ -310,21 +305,20 @@ class RustBackend private constructor(
             )
         }
 
-    override suspend fun suggestScanRanges(): List<JniScanRange> {
-        return withContext(SdkDispatchers.DATABASE_IO) {
+    override suspend fun suggestScanRanges(): List<JniScanRange> =
+        withContext(SdkDispatchers.DATABASE_IO) {
             suggestScanRanges(
                 dataDbFile.absolutePath,
                 networkId = networkId
             ).asList()
         }
-    }
 
     override suspend fun scanBlocks(
         fromHeight: Long,
         fromState: ByteArray,
         limit: Long
-    ): JniScanSummary {
-        return withContext(SdkDispatchers.DATABASE_IO) {
+    ): JniScanSummary =
+        withContext(SdkDispatchers.DATABASE_IO) {
             scanBlocks(
                 fsBlockDbRoot.absolutePath,
                 dataDbFile.absolutePath,
@@ -334,16 +328,14 @@ class RustBackend private constructor(
                 networkId = networkId
             )
         }
-    }
 
-    override suspend fun transactionDataRequests(): List<JniTransactionDataRequest> {
-        return withContext(SdkDispatchers.DATABASE_IO) {
+    override suspend fun transactionDataRequests(): List<JniTransactionDataRequest> =
+        withContext(SdkDispatchers.DATABASE_IO) {
             transactionDataRequests(
                 dbDataPath = dataDbFile.absolutePath,
                 networkId = networkId
             ).asList()
         }
-    }
 
     override suspend fun decryptAndStoreTransaction(
         tx: ByteArray,
@@ -396,8 +388,8 @@ class RustBackend private constructor(
         shieldingThreshold: Long,
         memo: ByteArray?,
         transparentReceiver: String?
-    ): ProposalUnsafe? {
-        return withContext(SdkDispatchers.DATABASE_IO) {
+    ): ProposalUnsafe? =
+        withContext(SdkDispatchers.DATABASE_IO) {
             proposeShielding(
                 dataDbFile.absolutePath,
                 accountUuid,
@@ -411,7 +403,6 @@ class RustBackend private constructor(
                 )
             }
         }
-    }
 
     override suspend fun createProposedTransactions(
         proposal: ProposalUnsafe,

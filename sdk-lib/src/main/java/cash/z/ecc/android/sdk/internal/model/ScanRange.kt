@@ -8,9 +8,8 @@ internal data class ScanRange(
 ) {
     override fun toString() = "ScanRange(range=$range, priority=${getSuggestScanRangePriority()})"
 
-    internal fun getSuggestScanRangePriority(): SuggestScanRangePriority {
-        return SuggestScanRangePriority.entries.first { it.priority == priority }
-    }
+    internal fun getSuggestScanRangePriority(): SuggestScanRangePriority =
+        SuggestScanRangePriority.entries.first { it.priority == priority }
 
     init {
         require(SuggestScanRangePriority.entries.map { it.priority }.contains(priority)) {
@@ -23,17 +22,18 @@ internal data class ScanRange(
          *  Note that this function subtracts 1 from [JniScanRange.endHeight] as the rest of the logic works with
          *  [ClosedRange] and the endHeight is exclusive.
          */
-        fun new(jni: JniScanRange): ScanRange {
-            return ScanRange(
+        fun new(jni: JniScanRange): ScanRange =
+            ScanRange(
                 range = BlockHeight.new(jni.startHeight)..(BlockHeight.new(jni.endHeight) - 1),
                 priority = jni.priority
             )
-        }
     }
 }
 
 @Suppress("MagicNumber")
-internal enum class SuggestScanRangePriority(val priority: Long) {
+internal enum class SuggestScanRangePriority(
+    val priority: Long
+) {
     Ignored(0),
     Scanned(10),
     Historic(20),

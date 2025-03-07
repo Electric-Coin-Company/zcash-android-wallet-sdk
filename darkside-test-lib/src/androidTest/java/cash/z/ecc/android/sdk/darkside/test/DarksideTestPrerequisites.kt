@@ -24,8 +24,10 @@ open class DarksideTestPrerequisites {
             if (isDebuggable(context)) {
                 // This is imperfect and could break in the future
                 if (null == Build.DEVICE ||
-                    "generic" == Build.DEVICE || // $NON-NLS
-                    ("generic_x86" == Build.DEVICE) // $NON-NLS
+                    // $NON-NLS
+                    "generic" == Build.DEVICE ||
+                    // $NON-NLS
+                    ("generic_x86" == Build.DEVICE)
                 ) {
                     return true
                 }

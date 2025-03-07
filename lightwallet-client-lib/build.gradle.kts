@@ -133,7 +133,7 @@ dependencies {
 }
 
 tasks {
-    getByName("preBuild").dependsOn(create("bugfixTask") {
+    getByName("preBuild").dependsOn(register("bugfixTask") {
         doFirst {
             mkdir("build/extracted-include-protos/main")
         }

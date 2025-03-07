@@ -50,25 +50,17 @@ fun PendingTransaction.isCreated() = raw.byteArray.isNotEmpty() && submitAttempt
 
 fun PendingTransaction.isFailedEncoding() = raw.byteArray.isEmpty() && encodeAttempts > 0
 
-fun PendingTransaction.isFailedSubmit(): Boolean {
-    return errorMessage != null || (errorCode != null && errorCode < 0)
-}
+fun PendingTransaction.isFailedSubmit(): Boolean = errorMessage != null || (errorCode != null && errorCode < 0)
 
-fun PendingTransaction.isFailure(): Boolean {
-    return isFailedEncoding() || isFailedSubmit()
-}
+fun PendingTransaction.isFailure(): Boolean = isFailedEncoding() || isFailedSubmit()
 
 // fun PendingTransaction.isCancelled(): Boolean {
 //     return cancelled > 0
 // }
 
-fun PendingTransaction.isMined(): Boolean {
-    return minedHeight != null
-}
+fun PendingTransaction.isMined(): Boolean = minedHeight != null
 
-internal fun PendingTransaction.isSubmitted(): Boolean {
-    return submitAttempts > 0
-}
+internal fun PendingTransaction.isSubmitted(): Boolean = submitAttempts > 0
 
 @Suppress("ReturnCount")
 internal fun PendingTransaction.isExpired(
@@ -111,9 +103,8 @@ internal fun PendingTransaction.isLongExpired(
 
 private const val ERROR_CODE_MARKED_FOR_DELETION = -9090
 
-internal fun PendingTransaction.isMarkedForDeletion(): Boolean {
-    return rawTransactionId == null && (errorCode ?: 0) == ERROR_CODE_MARKED_FOR_DELETION
-}
+internal fun PendingTransaction.isMarkedForDeletion(): Boolean =
+    rawTransactionId == null && (errorCode ?: 0) == ERROR_CODE_MARKED_FOR_DELETION
 
 private val smallThreshold = 30.minutes
 private val hugeThreshold = 30.days
@@ -138,10 +129,10 @@ internal fun PendingTransaction.isSafeToDiscard(): Boolean {
 
 fun PendingTransaction.isPending(currentHeight: BlockHeight?): Boolean {
     // not mined and not expired and successfully created
-    return !isSubmitSuccess() && minedHeight == null &&
+    return !isSubmitSuccess() &&
+        minedHeight == null &&
         (expiryHeight == null || expiryHeight.value > (currentHeight?.value ?: 0L))
 }
 
-fun PendingTransaction.isSubmitSuccess(): Boolean {
-    return submitAttempts > 0 && (errorCode != null && errorCode >= 0) && errorMessage == null
-}
+fun PendingTransaction.isSubmitSuccess(): Boolean =
+    submitAttempts > 0 && (errorCode != null && errorCode >= 0) && errorMessage == null

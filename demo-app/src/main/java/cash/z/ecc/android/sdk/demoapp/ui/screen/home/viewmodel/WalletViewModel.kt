@@ -64,7 +64,9 @@ import kotlin.time.Duration.Companion.seconds
 // To make this more multiplatform compatible, we need to remove the dependency on Context
 // for loading the preferences.
 @Suppress("TooManyFunctions")
-class WalletViewModel(application: Application) : AndroidViewModel(application) {
+class WalletViewModel(
+    application: Application
+) : AndroidViewModel(application) {
     private val walletCoordinator = WalletCoordinator.getInstance(application)
 
     /*
@@ -128,8 +130,7 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
                 } else {
                     it.toWalletSnapshot()
                 }
-            }
-            .throttle(1.seconds)
+            }.throttle(1.seconds)
             .stateIn(
                 viewModelScope,
                 SharingStarted.WhileSubscribed(ANDROID_STATE_FLOW_TIMEOUT),
@@ -241,11 +242,12 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
             val account = getCurrentAccount()
             // Calling the proposal API within a blocking coroutine should be fine for the showcase purpose
             runBlocking {
-                kotlin.runCatching {
-                    synchronizer.proposeSend(account, zecSend)
-                }.onFailure {
-                    Twig.error(it) { "Failed to get transaction proposal" }
-                }.getOrNull()
+                kotlin
+                    .runCatching {
+                        synchronizer.proposeSend(account, zecSend)
+                    }.onFailure {
+                        Twig.error(it) { "Failed to get transaction proposal" }
+                    }.getOrNull()
             }
         } else {
             error("Unable to send funds because synchronizer is not loaded.")
@@ -266,11 +268,12 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
             val account = getCurrentAccount()
             // Calling the proposal API within a blocking coroutine should be fine for the showcase purpose
             runBlocking {
-                kotlin.runCatching {
-                    synchronizer.proposeFulfillingPaymentUri(account, uri)
-                }.onFailure {
-                    Twig.error(it) { "Failed to get transaction proposal from uri" }
-                }.getOrNull()
+                kotlin
+                    .runCatching {
+                        synchronizer.proposeFulfillingPaymentUri(account, uri)
+                    }.onFailure {
+                        Twig.error(it) { "Failed to get transaction proposal from uri" }
+                    }.getOrNull()
             }
         } else {
             error("Unable to send funds because synchronizer is not loaded.")
@@ -294,16 +297,16 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
             val account = getCurrentAccount()
             viewModelScope.launch {
                 val spendingKey = spendingKey.filterNotNull().first()
-                kotlin.runCatching {
-                    @Suppress("MagicNumber")
-                    synchronizer.proposeShielding(account, Zatoshi(100000))?.let {
-                        synchronizer.createProposedTransactions(
-                            it,
-                            spendingKey
-                        )
-                    }
-                }
-                    .onSuccess { it?.let { mutableSendState.value = SendState.Sent(it.toList()) } }
+                kotlin
+                    .runCatching {
+                        @Suppress("MagicNumber")
+                        synchronizer.proposeShielding(account, Zatoshi(100000))?.let {
+                            synchronizer.createProposedTransactions(
+                                it,
+                                spendingKey
+                            )
+                        }
+                    }.onSuccess { it?.let { mutableSendState.value = SendState.Sent(it.toList()) } }
                     .onFailure { mutableSendState.value = SendState.Error(it) }
             }
         } else {
@@ -365,11 +368,12 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
 
         return if (null != synchronizer) {
             runBlocking {
-                kotlin.runCatching {
-                    synchronizer.getAccounts()
-                }.onFailure {
-                    Twig.error(it) { "Failed to get wallet accounts" }
-                }.getOrThrow()
+                kotlin
+                    .runCatching {
+                        synchronizer.getAccounts()
+                    }.onFailure {
+                        Twig.error(it) { "Failed to get wallet accounts" }
+                    }.getOrThrow()
             }
         } else {
             error("Unable get wallet accounts.")
@@ -382,8 +386,7 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
             .filterNotNull()
             .flatMapLatest {
                 it.accountsFlow.filterNotNull()
-            }
-            .stateIn(
+            }.stateIn(
                 viewModelScope,
                 SharingStarted.WhileSubscribed(ANDROID_STATE_FLOW_TIMEOUT),
                 emptyList()
@@ -404,7 +407,9 @@ sealed class SecretState {
 
     object None : SecretState()
 
-    class Ready(val persistableWallet: PersistableWallet) : SecretState()
+    class Ready(
+        val persistableWallet: PersistableWallet
+    ) : SecretState()
 }
 
 sealed class SendState {
@@ -416,11 +421,15 @@ sealed class SendState {
         override fun toString(): String = "Sending"
     }
 
-    class Sent(val txIds: List<TransactionSubmitResult>) : SendState() {
+    class Sent(
+        val txIds: List<TransactionSubmitResult>
+    ) : SendState() {
         override fun toString(): String = "Sent"
     }
 
-    class Error(val error: Throwable) : SendState() {
+    class Error(
+        val error: Throwable
+    ) : SendState() {
         override fun toString(): String = "Error ${error.message}"
     }
 }
@@ -435,23 +444,34 @@ sealed class SendState {
 sealed class SynchronizerError {
     abstract fun getCauseMessage(): String?
 
-    class Critical(val error: Throwable?) : SynchronizerError() {
+    class Critical(
+        val error: Throwable?
+    ) : SynchronizerError() {
         override fun getCauseMessage(): String? = error?.localizedMessage
     }
 
-    class Processor(val error: Throwable?) : SynchronizerError() {
+    class Processor(
+        val error: Throwable?
+    ) : SynchronizerError() {
         override fun getCauseMessage(): String? = error?.localizedMessage
     }
 
-    class Submission(val error: Throwable?) : SynchronizerError() {
+    class Submission(
+        val error: Throwable?
+    ) : SynchronizerError() {
         override fun getCauseMessage(): String? = error?.localizedMessage
     }
 
-    class Setup(val error: Throwable?) : SynchronizerError() {
+    class Setup(
+        val error: Throwable?
+    ) : SynchronizerError() {
         override fun getCauseMessage(): String? = error?.localizedMessage
     }
 
-    class Chain(val x: BlockHeight, val y: BlockHeight) : SynchronizerError() {
+    class Chain(
+        val x: BlockHeight,
+        val y: BlockHeight
+    ) : SynchronizerError() {
         override fun getCauseMessage(): String = "$x, $y"
     }
 }

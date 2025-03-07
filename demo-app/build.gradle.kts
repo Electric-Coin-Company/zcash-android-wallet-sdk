@@ -1,6 +1,7 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+    id("org.jetbrains.kotlin.plugin.compose")
     id("zcash-sdk.android-conventions")
     id("kotlin-parcelize")
     id("androidx.navigation.safeargs")

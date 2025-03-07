@@ -29,20 +29,24 @@ object ZecStringExt {
         context: Context,
         separators: MonetarySeparators,
         zecString: String
-    ): Boolean {
-        return if (separators.isGroupingValid()) {
-            context.getString(
-                R.string.co_electriccoin_zcash_zec_amount_regex_continuous_filter,
-                separators.grouping,
-                separators.decimal
-            ).toRegex().matches(zecString) && checkFor3Digits(separators, zecString)
+    ): Boolean =
+        if (separators.isGroupingValid()) {
+            context
+                .getString(
+                    R.string.co_electriccoin_zcash_zec_amount_regex_continuous_filter,
+                    separators.grouping,
+                    separators.decimal
+                ).toRegex()
+                .matches(zecString) &&
+                checkFor3Digits(separators, zecString)
         } else {
-            context.getString(
-                R.string.co_electriccoin_zcash_zec_amount_regex_continuous_no_grouping_filter,
-                separators.decimal
-            ).toRegex().matches(zecString)
+            context
+                .getString(
+                    R.string.co_electriccoin_zcash_zec_amount_regex_continuous_no_grouping_filter,
+                    separators.decimal
+                ).toRegex()
+                .matches(zecString)
         }
-    }
 
     /**
      * Checks for at least 3 digits between grouping separators.
@@ -100,16 +104,21 @@ object ZecStringExt {
         }
 
         return if (separators.isGroupingValid()) {
-            context.getString(
-                R.string.co_electriccoin_zcash_zec_amount_regex_confirm_filter,
-                separators.grouping,
-                separators.decimal
-            ).toRegex().matches(zecString) && checkFor3Digits(separators, zecString)
+            context
+                .getString(
+                    R.string.co_electriccoin_zcash_zec_amount_regex_confirm_filter,
+                    separators.grouping,
+                    separators.decimal
+                ).toRegex()
+                .matches(zecString) &&
+                checkFor3Digits(separators, zecString)
         } else {
-            context.getString(
-                R.string.co_electriccoin_zcash_zec_amount_regex_confirm_no_grouping_filter,
-                separators.decimal
-            ).toRegex().matches(zecString)
+            context
+                .getString(
+                    R.string.co_electriccoin_zcash_zec_amount_regex_confirm_no_grouping_filter,
+                    separators.decimal
+                ).toRegex()
+                .matches(zecString)
         }
     }
 }

@@ -43,7 +43,7 @@ class StartupBenchmark : UiTestPrerequisites() {
         private const val TRANSPARENT_ADDRESS_SECTION = "TRANSPARENT_ADDRESS" // NON-NLS
     }
 
-    private val unifiedAddressPattern = "^[a-z0-9]{141}$".toPattern() // NON-NLS
+    private val unifiedAddressPattern = "^u1[a-z0-9]{211}$".toPattern() // NON-NLS
     private val saplingAddressPattern = "^[a-z0-9]{78}$".toPattern() // NON-NLS
     private val transparentAddressPattern = "^[a-zA-Z0-9]{35}$".toPattern() // NON-NLS
 
@@ -79,10 +79,26 @@ class StartupBenchmark : UiTestPrerequisites() {
             packageName = APP_TARGET_PACKAGE_NAME,
             metrics =
                 listOf(
-                    TraceSectionMetric(ADDRESS_SCREEN_SECTION, TraceSectionMetric.Mode.First, false),
-                    TraceSectionMetric(UNIFIED_ADDRESS_SECTION, TraceSectionMetric.Mode.First, false),
-                    TraceSectionMetric(SAPLING_ADDRESS_SECTION, TraceSectionMetric.Mode.First, false),
-                    TraceSectionMetric(TRANSPARENT_ADDRESS_SECTION, TraceSectionMetric.Mode.First, false)
+                    TraceSectionMetric(
+                        sectionName = ADDRESS_SCREEN_SECTION,
+                        mode = TraceSectionMetric.Mode.First,
+                        targetPackageOnly = false
+                    ),
+                    TraceSectionMetric(
+                        sectionName = UNIFIED_ADDRESS_SECTION,
+                        mode = TraceSectionMetric.Mode.First,
+                        targetPackageOnly = false
+                    ),
+                    TraceSectionMetric(
+                        sectionName = SAPLING_ADDRESS_SECTION,
+                        mode = TraceSectionMetric.Mode.First,
+                        targetPackageOnly = false
+                    ),
+                    TraceSectionMetric(
+                        sectionName = TRANSPARENT_ADDRESS_SECTION,
+                        mode = TraceSectionMetric.Mode.First,
+                        targetPackageOnly = false
+                    )
                 ),
             compilationMode = CompilationMode.Full(),
             startupMode = StartupMode.COLD,
@@ -114,16 +130,15 @@ class StartupBenchmark : UiTestPrerequisites() {
     private fun MacrobenchmarkScope.waitForAddressAppear(
         addressPattern: Pattern,
         timeout: Duration
-    ): Boolean {
-        return device.waitFor(Until.hasObject(By.text(addressPattern)), timeout)
-    }
+    ): Boolean = device.waitFor(Until.hasObject(By.text(addressPattern)), timeout)
 
     // TODO [#808]: Add demo-ui-lib module (and reference the hardcoded texts here)
     // TODO [#808]: https://github.com/zcash/zcash-android-wallet-sdk/issues/808
 
     private fun MacrobenchmarkScope.gotoAddressScreen() {
         // Open drawer menu
-        device.findObject(By.desc("Open navigation drawer")) // NON-NLS
+        device
+            .findObject(By.desc("Open navigation drawer")) // NON-NLS
             .clickAndWaitFor(Until.newWindow(), 2.seconds)
         // Navigate to Addresses screen
         device.findObject(By.text("Get Address")).click() // NON-NLS

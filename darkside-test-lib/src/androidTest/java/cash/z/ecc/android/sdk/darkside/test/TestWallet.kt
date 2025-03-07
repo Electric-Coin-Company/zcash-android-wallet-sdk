@@ -80,7 +80,11 @@ class TestWallet(
         ) as SdkSynchronizer
 
     val available
-        get() = synchronizer.walletBalances.value?.get(account.accountUuid)?.sapling?.available
+        get() =
+            synchronizer.walletBalances.value
+                ?.get(account.accountUuid)
+                ?.sapling
+                ?.available
     val unifiedAddress =
         runBlocking { synchronizer.getUnifiedAddress(account) }
     val transparentAddress =
@@ -164,7 +168,11 @@ class TestWallet(
     companion object {
     }
 
-    enum class Backups(val seedPhrase: String, val testnetBirthday: BlockHeight, val mainnetBirthday: BlockHeight) {
+    enum class Backups(
+        val seedPhrase: String,
+        val testnetBirthday: BlockHeight,
+        val mainnetBirthday: BlockHeight
+    ) {
         // TODO [#902]: Get the proper birthday values for test wallets
         // TODO [#902]: https://github.com/zcash/zcash-android-wallet-sdk/issues/902
         DEFAULT(

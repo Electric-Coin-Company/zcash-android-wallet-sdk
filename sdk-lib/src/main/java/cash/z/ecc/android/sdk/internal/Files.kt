@@ -50,7 +50,5 @@ internal object Files {
         return dir
     }
 
-    suspend fun getTorDir(context: Context): File {
-        return File(getZcashNoBackupSubdirectory(context), TOR_SUBDIR)
-    }
+    suspend fun getTorDir(context: Context): File = File(getZcashNoBackupSubdirectory(context), TOR_SUBDIR)
 }

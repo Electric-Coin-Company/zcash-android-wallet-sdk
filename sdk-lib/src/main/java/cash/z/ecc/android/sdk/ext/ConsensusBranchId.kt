@@ -8,7 +8,11 @@ import java.util.Locale
  * printing that information to users.
  */
 @Suppress("MagicNumber")
-enum class ConsensusBranchId(val displayName: String, val id: Long, val hexId: String) {
+enum class ConsensusBranchId(
+    val displayName: String,
+    val id: Long,
+    val hexId: String
+) {
     // TODO [#679]: see if we can find a way to not rely on this separate source of truth (either stop converting from
     //  hex to display name in the apps or use Rust to get this info)
     // TODO [#679]: https://github.com/zcash/zcash-android-wallet-sdk/issues/679

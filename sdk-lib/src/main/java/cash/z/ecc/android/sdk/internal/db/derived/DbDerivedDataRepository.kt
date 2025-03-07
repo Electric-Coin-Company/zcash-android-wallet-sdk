@@ -21,13 +21,11 @@ internal class DbDerivedDataRepository(
 ) : DerivedDataRepository {
     private val invalidatingFlow = MutableStateFlow(UUID.randomUUID())
 
-    override suspend fun firstUnenhancedHeight(): BlockHeight? {
-        return derivedDataDb.allTransactionView.firstUnenhancedHeight()
-    }
+    override suspend fun firstUnenhancedHeight(): BlockHeight? =
+        derivedDataDb.allTransactionView.firstUnenhancedHeight()
 
-    override suspend fun findEncodedTransactionByTxId(txId: FirstClassByteArray): EncodedTransaction? {
-        return derivedDataDb.transactionTable.findEncodedTransactionByTxId(txId)
-    }
+    override suspend fun findEncodedTransactionByTxId(txId: FirstClassByteArray): EncodedTransaction? =
+        derivedDataDb.transactionTable.findEncodedTransactionByTxId(txId)
 
     override suspend fun findUnminedTransactionsWithinExpiry(blockHeight: BlockHeight): List<DbTransactionOverview> =
         derivedDataDb.allTransactionView.getUnminedUnexpiredTransactions(blockHeight).toList()
@@ -68,19 +66,15 @@ internal class DbDerivedDataRepository(
                 }
             }
 
-    override fun getRecipients(transactionId: TransactionId): Flow<TransactionRecipient> {
-        return derivedDataDb.txOutputsView.getRecipients(transactionId.value)
-    }
+    override fun getRecipients(transactionId: TransactionId): Flow<TransactionRecipient> =
+        derivedDataDb.txOutputsView.getRecipients(transactionId.value)
 
-    override suspend fun findBlockByHeight(blockHeight: BlockHeight): DbBlock? {
-        return derivedDataDb.blockTable.findBlockByExpiryHeight(blockHeight)
-    }
+    override suspend fun findBlockByHeight(blockHeight: BlockHeight): DbBlock? =
+        derivedDataDb.blockTable.findBlockByExpiryHeight(blockHeight)
 
     override suspend fun close() {
         derivedDataDb.close()
     }
 
-    override suspend fun isClosed(): Boolean {
-        return derivedDataDb.isClosed()
-    }
+    override suspend fun isClosed(): Boolean = derivedDataDb.isClosed()
 }

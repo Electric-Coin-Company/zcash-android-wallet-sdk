@@ -161,11 +161,12 @@ internal class AllTransactionView(
         }
 
     suspend fun count() =
-        sqliteDatabase.queryAndMap(
-            AllTransactionViewDefinition.VIEW_NAME,
-            columns = PROJECTION_COUNT,
-            cursorParser = { it.getLong(0) }
-        ).first()
+        sqliteDatabase
+            .queryAndMap(
+                AllTransactionViewDefinition.VIEW_NAME,
+                columns = PROJECTION_COUNT,
+                cursorParser = { it.getLong(0) }
+            ).first()
 
     fun getAllTransactions() =
         sqliteDatabase.queryAndMap(
@@ -196,24 +197,26 @@ internal class AllTransactionView(
         )
 
     suspend fun getOldestTransaction() =
-        sqliteDatabase.queryAndMap(
-            table = AllTransactionViewDefinition.VIEW_NAME,
-            columns = COLUMNS,
-            orderBy = ORDER_BY,
-            limit = QUERY_LIMIT,
-            cursorParser = cursorParser
-        ).firstOrNull()
+        sqliteDatabase
+            .queryAndMap(
+                table = AllTransactionViewDefinition.VIEW_NAME,
+                columns = COLUMNS,
+                orderBy = ORDER_BY,
+                limit = QUERY_LIMIT,
+                cursorParser = cursorParser
+            ).firstOrNull()
 
     suspend fun firstUnenhancedHeight(): BlockHeight? {
         val heightLong =
-            sqliteDatabase.queryAndMap(
-                table = AllTransactionViewDefinition.VIEW_NAME,
-                columns = PROJECTION_MINED_HEIGHT,
-                orderBy = ORDER_BY_MINED_HEIGHT,
-                selection = SELECTION_RAW_IS_NULL,
-                limit = QUERY_LIMIT,
-                cursorParser = { it.getLong(0) }
-            ).firstOrNull()
+            sqliteDatabase
+                .queryAndMap(
+                    table = AllTransactionViewDefinition.VIEW_NAME,
+                    columns = PROJECTION_MINED_HEIGHT,
+                    orderBy = ORDER_BY_MINED_HEIGHT,
+                    selection = SELECTION_RAW_IS_NULL,
+                    limit = QUERY_LIMIT,
+                    cursorParser = { it.getLong(0) }
+                ).firstOrNull()
 
         return if (heightLong != null) {
             BlockHeight.new(heightLong)

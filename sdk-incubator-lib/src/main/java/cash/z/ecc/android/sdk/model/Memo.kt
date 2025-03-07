@@ -3,7 +3,9 @@ package cash.z.ecc.android.sdk.model
 import cash.z.ecc.android.sdk.internal.sizeInUtf8Bytes
 
 @JvmInline
-value class Memo(val value: String) {
+value class Memo(
+    val value: String
+) {
     init {
         require(isWithinMaxLength(value)) {
             "Memo length in bytes must be less than $MAX_MEMO_LENGTH_BYTES but " +

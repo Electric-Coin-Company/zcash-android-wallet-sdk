@@ -28,7 +28,10 @@ object ZecString {
         }
 }
 
-data class MonetarySeparators(val grouping: Char, val decimal: Char) {
+data class MonetarySeparators(
+    val grouping: Char,
+    val decimal: Char
+) {
     companion object {
         /**
          * @param locale Preferred Locale for the returned monetary separators. If Locale is not provided, the

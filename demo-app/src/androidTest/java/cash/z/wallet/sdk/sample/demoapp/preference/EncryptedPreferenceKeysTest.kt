@@ -15,7 +15,8 @@ class EncryptedPreferenceKeysTest {
     fun key_values_unique() {
         val fieldValueSet = mutableSetOf<String>()
 
-        EncryptedPreferenceKeys::class.memberProperties
+        EncryptedPreferenceKeys::class
+            .memberProperties
             .map { it.getter.call(EncryptedPreferenceKeys) }
             .map { it as PersistableWalletPreferenceDefault }
             .map { it.key }

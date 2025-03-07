@@ -7,7 +7,12 @@ import cash.z.ecc.android.sdk.model.BlockHeight
  * Internal class for sharing suggested scan ranges action result.
  */
 internal sealed class SuggestScanRangesResult {
-    data class Success(val ranges: List<ScanRange>) : SuggestScanRangesResult()
+    data class Success(
+        val ranges: List<ScanRange>
+    ) : SuggestScanRangesResult()
 
-    data class Failure(val failedAtHeight: BlockHeight, val exception: Throwable) : SuggestScanRangesResult()
+    data class Failure(
+        val failedAtHeight: BlockHeight,
+        val exception: Throwable
+    ) : SuggestScanRangesResult()
 }

@@ -107,9 +107,11 @@ class AndroidPreferenceProvider(
             val mainKey =
                 withContext(singleThreadedDispatcher) {
                     @Suppress("BlockingMethodInNonBlockingContext")
-                    MasterKey.Builder(context).apply {
-                        setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-                    }.build()
+                    MasterKey
+                        .Builder(context)
+                        .apply {
+                            setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+                        }.build()
                 }
 
             val sharedPreferences =

@@ -18,7 +18,17 @@ class NumberExtTest {
         assertFalse(0L.minus(1L).isInUIntRange())
         assertFalse(Long.MAX_VALUE.isInUIntRange())
         assertFalse(Long.MIN_VALUE.isInUIntRange())
-        assertFalse(UInt.MAX_VALUE.toLong().plus(1L).isInUIntRange())
-        assertFalse(UInt.MIN_VALUE.toLong().minus(1L).isInUIntRange())
+        assertFalse(
+            UInt.MAX_VALUE
+                .toLong()
+                .plus(1L)
+                .isInUIntRange()
+        )
+        assertFalse(
+            UInt.MIN_VALUE
+                .toLong()
+                .minus(1L)
+                .isInUIntRange()
+        )
     }
 }

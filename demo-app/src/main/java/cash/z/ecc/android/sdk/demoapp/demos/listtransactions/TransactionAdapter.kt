@@ -10,19 +10,20 @@ import cash.z.ecc.android.sdk.model.TransactionOverview
 /**
  * Simple adapter implementation that knows how to bind a recyclerview to ClearedTransactions.
  */
-class TransactionAdapter : ListAdapter<TransactionOverview, TransactionViewHolder>(
-    object : DiffUtil.ItemCallback<TransactionOverview>() {
-        override fun areItemsTheSame(
-            oldItem: TransactionOverview,
-            newItem: TransactionOverview
-        ) = oldItem.minedHeight == newItem.minedHeight
+class TransactionAdapter :
+    ListAdapter<TransactionOverview, TransactionViewHolder>(
+        object : DiffUtil.ItemCallback<TransactionOverview>() {
+            override fun areItemsTheSame(
+                oldItem: TransactionOverview,
+                newItem: TransactionOverview
+            ) = oldItem.minedHeight == newItem.minedHeight
 
-        override fun areContentsTheSame(
-            oldItem: TransactionOverview,
-            newItem: TransactionOverview
-        ) = oldItem == newItem
-    }
-) {
+            override fun areContentsTheSame(
+                oldItem: TransactionOverview,
+                newItem: TransactionOverview
+            ) = oldItem == newItem
+        }
+    ) {
     override fun onCreateViewHolder(
         parent: ViewGroup,
         viewType: Int

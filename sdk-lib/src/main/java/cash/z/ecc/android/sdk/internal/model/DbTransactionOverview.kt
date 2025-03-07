@@ -25,7 +25,5 @@ internal data class DbTransactionOverview internal constructor(
 ) {
     override fun toString() = "DbTransactionOverview"
 
-    fun txIdString(): String {
-        return rawId.byteArray.toHexReversed()
-    }
+    fun txIdString(): String = rawId.byteArray.toHexReversed()
 }

@@ -111,36 +111,30 @@ data class PersistableWallet(
             )
         }
 
-        internal fun getVersion(jsonObject: JSONObject): Int {
-            return jsonObject.getInt(KEY_VERSION)
-        }
+        internal fun getVersion(jsonObject: JSONObject): Int = jsonObject.getInt(KEY_VERSION)
 
-        internal fun getSeedPhrase(jsonObject: JSONObject): String {
-            return jsonObject.getString(KEY_SEED_PHRASE)
-        }
+        internal fun getSeedPhrase(jsonObject: JSONObject): String = jsonObject.getString(KEY_SEED_PHRASE)
 
         internal fun getNetwork(jsonObject: JSONObject): ZcashNetwork {
             val networkId = jsonObject.getInt(KEY_NETWORK_ID)
             return ZcashNetwork.from(networkId)
         }
 
-        internal fun getBirthday(jsonObject: JSONObject): BlockHeight? {
-            return if (jsonObject.has(KEY_BIRTHDAY)) {
+        internal fun getBirthday(jsonObject: JSONObject): BlockHeight? =
+            if (jsonObject.has(KEY_BIRTHDAY)) {
                 val birthdayBlockHeightLong = jsonObject.getLong(KEY_BIRTHDAY)
                 BlockHeight.new(birthdayBlockHeightLong)
             } else {
                 null
             }
-        }
 
-        internal fun getEndpoint(jsonObject: JSONObject): LightWalletEndpoint {
-            return jsonObject.run {
+        internal fun getEndpoint(jsonObject: JSONObject): LightWalletEndpoint =
+            jsonObject.run {
                 val host = getString(KEY_ENDPOINT_HOST)
                 val port = getInt(KEY_ENDPOINT_PORT)
                 val isSecure = getBoolean(KEY_ENDPOINT_IS_SECURE)
                 LightWalletEndpoint(host, port, isSecure)
             }
-        }
 
         /**
          * @return A new PersistableWallet with a random seed phrase.
@@ -203,7 +197,11 @@ data class PersistableWallet(
 // Using IO context because of https://github.com/zcash/kotlin-bip39/issues/13
 private suspend fun newMnemonic() =
     withContext(Dispatchers.IO) {
-        Mnemonics.MnemonicCode(cash.z.ecc.android.bip39.Mnemonics.WordCount.COUNT_24.toEntropy()).words
+        Mnemonics
+            .MnemonicCode(
+                cash.z.ecc.android.bip39.Mnemonics.WordCount.COUNT_24
+                    .toEntropy()
+            ).words
     }
 
 private suspend fun newSeedPhrase() = SeedPhrase(newMnemonic().map { it.concatToString() })
@@ -212,13 +210,12 @@ private suspend fun newSeedPhrase() = SeedPhrase(newMnemonic().map { it.concatTo
  * The following functions and variables are package private only and preserved to support backward compatibility for
  * [PersistableWallet] and testing purposes.
  */
-internal fun getLightWalletEndpointForNetwork(zcashNetwork: ZcashNetwork): LightWalletEndpoint {
-    return when (zcashNetwork.id) {
+internal fun getLightWalletEndpointForNetwork(zcashNetwork: ZcashNetwork): LightWalletEndpoint =
+    when (zcashNetwork.id) {
         ZcashNetwork.Mainnet.id -> LightWalletEndpoint.Mainnet
         ZcashNetwork.Testnet.id -> LightWalletEndpoint.Testnet
         else -> error("Unknown network id: ${zcashNetwork.id}")
     }
-}
 
 private const val DEFAULT_PORT = 9067
 

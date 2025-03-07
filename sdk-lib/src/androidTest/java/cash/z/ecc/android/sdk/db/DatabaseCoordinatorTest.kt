@@ -35,12 +35,13 @@ class DatabaseCoordinatorTest {
             val destinationDirectory = DatabaseCacheFilesRootFixture.newCacheRoot()
             val expectedDirectoryPath = File(parentDirectory, destinationDirectory).path
 
-            dbCoordinator.fsBlockDbRoot(
-                DatabaseNameFixture.TEST_DB_NETWORK,
-                DatabaseNameFixture.TEST_DB_ALIAS
-            ).also { resultFile ->
-                assertEquals(expectedDirectoryPath, resultFile.absolutePath)
-            }
+            dbCoordinator
+                .fsBlockDbRoot(
+                    DatabaseNameFixture.TEST_DB_NETWORK,
+                    DatabaseNameFixture.TEST_DB_ALIAS
+                ).also { resultFile ->
+                    assertEquals(expectedDirectoryPath, resultFile.absolutePath)
+                }
         }
 
     @Test
@@ -51,12 +52,13 @@ class DatabaseCoordinatorTest {
             val fileName = DatabaseNameFixture.newDb(name = DatabaseCoordinator.DB_DATA_NAME)
             val expectedFilePath = File(directory, fileName).path
 
-            dbCoordinator.dataDbFile(
-                DatabaseNameFixture.TEST_DB_NETWORK,
-                DatabaseNameFixture.TEST_DB_ALIAS
-            ).also { resultFile ->
-                assertEquals(expectedFilePath, resultFile.absolutePath)
-            }
+            dbCoordinator
+                .dataDbFile(
+                    DatabaseNameFixture.TEST_DB_NETWORK,
+                    DatabaseNameFixture.TEST_DB_ALIAS
+                ).also { resultFile ->
+                    assertEquals(expectedFilePath, resultFile.absolutePath)
+                }
         }
 
     @Test
@@ -67,12 +69,13 @@ class DatabaseCoordinatorTest {
             val fileName = DatabaseNameFixture.newDb(name = DatabaseCoordinator.DB_PENDING_TRANSACTIONS_NAME)
             val expectedFilePath = File(directory, fileName).path
 
-            dbCoordinator.pendingTransactionsDbFile(
-                DatabaseNameFixture.TEST_DB_NETWORK,
-                DatabaseNameFixture.TEST_DB_ALIAS
-            ).also { resultFile ->
-                assertEquals(expectedFilePath, resultFile.absolutePath)
-            }
+            dbCoordinator
+                .pendingTransactionsDbFile(
+                    DatabaseNameFixture.TEST_DB_NETWORK,
+                    DatabaseNameFixture.TEST_DB_ALIAS
+                ).also { resultFile ->
+                    assertEquals(expectedFilePath, resultFile.absolutePath)
+                }
         }
 
     @Suppress("LongMethod")
@@ -142,28 +145,29 @@ class DatabaseCoordinatorTest {
             assertFalse(expectedDbJournalFile.exists())
             assertFalse(expectedDbWalFile.exists())
 
-            dbCoordinator.dataDbFile(
-                DatabaseNameFixture.TEST_DB_NETWORK,
-                DatabaseNameFixture.TEST_DB_ALIAS
-            ).also { resultFile ->
-                assertTrue(resultFile.exists())
-                assertEquals(expectedDbFile.absolutePath, resultFile.absolutePath)
+            dbCoordinator
+                .dataDbFile(
+                    DatabaseNameFixture.TEST_DB_NETWORK,
+                    DatabaseNameFixture.TEST_DB_ALIAS
+                ).also { resultFile ->
+                    assertTrue(resultFile.exists())
+                    assertEquals(expectedDbFile.absolutePath, resultFile.absolutePath)
 
-                assertTrue(expectedDbFile.exists())
-                assertTrue(expectedDbJournalFile.exists())
-                assertTrue(expectedDbWalFile.exists())
+                    assertTrue(expectedDbFile.exists())
+                    assertTrue(expectedDbJournalFile.exists())
+                    assertTrue(expectedDbWalFile.exists())
 
-                assertFalse(originalDbFile.exists())
-                assertFalse(originalDbJournalFile.exists())
-                assertFalse(originalDbWalFile.exists())
-            }
+                    assertFalse(originalDbFile.exists())
+                    assertFalse(originalDbJournalFile.exists())
+                    assertFalse(originalDbWalFile.exists())
+                }
         }
 
     private fun getEmptyFile(
         parent: File,
         fileName: String
-    ): File {
-        return File(parent, fileName).apply {
+    ): File =
+        File(parent, fileName).apply {
             assertTrue(parentFile != null)
             parentFile!!.mkdirs()
             assertTrue(parentFile!!.exists())
@@ -171,7 +175,6 @@ class DatabaseCoordinatorTest {
             createNewFile()
             assertTrue(exists())
         }
-    }
 
     @Test
     @SmallTest
@@ -318,18 +321,19 @@ class DatabaseCoordinatorTest {
 
             // once we access the latest file system blocks storage root directory, all the legacy database files should
             // be removed
-            dbCoordinator.fsBlockDbRoot(
-                network = DatabaseNameFixture.TEST_DB_NETWORK,
-                alias = DatabaseNameFixture.TEST_DB_ALIAS
-            ).also {
-                assertFalse(olderLegacyDbFile.exists())
-                assertFalse(olderLegacyDbJournalFile.exists())
-                assertFalse(olderLegacyDbWalFile.exists())
+            dbCoordinator
+                .fsBlockDbRoot(
+                    network = DatabaseNameFixture.TEST_DB_NETWORK,
+                    alias = DatabaseNameFixture.TEST_DB_ALIAS
+                ).also {
+                    assertFalse(olderLegacyDbFile.exists())
+                    assertFalse(olderLegacyDbJournalFile.exists())
+                    assertFalse(olderLegacyDbWalFile.exists())
 
-                assertFalse(newerLegacyDbFile.exists())
-                assertFalse(newerLegacyDbJournalFile.exists())
-                assertFalse(newerLegacyDbWalFile.exists())
-            }
+                    assertFalse(newerLegacyDbFile.exists())
+                    assertFalse(newerLegacyDbJournalFile.exists())
+                    assertFalse(newerLegacyDbWalFile.exists())
+                }
         }
 
     @Test

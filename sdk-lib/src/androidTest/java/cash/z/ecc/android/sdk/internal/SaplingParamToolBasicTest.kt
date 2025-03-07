@@ -143,9 +143,7 @@ class SaplingParamToolBasicTest {
     private suspend fun isFileInPlace(
         directory: File,
         file: File
-    ): Boolean {
-        return directory.listFilesSuspend()?.any { it.name == file.name } ?: false
-    }
+    ): Boolean = directory.listFilesSuspend()?.any { it.name == file.name } ?: false
 
     @Test
     @MediumTest

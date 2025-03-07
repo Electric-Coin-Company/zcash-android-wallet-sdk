@@ -23,15 +23,16 @@ object ReadOnlySupportSqliteOpenHelper {
         context: Context,
         file: File,
         databaseVersion: Int
-    ): SupportSQLiteDatabase {
-        return withContext(Dispatchers.IO) {
+    ): SupportSQLiteDatabase =
+        withContext(Dispatchers.IO) {
             val contextWrapper =
                 NoBackupContextWrapper(
                     context,
                     file.parentFile ?: throw InitializeException.DatabasePathException
                 )
             val config =
-                SupportSQLiteOpenHelper.Configuration.builder(contextWrapper)
+                SupportSQLiteOpenHelper.Configuration
+                    .builder(contextWrapper)
                     .apply {
                         name(file.name)
                         callback(ReadOnlyCallback(databaseVersion))
@@ -39,10 +40,11 @@ object ReadOnlySupportSqliteOpenHelper {
 
             FrameworkSQLiteOpenHelperFactory().create(config).readableDatabase
         }
-    }
 }
 
-private class ReadOnlyCallback(version: Int) : SupportSQLiteOpenHelper.Callback(version) {
+private class ReadOnlyCallback(
+    version: Int
+) : SupportSQLiteOpenHelper.Callback(version) {
     override fun onCreate(db: SupportSQLiteDatabase) {
         error("Database ${db.path} should be created by Rust libraries")
     }

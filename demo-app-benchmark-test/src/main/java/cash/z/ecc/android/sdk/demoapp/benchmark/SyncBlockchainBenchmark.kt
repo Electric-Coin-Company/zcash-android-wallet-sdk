@@ -58,11 +58,31 @@ class SyncBlockchainBenchmark : UiTestPrerequisites() {
             packageName = APP_TARGET_PACKAGE_NAME,
             metrics =
                 listOf(
-                    TraceSectionMetric(BALANCE_SCREEN_SECTION, TraceSectionMetric.Mode.First, false),
-                    TraceSectionMetric(BLOCKCHAIN_SYNC_SECTION, TraceSectionMetric.Mode.First, false),
-                    TraceSectionMetric(DOWNLOAD_SECTION, TraceSectionMetric.Mode.First, false),
-                    TraceSectionMetric(VALIDATION_SECTION, TraceSectionMetric.Mode.First, false),
-                    TraceSectionMetric(SCAN_SECTION, TraceSectionMetric.Mode.First, false)
+                    TraceSectionMetric(
+                        sectionName = BALANCE_SCREEN_SECTION,
+                        mode = TraceSectionMetric.Mode.First,
+                        targetPackageOnly = false
+                    ),
+                    TraceSectionMetric(
+                        sectionName = BLOCKCHAIN_SYNC_SECTION,
+                        mode = TraceSectionMetric.Mode.First,
+                        targetPackageOnly = false
+                    ),
+                    TraceSectionMetric(
+                        sectionName = DOWNLOAD_SECTION,
+                        mode = TraceSectionMetric.Mode.First,
+                        targetPackageOnly = false
+                    ),
+                    TraceSectionMetric(
+                        sectionName = VALIDATION_SECTION,
+                        mode = TraceSectionMetric.Mode.First,
+                        targetPackageOnly = false
+                    ),
+                    TraceSectionMetric(
+                        sectionName = SCAN_SECTION,
+                        mode = TraceSectionMetric.Mode.First,
+                        targetPackageOnly = false
+                    )
                 ),
             compilationMode = CompilationMode.Full(),
             startupMode = StartupMode.COLD,

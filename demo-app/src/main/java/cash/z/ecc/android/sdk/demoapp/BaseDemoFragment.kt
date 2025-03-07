@@ -75,8 +75,10 @@ abstract class BaseDemoFragment<T : ViewBinding> : Fragment() {
         // each fragment. Simply override this [onActionButtonClicked] callback to add behavior to a
         // demo. In other words, this function probably doesn't need to change because desired
         // behavior should go in the child fragment, which overrides this.
-        Snackbar.make(requireView(), "Replace with your own action", Snackbar.LENGTH_LONG)
-            .setAction("Action") { /* auto-close */ }.show()
+        Snackbar
+            .make(requireView(), "Replace with your own action", Snackbar.LENGTH_LONG)
+            .setAction("Action") { /* auto-close */ }
+            .show()
     }
 
     /**

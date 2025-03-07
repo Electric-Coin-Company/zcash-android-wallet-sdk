@@ -66,8 +66,8 @@ internal class OutboundTransactionManagerImpl(
         usk: UnifiedSpendingKey
     ): List<EncodedTransaction> = encoder.createProposedTransactions(proposal, usk)
 
-    override suspend fun submit(encodedTransaction: EncodedTransaction): TransactionSubmitResult {
-        return when (val response = service.submitTransaction(encodedTransaction.raw.byteArray)) {
+    override suspend fun submit(encodedTransaction: EncodedTransaction): TransactionSubmitResult =
+        when (val response = service.submitTransaction(encodedTransaction.raw.byteArray)) {
             is Response.Success -> {
                 if (response.result.code == 0) {
                     Twig.info {
@@ -103,7 +103,6 @@ internal class OutboundTransactionManagerImpl(
                 )
             }
         }
-    }
 
     override suspend fun createPcztFromProposal(
         accountUuid: AccountUuid,

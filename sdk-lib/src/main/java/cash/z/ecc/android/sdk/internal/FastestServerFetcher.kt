@@ -37,19 +37,17 @@ internal class FastestServerFetcher(
     suspend operator fun invoke(
         context: Context,
         servers: List<LightWalletEndpoint>,
-    ): Flow<FastestServersResult> {
-        return flow {
+    ): Flow<FastestServersResult> =
+        flow {
             emit(FastestServersResult.Measuring)
 
             val serversByRpcMeanLatency =
                 servers
                     .parallelMapNotNull {
                         validateServerEndpointAndMeasure(context, it)
-                    }
-                    .sortedBy {
+                    }.sortedBy {
                         it.meanDuration
-                    }
-                    .mapIndexedNotNull { index, result ->
+                    }.mapIndexedNotNull { index, result ->
                         if (index <= K - 1 || result.meanDuration <= LATENCY_THRESHOLD) {
                             Twig.debug { "Fastest Server: '${result.endpoint}' VALIDATED by SORTING by RPC latency" }
                             result
@@ -87,15 +85,13 @@ internal class FastestServerFetcher(
                                 result.endpoint
                             }
                         }
-                    }
-                    .take(K)
+                    }.take(K)
                     .toList()
 
             Twig.debug { "Fastest Server: '$serversByGetBlockRangeTimeout' VALIDATED by getBlockRange timeout" }
 
             emit(FastestServersResult.Done(serversByGetBlockRangeTimeout))
         }.flowOn(Dispatchers.Default)
-    }
 
     @Suppress("LongMethod", "ReturnCount")
     private suspend fun validateServerEndpointAndMeasure(
@@ -127,8 +123,9 @@ internal class FastestServerFetcher(
         val remoteInfo: LightWalletEndpointInfoUnsafe?
         val getServerInfoDuration =
             measureTime {
+                // 5 seconds timeout in case server is very unresponsive
                 remoteInfo =
-                    withTimeoutOrNull(5.seconds) { // 5 seconds timeout in case server is very unresponsive
+                    withTimeoutOrNull(5.seconds) {
                         when (val response = lightWalletClient.getServerInfo()) {
                             is Response.Success -> response.result
                             is Response.Failure -> {

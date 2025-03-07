@@ -57,6 +57,7 @@ captures/
 .idea/studiobot.xml
 .idea/deviceManager.xml
 .idea/material_theme_project_new.xml
+.idea/AndroidProjectSystem.xml
 .idea/.name
 *.iml
 

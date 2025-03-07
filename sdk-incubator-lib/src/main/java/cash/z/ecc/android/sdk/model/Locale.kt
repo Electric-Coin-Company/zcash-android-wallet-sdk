@@ -1,20 +1,26 @@
 package cash.z.ecc.android.sdk.model
 
-data class Locale(val language: String, val region: String?, val variant: String?) {
+data class Locale(
+    val language: String,
+    val region: String?,
+    val variant: String?
+) {
     companion object {
-        fun getDefault() = java.util.Locale.getDefault().toKotlinLocale()
+        fun getDefault() =
+            java.util.Locale
+                .getDefault()
+                .toKotlinLocale()
     }
 }
 
-fun Locale.toJavaLocale(): java.util.Locale {
-    return if (!region.isNullOrEmpty() && !variant.isNullOrEmpty()) {
+fun Locale.toJavaLocale(): java.util.Locale =
+    if (!region.isNullOrEmpty() && !variant.isNullOrEmpty()) {
         java.util.Locale(language, region, variant)
     } else if (!region.isNullOrEmpty() && variant.isNullOrEmpty()) {
         java.util.Locale(language, region)
     } else {
         java.util.Locale(language)
     }
-}
 
 fun java.util.Locale.toKotlinLocale(): Locale {
     val resultCountry =

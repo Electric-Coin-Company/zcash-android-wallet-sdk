@@ -17,7 +17,9 @@ sealed class TransactionSubmitResult(
     /**
      * The transaction was successfully submitted to the mempool.
      */
-    data class Success(override val txId: FirstClassByteArray) : TransactionSubmitResult(txId)
+    data class Success(
+        override val txId: FirstClassByteArray
+    ) : TransactionSubmitResult(txId)
 
     /**
      * An error occurred while submitting the transaction.
@@ -37,5 +39,7 @@ sealed class TransactionSubmitResult(
      * The transaction was created and is in the local wallet, but was not submitted to
      * the network.
      */
-    data class NotAttempted(override val txId: FirstClassByteArray) : TransactionSubmitResult(txId)
+    data class NotAttempted(
+        override val txId: FirstClassByteArray
+    ) : TransactionSubmitResult(txId)
 }

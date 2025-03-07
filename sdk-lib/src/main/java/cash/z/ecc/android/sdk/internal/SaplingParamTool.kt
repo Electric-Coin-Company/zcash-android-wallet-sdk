@@ -20,7 +20,9 @@ import java.net.URL
 import java.nio.channels.Channels
 import kotlin.time.Duration.Companion.milliseconds
 
-internal class SaplingParamTool(val properties: SaplingParamToolProperties) {
+internal class SaplingParamTool(
+    val properties: SaplingParamToolProperties
+) {
     val spendParamsFile: File
         get() = File(properties.paramsDirectory, SPEND_PARAM_FILE_NAME)
 
@@ -157,14 +159,13 @@ internal class SaplingParamTool(val properties: SaplingParamToolProperties) {
         private suspend fun isFileHashValid(
             parametersFile: File,
             fileHash: String
-        ): Boolean {
-            return try {
+        ): Boolean =
+            try {
                 fileHash == parametersFile.getSha1Hash()
             } catch (e: IOException) {
                 Twig.debug { "Failed in comparing file's hashes with: ${e.message}, caused by: ${e.cause}." }
                 false
             }
-        }
 
         /**
          * The purpose of this function is to rename parameters file from the old name (given by the {@code
@@ -207,31 +208,32 @@ internal class SaplingParamTool(val properties: SaplingParamToolProperties) {
         TransactionEncoderException.MissingParamsException::class
     )
     internal suspend fun ensureParams(destinationDir: File) {
-        properties.saplingParams.filter {
-            !File(it.destinationDirectory, it.fileName).existsSuspend()
-        }.forEach {
-            try {
-                Twig.debug { "Attempting to download missing params: ${it.fileName}." }
-                fetchParams(it)
-            } catch (e: TransactionEncoderException.FetchParamsException) {
-                Twig.debug {
-                    "Failed to fetch param file ${it.fileName} due to: $e. The second attempt is starting with a " +
-                        "little delay."
+        properties.saplingParams
+            .filter {
+                !File(it.destinationDirectory, it.fileName).existsSuspend()
+            }.forEach {
+                try {
+                    Twig.debug { "Attempting to download missing params: ${it.fileName}." }
+                    fetchParams(it)
+                } catch (e: TransactionEncoderException.FetchParamsException) {
+                    Twig.debug {
+                        "Failed to fetch param file ${it.fileName} due to: $e. The second attempt is starting with a " +
+                            "little delay."
+                    }
+                    // Re-run the fetch with a little delay, if it failed previously (as it can be caused by network
+                    // conditions). We do it only once, the next failure is delivered to the caller of this method.
+                    delay(200.milliseconds)
+                    fetchParams(it)
+                } catch (e: TransactionEncoderException.ValidateParamsException) {
+                    Twig.debug {
+                        "Failed to validate fetched param file ${it.fileName} due to: $e. The second attempt is " +
+                            "starting now."
+                    }
+                    // Re-run the fetch for invalid param file immediately, if it failed previously. We do it again only
+                    // once, the next failure is delivered to the caller of this method.
+                    fetchParams(it)
                 }
-                // Re-run the fetch with a little delay, if it failed previously (as it can be caused by network
-                // conditions). We do it only once, the next failure is delivered to the caller of this method.
-                delay(200.milliseconds)
-                fetchParams(it)
-            } catch (e: TransactionEncoderException.ValidateParamsException) {
-                Twig.debug {
-                    "Failed to validate fetched param file ${it.fileName} due to: $e. The second attempt is starting" +
-                        " now."
-                }
-                // Re-run the fetch for invalid param file immediately, if it failed previously. We do it again only
-                // once, the next failure is delivered to the caller of this method.
-                fetchParams(it)
             }
-        }
 
         if (!validate(destinationDir)) {
             Twig.debug { "Fetching sapling params files failed." }
@@ -336,8 +338,8 @@ internal class SaplingParamTool(val properties: SaplingParamToolProperties) {
         }
     }
 
-    internal suspend fun validate(destinationDir: File): Boolean {
-        return arrayOf(
+    internal suspend fun validate(destinationDir: File): Boolean =
+        arrayOf(
             SPEND_PARAM_FILE_NAME,
             OUTPUT_PARAM_FILE_NAME
         ).all { paramFileName ->
@@ -345,7 +347,6 @@ internal class SaplingParamTool(val properties: SaplingParamToolProperties) {
         }.also {
             Twig.debug { "Param files ${if (!it) "did not" else ""} both exist!" }
         }
-    }
 }
 
 /**

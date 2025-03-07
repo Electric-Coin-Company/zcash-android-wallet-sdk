@@ -122,10 +122,10 @@ class SampleCodeTest {
             }.onFailure {
                 Twig.debug(it) { "Failed to retrieve data" }
             }.onSuccess {
-                it.onEach { response ->
-                    assert(response is Response.Success) { "Server communication failed." }
-                }
-                    .filterIsInstance<Response.Success<CompactBlockUnsafe>>()
+                it
+                    .onEach { response ->
+                        assert(response is Response.Success) { "Server communication failed." }
+                    }.filterIsInstance<Response.Success<CompactBlockUnsafe>>()
                     .map { response ->
                         response.result
                     }.toList()

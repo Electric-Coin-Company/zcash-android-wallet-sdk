@@ -24,7 +24,9 @@ import java.io.File
  * @param context the application context
  */
 @Suppress("TooManyFunctions")
-internal class DatabaseCoordinator private constructor(context: Context) {
+internal class DatabaseCoordinator private constructor(
+    context: Context
+) {
     /*
      * This implementation is thread-safe but is not multi-process safe.
      *
@@ -386,10 +388,9 @@ internal class DatabaseCoordinator private constructor(context: Context) {
      *
      * @param appContext the application context
      */
-    private suspend fun getDatabaseParentDir(appContext: Context): File {
-        return appContext.getDatabasePathSuspend("unused.db").parentFile
+    private suspend fun getDatabaseParentDir(appContext: Context): File =
+        appContext.getDatabasePathSuspend("unused.db").parentFile
             ?: throw InitializeException.DatabasePathException
-    }
 
     /**
      * Simple helper function, which prepares a database file object by input parameters. It does

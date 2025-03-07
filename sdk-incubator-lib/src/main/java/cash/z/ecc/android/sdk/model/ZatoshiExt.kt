@@ -50,26 +50,28 @@ fun Zatoshi.toFiatString(
         locale,
     )
 
-private fun Zatoshi.convertZatoshiToZecDecimal(): BigDecimal {
-    return BigDecimal(value, MathContext.DECIMAL128).divide(
-        Conversions.ONE_ZEC_IN_ZATOSHI,
-        MathContext.DECIMAL128
-    ).setScale(Conversions.ZEC_FORMATTER.maximumFractionDigits, RoundingMode.HALF_EVEN)
-}
+private fun Zatoshi.convertZatoshiToZecDecimal(): BigDecimal =
+    BigDecimal(value, MathContext.DECIMAL128)
+        .divide(
+            Conversions.ONE_ZEC_IN_ZATOSHI,
+            MathContext.DECIMAL128
+        ).setScale(Conversions.ZEC_FORMATTER.maximumFractionDigits, RoundingMode.HALF_EVEN)
 
-private fun BigDecimal.convertZecDecimalToFiatDecimal(zecPrice: BigDecimal): BigDecimal {
-    return multiply(zecPrice, MathContext.DECIMAL128)
-}
+private fun BigDecimal.convertZecDecimalToFiatDecimal(zecPrice: BigDecimal): BigDecimal =
+    multiply(zecPrice, MathContext.DECIMAL128)
 
 fun BigDecimal.convertFiatDecimalToFiatString(
     fiatCurrency: Currency,
     locale: Locale = Locale.getDefault(),
-): String {
-    return DecimalFormat.getInstance(locale.toJavaLocale(), NumberFormat.NUMBERSTYLE).apply {
-        this.currency = fiatCurrency
-        // TODO [#343]: https://github.com/zcash/secant-android-wallet/issues/343
-        roundingMode = android.icu.math.BigDecimal.ROUND_HALF_EVEN // aka Bankers rounding
-        this.minimumFractionDigits = FRACTION_DIGITS
-        this.maximumFractionDigits = FRACTION_DIGITS
-    }.format(this.toDouble()).replace(fiatCurrency.symbol, "").trim()
-}
+): String =
+    DecimalFormat
+        .getInstance(locale.toJavaLocale(), NumberFormat.NUMBERSTYLE)
+        .apply {
+            this.currency = fiatCurrency
+            // TODO [#343]: https://github.com/zcash/secant-android-wallet/issues/343
+            roundingMode = android.icu.math.BigDecimal.ROUND_HALF_EVEN // aka Bankers rounding
+            this.minimumFractionDigits = FRACTION_DIGITS
+            this.maximumFractionDigits = FRACTION_DIGITS
+        }.format(this.toDouble())
+        .replace(fiatCurrency.symbol, "")
+        .trim()

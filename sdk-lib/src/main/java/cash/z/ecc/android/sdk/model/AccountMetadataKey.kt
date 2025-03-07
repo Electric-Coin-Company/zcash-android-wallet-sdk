@@ -56,7 +56,5 @@ class AccountMetadataKey private constructor(
     /**
      * Exposes the type-unsafe variant for passing across the JNI.
      */
-    fun toUnsafe(): JniMetadataKey {
-        return JniMetadataKey(sk.byteArray, chainCode.byteArray)
-    }
+    fun toUnsafe(): JniMetadataKey = JniMetadataKey(sk.byteArray, chainCode.byteArray)
 }

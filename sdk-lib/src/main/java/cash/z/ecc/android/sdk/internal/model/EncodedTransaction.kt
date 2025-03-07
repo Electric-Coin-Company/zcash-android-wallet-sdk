@@ -11,7 +11,5 @@ internal data class EncodedTransaction(
 ) {
     override fun toString() = "EncodedTransaction"
 
-    fun txIdString(): String {
-        return txId.byteArray.toHexReversed()
-    }
+    fun txIdString(): String = txId.byteArray.toHexReversed()
 }

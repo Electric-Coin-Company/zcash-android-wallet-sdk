@@ -28,11 +28,10 @@ object LightWalletEndpointFixture {
                 isSecure = true
             )
 
-    fun newEndpointForNetwork(zcashNetwork: ZcashNetwork): LightWalletEndpoint {
-        return when (zcashNetwork.id) {
+    fun newEndpointForNetwork(zcashNetwork: ZcashNetwork): LightWalletEndpoint =
+        when (zcashNetwork.id) {
             ZcashNetwork.Mainnet.id -> LightWalletEndpoint.Mainnet
             ZcashNetwork.Testnet.id -> LightWalletEndpoint.Testnet
             else -> error("Unknown network id: ${zcashNetwork.id}")
         }
-    }
 }

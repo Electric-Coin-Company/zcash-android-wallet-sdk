@@ -5,7 +5,9 @@ import cash.z.ecc.android.sdk.model.BlockHeight
 sealed class TransactionStatus {
     abstract fun toPrimitiveValue(): Long
 
-    data class Mined(val height: BlockHeight) : TransactionStatus() {
+    data class Mined(
+        val height: BlockHeight
+    ) : TransactionStatus() {
         override fun toPrimitiveValue() = height.value
     }
 

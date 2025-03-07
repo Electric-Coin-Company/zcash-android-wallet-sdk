@@ -162,14 +162,10 @@ internal class FileCompactBlockRepository(
 //
 // Private helper functions
 //
+@Suppress("MaxLineLength")
+private fun List<JniBlockMeta>.isBufferFull(): Boolean = size % FileCompactBlockRepository.BLOCKS_METADATA_BUFFER_SIZE == 0
 
-private fun List<JniBlockMeta>.isBufferFull(): Boolean {
-    return size % FileCompactBlockRepository.BLOCKS_METADATA_BUFFER_SIZE == 0
-}
-
-private fun CompactBlockUnsafe.toJniMetaData(): JniBlockMeta {
-    return JniBlockMeta.new(this)
-}
+private fun CompactBlockUnsafe.toJniMetaData(): JniBlockMeta = JniBlockMeta.new(this)
 
 private fun JniBlockMeta.createFilename(): String {
     val hashHex = hash.toHexReversed()
@@ -177,9 +173,7 @@ private fun JniBlockMeta.createFilename(): String {
 }
 
 @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-private fun JniBlockMeta.getFile(blocksDirectory: File): File {
-    return File(blocksDirectory, createFilename())
-}
+private fun JniBlockMeta.getFile(blocksDirectory: File): File = File(blocksDirectory, createFilename())
 
 private fun CompactBlockUnsafe.createFilename(): String {
     val hashHex = hash.toHexReversed()

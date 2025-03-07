@@ -9,11 +9,13 @@ internal interface ChannelFactory {
     fun newChannel(endpoint: LightWalletEndpoint): ManagedChannel
 }
 
-internal class AndroidChannelFactory(context: android.content.Context) : ChannelFactory {
+internal class AndroidChannelFactory(
+    context: android.content.Context
+) : ChannelFactory {
     private val context = context.applicationContext
 
-    override fun newChannel(endpoint: LightWalletEndpoint): ManagedChannel {
-        return AndroidChannelBuilder
+    override fun newChannel(endpoint: LightWalletEndpoint): ManagedChannel =
+        AndroidChannelBuilder
             .forAddress(endpoint.host, endpoint.port)
             .context(context)
             .apply {
@@ -23,7 +25,5 @@ internal class AndroidChannelFactory(context: android.content.Context) : Channel
                     Log.w(Constants.LOG_TAG, "WARNING Using plaintext connection")
                     usePlaintext()
                 }
-            }
-            .build()
-    }
+            }.build()
 }

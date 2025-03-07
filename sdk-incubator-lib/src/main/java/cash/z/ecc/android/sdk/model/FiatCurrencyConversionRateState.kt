@@ -10,12 +10,16 @@ sealed class FiatCurrencyConversionRateState {
     /**
      * @param formattedFiatValue A fiat value formatted as a localized string.  E.g. $1.00.
      */
-    data class Current(val formattedFiatValue: String) : FiatCurrencyConversionRateState()
+    data class Current(
+        val formattedFiatValue: String
+    ) : FiatCurrencyConversionRateState()
 
     /**
      * @param formattedFiatValue A fiat value formatted as a localized string.  E.g. $1.00.
      */
-    data class Stale(val formattedFiatValue: String) : FiatCurrencyConversionRateState()
+    data class Stale(
+        val formattedFiatValue: String
+    ) : FiatCurrencyConversionRateState()
 
     object Unavailable : FiatCurrencyConversionRateState()
 

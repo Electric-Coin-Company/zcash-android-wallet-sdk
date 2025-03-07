@@ -36,7 +36,9 @@ sealed class AddressType {
      *
      * @param reason a description of why the address was invalid.
      */
-    class Invalid(val reason: String = "Invalid") : AddressType()
+    class Invalid(
+        val reason: String = "Invalid"
+    ) : AddressType()
 
     /**
      * A convenience method that returns true when an instance of this class is invalid.

@@ -55,9 +55,7 @@ object Conversions {
 fun Zatoshi?.convertZatoshiToZecString(
     maxDecimals: Int = ZEC_FORMATTER.maximumFractionDigits,
     minDecimals: Int = ZEC_FORMATTER.minimumFractionDigits
-): String {
-    return currencyFormatter(maxDecimals, minDecimals).format(convertZatoshiToZec(maxDecimals))
-}
+): String = currencyFormatter(maxDecimals, minDecimals).format(convertZatoshiToZec(maxDecimals))
 
 /**
  * Format a ZEC value into ZEC with the given number of digits, represented as a string.
@@ -73,9 +71,7 @@ fun Zatoshi?.convertZatoshiToZecString(
 fun Double?.toZecString(
     maxDecimals: Int = ZEC_FORMATTER.maximumFractionDigits,
     minDecimals: Int = ZEC_FORMATTER.minimumFractionDigits
-): String {
-    return currencyFormatter(maxDecimals, minDecimals).format(this.toZec(maxDecimals))
-}
+): String = currencyFormatter(maxDecimals, minDecimals).format(this.toZec(maxDecimals))
 
 /**
  * Format a Zatoshi value into ZEC with the given number of decimal places, represented as a string.
@@ -91,9 +87,7 @@ fun Double?.toZecString(
 fun BigDecimal?.toZecString(
     maxDecimals: Int = ZEC_FORMATTER.maximumFractionDigits,
     minDecimals: Int = ZEC_FORMATTER.minimumFractionDigits
-): String {
-    return currencyFormatter(maxDecimals, minDecimals).format(this.toZec(maxDecimals))
-}
+): String = currencyFormatter(maxDecimals, minDecimals).format(this.toZec(maxDecimals))
 
 /**
  * Format a USD value into USD with the given number of digits, represented as a string.
@@ -109,13 +103,12 @@ fun BigDecimal?.toZecString(
 fun Double?.toUsdString(
     maxDecimals: Int = USD_FORMATTER.maximumFractionDigits,
     minDecimals: Int = USD_FORMATTER.minimumFractionDigits
-): String {
-    return if (this == 0.0) {
+): String =
+    if (this == 0.0) {
         "0"
     } else {
         currencyFormatter(maxDecimals, minDecimals).format(this.toUsd(maxDecimals))
     }
-}
 
 /**
  * Format a USD value into USD with the given number of decimal places, represented as a string.
@@ -131,9 +124,7 @@ fun Double?.toUsdString(
 fun BigDecimal?.toUsdString(
     maxDecimals: Int = USD_FORMATTER.maximumFractionDigits,
     minDecimals: Int = USD_FORMATTER.minimumFractionDigits
-): String {
-    return currencyFormatter(maxDecimals, minDecimals).format(this.toUsd(maxDecimals))
-}
+): String = currencyFormatter(maxDecimals, minDecimals).format(this.toUsd(maxDecimals))
 
 /**
  * Create a number formatter for use with converting currency to strings. This probably isn't needed
@@ -149,14 +140,13 @@ fun BigDecimal?.toUsdString(
 fun currencyFormatter(
     maxDecimals: Int,
     minDecimals: Int
-): NumberFormat {
-    return NumberFormat.getInstance(Locale.getDefault()).apply {
+): NumberFormat =
+    NumberFormat.getInstance(Locale.getDefault()).apply {
         roundingMode = ZEC_FORMATTER.roundingMode
         maximumFractionDigits = maxDecimals
         minimumFractionDigits = minDecimals
         minimumIntegerDigits = 1
     }
-}
 
 /**
  * Convert a Zatoshi value into ZEC, right-padded to the given number of fraction digits,
@@ -170,12 +160,12 @@ fun currencyFormatter(
  * @return this Long Zatoshi value represented as ZEC using a BigDecimal with the given scale,
  * rounded accurately out to 128 digits.
  */
-fun Zatoshi?.convertZatoshiToZec(scale: Int = ZEC_FORMATTER.maximumFractionDigits): BigDecimal {
-    return BigDecimal(this?.value ?: 0L, MathContext.DECIMAL128).divide(
-        Conversions.ONE_ZEC_IN_ZATOSHI,
-        MathContext.DECIMAL128
-    ).setScale(scale, ZEC_FORMATTER.roundingMode)
-}
+fun Zatoshi?.convertZatoshiToZec(scale: Int = ZEC_FORMATTER.maximumFractionDigits): BigDecimal =
+    BigDecimal(this?.value ?: 0L, MathContext.DECIMAL128)
+        .divide(
+            Conversions.ONE_ZEC_IN_ZATOSHI,
+            MathContext.DECIMAL128
+        ).setScale(scale, ZEC_FORMATTER.roundingMode)
 
 /**
  * Convert a ZEC value into Zatoshi.
@@ -205,12 +195,11 @@ fun BigDecimal?.convertZecToZatoshi(): Zatoshi {
  * @return this Double ZEC value converted into a BigDecimal, with the proper rounding mode for use
  * with other formatting functions.
  */
-fun Double?.toZec(decimals: Int = ZEC_FORMATTER.maximumFractionDigits): BigDecimal {
-    return BigDecimal(this?.toString() ?: "0.0", MathContext.DECIMAL128).setScale(
+fun Double?.toZec(decimals: Int = ZEC_FORMATTER.maximumFractionDigits): BigDecimal =
+    BigDecimal(this?.toString() ?: "0.0", MathContext.DECIMAL128).setScale(
         decimals,
         ZEC_FORMATTER.roundingMode
     )
-}
 
 /**
  * Format a Double ZEC value as a Long Zatoshi value, by first converting to ZEC with the given
@@ -222,9 +211,10 @@ fun Double?.toZec(decimals: Int = ZEC_FORMATTER.maximumFractionDigits): BigDecim
  * @return this Double ZEC value converted into Zatoshi, with proper rounding and precision by
  * leveraging an intermediate BigDecimal object.
  */
-fun Double?.convertZecToZatoshi(decimals: Int = ZEC_FORMATTER.maximumFractionDigits): Zatoshi {
-    return this.toZec(decimals).convertZecToZatoshi()
-}
+fun Double?.convertZecToZatoshi(decimals: Int = ZEC_FORMATTER.maximumFractionDigits): Zatoshi =
+    this
+        .toZec(decimals)
+        .convertZecToZatoshi()
 
 /**
  * Format a BigDecimal ZEC value as a BigDecimal ZEC value, right-padded to the given number of
@@ -235,9 +225,8 @@ fun Double?.convertZecToZatoshi(decimals: Int = ZEC_FORMATTER.maximumFractionDig
  *
  * @return this BigDecimal ZEC adjusted to the default scale and rounding mode.
  */
-fun BigDecimal?.toZec(decimals: Int = ZEC_FORMATTER.maximumFractionDigits): BigDecimal {
-    return (this ?: BigDecimal.ZERO).setScale(decimals, ZEC_FORMATTER.roundingMode)
-}
+fun BigDecimal?.toZec(decimals: Int = ZEC_FORMATTER.maximumFractionDigits): BigDecimal =
+    (this ?: BigDecimal.ZERO).setScale(decimals, ZEC_FORMATTER.roundingMode)
 
 /**
  * Format a Double USD value as a BigDecimal USD value, right-padded to the given number of fraction
@@ -248,12 +237,11 @@ fun BigDecimal?.toZec(decimals: Int = ZEC_FORMATTER.maximumFractionDigits): BigD
  *
  * @return this Double USD value converted into a BigDecimal, with proper rounding and precision.
  */
-fun Double?.toUsd(decimals: Int = USD_FORMATTER.maximumFractionDigits): BigDecimal {
-    return BigDecimal(this?.toString() ?: "0.0", MathContext.DECIMAL128).setScale(
+fun Double?.toUsd(decimals: Int = USD_FORMATTER.maximumFractionDigits): BigDecimal =
+    BigDecimal(this?.toString() ?: "0.0", MathContext.DECIMAL128).setScale(
         decimals,
         USD_FORMATTER.roundingMode
     )
-}
 
 /**
  * Format a BigDecimal USD value as a BigDecimal USD value, right-padded to the given number of
@@ -264,9 +252,8 @@ fun Double?.toUsd(decimals: Int = USD_FORMATTER.maximumFractionDigits): BigDecim
  *
  * @return this BigDecimal USD value converted into USD, with proper rounding and precision.
  */
-fun BigDecimal?.toUsd(decimals: Int = USD_FORMATTER.maximumFractionDigits): BigDecimal {
-    return (this ?: BigDecimal.ZERO).setScale(decimals, USD_FORMATTER.roundingMode)
-}
+fun BigDecimal?.toUsd(decimals: Int = USD_FORMATTER.maximumFractionDigits): BigDecimal =
+    (this ?: BigDecimal.ZERO).setScale(decimals, USD_FORMATTER.roundingMode)
 
 /**
  * Convert this ZEC value to USD, using the given price per ZEC.
@@ -341,13 +328,12 @@ fun Double?.convertUsdToZec(zecPrice: Double): Double {
 fun BigDecimal.convertCurrency(
     zecPrice: BigDecimal,
     isUsd: Boolean
-): BigDecimal {
-    return if (isUsd) {
+): BigDecimal =
+    if (isUsd) {
         this.convertUsdToZec(zecPrice)
     } else {
         this.convertZecToUsd(zecPrice)
     }
-}
 
 /**
  * Parse this string into a BigDecimal, ignoring all non numeric characters.

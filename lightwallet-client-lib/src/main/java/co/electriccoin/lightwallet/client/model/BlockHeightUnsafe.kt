@@ -5,7 +5,9 @@ package co.electriccoin.lightwallet.client.model
  *
  * It is marked as "unsafe" because it is not guaranteed to be valid.
  */
-data class BlockHeightUnsafe(val value: Long) : Comparable<BlockHeightUnsafe> {
+data class BlockHeightUnsafe(
+    val value: Long
+) : Comparable<BlockHeightUnsafe> {
     init {
         require(UINT_RANGE.contains(value)) { "Height $value is outside of allowed range $UINT_RANGE" }
     }

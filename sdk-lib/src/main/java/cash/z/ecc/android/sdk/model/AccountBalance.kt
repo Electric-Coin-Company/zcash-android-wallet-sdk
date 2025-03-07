@@ -8,8 +8,8 @@ data class AccountBalance(
     val unshielded: Zatoshi
 ) {
     companion object {
-        fun new(jni: JniAccountBalance): AccountBalance {
-            return AccountBalance(
+        fun new(jni: JniAccountBalance): AccountBalance =
+            AccountBalance(
                 sapling =
                     WalletBalance(
                         available = Zatoshi(jni.saplingVerifiedBalance),
@@ -24,6 +24,5 @@ data class AccountBalance(
                     ),
                 unshielded = Zatoshi(jni.unshieldedBalance)
             )
-        }
     }
 }

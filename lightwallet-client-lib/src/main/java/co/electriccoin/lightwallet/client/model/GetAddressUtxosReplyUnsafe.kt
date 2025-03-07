@@ -13,14 +13,13 @@ class GetAddressUtxosReplyUnsafe(
     val height: Long
 ) {
     companion object {
-        fun new(getAddressUtxosReply: Service.GetAddressUtxosReply): GetAddressUtxosReplyUnsafe {
-            return GetAddressUtxosReplyUnsafe(
+        fun new(getAddressUtxosReply: Service.GetAddressUtxosReply): GetAddressUtxosReplyUnsafe =
+            GetAddressUtxosReplyUnsafe(
                 txid = getAddressUtxosReply.txid.toByteArray(),
                 index = getAddressUtxosReply.index,
                 script = getAddressUtxosReply.script.toByteArray(),
                 valueZat = getAddressUtxosReply.valueZat,
                 height = getAddressUtxosReply.height,
             )
-        }
     }
 }

@@ -108,4 +108,8 @@ sealed class WalletFixture {
     }
 }
 
-data class Addresses(val unified: String, val sapling: String, val transparent: String)
+data class Addresses(
+    val unified: String,
+    val sapling: String,
+    val transparent: String
+)

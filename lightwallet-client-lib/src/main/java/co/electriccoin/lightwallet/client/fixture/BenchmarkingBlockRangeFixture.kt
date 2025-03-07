@@ -21,7 +21,5 @@ object BenchmarkingBlockRangeFixture {
     fun new(
         lowerBound: Long = BLOCK_HEIGHT_LOWER_BOUND,
         upperBound: Long = BLOCK_HEIGHT_UPPER_BOUND
-    ): ClosedRange<Long> {
-        return lowerBound..upperBound
-    }
+    ): ClosedRange<Long> = lowerBound..upperBound
 }

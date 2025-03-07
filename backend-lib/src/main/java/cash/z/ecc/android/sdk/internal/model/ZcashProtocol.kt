@@ -20,22 +20,20 @@ enum class ZcashProtocol {
     fun isShielded() = this == SAPLING || this == ORCHARD
 
     companion object {
-        fun validate(poolTypeCode: Int): Boolean {
-            return when (poolTypeCode) {
+        fun validate(poolTypeCode: Int): Boolean =
+            when (poolTypeCode) {
                 TRANSPARENT.poolCode,
                 SAPLING.poolCode,
                 ORCHARD.poolCode -> true
                 else -> false
             }
-        }
 
-        fun fromPoolType(poolCode: Int): ZcashProtocol {
-            return when (poolCode) {
+        fun fromPoolType(poolCode: Int): ZcashProtocol =
+            when (poolCode) {
                 TRANSPARENT.poolCode -> TRANSPARENT
                 SAPLING.poolCode -> SAPLING
                 ORCHARD.poolCode -> ORCHARD
                 else -> error("Unsupported pool type: $poolCode")
             }
-        }
     }
 }

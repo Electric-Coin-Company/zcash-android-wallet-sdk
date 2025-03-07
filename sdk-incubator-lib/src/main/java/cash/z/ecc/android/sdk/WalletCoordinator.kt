@@ -66,9 +66,13 @@ class WalletCoordinator(
     private sealed class InternalSynchronizerStatus {
         object NoWallet : InternalSynchronizerStatus()
 
-        class Available(val synchronizer: Synchronizer) : InternalSynchronizerStatus()
+        class Available(
+            val synchronizer: Synchronizer
+        ) : InternalSynchronizerStatus()
 
-        class Lockout(val id: UUID) : InternalSynchronizerStatus()
+        class Lockout(
+            val id: UUID
+        ) : InternalSynchronizerStatus()
     }
 
     private val synchronizerOrLockoutId: Flow<Flow<InternalSynchronizerStatus>> =
@@ -115,15 +119,13 @@ class WalletCoordinator(
         synchronizerOrLockoutId
             .flatMapLatest {
                 it
-            }
-            .map {
+            }.map {
                 when (it) {
                     is InternalSynchronizerStatus.Available -> it.synchronizer
                     is InternalSynchronizerStatus.Lockout -> null
                     InternalSynchronizerStatus.NoWallet -> null
                 }
-            }
-            .stateIn(
+            }.stateIn(
                 walletScope,
                 SharingStarted.WhileSubscribed(),
                 null
