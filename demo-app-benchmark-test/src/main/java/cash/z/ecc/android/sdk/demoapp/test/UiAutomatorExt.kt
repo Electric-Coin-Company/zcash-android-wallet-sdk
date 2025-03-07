@@ -9,13 +9,9 @@ import kotlin.time.Duration
 fun UiDevice.waitFor(
     condition: SearchCondition<Boolean>,
     timeout: Duration
-): Boolean {
-    return wait(condition, timeout.inWholeMilliseconds)
-}
+): Boolean = wait(condition, timeout.inWholeMilliseconds)
 
 fun UiObject2.clickAndWaitFor(
     condition: EventCondition<Boolean>,
     timeout: Duration
-): Boolean {
-    return clickAndWait(condition, timeout.inWholeMilliseconds)
-}
+): Boolean = clickAndWait(condition, timeout.inWholeMilliseconds)

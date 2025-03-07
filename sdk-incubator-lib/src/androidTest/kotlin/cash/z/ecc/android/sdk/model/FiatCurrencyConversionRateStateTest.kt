@@ -144,6 +144,8 @@ class FiatCurrencyConversionRateStateTest {
     }
 }
 
-private class FrozenClock(private val timestamp: Instant) : Clock {
+private class FrozenClock(
+    private val timestamp: Instant
+) : Clock {
     override fun now() = timestamp
 }

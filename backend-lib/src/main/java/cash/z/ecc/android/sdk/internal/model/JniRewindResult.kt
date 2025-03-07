@@ -14,7 +14,9 @@ sealed class JniRewindResult {
      * `height` is the height to which the data store was actually truncated.
      */
     @Keep
-    class Success(val height: Long) : JniRewindResult() {
+    class Success(
+        val height: Long
+    ) : JniRewindResult() {
         init {
             require(height.isInUIntRange()) {
                 "Height $height is outside of allowed UInt range"
@@ -28,7 +30,10 @@ sealed class JniRewindResult {
      * If no safe rewind height can be determined, the safe rewind height member will be -1.
      */
     @Keep
-    class Invalid(val safeRewindHeight: Long, val requestedHeight: Long) : JniRewindResult() {
+    class Invalid(
+        val safeRewindHeight: Long,
+        val requestedHeight: Long
+    ) : JniRewindResult() {
         init {
             if (safeRewindHeight != -1L) {
                 require(safeRewindHeight.isInUIntRange()) {

@@ -885,7 +885,9 @@ sealed class WalletInitMode {
     data object ExistingWallet : WalletInitMode()
 }
 
-interface CloseableSynchronizer : Synchronizer, Closeable
+interface CloseableSynchronizer :
+    Synchronizer,
+    Closeable
 
 /**
  * Validate that the alias doesn't contain malicious characters by enforcing simple rules which

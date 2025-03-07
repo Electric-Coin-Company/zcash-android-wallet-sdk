@@ -9,13 +9,12 @@ import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
  * This set of extension functions suited for defaults for the Demo app is not part of the SDK's public APIs.
  */
 
-internal fun LightWalletEndpoint.Companion.defaultForNetwork(zcashNetwork: ZcashNetwork): LightWalletEndpoint {
-    return when (zcashNetwork.id) {
+internal fun LightWalletEndpoint.Companion.defaultForNetwork(zcashNetwork: ZcashNetwork): LightWalletEndpoint =
+    when (zcashNetwork.id) {
         ZcashNetwork.Mainnet.id -> LightWalletEndpoint.Mainnet
         ZcashNetwork.Testnet.id -> LightWalletEndpoint.Testnet
         else -> error("Unknown network id: ${zcashNetwork.id}")
     }
-}
 
 internal val LightWalletEndpoint.Companion.Mainnet
     get() =

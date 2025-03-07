@@ -6,9 +6,7 @@ class TreeStateUnsafe(
     val encoded: ByteArray
 ) {
     companion object {
-        fun new(treeState: TreeState): TreeStateUnsafe {
-            return TreeStateUnsafe(treeState.toByteArray())
-        }
+        fun new(treeState: TreeState): TreeStateUnsafe = TreeStateUnsafe(treeState.toByteArray())
 
         fun fromParts(
             height: Long,
@@ -18,7 +16,8 @@ class TreeStateUnsafe(
             orchardTree: String
         ): TreeStateUnsafe {
             val treeState =
-                TreeState.newBuilder()
+                TreeState
+                    .newBuilder()
                     .setHeight(height)
                     .setHash(hash)
                     .setTime(time)

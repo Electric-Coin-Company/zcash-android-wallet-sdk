@@ -54,7 +54,8 @@ internal class LightWalletClientImpl private constructor(
         }
 
         return try {
-            requireChannel().createStub(streamingRequestTimeout)
+            requireChannel()
+                .createStub(streamingRequestTimeout)
                 .getBlockRange(heightRange.toBlockRange())
                 .map {
                     val response: Response<CompactBlockUnsafe> = Response.Success(CompactBlockUnsafe.new(it))
@@ -68,15 +69,16 @@ internal class LightWalletClientImpl private constructor(
         }
     }
 
-    override suspend fun getLatestBlockHeight(): Response<BlockHeightUnsafe> {
-        return try {
+    override suspend fun getLatestBlockHeight(): Response<BlockHeightUnsafe> =
+        try {
             if (BenchmarkingExt.isBenchmarking()) {
                 // We inject a benchmark test blocks range at this point to process only a restricted range of blocks
                 // for a more reliable benchmark results.
                 Response.Success(BlockHeightUnsafe(BenchmarkingBlockRangeFixture.new().endInclusive))
             } else {
                 val response =
-                    requireChannel().createStub(singleRequestTimeout)
+                    requireChannel()
+                        .createStub(singleRequestTimeout)
                         .getLatestBlock(Service.ChainSpec.newBuilder().build())
 
                 val blockHeight = BlockHeightUnsafe(response.height)
@@ -86,12 +88,12 @@ internal class LightWalletClientImpl private constructor(
         } catch (e: StatusException) {
             GrpcStatusResolver.resolveFailureFromStatus(e)
         }
-    }
 
-    override suspend fun getServerInfo(): Response<LightWalletEndpointInfoUnsafe> {
-        return try {
+    override suspend fun getServerInfo(): Response<LightWalletEndpointInfoUnsafe> =
+        try {
             val lightdInfo =
-                requireChannel().createStub(singleRequestTimeout)
+                requireChannel()
+                    .createStub(singleRequestTimeout)
                     .getLightdInfo(Service.Empty.newBuilder().build())
 
             val lightwalletEndpointInfo = LightWalletEndpointInfoUnsafe.new(lightdInfo)
@@ -100,7 +102,6 @@ internal class LightWalletClientImpl private constructor(
         } catch (e: StatusException) {
             GrpcStatusResolver.resolveFailureFromStatus(e)
         }
-    }
 
     override suspend fun submitTransaction(spendTransaction: ByteArray): Response<SendResponseUnsafe> {
         require(spendTransaction.isNotEmpty()) {
@@ -109,7 +110,8 @@ internal class LightWalletClientImpl private constructor(
         }
 
         val request =
-            Service.RawTransaction.newBuilder()
+            Service.RawTransaction
+                .newBuilder()
                 .setData(ByteString.copyFrom(spendTransaction))
                 .build()
 
@@ -134,7 +136,11 @@ internal class LightWalletClientImpl private constructor(
                 " null transaction ID, so this request was ignored on the client-side." // NON-NLS
         }
 
-        val request = Service.TxFilter.newBuilder().setHash(ByteString.copyFrom(txId)).build()
+        val request =
+            Service.TxFilter
+                .newBuilder()
+                .setHash(ByteString.copyFrom(txId))
+                .build()
 
         return try {
             val response = requireChannel().createStub().getTransaction(request)
@@ -164,7 +170,8 @@ internal class LightWalletClientImpl private constructor(
         val request = getUtxosBuilder.build()
 
         return try {
-            requireChannel().createStub(streamingRequestTimeout)
+            requireChannel()
+                .createStub(streamingRequestTimeout)
                 .getAddressUtxosStream(request)
                 .map {
                     val response: Response<GetAddressUtxosReplyUnsafe> =
@@ -190,13 +197,15 @@ internal class LightWalletClientImpl private constructor(
         }
 
         val request =
-            Service.TransparentAddressBlockFilter.newBuilder()
+            Service.TransparentAddressBlockFilter
+                .newBuilder()
                 .setAddress(tAddress)
                 .setRange(blockHeightRange.toBlockRange())
                 .build()
 
         return try {
-            requireChannel().createStub(streamingRequestTimeout)
+            requireChannel()
+                .createStub(streamingRequestTimeout)
                 .getTaddressTxids(request)
                 .map {
                     val response: Response<RawTransactionUnsafe> = Response.Success(RawTransactionUnsafe.new(it))
@@ -224,7 +233,8 @@ internal class LightWalletClientImpl private constructor(
         val request = getSubtreeRootsArgBuilder.build()
 
         return try {
-            requireChannel().createStub(streamingRequestTimeout)
+            requireChannel()
+                .createStub(streamingRequestTimeout)
                 .getSubtreeRoots(request)
                 .map {
                     val response: Response<SubtreeRootUnsafe> = Response.Success(SubtreeRootUnsafe.new(it))
@@ -238,17 +248,17 @@ internal class LightWalletClientImpl private constructor(
         }
     }
 
-    override suspend fun getTreeState(height: BlockHeightUnsafe): Response<TreeStateUnsafe> {
-        return try {
+    override suspend fun getTreeState(height: BlockHeightUnsafe): Response<TreeStateUnsafe> =
+        try {
             val response =
-                requireChannel().createStub(singleRequestTimeout)
+                requireChannel()
+                    .createStub(singleRequestTimeout)
                     .getTreeState(height.toBlockHeight())
 
             Response.Success(TreeStateUnsafe.new(response))
         } catch (e: StatusException) {
             GrpcStatusResolver.resolveFailureFromStatus(e)
         }
-    }
 
     override fun shutdown() {
         channel.shutdown()
@@ -280,25 +290,30 @@ internal class LightWalletClientImpl private constructor(
             lightWalletEndpoint: LightWalletEndpoint,
             singleRequestTimeout: Duration = 10.seconds,
             streamingRequestTimeout: Duration = 90.seconds
-        ): LightWalletClientImpl {
-            return LightWalletClientImpl(
+        ): LightWalletClientImpl =
+            LightWalletClientImpl(
                 channelFactory = channelFactory,
                 lightWalletEndpoint = lightWalletEndpoint,
                 singleRequestTimeout = singleRequestTimeout,
                 streamingRequestTimeout = streamingRequestTimeout
             )
-        }
     }
 }
 
 private fun Channel.createStub(timeoutSec: Duration = 60.seconds) =
-    CompactTxStreamerGrpcKt.CompactTxStreamerCoroutineStub(this, CallOptions.DEFAULT)
+    CompactTxStreamerGrpcKt
+        .CompactTxStreamerCoroutineStub(this, CallOptions.DEFAULT)
         .withDeadlineAfter(timeoutSec.inWholeSeconds, TimeUnit.SECONDS)
 
-private fun BlockHeightUnsafe.toBlockHeight(): Service.BlockID = Service.BlockID.newBuilder().setHeight(value).build()
+private fun BlockHeightUnsafe.toBlockHeight(): Service.BlockID =
+    Service.BlockID
+        .newBuilder()
+        .setHeight(value)
+        .build()
 
 private fun ClosedRange<BlockHeightUnsafe>.toBlockRange(): Service.BlockRange =
-    Service.BlockRange.newBuilder()
+    Service.BlockRange
+        .newBuilder()
         .setStart(start.toBlockHeight())
         .setEnd(endInclusive.toBlockHeight())
         .build()

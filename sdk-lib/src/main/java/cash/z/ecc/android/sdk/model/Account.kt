@@ -75,14 +75,13 @@ data class Account internal constructor(
             )
     }
 
-    override fun toString(): String {
-        return "Account(accountUuid=$accountUuid," +
+    override fun toString(): String =
+        "Account(accountUuid=$accountUuid," +
             " ufvk length=${ufvk?.length}," +
             " accountName=$accountName," +
             " keySource=$keySource," +
             " seedFingerprint size=${seedFingerprint?.size}," +
             " hdAccountIndex=$hdAccountIndex)"
-    }
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

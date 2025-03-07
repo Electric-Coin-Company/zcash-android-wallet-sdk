@@ -1,7 +1,11 @@
 package cash.z.ecc.android.sdk.model
 
-sealed class WalletAddress(val address: String) {
-    class Unified private constructor(address: String) : WalletAddress(address) {
+sealed class WalletAddress(
+    val address: String
+) {
+    class Unified private constructor(
+        address: String
+    ) : WalletAddress(address) {
         companion object {
             suspend fun new(address: String): Unified {
                 // https://github.com/zcash/zcash-android-wallet-sdk/issues/342
@@ -11,7 +15,9 @@ sealed class WalletAddress(val address: String) {
         }
     }
 
-    class Sapling private constructor(address: String) : WalletAddress(address) {
+    class Sapling private constructor(
+        address: String
+    ) : WalletAddress(address) {
         companion object {
             suspend fun new(address: String): Sapling {
                 // TODO [#342]: https://github.com/zcash/zcash-android-wallet-sdk/issues/342
@@ -21,7 +27,9 @@ sealed class WalletAddress(val address: String) {
         }
     }
 
-    class Transparent private constructor(address: String) : WalletAddress(address) {
+    class Transparent private constructor(
+        address: String
+    ) : WalletAddress(address) {
         companion object {
             suspend fun new(address: String): Transparent {
                 // TODO [#342]: https://github.com/zcash/zcash-android-wallet-sdk/issues/342
@@ -31,7 +39,9 @@ sealed class WalletAddress(val address: String) {
         }
     }
 
-    class Tex private constructor(address: String) : WalletAddress(address) {
+    class Tex private constructor(
+        address: String
+    ) : WalletAddress(address) {
         companion object {
             suspend fun new(address: String): Tex {
                 // TODO [#342]: https://github.com/zcash/zcash-android-wallet-sdk/issues/342

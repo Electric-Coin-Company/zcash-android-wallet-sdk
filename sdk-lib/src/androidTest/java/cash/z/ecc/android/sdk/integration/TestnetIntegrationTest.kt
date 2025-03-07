@@ -99,9 +99,11 @@ class TestnetIntegrationTest : ScopedTest() {
     fun testSpend() =
         runBlocking {
             var success = false
-            synchronizer.walletBalances.filterNotNull().onEach {
-                success = sendFunds()
-            }.first()
+            synchronizer.walletBalances
+                .filterNotNull()
+                .onEach {
+                    success = sendFunds()
+                }.first()
             log("asserting $success")
             assertTrue(success)
         }

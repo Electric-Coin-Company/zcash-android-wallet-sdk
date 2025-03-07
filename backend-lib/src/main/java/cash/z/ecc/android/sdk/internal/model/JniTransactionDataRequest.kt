@@ -9,10 +9,14 @@ import cash.z.ecc.android.sdk.internal.ext.isInUIntRange
 @Keep
 sealed class JniTransactionDataRequest {
     @Keep
-    class GetStatus(val txid: ByteArray) : JniTransactionDataRequest()
+    class GetStatus(
+        val txid: ByteArray
+    ) : JniTransactionDataRequest()
 
     @Keep
-    class Enhancement(val txid: ByteArray) : JniTransactionDataRequest()
+    class Enhancement(
+        val txid: ByteArray
+    ) : JniTransactionDataRequest()
 
     @Keep
     data class SpendsFromAddress(

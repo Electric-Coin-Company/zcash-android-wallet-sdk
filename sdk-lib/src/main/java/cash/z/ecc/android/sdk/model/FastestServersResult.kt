@@ -11,10 +11,14 @@ sealed interface FastestServersResult {
     /**
      * Fastest server validation is ongoing & latency measurement is done.
      */
-    data class Validating(val servers: List<LightWalletEndpoint>) : FastestServersResult
+    data class Validating(
+        val servers: List<LightWalletEndpoint>
+    ) : FastestServersResult
 
     /**
      * Fastest server measurement is completely done.
      */
-    data class Done(val servers: List<LightWalletEndpoint>) : FastestServersResult
+    data class Done(
+        val servers: List<LightWalletEndpoint>
+    ) : FastestServersResult
 }

@@ -13,8 +13,8 @@ internal data class WalletSummary(
     val nextOrchardSubtreeIndex: UInt
 ) {
     companion object {
-        fun new(jni: JniWalletSummary): WalletSummary {
-            return WalletSummary(
+        fun new(jni: JniWalletSummary): WalletSummary =
+            WalletSummary(
                 accountBalances =
                     jni.accountBalances.associateBy(
                         { AccountUuid.new(it.accountUuid) },
@@ -26,6 +26,5 @@ internal data class WalletSummary(
                 nextSaplingSubtreeIndex = jni.nextSaplingSubtreeIndex.toUInt(),
                 nextOrchardSubtreeIndex = jni.nextOrchardSubtreeIndex.toUInt()
             )
-        }
     }
 }

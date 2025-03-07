@@ -20,7 +20,10 @@ import org.junit.runners.Parameterized
 @MaintainedTest(TestPurpose.REGRESSION)
 @RunWith(Parameterized::class)
 @SmallTest
-class TransparentTest(val expected: Expected, val network: ZcashNetwork) {
+class TransparentTest(
+    val expected: Expected,
+    val network: ZcashNetwork
+) {
     @Test
     fun deriveUnifiedFullViewingKeysFromSeedTest() =
         runBlocking {

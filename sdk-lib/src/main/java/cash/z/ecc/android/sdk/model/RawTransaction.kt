@@ -21,8 +21,8 @@ data class RawTransaction internal constructor(
     }
 
     companion object {
-        fun new(rawTransactionUnsafe: RawTransactionUnsafe): RawTransaction {
-            return RawTransaction(
+        fun new(rawTransactionUnsafe: RawTransactionUnsafe): RawTransaction =
+            RawTransaction(
                 data = rawTransactionUnsafe.data,
                 height =
                     when (rawTransactionUnsafe) {
@@ -30,7 +30,6 @@ data class RawTransaction internal constructor(
                         else -> null
                     }
             )
-        }
     }
 
     override fun equals(other: Any?): Boolean {

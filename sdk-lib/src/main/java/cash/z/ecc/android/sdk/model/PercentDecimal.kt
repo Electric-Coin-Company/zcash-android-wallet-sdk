@@ -4,7 +4,9 @@ package cash.z.ecc.android.sdk.model
  * @param decimal A percent represented as a `Double` decimal value in the range of [0, 1].
  */
 @JvmInline
-value class PercentDecimal(val decimal: Float) {
+value class PercentDecimal(
+    val decimal: Float
+) {
     init {
         require(decimal >= MIN)
         require(decimal <= MAX)

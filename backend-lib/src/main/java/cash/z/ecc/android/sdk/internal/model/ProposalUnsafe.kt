@@ -33,9 +33,7 @@ class ProposalUnsafe(
     /**
      * Serializes this proposal for passing back across the FFI.
      */
-    fun toByteArray(): ByteArray {
-        return inner.toByteArray()
-    }
+    fun toByteArray(): ByteArray = inner.toByteArray()
 
     /**
      * Returns the number of transactions that this proposal will create.
@@ -45,14 +43,10 @@ class ProposalUnsafe(
      *
      * Proposals always create at least one transaction.
      */
-    fun transactionCount(): Int {
-        return inner.stepsCount
-    }
+    fun transactionCount(): Int = inner.stepsCount
 
     /**
      * Returns the total fee required by this proposal for its transactions.
      */
-    fun totalFeeRequired(): Long {
-        return inner.stepsList.fold(0) { acc, step -> acc + step.balance.feeRequired }
-    }
+    fun totalFeeRequired(): Long = inner.stepsList.fold(0) { acc, step -> acc + step.balance.feeRequired }
 }

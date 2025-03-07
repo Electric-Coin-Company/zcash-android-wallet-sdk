@@ -27,7 +27,6 @@ object ListOfCompactBlocksFixture {
     }
 
     @Suppress("MaxLineLength")
-    fun newFlow(blocksHeightRange: ClosedRange<BlockHeightUnsafe> = DEFAULT_FILE_BLOCK_RANGE): Flow<CompactBlockUnsafe> {
-        return newSequence(blocksHeightRange).asFlow()
-    }
+    fun newFlow(blocksHeightRange: ClosedRange<BlockHeightUnsafe> = DEFAULT_FILE_BLOCK_RANGE): Flow<CompactBlockUnsafe> =
+        newSequence(blocksHeightRange).asFlow()
 }

@@ -32,11 +32,13 @@ internal fun <T> SQLiteDatabase.queryAndMap(
     // TODO [#703]: Support blobs for argument binding
     // TODO [#703]: https://github.com/zcash/zcash-android-wallet-sdk/issues/703
     val mappedSelectionArgs =
-        selectionArgs?.onEach {
-            require(it !is ByteArray) {
-                "ByteArray is not supported"
-            }
-        }?.map { it.toString() }?.toTypedArray()
+        selectionArgs
+            ?.onEach {
+                require(it !is ByteArray) {
+                    "ByteArray is not supported"
+                }
+            }?.map { it.toString() }
+            ?.toTypedArray()
 
     // Counterintuitive but correct. When using the comma syntax, offset comes first.
     // When using the keyword syntax, "LIMIT 1 OFFSET 2" then the offset comes second.

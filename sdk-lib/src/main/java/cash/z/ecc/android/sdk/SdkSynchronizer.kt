@@ -141,7 +141,9 @@ class SdkSynchronizer private constructor(
         private sealed class InstanceState {
             object Active : InstanceState()
 
-            data class ShuttingDown(val job: Job) : InstanceState()
+            data class ShuttingDown(
+                val job: Job
+            ) : InstanceState()
         }
 
         private val instances: MutableMap<SynchronizerKey, InstanceState> =
@@ -252,8 +254,7 @@ class SdkSynchronizer private constructor(
                             }
                         emit(lastExchangeRateValue)
                     }
-                }
-                .onEach { send(it) }
+                }.onEach { send(it) }
                 .flowOn(Dispatchers.Default)
                 .launchIn(this)
 
@@ -429,12 +430,11 @@ class SdkSynchronizer private constructor(
             }
         }
 
-    override suspend fun rewindToNearestHeight(height: BlockHeight): BlockHeight? {
-        return processor.rewindToNearestHeight(height)
-    }
+    override suspend fun rewindToNearestHeight(height: BlockHeight): BlockHeight? =
+        processor.rewindToNearestHeight(height)
 
-    override fun getMemos(transactionOverview: TransactionOverview): Flow<String> {
-        return storage.getOutputProperties(transactionOverview.txId).map { properties ->
+    override fun getMemos(transactionOverview: TransactionOverview): Flow<String> =
+        storage.getOutputProperties(transactionOverview.txId).map { properties ->
             if (!properties.protocol.isShielded()) {
                 ""
             } else {
@@ -454,11 +454,9 @@ class SdkSynchronizer private constructor(
                 )
             }
         }
-    }
 
-    override fun getTransactionsByMemoSubstring(query: String): Flow<List<TransactionId>> {
-        return storage.getTransactionsByMemoSubstring(query)
-    }
+    override fun getTransactionsByMemoSubstring(query: String): Flow<List<TransactionId>> =
+        storage.getTransactionsByMemoSubstring(query)
 
     override fun getRecipients(transactionOverview: TransactionOverview): Flow<TransactionRecipient> {
         require(transactionOverview.isSentTransaction) { "Recipients can only be queried for sent transactions" }
@@ -466,8 +464,8 @@ class SdkSynchronizer private constructor(
         return storage.getRecipients(transactionOverview.txId)
     }
 
-    override suspend fun getTransactionOutputs(transactionOverview: TransactionOverview): List<TransactionOutput> {
-        return storage.getOutputProperties(transactionOverview.txId).toList().map {
+    override suspend fun getTransactionOutputs(transactionOverview: TransactionOverview): List<TransactionOutput> =
+        storage.getOutputProperties(transactionOverview.txId).toList().map {
             TransactionOutput(
                 when (it.protocol) {
                     ZcashProtocol.TRANSPARENT -> TransactionPool.TRANSPARENT
@@ -476,10 +474,9 @@ class SdkSynchronizer private constructor(
                 }
             )
         }
-    }
 
-    override suspend fun getTransactions(accountUuid: AccountUuid): Flow<List<TransactionOverview>> {
-        return combine(
+    override suspend fun getTransactions(accountUuid: AccountUuid): Flow<List<TransactionOverview>> =
+        combine(
             processor.networkHeight,
             storage.getTransactions(accountUuid)
         ) { networkHeight, allAccountTransactions ->
@@ -494,7 +491,6 @@ class SdkSynchronizer private constructor(
                 .map { TransactionOverview.new(it, latestBlockHeight) }
                 .map { it.checkAndFillInTime(storage) }
         }
-    }
 
     //
     // Storage APIs
@@ -504,9 +500,7 @@ class SdkSynchronizer private constructor(
     //  to do with the underlying data
     // TODO [#682]: https://github.com/zcash/zcash-android-wallet-sdk/issues/682
 
-    suspend fun getTransactionCount(): Int {
-        return storage.getTransactionCount().toInt()
-    }
+    suspend fun getTransactionCount(): Int = storage.getTransactionCount().toInt()
 
     fun refreshTransactions() {
         storage.invalidate()
@@ -526,9 +520,7 @@ class SdkSynchronizer private constructor(
         }
     }
 
-    suspend fun isValidAddress(address: String): Boolean {
-        return !validateAddress(address).isNotValid
-    }
+    suspend fun isValidAddress(address: String): Boolean = !validateAddress(address).isNotValid
 
     //
     // Private API
@@ -556,24 +548,25 @@ class SdkSynchronizer private constructor(
             processor.onSetupErrorListener = ::onSetupError
             processor.onChainErrorListener = ::onChainError
 
-            processor.state.onEach {
-                when (it) {
-                    is Initializing -> INITIALIZING
-                    is Synced -> {
-                        val now = System.currentTimeMillis()
-                        // do a bit of housekeeping and then report synced status
-                        onScanComplete(it.syncedRange, now - lastScanTime)
-                        lastScanTime = now
-                        SYNCED
-                    }
+            processor.state
+                .onEach {
+                    when (it) {
+                        is Initializing -> INITIALIZING
+                        is Synced -> {
+                            val now = System.currentTimeMillis()
+                            // do a bit of housekeeping and then report synced status
+                            onScanComplete(it.syncedRange, now - lastScanTime)
+                            lastScanTime = now
+                            SYNCED
+                        }
 
-                    is Stopped -> STOPPED
-                    is Disconnected -> DISCONNECTED
-                    is Syncing -> SYNCING
-                }.let { synchronizerStatus ->
-                    _status.value = synchronizerStatus
-                }
-            }.launchIn(this)
+                        is Stopped -> STOPPED
+                        is Disconnected -> DISCONNECTED
+                        is Syncing -> SYNCING
+                    }.let { synchronizerStatus ->
+                        _status.value = synchronizerStatus
+                    }
+                }.launchIn(this)
             processor.start()
             Twig.debug { "Completed starting synchronizer" }
         }
@@ -687,23 +680,23 @@ class SdkSynchronizer private constructor(
         recoverUntil: BlockHeight?,
         seed: FirstClassByteArray,
         treeState: TreeState,
-    ): AccountUsk {
-        return runCatching {
-            backend.createAccountAndGetSpendingKey(
-                accountName = accountName,
-                keySource = keySource,
-                seed = seed,
-                treeState = treeState,
-                recoverUntil = recoverUntil
-            ).also {
-                refreshAccountsBus.emit(Unit)
-            }
+    ): AccountUsk =
+        runCatching {
+            backend
+                .createAccountAndGetSpendingKey(
+                    accountName = accountName,
+                    keySource = keySource,
+                    seed = seed,
+                    treeState = treeState,
+                    recoverUntil = recoverUntil
+                ).also {
+                    refreshAccountsBus.emit(Unit)
+                }
         }.onFailure {
             Twig.error(it) { "Create account failed." }
         }.getOrElse {
             throw InitializeException.CreateAccountException(it)
         }
-    }
 
     override suspend fun importAccountByUfvk(setup: AccountImportSetup): Account {
         val chainTip: BlockHeight? =
@@ -729,13 +722,14 @@ class SdkSynchronizer private constructor(
         val treeState: TreeState = loadedCheckpoint.treeState()
 
         return runCatching {
-            backend.importAccountUfvk(
-                recoverUntil = chainTip,
-                setup = setup,
-                treeState = treeState,
-            ).also {
-                refreshAccountsBus.emit(Unit)
-            }
+            backend
+                .importAccountUfvk(
+                    recoverUntil = chainTip,
+                    setup = setup,
+                    treeState = treeState,
+                ).also {
+                    refreshAccountsBus.emit(Unit)
+                }
         }.onFailure {
             Twig.error(it) { "Import account failed." }
         }.getOrElse {
@@ -743,15 +737,14 @@ class SdkSynchronizer private constructor(
         }
     }
 
-    override suspend fun getAccounts(): List<Account> {
-        return runCatching {
+    override suspend fun getAccounts(): List<Account> =
+        runCatching {
             backend.getAccounts()
         }.onFailure {
             Twig.error(it) { "Get wallet accounts failed." }
         }.getOrElse {
             throw InitializeException.GetAccountsException(it)
         }
-    }
 
     override val accountsFlow: Flow<List<Account>?> =
         channelFlow {
@@ -848,7 +841,8 @@ class SdkSynchronizer private constructor(
         // Internally, this logic submits and checks every incoming transaction, and once [Failure] or
         // [NotAttempted] submission result occurs, it returns [NotAttempted] for the rest of them
         var anySubmissionFailed = false
-        return txManager.createProposedTransactions(proposal, usk)
+        return txManager
+            .createProposedTransactions(proposal, usk)
             .asFlow()
             .map { transaction ->
                 if (anySubmissionFailed) {
@@ -893,13 +887,9 @@ class SdkSynchronizer private constructor(
     override suspend fun refreshUtxos(
         account: Account,
         since: BlockHeight
-    ): Int {
-        return processor.refreshUtxos(account, since)
-    }
+    ): Int = processor.refreshUtxos(account, since)
 
-    override suspend fun getTransparentBalance(tAddr: String): Zatoshi {
-        return processor.getUtxoCacheBalance(tAddr)
-    }
+    override suspend fun getTransparentBalance(tAddr: String): Zatoshi = processor.getUtxoCacheBalance(tAddr)
 
     override suspend fun isValidShieldedAddr(address: String) = txManager.isValidShieldedAddress(address)
 
@@ -972,79 +962,80 @@ class SdkSynchronizer private constructor(
         // The single request timeout is changed from default to 5 seconds to speed up a possible custom server
         // endpoint validation
 
-        LightWalletClient.new(
-            context = context,
-            lightWalletEndpoint = endpoint,
-            singleRequestTimeout = 5.seconds
-        ).use { lightWalletClient ->
-            val remoteInfo =
-                when (val response = lightWalletClient.getServerInfo()) {
-                    is Response.Success -> response.result
-                    is Response.Failure -> {
-                        return ServerValidation.InValid(response.toThrowable())
-                    }
-                }
-
-            // Check network type
-            if (!remoteInfo.matchingNetwork(network.networkName)) {
-                return ServerValidation.InValid(
-                    CompactBlockProcessorException.MismatchedNetwork(
-                        clientNetwork = network.networkName,
-                        serverNetwork = remoteInfo.chainName
-                    )
-                )
-            }
-
-            // Check sapling activation height
-            runCatching {
-                val remoteSaplingActivationHeight = remoteInfo.saplingActivationHeightUnsafe.toBlockHeight()
-                if (network.saplingActivationHeight != remoteSaplingActivationHeight) {
-                    return ServerValidation.InValid(
-                        CompactBlockProcessorException.MismatchedSaplingActivationHeight(
-                            clientHeight = network.saplingActivationHeight.value,
-                            serverHeight = remoteSaplingActivationHeight.value
-                        )
-                    )
-                }
-            }.getOrElse {
-                return ServerValidation.InValid(it)
-            }
-
-            val currentChainTip =
-                when (val response = lightWalletClient.getLatestBlockHeight()) {
-                    is Response.Success -> {
-                        runCatching { response.result.toBlockHeight() }.getOrElse {
-                            return ServerValidation.InValid(it)
+        LightWalletClient
+            .new(
+                context = context,
+                lightWalletEndpoint = endpoint,
+                singleRequestTimeout = 5.seconds
+            ).use { lightWalletClient ->
+                val remoteInfo =
+                    when (val response = lightWalletClient.getServerInfo()) {
+                        is Response.Success -> response.result
+                        is Response.Failure -> {
+                            return ServerValidation.InValid(response.toThrowable())
                         }
                     }
 
-                    is Response.Failure -> {
-                        return ServerValidation.InValid(response.toThrowable())
-                    }
+                // Check network type
+                if (!remoteInfo.matchingNetwork(network.networkName)) {
+                    return ServerValidation.InValid(
+                        CompactBlockProcessorException.MismatchedNetwork(
+                            clientNetwork = network.networkName,
+                            serverNetwork = remoteInfo.chainName
+                        )
+                    )
                 }
 
-            val sdkBranchId =
+                // Check sapling activation height
                 runCatching {
-                    "%x".format(
-                        Locale.ROOT,
-                        backend.getBranchIdForHeight(currentChainTip)
-                    )
+                    val remoteSaplingActivationHeight = remoteInfo.saplingActivationHeightUnsafe.toBlockHeight()
+                    if (network.saplingActivationHeight != remoteSaplingActivationHeight) {
+                        return ServerValidation.InValid(
+                            CompactBlockProcessorException.MismatchedSaplingActivationHeight(
+                                clientHeight = network.saplingActivationHeight.value,
+                                serverHeight = remoteSaplingActivationHeight.value
+                            )
+                        )
+                    }
                 }.getOrElse {
                     return ServerValidation.InValid(it)
                 }
 
-            // Check branch id
-            return if (remoteInfo.consensusBranchId.equals(sdkBranchId, true)) {
-                ServerValidation.Valid
-            } else {
-                ServerValidation.InValid(
-                    CompactBlockProcessorException.MismatchedConsensusBranch(
-                        sdkBranchId,
-                        remoteInfo.consensusBranchId
+                val currentChainTip =
+                    when (val response = lightWalletClient.getLatestBlockHeight()) {
+                        is Response.Success -> {
+                            runCatching { response.result.toBlockHeight() }.getOrElse {
+                                return ServerValidation.InValid(it)
+                            }
+                        }
+
+                        is Response.Failure -> {
+                            return ServerValidation.InValid(response.toThrowable())
+                        }
+                    }
+
+                val sdkBranchId =
+                    runCatching {
+                        "%x".format(
+                            Locale.ROOT,
+                            backend.getBranchIdForHeight(currentChainTip)
+                        )
+                    }.getOrElse {
+                        return ServerValidation.InValid(it)
+                    }
+
+                // Check branch id
+                return if (remoteInfo.consensusBranchId.equals(sdkBranchId, true)) {
+                    ServerValidation.Valid
+                } else {
+                    ServerValidation.InValid(
+                        CompactBlockProcessorException.MismatchedConsensusBranch(
+                            sdkBranchId,
+                            remoteInfo.consensusBranchId
+                        )
                     )
-                )
+                }
             }
-        }
     }
 
     @Throws(InitializeException.MissingDatabaseException::class)
@@ -1052,17 +1043,18 @@ class SdkSynchronizer private constructor(
         context: Context,
         network: ZcashNetwork,
         alias: String
-    ): String {
-        return DatabaseCoordinator.getInstance(context).dataDbFile(
-            network = network,
-            alias = alias
-        ).run {
-            if (!existsSuspend()) {
-                throw InitializeException.MissingDatabaseException(network, alias)
+    ): String =
+        DatabaseCoordinator
+            .getInstance(context)
+            .dataDbFile(
+                network = network,
+                alias = alias
+            ).run {
+                if (!existsSuspend()) {
+                    throw InitializeException.MissingDatabaseException(network, alias)
+                }
+                absolutePath
             }
-            absolutePath
-        }
-    }
 }
 
 /**
@@ -1076,8 +1068,8 @@ internal object DefaultSynchronizerFactory {
         alias: String,
         saplingParamTool: SaplingParamTool,
         coordinator: DatabaseCoordinator
-    ): TypesafeBackend {
-        return TypesafeBackendImpl(
+    ): TypesafeBackend =
+        TypesafeBackendImpl(
             RustBackend.new(
                 coordinator.fsBlockDbRoot(network, alias),
                 coordinator.dataDbFile(network, alias),
@@ -1086,7 +1078,6 @@ internal object DefaultSynchronizerFactory {
                 zcashNetworkId = network.id
             )
         )
-    }
 
     @Suppress("LongParameterList")
     internal suspend fun defaultDerivedDataRepository(
@@ -1136,12 +1127,11 @@ internal object DefaultSynchronizerFactory {
     internal fun defaultTxManager(
         encoder: TransactionEncoder,
         service: LightWalletClient
-    ): OutboundTransactionManager {
-        return OutboundTransactionManagerImpl.new(
+    ): OutboundTransactionManager =
+        OutboundTransactionManagerImpl.new(
             encoder,
             service
         )
-    }
 
     internal fun defaultProcessor(
         backend: TypesafeBackend,
@@ -1159,4 +1149,7 @@ internal object DefaultSynchronizerFactory {
         )
 }
 
-internal data class SynchronizerKey(val zcashNetwork: ZcashNetwork, val alias: String)
+internal data class SynchronizerKey(
+    val zcashNetwork: ZcashNetwork,
+    val alias: String
+)

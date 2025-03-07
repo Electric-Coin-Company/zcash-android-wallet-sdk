@@ -22,11 +22,12 @@ fun Number?.withCommas() = this?.let { "%,d".format(it) } ?: "Unknown"
 @Suppress("MagicNumber")
 fun Int?.toRelativeTime(context: Context) =
     this?.let { timeInSeconds ->
-        DateUtils.getRelativeDateTimeString(
-            context,
-            timeInSeconds * 1000L,
-            DateUtils.SECOND_IN_MILLIS,
-            DateUtils.WEEK_IN_MILLIS,
-            DateUtils.FORMAT_SHOW_DATE or DateUtils.FORMAT_SHOW_YEAR or DateUtils.FORMAT_ABBREV_MONTH
-        ).toString()
+        DateUtils
+            .getRelativeDateTimeString(
+                context,
+                timeInSeconds * 1000L,
+                DateUtils.SECOND_IN_MILLIS,
+                DateUtils.WEEK_IN_MILLIS,
+                DateUtils.FORMAT_SHOW_DATE or DateUtils.FORMAT_SHOW_YEAR or DateUtils.FORMAT_ABBREV_MONTH
+            ).toString()
     } ?: "Unknown"

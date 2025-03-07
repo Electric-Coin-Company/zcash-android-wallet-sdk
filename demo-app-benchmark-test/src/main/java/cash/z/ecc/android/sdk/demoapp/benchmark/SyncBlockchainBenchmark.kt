@@ -69,14 +69,14 @@ class SyncBlockchainBenchmark : UiTestPrerequisites() {
                         targetPackageOnly = false
                     ),
                     TraceSectionMetric(
-                        sectionName =DOWNLOAD_SECTION,
+                        sectionName = DOWNLOAD_SECTION,
                         mode = TraceSectionMetric.Mode.First,
                         targetPackageOnly = false
                     ),
                     TraceSectionMetric(
                         sectionName = VALIDATION_SECTION,
                         mode = TraceSectionMetric.Mode.First,
-                        targetPackageOnly =false
+                        targetPackageOnly = false
                     ),
                     TraceSectionMetric(
                         sectionName = SCAN_SECTION,

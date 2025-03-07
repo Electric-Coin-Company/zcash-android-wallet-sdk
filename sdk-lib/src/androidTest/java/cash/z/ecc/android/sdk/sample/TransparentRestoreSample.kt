@@ -76,11 +76,14 @@ class TransparentRestoreSample {
 //        wallet.rewindToHeight(1343500).join(45_000)
             val wallet = TestWallet(TestWallet.Backups.SAMPLE_WALLET, alias = "WalletC")
 //        wallet.sync().rewindToHeight(1339178).join(10000)
-            wallet.sync().rewindToHeight(BlockHeight.new(1339178L)).send(
-                account = AccountFixture.new(),
-                address = "ztestsapling17zazsl8rryl8kjaqxnr2r29rw9d9a2mud37ugapm0s8gmyv0ue43h9lqwmhdsp3nu9dazeqfs6l",
-                memo = "is send broken?"
-            ).join(5)
+            wallet
+                .sync()
+                .rewindToHeight(BlockHeight.new(1339178L))
+                .send(
+                    account = AccountFixture.new(),
+                    address = "ztestsapling17zazsl8rryl8kjaqxnr2r29rw9d9a2mud37ugapm0s8gmyv0ue43h9lqwmhdsp3nu9dazeqfs6l",
+                    memo = "is send broken?"
+                ).join(5)
         }
 
     // This test is extremely slow and doesn't assert anything, so the benefit of this test is unclear
@@ -100,7 +103,8 @@ class TransparentRestoreSample {
                 )
 //        val wallet1 = SimpleWallet(WALLET0_PHRASE, "Wallet1")
 
-            wallet0.sync() // .shieldFunds()
+            wallet0
+                .sync() // .shieldFunds()
 //            .send(amount = 1543L, memo = "")
                 .join()
 //        wallet1.sync().join(5_000L)

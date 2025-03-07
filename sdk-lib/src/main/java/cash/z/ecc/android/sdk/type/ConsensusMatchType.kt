@@ -8,7 +8,10 @@ import cash.z.ecc.android.sdk.ext.ConsensusBranchId
  * functions for communicating detailed error information to the end-user. Used in conjunction with
  * [cash.z.ecc.android.sdk.Synchronizer.validateConsensusBranch].
  */
-class ConsensusMatchType(val sdkBranch: ConsensusBranchId?, val serverBranch: ConsensusBranchId?) {
+class ConsensusMatchType(
+    val sdkBranch: ConsensusBranchId?,
+    val serverBranch: ConsensusBranchId?
+) {
     val hasServerBranch = serverBranch != null
     val hasSdkBranch = sdkBranch != null
     val isValid = hasServerBranch && sdkBranch == serverBranch

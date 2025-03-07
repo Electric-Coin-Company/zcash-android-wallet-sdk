@@ -130,16 +130,15 @@ class StartupBenchmark : UiTestPrerequisites() {
     private fun MacrobenchmarkScope.waitForAddressAppear(
         addressPattern: Pattern,
         timeout: Duration
-    ): Boolean {
-        return device.waitFor(Until.hasObject(By.text(addressPattern)), timeout)
-    }
+    ): Boolean = device.waitFor(Until.hasObject(By.text(addressPattern)), timeout)
 
     // TODO [#808]: Add demo-ui-lib module (and reference the hardcoded texts here)
     // TODO [#808]: https://github.com/zcash/zcash-android-wallet-sdk/issues/808
 
     private fun MacrobenchmarkScope.gotoAddressScreen() {
         // Open drawer menu
-        device.findObject(By.desc("Open navigation drawer")) // NON-NLS
+        device
+            .findObject(By.desc("Open navigation drawer")) // NON-NLS
             .clickAndWaitFor(Until.newWindow(), 2.seconds)
         // Navigate to Addresses screen
         device.findObject(By.text("Get Address")).click() // NON-NLS

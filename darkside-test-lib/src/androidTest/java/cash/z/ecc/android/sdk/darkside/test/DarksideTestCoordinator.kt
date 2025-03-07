@@ -19,7 +19,9 @@ import org.junit.Assert.assertTrue
 
 // TODO [#1224]: Refactor and re-enable disabled darkside tests
 // TODO [#1224]: https://github.com/zcash/zcash-android-wallet-sdk/issues/1224
-class DarksideTestCoordinator(val wallet: TestWallet) {
+class DarksideTestCoordinator(
+    val wallet: TestWallet
+) {
     constructor(
         alias: String = "DarksideTestCoordinator",
         seedPhrase: String = DEFAULT_SEED_PHRASE,
@@ -189,7 +191,10 @@ class DarksideTestCoordinator(val wallet: TestWallet) {
             available: Long = -1,
             total: Long = -1
         ) {
-            val balance = synchronizer.walletBalances.value?.get(wallet.account.accountUuid)?.sapling
+            val balance =
+                synchronizer.walletBalances.value
+                    ?.get(wallet.account.accountUuid)
+                    ?.sapling
             if (available > 0) {
                 assertTrue(
                     "invalid available balance. Expected a minimum of $available but found ${balance?.available}",

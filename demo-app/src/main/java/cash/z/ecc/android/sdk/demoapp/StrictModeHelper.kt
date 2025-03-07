@@ -14,29 +14,33 @@ object StrictModeHelper {
         StrictMode.enableDefaults()
 
         StrictMode.setThreadPolicy(
-            StrictMode.ThreadPolicy.Builder().apply {
-                detectAll()
-                penaltyLog()
-            }.build()
+            StrictMode.ThreadPolicy
+                .Builder()
+                .apply {
+                    detectAll()
+                    penaltyLog()
+                }.build()
         )
 
         StrictMode.setVmPolicy(
-            StrictMode.VmPolicy.Builder().apply {
-                if (AndroidApiVersion.isAtLeastS) {
-                    detectUnsafeIntentLaunch()
-                }
-                detectActivityLeaks()
-                detectCleartextNetwork()
-                detectContentUriWithoutPermission()
-                detectFileUriExposure()
-                detectLeakedClosableObjects()
-                detectLeakedRegistrationObjects()
-                detectLeakedSqlLiteObjects()
-                if (AndroidApiVersion.isAtLeastP) {
-                    // Disable because this is mostly flagging Android X and Play Services
-                    // builder.detectNonSdkApiUsage();
-                }
-            }.build()
+            StrictMode.VmPolicy
+                .Builder()
+                .apply {
+                    if (AndroidApiVersion.isAtLeastS) {
+                        detectUnsafeIntentLaunch()
+                    }
+                    detectActivityLeaks()
+                    detectCleartextNetwork()
+                    detectContentUriWithoutPermission()
+                    detectFileUriExposure()
+                    detectLeakedClosableObjects()
+                    detectLeakedRegistrationObjects()
+                    detectLeakedSqlLiteObjects()
+                    if (AndroidApiVersion.isAtLeastP) {
+                        // Disable because this is mostly flagging Android X and Play Services
+                        // builder.detectNonSdkApiUsage();
+                    }
+                }.build()
         )
     }
 }

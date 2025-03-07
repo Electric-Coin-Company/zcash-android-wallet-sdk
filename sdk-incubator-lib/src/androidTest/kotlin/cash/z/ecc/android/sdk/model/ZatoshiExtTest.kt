@@ -67,9 +67,8 @@ class ZatoshiExtTest {
     }
 }
 
-private fun Char.isDigitOrSeparator(separators: MonetarySeparators): Boolean {
-    return this.isDigit() || this == separators.decimal || this == separators.grouping
-}
+private fun Char.isDigitOrSeparator(separators: MonetarySeparators): Boolean =
+    this.isDigit() || this == separators.decimal || this == separators.grouping
 
 private fun String.isValidNumber(separators: MonetarySeparators): Boolean {
     return this

@@ -9,7 +9,9 @@ import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 
 @Deprecated(message = InsecureWarning.MESSAGE)
-class SampleSpendingKeyProvider(private val seedValue: String) : ReadWriteProperty<Any?, String> {
+class SampleSpendingKeyProvider(
+    private val seedValue: String
+) : ReadWriteProperty<Any?, String> {
     override fun setValue(
         thisRef: Any?,
         property: KProperty<*>,
@@ -33,19 +35,22 @@ class SampleSpendingKeyProvider(private val seedValue: String) : ReadWriteProper
 }
 
 @Deprecated(message = InsecureWarning.MESSAGE)
-class SampleSeedProvider(val seed: ByteArray) : ReadOnlyProperty<Any?, ByteArray> {
+class SampleSeedProvider(
+    val seed: ByteArray
+) : ReadOnlyProperty<Any?, ByteArray> {
     constructor(seedValue: String) : this(seedValue.toByteArray())
 
     override fun getValue(
         thisRef: Any?,
         property: KProperty<*>
-    ): ByteArray {
-        return seed
-    }
+    ): ByteArray = seed
 }
 
 @Deprecated(message = InsecureWarning.MESSAGE)
-class BlockingSeedProvider(val seed: ByteArray, val delay: Long = 5000L) : ReadOnlyProperty<Any?, ByteArray> {
+class BlockingSeedProvider(
+    val seed: ByteArray,
+    val delay: Long = 5000L
+) : ReadOnlyProperty<Any?, ByteArray> {
     constructor(seedValue: String, delayMillis: Long = 5000L) : this(seedValue.toByteArray(), delayMillis)
 
     override fun getValue(
@@ -58,13 +63,13 @@ class BlockingSeedProvider(val seed: ByteArray, val delay: Long = 5000L) : ReadO
 }
 
 @Deprecated(message = InsecureWarning.MESSAGE)
-class SimpleProvider<T>(var value: T) : ReadWriteProperty<Any?, T> {
+class SimpleProvider<T>(
+    var value: T
+) : ReadWriteProperty<Any?, T> {
     override fun getValue(
         thisRef: Any?,
         property: KProperty<*>
-    ): T {
-        return value
-    }
+    ): T = value
 
     override fun setValue(
         thisRef: Any?,
@@ -76,7 +81,10 @@ class SimpleProvider<T>(var value: T) : ReadWriteProperty<Any?, T> {
 }
 
 @Deprecated(message = InsecureWarning.MESSAGE)
-class BlockingProvider<T>(var value: T, val delay: Long = 5000L) : ReadWriteProperty<Any?, T> {
+class BlockingProvider<T>(
+    var value: T,
+    val delay: Long = 5000L
+) : ReadWriteProperty<Any?, T> {
     override fun getValue(
         thisRef: Any?,
         property: KProperty<*>

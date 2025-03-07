@@ -9,7 +9,9 @@ import cash.z.ecc.android.sdk.model.TransactionRecipient
 import kotlinx.coroutines.flow.Flow
 import java.util.Locale
 
-internal class TxOutputsView(private val sqliteDatabase: SupportSQLiteDatabase) {
+internal class TxOutputsView(
+    private val sqliteDatabase: SupportSQLiteDatabase
+) {
     companion object {
         private val ORDER_BY =
             String.format(

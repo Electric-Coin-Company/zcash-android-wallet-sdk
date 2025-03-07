@@ -13,9 +13,7 @@ internal object AndroidApiVersion {
     @ChecksSdkIntAtLeast(parameter = 0)
     fun isAtLeast(
         @IntRange(from = Build.VERSION_CODES.BASE.toLong()) sdk: Int
-    ): Boolean {
-        return Build.VERSION.SDK_INT >= sdk
-    }
+    ): Boolean = Build.VERSION.SDK_INT >= sdk
 
     @ChecksSdkIntAtLeast(api = Build.VERSION_CODES.P)
     val isAtLeastP = isAtLeast(Build.VERSION_CODES.P)

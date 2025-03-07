@@ -14,25 +14,23 @@ class ZecStringExtTest {
         private val EN_US_SEPARATORS = MonetarySeparatorsFixture.new()
     }
 
-    private fun getContinuousRegex(): Regex {
-        return getStringResourceWithArgs(
+    private fun getContinuousRegex(): Regex =
+        getStringResourceWithArgs(
             R.string.co_electriccoin_zcash_zec_amount_regex_continuous_filter,
             arrayOf(
                 EN_US_SEPARATORS.grouping,
                 EN_US_SEPARATORS.decimal
             )
         ).toRegex()
-    }
 
-    private fun getConfirmRegex(): Regex {
-        return getStringResourceWithArgs(
+    private fun getConfirmRegex(): Regex =
+        getStringResourceWithArgs(
             R.string.co_electriccoin_zcash_zec_amount_regex_confirm_filter,
             arrayOf(
                 EN_US_SEPARATORS.grouping,
                 EN_US_SEPARATORS.decimal
             )
         ).toRegex()
-    }
 
     @Test
     @SmallTest

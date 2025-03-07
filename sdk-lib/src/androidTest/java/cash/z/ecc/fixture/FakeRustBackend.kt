@@ -76,9 +76,7 @@ internal class FakeRustBackend(
         error("Intentionally not implemented yet.")
     }
 
-    override suspend fun findBlockMetadata(height: Long): JniBlockMeta? {
-        return metadata.findLast { it.height == height }
-    }
+    override suspend fun findBlockMetadata(height: Long): JniBlockMeta? = metadata.findLast { it.height == height }
 
     override suspend fun rewindBlockMetadataToHeight(height: Long) {
         metadata.removeAll { it.height > height }

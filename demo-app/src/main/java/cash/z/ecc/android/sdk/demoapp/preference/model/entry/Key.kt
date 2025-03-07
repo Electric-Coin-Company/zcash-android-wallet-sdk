@@ -7,7 +7,9 @@ package cash.z.ecc.android.sdk.demoapp.preference.model.entry
  * find a least common denominator with some reasonable limits on what the keys can contain.
  */
 @JvmInline
-value class Key(val key: String) {
+value class Key(
+    val key: String
+) {
     init {
         requireKeyConstraints(key)
     }

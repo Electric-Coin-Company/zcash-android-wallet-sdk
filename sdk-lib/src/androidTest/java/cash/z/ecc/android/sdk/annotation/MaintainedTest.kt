@@ -26,4 +26,6 @@ enum class TestPurpose {
  * achieve the given purpose. Eventually, we will run all such tests nightly.
  */
 @Target(AnnotationTarget.CLASS)
-annotation class MaintainedTest(vararg val purpose: TestPurpose)
+annotation class MaintainedTest(
+    vararg val purpose: TestPurpose
+)

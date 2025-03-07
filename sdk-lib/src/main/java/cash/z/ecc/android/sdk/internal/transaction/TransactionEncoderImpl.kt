@@ -98,8 +98,8 @@ internal class TransactionEncoderImpl(
         shieldingThreshold: Zatoshi,
         memo: ByteArray?,
         transparentReceiver: String?
-    ): Proposal? {
-        return runCatching {
+    ): Proposal? =
+        runCatching {
             backend.proposeShielding(account, shieldingThreshold.value, memo, transparentReceiver)
         }.onFailure {
             // TODO [#680]: if this error matches: Insufficient balance (have 0, need 1000 including fee)
@@ -111,7 +111,6 @@ internal class TransactionEncoderImpl(
         }.getOrElse {
             throw TransactionEncoderException.ProposalShieldingException(it)
         }
-    }
 
     @Throws(
         TransactionEncoderException.TransactionNotCreatedException::class,
@@ -150,8 +149,8 @@ internal class TransactionEncoderImpl(
     override suspend fun createPcztFromProposal(
         accountUuid: AccountUuid,
         proposal: Proposal
-    ): Pczt {
-        return runCatching {
+    ): Pczt =
+        runCatching {
             backend.createPcztFromProposal(
                 account = Account.new(accountUuid),
                 proposal = proposal
@@ -163,10 +162,9 @@ internal class TransactionEncoderImpl(
         }.getOrElse {
             throw PcztException.CreatePcztFromProposalException(it.message, it.cause)
         }
-    }
 
-    override suspend fun redactPcztForSigner(pczt: Pczt): Pczt {
-        return runCatching {
+    override suspend fun redactPcztForSigner(pczt: Pczt): Pczt =
+        runCatching {
             backend.redactPcztForSigner(pczt = pczt)
         }.onSuccess {
             Twig.debug { "Result of redactPcztForSigner: $it" }
@@ -175,10 +173,9 @@ internal class TransactionEncoderImpl(
         }.getOrElse {
             throw PcztException.RedactPcztForSignerException(it.message, it.cause)
         }
-    }
 
-    override suspend fun pcztRequiresSaplingProofs(pczt: Pczt): Boolean {
-        return runCatching {
+    override suspend fun pcztRequiresSaplingProofs(pczt: Pczt): Boolean =
+        runCatching {
             backend.pcztRequiresSaplingProofs(pczt = pczt)
         }.onSuccess {
             Twig.debug { "Result of pcztRequiresSaplingProofs: $it" }
@@ -187,10 +184,9 @@ internal class TransactionEncoderImpl(
         }.getOrElse {
             throw PcztException.PcztRequiresSaplingProofsException(it.message, it.cause)
         }
-    }
 
-    override suspend fun addProofsToPczt(pczt: Pczt): Pczt {
-        return runCatching {
+    override suspend fun addProofsToPczt(pczt: Pczt): Pczt =
+        runCatching {
             // TODO [#1724]: zcash_client_backend: Make Sapling parameters optional for extract_and_store_transaction
             // TODO [#1724]: https://github.com/zcash/librustzcash/issues/1724
             // if (backend.pcztRequiresSaplingProofs(pczt)) {
@@ -206,7 +202,6 @@ internal class TransactionEncoderImpl(
         }.getOrElse {
             throw PcztException.AddProofsToPcztException(it.message, it.cause)
         }
-    }
 
     override suspend fun extractAndStoreTxFromPczt(
         pcztWithProofs: Pczt,
