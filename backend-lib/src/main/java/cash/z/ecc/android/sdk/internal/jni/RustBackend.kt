@@ -337,6 +337,14 @@ class RustBackend private constructor(
             ).asList()
         }
 
+    override suspend fun fixWitnesses() =
+      withContext(SdkDispatchers.DATABASE_IO) {
+          fixWitnesses(
+              dbDataPath = dataDbFile.absolutePath,
+              networkId = networkId
+          )
+      }
+
     override suspend fun decryptAndStoreTransaction(
         tx: ByteArray,
         minedHeight: Long?
@@ -753,6 +761,12 @@ class RustBackend private constructor(
             dbDataPath: String,
             networkId: Int
         ): Array<JniTransactionDataRequest>
+
+        @JvmStatic
+        private external fun fixWitnesses(
+            dbDataPath: String,
+            networkId: Int
+        )
 
         @JvmStatic
         @Suppress("LongParameterList")

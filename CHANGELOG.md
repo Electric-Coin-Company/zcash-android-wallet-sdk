@@ -6,6 +6,9 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `Synchronizer.fixWitnesses()` has been added
+
 ### Changed
 - Dependency update:
   - Gradle 8.13

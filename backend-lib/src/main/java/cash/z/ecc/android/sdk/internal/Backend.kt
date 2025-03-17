@@ -293,6 +293,12 @@ interface Backend {
      * @throws RuntimeException as a common indicator of the operation failure
      */
     @Throws(RuntimeException::class)
+    suspend fun fixWitnesses()
+
+    /**
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    @Throws(RuntimeException::class)
     suspend fun writeBlockMetadata(blockMetadata: List<JniBlockMeta>)
 
     /**

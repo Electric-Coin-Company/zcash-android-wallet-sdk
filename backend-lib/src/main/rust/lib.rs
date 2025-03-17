@@ -12,6 +12,7 @@ use jni::{
     sys::{jboolean, jbyteArray, jint, jlong, jobject, jobjectArray, jstring, JNI_FALSE, JNI_TRUE},
     JNIEnv,
 };
+use nonempty::NonEmpty;
 use pczt::roles::redactor::Redactor;
 use pczt::{
     roles::{combiner::Combiner, prover::Prover},
@@ -1612,6 +1613,27 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_transacti
         .into_raw())
     });
     unwrap_exc_or(&mut env, res, ptr::null_mut())
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_fixWitnesses<'local>(
+    mut env: JNIEnv<'local>,
+    _: JClass<'local>,
+    db_data: JString<'local>,
+    network_id: jint,
+) {
+    let res = catch_unwind(&mut env, |env| {
+        let network = parse_network(network_id as u32)?;
+        let mut db_data = wallet_db(env, network, db_data)?;
+
+        let corrupt_ranges = db_data.check_witnesses()?;
+        if let Some(nel_ranges) = NonEmpty::from_vec(corrupt_ranges) {
+            db_data.queue_rescans(nel_ranges, ScanPriority::FoundNote)?;
+        }
+
+        Ok(())
+    });
+    unwrap_exc_or(&mut env, res, ())
 }
 
 #[unsafe(no_mangle)]
