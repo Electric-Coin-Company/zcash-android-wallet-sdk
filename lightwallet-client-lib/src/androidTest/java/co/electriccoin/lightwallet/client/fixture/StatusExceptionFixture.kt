@@ -4,7 +4,5 @@ import io.grpc.Status
 import io.grpc.StatusRuntimeException
 
 object StatusExceptionFixture {
-    fun new(status: Status): StatusRuntimeException {
-        return StatusRuntimeException(status)
-    }
+    fun new(status: Status): StatusRuntimeException = StatusRuntimeException(status)
 }

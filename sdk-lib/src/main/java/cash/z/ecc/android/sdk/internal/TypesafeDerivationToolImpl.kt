@@ -7,7 +7,9 @@ import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.model.Zip32AccountIndex
 import cash.z.ecc.android.sdk.tool.DerivationTool
 
-internal class TypesafeDerivationToolImpl(private val derivation: Derivation) : DerivationTool {
+internal class TypesafeDerivationToolImpl(
+    private val derivation: Derivation
+) : DerivationTool {
     override suspend fun deriveUnifiedFullViewingKeys(
         seed: ByteArray,
         network: ZcashNetwork,

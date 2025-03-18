@@ -27,11 +27,10 @@ class JniSubtreeRoot(
         fun new(
             rootHash: ByteArray,
             completingBlockHeight: Long
-        ): JniSubtreeRoot {
-            return JniSubtreeRoot(
+        ): JniSubtreeRoot =
+            JniSubtreeRoot(
                 rootHash = rootHash,
                 completingBlockHeight = completingBlockHeight
             )
-        }
     }
 }

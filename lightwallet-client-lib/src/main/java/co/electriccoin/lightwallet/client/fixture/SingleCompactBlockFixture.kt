@@ -26,8 +26,8 @@ internal object SingleCompactBlockFixture {
         saplingOutputsCount: UInt = DEFAULT_SAPLING_OUTPUT_COUNT,
         orchardOutputsCount: UInt = DEFAULT_ORCHARD_OUTPUT_COUNT,
         blockBytes: ByteArray = heightToFixtureData(DEFAULT_BLOCK_BYTES)
-    ): CompactBlockUnsafe {
-        return CompactBlockUnsafe(
+    ): CompactBlockUnsafe =
+        CompactBlockUnsafe(
             height = height,
             hash = hash,
             time = time,
@@ -35,13 +35,10 @@ internal object SingleCompactBlockFixture {
             orchardOutputsCount = orchardOutputsCount,
             compactBlockBytes = blockBytes
         )
-    }
 }
 
 private object BytesConversionHelper {
-    private fun getBuffer(): ByteBuffer {
-        return ByteBuffer.allocate(java.lang.Long.BYTES)
-    }
+    private fun getBuffer(): ByteBuffer = ByteBuffer.allocate(java.lang.Long.BYTES)
 
     fun longToBytes(x: Long): ByteArray {
         val buffer = getBuffer()

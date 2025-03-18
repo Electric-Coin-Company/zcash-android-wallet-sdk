@@ -6,7 +6,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 // Consider using ImmutableList here
-data class SeedPhrase(val split: List<String>) {
+data class SeedPhrase(
+    val split: List<String>
+) {
     init {
         require(SEED_PHRASE_SIZE == split.size) {
             "Seed phrase must split into $SEED_PHRASE_SIZE words but was ${split.size}"

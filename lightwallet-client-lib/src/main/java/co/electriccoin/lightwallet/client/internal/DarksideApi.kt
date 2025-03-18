@@ -41,11 +41,13 @@ class DarksideApi private constructor(
         branchId: String = "e9ff75a6",
         chainName: String = "darksidemainnet"
     ) = apply {
-        Darkside.DarksideMetaState.newBuilder()
+        Darkside.DarksideMetaState
+            .newBuilder()
             .setBranchID(branchId)
             .setChainName(chainName)
             .setSaplingActivation(saplingActivationHeight.value.toInt())
-            .build().let { request ->
+            .build()
+            .let { request ->
                 createStub().reset(request)
             }
     }
@@ -60,7 +62,11 @@ class DarksideApi private constructor(
         targetHeight: BlockHeightUnsafe
     ) = apply {
         createStub().stageTransactions(
-            DarksideTransactionsURL.newBuilder().setHeight(targetHeight.value.toInt()).setUrl(url).build()
+            DarksideTransactionsURL
+                .newBuilder()
+                .setHeight(targetHeight.value.toInt())
+                .setUrl(url)
+                .build()
         )
     }
 
@@ -70,8 +76,12 @@ class DarksideApi private constructor(
         nonce: Int = Random.nextInt()
     ) = apply {
         createStub().stageBlocksCreate(
-            Darkside.DarksideEmptyBlocks.newBuilder().setHeight(startHeight.value.toInt()).setCount(count)
-                .setNonce(nonce).build()
+            Darkside.DarksideEmptyBlocks
+                .newBuilder()
+                .setHeight(startHeight.value.toInt())
+                .setCount(count)
+                .setNonce(nonce)
+                .build()
         )
     }
 
@@ -88,7 +98,11 @@ class DarksideApi private constructor(
                 // apply the tipHeight because the passed in txs might not know their destination
                 // height (if they were created via SendTransaction)
                 onNext(
-                    it.newBuilderForType().setData(it.data).setHeight(tipHeight.value).build()
+                    it
+                        .newBuilderForType()
+                        .setData(it.data)
+                        .setHeight(tipHeight.value)
+                        .build()
                 )
             }
             onCompleted()
@@ -100,9 +114,8 @@ class DarksideApi private constructor(
         createStub().applyStaged(tipHeight.toHeight())
     }
 
-    fun getSentTransactions(): MutableIterator<Service.RawTransaction>? {
-        return createStub().getIncomingTransactions(Service.Empty.newBuilder().build())
-    }
+    fun getSentTransactions(): MutableIterator<Service.RawTransaction>? =
+        createStub().getIncomingTransactions(Service.Empty.newBuilder().build())
 //    fun setMetaState(
 //        branchId: String = "2bb40e60", // Blossom,
 //        chainName: String = "darkside",
@@ -145,7 +158,11 @@ class DarksideApi private constructor(
             .newStub(channel)
             .withDeadlineAfter(singleRequestTimeout.inWholeSeconds, TimeUnit.SECONDS)
 
-    private fun String.toUrl() = Darkside.DarksideBlocksURL.newBuilder().setUrl(this).build()
+    private fun String.toUrl() =
+        Darkside.DarksideBlocksURL
+            .newBuilder()
+            .setUrl(this)
+            .build()
 
     class EmptyResponse : StreamObserver<Service.Empty> {
         companion object {
@@ -179,7 +196,11 @@ class DarksideApi private constructor(
     }
 }
 
-private fun BlockHeightUnsafe.toHeight() = Darkside.DarksideHeight.newBuilder().setHeight(this.value.toInt()).build()
+private fun BlockHeightUnsafe.toHeight() =
+    Darkside.DarksideHeight
+        .newBuilder()
+        .setHeight(this.value.toInt())
+        .build()
 
 fun DarksideApi.Companion.new(
     context: Context,

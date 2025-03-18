@@ -13,12 +13,11 @@ internal data class ScanSummary(
          *  as the rest of the logic works with [ClosedRange] and the endHeight
          *  is exclusive.
          */
-        fun new(jni: JniScanSummary): ScanSummary {
-            return ScanSummary(
+        fun new(jni: JniScanSummary): ScanSummary =
+            ScanSummary(
                 scannedRange = BlockHeight.new(jni.startHeight)..(BlockHeight.new(jni.endHeight) - 1),
                 spentSaplingNoteCount = jni.spentSaplingNoteCount,
                 receivedSaplingNoteCount = jni.receivedSaplingNoteCount
             )
-        }
     }
 }

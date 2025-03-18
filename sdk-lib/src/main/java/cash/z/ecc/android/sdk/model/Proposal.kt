@@ -36,16 +36,12 @@ class Proposal(
     /**
      * Exposes the type-unsafe proposal variant for passing across the FFI.
      */
-    fun toUnsafe(): ProposalUnsafe {
-        return inner
-    }
+    fun toUnsafe(): ProposalUnsafe = inner
 
     /**
      * Serializes this proposal type-safe data to [ByteArray] for storing purposes.
      */
-    fun toByteArray(): ByteArray {
-        return inner.toByteArray()
-    }
+    fun toByteArray(): ByteArray = inner.toByteArray()
 
     /**
      * Returns the number of transactions that this proposal will create.
@@ -55,18 +51,12 @@ class Proposal(
      *
      * Proposals always create at least one transaction.
      */
-    fun transactionCount(): Int {
-        return inner.transactionCount()
-    }
+    fun transactionCount(): Int = inner.transactionCount()
 
     /**
      * Returns the total fee required by this proposal for its transactions.
      */
-    fun totalFeeRequired(): Zatoshi {
-        return Zatoshi(inner.totalFeeRequired())
-    }
+    fun totalFeeRequired(): Zatoshi = Zatoshi(inner.totalFeeRequired())
 
-    fun toPrettyString(): String {
-        return "Transaction count: ${transactionCount()}, Total fee required: ${totalFeeRequired()}"
-    }
+    fun toPrettyString(): String = "Transaction count: ${transactionCount()}, Total fee required: ${totalFeeRequired()}"
 }

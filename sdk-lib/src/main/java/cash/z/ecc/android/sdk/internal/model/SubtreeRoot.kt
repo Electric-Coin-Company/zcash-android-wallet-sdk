@@ -31,12 +31,11 @@ internal data class SubtreeRoot(
     }
 
     companion object {
-        fun new(unsafe: SubtreeRootUnsafe): SubtreeRoot {
-            return SubtreeRoot(
+        fun new(unsafe: SubtreeRootUnsafe): SubtreeRoot =
+            SubtreeRoot(
                 rootHash = unsafe.rootHash,
                 completingBlockHash = unsafe.completingBlockHash,
                 completingBlockHeight = BlockHeight.new(unsafe.completingBlockHeight.value)
             )
-        }
     }
 }

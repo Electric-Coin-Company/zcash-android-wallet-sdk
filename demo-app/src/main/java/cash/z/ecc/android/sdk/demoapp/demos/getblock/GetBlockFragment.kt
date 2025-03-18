@@ -69,7 +69,12 @@ class GetBlockFragment : BaseDemoFragment<FragmentGetBlockBinding>() {
     }
 
     private fun loadNext(offset: Int) {
-        val nextBlockHeight = (binding.textBlockHeight.text.toString().toIntOrNull() ?: -1) + offset
+        val nextBlockHeight =
+            (
+                binding.textBlockHeight.text
+                    .toString()
+                    .toIntOrNull() ?: -1
+            ) + offset
         binding.textBlockHeight.setText(nextBlockHeight.toString())
         onApply()
     }

@@ -20,8 +20,7 @@ internal fun TransactionOverview.toTransactionState(
                     blockTimeEpochSeconds?.let { Instant.fromEpochSeconds(it) }
                         ?: context.getString(R.string.unknown)
                 } ?: context.getString(R.string.pending)
-        )
-            .toString(),
+        ).toString(),
     value =
         if (isSentTransaction) {
             -netValue.value
@@ -29,15 +28,19 @@ internal fun TransactionOverview.toTransactionState(
             netValue.value
         }.toString(),
     fee =
-        feePaid?.toFiatCurrencyState(
-            currencyConversion = null,
-            locale = Locale.current.toKotlinLocale(),
-        )?.toFiatCurrencyRateValue(context).orEmpty(),
+        feePaid
+            ?.toFiatCurrencyState(
+                currencyConversion = null,
+                locale = Locale.current.toKotlinLocale(),
+            )?.toFiatCurrencyRateValue(context)
+            .orEmpty(),
     status = transactionState.name,
     onClick = onClick
 )
 
-private fun Locale.toKotlinLocale() = cash.z.ecc.android.sdk.model.Locale(language, region, script)
+private fun Locale.toKotlinLocale() =
+    cash.z.ecc.android.sdk.model
+        .Locale(language, region, script)
 
 private fun FiatCurrencyConversionRateState.toFiatCurrencyRateValue(context: Context): String =
     when (this) {

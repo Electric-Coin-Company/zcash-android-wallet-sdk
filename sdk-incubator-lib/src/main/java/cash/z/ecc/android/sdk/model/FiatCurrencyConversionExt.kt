@@ -39,7 +39,8 @@ fun FiatCurrencyConversion.toZatoshi(
 
     @Suppress("SwallowedException")
     return try {
-        doubleValue.convertUsdToZec(priceOfZec)
+        doubleValue
+            .convertUsdToZec(priceOfZec)
             .convertZecToZatoshi()
     } catch (e: IllegalArgumentException) {
         null

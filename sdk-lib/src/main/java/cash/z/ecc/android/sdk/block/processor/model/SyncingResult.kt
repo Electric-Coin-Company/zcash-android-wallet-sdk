@@ -38,7 +38,8 @@ internal sealed class SyncingResult {
     data class DownloadFailed(
         override val failedAtHeight: BlockHeight,
         override val exception: CompactBlockProcessorException
-    ) : Failure, SyncingResult()
+    ) : SyncingResult(),
+        Failure
 
     data class ScanSuccess(
         val summary: ScanSummary
@@ -47,14 +48,16 @@ internal sealed class SyncingResult {
     data class ScanFailed(
         override val failedAtHeight: BlockHeight,
         override val exception: CompactBlockProcessorException
-    ) : Failure, SyncingResult()
+    ) : SyncingResult(),
+        Failure
 
     data object DeleteSuccess : SyncingResult()
 
     data class DeleteFailed(
         override val failedAtHeight: BlockHeight?,
         override val exception: CompactBlockProcessorException
-    ) : Failure, SyncingResult()
+    ) : SyncingResult(),
+        Failure
 
     data object EnhanceSuccess : SyncingResult()
 
@@ -63,14 +66,16 @@ internal sealed class SyncingResult {
     data class EnhanceFailed(
         override val failedAtHeight: BlockHeight? = null,
         override val exception: CompactBlockProcessorException
-    ) : Failure, SyncingResult()
+    ) : SyncingResult(),
+        Failure
 
     data object UpdateBirthday : SyncingResult()
 
     data class ContinuityError(
         override val failedAtHeight: BlockHeight,
         override val exception: CompactBlockProcessorException
-    ) : Failure, SyncingResult() {
+    ) : SyncingResult(),
+        Failure {
         override fun toBlockProcessingResult(): CompactBlockProcessor.BlockProcessingResult =
             CompactBlockProcessor.BlockProcessingResult.ContinuityError(
                 this.failedAtHeight,

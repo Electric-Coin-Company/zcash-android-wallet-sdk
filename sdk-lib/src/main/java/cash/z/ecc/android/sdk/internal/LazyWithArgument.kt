@@ -5,7 +5,9 @@ package cash.z.ecc.android.sdk.internal
  *
  * This class is thread-safe.
  */
-internal class LazyWithArgument<in Input, out Output>(private val deferredCreator: ((Input) -> Output)) {
+internal class LazyWithArgument<in Input, out Output>(
+    private val deferredCreator: ((Input) -> Output)
+) {
     @Volatile
     private var singletonInstance: Output? = null
 

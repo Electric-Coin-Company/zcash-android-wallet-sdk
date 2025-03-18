@@ -3,13 +3,12 @@ package cash.z.ecc.android.sdk.internal.ext
 import cash.z.ecc.android.sdk.internal.Twig
 
 @Suppress("SwallowedException", "TooGenericExceptionCaught")
-internal inline fun <R> tryNull(block: () -> R): R? {
-    return try {
+internal inline fun <R> tryNull(block: () -> R): R? =
+    try {
         block()
     } catch (t: Throwable) {
         null
     }
-}
 
 /**
  * Execute the given block, converting exceptions into warnings. This can be further controlled by
@@ -24,8 +23,8 @@ internal inline fun <R> tryWarn(
     ifContains: String? = null,
     unlessContains: String? = null,
     block: () -> R
-): R? {
-    return try {
+): R? =
+    try {
         block()
     } catch (t: Throwable) {
         val shouldThrowAnyway =
@@ -44,7 +43,6 @@ internal inline fun <R> tryWarn(
             null
         }
     }
-}
 
 // Note: Do NOT change these texts as they match the ones from ScanError in
 // librustzcash/zcash_client_backend/src/scanning.rs

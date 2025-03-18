@@ -128,8 +128,7 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
                                             ?.toBigDecimal()
                                 }
                             }
-                        }
-                        .collect { onSaplingBalance(it) }
+                        }.collect { onSaplingBalance(it) }
                 }
                 launch {
                     sharedViewModel.synchronizerFlow
@@ -145,8 +144,7 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
                                             ?.toBigDecimal()
                                 }
                             }
-                        }
-                        .collect { onOrchardBalance(it) }
+                        }.collect { onOrchardBalance(it) }
 
                     sharedViewModel.synchronizerFlow
                         .filterNotNull()
@@ -161,8 +159,7 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
                                             ?.toBigDecimal()
                                 }
                             }
-                        }
-                        .collect { onTransparentBalance(it) }
+                        }.collect { onTransparentBalance(it) }
                 }
             }
         }
@@ -216,7 +213,10 @@ class GetBalanceFragment : BaseDemoFragment<FragmentGetBalanceBinding>() {
 
         binding.textStatus.text = "Status: $status"
         sharedViewModel.synchronizerFlow.value?.let { synchronizer ->
-            val rate = synchronizer.exchangeRateUsd.value.currencyConversion?.priceOfZec?.toBigDecimal()
+            val rate =
+                synchronizer.exchangeRateUsd.value.currencyConversion
+                    ?.priceOfZec
+                    ?.toBigDecimal()
             viewLifecycleOwner.lifecycleScope.launch {
                 val account = synchronizer.getAccounts()[CURRENT_ZIP_32_ACCOUNT_INDEX.toInt()]
                 onOrchardBalance(

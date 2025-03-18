@@ -36,14 +36,13 @@ class JniBlockMeta(
     }
 
     companion object {
-        fun new(block: CompactBlockUnsafe): JniBlockMeta {
-            return JniBlockMeta(
+        fun new(block: CompactBlockUnsafe): JniBlockMeta =
+            JniBlockMeta(
                 height = block.height,
                 hash = block.hash,
                 time = block.time.toLong(),
                 saplingOutputsCount = block.saplingOutputsCount.toLong(),
                 orchardOutputsCount = block.orchardOutputsCount.toLong()
             )
-        }
     }
 }

@@ -58,43 +58,50 @@ class AssetTest {
         network: ZcashNetwork,
         files: Array<String>?
     ) {
-        files?.map { filename ->
-            val filePath = "${CheckpointTool.checkpointDirectory(network)}/$filename"
-            ApplicationProvider.getApplicationContext<Context>().assets.open(filePath)
-                .use { inputSteam ->
-                    inputSteam.bufferedReader().use { bufferedReader ->
-                        val slurped = bufferedReader.readText()
+        files
+            ?.map { filename ->
+                val filePath = "${CheckpointTool.checkpointDirectory(network)}/$filename"
+                ApplicationProvider
+                    .getApplicationContext<Context>()
+                    .assets
+                    .open(filePath)
+                    .use { inputSteam ->
+                        inputSteam.bufferedReader().use { bufferedReader ->
+                            val slurped = bufferedReader.readText()
 
-                        JsonFile(JSONObject(slurped), filename)
+                            JsonFile(JSONObject(slurped), filename)
+                        }
                     }
-                }
-        }?.forEach {
-            val jsonObject = it.jsonObject
-            assertTrue(jsonObject.has("network"))
-            assertTrue(jsonObject.has("height"))
-            assertTrue(jsonObject.has("hash"))
-            assertTrue(jsonObject.has("time"))
-            assertTrue(jsonObject.has("saplingTree"))
+            }?.forEach {
+                val jsonObject = it.jsonObject
+                assertTrue(jsonObject.has("network"))
+                assertTrue(jsonObject.has("height"))
+                assertTrue(jsonObject.has("hash"))
+                assertTrue(jsonObject.has("time"))
+                assertTrue(jsonObject.has("saplingTree"))
 
-            val expectedNetworkName =
-                when (network) {
-                    ZcashNetwork.Mainnet -> "main"
-                    ZcashNetwork.Testnet -> "test"
-                    else -> IllegalArgumentException("Unsupported network $network")
-                }
-            assertEquals("File: ${it.filename}", expectedNetworkName, jsonObject.getString("network"))
+                val expectedNetworkName =
+                    when (network) {
+                        ZcashNetwork.Mainnet -> "main"
+                        ZcashNetwork.Testnet -> "test"
+                        else -> IllegalArgumentException("Unsupported network $network")
+                    }
+                assertEquals("File: ${it.filename}", expectedNetworkName, jsonObject.getString("network"))
 
-            assertEquals(
-                "File: ${it.filename}",
-                CheckpointTool.checkpointHeightFromFilename(it.filename).value,
-                jsonObject.getLong("height")
-            )
+                assertEquals(
+                    "File: ${it.filename}",
+                    CheckpointTool.checkpointHeightFromFilename(it.filename).value,
+                    jsonObject.getLong("height")
+                )
 
-            // In the future, additional validation of the JSON can be added
-        }
+                // In the future, additional validation of the JSON can be added
+            }
     }
 
-    private data class JsonFile(val jsonObject: JSONObject, val filename: String)
+    private data class JsonFile(
+        val jsonObject: JSONObject,
+        val filename: String
+    )
 
     companion object {
         fun listAssets(network: ZcashNetwork): Array<String>? =

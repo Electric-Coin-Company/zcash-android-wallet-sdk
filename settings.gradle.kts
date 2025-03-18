@@ -38,6 +38,7 @@ pluginManagement {
         id("org.jetbrains.dokka") version (dokkaVersion) apply (false)
         id("org.jetbrains.kotlin.android") version (kotlinVersion) apply (false)
         id("org.jetbrains.kotlin.plugin.allopen") version (kotlinVersion) apply (false)
+        id("org.jetbrains.kotlin.plugin.compose") version (kotlinVersion) apply (false)
         id("wtf.emulator.gradle") version (emulatorWtfGradlePluginVersion) apply (false)
     }
 }
@@ -270,14 +271,6 @@ dependencyResolutionManagement {
                     "junit-migration",
                 )
             )
-        }
-    }
-}
-
-extra["GRADLE_BUILD_CACHE_DAYS"].toString().toIntOrNull()?.let {
-    buildCache {
-        local {
-            removeUnusedEntriesAfterDays = it
         }
     }
 }

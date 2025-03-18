@@ -30,7 +30,9 @@ import kotlinx.coroutines.withContext
  * @property compactBlockStore responsible for persisting the compact blocks that are received
  */
 @Suppress("TooManyFunctions")
-open class CompactBlockDownloader private constructor(val compactBlockRepository: CompactBlockRepository) {
+open class CompactBlockDownloader private constructor(
+    val compactBlockRepository: CompactBlockRepository
+) {
     private lateinit var lightWalletClient: LightWalletClient
 
     constructor(
@@ -53,28 +55,29 @@ open class CompactBlockDownloader private constructor(val compactBlockRepository
     @Throws(LightWalletException.DownloadBlockException::class)
     suspend fun downloadBlockRange(heightRange: ClosedRange<BlockHeight>): List<JniBlockMeta> {
         val filteredFlow =
-            lightWalletClient.getBlockRange(
-                BlockHeightUnsafe.from(heightRange.start)..BlockHeightUnsafe.from(heightRange.endInclusive)
-            ).onEach { response ->
-                when (response) {
-                    is Response.Success -> {
-                        Twig.verbose { "Downloading block at height: ${response.result.height} succeeded." }
+            lightWalletClient
+                .getBlockRange(
+                    BlockHeightUnsafe.from(heightRange.start)..BlockHeightUnsafe.from(heightRange.endInclusive)
+                ).onEach { response ->
+                    when (response) {
+                        is Response.Success -> {
+                            Twig.verbose { "Downloading block at height: ${response.result.height} succeeded." }
+                        }
+                        is Response.Failure -> {
+                            Twig.warn {
+                                "Downloading blocks in range: $heightRange failed with: ${response.description}."
+                            }
+                            throw LightWalletException.DownloadBlockException(
+                                response.code,
+                                response.description,
+                                response.toThrowable()
+                            )
+                        }
                     }
-                    is Response.Failure -> {
-                        Twig.warn { "Downloading blocks in range: $heightRange failed with: ${response.description}." }
-                        throw LightWalletException.DownloadBlockException(
-                            response.code,
-                            response.description,
-                            response.toThrowable()
-                        )
-                    }
-                }
-            }
-                .filterIsInstance<Response.Success<CompactBlockUnsafe>>()
+                }.filterIsInstance<Response.Success<CompactBlockUnsafe>>()
                 .map { response ->
                     response.result
-                }
-                .onCompletion {
+                }.onCompletion {
                     if (it != null) {
                         Twig.warn { "Blocks in range $heightRange failed to download with: $it" }
                     } else {
@@ -165,32 +168,33 @@ open class CompactBlockDownloader private constructor(val compactBlockRepository
     fun getTAddressTransactions(
         transparentAddress: String,
         blockHeightRange: ClosedRange<BlockHeight>
-    ) = lightWalletClient.getTAddressTransactions(
-        tAddress = transparentAddress,
-        blockHeightRange =
-            BlockHeightUnsafe.from(blockHeightRange.start)..BlockHeightUnsafe.from(blockHeightRange.endInclusive)
-    ).map { response ->
-        when (response) {
-            is Response.Success -> {
-                Twig.verbose { "Get a new rawTransactionUnsafe successfully" }
-                response.result
+    ) = lightWalletClient
+        .getTAddressTransactions(
+            tAddress = transparentAddress,
+            blockHeightRange =
+                BlockHeightUnsafe.from(blockHeightRange.start)..BlockHeightUnsafe.from(blockHeightRange.endInclusive)
+        ).map { response ->
+            when (response) {
+                is Response.Success -> {
+                    Twig.verbose { "Get a new rawTransactionUnsafe successfully" }
+                    response.result
+                }
+                is Response.Failure -> {
+                    Twig.error(response.toThrowable()) { "Getting a new rawTransactionUnsafe failed" }
+                    throw LightWalletException.GetTAddressTransactionsException(
+                        response.code,
+                        response.description,
+                        response.toThrowable()
+                    )
+                }
             }
-            is Response.Failure -> {
-                Twig.error(response.toThrowable()) { "Getting a new rawTransactionUnsafe failed" }
-                throw LightWalletException.GetTAddressTransactionsException(
-                    response.code,
-                    response.description,
-                    response.toThrowable()
-                )
+        }.onCompletion { error ->
+            if (error != null) {
+                Twig.error(error) { "Getting list of rawTransactionUnsafe failed" }
+            } else {
+                Twig.debug { "All rawTransactionUnsafe got successfully" }
             }
         }
-    }.onCompletion { error ->
-        if (error != null) {
-            Twig.error(error) { "Getting list of rawTransactionUnsafe failed" }
-        } else {
-            Twig.debug { "All rawTransactionUnsafe got successfully" }
-        }
-    }
 
     /**
      * Fetch all UTXOs for the given addresses and from the given height.

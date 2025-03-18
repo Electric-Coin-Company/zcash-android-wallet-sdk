@@ -6,10 +6,9 @@ import co.electriccoin.lightwallet.client.model.RawTransactionUnsafe.MainChain
 import co.electriccoin.lightwallet.client.model.RawTransactionUnsafe.Mempool
 import co.electriccoin.lightwallet.client.model.RawTransactionUnsafe.OrphanedBlock
 
-internal fun RawTransactionUnsafe.toTransactionStatus(): TransactionStatus {
-    return when (this) {
+internal fun RawTransactionUnsafe.toTransactionStatus(): TransactionStatus =
+    when (this) {
         is MainChain -> TransactionStatus.Mined(height.toBlockHeight())
         is Mempool -> TransactionStatus.NotInMainChain
         is OrphanedBlock -> TransactionStatus.NotInMainChain
     }
-}

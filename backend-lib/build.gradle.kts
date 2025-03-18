@@ -158,7 +158,7 @@ dependencies {
 }
 
 tasks {
-    getByName("preBuild").dependsOn(create("bugfixTask") {
+    getByName("preBuild").dependsOn(register("bugfixTask") {
         doFirst {
             mkdir("build/extracted-include-protos/main")
         }
@@ -169,7 +169,7 @@ tasks {
      * which does not normally get deleted during a clean. The following task and dependency solves
      * that.
      */
-    getByName<Delete>("clean").dependsOn(create<Delete>("cleanRustBuildOutput") {
+    getByName<Delete>("clean").dependsOn(register<Delete>("cleanRustBuildOutput") {
         delete("target")
     })
 }

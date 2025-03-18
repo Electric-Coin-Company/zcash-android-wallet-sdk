@@ -7,7 +7,9 @@ import co.electriccoin.lightwallet.client.BuildConfig
  *
  * WARN: Do not change the string identifiers, as those are agreed by both Kotlin and Rust SDK layers.
  */
-sealed class RustLogging(open val identifier: String) {
+sealed class RustLogging(
+    open val identifier: String
+) {
     /**
      * No logs are printed. This is a required option for the production SDK build.
      */

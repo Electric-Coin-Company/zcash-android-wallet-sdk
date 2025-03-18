@@ -24,7 +24,8 @@ open class UiTestPrerequisites {
 
         private fun isScreenOn(): Boolean {
             val powerService =
-                ApplicationProvider.getApplicationContext<Context>()
+                ApplicationProvider
+                    .getApplicationContext<Context>()
                     .getSystemService(Context.POWER_SERVICE) as PowerManager
             return powerService.isInteractive
         }
@@ -37,7 +38,8 @@ open class UiTestPrerequisites {
 
         private fun isKeyguardLocked(): Boolean {
             val keyguardService = (
-                ApplicationProvider.getApplicationContext<Context>()
+                ApplicationProvider
+                    .getApplicationContext<Context>()
                     .getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
             )
 

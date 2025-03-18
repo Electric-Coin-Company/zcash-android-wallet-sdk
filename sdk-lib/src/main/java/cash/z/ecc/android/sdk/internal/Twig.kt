@@ -175,15 +175,14 @@ private fun cleanupClassName(classNameString: String): String {
  * @return Name of the current process.  May return null if a failure occurs, which is possible
  * due to some race conditions in Android.
  */
-private fun searchForProcessName(context: Context): String? {
-    return if (AndroidApiVersion.isAtLeastTiramisu) {
+private fun searchForProcessName(context: Context): String? =
+    if (AndroidApiVersion.isAtLeastTiramisu) {
         getProcessNameTPlus()
     } else if (AndroidApiVersion.isAtLeastP) {
         getProcessNamePPlus()
     } else {
         searchForProcessNameLegacy(context)
     }
-}
 
 @RequiresApi(api = Build.VERSION_CODES.TIRAMISU)
 private fun getProcessNameTPlus() = Process.myProcessName()

@@ -6,9 +6,7 @@ class Pczt(
     /**
      * Exposes this PCZT's serialized [ByteArray] for conveyance purposes.
      */
-    fun toByteArray(): ByteArray {
-        return inner
-    }
+    fun toByteArray(): ByteArray = inner
 
     /**
      * Clones this object with its inner data

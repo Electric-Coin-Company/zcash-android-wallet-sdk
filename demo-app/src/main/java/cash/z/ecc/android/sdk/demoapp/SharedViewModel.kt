@@ -41,7 +41,9 @@ import kotlin.time.Duration.Companion.seconds
 /**
  * Shared mutable state for the demo
  */
-class SharedViewModel(application: Application) : AndroidViewModel(application) {
+class SharedViewModel(
+    application: Application
+) : AndroidViewModel(application) {
     private val _seedPhrase = MutableStateFlow(DemoConstants.INITIAL_SEED_WORDS)
 
     private val _birthdayHeight =
@@ -108,26 +110,26 @@ class SharedViewModel(application: Application) : AndroidViewModel(application) 
 
     // Note that seed and birthday shouldn't be changed once a synchronizer is first collected
     val synchronizerFlow: StateFlow<Synchronizer?> =
-        synchronizerOrLockout.map {
-            when (it) {
-                is InternalSynchronizerStatus.Available -> it.synchronizer
-                is InternalSynchronizerStatus.Lockout -> null
-            }
-        }.stateIn(
-            viewModelScope,
-            SharingStarted.WhileSubscribed(DEFAULT_ANDROID_STATE_TIMEOUT.inWholeMilliseconds, 0),
-            initialValue =
-            null
-        )
+        synchronizerOrLockout
+            .map {
+                when (it) {
+                    is InternalSynchronizerStatus.Available -> it.synchronizer
+                    is InternalSynchronizerStatus.Lockout -> null
+                }
+            }.stateIn(
+                viewModelScope,
+                SharingStarted.WhileSubscribed(DEFAULT_ANDROID_STATE_TIMEOUT.inWholeMilliseconds, 0),
+                initialValue =
+                null
+            )
 
-    fun updateSeedPhrase(newPhrase: String?): Boolean {
-        return if (isValidSeedPhrase(newPhrase)) {
+    fun updateSeedPhrase(newPhrase: String?): Boolean =
+        if (isValidSeedPhrase(newPhrase)) {
             _seedPhrase.value = newPhrase!!
             true
         } else {
             false
         }
-    }
 
     fun resetSDK() {
         viewModelScope.launch {
@@ -173,9 +175,13 @@ class SharedViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     private sealed class InternalSynchronizerStatus {
-        class Available(val synchronizer: Synchronizer) : InternalSynchronizerStatus()
+        class Available(
+            val synchronizer: Synchronizer
+        ) : InternalSynchronizerStatus()
 
-        class Lockout(val id: UUID) : InternalSynchronizerStatus()
+        class Lockout(
+            val id: UUID
+        ) : InternalSynchronizerStatus()
     }
 
     companion object {

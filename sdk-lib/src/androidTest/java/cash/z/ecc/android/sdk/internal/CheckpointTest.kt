@@ -41,14 +41,15 @@ class CheckpointTest {
     @SmallTest
     fun parse_height_as_long_that_would_overflow_int() {
         val jsonString =
-            JSONObject().apply {
-                put(Checkpoint.KEY_VERSION, Checkpoint.VERSION_1)
-                put(Checkpoint.KEY_HEIGHT, UInt.MAX_VALUE.toLong())
-                put(Checkpoint.KEY_HASH, CheckpointFixture.HASH)
-                put(Checkpoint.KEY_EPOCH_SECONDS, CheckpointFixture.EPOCH_SECONDS)
-                put(Checkpoint.KEY_SAPLING_TREE, CheckpointFixture.SAPLING_TREE)
-                put(Checkpoint.KEY_ORCHARD_TREE, CheckpointFixture.ORCHARD_TREE)
-            }.toString()
+            JSONObject()
+                .apply {
+                    put(Checkpoint.KEY_VERSION, Checkpoint.VERSION_1)
+                    put(Checkpoint.KEY_HEIGHT, UInt.MAX_VALUE.toLong())
+                    put(Checkpoint.KEY_HASH, CheckpointFixture.HASH)
+                    put(Checkpoint.KEY_EPOCH_SECONDS, CheckpointFixture.EPOCH_SECONDS)
+                    put(Checkpoint.KEY_SAPLING_TREE, CheckpointFixture.SAPLING_TREE)
+                    put(Checkpoint.KEY_ORCHARD_TREE, CheckpointFixture.ORCHARD_TREE)
+                }.toString()
 
         Checkpoint.from(CheckpointFixture.NETWORK, jsonString).also {
             assertEquals(UInt.MAX_VALUE.toLong(), it.height.value)

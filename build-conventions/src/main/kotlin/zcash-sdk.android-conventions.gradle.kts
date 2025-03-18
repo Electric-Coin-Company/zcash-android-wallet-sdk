@@ -155,7 +155,7 @@ fun com.android.build.gradle.BaseExtension.configureBaseExtension() {
                 .toString().toInt().coerceAtLeast(MANAGED_DEVICES_MIN_SDK)
             val testDeviceMaxSdkVersion = project.properties["ANDROID_TARGET_SDK_VERSION"].toString().toInt()
 
-            devices {
+            allDevices {
                 create<ManagedVirtualDevice>("pixel2Min") {
                     device = "Pixel 2"
                     apiLevel = testDeviceMinSdkVersion
@@ -181,7 +181,10 @@ fun com.android.build.gradle.BaseExtension.configureBaseExtension() {
         kotlinOptions {
             jvmTarget = project.property("ANDROID_JVM_TARGET").toString()
             allWarningsAsErrors = project.property("ZCASH_IS_TREAT_WARNINGS_AS_ERRORS").toString().toBoolean()
-            freeCompilerArgs = freeCompilerArgs + "-opt-in=kotlin.RequiresOptIn"
+            freeCompilerArgs += listOf(
+                "-opt-in=kotlin.RequiresOptIn",
+                "-Xconsistent-data-class-copy-visibility"
+            )
         }
     }
 }

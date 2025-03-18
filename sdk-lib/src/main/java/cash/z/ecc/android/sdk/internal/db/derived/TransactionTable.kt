@@ -53,69 +53,71 @@ internal class TransactionTable(
     }
 
     suspend fun count() =
-        sqliteDatabase.queryAndMap(
-            table = TransactionTableDefinition.TABLE_NAME,
-            columns = PROJECTION_COUNT,
-            cursorParser = { it.getLong(0) }
-        ).first()
+        sqliteDatabase
+            .queryAndMap(
+                table = TransactionTableDefinition.TABLE_NAME,
+                columns = PROJECTION_COUNT,
+                cursorParser = { it.getLong(0) }
+            ).first()
 
     suspend fun countUnmined() =
-        sqliteDatabase.queryAndMap(
-            table = TransactionTableDefinition.TABLE_NAME,
-            columns = PROJECTION_COUNT,
-            selection = SELECTION_BLOCK_IS_NULL,
-            cursorParser = { it.getLong(0) }
-        ).first()
+        sqliteDatabase
+            .queryAndMap(
+                table = TransactionTableDefinition.TABLE_NAME,
+                columns = PROJECTION_COUNT,
+                selection = SELECTION_BLOCK_IS_NULL,
+                cursorParser = { it.getLong(0) }
+            ).first()
 
-    suspend fun findEncodedTransactionByTxId(txId: FirstClassByteArray): EncodedTransaction? {
-        return sqliteDatabase.queryAndMap(
-            table = TransactionTableDefinition.TABLE_NAME,
-            columns = PROJECTION_ENCODED_TRANSACTION,
-            selection = SELECTION_TRANSACTION_ID_AND_RAW_NOT_NULL,
-            selectionArgs = arrayOf(txId.byteArray)
-        ) {
-            val rawIndex = it.getColumnIndexOrThrow(TransactionTableDefinition.COLUMN_BLOB_RAW)
-            val heightIndex = it.getColumnIndexOrThrow(TransactionTableDefinition.COLUMN_INTEGER_EXPIRY_HEIGHT)
+    suspend fun findEncodedTransactionByTxId(txId: FirstClassByteArray): EncodedTransaction? =
+        sqliteDatabase
+            .queryAndMap(
+                table = TransactionTableDefinition.TABLE_NAME,
+                columns = PROJECTION_ENCODED_TRANSACTION,
+                selection = SELECTION_TRANSACTION_ID_AND_RAW_NOT_NULL,
+                selectionArgs = arrayOf(txId.byteArray)
+            ) {
+                val rawIndex = it.getColumnIndexOrThrow(TransactionTableDefinition.COLUMN_BLOB_RAW)
+                val heightIndex = it.getColumnIndexOrThrow(TransactionTableDefinition.COLUMN_INTEGER_EXPIRY_HEIGHT)
 
-            val raw = it.getBlob(rawIndex)
-            val expiryHeight =
-                if (it.isNull(heightIndex)) {
-                    null
-                } else {
-                    BlockHeight.new(it.getLong(heightIndex))
-                }
+                val raw = it.getBlob(rawIndex)
+                val expiryHeight =
+                    if (it.isNull(heightIndex)) {
+                        null
+                    } else {
+                        BlockHeight.new(it.getLong(heightIndex))
+                    }
 
-            EncodedTransaction(
-                txId,
-                FirstClassByteArray(raw),
-                expiryHeight
-            )
-        }.firstOrNull()
-    }
+                EncodedTransaction(
+                    txId,
+                    FirstClassByteArray(raw),
+                    expiryHeight
+                )
+            }.firstOrNull()
 
-    suspend fun findMinedHeight(rawTransactionId: ByteArray): BlockHeight? {
-        return sqliteDatabase.queryAndMap(
-            table = TransactionTableDefinition.TABLE_NAME,
-            columns = PROJECTION_BLOCK,
-            selection = SELECTION_RAW_TRANSACTION_ID,
-            selectionArgs = arrayOf(rawTransactionId)
-        ) {
-            val blockIndex = it.getColumnIndexOrThrow(TransactionTableDefinition.COLUMN_INTEGER_BLOCK)
-            BlockHeight.new(it.getLong(blockIndex))
-        }.firstOrNull()
-    }
+    suspend fun findMinedHeight(rawTransactionId: ByteArray): BlockHeight? =
+        sqliteDatabase
+            .queryAndMap(
+                table = TransactionTableDefinition.TABLE_NAME,
+                columns = PROJECTION_BLOCK,
+                selection = SELECTION_RAW_TRANSACTION_ID,
+                selectionArgs = arrayOf(rawTransactionId)
+            ) {
+                val blockIndex = it.getColumnIndexOrThrow(TransactionTableDefinition.COLUMN_INTEGER_BLOCK)
+                BlockHeight.new(it.getLong(blockIndex))
+            }.firstOrNull()
 
-    suspend fun findDatabaseId(rawTransactionId: ByteArray): Long? {
-        return sqliteDatabase.queryAndMap(
-            table = TransactionTableDefinition.TABLE_NAME,
-            columns = PROJECTION_PRIMARY_KEY_ID,
-            selection = SELECTION_RAW_TRANSACTION_ID,
-            selectionArgs = arrayOf(rawTransactionId)
-        ) {
-            val idIndex = it.getColumnIndexOrThrow(TransactionTableDefinition.COLUMN_INTEGER_ID)
-            it.getLong(idIndex)
-        }.firstOrNull()
-    }
+    suspend fun findDatabaseId(rawTransactionId: ByteArray): Long? =
+        sqliteDatabase
+            .queryAndMap(
+                table = TransactionTableDefinition.TABLE_NAME,
+                columns = PROJECTION_PRIMARY_KEY_ID,
+                selection = SELECTION_RAW_TRANSACTION_ID,
+                selectionArgs = arrayOf(rawTransactionId)
+            ) {
+                val idIndex = it.getColumnIndexOrThrow(TransactionTableDefinition.COLUMN_INTEGER_ID)
+                it.getLong(idIndex)
+            }.firstOrNull()
 }
 
 internal object TransactionTableDefinition {

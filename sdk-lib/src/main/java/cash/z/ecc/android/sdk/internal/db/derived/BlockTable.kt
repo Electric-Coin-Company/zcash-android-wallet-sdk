@@ -28,28 +28,28 @@ internal class BlockTable(
             )
     }
 
-    suspend fun findBlockByExpiryHeight(expiryHeight: BlockHeight): DbBlock? {
-        return sqliteDatabase.queryAndMap(
-            table = BlockTableDefinition.TABLE_NAME,
-            columns = PROJECTION_BLOCK_SIMPLE,
-            selection = SELECTION_BLOCK_BY_HEIGHT,
-            selectionArgs = arrayOf(expiryHeight.value)
-        ) { cursor ->
-            val heightIndex = cursor.getColumnIndexOrThrow(BlockTableDefinition.COLUMN_INTEGER_HEIGHT)
-            val hashIndex = cursor.getColumnIndexOrThrow(BlockTableDefinition.COLUMN_BLOB_HASH)
-            val timeIndex = cursor.getColumnIndexOrThrow(BlockTableDefinition.COLUMN_INTEGER_TIME)
+    suspend fun findBlockByExpiryHeight(expiryHeight: BlockHeight): DbBlock? =
+        sqliteDatabase
+            .queryAndMap(
+                table = BlockTableDefinition.TABLE_NAME,
+                columns = PROJECTION_BLOCK_SIMPLE,
+                selection = SELECTION_BLOCK_BY_HEIGHT,
+                selectionArgs = arrayOf(expiryHeight.value)
+            ) { cursor ->
+                val heightIndex = cursor.getColumnIndexOrThrow(BlockTableDefinition.COLUMN_INTEGER_HEIGHT)
+                val hashIndex = cursor.getColumnIndexOrThrow(BlockTableDefinition.COLUMN_BLOB_HASH)
+                val timeIndex = cursor.getColumnIndexOrThrow(BlockTableDefinition.COLUMN_INTEGER_TIME)
 
-            val height = cursor.getLong(heightIndex)
-            val hash = cursor.getBlob(hashIndex)
-            val time = cursor.getLong(timeIndex)
+                val height = cursor.getLong(heightIndex)
+                val hash = cursor.getBlob(hashIndex)
+                val time = cursor.getLong(timeIndex)
 
-            DbBlock(
-                height = BlockHeight(height),
-                hash = FirstClassByteArray(hash),
-                blockTimeEpochSeconds = time
-            )
-        }.firstOrNull()
-    }
+                DbBlock(
+                    height = BlockHeight(height),
+                    hash = FirstClassByteArray(hash),
+                    blockTimeEpochSeconds = time
+                )
+            }.firstOrNull()
 }
 
 internal object BlockTableDefinition {

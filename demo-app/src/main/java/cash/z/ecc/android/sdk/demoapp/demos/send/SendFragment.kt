@@ -106,8 +106,7 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
                                     walletBalance
                                 }
                             }
-                        }
-                        .collect { onBalance(it) }
+                        }.collect { onBalance(it) }
                 }
             }
         }
@@ -152,7 +151,11 @@ class SendFragment : BaseDemoFragment<FragmentSendBinding>() {
     @Suppress("UNUSED_PARAMETER")
     private fun onSend(unused: View) {
         isSending = true
-        val amount = amountInput.text.toString().toDouble().convertZecToZatoshi()
+        val amount =
+            amountInput.text
+                .toString()
+                .toDouble()
+                .convertZecToZatoshi()
         val toAddress = addressInput.text.toString().trim()
         lifecycleScope.launch {
             sharedViewModel.synchronizerFlow.value?.let { synchronizer ->
