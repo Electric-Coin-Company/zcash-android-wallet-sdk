@@ -338,12 +338,12 @@ class RustBackend private constructor(
         }
 
     override suspend fun fixWitnesses() =
-      withContext(SdkDispatchers.DATABASE_IO) {
-          fixWitnesses(
-              dbDataPath = dataDbFile.absolutePath,
-              networkId = networkId
-          )
-      }
+        withContext(SdkDispatchers.DATABASE_IO) {
+            fixWitnesses(
+                dbDataPath = dataDbFile.absolutePath,
+                networkId = networkId
+            )
+        }
 
     override suspend fun decryptAndStoreTransaction(
         tx: ByteArray,
