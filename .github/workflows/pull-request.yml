@@ -361,7 +361,10 @@ jobs:
 
   # Performs a button mash test on the release build of the demo app
   test_robo_demo_app:
-    if: needs.check_firebase_secrets.outputs.has-secrets == 'true'
+    # Turning off until the issue of authentication is resolved
+    # TODO [#1326]: Broken authentication with Flank on CI tests
+    # TODO [#1326]: https://github.com/Electric-Coin-Company/zcash-android-wallet-sdk/issues/1326
+    if: false # needs.check_firebase_secrets.outputs.has-secrets == 'true'
     needs: [demo_app_release_build, check_firebase_secrets]
     runs-on: ubuntu-latest
     permissions:
