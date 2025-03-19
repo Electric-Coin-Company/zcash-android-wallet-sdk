@@ -3,7 +3,7 @@ package cash.z.ecc.android.sdk.internal.storage.preference.api
 import cash.z.ecc.android.sdk.internal.storage.preference.model.entry.PreferenceKey
 import kotlinx.coroutines.flow.Flow
 
-internal interface PreferenceProvider {
+interface PreferenceProvider {
     suspend fun hasKey(key: PreferenceKey): Boolean
 
     suspend fun putString(

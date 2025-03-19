@@ -2,7 +2,7 @@ package cash.z.ecc.android.sdk.internal.storage.preference.model.entry
 
 import cash.z.ecc.android.sdk.internal.storage.preference.api.PreferenceProvider
 
-internal data class BooleanPreferenceDefault(
+data class BooleanPreferenceDefault(
     override val key: PreferenceKey,
     private val defaultValue: Boolean
 ) : PreferenceDefault<Boolean> {
