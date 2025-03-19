@@ -8,4 +8,6 @@ internal class StandardPreferenceProvider(
 ) : PreferenceHolder() {
     override suspend fun create(): PreferenceProvider =
         AndroidPreferenceProvider.newStandard(context, "cash.z.ecc.android.sdk")
+
+    override suspend fun clear() = create().clearPreferences()
 }

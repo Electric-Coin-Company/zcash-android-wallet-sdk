@@ -127,4 +127,14 @@ internal class AndroidPreferenceProvider(
             return AndroidPreferenceProvider(sharedPreferences, singleThreadedDispatcher)
         }
     }
+
+    @SuppressLint("ApplySharedPref")
+    override suspend fun clearPreferences() =
+        withContext(dispatcher) {
+            val editor = sharedPreferences.edit()
+
+            editor.clear()
+
+            return@withContext editor.commit()
+        }
 }

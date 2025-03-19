@@ -26,4 +26,9 @@ class MockPreferenceProvider(
     ) {
         map[key.key] = value
     }
+
+    override suspend fun clearPreferences(): Boolean {
+        map.clear()
+        return true
+    }
 }

@@ -23,4 +23,6 @@ internal abstract class PreferenceHolder {
         }
 
     protected abstract suspend fun create(): PreferenceProvider
+
+    abstract suspend fun clear(): Boolean
 }

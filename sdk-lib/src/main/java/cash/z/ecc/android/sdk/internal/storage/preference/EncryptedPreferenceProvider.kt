@@ -8,4 +8,6 @@ internal class EncryptedPreferenceProvider(
 ) : PreferenceHolder() {
     override suspend fun create(): PreferenceProvider =
         AndroidPreferenceProvider.newEncrypted(context, "cash.z.ecc.android.sdk.encrypted")
+
+    override suspend fun clear() = create().clearPreferences()
 }

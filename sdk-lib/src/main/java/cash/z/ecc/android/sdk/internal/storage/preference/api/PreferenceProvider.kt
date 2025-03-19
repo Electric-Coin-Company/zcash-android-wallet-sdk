@@ -18,4 +18,6 @@ interface PreferenceProvider {
      * Consumers of the flow will need to then query the value and determine whether it has changed.
      */
     fun observe(key: PreferenceKey): Flow<Unit>
+
+    suspend fun clearPreferences(): Boolean
 }
