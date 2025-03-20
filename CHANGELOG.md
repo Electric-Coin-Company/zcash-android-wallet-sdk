@@ -6,8 +6,8 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-- `Synchronizer.fixWitnesses()` has been added
+### Fixed
+- The note commitment tree bug has been resolved using a new internal `Backend.fixWitnesses()` API 
 
 ### Changed
 - Dependency update:
