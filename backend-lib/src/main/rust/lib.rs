@@ -1924,18 +1924,19 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeSh
                 )
             })?;
 
-        let from_addrs = if let Some((addr, _)) = transparent_receiver.map_or_else(||
-            if account_receivers.len() > 1 {
-                Err(anyhow!(
-                    "Account has more than one transparent receiver with funds to shield; this is not yet supported by the SDK. Provide a specific transparent receiver to shield funds from."
-                ))
-            } else {
-                Ok(account_receivers.iter().next().map(|(a, v)| (*a, *v)))
-            },
-            |addr| Ok(account_receivers.get(&addr).map(|value| (addr, *value)))
-        )?.filter(|(_, value)| *value >= shielding_threshold) {
-            [addr]
-        } else {
+        let from_addrs: Vec<TransparentAddress> = match transparent_receiver {
+            Some(addr) => account_receivers
+                .get(&addr)
+                .into_iter()
+                .filter_map(|v| (*v >= shielding_threshold).then_some(addr))
+                .collect(),
+            None => account_receivers
+                .into_iter()
+                .filter_map(|(a, v)| (v >= shielding_threshold).then_some(a))
+                .collect(),
+        };
+
+        if from_addrs.is_empty() {
             // There are no transparent funds to shield; don't create a proposal.
             return Ok(ptr::null_mut());
         };
