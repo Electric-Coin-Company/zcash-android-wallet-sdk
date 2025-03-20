@@ -543,10 +543,6 @@ class SdkSynchronizer private constructor(
         }
 
         launch(CoroutineExceptionHandler(::onCriticalError)) {
-            dataMaintenance()
-        }
-
-        launch(CoroutineExceptionHandler(::onCriticalError)) {
             var lastScanTime = 0L
             processor.onProcessorErrorListener = ::onProcessorError
             processor.onSetupErrorListener = ::onSetupError
@@ -671,6 +667,7 @@ class SdkSynchronizer private constructor(
         getAccounts().forEach { refreshUtxos(it) }
     }
 
+    @Suppress("UnusedPrivateMember")
     private suspend fun dataMaintenance() {
         // Check and repair broken wallet data due to bugs in `shardtree`
         backend.fixWitnesses()
