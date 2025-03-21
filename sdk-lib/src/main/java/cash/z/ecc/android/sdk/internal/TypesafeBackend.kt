@@ -223,6 +223,22 @@ internal interface TypesafeBackend {
     suspend fun transactionDataRequests(): List<TransactionDataRequest>
 
     /**
+     * This function calls `check_witnesses` and `queue_rescans` from the underlying librustzcash internally. This
+     * method is intended for repairing wallets that broke due to bugs in `shardtree`.
+     *
+     * `check_witnesses`: It attempts to construct a witness for each note belonging to the wallet that is believed by
+     * the wallet to currently be spendable, and returns a vector of the ranges that must be
+     * rescanned in order to correct missing witness data.
+     *
+     * `queue_rescans`: Updates the scan queue by inserting scan ranges for the given range of block heights, with
+     * the specified scanning priority.
+     *
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    @Throws(RuntimeException::class)
+    suspend fun fixWitnesses()
+
+    /**
      * @throws RuntimeException as a common indicator of the operation failure
      */
     @Throws(RuntimeException::class)

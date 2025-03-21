@@ -239,4 +239,8 @@ internal class FakeRustBackend(
     override suspend fun transactionDataRequests(): List<JniTransactionDataRequest> {
         error("Intentionally not implemented yet.")
     }
+
+    override suspend fun fixWitnesses() {
+        error("Intentionally not implemented yet.")
+    }
 }

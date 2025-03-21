@@ -301,6 +301,8 @@ internal class TypesafeBackendImpl(
             TransactionDataRequest.new(jniRequest)
         }
 
+    override suspend fun fixWitnesses() = backend.fixWitnesses()
+
     override suspend fun getWalletSummary(): WalletSummary? =
         backend.getWalletSummary()?.let { jniWalletSummary ->
             WalletSummary.new(jniWalletSummary)

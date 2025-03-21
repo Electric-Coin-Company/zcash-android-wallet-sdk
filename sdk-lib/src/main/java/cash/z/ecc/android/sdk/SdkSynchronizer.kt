@@ -38,6 +38,8 @@ import cash.z.ecc.android.sdk.internal.model.ext.toBlockHeight
 import cash.z.ecc.android.sdk.internal.repository.CompactBlockRepository
 import cash.z.ecc.android.sdk.internal.repository.DerivedDataRepository
 import cash.z.ecc.android.sdk.internal.storage.block.FileCompactBlockRepository
+import cash.z.ecc.android.sdk.internal.storage.preference.EncryptedPreferenceProvider
+import cash.z.ecc.android.sdk.internal.storage.preference.StandardPreferenceProvider
 import cash.z.ecc.android.sdk.internal.transaction.OutboundTransactionManager
 import cash.z.ecc.android.sdk.internal.transaction.OutboundTransactionManagerImpl
 import cash.z.ecc.android.sdk.internal.transaction.TransactionEncoder
@@ -219,6 +221,11 @@ class SdkSynchronizer private constructor(
             return mutex.withLock {
                 waitForShutdown(key)
                 checkForExistingSynchronizers(key)
+
+                val standardPrefsCleared = StandardPreferenceProvider(appContext).clear()
+                val encryptedPrefsCleared = EncryptedPreferenceProvider(appContext).clear()
+
+                Twig.info { "Both preferences cleared: ${standardPrefsCleared && encryptedPrefsCleared}" }
 
                 DatabaseCoordinator.getInstance(appContext).deleteDatabases(network, alias)
             }
@@ -665,6 +672,12 @@ class SdkSynchronizer private constructor(
 
     private suspend fun refreshAllAccountsUtxos() {
         getAccounts().forEach { refreshUtxos(it) }
+    }
+
+    @Suppress("UnusedPrivateMember")
+    private suspend fun dataMaintenance() {
+        // Check and repair broken wallet data due to bugs in `shardtree`
+        backend.fixWitnesses()
     }
 
     //

@@ -94,6 +94,7 @@ dependencies {
 
     implementation(libs.androidx.annotation)
     implementation(libs.androidx.core)
+    implementation(libs.androidx.security.crypto)
 
     // Architecture Components: Lifecycle
     implementation(libs.androidx.lifecycle.runtime)
