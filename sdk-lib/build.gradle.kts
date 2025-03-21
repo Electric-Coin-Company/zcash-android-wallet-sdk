@@ -1,3 +1,5 @@
+import com.android.build.api.variant.BuildConfigField
+
 plugins {
     id("com.android.library")
     id("org.jetbrains.kotlin.android")
@@ -69,6 +71,20 @@ android {
 
     lint {
         baseline = File("lint-baseline.xml")
+    }
+}
+
+androidComponents {
+    onVariants { variant ->
+        // Add library version to be available for runtime
+        variant.buildConfigFields.put(
+            "LIBRARY_VERSION",
+            BuildConfigField(
+                type = "String",
+                value = "\"${project.property("LIBRARY_VERSION").toString()}\"",
+                comment = "Current library version"
+            )
+        )
     }
 }
 
