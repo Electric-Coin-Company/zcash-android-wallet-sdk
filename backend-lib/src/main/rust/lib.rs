@@ -12,12 +12,14 @@ use jni::{
     sys::{jboolean, jbyteArray, jint, jlong, jobject, jobjectArray, jstring, JNI_FALSE, JNI_TRUE},
     JNIEnv,
 };
+use nonempty::NonEmpty;
 use pczt::roles::redactor::Redactor;
 use pczt::{
     roles::{combiner::Combiner, prover::Prover},
     Pczt,
 };
 use prost::Message;
+use rand::rngs::OsRng;
 use secrecy::{ExposeSecret, SecretVec};
 use tor_rtcompat::BlockOn;
 use tracing::{debug, error};
@@ -29,10 +31,12 @@ use uuid::Uuid;
 use zcash_address::unified::{Container, Encoding, Item as _};
 use zcash_address::{unified, ToAddress, ZcashAddress};
 use zcash_client_backend::data_api::{
-    AccountPurpose, BirthdayError, TransactionDataRequest, TransactionStatus, Zip32Derivation,
+    AccountPurpose, BirthdayError, OutputStatusFilter, TransactionDataRequest, TransactionStatus,
+    Zip32Derivation,
 };
 use zcash_client_backend::fees::zip317::MultiOutputChangeStrategy;
 use zcash_client_backend::fees::{SplitPolicy, StandardFeeRule};
+use zcash_client_backend::keys::UnifiedAddressRequest;
 use zcash_client_backend::{
     address::{Address, UnifiedAddress},
     data_api::{
@@ -55,6 +59,7 @@ use zcash_client_backend::{
     zip321::{Payment, TransactionRequest},
 };
 use zcash_client_sqlite::error::SqliteClientError;
+use zcash_client_sqlite::util::SystemClock;
 use zcash_client_sqlite::AccountUuid;
 use zcash_client_sqlite::{
     chain::{init::init_blockmeta_db, BlockMeta},
@@ -105,8 +110,8 @@ fn wallet_db<P: Parameters>(
     env: &mut JNIEnv,
     params: P,
     db_data: JString,
-) -> anyhow::Result<WalletDb<rusqlite::Connection, P>> {
-    WalletDb::for_path(path_from_jni(env, db_data)?, params)
+) -> anyhow::Result<WalletDb<rusqlite::Connection, P, SystemClock, OsRng>> {
+    WalletDb::for_path(path_from_jni(env, db_data)?, params, SystemClock, OsRng)
         .map_err(|e| anyhow!("Error opening wallet database connection: {}", e))
 }
 
@@ -601,7 +606,10 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getCurren
         let db_data = wallet_db(env, network, db_data)?;
         let account_uuid = account_id_from_jni(&env, account_uuid)?;
 
-        match db_data.get_current_address(account_uuid) {
+        match db_data.get_last_generated_address_matching(
+            account_uuid,
+            UnifiedAddressRequest::AllAvailableKeys,
+        ) {
             Ok(Some(addr)) => {
                 let addr_str = addr.encode(&network);
                 let output = env
@@ -712,7 +720,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_listTrans
         let db_data = wallet_db(env, network, db_data)?;
         let account = account_id_from_jni(&env, account_uuid)?;
 
-        match db_data.get_transparent_receivers(account) {
+        match db_data.get_transparent_receivers(account, true) {
             Ok(receivers) => {
                 let transparent_receivers = receivers
                     .keys()
@@ -1526,10 +1534,12 @@ fn encode_transaction_data_request<'a>(
             "([B)V",
             &[(&env.byte_array_from_slice(txid.as_ref())?).into()],
         ),
-        TransactionDataRequest::SpendsFromAddress {
+        TransactionDataRequest::TransactionsInvolvingAddress {
             address,
             block_range_start,
             block_range_end,
+            output_status_filter: OutputStatusFilter::All,
+            ..
         } => {
             let taddr = match address {
                 TransparentAddress::PublicKeyHash(data) => {
@@ -1550,6 +1560,14 @@ fn encode_transaction_data_request<'a>(
                 ],
             )
         }
+        TransactionDataRequest::TransactionsInvolvingAddress {
+            output_status_filter: OutputStatusFilter::Unspent,
+            ..
+        } => {
+            // UTXO retreieval via the transaction data request queue is not yet
+            // supported; support will be added in a future release.
+            panic!("Should have been previously filtered out.")
+        }
     }
 }
 
@@ -1569,7 +1587,20 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_transacti
 
         let ranges = db_data
             .transaction_data_requests()
-            .map_err(|e| anyhow!("Error while fetching transaction data requests: {}", e))?;
+            .map_err(|e| anyhow!("Error while fetching transaction data requests: {}", e))?
+            .into_iter()
+            .filter(|req| match req {
+                TransactionDataRequest::TransactionsInvolvingAddress {
+                    output_status_filter: OutputStatusFilter::Unspent,
+                    ..
+                } => {
+                    // UTXO retreieval via the transaction data request queue is not yet
+                    // supported; support will be added in a future release.
+                    false
+                }
+                _ => true,
+            })
+            .collect();
 
         let net = network.network_type();
 
@@ -1582,6 +1613,27 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_transacti
         .into_raw())
     });
     unwrap_exc_or(&mut env, res, ptr::null_mut())
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_fixWitnesses<'local>(
+    mut env: JNIEnv<'local>,
+    _: JClass<'local>,
+    db_data: JString<'local>,
+    network_id: jint,
+) {
+    let res = catch_unwind(&mut env, |env| {
+        let network = parse_network(network_id as u32)?;
+        let mut db_data = wallet_db(env, network, db_data)?;
+
+        let corrupt_ranges = db_data.check_witnesses()?;
+        if let Some(nel_ranges) = NonEmpty::from_vec(corrupt_ranges) {
+            db_data.queue_rescans(nel_ranges, ScanPriority::FoundNote)?;
+        }
+
+        Ok(())
+    });
+    unwrap_exc_or(&mut env, res, ())
 }
 
 #[unsafe(no_mangle)]
@@ -1848,7 +1900,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeSh
                         }
                         Address::Transparent(addr) => {
                             if db_data
-                                .get_transparent_receivers(account_uuid)?
+                                .get_transparent_receivers(account_uuid, true)?
                                 .contains_key(&addr)
                             {
                                 Ok(Some(addr))
@@ -1861,40 +1913,30 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeSh
             }?;
 
         let min_confirmations = 0;
-        let min_confirmations_for_heights = NonZeroU32::MIN;
 
         let account_receivers = db_data
-            .get_target_and_anchor_heights(min_confirmations_for_heights)
-            .map_err(|e| anyhow!("Error while fetching anchor height: {}", e))
-            .and_then(|opt_anchor| {
-                opt_anchor
-                    .map(|(target, _)| target) // Include unconfirmed funds.
-                    .ok_or(anyhow!("Anchor height not available; scan required."))
-            })
-            .and_then(|anchor| {
-                db_data
-                    .get_transparent_balances(account_uuid, anchor)
-                    .map_err(|e| {
-                        anyhow!(
-                            "Error while fetching transparent balances for {:?}: {}",
-                            account_uuid,
-                            e
-                        )
-                    })
+            .get_transparent_balances(account_uuid, BlockHeight::from(0))
+            .map_err(|e| {
+                anyhow!(
+                    "Error while fetching transparent balances for {:?}: {}",
+                    account_uuid,
+                    e
+                )
             })?;
 
-        let from_addrs = if let Some((addr, _)) = transparent_receiver.map_or_else(||
-            if account_receivers.len() > 1 {
-                Err(anyhow!(
-                    "Account has more than one transparent receiver with funds to shield; this is not yet supported by the SDK. Provide a specific transparent receiver to shield funds from."
-                ))
-            } else {
-                Ok(account_receivers.iter().next().map(|(a, v)| (*a, *v)))
-            },
-            |addr| Ok(account_receivers.get(&addr).map(|value| (addr, *value)))
-        )?.filter(|(_, value)| *value >= shielding_threshold) {
-            [addr]
-        } else {
+        let from_addrs: Vec<TransparentAddress> = match transparent_receiver {
+            Some(addr) => account_receivers
+                .get(&addr)
+                .into_iter()
+                .filter_map(|v| (*v >= shielding_threshold).then_some(addr))
+                .collect(),
+            None => account_receivers
+                .into_iter()
+                .filter_map(|(a, v)| (v >= shielding_threshold).then_some(a))
+                .collect(),
+        };
+
+        if from_addrs.is_empty() {
             // There are no transparent funds to shield; don't create a proposal.
             return Ok(ptr::null_mut());
         };
@@ -2177,9 +2219,8 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_extractAn
         let txid = extract_and_store_transaction_from_pczt::<_, ()>(
             &mut db_data,
             pczt,
-            &spend_vk,
-            &output_vk,
-            &orchard::circuit::VerifyingKey::build(),
+            Some((&spend_vk, &output_vk)),
+            Some(&orchard::circuit::VerifyingKey::build()),
         )
         .map_err(|e| anyhow!("Failed to extract transaction from PCZT: {:?}", e))?;
 
@@ -2308,7 +2349,10 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustDerivationTool_de
             .map(|usk| usk.to_unified_full_viewing_key())?;
 
         let (ua, _) = ufvk
-            .find_address(DiversifierIndex::new(), None)
+            .find_address(
+                DiversifierIndex::new(),
+                UnifiedAddressRequest::AllAvailableKeys,
+            )
             .expect("At least one Unified Address should be derivable");
         let address_str = ua.encode(&network);
         let output = env
@@ -2336,7 +2380,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustDerivationTool_de
 
         // Derive the default Unified Address (containing the default Sapling payment
         // address that older SDKs used).
-        let (ua, _) = ufvk.default_address(None)?;
+        let (ua, _) = ufvk.default_address(UnifiedAddressRequest::AllAvailableKeys)?;
         let address_str = ua.encode(&network);
         let output = env
             .new_string(address_str)

@@ -667,6 +667,12 @@ class SdkSynchronizer private constructor(
         getAccounts().forEach { refreshUtxos(it) }
     }
 
+    @Suppress("UnusedPrivateMember")
+    private suspend fun dataMaintenance() {
+        // Check and repair broken wallet data due to bugs in `shardtree`
+        backend.fixWitnesses()
+    }
+
     //
     // Account management
     //

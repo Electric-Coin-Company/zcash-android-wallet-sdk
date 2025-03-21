@@ -6,6 +6,9 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- The note commitment tree bug has been resolved using a new internal `Backend.fixWitnesses()` API 
+
 ### Changed
 - Dependency update:
   - Gradle 8.13
