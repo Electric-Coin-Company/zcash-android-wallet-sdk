@@ -13,6 +13,7 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Kotlin 2.1.10
   - Bip39 1.0.9
   - Other dependencies update
+- Checkpoints update
 
 ## [2.2.8] - 2025-03-03
 
