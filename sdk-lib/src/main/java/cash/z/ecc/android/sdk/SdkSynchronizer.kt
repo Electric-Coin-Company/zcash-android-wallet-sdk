@@ -40,6 +40,8 @@ import cash.z.ecc.android.sdk.internal.repository.DerivedDataRepository
 import cash.z.ecc.android.sdk.internal.storage.block.FileCompactBlockRepository
 import cash.z.ecc.android.sdk.internal.storage.preference.EncryptedPreferenceProvider
 import cash.z.ecc.android.sdk.internal.storage.preference.StandardPreferenceProvider
+import cash.z.ecc.android.sdk.internal.storage.preference.api.PreferenceProvider
+import cash.z.ecc.android.sdk.internal.storage.preference.keys.StandardPreferenceKeys.SDK_VERSION_OF_LAST_FIX_WITNESSES_CALL
 import cash.z.ecc.android.sdk.internal.transaction.OutboundTransactionManager
 import cash.z.ecc.android.sdk.internal.transaction.OutboundTransactionManagerImpl
 import cash.z.ecc.android.sdk.internal.transaction.TransactionEncoder
@@ -137,7 +139,8 @@ class SdkSynchronizer private constructor(
     val processor: CompactBlockProcessor,
     private val backend: TypesafeBackend,
     private val fetchFastestServers: FastestServerFetcher,
-    private val fetchExchangeChangeUsd: UsdExchangeRateFetcher
+    private val fetchExchangeChangeUsd: UsdExchangeRateFetcher,
+    private val preferenceProvider: PreferenceProvider,
 ) : CloseableSynchronizer {
     companion object {
         private sealed class InstanceState {
@@ -173,6 +176,7 @@ class SdkSynchronizer private constructor(
             backend: TypesafeBackend,
             fastestServerFetcher: FastestServerFetcher,
             fetchExchangeChangeUsd: UsdExchangeRateFetcher,
+            preferenceProvider: PreferenceProvider,
         ): CloseableSynchronizer {
             val synchronizerKey = SynchronizerKey(zcashNetwork, alias)
 
@@ -188,7 +192,8 @@ class SdkSynchronizer private constructor(
                     processor,
                     backend,
                     fastestServerFetcher,
-                    fetchExchangeChangeUsd
+                    fetchExchangeChangeUsd,
+                    preferenceProvider
                 ).apply {
                     instances[synchronizerKey] = InstanceState.Active
                     start()
@@ -550,6 +555,10 @@ class SdkSynchronizer private constructor(
         }
 
         launch(CoroutineExceptionHandler(::onCriticalError)) {
+            dataMaintenance()
+        }
+
+        launch(CoroutineExceptionHandler(::onCriticalError)) {
             var lastScanTime = 0L
             processor.onProcessorErrorListener = ::onProcessorError
             processor.onSetupErrorListener = ::onSetupError
@@ -674,10 +683,14 @@ class SdkSynchronizer private constructor(
         getAccounts().forEach { refreshUtxos(it) }
     }
 
-    @Suppress("UnusedPrivateMember")
     private suspend fun dataMaintenance() {
         // Check and repair broken wallet data due to bugs in `shardtree`
-        backend.fixWitnesses()
+        if (BuildConfig.LIBRARY_VERSION != preferenceProvider.getString(SDK_VERSION_OF_LAST_FIX_WITNESSES_CALL.key)) {
+            Twig.info { "Wallet data check and repair starting..." }
+            backend.fixWitnesses()
+            SDK_VERSION_OF_LAST_FIX_WITNESSES_CALL.putValue(preferenceProvider, BuildConfig.LIBRARY_VERSION)
+            Twig.info { "Wallet data check and repair done" }
+        }
     }
 
     //
