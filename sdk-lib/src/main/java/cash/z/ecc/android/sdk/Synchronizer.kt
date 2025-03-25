@@ -16,6 +16,7 @@ import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.db.DatabaseCoordinator
 import cash.z.ecc.android.sdk.internal.exchange.UsdExchangeRateFetcher
 import cash.z.ecc.android.sdk.internal.model.ext.toBlockHeight
+import cash.z.ecc.android.sdk.internal.storage.preference.StandardPreferenceProvider
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.AccountBalance
 import cash.z.ecc.android.sdk.model.AccountCreateSetup
@@ -799,6 +800,8 @@ interface Synchronizer {
                     txManager = txManager,
                 )
 
+            val standardPreferenceProvider = StandardPreferenceProvider(context)
+
             return SdkSynchronizer.new(
                 context = context.applicationContext,
                 zcashNetwork = zcashNetwork,
@@ -811,7 +814,8 @@ interface Synchronizer {
                 fetchExchangeChangeUsd =
                     UsdExchangeRateFetcher(
                         torDir = Files.getTorDir(context)
-                    )
+                    ),
+                preferenceProvider = standardPreferenceProvider()
             )
         }
 

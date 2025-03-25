@@ -1,6 +1,6 @@
 [package]
 name = "zcash-android-wallet-sdk"
-version = "0.0.4"
+version = "2.2.9"
 authors = [
     "Jack Grigg <jack@z.cash>",
     "Kevin Gorham <kevin.gorham@z.cash>",
@@ -13,11 +13,11 @@ rust-version = "1.84"
 [dependencies]
 # Zcash dependencies
 orchard = "0.11"
-pczt = "0.2"
+pczt = { version = "0.2", features = ["prover", "orchard", "sapling"] }
 sapling = { package = "sapling-crypto", version = "0.5", default-features = false }
 transparent = { package = "zcash_transparent", version = "0.2", default-features = false }
 zcash_address = "0.7"
-zcash_client_backend = { version = "0.17", features = [
+zcash_client_backend = { version = "0.18", features = [
     "orchard",
     "lightwalletd-tonic-tls-webpki-roots",
     "tor",
@@ -25,7 +25,7 @@ zcash_client_backend = { version = "0.17", features = [
     "unstable",
     "pczt",
 ] }
-zcash_client_sqlite = { version = "0.15", features = ["orchard", "transparent-inputs", "unstable", "serde"] }
+zcash_client_sqlite = { version = "0.16", features = ["orchard", "transparent-inputs", "unstable", "serde"] }
 zcash_note_encryption = "0.4.1"
 zcash_primitives = "0.22"
 zcash_proofs = "0.22"
@@ -36,6 +36,8 @@ zip32 = "0.2"
 prost = "0.13"
 rusqlite = "0.32"
 secrecy = "0.8"
+rand = "0.8"
+nonempty = "0.11"
 
 # Initialization
 rayon = "1.7"

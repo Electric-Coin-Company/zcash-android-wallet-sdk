@@ -61,8 +61,6 @@ internal sealed class SyncingResult {
 
     data object EnhanceSuccess : SyncingResult()
 
-    data object FetchUtxos : SyncingResult()
-
     data class EnhanceFailed(
         override val failedAtHeight: BlockHeight? = null,
         override val exception: CompactBlockProcessorException

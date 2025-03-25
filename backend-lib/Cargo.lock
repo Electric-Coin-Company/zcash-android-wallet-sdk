@@ -1275,9 +1275,9 @@ dependencies = [
 
 [[package]]
 name = "equihash"
-version = "0.2.1"
+version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "756c3654e279e572484a6061a4f90a67849baeab43be89a622b9950105254674"
+checksum = "ca4f333d4ccc9d23c06593733673026efa71a332e028b00f12cf427b9677dce9"
 dependencies = [
  "blake2b_simd",
  "core2",
@@ -2694,12 +2694,13 @@ checksum = "57c0d7b74b563b49d38dae00a0c37d4d6de9b432382b2892f0574ddcae73fd0a"
 
 [[package]]
 name = "pczt"
-version = "0.2.0"
+version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3a44b9f258645cbbac406c876e0355f4a71e3f68baa3bb30fd517b28164e0222"
+checksum = "0ecd86f6f9acfadafa3aca948083a5cc6b8c5ff66fd2044416c20269c3953acd"
 dependencies = [
  "blake2b_simd",
  "bls12_381",
+ "document-features",
  "ff",
  "getset",
  "jubjub",
@@ -3076,6 +3077,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ec0be4795e2f6a28069bec0b5ff3e2ac9bafc99e6a9a7dc3547996c5c816922c"
 dependencies = [
  "getrandom 0.2.15",
+]
+
+[[package]]
+name = "rand_distr"
+version = "0.4.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "32cb0b9bc82b0a0876c2dd994a7e7a2683d3e7390ca40e6886785ef0c7e3ee31"
+dependencies = [
+ "num-traits",
+ "rand",
 ]
 
 [[package]]
@@ -5775,7 +5786,7 @@ dependencies = [
 
 [[package]]
 name = "zcash-android-wallet-sdk"
-version = "0.0.4"
+version = "2.2.9"
 dependencies = [
  "anyhow",
  "dlopen2",
@@ -5783,10 +5794,12 @@ dependencies = [
  "jni",
  "libc",
  "log-panics",
+ "nonempty",
  "orchard",
  "paranoid-android",
  "pczt",
  "prost",
+ "rand",
  "rayon",
  "rusqlite",
  "rust_decimal",
@@ -5825,9 +5838,9 @@ dependencies = [
 
 [[package]]
 name = "zcash_client_backend"
-version = "0.17.0"
+version = "0.18.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cd14f1ef34cacef42dd2149783dad3d1f46949cb72da786f6ab13d6aa142020b"
+checksum = "17d9eb503faa9f72a1b6575f884e524ac43e816b275a28445e9ecb9c59e46771"
 dependencies = [
  "arti-client",
  "base64",
@@ -5890,11 +5903,12 @@ dependencies = [
 
 [[package]]
 name = "zcash_client_sqlite"
-version = "0.15.0"
+version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4f608480b61455f6ca73d33c6f8154a04506ad388fd56b18e9a4b3e014b3efa7"
+checksum = "e98cadb897a6abdfcdb0bb7bec2218c224bcac382ee892658ca27805f96a047b"
 dependencies = [
  "bip32",
+ "bitflags 2.8.0",
  "bs58",
  "byteorder",
  "document-features",
@@ -5905,6 +5919,9 @@ dependencies = [
  "nonempty",
  "orchard",
  "prost",
+ "rand",
+ "rand_core",
+ "rand_distr",
  "regex",
  "rusqlite",
  "sapling-crypto",
@@ -5940,9 +5957,9 @@ dependencies = [
 
 [[package]]
 name = "zcash_keys"
-version = "0.7.0"
+version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2af2839a7bb0489ccf0db9fb12c67234dd83e4a3b81ef50a10beecf1e852a18e"
+checksum = "cb50fbc9d2d5e5997eefa934297be78312552f393149aa042ab12ac42031070c"
 dependencies = [
  "bech32",
  "bip32",
@@ -6046,9 +6063,9 @@ dependencies = [
 
 [[package]]
 name = "zcash_protocol"
-version = "0.5.0"
+version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "72df627873d103e973b536d34d16cc802d06a3d1494dc010781449789a156dc5"
+checksum = "de0acf60e235c5ba42c83f1e7e3763cf90a436583e6de71557fed26bab2d65dc"
 dependencies = [
  "core2",
  "document-features",
@@ -6067,9 +6084,9 @@ dependencies = [
 
 [[package]]
 name = "zcash_transparent"
-version = "0.2.0"
+version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "97b0c4ea6d9b94b5159106b65b57c4a9ea46859e7f7f8fb1be3e18e2d25bc372"
+checksum = "333349006998a6eec088c7f1f69935916d2d1d4c2d0371b683f78dcdad3c58fc"
 dependencies = [
  "bip32",
  "blake2b_simd",

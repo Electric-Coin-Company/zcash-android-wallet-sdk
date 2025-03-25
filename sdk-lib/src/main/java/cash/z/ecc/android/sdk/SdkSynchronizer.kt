@@ -16,7 +16,6 @@ import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException
 import cash.z.ecc.android.sdk.exception.InitializeException
 import cash.z.ecc.android.sdk.exception.TransactionEncoderException
 import cash.z.ecc.android.sdk.ext.ConsensusBranchId
-import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.internal.FastestServerFetcher
 import cash.z.ecc.android.sdk.internal.SaplingParamTool
 import cash.z.ecc.android.sdk.internal.Twig
@@ -28,7 +27,6 @@ import cash.z.ecc.android.sdk.internal.db.derived.DbDerivedDataRepository
 import cash.z.ecc.android.sdk.internal.db.derived.DerivedDataDb
 import cash.z.ecc.android.sdk.internal.exchange.UsdExchangeRateFetcher
 import cash.z.ecc.android.sdk.internal.ext.existsSuspend
-import cash.z.ecc.android.sdk.internal.ext.isNullOrEmpty
 import cash.z.ecc.android.sdk.internal.ext.tryNull
 import cash.z.ecc.android.sdk.internal.jni.RustBackend
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
@@ -38,6 +36,10 @@ import cash.z.ecc.android.sdk.internal.model.ext.toBlockHeight
 import cash.z.ecc.android.sdk.internal.repository.CompactBlockRepository
 import cash.z.ecc.android.sdk.internal.repository.DerivedDataRepository
 import cash.z.ecc.android.sdk.internal.storage.block.FileCompactBlockRepository
+import cash.z.ecc.android.sdk.internal.storage.preference.EncryptedPreferenceProvider
+import cash.z.ecc.android.sdk.internal.storage.preference.StandardPreferenceProvider
+import cash.z.ecc.android.sdk.internal.storage.preference.api.PreferenceProvider
+import cash.z.ecc.android.sdk.internal.storage.preference.keys.StandardPreferenceKeys.SDK_VERSION_OF_LAST_FIX_WITNESSES_CALL
 import cash.z.ecc.android.sdk.internal.transaction.OutboundTransactionManager
 import cash.z.ecc.android.sdk.internal.transaction.OutboundTransactionManagerImpl
 import cash.z.ecc.android.sdk.internal.transaction.TransactionEncoder
@@ -135,7 +137,8 @@ class SdkSynchronizer private constructor(
     val processor: CompactBlockProcessor,
     private val backend: TypesafeBackend,
     private val fetchFastestServers: FastestServerFetcher,
-    private val fetchExchangeChangeUsd: UsdExchangeRateFetcher
+    private val fetchExchangeChangeUsd: UsdExchangeRateFetcher,
+    private val preferenceProvider: PreferenceProvider,
 ) : CloseableSynchronizer {
     companion object {
         private sealed class InstanceState {
@@ -171,6 +174,7 @@ class SdkSynchronizer private constructor(
             backend: TypesafeBackend,
             fastestServerFetcher: FastestServerFetcher,
             fetchExchangeChangeUsd: UsdExchangeRateFetcher,
+            preferenceProvider: PreferenceProvider,
         ): CloseableSynchronizer {
             val synchronizerKey = SynchronizerKey(zcashNetwork, alias)
 
@@ -186,7 +190,8 @@ class SdkSynchronizer private constructor(
                     processor,
                     backend,
                     fastestServerFetcher,
-                    fetchExchangeChangeUsd
+                    fetchExchangeChangeUsd,
+                    preferenceProvider
                 ).apply {
                     instances[synchronizerKey] = InstanceState.Active
                     start()
@@ -219,6 +224,11 @@ class SdkSynchronizer private constructor(
             return mutex.withLock {
                 waitForShutdown(key)
                 checkForExistingSynchronizers(key)
+
+                val standardPrefsCleared = StandardPreferenceProvider(appContext).clear()
+                val encryptedPrefsCleared = EncryptedPreferenceProvider(appContext).clear()
+
+                Twig.info { "Both preferences cleared: ${standardPrefsCleared && encryptedPrefsCleared}" }
 
                 DatabaseCoordinator.getInstance(appContext).deleteDatabases(network, alias)
             }
@@ -543,7 +553,10 @@ class SdkSynchronizer private constructor(
         }
 
         launch(CoroutineExceptionHandler(::onCriticalError)) {
-            var lastScanTime = 0L
+            dataMaintenance()
+        }
+
+        launch(CoroutineExceptionHandler(::onCriticalError)) {
             processor.onProcessorErrorListener = ::onProcessorError
             processor.onSetupErrorListener = ::onSetupError
             processor.onChainErrorListener = ::onChainError
@@ -553,13 +566,9 @@ class SdkSynchronizer private constructor(
                     when (it) {
                         is Initializing -> INITIALIZING
                         is Synced -> {
-                            val now = System.currentTimeMillis()
-                            // do a bit of housekeeping and then report synced status
-                            onScanComplete(it.syncedRange, now - lastScanTime)
-                            lastScanTime = now
+                            onScanComplete()
                             SYNCED
                         }
-
                         is Stopped -> STOPPED
                         is Disconnected -> DISCONNECTED
                         is Syncing -> SYNCING
@@ -635,36 +644,36 @@ class SdkSynchronizer private constructor(
         onChainErrorHandler?.invoke(errorHeight, rewindHeight)
     }
 
-    /**
-     * @param elapsedMillis the amount of time that passed since the last scan
-     */
-    private suspend fun onScanComplete(
-        scannedRange: ClosedRange<BlockHeight>?,
-        elapsedMillis: Long
-    ) {
-        // We don't need to update anything if there have been no blocks
-        // refresh anyway if:
-        // - if it's the first time we finished scanning
-        // - if we check for blocks 5 times and find nothing was mined
-        @Suppress("MagicNumber")
-        val shouldRefresh = !scannedRange.isNullOrEmpty() || elapsedMillis > (ZcashSdk.POLL_INTERVAL * 5)
-        val reason = if (scannedRange.isNullOrEmpty()) "it's been a while" else "new blocks were scanned"
-
+    private suspend fun onScanComplete() {
         // Refresh UTXOs, balances, and transactions for all the wallet's accounts
-        if (shouldRefresh) {
-            Twig.debug { "Triggering utxo refresh since $reason!" }
-            refreshAllAccountsUtxos()
+        Twig.debug { "Triggering UTXOs refresh" }
+        refreshAllAccountsUtxos()
 
-            Twig.debug { "Triggering balance refresh since $reason!" }
-            refreshAllBalances()
+        Twig.debug { "Triggering balance refresh" }
+        refreshAllBalances()
 
-            Twig.debug { "Triggering transaction refresh since $reason!" }
-            refreshTransactions()
-        }
+        Twig.debug { "Triggering transaction refresh" }
+        refreshTransactions()
     }
 
     private suspend fun refreshAllAccountsUtxos() {
-        getAccounts().forEach { refreshUtxos(it) }
+        getAccounts().forEach {
+            refreshUtxos(
+                account = it,
+                // Refreshing UTXOs from 0 to be able to discover e.g. blocked Ledger funds
+                since = BlockHeight(0)
+            )
+        }
+    }
+
+    private suspend fun dataMaintenance() {
+        // Check and repair broken wallet data due to bugs in `shardtree`
+        if (BuildConfig.LIBRARY_VERSION != preferenceProvider.getString(SDK_VERSION_OF_LAST_FIX_WITNESSES_CALL.key)) {
+            Twig.info { "Wallet data check and repair starting..." }
+            backend.fixWitnesses()
+            SDK_VERSION_OF_LAST_FIX_WITNESSES_CALL.putValue(preferenceProvider, BuildConfig.LIBRARY_VERSION)
+            Twig.info { "Wallet data check and repair done" }
+        }
     }
 
     //

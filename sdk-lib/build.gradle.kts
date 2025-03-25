@@ -1,3 +1,5 @@
+import com.android.build.api.variant.BuildConfigField
+
 plugins {
     id("com.android.library")
     id("org.jetbrains.kotlin.android")
@@ -72,6 +74,20 @@ android {
     }
 }
 
+androidComponents {
+    onVariants { variant ->
+        // Add library version to be available for runtime
+        variant.buildConfigFields.put(
+            "LIBRARY_VERSION",
+            BuildConfigField(
+                type = "String",
+                value = "\"${project.property("LIBRARY_VERSION").toString()}\"",
+                comment = "Current library version"
+            )
+        )
+    }
+}
+
 allOpen {
     // marker for classes that we want to be able to extend in debug builds for testing purposes
     annotation("cash.z.ecc.android.sdk.annotation.OpenClass")
@@ -94,6 +110,7 @@ dependencies {
 
     implementation(libs.androidx.annotation)
     implementation(libs.androidx.core)
+    implementation(libs.androidx.security.crypto)
 
     // Architecture Components: Lifecycle
     implementation(libs.androidx.lifecycle.runtime)
