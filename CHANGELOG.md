@@ -6,6 +6,8 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.9] - 2025-03-25
+
 ### Fixed
 - The note commitment tree bug has been resolved using a new internal `Backend.fixWitnesses()` API 
 
