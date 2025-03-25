@@ -680,7 +680,13 @@ class SdkSynchronizer private constructor(
     }
 
     private suspend fun refreshAllAccountsUtxos() {
-        getAccounts().forEach { refreshUtxos(it) }
+        getAccounts().forEach {
+            refreshUtxos(
+                account = it,
+                // Refreshing UTXOs from 0 to be able to discover e.g. blocked Ledger funds
+                since = BlockHeight(0)
+            )
+        }
     }
 
     private suspend fun dataMaintenance() {

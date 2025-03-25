@@ -504,16 +504,13 @@ class CompactBlockProcessor internal constructor(
                         checkTransactions(transactionStorage = repository)
                     }
                     SyncingResult.FetchUtxos -> {
-                        Twig.info { "Triggering UTXOs fetching from: ${fullyScannedHeight.value}" }
-                        if (fullyScannedHeight.value == null) {
-                            Twig.info { "Postponing UTXOs fetching because fullyScannedHeight is null" }
-                        } else {
-                            backend.getAccounts().forEach {
-                                refreshUtxos(
-                                    account = it,
-                                    startHeight = fullyScannedHeight.value!!
-                                )
-                            }
+                        Twig.info { "Triggering UTXOs fetching" }
+                        backend.getAccounts().forEach {
+                            refreshUtxos(
+                                account = it,
+                                // Refreshing UTXOs from 0 to be able to discover e.g. blocked Ledger funds
+                                startHeight = BlockHeight(0)
+                            )
                         }
                     }
                     is SyncingResult.Failure -> {
@@ -617,16 +614,13 @@ class CompactBlockProcessor internal constructor(
                         SyncingResult.AllSuccess
                     }
                     SyncingResult.FetchUtxos -> {
-                        Twig.info { "Triggering UTXOs fetching from: ${fullyScannedHeight.value}" }
-                        if (fullyScannedHeight.value == null) {
-                            Twig.info { "Postponing UTXOs fetching because fullyScannedHeight is null" }
-                        } else {
-                            backend.getAccounts().forEach {
-                                refreshUtxos(
-                                    account = it,
-                                    startHeight = fullyScannedHeight.value!!
-                                )
-                            }
+                        Twig.info { "Triggering UTXOs fetching" }
+                        backend.getAccounts().forEach {
+                            refreshUtxos(
+                                account = it,
+                                // Refreshing UTXOs from 0 to be able to discover e.g. blocked Ledger funds
+                                startHeight = BlockHeight(0)
+                            )
                         }
                         SyncingResult.AllSuccess
                     }
