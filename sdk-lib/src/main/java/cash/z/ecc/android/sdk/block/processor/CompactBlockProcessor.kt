@@ -503,16 +503,6 @@ class CompactBlockProcessor internal constructor(
                         // Invalidate transaction data
                         checkTransactions(transactionStorage = repository)
                     }
-                    SyncingResult.FetchUtxos -> {
-                        Twig.info { "Triggering UTXOs fetching" }
-                        backend.getAccounts().forEach {
-                            refreshUtxos(
-                                account = it,
-                                // Refreshing UTXOs from 0 to be able to discover e.g. blocked Ledger funds
-                                startHeight = BlockHeight(0)
-                            )
-                        }
-                    }
                     is SyncingResult.Failure -> {
                         syncingResult = batchSyncProgress.resultState
                         return@collect
@@ -611,17 +601,6 @@ class CompactBlockProcessor internal constructor(
                         Twig.info { "Triggering transaction refresh now" }
                         // Invalidate transaction data and return the common batch syncing success result to the caller
                         checkTransactions(transactionStorage = repository)
-                        SyncingResult.AllSuccess
-                    }
-                    SyncingResult.FetchUtxos -> {
-                        Twig.info { "Triggering UTXOs fetching" }
-                        backend.getAccounts().forEach {
-                            refreshUtxos(
-                                account = it,
-                                // Refreshing UTXOs from 0 to be able to discover e.g. blocked Ledger funds
-                                startHeight = BlockHeight(0)
-                            )
-                        }
                         SyncingResult.AllSuccess
                     }
                     is SyncingResult.Failure -> {
@@ -1478,15 +1457,6 @@ class CompactBlockProcessor internal constructor(
                         }.buffer(1)
                         .map { downloadStageResult ->
                             Twig.debug { "Download stage done with result: $downloadStageResult" }
-
-                            // Triggering UTXOs fetch operation
-                            emit(
-                                BatchSyncProgress(
-                                    order = downloadStageResult.batch.order,
-                                    range = downloadStageResult.batch.range,
-                                    resultState = SyncingResult.FetchUtxos
-                                )
-                            )
 
                             if (downloadStageResult.stageResult !is SyncingResult.DownloadSuccess) {
                                 // In case of any failure, we just propagate the result

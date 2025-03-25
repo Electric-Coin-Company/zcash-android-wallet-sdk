@@ -18,7 +18,8 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Other dependencies update
 - Migrated to `zcash_client_backend 0.18.0`, `zcash_client_sqlite 0.16.0`
 - Added support for gap-limit-based discovery of transparent wallet addresses.
-- The internal fetch-utxos logic now fetches UTXOs from height 0 to support the Ledger funds rescue requirement
+- The internal `fetch-utxos` logic is now triggered only in every `init` and `complete` block sync phases, and it 
+  fetches UTXOs from height 0 to support the Ledger funds rescue requirement.
 
 ## [2.2.8] - 2025-03-03
 
