@@ -16,7 +16,6 @@ import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException
 import cash.z.ecc.android.sdk.exception.InitializeException
 import cash.z.ecc.android.sdk.exception.TransactionEncoderException
 import cash.z.ecc.android.sdk.ext.ConsensusBranchId
-import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.internal.FastestServerFetcher
 import cash.z.ecc.android.sdk.internal.SaplingParamTool
 import cash.z.ecc.android.sdk.internal.Twig
@@ -28,7 +27,6 @@ import cash.z.ecc.android.sdk.internal.db.derived.DbDerivedDataRepository
 import cash.z.ecc.android.sdk.internal.db.derived.DerivedDataDb
 import cash.z.ecc.android.sdk.internal.exchange.UsdExchangeRateFetcher
 import cash.z.ecc.android.sdk.internal.ext.existsSuspend
-import cash.z.ecc.android.sdk.internal.ext.isNullOrEmpty
 import cash.z.ecc.android.sdk.internal.ext.tryNull
 import cash.z.ecc.android.sdk.internal.jni.RustBackend
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
@@ -559,7 +557,6 @@ class SdkSynchronizer private constructor(
         }
 
         launch(CoroutineExceptionHandler(::onCriticalError)) {
-            var lastScanTime = 0L
             processor.onProcessorErrorListener = ::onProcessorError
             processor.onSetupErrorListener = ::onSetupError
             processor.onChainErrorListener = ::onChainError
@@ -569,13 +566,9 @@ class SdkSynchronizer private constructor(
                     when (it) {
                         is Initializing -> INITIALIZING
                         is Synced -> {
-                            val now = System.currentTimeMillis()
-                            // do a bit of housekeeping and then report synced status
-                            onScanComplete(it.syncedRange, now - lastScanTime)
-                            lastScanTime = now
+                            onScanComplete()
                             SYNCED
                         }
-
                         is Stopped -> STOPPED
                         is Disconnected -> DISCONNECTED
                         is Syncing -> SYNCING
@@ -651,32 +644,16 @@ class SdkSynchronizer private constructor(
         onChainErrorHandler?.invoke(errorHeight, rewindHeight)
     }
 
-    /**
-     * @param elapsedMillis the amount of time that passed since the last scan
-     */
-    private suspend fun onScanComplete(
-        scannedRange: ClosedRange<BlockHeight>?,
-        elapsedMillis: Long
-    ) {
-        // We don't need to update anything if there have been no blocks
-        // refresh anyway if:
-        // - if it's the first time we finished scanning
-        // - if we check for blocks 5 times and find nothing was mined
-        @Suppress("MagicNumber")
-        val shouldRefresh = !scannedRange.isNullOrEmpty() || elapsedMillis > (ZcashSdk.POLL_INTERVAL * 5)
-        val reason = if (scannedRange.isNullOrEmpty()) "it's been a while" else "new blocks were scanned"
-
+    private suspend fun onScanComplete() {
         // Refresh UTXOs, balances, and transactions for all the wallet's accounts
-        if (shouldRefresh) {
-            Twig.debug { "Triggering utxo refresh since $reason!" }
-            refreshAllAccountsUtxos()
+        Twig.debug { "Triggering UTXOs refresh" }
+        refreshAllAccountsUtxos()
 
-            Twig.debug { "Triggering balance refresh since $reason!" }
-            refreshAllBalances()
+        Twig.debug { "Triggering balance refresh" }
+        refreshAllBalances()
 
-            Twig.debug { "Triggering transaction refresh since $reason!" }
-            refreshTransactions()
-        }
+        Twig.debug { "Triggering transaction refresh" }
+        refreshTransactions()
     }
 
     private suspend fun refreshAllAccountsUtxos() {
