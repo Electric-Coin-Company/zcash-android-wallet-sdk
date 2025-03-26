@@ -1912,10 +1912,11 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeSh
                 },
             }?;
 
-        let min_confirmations = 0;
-
+        let chain_tip_height = db_data
+            .chain_height()?
+            .ok_or_else(|| anyhow!("Chain tip height must be known to shield funds."))?;
         let account_receivers = db_data
-            .get_transparent_balances(account_uuid, BlockHeight::from(0))
+            .get_transparent_balances(account_uuid, chain_tip_height)
             .map_err(|e| {
                 anyhow!(
                     "Error while fetching transparent balances for {:?}: {}",
@@ -1950,6 +1951,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeSh
         // Always use ZIP 317 fees
         let (change_strategy, input_selector) = zip317_helper(memo);
 
+        let min_confirmations = 0;
         let proposal = propose_shielding::<_, _, _, _, Infallible>(
             &mut db_data,
             &network,
