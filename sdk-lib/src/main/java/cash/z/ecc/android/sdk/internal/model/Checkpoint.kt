@@ -26,5 +26,13 @@ internal data class Checkpoint(
         return TreeState.fromParts(height.value, hash, epochSeconds.toInt(), saplingTree, orchardTree)
     }
 
-    internal companion object
+    internal companion object {
+        fun new() = Checkpoint(
+            height = ,
+            hash = ,
+            epochSeconds = ,
+            saplingTree = ,
+            orchardTree =
+        )
+    }
 }

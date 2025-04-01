@@ -50,6 +50,8 @@
     <string name="seed_custom">Type in a secret phrase</string>
     <string name="seed_birthday_optional">Type in a birthday (optional)</string>
     <string name="seed_random">Generate a new random secret phrase</string>
+    <string name="seed_estimate_bd_btn">Estimate birthday height</string>
+    <string name="seed_estimate_bd_dialog_btn">Use selected date</string>
     <string name="seed_restore">Restore wallet</string>
 
     <string name="home_accounts">

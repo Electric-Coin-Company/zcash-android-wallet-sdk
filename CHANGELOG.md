@@ -6,6 +6,10 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `SdkSynchronizer.estimateBirthdayHeight(date: Date)` has been added to get an estimated height for a given date,
+  typically used for estimating birthday.
+
 ## [2.2.11] - 2025-04-04
 
 ### Fixed
