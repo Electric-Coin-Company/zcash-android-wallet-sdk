@@ -1,6 +1,7 @@
 package cash.z.ecc.android.sdk.tool
 
 import android.content.Context
+import android.net.Network
 import androidx.annotation.VisibleForTesting
 import cash.z.ecc.android.sdk.exception.BirthdayException
 import cash.z.ecc.android.sdk.internal.Twig
@@ -10,6 +11,8 @@ import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import java.io.BufferedReader
 import java.io.IOException
 import java.util.Locale
@@ -54,6 +57,14 @@ internal object CheckpointTool {
             )
         }
     }
+
+    /**
+     * Load tha last know checkpoint for the given network.
+     */
+    suspend fun loadLast(
+        context: Context,
+        network: ZcashNetwork,
+    ) = loadNearest(context, network, null)
 
     // Converting this to suspending will then propagate
     @Throws(IOException::class)
@@ -177,5 +188,82 @@ internal object CheckpointTool {
         }
 
         throw lastException!!
+    }
+
+    /**
+     * TODO
+     */
+    internal suspend fun estimateBirthdayHeight(
+        context: Context,
+        date: Instant,
+        network: ZcashNetwork,
+    ): BlockHeight {
+        val avgIntervalTime = if (network == ZcashNetwork.Mainnet) 52.33 else 134.93
+        val blockInterval = if (network == ZcashNetwork.Mainnet) 2500.0 else 10_000.0
+        val saplingActivationHeight = if (network == ZcashNetwork.Mainnet)
+            ZcashNetwork.Mainnet.saplingActivationHeight
+        else
+            ZcashNetwork.Testnet.saplingActivationHeight
+
+        val latestCheckpoint = loadLast(context, network)
+        val latestCheckpointTime = latestCheckpoint.height.value
+
+        if (date.toEpochMilliseconds() / 1000 >= latestCheckpointTime) {
+            return latestCheckpoint.height
+        }
+
+        val nowTimeIntervalSince1970 = Clock.System.now().toEpochMilliseconds() / 1000.0
+        val timeDiff = (nowTimeIntervalSince1970 - date.toEpochMilliseconds() / 1000.0) - (nowTimeIntervalSince1970 - latestCheckpointTime)
+        val blockDiff = ((timeDiff / 3600) / avgIntervalTime) * blockInterval
+
+        var heightToLookAround = (latestCheckpoint.height - blockDiff.toInt()) / blockInterval * blockInterval
+
+        if (heightToLookAround.toInt() <= saplingActivationHeight) {
+            return saplingActivationHeight
+        }
+
+        val loadedCheckpoint = loadNearest(context,
+            network,
+            BlockHeight(heightToLookAround.toInt()),
+        )
+
+        var hoursApart = (loadedCheckpoint.time.toDouble() - date.time / 1000.0) / 3600.0
+        if (hoursApart < 0 && abs(hoursApart) < avgIntervalTime) {
+            return loadedCheckpoint.height
+        }
+
+        if (hoursApart < 0) {
+            var closestHeight = loadedCheckpoint.height
+            while (Math.abs(hoursApart) > avgIntervalTime) {
+                heightToLookAround += blockInterval
+                val newCheckpoint = Checkpoint.birthday(
+                    BlockHeight(heightToLookAround.toInt()),
+                    BundleCheckpointURLProvider.default.url(network)
+                ) ?: return saplingActivationHeight
+
+                hoursApart = (newCheckpoint.time.toDouble() - date.time / 1000.0) / 3600.0
+                if (hoursApart < 0 && abs(hoursApart) < avgIntervalTime) {
+                    return newCheckpoint.height
+                } else if (hoursApart >= 0) {
+                    return closestHeight
+                }
+                closestHeight = newCheckpoint.height
+            }
+        } else {
+            while (hoursApart > 0) {
+                heightToLookAround -= blockInterval
+                val newCheckpoint = Checkpoint.birthday(
+                    BlockHeight(heightToLookAround.toInt()),
+                    BundleCheckpointURLProvider.default.url(network)
+                ) ?: return saplingActivationHeight
+
+                hoursApart = (newCheckpoint.time.toDouble() - date.time / 1000.0) / 3600.0
+                if (hoursApart < 0) {
+                    return newCheckpoint.height
+                }
+            }
+        }
+
+        return saplingActivationHeight
     }
 }

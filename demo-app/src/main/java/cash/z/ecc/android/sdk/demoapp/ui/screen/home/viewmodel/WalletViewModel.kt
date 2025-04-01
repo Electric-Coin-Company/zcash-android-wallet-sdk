@@ -59,6 +59,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlinx.datetime.Instant
 import kotlin.time.Duration.Companion.seconds
 
 // To make this more multiplatform compatible, we need to remove the dependency on Context
@@ -393,6 +394,14 @@ class WalletViewModel(
             )
 
     fun getCurrentAccount(): Account = getAccounts()[CURRENT_ZIP_32_ACCOUNT_INDEX.toInt()]
+
+    fun estimateBirthday(selection: Instant): BlockHeight = runBlocking {
+        runCatching {
+            SdkSynchronizer.estimateBirthdayHeight(selection)
+        }.onFailure {
+            Twig.error(it) { "Failed to estimate the wallet birthday height based on: $selection." }
+        }.getOrThrow()
+    }
 
     companion object {
         private const val QUICK_REWIND_BLOCKS = 100
