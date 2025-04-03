@@ -6,6 +6,12 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Database migration bugs in `zcash_client_sqlite 0.16.0` and `0.16.1` have
+  been fixed by updating to `zcash_client_sqlite 0.16.2`. These caused a few
+  wallets to stop working after the 2.2.9 upgrade due to failed database
+  migrations.
+
 ## [2.2.9] - 2025-03-25
 
 ### Fixed
