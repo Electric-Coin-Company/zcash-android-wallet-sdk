@@ -19,6 +19,28 @@ class TorLwdConn private constructor(
         }
 
     /**
+     * Returns information about this lightwalletd instance and the blockchain.
+     */
+    suspend fun getServerInfo() =
+        accessMutex.withLock {
+            withContext(Dispatchers.IO) {
+                checkNotNull(nativeHandle) { "TorLwdConn is disposed" }
+                getServerInfo(nativeHandle!!)
+            }
+        }
+
+    /**
+     * Returns information about this lightwalletd instance and the blockchain.
+     */
+    suspend fun getLatestBlock() =
+        accessMutex.withLock {
+            withContext(Dispatchers.IO) {
+                checkNotNull(nativeHandle) { "TorLwdConn is disposed" }
+                getLatestBlock(nativeHandle!!)
+            }
+        }
+
+    /**
      * Fetches the transaction with the given ID.
      */
     suspend fun fetchTransaction(txId: ByteArray) =
@@ -40,6 +62,17 @@ class TorLwdConn private constructor(
             }
         }
 
+    /**
+     * Fetches the note commitment tree state corresponding to the given block height.
+     */
+    suspend fun getTreeState(height: Long) =
+        accessMutex.withLock {
+            withContext(Dispatchers.IO) {
+                checkNotNull(nativeHandle) { "TorLwdConn is disposed" }
+                getTreeState(nativeHandle!!, height)
+            }
+        }
+
     companion object {
         internal suspend fun new(nativeHandle: Long): TorLwdConn = TorLwdConn(nativeHandle = nativeHandle)
 
@@ -49,6 +82,20 @@ class TorLwdConn private constructor(
 
         @JvmStatic
         private external fun freeLightwalletdConnection(nativeHandle: Long)
+
+        /**
+         * @throws RuntimeException as a common indicator of the operation failure
+         */
+        @JvmStatic
+        @Throws(RuntimeException::class)
+        private external fun getServerInfo(nativeHandle: Long): ByteArray
+
+        /**
+         * @throws RuntimeException as a common indicator of the operation failure
+         */
+        @JvmStatic
+        @Throws(RuntimeException::class)
+        private external fun getLatestBlock(nativeHandle: Long): ByteArray
 
         /**
          * @throws RuntimeException as a common indicator of the operation failure
@@ -68,6 +115,16 @@ class TorLwdConn private constructor(
         private external fun submitTransaction(
             nativeHandle: Long,
             tx: ByteArray
+        )
+
+        /**
+         * @throws RuntimeException as a common indicator of the operation failure
+         */
+        @JvmStatic
+        @Throws(RuntimeException::class)
+        private external fun getTreeState(
+            nativeHandle: Long,
+            fromHeight: Long
         )
     }
 }
