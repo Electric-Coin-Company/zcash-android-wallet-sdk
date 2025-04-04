@@ -1,6 +1,7 @@
 package cash.z.ecc.android.sdk.internal.jni
 
 import cash.z.ecc.android.sdk.internal.model.TorClient
+import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import kotlin.io.path.createTempDirectory
@@ -20,6 +21,17 @@ class TorClientTest {
 
             // Connect to a testnet lightwalletd server.
             val lwdConn = torClient.connectToLightwalletd("https://testnet.zec.rocks:443")
+
+            // Confirm that it is on testnet.
+            val info = lwdConn.getServerInfo()
+            assertEquals("test", info.chainName)
+            assertEquals(BlockHeightUnsafe(280000), info.saplingActivationHeightUnsafe)
+
+            // Confirm that it has the block containing the known testnet transaction.
+            val txHeight = BlockHeightUnsafe(1234567)
+            assert(info.blockHeightUnsafe >= txHeight)
+            val latest = lwdConn.getLatestBlock()
+            assert(latest.height >= txHeight.value)
 
             // Fetch a known testnet transaction.
             val txId =

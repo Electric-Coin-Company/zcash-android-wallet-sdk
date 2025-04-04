@@ -2759,6 +2759,44 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorLwdConn_freeLigh
     }
 }
 
+/// Returns information about this lightwalletd instance and the blockchain.
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorLwdConn_getServerInfo<'local>(
+    mut env: JNIEnv<'local>,
+    _: JClass<'local>,
+    lwd_conn: jlong,
+) -> jbyteArray {
+    let res = catch_unwind(&mut env, |env| {
+        let lwd_conn = ptr::with_exposed_provenance_mut::<crate::tor::LwdConn>(lwd_conn as usize);
+        let lwd_conn = unsafe { lwd_conn.as_mut() }
+            .ok_or_else(|| anyhow!("A Tor lightwalletd connection is required"))?;
+
+        let info = lwd_conn.get_lightd_info()?;
+
+        Ok(utils::rust_bytes_to_java(env, &info.encode_to_vec())?.into_raw())
+    });
+    unwrap_exc_or(&mut env, res, ptr::null_mut())
+}
+
+/// Returns information about this lightwalletd instance and the blockchain.
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorLwdConn_getLatestBlock<'local>(
+    mut env: JNIEnv<'local>,
+    _: JClass<'local>,
+    lwd_conn: jlong,
+) -> jbyteArray {
+    let res = catch_unwind(&mut env, |env| {
+        let lwd_conn = ptr::with_exposed_provenance_mut::<crate::tor::LwdConn>(lwd_conn as usize);
+        let lwd_conn = unsafe { lwd_conn.as_mut() }
+            .ok_or_else(|| anyhow!("A Tor lightwalletd connection is required"))?;
+
+        let block_id = lwd_conn.get_latest_block()?;
+
+        Ok(utils::rust_bytes_to_java(env, &block_id.encode_to_vec())?.into_raw())
+    });
+    unwrap_exc_or(&mut env, res, ptr::null_mut())
+}
+
 /// Fetches the transaction with the given ID.
 #[unsafe(no_mangle)]
 pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorLwdConn_fetchTransaction<'local>(
@@ -2776,7 +2814,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorLwdConn_fetchTra
         // we may as well confirm we were actually passed something shaped correctly.
         let txid = parse_txid(env, txid_bytes)?;
 
-        let tx = lwd_conn.get_transaction(txid)?;
+        let (tx, _height) = lwd_conn.get_transaction(txid)?;
 
         Ok(utils::rust_bytes_to_java(env, &tx)?.into_raw())
     });
@@ -2803,6 +2841,28 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorLwdConn_submitTr
         lwd_conn.send_transaction(tx_bytes)
     });
     unwrap_exc_or(&mut env, res, ())
+}
+
+/// Fetches the note commitment tree state corresponding to the given block height.
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorLwdConn_getTreeState<'local>(
+    mut env: JNIEnv<'local>,
+    _: JClass<'local>,
+    lwd_conn: jlong,
+    height: jlong,
+) -> jbyteArray {
+    let res = catch_unwind(&mut env, |env| {
+        let lwd_conn = ptr::with_exposed_provenance_mut::<crate::tor::LwdConn>(lwd_conn as usize);
+        let lwd_conn = unsafe { lwd_conn.as_mut() }
+            .ok_or_else(|| anyhow!("A Tor lightwalletd connection is required"))?;
+
+        let height = BlockHeight::try_from(height)?;
+
+        let treestate = lwd_conn.get_tree_state(height)?;
+
+        Ok(utils::rust_bytes_to_java(env, &treestate.encode_to_vec())?.into_raw())
+    });
+    unwrap_exc_or(&mut env, res, ptr::null_mut())
 }
 
 //
