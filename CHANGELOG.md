@@ -6,6 +6,8 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.11] - 2025-04-04
+
 ### Fixed
 - Database migration bugs in `zcash_client_sqlite 0.16.0` and `0.16.1` have
   been fixed by updating to `zcash_client_sqlite 0.16.2`. These caused a few
