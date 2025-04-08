@@ -21,8 +21,8 @@ internal data class ScanProgress(
     companion object {
         fun new(jni: JniWalletSummary): ScanProgress =
             ScanProgress(
-                numerator = jni.progressNumerator,
-                denominator = jni.progressDenominator
+                numerator = jni.scanProgressNumerator,
+                denominator = jni.scanProgressDenominator
             )
     }
 }

@@ -1359,28 +1359,38 @@ fn encode_wallet_summary<'a>(
         |env, (account_uuid, balance)| encode_account_balance(env, &account_uuid, balance),
     )?;
 
-    let (progress_numerator, progress_denominator) =
+    let (recovery_progress_numerator, recovery_progress_denominator) =
         if let Some(recovery_progress) = summary.progress().recovery() {
             (
-                *summary.progress().scan().numerator() + *recovery_progress.numerator(),
-                *summary.progress().scan().denominator() + *recovery_progress.denominator(),
+                env.new_object(
+                    "java/lang/Long",
+                    "(J)V",
+                    &[JValue::Long(*recovery_progress.numerator() as i64)],
+                )?,
+                env.new_object(
+                    "java/lang/Long",
+                    "(J)V",
+                    &[JValue::Long(*recovery_progress.denominator() as i64)],
+                )?,
             )
         } else {
-            (
-                *summary.progress().scan().numerator(),
-                *summary.progress().scan().denominator(),
-            )
+            (JObject::null(), JObject::null())
         };
 
     Ok(env.new_object(
         "cash/z/ecc/android/sdk/internal/model/JniWalletSummary",
-        format!("([L{};JJJJJJ)V", JNI_ACCOUNT_BALANCE),
+        format!(
+            "([L{};JJJJLjava/lang/Long;Ljava/lang/Long;JJ)V",
+            JNI_ACCOUNT_BALANCE
+        ),
         &[
             (&account_balances).into(),
             JValue::Long(i64::from(u32::from(summary.chain_tip_height()))),
             JValue::Long(i64::from(u32::from(summary.fully_scanned_height()))),
-            JValue::Long(progress_numerator as i64),
-            JValue::Long(progress_denominator as i64),
+            JValue::Long(*summary.progress().scan().numerator() as i64),
+            JValue::Long(*summary.progress().scan().denominator() as i64),
+            JValue::Object(&recovery_progress_numerator),
+            JValue::Object(&recovery_progress_denominator),
             JValue::Long(summary.next_sapling_subtree_index() as i64),
             JValue::Long(summary.next_orchard_subtree_index() as i64),
         ],

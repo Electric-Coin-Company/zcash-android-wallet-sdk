@@ -10,8 +10,10 @@ import cash.z.ecc.android.sdk.internal.ext.isInUIntRange
  * @param chainTipHeight the wallet's view of the current chain tip
  * @param fullyScannedHeight the height below which all blocks have been scanned
  *        by the wallet, ignoring blocks below the wallet birthday.
- * @param progressNumerator the numerator of the progress ratio
- * @param progressDenominator the denominator of the progress ratio
+ * @param scanProgressNumerator the numerator of the scan progress ratio
+ * @param scanProgressDenominator the denominator of the scan progress ratio
+ * @param recoveryProgressNumerator the numerator of the recovery progress ratio
+ * @param recoveryProgressDenominator the denominator of the recovery progress ratio
  * @param nextSaplingSubtreeIndex the Sapling subtree index that should start
  *        the next range of subtree roots passed to `Backend.putSaplingSubtreeRoots`.
  * @param nextOrchardSubtreeIndex the Orchard subtree index that should start
@@ -26,8 +28,10 @@ class JniWalletSummary(
     val accountBalances: Array<JniAccountBalance>,
     val chainTipHeight: Long,
     val fullyScannedHeight: Long,
-    val progressNumerator: Long,
-    val progressDenominator: Long,
+    val scanProgressNumerator: Long,
+    val scanProgressDenominator: Long,
+    val recoveryProgressNumerator: Long?,
+    val recoveryProgressDenominator: Long?,
     val nextSaplingSubtreeIndex: Long,
     val nextOrchardSubtreeIndex: Long,
 ) {
@@ -38,17 +42,38 @@ class JniWalletSummary(
         require(fullyScannedHeight.isInUIntRange()) {
             "Height $fullyScannedHeight is outside of allowed UInt range"
         }
-        require(progressNumerator >= 0L) {
-            "Numerator $progressNumerator is outside of allowed range [0, Long.MAX_VALUE]"
+        require(scanProgressNumerator >= 0L) {
+            "Numerator $scanProgressNumerator is outside of allowed range [0, Long.MAX_VALUE]"
         }
-        require(progressDenominator >= 1L) {
-            "Denominator $progressDenominator is outside of allowed range [1, Long.MAX_VALUE]"
+        require(scanProgressDenominator >= 1L) {
+            "Denominator $scanProgressDenominator is outside of allowed range [1, Long.MAX_VALUE]"
         }
-        require(progressNumerator.toFloat().div(progressDenominator) >= 0f) {
-            "Result of ${progressNumerator.toFloat()}/$progressDenominator is outside of allowed range"
+        require(scanProgressNumerator.toFloat().div(scanProgressDenominator) >= 0f) {
+            "Result of ${scanProgressNumerator.toFloat()}/$scanProgressDenominator is outside of allowed range"
         }
-        require(progressNumerator.toFloat().div(progressDenominator) <= 1f) {
-            "Result of ${progressNumerator.toFloat()}/$progressDenominator is outside of allowed range"
+        require(scanProgressNumerator.toFloat().div(scanProgressDenominator) <= 1f) {
+            "Result of ${scanProgressNumerator.toFloat()}/$scanProgressDenominator is outside of allowed range"
+        }
+        if (recoveryProgressNumerator != null && recoveryProgressDenominator != null) {
+            require(recoveryProgressNumerator >= 0L) {
+                "Numerator $recoveryProgressNumerator is outside of allowed range [0, Long.MAX_VALUE]"
+            }
+            require(recoveryProgressDenominator >= 1L) {
+                "Denominator $recoveryProgressDenominator is outside of allowed range [1, Long.MAX_VALUE]"
+            }
+            require(recoveryProgressNumerator.toFloat().div(recoveryProgressDenominator) >= 0f) {
+                "Result of ${recoveryProgressNumerator.toFloat()}/$recoveryProgressDenominator is outside of allowed range"
+            }
+            require(recoveryProgressNumerator.toFloat().div(recoveryProgressDenominator) <= 1f) {
+                "Result of ${recoveryProgressNumerator.toFloat()}/$recoveryProgressDenominator is outside of allowed range"
+            }
+        } else {
+            require(recoveryProgressNumerator == null) {
+                "Recovery numerator must be null when denominator is null"
+            }
+            require(recoveryProgressDenominator == null) {
+                "Recovery denominator must be null when numerator is null"
+            }
         }
         require(nextSaplingSubtreeIndex.isInUIntRange()) {
             "Height $nextSaplingSubtreeIndex is outside of allowed UInt range"

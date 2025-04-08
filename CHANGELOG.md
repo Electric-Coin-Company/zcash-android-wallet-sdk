@@ -6,6 +6,16 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `Synchronizer.recoveryProgress`
+
+### Changed
+- `Synchronizer.progress` now only tracks the progress of making existing wallet
+  balance spendable. In some cases (depending on how long a wallet was offline
+  since its last sync) it may also happen to include progress of discovering new
+  notes, but in general `Synchronizer.recoveryProgress` now covers the discovery
+  of historic wallet information.
+
 ## [2.2.11] - 2025-04-04
 
 ### Fixed
