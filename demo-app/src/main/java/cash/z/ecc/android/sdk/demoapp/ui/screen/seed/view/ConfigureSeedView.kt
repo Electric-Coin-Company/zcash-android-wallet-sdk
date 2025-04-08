@@ -249,14 +249,15 @@ private fun RestoreWalletSection(
             label = { Text(stringResource(id = R.string.seed_custom)) }
         )
         TextField(
-            value = when {
-                walletBirthdayString != null -> walletBirthdayString!!
-                estimatedHeight != null -> {
-                    walletBirthdayString = estimatedHeight.value.toString()
-                    walletBirthdayString!!
-                }
-                else -> ""
-            },
+            value =
+                when {
+                    walletBirthdayString != null -> walletBirthdayString!!
+                    estimatedHeight != null -> {
+                        walletBirthdayString = estimatedHeight.value.toString()
+                        walletBirthdayString!!
+                    }
+                    else -> ""
+                },
             onValueChange = {
                 Twig.debug { "New BD value: $it" }
                 // filter input to contain only digits
