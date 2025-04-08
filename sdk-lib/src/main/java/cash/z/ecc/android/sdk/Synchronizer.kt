@@ -45,9 +45,7 @@ import co.electriccoin.lightwallet.client.model.Response
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.runBlocking
-import kotlinx.datetime.Instant
 import java.io.Closeable
-import kotlin.time.Duration
 
 @Suppress("TooManyFunctions")
 interface Synchronizer {

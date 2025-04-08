@@ -66,7 +66,7 @@ import kotlin.time.Duration.Companion.seconds
 // for loading the preferences.
 @Suppress("TooManyFunctions")
 class WalletViewModel(
-    application: Application
+    private val application: Application
 ) : AndroidViewModel(application) {
     private val walletCoordinator = WalletCoordinator.getInstance(application)
 
@@ -395,13 +395,18 @@ class WalletViewModel(
 
     fun getCurrentAccount(): Account = getAccounts()[CURRENT_ZIP_32_ACCOUNT_INDEX.toInt()]
 
-    fun estimateBirthday(selection: Instant): BlockHeight = runBlocking {
-        runCatching {
-            SdkSynchronizer.estimateBirthdayHeight(selection)
-        }.onFailure {
-            Twig.error(it) { "Failed to estimate the wallet birthday height based on: $selection." }
-        }.getOrThrow()
-    }
+    fun estimateBirthday(selection: Instant): BlockHeight =
+        runBlocking {
+            runCatching {
+                SdkSynchronizer.estimateBirthdayHeight(
+                    application.applicationContext,
+                    selection,
+                    ZcashNetwork.fromResources(application)
+                )
+            }.onFailure {
+                Twig.error(it) { "Failed to estimate the wallet birthday height based on: $selection." }
+            }.getOrThrow()
+        }
 
     companion object {
         private const val QUICK_REWIND_BLOCKS = 100

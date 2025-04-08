@@ -1,7 +1,6 @@
 package cash.z.ecc.android.sdk.tool
 
 import android.content.Context
-import android.net.Network
 import androidx.annotation.VisibleForTesting
 import cash.z.ecc.android.sdk.exception.BirthdayException
 import cash.z.ecc.android.sdk.internal.Twig
@@ -16,6 +15,7 @@ import kotlinx.datetime.Instant
 import java.io.BufferedReader
 import java.io.IOException
 import java.util.Locale
+import kotlin.math.abs
 
 /**
  * Tool for loading checkpoints for the wallet, based on the height at which the wallet was born.
@@ -199,49 +199,49 @@ internal object CheckpointTool {
         network: ZcashNetwork,
     ): BlockHeight {
         val avgIntervalTime = if (network == ZcashNetwork.Mainnet) 52.33 else 134.93
-        val blockInterval = if (network == ZcashNetwork.Mainnet) 2500.0 else 10_000.0
-        val saplingActivationHeight = if (network == ZcashNetwork.Mainnet)
-            ZcashNetwork.Mainnet.saplingActivationHeight
-        else
-            ZcashNetwork.Testnet.saplingActivationHeight
+        val blockInterval = if (network == ZcashNetwork.Mainnet) 2500 else 10_000
+        val saplingActivationHeight =
+            if (network == ZcashNetwork.Mainnet) {
+                ZcashNetwork.Mainnet.saplingActivationHeight
+            } else {
+                ZcashNetwork.Testnet.saplingActivationHeight
+            }
 
         val latestCheckpoint = loadLast(context, network)
-        val latestCheckpointTime = latestCheckpoint.height.value
+        val latestCheckpointTime = latestCheckpoint.epochSeconds
 
-        if (date.toEpochMilliseconds() / 1000 >= latestCheckpointTime) {
+        if ((date.toEpochMilliseconds() / 1000) >= latestCheckpointTime) {
             return latestCheckpoint.height
         }
 
-        val nowTimeIntervalSince1970 = Clock.System.now().toEpochMilliseconds() / 1000.0
-        val timeDiff = (nowTimeIntervalSince1970 - date.toEpochMilliseconds() / 1000.0) - (nowTimeIntervalSince1970 - latestCheckpointTime)
+        val nowTimeIntervalSince1970 = Clock.System.now().toEpochMilliseconds() / 1000
+        val timeDiff = (nowTimeIntervalSince1970 - date.toEpochMilliseconds() / 1000) - (nowTimeIntervalSince1970 - latestCheckpointTime)
         val blockDiff = ((timeDiff / 3600) / avgIntervalTime) * blockInterval
 
-        var heightToLookAround = (latestCheckpoint.height - blockDiff.toInt()) / blockInterval * blockInterval
+        var heightToLookAround = ((latestCheckpoint.height.value - blockDiff.toInt()) / blockInterval * blockInterval)
 
-        if (heightToLookAround.toInt() <= saplingActivationHeight) {
+        if (heightToLookAround <= saplingActivationHeight.value) {
             return saplingActivationHeight
         }
 
-        val loadedCheckpoint = loadNearest(context,
-            network,
-            BlockHeight(heightToLookAround.toInt()),
-        )
+        val loadedCheckpoint =
+            loadNearest(
+                context,
+                network,
+                BlockHeight(heightToLookAround),
+            )
 
-        var hoursApart = (loadedCheckpoint.time.toDouble() - date.time / 1000.0) / 3600.0
+        var hoursApart = (loadedCheckpoint.epochSeconds - date.epochSeconds) / 3600
         if (hoursApart < 0 && abs(hoursApart) < avgIntervalTime) {
             return loadedCheckpoint.height
         }
 
         if (hoursApart < 0) {
             var closestHeight = loadedCheckpoint.height
-            while (Math.abs(hoursApart) > avgIntervalTime) {
+            while (abs(hoursApart) > avgIntervalTime) {
                 heightToLookAround += blockInterval
-                val newCheckpoint = Checkpoint.birthday(
-                    BlockHeight(heightToLookAround.toInt()),
-                    BundleCheckpointURLProvider.default.url(network)
-                ) ?: return saplingActivationHeight
-
-                hoursApart = (newCheckpoint.time.toDouble() - date.time / 1000.0) / 3600.0
+                val newCheckpoint = loadNearest(context, network, BlockHeight.new(heightToLookAround))
+                hoursApart = (newCheckpoint.epochSeconds - date.epochSeconds) / 3600
                 if (hoursApart < 0 && abs(hoursApart) < avgIntervalTime) {
                     return newCheckpoint.height
                 } else if (hoursApart >= 0) {
@@ -252,12 +252,8 @@ internal object CheckpointTool {
         } else {
             while (hoursApart > 0) {
                 heightToLookAround -= blockInterval
-                val newCheckpoint = Checkpoint.birthday(
-                    BlockHeight(heightToLookAround.toInt()),
-                    BundleCheckpointURLProvider.default.url(network)
-                ) ?: return saplingActivationHeight
-
-                hoursApart = (newCheckpoint.time.toDouble() - date.time / 1000.0) / 3600.0
+                val newCheckpoint = loadNearest(context, network, BlockHeight.new(heightToLookAround))
+                hoursApart = (newCheckpoint.epochSeconds - date.epochSeconds) / 3600
                 if (hoursApart < 0) {
                     return newCheckpoint.height
                 }
