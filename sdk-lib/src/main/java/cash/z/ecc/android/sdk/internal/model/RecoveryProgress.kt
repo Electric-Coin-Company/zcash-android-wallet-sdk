@@ -3,7 +3,7 @@ package cash.z.ecc.android.sdk.internal.model
 internal data class RecoveryProgress(
     private val numerator: Long,
     private val denominator: Long
-): Progress(numerator, denominator) {
+) : Progress(numerator, denominator) {
     override fun toString() = "RecoveryProgress($numerator/$denominator) -> ${getSafeRatio()}"
 
     companion object {

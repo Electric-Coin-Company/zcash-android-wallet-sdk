@@ -11,6 +11,7 @@ internal sealed class GetWalletSummaryResult {
         val walletSummary: WalletSummary
     ) : GetWalletSummaryResult() {
         fun scanProgressPercentDecimal() = PercentDecimal(walletSummary.scanProgress.getSafeRatio())
+
         fun recoveryProgressPercentDecimal() =
             walletSummary.recoveryProgress?.getSafeRatio()?.let { ratio -> PercentDecimal(ratio) }
     }

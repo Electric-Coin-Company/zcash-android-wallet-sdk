@@ -67,10 +67,12 @@ class JniWalletSummary(
             }
             recoveryProgressDenominator.takeIf { it > 0L }?.run {
                 require(recoveryProgressNumerator.toFloat().div(recoveryProgressDenominator) >= 0f) {
-                    "Result of ${recoveryProgressNumerator.toFloat()}/$recoveryProgressDenominator is outside of allowed range"
+                    "Result of ${recoveryProgressNumerator.toFloat()}/$recoveryProgressDenominator is outside of " +
+                        "allowed range"
                 }
                 require(recoveryProgressNumerator.toFloat().div(recoveryProgressDenominator) <= 1f) {
-                    "Result of ${recoveryProgressNumerator.toFloat()}/$recoveryProgressDenominator is outside of allowed range"
+                    "Result of ${recoveryProgressNumerator.toFloat()}/$recoveryProgressDenominator is outside of " +
+                        "allowed range"
                 }
             }
         } else {

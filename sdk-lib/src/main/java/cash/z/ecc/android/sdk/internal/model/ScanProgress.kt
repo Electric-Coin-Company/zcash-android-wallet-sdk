@@ -3,7 +3,7 @@ package cash.z.ecc.android.sdk.internal.model
 internal data class ScanProgress(
     private val numerator: Long,
     private val denominator: Long
-): Progress(numerator, denominator) {
+) : Progress(numerator, denominator) {
     override fun toString() = "ScanProgress($numerator/$denominator) -> ${getSafeRatio()}"
 
     companion object {
