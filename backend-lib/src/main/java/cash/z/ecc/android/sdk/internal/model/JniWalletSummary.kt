@@ -11,9 +11,11 @@ import cash.z.ecc.android.sdk.internal.ext.isInUIntRange
  * @param fullyScannedHeight the height below which all blocks have been scanned
  *        by the wallet, ignoring blocks below the wallet birthday.
  * @param scanProgressNumerator the numerator of the scan progress ratio
- * @param scanProgressDenominator the denominator of the scan progress ratio
+ * @param scanProgressDenominator the denominator of the scan progress ratio. It might be 0 which means the overall
+ * scan progress is 100%.
  * @param recoveryProgressNumerator the numerator of the recovery progress ratio
- * @param recoveryProgressDenominator the denominator of the recovery progress ratio
+ * @param recoveryProgressDenominator the denominator of the recovery progress ratio. It might be 0 which means the
+ * overall recovery progress is 100%.
  * @param nextSaplingSubtreeIndex the Sapling subtree index that should start
  *        the next range of subtree roots passed to `Backend.putSaplingSubtreeRoots`.
  * @param nextOrchardSubtreeIndex the Orchard subtree index that should start
@@ -45,27 +47,31 @@ class JniWalletSummary(
         require(scanProgressNumerator >= 0L) {
             "Numerator $scanProgressNumerator is outside of allowed range [0, Long.MAX_VALUE]"
         }
-        require(scanProgressDenominator >= 1L) {
-            "Denominator $scanProgressDenominator is outside of allowed range [1, Long.MAX_VALUE]"
+        require(scanProgressDenominator >= 0L) {
+            "Denominator $scanProgressDenominator is outside of allowed range [0, Long.MAX_VALUE]"
         }
-        require(scanProgressNumerator.toFloat().div(scanProgressDenominator) >= 0f) {
-            "Result of ${scanProgressNumerator.toFloat()}/$scanProgressDenominator is outside of allowed range"
-        }
-        require(scanProgressNumerator.toFloat().div(scanProgressDenominator) <= 1f) {
-            "Result of ${scanProgressNumerator.toFloat()}/$scanProgressDenominator is outside of allowed range"
+        scanProgressDenominator.takeIf { it > 0L }?.run {
+            require(scanProgressNumerator.toFloat().div(scanProgressDenominator) >= 0f) {
+                "Result of ${scanProgressNumerator.toFloat()}/$scanProgressDenominator is outside of allowed range"
+            }
+            require(scanProgressNumerator.toFloat().div(scanProgressDenominator) <= 1f) {
+                "Result of ${scanProgressNumerator.toFloat()}/$scanProgressDenominator is outside of allowed range"
+            }
         }
         if (recoveryProgressNumerator != null && recoveryProgressDenominator != null) {
             require(recoveryProgressNumerator >= 0L) {
                 "Numerator $recoveryProgressNumerator is outside of allowed range [0, Long.MAX_VALUE]"
             }
-            require(recoveryProgressDenominator >= 1L) {
-                "Denominator $recoveryProgressDenominator is outside of allowed range [1, Long.MAX_VALUE]"
+            require(recoveryProgressDenominator >= 0L) {
+                "Denominator $recoveryProgressDenominator is outside of allowed range [0, Long.MAX_VALUE]"
             }
-            require(recoveryProgressNumerator.toFloat().div(recoveryProgressDenominator) >= 0f) {
-                "Result of ${recoveryProgressNumerator.toFloat()}/$recoveryProgressDenominator is outside of allowed range"
-            }
-            require(recoveryProgressNumerator.toFloat().div(recoveryProgressDenominator) <= 1f) {
-                "Result of ${recoveryProgressNumerator.toFloat()}/$recoveryProgressDenominator is outside of allowed range"
+            recoveryProgressDenominator.takeIf { it > 0L }?.run {
+                require(recoveryProgressNumerator.toFloat().div(recoveryProgressDenominator) >= 0f) {
+                    "Result of ${recoveryProgressNumerator.toFloat()}/$recoveryProgressDenominator is outside of allowed range"
+                }
+                require(recoveryProgressNumerator.toFloat().div(recoveryProgressDenominator) <= 1f) {
+                    "Result of ${recoveryProgressNumerator.toFloat()}/$recoveryProgressDenominator is outside of allowed range"
+                }
             }
         } else {
             require(recoveryProgressNumerator == null) {
