@@ -3,6 +3,7 @@ package cash.z.ecc.android.sdk.internal.model
 import cash.z.wallet.sdk.internal.rpc.Service.BlockID
 import cash.z.wallet.sdk.internal.rpc.Service.LightdInfo
 import cash.z.wallet.sdk.internal.rpc.Service.TreeState
+import co.electriccoin.lightwallet.client.model.BlockIDUnsafe
 import co.electriccoin.lightwallet.client.model.LightWalletEndpointInfoUnsafe
 import co.electriccoin.lightwallet.client.model.TreeStateUnsafe
 import kotlinx.coroutines.Dispatchers
@@ -26,7 +27,7 @@ class TorLwdConn private constructor(
     /**
      * Returns information about this lightwalletd instance and the blockchain.
      */
-    suspend fun getServerInfo() =
+    suspend fun getServerInfo(): LightWalletEndpointInfoUnsafe =
         accessMutex.withLock {
             withContext(Dispatchers.IO) {
                 checkNotNull(nativeHandle) { "TorLwdConn is disposed" }
@@ -39,14 +40,16 @@ class TorLwdConn private constructor(
         }
 
     /**
-     * Returns information about this lightwalletd instance and the blockchain.
+     * Returns information about the latest block in the network.
      */
-    suspend fun getLatestBlock() =
+    suspend fun getLatestBlock(): BlockIDUnsafe =
         accessMutex.withLock {
             withContext(Dispatchers.IO) {
                 checkNotNull(nativeHandle) { "TorLwdConn is disposed" }
-                BlockID.parseFrom(
-                    getLatestBlock(nativeHandle!!)
+                BlockIDUnsafe.new(
+                    BlockID.parseFrom(
+                        getLatestBlock(nativeHandle!!)
+                    )
                 )
             }
         }
@@ -76,7 +79,7 @@ class TorLwdConn private constructor(
     /**
      * Fetches the note commitment tree state corresponding to the given block height.
      */
-    suspend fun getTreeState(height: Long) =
+    suspend fun getTreeState(height: Long): TreeStateUnsafe =
         accessMutex.withLock {
             withContext(Dispatchers.IO) {
                 checkNotNull(nativeHandle) { "TorLwdConn is disposed" }
